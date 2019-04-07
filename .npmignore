@@ -1,0 +1,5 @@
+src/
+rollup.config.js
+test/
+.travis.yml
+*.config.js
