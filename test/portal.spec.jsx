@@ -43,6 +43,11 @@ describe('Testing a Portal with Synthetic Events', () => {
     expect(clicked).toBe(false);
     testElem.click();
     expect(clicked).toBe(true);
+    clicked = false;
+    r.clearDelegatedEvents();
+    expect(clicked).toBe(false);
+    testElem.click();
+    expect(clicked).toBe(false);
   })
 
   test('dispose', () => disposer());

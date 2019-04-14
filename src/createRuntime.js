@@ -52,7 +52,9 @@ function eventHandler(e) {
 }
 
 export function createRuntime(config) {
-  const { wrap, cleanup, root, sample } = config;
+  const { wrap, cleanup, root, sample } = config,
+    renderers = new Map();
+  let runtime;
 
   function insertExpression(parent, value, current, marker) {
     if (value === current) return current;
@@ -130,7 +132,7 @@ export function createRuntime(config) {
     }
   }
 
-  return Object.assign({
+  return runtime = Object.assign({
     insert(parent, accessor, init, marker) {
       if (typeof accessor !== 'function') return insertExpression(parent, accessor, init, marker);
       wrap((current = init) => insertExpression(parent, accessor(), current, marker));
@@ -241,7 +243,7 @@ export function createRuntime(config) {
       } else if (type === 'portal') {
         const { useShadow } = options,
           container =  document.createElement('div'),
-          anchor = sample(accessor) || document.body,
+          anchor = (accessor && sample(accessor)) || document.body,
           renderRoot = (useShadow && container.attachShadow) ? container.attachShadow({ mode: 'open' }) : container;
         Object.defineProperty(container, 'host', { get() { return (marker && marker.parentNode) || parent; } });
         const nodes = sample(() => expr(container));
@@ -251,6 +253,17 @@ export function createRuntime(config) {
         anchor.appendChild(container);
         cleanup(() => anchor.removeChild(container));
       }
+    },
+    registerRenderer(name, factory, options={}) {
+      if (renderers.has(name)) throw new Error(`Renderer already registered with name ${name}`);
+      const renderer = factory(runtime, options);
+      renderers.set(name, renderer);
+      return renderer;
+    },
+    renderer(name) {
+      const renderer = renderers.get(name);
+      if (!renderer) throw new Error(`Renderer not found with name ${name}`);
+      return renderer;
     }
   }, config);
 }
