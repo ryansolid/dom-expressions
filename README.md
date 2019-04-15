@@ -50,25 +50,6 @@ If precompilation is not an option Tagged Template Literals are the next best th
 
 While not as performant as the other options this library provides a mechanism to expose a HyperScript version. [Hyper DOM Expressions](https://github.com/ryansolid/hyper-dom-expressions) offers the greatest flexibility working with existing tooling for HyperScript and enables pure JS DSLs.
 
-## Registering a Render Runtime (Not necessary for JSX)
-
-While the companion libraries offer create factory functions it is often inconvenient to include and create renderers in every file. DOM Expressions allows you to attach renderers to a runtime. For example with Lit DOM Expressions with Solid.
-
-```js
-// @ application root
-// r is a runtime instance created from dom-expressions' createRuntime
-import { r } from 'solid-js/dom';
-import { createHTML } from 'lit-dom-expressions'
-
-r.registerRenderer('html', createHTML);
-
-// @ a different file
-import { r } from 'solid-js/dom';
-
-const html = r.renderer('html');
-
-```
-
 ## Work in Progress
 
 This is still a work in progress. My goal here is to better understand and generalize this approach to provide non Virtual DOM alternatives to developing web applications.
