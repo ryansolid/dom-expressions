@@ -1,6 +1,7 @@
-export { RuntimeConfig } from './utils';
+import { RuntimeConfig } from './utils';
+export type RuntimeConfig = RuntimeConfig;
 
-export { createRuntime, Runtime } from './createRuntime';
+export * from './createRuntime';
 
 export { default as Attributes } from './Attributes';
 

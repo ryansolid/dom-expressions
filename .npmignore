@@ -2,7 +2,6 @@ src/
 rollup.config.js
 test/
 coverage/
+types/tsconfig.tsbuildinfo
 .travis.yml
 *.config.js
-tsconfig.json
-.rpt2_cache/
