@@ -3,8 +3,8 @@ import Attributes from './Attributes';
 import { normalizeIncomingArray, RuntimeConfig } from './utils';
 
 export interface Runtime extends RuntimeConfig {
-  insert(parent: Node, accessor: any, init: any, marker: Node): any;
-  createComponent(Comp: (props: any) => any, props: any, dynamicKeys: string[]): any;
+  insert(parent: Node, accessor: any, init?: any, marker?: Node): any;
+  createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]): any;
   delegateEvents(eventNames: string[]): void;
   clearDelegatedEvents(): void;
   spread(node: HTMLElement, accessor: any): void;
@@ -144,11 +144,11 @@ export function createRuntime(config: RuntimeConfig): Runtime {
   }
 
   return Object.assign({
-    insert(parent: Node, accessor: any, init: any, marker: Node) {
+    insert(parent: Node, accessor: any, init?: any, marker?: Node) {
       if (typeof accessor !== 'function') return insertExpression(parent, accessor, init, marker);
       wrap((current: any = init) => insertExpression(parent, accessor(), current, marker));
     },
-    createComponent(Comp: (props: any) => any, props: any, dynamicKeys: string[]) {
+    createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]) {
       if (dynamicKeys) {
         for (let i = 0; i < dynamicKeys.length; i++) dynamicProp(props, dynamicKeys[i]);
       }
