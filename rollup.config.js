@@ -1,27 +1,27 @@
-import babel from 'rollup-plugin-babel';
 import nodeResolve from 'rollup-plugin-node-resolve';
+import typescript from 'rollup-plugin-typescript2';
 
 const plugins = [
   nodeResolve({
     extensions: ['.js', '.ts']
   }),
-  babel({
-    extensions: ['.js', '.ts'],
-    presets: ["@babel/preset-typescript"],
-    exclude: 'node_modules/**',
-    retainLines: true
+  typescript({
+    useTsconfigDeclarationDir: true
   })
 ]
 
-export default {
+export default [{
   input: 'src/index.ts',
-  output: [{
+  output: {
+    file: 'dist/dom-expressions.js',
+    format: 'es'
+  },
+  plugins
+}, {
+  input: 'dist/dom-expressions.js',
+  output: {
     file: 'lib/dom-expressions.js',
     format: 'cjs',
     exports: 'named'
-  }, {
-    file: 'dist/dom-expressions.js',
-    format: 'es'
-  }],
-  plugins
-}
+  }
+}]

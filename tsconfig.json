@@ -1,11 +1,8 @@
 {
   "compilerOptions": {
-    "outDir": "types",
-    "emitDeclarationOnly": true,
+    "declarationDir": "types",
     "declaration": true,
-    "incremental": true,
     "target": "esnext",
-    "moduleResolution": "node",
     "strict": true
   }
 }

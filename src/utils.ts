@@ -1,4 +1,4 @@
-export type RuntimeConfig = {
+export interface RuntimeConfig {
   wrap: <T>(prev?: T) => T,
   sample: <T>(fn: () => T) => T,
   root: <T>(fn: (dispose: () => void) => T) => T,

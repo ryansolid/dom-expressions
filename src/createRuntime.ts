@@ -2,6 +2,14 @@ import { reconcileArrays } from './reconcileArrays';
 import Attributes from './Attributes';
 import { normalizeIncomingArray, RuntimeConfig } from './utils';
 
+export interface Runtime extends RuntimeConfig {
+  insert(parent: Node, accessor: any, init: any, marker: Node): any;
+  createComponent(Comp: (props: any) => any, props: any, dynamicKeys: string[]): any;
+  delegateEvents(eventNames: string[]): void;
+  clearDelegatedEvents(): void;
+  spread(node: HTMLElement, accessor: any): void;
+  flow(parent: Node, type: string, accessor: () => any, expr: (...args: any[]) => any, options: any, marker?: Node | undefined): void;
+};
 type ExpandableElement = HTMLElement & { [key: string]: any }
 type DynamicProps = { [key: string]: () => any };
 type DelegatedEventHandler = (e: Event, model?: any) => any;
@@ -56,7 +64,7 @@ function eventHandler(e: Event) {
   return handler && handler(e, model);
 }
 
-export function createRuntime(config: RuntimeConfig) {
+export function createRuntime(config: RuntimeConfig): Runtime {
   const { wrap, cleanup, root, sample } = config;
 
   function insertExpression(parent: Node, value: any, current?: any, marker?: Node) {
