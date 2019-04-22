@@ -4,4 +4,5 @@ test/
 coverage/
 .travis.yml
 *.config.js
+tsconfig.json
 .rpt2_cache/
