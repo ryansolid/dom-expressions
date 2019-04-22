@@ -1,7 +1,12 @@
-import { reconcileArrays, normalizeIncomingArray } from './reconcileArrays';
-import Attributes from './Attributes'
+import { reconcileArrays } from './reconcileArrays';
+import Attributes from './Attributes';
+import { normalizeIncomingArray, RuntimeConfig } from './utils';
 
-function clearAll(parent, current, marker, startNode) {
+type ExpandableElement = HTMLElement & { [key: string]: any }
+type DynamicProps = { [key: string]: () => any };
+type DelegatedEventHandler = (e: Event, model?: any) => any;
+
+function clearAll(parent: Node, current: any, marker?: Node, startNode?: Node | null) {
   if (!marker) return parent.textContent = '';
   if (Array.isArray(current)) {
     for (let i = 0; i < current.length; i++) {
@@ -11,17 +16,17 @@ function clearAll(parent, current, marker, startNode) {
     if (startNode !== undefined) {
       let node = marker.previousSibling, tmp;
       while(node !== startNode) {
-        tmp = node.previousSibling;
-        parent.removeChild(node);
+        tmp = (node as Node).previousSibling;
+        parent.removeChild(node as Node);
         node = tmp;
       }
     }
-    else parent.removeChild(marker.previousSibling);
+    else parent.removeChild(marker.previousSibling as Node);
   }
   return '';
 }
 
-function dynamicProp(props, key) {
+function dynamicProp(props: DynamicProps, key: string) {
   const src = props[key];
   Object.defineProperty(props, key, {
     get() { return src(); },
@@ -30,16 +35,16 @@ function dynamicProp(props, key) {
 }
 
 const eventRegistry = new Set();
-function lookup(el, name) {
+function lookup(el: ExpandableElement, name: string) : [DelegatedEventHandler, any?] {
   let h = el[name], m = el.model, r, p;
   if ((h === undefined || (h.length > 1 && m === undefined))
     && (p = el.host || el.parentNode)) r = lookup(p, name);
   return [h !== undefined ? h : r && r[0], m || r && r[1]];
 }
 
-function eventHandler(e) {
+function eventHandler(e: Event) {
   const node = (e.composedPath && e.composedPath()[0]) || e.target;
-  const [handler, model] = lookup(node, `__${e.type}`);
+  const [handler, model] = lookup(node as ExpandableElement, `__${e.type}`);
 
   // reverse Shadow DOM retargetting
   if (e.target !== node) {
@@ -51,10 +56,10 @@ function eventHandler(e) {
   return handler && handler(e, model);
 }
 
-export function createRuntime(config) {
+export function createRuntime(config: RuntimeConfig) {
   const { wrap, cleanup, root, sample } = config;
 
-  function insertExpression(parent, value, current, marker) {
+  function insertExpression(parent: Node, value: any, current?: any, marker?: Node) {
     if (value === current) return current;
     parent = (marker && marker.parentNode) || parent;
     const t = typeof value;
@@ -63,17 +68,17 @@ export function createRuntime(config) {
       if (marker) {
         if (value === '') clearAll(parent, current, marker)
         else if (current !== '' && typeof current === 'string') {
-          marker.previousSibling.data = value;
+          (marker.previousSibling as Text).data = value;
         } else {
           const node = document.createTextNode(value);
           if (current !== '' && current != null) {
-            parent.replaceChild(node, marker.previousSibling);
+            parent.replaceChild(node, marker.previousSibling as Node);
           } else parent.insertBefore(node, marker);
         }
         current = value;
       } else {
         if (current !== '' && typeof current === 'string') {
-          current = parent.firstChild.data = value;
+          current = (parent.firstChild as Text).data = value;
         } else current = parent.textContent = value;
       }
     } else if (value == null || t === 'boolean') {
@@ -83,7 +88,7 @@ export function createRuntime(config) {
     } else if (value instanceof Node) {
       if (Array.isArray(current)) {
         if (current.length === 0) {
-          parent.insertBefore(value, marker);
+          parent.insertBefore(value, marker as any);
         } else if (current.length === 1) {
           parent.replaceChild(value, current[0]);
         } else {
@@ -91,9 +96,9 @@ export function createRuntime(config) {
           parent.appendChild(value);
         }
       } else if (current == null || current === '') {
-        parent.insertBefore(value, marker);
+        parent.insertBefore(value, marker as any);
       } else {
-        parent.replaceChild(value, (marker && marker.previousSibling) || parent.firstChild);
+        parent.replaceChild(value, (marker && marker.previousSibling) || parent.firstChild as Node);
       }
       current = value;
     } else if (Array.isArray(value)) {
@@ -101,7 +106,7 @@ export function createRuntime(config) {
       clearAll(parent, current, marker);
       if (array.length !== 0) {
         for (let i = 0, len = array.length; i < len; i++) {
-          parent.insertBefore(array[i], marker);
+          parent.insertBefore(array[i], marker as any);
         }
       }
       current = array;
@@ -112,7 +117,7 @@ export function createRuntime(config) {
     return current;
   }
 
-  function spreadExpression(node, props) {
+  function spreadExpression(node: ExpandableElement, props: any) {
     let info;
     for (const prop in props) {
       const value = props[prop];
@@ -125,23 +130,23 @@ export function createRuntime(config) {
       } else if (info = Attributes[prop]) {
         if (info.type === 'attribute') {
           node.setAttribute(prop, value)
-        } else node[info.alias] = value;
+        } else node[info.alias as string] = value;
       } else node[prop] = value;
     }
   }
 
   return Object.assign({
-    insert(parent, accessor, init, marker) {
+    insert(parent: Node, accessor: any, init: any, marker: Node) {
       if (typeof accessor !== 'function') return insertExpression(parent, accessor, init, marker);
-      wrap((current = init) => insertExpression(parent, accessor(), current, marker));
+      wrap((current: any = init) => insertExpression(parent, accessor(), current, marker));
     },
-    createComponent(Comp, props, dynamicKeys) {
+    createComponent(Comp: (props: any) => any, props: any, dynamicKeys: string[]) {
       if (dynamicKeys) {
         for (let i = 0; i < dynamicKeys.length; i++) dynamicProp(props, dynamicKeys[i]);
       }
       return Comp(props);
     },
-    delegateEvents(eventNames) {
+    delegateEvents(eventNames: string[]) {
       for (let i = 0, l = eventNames.length; i < l; i++) {
         const name = eventNames[i];
         if (!eventRegistry.has(name)) {
@@ -154,20 +159,21 @@ export function createRuntime(config) {
       for (let name of eventRegistry.keys()) document.removeEventListener(name, eventHandler);
       eventRegistry.clear();
     },
-    spread(node, accessor) {
-      if (typeof accessor !== 'function') return spreadExpression(node, accessor);
-      wrap(() => spreadExpression(node, accessor()));
+    spread(node: HTMLElement, accessor: any) {
+      if (typeof accessor === 'function') {
+        wrap(() => spreadExpression(node, accessor()));
+      } else spreadExpression(node, accessor);
     },
-    flow(parent, type, accessor, expr, options, marker) {
-      let startNode;
+    flow(parent: Node, type: string, accessor: (() => any), expr: (...args: any[]) => any, options: any, marker?: Node) {
+      let startNode: Node | null | undefined;
       if (marker) startNode = marker.previousSibling;
       if (type === 'each') {
         reconcileArrays(parent, accessor, expr, options, config, startNode, marker);
       } else if (type === 'when') {
-        let current, disposable;
+        let current: any, disposable: (() => void);
         const { afterRender, fallback } = options;
         cleanup(function dispose() { disposable && disposable(); });
-        wrap(cached => {
+        wrap((cached: any) : any => {
           const value = accessor();
           if (value === cached) return cached;
           return sample(() => {
@@ -178,14 +184,14 @@ export function createRuntime(config) {
               current = null;
               afterRender && afterRender(current, marker);
               if (fallback) {
-                root(disposer => {
+                root((disposer: () => void) => {
                   disposable = disposer;
                   current = insertExpression(parent, fallback(), current, marker)
                 });
               }
               return value;
             }
-            root(disposer => {
+            root((disposer: () => void) => {
               disposable = disposer;
               current = insertExpression(parent, expr(value), current, marker)
             });
@@ -197,11 +203,11 @@ export function createRuntime(config) {
         const { fallback } = options,
           doc = document.implementation.createHTMLDocument(),
           rendered = sample(expr);
-        let disposable, current, first = true;
+        let disposable: () => void, current: any, first = true;
         for (let name of eventRegistry.keys()) doc.addEventListener(name, eventHandler);
         Object.defineProperty(doc.body, 'host', { get() { return (marker && marker.parentNode) || parent; } });
         cleanup(function dispose() { disposable && disposable(); });
-        wrap(cached => {
+        wrap((cached: any) => {
           const value = !!accessor();
           let node;
           if (value === cached) return cached;
@@ -213,13 +219,13 @@ export function createRuntime(config) {
             } else {
               node = startNode ? startNode.nextSibling : parent.firstChild;
               while (node && node !== marker) {
-                const next = node.nextSibling;
+                const next: Node | null = node.nextSibling;
                 doc.body.appendChild(node);
                 node = next;
               }
             }
             if (fallback) {
-              sample(() => root(disposer => {
+              sample(() => root((disposer: () => void) => {
                 disposable = disposer;
                 current = insertExpression(parent, fallback(), null, marker)
               }));
@@ -234,7 +240,7 @@ export function createRuntime(config) {
               clearAll(parent, current, marker, startNode);
               disposable();
             }
-            while (node = doc.body.firstChild) parent.insertBefore(node, marker);
+            while (node = doc.body.firstChild) parent.insertBefore(node, marker as any);
           }
           return value;
         })

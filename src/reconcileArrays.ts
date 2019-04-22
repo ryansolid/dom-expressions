@@ -1,29 +1,13 @@
+import { normalizeIncomingArray, RuntimeConfig } from './utils';
+
 const GROUPING = '__rGroup',
   FORWARD = 'nextSibling',
   BACKWARD = 'previousSibling';
 let groupCounter = 0;
 
-export function normalizeIncomingArray(normalized, array) {
-  for (var i = 0, len = array.length; i < len; i++) {
-    var item = array[i];
-    if (item instanceof Node) {
-      if (item.nodeType === 11) {
-        normalizeIncomingArray(normalized, item.childNodes)
-      } else normalized.push(item);
-    } else if (item == null || item === true || item === false) { // matches null, undefined, true or false
-      // skip
-    } else if (Array.isArray(item)) {
-      normalizeIncomingArray(normalized, item);
-    } else if (typeof item === 'string') {
-      normalized.push(document.createTextNode(item));
-    } else {
-      normalized.push(document.createTextNode(item.toString()));
-    }
-  }
-  return normalized;
-}
+type WalkableNode = Node & { [key: string]: any }
 
-function addNode(node, parent, afterNode, counter) {
+function addNode(node: any, parent: Node, afterNode: Node | null | undefined, counter: number) {
   if (Array.isArray(node)) {
     if (!node.length) return;
     node = normalizeIncomingArray([], node);
@@ -43,7 +27,7 @@ function addNode(node, parent, afterNode, counter) {
   return mark || node;
 }
 
-function step(node, direction, inner) {
+function step(node: WalkableNode, direction: string, inner?: boolean) {
   const key = node[GROUPING];
   if (key) {
     node = node[direction];
@@ -52,26 +36,27 @@ function step(node, direction, inner) {
   return inner ? node : node[direction];
 }
 
-function removeNodes(parent, node, end) {
+function removeNodes(parent: Node, node: Node | null, end: Node | null) {
   let tmp;
   while(node !== end) {
-    tmp = node.nextSibling;
-    parent.removeChild(node);
+    tmp = (node as Node).nextSibling;
+    parent.removeChild(node as Node);
     node = tmp;
   }
 }
 
-function insertNodes(parent, node, end, target) {
+function insertNodes(parent: Node, node: Node | null, end: Node | null, target?: Node | null) {
   let tmp;
   while (node !== end) {
-    tmp = node.nextSibling;
-    parent.insertBefore(node, target);
+    tmp = (node as Node).nextSibling;
+    parent.insertBefore(node as Node, target as any);
     node = tmp;
   }
 }
 
-function cleanNode(disposables, node) {
-  disposables.get(node)();
+function cleanNode(disposables: Map<Node, () => void>, node: Node) {
+  let disposable;
+  (disposable = disposables.get(node)) && disposable();
   disposables.delete(node);
 }
 
@@ -83,14 +68,14 @@ function cleanNode(disposables, node) {
 // And working with data directly from Stage0:
 // https://github.com/Freak613/stage0/blob/master/reconcile.js
 // This implementation is tailored for fine grained change detection and adds support for fragments
-export function reconcileArrays(parent, accessor, mapFn, options, library, beforeNode, afterNode) {
+export function reconcileArrays(parent: Node, accessor: (() => any), mapFn: (...args: any[]) => any, options: any, library: RuntimeConfig, beforeNode?: Node | null, afterNode?: Node | null) {
   const { wrap, cleanup, root, sample } = library,
     { afterRender, fallback } = options;
   let disposables = new Map(),
     isFallback = false;
 
-  function createFn(item, i, afterNode) {
-    return root(disposer => {
+  function createFn(item: any, i: number, afterNode?: Node | null) {
+    return root((disposer: () => void) => {
       const node = addNode(mapFn(item, i), parent, afterNode, ++groupCounter);
       disposables.set(node, disposer);
       return node;
@@ -107,7 +92,7 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
     for (let i of disposables.keys()) disposables.get(i)();
     disposables.clear();
   });
-  wrap((renderedValues = []) => {
+  wrap((renderedValues: Node[] = []) : Node[] => {
     const data = accessor() || [];
     return sample(() => {
       parent = (afterNode && afterNode.parentNode) || parent;
@@ -136,7 +121,7 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
         after();
         if (fallback) {
           isFallback = true;
-          root(disposer => {
+          root((disposer: () => void) => {
             const node = addNode(fallback(), parent, afterNode, ++groupCounter);
             disposables.set(node, disposer);
           });
@@ -171,7 +156,7 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
         while(a === b) {
           prevStart++;
           newStart++;
-          newStartNode = prevStartNode = step(prevStartNode, FORWARD);
+          newStartNode = prevStartNode = step(prevStartNode as Node, FORWARD);
           if (prevEnd < prevStart || newEnd < newStart) break fixes;
           a = renderedValues[prevStart];
           b = data[newStart];
@@ -182,8 +167,8 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
         while(a === b) {
           prevEnd--;
           newEnd--;
-          newAfterNode = step(prevEndNode, BACKWARD, true);
-          prevEndNode = newAfterNode.previousSibling;
+          newAfterNode = step(prevEndNode as Node, BACKWARD, true);
+          prevEndNode = (newAfterNode as Node).previousSibling;
           if (prevEnd < prevStart || newEnd < newStart) break fixes;
           a = renderedValues[prevEnd];
           b = data[newEnd];
@@ -193,10 +178,10 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
         a = renderedValues[prevEnd], b = data[newStart];
         while(a === b) {
           loop = true;
-          _node = step(prevEndNode, BACKWARD);
+          _node = step(prevEndNode as Node, BACKWARD);
           let mark = _node.nextSibling;
           if (newStartNode !== mark) {
-            insertNodes(parent, mark, prevEndNode.nextSibling, newStartNode)
+            insertNodes(parent, mark, (prevEndNode as Node).nextSibling, newStartNode as any)
             prevEndNode = _node;
           }
           newStart++;
@@ -210,7 +195,7 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
         a = renderedValues[prevStart], b = data[newEnd];
         while(a === b) {
           loop = true;
-          _node = step(prevStartNode, FORWARD);
+          _node = step(prevStartNode as Node, FORWARD);
           if (prevStartNode !== newAfterNode) {
             let mark = _node.previousSibling;
             insertNodes(parent, prevStartNode, _node, newAfterNode);
@@ -230,9 +215,9 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
         if (prevStart <= prevEnd) {
           let next, node;
           while(prevStart <= prevEnd) {
-            node = step(prevEndNode, BACKWARD, true);
+            node = step(prevEndNode as Node, BACKWARD, true);
             next = node.previousSibling;
-            removeNodes(parent, node, prevEndNode.nextSibling);
+            removeNodes(parent, node, (prevEndNode as Node).nextSibling);
             cleanNode(disposables, node);
             prevEndNode = next;
             prevEnd--;
@@ -262,7 +247,7 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
       const I = new Map();
       for(let i = newStart; i <= newEnd; i++) I.set(data[i], i);
 
-      let reusingNodes = 0, toRemove = [];
+      let reusingNodes = 0, toRemove: number[] = [];
       for(let i = prevStart; i <= prevEnd; i++) {
         if (I.has(renderedValues[i])) {
           P[I.get(renderedValues[i])] = i;
@@ -274,10 +259,10 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
       if (reusingNodes === 0) {
         const doRemove = prevStartNode !== parent.firstChild || prevEndNode !== parent.lastChild;
         let node = prevStartNode, mark;
-        newAfterNode = prevEndNode.nextSibling;
+        newAfterNode = (prevEndNode as Node).nextSibling;
         while(node !== newAfterNode) {
-          mark = step(node, FORWARD);
-          cleanNode(disposables, node);
+          mark = step(node as Node, FORWARD);
+          cleanNode(disposables, node as Node);
           doRemove && removeNodes(parent, node, mark);
           node = mark;
           prevStart++;
@@ -291,13 +276,13 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
 
       // What else?
       const longestSeq = longestPositiveIncreasingSubsequence(P, newStart),
-        nodes = [];
+        nodes: Node[] = [];
       let tmpC = prevStartNode, lisIdx = longestSeq.length - 1, tmpD;
 
       // Collect nodes to work with them
       for(let i = prevStart; i <= prevEnd; i++) {
-        nodes[i] = tmpC;
-        tmpC = step(tmpC, FORWARD);
+        nodes[i] = tmpC as Node;
+        tmpC = step(tmpC as Node, FORWARD);
       }
 
       for(let i = 0; i < toRemove.length; i++) {
@@ -332,9 +317,9 @@ export function reconcileArrays(parent, accessor, mapFn, options, library, befor
 // https://github.com/adamhaile/surplus/blob/master/src/runtime/content.ts#L368
 
 // return an array of the indices of ns that comprise the longest increasing subsequence within ns
-function longestPositiveIncreasingSubsequence(ns, newStart) {
-  var seq = [],
-    is  = [],
+function longestPositiveIncreasingSubsequence(ns: number[], newStart: number) {
+  var seq: number[] = [],
+    is: number[] = [],
     l   = -1,
     pre = new Array(ns.length);
 
@@ -360,7 +345,7 @@ function longestPositiveIncreasingSubsequence(ns, newStart) {
   return seq;
 }
 
-function findGreatestIndexLEQ(seq, n) {
+function findGreatestIndexLEQ(seq: number[], n: number) {
   // invariant: lo is guaranteed to be index of a value <= n, hi to be >
   // therefore, they actually start out of range: (-1, last + 1)
   var lo = -1,
