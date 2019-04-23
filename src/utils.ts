@@ -1,5 +1,5 @@
 export interface RuntimeConfig {
-  wrap: <T>(prev?: T) => T,
+  wrap: <T>(fn: (prev?: T) => T) => any,
   sample: <T>(fn: () => T) => T,
   root: <T>(fn: (dispose: () => void) => T) => T,
   cleanup: (fn: () => void) => void
