@@ -4,6 +4,7 @@ import { normalizeIncomingArray, RuntimeConfig } from './utils';
 
 export interface Runtime extends RuntimeConfig {
   insert(parent: Node, accessor: any, init?: any, marker?: Node): any;
+  classList(node: HTMLElement, value: { [k: string]: boolean }): void;
   createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]): any;
   delegateEvents(eventNames: string[]): void;
   clearDelegatedEvents(): void;
