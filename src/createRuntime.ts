@@ -125,6 +125,16 @@ export function createRuntime(config: RuntimeConfig): Runtime {
     return current;
   }
 
+  function classList(node: HTMLElement, value: { [k: string]: boolean }) {
+    const classKeys = Object.keys(value);
+    for (let i = 0; i < classKeys.length; i++) {
+      const key = classKeys[i],
+        classNames = key.split(/\s+/);
+      for (let j = 0; j < classNames.length; j++)
+        node.classList.toggle(classNames[j], value[key]);
+    }
+  }
+
   function spreadExpression(node: ExpandableElement, props: any) {
     let info;
     for (const prop in props) {
@@ -132,7 +142,7 @@ export function createRuntime(config: RuntimeConfig): Runtime {
       if (prop === 'style') {
         Object.assign(node.style, value);
       } else if (prop === 'classList') {
-        for (const className in value) node.classList.toggle(className, value[className]);
+        classList(node, value);
       } else if (prop === 'events') {
         for (const eventName in value) node.addEventListener(eventName, value[eventName]);
       } else if (info = Attributes[prop]) {
@@ -148,6 +158,7 @@ export function createRuntime(config: RuntimeConfig): Runtime {
       if (typeof accessor !== 'function') return insertExpression(parent, accessor, init, marker);
       wrap((current: any = init) => insertExpression(parent, accessor(), current, marker));
     },
+    classList,
     createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]) {
       if (dynamicKeys) {
         for (let i = 0; i < dynamicKeys.length; i++) dynamicProp(props, dynamicKeys[i]);
