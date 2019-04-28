@@ -44,17 +44,13 @@ function dynamicProp(props: DynamicProps, key: string) {
 }
 
 const eventRegistry = new Set();
-function lookup(el: ExpandableElement, name: string) : [DelegatedEventHandler, any?] {
-  let h = el[name], m = el.model, r, p;
-  if ((h === undefined || (h.length > 1 && m === undefined))
-    && (p = el.host || el.parentNode)) r = lookup(p, name);
-  return [h !== undefined ? h : r && r[0], m || r && r[1]];
+function lookup(el: ExpandableElement): any {
+  return el && (el.model || lookup(el.host || el.parentNode));
 }
 
 function eventHandler(e: Event) {
-  const node = (e.composedPath && e.composedPath()[0]) || e.target;
-  const [handler, model] = lookup(node as ExpandableElement, `__${e.type}`);
-
+  const key =  `__${e.type}`;
+  let node = ((e.composedPath && e.composedPath()[0]) || e.target) as ExpandableElement;
   // reverse Shadow DOM retargetting
   if (e.target !== node) {
     Object.defineProperty(e, 'target', {
@@ -62,7 +58,22 @@ function eventHandler(e: Event) {
       value: node
     })
   }
-  return handler && handler(e, model);
+
+  // simulate currentTarget
+  Object.defineProperty(e, 'currentTarget', {
+    configurable: true,
+    get() { return node; }
+  })
+
+  while (node !== null) {
+    const handler = node[key];
+    if (handler) {
+      const model = handler.length > 1 ? lookup(node): undefined;
+      handler(e, model);
+      if (e.cancelBubble) return;
+    }
+    node = node.host || node.parentNode;
+  }
 }
 
 export function createRuntime(config: RuntimeConfig): Runtime {
