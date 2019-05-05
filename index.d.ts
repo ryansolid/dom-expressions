@@ -11,11 +11,12 @@ export interface Runtime {
   flow(parent: Node, type: string, accessor: () => any, expr: (...args: any[]) => any, options: any, marker?: Node | undefined): void;
 }
 
-export declare type Attributes = {
+declare type AttributeInfo = {
   [key: string]: {
       type: string;
       alias?: string;
   };
 };
+export const Attributes: AttributeInfo;
 
-export declare type NonComposedEvents = Set<string>;
+export const NonComposedEvents: Set<string>;

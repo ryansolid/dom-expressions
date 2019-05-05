@@ -1,7 +1,7 @@
 {
   "name": "dom-expressions",
   "description": "A Fine-Grained Runtime Generator for Performant DOM Rendering",
-  "version": "0.8.0-beta.1",
+  "version": "0.8.0-beta.2",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -18,12 +18,14 @@
   "scripts": {
     "test": "dom-expressions && jest --coverage"
   },
+  "dependencies": {
+    "ejs": "^2.6.1"
+  },
   "devDependencies": {
     "@babel/core": "7.4.3",
     "@babel/preset-env": "^7.4.4",
     "babel-plugin-jsx-dom-expressions": "beta",
     "coveralls": "3.0.3",
-    "ejs": "^2.6.1",
     "jest": "24.7.1",
     "s-js": "0.4.9"
   }
