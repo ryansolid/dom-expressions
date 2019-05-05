@@ -1,7 +1,7 @@
 {
   "name": "dom-expressions",
-  "description": "A Fine-Grained Runtime for Performant DOM Rendering",
-  "version": "0.7.10",
+  "description": "A Fine-Grained Runtime Generator for Performant DOM Rendering",
+  "version": "0.8.0-beta.0",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -9,25 +9,21 @@
     "url": "https://github.com/ryansolid/dom-expressions"
   },
   "readmeFilename": "README.md",
-  "module": "dist/dom-expressions.js",
-  "main": "lib/dom-expressions.js",
-  "types": "types/index.d.ts",
+  "bin": {
+    "dom-expressions": "bin/dom-expressions.js"
+  },
+  "types": "index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "rollup -c && tsc",
-    "test": "npm run build && jest --coverage",
-    "prepublishOnly": "npm run build"
+    "test": "dom-expressions && jest --coverage"
   },
   "devDependencies": {
     "@babel/core": "7.4.3",
-    "@babel/preset-typescript": "7.3.3",
-    "babel-plugin-jsx-dom-expressions": "*",
+    "@babel/preset-env": "^7.4.4",
+    "babel-plugin-jsx-dom-expressions": "beta",
     "coveralls": "3.0.3",
+    "ejs": "^2.6.1",
     "jest": "24.7.1",
-    "rollup": "1.10.1",
-    "rollup-plugin-babel": "^4.3.2",
-    "rollup-plugin-node-resolve": "4.2.3",
-    "s-js": "0.4.9",
-    "typescript": "3.4.4"
+    "s-js": "0.4.9"
   }
 }

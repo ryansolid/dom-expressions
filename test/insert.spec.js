@@ -1,5 +1,4 @@
-const { createRuntime } = require('../lib/dom-expressions');
-const r = createRuntime({wrap: fn => fn()});
+import * as r from '../runtime'
 
 describe("r.insert", () => {
   // <div>before<!-- insert -->after</div>
@@ -103,15 +102,15 @@ describe("r.insert", () => {
       n1 = document.createElement("span"),
       n2 = document.createElement("div"),
       n3 = document.createElement("span"),
-      n4 = document.createElement("div");
+      n4 = document.createElement("div"),
       orig = [n1, n2, n3, n4];
 
     n1.textContent = "1";
     n2.textContent = "2";
-    n3.textContent = "3"
+    n3.textContent = "3";
     n4.textContent = "4";
 
-    var origExpected = expected(orig)
+    var origExpected = expected(orig);
 
     // identity
     test([n1, n2, n3, n4]);

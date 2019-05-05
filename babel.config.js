@@ -1,4 +1,5 @@
 // babel.config.js
 module.exports = {
-  plugins: ['babel-plugin-jsx-dom-expressions']
+  presets: ['@babel/preset-env'],
+  plugins: [['babel-plugin-jsx-dom-expressions', {moduleName: '../runtime.js'}]]
 };

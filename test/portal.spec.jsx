@@ -1,7 +1,5 @@
-const S = require('s-js');
-const { createRuntime } = require('../lib/dom-expressions');
-
-const r = createRuntime({wrap: S.makeComputationNode, root: S.root, cleanup: S.cleanup, sample: S.sample});
+import S from 's-js';
+import { clearDelegatedEvents } from '../runtime';
 
 describe('Testing a simple Portal', () => {
   let div, disposer;
@@ -44,7 +42,7 @@ describe('Testing a Portal with Synthetic Events', () => {
     testElem.click();
     expect(clicked).toBe(true);
     clicked = false;
-    r.clearDelegatedEvents();
+    clearDelegatedEvents();
     expect(clicked).toBe(false);
     testElem.click();
     expect(clicked).toBe(false);

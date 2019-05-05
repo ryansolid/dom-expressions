@@ -1,7 +1,4 @@
-const S = require('s-js');
-const { createRuntime } = require('../lib/dom-expressions');
-
-const r = createRuntime({wrap: S.makeComputationNode, root: S.root, cleanup: S.cleanup, sample: S.sample});
+import S from 's-js';
 
 describe('Testing an only child suspend control flow', () => {
   let div, disposer;

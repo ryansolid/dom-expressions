@@ -1,15 +1,8 @@
-type AttributeInfo = {
-  [key: string]: {
-    type: string,
-    alias?: string
-  }
-}
-
 const Types = {
     ATTRIBUTE: 'attribute',
     PROPERTY: 'property'
   },
-  Attributes: AttributeInfo = {
+  Attributes = {
     href: {
       type: Types.ATTRIBUTE
     },

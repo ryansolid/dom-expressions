@@ -1,7 +1,6 @@
-src/
 rollup.config.js
+dom-expressions.config.js
 test/
 coverage/
-types/tsconfig.tsbuildinfo
 .travis.yml
 *.config.js

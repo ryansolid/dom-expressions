@@ -1,6 +1,4 @@
 node_modules/
-lib/
-dist/
 coverage/
-types/
+runtime.js
 .vscode/

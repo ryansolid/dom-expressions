@@ -18,9 +18,24 @@ It is designed to be used with a companion render API. Currently there is a JSX 
 * [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
 * [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
 
-## Runtime Wrapper API
+## Runtime Generator
 
-To create a runtime you pass an object with the following methods to the createRuntime method:
+To create a generate runtime you must provide symbols to create the final js file and the output path. We do this through a dom-expressions.config.js.
+
+```js
+module.exports = {
+  output: 'path-to-output/filename.js',
+  variables: {
+    imports: [ `import S from 's-js'` ],
+    computed: 'S',
+    sample: 'S.sample',
+    root: 'S.root',
+    cleanup: 'S.cleanup'
+  }
+}
+```
+
+These symbols should reference an observable API with the following functionality:
 
 ### wrap(fn) : void
 
@@ -38,15 +53,19 @@ A method that causes dependencies within not to be tracked.
 
 This method should register a cleanup method to be called when the context is released.
 
-## JSX
+## Runtime Renderers
 
-This library's companion is [Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/babel-plugin-jsx-dom-expressions). This by far the best way to use this library. Pre-compilation lends to the best performance since the whole template can be analyzed and optimal compiled into the most performant JavaScript. This allows for not only the most performant code, but the cleanest and the smallest.
+Once you have generated a runtime it can be used with companion render APIs:
 
-## Tagged Template
+### JSX
+
+[Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/babel-plugin-jsx-dom-expressions) is by far the best way to use this library. Pre-compilation lends to the best performance since the whole template can be analyzed and optimal compiled into the most performant JavaScript. This allows for not only the most performant code, but the cleanest and the smallest.
+
+### Tagged Template
 
 If precompilation is not an option Tagged Template Literals are the next best thing. [Lit DOM Expressions](https://github.com/ryansolid/lit-dom-expressions) provides a similar experience to the JSX, compiling templates at runtime into similar code on first run. This option is the largest in size and memory usage but it keeps most of the performance and syntax from the JSX version.
 
-## HyperScript
+### HyperScript
 
 While not as performant as the other options this library provides a mechanism to expose a HyperScript version. [Hyper DOM Expressions](https://github.com/ryansolid/hyper-dom-expressions) offers the greatest flexibility working with existing tooling for HyperScript and enables pure JS DSLs.
 
