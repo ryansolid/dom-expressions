@@ -10,3 +10,12 @@ export interface Runtime {
   spread(node: HTMLElement, accessor: any): void;
   flow(parent: Node, type: string, accessor: () => any, expr: (...args: any[]) => any, options: any, marker?: Node | undefined): void;
 }
+
+export declare type Attributes = {
+  [key: string]: {
+      type: string;
+      alias?: string;
+  };
+};
+
+export declare type NonComposedEvents = Set<string>;
