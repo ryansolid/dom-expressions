@@ -1,4 +1,5 @@
 node_modules/
 coverage/
 test/runtime.js
+test/runtime.d.ts
 .vscode/

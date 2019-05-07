@@ -12,9 +12,13 @@ if (!config) {
   console.warn('dom-expressions.config.js is missing in project root.');
   return 1;
 }
-const options = require(config);
+const options = require(config),
+  outPath = path.join(resolveApp(options.output || 'runtime.js'));
 
-console.log( resolveApp('dom-expressions.config.js'))
 ejs.renderFile(path.join(__dirname, '../template/runtime.ejs'), options.variables).then(rendered => {
-  fs.writeFileSync(path.join(resolveApp(options.output || 'runtime.js')), rendered);
+  fs.writeFileSync(outPath, rendered);
 })
+
+if(options.includeTypes) {
+  fs.createReadStream(path.join(__dirname, '../template/runtime.d.ts')).pipe(fs.createWriteStream(outPath.replace('.js', '.d.ts')));
+}
