@@ -1,5 +1,5 @@
 import S from 's-js';
-import { clearDelegatedEvents } from '../runtime';
+import { clearDelegatedEvents } from './runtime';
 
 describe('Testing a simple Portal', () => {
   let div, disposer;

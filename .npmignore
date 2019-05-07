@@ -1,6 +1,3 @@
-rollup.config.js
-dom-expressions.config.js
-runtime.js
 test/
 coverage/
 .travis.yml

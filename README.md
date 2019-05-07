@@ -20,7 +20,7 @@ It is designed to be used with a companion render API. Currently there is a JSX 
 
 ## Runtime Generator
 
-To create a generate runtime you must provide symbols to create the final js file and the output path. We do this through a dom-expressions.config.js.
+Dom Expressions is designed to allow the runtime to be tree shakeable by generating a special version ahead of time so static module analysis provided by your bundler can do it's thing. To create a generate runtime you must provide symbols to create the final js file and the output path. We do this through a dom-expressions.config.js.
 
 ```js
 module.exports = {
@@ -37,9 +37,9 @@ module.exports = {
 
 These symbols should reference an observable API with the following functionality:
 
-### wrap(fn) : void
+### computed(fn) : void
 
-This is called around all expressions. This is typically where you wrap the expression with a computation in the desired library and handle any value preparsing. Your wrap method is expected to call fn with the previously evaluated value if the arity is 1 to allow for reducing computations.
+This is used to wrap all expressions in computations. Your wrap method is expected to call fn with the previously evaluated value if the arity is 1 to allow for reducing computations.
 
 ### root(fn) : any
 

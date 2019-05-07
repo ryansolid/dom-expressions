@@ -1,5 +1,5 @@
 module.exports = {
-  output: 'runtime.js',
+  output: 'test/runtime.js',
   variables: {
     imports: [ `import S from 's-js'` ],
     computed: 'S',
