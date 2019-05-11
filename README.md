@@ -20,7 +20,13 @@ It is designed to be used with a companion render API. Currently there is a JSX 
 
 ## Runtime Generator
 
-Dom Expressions is designed to allow the runtime to be tree shakeable by generating a special version ahead of time so static module analysis provided by your bundler can do it's thing. To create a generate runtime you must provide symbols to create the final js file and the output path. We do this through a dom-expressions.config.js.
+Dom Expressions is designed to allow the runtime to be tree shakeable by generating a special version ahead of time so static module analysis provided by your bundler can do it's thing.
+
+To create runtime first install:
+```sh
+> npm i --save-dev dom-expressions
+```
+You must provide symbols to create the final js file and the output path. We do this through a dom-expressions.config.js in your project root.
 
 ```js
 module.exports = {
@@ -52,6 +58,11 @@ A method that causes dependencies within not to be tracked.
 ### cleanup(fn) : void
 
 This method should register a cleanup method to be called when the context is released.
+
+Then you run the cli command:
+```sh
+> dom-expressions
+```
 
 ## Runtime Renderers
 
