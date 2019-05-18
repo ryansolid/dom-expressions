@@ -8,7 +8,7 @@ describe('Testing an only child each control flow', () => {
     n4 = 'd';
   const list = S.data([n1, n2, n3, n4]);
   const Component = () =>
-    <div ref={div}><$ each={list()}>{ item => item}</$></div>
+    <div ref={div}><$ each={list()}>{ item => item }</$></div>
 
   function apply(array) {
     list(array);
@@ -73,6 +73,11 @@ describe('Testing an only child each control flow', () => {
     apply(['e', 'f', 'g', 'h']);
   });
 
+  test('swap backward edge', () => {
+    list(["milk", "bread", "chips", "cookie", "honey"]);
+    list(["chips", "bread", "cookie", "milk", "honey"]);
+  });
+
   test('dispose', () => disposer());
 });
 
@@ -83,7 +88,7 @@ describe('Testing an multi child each control flow', () => {
     n3 = 'c',
     n4 = 'd';
   const list = S.data([n1, n2, n3, n4]);
-  const Component = () => <$ each={list()}>{ item => item}</$>
+  const Component = () => <$ each={list()}>{ item => item }</$>
   let disposer;
 
   function apply(array) {
@@ -147,6 +152,11 @@ describe('Testing an multi child each control flow', () => {
 
   test('full replace', () => {
     apply(['e', 'f', 'g', 'h']);
+  });
+
+  test('swap backward edge', () => {
+    list(["milk", "bread", "chips", "cookie", "honey"]);
+    list(["chips", "bread", "cookie", "milk", "honey"]);
   });
 
   test('dispose', () => disposer());
@@ -225,6 +235,11 @@ describe('Testing an only child each control flow with fragment children', () =>
     apply(['e', 'f', 'g', 'h']);
   });
 
+  test('swap backward edge', () => {
+    list(["milk", "bread", "chips", "cookie", "honey"]);
+    list(["chips", "bread", "cookie", "milk", "honey"]);
+  });
+
   test('dispose', () => disposer());
 });
 
@@ -299,6 +314,11 @@ describe('Testing an only child each control flow with array children', () => {
 
   test('full replace', () => {
     apply(['e', 'f', 'g', 'h']);
+  });
+
+  test('swap backward edge', () => {
+    list(["milk", "bread", "chips", "cookie", "honey"]);
+    list(["chips", "bread", "cookie", "milk", "honey"]);
   });
 
   test('dispose', () => disposer());
