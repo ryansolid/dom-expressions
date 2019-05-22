@@ -91,10 +91,21 @@ describe('Testing an only child suspend control flow with DOM children and fallb
 
 describe('Testing a context suspend control flow', () => {
   let div, disposer, resolver;
-  const AsyncComponent = async () =>
-    await new Promise(resolve => resolver = resolve),
+  const handlePromise = p => {
+      const [processing, register] = S.lookupContext('suspense');
+      const s = S.makeDataNode();
+      register(processing() + 1);
+      p.then(v => s.next(v)).finally(() => register(processing() - 1));
+      return s.current.bind(s);
+    },
+    LazyComponent = (props) => {
+      const getComp = handlePromise(new Promise(resolve => resolver = resolve))
+      let Comp;
+      return () => (Comp = getComp()) && S.sample(() => Comp(props));
+    },
+    ChildComponent = (props) => props.greeting,
     Component = () =>
-      <div ref={div}><$ suspend><AsyncComponent/></$></div>;
+      <div ref={div}><$ suspend><LazyComponent greeting={'Hi'}/></$></div>;
 
   test('Create suspend control flow', () => {
     S.root(dispose => {
@@ -106,9 +117,8 @@ describe('Testing a context suspend control flow', () => {
   });
 
   test('Toggle suspend control flow', async (done) => {
-    resolver('Hi');
+    resolver(ChildComponent);
     await Promise.resolve();
-    console.log('check')
     expect(div.innerHTML).toBe('Hi');
     done();
   });

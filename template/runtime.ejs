@@ -2,7 +2,7 @@ import { Attributes } from 'dom-expressions';
 <%- imports.join(';\n') %>;
 
 <%- (function() {
-  const decls = ['wrap', 'root', 'sample', 'cleanup', 'setContext', 'currentContext', 'SuspenseContext', 'handlePromise']
+  const decls = ['wrap', 'root', 'sample', 'cleanup', 'setContext', 'currentContext', 'SuspenseContext']
     .filter(decl => locals[decl])
     .map(decl => `${decl} = ${locals[decl]}`)
   return decls.length ? `const ${decls.join(',\n')};` : '';
@@ -87,7 +87,6 @@ function clearAll(parent, current, marker, startNode) {
 function insertExpression(parent, value, current, marker) {
   if (value === current) return current;
   parent = (marker && marker.parentNode) || parent;
-  if (value instanceof Promise) value = handlePromise(value);
   const t = typeof value;
   if (t === 'string' || t === 'number') {
     if (t === 'number') value = value.toString();
@@ -571,7 +570,7 @@ export function each(parent, accessor, expr, options, afterNode) {
 }
 
 export function suspend(parent, accessor, expr, options, marker) {
-  let beforeNode, disposable, current, rendered, isSuspended;
+  let beforeNode, disposable, current, isSuspended;
   const { fallback } = options,
     doc = document.implementation.createHTMLDocument();
 <% if(locals.includeContext) { %>
@@ -583,14 +582,11 @@ export function suspend(parent, accessor, expr, options, marker) {
       isSuspended = c[0];
       setContext(SuspenseContext.id, c)
     }
-    sample(() => {
-      rendered = sample(expr);
-      insertExpression(parent, rendered, null, marker);
-    });
+    insertExpression(parent, sample(expr), null, marker);
   });
 <% } else { %>
   isSuspended = accessor;
-  rendered = sample(expr);
+  insertExpression(parent, sample(expr), null, marker);
 <% } %>
   if (marker) beforeNode = marker.previousSibling;
   for (let name of eventRegistry.keys()) doc.addEventListener(name, eventHandler);
