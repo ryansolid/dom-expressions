@@ -1,17 +1,20 @@
 import { Attributes } from 'dom-expressions';
 <%- imports.join(';\n') %>;
 
-const wrap = <%- computed %>,
-  root = <%- root %>,
-  sample = <%- sample %>,
-  cleanup = <%- cleanup %>;
+<%- (function() {
+  const decls = ['wrap', 'root', 'sample', 'cleanup', 'setContext', 'currentContext', 'SuspenseContext', 'handlePromise']
+    .filter(decl => locals[decl])
+    .map(decl => `${decl} = ${locals[decl]}`)
+  return decls.length ? `const ${decls.join(',\n')};` : '';
+})();
+%>
 
 const GROUPING = '__rGroup',
   FORWARD = 'nextSibling',
   BACKWARD = 'previousSibling';
 let groupCounter = 0;
 
-export { wrap };
+export { wrap<%-locals.includeContext && ', currentContext' %> };
 
 function normalizeIncomingArray(normalized, array) {
   for (let i = 0, len = array.length; i < len; i++) {
@@ -84,6 +87,7 @@ function clearAll(parent, current, marker, startNode) {
 function insertExpression(parent, value, current, marker) {
   if (value === current) return current;
   parent = (marker && marker.parentNode) || parent;
+  if (value instanceof Promise) value = handlePromise(value);
   const t = typeof value;
   if (t === 'string' || t === 'number') {
     if (t === 'number') value = value.toString();
@@ -567,55 +571,70 @@ export function each(parent, accessor, expr, options, afterNode) {
 }
 
 export function suspend(parent, accessor, expr, options, marker) {
-  let beforeNode, disposable, current, first = true;
+  let beforeNode, disposable, current, rendered, isSuspended;
   const { fallback } = options,
-    doc = document.implementation.createHTMLDocument(),
-    rendered = sample(expr);
-
+    doc = document.implementation.createHTMLDocument();
+<% if(locals.includeContext) { %>
+  wrap(() => {
+    if (accessor) {
+      isSuspended = accessor;
+    } else {
+      const c = SuspenseContext.initFn();
+      isSuspended = c[0];
+      setContext(SuspenseContext.id, c)
+    }
+    sample(() => {
+      rendered = sample(expr);
+      insertExpression(parent, rendered, null, marker);
+    });
+  });
+<% } else { %>
+  isSuspended = accessor;
+  rendered = sample(expr);
+<% } %>
   if (marker) beforeNode = marker.previousSibling;
   for (let name of eventRegistry.keys()) doc.addEventListener(name, eventHandler);
   Object.defineProperty(doc.body, 'host', { get() { return (marker && marker.parentNode) || parent; } });
   cleanup(function dispose() { disposable && disposable(); });
 
-  wrap(cached => {
-    const value = !!accessor();
+  wrap((cached = false) => {
+    const value = !!isSuspended();
     let node;
     if (value === cached) return cached;
     parent = (marker && marker.parentNode) || parent;
     if (value) {
-      if (first) {
-        insertExpression(doc.body, rendered);
-        first = false;
-      } else {
-        node = beforeNode ? beforeNode.nextSibling : parent.firstChild;
-        while (node && node !== marker) {
-          const next = node.nextSibling;
-          doc.body.appendChild(node);
-          node = next;
-        }
+      node = beforeNode ? beforeNode.nextSibling : parent.firstChild;
+      while (node && node !== marker) {
+        const next = node.nextSibling;
+        doc.body.appendChild(node);
+        node = next;
       }
       if (fallback) {
         sample(() => root(disposer => {
           disposable = disposer;
-          current = insertExpression(parent, fallback(), null, marker)
+          current = insertExpression(parent, fallback(), null, marker);
         }));
       }
       return value;
     }
-    if (first) {
-      insertExpression(parent, rendered, null, marker);
-      first = false;
-    } else {
-      if (disposable) {
-        clearAll(parent, current, marker, beforeNode ? beforeNode.nextSibling : parent.firstChild);
-        disposable();
-      }
-      while (node = doc.body.firstChild) parent.insertBefore(node, marker);
+    if (disposable) {
+      clearAll(parent, current, marker, beforeNode ? beforeNode.nextSibling : parent.firstChild);
+      disposable();
     }
+    while (node = doc.body.firstChild) parent.insertBefore(node, marker);
     return value;
   });
 }
-
+<% if(locals.includeContext) { %>
+export function provide(parent, accessor, expr, options, marker) {
+  const Context = accessor(),
+    { value } = options;
+  insertExpression(parent, () => sample(() => {
+    setContext(Context.id, Context.initFn ? Context.initFn(value) : value);
+    return expr();
+  }), undefined, marker);
+}
+<% } %>
 export function portal(parent, accessor, expr, options, marker) {
   const { useShadow } = options,
     container =  document.createElement('div'),

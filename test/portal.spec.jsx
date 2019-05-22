@@ -1,4 +1,4 @@
-import S from 's-js';
+import * as S from '@ryansolid/s-js';
 import { clearDelegatedEvents } from './runtime';
 
 describe('Testing a simple Portal', () => {

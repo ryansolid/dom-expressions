@@ -1,4 +1,4 @@
-import S from 's-js';
+import * as S from '@ryansolid/s-js';
 
 describe('Testing an only child suspend control flow', () => {
   let div, disposer;
@@ -84,6 +84,33 @@ describe('Testing an only child suspend control flow with DOM children and fallb
     expect(div.firstChild.innerHTML).toBe('5');
     count(2);
     expect(div.firstChild.innerHTML).toBe('Too Low');
+  });
+
+  test('dispose', () => disposer());
+});
+
+describe('Testing a context suspend control flow', () => {
+  let div, disposer, resolver;
+  const AsyncComponent = async () =>
+    await new Promise(resolve => resolver = resolve),
+    Component = () =>
+      <div ref={div}><$ suspend><AsyncComponent/></$></div>;
+
+  test('Create suspend control flow', () => {
+    S.root(dispose => {
+      disposer = dispose;
+      <Component />
+    });
+
+    expect(div.innerHTML).toBe('');
+  });
+
+  test('Toggle suspend control flow', async (done) => {
+    resolver('Hi');
+    await Promise.resolve();
+    console.log('check')
+    expect(div.innerHTML).toBe('Hi');
+    done();
   });
 
   test('dispose', () => disposer());

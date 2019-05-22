@@ -1,4 +1,4 @@
-import S from 's-js';
+import * as S from '@ryansolid/s-js';
 
 describe('Testing an only child each control flow', () => {
   let div, disposer;

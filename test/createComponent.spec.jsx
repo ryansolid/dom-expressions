@@ -1,4 +1,4 @@
-import S from 's-js';
+import * as S from '@ryansolid/s-js';
 
 describe('create component with dynamic expressions', () => {
   it('should properly create dynamic properties', () => {

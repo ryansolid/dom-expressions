@@ -1,4 +1,4 @@
-import S from 's-js';
+import * as S from '@ryansolid/s-js';
 
 describe('Test Synthetic event bubbling', () => {
   const Elements = {
