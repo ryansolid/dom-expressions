@@ -570,7 +570,7 @@ export function each(parent, accessor, expr, options, afterNode) {
 }
 
 export function suspend(parent, accessor, expr, options, marker) {
-  let beforeNode, disposable, current, isSuspended, rendered, first = true;
+  let beforeNode, disposable, current;
   const { fallback } = options,
     doc = document.implementation.createHTMLDocument();
 
@@ -579,23 +579,16 @@ export function suspend(parent, accessor, expr, options, marker) {
   Object.defineProperty(doc.body, 'host', { get() { return (marker && marker.parentNode) || parent; } });
   cleanup(function dispose() { disposable && disposable(); });
 
-  wrap(() => {
-<% if(locals.includeContext) { %>
-    isSuspended = accessor || registerSuspense();
-<% } else { %>
-    isSuspended = accessor;
-<% } %>
-    rendered = sample(expr);
+  function suspense(options) {
+    const rendered = sample(expr);
     wrap(cached => {
-      const value = !!isSuspended();
+      const value = !!options.suspended();
       if (value === cached) return cached;
       let node;
       parent = (marker && marker.parentNode) || parent;
       if (value) {
-        if (first) {
-          insertExpression(doc.body, rendered);
-          first = false;
-        } else {
+        if (options.initializing) insertExpression(doc.body, rendered);
+        else {
           node = beforeNode ? beforeNode.nextSibling : parent.firstChild;
           while (node && node !== marker) {
             const next = node.nextSibling;
@@ -611,10 +604,8 @@ export function suspend(parent, accessor, expr, options, marker) {
         }
         return value;
       }
-      if (first) {
-        insertExpression(parent, rendered, null, marker);
-        first = false;
-      } else {
+      if (options.initializing) insertExpression(parent, rendered, null, marker);
+      else {
         if (disposable) {
           clearAll(parent, current, marker, beforeNode ? beforeNode.nextSibling : parent.firstChild);
           disposable();
@@ -623,7 +614,18 @@ export function suspend(parent, accessor, expr, options, marker) {
       }
       return value;
     });
-  });
+  }
+<% if(locals.includeContext) { %>
+  if (accessor) {
+    const options = { suspended: accessor, initializing: true }
+    suspense(options);
+    options.initializing = false;
+  } else registerSuspense(suspense);
+<% } else { %>
+  const options = { suspended: accessor, initializing: true }
+  suspense(options);
+  options.initializing = false;
+<% } %>
 }
 <% if(locals.includeContext) { %>
 export function provide(parent, accessor, expr, options, marker) {

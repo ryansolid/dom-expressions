@@ -8,27 +8,27 @@ module.exports = {
     declarations: {
       SuspenseContext: `{
         id: 'suspense', initFn: () => {
-          let counter = 0,
-            first = true;
+          let counter = 0;
           const s = makeDataNode(),
-            increment = () => {
-              (++counter === 1 && !first) && s.next();
-              first = false;
-            },
-            decrement = () => {
-              (--counter === 0)  && s.next();
-            },
-            count = () => {
-              s.current();
-              return counter;
+            store = {
+              increment: () => ++counter === 1 && !store.initializing && s.next(),
+              decrement: () => --counter === 0 && s.next(),
+              suspended: () => {
+                s.current();
+                return counter;
+              },
+              initializing: true
             }
-          return {increment, decrement, count};
+          return store;
         }
       }`,
-      registerSuspense: `() => {
-        const c = SuspenseContext.initFn();
-        setContext(SuspenseContext.id, c);
-        return c.count;
+      registerSuspense: `(fn) => {
+        wrap(() => {
+          const c = SuspenseContext.initFn();
+          setContext(SuspenseContext.id, c);
+          fn(c);
+          c.initializing = false;
+        });
       }`
     },
     includeContext: true
