@@ -92,16 +92,16 @@ describe('Testing an only child suspend control flow with DOM children and fallb
 describe('Testing a context suspend control flow', () => {
   let div, disposer, resolver;
   const handlePromise = p => {
-      const [processing, register] = S.lookupContext('suspense');
+      const {increment, decrement} = S.lookupContext('suspense');
       const s = S.makeDataNode();
-      register(processing() + 1);
-      p.then(v => s.next(v)).finally(() => register(processing() - 1));
+      increment();
+      p.then(v => s.next(v)).finally(decrement);
       return s.current.bind(s);
     },
     LazyComponent = (props) => {
-      const getComp = handlePromise(new Promise(resolve => resolver = resolve))
+      const getComp = handlePromise(new Promise(resolve => resolver = resolve));
       let Comp;
-      return () => (Comp = getComp()) && S.sample(() => Comp(props));
+      return () => (Comp = getComp()) && (S.sample(() => Comp(props)));
     },
     ChildComponent = (props) => props.greeting,
     Component = () =>

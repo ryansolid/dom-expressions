@@ -2,9 +2,9 @@ import { Attributes } from 'dom-expressions';
 <%- imports.join(';\n') %>;
 
 <%- (function() {
-  const decls = ['wrap', 'root', 'sample', 'cleanup', 'setContext', 'currentContext', 'SuspenseContext']
-    .filter(decl => locals[decl])
-    .map(decl => `${decl} = ${locals[decl]}`)
+  if (!locals.declarations) return '';
+  const decls = Object.keys(declarations)
+    .map(decl => `${decl} = ${declarations[decl]}`)
   return decls.length ? `const ${decls.join(',\n')};` : '';
 })();
 %>
@@ -570,55 +570,59 @@ export function each(parent, accessor, expr, options, afterNode) {
 }
 
 export function suspend(parent, accessor, expr, options, marker) {
-  let beforeNode, disposable, current, isSuspended;
+  let beforeNode, disposable, current, isSuspended, rendered, first = true;
   const { fallback } = options,
     doc = document.implementation.createHTMLDocument();
-<% if(locals.includeContext) { %>
-  wrap(() => {
-    if (accessor) {
-      isSuspended = accessor;
-    } else {
-      const c = SuspenseContext.initFn();
-      isSuspended = c[0];
-      setContext(SuspenseContext.id, c)
-    }
-    insertExpression(parent, sample(expr), null, marker);
-  });
-<% } else { %>
-  isSuspended = accessor;
-  insertExpression(parent, sample(expr), null, marker);
-<% } %>
+
   if (marker) beforeNode = marker.previousSibling;
   for (let name of eventRegistry.keys()) doc.addEventListener(name, eventHandler);
   Object.defineProperty(doc.body, 'host', { get() { return (marker && marker.parentNode) || parent; } });
   cleanup(function dispose() { disposable && disposable(); });
 
-  wrap((cached = false) => {
-    const value = !!isSuspended();
-    let node;
-    if (value === cached) return cached;
-    parent = (marker && marker.parentNode) || parent;
-    if (value) {
-      node = beforeNode ? beforeNode.nextSibling : parent.firstChild;
-      while (node && node !== marker) {
-        const next = node.nextSibling;
-        doc.body.appendChild(node);
-        node = next;
+  wrap(() => {
+<% if(locals.includeContext) { %>
+    isSuspended = accessor || registerSuspense();
+<% } else { %>
+    isSuspended = accessor;
+<% } %>
+    rendered = sample(expr);
+    wrap(cached => {
+      const value = !!isSuspended();
+      if (value === cached) return cached;
+      let node;
+      parent = (marker && marker.parentNode) || parent;
+      if (value) {
+        if (first) {
+          insertExpression(doc.body, rendered);
+          first = false;
+        } else {
+          node = beforeNode ? beforeNode.nextSibling : parent.firstChild;
+          while (node && node !== marker) {
+            const next = node.nextSibling;
+            doc.body.appendChild(node);
+            node = next;
+          }
+        }
+        if (fallback) {
+          sample(() => root(disposer => {
+            disposable = disposer;
+            current = insertExpression(parent, fallback(), null, marker)
+          }));
+        }
+        return value;
       }
-      if (fallback) {
-        sample(() => root(disposer => {
-          disposable = disposer;
-          current = insertExpression(parent, fallback(), null, marker);
-        }));
+      if (first) {
+        insertExpression(parent, rendered, null, marker);
+        first = false;
+      } else {
+        if (disposable) {
+          clearAll(parent, current, marker, beforeNode ? beforeNode.nextSibling : parent.firstChild);
+          disposable();
+        }
+        while (node = doc.body.firstChild) parent.insertBefore(node, marker);
       }
       return value;
-    }
-    if (disposable) {
-      clearAll(parent, current, marker, beforeNode ? beforeNode.nextSibling : parent.firstChild);
-      disposable();
-    }
-    while (node = doc.body.firstChild) parent.insertBefore(node, marker);
-    return value;
+    });
   });
 }
 <% if(locals.includeContext) { %>
