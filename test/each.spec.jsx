@@ -174,9 +174,9 @@ describe('Testing an only child each control flow with fragment children', () =>
 
   function apply(array) {
     list(array);
-    expect(div.innerHTML).toBe(array.map(p => `${p}<!--6-->${p}<!--7-->`).join(''));
+    expect(div.innerHTML).toBe(array.map(p => `${p}${p}`).join(''));
     list([n1, n2, n3, n4])
-    expect(div.innerHTML).toBe('a<!--6-->a<!--7-->b<!--6-->b<!--7-->c<!--6-->c<!--7-->d<!--6-->d<!--7-->');
+    expect(div.innerHTML).toBe('aabbccdd');
   }
 
   test('Create each control flow', () => {
@@ -185,7 +185,7 @@ describe('Testing an only child each control flow with fragment children', () =>
       <Component />
     });
 
-    expect(div.innerHTML).toBe('a<!--6-->a<!--7-->b<!--6-->b<!--7-->c<!--6-->c<!--7-->d<!--6-->d<!--7-->');
+    expect(div.innerHTML).toBe('aabbccdd');
   });
 
   test('1 missing', () => {
