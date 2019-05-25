@@ -11,12 +11,13 @@ DOM Expressions is a Rendering Runtime for reactive libraries that do fine grain
 
 This package wraps libraries like KnockoutJS or MobX and use them independent of their current render systems using a small library to render pure DOM expressions. This approach has been proven to be incredibly fast, dominating the highest rankings in the [JS Framework Benchmark](https://github.com/krausest/js-framework-benchmark).
 
-It is designed to be used with a companion render API. Currently there is a JSX Babel Plugin, and Tagged Template Literals, and HyperScript runtime APIs.
+It is designed to be used with a companion render API. Currently there is a JSX Babel Plugin, and Tagged Template Literals, and HyperScript runtime APIs. Most developers will not use this package directly. It is intended to help author your own Reactive Libraries and not to be used directly in projects.
 
 ## Example Implementations
 * [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
-* [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
 * [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
+* [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
+* [s-jsx](https://github.com/ryansolid/s-jsx): Testbed for trying new techniques in the fine grained space.
 
 ## Runtime Generator
 
@@ -63,6 +64,8 @@ Then you run the cli command:
 ```sh
 > dom-expressions
 ```
+
+There are more advanced options to support a Context API. Look at the examples. Still experimental and will document as it stabilizes.
 
 ## Runtime Renderers
 

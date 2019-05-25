@@ -75,7 +75,7 @@ function removeNodes(parent, node, end) {
 }
 
 function clearAll(parent, current, marker, startNode) {
-  if (!marker) return parent.textContent = '';
+  if (marker === undefined) return parent.textContent = '';
   if (Array.isArray(current)) startNode = current[0];
   else if (current != null && current != '' && startNode === undefined) {
     startNode = step(marker.previousSibling, BACKWARD, true);
@@ -90,14 +90,15 @@ function insertExpression(parent, value, current, marker) {
   const t = typeof value;
   if (t === 'string' || t === 'number') {
     if (t === 'number') value = value.toString();
-    if (marker) {
+    if (marker !== undefined) {
+      const startNode = (marker && marker.previousSibling) || parent.lastChild;
       if (value === '') clearAll(parent, current, marker)
       else if (current !== '' && typeof current === 'string') {
-        marker.previousSibling.data = value;
+        startNode.data = value;
       } else {
         const node = document.createTextNode(value);
         if (current !== '' && current != null) {
-          parent.replaceChild(node, marker.previousSibling);
+          parent.replaceChild(node, startNode);
         } else parent.insertBefore(node, marker);
       }
       current = value;
@@ -617,14 +618,14 @@ export function suspend(parent, accessor, expr, options, marker) {
   }
 <% if(locals.includeContext) { %>
   if (accessor) {
-    const options = { suspended: accessor, initializing: true }
-    suspense(options);
-    options.initializing = false;
+    const config = { suspended: accessor, initializing: true }
+    suspense(config);
+    config.initializing = false;
   } else registerSuspense(suspense);
 <% } else { %>
-  const options = { suspended: accessor, initializing: true }
-  suspense(options);
-  options.initializing = false;
+  const config = { suspended: accessor, initializing: true }
+  suspense(config);
+  config.initializing = false;
 <% } %>
 }
 <% if(locals.includeContext) { %>
