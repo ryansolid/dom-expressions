@@ -152,9 +152,9 @@ describe("r.insert", () => {
     test([n4, n3, n2, n1]);
 
     function test(array) {
-      current = r.insert(parent, array, current);
+      current = r.insert(parent, array, undefined, current);
       expect(parent.innerHTML).toBe(expected(array));
-      current = r.insert(parent, orig, current);
+      current = r.insert(parent, orig, undefined, current);
       expect(parent.innerHTML).toBe(origExpected);
     }
 
@@ -276,34 +276,34 @@ describe("r.insert with Markers", () => {
     div2.textContent = "2";
     span3.textContent = "3"
 
-    current = r.insert(container, [], current, marker);
+    current = r.insert(container, [], marker, current);
     expect(container.innerHTML).toBe("");
 
-    current = r.insert(container, [span1, div2, span3], current, marker);
+    current = r.insert(container, [span1, div2, span3], marker, current);
     expect(container.innerHTML)
       .toBe("<span>1</span><div>2</div><span>3</span>");
 
-    current = r.insert(container, [div2, span3], current, marker);
+    current = r.insert(container, [div2, span3], marker, current);
     expect(container.innerHTML)
       .toBe("<div>2</div><span>3</span>");
 
-    current = r.insert(container, [div2, span3], current, marker);
+    current = r.insert(container, [div2, span3], marker, current);
     expect(container.innerHTML)
       .toBe("<div>2</div><span>3</span>");
 
-    current = r.insert(container, [span3, div2], current, marker);
+    current = r.insert(container, [span3, div2], marker, current);
     expect(container.innerHTML)
       .toBe("<span>3</span><div>2</div>");
 
-    current = r.insert(container, [], current, marker);
+    current = r.insert(container, [], marker, current);
     expect(container.innerHTML)
       .toBe("");
 
-    current = r.insert(container, [span3], current, marker);
+    current = r.insert(container, [span3], marker, current);
     expect(container.innerHTML)
       .toBe("<span>3</span>");
 
-    current = r.insert(container, [div2], current, marker);
+    current = r.insert(container, [div2], marker, current);
     expect(container.innerHTML)
       .toBe("<div>2</div>");
   });
@@ -315,7 +315,7 @@ describe("r.insert with Markers", () => {
 
   function insert(val) {
     const parent = container.cloneNode(true);
-    r.insert(parent, val, undefined, parent.childNodes[1]);
+    r.insert(parent, val, parent.childNodes[1]);
     return parent;
   }
 });
