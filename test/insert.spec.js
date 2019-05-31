@@ -1,7 +1,7 @@
 import * as r from './runtime'
 
 describe("r.insert", () => {
-  // <div>before<!-- insert -->after</div>
+  // <div><!-- insert --></div>
   const container = document.createElement("div");
 
   it("inserts nothing for null", () => {
@@ -168,6 +168,15 @@ describe("r.insert", () => {
     .toBe("foobarblech", "array of array of strings");
   });
 
+  it("can insert and clear strings", () => {
+    var parent = document.createElement("div")
+    r.insert(parent, 'foo');
+    expect(parent.innerHTML).toBe('foo');
+    expect(parent.childNodes.length).toBe(1);
+    r.insert(parent, '', undefined, 'foo');
+    expect(parent.innerHTML).toBe('');
+  });
+
   function insert(val) {
     const parent = container.cloneNode(true);
     r.insert(parent, val);
@@ -311,6 +320,27 @@ describe("r.insert with Markers", () => {
   it("can insert nested arrays", () => {
     expect(insert(["foo", ["bar", "blech"]]).innerHTML)
       .toBe("beforefoobarblechafter", "array of array of strings");
+  });
+
+  it("can insert and clear strings with marker", () => {
+    var parent = document.createElement("div");
+    parent.innerHTML = ' bar';
+    var marker = parent.firstChild;
+    r.insert(parent, 'foo', marker);
+    expect(parent.innerHTML).toBe('foo bar');
+    expect(parent.childNodes.length).toBe(2);
+    r.insert(parent, '', marker, 'foo');
+    expect(parent.innerHTML).toBe(' bar');
+  });
+
+  it("can insert and clear strings with null marker", () => {
+    var parent = document.createElement("div")
+    parent.innerHTML = 'hello '
+    r.insert(parent, 'foo', null);
+    expect(parent.innerHTML).toBe('hello foo');
+    expect(parent.childNodes.length).toBe(2);
+    r.insert(parent, '', null, 'foo');
+    expect(parent.innerHTML).toBe('hello ');
   });
 
   function insert(val) {
