@@ -349,3 +349,28 @@ describe('Testing each control flow with fallback', () => {
 
   test('dispose', () => disposer());
 });
+
+describe('Testing each that maps to undefined', () => {
+  let div, disposer;
+  const n1 = 'a',
+    n2 = 'b',
+    n3 = 'c',
+    n4 = 'd';
+  const list = S.data([]);
+  const Component = () =>
+    <div ref={div}><$ each={list()}>{ item => undefined }</$></div>
+
+  test('Create each control flow', () => {
+    S.root(dispose => {
+      disposer = dispose;
+      <Component />
+    });
+    expect(div.innerHTML).toBe('');
+    list([n1, n2, n3, n4])
+    expect(div.innerHTML).toBe('');
+    list([])
+    expect(div.innerHTML).toBe('');
+  });
+
+  test('dispose', () => disposer());
+});
