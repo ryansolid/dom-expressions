@@ -701,12 +701,12 @@ export function provide(parent, accessor, expr, options, marker) {
   const Context = accessor(),
     { value } = options;
   wrap(() => {
-    const rendered = sample(() => {
+    sample(() => {
       setContext(Context.id, Context.initFn ? Context.initFn(value) : value);
-      return expr();
+      const rendered = expr();
+      if (typeof rendered !== 'function') insertExpression(parent, rendered, undefined, marker);
+      else wrap(() => insertExpression(parent, rendered(), undefined, marker));
     });
-    if (typeof rendered !== 'function') insertExpression(parent, rendered, undefined, marker);
-    else wrap(() => insertExpression(parent, rendered(), undefined, marker));
   });
 }
 <% } %>
