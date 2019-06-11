@@ -1,4 +1,5 @@
 declare module "dom-expressions-runtime" {
+  export function template(html: string): HTMLTemplateElement;
   export function wrap<T>(fn: (prev?: T) => T): any;
   export function insert(parent: Node, accessor: any, init?: any, marker?: Node): any;
   export function createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]): any;
