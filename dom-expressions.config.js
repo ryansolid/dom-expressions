@@ -3,9 +3,14 @@ module.exports = {
   variables: {
     imports: [ `import {
       comp as wrap, sample, root, cleanup, getContextOwner as currentContext,
-      setContext, makeDataNode
+      setContext, makeDataNode, value
     } from '@ryansolid/s-js'` ],
     declarations: {
+      memo: `(fn) => {
+        const s = value(fn());
+        wrap(() => s(fn()));
+        return s;
+      }`,
       SuspenseContext: `{
         id: 'suspense', initFn: () => {
           let counter = 0;
