@@ -1,7 +1,7 @@
 {
   "name": "dom-expressions",
   "description": "A Fine-Grained Runtime for Performant DOM Rendering",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -19,7 +19,7 @@
     "test": "dom-expressions && jest --coverage"
   },
   "dependencies": {
-    "ejs": "^2.6.1"
+    "ejs": "^2.6.2"
   },
   "devDependencies": {
     "@babel/core": "7.4.5",
