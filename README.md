@@ -34,31 +34,18 @@ module.exports = {
   output: 'path-to-output/filename.js',
   variables: {
     imports: [ `import S from 's-js'` ],
-    computed: 'S',
-    sample: 'S.sample',
-    root: 'S.root',
-    cleanup: 'S.cleanup'
+    declarations: {
+      wrap: 'S',
+    }
   }
 }
 ```
 
 These symbols should reference an observable API with the following functionality:
 
-### computed(fn) : void
+### wrap(fn) : void
 
 This is used to wrap all expressions in computations. Your wrap method is expected to call fn with the previously evaluated value if the arity is 1 to allow for reducing computations.
-
-### root(fn) : any
-
-This indicates a new disposable context. The fn should be provided a dispose method that can be called to free all computations in the context.
-
-### sample(fn) : any
-
-A method that causes dependencies within not to be tracked.
-
-### cleanup(fn) : void
-
-This method should register a cleanup method to be called when the context is released.
 
 Then you run the cli command:
 ```sh

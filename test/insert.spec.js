@@ -188,7 +188,6 @@ describe("r.insert with Markers", () => {
   // <div>before<!-- insert -->after</div>
   var container = document.createElement("div");
   container.appendChild(document.createTextNode("before"));
-  container.appendChild(document.createTextNode(""));
   container.appendChild(document.createTextNode("after"));
 
   it("inserts nothing for null", () => {
@@ -218,31 +217,31 @@ describe("r.insert with Markers", () => {
   it("inserts nothing for null in array", () => {
     const res = insert(["a", null, "b"]);
     expect(res.innerHTML).toBe("beforeabafter");
-    expect(res.childNodes.length).toBe(5);
+    expect(res.childNodes.length).toBe(4);
   });
 
   it("inserts nothing for undefined in array", () => {
     const res = insert(["a", undefined, "b"]);
     expect(res.innerHTML).toBe("beforeabafter");
-    expect(res.childNodes.length).toBe(5);
+    expect(res.childNodes.length).toBe(4);
   });
 
   it("inserts nothing for false in array", () => {
     const res = insert(["a", false, "b"]);
     expect(res.innerHTML).toBe("beforeabafter");
-    expect(res.childNodes.length).toBe(5);
+    expect(res.childNodes.length).toBe(4);
   });
 
   it("inserts nothing for true in array", () => {
     const res = insert(["a", true, "b"]);
     expect(res.innerHTML).toBe("beforeabafter");
-    expect(res.childNodes.length).toBe(5);
+    expect(res.childNodes.length).toBe(4);
   });
 
   it("can insert strings", () => {
     const res = insert("foo");
     expect(res.innerHTML).toBe("beforefooafter");
-    expect(res.childNodes.length).toBe(4);
+    expect(res.childNodes.length).toBe(3);
   });
 
   it("can insert a node", () => {
@@ -283,7 +282,7 @@ describe("r.insert with Markers", () => {
       current;
     span1.textContent = "1";
     div2.textContent = "2";
-    span3.textContent = "3"
+    span3.textContent = "3";
 
     current = r.insert(container, [], marker, current);
     expect(container.innerHTML).toBe("");
@@ -326,20 +325,20 @@ describe("r.insert with Markers", () => {
     var parent = document.createElement("div");
     parent.innerHTML = ' bar';
     var marker = parent.firstChild;
-    r.insert(parent, 'foo', marker);
+    let current = r.insert(parent, 'foo', marker);
     expect(parent.innerHTML).toBe('foo bar');
     expect(parent.childNodes.length).toBe(2);
-    r.insert(parent, '', marker, 'foo');
+    r.insert(parent, '', marker, current);
     expect(parent.innerHTML).toBe(' bar');
   });
 
   it("can insert and clear strings with null marker", () => {
-    var parent = document.createElement("div")
-    parent.innerHTML = 'hello '
-    r.insert(parent, 'foo', null);
+    var parent = document.createElement("div");
+    parent.innerHTML = 'hello ';
+    let current = r.insert(parent, 'foo', null);
     expect(parent.innerHTML).toBe('hello foo');
     expect(parent.childNodes.length).toBe(2);
-    r.insert(parent, '', null, 'foo');
+    r.insert(parent, '', null, current);
     expect(parent.innerHTML).toBe('hello ');
   });
 
