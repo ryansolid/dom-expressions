@@ -69,7 +69,7 @@ export function insert(parent, accessor, marker, initial) {
   if (typeof accessor === 'function')
     wrap((current = initial) => insertExpression(parent, accessor(), current, marker));
   else if (Array.isArray(accessor) && checkDynamicArray(accessor)) {
-    wrap((current = initial) => current = insertExpression(parent, accessor, current, marker));
+    wrap((current = initial) => insertExpression(parent, accessor, current, marker));
   } else {
     return insertExpression(parent, accessor, initial, marker);
   }
@@ -157,15 +157,14 @@ function appendNodes(parent, array, marker) {
   for (let i = 0, len = array.length; i < len; i++) parent.insertBefore(array[i], marker);
 }
 
-function clearAll(parent, current, multi, replacement) {
-  if (!multi) return parent.textContent = '';
+function cleanChildren(parent, current, marker, replacement) {
+  if (marker === undefined) return parent.textContent = '';
+  const node = (replacement || document.createTextNode(''));
   if (current.length) {
-    let node;
-    for (let i = 0; i < current.length - 1; i++) parent.removeChild(current[i]);
-    parent.replaceChild(node = (replacement || document.createTextNode('')), current[current.length - 1]);
-    return [node];
-  }
-  return current;
+    node !== current[0] && parent.replaceChild(node, current[0]);
+    for (let i = current.length - 1; i > 0; i--) parent.removeChild(current[i]);
+  } else parent.insertBefore(node, marker);
+  return [node];
 }
 
 function checkDynamicArray(array) {
@@ -185,38 +184,24 @@ function insertExpression(parent, value, current, marker) {
   if (t === 'string' || t === 'number') {
     if (t === 'number') value = value.toString();
     if (multi) {
-      let good = null;
-      const test = current[0];
-      if (test && test.nodeType === 3) {
-        test.data = value;
-        good = test;
-      } else {
-        value = document.createTextNode(value);
-        if (test) parent.replaceChild(value, test);
-        else parent.insertBefore(value, marker);
-        current[0] = good = value;
-      }
-      let end = current[current.length - 1], i = 0;
-      while (good !== end) {
-        test = end;
-        end = test.previousSibling;
-        parent.removeChild(test);
-        i++;
-      }
-      current.length = current.length - i;
+      let node = current[0];
+      if (node && node.nodeType === 3) {
+        node.data = value;
+      } else node = document.createTextNode(value);
+      current = cleanChildren(parent, current, marker, node)
     } else {
       if (current !== '' && typeof current === 'string') {
         current = parent.firstChild.data = value;
       } else current = parent.textContent = value;
     }
   } else if (value == null || t === 'boolean') {
-    current = clearAll(parent, current, multi);
+    current = cleanChildren(parent, current, marker);
   } else if (t === 'function') {
-    wrap(function() { current = insertExpression(parent, value(), current, marker); });
+    wrap(() => current = insertExpression(parent, value(), current, marker));
   } else if (Array.isArray(value)) {
     const array = normalizeIncomingArray([], value);
     if (array.length === 0) {
-      current = clearAll(parent, current, multi);
+      current = cleanChildren(parent, current, marker);
       if (multi) return current;
     } else {
       if (Array.isArray(current)) {
@@ -232,20 +217,13 @@ function insertExpression(parent, value, current, marker) {
     current = array;
   } else if (value instanceof Node) {
     if (Array.isArray(current)) {
-      if (current.length === 0) {
-        parent.insertBefore(value, marker);
-      } else if (current.length === 1) {
-        parent.replaceChild(value, current[0]);
-      } else clearAll(parent, current, multi, value);
+      if (multi) return current = cleanChildren(parent, current, marker, value);
+      cleanChildren(parent, current, null, value);
     } else if (current == null || current === '') {
-      parent.insertBefore(value, marker);
+      parent.appendChild(value);
     } else parent.replaceChild(value, parent.firstChild);
     current = value;
-  } else {
-    throw new Error("content must be Node, stringable, or array of same");
   }
-  // first time fallback
-  if (multi && !current.length) parent.insertBefore(current = document.createTextNode(''), marker);
 
   return current;
 }
