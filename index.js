@@ -91,9 +91,6 @@ Attributes = {
   calcMode: {
     type: Types.ATTRIBUTE
   },
-  class: {
-    type: Types.ATTRIBUTE
-  },
   clip: {
     type: Types.ATTRIBUTE
   },
@@ -209,9 +206,6 @@ Attributes = {
     type: Types.ATTRIBUTE
   },
   height: {
-    type: Types.ATTRIBUTE
-  },
-  href: {
     type: Types.ATTRIBUTE
   },
   hreflang: {
@@ -398,12 +392,6 @@ Attributes = {
     type: Types.ATTRIBUTE
   },
   repeatDur: {
-    type: Types.ATTRIBUTE
-  },
-  requiredExtensions: {
-    type: Types.ATTRIBUTE
-  },
-  requiredFeatures: {
     type: Types.ATTRIBUTE
   },
   restart: {
