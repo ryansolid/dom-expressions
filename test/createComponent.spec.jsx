@@ -1,5 +1,32 @@
 import * as S from '@ryansolid/s-js';
 
+
+describe('create SVG component with dynamic expressions', () => {
+  it('should properly create dynamic properties', () => {
+    let rect, disposer;
+    const width = S.data(80);
+    const height = S.data(20);
+
+    const DynamicChild = props =>
+      <rect forwardRef={props.ref} x="0" y="0" width={( props.width )} height={( props.height )} />
+
+    const Component = () =>
+      <DynamicChild ref={rect} width={( width() )} height={( height() )} />
+
+    S.root(dispose => {
+      disposer = dispose;
+      <Component />
+    });
+ 
+    expect(rect.outerHTML).toBe('<rect x="0" y="0" width="80" height="20"></rect>');
+    width(60);
+    height(30);
+    expect(rect.outerHTML).toBe('<rect x="0" y="0" width="60" height="30"></rect>');
+    disposer();
+  });
+});
+
+
 describe('create component with dynamic expressions', () => {
   it('should properly create dynamic properties', () => {
     let span, disposer;
