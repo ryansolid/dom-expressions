@@ -5,7 +5,7 @@ declare module "dom-expressions-runtime" {
   export function createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]): any;
   export function delegateEvents(eventNames: string[]): void;
   export function clearDelegatedEvents(): void;
-  export function spread(node: HTMLElement, accessor: any): void;
+  export function spread(node: HTMLElement, accessor: any, isSVG: Boolean): void;
   export function classList(node: HTMLElement, value: { [k: string]: boolean; }): void;
   export function currentContext(): any;
 }
