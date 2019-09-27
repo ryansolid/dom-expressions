@@ -33,10 +33,7 @@ You must provide symbols to create the final js file and the output path. We do 
 module.exports = {
   output: 'path-to-output/filename.js',
   variables: {
-    imports: [ `import S from 's-js'` ],
-    declarations: {
-      wrap: 'S',
-    }
+    imports: [ `import wrap from 's-js'` ]
   }
 }
 ```
