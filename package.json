@@ -1,7 +1,7 @@
 {
   "name": "dom-expressions",
   "description": "A Fine-Grained Runtime for Performant DOM Rendering",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
