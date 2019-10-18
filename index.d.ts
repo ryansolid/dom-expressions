@@ -6,6 +6,8 @@ declare type AttributeInfo = {
 };
 export const Attributes: AttributeInfo;
 
+export const SVGAttributes: AttributeInfo;
+
 export const NonComposedEvents: Set<string>;
 
 export const SVGElements: Set<string>;
