@@ -1,5 +1,5 @@
 declare module "dom-expressions-runtime" {
-  export function template(html: string): HTMLTemplateElement;
+  export function template(html: string, isSVG?: boolean): Element;
   export function wrap<T>(fn: (prev?: T) => T): any;
   export function insert(
     parent: Element | Document | ShadowRoot | DocumentFragment,
