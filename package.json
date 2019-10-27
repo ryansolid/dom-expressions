@@ -19,12 +19,12 @@
     "test": "dom-expressions && jest --coverage"
   },
   "dependencies": {
-    "ejs": "^2.6.2"
+    "ejs": "^2.7.1"
   },
   "devDependencies": {
     "@babel/core": "7.6.4",
     "@babel/preset-env": "^7.6.3",
-    "babel-plugin-jsx-dom-expressions": "0.13.0",
+    "babel-plugin-jsx-dom-expressions": "0.14.0",
     "coveralls": "3.0.6",
     "jest": "24.9.0",
     "s-js": "~0.4.9"
