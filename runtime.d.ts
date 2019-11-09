@@ -1,6 +1,7 @@
 declare module "dom-expressions-runtime" {
   export function template(html: string, isSVG?: boolean): Element;
   export function wrap<T>(fn: (prev?: T) => T): any;
+  export function wrapCondition(fn: () => boolean): () => boolean;
   export function insert(
     parent: Element | Document | ShadowRoot | DocumentFragment,
     accessor: any,
