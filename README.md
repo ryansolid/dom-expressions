@@ -44,6 +44,10 @@ These symbols should reference an observable API with the following functionalit
 
 This is used to wrap all expressions in computations. Your wrap method is expected to call fn with the previously evaluated value if the arity is 1 to allow for reducing computations.
 
+### ignore(fn) : void
+
+This is used to set the context to not be tracking.
+
 Then you run the cli command:
 ```sh
 > dom-expressions

@@ -11,7 +11,7 @@ import { Attributes, SVGAttributes, NonComposedEvents } from 'dom-expressions';
 
 const eventRegistry = new Set();
 
-export { wrap<%-locals.includeContext ? ', currentContext' : '' %> };
+export { wrap<%-locals.wrapConditionals ? ', wrapCondition' : '' %><%-locals.includeContext ? ', currentContext' : '' %> };
 
 export function template(html, isSVG) {
   const t = document.createElement('template');
@@ -28,11 +28,13 @@ export function createComponent(Comp, props, dynamicKeys) {
   }
 <% if (locals.classComponents) { %>
   if (Comp.prototype && Comp.prototype.isClassComponent) {
-    const comp = new Comp(props);
-    return comp.render();
+    return ignore(() => {
+      const comp = new Comp(props);
+      return comp.render();
+    });
   }
 <% } %>
-  return Comp(props);
+  return ignore(() => Comp(props));
 }
 
 export function delegateEvents(eventNames) {
