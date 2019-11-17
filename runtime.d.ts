@@ -18,7 +18,8 @@ declare module "dom-expressions-runtime" {
   export function spread(node: Element, accessor: any, isSVG: Boolean): void;
   export function classList(
     node: Element,
-    value: { [k: string]: boolean }
+    value: { [k: string]: boolean },
+    prev?: { [k: string]: boolean }
   ): void;
   export function currentContext(): any;
   export function isSSR(): boolean;
