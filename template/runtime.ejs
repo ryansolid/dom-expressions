@@ -30,7 +30,7 @@ export function createComponent(Comp, props, dynamicKeys) {
   if (Comp.prototype && Comp.prototype.isClassComponent) {
     return ignore(() => {
       const comp = new Comp(props);
-      return comp.render();
+      return comp.render(props);
     });
   }
 <% } %>

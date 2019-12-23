@@ -28,16 +28,20 @@ describe("create component with dynamic expressions", () => {
 });
 
 describe("create component with class syntax", () => {
-  class Component {}
+  class Component {
+    constructor(props) {
+      this.props = props;
+    }
+  }
   Component.prototype.isClassComponent = true;
 
   it("should properly create component", () => {
     let ref, disposer;
 
     class MyComponent extends Component {
-      constructor() {
-        super();
-        this.favoriteCar = S.data("Porsche 911 Turbo");
+      constructor(props) {
+        super(props);
+        this.favoriteCar = S.data(`${props.make} 911 Turbo`);
       }
       render() {
         return <div ref={ref}>John loves {this.favoriteCar()}</div>;
@@ -46,7 +50,7 @@ describe("create component with class syntax", () => {
 
     S.root(dispose => {
       disposer = dispose;
-      <MyComponent />;
+      <MyComponent make={"Porsche"} />;
     });
 
     expect(ref.textContent).toBe("John loves Porsche 911 Turbo");
