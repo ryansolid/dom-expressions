@@ -22,7 +22,7 @@ export function classList(
 ): void;
 export function currentContext(): any;
 export function isSynchronous(): boolean;
-export function renderToString(fn: () => unknown): void;
+export function renderToString(fn: () => any): string;
 export function hydration(
   fn: () => unknown,
   node: Element | Document | ShadowRoot | DocumentFragment
