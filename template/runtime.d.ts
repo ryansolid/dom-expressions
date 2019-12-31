@@ -23,7 +23,7 @@ export function classList(
 export function currentContext(): any;
 export function renderToString(
   fn: (done?: () => void) => any,
-  options: {
+  options?: {
     timeoutMs?: number;
   }
 ): Promise<string>;
