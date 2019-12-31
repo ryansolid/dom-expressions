@@ -22,8 +22,12 @@ declare module "dom-expressions-runtime" {
     prev?: { [k: string]: boolean }
   ): void;
   export function currentContext(): any;
-  export function isSynchronous(): boolean;
-  export function renderToString(fn: () => any): string;
+  export function renderToString(
+    fn: (done?: () => void) => any,
+    options: {
+      timeoutMs?: number;
+    }
+  ): Promise<string>;
   export function hydration(
     fn: () => unknown,
     node: Element | Document | ShadowRoot | DocumentFragment
