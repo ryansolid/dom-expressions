@@ -6,6 +6,7 @@
 ![](https://img.shields.io/bundlephobia/minzip/dom-expressions.svg?style=flat)
 ![](https://img.shields.io/david/ryansolid/dom-expressions.svg?style=flat)
 ![](https://img.shields.io/npm/dt/dom-expressions.svg?style=flat)
+[![Gitter](https://img.shields.io/gitter/room/dom-expressions/community)](https://gitter.im/dom-expressions/community)
 
 DOM Expressions is a Rendering Runtime for reactive libraries that do fine grained change detection. These libraries rely on concepts like Observables and Signals rather than Lifecycle functions and the Virtual DOM. Standard JSX transformers are not helpful to these libraries as they need to evaluate their expressions in isolation to avoid re-rendering unnecessary parts of the DOM.
 

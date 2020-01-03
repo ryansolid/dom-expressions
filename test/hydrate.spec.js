@@ -36,7 +36,7 @@ describe("r.hydration", () => {
           const _el$ = r.getNextElement(_tmpl$),
             _el$2 = _el$.firstChild,
             [_el$3, _co$] = r.getNextMarker(_el$2.nextSibling);
-          r.hydration(() => r.insert(_el$, "Hi", _el$3, _co$), _el$);
+          r.insert(_el$, "Hi", _el$3, _co$);
           return _el$;
         })();
         r.insert(container, leadingExpr, undefined, [...container.childNodes]);
@@ -81,7 +81,7 @@ describe("r.hydration", () => {
           const _el$ = r.getNextElement(_tmpl$),
             _el$2 = _el$.firstChild,
             [_el$3, _co$] = r.getNextMarker(_el$2.nextSibling);
-          r.hydration(() => r.insert(_el$, updatedTime, _el$3, _co$), _el$);
+          r.insert(_el$, updatedTime, _el$3, _co$);
           return _el$;
         })();
         r.insert(container, leadingExpr, undefined, [...container.childNodes]);
