@@ -1,7 +1,10 @@
 module.exports = {
-  output: 'test/runtime.js',
+  output: "test/runtime.js",
   variables: {
-    imports: [ `import wrap, { value, sample as ignore } from 's-js'` ],
+    imports: [
+      `import wrap, { value, sample as ignore } from 's-js'`,
+      `import { sharedConfig } from './hydrate.config'`
+    ],
     declarations: {
       wrapCondition: `(fn) => {
         const s = value(ignore(fn));
@@ -11,6 +14,7 @@ module.exports = {
     },
     includeContext: false,
     wrapConditionals: true,
-    classComponents: true
+    classComponents: true,
+    sharedConfig: true
   }
-}
+};
