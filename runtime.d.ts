@@ -15,7 +15,12 @@ declare module "dom-expressions-runtime" {
   ): any;
   export function delegateEvents(eventNames: string[]): void;
   export function clearDelegatedEvents(): void;
-  export function spread(node: Element, accessor: any, isSVG: Boolean): void;
+  export function spread(
+    node: Element,
+    accessor: any,
+    isSVG?: Boolean,
+    skipChildren?: Boolean
+  ): void;
   export function classList(
     node: Element,
     value: { [k: string]: boolean },
