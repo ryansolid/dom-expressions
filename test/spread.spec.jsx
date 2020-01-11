@@ -18,4 +18,22 @@ describe("create element with various spreads", () => {
     expect(span.__click).toBeDefined();
     disposer();
   });
+
+  it("should properly prioritize children over spread", () => {
+    let span, disposer;
+
+    const Component = props => <span {...props}>Holla</span>;
+
+    S.root(dispose => {
+      disposer = dispose;
+      <Component ref={span} onClick={() => console.log("click")}>
+        Hi
+      </Component>;
+    });
+
+    expect(span).toBeDefined();
+    expect(span.textContent).toBe("Holla");
+    expect(span.__click).toBeDefined();
+    disposer();
+  });
 });
