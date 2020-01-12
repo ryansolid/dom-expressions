@@ -38,6 +38,7 @@ describe("r.hydrate", () => {
             _el$2 = _el$.firstChild,
             [_el$3, _co$] = r.getNextMarker(_el$2.nextSibling);
           r.insert(_el$, "Hi", _el$3, _co$);
+          r.runHydrationEvents(_el$.getAttribute("_hk"));
           return _el$;
         })();
         r.insert(container, leadingExpr, undefined, [...container.childNodes]);
@@ -83,6 +84,7 @@ describe("r.hydrate", () => {
             _el$2 = _el$.firstChild,
             [_el$3, _co$] = r.getNextMarker(_el$2.nextSibling);
           r.insert(_el$, updatedTime, _el$3, _co$);
+          r.runHydrationEvents(_el$.getAttribute("_hk"));
           return _el$;
         })();
         r.insert(container, leadingExpr, undefined, [...container.childNodes]);
@@ -121,9 +123,17 @@ describe("r.hydrate", () => {
     S.root(() => {
       r.hydrate(() => {
         const multiExpression = [
-          r.getNextElement(_tmpl$2),
+          function() {
+            const _el$ = r.getNextElement(_tmpl$2);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }(),
           "middle",
-          r.getNextElement(_tmpl$3)
+          function() {
+            const _el$ = r.getNextElement(_tmpl$3);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
@@ -162,9 +172,17 @@ describe("r.hydrate", () => {
     S.root(() => {
       r.hydrate(() => {
         const multiExpression = [
-          r.getNextElement(_tmpl$2),
+          function() {
+            const _el$ = r.getNextElement(_tmpl$2);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }(),
           () => "middle",
-          r.getNextElement(_tmpl$3)
+          function() {
+            const _el$ = r.getNextElement(_tmpl$3);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
@@ -203,9 +221,21 @@ describe("r.hydrate", () => {
     S.root(() => {
       r.hydrate(() => {
         const multiExpression = [
-          r.getNextElement(_tmpl$2),
-          () => r.getNextElement(_tmpl$2),
-          r.getNextElement(_tmpl$3)
+          function() {
+            const _el$ = r.getNextElement(_tmpl$2);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }(),
+          () => function() {
+            const _el$ = r.getNextElement(_tmpl$2);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }(),
+          function() {
+            const _el$ = r.getNextElement(_tmpl$3);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
@@ -304,15 +334,27 @@ describe("r.hydrate", () => {
           ctx = nextHydrateContext();
         setTimeout(() => {
           setHydrateContext(ctx);
-          signal(r.getNextElement(_tmpl$3, true));
+          signal(function() {
+            const _el$ = r.getNextElement(_tmpl$3);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }());
         }, 20);
         return signal;
       }
       r.hydrate(() => {
         const multiExpression = [
-          r.getNextElement(_tmpl$2),
+          function() {
+            const _el$ = r.getNextElement(_tmpl$2);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }(),
           lazy(),
-          r.getNextElement(_tmpl$3)
+          function() {
+            const _el$ = r.getNextElement(_tmpl$3);
+            r.runHydrationEvents(_el$.getAttribute("_hk"));
+            return _el$;
+          }()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
