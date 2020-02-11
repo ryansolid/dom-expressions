@@ -41,7 +41,7 @@ module.exports = {
 
 These symbols should reference an observable API with the following functionality:
 
-### wrap(fn) : void
+### wrap(fn, init) : void
 
 This is used to wrap all expressions in computations. Your wrap method is expected to call fn with the previously evaluated value if the arity is 1 to allow for reducing computations.
 
