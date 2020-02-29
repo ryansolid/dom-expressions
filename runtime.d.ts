@@ -3,7 +3,7 @@ declare module "dom-expressions-runtime" {
   export function wrap<T>(fn: (prev?: T) => T, init?: T): any;
   export function wrapCondition(fn: () => any): () => any;
   export function insert(
-    parent: Element | Document | ShadowRoot | DocumentFragment,
+    parent: Element | Document | ShadowRoot | DocumentFragment | Node,
     accessor: any,
     init?: any,
     marker?: Node
@@ -28,14 +28,14 @@ declare module "dom-expressions-runtime" {
   ): void;
   export function currentContext(): any;
   export function renderToString(
-    fn: (done?: () => void) => any,
+    fn: (done?: (rendered: any) => void) => any,
     options?: {
       timeoutMs?: number;
     }
   ): Promise<string>;
   export function hydrate(
     fn: () => unknown,
-    node: Element | Document | ShadowRoot | DocumentFragment
+    node: Element | Document | ShadowRoot | DocumentFragment | Node
   ): void;
   export function getNextElement(
     template: HTMLTemplateElement,

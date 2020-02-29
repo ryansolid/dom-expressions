@@ -123,17 +123,17 @@ describe("r.hydrate", () => {
     S.root(() => {
       r.hydrate(() => {
         const multiExpression = [
-          function() {
+          (function() {
             const _el$ = r.getNextElement(_tmpl$2);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }(),
+          })(),
           "middle",
-          function() {
+          (function() {
             const _el$ = r.getNextElement(_tmpl$3);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }()
+          })()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
@@ -172,17 +172,17 @@ describe("r.hydrate", () => {
     S.root(() => {
       r.hydrate(() => {
         const multiExpression = [
-          function() {
+          (function() {
             const _el$ = r.getNextElement(_tmpl$2);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }(),
+          })(),
           () => "middle",
-          function() {
+          (function() {
             const _el$ = r.getNextElement(_tmpl$3);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }()
+          })()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
@@ -221,21 +221,22 @@ describe("r.hydrate", () => {
     S.root(() => {
       r.hydrate(() => {
         const multiExpression = [
-          function() {
+          (function() {
             const _el$ = r.getNextElement(_tmpl$2);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }(),
-          () => function() {
-            const _el$ = r.getNextElement(_tmpl$2);
-            r.runHydrationEvents(_el$.getAttribute("_hk"));
-            return _el$;
-          }(),
-          function() {
+          })(),
+          () =>
+            (function() {
+              const _el$ = r.getNextElement(_tmpl$2);
+              r.runHydrationEvents(_el$.getAttribute("_hk"));
+              return _el$;
+            })(),
+          (function() {
             const _el$ = r.getNextElement(_tmpl$3);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }()
+          })()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
@@ -261,9 +262,8 @@ describe("r.hydrate", () => {
         ];
         setTimeout(() => {
           signal(r.getNextElement(_tmpl$3, true));
-          done();
+          done(multiExpression);
         }, 20);
-        return multiExpression;
       });
     });
     rendered = await result;
@@ -284,38 +284,40 @@ describe("r.hydrate", () => {
           ];
           setTimeout(() => {
             signal(r.getNextElement(_tmpl$3, true));
-            done();
+            done(multiExpression);
           }, 20);
-          return multiExpression;
         },
         { timeoutMs: 0 }
       );
     });
-    rendered = await result;
-    expect(rendered).toBe(
-      `<div _hk=":0">First</div><div _hk=":1">Last</div>`
-    );
+    let errored;
+    try {
+      rendered = await result;
+    } catch {
+      errored = true;
+    }
+    expect(errored).toBe(true);
   });
 
   it("renders nested asynchronous context", async () => {
     S.root(() => {
+      let multiExpression;
       function lazy(done) {
         const signal = S.data(),
           ctx = nextHydrateContext();
         setTimeout(() => {
           setHydrateContext(ctx);
           signal(r.getNextElement(_tmpl$3, true));
-          done();
+          done(multiExpression);
         }, 20);
         return signal;
       }
       result = r.renderToString(done => {
-        const multiExpression = [
+        multiExpression = [
           r.getNextElement(_tmpl$2, true),
           lazy(done),
           r.getNextElement(_tmpl$3, true)
         ];
-        return multiExpression;
       });
     });
     rendered = await result;
@@ -334,27 +336,29 @@ describe("r.hydrate", () => {
           ctx = nextHydrateContext();
         setTimeout(() => {
           setHydrateContext(ctx);
-          signal(function() {
-            const _el$ = r.getNextElement(_tmpl$3);
-            r.runHydrationEvents(_el$.getAttribute("_hk"));
-            return _el$;
-          }());
+          signal(
+            (function() {
+              const _el$ = r.getNextElement(_tmpl$3);
+              r.runHydrationEvents(_el$.getAttribute("_hk"));
+              return _el$;
+            })()
+          );
         }, 20);
         return signal;
       }
       r.hydrate(() => {
         const multiExpression = [
-          function() {
+          (function() {
             const _el$ = r.getNextElement(_tmpl$2);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }(),
+          })(),
           lazy(),
-          function() {
+          (function() {
             const _el$ = r.getNextElement(_tmpl$3);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          }()
+          })()
         ];
         r.insert(container, multiExpression, undefined, [
           ...container.childNodes
