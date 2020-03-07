@@ -1,5 +1,7 @@
 node_modules/
-coverage/
-test/runtime.js
-test/runtime.d.ts
+dist/
+lib/
 .vscode/
+coverage/
+types/
+test/runtime.js

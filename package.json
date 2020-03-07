@@ -1,32 +1,46 @@
 {
-  "name": "dom-expressions",
+  "name": "dom-expressions-build",
   "description": "A Fine-Grained Runtime for Performant DOM Rendering",
-  "version": "0.16.2",
+  "version": "0.17.0",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ryansolid/dom-expressions"
   },
-  "readmeFilename": "README.md",
-  "bin": {
-    "dom-expressions": "bin/dom-expressions.js"
-  },
-  "main": "index.js",
-  "types": "index.d.ts",
-  "sideEffects": false,
+  "private": true,
   "scripts": {
-    "test": "dom-expressions && jest --coverage"
-  },
-  "dependencies": {
-    "ejs": "^3.0.1"
+    "postinstall": "lerna bootstrap --no-ci",
+    "clean": "npm run clean:artifacts && npm run clean:packages && npm run clean:root",
+    "clean:artifacts": "lerna run clean --parallel",
+    "clean:packages": "lerna clean --yes",
+    "clean:root": "rimraf node_modules",
+    "test": "lerna run test --concurrency=1 --stream",
+    "test:coverage": "lerna run test:coverage --parallel",
+    "build": "lerna run build --concurrency=1 --stream",
+    "publish:release": "lerna run build && lerna publish",
+    "report:coverage": "lerna run report:coverage --parallel"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.3",
-    "@babel/preset-env": "^7.8.3",
-    "babel-plugin-jsx-dom-expressions": "0.16.0",
-    "coveralls": "3.0.9",
-    "jest": "24.9.0",
-    "s-js": "~0.4.9"
+    "@babel/core": "^7.8.4",
+    "@babel/preset-env": "^7.8.4",
+    "@babel/preset-typescript": "^7.8.3",
+    "@rollup/plugin-commonjs": "11.0.2",
+    "@rollup/plugin-json": "4.0.2",
+    "@rollup/plugin-node-resolve": "7.1.1",
+    "@types/jest": "^24.9.0",
+    "babel-jest": "^24.9.0",
+    "babel-plugin-tester": "^8.0.1",
+    "coveralls": "^3.0.9",
+    "jest": "~25.1.0",
+    "jest-ts-webcompat-resolver": "^1.0.0",
+    "jsdom": "^16.2.0",
+    "lerna": "^3.19.0",
+    "rimraf": "^3.0.0",
+    "rollup": "^1.31.0",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-cleanup": "^3.1.1",
+    "s-js": "0.4.9",
+    "typescript": "~3.7.5"
   }
 }

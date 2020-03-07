@@ -1,0 +1,25 @@
+{
+  "name": "hyper-dom-expressions",
+  "description": "A Fine-Grained Rendering Runtime API using HyperScript",
+  "version": "0.16.0",
+  "author": "Ryan Carniato",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryansolid/dom-expressoins/blob/master/packages/hyper-dom-expressions"
+  },
+  "main": "lib/hyper-dom-expressions.js",
+  "module": "dist/hyper-dom-expressions.js",
+  "types": "types/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c && tsc",
+    "test": "npm run build && dom-expressions && jest",
+    "test:coverage": "npm run build && dom-expressions && jest --coverage",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "html-parse-string": "0.0.5",
+    "dom-expressions": "*"
+  }
+}
