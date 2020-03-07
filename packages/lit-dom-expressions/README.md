@@ -1,13 +1,12 @@
 # Lit DOM Expressions
 
-[![Build Status](https://img.shields.io/travis/com/ryansolid/lit-dom-expressions.svg?style=flat)](https://travis-ci.com/ryansolid/lit-dom-expressions)
-[![Coverage Status](https://img.shields.io/coveralls/github/ryansolid/lit-dom-expressions.svg?style=flat)](https://coveralls.io/github/ryansolid/lit-dom-expressions?branch=master)
+[![Build Status](https://img.shields.io/travis/com/ryansolid/dom-expressions.svg?style=flat)](https://travis-ci.com/ryansolid/dom-expressions)
 [![NPM Version](https://img.shields.io/npm/v/lit-dom-expressions.svg?style=flat)](https://www.npmjs.com/package/lit-dom-expressions)
 ![](https://img.shields.io/bundlephobia/minzip/lit-dom-expressions.svg?style=flat)
 ![](https://img.shields.io/david/ryansolid/lit-dom-expressions.svg?style=flat)
 ![](https://img.shields.io/npm/dt/lit-dom-expressions.svg?style=flat)
 
-This package is a Runtime API built for [DOM Expressions](https://github.com/ryansolid/dom-expressions) to provide Tagged Template Literals DSL to DOM transformation for reactive libraries that do fine grained change detection. While the JSX plugin [Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/babel-plugin-jsx-dom-expressions) is more optimized with precompilation and cleaner syntax, this Tagged Template solution has minimal overhead over it.
+This package is a Runtime API built for [DOM Expressions](https://github.com/ryansolid/dom-expressions) to provide Tagged Template Literals DSL to DOM transformation for reactive libraries that do fine grained change detection. While the JSX plugin [Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/dom-expressoins/blob/master/packages/babel-plugin-jsx-dom-expressions) is more optimized with precompilation and cleaner syntax, this Tagged Template solution has minimal overhead over it.
 
 Upon first instantiation templates are compiled into DOM templates and generated code. Each instantiation there after the template is cloned and the optimized code is ran.
 

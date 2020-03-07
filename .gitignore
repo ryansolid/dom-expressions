@@ -5,3 +5,4 @@ lib/
 coverage/
 types/
 test/runtime.js
+packages/babel-plugin-jsx-dom-expressions/index.js

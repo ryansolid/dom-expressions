@@ -5,6 +5,7 @@ jobs:
   include:
     - stage: test
       script:
+        - npm install
         - npm run build
         - npm run test:coverage
         - npm run report:coverage
