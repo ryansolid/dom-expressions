@@ -10,7 +10,7 @@
   },
   "readmeFilename": "README.md",
   "main": "index.js",
-  "types": "jsx.d.ts",
+  "types": "types/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "build": "rollup -c",

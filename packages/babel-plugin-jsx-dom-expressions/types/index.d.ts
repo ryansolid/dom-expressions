@@ -41,8 +41,8 @@ declare global {
     }
 
     interface BoundEventHandler<T, E extends Event> {
-      0: (data: U, e: E & { currentTarget: T; target: T }) => void;
-      1: U
+      0: (data: any, e: E & { currentTarget: T; target: T }) => void;
+      1: any
     }
 
     // Intrinsic attributes enable us to define certain keys as attributes on an element, while

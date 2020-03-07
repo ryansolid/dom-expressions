@@ -46,9 +46,9 @@ function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
 }
 
-export function createHTML(r: Runtime & { delegate: (el: Node, ev: string, expr: any) => void }, { delegateEvents = true } = {}): HTMLTag {
+export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag {
   let uuid = 1;
-  r.delegate = (el: Node, ev: string, expr: any) => {
+  (r as any).delegate = (el: Node, ev: string, expr: any) => {
     if (Array.isArray(expr)) {
       (el as any)[`__${ev}`] = expr[0];
       (el as any)[`__${ev}Data`] = expr[1];
