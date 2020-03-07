@@ -18,7 +18,7 @@ export default babel => {
 
   function assignJSXoptions(opts = {}) {
     if (!Object.keys(opts).legnth) return;
-    for (opt of opts) {
+    for (const opt in opts) {
       JSXoptions[opt] = opt;
     }
   }
