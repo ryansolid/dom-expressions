@@ -46,8 +46,14 @@ function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
 }
 
-export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag {
+export function createHTML(r: Runtime & { delegate: (el: Node, ev: string, expr: any) => void }, { delegateEvents = true } = {}): HTMLTag {
   let uuid = 1;
+  r.delegate = (el: Node, ev: string, expr: any) => {
+    if (Array.isArray(expr)) {
+      (el as any)[`__${ev}`] = expr[0];
+      (el as any)[`__${ev}Data`] = expr[1];
+    } else (el as any)[`__${ev}`] = expr;
+  };
 
   function createTemplate(statics: string[]) {
     let i = 0,
@@ -105,7 +111,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       if (delegateEvents && !NonComposedEvents.has(lc.slice(2))) {
         const e = lc.slice(2);
         options.delegatedEvents.add(e);
-        options.exprs.push(`${tag}.__${e} = exprs[${options.counter++}]`);
+        options.exprs.push(`r.delegate(${tag},"${e}",exprs[${options.counter++}])`);
       } else options.exprs.push(`${tag}.${lc} = exprs[${options.counter++}]`);
     } else if (name === "ref") {
       options.exprs.push(`exprs[${options.counter++}](${tag})`);

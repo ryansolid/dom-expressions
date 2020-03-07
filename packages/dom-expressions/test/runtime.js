@@ -165,10 +165,6 @@ function dynamicProp(props, key) {
   });
 }
 
-function lookup(el) {
-  return el && (el.model || lookup(el.host || el.parentNode));
-}
-
 function eventHandler(e) {
   const key =  `__${e.type}`;
   let node = (e.composedPath && e.composedPath()[0]) || e.target;
@@ -189,8 +185,8 @@ function eventHandler(e) {
   while (node !== null) {
     const handler = node[key];
     if (handler) {
-      const model = handler.length > 1 ? lookup(node): undefined;
-      handler(e, model);
+      const data = node[`${key}Data`];
+      data ? handler(data, e): handler(e);
       if (e.cancelBubble) return;
     }
     node = (node.host && node.host instanceof Node) ? node.host : node.parentNode;
@@ -220,16 +216,22 @@ function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
         // really only for forwarding from Components, can't forward normal ref
       } else if (prop === "ref" || prop === "forwardRef") {
         value(node);
-      } else if (prop.slice(0, 2) === "on") {
-        const lc = prop.toLowerCase();
-        if (lc !== prop && !NonComposedEvents.has(lc.slice(2))) {
-          const name = lc.slice(2);
-          node[`__${name}`] = value;
-          delegateEvents([name]);
-        } else node[lc] = value;
-      } else if (prop === "events") {
+      } else if (prop === "on") {
         for (const eventName in value)
           node.addEventListener(eventName, value[eventName]);
+      } else if (prop === "onCapture") {
+        for (const eventName in value)
+          node.addEventListener(eventName, value[eventName], true);
+      } else if (prop.slice(0, 2) === "on") {
+        const lc = prop.toLowerCase();
+        if (!NonComposedEvents.has(lc.slice(2))) {
+          const name = lc.slice(2);
+          if (Array.isArray(value)) {
+            node[`__${name}`] = value[0];
+            node[`__${name}Data`] = value[1];
+          } else node[`__${name}`] = value;
+          delegateEvents([name]);
+        } else node[lc] = value;
       } else if ((info = Attributes[prop])) {
         if (info.type === "attribute") {
           node.setAttribute(prop, value);

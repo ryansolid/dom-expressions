@@ -40,6 +40,11 @@ declare global {
       (e: E & { currentTarget: T; target: T }): void;
     }
 
+    interface BoundEventHandler<T, E extends Event> {
+      0: (data: U, e: E & { currentTarget: T; target: T }) => void;
+      1: U
+    }
+
     // Intrinsic attributes enable us to define certain keys as attributes on an element, while
     // at the same time hiding them from the element's `props`.
     // https://github.com/Microsoft/TypeScript/issues/5478
@@ -54,12 +59,11 @@ declare global {
       ref?: T | ((el: T) => void);
       forwardRef?: (el: T) => void;
       classList?: { [k: string]: boolean | undefined };
-      model?: any;
       on?: { [key: string]: EventHandler<T, CustomEvent> };
       onCapture?: { [key: string]: EventHandler<T, CustomEvent> };
     }
 
-    // https://github.com/ryansolid/babel-plugin-jsx-dom-expressions#oneventname--model
+    // https://github.com/ryansolid/babel-plugin-jsx-dom-expressions#oneventname
     interface DOMAttributes<T> extends CustomAttributes<T> {
       innerHTML?: string;
       innerText?: string;
@@ -71,9 +75,9 @@ declare global {
       onPaste?: EventHandler<T, ClipboardEvent>;
 
       // Composition Events
-      onCompositionEnd?: EventHandler<T, CompositionEvent>;
-      onCompositionStart?: EventHandler<T, CompositionEvent>;
-      onCompositionUpdate?: EventHandler<T, CompositionEvent>;
+      onCompositionEnd?: EventHandler<T, CompositionEvent> | BoundEventHandler<T, CompositionEvent>;
+      onCompositionStart?: EventHandler<T, CompositionEvent> | BoundEventHandler<T, CompositionEvent>;
+      onCompositionUpdate?: EventHandler<T, CompositionEvent> | BoundEventHandler<T, CompositionEvent>;
 
       // Focus Events
       onFocus?: EventHandler<T, FocusEvent>;
@@ -81,7 +85,7 @@ declare global {
 
       // Form Events
       onChange?: EventHandler<T, Event>;
-      onInput?: EventHandler<T, InputEvent>;
+      onInput?: EventHandler<T, InputEvent> | BoundEventHandler<T, InputEvent>;
       onReset?: EventHandler<T, Event>;
       onSubmit?: EventHandler<T, FocusEvent>;
 
@@ -90,21 +94,21 @@ declare global {
       onError?: EventHandler<T, Event>; // also a Media Event
 
       // Keyboard Events
-      onKeyDown?: EventHandler<T, KeyboardEvent>;
-      onKeyPress?: EventHandler<T, KeyboardEvent>;
-      onKeyUp?: EventHandler<T, KeyboardEvent>;
+      onKeyDown?: EventHandler<T, KeyboardEvent> | BoundEventHandler<T, KeyboardEvent>;
+      onKeyPress?: EventHandler<T, KeyboardEvent> | BoundEventHandler<T, KeyboardEvent>;
+      onKeyUp?: EventHandler<T, KeyboardEvent> | BoundEventHandler<T, KeyboardEvent>;
 
       // Pointer Events
       onGotPointerCapture?: EventHandler<T, PointerEvent>;
       onLostPointerCapture?: EventHandler<T, PointerEvent>;
-      onPointerCancel?: EventHandler<T, PointerEvent>;
-      onPointerDown?: EventHandler<T, PointerEvent>;
-      onPointerEnter?: EventHandler<T, PointerEvent>;
-      onPointerLeave?: EventHandler<T, PointerEvent>;
-      onPointerMove?: EventHandler<T, PointerEvent>;
-      onPointerOver?: EventHandler<T, PointerEvent>;
-      onPointerOut?: EventHandler<T, PointerEvent>;
-      onPointerUp?: EventHandler<T, PointerEvent>;
+      onPointerCancel?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onPointerDown?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onPointerEnter?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onPointerLeave?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onPointerMove?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onPointerOver?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onPointerOut?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onPointerUp?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
 
       // Media Events
       onAbort?: EventHandler<T, Event>;
@@ -131,39 +135,39 @@ declare global {
       onWaiting?: EventHandler<T, Event>;
 
       // MouseEvents
-      onClick?: EventHandler<T, MouseEvent>;
-      onContextMenu?: EventHandler<T, MouseEvent>;
-      onDoubleClick?: EventHandler<T, MouseEvent>;
-      onDrag?: EventHandler<T, DragEvent>;
-      onDragEnd?: EventHandler<T, DragEvent>;
-      onDragEnter?: EventHandler<T, DragEvent>;
-      onDragExit?: EventHandler<T, DragEvent>;
-      onDragLeave?: EventHandler<T, DragEvent>;
-      onDragOver?: EventHandler<T, DragEvent>;
-      onDragStart?: EventHandler<T, DragEvent>;
-      onDrop?: EventHandler<T, DragEvent>;
-      onMouseDown?: EventHandler<T, MouseEvent>;
+      onClick?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
+      onContextMenu?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
+      onDoubleClick?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
+      onDrag?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onDragEnd?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onDragEnter?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onDragExit?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onDragLeave?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onDragOver?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onDragStart?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onDrop?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
+      onMouseDown?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
       onMouseEnter?: EventHandler<T, MouseEvent>;
       onMouseLeave?: EventHandler<T, MouseEvent>;
-      onMouseMove?: EventHandler<T, MouseEvent>;
-      onMouseOut?: EventHandler<T, MouseEvent>;
-      onMouseOver?: EventHandler<T, MouseEvent>;
-      onMouseUp?: EventHandler<T, MouseEvent>;
+      onMouseMove?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
+      onMouseOut?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
+      onMouseOver?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
+      onMouseUp?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
 
       // Selection Events
       onSelect?: EventHandler<T, UIEvent>;
 
       // Touch Events
-      onTouchCancel?: EventHandler<T, TouchEvent>;
-      onTouchEnd?: EventHandler<T, TouchEvent>;
-      onTouchMove?: EventHandler<T, TouchEvent>;
-      onTouchStart?: EventHandler<T, TouchEvent>;
+      onTouchCancel?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
+      onTouchEnd?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
+      onTouchMove?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
+      onTouchStart?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
 
       // UI Events
       onScroll?: EventHandler<T, UIEvent>;
 
       // Wheel Events
-      onWheel?: EventHandler<T, WheelEvent>;
+      onWheel?: EventHandler<T, WheelEvent> | BoundEventHandler<T, WheelEvent>;
 
       // Animation Events
       onAnimationStart?: EventHandler<T, AnimationEvent>;

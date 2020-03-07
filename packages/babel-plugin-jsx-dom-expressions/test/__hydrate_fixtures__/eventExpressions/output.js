@@ -22,7 +22,9 @@ const template = (function() {
 
   _el$4.__click = () => console.log("delegated");
 
-  _el$5.__click = () => console.log("delegated");
+  _el$5.__click = id => console.log("delegated", id);
+
+  _el$5.__clickData = rowId;
 
   _el$6.addEventListener("click", () => console.log("listener"));
 

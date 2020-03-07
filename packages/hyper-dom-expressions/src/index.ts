@@ -60,9 +60,13 @@ export function createHyperScript(
                 delegateEvents &&
                 !NonComposedEvents.has(lc.slice(2))
               ) {
-                const name = lc.slice(2);
+                const name = lc.slice(2),
+                  hdlr = l[k];
                 delegatedEvents.add(name);
-                (e as ExpandableNode)[`__${name}`] = l[k];
+                if (Array.isArray(hdlr)) {
+                  (e as ExpandableNode)[`__${name}`] = hdlr[0];
+                  (e as ExpandableNode)[`__${name}Data`] = hdlr[1];
+                } else (e as ExpandableNode)[`__${name}`] = hdlr;
               } else (e as ExpandableNode)[lc] = l[k];
             } else if (k === "ref") {
               l[k](e);

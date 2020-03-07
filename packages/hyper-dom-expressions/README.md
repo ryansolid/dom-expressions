@@ -34,10 +34,10 @@ Profit:
 ```js
 const view = h('table.table.table-hover.table-striped.test-data',
   h('tbody', mapSample(() => state.data, row =>
-    h('tr', {model: row.id}, [
+    h('tr', [
       h('td.col-md-1', row.id),
-      h('td.col-md-4', h('a', {onClick: select}, () => row.label)),
-      h('td.col-md-1', h('a', {onClick: remove}, h('span.glyphicon.glyphicon-remove'))),
+      h('td.col-md-4', h('a', {onClick: [select, row.id]}, () => row.label)),
+      h('td.col-md-1', h('a', {onClick: [remove, row.id]}, h('span.glyphicon.glyphicon-remove'))),
       h('td.col-md-6')
     ])
   ))

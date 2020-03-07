@@ -56,7 +56,7 @@ describe("Test HTML", () => {
     const template = html`
       <div id="main">
         <button onclick=${() => (exec.bound = true)}>Click Bound</button>
-        <button onClick=${() => (exec.delegated = true)}>
+        <button onClick=${[v => (exec.delegated = v), true]}>
           Click Delegated
         </button>
         <button on=${{ click: () => (exec.listener = true) }}>

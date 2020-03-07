@@ -21,18 +21,21 @@ This library uses a heuristic whether to dynamic wrap expressions based on if th
 ```jsx
 const view = ({ item }) => {
   const itemId = item.id;
-  <tr class={ itemId === selected() ? 'danger' : '' }>
-    <td class="col-md-1">{ itemId }</td>
+  <tr class={itemId === selected() ? "danger" : ""}>
+    <td class="col-md-1">{itemId}</td>
     <td class="col-md-4">
-      <a onclick={e => select(item, e)}>{ item.label }</a>
+      <a onclick={e => select(item, e)}>{item.label}</a>
     </td>
-    <td class="col-md-1"><a onclick={e => del(item, e)}>
-      <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-    </a></td>
+    <td class="col-md-1">
+      <a onclick={e => del(item, e)}>
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+      </a>
+    </td>
     <td class="col-md-6"></td>
-  </tr>
-}
+  </tr>;
+};
 ```
+
 Compiles to:
 
 ```jsx
@@ -44,30 +47,30 @@ _tmpl$.innerHTML = `<tr><td class="col-md-1"></td><td class="col-md-4"><a></a></
 
 const view = ({ item }) => {
   const itemId = item.id;
-  return function() {
+  return (function() {
     const _el$ = _tmpl$.content.firstChild.cloneNode(true),
-          _el$2 = _el$.firstChild,
-          _el$3 = _el$2.nextSibling,
-          _el$4 = _el$3.firstChild,
-          _el$5 = _el$3.nextSibling,
-          _el$6 = _el$5.firstChild;
-    _$wrap(() => _el$.className = itemId === selected() ? 'danger' : '');
+      _el$2 = _el$.firstChild,
+      _el$3 = _el$2.nextSibling,
+      _el$4 = _el$3.firstChild,
+      _el$5 = _el$3.nextSibling,
+      _el$6 = _el$5.firstChild;
+    _$wrap(() => (_el$.className = itemId === selected() ? "danger" : ""));
     _$insert(_el$2, itemId);
     _el$4.onclick = e => select(item, e);
     _$insert(_el$4, () => item.label);
     _el$6.onclick = e => del(item, e);
     return _el$;
-  }();
-}
+  })();
+};
 ```
 
 The use of cloneNode improves repeat insert performance and precompilation reduces the number of references to the minimal traversal path. This is a basic example which doesn't leverage event delegation or any of the more advanced features described below.
 
 ## Example Implementations
 
-* [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
-* [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
-* [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
+- [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
+- [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
+- [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
 
 ## Plugin Options
 
@@ -106,40 +109,48 @@ This binding will assign the variable you pass to it with the DOM element.
 This binding takes a function callback and calls it with the ref. Useful for moving refs out Components or doing Custom Bindings.
 
 ```jsx
-const Child = props => <div forwardRef={props.ref} />
+const Child = props => <div forwardRef={props.ref} />;
 
 const Parent = () => {
   let ref;
-  return <Child ref={ref} />
-}
+  return <Child ref={ref} />;
+};
 ```
 
-### on(eventName) / model
+### on(eventName)
 
-These will be treated as event handlers expecting a function. The compiler will delegate events where possible else it will fall back to bound events(Level 1) The model which can be the same node or closest ancestor can passed to delegated events as second argument.
+These will be treated as event handlers expecting a function. The compiler will delegate events where possible (Events that can be composed) else it will fall back to Level 1 spec "on_____" events.
+
+If you wish to bind a value to your delegated event pass an array handler instead and the second argument will be passed to your event handler as the first argument (the event will be second).
 
 ```jsx
 <ul>
-  { list().map(item => <li model={item.id} onClick={handler} />) }
+  {list().map(item => (
+    <li onClick={[handler, item.id]} />
+  ))}
 </ul>
 ```
 
 This delegation solution works with Web Components and the Shadow DOM as well if the events are composed. That limits the list to custom events and most UA UI events like onClick, onKeyUp, onKeyDown, onDblClick, onInput, onMouseDown, onMouseUp, etc..
 
 Important:
-* To allow for casing to work all custom events should follow the all lowercase convention of native events. If you want to use different event convention (or use Level 3 Events "addEventListener") use the "on" binding.
 
-* Event delegates aren't cleaned up automatically off Document. If you will be completely unmounting the library and wish to remove the handlers from the current page use `clearDelegatedEvents`.
+- To allow for casing to work all custom events should follow the all lowercase convention of native events. If you want to use different event convention (or use Level 3 Events "addEventListener") use the "on" binding.
+
+- Event delegates aren't cleaned up automatically off Document. If you will be completely unmounting the library and wish to remove the handlers from the current page use `clearDelegatedEvents`.
 
 ### classList
 
 This takes an object and assigns all the keys as classes which are truthy.
+
 ```jsx
 <div classList={{ selected: isSelected(), editing: isEditing() }} />
 ```
+
 ### on/onCapture
 
 Generic event method for Level 3 "addEventListener" events.
+
 ```jsx
 <div on={{ "Weird-Event": e => alert(e.detail) }} />
 ```
@@ -156,18 +167,20 @@ Keep in mind given the independent nature of binding updates there is no guarant
 
 ## Components
 
-Components are just Capital Cased tags. Instead of wrapping with computation dynamic props will just be getter accessors. * Remember property access triggers so don't destructure outside of computations unless you intend the content to be static.
+Components are just Capital Cased tags. Instead of wrapping with computation dynamic props will just be getter accessors. \* Remember property access triggers so don't destructure outside of computations unless you intend the content to be static.
 
 ```jsx
 const MyComp = props => {
   const staticProp = props.other;
-  return <>
-    <div>{ props.param }</div>
-    <div>{ staticProp }</div>
-  </>
+  return (
+    <>
+      <div>{props.param}</div>
+      <div>{staticProp}</div>
+    </>
+  );
 };
 
-<MyComp param={ dynamic() } other={ static } />
+<MyComp param={dynamic()} other={static} />;
 ```
 
 Components may have children. This is available as props.children. It may be a node, a function, or a string, or an array of the aforementioned. Non-expression children like DOM nodes are set to evaluate lazily (upon access by default).

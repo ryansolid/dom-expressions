@@ -9,8 +9,8 @@ describe("Test Synthetic event bubbling", () => {
   let eventTarget = null,
     count = 0,
     stopPropagation = false;
-  function handleClick(e, model) {
-    expect(e.currentTarget).toBe(Elements[`el${model}`]);
+  function handleClick(data, e) {
+    expect(e.currentTarget).toBe(Elements[`el${data}`]);
     expect(e.target).toBe(eventTarget);
     if (stopPropagation) e.stopPropagation();
     count++;
@@ -19,9 +19,9 @@ describe("Test Synthetic event bubbling", () => {
   document.body.innerHTML = "";
   S.root(() =>
     document.body.appendChild(
-      <div ref={Elements.el1} model={"1"} onClick={handleClick}>
-        <div ref={Elements.el2} model={"2"} onClick={handleClick}>
-          <div ref={Elements.el3} model={"3"} onClick={handleClick} />
+      <div ref={Elements.el1} onClick={[handleClick, 1]}>
+        <div ref={Elements.el2} onClick={[handleClick, 2]}>
+          <div ref={Elements.el3} onClick={[handleClick, 3]} />
         </div>
       </div>
     )

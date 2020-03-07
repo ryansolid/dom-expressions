@@ -43,13 +43,13 @@ const view = html`
     <tbody>
       <${For} each=${() => state.data}
         >${row => html`
-          <tr model=${row.id}>
+          <tr>
             <td class="col-md-1" textContent=${row.id} />
             <td class="col-md-4">
-              <a onClick=${select}>${() => row.label}</a>
+              <a onClick=${[select, row.id]}>${() => row.label}</a>
             </td>
             <td class="col-md-1">
-              <a onClick=${remove}
+              <a onClick=${[remove, row.id]}
                 ><span class="glyphicon glyphicon-remove"
               /></a>
             </td>

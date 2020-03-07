@@ -3,7 +3,7 @@ const template = (
     <button onchange={() => console.log("bound")}>Change Bound</button>
     <button onChange={() => console.log("bound")}>Change Bound</button>
     <button onclick={() => console.log("delegated")}>Click Delegated</button>
-    <button onClick={() => console.log("delegated")}>Click Delegated</button>
+    <button onClick={[id => console.log("delegated", id), rowId]}>Click Delegated</button>
     <button
       on={{
         click: () => console.log("listener"),
@@ -14,7 +14,7 @@ const template = (
     </button>
     <button
       onCapture={{
-        camelClick: () => console.log("listener"),
+        camelClick: () => console.log("listener")
       }}
     >
       Click Capture
