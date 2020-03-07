@@ -58,7 +58,6 @@ export function createHyperScript(
               const lc = k.toLowerCase();
               if (
                 delegateEvents &&
-                lc !== k &&
                 !NonComposedEvents.has(lc.slice(2))
               ) {
                 const name = lc.slice(2);
@@ -121,8 +120,10 @@ export function createHyperScript(
         else Object.assign((e as HTMLElement | SVGElement).style, v);
       } else if (k === "classList") {
         r.classList(e as Element, v);
-      } else if (k === "events") {
+      } else if (k === "on") {
         for (const c in v) (e as Element).addEventListener(c, v[c]);
+      } else if (k === "onCapture") {
+        for (const c in v) (e as Element).addEventListener(c, v[c], true);
       } else if (k === "attrs") {
         for (const a in v) (e as Element).setAttribute(a, v[a]);
       } else (e as ExpandableNode)[k] = v;

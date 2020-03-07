@@ -59,14 +59,14 @@ describe("Test HTML", () => {
         <button onClick=${() => (exec.delegated = true)}>
           Click Delegated
         </button>
-        <button events=${{ click: () => (exec.listener = true) }}>
+        <button on=${{ click: () => (exec.listener = true) }}>
           Click Listener
         </button>
       </div>
     `;
     expect(template.outerHTML).toBe(FIXTURES[2]);
     document.body.appendChild(template);
-    var event = new MouseEvent("click");
+    var event = new MouseEvent("click", { bubbles: true });
     template.firstChild.dispatchEvent(event);
     event = new MouseEvent("click", { bubbles: true });
     template.firstChild.nextSibling.dispatchEvent(event);

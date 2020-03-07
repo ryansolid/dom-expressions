@@ -1,13 +1,7 @@
 /// <reference path="../../dom-expressions/runtime.d.ts" />
 import { parse, stringify, IDom } from "html-parse-string";
 import { NonComposedEvents } from "dom-expressions";
-import {
-  wrap,
-  insert,
-  createComponent,
-  delegateEvents,
-  classList
-} from "dom-expressions-runtime";
+import { wrap, insert, createComponent, delegateEvents, classList } from "dom-expressions-runtime";
 
 interface Runtime {
   wrap: typeof wrap;
@@ -16,12 +10,7 @@ interface Runtime {
   delegateEvents: typeof delegateEvents;
   classList: typeof classList;
 }
-type TemplateCreate = (
-  node: Node,
-  data: any[],
-  r: Runtime,
-  bindings: any
-) => Node;
+type TemplateCreate = (node: Node, data: any[], r: Runtime, bindings: any) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
 
 export type HTMLTag = {
@@ -36,22 +25,14 @@ const almostEverything = "[^ " + spaces + "\\/>\"'=]+";
 const attrName = "[ " + spaces + "]+" + almostEverything;
 const tagName = "<([A-Za-z$#]+[A-Za-z0-9:_-]*)((?:";
 const attrPartials =
-  "(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|\\([^)]*?\\)|<[^>]*?>|" +
-  almostEverything +
-  "))?)";
+  "(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|\\([^)]*?\\)|<[^>]*?>|" + almostEverything + "))?)";
 
-const attrSeeker = new RegExp(
-  tagName + attrName + attrPartials + "+)([ " + spaces + "]*/?>)",
-  "g"
-);
+const attrSeeker = new RegExp(tagName + attrName + attrPartials + "+)([ " + spaces + "]*/?>)", "g");
 const findAttributes = new RegExp(
   "(" + attrName + "\\s*=\\s*)(['\"(]?)" + "<!--#-->" + "(['\")]?)",
   "gi"
 );
-const selfClosing = new RegExp(
-  tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)",
-  "g"
-);
+const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -65,10 +46,7 @@ function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
 }
 
-export function createHTML(
-  r: Runtime,
-  { delegateEvents = true } = {}
-): HTMLTag {
+export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag {
   let uuid = 1;
 
   function createTemplate(statics: string[]) {
@@ -103,29 +81,28 @@ export function createHTML(
       expr = `!doNotWrap ? exprs[${count}]() : exprs[${count}]`;
     if (name === "style") {
       const id = uuid++;
-      options.exprs.push(
-        `const v${id} = ${expr}`,
-        `Object.assign(${tag}.style, v${id})`
-      );
+      options.exprs.push(`const v${id} = ${expr}`, `Object.assign(${tag}.style, v${id})`);
     } else if (name === "classList") {
       options.exprs.push(`r.classList(${tag}, ${expr})`);
-    } else if (name === "events") {
+    } else if (name === "on") {
       const id = uuid++;
       options.exprs.push(
         `const v${id} = ${expr}`,
         `for (const e in v${id}) ${tag}.addEventListener(e, v${id}[e])`
       );
+    } else if (name === "onCapture") {
+      const id = uuid++;
+      options.exprs.push(
+        `const v${id} = ${expr}`,
+        `for (const e in v${id}) ${tag}.addEventListener(e, v${id}[e], true)`
+      );
     } else options.exprs.push(`${tag}.${name} = ${expr}`);
   }
 
   function parseAttribute(tag: string, name: string, options: any) {
-    if (name.slice(0, 2) === "on") {
+    if (name.slice(0, 2) === "on" && name !== "on" && name !== "onCapture") {
       const lc = name.toLowerCase();
-      if (
-        delegateEvents &&
-        lc !== name &&
-        !NonComposedEvents.has(lc.slice(2))
-      ) {
+      if (delegateEvents && !NonComposedEvents.has(lc.slice(2))) {
         const e = lc.slice(2);
         options.delegatedEvents.add(e);
         options.exprs.push(`${tag}.__${e} = exprs[${options.counter++}]`);
@@ -136,9 +113,7 @@ export function createHTML(
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
       parseKeyValue(tag, name, childOptions);
-      options.decl.push(
-        `_fn${count} = doNotWrap => {\n${childOptions.exprs.join(";\n")};\n}`
-      );
+      options.decl.push(`_fn${count} = doNotWrap => {\n${childOptions.exprs.join(";\n")};\n}`);
       options.exprs.push(
         `typeof exprs[${count}] === "function" ? r.wrap(_fn${count}) : _fn${count}(true)`
       );
@@ -224,26 +199,21 @@ export function createHTML(
     let tag;
     if (options.multi) {
       tag = `_$el${uuid++}`;
-      options.decl.push(
-        `${tag} = ${options.path}.${
-          options.first ? "firstChild" : "nextSibling"
-        }`
-      );
+      options.decl.push(`${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`);
     }
 
     if (options.parent)
       options.exprs.push(
-        `r.insert(${
-          options.parent
-        }, r.createComponent(exprs[${componentIdentifier}], {${props.join(
+        `r.insert(${options.parent}, r.createComponent(exprs[${componentIdentifier}], {${props.join(
           ", "
         ) || ""}}, [${dynamicKeys}])${tag ? `, ${tag}` : ""})`
       );
     else
       options.exprs.push(
-        `${options.fragment ? "" : "return "}r.createComponent(exprs[${componentIdentifier}], {${props.join(
-          ", "
-        ) || ""}}, [${dynamicKeys}])`
+        `${
+          options.fragment ? "" : "return "
+        }r.createComponent(exprs[${componentIdentifier}], {${props.join(", ") ||
+          ""}}, [${dynamicKeys}])`
       );
     options.path = tag;
     options.first = false;
@@ -260,7 +230,7 @@ export function createHTML(
               fragment: true,
               decl: [],
               exprs: []
-            })
+            });
             processComponent(child, childOptions);
             parts.push(childOptions.exprs[0]);
             options.counter = childOptions.counter;
@@ -296,9 +266,7 @@ export function createHTML(
       options.decl.push(
         !options.decl.length
           ? `const ${tag} = tmpls[${options.templateId}].content.firstChild.cloneNode(true)`
-          : `${tag} = ${options.path}.${
-              options.first ? "firstChild" : "nextSibling"
-            }`
+          : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
       const keys = Object.keys(node.attrs);
       for (let i = 0; i < keys.length; i++) {
@@ -314,28 +282,15 @@ export function createHTML(
       processChildren(node, options);
     } else if (node.type === "text") {
       const tag = `_$el${uuid++}`;
-      options.decl.push(
-        `${tag} = ${options.path}.${
-          options.first ? "firstChild" : "nextSibling"
-        }`
-      );
+      options.decl.push(`${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`);
       options.path = tag;
       options.first = false;
     } else if (node.type === "comment" && node.content === "#") {
       const tag = `_$el${uuid++}`;
-      options.decl.push(
-        `${tag} = ${options.path}.${
-          options.first ? "firstChild" : "nextSibling"
-        }`
-      );
+      options.decl.push(`${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`);
       if (options.multi) {
-        options.exprs.push(
-          `r.insert(${options.parent}, exprs[${options.counter++}], ${tag})`
-        );
-      } else
-        options.exprs.push(
-          `r.insert(${options.parent}, exprs[${options.counter++}])`
-        );
+        options.exprs.push(`r.insert(${options.parent}, exprs[${options.counter++}], ${tag})`);
+      } else options.exprs.push(`r.insert(${options.parent}, exprs[${options.counter++}])`);
       options.path = tag;
       options.first = false;
     }

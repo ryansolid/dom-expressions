@@ -221,16 +221,19 @@ function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
         // really only for forwarding from Components, can't forward normal ref
       } else if (prop === "ref" || prop === "forwardRef") {
         value(node);
+      } else if (prop === "on") {
+        for (const eventName in value)
+          node.addEventListener(eventName, value[eventName]);
+      } else if (prop === "onCapture") {
+        for (const eventName in value)
+          node.addEventListener(eventName, value[eventName], true);
       } else if (prop.slice(0, 2) === "on") {
         const lc = prop.toLowerCase();
-        if (lc !== prop && !NonComposedEvents.has(lc.slice(2))) {
+        if (!NonComposedEvents.has(lc.slice(2))) {
           const name = lc.slice(2);
           node[`__${name}`] = value;
           delegateEvents([name]);
         } else node[lc] = value;
-      } else if (prop === "events") {
-        for (const eventName in value)
-          node.addEventListener(eventName, value[eventName]);
       } else if ((info = Attributes[prop])) {
         if (info.type === "attribute") {
           node.setAttribute(prop, value);

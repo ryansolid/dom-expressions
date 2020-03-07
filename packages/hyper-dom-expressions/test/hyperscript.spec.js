@@ -50,11 +50,11 @@ describe('Test HyperScript', () => {
     const template = h('#main', [
       h('button', { onclick: () => exec.bound = true }, 'Click Bound'),
       h('button', { onClick: () => exec.delegated = true }, 'Click Delegated'),
-      h('button', { events: { click: () => exec.listener = true }}, 'Click Listener')
+      h('button', { on: { click: () => exec.listener = true }}, 'Click Listener')
     ]);
     expect(template.outerHTML).toBe(FIXTURES[2]);
     document.body.appendChild(template);
-    var event = new MouseEvent('click');
+    var event = new MouseEvent('click', { bubbles: true });
     template.firstChild.dispatchEvent(event);
     event = new MouseEvent('click', { bubbles: true });
     template.firstChild.nextSibling.dispatchEvent(event);
