@@ -5,22 +5,31 @@ import VoidElements from "./VoidElements";
 
 export default babel => {
   const { types: t } = babel;
-  let moduleName = "dom",
-    generate = "dom",
-    delegateEvents = true,
-    builtIns = [],
-    wrapFragments = false,
-    wrapConditionals = false,
-    contextToCustomElements = false,
-    staticMarker = "@once";
+  const JSXoptions = {
+    moduleName: "dom",
+    generate: "dom",
+    delegateEvents: true,
+    builtIns: [],
+    wrapFragments: false,
+    wrapConditionals: false,
+    contextToCustomElements: false,
+    staticMarker: "@once"
+  };
+
+  function assignJSXoptions(opts = {}) {
+    if (!Object.keys(opts).legnth) return;
+    for (opt of opts) {
+      JSXoptions[opt] = opt;
+    }
+  }
 
   function isComponent(tagName) {
-    return tagName[0].toLowerCase() !== tagName[0] || tagName.includes(".");
+    return (tagName[0] && tagName[0].toLowerCase() !== tagName[0]) || tagName.includes(".");
   }
 
   function isDynamic(expr, path, { checkMember, checkTags }) {
     if (t.isFunction(expr)) return false;
-    if (expr.leadingComments && expr.leadingComments[0].value.trim() === staticMarker) {
+    if (expr.leadingComments && expr.leadingComments[0].value.trim() === JSXoptions.staticMarker) {
       expr.leadingComments.shift();
       return false;
     }
@@ -58,12 +67,14 @@ export default babel => {
       path.scope.getProgramParent().data.imports ||
       (path.scope.getProgramParent().data.imports = new Set());
     if (!imports.has(name)) {
-      addNamed(path, name, moduleName, { nameHint: `_$${name}` });
+      addNamed(path, name, JSXoptions.moduleName, { nameHint: `_$${name}` });
       imports.add(name);
     }
   }
 
   function registerTemplate(path, results) {
+    const { generate } = JSXoptions;
+    const generateIsHydrateOrSsr = generate === "hydrate" || generate === "ssr";
     let decl;
     if (results.template.length) {
       const templates =
@@ -80,11 +91,10 @@ export default babel => {
           isSVG: results.isSVG
         });
       }
-      if (generate === "hydrate" || generate === "ssr")
-        registerImportMethod(path, "getNextElement");
+      generateIsHydrateOrSsr && registerImportMethod(path, "getNextElement");
       decl = t.variableDeclarator(
         results.id,
-        generate === "hydrate" || generate === "ssr"
+        generateIsHydrateOrSsr
           ? t.callExpression(
               t.identifier("_$getNextElement"),
               generate === "ssr" ? [templateId, t.booleanLiteral(true)] : [templateId]
@@ -294,7 +304,7 @@ export default babel => {
     const exprId = path.scope.generateUidIdentifier("el$");
     let contentId;
     results.template += `<!--${char}-->`;
-    if (generate === "hydrate" && char === "/") {
+    if (JSXoptions.generate === "hydrate" && char === "/") {
       registerImportMethod(path, "getNextMarker");
       contentId = path.scope.generateUidIdentifier("co$");
       results.decl.push(
@@ -406,7 +416,7 @@ export default babel => {
         dynamic = true;
       }
     } else {
-      if (wrapFragments) {
+      if (JSXoptions.wrapFragments) {
         transformedChildren = transformedChildren.map(c => {
           if (t.isFunction(c)) {
             registerImportMethod(path, "wrapMemo");
@@ -443,14 +453,14 @@ export default babel => {
       } else if (t.isJSXElement(children[i])) {
         const tagName = getTagName(children[i]);
         if (isComponent(tagName)) return true;
-        if (contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1))
+        if (JSXoptions.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1))
           return true;
         if (
           children[i].openingElement.attributes.some(
             attr =>
               t.isJSXSpreadAttribute(attr) ||
               (t.isJSXExpressionContainer(attr.value) &&
-                (generate !== "ssr" || !attr.name.name.startsWith("on")) &&
+                (JSXoptions.generate !== "ssr" || !attr.name.name.startsWith("on")) &&
                 (attr.name.name.toLowerCase() !== attr.name.name ||
                   !(
                     t.isStringLiteral(attr.value.expression) ||
@@ -473,7 +483,7 @@ export default babel => {
       dynamicSpreads = [],
       dynamicKeys = [];
 
-    if (builtIns.indexOf(tagName) > -1) {
+    if (JSXoptions.builtIns.indexOf(tagName) > -1) {
       registerImportMethod(path, tagName);
       tagName = `_$${tagName}`;
     }
@@ -540,7 +550,7 @@ export default babel => {
           ) {
             dynamicKeys.push(t.stringLiteral(attribute.name.name));
             const expr =
-              wrapConditionals &&
+              JSXoptions.wrapConditionals &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
                 ? transformCondition(lookupPathForExpr(path, value.expression), value.expression)
@@ -648,7 +658,7 @@ export default babel => {
             )
           );
         } else if (key.startsWith("on")) {
-          if (generate === "ssr") return;
+          if (JSXoptions.generate === "ssr") return;
           const ev = toEventName(key);
           if (!ev || ev === "capture") {
             value.expression.properties.forEach(prop => {
@@ -665,7 +675,7 @@ export default babel => {
                 )
               );
             });
-          } else if (delegateEvents && !NonComposedEvents.has(ev)) {
+          } else if (JSXoptions.delegateEvents && !NonComposedEvents.has(ev)) {
             // can only hydrate delegated events
             hasHydratableEvent = opts.hydratableEvents ? opts.hydratableEvents.includes(ev) : true;
             const events =
@@ -756,6 +766,7 @@ export default babel => {
   }
 
   function transformChildren(path, jsx, opts, results) {
+    const { generate } = JSXoptions;
     let tempPath = results.id && results.id.name,
       i = 0;
     const jsxChildren = filterChildren(jsx.children, true),
@@ -887,7 +898,7 @@ export default babel => {
               );
             }
           }
-          if (!singleChild && wrapFragments && child.dynamic) {
+          if (!singleChild && JSXoptions.wrapFragments && child.dynamic) {
             registerImportMethod(path, "wrapMemo");
             return t.callExpression(t.identifier("_$wrapMemo"), [child.exprs[0]]);
           }
@@ -914,7 +925,7 @@ export default babel => {
       if (wrapSVG) results.template = "<svg>" + results.template;
       if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
       transformAttributes(path, jsx, opts, results);
-      if (contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1)) {
+      if (JSXoptions.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1)) {
         registerImportMethod(path, "currentContext");
         results.exprs.push(
           t.expressionStatement(
@@ -931,7 +942,7 @@ export default babel => {
         transformChildren(path, jsx, opts, results);
         results.template += `</${tagName}>`;
       }
-      if (info.topLevel && generate === "hydrate" && results.hasHydratableEvent) {
+      if (info.topLevel && JSXoptions.generate === "hydrate" && results.hasHydratableEvent) {
         registerImportMethod(path, "runHydrationEvents");
         results.postExprs.push(
           t.expressionStatement(
@@ -982,7 +993,7 @@ export default babel => {
       )
         return { exprs: [jsx.expression], template: "" };
       const expr =
-        wrapConditionals &&
+        JSXoptions.wrapConditionals &&
         (t.isLogicalExpression(jsx.expression) || t.isConditionalExpression(jsx.expression))
           ? transformCondition(lookupPathForExpr(path, jsx.expression), jsx.expression)
           : t.arrowFunctionExpression([], jsx.expression);
@@ -999,15 +1010,7 @@ export default babel => {
     inherits: SyntaxJSX,
     visitor: {
       JSXElement: (path, { opts }) => {
-        if ("moduleName" in opts) moduleName = opts.moduleName;
-        if ("generate" in opts) generate = opts.generate;
-        if ("delegateEvents" in opts) delegateEvents = opts.delegateEvents;
-        if ("contextToCustomElements" in opts)
-          contextToCustomElements = opts.contextToCustomElements;
-        if ("builtIns" in opts) builtIns = opts.builtIns;
-        if ("wrapConditionals" in opts) wrapConditionals = opts.wrapConditionals;
-        if ("wrapFragments" in opts) wrapFragments = opts.wrapFragments;
-        if ("staticMarker" in opts) staticMarker = opts.staticMarker;
+        assignJSXoptions(opts);
         const result = generateHTMLNode(path, path.node, opts, {
           topLevel: true
         });
@@ -1030,15 +1033,7 @@ export default babel => {
         } else path.replaceWith(result.exprs[0]);
       },
       JSXFragment: (path, { opts }) => {
-        if ("moduleName" in opts) moduleName = opts.moduleName;
-        if ("generate" in opts) generate = opts.generate;
-        if ("delegateEvents" in opts) delegateEvents = opts.delegateEvents;
-        if ("contextToCustomElements" in opts)
-          contextToCustomElements = opts.contextToCustomElements;
-        if ("builtIns" in opts) builtIns = opts.builtIns;
-        if ("wrapConditionals" in opts) wrapConditionals = opts.wrapConditionals;
-        if ("wrapFragments" in opts) wrapFragments = opts.wrapFragments;
-        if ("staticMarker" in opts) staticMarker = opts.staticMarker;
+        assignJSXoptions(opts);
         const result = generateHTMLNode(path, path.node, opts);
         path.replaceWith(result.exprs[0]);
       },
