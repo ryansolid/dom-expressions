@@ -19,6 +19,7 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "dom-expressions": "*"
+    "dom-expressions": "*",
+    "html-parse-string": "0.0.5"
   }
 }
