@@ -8,9 +8,3 @@ jobs:
         - npm run build
         - npm run test:coverage
         - npm run report:coverage
-      artifacts:
-        paths:
-          - "*/dist"
-          - "*/lib"
-          - "*/types"
-        expire_in: 1 day
