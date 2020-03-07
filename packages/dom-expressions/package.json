@@ -16,7 +16,7 @@
   "types": "index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "npm link & dom-expressions",
+    "build": "npm link && dom-expressions",
     "test": "jest",
     "test:coverage": "dom-expressions && jest --coverage",
     "report:coverage": "cat ./coverage/lcov.info | ../../node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
