@@ -3,7 +3,6 @@
     "outDir": "types",
     "emitDeclarationOnly": true,
     "declaration": true,
-    "incremental": true,
     "target": "esnext",
     "moduleResolution": "node",
     "strict": true
