@@ -5,7 +5,7 @@ jobs:
     - stage: test
       script:
         - jest --clearCache
-        - lerna bootstrp
+        - lerna bootstrap
         - npm run build
         - npm run test:coverage
         - npm run report:coverage
