@@ -4,6 +4,7 @@ jobs:
   include:
     - stage: test
       script:
+        - lerna exec "jest --clearCache"
         - npm run build
         - npm run test:coverage
         - npm run report:coverage
