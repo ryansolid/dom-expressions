@@ -5,7 +5,7 @@ import VoidElements from "./VoidElements";
 
 export default babel => {
   const { types: t } = babel;
-  const JSXoptions = {
+  const JSXOptions = {
     moduleName: "dom",
     generate: "dom",
     delegateEvents: true,
@@ -16,10 +16,10 @@ export default babel => {
     staticMarker: "@once"
   };
 
-  function assignJSXoptions(opts = {}) {
-    if (!Object.keys(opts).legnth) return;
+  function assignJSXOptions(opts = {}) {
+    if (!Object.keys(opts).length) return;
     for (const opt in opts) {
-      JSXoptions[opt] = opt;
+      JSXOptions[opt] = opts[opt];
     }
   }
 
@@ -29,7 +29,7 @@ export default babel => {
 
   function isDynamic(expr, path, { checkMember, checkTags }) {
     if (t.isFunction(expr)) return false;
-    if (expr.leadingComments && expr.leadingComments[0].value.trim() === JSXoptions.staticMarker) {
+    if (expr.leadingComments && expr.leadingComments[0].value.trim() === JSXOptions.staticMarker) {
       expr.leadingComments.shift();
       return false;
     }
@@ -67,13 +67,13 @@ export default babel => {
       path.scope.getProgramParent().data.imports ||
       (path.scope.getProgramParent().data.imports = new Set());
     if (!imports.has(name)) {
-      addNamed(path, name, JSXoptions.moduleName, { nameHint: `_$${name}` });
+      addNamed(path, name, JSXOptions.moduleName, { nameHint: `_$${name}` });
       imports.add(name);
     }
   }
 
   function registerTemplate(path, results) {
-    const { generate } = JSXoptions;
+    const { generate } = JSXOptions;
     const generateIsHydrateOrSsr = generate === "hydrate" || generate === "ssr";
     let decl;
     if (results.template.length) {
@@ -304,7 +304,7 @@ export default babel => {
     const exprId = path.scope.generateUidIdentifier("el$");
     let contentId;
     results.template += `<!--${char}-->`;
-    if (JSXoptions.generate === "hydrate" && char === "/") {
+    if (JSXOptions.generate === "hydrate" && char === "/") {
       registerImportMethod(path, "getNextMarker");
       contentId = path.scope.generateUidIdentifier("co$");
       results.decl.push(
@@ -416,7 +416,7 @@ export default babel => {
         dynamic = true;
       }
     } else {
-      if (JSXoptions.wrapFragments) {
+      if (JSXOptions.wrapFragments) {
         transformedChildren = transformedChildren.map(c => {
           if (t.isFunction(c)) {
             registerImportMethod(path, "wrapMemo");
@@ -453,14 +453,14 @@ export default babel => {
       } else if (t.isJSXElement(children[i])) {
         const tagName = getTagName(children[i]);
         if (isComponent(tagName)) return true;
-        if (JSXoptions.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1))
+        if (JSXOptions.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1))
           return true;
         if (
           children[i].openingElement.attributes.some(
             attr =>
               t.isJSXSpreadAttribute(attr) ||
               (t.isJSXExpressionContainer(attr.value) &&
-                (JSXoptions.generate !== "ssr" || !attr.name.name.startsWith("on")) &&
+                (JSXOptions.generate !== "ssr" || !attr.name.name.startsWith("on")) &&
                 (attr.name.name.toLowerCase() !== attr.name.name ||
                   !(
                     t.isStringLiteral(attr.value.expression) ||
@@ -483,7 +483,7 @@ export default babel => {
       dynamicSpreads = [],
       dynamicKeys = [];
 
-    if (JSXoptions.builtIns.indexOf(tagName) > -1) {
+    if (JSXOptions.builtIns.indexOf(tagName) > -1) {
       registerImportMethod(path, tagName);
       tagName = `_$${tagName}`;
     }
@@ -550,7 +550,7 @@ export default babel => {
           ) {
             dynamicKeys.push(t.stringLiteral(attribute.name.name));
             const expr =
-              JSXoptions.wrapConditionals &&
+              JSXOptions.wrapConditionals &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
                 ? transformCondition(lookupPathForExpr(path, value.expression), value.expression)
@@ -658,7 +658,7 @@ export default babel => {
             )
           );
         } else if (key.startsWith("on")) {
-          if (JSXoptions.generate === "ssr") return;
+          if (JSXOptions.generate === "ssr") return;
           const ev = toEventName(key);
           if (!ev || ev === "capture") {
             value.expression.properties.forEach(prop => {
@@ -675,7 +675,7 @@ export default babel => {
                 )
               );
             });
-          } else if (JSXoptions.delegateEvents && !NonComposedEvents.has(ev)) {
+          } else if (JSXOptions.delegateEvents && !NonComposedEvents.has(ev)) {
             // can only hydrate delegated events
             hasHydratableEvent = opts.hydratableEvents ? opts.hydratableEvents.includes(ev) : true;
             const events =
@@ -766,7 +766,7 @@ export default babel => {
   }
 
   function transformChildren(path, jsx, opts, results) {
-    const { generate } = JSXoptions;
+    const { generate } = JSXOptions;
     let tempPath = results.id && results.id.name,
       i = 0;
     const jsxChildren = filterChildren(jsx.children, true),
@@ -898,7 +898,7 @@ export default babel => {
               );
             }
           }
-          if (!singleChild && JSXoptions.wrapFragments && child.dynamic) {
+          if (!singleChild && JSXOptions.wrapFragments && child.dynamic) {
             registerImportMethod(path, "wrapMemo");
             return t.callExpression(t.identifier("_$wrapMemo"), [child.exprs[0]]);
           }
@@ -925,7 +925,7 @@ export default babel => {
       if (wrapSVG) results.template = "<svg>" + results.template;
       if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
       transformAttributes(path, jsx, opts, results);
-      if (JSXoptions.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1)) {
+      if (JSXOptions.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1)) {
         registerImportMethod(path, "currentContext");
         results.exprs.push(
           t.expressionStatement(
@@ -942,7 +942,7 @@ export default babel => {
         transformChildren(path, jsx, opts, results);
         results.template += `</${tagName}>`;
       }
-      if (info.topLevel && JSXoptions.generate === "hydrate" && results.hasHydratableEvent) {
+      if (info.topLevel && JSXOptions.generate === "hydrate" && results.hasHydratableEvent) {
         registerImportMethod(path, "runHydrationEvents");
         results.postExprs.push(
           t.expressionStatement(
@@ -993,7 +993,7 @@ export default babel => {
       )
         return { exprs: [jsx.expression], template: "" };
       const expr =
-        JSXoptions.wrapConditionals &&
+        JSXOptions.wrapConditionals &&
         (t.isLogicalExpression(jsx.expression) || t.isConditionalExpression(jsx.expression))
           ? transformCondition(lookupPathForExpr(path, jsx.expression), jsx.expression)
           : t.arrowFunctionExpression([], jsx.expression);
@@ -1010,7 +1010,7 @@ export default babel => {
     inherits: SyntaxJSX,
     visitor: {
       JSXElement: (path, { opts }) => {
-        assignJSXoptions(opts);
+        assignJSXOptions(opts);
         const result = generateHTMLNode(path, path.node, opts, {
           topLevel: true
         });
@@ -1033,7 +1033,7 @@ export default babel => {
         } else path.replaceWith(result.exprs[0]);
       },
       JSXFragment: (path, { opts }) => {
-        assignJSXoptions(opts);
+        assignJSXOptions(opts);
         const result = generateHTMLNode(path, path.node, opts);
         path.replaceWith(result.exprs[0]);
       },
