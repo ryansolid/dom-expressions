@@ -13,6 +13,7 @@ export default babel => {
     wrapFragments: false,
     wrapConditionals: false,
     contextToCustomElements: false,
+    hydratableEvents: null,
     staticMarker: "@once"
   };
 
@@ -364,7 +365,7 @@ export default babel => {
     );
   }
 
-  function transformComponentChildren(path, children, opts) {
+  function transformComponentChildren(path, children) {
     const filteredChildren = filterChildren(children);
     if (!filteredChildren.length) return;
     let dynamic = false;
@@ -373,7 +374,7 @@ export default babel => {
       if (t.isJSXText(child)) {
         return t.stringLiteral(trimWhitespace(child.extra.raw));
       } else {
-        child = generateHTMLNode(path, child, opts, {
+        child = generateHTMLNode(path, child, {
           topLevel: true,
           componentChild: true
         });
@@ -402,6 +403,12 @@ export default babel => {
           }
         }
         dynamic = dynamic || child.dynamic;
+        if (JSXOptions.wrapFragments && filteredChildren.length > 1) {
+          if (child.dynamic) {
+            registerImportMethod(path, "wrapMemo");
+            return t.callExpression(t.identifier("_$wrapMemo"), [child.exprs[0]]);
+          }
+        }
         return child.exprs[0];
       }
     });
@@ -416,15 +423,6 @@ export default babel => {
         dynamic = true;
       }
     } else {
-      if (JSXOptions.wrapFragments) {
-        transformedChildren = transformedChildren.map(c => {
-          if (t.isFunction(c)) {
-            registerImportMethod(path, "wrapMemo");
-            return t.callExpression(t.identifier("_$wrapMemo"), [c]);
-          }
-          return c;
-        });
-      }
       transformedChildren = t.arrowFunctionExpression([], t.arrayExpression(transformedChildren));
       dynamic = true;
     }
@@ -475,7 +473,7 @@ export default babel => {
     }
   }
 
-  function generateComponent(path, jsx, opts) {
+  function generateComponent(path, jsx) {
     let props = [],
       runningObject = [],
       exprs,
@@ -564,7 +562,7 @@ export default babel => {
       }
     });
 
-    const childResult = transformComponentChildren(path, jsx.children, opts);
+    const childResult = transformComponentChildren(path, jsx.children);
     if (childResult && childResult[0]) {
       childResult[1] && dynamicKeys.push(t.stringLiteral("children"));
       runningObject.push(t.objectProperty(t.identifier("children"), childResult[0]));
@@ -603,7 +601,7 @@ export default babel => {
     return { exprs, template: "", component: true };
   }
 
-  function transformAttributes(path, jsx, opts, results) {
+  function transformAttributes(path, jsx, results) {
     let elem = results.id,
       hasHydratableEvent = false,
       children;
@@ -677,7 +675,7 @@ export default babel => {
             });
           } else if (JSXOptions.delegateEvents && !NonComposedEvents.has(ev)) {
             // can only hydrate delegated events
-            hasHydratableEvent = opts.hydratableEvents ? opts.hydratableEvents.includes(ev) : true;
+            hasHydratableEvent = JSXOptions.hydratableEvents ? JSXOptions.hydratableEvents.includes(ev) : true;
             const events =
               path.scope.getProgramParent().data.events ||
               (path.scope.getProgramParent().data.events = new Set());
@@ -765,13 +763,13 @@ export default babel => {
     results.hasHydratableEvent = results.hasHydratableEvent || hasHydratableEvent;
   }
 
-  function transformChildren(path, jsx, opts, results) {
+  function transformChildren(path, jsx, results) {
     const { generate } = JSXOptions;
     let tempPath = results.id && results.id.name,
       i = 0;
     const jsxChildren = filterChildren(jsx.children, true),
       children = jsxChildren.map((jsxChild, index) =>
-        generateHTMLNode(path, jsxChild, opts, {
+        generateHTMLNode(path, jsxChild, {
           skipId: !results.id || !detectExpressions(jsxChildren, index)
         })
       );
@@ -866,14 +864,14 @@ export default babel => {
     });
   }
 
-  function transformFragmentChildren(path, jsx, opts, results) {
+  function transformFragmentChildren(path, jsx, results) {
     const jsxChildren = filterChildren(jsx.children, true),
       singleChild = jsxChildren.length === 1,
       children = jsxChildren.map(child => {
         if (t.isJSXText(child)) {
           return t.stringLiteral(trimWhitespace(child.extra.raw));
         } else {
-          child = generateHTMLNode(path, child, opts, { topLevel: true });
+          child = generateHTMLNode(path, child, { topLevel: true });
           if (child.id) {
             registerTemplate(path, child);
             if (
@@ -908,12 +906,12 @@ export default babel => {
     results.exprs.push(singleChild ? children[0] : t.arrayExpression(children));
   }
 
-  function generateHTMLNode(path, jsx, opts, info = {}) {
+  function generateHTMLNode(path, jsx, info = {}) {
     if (t.isJSXElement(jsx)) {
       let tagName = getTagName(jsx),
         wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
         voidTag = VoidElements.indexOf(tagName) > -1;
-      if (isComponent(tagName)) return generateComponent(path, jsx, opts);
+      if (isComponent(tagName)) return generateComponent(path, jsx);
       let results = {
         template: `<${tagName}`,
         decl: [],
@@ -924,7 +922,7 @@ export default babel => {
       };
       if (wrapSVG) results.template = "<svg>" + results.template;
       if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
-      transformAttributes(path, jsx, opts, results);
+      transformAttributes(path, jsx, results);
       if (JSXOptions.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1)) {
         registerImportMethod(path, "currentContext");
         results.exprs.push(
@@ -939,7 +937,7 @@ export default babel => {
       }
       results.template += ">";
       if (!voidTag) {
-        transformChildren(path, jsx, opts, results);
+        transformChildren(path, jsx, results);
         results.template += `</${tagName}>`;
       }
       if (info.topLevel && JSXOptions.generate === "hydrate" && results.hasHydratableEvent) {
@@ -958,7 +956,7 @@ export default babel => {
       return results;
     } else if (t.isJSXFragment(jsx)) {
       let results = { template: "", decl: [], exprs: [], dynamics: [] };
-      transformFragmentChildren(path, jsx, opts, results);
+      transformFragmentChildren(path, jsx, results);
       return results;
     } else if (
       t.isJSXText(jsx) ||
@@ -1011,7 +1009,7 @@ export default babel => {
     visitor: {
       JSXElement: (path, { opts }) => {
         assignJSXOptions(opts);
-        const result = generateHTMLNode(path, path.node, opts, {
+        const result = generateHTMLNode(path, path.node, {
           topLevel: true
         });
         if (result.id) {
@@ -1034,7 +1032,7 @@ export default babel => {
       },
       JSXFragment: (path, { opts }) => {
         assignJSXOptions(opts);
-        const result = generateHTMLNode(path, path.node, opts);
+        const result = generateHTMLNode(path, path.node);
         path.replaceWith(result.exprs[0]);
       },
       Program: {

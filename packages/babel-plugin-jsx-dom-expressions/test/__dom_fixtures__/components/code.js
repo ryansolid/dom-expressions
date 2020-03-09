@@ -57,3 +57,10 @@ const template7 = (
     {state.dynamic}
   </Child>
 );
+
+const template8 = (
+  <Child>
+    {item => item}
+    {item => item}
+  </Child>
+);

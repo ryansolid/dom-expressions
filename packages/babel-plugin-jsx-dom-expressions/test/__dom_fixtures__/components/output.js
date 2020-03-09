@@ -149,3 +149,11 @@ const template7 = _$createComponent(
   },
   _ck$
 );
+
+const template8 = _$createComponent(
+  Child,
+  {
+    children: () => [item => item, item => item]
+  },
+  _ck$
+);
