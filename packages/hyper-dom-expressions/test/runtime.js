@@ -44,9 +44,9 @@ export function classList(node, value, prev) {
   const classKeys = Object.keys(value);
   for (let i = 0, len = classKeys.length; i < len; i++) {
     const key = classKeys[i],
-      classValue = value[key],
+      classValue = !!value[key],
       classNames = key.split(/\s+/);
-    if (prev && prev[key] === classValue) continue;
+    if (!key || prev && prev[key] === classValue) continue;
     for (let j = 0, nameLen = classNames.length; j < nameLen; j++)
       node.classList.toggle(classNames[j], classValue);
   }
