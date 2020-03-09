@@ -4,7 +4,6 @@
 [![Coverage Status](https://img.shields.io/coveralls/github/ryansolid/dom-expressions.svg?style=flat)](https://coveralls.io/github/ryansolid/dom-expressions?branch=master)
 [![NPM Version](https://img.shields.io/npm/v/dom-expressions.svg?style=flat)](https://www.npmjs.com/package/dom-expressions)
 ![](https://img.shields.io/bundlephobia/minzip/dom-expressions.svg?style=flat)
-![](https://img.shields.io/david/ryansolid/dom-expressions.svg?style=flat)
 ![](https://img.shields.io/npm/dt/dom-expressions.svg?style=flat)
 [![Gitter](https://img.shields.io/gitter/room/dom-expressions/community)](https://gitter.im/dom-expressions/community)
 

@@ -3,7 +3,6 @@
 [![Build Status](https://img.shields.io/travis/com/ryansolid/dom-expressions.svg?style=flat)](https://travis-ci.com/ryansolid/dom-expressions)
 [![NPM Version](https://img.shields.io/npm/v/hyper-dom-expressions.svg?style=flat)](https://www.npmjs.com/package/hyper-dom-expressions)
 ![](https://img.shields.io/bundlephobia/minzip/hyper-dom-expressions.svg?style=flat)
-![](https://img.shields.io/david/ryansolid/hyper-dom-expressions.svg?style=flat)
 ![](https://img.shields.io/npm/dt/hyper-dom-expressions.svg?style=flat)
 
 This package is a Runtime API built for [DOM Expressions](https://github.com/ryansolid/dom-expressions) to provide HyperScript DSL for reactive libraries that do fine grained change detection. While the JSX plugin [Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/dom-expressions/blob/master/packages/babel-plugin-jsx-dom-expressions) is more optimized with precompilation, smaller size, and cleaner syntax, this HyperScript solution has the flexibility of not being precompiled. However, Tagged Template Literals are likely a better choice in terms of performance in non-compiled environments [Lit DOM Expressions](https://github.com/ryansolid/dom-expressions/blob/master/packages/lit-dom-expressions).
