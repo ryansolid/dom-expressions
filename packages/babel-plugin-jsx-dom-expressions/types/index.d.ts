@@ -55,7 +55,6 @@ declare global {
 
     // https://github.com/ryansolid/babel-plugin-jsx-dom-expressions#special-binding
     interface CustomAttributes<T> {
-      children?: Children;
       ref?: T | ((el: T) => void);
       forwardRef?: (el: T) => void;
       classList?: { [k: string]: boolean | undefined };
@@ -65,6 +64,7 @@ declare global {
 
     // https://github.com/ryansolid/babel-plugin-jsx-dom-expressions#oneventname
     interface DOMAttributes<T> extends CustomAttributes<T> {
+      children?: Children;
       innerHTML?: string;
       innerText?: string;
       textContent?: string;
