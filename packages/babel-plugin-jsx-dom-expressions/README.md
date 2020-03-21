@@ -118,11 +118,13 @@ const Parent = () => {
 
 ### on(eventName)
 
-These will be treated as event handlers expecting a function. The compiler will delegate events where possible (Events that can be composed) else it will fall back to Level 1 spec "on_____" events.
+These will be treated as event handlers expecting a function. The compiler will delegate events where possible (Events that bubble or can be composed) else it will fall back to Level 1 spec "on_____" events.
 
-If you wish to bind a value to your delegated event pass an array handler instead and the second argument will be passed to your event handler as the first argument (the event will be second).
+If you wish to make it into a Bound Event, you can bind a value to your delegated event by passing an array handler instead and the second argument will be passed to your event handler as the first argument (the event will be second).
 
 ```jsx
+function handler(itemId, e) {/*...*/}
+
 <ul>
   {list().map(item => (
     <li onClick={[handler, item.id]} />
@@ -131,12 +133,24 @@ If you wish to bind a value to your delegated event pass an array handler instea
 ```
 
 This delegation solution works with Web Components and the Shadow DOM as well if the events are composed. That limits the list to custom events and most UA UI events like onClick, onKeyUp, onKeyDown, onDblClick, onInput, onMouseDown, onMouseUp, etc..
-
 Important:
 
 - To allow for casing to work all custom events should follow the all lowercase convention of native events. If you want to use different event convention (or use Level 3 Events "addEventListener") use the "on" binding.
 
 - Event delegates aren't cleaned up automatically off Document. If you will be completely unmounting the library and wish to remove the handlers from the current page use `clearDelegatedEvents`.
+
+### on/onCapture
+
+To bypass event delegation and use normal Level 3 "addEventListener" events.
+
+```jsx
+<div on={{ "Weird-Event": e => alert(e.detail) }} />
+```
+
+To use capture event:
+```jsx
+<div onCapture={{ "Weird-Event": e => alert(e.detail) }} />
+```
 
 ### classList
 
@@ -144,14 +158,6 @@ This takes an object and assigns all the keys as classes which are truthy.
 
 ```jsx
 <div classList={{ selected: isSelected(), editing: isEditing() }} />
-```
-
-### on/onCapture
-
-Generic event method for Level 3 "addEventListener" events.
-
-```jsx
-<div on={{ "Weird-Event": e => alert(e.detail) }} />
 ```
 
 ### ... (spreads)

@@ -702,7 +702,9 @@ export default babel => {
                 )
               )
             );
-          } else
+          } else {
+            if (t.isArrayExpression(value.expression))
+              console.warn("Non-Composed/Bubbling Event cannot be bound");
             results.exprs.unshift(
               t.expressionStatement(
                 t.assignmentExpression(
@@ -712,6 +714,7 @@ export default babel => {
                 )
               )
             );
+          }
         } else if (
           isDynamic(value.expression, lookupPathForExpr(path, value.expression), {
             checkMember: true

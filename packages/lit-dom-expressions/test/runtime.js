@@ -349,20 +349,12 @@ function reconcileArrays(parentNode, a, b) {
     bEnd = bLength,
     aStart = 0,
     bStart = 0,
-    after = a[aEnd-1].nextSibling,
+    after = a[aEnd - 1].nextSibling,
     map = null;
 
   while (aStart < aEnd || bStart < bEnd) {
-    // common prefix
-    if (a[aStart] === b[bStart]) {
-      aStart++;
-      bStart++;
-    // common suffix
-    } else if (aEnd && bEnd && a[aEnd - 1] === b[bEnd - 1]) {
-      aEnd--;
-      bEnd--;
     // append
-    } else if (aEnd === aStart) {
+    if (aEnd === aStart) {
       const node =
         bEnd < bLength
           ? bStart
@@ -370,15 +362,21 @@ function reconcileArrays(parentNode, a, b) {
             : b[bEnd - bStart]
           : after;
 
-      while (bStart < bEnd) {
-        parentNode.insertBefore(b[bStart++], node);
-      }
+      while (bStart < bEnd) parentNode.insertBefore(b[bStart++], node);
     // remove
     } else if (bEnd === bStart) {
       while (aStart < aEnd) {
         if (!map || !map.has(a[aStart])) parentNode.removeChild(a[aStart]);
         aStart++;
       }
+    // common prefix
+    } else if (a[aStart] === b[bStart]) {
+      aStart++;
+      bStart++;
+    // common suffix
+    } else if (a[aEnd - 1] === b[bEnd - 1]) {
+      aEnd--;
+      bEnd--;
     // swap forward
     } else if (aEnd - aStart === 1 && bEnd - bStart === 1) {
       if (map && map.has(a[aStart])) {
@@ -415,13 +413,8 @@ function reconcileArrays(parentNode, a, b) {
 
           if (sequence > index - bStart) {
             const node = a[aStart];
-
-            while (bStart < index) {
-              parentNode.insertBefore(b[bStart++], node);
-            }
-          } else {
-            parentNode.replaceChild(b[bStart++], a[aStart++]);
-          }
+            while (bStart < index) parentNode.insertBefore(b[bStart++], node);
+          } else parentNode.replaceChild(b[bStart++], a[aStart++]);
         } else aStart++;
       } else parentNode.removeChild(a[aStart++]);
     }
