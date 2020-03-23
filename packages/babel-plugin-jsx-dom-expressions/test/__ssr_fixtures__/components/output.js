@@ -5,10 +5,10 @@ import { createComponent as _$createComponent } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
-const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`),
-  _tmpl$2 = _$template(`<div></div>`),
-  _tmpl$3 = _$template(`<div>From Parent</div>`),
-  _tmpl$4 = _$template(`<div><!--#--><!--/--><!--#--><!--/--><!--#--><!--/--></div>`);
+const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
+  _tmpl$2 = _$template(`<div></div>`, 2),
+  _tmpl$3 = _$template(`<div>From Parent</div>`, 2),
+  _tmpl$4 = _$template(`<div><!--#--><!--/--><!--#--><!--/--><!--#--><!--/--></div>`, 8);
 
 const _ck$ = ["children"],
   _ck$2 = ["dynamic"],

@@ -3,9 +3,9 @@ import { wrap as _$wrap } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { currentContext as _$currentContext } from "r-dom";
 
-const _tmpl$ = _$template(`<my-element></my-element>`),
-  _tmpl$2 = _$template(`<my-element><header slot="head">Title</header></my-element>`),
-  _tmpl$3 = _$template(`<slot name="head"></slot>`);
+const _tmpl$ = _$template(`<my-element></my-element>`, 2),
+  _tmpl$2 = _$template(`<my-element><header slot="head">Title</header></my-element>`, 4),
+  _tmpl$3 = _$template(`<slot name="head"></slot>`, 2);
 
 const template = (function() {
   const _el$ = _$getNextElement(_tmpl$, true);

@@ -89,6 +89,7 @@ export default babel => {
         templates.push({
           id: templateId,
           template: results.template,
+          elementCount: results.template.split("<").length - 1,
           isSVG: results.isSVG
         });
       }
@@ -675,7 +676,9 @@ export default babel => {
             });
           } else if (JSXOptions.delegateEvents && !NonComposedEvents.has(ev)) {
             // can only hydrate delegated events
-            hasHydratableEvent = JSXOptions.hydratableEvents ? JSXOptions.hydratableEvents.includes(ev) : true;
+            hasHydratableEvent = JSXOptions.hydratableEvents
+              ? JSXOptions.hydratableEvents.includes(ev)
+              : true;
             const events =
               path.scope.getProgramParent().data.events ||
               (path.scope.getProgramParent().data.events = new Set());
@@ -1078,9 +1081,10 @@ export default babel => {
                 template.id,
                 t.callExpression(
                   t.identifier("_$template"),
-                  [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
-                    template.isSVG ? t.booleanLiteral(template.isSVG) : []
-                  )
+                  [
+                    t.templateLiteral([t.templateElement(tmpl, true)], []),
+                    t.numericLiteral(template.elementCount)
+                  ].concat(template.isSVG ? t.booleanLiteral(template.isSVG) : [])
                 )
               );
             });

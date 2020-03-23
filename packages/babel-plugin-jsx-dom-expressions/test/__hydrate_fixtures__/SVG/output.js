@@ -6,13 +6,15 @@ import { wrap as _$wrap } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 
 const _tmpl$ = _$template(
-    `<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%"></stop></linearGradient></svg>`
+    `<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%"></stop></linearGradient></svg>`,
+    8
   ),
   _tmpl$2 = _$template(
-    `<svg width="400" height="180"><rect rx="20" ry="20" width="150" height="150"></rect></svg>`
+    `<svg width="400" height="180"><rect rx="20" ry="20" width="150" height="150"></rect></svg>`,
+    4
   ),
-  _tmpl$3 = _$template(`<svg width="400" height="180"><rect></rect></svg>`),
-  _tmpl$4 = _$template(`<svg><rect x="50" y="20" width="150" height="150"></rect></svg>`, true);
+  _tmpl$3 = _$template(`<svg width="400" height="180"><rect></rect></svg>`, 4),
+  _tmpl$4 = _$template(`<svg><rect x="50" y="20" width="150" height="150"></rect></svg>`, 4, true);
 
 const _ck$ = ["children"];
 

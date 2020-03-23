@@ -4,9 +4,9 @@ import { getNextElement as _$getNextElement } from "r-dom";
 import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
-const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`),
-  _tmpl$2 = _$template(`<div><div></div><div></div></div>`),
-  _tmpl$3 = _$template(`<div></div>`);
+const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
+  _tmpl$2 = _$template(`<div><div></div><div></div></div>`, 6),
+  _tmpl$3 = _$template(`<div></div>`, 2);
 
 const template = (function() {
   const _el$ = _$getNextElement(_tmpl$, true),

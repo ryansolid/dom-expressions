@@ -1,13 +1,13 @@
 import { template as _$template } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
-const _tmpl$ = _$template(`<span>Hello </span>`),
-  _tmpl$2 = _$template(`<span> John</span>`),
-  _tmpl$3 = _$template(`<span>Hello John</span>`),
-  _tmpl$4 = _$template(`<span> </span>`),
-  _tmpl$5 = _$template(`<span> <!----> <!----> </span>`),
-  _tmpl$6 = _$template(`<span>Hello</span>`),
-  _tmpl$7 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`);
+const _tmpl$ = _$template(`<span>Hello </span>`, 2),
+  _tmpl$2 = _$template(`<span> John</span>`, 2),
+  _tmpl$3 = _$template(`<span>Hello John</span>`, 2),
+  _tmpl$4 = _$template(`<span> </span>`, 2),
+  _tmpl$5 = _$template(`<span> <!----> <!----> </span>`, 4),
+  _tmpl$6 = _$template(`<span>Hello</span>`, 2),
+  _tmpl$7 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
 
 const trailing = _tmpl$.cloneNode(true);
 

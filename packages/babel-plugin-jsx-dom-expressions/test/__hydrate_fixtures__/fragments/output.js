@@ -4,9 +4,9 @@ import { wrapMemo as _$wrapMemo } from "r-dom";
 import { wrap as _$wrap } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 
-const _tmpl$ = _$template(`<div>First</div>`),
-  _tmpl$2 = _$template(`<div>Last</div>`),
-  _tmpl$3 = _$template(`<div></div>`);
+const _tmpl$ = _$template(`<div>First</div>`, 2),
+  _tmpl$2 = _$template(`<div>Last</div>`, 2),
+  _tmpl$3 = _$template(`<div></div>`, 2);
 
 const multiStatic = [_$getNextElement(_tmpl$), _$getNextElement(_tmpl$2)];
 const multiExpression = [_$getNextElement(_tmpl$), inserted, _$getNextElement(_tmpl$2), "After"];

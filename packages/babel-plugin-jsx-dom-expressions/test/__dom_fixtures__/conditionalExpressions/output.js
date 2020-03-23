@@ -3,7 +3,7 @@ import { createComponent as _$createComponent } from "r-dom";
 import { wrapCondition as _$wrapCondition } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
-const _tmpl$ = _$template(`<div></div>`);
+const _tmpl$ = _$template(`<div></div>`, 2);
 
 const _ck$ = ["render"];
 

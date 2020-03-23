@@ -3,9 +3,9 @@ import { spread as _$spread } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 
-const _tmpl$ = _$template(`<div></div>`),
-  _tmpl$2 = _$template(`<module></module>`),
-  _tmpl$3 = _$template(`<module>Hello</module>`);
+const _tmpl$ = _$template(`<div></div>`, 2),
+  _tmpl$2 = _$template(`<module></module>`, 2),
+  _tmpl$3 = _$template(`<module>Hello</module>`, 2);
 
 const _ck$ = ["children"];
 

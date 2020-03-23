@@ -3,9 +3,9 @@ import { createComponent as _$createComponent } from "r-dom";
 import { wrapMemo as _$wrapMemo } from "r-dom";
 import { wrap as _$wrap } from "r-dom";
 
-const _tmpl$ = _$template(`<div>First</div>`),
-  _tmpl$2 = _$template(`<div>Last</div>`),
-  _tmpl$3 = _$template(`<div></div>`);
+const _tmpl$ = _$template(`<div>First</div>`, 2),
+  _tmpl$2 = _$template(`<div>Last</div>`, 2),
+  _tmpl$3 = _$template(`<div></div>`, 2);
 
 const multiStatic = [_tmpl$.cloneNode(true), _tmpl$2.cloneNode(true)];
 const multiExpression = [_tmpl$.cloneNode(true), inserted, _tmpl$2.cloneNode(true), "After"];

@@ -1,5 +1,5 @@
 declare module "dom-expressions-runtime" {
-  export function template(html: string, isSVG?: boolean): Element;
+  export function template(html: string, count: number, isSVG?: boolean): Element;
   export function wrap<T>(fn: (prev?: T) => T, init?: T): any;
   export function wrapCondition(fn: () => any): () => any;
   export function insert(

@@ -4,9 +4,9 @@ import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
-const _tmpl$ = _$template(`<div>Hello </div>`),
-  _tmpl$2 = _$template(`<div></div>`),
-  _tmpl$3 = _$template(`<div>From Parent</div>`);
+const _tmpl$ = _$template(`<div>Hello </div>`, 2),
+  _tmpl$2 = _$template(`<div></div>`, 2),
+  _tmpl$3 = _$template(`<div>From Parent</div>`, 2);
 
 const _ck$ = ["children"],
   _ck$2 = ["dynamic"],
