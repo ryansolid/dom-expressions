@@ -19,7 +19,7 @@ const template = (function() {
 
   _el$2.onchange = () => console.log("bound");
 
-  _el$3.onchange = () => console.log("bound");
+  _el$3.onchange = e => (id => console.log("bound", id))(id, e);
 
   _el$4.__click = () => console.log("delegated");
 

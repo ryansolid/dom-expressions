@@ -9,6 +9,7 @@ export default babel => {
     moduleName: "dom",
     generate: "dom",
     delegateEvents: true,
+    nonDelegateEvents: [],
     builtIns: [],
     wrapFragments: false,
     wrapConditionals: false,
@@ -674,7 +675,11 @@ export default babel => {
                 )
               );
             });
-          } else if (JSXOptions.delegateEvents && !NonComposedEvents.has(ev)) {
+          } else if (
+            JSXOptions.delegateEvents &&
+            !NonComposedEvents.has(ev) &&
+            JSXOptions.nonDelegateEvents.indexOf(ev) === -1
+          ) {
             // can only hydrate delegated events
             hasHydratableEvent = JSXOptions.hydratableEvents
               ? JSXOptions.hydratableEvents.includes(ev)
@@ -706,14 +711,22 @@ export default babel => {
               )
             );
           } else {
-            if (t.isArrayExpression(value.expression))
-              console.warn("Non-Composed/Bubbling Event cannot be bound");
+            let handler = value.expression;
+            if (t.isArrayExpression(value.expression)) {
+              handler = t.arrowFunctionExpression(
+                [t.identifier("e")],
+                t.callExpression(value.expression.elements[0], [
+                  value.expression.elements[1],
+                  t.identifier("e")
+                ])
+              );
+            }
             results.exprs.unshift(
               t.expressionStatement(
                 t.assignmentExpression(
                   "=",
                   t.memberExpression(t.identifier(elem.name), t.identifier(`on${ev}`)),
-                  value.expression
+                  handler
                 )
               )
             );
