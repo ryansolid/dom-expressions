@@ -125,6 +125,17 @@ export default babel => {
     return `${jsx.namespace.name}:${jsx.name.name}`;
   }
 
+  function tagNameToIdentifier(name) {
+    const parts = name.split(".");
+    if (parts.length === 1) return t.identifier(name);
+    let part;
+    let base = t.identifier(parts.shift())
+    while (part = parts.shift()) {
+      base = t.memberExpression(base, t.identifier(part));
+    }
+    return base;
+  }
+
   function getTagName(tag) {
     const jsxName = tag.openingElement.name;
     return jsxElementNameToString(jsxName);
@@ -596,7 +607,7 @@ export default babel => {
     }
 
     registerImportMethod(path, "createComponent");
-    const componentArgs = [t.identifier(tagName), props[0]];
+    const componentArgs = [tagNameToIdentifier(tagName), props[0]];
     if (dynamics) componentArgs.push(dynamics);
     exprs = [t.callExpression(t.identifier("_$createComponent"), componentArgs)];
 
