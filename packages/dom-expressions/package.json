@@ -1,7 +1,7 @@
 {
   "name": "dom-expressions",
   "description": "A Fine-Grained Runtime for Performant DOM Rendering",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -25,6 +25,6 @@
     "ejs": "^3.0.1"
   },
   "devDependencies": {
-    "babel-plugin-jsx-dom-expressions": "^0.17.0"
+    "babel-plugin-jsx-dom-expressions": "^0.17.1"
   }
 }
