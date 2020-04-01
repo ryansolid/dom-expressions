@@ -747,6 +747,7 @@ export default babel => {
             checkMember: true
           })
         ) {
+          let nextElem = elem;
           if (key === "textContent") {
             const textId = path.scope.generateUidIdentifier("el$");
             results.exprs.push(
@@ -761,9 +762,9 @@ export default babel => {
                 t.variableDeclarator(textId, t.memberExpression(elem, t.identifier("firstChild")))
               ])
             );
-            elem = textId;
+            nextElem = textId;
           }
-          results.dynamics.push({ elem, key, value: value.expression, isSVG });
+          results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG });
         } else {
           results.exprs.push(
             t.expressionStatement(setAttr(path, elem, key, value.expression, isSVG))
