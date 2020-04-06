@@ -77,3 +77,11 @@ const template3 = (function() {
 
   return _el$8;
 })();
+
+const template4 = (function() {
+  const _el$9 = _tmpl$3.cloneNode(true);
+
+  _$wrap(() => (_el$9.className = `hi ${state.class}`));
+
+  return _el$9;
+})();

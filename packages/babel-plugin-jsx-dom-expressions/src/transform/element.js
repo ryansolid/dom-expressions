@@ -14,7 +14,7 @@ import transformNode from "./node";
 
 function checkLength(children) {
   let i = 0;
-  children.forEach(path => {
+  children.forEach((path) => {
     const child = path.node;
     !(t.isJSXExpressionContainer(child) && t.isJSXEmptyExpression(child.expression)) &&
       (!t.isJSXText(child) || !/^\s*$/.test(child.extra.raw)) &&
@@ -74,7 +74,7 @@ export function detectExpressions(children, index) {
         return true;
       if (
         child.openingElement.attributes.some(
-          attr =>
+          (attr) =>
             t.isJSXSpreadAttribute(attr) ||
             (t.isJSXExpressionContainer(attr.value) &&
               (config.generate !== "ssr" || !attr.name.name.startsWith("on")) &&
@@ -99,176 +99,191 @@ export function transformAttributes(path, results) {
   const spread = t.identifier("_$spread"),
     tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
-    hasChildren = path.node.children.length > 0;
+    hasChildren = path.node.children.length > 0,
+    attributes = path.get("openingElement").get("attributes"),
+    classAttributes = attributes.filter(
+      (a) => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
+    );
+  // combine class propertoes
+  if (classAttributes.length > 1) {
+    const first = classAttributes[0].node,
+      values = [],
+      quasis = [t.TemplateElement({ raw: "" })];
+    for (let i = 0; i < classAttributes.length; i++) {
+      const attr = classAttributes[i].node,
+        isLast = i === classAttributes.length - 1;
+      if (!t.isJSXExpressionContainer(attr.value)) {
+        quasis.pop();
+        quasis.push(
+          t.TemplateElement({ raw: (i ? " " : "") + `${attr.value.value}` + (isLast ? "" : " ") })
+        );
+      } else {
+        values.push(attr.value.expression);
+        quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+      }
+      i && attributes.splice(classAttributes[i].key);
+    }
+    first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
+  }
 
-  path
-    .get("openingElement")
-    .get("attributes")
-    .forEach(attribute => {
-      const node = attribute.node;
-      if (t.isJSXSpreadAttribute(node)) {
-        registerImportMethod(attribute, "spread");
-        results.exprs.push(
+  attributes.forEach((attribute) => {
+    const node = attribute.node;
+    if (t.isJSXSpreadAttribute(node)) {
+      registerImportMethod(attribute, "spread");
+      results.exprs.push(
+        t.expressionStatement(
+          t.callExpression(spread, [
+            elem,
+            isDynamic(attribute.get("argument"), {
+              checkMember: true
+            })
+              ? t.arrowFunctionExpression([], node.argument)
+              : node.argument,
+            t.booleanLiteral(isSVG),
+            t.booleanLiteral(hasChildren)
+          ])
+        )
+      );
+      //NOTE: can't be checked at compile time so add to compiled output
+      hasHydratableEvent = true;
+      return;
+    }
+
+    let value = node.value,
+      key = node.name.name;
+    if (
+      t.isJSXExpressionContainer(value) &&
+      (key.toLowerCase() !== key ||
+        !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
+    ) {
+      if (key === "ref") {
+        results.exprs.unshift(
+          t.expressionStatement(t.assignmentExpression("=", value.expression, elem))
+        );
+      } else if (key === "children") {
+        children = value;
+      } else if (key === "forwardRef") {
+        results.exprs.unshift(
           t.expressionStatement(
-            t.callExpression(spread, [
-              elem,
-              isDynamic(attribute.get("argument"), {
-                checkMember: true
-              })
-                ? t.arrowFunctionExpression([], node.argument)
-                : node.argument,
-              t.booleanLiteral(isSVG),
-              t.booleanLiteral(hasChildren)
-            ])
+            t.logicalExpression("&&", value.expression, t.callExpression(value.expression, [elem]))
           )
         );
-        //NOTE: can't be checked at compile time so add to compiled output
-        hasHydratableEvent = true;
-        return;
-      }
-
-      let value = node.value,
-        key = node.name.name;
-      if (
-        t.isJSXExpressionContainer(value) &&
-        (key.toLowerCase() !== key ||
-          !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
-      ) {
-        if (key === "ref") {
-          results.exprs.unshift(
-            t.expressionStatement(t.assignmentExpression("=", value.expression, elem))
-          );
-        } else if (key === "children") {
-          children = value;
-        } else if (key === "forwardRef") {
+      } else if (key.startsWith("on")) {
+        if (config.generate === "ssr") return;
+        const ev = toEventName(key);
+        if (!ev || ev === "capture") {
+          value.expression.properties.forEach((prop) => {
+            const listenerOptions = [t.stringLiteral(prop.key.name || prop.key.value), prop.value];
+            results.exprs.push(
+              t.expressionStatement(
+                t.callExpression(
+                  t.memberExpression(elem, t.identifier("addEventListener")),
+                  ev ? listenerOptions.concat(t.booleanLiteral(true)) : listenerOptions
+                )
+              )
+            );
+          });
+        } else if (
+          config.delegateEvents &&
+          !NonComposedEvents.has(ev) &&
+          config.nonDelegateEvents.indexOf(ev) === -1
+        ) {
+          // can only hydrate delegated events
+          hasHydratableEvent = config.hydratableEvents
+            ? config.hydratableEvents.includes(ev)
+            : true;
+          const events =
+            attribute.scope.getProgramParent().data.events ||
+            (attribute.scope.getProgramParent().data.events = new Set());
+          events.add(ev);
+          let handler = value.expression;
+          if (t.isArrayExpression(value.expression)) {
+            handler = value.expression.elements[0];
+            results.exprs.unshift(
+              t.expressionStatement(
+                t.assignmentExpression(
+                  "=",
+                  t.memberExpression(t.identifier(elem.name), t.identifier(`__${ev}Data`)),
+                  value.expression.elements[1]
+                )
+              )
+            );
+          }
           results.exprs.unshift(
             t.expressionStatement(
-              t.logicalExpression(
-                "&&",
-                value.expression,
-                t.callExpression(value.expression, [elem])
+              t.assignmentExpression(
+                "=",
+                t.memberExpression(t.identifier(elem.name), t.identifier(`__${ev}`)),
+                handler
               )
             )
           );
-        } else if (key.startsWith("on")) {
-          if (config.generate === "ssr") return;
-          const ev = toEventName(key);
-          if (!ev || ev === "capture") {
-            value.expression.properties.forEach(prop => {
-              const listenerOptions = [
-                t.stringLiteral(prop.key.name || prop.key.value),
-                prop.value
-              ];
-              results.exprs.push(
-                t.expressionStatement(
-                  t.callExpression(
-                    t.memberExpression(elem, t.identifier("addEventListener")),
-                    ev ? listenerOptions.concat(t.booleanLiteral(true)) : listenerOptions
-                  )
-                )
-              );
-            });
-          } else if (
-            config.delegateEvents &&
-            !NonComposedEvents.has(ev) &&
-            config.nonDelegateEvents.indexOf(ev) === -1
-          ) {
-            // can only hydrate delegated events
-            hasHydratableEvent = config.hydratableEvents
-              ? config.hydratableEvents.includes(ev)
-              : true;
-            const events =
-              attribute.scope.getProgramParent().data.events ||
-              (attribute.scope.getProgramParent().data.events = new Set());
-            events.add(ev);
-            let handler = value.expression;
-            if (t.isArrayExpression(value.expression)) {
-              handler = value.expression.elements[0];
-              results.exprs.unshift(
-                t.expressionStatement(
-                  t.assignmentExpression(
-                    "=",
-                    t.memberExpression(t.identifier(elem.name), t.identifier(`__${ev}Data`)),
-                    value.expression.elements[1]
-                  )
-                )
-              );
-            }
-            results.exprs.unshift(
-              t.expressionStatement(
-                t.assignmentExpression(
-                  "=",
-                  t.memberExpression(t.identifier(elem.name), t.identifier(`__${ev}`)),
-                  handler
-                )
-              )
-            );
-          } else {
-            let handler = value.expression;
-            if (t.isArrayExpression(value.expression)) {
-              handler = t.arrowFunctionExpression(
-                [t.identifier("e")],
-                t.callExpression(value.expression.elements[0], [
-                  value.expression.elements[1],
-                  t.identifier("e")
-                ])
-              );
-            }
-            results.exprs.unshift(
-              t.expressionStatement(
-                t.assignmentExpression(
-                  "=",
-                  t.memberExpression(t.identifier(elem.name), t.identifier(`on${ev}`)),
-                  handler
-                )
-              )
-            );
-          }
-        } else if (
-          isDynamic(attribute.get("value").get("expression"), {
-            checkMember: true
-          })
-        ) {
-          let nextElem = elem;
-          if (key === "textContent") {
-            const textId = attribute.scope.generateUidIdentifier("el$");
-            results.exprs.push(
-              t.expressionStatement(
-                t.assignmentExpression(
-                  "=",
-                  t.memberExpression(elem, t.identifier("textContent")),
-                  value.expression
-                )
-              ),
-              t.variableDeclaration("const", [
-                t.variableDeclarator(textId, t.memberExpression(elem, t.identifier("firstChild")))
+        } else {
+          let handler = value.expression;
+          if (t.isArrayExpression(value.expression)) {
+            handler = t.arrowFunctionExpression(
+              [t.identifier("e")],
+              t.callExpression(value.expression.elements[0], [
+                value.expression.elements[1],
+                t.identifier("e")
               ])
             );
-            nextElem = textId;
           }
-          results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG });
-        } else {
-          results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value.expression, isSVG))
+          results.exprs.unshift(
+            t.expressionStatement(
+              t.assignmentExpression(
+                "=",
+                t.memberExpression(t.identifier(elem.name), t.identifier(`on${ev}`)),
+                handler
+              )
+            )
           );
         }
-      } else {
-        if (t.isJSXExpressionContainer(value)) value = value.expression;
-        if (isSVG) {
-          const attr = SVGAttributes[key];
-
-          if (attr) {
-            if (attr.alias) key = attr.alias;
-          } else key = key.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
-        } else {
-          const attr = SVGAttributes[key];
-          if (attr && attr.alias) key = attr.alias;
-          key = key.toLowerCase();
+      } else if (
+        isDynamic(attribute.get("value").get("expression"), {
+          checkMember: true
+        })
+      ) {
+        let nextElem = elem;
+        if (key === "textContent") {
+          const textId = attribute.scope.generateUidIdentifier("el$");
+          results.exprs.push(
+            t.expressionStatement(
+              t.assignmentExpression(
+                "=",
+                t.memberExpression(elem, t.identifier("textContent")),
+                value.expression
+              )
+            ),
+            t.variableDeclaration("const", [
+              t.variableDeclarator(textId, t.memberExpression(elem, t.identifier("firstChild")))
+            ])
+          );
+          nextElem = textId;
         }
-        results.template += ` ${key}`;
-        results.template += value ? `="${value.value}"` : `=""`;
+        results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG });
+      } else {
+        results.exprs.push(
+          t.expressionStatement(setAttr(attribute, elem, key, value.expression, isSVG))
+        );
       }
-    });
+    } else {
+      if (t.isJSXExpressionContainer(value)) value = value.expression;
+      if (isSVG) {
+        const attr = SVGAttributes[key];
+
+        if (attr) {
+          if (attr.alias) key = attr.alias;
+        } else key = key.replace(/([A-Z])/g, (g) => `-${g[0].toLowerCase()}`);
+      } else {
+        const attr = SVGAttributes[key];
+        if (attr && attr.alias) key = attr.alias;
+        key = key.toLowerCase();
+      }
+      results.template += ` ${key}`;
+      results.template += value ? `="${value.value}"` : `=""`;
+    }
+  });
   if (!hasChildren && children) {
     path.node.children.push(children);
   }

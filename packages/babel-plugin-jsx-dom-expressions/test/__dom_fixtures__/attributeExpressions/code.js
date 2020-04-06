@@ -34,3 +34,10 @@ const template3 = (
     textContent={/*@once*/ state.content}
   />
 );
+
+const template4 = (
+  <div
+    class="hi"
+    className={state.class}
+  />
+)
