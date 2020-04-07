@@ -77,7 +77,11 @@ export function getTagName(tag) {
 }
 
 export function isComponent(tagName) {
-  return (tagName[0] && tagName[0].toLowerCase() !== tagName[0]) || tagName.includes(".");
+  return (
+    (tagName[0] && tagName[0].toLowerCase() !== tagName[0]) ||
+    tagName.includes(".") ||
+    /[^a-zA-Z]/.test(tagName[0])
+  );
 }
 
 export function isDynamic(path, { checkMember, checkTags }) {

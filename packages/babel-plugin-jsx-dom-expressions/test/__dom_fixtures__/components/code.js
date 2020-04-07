@@ -64,3 +64,7 @@ const template8 = (
     {item => item}
   </Child>
 );
+
+const template9 = (
+  <_garbage></_garbage>
+)
