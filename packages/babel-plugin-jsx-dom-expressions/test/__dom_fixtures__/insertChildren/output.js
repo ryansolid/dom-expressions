@@ -84,10 +84,10 @@ const template10 = _$createComponent(
   Object.assign(
     Object.keys(dynamic).reduce((m$, k$) => ((m$[k$] = () => dynamic[k$]), m$), {}),
     {
-      children: () => "Hello"
+      children: "Hello"
     }
   ),
-  ["children", ...Object.keys(dynamic)]
+  Object.keys(dynamic)
 );
 
 const template11 = (function() {

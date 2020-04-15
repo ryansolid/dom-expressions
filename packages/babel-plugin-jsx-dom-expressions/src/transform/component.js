@@ -39,11 +39,9 @@ export default function transformComponent(path) {
         const key = t.identifier("k$"),
           memo = t.identifier("m$");
         dynamicSpreads.push(
-          t.spreadElement(
-            t.callExpression(t.memberExpression(t.identifier("Object"), t.identifier("keys")), [
-              node.argument
-            ])
-          )
+          t.callExpression(t.memberExpression(t.identifier("Object"), t.identifier("keys")), [
+            node.argument
+          ])
         );
         props.push(
           t.callExpression(
@@ -119,8 +117,14 @@ export default function transformComponent(path) {
   dynamicKeys.sort((a, b) => a.value.toLowerCase().localeCompare(b.value.toLowerCase()));
   let dynamics;
   if (dynamicSpreads.length) {
-    dynamicKeys.push.apply(dynamicKeys, dynamicSpreads);
-    dynamics = t.arrayExpression(dynamicKeys);
+    if (dynamicSpreads.length === 1 && !dynamicKeys.length) dynamics = dynamicSpreads[0];
+    else {
+      dynamicKeys.push.apply(
+        dynamicKeys,
+        dynamicSpreads.map(s => t.spreadElement(s))
+      );
+      dynamics = t.arrayExpression(dynamicKeys);
+    }
   } else if (dynamicKeys.length) {
     const hash = dynamicKeys.map(k => k.value).join("|"),
       childKeys =
@@ -193,7 +197,7 @@ function transformComponentChildren(children) {
 
   if (filteredChildren.length === 1) {
     transformedChildren = transformedChildren[0];
-    if (!t.isJSXExpressionContainer(filteredChildren[0])) {
+    if (!t.isJSXExpressionContainer(filteredChildren[0]) && !t.isJSXText(filteredChildren[0])) {
       transformedChildren =
         t.isCallExpression(transformedChildren) && !transformedChildren.arguments.length
           ? transformedChildren.callee

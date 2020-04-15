@@ -66,5 +66,5 @@ const template8 = (
 );
 
 const template9 = (
-  <_garbage></_garbage>
+  <_garbage>Hi</_garbage>
 )

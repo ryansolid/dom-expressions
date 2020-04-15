@@ -158,4 +158,6 @@ const template8 = _$createComponent(
   _ck$
 );
 
-const template9 = _$createComponent(_garbage, {});
+const template9 = _$createComponent(_garbage, {
+  children: "Hi"
+});

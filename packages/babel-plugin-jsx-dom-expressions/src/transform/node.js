@@ -70,6 +70,8 @@ export default function transformNode(path, info = {}) {
   } else if (
     t.isJSXText(node) ||
     (t.isJSXExpressionContainer(node) &&
+      t.isJSXElement(path.parent) &&
+      !isComponent(getTagName(path.parent)) &&
       (t.isStringLiteral(node.expression) ||
         (t.isTemplateLiteral(node.expression) && node.expression.expressions.length === 0)))
   ) {
