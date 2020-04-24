@@ -16,7 +16,7 @@ const leading = _tmpl$2.cloneNode(true);
 
 const extraSpaces = _tmpl$3.cloneNode(true);
 
-const trailingExpr = (function() {
+const trailingExpr = (() => {
   const _el$4 = _tmpl$.cloneNode(true),
     _el$5 = _el$4.firstChild;
 
@@ -25,7 +25,7 @@ const trailingExpr = (function() {
   return _el$4;
 })();
 
-const leadingExpr = (function() {
+const leadingExpr = (() => {
   const _el$6 = _tmpl$2.cloneNode(true),
     _el$7 = _el$6.firstChild;
 
@@ -35,7 +35,7 @@ const leadingExpr = (function() {
 })();
 /* prettier-ignore */
 
-const multiExpr = function () {
+const multiExpr = (() => {
   const _el$8 = _tmpl$4.cloneNode(true),
         _el$9 = _el$8.firstChild;
 
@@ -44,10 +44,10 @@ const multiExpr = function () {
   _$insert(_el$8, name, null);
 
   return _el$8;
-}();
+})();
 /* prettier-ignore */
 
-const multiExprSpaced = function () {
+const multiExprSpaced = (() => {
   const _el$10 = _tmpl$5.cloneNode(true),
         _el$11 = _el$10.firstChild,
         _el$14 = _el$11.nextSibling,
@@ -60,7 +60,7 @@ const multiExprSpaced = function () {
   _$insert(_el$10, name, _el$15);
 
   return _el$10;
-}();
+})();
 /* prettier-ignore */
 
 const multiLine = _tmpl$6.cloneNode(true);

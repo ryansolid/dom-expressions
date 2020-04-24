@@ -26,8 +26,13 @@ declare module "dom-expressions-runtime" {
     value: { [k: string]: boolean },
     prev?: { [k: string]: boolean }
   ): void;
+  export function style(
+    node: Element,
+    value: { [k: string]: boolean },
+    prev?: { [k: string]: boolean }
+  ): void;
   export function currentContext(): any;
-  export function renderToString(
+  export function renderDOMToString(
     fn: (done?: (rendered: any) => void) => any,
     options?: {
       timeoutMs?: number;
@@ -37,10 +42,8 @@ declare module "dom-expressions-runtime" {
     fn: () => unknown,
     node: Element | Document | ShadowRoot | DocumentFragment | Node
   ): void;
-  export function getNextElement(
-    template: HTMLTemplateElement,
-    isSSR: boolean
-  ): Node;
+  export function getHydrationKey(): string;
+  export function getNextElement(template: HTMLTemplateElement, isSSR: boolean): Node;
   export function getNextMarker(start: Node): [Node, Array<Node>];
   export function generateHydrationEventsScript(eventNames: string[]): string;
 }

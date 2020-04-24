@@ -7,26 +7,22 @@ export function insert(
   init?: any,
   marker?: Node
 ): any;
-export function createComponent(
-  Comp: (props: any) => any,
-  props: any,
-  dynamicKeys?: string[]
-): any;
+export function createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]): any;
 export function delegateEvents(eventNames: string[]): void;
 export function clearDelegatedEvents(): void;
-export function spread(
-  node: Element,
-  accessor: any,
-  isSVG?: Boolean,
-  skipChildren?: Boolean
-): void;
+export function spread(node: Element, accessor: any, isSVG?: Boolean, skipChildren?: Boolean): void;
 export function classList(
   node: Element,
   value: { [k: string]: boolean },
   prev?: { [k: string]: boolean }
 ): void;
+export function style(
+  node: Element,
+  value: { [k: string]: boolean },
+  prev?: { [k: string]: boolean }
+): void;
 export function currentContext(): any;
-export function renderToString(
+export function renderDOMToString(
   fn: (done?: (rendered: any) => void) => any,
   options?: {
     timeoutMs?: number;
@@ -36,9 +32,7 @@ export function hydrate(
   fn: () => unknown,
   node: Element | Document | ShadowRoot | DocumentFragment | Node
 ): void;
-export function getNextElement(
-  template: HTMLTemplateElement,
-  isSSR: boolean
-): Node;
+export function getHydrationKey(): string;
+export function getNextElement(template: HTMLTemplateElement, isSSR: boolean): Node;
 export function getNextMarker(start: Node): [Node, Array<Node>];
 export function generateHydrationEventsScript(eventNames: string[]): string;

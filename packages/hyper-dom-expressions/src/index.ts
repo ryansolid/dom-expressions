@@ -5,7 +5,8 @@ import {
   insert,
   createComponent,
   delegateEvents,
-  classList
+  classList,
+  style
 } from "dom-expressions-runtime";
 
 interface Runtime {
@@ -14,6 +15,7 @@ interface Runtime {
   createComponent: typeof createComponent;
   delegateEvents: typeof delegateEvents;
   classList: typeof classList;
+  style: typeof style;
 }
 
 type ExpandableNode = Node & { [key: string]: any };
@@ -121,7 +123,7 @@ export function createHyperScript(
       if (k === "style") {
         if ("string" === typeof v)
           (e as HTMLElement | SVGElement).style.cssText = v;
-        else Object.assign((e as HTMLElement | SVGElement).style, v);
+        else r.style(e as Element, v);
       } else if (k === "classList") {
         r.classList(e as Element, v);
       } else if (k === "on") {

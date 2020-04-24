@@ -1,14 +1,14 @@
 import SyntaxJSX from "@babel/plugin-syntax-jsx";
-import transform from "./transform";
-import postprocess from "./postprocess";
+import { transformJSX } from "./shared/transform";
+import postprocess from "./shared/postprocess";
 
 export default () => {
   return {
     name: "JSX DOM Expressions",
     inherits: SyntaxJSX,
     visitor: {
-      JSXElement: transform,
-      JSXFragment: transform,
+      JSXElement: transformJSX,
+      JSXFragment: transformJSX,
       Program: {
         exit: postprocess
       }

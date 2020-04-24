@@ -63,28 +63,48 @@ export function classList(node, value, prev) {
     for (let j = 0, nameLen = classNames.length; j < nameLen; j++)
       node.classList.toggle(classNames[j], classValue);
   }
+  return value;
+}
+
+export function style(node, value, prev) {
+  const nodeStyle = node.style;
+  if (typeof value === "string") return nodeStyle.cssText = value;
+
+  let v, s;
+  if (prev != null && typeof prev !== "string") {
+    for (s in value) {
+      v = value[s];
+      v !== prev[s] && nodeStyle.setProperty(s, v);
+    }
+    for (s in prev) {
+      value[s] == null && nodeStyle.removeProperty(s);
+    }
+  } else {
+    for (s in value) nodeStyle.setProperty(s, value[s]);
+  }
+  return value;
 }
 
 export function spread(node, accessor, isSVG, skipChildren) {
-  if (typeof accessor === 'function') {
+  if (typeof accessor === "function") {
     wrap(current => spreadExpression(node, accessor(), current, isSVG, skipChildren));
   } else spreadExpression(node, accessor, undefined, isSVG, skipChildren);
 }
 
 export function insert(parent, accessor, marker, initial) {
   if (marker !== undefined && !initial) initial = [];
-  if (typeof accessor !== 'function') return insertExpression(parent, accessor, initial, marker);
+  if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
   wrap(current => insertExpression(parent, accessor(), current, marker), initial);
 }
 
-// SSR
-export function renderToString(code, options = {}) {
+// Hydrate
+export function renderDOMToString(code, options = {}) {
   options = { timeoutMs: 30000, ...options }
   config.hydrate = { id: '', count: 0 };
   const container = document.createElement("div");
   document.body.appendChild(container);
   return new Promise((resolve, reject) => {
-    setTimeout(() => reject("renderToString timed out"), options.timeoutMs);
+    setTimeout(() => reject("renderToDOMString timed out"), options.timeoutMs);
     function render(rendered) {
       insert(container, rendered);
       resolve(container.innerHTML);
@@ -105,13 +125,18 @@ export function hydrate(code, root) {
   delete config.hydrate;
 }
 
+export function getHydrationKey() {
+  const hydrate = config.hydrate;
+  return `${hydrate.id}:${hydrate.count++}`
+}
+
 export function getNextElement(template, isSSR) {
   const hydrate = config.hydrate;
   let node, key;
-  if (!hydrate || !hydrate.registry || !(node = hydrate.registry.get(key = `${hydrate.id}:${hydrate.count++}`))) {
+  if (!hydrate || !hydrate.registry || !(node = hydrate.registry.get(key = getHydrationKey()))) {
     const el = template.cloneNode(true);
     if (isSSR && hydrate)
-      el.setAttribute('_hk', `${hydrate.id}:${hydrate.count++}`);
+      el.setAttribute('_hk', getHydrationKey());
     return el;
   }
   if (window && window._$HYDRATION) window._$HYDRATION.completed.add(key);
@@ -263,9 +288,9 @@ function normalizeIncomingArray(normalized, array, unwrap) {
       // skip
     } else if (Array.isArray(item)) {
       dynamic = normalizeIncomingArray(normalized, item) || dynamic;
-    } else if ((t = typeof item) === 'string') {
+    } else if ((t = typeof item) === "string") {
       normalized.push(document.createTextNode(item));
-    } else if (t === 'function') {
+    } else if (t === "function") {
       if (unwrap) {
         const idx = item();
         dynamic = normalizeIncomingArray(normalized, Array.isArray(idx) ? idx : [idx]) || dynamic;
@@ -299,8 +324,8 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     multi = marker !== undefined;
   parent = (multi && current[0] && current[0].parentNode) || parent;
 
-  if (t === 'string' || t === 'number') {
-    if (t === 'number') value = value.toString();
+  if (t === "string" || t === "number") {
+    if (t === "number") value = value.toString();
     if (multi) {
       let node = current[0];
       if (node && node.nodeType === 3) {
@@ -308,14 +333,14 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       } else node = document.createTextNode(value);
       current = cleanChildren(parent, current, marker, node)
     } else {
-      if (current !== '' && typeof current === 'string') {
+      if (current !== '' && typeof current === "string") {
         current = parent.firstChild.data = value;
       } else current = parent.textContent = value;
     }
   } else if (value == null || t === 'boolean') {
     if (config.hydrate && config.hydrate.registry) return current;
     current = cleanChildren(parent, current, marker);
-  } else if (t === 'function') {
+  } else if (t === "function") {
     wrap(() => current = insertExpression(parent, value(), current, marker));
     return () => current;
   } else if (Array.isArray(value)) {

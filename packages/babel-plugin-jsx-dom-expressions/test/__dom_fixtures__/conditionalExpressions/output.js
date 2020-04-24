@@ -7,7 +7,7 @@ const _tmpl$ = _$template(`<div></div>`, 2);
 
 const _ck$ = ["render"];
 
-const template1 = (function() {
+const template1 = (() => {
   const _el$ = _tmpl$.cloneNode(true);
 
   _$insert(_el$, simple);
@@ -15,7 +15,7 @@ const template1 = (function() {
   return _el$;
 })();
 
-const template2 = (function() {
+const template2 = (() => {
   const _el$2 = _tmpl$.cloneNode(true);
 
   _$insert(_el$2, () => state.dynamic);
@@ -23,7 +23,7 @@ const template2 = (function() {
   return _el$2;
 })();
 
-const template3 = (function() {
+const template3 = (() => {
   const _el$3 = _tmpl$.cloneNode(true);
 
   _$insert(_el$3, simple ? good : bad);
@@ -31,7 +31,7 @@ const template3 = (function() {
   return _el$3;
 })();
 
-const template4 = (function() {
+const template4 = (() => {
   const _el$4 = _tmpl$.cloneNode(true);
 
   _$insert(_el$4, () => (simple ? good() : bad));
@@ -39,7 +39,7 @@ const template4 = (function() {
   return _el$4;
 })();
 
-const template5 = (function() {
+const template5 = (() => {
   const _el$5 = _tmpl$.cloneNode(true);
 
   _$insert(
@@ -54,7 +54,7 @@ const template5 = (function() {
   return _el$5;
 })();
 
-const template6 = (function() {
+const template6 = (() => {
   const _el$6 = _tmpl$.cloneNode(true);
 
   _$insert(
@@ -69,7 +69,7 @@ const template6 = (function() {
   return _el$6;
 })();
 
-const template7 = (function() {
+const template7 = (() => {
   const _el$7 = _tmpl$.cloneNode(true);
 
   _$insert(
@@ -91,7 +91,7 @@ const template7 = (function() {
   return _el$7;
 })();
 
-const template8 = (function() {
+const template8 = (() => {
   const _el$8 = _tmpl$.cloneNode(true);
 
   _$insert(
@@ -106,7 +106,7 @@ const template8 = (function() {
   return _el$8;
 })();
 
-const template9 = (function() {
+const template9 = (() => {
   const _el$9 = _tmpl$.cloneNode(true);
 
   _$insert(
@@ -121,7 +121,7 @@ const template9 = (function() {
   return _el$9;
 })();
 
-const template10 = (function() {
+const template10 = (() => {
   const _el$10 = _tmpl$.cloneNode(true);
 
   _$insert(_el$10, () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"));
@@ -129,7 +129,7 @@ const template10 = (function() {
   return _el$10;
 })();
 
-const template11 = (function() {
+const template11 = (() => {
   const _el$11 = _tmpl$.cloneNode(true);
 
   _$insert(

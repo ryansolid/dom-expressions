@@ -36,7 +36,7 @@ const Child = props => [
 const template = props => {
   let childRef;
   const { content } = props;
-  return (function() {
+  return (() => {
     const _el$4 = _tmpl$2.cloneNode(true);
 
     _$insert(

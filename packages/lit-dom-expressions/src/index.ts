@@ -86,8 +86,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     let count = options.counter++,
       expr = `!doNotWrap ? exprs[${count}]() : exprs[${count}]`;
     if (name === "style") {
-      const id = uuid++;
-      options.exprs.push(`const v${id} = ${expr}`, `Object.assign(${tag}.style, v${id})`);
+      options.exprs.push(`r.style(${tag}, ${expr})`);
     } else if (name === "classList") {
       options.exprs.push(`r.classList(${tag}, ${expr})`);
     } else if (name === "on") {

@@ -41,7 +41,7 @@ describe("Test HTML", () => {
             el.setAttribute("refset", "true");
           }}
         >
-          <h1 title=${welcoming} style=${() => ({ backgroundColor: "red" })}>
+          <h1 title=${welcoming} style=${() => ({ "background-color": "red" })}>
             <a href="/" ref=${r => (link = r)}>Welcome</a>
           </h1>
         </div>
