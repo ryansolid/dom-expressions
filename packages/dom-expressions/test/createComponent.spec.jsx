@@ -6,7 +6,7 @@ describe("create component with dynamic expressions", () => {
     const favoriteCar = S.data("Porsche 911 Turbo");
 
     const DynamicChild = props => (
-      <span forwardRef={props.ref}>
+      <span ref={props.ref}>
         {props.name} loves {props.favoriteCar}
       </span>
     );
