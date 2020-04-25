@@ -11,7 +11,7 @@ describe("r.hydrate", () => {
 
   it("hydrates simple text", async () => {
     S.root(() => {
-      result = r.renderToString(() => {
+      result = r.renderDOMToString(() => {
         const leadingExpr = (function() {
           const _el$ = r.getNextElement(_tmpl$, true),
             _el$2 = _el$.firstChild,
@@ -56,7 +56,7 @@ describe("r.hydrate", () => {
   it("hydrates with an updated timestamp", async () => {
     const time = Date.now();
     S.root(() => {
-      result = r.renderToString(() => {
+      result = r.renderDOMToString(() => {
         const leadingExpr = (function() {
           const _el$ = r.getNextElement(_tmpl$, true),
             _el$2 = _el$.firstChild,
@@ -101,7 +101,7 @@ describe("r.hydrate", () => {
 
   it("hydrates fragments", async () => {
     S.root(() => {
-      result = r.renderToString(() => {
+      result = r.renderDOMToString(() => {
         const multiExpression = [
           r.getNextElement(_tmpl$2, true),
           "middle",
@@ -150,7 +150,7 @@ describe("r.hydrate", () => {
 
   it("hydrates fragments with dynamic", async () => {
     S.root(() => {
-      result = r.renderToString(() => {
+      result = r.renderDOMToString(() => {
         const multiExpression = [
           r.getNextElement(_tmpl$2, true),
           () => "middle",
@@ -199,7 +199,7 @@ describe("r.hydrate", () => {
 
   it("hydrates fragments with dynamic template", async () => {
     S.root(() => {
-      result = r.renderToString(() => {
+      result = r.renderDOMToString(() => {
         const multiExpression = [
           r.getNextElement(_tmpl$2, true),
           () => r.getNextElement(_tmpl$2, true),
@@ -254,7 +254,7 @@ describe("r.hydrate", () => {
   it("renders asynchronously", async () => {
     S.root(() => {
       const signal = S.data();
-      result = r.renderToString(done => {
+      result = r.renderDOMToString(done => {
         const multiExpression = [
           r.getNextElement(_tmpl$2, true),
           signal,
@@ -275,7 +275,7 @@ describe("r.hydrate", () => {
   it("timeouts asynchronous render", async () => {
     S.root(() => {
       const signal = S.data();
-      result = r.renderToString(
+      result = r.renderDOMToString(
         done => {
           const multiExpression = [
             r.getNextElement(_tmpl$2, true),
@@ -312,7 +312,7 @@ describe("r.hydrate", () => {
         }, 20);
         return signal;
       }
-      result = r.renderToString(done => {
+      result = r.renderDOMToString(done => {
         multiExpression = [
           r.getNextElement(_tmpl$2, true),
           lazy(done),
