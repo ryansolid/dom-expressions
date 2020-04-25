@@ -11,7 +11,7 @@ const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
   _tmpl$4 = _$template(`<div><!--#--><!--/--><!--#--><!--/--><!--#--><!--/--></div>`, 8);
 
 const _ck$ = ["children"],
-  _ck$2 = ["dynamic"],
+  _ck$2 = ["dynamic", "hyphen-ated"],
   _ck$3 = ["children", "dynamic"],
   _ck$4 = ["each", "fallback"];
 
@@ -107,7 +107,8 @@ const template2 = _$createComponent(
     name: "Jake",
     dynamic: () => state.data,
     stale: state.data,
-    handleClick: clickHandler
+    handleClick: clickHandler,
+    "hyphen-ated": () => state.data
   },
   _ck$2
 );
@@ -159,3 +160,15 @@ const template7 = _$createComponent(
   },
   _ck$
 );
+
+const template8 = _$createComponent(
+  Child,
+  {
+    children: () => [item => item, item => item]
+  },
+  _ck$
+);
+
+const template9 = _$createComponent(_garbage, {
+  children: "Hi"
+});

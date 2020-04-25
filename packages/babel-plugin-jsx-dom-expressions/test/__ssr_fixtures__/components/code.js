@@ -28,6 +28,7 @@ const template2 = (
     dynamic={state.data}
     stale={/*@once*/ state.data}
     handleClick={clickHandler}
+    hyphen-ated={state.data}
   />
 );
 
@@ -57,3 +58,14 @@ const template7 = (
     {state.dynamic}
   </Child>
 );
+
+const template8 = (
+  <Child>
+    {item => item}
+    {item => item}
+  </Child>
+);
+
+const template9 = (
+  <_garbage>Hi</_garbage>
+)

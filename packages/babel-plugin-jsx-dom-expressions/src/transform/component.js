@@ -68,7 +68,8 @@ export default function transformComponent(path) {
           )
         );
       } else {
-        const value = node.value || t.booleanLiteral(true);
+        const value = node.value || t.booleanLiteral(true),
+          wrapName = t.isValidIdentifier(node.name.name) ? t.identifier : t.stringLiteral;
         if (t.isJSXExpressionContainer(value))
           if (node.name.name === "ref") {
             runningObject.push(
@@ -95,10 +96,10 @@ export default function transformComponent(path) {
                 t.isConditionalExpression(value.expression))
                 ? transformCondition(attribute.get("value").get("expression"))
                 : t.arrowFunctionExpression([], value.expression);
-            runningObject.push(t.objectProperty(t.identifier(node.name.name), expr));
+            runningObject.push(t.objectProperty(wrapName(node.name.name), expr));
           } else
-            runningObject.push(t.objectProperty(t.identifier(node.name.name), value.expression));
-        else runningObject.push(t.objectProperty(t.identifier(node.name.name), value));
+            runningObject.push(t.objectProperty(wrapName(node.name.name), value.expression));
+        else runningObject.push(t.objectProperty(wrapName(node.name.name), value));
       }
     });
 
