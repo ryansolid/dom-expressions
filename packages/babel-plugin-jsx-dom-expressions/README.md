@@ -101,14 +101,10 @@ Array of Component exports from module, that aren't included by default with the
 
 ### ref
 
-This binding will assign the variable you pass to it with the DOM element.
-
-### forwardRef
-
-This binding takes a function callback and calls it with the ref. Useful for moving refs out Components or doing Custom Bindings.
+This binding will assign the variable you pass to it with the DOM element or if a function will call it with the element.
 
 ```jsx
-const Child = props => <div forwardRef={props.ref} />;
+const Child = props => <div ref={props.ref} />;
 
 const Parent = () => {
   let ref;

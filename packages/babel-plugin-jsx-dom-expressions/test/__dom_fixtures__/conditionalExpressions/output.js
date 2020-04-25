@@ -1,6 +1,6 @@
 import { template as _$template } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
-import { wrapCondition as _$wrapCondition } from "r-dom";
+import { memo as _$memo } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
 const _tmpl$ = _$template(`<div></div>`, 2);
@@ -45,7 +45,7 @@ const template5 = (() => {
   _$insert(
     _el$5,
     (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic);
+      const _c$ = _$memo(() => state.dynamic, true);
 
       return () => (_c$() ? good() : bad);
     })()
@@ -60,7 +60,7 @@ const template6 = (() => {
   _$insert(
     _el$6,
     (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic);
+      const _c$ = _$memo(() => state.dynamic, true);
 
       return () => _c$() && good();
     })()
@@ -75,12 +75,12 @@ const template7 = (() => {
   _$insert(
     _el$7,
     (() => {
-      const _c$ = _$wrapCondition(() => state.count > 5);
+      const _c$ = _$memo(() => state.count > 5, true);
 
       return () =>
         _c$()
           ? (() => {
-              const _c$ = _$wrapCondition(() => state.dynamic);
+              const _c$ = _$memo(() => state.dynamic, true);
 
               return () => (_c$() ? best : good());
             })()
@@ -97,7 +97,7 @@ const template8 = (() => {
   _$insert(
     _el$8,
     (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic && state.something);
+      const _c$ = _$memo(() => state.dynamic && state.something, true);
 
       return () => _c$() && good();
     })()
@@ -112,7 +112,7 @@ const template9 = (() => {
   _$insert(
     _el$9,
     (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic);
+      const _c$ = _$memo(() => state.dynamic, true);
 
       return () => (_c$() && good()) || bad;
     })()
@@ -135,13 +135,13 @@ const template11 = (() => {
   _$insert(
     _el$11,
     (() => {
-      const _c$ = _$wrapCondition(() => state.a);
+      const _c$ = _$memo(() => state.a, true);
 
       return () =>
         _c$()
           ? a()
           : (() => {
-              const _c$ = _$wrapCondition(() => state.b);
+              const _c$ = _$memo(() => state.b, true);
 
               return () => (_c$() ? b() : state.c ? "c" : "fallback");
             })();
@@ -155,7 +155,7 @@ const template12 = _$createComponent(
   Comp,
   {
     render: (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic);
+      const _c$ = _$memo(() => state.dynamic, true);
 
       return () => (_c$() ? good() : bad);
     })()
@@ -175,7 +175,7 @@ const template14 = _$createComponent(
   Comp,
   {
     render: (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic);
+      const _c$ = _$memo(() => state.dynamic, true);
 
       return () => _c$() && good();
     })()

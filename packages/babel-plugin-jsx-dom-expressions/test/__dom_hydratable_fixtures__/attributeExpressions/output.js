@@ -1,5 +1,5 @@
 import { template as _$template } from "r-dom";
-import { wrap as _$wrap } from "r-dom";
+import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { classList as _$classList } from "r-dom";
@@ -24,9 +24,9 @@ const template = (() => {
 
   _$spread(_el$2, () => results(), false, true);
 
-  link = _el$3;
+  typeof link === "function" ? link(_el$3) : (link = _el$3);
 
-  _$wrap(
+  _$effect(
     _p$ => {
       const _v$ = welcoming(),
         _v$2 = color(),
@@ -60,7 +60,7 @@ const template2 = (() => {
   _el$6.textContent = row.label;
   const _el$7 = _el$6.firstChild;
 
-  _$wrap(() => (_el$7.data = row.label));
+  _$effect(() => (_el$7.data = row.label));
 
   return _el$4;
 })();
@@ -74,7 +74,7 @@ const template3 = (() => {
 
   _el$8.textContent = state.content;
 
-  _$wrap(() => (_el$8.name = state.name));
+  _$effect(() => (_el$8.name = state.name));
 
   return _el$8;
 })();
@@ -82,7 +82,7 @@ const template3 = (() => {
 const template4 = (() => {
   const _el$9 = _$getNextElement(_tmpl$3);
 
-  _$wrap(() => (_el$9.className = `hi ${state.class}`));
+  _$effect(() => (_el$9.className = `hi ${state.class}`));
 
   return _el$9;
 })();

@@ -1,5 +1,5 @@
 import { createComponent as _$createComponent } from "r-dom";
-import { wrapCondition as _$wrapCondition } from "r-dom";
+import { memo as _$memo } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 const _ck$ = ["render"];
@@ -8,47 +8,47 @@ const template2 = _$ssr`<div _hk="${_$getHydrationKey()}">${() => state.dynamic}
 const template3 = _$ssr`<div _hk="${_$getHydrationKey()}">${simple ? good : bad}</div>`;
 const template4 = _$ssr`<div _hk="${_$getHydrationKey()}">${() => (simple ? good() : bad)}</div>`;
 const template5 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$wrapCondition(() => state.dynamic);
+  const _c$ = _$memo(() => state.dynamic, true);
 
   return () => (_c$() ? good() : bad);
 })()}</div>`;
 const template6 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$wrapCondition(() => state.dynamic);
+  const _c$ = _$memo(() => state.dynamic, true);
 
   return () => _c$() && good();
 })()}</div>`;
 const template7 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$wrapCondition(() => state.count > 5);
+  const _c$ = _$memo(() => state.count > 5, true);
 
   return () =>
     _c$()
       ? (() => {
-          const _c$ = _$wrapCondition(() => state.dynamic);
+          const _c$ = _$memo(() => state.dynamic, true);
 
           return () => (_c$() ? best : good());
         })()
       : bad;
 })()}</div>`;
 const template8 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$wrapCondition(() => state.dynamic && state.something);
+  const _c$ = _$memo(() => state.dynamic && state.something, true);
 
   return () => _c$() && good();
 })()}</div>`;
 const template9 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$wrapCondition(() => state.dynamic);
+  const _c$ = _$memo(() => state.dynamic, true);
 
   return () => (_c$() && good()) || bad;
 })()}</div>`;
 const template10 = _$ssr`<div _hk="${_$getHydrationKey()}">${() =>
   state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"}</div>`;
 const template11 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$wrapCondition(() => state.a);
+  const _c$ = _$memo(() => state.a, true);
 
   return () =>
     _c$()
       ? a()
       : (() => {
-          const _c$ = _$wrapCondition(() => state.b);
+          const _c$ = _$memo(() => state.b, true);
 
           return () => (_c$() ? b() : state.c ? "c" : "fallback");
         })();
@@ -58,7 +58,7 @@ const template12 = _$createComponent(
   Comp,
   {
     render: (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic);
+      const _c$ = _$memo(() => state.dynamic, true);
 
       return () => (_c$() ? good() : bad);
     })()
@@ -78,7 +78,7 @@ const template14 = _$createComponent(
   Comp,
   {
     render: (() => {
-      const _c$ = _$wrapCondition(() => state.dynamic);
+      const _c$ = _$memo(() => state.dynamic, true);
 
       return () => _c$() && good();
     })()

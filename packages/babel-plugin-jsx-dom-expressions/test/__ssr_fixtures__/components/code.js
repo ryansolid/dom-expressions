@@ -1,6 +1,6 @@
 const Child = props => (
   <>
-    <div forwardRef={props.ref}>Hello {props.name}</div>
+    <div ref={props.ref}>Hello {props.name}</div>
     <div>{props.children}</div>
   </>
 );
@@ -13,7 +13,7 @@ const template = props => {
       <Child name="John" {...props} ref={childRef} booleanProperty>
         <div>From Parent</div>
       </Child>
-      <Child name="Jason" forwardRef={props.ref}>
+      <Child name="Jason" ref={props.ref}>
         {/* Comment Node */}
         <div>{content}</div>
       </Child>

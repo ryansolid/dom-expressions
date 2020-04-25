@@ -1,5 +1,5 @@
 import { template as _$template } from "r-dom";
-import { wrapMemo as _$wrapMemo } from "r-dom";
+import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { insert as _$insert } from "r-dom";
@@ -18,7 +18,7 @@ const Child = props => [
     const _el$ = _tmpl$.cloneNode(true),
       _el$2 = _el$.firstChild;
 
-    props.ref && props.ref(_el$);
+    typeof props.ref === "function" ? props.ref(_el$) : (props.ref = _el$);
 
     _$insert(_el$, () => props.name, null);
 
@@ -49,7 +49,7 @@ const template = props => {
           },
           Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
           {
-            ref: r$ => (childRef = r$),
+            ref: r$ => (typeof childRef === "function" ? childRef(r$) : (childRef = r$)),
             booleanProperty: true,
             children: () => _tmpl$3.cloneNode(true)
           }
@@ -65,7 +65,7 @@ const template = props => {
         Child,
         {
           name: "Jason",
-          ref: props.ref,
+          ref: r$ => (typeof props.ref === "function" ? props.ref(r$) : (props.ref = r$)),
           children: () => {
             const _el$6 = _tmpl$2.cloneNode(true);
 
@@ -146,7 +146,7 @@ const template6 = _$createComponent(
 const template7 = _$createComponent(
   Child,
   {
-    children: () => [_tmpl$2.cloneNode(true), _$wrapMemo(() => state.dynamic)]
+    children: () => [_tmpl$2.cloneNode(true), _$memo(() => state.dynamic)]
   },
   _ck$
 );

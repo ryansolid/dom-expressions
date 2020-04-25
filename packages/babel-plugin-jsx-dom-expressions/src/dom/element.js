@@ -1,5 +1,10 @@
 import * as t from "@babel/types";
-import { Attributes, SVGAttributes, NonComposedEvents, SVGElements } from "dom-expressions";
+import {
+  Attributes,
+  SVGAttributes,
+  NonComposedEvents,
+  SVGElements
+} from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import config from "../config";
 import {
@@ -213,20 +218,20 @@ function transformAttributes(path, results) {
       ) {
         if (key === "ref") {
           results.exprs.unshift(
-            t.expressionStatement(t.assignmentExpression("=", value.expression, elem))
-          );
-        } else if (key === "children") {
-          children = value;
-        } else if (key === "forwardRef") {
-          results.exprs.unshift(
             t.expressionStatement(
-              t.logicalExpression(
-                "&&",
-                value.expression,
-                t.callExpression(value.expression, [elem])
+              t.conditionalExpression(
+                t.binaryExpression(
+                  "===",
+                  t.unaryExpression("typeof", value.expression),
+                  t.stringLiteral("function")
+                ),
+                t.callExpression(value.expression, [elem]),
+                t.assignmentExpression("=", value.expression, elem)
               )
             )
           );
+        } else if (key === "children") {
+          children = value;
         } else if (key.startsWith("on")) {
           if (config.generate === "dom-ssr") return;
           const ev = toEventName(key);

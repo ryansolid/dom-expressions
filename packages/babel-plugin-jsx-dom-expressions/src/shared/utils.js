@@ -121,7 +121,7 @@ export function toEventName(name) {
 
 export function transformCondition(path, deep) {
   const expr = path.node;
-  registerImportMethod(path, "wrapCondition");
+  registerImportMethod(path, "memo");
   let dTest, cond;
   if (
     t.isConditionalExpression(expr) &&
@@ -164,8 +164,9 @@ export function transformCondition(path, deep) {
           t.variableDeclaration("const", [
             t.variableDeclarator(
               t.identifier("_c$"),
-              t.callExpression(t.identifier("_$wrapCondition"), [
-                t.arrowFunctionExpression([], cond)
+              t.callExpression(t.identifier("_$memo"), [
+                t.arrowFunctionExpression([], cond),
+                t.booleanLiteral(true)
               ])
             )
           ]),

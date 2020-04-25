@@ -1,4 +1,4 @@
-import * as r from "./runtime";
+import * as r from "../src/runtime";
 import { setHydrateContext, nextHydrateContext } from "./hydrate.config";
 import S from "s-js";
 

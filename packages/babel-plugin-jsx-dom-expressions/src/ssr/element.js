@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { SVGAttributes, SVGElements } from "dom-expressions";
+import { SVGAttributes, SVGElements } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import config from "../config";
 import {
@@ -125,7 +125,7 @@ function transformAttributes(path, results) {
       (key.toLowerCase() !== key ||
         !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
     ) {
-      if (key === "ref" || key === "forwardRef" || key.startsWith("on")) return;
+      if (key === "ref" || key.startsWith("on")) return;
       else if (
         key === "children" ||
         key === "textContent" ||

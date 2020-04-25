@@ -72,17 +72,24 @@ export default function transformComponent(path) {
           wrapName = t.isValidIdentifier(node.name.name) ? t.identifier : t.stringLiteral;
         if (t.isJSXExpressionContainer(value))
           if (node.name.name === "ref") {
+            if (config.generate === "ssr") return;
             runningObject.push(
               t.objectProperty(
                 t.identifier("ref"),
                 t.arrowFunctionExpression(
                   [t.identifier("r$")],
-                  t.assignmentExpression("=", value.expression, t.identifier("r$"))
+                  t.conditionalExpression(
+                    t.binaryExpression(
+                      "===",
+                      t.unaryExpression("typeof", value.expression),
+                      t.stringLiteral("function")
+                    ),
+                    t.callExpression(value.expression, [t.identifier("r$")]),
+                    t.assignmentExpression("=", value.expression, t.identifier("r$"))
+                  )
                 )
               )
             );
-          } else if (node.name.name === "forwardRef") {
-            runningObject.push(t.objectProperty(t.identifier("ref"), value.expression));
           } else if (
             isDynamic(attribute.get("value").get("expression"), {
               checkMember: true,
@@ -97,8 +104,7 @@ export default function transformComponent(path) {
                 ? transformCondition(attribute.get("value").get("expression"))
                 : t.arrowFunctionExpression([], value.expression);
             runningObject.push(t.objectProperty(wrapName(node.name.name), expr));
-          } else
-            runningObject.push(t.objectProperty(wrapName(node.name.name), value.expression));
+          } else runningObject.push(t.objectProperty(wrapName(node.name.name), value.expression));
         else runningObject.push(t.objectProperty(wrapName(node.name.name), value));
       }
     });

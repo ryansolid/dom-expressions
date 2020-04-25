@@ -1,5 +1,5 @@
 import { template as _$template } from "r-dom";
-import { wrapMemo as _$wrapMemo } from "r-dom";
+import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
@@ -22,7 +22,7 @@ const Child = props => [
       _el$3 = _el$2.nextSibling,
       _el$4 = _el$3.nextSibling;
 
-    props.ref && props.ref(_el$);
+    typeof props.ref === "function" ? props.ref(_el$) : (props.ref = _el$);
 
     _$insert(_el$, () => props.name, _el$4);
 
@@ -59,7 +59,7 @@ const template = props => {
           },
           Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
           {
-            ref: r$ => (childRef = r$),
+            ref: r$ => (typeof childRef === "function" ? childRef(r$) : (childRef = r$)),
             booleanProperty: true,
             children: () => _$getNextElement(_tmpl$3, true)
           }
@@ -75,7 +75,7 @@ const template = props => {
         Child,
         {
           name: "Jason",
-          ref: props.ref,
+          ref: r$ => (typeof props.ref === "function" ? props.ref(r$) : (props.ref = r$)),
           children: () => {
             const _el$8 = _$getNextElement(_tmpl$2, true);
 
@@ -155,7 +155,7 @@ const template6 = _$createComponent(
 const template7 = _$createComponent(
   Child,
   {
-    children: () => [_$getNextElement(_tmpl$2, true), _$wrapMemo(() => state.dynamic)]
+    children: () => [_$getNextElement(_tmpl$2, true), _$memo(() => state.dynamic)]
   },
   _ck$
 );

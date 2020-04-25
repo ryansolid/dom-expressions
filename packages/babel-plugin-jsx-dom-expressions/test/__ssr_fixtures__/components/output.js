@@ -22,7 +22,6 @@ const template = props => {
       },
       Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
       {
-        ref: r$ => (childRef = r$),
         booleanProperty: true,
         children: () => "<div>From Parent</div>"
       }
@@ -32,7 +31,6 @@ const template = props => {
     Child,
     {
       name: "Jason",
-      ref: props.ref,
       children: () => _$ssr`<div>${content}</div>`
     },
     _ck$

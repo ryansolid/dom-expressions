@@ -1,7 +1,7 @@
 import { template as _$template } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { spread as _$spread } from "r-dom";
-import { wrap as _$wrap } from "r-dom";
+import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 
 const _tmpl$ = _$template(
@@ -29,7 +29,7 @@ const template2 = (() => {
 
   _el$3.style.setProperty("opacity", 0.5);
 
-  _$wrap(
+  _$effect(
     _p$ => {
       const _v$ = state.name,
         _v$2 = state.width,

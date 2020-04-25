@@ -14,8 +14,8 @@
   "sideEffects": false,
   "scripts": {
     "build": "rollup -c && tsc",
-    "test": "npm run build && dom-expressions && jest",
-    "test:coverage": "npm run build && dom-expressions && jest --coverage",
+    "test": "npm run build && jest",
+    "test:coverage": "npm run build && jest --coverage",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {

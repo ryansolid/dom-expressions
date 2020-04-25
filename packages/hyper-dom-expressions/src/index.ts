@@ -1,16 +1,15 @@
-/// <reference path="../../dom-expressions/runtime.d.ts" />
-import { NonComposedEvents } from "dom-expressions";
+import { NonComposedEvents } from "dom-expressions/src/constants";
 import {
-  wrap,
+  effect,
   insert,
   createComponent,
   delegateEvents,
   classList,
   style
-} from "dom-expressions-runtime";
+} from "dom-expressions/src/runtime";
 
 interface Runtime {
-  wrap: typeof wrap;
+  effect: typeof effect;
   insert: typeof insert;
   createComponent: typeof createComponent;
   delegateEvents: typeof delegateEvents;
@@ -74,7 +73,7 @@ export function createHyperScript(
               l[k](e);
             } else
               (function(k, l) {
-                r.wrap(() => parseKeyValue(k, l[k]()));
+                r.effect(() => parseKeyValue(k, l[k]()));
               })(k, l);
           } else parseKeyValue(k, l[k]);
         }

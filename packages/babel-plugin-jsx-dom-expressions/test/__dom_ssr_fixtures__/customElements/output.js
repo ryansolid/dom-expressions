@@ -1,5 +1,5 @@
 import { template as _$template } from "r-dom";
-import { wrap as _$wrap } from "r-dom";
+import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { currentContext as _$currentContext } from "r-dom";
 
@@ -22,7 +22,7 @@ const template2 = (() => {
 
   _el$2._context = _$currentContext();
 
-  _$wrap(
+  _$effect(
     _p$ => {
       const _v$ = state.name,
         _v$2 = state.data;

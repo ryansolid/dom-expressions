@@ -49,14 +49,12 @@ declare global {
     // at the same time hiding them from the element's `props`.
     // https://github.com/Microsoft/TypeScript/issues/5478
     interface IntrinsicAttributes {
-      ref?: HTMLElement;
-      forwardRef?: (e: HTMLElement) => void;
+      ref?: HTMLElement | ((e: HTMLElement) => void);
     }
 
     // https://github.com/ryansolid/babel-plugin-jsx-dom-expressions#special-binding
     interface CustomAttributes<T> {
       ref?: T | ((el: T) => void);
-      forwardRef?: (el: T) => void;
       classList?: { [k: string]: boolean | undefined };
       on?: { [key: string]: EventHandler<T, CustomEvent> };
       onCapture?: { [key: string]: EventHandler<T, CustomEvent> };
