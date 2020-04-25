@@ -134,8 +134,7 @@ function transformAttributes(path, results) {
       ) {
         children = value;
       } else {
-        let dynamic = false,
-          prev;
+        let dynamic = false;
         if (
           isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
@@ -143,18 +142,17 @@ function transformAttributes(path, results) {
         )
           dynamic = true;
 
-        if ((dynamic && key === "style") || key === "classList") prev = t.identifier("_p$");
         if (key === "style") {
           registerImportMethod(path, "ssrStyle");
-          value.expression = t.callExpression(t.identifier("_$ssrStyle"), prev ? [value.expression, prev] : [value.expression]);
+          value.expression = t.callExpression(t.identifier("_$ssrStyle"), [value.expression]);
         }
         if (key === "classList") {
           registerImportMethod(path, "ssrClassList");
-          value.expression = t.callExpression(t.identifier("_$ssrClassList"), prev ? [value.expression, prev] :[value.expression]);
+          value.expression = t.callExpression(t.identifier("_$ssrClassList"), [value.expression]);
           key = "class";
         }
         if (dynamic)
-          value.expression = t.arrowFunctionExpression(prev ? [prev] : [], value.expression);
+          value.expression = t.arrowFunctionExpression([], value.expression);
         setAttr(results, key, value.expression, isSVG);
       }
     } else {

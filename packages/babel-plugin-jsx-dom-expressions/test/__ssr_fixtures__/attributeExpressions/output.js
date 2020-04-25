@@ -2,27 +2,18 @@ import { ssr as _$ssr } from "r-dom";
 import { ssrStyle as _$ssrStyle } from "r-dom";
 import { ssrClassList as _$ssrClassList } from "r-dom";
 import { ssrSpread as _$ssrSpread } from "r-dom";
-const template = _$ssr`<div id="main" ${_$ssrSpread(results, false, true)} class="${_$ssrClassList(
-  {
-    selected: selected
-  },
-  _p$
-)}" style="${_$ssrStyle({
+const template = _$ssr`<div id="main" ${_$ssrSpread(results, false, true)} class="${_$ssrClassList({
+  selected: selected
+})}" style="${_$ssrStyle({
   color
 })}"><h1 ${_$ssrSpread(() => results(), false, true)} disabled="" title="${() =>
-  welcoming()}" style="${_p$ =>
-  _$ssrStyle(
-    {
-      "background-color": color()
-    },
-    _p$
-  )}" class="${_p$ =>
-  _$ssrClassList(
-    {
-      selected: selected()
-    },
-    _p$
-  )}"><a href="/">Welcome</a></h1></div>`;
+  welcoming()}" style="${() =>
+  _$ssrStyle({
+    "background-color": color()
+  })}" class="${() =>
+  _$ssrClassList({
+    selected: selected()
+  })}"><a href="/">Welcome</a></h1></div>`;
 const template2 = _$ssr`<div><div>${rowId}</div><div>${() => row.label}</div></div>`;
 const template3 = _$ssr`<div id="${state.id}" style="${_$ssrStyle({
   "background-color": state.color

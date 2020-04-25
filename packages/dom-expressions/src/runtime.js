@@ -85,6 +85,82 @@ export function insert(parent, accessor, marker, initial) {
   effect(current => insertExpression(parent, accessor(), current, marker), initial);
 }
 
+// SSR
+export function renderToString(code, options = {}) {
+  options = { timeoutMs: 30000, ...options };
+  config.hydrate = { id: "", count: 0 };
+  return new Promise((resolve, reject) => {
+    setTimeout(() => reject("renderToString timed out"), options.timeoutMs);
+    function render(rendered) {
+      if (typeof rendered === "function") resolve(rendered());
+      else resolve(rendered);
+    }
+    !code.length ? render(code()) : code(render);
+  });
+}
+
+export function ssr(template, ...nodes) {
+  const rNodes = [];
+  for (let i = 0; i < nodes.length; i++) {
+    if (typeof nodes[i] === "function" && !nodes[i].isTemplate) {
+      rNodes.push(memo(nodes[i]));
+    } else rNodes.push(nodes[i]);
+  }
+  const t = () =>
+    template.reduce((result, part, index) => {
+      result += part;
+      const node = rNodes[index];
+      if (node !== undefined) result += resolveSSRNode(node);
+      return result;
+    }, "");
+  t.isTemplate = true;
+  return t;
+}
+
+export function ssrClassList(value) {
+  let classKeys = Object.keys(value),
+    result = "";
+  for (let i = 0, len = classKeys.length; i < len; i++) {
+    const key = classKeys[i],
+      classValue = !!value[key];
+    if (!key || !classValue) continue;
+    i && (result += " ");
+    result += key;
+  }
+  return result;
+}
+
+export function ssrStyle(value) {
+  if (typeof value === "string") return value;
+  let result = "";
+  for (const s in value) result += `${s}: ${value[s]};`;
+  return result;
+}
+
+export function ssrSpread(props, isSVG) {
+  return () => {
+    if (typeof props === "function") props = props();
+    // TODO: figure out how to handle props.children
+    const keys = Object.keys(props);
+    let result = "";
+    for (let i = 0; i < keys.length; i++) {
+      const prop = keys[i];
+      if (prop === "children") continue;
+      const value = props[prop];
+      if (prop === "style") {
+        result += `style="${ssrStyle(value)}"`;
+      } else if (prop === "classList") {
+        result += `class="${ssrClassList(value)}"`;
+      } else {
+        const key = toSSRAttribute(prop, isSVG);
+        result += `${key}="${value}"`;
+      }
+      if (i !== keys.length - 1) result += " ";
+    }
+    return result;
+  };
+}
+
 // Hydrate
 export function renderDOMToString(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
@@ -92,7 +168,7 @@ export function renderDOMToString(code, options = {}) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   return new Promise((resolve, reject) => {
-    setTimeout(() => reject("renderToDOMString timed out"), options.timeoutMs);
+    setTimeout(() => reject("renderDOMToString timed out"), options.timeoutMs);
     function render(rendered) {
       insert(container, rendered);
       resolve(container.innerHTML);
@@ -211,10 +287,9 @@ function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
       const value = props[prop];
       if (value === prevProps[prop]) continue;
       if (prop === "style") {
-        Object.assign(node.style, value);
+        style(node, value, prevProps[prop]);
       } else if (prop === "classList") {
         classList(node, value, prevProps[prop]);
-        // really only for forwarding from Components, can't forward normal ref
       } else if (prop === "ref") {
         value(node);
       } else if (prop === "on") {
@@ -310,4 +385,24 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
   }
 
   return current;
+}
+
+function toSSRAttribute(key, isSVG) {
+  if (isSVG) {
+    const attr = SVGAttributes[key];
+    if (attr) {
+      if (attr.alias) key = attr.alias;
+    } else key = key.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
+  } else {
+    const attr = SVGAttributes[key];
+    if (attr && attr.alias) key = attr.alias;
+    key = key.toLowerCase();
+  }
+  return key;
+}
+
+function resolveSSRNode(node) {
+  if (Array.isArray(node)) node.map(resolveSSRNode);
+  if (typeof node === "function") node = node();
+  return typeof node === "string" ? node : JSON.stringify(node);
 }

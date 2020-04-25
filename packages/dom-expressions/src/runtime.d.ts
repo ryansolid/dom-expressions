@@ -18,10 +18,20 @@ export function classList(
 ): void;
 export function style(
   node: Element,
-  value: { [k: string]: boolean },
-  prev?: { [k: string]: boolean }
+  value: { [k: string]: string },
+  prev?: { [k: string]: string }
 ): void;
 export function currentContext(): any;
+export function renderToString(
+  fn: (done?: (rendered: any) => void) => any,
+  options?: {
+    timeoutMs?: number;
+  }
+): Promise<string>;
+export function ssr(template: TemplateStringsArray, ...nodes: any[]): () => string;
+export function ssrClassList(value: { [k: string]: boolean }): string;
+export function ssrStyle(value: { [k: string]: string }): string;
+export function ssrSpread(accessor: any, isSVG: boolean, skipChildren: boolean): () => string;
 export function renderDOMToString(
   fn: (done?: (rendered: any) => void) => any,
   options?: {
