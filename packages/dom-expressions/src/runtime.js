@@ -103,7 +103,7 @@ export function ssr(template, ...nodes) {
   const rNodes = [];
   for (let i = 0; i < nodes.length; i++) {
     if (typeof nodes[i] === "function" && !nodes[i].isTemplate) {
-      rNodes.push(memo(nodes[i]));
+      rNodes.push(memo(() => resolveSSRNode(nodes[i]())));
     } else rNodes.push(nodes[i]);
   }
   const t = () =>

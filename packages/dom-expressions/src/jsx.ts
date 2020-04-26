@@ -3,7 +3,7 @@ declare global {
    * Forked from `https://github.com/adamhaile/surplus` and adapted for `babel-plugin-jsx-dom-expressions`.
    *
    * @onceee https://github.com/adamhaile/surplus/blob/master/index.d.ts
-   * @onceee https://github.com/ryansolid/babel-plugin-jsx-dom-expressions
+   * @onceee https://github.com/ryansolid/dom-expressions
    */
 
   namespace JSX {
@@ -45,6 +45,8 @@ declare global {
       1: any
     }
 
+    type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+
     // Intrinsic attributes enable us to define certain keys as attributes on an element, while
     // at the same time hiding them from the element's `props`.
     // https://github.com/Microsoft/TypeScript/issues/5478
@@ -68,112 +70,112 @@ declare global {
       textContent?: string;
 
       // Clipboard Events
-      onCopy?: EventHandler<T, ClipboardEvent>;
-      onCut?: EventHandler<T, ClipboardEvent>;
-      onPaste?: EventHandler<T, ClipboardEvent>;
+      onCopy?: EventHandlerUnion<T, ClipboardEvent>;
+      onCut?: EventHandlerUnion<T, ClipboardEvent>;
+      onPaste?: EventHandlerUnion<T, ClipboardEvent>;
 
       // Composition Events
-      onCompositionEnd?: EventHandler<T, CompositionEvent> | BoundEventHandler<T, CompositionEvent>;
-      onCompositionStart?: EventHandler<T, CompositionEvent> | BoundEventHandler<T, CompositionEvent>;
-      onCompositionUpdate?: EventHandler<T, CompositionEvent> | BoundEventHandler<T, CompositionEvent>;
+      onCompositionEnd?: EventHandlerUnion<T, CompositionEvent>;
+      onCompositionStart?: EventHandlerUnion<T, CompositionEvent>;
+      onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent>;
 
       // Focus Events
-      onFocus?: EventHandler<T, FocusEvent>;
-      onBlur?: EventHandler<T, FocusEvent>;
+      onFocus?: EventHandlerUnion<T, FocusEvent>;
+      onBlur?: EventHandlerUnion<T, FocusEvent>;
 
       // Form Events
-      onChange?: EventHandler<T, Event>;
-      onInput?: EventHandler<T, InputEvent> | BoundEventHandler<T, InputEvent>;
-      onReset?: EventHandler<T, Event>;
-      onSubmit?: EventHandler<T, FocusEvent>;
+      onChange?: EventHandlerUnion<T, Event>;
+      onInput?: EventHandlerUnion<T, InputEvent>;
+      onReset?: EventHandlerUnion<T, Event>;
+      onSubmit?: EventHandlerUnion<T, FocusEvent>;
 
       // Image Events
-      onLoad?: EventHandler<T, Event>;
-      onError?: EventHandler<T, Event>; // also a Media Event
+      onLoad?: EventHandlerUnion<T, Event>;
+      onError?: EventHandlerUnion<T, Event>; // also a Media Event
 
       // Keyboard Events
-      onKeyDown?: EventHandler<T, KeyboardEvent> | BoundEventHandler<T, KeyboardEvent>;
-      onKeyPress?: EventHandler<T, KeyboardEvent> | BoundEventHandler<T, KeyboardEvent>;
-      onKeyUp?: EventHandler<T, KeyboardEvent> | BoundEventHandler<T, KeyboardEvent>;
+      onKeyDown?: EventHandlerUnion<T, KeyboardEvent>;
+      onKeyPress?: EventHandlerUnion<T, KeyboardEvent>;
+      onKeyUp?: EventHandlerUnion<T, KeyboardEvent>;
 
       // Pointer Events
-      onGotPointerCapture?: EventHandler<T, PointerEvent>;
-      onLostPointerCapture?: EventHandler<T, PointerEvent>;
-      onPointerCancel?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
-      onPointerDown?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
-      onPointerEnter?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
-      onPointerLeave?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
-      onPointerMove?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
-      onPointerOver?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
-      onPointerOut?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
-      onPointerUp?: EventHandler<T, PointerEvent> | BoundEventHandler<T, PointerEvent>;
+      onGotPointerCapture?: EventHandlerUnion<T, PointerEvent>;
+      onLostPointerCapture?: EventHandlerUnion<T, PointerEvent>;
+      onPointerCancel?: EventHandlerUnion<T, PointerEvent>;
+      onPointerDown?: EventHandlerUnion<T, PointerEvent>;
+      onPointerEnter?: EventHandlerUnion<T, PointerEvent>;
+      onPointerLeave?: EventHandlerUnion<T, PointerEvent>;
+      onPointerMove?: EventHandlerUnion<T, PointerEvent>;
+      onPointerOver?: EventHandlerUnion<T, PointerEvent>;
+      onPointerOut?: EventHandlerUnion<T, PointerEvent>;
+      onPointerUp?: EventHandlerUnion<T, PointerEvent>;
 
       // Media Events
-      onAbort?: EventHandler<T, Event>;
-      onCanPlay?: EventHandler<T, Event>;
-      onCanPlayThrough?: EventHandler<T, Event>;
-      onDurationChange?: EventHandler<T, Event>;
-      onEmptied?: EventHandler<T, Event>;
-      onEncrypted?: EventHandler<T, Event>;
-      onEnded?: EventHandler<T, Event>;
-      onLoadedData?: EventHandler<T, Event>;
-      onLoadedMetadata?: EventHandler<T, Event>;
-      onLoadStart?: EventHandler<T, Event>;
-      onPause?: EventHandler<T, Event>;
-      onPlay?: EventHandler<T, Event>;
-      onPlaying?: EventHandler<T, Event>;
-      onProgress?: EventHandler<T, Event>;
-      onRateChange?: EventHandler<T, Event>;
-      onSeeked?: EventHandler<T, Event>;
-      onSeeking?: EventHandler<T, Event>;
-      onStalled?: EventHandler<T, Event>;
-      onSuspend?: EventHandler<T, Event>;
-      onTimeUpdate?: EventHandler<T, Event>;
-      onVolumeChange?: EventHandler<T, Event>;
-      onWaiting?: EventHandler<T, Event>;
+      onAbort?: EventHandlerUnion<T, Event>;
+      onCanPlay?: EventHandlerUnion<T, Event>;
+      onCanPlayThrough?: EventHandlerUnion<T, Event>;
+      onDurationChange?: EventHandlerUnion<T, Event>;
+      onEmptied?: EventHandlerUnion<T, Event>;
+      onEncrypted?: EventHandlerUnion<T, Event>;
+      onEnded?: EventHandlerUnion<T, Event>;
+      onLoadedData?: EventHandlerUnion<T, Event>;
+      onLoadedMetadata?: EventHandlerUnion<T, Event>;
+      onLoadStart?: EventHandlerUnion<T, Event>;
+      onPause?: EventHandlerUnion<T, Event>;
+      onPlay?: EventHandlerUnion<T, Event>;
+      onPlaying?: EventHandlerUnion<T, Event>;
+      onProgress?: EventHandlerUnion<T, Event>;
+      onRateChange?: EventHandlerUnion<T, Event>;
+      onSeeked?: EventHandlerUnion<T, Event>;
+      onSeeking?: EventHandlerUnion<T, Event>;
+      onStalled?: EventHandlerUnion<T, Event>;
+      onSuspend?: EventHandlerUnion<T, Event>;
+      onTimeUpdate?: EventHandlerUnion<T, Event>;
+      onVolumeChange?: EventHandlerUnion<T, Event>;
+      onWaiting?: EventHandlerUnion<T, Event>;
 
       // MouseEvents
-      onClick?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
-      onContextMenu?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
-      onDoubleClick?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
-      onDrag?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onDragEnd?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onDragEnter?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onDragExit?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onDragLeave?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onDragOver?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onDragStart?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onDrop?: EventHandler<T, DragEvent> | BoundEventHandler<T, DragEvent>;
-      onMouseDown?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
-      onMouseEnter?: EventHandler<T, MouseEvent>;
-      onMouseLeave?: EventHandler<T, MouseEvent>;
-      onMouseMove?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
-      onMouseOut?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
-      onMouseOver?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
-      onMouseUp?: EventHandler<T, MouseEvent> | BoundEventHandler<T, MouseEvent>;
+      onClick?: EventHandlerUnion<T, MouseEvent>;
+      onContextMenu?: EventHandlerUnion<T, MouseEvent>;
+      onDoubleClick?: EventHandlerUnion<T, MouseEvent>;
+      onDrag?: EventHandlerUnion<T, DragEvent>;
+      onDragEnd?: EventHandlerUnion<T, DragEvent>;
+      onDragEnter?: EventHandlerUnion<T, DragEvent>;
+      onDragExit?: EventHandlerUnion<T, DragEvent>;
+      onDragLeave?: EventHandlerUnion<T, DragEvent>;
+      onDragOver?: EventHandlerUnion<T, DragEvent>;
+      onDragStart?: EventHandlerUnion<T, DragEvent>;
+      onDrop?: EventHandlerUnion<T, DragEvent>;
+      onMouseDown?: EventHandlerUnion<T, MouseEvent>;
+      onMouseEnter?: EventHandlerUnion<T, MouseEvent>;
+      onMouseLeave?: EventHandlerUnion<T, MouseEvent>;
+      onMouseMove?: EventHandlerUnion<T, MouseEvent>;
+      onMouseOut?: EventHandlerUnion<T, MouseEvent>;
+      onMouseOver?: EventHandlerUnion<T, MouseEvent>;
+      onMouseUp?: EventHandlerUnion<T, MouseEvent>;
 
       // Selection Events
-      onSelect?: EventHandler<T, UIEvent>;
+      onSelect?: EventHandlerUnion<T, UIEvent>;
 
       // Touch Events
-      onTouchCancel?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
-      onTouchEnd?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
-      onTouchMove?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
-      onTouchStart?: EventHandler<T, TouchEvent> | BoundEventHandler<T, TouchEvent>;
+      onTouchCancel?: EventHandlerUnion<T, TouchEvent>;
+      onTouchEnd?: EventHandlerUnion<T, TouchEvent>;
+      onTouchMove?: EventHandlerUnion<T, TouchEvent>;
+      onTouchStart?: EventHandlerUnion<T, TouchEvent>;
 
       // UI Events
-      onScroll?: EventHandler<T, UIEvent>;
+      onScroll?: EventHandlerUnion<T, UIEvent>;
 
       // Wheel Events
-      onWheel?: EventHandler<T, WheelEvent> | BoundEventHandler<T, WheelEvent>;
+      onWheel?: EventHandlerUnion<T, WheelEvent>;
 
       // Animation Events
-      onAnimationStart?: EventHandler<T, AnimationEvent>;
-      onAnimationEnd?: EventHandler<T, AnimationEvent>;
-      onAnimationIteration?: EventHandler<T, AnimationEvent>;
+      onAnimationStart?: EventHandlerUnion<T, AnimationEvent>;
+      onAnimationEnd?: EventHandlerUnion<T, AnimationEvent>;
+      onAnimationIteration?: EventHandlerUnion<T, AnimationEvent>;
 
       // Transition Events
-      onTransitionEnd?: EventHandler<T, TransitionEvent>;
+      onTransitionEnd?: EventHandlerUnion<T, TransitionEvent>;
     }
 
     type HTMLAutocapitalize =
