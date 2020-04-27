@@ -1,20 +1,70 @@
 import { Attributes, SVGAttributes, NonComposedEvents } from "./constants";
-import { dynamicProp, cleanChildren, appendNodes, normalizeIncomingArray } from "./utils";
+import { dynamicProperty, cleanChildren, appendNodes, normalizeIncomingArray } from "./utils";
 import reconcileArrays from "./reconcile";
 import core from "rxcore";
 
-const eventRegistry = new Set();
-let { config = {}, effect, memo, ignore, currentContext, createComponent } = core;
-
-createComponent ||
-  (createComponent = (Comp, props, dynamicKeys) => {
-    if (dynamicKeys) {
-      for (let i = 0; i < dynamicKeys.length; i++) dynamicProp(props, dynamicKeys[i]);
-    }
-    return ignore(() => Comp(props));
-  });
+const eventRegistry = new Set(),
+  { config = {}, root, effect, memo, ignore, currentContext, createComponent: cc } = core,
+  createComponent =
+    cc ||
+    ((Comp, props, dynamicKeys) => {
+      if (dynamicKeys) {
+        for (let i = 0; i < dynamicKeys.length; i++) dynamicProperty(props, dynamicKeys[i]);
+      }
+      return ignore(() => Comp(props));
+    });
 
 export { effect, memo, createComponent, currentContext };
+
+export function render(code, element) {
+  let disposer;
+  root(dispose => {
+    disposer = dispose;
+    insert(element, code());
+  });
+  return disposer;
+}
+
+export function renderToString(code, options = {}) {
+  options = { timeoutMs: 30000, ...options };
+  config.hydrate = { id: "", count: 0 };
+  return root(async () => {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
+    );
+    const rendered = await Promise.race([code(), timeout]);
+    return resolveSSRNode(rendered);
+  });
+}
+
+export function renderDOMToString(code, options = {}) {
+  options = { timeoutMs: 30000, ...options };
+  config.hydrate = { id: "", count: 0 };
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  return root(async d1 => {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject("renderDOMToString timed out"), options.timeoutMs)
+    );
+    const rendered = await Promise.race([code(), timeout]);
+    root(d2 => (insert(container, rendered), d1(), d2()));
+    const html = container.innerHTML;
+    document.body.removeChild(container);
+    return html;
+  });
+}
+
+export function hydrate(code, element) {
+  config.hydrate = { id: "", count: 0, registry: new Map() };
+  const templates = element.querySelectorAll(`*[_hk]`);
+  for (let i = 0; i < templates.length; i++) {
+    const node = templates[i];
+    config.hydrate.registry.set(node.getAttribute("_hk"), node);
+  }
+  const dispose = render(code, element);
+  delete config.hydrate;
+  return dispose;
+}
 
 export function template(html, check, isSVG) {
   const t = document.createElement("template");
@@ -86,19 +136,6 @@ export function insert(parent, accessor, marker, initial) {
 }
 
 // SSR
-export function renderToString(code, options = {}) {
-  options = { timeoutMs: 30000, ...options };
-  config.hydrate = { id: "", count: 0 };
-  return new Promise((resolve, reject) => {
-    setTimeout(() => reject("renderToString timed out"), options.timeoutMs);
-    function render(rendered) {
-      if (typeof rendered === "function") resolve(rendered());
-      else resolve(rendered);
-    }
-    !code.length ? render(code()) : code(render);
-  });
-}
-
 export function ssr(template, ...nodes) {
   const rNodes = [];
   for (let i = 0; i < nodes.length; i++) {
@@ -162,33 +199,6 @@ export function ssrSpread(props, isSVG) {
 }
 
 // Hydrate
-export function renderDOMToString(code, options = {}) {
-  options = { timeoutMs: 30000, ...options };
-  config.hydrate = { id: "", count: 0 };
-  const container = document.createElement("div");
-  document.body.appendChild(container);
-  return new Promise((resolve, reject) => {
-    setTimeout(() => reject("renderDOMToString timed out"), options.timeoutMs);
-    function render(rendered) {
-      insert(container, rendered);
-      resolve(container.innerHTML);
-      document.body.removeChild(container);
-    }
-    !code.length ? render(code()) : code(render);
-  });
-}
-
-export function hydrate(code, root) {
-  config.hydrate = { id: "", count: 0, registry: new Map() };
-  const templates = root.querySelectorAll(`*[_hk]`);
-  for (let i = 0; i < templates.length; i++) {
-    const node = templates[i];
-    config.hydrate.registry.set(node.getAttribute("_hk"), node);
-  }
-  code();
-  delete config.hydrate;
-}
-
 export function getHydrationKey() {
   const hydrate = config.hydrate;
   return `${hydrate.id}:${hydrate.count++}`;
@@ -310,7 +320,7 @@ function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
         if (info.type === "attribute") {
           node.setAttribute(prop, value);
         } else node[info.alias] = value;
-      } else if (isSVG) {
+      } else if (isSVG || prop.indexOf("-") > -1) {
         if ((info = SVGAttributes[prop])) {
           if (info.alias) node.setAttribute(info.alias, value);
           else node.setAttribute(prop, value);
@@ -402,7 +412,7 @@ function toSSRAttribute(key, isSVG) {
 }
 
 function resolveSSRNode(node) {
-  if (Array.isArray(node)) node.map(resolveSSRNode);
-  if (typeof node === "function") node = node();
+  if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
+  if (typeof node === "function") node = resolveSSRNode(node());
   return typeof node === "string" ? node : JSON.stringify(node);
 }

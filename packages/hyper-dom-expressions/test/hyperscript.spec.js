@@ -17,7 +17,7 @@ describe("Test HyperScript", () => {
     const template = h("#main", [
       h("h1", "Welcome"),
       h("span", { style: "color: #555" }, 555),
-      h("label.name", { attrs: { for: "entry" } }, "Edit:"),
+      h("label.name", { htmlFor: "entry" }, "Edit:"),
       h("input#entry", { type: "text" })
     ]);
     expect(template.outerHTML).toBe(FIXTURES[0]);

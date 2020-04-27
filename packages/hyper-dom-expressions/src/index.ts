@@ -1,20 +1,11 @@
-import { NonComposedEvents } from "dom-expressions/src/constants";
-import {
-  effect,
-  insert,
-  createComponent,
-  delegateEvents,
-  classList,
-  style
-} from "dom-expressions/src/runtime";
+import { insert, spread, createComponent, delegateEvents } from "dom-expressions/src/runtime";
+import { dynamicProperty } from "dom-expressions/src/utils";
 
 interface Runtime {
-  effect: typeof effect;
   insert: typeof insert;
+  spread: typeof spread;
   createComponent: typeof createComponent;
   delegateEvents: typeof delegateEvents;
-  classList: typeof classList;
-  style: typeof style;
 }
 
 type ExpandableNode = Node & { [key: string]: any };
@@ -25,10 +16,7 @@ export type HyperScript = {
 };
 
 // Inspired by https://github.com/hyperhype/hyperscript
-export function createHyperScript(
-  r: Runtime,
-  { delegateEvents = true } = {}
-): HyperScript {
+export function createHyperScript(r: Runtime): HyperScript {
   function h() {
     let args: any = [].slice.call(arguments),
       e: ExpandableNode | undefined,
@@ -51,32 +39,13 @@ export function createHyperScript(
       } else if (Array.isArray(l)) {
         for (let i = 0; i < l.length; i++) item(l[i]);
       } else if (l instanceof Element) {
-        r.insert(e as Element, l, multiExpression ? null : undefined);
+        r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
       } else if ("object" === type) {
         for (const k in l) {
-          if ("function" === typeof l[k]) {
-            if (k.slice(0, 2) === "on") {
-              const lc = k.toLowerCase();
-              if (
-                delegateEvents &&
-                !NonComposedEvents.has(lc.slice(2))
-              ) {
-                const name = lc.slice(2),
-                  hdlr = l[k];
-                delegatedEvents.add(name);
-                if (Array.isArray(hdlr)) {
-                  (e as ExpandableNode)[`__${name}`] = hdlr[0];
-                  (e as ExpandableNode)[`__${name}Data`] = hdlr[1];
-                } else (e as ExpandableNode)[`__${name}`] = hdlr;
-              } else (e as ExpandableNode)[lc] = l[k];
-            } else if (k === "ref") {
-              l[k](e);
-            } else
-              (function(k, l) {
-                r.effect(() => parseKeyValue(k, l[k]()));
-              })(k, l);
-          } else parseKeyValue(k, l[k]);
+          if (typeof l[k] === "function" && k !== "ref" && k.slice(0, 2) !== "on")
+            dynamicProperty(l, k);
         }
+        r.spread(e as Element, l, e instanceof SVGElement, !!args.length);
       } else if ("function" === typeof l) {
         if (!e) {
           let props: Props = {},
@@ -86,15 +55,11 @@ export function createHyperScript(
             if (typeof props[k] === "function") dynamic.push(k);
           }
           props.children = args.length > 1 ? args : args[0];
-          if (
-            props.children &&
-            typeof props.children === "function" &&
-            !props.children.length
-          )
+          if (props.children && typeof props.children === "function" && !props.children.length)
             dynamic.push("children");
           e = r.createComponent(l, props, dynamic);
           args = [];
-        } else r.insert(e as Element, l, multiExpression ? null : undefined);
+        } else r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
       }
     }
     detectMultiExpression(args);
@@ -117,21 +82,6 @@ export function createHyperScript(
         else if (v[0] === ".") e.classList.add(s);
         else if (v[0] === "#") e.setAttribute("id", s);
       }
-    }
-    function parseKeyValue(k: string, v: any) {
-      if (k === "style") {
-        if ("string" === typeof v)
-          (e as HTMLElement | SVGElement).style.cssText = v;
-        else r.style(e as Element, v);
-      } else if (k === "classList") {
-        r.classList(e as Element, v);
-      } else if (k === "on") {
-        for (const c in v) (e as Element).addEventListener(c, v[c]);
-      } else if (k === "onCapture") {
-        for (const c in v) (e as Element).addEventListener(c, v[c], true);
-      } else if (k === "attrs") {
-        for (const a in v) (e as Element).setAttribute(a, v[a]);
-      } else (e as ExpandableNode)[k] = v;
     }
     function detectMultiExpression(list: any[]) {
       for (let i = 0; i < list.length; i++) {

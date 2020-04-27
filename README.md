@@ -41,9 +41,10 @@ What is the reactive core file. It exports an object with the methods required b
 Example:
 
 ```js
-import S, { value, sample } from "s-js";
+import S, { root, value, sample } from "s-js";
 
 export default {
+  root,
   effect: S,
   memo: (fn, equal) => {
     if (!equal) return S(fn);

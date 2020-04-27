@@ -1,6 +1,6 @@
 import { parse, stringify, IDom } from "html-parse-string";
 import { NonComposedEvents } from "dom-expressions/src/constants";
-import { effect, insert, createComponent, delegateEvents, classList } from "dom-expressions/src/runtime";
+import { effect, insert, createComponent, delegateEvents, classList, style } from "dom-expressions/src/runtime";
 
 interface Runtime {
   effect: typeof effect;
@@ -8,6 +8,7 @@ interface Runtime {
   createComponent: typeof createComponent;
   delegateEvents: typeof delegateEvents;
   classList: typeof classList;
+  style: typeof style;
 }
 type TemplateCreate = (node: Node, data: any[], r: Runtime, bindings: any) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };

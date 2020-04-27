@@ -1,12 +1,12 @@
-import S, { value, sample } from "s-js";
+import S, { root, value, sample } from "s-js";
 import { sharedConfig } from "./hydrate.config";
-import { dynamicProp } from "../src/utils";
+import { dynamicProperty } from "../src/utils";
 
 export default {
   config: sharedConfig,
   createComponent(Comp, props, dynamicKeys) {
     if (dynamicKeys) {
-      for (let i = 0; i < dynamicKeys.length; i++) dynamicProp(props, dynamicKeys[i]);
+      for (let i = 0; i < dynamicKeys.length; i++) dynamicProperty(props, dynamicKeys[i]);
     }
 
     if (Comp.prototype && Comp.prototype.isClassComponent) {
@@ -18,6 +18,7 @@ export default {
 
     return sample(() => Comp(props));
   },
+  root,
   effect: S,
   memo: (fn, equal) => {
     if (!equal) return S(fn);

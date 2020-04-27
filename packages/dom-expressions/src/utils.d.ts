@@ -1,4 +1,4 @@
-export function dynamicProp(props: any, key: string): void;
+export function dynamicProperty(props: any, key: string): void;
 
 export function normalizeIncomingArray(normalized: any[], array: any[], unwrap: boolean): boolean;
 

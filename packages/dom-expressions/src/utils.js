@@ -1,4 +1,4 @@
-export function dynamicProp(props, key) {
+export function dynamicProperty(props, key) {
   const src = props[key];
   Object.defineProperty(props, key, {
     get() {
