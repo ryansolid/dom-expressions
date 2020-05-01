@@ -1,9 +1,16 @@
-import { insert, spread, createComponent, delegateEvents } from "dom-expressions/src/runtime";
+import {
+  insert,
+  spread,
+  assign,
+  createComponent,
+  delegateEvents
+} from "dom-expressions/src/runtime";
 import { dynamicProperty } from "dom-expressions/src/utils";
 
 interface Runtime {
   insert: typeof insert;
   spread: typeof spread;
+  assign: typeof assign;
   createComponent: typeof createComponent;
   delegateEvents: typeof delegateEvents;
 }
@@ -41,11 +48,16 @@ export function createHyperScript(r: Runtime): HyperScript {
       } else if (l instanceof Element) {
         r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
       } else if ("object" === type) {
+        let dynamic = false;
         for (const k in l) {
-          if (typeof l[k] === "function" && k !== "ref" && k.slice(0, 2) !== "on")
+          if (typeof l[k] === "function" && k !== "ref" && k.slice(0, 2) !== "on") {
             dynamicProperty(l, k);
+            dynamic = true;
+          }
         }
-        r.spread(e as Element, l, e instanceof SVGElement, !!args.length);
+        dynamic
+          ? r.spread(e as Element, l, e instanceof SVGElement, !!args.length)
+          : r.assign(e as Element, l, e instanceof SVGElement, !!args.length);
       } else if ("function" === typeof l) {
         if (!e) {
           let props: Props = {},
@@ -62,7 +74,7 @@ export function createHyperScript(r: Runtime): HyperScript {
         } else r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
       }
     }
-    detectMultiExpression(args);
+    typeof args[0] === "string" && detectMultiExpression(args);
     while (args.length) item(args.shift());
     r.delegateEvents(Array.from(delegatedEvents));
     return e as ExpandableNode;
@@ -84,7 +96,7 @@ export function createHyperScript(r: Runtime): HyperScript {
       }
     }
     function detectMultiExpression(list: any[]) {
-      for (let i = 0; i < list.length; i++) {
+      for (let i = 1; i < list.length; i++) {
         if (typeof list[i] === "function") {
           multiExpression = true;
           return;

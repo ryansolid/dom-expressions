@@ -78,5 +78,18 @@ export function transformNode(path, info = {}) {
       template: "",
       dynamic: true
     };
+  } else if (t.isJSXSpreadChild(node)) {
+    if (
+      !isDynamic(path.get("expression"), {
+        checkMember: true
+      })
+    )
+      return { exprs: [node.expression], template: "" };
+    const expr = t.arrowFunctionExpression([], node.expression);
+    return {
+      exprs: [expr],
+      template: "",
+      dynamic: true
+    };
   }
 }

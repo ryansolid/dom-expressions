@@ -1,11 +1,12 @@
 import { createComponent as _$createComponent } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
+import { escape as _$escape } from "r-dom";
 const _ck$ = ["render"];
-const template1 = _$ssr`<div>${simple}</div>`;
-const template2 = _$ssr`<div>${() => state.dynamic}</div>`;
-const template3 = _$ssr`<div>${simple ? good : bad}</div>`;
-const template4 = _$ssr`<div>${() => (simple ? good() : bad)}</div>`;
+const template1 = _$ssr`<div>${_$escape(simple)}</div>`;
+const template2 = _$ssr`<div>${() => _$escape(state.dynamic)}</div>`;
+const template3 = _$ssr`<div>${_$escape(simple ? good : bad)}</div>`;
+const template4 = _$ssr`<div>${() => _$escape(simple ? good() : bad)}</div>`;
 const template5 = _$ssr`<div>${(() => {
   const _c$ = _$memo(() => state.dynamic, true);
 
@@ -39,7 +40,7 @@ const template9 = _$ssr`<div>${(() => {
   return () => (_c$() && good()) || bad;
 })()}</div>`;
 const template10 = _$ssr`<div>${() =>
-  state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"}</div>`;
+  _$escape(state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback")}</div>`;
 const template11 = _$ssr`<div>${(() => {
   const _c$ = _$memo(() => state.a, true);
 

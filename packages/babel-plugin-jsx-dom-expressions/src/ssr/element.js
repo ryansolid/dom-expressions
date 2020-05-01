@@ -129,10 +129,11 @@ function transformAttributes(path, results) {
       else if (
         key === "children" ||
         key === "textContent" ||
-        key === "innerHTML" ||
-        key === "innerText"
+        key === "innerText" ||
+        key === "innerHTML"
       ) {
         children = value;
+        if (key === "innerHTML") path.doNotEscape = true;
       } else {
         let dynamic = false;
         if (
@@ -170,13 +171,21 @@ function transformAttributes(path, results) {
 function transformChildren(path, results) {
   const { hydratable } = config;
   const filteredChildren = filterChildren(path.get("children"), true);
-  filteredChildren.forEach((node, index) => {
-    const child = transformNode(node);
+  filteredChildren.forEach((node) => {
+    const doNotEscape = path.doNotEscape,
+      child = transformNode(node);
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {
       const multi = checkLength(filteredChildren),
         markers = hydratable && multi;
+
+      if (!doNotEscape) {
+        registerImportMethod(path, "escape");
+        if (child.dynamic) {
+          if (!t.isCallExpression(child.exprs[0])) child.exprs[0].body = t.callExpression(t.identifier("_$escape"), [child.exprs[0].body]);
+        } else if (!t.isCallExpression(child.exprs[0])) child.exprs[0] = t.callExpression(t.identifier("_$escape"), [child.exprs[0]])
+      }
 
       // boxed by textNodes
       if (markers) {

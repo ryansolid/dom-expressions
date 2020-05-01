@@ -175,7 +175,7 @@ function transformComponentChildren(children) {
 
   if (filteredChildren.length === 1) {
     transformedChildren = transformedChildren[0];
-    if (!t.isJSXExpressionContainer(filteredChildren[0]) && !t.isJSXText(filteredChildren[0])) {
+    if (!t.isJSXExpressionContainer(filteredChildren[0]) && !t.isJSXSpreadChild(filteredChildren[0]) && !t.isJSXText(filteredChildren[0])) {
       transformedChildren =
         t.isCallExpression(transformedChildren) && !transformedChildren.arguments.length
           ? transformedChildren.callee

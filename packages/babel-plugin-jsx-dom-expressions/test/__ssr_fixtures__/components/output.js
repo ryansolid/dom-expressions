@@ -1,14 +1,15 @@
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
+import { escape as _$escape } from "r-dom";
 const _ck$ = ["children"],
   _ck$2 = ["dynamic", "hyphen-ated"],
   _ck$3 = ["children", "dynamic"],
   _ck$4 = ["each", "fallback"];
 
 const Child = props => [
-  _$ssr`<div>Hello ${() => props.name}</div>`,
-  _$ssr`<div>${() => props.children}</div>`
+  _$ssr`<div>Hello ${() => _$escape(props.name)}</div>`,
+  _$ssr`<div>${() => _$escape(props.children)}</div>`
 ];
 
 const template = props => {
@@ -31,7 +32,7 @@ const template = props => {
     Child,
     {
       name: "Jason",
-      children: () => _$ssr`<div>${content}</div>`
+      children: () => _$ssr`<div>${_$escape(content)}</div>`
     },
     _ck$
   )}${_$createComponent(Context.Consumer, {

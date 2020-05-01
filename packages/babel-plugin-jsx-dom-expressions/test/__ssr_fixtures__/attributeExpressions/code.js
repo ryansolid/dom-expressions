@@ -41,3 +41,10 @@ const template4 = (
     className={state.class}
   />
 )
+
+const template5 = (
+  <div>
+    <div innerHTML={rowId} />
+    <div innerHTML={row.label} />
+  </div>
+);

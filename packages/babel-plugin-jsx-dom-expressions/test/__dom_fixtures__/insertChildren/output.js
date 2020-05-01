@@ -5,7 +5,8 @@ import { createComponent as _$createComponent } from "r-dom";
 
 const _tmpl$ = _$template(`<div></div>`, 2),
   _tmpl$2 = _$template(`<module></module>`, 2),
-  _tmpl$3 = _$template(`<module>Hello</module>`, 2);
+  _tmpl$3 = _$template(`<module>Hello</module>`, 2),
+  _tmpl$4 = _$template(`<module>Hi </module>`, 2);
 
 const _ck$ = ["children"];
 
@@ -101,3 +102,47 @@ const template11 = (() => {
 const template12 = _$createComponent(Module, {
   children: state.children
 });
+
+const template13 = (() => {
+  const _el$10 = _tmpl$2.cloneNode(true);
+
+  _$insert(_el$10, children);
+
+  return _el$10;
+})();
+
+const template14 = _$createComponent(Module, {
+  children: children
+});
+
+const template15 = (() => {
+  const _el$11 = _tmpl$2.cloneNode(true);
+
+  _$insert(_el$11, () => dynamic.children);
+
+  return _el$11;
+})();
+
+const template16 = _$createComponent(
+  Module,
+  {
+    children: () => dynamic.children
+  },
+  _ck$
+);
+
+const template18 = (() => {
+  const _el$12 = _tmpl$4.cloneNode(true);
+
+  _$insert(_el$12, children, null);
+
+  return _el$12;
+})();
+
+const template19 = _$createComponent(
+  Module,
+  {
+    children: () => ["Hi ", children]
+  },
+  _ck$
+);

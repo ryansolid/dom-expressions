@@ -1,6 +1,7 @@
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
+import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 const _ck$ = ["children"],
   _ck$2 = ["dynamic", "hyphen-ated"],
@@ -8,8 +9,9 @@ const _ck$ = ["children"],
   _ck$4 = ["each", "fallback"];
 
 const Child = props => [
-  _$ssr`<div _hk="${_$getHydrationKey()}">Hello <!--#-->${() => props.name}<!--/--></div>`,
-  _$ssr`<div _hk="${_$getHydrationKey()}">${() => props.children}</div>`
+  _$ssr`<div _hk="${_$getHydrationKey()}">Hello <!--#-->${() =>
+    _$escape(props.name)}<!--/--></div>`,
+  _$ssr`<div _hk="${_$getHydrationKey()}">${() => _$escape(props.children)}</div>`
 ];
 
 const template = props => {
@@ -32,7 +34,7 @@ const template = props => {
     Child,
     {
       name: "Jason",
-      children: () => _$ssr`<div _hk="${_$getHydrationKey()}">${content}</div>`
+      children: () => _$ssr`<div _hk="${_$getHydrationKey()}">${_$escape(content)}</div>`
     },
     _ck$
   )}<!--/--><!--#-->${_$createComponent(Context.Consumer, {

@@ -1,12 +1,14 @@
 import { createComponent as _$createComponent } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
+import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 const _ck$ = ["render"];
-const template1 = _$ssr`<div _hk="${_$getHydrationKey()}">${simple}</div>`;
-const template2 = _$ssr`<div _hk="${_$getHydrationKey()}">${() => state.dynamic}</div>`;
-const template3 = _$ssr`<div _hk="${_$getHydrationKey()}">${simple ? good : bad}</div>`;
-const template4 = _$ssr`<div _hk="${_$getHydrationKey()}">${() => (simple ? good() : bad)}</div>`;
+const template1 = _$ssr`<div _hk="${_$getHydrationKey()}">${_$escape(simple)}</div>`;
+const template2 = _$ssr`<div _hk="${_$getHydrationKey()}">${() => _$escape(state.dynamic)}</div>`;
+const template3 = _$ssr`<div _hk="${_$getHydrationKey()}">${_$escape(simple ? good : bad)}</div>`;
+const template4 = _$ssr`<div _hk="${_$getHydrationKey()}">${() =>
+  _$escape(simple ? good() : bad)}</div>`;
 const template5 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
   const _c$ = _$memo(() => state.dynamic, true);
 
@@ -40,7 +42,7 @@ const template9 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
   return () => (_c$() && good()) || bad;
 })()}</div>`;
 const template10 = _$ssr`<div _hk="${_$getHydrationKey()}">${() =>
-  state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"}</div>`;
+  _$escape(state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback")}</div>`;
 const template11 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
   const _c$ = _$memo(() => state.a, true);
 
