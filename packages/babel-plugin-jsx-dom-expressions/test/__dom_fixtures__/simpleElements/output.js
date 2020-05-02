@@ -5,7 +5,7 @@ const _tmpl$ = _$template(
   9
 );
 
-const template = (function() {
+const template = (() => {
   const _el$ = _tmpl$.cloneNode(true),
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.firstChild;

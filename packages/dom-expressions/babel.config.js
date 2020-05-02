@@ -1,8 +1,20 @@
 module.exports = {
   env: {
     test: {
-      presets: [['@babel/preset-env', {targets: {node: 'current'}}]],
-      plugins: [['babel-plugin-jsx-dom-expressions', {moduleName: './runtime.js', wrapConditionals: true}]]
+      presets: [["@babel/preset-env", { targets: { node: "current" } }]],
+      plugins: [
+        [
+          "babel-plugin-transform-rename-import",
+          {
+            original: "rxcore",
+            replacement: "../test/core"
+          }
+        ],
+        [
+          "babel-plugin-jsx-dom-expressions",
+          { moduleName: "../src/runtime.js", wrapConditionals: true }
+        ]
+      ]
     }
   }
 };

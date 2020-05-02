@@ -1,12 +1,12 @@
 import { template as _$template } from "r-dom";
-import { wrap as _$wrap } from "r-dom";
+import { effect as _$effect } from "r-dom";
 import { currentContext as _$currentContext } from "r-dom";
 
 const _tmpl$ = _$template(`<my-element></my-element>`, 2),
   _tmpl$2 = _$template(`<my-element><header slot="head">Title</header></my-element>`, 4),
   _tmpl$3 = _$template(`<slot name="head"></slot>`, 2);
 
-const template = (function() {
+const template = (() => {
   const _el$ = _tmpl$.cloneNode(true);
 
   _el$.setAttribute("some-attr", name);
@@ -16,12 +16,12 @@ const template = (function() {
   return _el$;
 })();
 
-const template2 = (function() {
+const template2 = (() => {
   const _el$2 = _tmpl$.cloneNode(true);
 
   _el$2._context = _$currentContext();
 
-  _$wrap(
+  _$effect(
     _p$ => {
       const _v$ = state.name,
         _v$2 = state.data;
@@ -38,7 +38,7 @@ const template2 = (function() {
   return _el$2;
 })();
 
-const template3 = (function() {
+const template3 = (() => {
   const _el$3 = _tmpl$2.cloneNode(true);
 
   _el$3._context = _$currentContext();

@@ -1,80 +1,24 @@
-import { template as _$template } from "r-dom";
-import { wrap as _$wrap } from "r-dom";
-import { getNextElement as _$getNextElement } from "r-dom";
-import { classList as _$classList } from "r-dom";
-import { spread as _$spread } from "r-dom";
-
-const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
-  _tmpl$2 = _$template(`<div><div></div><div></div></div>`, 6),
-  _tmpl$3 = _$template(`<div></div>`, 2);
-
-const template = (function() {
-  const _el$ = _$getNextElement(_tmpl$, true),
-    _el$2 = _el$.firstChild,
-    _el$3 = _el$2.firstChild;
-
-  _$spread(_el$, results, false, true);
-
-  _$classList(_el$, {
-    selected: selected
-  });
-
-  Object.assign(_el$.style, {
-    color
-  });
-
-  _$spread(_el$2, () => results(), false, true);
-
-  link = _el$3;
-
-  _$wrap(
-    _p$ => {
-      const _v$ = welcoming(),
-        _v$2 = {
-          selected: selected()
-        },
-        _v$3 = _p$._v$2;
-
-      _v$ !== _p$._v$ && (_el$2.title = _p$._v$ = _v$);
-      Object.assign(_el$2.style, {
-        backgroundColor: color()
-      });
-      _v$2 !== _p$._v$2 && _$classList(_el$2, (_p$._v$2 = _v$2), _v$3);
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined
-    }
-  );
-
-  return _el$;
-})();
-
-const template2 = (function() {
-  const _el$4 = _$getNextElement(_tmpl$2, true),
-    _el$5 = _el$4.firstChild,
-    _el$6 = _el$5.nextSibling;
-
-  _el$5.textContent = rowId;
-  _el$6.textContent = row.label;
-  const _el$7 = _el$6.firstChild;
-
-  _$wrap(() => (_el$7.data = row.label));
-
-  return _el$4;
-})();
-
-const template3 = (function() {
-  const _el$8 = _$getNextElement(_tmpl$3, true);
-
-  _el$8.id = state.id;
-  Object.assign(_el$8.style, {
-    backgroundColor: state.color
-  });
-  _el$8.textContent = state.content;
-
-  _$wrap(() => (_el$8.name = state.name));
-
-  return _el$8;
-})();
+import { escape as _$escape } from "r-dom";
+import { ssr as _$ssr } from "r-dom";
+import { ssrStyle as _$ssrStyle } from "r-dom";
+import { ssrClassList as _$ssrClassList } from "r-dom";
+import { ssrSpread as _$ssrSpread } from "r-dom";
+const template = _$ssr`<div id="main" ${_$ssrSpread(results, false, true)} class="${_$ssrClassList({
+  selected: selected
+})}" style="${_$ssrStyle({
+  color
+})}"><h1 ${_$ssrSpread(() => results(), false, true)} disabled="" title="${() =>
+  welcoming()}" style="${() =>
+  _$ssrStyle({
+    "background-color": color()
+  })}" class="${() =>
+  _$ssrClassList({
+    selected: selected()
+  })}"><a href="/">Welcome</a></h1></div>`;
+const template2 = _$ssr`<div><div>${_$escape(rowId)}</div><div>${() =>
+  _$escape(row.label)}</div></div>`;
+const template3 = _$ssr`<div id="${state.id}" style="${_$ssrStyle({
+  "background-color": state.color
+})}" name="${() => state.name}">${_$escape(state.content)}</div>`;
+const template4 = _$ssr`<div class="${() => `hi ${state.class}`}"></div>`;
+const template5 = _$ssr`<div><div>${rowId}</div><div>${() => row.label}</div></div>`;

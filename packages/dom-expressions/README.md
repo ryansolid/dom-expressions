@@ -14,46 +14,47 @@ This package wraps libraries like KnockoutJS or MobX and use them independent of
 It is designed to be used with a companion render API. Currently there is a JSX Babel Plugin, and Tagged Template Literals, and HyperScript runtime APIs. Most developers will not use this package directly. It is intended to help author your own Reactive Libraries and not to be used directly in projects.
 
 ## Example Implementations
-* [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
-* [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
-* [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
-* [s-jsx](https://github.com/ryansolid/s-jsx): Testbed for trying new techniques in the fine grained space.
+
+- [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
+- [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
+- [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
+- [s-jsx](https://github.com/ryansolid/s-jsx): Testbed for trying new techniques in the fine grained space.
 
 ## Runtime Generator
 
-Dom Expressions is designed to allow the runtime to be tree shakeable by generating a special version ahead of time so static module analysis provided by your bundler can do it's thing.
-
-To create runtime first install:
-```sh
-> npm i --save-dev dom-expressions
-```
-You must provide symbols to create the final js file and the output path. We do this through a dom-expressions.config.js in your project root.
+Dom Expressions is designed to allow ypu to create a runtime to be tree shakeable. It does that by using "babel-plugin-transform-rename-import" to rename the import to your reactive core file. Setup the babel plugin and then `export * from "dom-expressions/src/runtime"`from your runtime. Be sure to not exclude the dom-expressions node_module.
 
 ```js
-module.exports = {
-  output: 'path-to-output/filename.js',
-  variables: {
-    imports: [ `import wrap from 's-js'` ]
-  }
+{
+  plugins: [
+    [
+      "babel-plugin-transform-rename-import",
+      {
+        original: "rxcore",
+        replacement: "../src/core"
+      }
+    ]
+  ];
 }
 ```
+What is the reactive core file. It exports an object with the methods required by the runtime.
+Example:
 
-These symbols should reference an observable API with the following functionality:
+```js
+import S, { root, value, sample } from "s-js";
 
-### wrap(fn, init) : void
-
-This is used to wrap all expressions in computations. Your wrap method is expected to call fn with the previously evaluated value if the arity is 1 to allow for reducing computations.
-
-### ignore(fn) : void
-
-This is used to set the context to not be tracking.
-
-Then you run the cli command:
-```sh
-> dom-expressions
+export default {
+  root,
+  effect: S,
+  memo: (fn, equal) => {
+    if (!equal) return S(fn);
+    const s = value(sample(fn));
+    S(() => s(fn()));
+    return s;
+  },
+  ignore: sample
+};
 ```
-
-There are more advanced options to support a Context API. Look at the examples. Still experimental and will document as it stabilizes.
 
 ## Runtime Renderers
 
@@ -61,7 +62,7 @@ Once you have generated a runtime it can be used with companion render APIs:
 
 ### JSX
 
-[Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/babel-plugin-jsx-dom-expressions) is by far the best way to use this library. Pre-compilation lends to the best performance since the whole template can be analyzed and optimal compiled into the most performant JavaScript. This allows for not only the most performant code, but the cleanest and the smallest.
+[Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/dom-expressions/blob/master/packages/babel-plugin-jsx-dom-expressions) is by far the best way to use this library. Pre-compilation lends to the best performance since the whole template can be analyzed and optimal compiled into the most performant JavaScript. This allows for not only the most performant code, but the cleanest and the smallest.
 
 ### Tagged Template
 

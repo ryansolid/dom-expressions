@@ -1,4 +1,4 @@
-import * as r from './runtime';
+import * as r from '../src/runtime';
 
 describe("r.insert", () => {
   // <div><!-- insert --></div>

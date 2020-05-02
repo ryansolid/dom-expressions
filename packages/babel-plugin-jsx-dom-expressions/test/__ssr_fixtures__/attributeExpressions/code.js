@@ -9,7 +9,7 @@ const template = (
       {...results()}
       disabled
       title={welcoming()}
-      style={{ backgroundColor: color() }}
+      style={{ "background-color": color() }}
       classList={{ selected: selected() }}
     >
       <a href={"/"} ref={link}>
@@ -29,8 +29,22 @@ const template2 = (
 const template3 = (
   <div
     id={/*@once*/ state.id}
-    style={/*@once*/ { backgroundColor: state.color }}
+    style={/*@once*/ { "background-color": state.color }}
     name={state.name}
     textContent={/*@once*/ state.content}
   />
+);
+
+const template4 = (
+  <div
+    class="hi"
+    className={state.class}
+  />
+)
+
+const template5 = (
+  <div>
+    <div innerHTML={rowId} />
+    <div innerHTML={row.label} />
+  </div>
 );

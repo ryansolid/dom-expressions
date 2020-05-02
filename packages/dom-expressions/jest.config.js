@@ -1,5 +1,5 @@
 module.exports = {
-  collectCoverageFrom: [
-    'test/runtime.js'
-  ]
+  transform: {
+    "^.+\\.[t|j]sx?$": "babel-jest"
+  }
 }

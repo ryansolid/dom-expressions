@@ -1,14 +1,14 @@
-/// <reference path="../../dom-expressions/runtime.d.ts" />
 import { parse, stringify, IDom } from "html-parse-string";
-import { NonComposedEvents } from "dom-expressions";
-import { wrap, insert, createComponent, delegateEvents, classList } from "dom-expressions-runtime";
+import { NonComposedEvents } from "dom-expressions/src/constants";
+import { effect, insert, createComponent, delegateEvents, classList, style } from "dom-expressions/src/runtime";
 
 interface Runtime {
-  wrap: typeof wrap;
+  effect: typeof effect;
   insert: typeof insert;
   createComponent: typeof createComponent;
   delegateEvents: typeof delegateEvents;
   classList: typeof classList;
+  style: typeof style;
 }
 type TemplateCreate = (node: Node, data: any[], r: Runtime, bindings: any) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
@@ -86,8 +86,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     let count = options.counter++,
       expr = `!doNotWrap ? exprs[${count}]() : exprs[${count}]`;
     if (name === "style") {
-      const id = uuid++;
-      options.exprs.push(`const v${id} = ${expr}`, `Object.assign(${tag}.style, v${id})`);
+      options.exprs.push(`r.style(${tag}, ${expr})`);
     } else if (name === "classList") {
       options.exprs.push(`r.classList(${tag}, ${expr})`);
     } else if (name === "on") {
@@ -121,7 +120,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       parseKeyValue(tag, name, childOptions);
       options.decl.push(`_fn${count} = doNotWrap => {\n${childOptions.exprs.join(";\n")};\n}`);
       options.exprs.push(
-        `typeof exprs[${count}] === "function" ? r.wrap(_fn${count}) : _fn${count}(true)`
+        `typeof exprs[${count}] === "function" ? r.effect(_fn${count}) : _fn${count}(true)`
       );
       options.counter = childOptions.counter;
       options.wrap = false;

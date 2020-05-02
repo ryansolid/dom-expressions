@@ -9,8 +9,10 @@ pluginTester({
     builtIns: ['For'],
     generate: "ssr",
     delegateEvents: true,
+    wrapConditionals: true,
     wrapFragments: true,
-    contextToCustomElements: true
+    contextToCustomElements: true,
+    staticMarker: "@once"
   },
   title: 'Convert JSX',
   fixtures: path.join(__dirname, '__ssr_fixtures__'),
