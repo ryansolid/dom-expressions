@@ -4,7 +4,7 @@ import {
   assign,
   createComponent,
   delegateEvents
-} from "dom-expressions/src/runtime";
+} from "dom-expressions/src/dom";
 import { dynamicProperty } from "dom-expressions/src/utils";
 
 interface Runtime {

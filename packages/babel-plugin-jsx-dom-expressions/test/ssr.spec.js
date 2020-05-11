@@ -8,9 +8,6 @@ pluginTester({
     moduleName: 'r-dom',
     builtIns: ['For'],
     generate: "ssr",
-    delegateEvents: true,
-    wrapConditionals: true,
-    wrapFragments: true,
     contextToCustomElements: true,
     staticMarker: "@once"
   },

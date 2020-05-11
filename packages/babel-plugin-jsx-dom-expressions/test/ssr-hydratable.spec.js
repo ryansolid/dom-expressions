@@ -9,9 +9,6 @@ pluginTester({
     builtIns: ['For'],
     generate: "ssr",
     hydratable: true,
-    delegateEvents: true,
-    wrapConditionals: true,
-    wrapFragments: true,
     contextToCustomElements: true,
     staticMarker: "@once"
   },

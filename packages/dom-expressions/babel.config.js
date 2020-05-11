@@ -12,7 +12,7 @@ module.exports = {
         ],
         [
           "babel-plugin-jsx-dom-expressions",
-          { moduleName: "../src/runtime.js", wrapConditionals: true }
+          { moduleName: "./s-jsx.js", wrapConditionals: true }
         ]
       ]
     }

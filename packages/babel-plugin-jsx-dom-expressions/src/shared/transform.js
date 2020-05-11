@@ -66,8 +66,9 @@ export function transformNode(path, info = {}) {
         checkMember: true,
         checkTags: !!info.componentChild
       })
-    )
+    ) {
       return { exprs: [node.expression], template: "" };
+    }
     const expr =
       config.wrapConditionals &&
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))

@@ -169,7 +169,7 @@ function transformComponentChildren(children) {
         componentChild: true
       });
       dynamic = dynamic || child.dynamic;
-      return createTemplate(path, child, config.wrapFragments && filteredChildren.length > 1);
+      return createTemplate(path, child, filteredChildren.length > 1);
     }
   });
 

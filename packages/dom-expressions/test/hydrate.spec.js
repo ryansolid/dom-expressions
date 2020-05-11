@@ -1,5 +1,5 @@
-import * as r from "../src/runtime";
-import { setHydrateContext, nextHydrateContext } from "./hydrate.config";
+import * as r from "../src/dom";
+import { setHydrateContext, nextHydrateContext } from "../src/runtime";
 import S from "s-js";
 
 describe("r.hydrate", () => {
@@ -21,7 +21,7 @@ describe("r.hydrate", () => {
       return leadingExpr;
     });
     rendered = await result;
-    expect(rendered).toBe(`<span _hk=":0"><!--#-->Hi<!--/--> John</span>`);
+    expect(rendered).toBe(`<span _hk="0"><!--#-->Hi<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -40,7 +40,7 @@ describe("r.hydrate", () => {
       })();
       r.insert(container, leadingExpr, undefined, [...container.childNodes]);
     }, container);
-    expect(container.innerHTML).toBe(`<span _hk=":0"><!--#-->Hi<!--/--> John</span>`);
+    expect(container.innerHTML).toBe(`<span _hk="0"><!--#-->Hi<!--/--> John</span>`);
     expect(container.firstChild).toBe(el1);
     expect(el1.firstChild).toBe(el2);
     expect(el2.nextSibling).toBe(el3);
@@ -60,7 +60,7 @@ describe("r.hydrate", () => {
       return leadingExpr;
     });
     rendered = await result;
-    expect(rendered).toBe(`<span _hk=":0"><!--#-->${time}<!--/--> John</span>`);
+    expect(rendered).toBe(`<span _hk="0"><!--#-->${time}<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -80,7 +80,7 @@ describe("r.hydrate", () => {
       })();
       r.insert(container, leadingExpr, undefined, [...container.childNodes]);
     }, container);
-    expect(container.innerHTML).toBe(`<span _hk=":0"><!--#-->${updatedTime}<!--/--> John</span>`);
+    expect(container.innerHTML).toBe(`<span _hk="0"><!--#-->${updatedTime}<!--/--> John</span>`);
     expect(container.firstChild).toBe(el1);
     expect(el1.firstChild).toBe(el2);
     expect(el2.nextSibling).toBe(el3);
@@ -97,7 +97,7 @@ describe("r.hydrate", () => {
       return multiExpression;
     });
     rendered = await result;
-    expect(rendered).toBe(`<div _hk=":0">First</div>middle<div _hk=":1">Last</div>`);
+    expect(rendered).toBe(`<div _hk="0">First</div>middle<div _hk="0">Last</div>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -120,7 +120,7 @@ describe("r.hydrate", () => {
       ];
       r.insert(container, multiExpression, undefined, [...container.childNodes]);
     }, container);
-    expect(container.innerHTML).toBe(`<div _hk=":0">First</div>middle<div _hk=":1">Last</div>`);
+    expect(container.innerHTML).toBe(`<div _hk="0">First</div>middle<div _hk="0">Last</div>`);
     expect(container.firstChild).toBe(el1);
     expect(el1.nextSibling).toEqual(el2);
     expect(el1.nextSibling.nextSibling).toBe(el3);
@@ -130,13 +130,13 @@ describe("r.hydrate", () => {
     result = r.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
-        () => "middle",
+        S(() => "middle"),
         r.getNextElement(_tmpl$3, true)
       ];
       return multiExpression;
     });
     rendered = await result;
-    expect(rendered).toBe(`<div _hk=":0">First</div>middle<div _hk=":1">Last</div>`);
+    expect(rendered).toBe(`<div _hk="0">First</div>middle<div _hk="0">Last</div>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -150,7 +150,7 @@ describe("r.hydrate", () => {
           r.runHydrationEvents(_el$.getAttribute("_hk"));
           return _el$;
         })(),
-        () => "middle",
+        S(() => "middle"),
         (function() {
           const _el$ = r.getNextElement(_tmpl$3);
           r.runHydrationEvents(_el$.getAttribute("_hk"));
@@ -159,7 +159,7 @@ describe("r.hydrate", () => {
       ];
       r.insert(container, multiExpression, undefined, [...container.childNodes]);
     }, container);
-    expect(container.innerHTML).toBe(`<div _hk=":0">First</div>middle<div _hk=":1">Last</div>`);
+    expect(container.innerHTML).toBe(`<div _hk="0">First</div>middle<div _hk="0">Last</div>`);
     expect(container.firstChild).toBe(el1);
     expect(el1.nextSibling).toEqual(el2);
     expect(el1.nextSibling.nextSibling).toBe(el3);
@@ -169,14 +169,14 @@ describe("r.hydrate", () => {
     result = r.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
-        () => r.getNextElement(_tmpl$2, true),
+        S(() => r.getNextElement(_tmpl$2, true)),
         r.getNextElement(_tmpl$3, true)
       ];
       return multiExpression;
     });
     rendered = await result;
     expect(rendered).toBe(
-      `<div _hk=":0">First</div><div _hk=":2">First</div><div _hk=":1">Last</div>`
+      `<div _hk="0">First</div><div _hk="0">First</div><div _hk="0">Last</div>`
     );
     // gather refs
     container.innerHTML = rendered;
@@ -191,12 +191,12 @@ describe("r.hydrate", () => {
           r.runHydrationEvents(_el$.getAttribute("_hk"));
           return _el$;
         })(),
-        () =>
+        S(() =>
           (function() {
             const _el$ = r.getNextElement(_tmpl$2);
             r.runHydrationEvents(_el$.getAttribute("_hk"));
             return _el$;
-          })(),
+          })()),
         (function() {
           const _el$ = r.getNextElement(_tmpl$3);
           r.runHydrationEvents(_el$.getAttribute("_hk"));
@@ -206,7 +206,7 @@ describe("r.hydrate", () => {
       r.insert(container, multiExpression, undefined, [...container.childNodes]);
     }, container);
     expect(container.innerHTML).toBe(
-      `<div _hk=":0">First</div><div _hk=":2">First</div><div _hk=":1">Last</div>`
+      `<div _hk="0">First</div><div _hk="0">First</div><div _hk="0">Last</div>`
     );
     expect(container.firstChild).toBe(el1);
     expect(el1.nextSibling).toBe(el2);
@@ -222,12 +222,12 @@ describe("r.hydrate", () => {
         r.getNextElement(_tmpl$3, true)
       ];
       await new Promise(r => setTimeout(r, 20));
-      signal(r.getNextElement(_tmpl$3, true));
+      signal(r.getNextElement(_tmpl$2, true));
       return multiExpression;
     });
     rendered = await result;
     expect(rendered).toBe(
-      `<div _hk=":0">First</div><div _hk=":2">Last</div><div _hk=":1">Last</div>`
+      `<div _hk="0">First</div><div _hk="0">First</div><div _hk="0">Last</div>`
     );
   });
 
@@ -240,12 +240,12 @@ describe("r.hydrate", () => {
         r.ssr`<div _hk="${r.getHydrationKey()}">Last</div>`
       ];
       await new Promise(r => setTimeout(r, 20));
-      signal(r.ssr`<div _hk="${r.getHydrationKey()}">Last</div>`);
+      signal(r.ssr`<div _hk="${r.getHydrationKey()}">First</div>`);
       return multiExpression;
     });
     rendered = await result;
     expect(rendered).toBe(
-      `<div _hk=":0">First</div><div _hk=":2">Last</div><div _hk=":1">Last</div>`
+      `<div _hk="0">First</div><div _hk="0">First</div><div _hk="0">Last</div>`
     );
   });
 
@@ -273,7 +273,7 @@ describe("r.hydrate", () => {
     );
     rendered = await result;
     expect(rendered).toBe(
-      `<div _hk=":0">First</div><div _hk=".1:0">Last</div><div _hk=":2">Last</div>`
+      `<div _hk="0">First</div><div _hk="0.0">Last</div><div _hk="0">Last</div>`
     );
     // gather refs
     container.innerHTML = rendered;
@@ -313,7 +313,7 @@ describe("r.hydrate", () => {
     }, container);
     await new Promise(r => setTimeout(r, 50));
     expect(container.innerHTML).toBe(
-      `<div _hk=":0">First</div><div _hk=".1:0">Last</div><div _hk=":2">Last</div>`
+      `<div _hk="0">First</div><div _hk="0.0">Last</div><div _hk="0">Last</div>`
     );
     expect(container.firstChild).toBe(el1);
     expect(el1.nextSibling).toBe(el2);

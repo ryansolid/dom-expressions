@@ -34,7 +34,7 @@ const singleDynamic = () => inserted();
 
 const firstStatic = [inserted, _$getNextElement(_tmpl$3)];
 const firstDynamic = [_$memo(() => inserted()), _$getNextElement(_tmpl$3)];
-const firstComponent = [_$createComponent(Component, {}), _$getNextElement(_tmpl$3)];
+const firstComponent = [_$memo(_$createComponent(Component, {})), _$getNextElement(_tmpl$3)];
 const lastStatic = [_$getNextElement(_tmpl$3), inserted];
 const lastDynamic = [_$getNextElement(_tmpl$3), _$memo(() => inserted())];
-const lastComponent = [_$getNextElement(_tmpl$3), _$createComponent(Component, {})];
+const lastComponent = [_$getNextElement(_tmpl$3), _$memo(_$createComponent(Component, {}))];

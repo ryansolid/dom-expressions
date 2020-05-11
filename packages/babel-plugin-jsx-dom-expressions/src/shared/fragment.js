@@ -12,7 +12,7 @@ export default function transformFragmentChildren(children, results) {
     childNodes = filteredChildren.map(path => {
       if (t.isJSXText(path.node)) return t.stringLiteral(trimWhitespace(path.node.extra.raw));
       const child = transformNode(path, { topLevel: true });
-      return createTemplate(path, child, !singleChild && config.wrapFragments);
+      return createTemplate(path, child, !singleChild);
     });
   results.exprs.push(singleChild ? childNodes[0] : t.arrayExpression(childNodes));
 }
