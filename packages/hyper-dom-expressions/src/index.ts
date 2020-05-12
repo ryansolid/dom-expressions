@@ -4,8 +4,7 @@ import {
   assign,
   createComponent,
   delegateEvents
-} from "dom-expressions/src/dom";
-import { dynamicProperty } from "dom-expressions/src/utils";
+} from "dom-expressions/src/runtime";
 
 interface Runtime {
   insert: typeof insert;
@@ -108,4 +107,14 @@ export function createHyperScript(r: Runtime): HyperScript {
   }
 
   return h;
+}
+
+function dynamicProperty(props: any, key: string) {
+  const src = props[key];
+  Object.defineProperty(props, key, {
+    get() {
+      return src();
+    },
+    enumerable: true
+  });
 }

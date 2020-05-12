@@ -1,6 +1,6 @@
 import * as S from "s-js";
 import { createHTML } from "../dist/lit-dom-expressions";
-import * as r from "dom-expressions/src/dom";
+import * as r from "dom-expressions/src/runtime";
 
 const html = createHTML(r);
 

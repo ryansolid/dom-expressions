@@ -1,6 +1,19 @@
-import * as r from "../src/dom";
-import { setHydrateContext, nextHydrateContext } from "../src/runtime";
+import * as r from "../src/runtime";
 import S from "s-js";
+
+function setHydrateContext(context) {
+  globalThis._$HYDRATION.context = context;
+}
+
+function nextHydrateContext() {
+  return globalThis._$HYDRATION && globalThis._$HYDRATION.context
+    ? {
+        id: `${globalThis._$HYDRATION.context.id}.${globalThis._$HYDRATION.context.count++}`,
+        count: 0,
+        registry: globalThis._$HYDRATION.context.registry
+      }
+    : undefined;
+}
 
 describe("r.hydrate", () => {
   const container = document.createElement("div"),

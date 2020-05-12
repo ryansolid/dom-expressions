@@ -1,4 +1,4 @@
-import * as r from "../src/dom";
+import * as r from "../src/runtime";
 import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" class="selected" style="color: red;"><h1 custom-attr="1" disabled="" title="Hello John" style="background-color: red;" class="selected"><a href="/">Welcome</a></h1></div>`;
