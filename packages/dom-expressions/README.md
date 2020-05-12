@@ -43,17 +43,34 @@ Example:
 ```js
 import S, { root, value, sample } from "s-js";
 
-export default {
-  root,
-  effect: S,
-  memo: (fn, equal) => {
-    if (!equal) return S(fn);
-    const s = value(sample(fn));
-    S(() => s(fn()));
-    return s;
-  },
-  ignore: sample
-};
+const currentContext = null;
+
+function memo(fn, equal) {
+  if (typeof fn !== "function") return fn;
+  if (!equal) return S(fn);
+  const s = value(sample(fn));
+  S(() => s(fn()));
+  return s;
+}
+
+function createComponent(Comp, props, dynamicKeys) {
+  if (dynamicKeys) {
+    for (let i = 0; i < dynamicKeys.length; i++) dynamicProperty(props, dynamicKeys[i]);
+  }
+  return sample(() => Comp(props));
+}
+
+function dynamicProperty(props, key) {
+  const src = props[key];
+  Object.defineProperty(props, key, {
+    get() {
+      return src();
+    },
+    enumerable: true
+  });
+}
+
+export { root, S as effect, memo, createComponent, currentContext };
 ```
 
 ## Runtime Renderers

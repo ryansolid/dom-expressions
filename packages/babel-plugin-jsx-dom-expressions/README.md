@@ -79,7 +79,11 @@ The name of the runtime module to import the methods from.
 
 ### generate
 
-The output mode of the compiler. Can be "dom"(default), "ssr", or "hydrate". "dom" is standard output. "ssr" is for server side rendering that is hydrateable. And "hydrate" is for the client that hydrates the previously server rendered markup.s
+The output mode of the compiler. Can be "dom"(default), "ssr". "dom" is standard output. "ssr" is for server side rendering that is hydrateable.
+
+### hydratable
+
+Indicate whether the output should contain hydratable markers.
 
 ### delegateEvents
 
