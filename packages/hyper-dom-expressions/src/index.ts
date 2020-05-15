@@ -57,11 +57,13 @@ export function createHyperScript(r: Runtime): HyperScript {
         dynamic
           ? r.spread(e as Element, l, e instanceof SVGElement, !!args.length)
           : r.assign(e as Element, l, e instanceof SVGElement, !!args.length);
-      } else if ("function" === typeof l) {
+      } else if ("function" === type) {
         if (!e) {
           let props: Props = {},
-            dynamic = [];
-          if (typeof args[0] === "object") props = args.shift();
+            dynamic = [],
+            next = args[0];
+          if (typeof next === "object" && !Array.isArray(next) && !(next instanceof Element))
+            props = args.shift();
           for (const k in props) {
             if (typeof props[k] === "function") dynamic.push(k);
           }
