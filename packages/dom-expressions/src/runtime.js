@@ -389,7 +389,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (hydration.context && hydration.context.registry) return current;
+    if (hydration.context && hydration.context.registry) return array;
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
