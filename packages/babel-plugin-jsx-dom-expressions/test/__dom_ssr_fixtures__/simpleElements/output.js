@@ -6,10 +6,4 @@ const _tmpl$ = _$template(
   9
 );
 
-const template = (() => {
-  const _el$ = _$getNextElement(_tmpl$, true),
-    _el$2 = _el$.firstChild,
-    _el$3 = _el$2.firstChild;
-
-  return _el$;
-})();
+const template = _$getNextElement(_tmpl$, true);

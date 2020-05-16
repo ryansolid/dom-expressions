@@ -82,6 +82,17 @@ export function isDynamic(path, { checkMember, checkTags }) {
   return dynamic;
 }
 
+export function isStaticExpressionContainer(path) {
+  const node = path.node;
+  return (
+    t.isJSXExpressionContainer(node) &&
+    t.isJSXElement(path.parent) &&
+    !isComponent(getTagName(path.parent)) &&
+    (t.isStringLiteral(node.expression) || t.isNumericLiteral(node.expression) ||
+      (t.isTemplateLiteral(node.expression) && node.expression.expressions.length === 0))
+  );
+}
+
 // remove unnecessary JSX Text nodes
 export function filterChildren(children, loose) {
   return children.filter(

@@ -14,7 +14,8 @@ import {
   registerImportMethod,
   filterChildren,
   toEventName,
-  checkLength
+  checkLength,
+  isStaticExpressionContainer
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -498,14 +499,20 @@ function nextChild(children, index) {
 function detectExpressions(children, index) {
   if (children[index - 1]) {
     const node = children[index - 1].node;
-    if (t.isJSXExpressionContainer(node) && !t.isJSXEmptyExpression(node.expression)) return true;
+    if (
+      t.isJSXExpressionContainer(node) &&
+      !t.isJSXEmptyExpression(node.expression) &&
+      !isStaticExpressionContainer(children[index - 1])
+    )
+      return true;
     let tagName;
     if (t.isJSXElement(node) && (tagName = getTagName(node)) && isComponent(tagName)) return true;
   }
   for (let i = index; i < children.length; i++) {
     const child = children[i].node;
     if (t.isJSXExpressionContainer(child)) {
-      if (!t.isJSXEmptyExpression(child.expression)) return true;
+      if (!t.isJSXEmptyExpression(child.expression) && !isStaticExpressionContainer(children[i]))
+        return true;
     } else if (t.isJSXElement(child)) {
       const tagName = getTagName(child);
       if (isComponent(tagName)) return true;

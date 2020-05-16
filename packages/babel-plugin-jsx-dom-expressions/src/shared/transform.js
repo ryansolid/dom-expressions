@@ -4,7 +4,14 @@ import { transformElement as transformElementDOM } from "../dom/element";
 import { createTemplate as createTemplateDOM } from "../dom/template";
 import { transformElement as transformElementSSR } from "../ssr/element";
 import { createTemplate as createTemplateSSR } from "../ssr/template";
-import { getTagName, isComponent, isDynamic, trimWhitespace, transformCondition } from "./utils";
+import {
+  getTagName,
+  isComponent,
+  isDynamic,
+  trimWhitespace,
+  transformCondition,
+  isStaticExpressionContainer
+} from "./utils";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
 
@@ -33,19 +40,12 @@ export function transformNode(path, info = {}) {
     let results = { template: "", decl: [], exprs: [], dynamics: [] };
     transformFragmentChildren(path.get("children"), results);
     return results;
-  } else if (
-    t.isJSXText(node) ||
-    (t.isJSXExpressionContainer(node) &&
-      t.isJSXElement(path.parent) &&
-      !isComponent(getTagName(path.parent)) &&
-      (t.isStringLiteral(node.expression) ||
-        (t.isTemplateLiteral(node.expression) && node.expression.expressions.length === 0)))
-  ) {
+  } else if (t.isJSXText(node) || isStaticExpressionContainer(path)) {
     const text = trimWhitespace(
       t.isJSXExpressionContainer(node)
-        ? t.isStringLiteral(node.expression)
-          ? node.expression.value
-          : node.expression.quasis[0].value.raw
+        ? t.isTemplateLiteral(node.expression)
+          ? node.expression.quasis[0].value.raw
+          : node.expression.value.toString()
         : node.extra.raw
     );
     if (!text.length) return null;
