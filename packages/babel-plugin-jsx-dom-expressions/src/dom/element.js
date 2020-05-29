@@ -218,19 +218,27 @@ function transformAttributes(path, results) {
           !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
       ) {
         if (key === "ref") {
-          results.exprs.unshift(
-            t.expressionStatement(
-              t.conditionalExpression(
-                t.binaryExpression(
-                  "===",
-                  t.unaryExpression("typeof", value.expression),
-                  t.stringLiteral("function")
-                ),
-                t.callExpression(value.expression, [elem]),
-                t.assignmentExpression("=", value.expression, elem)
+          if (t.isLVal(value.expression)) {
+            results.exprs.unshift(
+              t.expressionStatement(
+                t.conditionalExpression(
+                  t.binaryExpression(
+                    "===",
+                    t.unaryExpression("typeof", value.expression),
+                    t.stringLiteral("function")
+                  ),
+                  t.callExpression(value.expression, [elem]),
+                  t.assignmentExpression("=", value.expression, elem)
+                )
               )
-            )
-          );
+            );
+          } else {
+            results.exprs.unshift(
+              t.expressionStatement(
+                t.callExpression(value.expression, [elem])
+              )
+            );
+          }
         } else if (key === "children") {
           children = value;
         } else if (key.startsWith("on")) {
