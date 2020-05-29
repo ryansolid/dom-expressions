@@ -232,7 +232,7 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else {
+          } else if (t.isFunction(value.expression)) {
             results.exprs.unshift(
               t.expressionStatement(
                 t.callExpression(value.expression, [elem])
