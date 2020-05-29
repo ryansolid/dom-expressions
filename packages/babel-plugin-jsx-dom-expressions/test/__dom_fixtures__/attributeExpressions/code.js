@@ -33,3 +33,8 @@ const template3 = (
 const template4 = <div class="hi" className={state.class} />;
 
 const template5 = <div style={someStyle()} />;
+
+let refTarget;
+const template6 = <div ref={refTarget} />;
+
+const template7 = <div ref={e => console.log(e)} />;

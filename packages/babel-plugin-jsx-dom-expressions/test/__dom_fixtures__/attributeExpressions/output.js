@@ -91,3 +91,20 @@ const template5 = (() => {
 
   return _el$10;
 })();
+
+let refTarget;
+
+const template6 = (() => {
+  const _el$11 = _tmpl$3.cloneNode(true);
+
+  typeof refTarget === "function" ? refTarget(_el$11) : (refTarget = _el$11);
+  return _el$11;
+})();
+
+const template7 = (() => {
+  const _el$12 = _tmpl$3.cloneNode(true);
+
+  (e => console.log(e))(_el$12);
+
+  return _el$12;
+})();
