@@ -17,6 +17,7 @@ It is designed to be used with a companion render API. Currently there is a JSX 
 
 - [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
 - [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
+- [vuerx-jsx](https://github.com/ryansolid/vuerx-jsx): Ever wondered how much more performant Vue is without Vue? ...renderer built on @vue/reactivity
 - [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
 - [s-jsx](https://github.com/ryansolid/s-jsx): Testbed for trying new techniques in the fine grained space.
 
