@@ -73,23 +73,27 @@ export default function transformComponent(path) {
         if (t.isJSXExpressionContainer(value))
           if (node.name.name === "ref") {
             if (config.generate === "ssr") return;
-            runningObject.push(
-              t.objectProperty(
-                t.identifier("ref"),
-                t.arrowFunctionExpression(
-                  [t.identifier("r$")],
-                  t.conditionalExpression(
-                    t.binaryExpression(
-                      "===",
-                      t.unaryExpression("typeof", value.expression),
-                      t.stringLiteral("function")
-                    ),
-                    t.callExpression(value.expression, [t.identifier("r$")]),
-                    t.assignmentExpression("=", value.expression, t.identifier("r$"))
+            if (t.isLVal(value.expression)) {
+              runningObject.push(
+                t.objectProperty(
+                  t.identifier("ref"),
+                  t.arrowFunctionExpression(
+                    [t.identifier("r$")],
+                    t.conditionalExpression(
+                      t.binaryExpression(
+                        "===",
+                        t.unaryExpression("typeof", value.expression),
+                        t.stringLiteral("function")
+                      ),
+                      t.callExpression(value.expression, [t.identifier("r$")]),
+                      t.assignmentExpression("=", value.expression, t.identifier("r$"))
+                    )
                   )
                 )
-              )
-            );
+              );
+            } else if (t.isFunction(value.expression)) {
+              runningObject.push(t.objectProperty(t.identifier("ref"), value.expression));
+            }
           } else if (
             isDynamic(attribute.get("value").get("expression"), {
               checkMember: true,
@@ -175,7 +179,11 @@ function transformComponentChildren(children) {
 
   if (filteredChildren.length === 1) {
     transformedChildren = transformedChildren[0];
-    if (!t.isJSXExpressionContainer(filteredChildren[0]) && !t.isJSXSpreadChild(filteredChildren[0]) && !t.isJSXText(filteredChildren[0])) {
+    if (
+      !t.isJSXExpressionContainer(filteredChildren[0]) &&
+      !t.isJSXSpreadChild(filteredChildren[0]) &&
+      !t.isJSXText(filteredChildren[0])
+    ) {
       transformedChildren =
         t.isCallExpression(transformedChildren) && !transformedChildren.arguments.length
           ? transformedChildren.callee

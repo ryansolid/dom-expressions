@@ -98,7 +98,8 @@ const template2 = _$createComponent(
     dynamic: () => state.data,
     stale: state.data,
     handleClick: clickHandler,
-    "hyphen-ated": () => state.data
+    "hyphen-ated": () => state.data,
+    ref: el => (e = el)
   },
   _ck$2
 );

@@ -29,6 +29,7 @@ const template2 = (
     stale={/*@once*/ state.data}
     handleClick={clickHandler}
     hyphen-ated={state.data}
+    ref={el => e = el}
   />
 );
 
