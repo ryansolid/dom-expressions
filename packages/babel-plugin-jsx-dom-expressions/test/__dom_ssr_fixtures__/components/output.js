@@ -8,10 +8,14 @@ import { insert as _$insert } from "r-dom";
 const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
   _tmpl$2 = _$template(`<div></div>`, 2),
   _tmpl$3 = _$template(`<div>From Parent</div>`, 2),
-  _tmpl$4 = _$template(`<div><!--#--><!--/--><!--#--><!--/--><!--#--><!--/--></div>`, 8);
+  _tmpl$4 = _$template(`<div><!--#--><!--/--><!--#--><!--/--><!--#--><!--/--></div>`, 8),
+  _tmpl$5 = _$template(
+    `<div><!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--></div>`,
+    14
+  );
 
 const _ck$ = ["children"],
-  _ck$2 = ["dynamic"],
+  _ck$2 = ["dynamic", "hyphen-ated"],
   _ck$3 = ["children", "dynamic"],
   _ck$4 = ["each", "fallback"];
 
@@ -107,7 +111,9 @@ const template2 = _$createComponent(
     name: "Jake",
     dynamic: () => state.data,
     stale: state.data,
-    handleClick: clickHandler
+    handleClick: clickHandler,
+    "hyphen-ated": () => state.data,
+    ref: el => (e = el)
   },
   _ck$2
 );
@@ -159,3 +165,86 @@ const template7 = _$createComponent(
   },
   _ck$
 );
+
+const template8 = _$createComponent(
+  Child,
+  {
+    children: () => [item => item, item => item]
+  },
+  _ck$
+);
+
+const template9 = _$createComponent(_garbage, {
+  children: "Hi"
+});
+
+const template10 = (() => {
+  const _el$20 = _$getNextElement(_tmpl$5, true),
+    _el$26 = _el$20.firstChild,
+    _el$27 = _el$26.nextSibling,
+    _el$21 = _el$27.nextSibling,
+    _el$28 = _el$21.nextSibling,
+    _el$29 = _el$28.nextSibling,
+    _el$22 = _el$29.nextSibling,
+    _el$30 = _el$22.nextSibling,
+    _el$31 = _el$30.nextSibling,
+    _el$23 = _el$31.nextSibling,
+    _el$32 = _el$23.nextSibling,
+    _el$33 = _el$32.nextSibling,
+    _el$24 = _el$33.nextSibling,
+    _el$34 = _el$24.nextSibling,
+    _el$35 = _el$34.nextSibling,
+    _el$25 = _el$35.nextSibling,
+    _el$36 = _el$25.nextSibling,
+    _el$37 = _el$36.nextSibling;
+
+  _$insert(
+    _el$20,
+    _$createComponent(Link, {
+      children: "new"
+    }),
+    _el$27
+  );
+
+  _$insert(
+    _el$20,
+    _$createComponent(Link, {
+      children: "comments"
+    }),
+    _el$29
+  );
+
+  _$insert(
+    _el$20,
+    _$createComponent(Link, {
+      children: "show"
+    }),
+    _el$31
+  );
+
+  _$insert(
+    _el$20,
+    _$createComponent(Link, {
+      children: "ask"
+    }),
+    _el$33
+  );
+
+  _$insert(
+    _el$20,
+    _$createComponent(Link, {
+      children: "jobs"
+    }),
+    _el$35
+  );
+
+  _$insert(
+    _el$20,
+    _$createComponent(Link, {
+      children: "submit"
+    }),
+    _el$37
+  );
+
+  return _el$20;
+})();

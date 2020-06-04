@@ -113,3 +113,17 @@ const template8 = _$createComponent(
 const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
+
+const template10 = _$ssr`<div _hk="${_$getHydrationKey()}"><!--#-->${_$createComponent(Link, {
+  children: "new"
+})}<!--/--> | <!--#-->${_$createComponent(Link, {
+  children: "comments"
+})}<!--/--> | <!--#-->${_$createComponent(Link, {
+  children: "show"
+})}<!--/--> | <!--#-->${_$createComponent(Link, {
+  children: "ask"
+})}<!--/--> | <!--#-->${_$createComponent(Link, {
+  children: "jobs"
+})}<!--/--> | <!--#-->${_$createComponent(Link, {
+  children: "submit"
+})}<!--/--></div>`;

@@ -29,7 +29,7 @@ const template2 = (
     stale={/*@once*/ state.data}
     handleClick={clickHandler}
     hyphen-ated={state.data}
-    ref={el => e = el}
+    ref={el => (e = el)}
   />
 );
 
@@ -67,6 +67,20 @@ const template8 = (
   </Child>
 );
 
-const template9 = (
-  <_garbage>Hi</_garbage>
-)
+const template9 = <_garbage>Hi</_garbage>;
+
+const template10 = (
+  <div>
+    <Link>new</Link>
+    {" | "}
+    <Link>comments</Link>
+    {" | "}
+    <Link>show</Link>
+    {" | "}
+    <Link>ask</Link>
+    {" | "}
+    <Link>jobs</Link>
+    {" | "}
+    <Link>submit</Link>
+  </div>
+);

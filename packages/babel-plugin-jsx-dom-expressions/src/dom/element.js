@@ -404,10 +404,10 @@ function transformChildren(path, results) {
       // boxed by textNodes
       if (
         markers ||
-        (filteredChildren[index - 1] &&
-          t.isJSXText(filteredChildren[index - 1].node) &&
-          filteredChildren[index + 1] &&
-          t.isJSXText(filteredChildren[index + 1].node))
+        (childNodes[index - 1] &&
+          childNodes[index - 1].text) &&
+          (childNodes[index + 1] &&
+          childNodes[index + 1].text)
       ) {
         if (markers) tempPath = createPlaceholder(path, results, tempPath, i++, "#")[0].name;
         const [exprId, contentId] = createPlaceholder(

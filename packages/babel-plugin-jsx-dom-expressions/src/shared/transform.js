@@ -54,7 +54,8 @@ export function transformNode(path, info = {}) {
       decl: [],
       exprs: [],
       dynamics: [],
-      postExprs: []
+      postExprs: [],
+      text: true
     };
     if (!info.skipId && config.generate !== "ssr")
       results.id = path.scope.generateUidIdentifier("el$");
