@@ -38,9 +38,9 @@ const Comp2 = () => {
 
 describe("renderToString", () => {
   it("renders as expected", async () => {
-    let res = await r.renderToString(Comp1);
+    let res = r.renderToString(Comp1);
     expect(res).toBe(fixture);
-    res = await r.renderToString(Comp2);
+    res = r.renderToString(Comp2);
     expect(res).toBe(fixture2);
   });
 });

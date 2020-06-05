@@ -5,17 +5,19 @@ const leading = "<span> John</span>";
 /* prettier-ignore */
 
 const extraSpaces = "<span>Hello John</span>";
-const trailingExpr = _$ssr`<span>Hello ${_$escape(name)}</span>`;
-const leadingExpr = _$ssr`<span>${_$escape(greeting)} John</span>`;
+
+const trailingExpr = _$ssr(["<span>Hello ", "</span>"], _$escape(name));
+
+const leadingExpr = _$ssr(["<span>", " John</span>"], _$escape(greeting));
 /* prettier-ignore */
 
-const multiExpr = _$ssr`<span>${_$escape(greeting)} ${_$escape(name)}</span>`;
+const multiExpr = _$ssr(["<span>", " ", "</span>"], _$escape(greeting), _$escape(name));
 /* prettier-ignore */
 
-const multiExprSpaced = _$ssr`<span> ${_$escape(greeting)} ${_$escape(name)} </span>`;
+const multiExprSpaced = _$ssr(["<span> ", " ", " </span>"], _$escape(greeting), _$escape(name));
 /* prettier-ignore */
 
-const multiExprTogether = _$ssr`<span> ${_$escape(greeting)}${_$escape(name)} </span>`;
+const multiExprTogether = _$ssr(["<span> ", "", " </span>"], _$escape(greeting), _$escape(name));
 /* prettier-ignore */
 
 const multiLine = "<span>Hello</span>";

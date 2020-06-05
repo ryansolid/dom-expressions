@@ -1,7 +1,23 @@
 import { ssr as _$ssr } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
-const template = _$ssr`<my-element _hk="${_$getHydrationKey()}" some-attr="${name}" someprop="${data}"></my-element>`;
-const template2 = _$ssr`<my-element _hk="${_$getHydrationKey()}" some-attr="${() =>
-  state.name}" someprop="${() => state.data}"></my-element>`;
-const template3 = _$ssr`<my-element _hk="${_$getHydrationKey()}"><header slot="head">Title</header></my-element>`;
-const template4 = _$ssr`<slot _hk="${_$getHydrationKey()}" name="head"></slot>`;
+
+const template = _$ssr(
+  ['<my-element _hk="', '" some-attr="', '" someprop="', '"></my-element>'],
+  _$getHydrationKey(),
+  name,
+  data
+);
+
+const template2 = _$ssr(
+  ['<my-element _hk="', '" some-attr="', '" someprop="', '"></my-element>'],
+  _$getHydrationKey(),
+  () => state.name,
+  () => state.data
+);
+
+const template3 = _$ssr(
+  ['<my-element _hk="', '"><header slot="head">Title</header></my-element>'],
+  _$getHydrationKey()
+);
+
+const template4 = _$ssr(['<slot _hk="', '" name="head"></slot>'], _$getHydrationKey());

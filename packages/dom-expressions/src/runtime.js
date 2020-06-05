@@ -19,11 +19,14 @@ export function render(code, element) {
 export function renderToString(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
   hydration.context = { id: "0", count: 0 };
-  return root(async () => {
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
-    );
-    const rendered = await Promise.race([code(), timeout]);
+  return root(() => {
+    const rendered = code();
+    if (typeof rendered === "object" && 'then' in rendered) {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
+      );
+      return Promise.race([rendered, timeout]).then(resolveSSRNode);
+    }
     return resolveSSRNode(rendered);
   });
 }
@@ -33,15 +36,23 @@ export function renderDOMToString(code, options = {}) {
   hydration.context = { id: "0", count: 0 };
   const container = document.createElement("div");
   document.body.appendChild(container);
-  return root(async d1 => {
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject("renderDOMToString timed out"), options.timeoutMs)
-    );
-    const rendered = await Promise.race([code(), timeout]);
-    root(d2 => (insert(container, rendered), d1(), d2()));
-    const html = container.innerHTML;
-    document.body.removeChild(container);
-    return html;
+  return root(d1 => {
+    const rendered = code();
+
+    function resolve(rendered) {
+      root(d2 => (insert(container, rendered), d1(), d2()));
+      const html = container.innerHTML;
+      document.body.removeChild(container);
+      return html;
+    }
+
+    if (typeof rendered === "object" && 'then' in rendered) {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
+      );
+      return Promise.race([rendered, timeout]).then(resolve);
+    }
+    return resolve(rendered);
   });
 }
 
@@ -187,13 +198,15 @@ export function ssr(template, ...nodes) {
       rNodes.push(memo(() => resolveSSRNode(nodes[i]())));
     } else rNodes.push(nodes[i]);
   }
-  const t = () =>
-    template.reduce((result, part, index) => {
-      result += part;
-      const node = rNodes[index];
+  const t = () => {
+    let result = "";
+    for(let i = 0; i < template.length; i++) {
+      result += template[i];
+      const node = nodes[i];
       if (node !== undefined) result += resolveSSRNode(node);
-      return result;
-    }, "");
+    }
+    return result;
+  }
   t.isTemplate = true;
   return t;
 }

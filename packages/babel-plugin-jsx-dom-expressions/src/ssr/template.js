@@ -9,9 +9,6 @@ export function createTemplate(path, result) {
   if (result.template.length === 1) return t.stringLiteral(result.template[0]);
 
   registerImportMethod(path, "ssr");
-  const quasis = result.template.map(tmpl => t.TemplateElement({ raw: tmpl }));
-  return t.TaggedTemplateExpression(
-    t.identifier("_$ssr"),
-    t.TemplateLiteral(quasis, result.templateValues)
-  );
+  const strings = result.template.map(tmpl => t.stringLiteral(tmpl));
+  return t.callExpression(t.identifier("_$ssr"), [t.arrayExpression(strings), ...result.templateValues]);
 }

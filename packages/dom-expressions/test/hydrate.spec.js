@@ -22,7 +22,7 @@ describe("r.hydrate", () => {
     _tmpl$3 = r.template(`<div>Last</div>`);
   let result, rendered;
 
-  it("hydrates simple text", async () => {
+  it("hydrates simple text", () => {
     result = r.renderDOMToString(() => {
       const leadingExpr = (function() {
         const _el$ = r.getNextElement(_tmpl$, true),
@@ -33,7 +33,7 @@ describe("r.hydrate", () => {
       })();
       return leadingExpr;
     });
-    rendered = await result;
+    rendered = result;
     expect(rendered).toBe(`<span _hk="0"><!--#-->Hi<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
@@ -60,7 +60,7 @@ describe("r.hydrate", () => {
     expect(el3.nextSibling).toBe(el4);
   });
 
-  it("hydrates with an updated timestamp", async () => {
+  it("hydrates with an updated timestamp", () => {
     const time = Date.now();
     result = r.renderDOMToString(() => {
       const leadingExpr = (function() {
@@ -72,7 +72,7 @@ describe("r.hydrate", () => {
       })();
       return leadingExpr;
     });
-    rendered = await result;
+    rendered = result;
     expect(rendered).toBe(`<span _hk="0"><!--#-->${time}<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
@@ -100,7 +100,7 @@ describe("r.hydrate", () => {
     expect(el3.nextSibling).toBe(el4);
   });
 
-  it("hydrates fragments", async () => {
+  it("hydrates fragments", () => {
     result = r.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
@@ -109,7 +109,7 @@ describe("r.hydrate", () => {
       ];
       return multiExpression;
     });
-    rendered = await result;
+    rendered = result;
     expect(rendered).toBe(`<div _hk="0">First</div>middle<div _hk="0">Last</div>`);
     // gather refs
     container.innerHTML = rendered;
@@ -139,7 +139,7 @@ describe("r.hydrate", () => {
     expect(el1.nextSibling.nextSibling).toBe(el3);
   });
 
-  it("hydrates fragments with dynamic", async () => {
+  it("hydrates fragments with dynamic", () => {
     result = r.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
@@ -148,7 +148,7 @@ describe("r.hydrate", () => {
       ];
       return multiExpression;
     });
-    rendered = await result;
+    rendered = result;
     expect(rendered).toBe(`<div _hk="0">First</div>middle<div _hk="0">Last</div>`);
     // gather refs
     container.innerHTML = rendered;
@@ -178,7 +178,7 @@ describe("r.hydrate", () => {
     expect(el1.nextSibling.nextSibling).toBe(el3);
   });
 
-  it("hydrates fragments with dynamic template", async () => {
+  it("hydrates fragments with dynamic template", () => {
     result = r.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
@@ -187,7 +187,7 @@ describe("r.hydrate", () => {
       ];
       return multiExpression;
     });
-    rendered = await result;
+    rendered = result;
     expect(rendered).toBe(
       `<div _hk="0">First</div><div _hk="0">First</div><div _hk="0">Last</div>`
     );

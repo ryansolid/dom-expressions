@@ -9,37 +9,45 @@ const _ck$ = ["children"],
   _ck$4 = ["each", "fallback"];
 
 const Child = props => [
-  _$ssr`<div _hk="${_$getHydrationKey()}">Hello <!--#-->${() =>
-    _$escape(props.name)}<!--/--></div>`,
-  _$ssr`<div _hk="${_$getHydrationKey()}">${() => _$escape(props.children)}</div>`
+  _$ssr(['<div _hk="', '">Hello <!--#-->', "<!--/--></div>"], _$getHydrationKey(), () =>
+    _$escape(props.name)
+  ),
+  _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () => _$escape(props.children))
 ];
 
 const template = props => {
   let childRef;
   const { content } = props;
-  return _$ssr`<div _hk="${_$getHydrationKey()}"><!--#-->${_$createComponent(
-    Child,
-    Object.assign(
-      {
-        name: "John"
-      },
-      Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
-      {
-        booleanProperty: true,
-        children: () => _$ssr`<div _hk="${_$getHydrationKey()}">From Parent</div>`
-      }
+  return _$ssr(
+    ['<div _hk="', '"><!--#-->', "<!--/--><!--#-->", "<!--/--><!--#-->", "<!--/--></div>"],
+    _$getHydrationKey(),
+    _$createComponent(
+      Child,
+      Object.assign(
+        {
+          name: "John"
+        },
+        Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
+        {
+          booleanProperty: true,
+          children: () => _$ssr(['<div _hk="', '">From Parent</div>'], _$getHydrationKey())
+        }
+      ),
+      ["children", ...Object.keys(props)]
     ),
-    ["children", ...Object.keys(props)]
-  )}<!--/--><!--#-->${_$createComponent(
-    Child,
-    {
-      name: "Jason",
-      children: () => _$ssr`<div _hk="${_$getHydrationKey()}">${_$escape(content)}</div>`
-    },
-    _ck$
-  )}<!--/--><!--#-->${_$createComponent(Context.Consumer, {
-    children: context => context
-  })}<!--/--></div>`;
+    _$createComponent(
+      Child,
+      {
+        name: "Jason",
+        children: () =>
+          _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), _$escape(content))
+      },
+      _ck$
+    ),
+    _$createComponent(Context.Consumer, {
+      children: context => context
+    })
+  );
 };
 
 const template2 = _$createComponent(
@@ -58,9 +66,9 @@ const template3 = _$createComponent(
   Child,
   {
     children: () => [
-      _$ssr`<div _hk="${_$getHydrationKey()}"></div>`,
-      _$ssr`<div _hk="${_$getHydrationKey()}"></div>`,
-      _$ssr`<div _hk="${_$getHydrationKey()}"></div>`,
+      _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()),
+      _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()),
+      _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()),
       "After"
     ]
   },
@@ -70,7 +78,7 @@ const template3 = _$createComponent(
 const template4 = _$createComponent(
   Child,
   {
-    children: () => _$ssr`<div _hk="${_$getHydrationKey()}"></div>`
+    children: () => _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey())
   },
   _ck$
 );
@@ -97,7 +105,7 @@ const template6 = _$createComponent(
 const template7 = _$createComponent(
   Child,
   {
-    children: () => [_$ssr`<div _hk="${_$getHydrationKey()}"></div>`, () => state.dynamic]
+    children: () => [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), () => state.dynamic]
   },
   _ck$
 );
@@ -114,29 +122,66 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 
-const template10 = _$ssr`<div _hk="${_$getHydrationKey()}"><!--#-->${_$createComponent(Link, {
-  children: "new"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "comments"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "show"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "ask"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "jobs"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "submit"
-})}<!--/--></div>`;
-const template11 = _$ssr`<div _hk="${_$getHydrationKey()}"><!--#-->${_$createComponent(Link, {
-  children: "new"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "comments"
-})}<!--/--><!--#-->${_$createComponent(Link, {
-  children: "show"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "ask"
-})}<!--/--><!--#-->${_$createComponent(Link, {
-  children: "jobs"
-})}<!--/--> | <!--#-->${_$createComponent(Link, {
-  children: "submit"
-})}<!--/--></div>`;
+const template10 = _$ssr(
+  [
+    '<div _hk="',
+    '"><!--#-->',
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--></div>"
+  ],
+  _$getHydrationKey(),
+  _$createComponent(Link, {
+    children: "new"
+  }),
+  _$createComponent(Link, {
+    children: "comments"
+  }),
+  _$createComponent(Link, {
+    children: "show"
+  }),
+  _$createComponent(Link, {
+    children: "ask"
+  }),
+  _$createComponent(Link, {
+    children: "jobs"
+  }),
+  _$createComponent(Link, {
+    children: "submit"
+  })
+);
+
+const template11 = _$ssr(
+  [
+    '<div _hk="',
+    '"><!--#-->',
+    "<!--/--> | <!--#-->",
+    "<!--/--><!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--><!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--></div>"
+  ],
+  _$getHydrationKey(),
+  _$createComponent(Link, {
+    children: "new"
+  }),
+  _$createComponent(Link, {
+    children: "comments"
+  }),
+  _$createComponent(Link, {
+    children: "show"
+  }),
+  _$createComponent(Link, {
+    children: "ask"
+  }),
+  _$createComponent(Link, {
+    children: "jobs"
+  }),
+  _$createComponent(Link, {
+    children: "submit"
+  })
+);

@@ -3,9 +3,9 @@ import { ssr as _$ssr } from "r-dom";
 const multiStatic = ["<div>First</div>", "<div>Last</div>"];
 const multiExpression = ["<div>First</div>", inserted, "<div>Last</div>", "After"];
 const multiDynamic = [
-  _$ssr`<div id="${() => state.first}">First</div>`,
+  _$ssr(['<div id="', '">First</div>'], () => state.first),
   () => state.inserted,
-  _$ssr`<div id="${() => state.last}">Last</div>`,
+  _$ssr(['<div id="', '">Last</div>'], () => state.last),
   "After"
 ];
 const singleExpression = inserted;

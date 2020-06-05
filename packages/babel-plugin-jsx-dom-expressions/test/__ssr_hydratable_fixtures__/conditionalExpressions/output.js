@@ -4,57 +4,100 @@ import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 const _ck$ = ["render"];
-const template1 = _$ssr`<div _hk="${_$getHydrationKey()}">${_$escape(simple)}</div>`;
-const template2 = _$ssr`<div _hk="${_$getHydrationKey()}">${() => _$escape(state.dynamic)}</div>`;
-const template3 = _$ssr`<div _hk="${_$getHydrationKey()}">${_$escape(simple ? good : bad)}</div>`;
-const template4 = _$ssr`<div _hk="${_$getHydrationKey()}">${() =>
-  _$escape(simple ? good() : bad)}</div>`;
-const template5 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$memo(() => state.dynamic, true);
 
-  return () => (_c$() ? good() : bad);
-})()}</div>`;
-const template6 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$memo(() => state.dynamic, true);
+const template1 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), _$escape(simple));
 
-  return () => _c$() && good();
-})()}</div>`;
-const template7 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$memo(() => state.count > 5, true);
+const template2 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
+  _$escape(state.dynamic)
+);
 
-  return () =>
-    _c$()
-      ? (() => {
-          const _c$ = _$memo(() => state.dynamic, true);
+const template3 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
+  _$escape(simple ? good : bad)
+);
 
-          return () => (_c$() ? best : good());
-        })()
-      : bad;
-})()}</div>`;
-const template8 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$memo(() => state.dynamic && state.something, true);
+const template4 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
+  _$escape(simple ? good() : bad)
+);
 
-  return () => _c$() && good();
-})()}</div>`;
-const template9 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$memo(() => state.dynamic, true);
+const template5 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
+  (() => {
+    const _c$ = _$memo(() => state.dynamic, true);
 
-  return () => (_c$() && good()) || bad;
-})()}</div>`;
-const template10 = _$ssr`<div _hk="${_$getHydrationKey()}">${() =>
-  _$escape(state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback")}</div>`;
-const template11 = _$ssr`<div _hk="${_$getHydrationKey()}">${(() => {
-  const _c$ = _$memo(() => state.a, true);
+    return () => (_c$() ? good() : bad);
+  })()
+);
 
-  return () =>
-    _c$()
-      ? a()
-      : (() => {
-          const _c$ = _$memo(() => state.b, true);
+const template6 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
+  (() => {
+    const _c$ = _$memo(() => state.dynamic, true);
 
-          return () => (_c$() ? b() : state.c ? "c" : "fallback");
-        })();
-})()}</div>`;
+    return () => _c$() && good();
+  })()
+);
+
+const template7 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
+  (() => {
+    const _c$ = _$memo(() => state.count > 5, true);
+
+    return () =>
+      _c$()
+        ? (() => {
+            const _c$ = _$memo(() => state.dynamic, true);
+
+            return () => (_c$() ? best : good());
+          })()
+        : bad;
+  })()
+);
+
+const template8 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
+  (() => {
+    const _c$ = _$memo(() => state.dynamic && state.something, true);
+
+    return () => _c$() && good();
+  })()
+);
+
+const template9 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
+  (() => {
+    const _c$ = _$memo(() => state.dynamic, true);
+
+    return () => (_c$() && good()) || bad;
+  })()
+);
+
+const template10 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
+  _$escape(state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback")
+);
+
+const template11 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
+  (() => {
+    const _c$ = _$memo(() => state.a, true);
+
+    return () =>
+      _c$()
+        ? a()
+        : (() => {
+            const _c$ = _$memo(() => state.b, true);
+
+            return () => (_c$() ? b() : state.c ? "c" : "fallback");
+          })();
+  })()
+);
 
 const template12 = _$createComponent(
   Comp,
