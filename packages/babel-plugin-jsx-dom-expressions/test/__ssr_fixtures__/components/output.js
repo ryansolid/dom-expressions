@@ -155,3 +155,13 @@ const template11 = _$ssr(
     children: "submit"
   })
 );
+
+const template12 = _$ssr(
+  ["<div> | ", " |  |  | ", " | </div>"],
+  _$createComponent(Link, {
+    children: "comments"
+  }),
+  _$createComponent(Link, {
+    children: "show"
+  })
+);

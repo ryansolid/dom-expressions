@@ -8,7 +8,8 @@ const _tmpl$ = _$template(`<div>Hello </div>`, 2),
   _tmpl$2 = _$template(`<div></div>`, 2),
   _tmpl$3 = _$template(`<div>From Parent</div>`, 2),
   _tmpl$4 = _$template(`<div> | <!----> | <!----> | <!----> | <!----> | </div>`, 6),
-  _tmpl$5 = _$template(`<div> | <!----> | <!----> | </div>`, 4);
+  _tmpl$5 = _$template(`<div> | <!----> | <!----> | </div>`, 4),
+  _tmpl$6 = _$template(`<div> | <!----> |  |  | <!----> | </div>`, 4);
 
 const _ck$ = ["children"],
   _ck$2 = ["dynamic", "hyphen-ated"],
@@ -286,4 +287,31 @@ const template11 = (() => {
   );
 
   return _el$22;
+})();
+
+const template12 = (() => {
+  const _el$28 = _tmpl$6.cloneNode(true),
+    _el$29 = _el$28.firstChild,
+    _el$34 = _el$29.nextSibling,
+    _el$30 = _el$34.nextSibling,
+    _el$35 = _el$30.nextSibling,
+    _el$33 = _el$35.nextSibling;
+
+  _$insert(
+    _el$28,
+    _$createComponent(Link, {
+      children: "comments"
+    }),
+    _el$34
+  );
+
+  _$insert(
+    _el$28,
+    _$createComponent(Link, {
+      children: "show"
+    }),
+    _el$35
+  );
+
+  return _el$28;
 })();

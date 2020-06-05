@@ -17,7 +17,8 @@ const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
   _tmpl$6 = _$template(
     `<div><!--#--><!--/--> | <!--#--><!--/--><!--#--><!--/--> | <!--#--><!--/--><!--#--><!--/--> | <!--#--><!--/--></div>`,
     14
-  );
+  ),
+  _tmpl$7 = _$template(`<div> | <!--#--><!--/--> |  |  | <!--#--><!--/--> | </div>`, 6);
 
 const _ck$ = ["children"],
   _ck$2 = ["dynamic", "hyphen-ated"],
@@ -341,4 +342,35 @@ const template11 = (() => {
   );
 
   return _el$38;
+})();
+
+const template12 = (() => {
+  const _el$54 = _$getNextElement(_tmpl$7),
+    _el$55 = _el$54.firstChild,
+    _el$60 = _el$55.nextSibling,
+    [_el$61, _co$17] = _$getNextMarker(_el$60.nextSibling),
+    _el$56 = _el$61.nextSibling,
+    _el$62 = _el$56.nextSibling,
+    [_el$63, _co$18] = _$getNextMarker(_el$62.nextSibling),
+    _el$59 = _el$63.nextSibling;
+
+  _$insert(
+    _el$54,
+    _$createComponent(Link, {
+      children: "comments"
+    }),
+    _el$61,
+    _co$17
+  );
+
+  _$insert(
+    _el$54,
+    _$createComponent(Link, {
+      children: "show"
+    }),
+    _el$63,
+    _co$18
+  );
+
+  return _el$54;
 })();

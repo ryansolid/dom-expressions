@@ -400,7 +400,14 @@ function transformChildren(path, results) {
       transformNode(child, {
         skipId: !results.id || !detectExpressions(filteredChildren, index)
       })
-    );
+    // combine adjacent textNodes
+    ).reduce((memo, child) => {
+      const i = memo.length
+      if (child.text && i && memo[i -1].text) {
+        memo[i - 1].template += child.template;
+      } else memo.push(child);
+      return memo;
+    }, []);
 
   childNodes.forEach((child, index) => {
     if (!child) return;

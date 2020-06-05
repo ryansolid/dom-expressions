@@ -185,3 +185,14 @@ const template11 = _$ssr(
     children: "submit"
   })
 );
+
+const template12 = _$ssr(
+  ['<div _hk="', '"> | <!--#-->', "<!--/--> |  |  | <!--#-->", "<!--/--> | </div>"],
+  _$getHydrationKey(),
+  _$createComponent(Link, {
+    children: "comments"
+  }),
+  _$createComponent(Link, {
+    children: "show"
+  })
+);
