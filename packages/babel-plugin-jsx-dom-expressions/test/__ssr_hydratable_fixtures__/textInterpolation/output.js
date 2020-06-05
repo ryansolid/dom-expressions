@@ -20,6 +20,9 @@ const multiExpr = _$ssr`<span _hk="${_$getHydrationKey()}"><!--#-->${_$escape(gr
 const multiExprSpaced = _$ssr`<span _hk="${_$getHydrationKey()}"> <!--#-->${_$escape(greeting)}<!--/--> <!--#-->${_$escape(name)}<!--/--> </span>`;
 /* prettier-ignore */
 
+const multiExprTogether = _$ssr`<span _hk="${_$getHydrationKey()}"> <!--#-->${_$escape(greeting)}<!--/--><!--#-->${_$escape(name)}<!--/--> </span>`;
+/* prettier-ignore */
+
 const multiLine = _$ssr`<span _hk="${_$getHydrationKey()}">Hello</span>`;
 /* prettier-ignore */
 

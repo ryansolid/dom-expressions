@@ -367,9 +367,33 @@ function transformAttributes(path, results) {
   results.hasHydratableEvent = results.hasHydratableEvent || hasHydratableEvent;
 }
 
+function wrappedByText(list, startIndex) {
+  let index = startIndex,
+    wrapped;
+  while (--index >= 0) {
+    const node = list[index]
+    if (!node) continue;
+    if (node.text) {
+      wrapped = true;
+      break;
+    }
+    if (node.id) return false;
+  }
+  if (!wrapped) return false;
+  index = startIndex;
+  while (++index < list.length) {
+    const node = list[index]
+    if (!node) continue;
+    if (node.text) return true;
+    if (node.id) return false;
+  }
+  return false;
+}
+
 function transformChildren(path, results) {
   const { generate, hydratable } = config;
   let tempPath = results.id && results.id.name,
+    nextPlaceholder,
     i = 0;
   const filteredChildren = filterChildren(path.get("children"), true),
     childNodes = filteredChildren.map((child, index) =>
@@ -396,6 +420,7 @@ function transformChildren(path, results) {
       results.dynamics.push(...child.dynamics);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       tempPath = child.id.name;
+      nextPlaceholder = null;
       i++;
     } else if (child.exprs.length) {
       registerImportMethod(path, "insert");
@@ -404,19 +429,22 @@ function transformChildren(path, results) {
       // boxed by textNodes
       if (
         markers ||
-        (childNodes[index - 1] &&
-          childNodes[index - 1].text) &&
-          (childNodes[index + 1] &&
-          childNodes[index + 1].text)
+        wrappedByText(childNodes, index)
       ) {
+        let exprId, contentId;
         if (markers) tempPath = createPlaceholder(path, results, tempPath, i++, "#")[0].name;
-        const [exprId, contentId] = createPlaceholder(
-          path,
-          results,
-          tempPath,
-          i++,
-          markers ? "/" : ""
-        );
+        if (nextPlaceholder) {
+          exprId = nextPlaceholder;
+        } else {
+          [exprId, contentId] = createPlaceholder(
+            path,
+            results,
+            tempPath,
+            i++,
+            markers ? "/" : ""
+          );
+        }
+        if (!markers) nextPlaceholder = exprId;
         results.exprs.push(
           t.expressionStatement(
             t.callExpression(
@@ -467,7 +495,7 @@ function transformChildren(path, results) {
           )
         );
       }
-    }
+    } else nextPlaceholder = null;
   });
 }
 

@@ -6,8 +6,9 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
   _tmpl$3 = _$template(`<span>Hello John</span>`, 2),
   _tmpl$4 = _$template(`<span> </span>`, 2),
   _tmpl$5 = _$template(`<span> <!----> <!----> </span>`, 4),
-  _tmpl$6 = _$template(`<span>Hello</span>`, 2),
-  _tmpl$7 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
+  _tmpl$6 = _$template(`<span> <!----> </span>`, 3),
+  _tmpl$7 = _$template(`<span>Hello</span>`, 2),
+  _tmpl$8 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
 
 const trailing = _tmpl$.cloneNode(true);
 
@@ -63,10 +64,24 @@ const multiExprSpaced = (() => {
 })();
 /* prettier-ignore */
 
-const multiLine = _tmpl$6.cloneNode(true);
+const multiExprTogether = (() => {
+  const _el$16 = _tmpl$6.cloneNode(true),
+        _el$17 = _el$16.firstChild,
+        _el$19 = _el$17.nextSibling,
+        _el$18 = _el$19.nextSibling;
+
+  _$insert(_el$16, greeting, _el$19);
+
+  _$insert(_el$16, name, _el$19);
+
+  return _el$16;
+})();
+/* prettier-ignore */
+
+const multiLine = _tmpl$7.cloneNode(true);
 /* prettier-ignore */
 
 const multiLineTrailingSpace = _tmpl$3.cloneNode(true);
 /* prettier-ignore */
 
-const escape = _tmpl$7.cloneNode(true);
+const escape = _tmpl$8.cloneNode(true);

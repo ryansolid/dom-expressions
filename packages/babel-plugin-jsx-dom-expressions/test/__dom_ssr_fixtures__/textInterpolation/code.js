@@ -14,6 +14,9 @@ const multiExpr = <span>{greeting} {name}</span>;
 const multiExprSpaced = <span> {greeting} {name} </span>;
 
 /* prettier-ignore */
+const multiExprTogether = <span> {greeting}{name} </span>;
+
+/* prettier-ignore */
 const multiLine = <span>
 
   Hello

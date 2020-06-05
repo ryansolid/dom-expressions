@@ -9,8 +9,9 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
   _tmpl$5 = _$template(`<span><!--#--><!--/--> John</span>`, 4),
   _tmpl$6 = _$template(`<span><!--#--><!--/--> <!--#--><!--/--></span>`, 6),
   _tmpl$7 = _$template(`<span> <!--#--><!--/--> <!--#--><!--/--> </span>`, 6),
-  _tmpl$8 = _$template(`<span>Hello</span>`, 2),
-  _tmpl$9 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
+  _tmpl$8 = _$template(`<span> <!--#--><!--/--><!--#--><!--/--> </span>`, 6),
+  _tmpl$9 = _$template(`<span>Hello</span>`, 2),
+  _tmpl$10 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
 
 const trailing = _$getNextElement(_tmpl$, true);
 
@@ -76,10 +77,27 @@ const multiExprSpaced = (() => {
 })();
 /* prettier-ignore */
 
-const multiLine = _$getNextElement(_tmpl$8, true);
+const multiExprTogether = (() => {
+  const _el$26 = _$getNextElement(_tmpl$8, true),
+        _el$27 = _el$26.firstChild,
+        _el$29 = _el$27.nextSibling,
+        _el$30 = _el$29.nextSibling,
+        _el$31 = _el$30.nextSibling,
+        _el$32 = _el$31.nextSibling,
+        _el$28 = _el$32.nextSibling;
+
+  _$insert(_el$26, greeting, _el$30);
+
+  _$insert(_el$26, name, _el$32);
+
+  return _el$26;
+})();
+/* prettier-ignore */
+
+const multiLine = _$getNextElement(_tmpl$9, true);
 /* prettier-ignore */
 
 const multiLineTrailingSpace = _$getNextElement(_tmpl$3, true);
 /* prettier-ignore */
 
-const escape = _$getNextElement(_tmpl$9, true);
+const escape = _$getNextElement(_tmpl$10, true);

@@ -13,6 +13,10 @@ const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
   _tmpl$5 = _$template(
     `<div><!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--></div>`,
     14
+  ),
+  _tmpl$6 = _$template(
+    `<div><!--#--><!--/--> | <!--#--><!--/--><!--#--><!--/--> | <!--#--><!--/--><!--#--><!--/--> | <!--#--><!--/--></div>`,
+    14
   );
 
 const _ck$ = ["children"],
@@ -262,4 +266,79 @@ const template10 = (() => {
   );
 
   return _el$20;
+})();
+
+const template11 = (() => {
+  const _el$38 = _$getNextElement(_tmpl$6),
+    _el$42 = _el$38.firstChild,
+    [_el$43, _co$11] = _$getNextMarker(_el$42.nextSibling),
+    _el$39 = _el$43.nextSibling,
+    _el$44 = _el$39.nextSibling,
+    [_el$45, _co$12] = _$getNextMarker(_el$44.nextSibling),
+    _el$46 = _el$45.nextSibling,
+    [_el$47, _co$13] = _$getNextMarker(_el$46.nextSibling),
+    _el$40 = _el$47.nextSibling,
+    _el$48 = _el$40.nextSibling,
+    [_el$49, _co$14] = _$getNextMarker(_el$48.nextSibling),
+    _el$50 = _el$49.nextSibling,
+    [_el$51, _co$15] = _$getNextMarker(_el$50.nextSibling),
+    _el$41 = _el$51.nextSibling,
+    _el$52 = _el$41.nextSibling,
+    [_el$53, _co$16] = _$getNextMarker(_el$52.nextSibling);
+
+  _$insert(
+    _el$38,
+    _$createComponent(Link, {
+      children: "new"
+    }),
+    _el$43,
+    _co$11
+  );
+
+  _$insert(
+    _el$38,
+    _$createComponent(Link, {
+      children: "comments"
+    }),
+    _el$45,
+    _co$12
+  );
+
+  _$insert(
+    _el$38,
+    _$createComponent(Link, {
+      children: "show"
+    }),
+    _el$47,
+    _co$13
+  );
+
+  _$insert(
+    _el$38,
+    _$createComponent(Link, {
+      children: "ask"
+    }),
+    _el$49,
+    _co$14
+  );
+
+  _$insert(
+    _el$38,
+    _$createComponent(Link, {
+      children: "jobs"
+    }),
+    _el$51,
+    _co$15
+  );
+
+  _$insert(
+    _el$38,
+    _$createComponent(Link, {
+      children: "submit"
+    }),
+    _el$53,
+    _co$16
+  );
+
+  return _el$38;
 })();

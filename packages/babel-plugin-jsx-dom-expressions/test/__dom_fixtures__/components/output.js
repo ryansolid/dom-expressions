@@ -7,7 +7,8 @@ import { insert as _$insert } from "r-dom";
 const _tmpl$ = _$template(`<div>Hello </div>`, 2),
   _tmpl$2 = _$template(`<div></div>`, 2),
   _tmpl$3 = _$template(`<div>From Parent</div>`, 2),
-  _tmpl$4 = _$template(`<div> | <!----> | <!----> | <!----> | <!----> | </div>`, 6);
+  _tmpl$4 = _$template(`<div> | <!----> | <!----> | <!----> | <!----> | </div>`, 6),
+  _tmpl$5 = _$template(`<div> | <!----> | <!----> | </div>`, 4);
 
 const _ck$ = ["children"],
   _ck$2 = ["dynamic", "hyphen-ated"],
@@ -226,4 +227,63 @@ const template10 = (() => {
   );
 
   return _el$12;
+})();
+
+const template11 = (() => {
+  const _el$22 = _tmpl$5.cloneNode(true),
+    _el$23 = _el$22.firstChild,
+    _el$26 = _el$23.nextSibling,
+    _el$24 = _el$26.nextSibling,
+    _el$27 = _el$24.nextSibling,
+    _el$25 = _el$27.nextSibling;
+
+  _$insert(
+    _el$22,
+    _$createComponent(Link, {
+      children: "new"
+    }),
+    _el$23
+  );
+
+  _$insert(
+    _el$22,
+    _$createComponent(Link, {
+      children: "comments"
+    }),
+    _el$26
+  );
+
+  _$insert(
+    _el$22,
+    _$createComponent(Link, {
+      children: "show"
+    }),
+    _el$26
+  );
+
+  _$insert(
+    _el$22,
+    _$createComponent(Link, {
+      children: "ask"
+    }),
+    _el$27
+  );
+
+  _$insert(
+    _el$22,
+    _$createComponent(Link, {
+      children: "jobs"
+    }),
+    _el$27
+  );
+
+  _$insert(
+    _el$22,
+    _$createComponent(Link, {
+      children: "submit"
+    }),
+    null
+  );
+
+  return _el$22;
 })();

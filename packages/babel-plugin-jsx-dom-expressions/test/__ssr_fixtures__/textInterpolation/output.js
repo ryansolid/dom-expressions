@@ -15,6 +15,9 @@ const multiExpr = _$ssr`<span>${_$escape(greeting)} ${_$escape(name)}</span>`;
 const multiExprSpaced = _$ssr`<span> ${_$escape(greeting)} ${_$escape(name)} </span>`;
 /* prettier-ignore */
 
+const multiExprTogether = _$ssr`<span> ${_$escape(greeting)}${_$escape(name)} </span>`;
+/* prettier-ignore */
+
 const multiLine = "<span>Hello</span>";
 /* prettier-ignore */
 

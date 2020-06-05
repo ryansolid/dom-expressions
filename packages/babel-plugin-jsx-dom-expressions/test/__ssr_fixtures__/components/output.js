@@ -120,3 +120,16 @@ const template10 = _$ssr`<div>${_$createComponent(Link, {
 })} | ${_$createComponent(Link, {
   children: "submit"
 })}</div>`;
+const template11 = _$ssr`<div>${_$createComponent(Link, {
+  children: "new"
+})} | ${_$createComponent(Link, {
+  children: "comments"
+})}${_$createComponent(Link, {
+  children: "show"
+})} | ${_$createComponent(Link, {
+  children: "ask"
+})}${_$createComponent(Link, {
+  children: "jobs"
+})} | ${_$createComponent(Link, {
+  children: "submit"
+})}</div>`;
