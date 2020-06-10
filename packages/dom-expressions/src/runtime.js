@@ -176,7 +176,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       if (info.type === "attribute") {
         node.setAttribute(prop, value);
       } else node[info.alias] = value;
-    } else if (isSVG || prop.indexOf("-") > -1) {
+    } else if (isSVG || prop.indexOf("-") > -1 || prop.indexOf(":") > -1) {
       if ((info = SVGAttributes[prop])) {
         if (info.alias) node.setAttribute(info.alias, value);
         else node.setAttribute(prop, value);
