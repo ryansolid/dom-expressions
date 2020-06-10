@@ -23,6 +23,8 @@ const template = (() => {
 
   _$spread(_el$2, () => results(), false, true);
 
+  _el$2.style.setProperty("margin-right", "40px");
+
   typeof link === "function" ? link(_el$3) : (link = _el$3);
 
   _$effect(
@@ -92,19 +94,37 @@ const template5 = (() => {
   return _el$10;
 })();
 
-let refTarget;
-
 const template6 = (() => {
   const _el$11 = _tmpl$3.cloneNode(true);
 
-  typeof refTarget === "function" ? refTarget(_el$11) : (refTarget = _el$11);
+  _$effect(_$p =>
+    _$style(
+      _el$11,
+      {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      _$p
+    )
+  );
+
   return _el$11;
 })();
+
+let refTarget;
 
 const template7 = (() => {
   const _el$12 = _tmpl$3.cloneNode(true);
 
-  (e => console.log(e))(_el$12);
-
+  typeof refTarget === "function" ? refTarget(_el$12) : (refTarget = _el$12);
   return _el$12;
+})();
+
+const template8 = (() => {
+  const _el$13 = _tmpl$3.cloneNode(true);
+
+  (e => console.log(e))(_el$13);
+
+  return _el$13;
 })();

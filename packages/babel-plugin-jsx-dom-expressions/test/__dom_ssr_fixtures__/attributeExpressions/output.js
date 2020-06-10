@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { style as _$style } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { classList as _$classList } from "r-dom";
@@ -22,6 +23,8 @@ const template = (() => {
   _el$.style.setProperty("color", color);
 
   _$spread(_el$2, () => results(), false, true);
+
+  _el$2.style.setProperty("margin-right", "40px");
 
   typeof link === "function" ? link(_el$3) : (link = _el$3);
 
@@ -82,4 +85,47 @@ const template4 = (() => {
   _$effect(() => (_el$9.className = `hi ${state.class}`));
 
   return _el$9;
+})();
+
+const template5 = (() => {
+  const _el$10 = _$getNextElement(_tmpl$3, true);
+
+  _$effect(_$p => _$style(_el$10, someStyle(), _$p));
+
+  return _el$10;
+})();
+
+const template6 = (() => {
+  const _el$11 = _$getNextElement(_tmpl$3, true);
+
+  _$effect(_$p =>
+    _$style(
+      _el$11,
+      {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      _$p
+    )
+  );
+
+  return _el$11;
+})();
+
+let refTarget;
+
+const template7 = (() => {
+  const _el$12 = _$getNextElement(_tmpl$3, true);
+
+  typeof refTarget === "function" ? refTarget(_el$12) : (refTarget = _el$12);
+  return _el$12;
+})();
+
+const template8 = (() => {
+  const _el$13 = _$getNextElement(_tmpl$3, true);
+
+  (e => console.log(e))(_el$13);
+
+  return _el$13;
 })();

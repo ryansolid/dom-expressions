@@ -1,15 +1,10 @@
 const template = (
-  <div
-    id="main"
-    {...results}
-    classList={{ selected: selected }}
-    style={{ color }}
-  >
+  <div id="main" {...results} classList={{ selected: selected }} style={{ color }}>
     <h1
       {...results()}
       disabled
       title={welcoming()}
-      style={{ "background-color": color() }}
+      style={{ "background-color": color(), "margin-right": "40px" }}
       classList={{ selected: selected() }}
     >
       <a href={"/"} ref={link}>
@@ -35,9 +30,13 @@ const template3 = (
   />
 );
 
-const template4 = (
-  <div
-    class="hi"
-    className={state.class}
-  />
-)
+const template4 = <div class="hi" className={state.class} />;
+
+const template5 = <div style={someStyle()} />;
+
+const template6 = <div style={{ "background-color": color(), "margin-right": "40px", ...props.style }} />;
+
+let refTarget;
+const template7 = <div ref={refTarget} />;
+
+const template8 = <div ref={e => console.log(e)} />;

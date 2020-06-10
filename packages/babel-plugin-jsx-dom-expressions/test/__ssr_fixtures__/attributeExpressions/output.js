@@ -26,7 +26,8 @@ const template = _$ssr(
   () => welcoming(),
   () =>
     _$ssrStyle({
-      "background-color": color()
+      "background-color": color(),
+      "margin-right": "40px"
     }),
   () =>
     _$ssrClassList({
@@ -50,4 +51,16 @@ const template3 = _$ssr(
 
 const template4 = _$ssr(['<div class="', '"></div>'], () => `hi ${state.class}`);
 
-const template5 = _$ssr(["<div><div>", "</div><div>", "</div></div>"], rowId, () => row.label);
+const template5 = _$ssr(['<div style="', '"></div>'], () => _$ssrStyle(someStyle()));
+
+const template6 = _$ssr(['<div style="', '"></div>'], () =>
+  _$ssrStyle({
+    "background-color": color(),
+    "margin-right": "40px",
+    ...props.style
+  })
+);
+
+let refTarget;
+const template7 = "<div></div>";
+const template8 = "<div></div>";

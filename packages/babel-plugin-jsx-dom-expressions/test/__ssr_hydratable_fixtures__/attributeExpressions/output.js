@@ -29,7 +29,8 @@ const template = _$ssr(
   () => welcoming(),
   () =>
     _$ssrStyle({
-      "background-color": color()
+      "background-color": color(),
+      "margin-right": "40px"
     }),
   () =>
     _$ssrClassList({
@@ -60,3 +61,21 @@ const template4 = _$ssr(
   _$getHydrationKey(),
   () => `hi ${state.class}`
 );
+
+const template5 = _$ssr(['<div _hk="', '" style="', '"></div>'], _$getHydrationKey(), () =>
+  _$ssrStyle(someStyle())
+);
+
+const template6 = _$ssr(['<div _hk="', '" style="', '"></div>'], _$getHydrationKey(), () =>
+  _$ssrStyle({
+    "background-color": color(),
+    "margin-right": "40px",
+    ...props.style
+  })
+);
+
+let refTarget;
+
+const template7 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+
+const template8 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());

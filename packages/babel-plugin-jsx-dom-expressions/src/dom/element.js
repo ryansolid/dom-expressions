@@ -150,7 +150,8 @@ function transformAttributes(path, results) {
       a.node.name &&
       a.node.name.name === "style" &&
       t.isJSXExpressionContainer(a.node.value) &&
-      t.isObjectExpression(a.node.value.expression)
+      t.isObjectExpression(a.node.value.expression) &&
+      !(a.node.value.expression.properties.some(p => t.isSpreadElement(p)))
   );
   if (styleAttribute) {
     let i = 0,
