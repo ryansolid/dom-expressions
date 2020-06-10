@@ -202,7 +202,7 @@ export function ssr(template, ...nodes) {
     let result = "";
     for(let i = 0; i < template.length; i++) {
       result += template[i];
-      const node = nodes[i];
+      const node = rNodes[i];
       if (node !== undefined) result += resolveSSRNode(node);
     }
     return result;
