@@ -15,7 +15,8 @@ import {
   filterChildren,
   toEventName,
   checkLength,
-  isStaticExpressionContainer
+  isStaticExpressionContainer,
+  reservedNameSpaces
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -90,7 +91,7 @@ export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
-  let isAttribute = isSVG || name.indexOf("-") > -1,
+  let isAttribute = isSVG || name.indexOf("-") > -1 || name.indexOf(":") > -1,
     attribute = isSVG ? SVGAttributes[name] : Attributes[name];
 
   if (attribute) {
@@ -208,14 +209,15 @@ function transformAttributes(path, results) {
       let value = node.value,
         key = t.isJSXNamespacedName(node.name)
           ? `${node.name.namespace.name}:${node.name.name.name}`
-          : node.name.name;
-      if (t.isJSXNamespacedName(node.name) && !t.isJSXExpressionContainer(value)) {
+          : node.name.name,
+        reservedNameSpace = t.isJSXNamespacedName(node.name) && reservedNameSpaces[node.name.namespace.name];
+      if (t.isJSXNamespacedName(node.name) && reservedNameSpace && !t.isJSXExpressionContainer(value)) {
         node.value = value = t.JSXExpressionContainer(value);
       }
       if (
         t.isJSXExpressionContainer(value) &&
         (key.toLowerCase() !== key ||
-          key.includes(":") ||
+          reservedNameSpace ||
           !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
       ) {
         if (key === "ref") {

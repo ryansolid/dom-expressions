@@ -69,9 +69,12 @@ export default function transformComponent(path) {
         );
       } else {
         const value = node.value || t.booleanLiteral(true),
-          wrapName = t.isValidIdentifier(node.name.name) ? t.identifier : t.stringLiteral;
+          key = t.isJSXNamespacedName(node.name)
+            ? `${node.name.namespace.name}:${node.name.name.name}`
+            : node.name.name,
+          wrapName = t.isValidIdentifier(key) ? t.identifier : t.stringLiteral;
         if (t.isJSXExpressionContainer(value))
-          if (node.name.name === "ref") {
+          if (key === "ref") {
             if (config.generate === "ssr") return;
             if (t.isLVal(value.expression)) {
               runningObject.push(
@@ -100,16 +103,16 @@ export default function transformComponent(path) {
               checkTags: true
             })
           ) {
-            dynamicKeys.push(t.stringLiteral(node.name.name));
+            dynamicKeys.push(t.stringLiteral(key));
             const expr =
               config.wrapConditionals &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
                 ? transformCondition(attribute.get("value").get("expression"))
                 : t.arrowFunctionExpression([], value.expression);
-            runningObject.push(t.objectProperty(wrapName(node.name.name), expr));
-          } else runningObject.push(t.objectProperty(wrapName(node.name.name), value.expression));
-        else runningObject.push(t.objectProperty(wrapName(node.name.name), value));
+            runningObject.push(t.objectProperty(wrapName(key), expr));
+          } else runningObject.push(t.objectProperty(wrapName(key), value.expression));
+        else runningObject.push(t.objectProperty(wrapName(key), value));
       }
     });
 

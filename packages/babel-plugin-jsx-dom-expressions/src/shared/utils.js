@@ -2,6 +2,10 @@ import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
 import config from "../config";
 
+export const reservedNameSpaces = {
+  "style": true
+}
+
 export function registerImportMethod(path, name) {
   const imports =
     path.scope.getProgramParent().data.imports ||
