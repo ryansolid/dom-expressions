@@ -2,7 +2,7 @@ import * as r from "../src/runtime";
 import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" class="selected" style="color: red;"><h1 custom-attr="1" disabled="" title="Hello John" style="background-color: red;" class="selected"><a href="/">Welcome</a></h1></div>`;
-const fixture2 = `<span> Hello &lt;====&gt; </span>`;
+const fixture2 = `<span> Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
   const selected = S.data(true),
@@ -32,7 +32,7 @@ const Comp1 = () => {
 
 const Comp2 = () => {
   const greeting = "Hello",
-    name="<====>"
+    name="<div/>"
   return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)} </span>`;
 }
 

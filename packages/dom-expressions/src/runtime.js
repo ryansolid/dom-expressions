@@ -227,7 +227,7 @@ export function ssrClassList(value) {
 export function ssrStyle(value) {
   if (typeof value === "string") return value;
   let result = "";
-  for (const s in value) result += `${s}: ${value[s]};`;
+  for (const s in value) result += `${s}: ${escape(value[s], true)};`;
   return result;
 }
 
@@ -250,7 +250,7 @@ export function ssrSpread(props, isSVG) {
         result += `class="${ssrClassList(value)}"`;
       } else {
         const key = toSSRAttribute(prop, isSVG);
-        result += `${key}="${value}"`;
+        result += `${key}="${escape(value, true)}"`;
       }
       if (i !== keys.length - 1) result += " ";
     }
@@ -258,17 +258,21 @@ export function ssrSpread(props, isSVG) {
   };
 }
 
-const escaped = {
-  '"': "&quot;",
-  "'": "&#39;",
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;"
-};
+const ATTR_REGEX = /[&<"]/g,
+  CONTENT_REGEX = /[&<]/g;
 
-export function escape(html) {
+export function escape(html, attr) {
   if (typeof html !== "string") return html;
-  return String(html).replace(/["'&<>]/g, match => escaped[match]);
+  return html.replace(attr ? ATTR_REGEX : CONTENT_REGEX, m => {
+    switch (m) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '"':
+        return '&quot;';
+      }
+  });
 }
 
 // Hydrate
