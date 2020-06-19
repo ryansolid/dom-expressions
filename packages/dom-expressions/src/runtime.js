@@ -179,14 +179,15 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       } else node[lc] = value;
     } else if ((info = Attributes[prop])) {
       if (info.type === "attribute") {
-        node.setAttribute(prop, value);
+        setAttribute(node, prop, value);
       } else node[info.alias] = value;
     } else if (isSVG || prop.indexOf("-") > -1 || prop.indexOf(":") > -1) {
       if ((info = SVGAttributes[prop])) {
-        if (info.alias) node.setAttribute(info.alias, value);
-        else node.setAttribute(prop, value);
+        if (info.alias) setAttribute(node, info.alias, value);
+        else setAttribute(node, prop, value);
       } else
-        node.setAttribute(
+        setAttribute(
+          node,
           prop.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`),
           value
         );
