@@ -62,7 +62,7 @@ export function createHyperScript(r: Runtime): HyperScript {
           let props: Props = {},
             dynamic = [],
             next = args[0];
-          if (typeof next === "object" && !Array.isArray(next) && !(next instanceof Element))
+          if (typeof next === "object" && next != null && !Array.isArray(next) && !(next instanceof Element))
             props = args.shift();
           for (const k in props) {
             if (typeof props[k] === "function") dynamic.push(k);
