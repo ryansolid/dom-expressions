@@ -436,7 +436,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       parent.appendChild(value);
     } else parent.replaceChild(value, parent.firstChild);
     current = value;
-  } else console.warn(`Skipped inserting ${value}`);
+  } else console.warn(`Skipped inserting`, value);
 
   return current;
 }
