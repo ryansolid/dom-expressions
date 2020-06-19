@@ -99,11 +99,10 @@ export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
     if (attribute.alias) name = attribute.alias;
   } else if (isSVG) name = name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
 
-  if (isAttribute)
-    return t.callExpression(t.memberExpression(elem, t.identifier("setAttribute")), [
-      t.stringLiteral(name),
-      value
-    ]);
+  if (isAttribute) {
+    registerImportMethod(path, "setAttribute");
+    return t.callExpression(t.identifier("_$setAttribute"), [elem, t.stringLiteral(name), value]);
+  }
   return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
 }
 
@@ -152,7 +151,7 @@ function transformAttributes(path, results) {
       a.node.name.name === "style" &&
       t.isJSXExpressionContainer(a.node.value) &&
       t.isObjectExpression(a.node.value.expression) &&
-      !(a.node.value.expression.properties.some(p => t.isSpreadElement(p)))
+      !a.node.value.expression.properties.some(p => t.isSpreadElement(p))
   );
   if (styleAttribute) {
     let i = 0,
@@ -210,8 +209,13 @@ function transformAttributes(path, results) {
         key = t.isJSXNamespacedName(node.name)
           ? `${node.name.namespace.name}:${node.name.name.name}`
           : node.name.name,
-        reservedNameSpace = t.isJSXNamespacedName(node.name) && reservedNameSpaces[node.name.namespace.name];
-      if (t.isJSXNamespacedName(node.name) && reservedNameSpace && !t.isJSXExpressionContainer(value)) {
+        reservedNameSpace =
+          t.isJSXNamespacedName(node.name) && reservedNameSpaces[node.name.namespace.name];
+      if (
+        t.isJSXNamespacedName(node.name) &&
+        reservedNameSpace &&
+        !t.isJSXExpressionContainer(value)
+      ) {
         node.value = value = t.JSXExpressionContainer(value);
       }
       if (
@@ -237,9 +241,7 @@ function transformAttributes(path, results) {
             );
           } else if (t.isFunction(value.expression)) {
             results.exprs.unshift(
-              t.expressionStatement(
-                t.callExpression(value.expression, [elem])
-              )
+              t.expressionStatement(t.callExpression(value.expression, [elem]))
             );
           }
         } else if (key === "children") {
@@ -374,7 +376,7 @@ function wrappedByText(list, startIndex) {
   let index = startIndex,
     wrapped;
   while (--index >= 0) {
-    const node = list[index]
+    const node = list[index];
     if (!node) continue;
     if (node.text) {
       wrapped = true;
@@ -385,7 +387,7 @@ function wrappedByText(list, startIndex) {
   if (!wrapped) return false;
   index = startIndex;
   while (++index < list.length) {
-    const node = list[index]
+    const node = list[index];
     if (!node) continue;
     if (node.text) return true;
     if (node.id) return false;
@@ -399,18 +401,21 @@ function transformChildren(path, results) {
     nextPlaceholder,
     i = 0;
   const filteredChildren = filterChildren(path.get("children"), true),
-    childNodes = filteredChildren.map((child, index) =>
-      transformNode(child, {
-        skipId: !results.id || !detectExpressions(filteredChildren, index)
-      })
-    // combine adjacent textNodes
-    ).reduce((memo, child) => {
-      const i = memo.length
-      if (child.text && i && memo[i -1].text) {
-        memo[i - 1].template += child.template;
-      } else memo.push(child);
-      return memo;
-    }, []);
+    childNodes = filteredChildren
+      .map(
+        (child, index) =>
+          transformNode(child, {
+            skipId: !results.id || !detectExpressions(filteredChildren, index)
+          })
+        // combine adjacent textNodes
+      )
+      .reduce((memo, child) => {
+        const i = memo.length;
+        if (child.text && i && memo[i - 1].text) {
+          memo[i - 1].template += child.template;
+        } else memo.push(child);
+        return memo;
+      }, []);
 
   childNodes.forEach((child, index) => {
     if (!child) return;
@@ -437,22 +442,13 @@ function transformChildren(path, results) {
       const multi = checkLength(filteredChildren),
         markers = (generate === "dom-ssr" || hydratable) && multi;
       // boxed by textNodes
-      if (
-        markers ||
-        wrappedByText(childNodes, index)
-      ) {
+      if (markers || wrappedByText(childNodes, index)) {
         let exprId, contentId;
         if (markers) tempPath = createPlaceholder(path, results, tempPath, i++, "#")[0].name;
         if (nextPlaceholder) {
           exprId = nextPlaceholder;
         } else {
-          [exprId, contentId] = createPlaceholder(
-            path,
-            results,
-            tempPath,
-            i++,
-            markers ? "/" : ""
-          );
+          [exprId, contentId] = createPlaceholder(path, results, tempPath, i++, markers ? "/" : "");
         }
         if (!markers) nextPlaceholder = exprId;
         results.exprs.push(

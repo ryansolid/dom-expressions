@@ -1,6 +1,7 @@
 import { template as _$template } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { spread as _$spread } from "r-dom";
+import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 
@@ -36,10 +37,10 @@ const template2 = (() => {
         _v$3 = state.x,
         _v$4 = state.y,
         _v$5 = props.stroke;
-      _v$ !== _p$._v$ && _el$3.setAttribute("class", (_p$._v$ = _v$));
-      _v$2 !== _p$._v$2 && _el$3.setAttribute("stroke-width", (_p$._v$2 = _v$2));
-      _v$3 !== _p$._v$3 && _el$3.setAttribute("x", (_p$._v$3 = _v$3));
-      _v$4 !== _p$._v$4 && _el$3.setAttribute("y", (_p$._v$4 = _v$4));
+      _v$ !== _p$._v$ && _$setAttribute(_el$3, "class", (_p$._v$ = _v$));
+      _v$2 !== _p$._v$2 && _$setAttribute(_el$3, "stroke-width", (_p$._v$2 = _v$2));
+      _v$3 !== _p$._v$3 && _$setAttribute(_el$3, "x", (_p$._v$3 = _v$3));
+      _v$4 !== _p$._v$4 && _$setAttribute(_el$3, "y", (_p$._v$4 = _v$4));
       _v$5 !== _p$._v$5 && _el$3.style.setProperty("stroke-width", (_p$._v$5 = _v$5));
       return _p$;
     },

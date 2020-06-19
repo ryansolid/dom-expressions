@@ -1,5 +1,5 @@
 import { Attributes, SVGAttributes, NonComposedEvents } from "./constants";
-import  { root, effect, memo, currentContext, createComponent } from "rxcore";
+import { root, effect, memo, currentContext, createComponent } from "rxcore";
 import reconcileArrays from "./reconcile";
 
 const eventRegistry = new Set(),
@@ -21,7 +21,7 @@ export function renderToString(code, options = {}) {
   hydration.context = { id: "0", count: 0 };
   return root(() => {
     const rendered = code();
-    if (typeof rendered === "object" && 'then' in rendered) {
+    if (typeof rendered === "object" && "then" in rendered) {
       const timeout = new Promise((_, reject) =>
         setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
       );
@@ -46,7 +46,7 @@ export function renderDOMToString(code, options = {}) {
       return html;
     }
 
-    if (typeof rendered === "object" && 'then' in rendered) {
+    if (typeof rendered === "object" && "then" in rendered) {
       const timeout = new Promise((_, reject) =>
         setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
       );
@@ -97,6 +97,11 @@ export function delegateEvents(eventNames) {
 export function clearDelegatedEvents() {
   for (let name of eventRegistry.keys()) document.removeEventListener(name, eventHandler);
   eventRegistry.clear();
+}
+
+export function setAttribute(node, name, value) {
+  if (value === false || value == null) node.removeAttribute(name);
+  else node.setAttribute(name, value);
 }
 
 export function classList(node, value, prev) {
@@ -200,13 +205,13 @@ export function ssr(template, ...nodes) {
   }
   const t = () => {
     let result = "";
-    for(let i = 0; i < template.length; i++) {
+    for (let i = 0; i < template.length; i++) {
       result += template[i];
       const node = rNodes[i];
       if (node !== undefined) result += resolveSSRNode(node);
     }
     return result;
-  }
+  };
   t.isTemplate = true;
   return t;
 }
@@ -265,13 +270,13 @@ export function escape(html, attr) {
   if (typeof html !== "string") return html;
   return html.replace(attr ? ATTR_REGEX : CONTENT_REGEX, m => {
     switch (m) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
       case '"':
-        return '&quot;';
-      }
+        return "&quot;";
+    }
   });
 }
 
@@ -471,7 +476,8 @@ function cleanChildren(parent, current, marker, replacement) {
   const node = replacement || document.createTextNode("");
   if (current.length) {
     node !== current[0] && parent.replaceChild(node, current[0]);
-    for (let i = current.length - 1; i > 0; i--) parent.removeChild(current[i]);
+    for (let i = current.length - 1; i > 0; i--)
+      current[i].parentNode === parent && parent.removeChild(current[i]);
   } else parent.insertBefore(node, marker);
   return [node];
 }
