@@ -432,7 +432,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
       cleanChildren(parent, current, null, value);
-    } else if (current == null || current === "") {
+    } else if (current == null || current === "" || !parent.firstChild) {
       parent.appendChild(value);
     } else parent.replaceChild(value, parent.firstChild);
     current = value;

@@ -26,8 +26,7 @@ export function createHyperScript(r: Runtime): HyperScript {
   function h() {
     let args: any = [].slice.call(arguments),
       e: ExpandableNode | undefined,
-      multiExpression = false,
-      delegatedEvents = new Set<string>();
+      multiExpression = false;
 
     function item(l: any) {
       const type = typeof l;
@@ -59,11 +58,12 @@ export function createHyperScript(r: Runtime): HyperScript {
           : r.assign(e as Element, l, e instanceof SVGElement, !!args.length);
       } else if ("function" === type) {
         if (!e) {
-          let props: Props = {},
+          let props: Props | undefined,
             dynamic = [],
             next = args[0];
-          if (typeof next === "object" && next != null && !Array.isArray(next) && !(next instanceof Element))
+          if (next == null || typeof next === "object" && !Array.isArray(next) && !(next instanceof Element))
             props = args.shift();
+          props || (props = {});
           for (const k in props) {
             if (typeof props[k] === "function") dynamic.push(k);
           }
@@ -77,7 +77,6 @@ export function createHyperScript(r: Runtime): HyperScript {
     }
     typeof args[0] === "string" && detectMultiExpression(args);
     while (args.length) item(args.shift());
-    r.delegateEvents(Array.from(delegatedEvents));
     return e as ExpandableNode;
 
     function parseClass(string: string) {
