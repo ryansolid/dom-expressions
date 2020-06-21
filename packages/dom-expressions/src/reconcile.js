@@ -35,7 +35,7 @@ export default function reconcileArrays(parentNode, a, b) {
       bEnd--;
     // swap forward
     } else if (aEnd - aStart === 1 && bEnd - bStart === 1) {
-      if (map && map.has(a[aStart])) {
+      if (map && map.has(a[aStart]) || a[aStart].parentNode !== parentNode) {
         parentNode.insertBefore(b[bStart], bEnd < bLength ? b[bEnd] : after);
       } else parentNode.replaceChild(b[bStart], a[aStart]);
       break;
