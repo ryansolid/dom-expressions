@@ -63,7 +63,7 @@ const template3 = (() => {
 
   _$spread(_el$5, props, true, false);
 
-  _$runHydrationEvents(_el$4.getAttribute("_hk"));
+  _$runHydrationEvents(_el$4);
 
   return _el$4;
 })();

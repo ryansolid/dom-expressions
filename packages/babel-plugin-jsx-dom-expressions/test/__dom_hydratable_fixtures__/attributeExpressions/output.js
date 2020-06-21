@@ -49,7 +49,7 @@ const template = (() => {
     }
   );
 
-  _$runHydrationEvents(_el$.getAttribute("_hk"));
+  _$runHydrationEvents(_el$);
 
   return _el$;
 })();

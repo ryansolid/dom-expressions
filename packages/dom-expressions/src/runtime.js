@@ -319,12 +319,12 @@ export function getNextMarker(start) {
   return [end, current];
 }
 
-export function runHydrationEvents(id) {
+export function runHydrationEvents(el) {
   if (hydration && hydration.events) {
     const { completed, events } = hydration;
     while (events.length) {
-      const [id, e] = events[0];
-      if (!completed.has(id)) return;
+      const [el, e] = events[0];
+      if (!completed.has(el)) return;
       eventHandler(e);
       events.shift();
     }
@@ -336,9 +336,9 @@ export function getHydrationKey() {
 }
 
 export function generateHydrationEventsScript(eventNames) {
-  return `!function(){function t(t){const e=function t(e){return e&&(e.getAttribute("_hk")||t(e.host&&e.host instanceof Node?e.host:e.parentNode))}(t.composedPath&&t.composedPath()[0]||t.target);e&&!window._$HYDRATION.completed.has(e)&&window._$HYDRATION.events.push([e,t])}window._$HYDRATION={events:[],completed:new Set},["${eventNames.join(
+  return `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
-  )}"].forEach(e=>document.addEventListener(e,t))}();`;
+  )}"].forEach(t=>document.addEventListener(t,e))})();`
 }
 
 // Internal Functions
