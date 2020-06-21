@@ -294,7 +294,7 @@ export function getNextElement(template, isSSR) {
     if (isSSR && hydrate) el.setAttribute("_hk", getHydrationKey());
     return el;
   }
-  if (hydration && hydration.completed) hydration.completed.add(key);
+  if (hydration && hydration.completed) hydration.completed.add(node);
   return node;
 }
 
