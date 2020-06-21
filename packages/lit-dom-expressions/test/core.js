@@ -3,7 +3,6 @@ import S, { root, value, sample } from "s-js";
 const currentContext = null;
 
 function memo(fn, equal) {
-  if (typeof fn !== "function") return fn;
   if (!equal) return S(fn);
   const s = value(sample(fn));
   S(() => s(fn()));
@@ -22,7 +21,7 @@ function createComponent(Comp, props, dynamicKeys) {
       return comp.render(props);
     });
   } else c = sample(() => Comp(props));
-  return c;
+  return typeof c === "function" ? memo(c) : c;;
 }
 
 function dynamicProperty(props, key) {

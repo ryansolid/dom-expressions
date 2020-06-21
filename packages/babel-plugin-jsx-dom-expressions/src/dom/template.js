@@ -28,7 +28,7 @@ export function createTemplate(path, result, wrap) {
       );
     }
   }
-  if (wrap && (result.dynamic || result.component)) {
+  if (wrap && result.dynamic) {
     registerImportMethod(path, "memo");
     return t.callExpression(t.identifier("_$memo"), [result.exprs[0]]);
   }
