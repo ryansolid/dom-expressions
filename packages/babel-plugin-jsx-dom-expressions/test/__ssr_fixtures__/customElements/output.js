@@ -1,11 +1,16 @@
 import { ssr as _$ssr } from "r-dom";
+import { escape as _$escape } from "r-dom";
 
-const template = _$ssr(['<my-element some-attr="', '" someprop="', '"></my-element>'], name, data);
+const template = _$ssr(
+  ['<my-element some-attr="', '" someprop="', '"></my-element>'],
+  _$escape(name, true),
+  _$escape(data, true)
+);
 
 const template2 = _$ssr(
   ['<my-element some-attr="', '" someprop="', '"></my-element>'],
-  () => state.name,
-  () => state.data
+  () => _$escape(state.name, true),
+  () => _$escape(state.data, true)
 );
 
 const template3 = '<my-element><header slot="head">Title</header></my-element>';

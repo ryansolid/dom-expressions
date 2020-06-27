@@ -233,7 +233,12 @@ export function ssrClassList(value) {
 export function ssrStyle(value) {
   if (typeof value === "string") return value;
   let result = "";
-  for (const s in value) result += `${s}: ${escape(value[s], true)};`;
+  const k = Object.keys(value);
+  for (let i = 0; i < k.length; i++) {
+    const s = k[i];
+    if (i) result += ";";
+    result += `${s}:${escape(value[s], true)}`;
+  }
   return result;
 }
 

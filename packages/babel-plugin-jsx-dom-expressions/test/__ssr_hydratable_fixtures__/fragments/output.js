@@ -1,4 +1,5 @@
 import { createComponent as _$createComponent } from "r-dom";
+import { escape as _$escape } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 const multiStatic = [
@@ -12,9 +13,13 @@ const multiExpression = [
   "After"
 ];
 const multiDynamic = [
-  _$ssr(['<div _hk="', '" id="', '">First</div>'], _$getHydrationKey(), () => state.first),
+  _$ssr(['<div _hk="', '" id="', '">First</div>'], _$getHydrationKey(), () =>
+    _$escape(state.first, true)
+  ),
   () => state.inserted,
-  _$ssr(['<div _hk="', '" id="', '">Last</div>'], _$getHydrationKey(), () => state.last),
+  _$ssr(['<div _hk="', '" id="', '">Last</div>'], _$getHydrationKey(), () =>
+    _$escape(state.last, true)
+  ),
   "After"
 ];
 const singleExpression = inserted;

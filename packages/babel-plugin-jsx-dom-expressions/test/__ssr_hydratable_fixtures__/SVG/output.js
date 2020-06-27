@@ -1,6 +1,6 @@
 import { createComponent as _$createComponent } from "r-dom";
 import { ssrSpread as _$ssrSpread } from "r-dom";
-import { ssrStyle as _$ssrStyle } from "r-dom";
+import { escape as _$escape } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 const _ck$ = ["children"];
@@ -24,17 +24,16 @@ const template2 = _$ssr(
     '"></rect></svg>'
   ],
   _$getHydrationKey(),
-  () => state.name,
-  () => state.width,
-  () => state.x,
-  () => state.y,
+  () => _$escape(state.name, true),
+  () => _$escape(state.width, true),
+  () => _$escape(state.x, true),
+  () => _$escape(state.y, true),
   () =>
-    _$ssrStyle({
-      fill: "red",
-      stroke: "black",
-      "stroke-width": props.stroke,
-      opacity: 0.5
-    })
+    "fill:" +
+    "red" +
+    (";stroke:" + "black") +
+    (";stroke-width:" + _$escape(props.stroke, true)) +
+    (";opacity:" + 0.5)
 );
 
 const template3 = _$ssr(

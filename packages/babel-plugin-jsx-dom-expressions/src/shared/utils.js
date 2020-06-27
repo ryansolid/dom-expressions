@@ -193,3 +193,20 @@ export function transformCondition(path, deep) {
   }
   return deep ? expr : t.arrowFunctionExpression([], expr);
 }
+
+const ATTR_REGEX = /[&<"]/g,
+  CONTENT_REGEX = /[&<]/g;
+
+export function escapeHTML(html, attr) {
+  if (typeof html !== "string") return html;
+  return html.replace(attr ? ATTR_REGEX : CONTENT_REGEX, m => {
+    switch (m) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case '"':
+        return "&quot;";
+    }
+  });
+}

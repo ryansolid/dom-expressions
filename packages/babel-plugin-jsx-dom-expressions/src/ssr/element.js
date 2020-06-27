@@ -7,7 +7,8 @@ import {
   isDynamic,
   registerImportMethod,
   filterChildren,
-  checkLength
+  checkLength,
+  escapeHTML
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -135,7 +136,8 @@ function transformAttributes(path, results) {
         children = value;
         if (key === "innerHTML") path.doNotEscape = true;
       } else {
-        let dynamic = false;
+        let dynamic = false,
+          doEscape = true;
         if (
           isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
@@ -144,23 +146,67 @@ function transformAttributes(path, results) {
           dynamic = true;
 
         if (key === "style") {
-          registerImportMethod(path, "ssrStyle");
-          value.expression = t.callExpression(t.identifier("_$ssrStyle"), [value.expression]);
+          if (
+            t.isJSXExpressionContainer(value) &&
+            t.isObjectExpression(value.expression) &&
+            !value.expression.properties.some(p => t.isSpreadElement(p))
+          ) {
+            registerImportMethod(path, "escape");
+            const props = value.expression.properties.map((p, i) =>
+              t.binaryExpression(
+                "+",
+                t.stringLiteral(
+                  (i ? ";" : "") + (t.isIdentifier(p.key) ? p.key.name : p.key.value) + ":"
+                ),
+                t.isStringLiteral(p.value)
+                  ? t.stringLiteral(escapeHTML(p.value.value))
+                  : t.isNumericLiteral(p.value)
+                  ? p.value
+                  : t.isTemplateLiteral(p.value) && p.value.expressions.length === 0
+                  ? t.stringLiteral(escapeHTML(p.value.quasis[0].value.raw))
+                  : t.callExpression(t.identifier("_$escape"), [p.value, t.booleanLiteral(true)])
+              )
+            );
+            let res = props[0];
+            for (let i = 1; i < props.length; i++) {
+              res = t.binaryExpression("+", res, props[i]);
+            }
+            value.expression = res;
+          } else {
+            registerImportMethod(path, "ssrStyle");
+            value.expression = t.callExpression(t.identifier("_$ssrStyle"), [value.expression]);
+          }
+          doEscape = false;
         }
         if (key === "classList") {
           registerImportMethod(path, "ssrClassList");
           value.expression = t.callExpression(t.identifier("_$ssrClassList"), [value.expression]);
           key = "class";
+          doEscape = false;
         }
+        doEscape && registerImportMethod(path, "escape");
         if (dynamic)
-          value.expression = t.arrowFunctionExpression([], value.expression);
+          value.expression = t.arrowFunctionExpression(
+            [],
+            doEscape
+              ? t.callExpression(t.identifier("_$escape"), [
+                  value.expression,
+                  t.booleanLiteral(true)
+                ])
+              : value.expression
+          );
+        else if (doEscape)
+          value.expression = t.callExpression(t.identifier("_$escape"), [
+            value.expression,
+            t.booleanLiteral(true)
+          ]);
         setAttr(results, key, value.expression, isSVG);
       }
     } else {
       if (t.isJSXExpressionContainer(value)) value = value.expression;
       key = toAttribute(key, isSVG);
       appendToTemplate(results.template, ` ${key}`);
-      appendToTemplate(results.template, value ? `="${value.value}"` : `=""`);
+      appendToTemplate(results.template, value ? `="${escapeHTML(value.value, true)}"` : `=""`);
     }
   });
   if (!hasChildren && children) {
@@ -171,7 +217,7 @@ function transformAttributes(path, results) {
 function transformChildren(path, results) {
   const { hydratable } = config;
   const filteredChildren = filterChildren(path.get("children"), true);
-  filteredChildren.forEach((node) => {
+  filteredChildren.forEach(node => {
     const doNotEscape = path.doNotEscape,
       child = transformNode(node);
     appendToTemplate(results.template, child.template);
@@ -183,8 +229,10 @@ function transformChildren(path, results) {
       if (!doNotEscape) {
         registerImportMethod(path, "escape");
         if (child.dynamic) {
-          if (!t.isCallExpression(child.exprs[0])) child.exprs[0].body = t.callExpression(t.identifier("_$escape"), [child.exprs[0].body]);
-        } else if (!t.isCallExpression(child.exprs[0])) child.exprs[0] = t.callExpression(t.identifier("_$escape"), [child.exprs[0]])
+          if (!t.isCallExpression(child.exprs[0]))
+            child.exprs[0].body = t.callExpression(t.identifier("_$escape"), [child.exprs[0].body]);
+        } else if (!t.isCallExpression(child.exprs[0]))
+          child.exprs[0] = t.callExpression(t.identifier("_$escape"), [child.exprs[0]]);
       }
 
       // boxed by textNodes
