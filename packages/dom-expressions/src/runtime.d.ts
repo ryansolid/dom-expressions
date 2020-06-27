@@ -41,7 +41,7 @@ export function style(
 ): void;
 export function currentContext(): any;
 
-export function ssr(template: string[], ...nodes: any[]): { t: string | (() => string) };
+export function ssr(template: string[] | string, ...nodes: any[]): { t: string | (() => string) };
 export function ssrClassList(value: { [k: string]: boolean }): string;
 export function ssrStyle(value: { [k: string]: string }): string;
 export function ssrSpread(accessor: any, isSVG: boolean, skipChildren: boolean): () => string;
