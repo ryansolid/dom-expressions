@@ -13,5 +13,6 @@ const template2 = _$ssr(
   () => _$escape(state.data, true)
 );
 
-const template3 = '<my-element><header slot="head">Title</header></my-element>';
-const template4 = '<slot name="head"></slot>';
+const template3 = _$ssr('<my-element><header slot="head">Title</header></my-element>');
+
+const template4 = _$ssr('<slot name="head"></slot>');

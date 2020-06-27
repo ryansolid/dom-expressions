@@ -1,9 +1,11 @@
 import { ssrSpread as _$ssrSpread } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
+import { ssr as _$ssr } from "r-dom";
 const _ck$ = ["children"];
-const children = "<div></div>";
+
+const children = _$ssr("<div></div>");
+
 const dynamic = {
   children
 };
@@ -14,7 +16,7 @@ const template = _$createComponent(Module, {
 
 const template2 = _$ssr(["<module>", "</module>"], _$escape(children));
 
-const template3 = "<module>Hello</module>";
+const template3 = _$ssr("<module>Hello</module>");
 
 const template4 = _$ssr(["<module>", "</module>"], _$createComponent(Hello, {}));
 

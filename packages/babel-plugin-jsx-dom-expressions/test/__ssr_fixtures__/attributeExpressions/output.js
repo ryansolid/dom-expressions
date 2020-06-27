@@ -54,5 +54,7 @@ const template6 = _$ssr(['<div style="', '"></div>'], () =>
 );
 
 let refTarget;
-const template7 = "<div></div>";
-const template8 = "<div></div>";
+
+const template7 = _$ssr("<div></div>");
+
+const template8 = _$ssr("<div></div>");

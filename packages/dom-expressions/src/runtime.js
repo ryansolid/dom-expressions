@@ -197,24 +197,23 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 }
 
 // SSR
-export function ssr(template, ...nodes) {
-  const rNodes = [];
+export function ssr(t, ...nodes) {
+  if (!nodes.length) return { t };
   for (let i = 0; i < nodes.length; i++) {
-    if (typeof nodes[i] === "function" && !nodes[i].isTemplate) {
-      rNodes.push(memo(() => resolveSSRNode(nodes[i]())));
-    } else rNodes.push(nodes[i]);
+    const n = nodes[i];
+    if (typeof n === "function") nodes[i] = memo(() => resolveSSRNode(n()));
   }
-  const t = () => {
-    let result = "";
-    for (let i = 0; i < template.length; i++) {
-      result += template[i];
-      const node = rNodes[i];
-      if (node !== undefined) result += resolveSSRNode(node);
+  return {
+    t: () => {
+      let result = "";
+      for (let i = 0; i < t.length; i++) {
+        result += t[i];
+        const node = nodes[i];
+        if (node !== undefined) result += resolveSSRNode(node);
+      }
+      return result;
     }
-    return result;
   };
-  t.isTemplate = true;
-  return t;
 }
 
 export function ssrClassList(value) {
@@ -343,7 +342,7 @@ export function getHydrationKey() {
 export function generateHydrationEventsScript(eventNames) {
   return `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
-  )}"].forEach(t=>document.addEventListener(t,e))})();`
+  )}"].forEach(t=>document.addEventListener(t,e))})();`;
 }
 
 // Internal Functions
@@ -504,6 +503,8 @@ function toSSRAttribute(key, isSVG) {
 
 function resolveSSRNode(node) {
   if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
-  if (typeof node === "function") node = resolveSSRNode(node());
-  return typeof node === "string" ? node : JSON.stringify(node);
+  const t = typeof node;
+  if (node && t === "object") return resolveSSRNode(node.t);
+  if (t === "function") return resolveSSRNode(node());
+  return t === "string" ? node : JSON.stringify(node);
 }

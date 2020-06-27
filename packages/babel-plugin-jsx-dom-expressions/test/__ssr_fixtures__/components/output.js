@@ -26,7 +26,7 @@ const template = props => {
         Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
         {
           booleanProperty: true,
-          children: () => "<div>From Parent</div>"
+          children: () => _$ssr("<div>From Parent</div>")
         }
       ),
       ["children", ...Object.keys(props)]
@@ -60,7 +60,7 @@ const template2 = _$createComponent(
 const template3 = _$createComponent(
   Child,
   {
-    children: () => ["<div></div>", "<div></div>", "<div></div>", "After"]
+    children: () => [_$ssr("<div></div>"), _$ssr("<div></div>"), _$ssr("<div></div>"), "After"]
   },
   _ck$
 );
@@ -68,7 +68,7 @@ const template3 = _$createComponent(
 const template4 = _$createComponent(
   Child,
   {
-    children: () => "<div></div>"
+    children: () => _$ssr("<div></div>")
   },
   _ck$
 );
@@ -95,7 +95,7 @@ const template6 = _$createComponent(
 const template7 = _$createComponent(
   Child,
   {
-    children: () => ["<div></div>", () => state.dynamic]
+    children: () => [_$ssr("<div></div>"), () => state.dynamic]
   },
   _ck$
 );
