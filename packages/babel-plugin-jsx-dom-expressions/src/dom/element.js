@@ -404,6 +404,7 @@ function transformChildren(path, results) {
         // combine adjacent textNodes
       )
       .reduce((memo, child) => {
+        if (!child) return memo;
         const i = memo.length;
         if (child.text && i && memo[i - 1].text) {
           memo[i - 1].template += child.template;

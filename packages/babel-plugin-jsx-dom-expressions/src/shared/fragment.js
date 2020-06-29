@@ -7,7 +7,7 @@ import { createTemplate as createTemplateSSR } from "../ssr/template";
 
 export default function transformFragmentChildren(children, results) {
   const createTemplate = config.generate === "ssr" ? createTemplateSSR : createTemplateDOM,
-    filteredChildren = filterChildren(children, true),
+    filteredChildren = filterChildren(children),
     singleChild = filteredChildren.length === 1,
     childNodes = filteredChildren.map(path => {
       if (t.isJSXText(path.node)) return t.stringLiteral(trimWhitespace(path.node.extra.raw));
