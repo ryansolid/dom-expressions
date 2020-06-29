@@ -3,8 +3,8 @@ import { addNamed } from "@babel/helper-module-imports";
 import config from "../config";
 
 export const reservedNameSpaces = {
-  "style": true
-}
+  style: true
+};
 
 export function registerImportMethod(path, name) {
   const imports =
@@ -92,7 +92,8 @@ export function isStaticExpressionContainer(path) {
     t.isJSXExpressionContainer(node) &&
     t.isJSXElement(path.parent) &&
     !isComponent(getTagName(path.parent)) &&
-    (t.isStringLiteral(node.expression) || t.isNumericLiteral(node.expression) ||
+    (t.isStringLiteral(node.expression) ||
+      t.isNumericLiteral(node.expression) ||
       (t.isTemplateLiteral(node.expression) && node.expression.expressions.length === 0))
   );
 }
@@ -148,6 +149,8 @@ export function transformCondition(path, deep) {
     dTest = isDynamic(path.get("test"), { checkMember: true });
     if (dTest) {
       cond = expr.test;
+      if (!t.isBinaryExpression(cond))
+        cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       expr.test = t.callExpression(t.identifier("_c$"), []);
       if (t.isConditionalExpression(expr.consequent) || t.isLogicalExpression(expr.consequent)) {
         expr.consequent = transformCondition(path.get("consequent"), true);
@@ -168,6 +171,8 @@ export function transformCondition(path, deep) {
       }));
     if (dTest) {
       cond = nextPath.node.left;
+      if (expr.operator !== "||" && !t.isBinaryExpression(cond))
+        cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       nextPath.node.left = t.callExpression(t.identifier("_c$"), []);
     }
   }

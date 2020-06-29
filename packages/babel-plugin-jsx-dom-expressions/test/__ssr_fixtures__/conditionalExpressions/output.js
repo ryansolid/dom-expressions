@@ -15,7 +15,7 @@ const template4 = _$ssr(["<div>", "</div>"], () => _$escape(simple ? good() : ba
 const template5 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => state.dynamic, true);
+    const _c$ = _$memo(() => !!state.dynamic, true);
 
     return () => (_c$() ? good() : bad);
   })()
@@ -24,7 +24,7 @@ const template5 = _$ssr(
 const template6 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => state.dynamic, true);
+    const _c$ = _$memo(() => !!state.dynamic, true);
 
     return () => _c$() && good();
   })()
@@ -38,7 +38,7 @@ const template7 = _$ssr(
     return () =>
       _c$()
         ? (() => {
-            const _c$ = _$memo(() => state.dynamic, true);
+            const _c$ = _$memo(() => !!state.dynamic, true);
 
             return () => (_c$() ? best : good());
           })()
@@ -49,7 +49,7 @@ const template7 = _$ssr(
 const template8 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => state.dynamic && state.something, true);
+    const _c$ = _$memo(() => !!(state.dynamic && state.something), true);
 
     return () => _c$() && good();
   })()
@@ -71,13 +71,13 @@ const template10 = _$ssr(["<div>", "</div>"], () =>
 const template11 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => state.a, true);
+    const _c$ = _$memo(() => !!state.a, true);
 
     return () =>
       _c$()
         ? a()
         : (() => {
-            const _c$ = _$memo(() => state.b, true);
+            const _c$ = _$memo(() => !!state.b, true);
 
             return () => (_c$() ? b() : state.c ? "c" : "fallback");
           })();
@@ -88,7 +88,7 @@ const template12 = _$createComponent(
   Comp,
   {
     render: (() => {
-      const _c$ = _$memo(() => state.dynamic, true);
+      const _c$ = _$memo(() => !!state.dynamic, true);
 
       return () => (_c$() ? good() : bad);
     })()
@@ -108,7 +108,7 @@ const template14 = _$createComponent(
   Comp,
   {
     render: (() => {
-      const _c$ = _$memo(() => state.dynamic, true);
+      const _c$ = _$memo(() => !!state.dynamic, true);
 
       return () => _c$() && good();
     })()
@@ -120,6 +120,18 @@ const template15 = _$createComponent(
   Comp,
   {
     render: () => state.dynamic && good
+  },
+  _ck$
+);
+
+const template16 = _$createComponent(
+  Comp,
+  {
+    render: (() => {
+      const _c$ = _$memo(() => state.dynamic, true);
+
+      return () => _c$() || good();
+    })()
   },
   _ck$
 );
