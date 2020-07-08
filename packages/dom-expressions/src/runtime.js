@@ -11,7 +11,7 @@ export function render(code, element) {
   let disposer;
   root(dispose => {
     disposer = dispose;
-    insert(element, code());
+    insert(element, code(), element.firstChild ? null : undefined);
   });
   return disposer;
 }
