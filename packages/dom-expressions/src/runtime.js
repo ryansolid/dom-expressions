@@ -480,9 +480,16 @@ function cleanChildren(parent, current, marker, replacement) {
   if (marker === undefined) return (parent.textContent = "");
   const node = replacement || document.createTextNode("");
   if (current.length) {
-    node !== current[0] && parent.replaceChild(node, current[0]);
-    for (let i = current.length - 1; i > 0; i--)
-      current[i].parentNode === parent && parent.removeChild(current[i]);
+    let inserted = false;
+    for (let i = current.length - 1; i >= 0; i--) {
+      const el = current[i];
+      if (node !== el) {
+        const isParent = el.parentNode === parent;
+        if (!inserted && !i)
+          isParent ? parent.replaceChild(node, el) : parent.insertBefore(node, marker);
+        else isParent && parent.removeChild(el);
+      } else inserted = true;
+    }
   } else parent.insertBefore(node, marker);
   return [node];
 }
