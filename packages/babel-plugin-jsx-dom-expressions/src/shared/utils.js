@@ -126,7 +126,7 @@ export function trimWhitespace(text) {
       .split("\n")
       .map((t, i) => (i ? t.replace(/^\s*/g, "") : t))
       .filter(s => !/^\s*$/.test(s))
-      .join("");
+      .join(" ");
   }
   return text.replace(/\s+/g, " ");
 }
