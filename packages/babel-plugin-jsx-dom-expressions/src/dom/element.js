@@ -214,8 +214,7 @@ function transformAttributes(path, results) {
       }
       if (
         t.isJSXExpressionContainer(value) &&
-        (key.toLowerCase() !== key ||
-          reservedNameSpace ||
+        (reservedNameSpace ||
           !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
       ) {
         if (key === "ref") {
@@ -561,11 +560,10 @@ function detectExpressions(children, index) {
             t.isJSXSpreadAttribute(attr) ||
             (t.isJSXExpressionContainer(attr.value) &&
               (config.generate !== "dom-ssr" || !attr.name.name.startsWith("on")) &&
-              (attr.name.name.toLowerCase() !== attr.name.name ||
-                !(
-                  t.isStringLiteral(attr.value.expression) ||
-                  t.isNumericLiteral(attr.value.expression)
-                )))
+              !(
+                t.isStringLiteral(attr.value.expression) ||
+                t.isNumericLiteral(attr.value.expression)
+              ))
         )
       )
         return true;
