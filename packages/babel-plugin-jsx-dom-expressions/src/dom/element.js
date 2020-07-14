@@ -2,6 +2,7 @@ import * as t from "@babel/types";
 import {
   Attributes,
   SVGAttributes,
+  SVGNamespace,
   NonComposedEvents,
   SVGElements
 } from "dom-expressions/src/constants";
@@ -85,7 +86,8 @@ export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
-  let isAttribute = isSVG || name.indexOf("-") > -1 || name.indexOf(":") > -1,
+  let isNameSpaced = name.indexOf(":") > -1,
+    isAttribute = isSVG || name.indexOf("-") > -1 || isNameSpaced,
     attribute = isSVG ? SVGAttributes[name] : Attributes[name];
 
   if (attribute) {
@@ -94,8 +96,19 @@ export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
   } else if (isSVG) name = name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
 
   if (isAttribute) {
-    registerImportMethod(path, "setAttribute");
-    return t.callExpression(t.identifier("_$setAttribute"), [elem, t.stringLiteral(name), value]);
+    const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
+    if (ns) {
+      registerImportMethod(path, "setAttributeNS");
+      return t.callExpression(t.identifier("_$setAttributeNS"), [
+        elem,
+        t.stringLiteral(ns),
+        t.stringLiteral(name),
+        value
+      ]);
+    } else {
+      registerImportMethod(path, "setAttribute");
+      return t.callExpression(t.identifier("_$setAttribute"), [elem, t.stringLiteral(name), value]);
+    }
   }
   return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
 }
@@ -559,7 +572,8 @@ function detectExpressions(children, index) {
           attr =>
             t.isJSXSpreadAttribute(attr) ||
             (t.isJSXExpressionContainer(attr.value) &&
-              (config.generate !== "dom-ssr" || !attr.name.name.startsWith("on")) &&
+              (config.generate !== "dom-ssr" ||
+                (typeof attr.name.name !== "string" || !attr.name.name.startsWith("on"))) &&
               !(
                 t.isStringLiteral(attr.value.expression) ||
                 t.isNumericLiteral(attr.value.expression)

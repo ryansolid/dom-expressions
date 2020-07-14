@@ -1,4 +1,4 @@
-import { Attributes, SVGAttributes, NonComposedEvents } from "./constants";
+import { Attributes, SVGAttributes, SVGNamespace, NonComposedEvents } from "./constants";
 import { root, effect, memo, currentContext, createComponent } from "rxcore";
 import reconcileArrays from "./reconcile";
 
@@ -104,6 +104,11 @@ export function setAttribute(node, name, value) {
   else node.setAttribute(name, value);
 }
 
+export function setAttributeNS(node, namespace, name, value) {
+  if (value === false || value == null) node.removeAttributeNS(namespace, name);
+  else node.setAttributeNS(namespace, name, value);
+}
+
 export function classList(node, value, prev) {
   const classKeys = Object.keys(value);
   for (let i = 0, len = classKeys.length; i < len; i++) {
@@ -182,7 +187,9 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
         setAttribute(node, prop, value);
       } else node[info.alias] = value;
     } else if (isSVG || prop.indexOf("-") > -1 || prop.indexOf(":") > -1) {
-      if ((info = SVGAttributes[prop])) {
+      const ns = prop.indexOf(":") > -1 && SVGNamepace[prop.split(":")[0]];
+      if (ns) setAttributeNS(node, ns, prop, value);
+      else if ((info = SVGAttributes[prop])) {
         if (info.alias) setAttribute(node, info.alias, value);
         else setAttribute(node, prop, value);
       } else

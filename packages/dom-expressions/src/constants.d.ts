@@ -11,3 +11,5 @@ export const SVGAttributes: AttributeInfo;
 export const NonComposedEvents: Set<string>;
 
 export const SVGElements: Set<string>;
+
+export const SVGNamespace: Record<string, string>;

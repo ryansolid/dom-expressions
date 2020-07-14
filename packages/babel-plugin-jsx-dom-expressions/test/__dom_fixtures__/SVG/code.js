@@ -56,3 +56,13 @@ const template6 = (
     <rect x="50" y="20" width="150" height="150" />
   </Component>
 );
+
+const template7 = (
+  <svg viewBox={"0 0 160 40"} xmlns="http://www.w3.org/2000/svg">
+    <a xlink:href={url}>
+      <text x="10" y="25">
+        MDN Web Docs
+      </text>
+    </a>
+  </svg>
+);

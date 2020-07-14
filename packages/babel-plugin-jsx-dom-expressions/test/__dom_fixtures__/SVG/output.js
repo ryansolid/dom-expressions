@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { setAttributeNS as _$setAttributeNS } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
@@ -13,7 +14,11 @@ const _tmpl$ = _$template(
     4
   ),
   _tmpl$3 = _$template(`<svg width="400" height="180"><rect></rect></svg>`, 4),
-  _tmpl$4 = _$template(`<svg><rect x="50" y="20" width="150" height="150"></rect></svg>`, 4, true);
+  _tmpl$4 = _$template(`<svg><rect x="50" y="20" width="150" height="150"></rect></svg>`, 4, true),
+  _tmpl$5 = _$template(
+    `<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><a><text x="10" y="25">MDN Web Docs</text></a></svg>`,
+    6
+  );
 
 const _ck$ = ["children"];
 
@@ -75,3 +80,12 @@ const template6 = _$createComponent(
   },
   _ck$
 );
+
+const template7 = (() => {
+  const _el$9 = _tmpl$5.cloneNode(true),
+    _el$10 = _el$9.firstChild;
+
+  _$setAttributeNS(_el$10, "http://www.w3.org/1999/xlink", "xlink:href", url);
+
+  return _el$9;
+})();

@@ -352,4 +352,9 @@ const SVGElements = new Set([
   "vkern"
 ]);
 
-export { Attributes, SVGAttributes, NonComposedEvents, SVGElements };
+const SVGNamespace = {
+  xlink: "http://www.w3.org/1999/xlink",
+  xml: "http://www.w3.org/XML/1998/namespace"
+}
+
+export { Attributes, SVGAttributes, NonComposedEvents, SVGElements, SVGNamespace };

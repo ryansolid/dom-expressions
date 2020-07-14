@@ -194,10 +194,6 @@ Components may have children. This is available as props.children. It may be a n
 
 This plugin also supports JSX Fragments with `<></>` notation. These will be compiled to arrays. The fragment syntax provides the convenience of being able to use the template syntax to wrap expressions.
 
-## SVG
-
-There is basic SVG support with this library. Most element attributes should work but no support for namespaces yet.
-
 ## Acknowledgements
 
 The concept of using JSX to DOM instead of html strings and context based binding usually found in these libraries was inspired greatly by [Surplus](https://github.com/adamhaile/surplus).
