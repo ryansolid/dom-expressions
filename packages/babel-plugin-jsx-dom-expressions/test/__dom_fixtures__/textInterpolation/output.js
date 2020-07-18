@@ -84,4 +84,7 @@ const multiLine = _tmpl$7.cloneNode(true);
 const multiLineTrailingSpace = _tmpl$3.cloneNode(true);
 /* prettier-ignore */
 
+const multiLineNoTrailingSpace = _tmpl$3.cloneNode(true);
+/* prettier-ignore */
+
 const escape = _tmpl$8.cloneNode(true);

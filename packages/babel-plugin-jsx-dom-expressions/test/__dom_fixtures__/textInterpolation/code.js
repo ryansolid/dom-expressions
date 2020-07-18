@@ -30,6 +30,12 @@ const multiLineTrailingSpace = <span>
 </span>
 
 /* prettier-ignore */
+const multiLineNoTrailingSpace = <span>
+  Hello
+  John
+</span>
+
+/* prettier-ignore */
 const escape = <span>
   &nbsp;&lt;Hi&gt;&nbsp;
 </span>
