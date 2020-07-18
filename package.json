@@ -22,7 +22,7 @@
     "report:coverage": "lerna run report:coverage --parallel"
   },
   "devDependencies": {
-    "@babel/core": "^7.10.4",
+    "@babel/core": "^7.10.5",
     "@babel/preset-env": "^7.10.4",
     "@babel/preset-typescript": "^7.10.4",
     "@rollup/plugin-commonjs": "14.0.0",
@@ -42,6 +42,6 @@
     "rollup": "^2.21.0",
     "rollup-plugin-cleanup": "^3.1.1",
     "s-js": "0.4.9",
-    "typescript": "~3.9.6"
+    "typescript": "~3.9.7"
   }
 }
