@@ -40,5 +40,3 @@ let refTarget;
 const template7 = <div ref={refTarget} />;
 
 const template8 = <div ref={e => console.log(e)} />;
-
-const template9 = <div ref={refFactory()} />

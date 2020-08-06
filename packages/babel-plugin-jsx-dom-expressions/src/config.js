@@ -2,6 +2,7 @@ export default {
   moduleName: "dom",
   generate: "dom",
   hydratable: false,
+  streaming: false,
   delegateEvents: true,
   nonDelegateEvents: [],
   builtIns: [],

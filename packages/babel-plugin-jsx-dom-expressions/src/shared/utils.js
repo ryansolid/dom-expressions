@@ -50,7 +50,11 @@ export function isComponent(tagName) {
   );
 }
 
-export function isDynamic(path, { checkMember, checkTags }) {
+export function isDynamic(path, { checkMember, checkTags, checkCallExpressions = true }) {
+  if (config.streaming) {
+    checkMember = false;
+    checkCallExpressions = false;
+  };
   const expr = path.node;
   if (t.isFunction(expr)) return false;
   if (expr.leadingComments && expr.leadingComments[0].value.trim() === config.staticMarker) {
@@ -58,7 +62,7 @@ export function isDynamic(path, { checkMember, checkTags }) {
     return false;
   }
   if (
-    t.isCallExpression(expr) ||
+    (checkCallExpressions && t.isCallExpression(expr)) ||
     (checkMember && t.isMemberExpression(expr)) ||
     (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr)))
   )
@@ -70,8 +74,7 @@ export function isDynamic(path, { checkMember, checkTags }) {
       p.skip();
     },
     CallExpression(p) {
-      dynamic = true;
-      p.stop();
+      checkCallExpressions && (dynamic = true) && p.stop();
     },
     MemberExpression(p) {
       checkMember && (dynamic = true) && p.stop();

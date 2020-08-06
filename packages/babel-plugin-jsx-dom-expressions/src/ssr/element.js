@@ -68,6 +68,31 @@ function setAttr(results, name, value, isSVG) {
   results.templateValues.push(value);
 }
 
+function checkIfStatic(expression) {
+  if (
+    t.isStringLiteral(expression) ||
+    t.isNumericLiteral(expression) ||
+    t.isJSXElement(expression) ||
+    t.isJSXFragment(expression)
+  ) {
+    return true;
+  } else if (t.isTemplateLiteral(expression)) {
+    return expression.expressions.every(e => checkIfStatic(e));
+  } else if (t.isUnaryExpression(expression)) {
+    return checkIfStatic(expression.argument);
+  } else if (t.isBinaryExpression(expression)) {
+    return checkIfStatic(expression.left) && checkIfStatic(expression.right);
+  } else if (t.isConditionalExpression(expression)) {
+    return checkIfStatic(expression.consequent) && checkIfStatic(expression.alternate);
+  } else if (t.isLogicalExpression(expression)) {
+    return (
+      checkIfStatic(expression.right) &&
+      (expression.operator === "&&" || checkIfStatic(expression.left))
+    );
+  }
+  return false;
+}
+
 function transformAttributes(path, results) {
   let children;
   const tagName = getTagName(path.node),
@@ -184,6 +209,7 @@ function transformAttributes(path, results) {
           key = "class";
           doEscape = false;
         }
+        doEscape = doEscape && !checkIfStatic(value.expression);
         doEscape && registerImportMethod(path, "escape");
         if (dynamic)
           value.expression = t.arrowFunctionExpression(
@@ -215,18 +241,18 @@ function transformAttributes(path, results) {
 }
 
 function transformChildren(path, results) {
-  const { hydratable } = config;
+  const { hydratable } = config,
+    doEscape = !path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"), true);
   filteredChildren.forEach(node => {
-    const doNotEscape = path.doNotEscape,
-      child = transformNode(node);
+    const child = transformNode(node);
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {
       const multi = checkLength(filteredChildren),
         markers = hydratable && multi;
 
-      if (!doNotEscape) {
+      if (doEscape && !checkIfStatic(child.exprs[0])) {
         registerImportMethod(path, "escape");
         if (child.dynamic) {
           if (!t.isCallExpression(child.exprs[0]))

@@ -249,6 +249,29 @@ function transformAttributes(path, results) {
             results.exprs.unshift(
               t.expressionStatement(t.callExpression(value.expression, [elem]))
             );
+          } else {
+            results.exprs.unshift(
+              t.expressionStatement(
+                t.callExpression(
+                  t.arrowFunctionExpression(
+                    [],
+                    t.blockStatement([
+                      t.variableDeclaration("const", [
+                        t.variableDeclarator(t.identifier("_$r"), value.expression)
+                      ]),
+                      t.expressionStatement(
+                        t.logicalExpression(
+                          "&&",
+                          t.identifier("_$r"),
+                          t.callExpression(t.identifier("_$r"), [elem])
+                        )
+                      )
+                    ])
+                  ),
+                  []
+                )
+              )
+            );
           }
         } else if (key === "children") {
           children = value;
@@ -573,7 +596,8 @@ function detectExpressions(children, index) {
             t.isJSXSpreadAttribute(attr) ||
             (t.isJSXExpressionContainer(attr.value) &&
               (config.generate !== "dom-ssr" ||
-                (typeof attr.name.name !== "string" || !attr.name.name.startsWith("on"))) &&
+                typeof attr.name.name !== "string" ||
+                !attr.name.name.startsWith("on")) &&
               !(
                 t.isStringLiteral(attr.value.expression) ||
                 t.isNumericLiteral(attr.value.expression)

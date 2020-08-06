@@ -187,7 +187,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
         setAttribute(node, prop, value);
       } else node[info.alias] = value;
     } else if (isSVG || prop.indexOf("-") > -1 || prop.indexOf(":") > -1) {
-      const ns = prop.indexOf(":") > -1 && SVGNamepace[prop.split(":")[0]];
+      const ns = prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
       if (ns) setAttributeNS(node, ns, prop, value);
       else if ((info = SVGAttributes[prop])) {
         if (info.alias) setAttribute(node, info.alias, value);
@@ -346,10 +346,14 @@ export function getHydrationKey() {
   return hydration.context.id;
 }
 
-export function generateHydrationEventsScript(eventNames) {
-  return `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
+export function generateHydrationScript({ eventNames = ["click", "input"], streaming } = {}) {
+  let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
+  if (streaming) {
+    s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`
+  }
+  return s;
 }
 
 // Internal Functions

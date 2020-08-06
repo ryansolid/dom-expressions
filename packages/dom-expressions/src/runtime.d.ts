@@ -51,4 +51,4 @@ export function escape(html: string): string;
 export function getHydrationKey(): string;
 export function getNextElement(template: HTMLTemplateElement, isSSR: boolean): Node;
 export function getNextMarker(start: Node): [Node, Array<Node>];
-export function generateHydrationEventsScript(eventNames: string[]): string;
+export function generateHydrationScript(options: { eventNames: string[], streaming: boolean }): string;

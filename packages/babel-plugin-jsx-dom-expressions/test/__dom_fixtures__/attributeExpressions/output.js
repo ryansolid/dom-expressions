@@ -128,3 +128,15 @@ const template8 = (() => {
 
   return _el$13;
 })();
+
+const template9 = (() => {
+  const _el$14 = _tmpl$3.cloneNode(true);
+
+  (() => {
+    const _$r = refFactory();
+
+    _$r && _$r(_el$14);
+  })();
+
+  return _el$14;
+})();
