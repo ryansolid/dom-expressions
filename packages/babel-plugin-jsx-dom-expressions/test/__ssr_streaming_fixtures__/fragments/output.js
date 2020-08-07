@@ -1,19 +1,24 @@
 import { createComponent as _$createComponent } from "r-dom";
 import { escape as _$escape } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
-const multiStatic = [_$ssr("<div>First</div>"), _$ssr("<div>Last</div>")];
-const multiExpression = [_$ssr("<div>First</div>"), inserted, _$ssr("<div>Last</div>"), "After"];
+import { ssrStream as _$ssrStream } from "r-dom";
+const multiStatic = [_$ssrStream("<div>First</div>"), _$ssrStream("<div>Last</div>")];
+const multiExpression = [
+  _$ssrStream("<div>First</div>"),
+  inserted,
+  _$ssrStream("<div>Last</div>"),
+  "After"
+];
 const multiDynamic = [
-  _$ssr(['<div id="', '">First</div>'], _$escape(state.first, true)),
+  _$ssrStream(['<div id="', '">First</div>'], _$escape(state.first, true)),
   state.inserted,
-  _$ssr(['<div id="', '">Last</div>'], _$escape(state.last, true)),
+  _$ssrStream(['<div id="', '">Last</div>'], _$escape(state.last, true)),
   "After"
 ];
 const singleExpression = inserted;
 const singleDynamic = inserted();
-const firstStatic = [inserted, _$ssr("<div></div>")];
-const firstDynamic = [inserted(), _$ssr("<div></div>")];
-const firstComponent = [_$createComponent(Component, {}), _$ssr("<div></div>")];
-const lastStatic = [_$ssr("<div></div>"), inserted];
-const lastDynamic = [_$ssr("<div></div>"), inserted()];
-const lastComponent = [_$ssr("<div></div>"), _$createComponent(Component, {})];
+const firstStatic = [inserted, _$ssrStream("<div></div>")];
+const firstDynamic = [inserted(), _$ssrStream("<div></div>")];
+const firstComponent = [_$createComponent(Component, {}), _$ssrStream("<div></div>")];
+const lastStatic = [_$ssrStream("<div></div>"), inserted];
+const lastDynamic = [_$ssrStream("<div></div>"), inserted()];
+const lastComponent = [_$ssrStream("<div></div>"), _$createComponent(Component, {})];

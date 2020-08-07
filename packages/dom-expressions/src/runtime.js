@@ -206,10 +206,13 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 // SSR
 export function ssr(t, ...nodes) {
   if (!nodes.length) return { t };
+
+  // not streaming
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
     if (typeof n === "function") nodes[i] = memo(() => resolveSSRNode(n()));
   }
+
   return {
     t: () => {
       let result = "";
@@ -221,6 +224,19 @@ export function ssr(t, ...nodes) {
       return result;
     }
   };
+}
+
+export function ssrStream(t, ...nodes) {
+  if (nodes.length) {
+    let result = "";
+    for (let i = 0; i < t.length; i++) {
+      result += t[i];
+      const node = nodes[i];
+      if (node !== undefined) result += resolveSSRNode(node);
+    }
+    t = result;
+  }
+  return { t };
 }
 
 export function ssrClassList(value) {

@@ -68,29 +68,52 @@ function setAttr(results, name, value, isSVG) {
   results.templateValues.push(value);
 }
 
-function checkIfStatic(expression) {
+function escapeExpression(path, expression, attr) {
   if (
     t.isStringLiteral(expression) ||
     t.isNumericLiteral(expression) ||
     t.isJSXElement(expression) ||
     t.isJSXFragment(expression)
   ) {
-    return true;
+    return expression;
+  } else if (t.isFunction(expression)) {
+    expression.body = escapeExpression(path, expression.body, attr);
+    return expression;
   } else if (t.isTemplateLiteral(expression)) {
-    return expression.expressions.every(e => checkIfStatic(e));
+    expression.expressions = expression.expressions.map(e => escapeExpression(path, e, attr));
+    return expression;
   } else if (t.isUnaryExpression(expression)) {
-    return checkIfStatic(expression.argument);
+    expression.argument = escapeExpression(path, expression.argument, attr);
+    return expression;
   } else if (t.isBinaryExpression(expression)) {
-    return checkIfStatic(expression.left) && checkIfStatic(expression.right);
+    expression.left = escapeExpression(path, expression.left, attr);
+    expression.right = escapeExpression(path, expression.right, attr);
+    return expression;
   } else if (t.isConditionalExpression(expression)) {
-    return checkIfStatic(expression.consequent) && checkIfStatic(expression.alternate);
+    expression.consequent = escapeExpression(path, expression.consequent, attr);
+    expression.alternate = escapeExpression(path, expression.alternate, attr);
+    return expression;
   } else if (t.isLogicalExpression(expression)) {
-    return (
-      checkIfStatic(expression.right) &&
-      (expression.operator === "&&" || checkIfStatic(expression.left))
-    );
+    expression.right = escapeExpression(path, expression.right, attr);
+    if (expression.operator !== "&&") {
+      expression.left = escapeExpression(path, expression.left, attr);
+    }
+    return expression;
+  } else if (t.isCallExpression(expression) && t.isFunction(expression.callee)) {
+    if (t.isBlockStatement(expression.callee.body)) {
+      expression.callee.body.body = expression.callee.body.body.map(e => {
+        if (t.isReturnStatement(e)) e.argument = escapeExpression(path, e.argument, attr);
+        return e;
+      })
+    } else expression.callee.body = escapeExpression(path, expression.callee.body, attr);
+    return expression;
   }
-  return false;
+
+  registerImportMethod(path, "escape");
+  return t.callExpression(
+    t.identifier("_$escape"),
+    [expression].concat(attr ? [t.booleanLiteral(true)] : [])
+  );
 }
 
 function transformAttributes(path, results) {
@@ -209,23 +232,12 @@ function transformAttributes(path, results) {
           key = "class";
           doEscape = false;
         }
-        doEscape = doEscape && !checkIfStatic(value.expression);
-        doEscape && registerImportMethod(path, "escape");
         if (dynamic)
           value.expression = t.arrowFunctionExpression(
             [],
-            doEscape
-              ? t.callExpression(t.identifier("_$escape"), [
-                  value.expression,
-                  t.booleanLiteral(true)
-                ])
-              : value.expression
+            doEscape ? escapeExpression(path, value.expression, true) : value.expression
           );
-        else if (doEscape)
-          value.expression = t.callExpression(t.identifier("_$escape"), [
-            value.expression,
-            t.booleanLiteral(true)
-          ]);
+        else if (doEscape) value.expression = escapeExpression(path, value.expression, true);
         setAttr(results, key, value.expression, isSVG);
       }
     } else {
@@ -252,14 +264,7 @@ function transformChildren(path, results) {
       const multi = checkLength(filteredChildren),
         markers = hydratable && multi;
 
-      if (doEscape && !checkIfStatic(child.exprs[0])) {
-        registerImportMethod(path, "escape");
-        if (child.dynamic) {
-          if (!t.isCallExpression(child.exprs[0]))
-            child.exprs[0].body = t.callExpression(t.identifier("_$escape"), [child.exprs[0].body]);
-        } else if (!t.isCallExpression(child.exprs[0]))
-          child.exprs[0] = t.callExpression(t.identifier("_$escape"), [child.exprs[0]]);
-      }
+      if (doEscape && !child.component) child.exprs[0] = escapeExpression(path, child.exprs[0]);
 
       // boxed by textNodes
       if (markers) {

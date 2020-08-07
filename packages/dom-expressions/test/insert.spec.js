@@ -1,4 +1,5 @@
 import * as r from '../src/runtime';
+import * as S from "s-js";
 
 describe("r.insert", () => {
   // <div><!-- insert --></div>
@@ -77,7 +78,9 @@ describe("r.insert", () => {
 
   it('can spread over element', () => {
     const node = document.createElement("span");
-    r.spread(node, () => ({href: '/', for: 'id', classList: {danger: true}, events: {custom: e => e}, style: {color: 'red'}, something: 'good'}))
+    S.root(() => {
+      r.spread(node, () => ({href: '/', for: 'id', classList: {danger: true}, events: {custom: e => e}, style: {color: 'red'}, something: 'good'}))
+    })
     expect(node.getAttribute('href')).toBe('/');
     expect(node.htmlFor).toBe('id');
     expect(node.className).toBe('danger');

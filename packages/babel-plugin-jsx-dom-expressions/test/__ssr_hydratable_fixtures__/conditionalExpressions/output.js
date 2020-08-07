@@ -14,11 +14,11 @@ const template2 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () 
 const template3 = _$ssr(
   ['<div _hk="', '">', "</div>"],
   _$getHydrationKey(),
-  _$escape(simple ? good : bad)
+  simple ? _$escape(good) : _$escape(bad)
 );
 
 const template4 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
-  _$escape(simple ? good() : bad)
+  simple ? _$escape(good()) : _$escape(bad)
 );
 
 const template5 = _$ssr(
@@ -27,7 +27,7 @@ const template5 = _$ssr(
   (() => {
     const _c$ = _$memo(() => !!state.dynamic, true);
 
-    return () => (_c$() ? good() : bad);
+    return () => (_c$() ? _$escape(good()) : _$escape(bad));
   })()
 );
 
@@ -37,7 +37,7 @@ const template6 = _$ssr(
   (() => {
     const _c$ = _$memo(() => !!state.dynamic, true);
 
-    return () => _c$() && good();
+    return () => _c$() && _$escape(good());
   })()
 );
 
@@ -52,9 +52,9 @@ const template7 = _$ssr(
         ? (() => {
             const _c$ = _$memo(() => !!state.dynamic, true);
 
-            return () => (_c$() ? best : good());
+            return () => (_c$() ? _$escape(best) : _$escape(good()));
           })()
-        : bad;
+        : _$escape(bad);
   })()
 );
 
@@ -64,7 +64,7 @@ const template8 = _$ssr(
   (() => {
     const _c$ = _$memo(() => !!(state.dynamic && state.something), true);
 
-    return () => _c$() && good();
+    return () => _c$() && _$escape(good());
   })()
 );
 
@@ -74,12 +74,12 @@ const template9 = _$ssr(
   (() => {
     const _c$ = _$memo(() => state.dynamic, true);
 
-    return () => (_c$() && good()) || bad;
+    return () => (_c$() && _$escape(good())) || _$escape(bad);
   })()
 );
 
 const template10 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
-  _$escape(state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback")
+  state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"
 );
 
 const template11 = _$ssr(
@@ -90,11 +90,11 @@ const template11 = _$ssr(
 
     return () =>
       _c$()
-        ? a()
+        ? _$escape(a())
         : (() => {
             const _c$ = _$memo(() => !!state.b, true);
 
-            return () => (_c$() ? b() : state.c ? "c" : "fallback");
+            return () => (_c$() ? _$escape(b()) : state.c ? "c" : "fallback");
           })();
   })()
 );

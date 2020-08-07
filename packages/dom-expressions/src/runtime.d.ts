@@ -43,6 +43,7 @@ export function style(
 export function currentContext(): any;
 
 export function ssr(template: string[] | string, ...nodes: any[]): { t: string | (() => string) };
+export function ssrStream(template: string[] | string, ...nodes: any[]): { t: string };
 export function ssrClassList(value: { [k: string]: boolean }): string;
 export function ssrStyle(value: { [k: string]: string }): string;
 export function ssrSpread(accessor: any, isSVG: boolean, skipChildren: boolean): () => string;

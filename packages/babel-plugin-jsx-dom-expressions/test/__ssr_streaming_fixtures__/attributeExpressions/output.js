@@ -1,10 +1,10 @@
 import { ssrStyle as _$ssrStyle } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
+import { ssrStream as _$ssrStream } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { ssrClassList as _$ssrClassList } from "r-dom";
 import { ssrSpread as _$ssrSpread } from "r-dom";
 
-const template = _$ssr(
+const template = _$ssrStream(
   [
     '<div id="main" ',
     ' class="',
@@ -28,13 +28,13 @@ const template = _$ssr(
   })
 );
 
-const template2 = _$ssr(
+const template2 = _$ssrStream(
   ["<div><div>", "</div><div>", "</div></div>"],
   _$escape(rowId),
   _$escape(row.label)
 );
 
-const template3 = _$ssr(
+const template3 = _$ssrStream(
   ['<div id="', '" style="', '" name="', '">', "</div>"],
   _$escape(state.id, true),
   "background-color:" + _$escape(state.color, true),
@@ -42,11 +42,11 @@ const template3 = _$ssr(
   _$escape(state.content)
 );
 
-const template4 = _$ssr(['<div class="', '"></div>'], _$escape(`hi ${state.class}`, true));
+const template4 = _$ssrStream(['<div class="', '"></div>'], `hi ${_$escape(state.class, true)}`);
 
-const template5 = _$ssr(['<div style="', '"></div>'], _$ssrStyle(someStyle()));
+const template5 = _$ssrStream(['<div style="', '"></div>'], _$ssrStyle(someStyle()));
 
-const template6 = _$ssr(
+const template6 = _$ssrStream(
   ['<div style="', '"></div>'],
   _$ssrStyle({
     "background-color": color(),
@@ -57,6 +57,6 @@ const template6 = _$ssr(
 
 let refTarget;
 
-const template7 = _$ssr("<div></div>");
+const template7 = _$ssrStream("<div></div>");
 
-const template8 = _$ssr("<div></div>");
+const template8 = _$ssrStream("<div></div>");

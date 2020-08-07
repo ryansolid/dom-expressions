@@ -48,8 +48,10 @@ const template3 = _$ssr(
   _$escape(state.content)
 );
 
-const template4 = _$ssr(['<div _hk="', '" class="', '"></div>'], _$getHydrationKey(), () =>
-  _$escape(`hi ${state.class}`, true)
+const template4 = _$ssr(
+  ['<div _hk="', '" class="', '"></div>'],
+  _$getHydrationKey(),
+  () => `hi ${_$escape(state.class, true)}`
 );
 
 const template5 = _$ssr(['<div _hk="', '" style="', '"></div>'], _$getHydrationKey(), () =>

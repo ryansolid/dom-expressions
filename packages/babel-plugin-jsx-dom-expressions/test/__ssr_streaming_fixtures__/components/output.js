@@ -1,19 +1,19 @@
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
+import { ssrStream as _$ssrStream } from "r-dom";
 import { escape as _$escape } from "r-dom";
 const _ck$ = ["children"],
   _ck$2 = ["fallback"];
 
 const Child = props => [
-  _$ssr(["<div>Hello ", "</div>"], _$escape(props.name)),
-  _$ssr(["<div>", "</div>"], _$escape(props.children))
+  _$ssrStream(["<div>Hello ", "</div>"], _$escape(props.name)),
+  _$ssrStream(["<div>", "</div>"], _$escape(props.children))
 ];
 
 const template = props => {
   let childRef;
   const { content } = props;
-  return _$ssr(
+  return _$ssrStream(
     ["<div>", "", "", "</div>"],
     _$createComponent(
       Child,
@@ -24,7 +24,7 @@ const template = props => {
         Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
         {
           booleanProperty: true,
-          children: () => _$ssr("<div>From Parent</div>")
+          children: () => _$ssrStream("<div>From Parent</div>")
         }
       ),
       ["children", ...Object.keys(props)]
@@ -33,7 +33,7 @@ const template = props => {
       Child,
       {
         name: "Jason",
-        children: () => _$ssr(["<div>", "</div>"], _$escape(content))
+        children: () => _$ssrStream(["<div>", "</div>"], _$escape(content))
       },
       _ck$
     ),
@@ -54,7 +54,12 @@ const template2 = _$createComponent(Child, {
 const template3 = _$createComponent(
   Child,
   {
-    children: () => [_$ssr("<div></div>"), _$ssr("<div></div>"), _$ssr("<div></div>"), "After"]
+    children: () => [
+      _$ssrStream("<div></div>"),
+      _$ssrStream("<div></div>"),
+      _$ssrStream("<div></div>"),
+      "After"
+    ]
   },
   _ck$
 );
@@ -62,7 +67,7 @@ const template3 = _$createComponent(
 const template4 = _$createComponent(
   Child,
   {
-    children: () => _$ssr("<div></div>")
+    children: () => _$ssrStream("<div></div>")
   },
   _ck$
 );
@@ -85,7 +90,7 @@ const template6 = _$createComponent(
 const template7 = _$createComponent(
   Child,
   {
-    children: () => [_$ssr("<div></div>"), state.dynamic]
+    children: () => [_$ssrStream("<div></div>"), state.dynamic]
   },
   _ck$
 );
@@ -102,7 +107,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 
-const template10 = _$ssr(
+const template10 = _$ssrStream(
   ["<div>", " | ", " | ", " | ", " | ", " | ", "</div>"],
   _$createComponent(Link, {
     children: "new"
@@ -124,7 +129,7 @@ const template10 = _$ssr(
   })
 );
 
-const template11 = _$ssr(
+const template11 = _$ssrStream(
   ["<div>", " | ", "", " | ", "", " | ", "</div>"],
   _$createComponent(Link, {
     children: "new"
@@ -146,7 +151,7 @@ const template11 = _$ssr(
   })
 );
 
-const template12 = _$ssr(
+const template12 = _$ssrStream(
   ["<div> | ", " |  |  | ", " | </div>"],
   _$createComponent(Link, {
     children: "comments"
