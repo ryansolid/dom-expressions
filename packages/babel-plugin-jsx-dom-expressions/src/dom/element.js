@@ -249,6 +249,25 @@ function transformAttributes(path, results) {
             results.exprs.unshift(
               t.expressionStatement(t.callExpression(value.expression, [elem]))
             );
+          } else if (t.isCallExpression(value.expression)) {
+            const refIdentifier = path.scope.generateUidIdentifier("_ref$");
+            results.exprs.unshift(
+              t.variableDeclaration(
+                'const',
+                [t.variableDeclarator(refIdentifier, value.expression)]
+              ),
+              t.expressionStatement(
+                t.logicalExpression(
+                  '&&',
+                  t.binaryExpression(
+                    "===",
+                    t.unaryExpression("typeof", refIdentifier),
+                    t.stringLiteral("function")
+                  ),
+                  t.callExpression(refIdentifier, [elem])
+                )
+              )
+            );
           }
         } else if (key === "children") {
           children = value;

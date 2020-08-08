@@ -85,6 +85,11 @@ const template = props => {
     _$insert(
       _el$4,
       _$createComponent(Context.Consumer, {
+        ref: r$ => {
+          const _ref$ = props.consumerRef();
+
+          typeof _ref$ === "function" && _ref$(r$);
+        },
         children: context => context
       }),
       null
