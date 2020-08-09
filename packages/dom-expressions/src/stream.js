@@ -1,5 +1,7 @@
 import { Readable } from "stream";
 
+const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
+
 export function renderToNodeStream(code) {
   const stream = new Readable({
     read() {}
