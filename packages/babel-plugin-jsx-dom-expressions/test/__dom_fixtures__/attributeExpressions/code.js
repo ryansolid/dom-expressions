@@ -10,6 +10,9 @@ const template = (
       <a href={"/"} ref={link}>
         Welcome
       </a>
+      <a href={"/"} ref={link2()}>
+        Welcome 2
+      </a>
     </h1>
   </div>
 );
