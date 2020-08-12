@@ -21,7 +21,8 @@ const Child = props => [
     const _el$ = _tmpl$.cloneNode(true),
       _el$2 = _el$.firstChild;
 
-    typeof props.ref === "function" ? props.ref(_el$) : (props.ref = _el$);
+    const _ref$ = props.ref;
+    typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
 
     _$insert(_el$, () => props.name, null);
 
@@ -52,7 +53,10 @@ const template = props => {
           },
           Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
           {
-            ref: r$ => (typeof childRef === "function" ? childRef(r$) : (childRef = r$)),
+            ref: r$ => {
+              const _ref$2 = childRef;
+              typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
+            },
             booleanProperty: true,
             children: () => _tmpl$3.cloneNode(true)
           }
@@ -68,7 +72,10 @@ const template = props => {
         Child,
         {
           name: "Jason",
-          ref: r$ => (typeof props.ref === "function" ? props.ref(r$) : (props.ref = r$)),
+          ref: r$ => {
+            const _ref$3 = props.ref;
+            typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
+          },
           children: () => {
             const _el$6 = _tmpl$2.cloneNode(true);
 
@@ -85,6 +92,11 @@ const template = props => {
     _$insert(
       _el$4,
       _$createComponent(Context.Consumer, {
+        ref: r$ => {
+          const _ref$4 = props.consumerRef();
+
+          typeof _ref$4 === "function" && _ref$4(r$);
+        },
         children: context => context
       }),
       null

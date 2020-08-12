@@ -1,6 +1,13 @@
 import { parse, stringify, IDom } from "html-parse-string";
 import { NonComposedEvents } from "dom-expressions/src/constants";
-import { effect, insert, createComponent, delegateEvents, classList, style } from "dom-expressions/src/runtime";
+import {
+  effect,
+  insert,
+  createComponent,
+  delegateEvents,
+  classList,
+  style
+} from "dom-expressions/src/runtime";
 
 interface Runtime {
   effect: typeof effect;
@@ -10,14 +17,14 @@ interface Runtime {
   classList: typeof classList;
   style: typeof style;
 }
-type TemplateCreate = (node: Node, data: any[], r: Runtime, bindings: any) => Node;
+type TemplateCreate = (tmpl: HTMLTemplateElement[], data: any[], r: Runtime) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
 
 export type HTMLTag = {
-  (statics: string[], ...args: unknown[]): Node | Node[];
+  (statics: TemplateStringsArray, ...args: unknown[]): Node | Node[];
 };
 
-const cache = new Map();
+const cache = new Map<TemplateStringsArray, HTMLTemplateElement[]>();
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
 const spaces = " \\f\\n\\r\\t";
@@ -55,7 +62,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     } else (el as any)[`__${ev}`] = expr;
   };
 
-  function createTemplate(statics: string[]) {
+  function createTemplate(statics: TemplateStringsArray) {
     let i = 0,
       markup = "";
     for (; i < statics.length - 1; i++) {
@@ -209,16 +216,15 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
 
     if (options.parent)
       options.exprs.push(
-        `r.insert(${options.parent}, r.createComponent(exprs[${componentIdentifier}], {${props.join(
-          ", "
-        ) || ""}}, [${dynamicKeys}])${tag ? `, ${tag}` : ""})`
+        `r.insert(${options.parent}, r.createComponent(exprs[${componentIdentifier}], {${
+          props.join(", ") || ""
+        }}, [${dynamicKeys}])${tag ? `, ${tag}` : ""})`
       );
     else
       options.exprs.push(
-        `${
-          options.fragment ? "" : "return "
-        }r.createComponent(exprs[${componentIdentifier}], {${props.join(", ") ||
-          ""}}, [${dynamicKeys}])`
+        `${options.fragment ? "" : "return "}r.createComponent(exprs[${componentIdentifier}], {${
+          props.join(", ") || ""
+        }}, [${dynamicKeys}])`
       );
     options.path = tag;
     options.first = false;
@@ -252,10 +258,12 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
           parseNode(child, childOptions);
           options.templateNodes.push([child]);
           parts.push(
-            `function() { ${childOptions.decl.join(",\n") +
+            `function() { ${
+              childOptions.decl.join(",\n") +
               ";\n" +
               childOptions.exprs.join(";\n") +
-              `;\nreturn _$el${id};\n`}}()`
+              `;\nreturn _$el${id};\n`
+            }}()`
           );
           options.counter = childOptions.counter;
           options.templateId = childOptions.templateId;
@@ -340,9 +348,9 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     ];
   }
 
-  function html(statics: string[], ...args: unknown[]): Node {
+  function html(statics: TemplateStringsArray, ...args: unknown[]): Node {
     const templates = cache.get(statics) || createTemplate(statics);
-    return templates[0].create(templates, args, r);
+    return (templates[0] as CreateableTemplate).create(templates, args, r);
   }
 
   return html;

@@ -31,7 +31,8 @@ const Child = props => [
       _el$3 = _el$2.nextSibling,
       _el$4 = _el$3.nextSibling;
 
-    typeof props.ref === "function" ? props.ref(_el$) : (props.ref = _el$);
+    const _ref$ = props.ref;
+    typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
 
     _$insert(_el$, () => props.name, _el$4);
 
@@ -68,7 +69,10 @@ const template = props => {
           },
           Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
           {
-            ref: r$ => (typeof childRef === "function" ? childRef(r$) : (childRef = r$)),
+            ref: r$ => {
+              const _ref$2 = childRef;
+              typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
+            },
             booleanProperty: true,
             children: () => _$getNextElement(_tmpl$3, true)
           }
@@ -84,7 +88,10 @@ const template = props => {
         Child,
         {
           name: "Jason",
-          ref: r$ => (typeof props.ref === "function" ? props.ref(r$) : (props.ref = r$)),
+          ref: r$ => {
+            const _ref$3 = props.ref;
+            typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
+          },
           children: () => {
             const _el$8 = _$getNextElement(_tmpl$2, true);
 

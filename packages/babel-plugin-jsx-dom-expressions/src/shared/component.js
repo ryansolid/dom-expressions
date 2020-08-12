@@ -77,25 +77,61 @@ export default function transformComponent(path) {
           if (key === "ref") {
             if (config.generate === "ssr") return;
             if (t.isLVal(value.expression)) {
+              const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
                 t.objectProperty(
                   t.identifier("ref"),
                   t.arrowFunctionExpression(
                     [t.identifier("r$")],
-                    t.conditionalExpression(
-                      t.binaryExpression(
-                        "===",
-                        t.unaryExpression("typeof", value.expression),
-                        t.stringLiteral("function")
+                    t.blockStatement([
+                      t.variableDeclaration(
+                        'const',
+                        [t.variableDeclarator(refIdentifier, value.expression)]
                       ),
-                      t.callExpression(value.expression, [t.identifier("r$")]),
-                      t.assignmentExpression("=", value.expression, t.identifier("r$"))
-                    )
+                      t.expressionStatement(
+                        t.conditionalExpression(
+                          t.binaryExpression(
+                            "===",
+                            t.unaryExpression("typeof", refIdentifier),
+                            t.stringLiteral("function")
+                          ),
+                          t.callExpression(refIdentifier, [t.identifier("r$")]),
+                          t.assignmentExpression("=", value.expression, t.identifier("r$"))
+                        )
+                      )
+                    ])
                   )
                 )
               );
             } else if (t.isFunction(value.expression)) {
               runningObject.push(t.objectProperty(t.identifier("ref"), value.expression));
+            } else if (t.isCallExpression(value.expression)) {
+              const refIdentifier = path.scope.generateUidIdentifier("_ref$");
+              runningObject.push(
+                t.objectProperty(
+                  t.identifier("ref"),
+                  t.arrowFunctionExpression(
+                    [t.identifier("r$")],
+                    t.blockStatement([
+                      t.variableDeclaration(
+                        'const',
+                        [t.variableDeclarator(refIdentifier, value.expression)]
+                      ),
+                      t.expressionStatement(
+                        t.logicalExpression(
+                          '&&',
+                          t.binaryExpression(
+                            "===",
+                            t.unaryExpression("typeof", refIdentifier),
+                            t.stringLiteral("function")
+                          ),
+                          t.callExpression(refIdentifier, [t.identifier("r$")])
+                        )
+                      )
+                    ])
+                  )
+                )
+              );
             }
           } else if (
             isDynamic(attribute.get("value").get("expression"), {
@@ -157,7 +193,6 @@ export default function transformComponent(path) {
   const componentArgs = [tagNameToIdentifier(tagName), props[0]];
   if (dynamics) componentArgs.push(dynamics);
   exprs = [t.callExpression(t.identifier("_$createComponent"), componentArgs)];
-
   return { exprs, template: "", component: true };
 }
 

@@ -5,6 +5,7 @@
     "declaration": true,
     "target": "esnext",
     "moduleResolution": "node",
-    "strict": true
+    "strict": true,
+    "lib": ["es2018", "DOM"]
   }
 }

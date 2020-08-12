@@ -25,7 +25,8 @@ const template = (() => {
 
   _el$2.style.setProperty("margin-right", "40px");
 
-  typeof link === "function" ? link(_el$3) : (link = _el$3);
+  const _ref$ = link;
+  typeof _ref$ === "function" ? _ref$(_el$3) : (link = _el$3);
 
   _$effect(
     _p$ => {
@@ -117,7 +118,8 @@ let refTarget;
 const template7 = (() => {
   const _el$12 = _tmpl$3.cloneNode(true);
 
-  typeof refTarget === "function" ? refTarget(_el$12) : (refTarget = _el$12);
+  const _ref$2 = refTarget;
+  typeof _ref$2 === "function" ? _ref$2(_el$12) : (refTarget = _el$12);
   return _el$12;
 })();
 
@@ -132,11 +134,8 @@ const template8 = (() => {
 const template9 = (() => {
   const _el$14 = _tmpl$3.cloneNode(true);
 
-  (() => {
-    const _$r = refFactory();
+  const _ref$3 = refFactory();
 
-    _$r && _$r(_el$14);
-  })();
-
+  typeof _ref$3 === "function" && _ref$3(_el$14);
   return _el$14;
 })();

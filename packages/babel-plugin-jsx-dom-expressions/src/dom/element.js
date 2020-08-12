@@ -232,15 +232,19 @@ function transformAttributes(path, results) {
       ) {
         if (key === "ref") {
           if (t.isLVal(value.expression)) {
+            const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
+              t.variableDeclaration("const", [
+                t.variableDeclarator(refIdentifier, value.expression)
+              ]),
               t.expressionStatement(
                 t.conditionalExpression(
                   t.binaryExpression(
                     "===",
-                    t.unaryExpression("typeof", value.expression),
+                    t.unaryExpression("typeof", refIdentifier),
                     t.stringLiteral("function")
                   ),
-                  t.callExpression(value.expression, [elem]),
+                  t.callExpression(refIdentifier, [elem]),
                   t.assignmentExpression("=", value.expression, elem)
                 )
               )
@@ -249,26 +253,22 @@ function transformAttributes(path, results) {
             results.exprs.unshift(
               t.expressionStatement(t.callExpression(value.expression, [elem]))
             );
-          } else {
+          } else if (t.isCallExpression(value.expression)) {
+            const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
+              t.variableDeclaration(
+                'const',
+                [t.variableDeclarator(refIdentifier, value.expression)]
+              ),
               t.expressionStatement(
-                t.callExpression(
-                  t.arrowFunctionExpression(
-                    [],
-                    t.blockStatement([
-                      t.variableDeclaration("const", [
-                        t.variableDeclarator(t.identifier("_$r"), value.expression)
-                      ]),
-                      t.expressionStatement(
-                        t.logicalExpression(
-                          "&&",
-                          t.identifier("_$r"),
-                          t.callExpression(t.identifier("_$r"), [elem])
-                        )
-                      )
-                    ])
+                t.logicalExpression(
+                  '&&',
+                  t.binaryExpression(
+                    "===",
+                    t.unaryExpression("typeof", refIdentifier),
+                    t.stringLiteral("function")
                   ),
-                  []
+                  t.callExpression(refIdentifier, [elem])
                 )
               )
             );
