@@ -14,7 +14,7 @@ type TemplateCreate = (node: Node, data: any[], r: Runtime, bindings: any) => No
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
 
 export type HTMLTag = {
-  (statics: string[], ...args: unknown[]): Node | Node[];
+  (statics: TemplateStringsArray, ...args: unknown[]): Node | Node[];
 };
 
 const cache = new Map();
