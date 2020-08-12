@@ -18,6 +18,9 @@ const Types = {
       type: Types.PROPERTY,
       alias: "className"
     },
+    role: {
+      type: Types.ATTRIBUTE
+    },
     // React compat
     spellCheck: {
       type: Types.PROPERTY,

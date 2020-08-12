@@ -362,7 +362,7 @@ export function getHydrationKey() {
   return hydration.context.id;
 }
 
-export function generateHydrationScript({ eventNames = ["click", "input"], streaming } = {}) {
+export function generateHydrationScript({ eventNames = ["click", "input", "blur"], streaming } = {}) {
   let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;

@@ -121,7 +121,7 @@ declare global {
       // MouseEvents
       onClick?: EventHandlerUnion<T, MouseEvent>;
       onContextMenu?: EventHandlerUnion<T, MouseEvent>;
-      onDoubleClick?: EventHandlerUnion<T, MouseEvent>;
+      onDblClick?: EventHandlerUnion<T, MouseEvent>;
       onDrag?: EventHandlerUnion<T, DragEvent>;
       onDragEnd?: EventHandlerUnion<T, DragEvent>;
       onDragEnter?: EventHandlerUnion<T, DragEvent>;
