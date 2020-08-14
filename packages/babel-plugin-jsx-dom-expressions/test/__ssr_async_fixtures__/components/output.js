@@ -1,19 +1,21 @@
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
-import { ssrStream as _$ssrStream } from "r-dom";
+import { ssrAsync as _$ssrAsync } from "r-dom";
 import { escape as _$escape } from "r-dom";
 const _ck$ = ["children"],
-  _ck$2 = ["fallback"];
+  _ck$2 = ["dynamic", "hyphen-ated"],
+  _ck$3 = ["children", "dynamic"],
+  _ck$4 = ["each", "fallback"];
 
 const Child = props => [
-  _$ssrStream(["<div>Hello ", "</div>"], _$escape(props.name)),
-  _$ssrStream(["<div>", "</div>"], _$escape(props.children))
+  _$ssrAsync(["<div>Hello ", "</div>"], () => _$escape(props.name)),
+  _$ssrAsync(["<div>", "</div>"], () => _$escape(props.children))
 ];
 
 const template = props => {
   let childRef;
   const { content } = props;
-  return _$ssrStream(
+  return _$ssrAsync(
     ["<div>", "", "", "</div>"],
     _$createComponent(
       Child,
@@ -24,7 +26,7 @@ const template = props => {
         Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
         {
           booleanProperty: true,
-          children: () => _$ssrStream("<div>From Parent</div>")
+          children: () => _$ssrAsync("<div>From Parent</div>")
         }
       ),
       ["children", ...Object.keys(props)]
@@ -33,7 +35,7 @@ const template = props => {
       Child,
       {
         name: "Jason",
-        children: () => _$ssrStream(["<div>", "</div>"], _$escape(content))
+        children: () => _$ssrAsync(["<div>", "</div>"], _$escape(content))
       },
       _ck$
     ),
@@ -43,21 +45,25 @@ const template = props => {
   );
 };
 
-const template2 = _$createComponent(Child, {
-  name: "Jake",
-  dynamic: state.data,
-  stale: state.data,
-  handleClick: clickHandler,
-  "hyphen-ated": state.data
-});
+const template2 = _$createComponent(
+  Child,
+  {
+    name: "Jake",
+    dynamic: () => state.data,
+    stale: state.data,
+    handleClick: clickHandler,
+    "hyphen-ated": () => state.data
+  },
+  _ck$2
+);
 
 const template3 = _$createComponent(
   Child,
   {
     children: () => [
-      _$ssrStream("<div></div>"),
-      _$ssrStream("<div></div>"),
-      _$ssrStream("<div></div>"),
+      _$ssrAsync("<div></div>"),
+      _$ssrAsync("<div></div>"),
+      _$ssrAsync("<div></div>"),
       "After"
     ]
   },
@@ -67,30 +73,34 @@ const template3 = _$createComponent(
 const template4 = _$createComponent(
   Child,
   {
-    children: () => _$ssrStream("<div></div>")
+    children: () => _$ssrAsync("<div></div>")
   },
   _ck$
 );
 
-const template5 = _$createComponent(Child, {
-  dynamic: state.dynamic,
-  children: state.dynamic
-}); // builtIns
+const template5 = _$createComponent(
+  Child,
+  {
+    dynamic: () => state.dynamic,
+    children: () => state.dynamic
+  },
+  _ck$3
+); // builtIns
 
 const template6 = _$createComponent(
   _$For,
   {
-    each: state.list,
+    each: () => state.list,
     fallback: () => _$createComponent(Loading, {}),
     children: item => item
   },
-  _ck$2
+  _ck$4
 );
 
 const template7 = _$createComponent(
   Child,
   {
-    children: () => [_$ssrStream("<div></div>"), state.dynamic]
+    children: () => [_$ssrAsync("<div></div>"), () => state.dynamic]
   },
   _ck$
 );
@@ -107,7 +117,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 
-const template10 = _$ssrStream(
+const template10 = _$ssrAsync(
   ["<div>", " | ", " | ", " | ", " | ", " | ", "</div>"],
   _$createComponent(Link, {
     children: "new"
@@ -129,7 +139,7 @@ const template10 = _$ssrStream(
   })
 );
 
-const template11 = _$ssrStream(
+const template11 = _$ssrAsync(
   ["<div>", " | ", "", " | ", "", " | ", "</div>"],
   _$createComponent(Link, {
     children: "new"
@@ -151,7 +161,7 @@ const template11 = _$ssrStream(
   })
 );
 
-const template12 = _$ssrStream(
+const template12 = _$ssrAsync(
   ["<div> | ", " |  |  | ", " | </div>"],
   _$createComponent(Link, {
     children: "comments"

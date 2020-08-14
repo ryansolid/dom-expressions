@@ -4,15 +4,15 @@ import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 const _ck$ = ["children"],
-  _ck$2 = ["dynamic", "hyphen-ated"],
-  _ck$3 = ["children", "dynamic"],
-  _ck$4 = ["each", "fallback"];
+  _ck$2 = ["fallback"];
 
 const Child = props => [
-  _$ssr(['<div _hk="', '">Hello <!--#-->', "<!--/--></div>"], _$getHydrationKey(), () =>
+  _$ssr(
+    ['<div _hk="', '">Hello <!--#-->', "<!--/--></div>"],
+    _$getHydrationKey(),
     _$escape(props.name)
   ),
-  _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () => _$escape(props.children))
+  _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), _$escape(props.children))
 ];
 
 const template = props => {
@@ -50,17 +50,13 @@ const template = props => {
   );
 };
 
-const template2 = _$createComponent(
-  Child,
-  {
-    name: "Jake",
-    dynamic: () => state.data,
-    stale: state.data,
-    handleClick: clickHandler,
-    "hyphen-ated": () => state.data
-  },
-  _ck$2
-);
+const template2 = _$createComponent(Child, {
+  name: "Jake",
+  dynamic: state.data,
+  stale: state.data,
+  handleClick: clickHandler,
+  "hyphen-ated": state.data
+});
 
 const template3 = _$createComponent(
   Child,
@@ -83,29 +79,25 @@ const template4 = _$createComponent(
   _ck$
 );
 
-const template5 = _$createComponent(
-  Child,
-  {
-    dynamic: () => state.dynamic,
-    children: () => state.dynamic
-  },
-  _ck$3
-); // builtIns
+const template5 = _$createComponent(Child, {
+  dynamic: state.dynamic,
+  children: state.dynamic
+}); // builtIns
 
 const template6 = _$createComponent(
   _$For,
   {
-    each: () => state.list,
+    each: state.list,
     fallback: () => _$createComponent(Loading, {}),
     children: item => item
   },
-  _ck$4
+  _ck$2
 );
 
 const template7 = _$createComponent(
   Child,
   {
-    children: () => [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), () => state.dynamic]
+    children: () => [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), state.dynamic]
   },
   _ck$
 );

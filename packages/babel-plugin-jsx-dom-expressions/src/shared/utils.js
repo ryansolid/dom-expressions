@@ -51,7 +51,7 @@ export function isComponent(tagName) {
 }
 
 export function isDynamic(path, { checkMember, checkTags, checkCallExpressions = true }) {
-  if (config.streaming) {
+  if (config.generate === "ssr" && !config.async) {
     checkMember = false;
     checkCallExpressions = false;
   };

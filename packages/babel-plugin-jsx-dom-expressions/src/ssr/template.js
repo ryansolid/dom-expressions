@@ -8,14 +8,14 @@ export function createTemplate(path, result) {
   }
 
   // uncomment to optimize non-hoisted, needs more thorough testing
-  // if (config.streaming) {
+  // if (!config.async) {
   //   if (!Array.isArray(result.template)) return t.stringLiteral(result.template);
   //   if (result.template.length === 1) return t.stringLiteral(result.template[0]);
   //   const quasis = result.template.map(tmpl => t.TemplateElement({ raw: tmpl }));
   //   return t.TemplateLiteral(quasis, result.templateValues);
   // }
 
-  const fnName = config.streaming ? "ssrStream" : "ssr";
+  const fnName = config.async ? "ssrAsync" : "ssr";
   registerImportMethod(path, fnName);
   if (!Array.isArray(result.template))
     return t.callExpression(t.identifier(`_$${fnName}`), [t.stringLiteral(result.template)]);

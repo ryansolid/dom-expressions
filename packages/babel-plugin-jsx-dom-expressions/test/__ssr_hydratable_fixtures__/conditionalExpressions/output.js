@@ -1,13 +1,13 @@
 import { createComponent as _$createComponent } from "r-dom";
-import { memo as _$memo } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
-const _ck$ = ["render"];
 
 const template1 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), _$escape(simple));
 
-const template2 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
+const template2 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
   _$escape(state.dynamic)
 );
 
@@ -17,136 +17,70 @@ const template3 = _$ssr(
   simple ? _$escape(good) : _$escape(bad)
 );
 
-const template4 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
+const template4 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
   simple ? _$escape(good()) : _$escape(bad)
 );
 
 const template5 = _$ssr(
   ['<div _hk="', '">', "</div>"],
   _$getHydrationKey(),
-  (() => {
-    const _c$ = _$memo(() => !!state.dynamic, true);
-
-    return () => (_c$() ? _$escape(good()) : _$escape(bad));
-  })()
+  state.dynamic ? _$escape(good()) : _$escape(bad)
 );
 
 const template6 = _$ssr(
   ['<div _hk="', '">', "</div>"],
   _$getHydrationKey(),
-  (() => {
-    const _c$ = _$memo(() => !!state.dynamic, true);
-
-    return () => _c$() && _$escape(good());
-  })()
+  state.dynamic && _$escape(good())
 );
 
 const template7 = _$ssr(
   ['<div _hk="', '">', "</div>"],
   _$getHydrationKey(),
-  (() => {
-    const _c$ = _$memo(() => state.count > 5, true);
-
-    return () =>
-      _c$()
-        ? (() => {
-            const _c$ = _$memo(() => !!state.dynamic, true);
-
-            return () => (_c$() ? _$escape(best) : _$escape(good()));
-          })()
-        : _$escape(bad);
-  })()
+  state.count > 5 ? (state.dynamic ? _$escape(best) : _$escape(good())) : _$escape(bad)
 );
 
 const template8 = _$ssr(
   ['<div _hk="', '">', "</div>"],
   _$getHydrationKey(),
-  (() => {
-    const _c$ = _$memo(() => !!(state.dynamic && state.something), true);
-
-    return () => _c$() && _$escape(good());
-  })()
+  state.dynamic && state.something && _$escape(good())
 );
 
 const template9 = _$ssr(
   ['<div _hk="', '">', "</div>"],
   _$getHydrationKey(),
-  (() => {
-    const _c$ = _$memo(() => state.dynamic, true);
-
-    return () => (_c$() && _$escape(good())) || _$escape(bad);
-  })()
+  (state.dynamic && _$escape(good())) || _$escape(bad)
 );
 
-const template10 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), () =>
+const template10 = _$ssr(
+  ['<div _hk="', '">', "</div>"],
+  _$getHydrationKey(),
   state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"
 );
 
 const template11 = _$ssr(
   ['<div _hk="', '">', "</div>"],
   _$getHydrationKey(),
-  (() => {
-    const _c$ = _$memo(() => !!state.a, true);
-
-    return () =>
-      _c$()
-        ? _$escape(a())
-        : (() => {
-            const _c$ = _$memo(() => !!state.b, true);
-
-            return () => (_c$() ? _$escape(b()) : state.c ? "c" : "fallback");
-          })();
-  })()
+  state.a ? _$escape(a()) : state.b ? _$escape(b()) : state.c ? "c" : "fallback"
 );
 
-const template12 = _$createComponent(
-  Comp,
-  {
-    render: (() => {
-      const _c$ = _$memo(() => !!state.dynamic, true);
+const template12 = _$createComponent(Comp, {
+  render: state.dynamic ? good() : bad
+}); // no dynamic predicate
 
-      return () => (_c$() ? good() : bad);
-    })()
-  },
-  _ck$
-); // no dynamic predicate
+const template13 = _$createComponent(Comp, {
+  render: state.dynamic ? good : bad
+});
 
-const template13 = _$createComponent(
-  Comp,
-  {
-    render: () => (state.dynamic ? good : bad)
-  },
-  _ck$
-);
+const template14 = _$createComponent(Comp, {
+  render: state.dynamic && good()
+}); // no dynamic predicate
 
-const template14 = _$createComponent(
-  Comp,
-  {
-    render: (() => {
-      const _c$ = _$memo(() => !!state.dynamic, true);
+const template15 = _$createComponent(Comp, {
+  render: state.dynamic && good
+});
 
-      return () => _c$() && good();
-    })()
-  },
-  _ck$
-); // no dynamic predicate
-
-const template15 = _$createComponent(
-  Comp,
-  {
-    render: () => state.dynamic && good
-  },
-  _ck$
-);
-
-const template16 = _$createComponent(
-  Comp,
-  {
-    render: (() => {
-      const _c$ = _$memo(() => state.dynamic, true);
-
-      return () => _c$() || good();
-    })()
-  },
-  _ck$
-);
+const template16 = _$createComponent(Comp, {
+  render: state.dynamic || good()
+});

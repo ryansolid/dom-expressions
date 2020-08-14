@@ -13,27 +13,25 @@ const multiExpression = [
   "After"
 ];
 const multiDynamic = [
-  _$ssr(['<div _hk="', '" id="', '">First</div>'], _$getHydrationKey(), () =>
+  _$ssr(
+    ['<div _hk="', '" id="', '">First</div>'],
+    _$getHydrationKey(),
     _$escape(state.first, true)
   ),
-  () => state.inserted,
-  _$ssr(['<div _hk="', '" id="', '">Last</div>'], _$getHydrationKey(), () =>
-    _$escape(state.last, true)
-  ),
+  state.inserted,
+  _$ssr(['<div _hk="', '" id="', '">Last</div>'], _$getHydrationKey(), _$escape(state.last, true)),
   "After"
 ];
 const singleExpression = inserted;
-
-const singleDynamic = () => inserted();
-
+const singleDynamic = inserted();
 const firstStatic = [inserted, _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey())];
-const firstDynamic = [() => inserted(), _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey())];
+const firstDynamic = [inserted(), _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey())];
 const firstComponent = [
   _$createComponent(Component, {}),
   _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey())
 ];
 const lastStatic = [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), inserted];
-const lastDynamic = [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), () => inserted()];
+const lastDynamic = [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), inserted()];
 const lastComponent = [
   _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()),
   _$createComponent(Component, {})

@@ -24,12 +24,11 @@ const template2 = _$ssr(
     '"></rect></svg>'
   ],
   _$getHydrationKey(),
-  () => _$escape(state.name, true),
-  () => _$escape(state.width, true),
-  () => _$escape(state.x, true),
-  () => _$escape(state.y, true),
-  () =>
-    "fill:" +
+  _$escape(state.name, true),
+  _$escape(state.width, true),
+  _$escape(state.x, true),
+  _$escape(state.y, true),
+  "fill:" +
     "red" +
     (";stroke:" + "black") +
     (";stroke-width:" + _$escape(props.stroke, true)) +

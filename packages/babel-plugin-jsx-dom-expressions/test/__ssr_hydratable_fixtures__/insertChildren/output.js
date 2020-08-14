@@ -3,7 +3,6 @@ import { escape as _$escape } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
-const _ck$ = ["children"];
 
 const children = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
 
@@ -29,17 +28,15 @@ const template4 = _$ssr(
   _$createComponent(Hello, {})
 );
 
-const template5 = _$ssr(['<module _hk="', '">', "</module>"], _$getHydrationKey(), () =>
+const template5 = _$ssr(
+  ['<module _hk="', '">', "</module>"],
+  _$getHydrationKey(),
   _$escape(dynamic.children)
 );
 
-const template6 = _$createComponent(
-  Module,
-  {
-    children: () => dynamic.children
-  },
-  _ck$
-);
+const template6 = _$createComponent(Module, {
+  children: dynamic.children
+});
 
 const template7 = _$ssr(
   ['<module _hk="', '" ', "></module>"],
@@ -57,7 +54,7 @@ const template9 = _$ssr(
   ['<module _hk="', '" ', ">", "</module>"],
   _$getHydrationKey(),
   _$ssrSpread(dynamic, false, true),
-  () => _$escape(dynamic.children)
+  _$escape(dynamic.children)
 );
 
 const template10 = _$createComponent(

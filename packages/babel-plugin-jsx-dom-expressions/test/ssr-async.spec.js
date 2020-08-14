@@ -8,11 +8,11 @@ pluginTester({
     moduleName: 'r-dom',
     builtIns: ['For'],
     generate: "ssr",
-    streaming: true,
+    async: true,
     contextToCustomElements: true,
     staticMarker: "@once"
   },
   title: 'Convert JSX',
-  fixtures: path.join(__dirname, '__ssr_streaming_fixtures__'),
+  fixtures: path.join(__dirname, '__ssr_async_fixtures__'),
   snapshot: true
 });

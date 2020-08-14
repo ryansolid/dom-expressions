@@ -9,8 +9,8 @@ const template = _$ssr(
 
 const template2 = _$ssr(
   ['<my-element some-attr="', '" someprop="', '"></my-element>'],
-  () => _$escape(state.name, true),
-  () => _$escape(state.data, true)
+  _$escape(state.name, true),
+  _$escape(state.data, true)
 );
 
 const template3 = _$ssr('<my-element><header slot="head">Title</header></my-element>');

@@ -12,8 +12,8 @@ const template = _$ssr(
 const template2 = _$ssr(
   ['<my-element _hk="', '" some-attr="', '" someprop="', '"></my-element>'],
   _$getHydrationKey(),
-  () => _$escape(state.name, true),
-  () => _$escape(state.data, true)
+  _$escape(state.name, true),
+  _$escape(state.data, true)
 );
 
 const template3 = _$ssr(

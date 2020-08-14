@@ -20,8 +20,8 @@ export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function insert(
   parent: MountableElement,
   accessor: any,
-  init?: any,
-  marker?: Node | null
+  marker?: Node | null,
+  init?: any
 ): any;
 export function createComponent(Comp: (props: any) => any, props: any, dynamicKeys?: string[]): any;
 export function delegateEvents(eventNames: string[]): void;
@@ -42,8 +42,8 @@ export function style(
 ): void;
 export function currentContext(): any;
 
-export function ssr(template: string[] | string, ...nodes: any[]): { t: string | (() => string) };
-export function ssrStream(template: string[] | string, ...nodes: any[]): { t: string };
+export function ssr(template: string[] | string, ...nodes: any[]): { t: string };
+export function ssrAsync(template: string[] | string, ...nodes: any[]): { t: string | (() => string) };
 export function ssrClassList(value: { [k: string]: boolean }): string;
 export function ssrStyle(value: { [k: string]: string }): string;
 export function ssrSpread(accessor: any, isSVG: boolean, skipChildren: boolean): () => string;

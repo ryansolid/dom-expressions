@@ -23,20 +23,19 @@ const template = _$ssr(
     selected: selected
   }),
   "color:" + _$escape(color, true),
-  _$ssrSpread(() => results(), false, true),
-  () => _$escape(welcoming(), true),
-  () => "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
-  () =>
-    _$ssrClassList({
-      selected: selected()
-    })
+  _$ssrSpread(results(), false, true),
+  _$escape(welcoming(), true),
+  "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
+  _$ssrClassList({
+    selected: selected()
+  })
 );
 
 const template2 = _$ssr(
   ['<div _hk="', '"><div>', "</div><div>", "</div></div>"],
   _$getHydrationKey(),
   _$escape(rowId),
-  () => _$escape(row.label)
+  _$escape(row.label)
 );
 
 const template3 = _$ssr(
@@ -44,21 +43,25 @@ const template3 = _$ssr(
   _$getHydrationKey(),
   _$escape(state.id, true),
   "background-color:" + _$escape(state.color, true),
-  () => _$escape(state.name, true),
+  _$escape(state.name, true),
   _$escape(state.content)
 );
 
 const template4 = _$ssr(
   ['<div _hk="', '" class="', '"></div>'],
   _$getHydrationKey(),
-  () => `hi ${_$escape(state.class, true)}`
+  `hi ${_$escape(state.class, true)}`
 );
 
-const template5 = _$ssr(['<div _hk="', '" style="', '"></div>'], _$getHydrationKey(), () =>
+const template5 = _$ssr(
+  ['<div _hk="', '" style="', '"></div>'],
+  _$getHydrationKey(),
   _$ssrStyle(someStyle())
 );
 
-const template6 = _$ssr(['<div _hk="', '" style="', '"></div>'], _$getHydrationKey(), () =>
+const template6 = _$ssr(
+  ['<div _hk="', '" style="', '"></div>'],
+  _$getHydrationKey(),
   _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",

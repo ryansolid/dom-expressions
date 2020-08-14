@@ -20,16 +20,17 @@ const template = _$ssr(
     selected: selected
   }),
   "color:" + _$escape(color, true),
-  _$ssrSpread(() => results(), false, true),
-  () => _$escape(welcoming(), true),
-  () => "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
-  () =>
-    _$ssrClassList({
-      selected: selected()
-    })
+  _$ssrSpread(results(), false, true),
+  _$escape(welcoming(), true),
+  "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
+  _$ssrClassList({
+    selected: selected()
+  })
 );
 
-const template2 = _$ssr(["<div><div>", "</div><div>", "</div></div>"], _$escape(rowId), () =>
+const template2 = _$ssr(
+  ["<div><div>", "</div><div>", "</div></div>"],
+  _$escape(rowId),
   _$escape(row.label)
 );
 
@@ -37,15 +38,16 @@ const template3 = _$ssr(
   ['<div id="', '" style="', '" name="', '">', "</div>"],
   _$escape(state.id, true),
   "background-color:" + _$escape(state.color, true),
-  () => _$escape(state.name, true),
+  _$escape(state.name, true),
   _$escape(state.content)
 );
 
-const template4 = _$ssr(['<div class="', '"></div>'], () => `hi ${_$escape(state.class, true)}`);
+const template4 = _$ssr(['<div class="', '"></div>'], `hi ${_$escape(state.class, true)}`);
 
-const template5 = _$ssr(['<div style="', '"></div>'], () => _$ssrStyle(someStyle()));
+const template5 = _$ssr(['<div style="', '"></div>'], _$ssrStyle(someStyle()));
 
-const template6 = _$ssr(['<div style="', '"></div>'], () =>
+const template6 = _$ssr(
+  ['<div style="', '"></div>'],
   _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",
