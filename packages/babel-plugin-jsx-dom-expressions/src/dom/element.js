@@ -47,7 +47,7 @@ export function transformElement(path, info) {
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
     registerImportMethod(path, "runHydrationEvents");
     results.postExprs.push(
-      t.expressionStatement(t.callExpression(t.identifier("_$runHydrationEvents"), [results.id]))
+      t.expressionStatement(t.callExpression(t.identifier("_$runHydrationEvents"), []))
     );
   }
   if (wrapSVG) results.template += "</svg>";

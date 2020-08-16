@@ -33,7 +33,7 @@ const template = (() => {
 
   _el$7.addEventListener("camelClick", () => console.log("listener"), true);
 
-  _$runHydrationEvents(_el$);
+  _$runHydrationEvents();
 
   return _el$;
 })();

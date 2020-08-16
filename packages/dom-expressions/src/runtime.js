@@ -271,7 +271,7 @@ export function getNextMarker(start) {
   return [end, current];
 }
 
-export function runHydrationEvents(el) {
+export function runHydrationEvents() {
   if (hydration && hydration.events) {
     const { completed, events } = hydration;
     while (events.length) {

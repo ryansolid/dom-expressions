@@ -68,7 +68,7 @@ const template3 = (() => {
 
   _$spread(_el$5, props, true, false);
 
-  _$runHydrationEvents(_el$4);
+  _$runHydrationEvents();
 
   return _el$4;
 })();

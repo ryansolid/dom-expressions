@@ -50,7 +50,7 @@ const template = (() => {
     }
   );
 
-  _$runHydrationEvents(_el$);
+  _$runHydrationEvents();
 
   return _el$;
 })();
