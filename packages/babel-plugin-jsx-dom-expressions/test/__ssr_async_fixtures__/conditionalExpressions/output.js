@@ -1,20 +1,18 @@
 import { createComponent as _$createComponent } from "r-dom";
 import { memo as _$memo } from "r-dom";
-import { ssrAsync as _$ssrAsync } from "r-dom";
+import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 const _ck$ = ["render"];
 
-const template1 = _$ssrAsync(["<div>", "</div>"], _$escape(simple));
+const template1 = _$ssr(["<div>", "</div>"], _$escape(simple));
 
-const template2 = _$ssrAsync(["<div>", "</div>"], () => _$escape(state.dynamic));
+const template2 = _$ssr(["<div>", "</div>"], () => _$escape(state.dynamic));
 
-const template3 = _$ssrAsync(["<div>", "</div>"], simple ? _$escape(good) : _$escape(bad));
+const template3 = _$ssr(["<div>", "</div>"], simple ? _$escape(good) : _$escape(bad));
 
-const template4 = _$ssrAsync(["<div>", "</div>"], () =>
-  simple ? _$escape(good()) : _$escape(bad)
-);
+const template4 = _$ssr(["<div>", "</div>"], () => (simple ? _$escape(good()) : _$escape(bad)));
 
-const template5 = _$ssrAsync(
+const template5 = _$ssr(
   ["<div>", "</div>"],
   (() => {
     const _c$ = _$memo(() => !!state.dynamic, true);
@@ -23,7 +21,7 @@ const template5 = _$ssrAsync(
   })()
 );
 
-const template6 = _$ssrAsync(
+const template6 = _$ssr(
   ["<div>", "</div>"],
   (() => {
     const _c$ = _$memo(() => !!state.dynamic, true);
@@ -32,7 +30,7 @@ const template6 = _$ssrAsync(
   })()
 );
 
-const template7 = _$ssrAsync(
+const template7 = _$ssr(
   ["<div>", "</div>"],
   (() => {
     const _c$ = _$memo(() => state.count > 5, true);
@@ -48,7 +46,7 @@ const template7 = _$ssrAsync(
   })()
 );
 
-const template8 = _$ssrAsync(
+const template8 = _$ssr(
   ["<div>", "</div>"],
   (() => {
     const _c$ = _$memo(() => !!(state.dynamic && state.something), true);
@@ -57,7 +55,7 @@ const template8 = _$ssrAsync(
   })()
 );
 
-const template9 = _$ssrAsync(
+const template9 = _$ssr(
   ["<div>", "</div>"],
   (() => {
     const _c$ = _$memo(() => state.dynamic, true);
@@ -66,11 +64,11 @@ const template9 = _$ssrAsync(
   })()
 );
 
-const template10 = _$ssrAsync(["<div>", "</div>"], () =>
+const template10 = _$ssr(["<div>", "</div>"], () =>
   state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"
 );
 
-const template11 = _$ssrAsync(
+const template11 = _$ssr(
   ["<div>", "</div>"],
   (() => {
     const _c$ = _$memo(() => !!state.a, true);

@@ -1,6 +1,6 @@
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
-import { ssrAsync as _$ssrAsync } from "r-dom";
+import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 const _ck$ = ["children"],
   _ck$2 = ["dynamic", "hyphen-ated"],
@@ -8,14 +8,14 @@ const _ck$ = ["children"],
   _ck$4 = ["each", "fallback"];
 
 const Child = props => [
-  _$ssrAsync(["<div>Hello ", "</div>"], () => _$escape(props.name)),
-  _$ssrAsync(["<div>", "</div>"], () => _$escape(props.children))
+  _$ssr(["<div>Hello ", "</div>"], () => _$escape(props.name)),
+  _$ssr(["<div>", "</div>"], () => _$escape(props.children))
 ];
 
 const template = props => {
   let childRef;
   const { content } = props;
-  return _$ssrAsync(
+  return _$ssr(
     ["<div>", "", "", "</div>"],
     _$createComponent(
       Child,
@@ -26,7 +26,7 @@ const template = props => {
         Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
         {
           booleanProperty: true,
-          children: () => _$ssrAsync("<div>From Parent</div>")
+          children: () => _$ssr("<div>From Parent</div>")
         }
       ),
       ["children", ...Object.keys(props)]
@@ -35,7 +35,7 @@ const template = props => {
       Child,
       {
         name: "Jason",
-        children: () => _$ssrAsync(["<div>", "</div>"], _$escape(content))
+        children: () => _$ssr(["<div>", "</div>"], _$escape(content))
       },
       _ck$
     ),
@@ -60,12 +60,7 @@ const template2 = _$createComponent(
 const template3 = _$createComponent(
   Child,
   {
-    children: () => [
-      _$ssrAsync("<div></div>"),
-      _$ssrAsync("<div></div>"),
-      _$ssrAsync("<div></div>"),
-      "After"
-    ]
+    children: () => [_$ssr("<div></div>"), _$ssr("<div></div>"), _$ssr("<div></div>"), "After"]
   },
   _ck$
 );
@@ -73,7 +68,7 @@ const template3 = _$createComponent(
 const template4 = _$createComponent(
   Child,
   {
-    children: () => _$ssrAsync("<div></div>")
+    children: () => _$ssr("<div></div>")
   },
   _ck$
 );
@@ -100,7 +95,7 @@ const template6 = _$createComponent(
 const template7 = _$createComponent(
   Child,
   {
-    children: () => [_$ssrAsync("<div></div>"), () => state.dynamic]
+    children: () => [_$ssr("<div></div>"), () => state.dynamic]
   },
   _ck$
 );
@@ -117,7 +112,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 
-const template10 = _$ssrAsync(
+const template10 = _$ssr(
   ["<div>", " | ", " | ", " | ", " | ", " | ", "</div>"],
   _$createComponent(Link, {
     children: "new"
@@ -139,7 +134,7 @@ const template10 = _$ssrAsync(
   })
 );
 
-const template11 = _$ssrAsync(
+const template11 = _$ssr(
   ["<div>", " | ", "", " | ", "", " | ", "</div>"],
   _$createComponent(Link, {
     children: "new"
@@ -161,7 +156,7 @@ const template11 = _$ssrAsync(
   })
 );
 
-const template12 = _$ssrAsync(
+const template12 = _$ssr(
   ["<div> | ", " |  |  | ", " | </div>"],
   _$createComponent(Link, {
     children: "comments"

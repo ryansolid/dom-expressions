@@ -1,10 +1,10 @@
 import { ssrStyle as _$ssrStyle } from "r-dom";
-import { ssrAsync as _$ssrAsync } from "r-dom";
+import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { ssrClassList as _$ssrClassList } from "r-dom";
 import { ssrSpread as _$ssrSpread } from "r-dom";
 
-const template = _$ssrAsync(
+const template = _$ssr(
   [
     '<div id="main" ',
     ' class="',
@@ -29,11 +29,11 @@ const template = _$ssrAsync(
     })
 );
 
-const template2 = _$ssrAsync(["<div><div>", "</div><div>", "</div></div>"], _$escape(rowId), () =>
+const template2 = _$ssr(["<div><div>", "</div><div>", "</div></div>"], _$escape(rowId), () =>
   _$escape(row.label)
 );
 
-const template3 = _$ssrAsync(
+const template3 = _$ssr(
   ['<div id="', '" style="', '" name="', '">', "</div>"],
   _$escape(state.id, true),
   "background-color:" + _$escape(state.color, true),
@@ -41,14 +41,11 @@ const template3 = _$ssrAsync(
   _$escape(state.content)
 );
 
-const template4 = _$ssrAsync(
-  ['<div class="', '"></div>'],
-  () => `hi ${_$escape(state.class, true)}`
-);
+const template4 = _$ssr(['<div class="', '"></div>'], () => `hi ${_$escape(state.class, true)}`);
 
-const template5 = _$ssrAsync(['<div style="', '"></div>'], () => _$ssrStyle(someStyle()));
+const template5 = _$ssr(['<div style="', '"></div>'], () => _$ssrStyle(someStyle()));
 
-const template6 = _$ssrAsync(['<div style="', '"></div>'], () =>
+const template6 = _$ssr(['<div style="', '"></div>'], () =>
   _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",
@@ -58,6 +55,6 @@ const template6 = _$ssrAsync(['<div style="', '"></div>'], () =>
 
 let refTarget;
 
-const template7 = _$ssrAsync("<div></div>");
+const template7 = _$ssr("<div></div>");
 
-const template8 = _$ssrAsync("<div></div>");
+const template8 = _$ssr("<div></div>");

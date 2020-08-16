@@ -1,17 +1,5 @@
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 export function render(code: () => any, element: MountableElement): () => void;
-export function renderToString<T>(
-  fn: () => T,
-  options?: {
-    timeoutMs?: number;
-  }
-): T extends Promise<any> ? Promise<string> : string;
-export function renderDOMToString<T>(
-  fn: () => T,
-  options?: {
-    timeoutMs?: number;
-  }
-): T extends Promise<any> ? Promise<string> : string;
 export function hydrate(fn: () => unknown, node: MountableElement): void;
 
 export function template(html: string, count: number, isSVG?: boolean): Element;
@@ -42,14 +30,12 @@ export function style(
 ): void;
 export function currentContext(): any;
 
-export function ssr(template: string[] | string, ...nodes: any[]): { t: string };
-export function ssrAsync(template: string[] | string, ...nodes: any[]): { t: string | (() => string) };
-export function ssrClassList(value: { [k: string]: boolean }): string;
-export function ssrStyle(value: { [k: string]: string }): string;
-export function ssrSpread(accessor: any, isSVG: boolean, skipChildren: boolean): () => string;
-export function escape(html: string): string;
-
 export function getHydrationKey(): string;
 export function getNextElement(template: HTMLTemplateElement, isSSR: boolean): Node;
 export function getNextMarker(start: Node): [Node, Array<Node>];
 export function generateHydrationScript(options: { eventNames: string[], streaming: boolean }): string;
+
+export function ssrClassList(value: { [k: string]: boolean }): string;
+export function ssrStyle(value: { [k: string]: string }): string;
+export function ssrSpread(accessor: any, isSVG: boolean, skipChildren: boolean): () => string;
+export function escape(html: string): string;

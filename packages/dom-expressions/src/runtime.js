@@ -16,46 +16,6 @@ export function render(code, element) {
   return disposer;
 }
 
-export function renderToString(code, options = {}) {
-  options = { timeoutMs: 30000, ...options };
-  hydration.context = { id: "0", count: 0 };
-  return root(() => {
-    const rendered = code();
-    if (typeof rendered === "object" && "then" in rendered) {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
-      );
-      return Promise.race([rendered, timeout]).then(resolveSSRNode);
-    }
-    return resolveSSRNode(rendered);
-  });
-}
-
-export function renderDOMToString(code, options = {}) {
-  options = { timeoutMs: 30000, ...options };
-  hydration.context = { id: "0", count: 0 };
-  const container = document.createElement("div");
-  document.body.appendChild(container);
-  return root(d1 => {
-    const rendered = code();
-
-    function resolve(rendered) {
-      root(d2 => (insert(container, rendered), d1(), d2()));
-      const html = container.innerHTML;
-      document.body.removeChild(container);
-      return html;
-    }
-
-    if (typeof rendered === "object" && "then" in rendered) {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
-      );
-      return Promise.race([rendered, timeout]).then(resolve);
-    }
-    return resolve(rendered);
-  });
-}
-
 export function hydrate(code, element) {
   hydration.context = { id: "0", count: 0, registry: {} };
   const templates = element.querySelectorAll(`*[_hk]`);
@@ -204,40 +164,6 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 }
 
 // SSR
-export function ssr(t, ...nodes) {
-  if (nodes.length) {
-    let result = "";
-    for (let i = 0; i < t.length; i++) {
-      result += t[i];
-      const node = nodes[i];
-      if (node !== undefined) result += resolveSSRNode(node);
-    }
-    t = result;
-  }
-  return { t };
-}
-
-export function ssrAsync(t, ...nodes) {
-  if (!nodes.length) return { t };
-
-  for (let i = 0; i < nodes.length; i++) {
-    const n = nodes[i];
-    if (typeof n === "function") nodes[i] = memo(() => resolveSSRNode(n()));
-  }
-
-  return {
-    t: () => {
-      let result = "";
-      for (let i = 0; i < t.length; i++) {
-        result += t[i];
-        const node = nodes[i];
-        if (node !== undefined) result += resolveSSRNode(node);
-      }
-      return result;
-    }
-  };
-}
-
 export function ssrClassList(value) {
   let classKeys = Object.keys(value),
     result = "";
@@ -361,13 +287,14 @@ export function getHydrationKey() {
   return hydration.context.id;
 }
 
-export function generateHydrationScript({ eventNames = ["click", "input", "blur"], streaming } = {}) {
+export function generateHydrationScript({ eventNames = ["click", "input", "blur"], streaming, resolved } = {}) {
   let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
   if (streaming) {
     s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`
   }
+  if (resolved) s += `_$HYDRATION.resources = JSON.parse(${JSON.stringify(_$HYDRATION.resources || {})});`;
   return s;
 }
 
@@ -532,12 +459,4 @@ function toSSRAttribute(key, isSVG) {
     key = key.toLowerCase();
   }
   return key;
-}
-
-function resolveSSRNode(node) {
-  if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
-  const t = typeof node;
-  if (node && t === "object") return resolveSSRNode(node.t);
-  if (t === "function") return resolveSSRNode(node());
-  return t === "string" ? node : JSON.stringify(node);
 }

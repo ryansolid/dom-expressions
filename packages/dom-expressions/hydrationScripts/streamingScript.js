@@ -1,16 +1,14 @@
 `(() => {
   const h = _$HYDRATION,
     resources = {};
-  let count = 0;
   h.resolveResource = (id, data) => {
     const r = resources[id];
     if(!r) return resources[id] = data;
     delete resources[id];
     r(data);
   };
-  h.loadResource = () => {
-    const id = ++count,
-      r = resources[id];
+  h.loadResource = (id) => {
+    const r = resources[id];
     if(!r) {
       let r,
         p = new Promise(res => r = res);

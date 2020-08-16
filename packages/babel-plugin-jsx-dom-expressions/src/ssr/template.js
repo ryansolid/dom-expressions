@@ -15,14 +15,13 @@ export function createTemplate(path, result) {
   //   return t.TemplateLiteral(quasis, result.templateValues);
   // }
 
-  const fnName = config.async ? "ssrAsync" : "ssr";
-  registerImportMethod(path, fnName);
+  registerImportMethod(path, "ssr");
   if (!Array.isArray(result.template))
-    return t.callExpression(t.identifier(`_$${fnName}`), [t.stringLiteral(result.template)]);
+    return t.callExpression(t.identifier(`_$ssr`), [t.stringLiteral(result.template)]);
   if (result.template.length === 1)
-    return t.callExpression(t.identifier(`_$${fnName}`), [t.stringLiteral(result.template[0])]);
+    return t.callExpression(t.identifier(`_$ssr`), [t.stringLiteral(result.template[0])]);
   const strings = result.template.map(tmpl => t.stringLiteral(tmpl));
-  return t.callExpression(t.identifier(`_$${fnName}`), [
+  return t.callExpression(t.identifier(`_$ssr`), [
     t.arrayExpression(strings),
     ...result.templateValues
   ]);

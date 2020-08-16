@@ -1,4 +1,5 @@
 import * as r from "../src/runtime";
+import * as r2 from "../src/asyncSSR";
 import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" class="selected" style="color:red"><h1 custom-attr="1" disabled="" title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
@@ -16,7 +17,7 @@ const Comp1 = () => {
       "custom-attr": "1"
     });
 
-  return r.ssr`<div id="main" ${r.ssrSpread(results, false, true)} class="${r.ssrClassList({
+  return r2.ssr`<div id="main" ${r.ssrSpread(results, false, true)} class="${r.ssrClassList({
     selected: selected()
   })}" style="${r.ssrStyle({
     color: color()
@@ -33,14 +34,14 @@ const Comp1 = () => {
 const Comp2 = () => {
   const greeting = "Hello",
     name="<div/>"
-  return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)} </span>`;
+  return r2.ssr`<span> ${r.escape(greeting)} ${r.escape(name)} </span>`;
 }
 
 describe("renderToString", () => {
   it("renders as expected", async () => {
-    let res = r.renderToString(Comp1);
+    let res = r2.renderToString(Comp1);
     expect(res).toBe(fixture);
-    res = r.renderToString(Comp2);
+    res = r2.renderToString(Comp2);
     expect(res).toBe(fixture2);
   });
 });

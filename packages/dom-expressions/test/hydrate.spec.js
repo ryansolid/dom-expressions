@@ -1,4 +1,5 @@
 import * as r from "../src/runtime";
+import * as r2 from "../src/asyncSSR";
 import S from "s-js";
 
 function setHydrateContext(context) {
@@ -23,7 +24,7 @@ describe("r.hydrate", () => {
   let result, rendered;
 
   it("hydrates simple text", () => {
-    result = r.renderDOMToString(() => {
+    result = r2.renderDOMToString(() => {
       const leadingExpr = (function() {
         const _el$ = r.getNextElement(_tmpl$, true),
           _el$2 = _el$.firstChild,
@@ -62,7 +63,7 @@ describe("r.hydrate", () => {
 
   it("hydrates with an updated timestamp", () => {
     const time = Date.now();
-    result = r.renderDOMToString(() => {
+    result = r2.renderDOMToString(() => {
       const leadingExpr = (function() {
         const _el$ = r.getNextElement(_tmpl$, true),
           _el$2 = _el$.firstChild,
@@ -101,7 +102,7 @@ describe("r.hydrate", () => {
   });
 
   it("hydrates fragments", () => {
-    result = r.renderDOMToString(() => {
+    result = r2.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
         "middle",
@@ -140,7 +141,7 @@ describe("r.hydrate", () => {
   });
 
   it("hydrates fragments with dynamic", () => {
-    result = r.renderDOMToString(() => {
+    result = r2.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
         S(() => "middle"),
@@ -179,7 +180,7 @@ describe("r.hydrate", () => {
   });
 
   it("hydrates fragments with dynamic template", () => {
-    result = r.renderDOMToString(() => {
+    result = r2.renderDOMToString(() => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
         S(() => r.getNextElement(_tmpl$2, true)),
@@ -228,7 +229,7 @@ describe("r.hydrate", () => {
 
   it("renders DOM asynchronously", async () => {
     const signal = S.data();
-    result = r.renderDOMToString(async () => {
+    result = r2.renderDOMToString(async () => {
       const multiExpression = [
         r.getNextElement(_tmpl$2, true),
         signal,
@@ -246,14 +247,14 @@ describe("r.hydrate", () => {
 
   it("renders SSR asynchronously", async () => {
     const signal = S.data();
-    result = r.renderToString(async () => {
+    result = r2.renderToString(async () => {
       const multiExpression = [
-        r.ssr`<div _hk="${r.getHydrationKey()}">First</div>`,
+        r2.ssr`<div _hk="${r.getHydrationKey()}">First</div>`,
         signal,
-        r.ssr`<div _hk="${r.getHydrationKey()}">Last</div>`
+        r2.ssr`<div _hk="${r.getHydrationKey()}">Last</div>`
       ];
       await new Promise(r => setTimeout(r, 20));
-      signal(r.ssr`<div _hk="${r.getHydrationKey()}">First</div>`);
+      signal(r2.ssr`<div _hk="${r.getHydrationKey()}">First</div>`);
       return multiExpression;
     });
     rendered = await result;
@@ -274,7 +275,7 @@ describe("r.hydrate", () => {
       }, 20);
       return signal;
     }
-    result = r.renderDOMToString(
+    result = r2.renderDOMToString(
       () =>
         new Promise(done => {
           multiExpression = [
@@ -337,7 +338,7 @@ describe("r.hydrate", () => {
     const signal = S.data();
     let errored;
     try {
-      result = r.renderDOMToString(
+      result = r2.renderDOMToString(
         async () => {
           const multiExpression = [
             r.getNextElement(_tmpl$2, true),
@@ -361,12 +362,12 @@ describe("r.hydrate", () => {
     const signal = S.data();
     let errored;
     try {
-      result = r.renderToString(
+      result = r2.renderToString(
         async () => {
           const multiExpression = [
-            r.ssr`<div _hk="${r.getHydrationKey()}">First</div>`,
+            r2.ssr`<div _hk="${r.getHydrationKey()}">First</div>`,
             signal,
-            r.ssr`<div _hk="${r.getHydrationKey()}">Last</div>`
+            r2.ssr`<div _hk="${r.getHydrationKey()}">Last</div>`
           ];
           await new Promise(r => setTimeout(r, 20));
           signal(r.ssr`<div _hk="${r.getHydrationKey()}">Last</div>`);
