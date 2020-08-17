@@ -32,7 +32,7 @@ const template3 = (
 
 const template4 = <div class="hi" className={state.class} />;
 
-const template5 = <div style={someStyle()} />;
+const template5 = <div style={someStyle()} textContent="Hi" />;
 
 const template6 = <div style={{ "background-color": color(), "margin-right": "40px", ...props.style }} />;
 

@@ -44,6 +44,15 @@ const Types = {
     }
   },
   SVGAttributes = {
+    innerHTML: {
+      type: Types.PROPERTY
+    },
+    textContent: {
+      type: Types.PROPERTY
+    },
+    innerText: {
+      type: Types.PROPERTY
+    },
     className: {
       type: Types.ATTRIBUTE,
       alias: "class"

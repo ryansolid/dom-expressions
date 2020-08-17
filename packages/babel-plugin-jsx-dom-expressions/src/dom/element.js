@@ -87,13 +87,16 @@ export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
   }
 
   let isNameSpaced = name.indexOf(":") > -1,
-    isAttribute = isSVG || name.indexOf("-") > -1 || isNameSpaced,
+    isAttribute = name.indexOf("-") > -1 || isNameSpaced,
     attribute = isSVG ? SVGAttributes[name] : Attributes[name];
 
   if (attribute) {
     if (attribute.type === "attribute") isAttribute = true;
     if (attribute.alias) name = attribute.alias;
-  } else if (isSVG) name = name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
+  } else if (isSVG) {
+    isAttribute = true;
+    name = name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
+  }
 
   if (isAttribute) {
     const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
@@ -378,20 +381,29 @@ function transformAttributes(path, results) {
           );
         }
       } else {
+        let isProperty = false;
         if (t.isJSXExpressionContainer(value)) value = value.expression;
         if (isSVG) {
           const attr = SVGAttributes[key];
 
           if (attr) {
             if (attr.alias) key = attr.alias;
+            if (attr.type === "property") isProperty = true;
           } else key = key.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
         } else {
           const attr = SVGAttributes[key];
           if (attr && attr.alias) key = attr.alias;
-          key = key.toLowerCase();
+          if (attr && attr.type === "property") isProperty = true;
+          else key = key.toLowerCase();
         }
-        results.template += ` ${key}`;
-        results.template += value ? `="${value.value}"` : `=""`;
+        if (isProperty) {
+          results.exprs.push(
+            t.expressionStatement(setAttr(attribute, elem, key, value, isSVG))
+          );
+        } else {
+          results.template += ` ${key}`;
+          results.template += value ? `="${value.value}"` : `=""`;
+        }
       }
     });
   if (!hasChildren && children) {
@@ -594,6 +606,7 @@ function detectExpressions(children, index) {
         child.openingElement.attributes.some(
           attr =>
             t.isJSXSpreadAttribute(attr) ||
+            ["textContent", "innerHTML", "innerText"].includes(attr.name.name) ||
             (t.isJSXExpressionContainer(attr.value) &&
               (config.generate !== "dom-ssr" ||
                 typeof attr.name.name !== "string" ||

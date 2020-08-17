@@ -90,6 +90,8 @@ const template4 = (() => {
 const template5 = (() => {
   const _el$10 = _tmpl$3.cloneNode(true);
 
+  _el$10.textContent = "Hi";
+
   _$effect(_$p => _$style(_el$10, someStyle(), _$p));
 
   return _el$10;

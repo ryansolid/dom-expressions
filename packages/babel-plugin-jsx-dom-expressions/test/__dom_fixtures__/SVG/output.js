@@ -18,6 +18,10 @@ const _tmpl$ = _$template(
   _tmpl$5 = _$template(
     `<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><a><text x="10" y="25">MDN Web Docs</text></a></svg>`,
     6
+  ),
+  _tmpl$6 = _$template(
+    `<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><text x="10" y="25"></text></svg>`,
+    4
   );
 
 const _ck$ = ["children"];
@@ -88,4 +92,12 @@ const template7 = (() => {
   _$setAttributeNS(_el$10, "http://www.w3.org/1999/xlink", "xlink:href", url);
 
   return _el$9;
+})();
+
+const template8 = (() => {
+  const _el$11 = _tmpl$6.cloneNode(true),
+    _el$12 = _el$11.firstChild;
+
+  _el$12.textContent = text;
+  return _el$11;
 })();
