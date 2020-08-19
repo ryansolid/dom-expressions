@@ -8,16 +8,22 @@ export function renderToNodeStream(code) {
   });
   hydration.context = { id: "0", count: 0 };
   let count = 0,
-    completed = 0;
+    completed = 0,
+    checkEnd = () => {
+      if (completed === count) {
+        stream$1.push(null);
+        delete hydration$1.context;
+      }
+    };
   hydration.register = p => {
     const id = ++count;
     p.then(d => {
       stream.push(`<script>_$HYDRATION.resolveResource(${id}, ${d})</script>`);
-      if (completed === count) stream.push(null);
+      ++completed && checkEnd();
     });
   };
-  stream.push(code());
-  delete hydration.context;
+  stream.push(resolveSSRNode(code()));
+  setTimeout(checkEnd);
   return stream;
 }
 

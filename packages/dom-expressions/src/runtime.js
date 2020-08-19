@@ -294,7 +294,7 @@ export function generateHydrationScript({ eventNames = ["click", "input", "blur"
   if (streaming) {
     s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`
   }
-  if (resolved) s += `_$HYDRATION.resources = JSON.parse(${JSON.stringify(_$HYDRATION.resources || {})});`;
+  if (resolved) s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(_$HYDRATION.resources || {})}');`;
   return s;
 }
 
