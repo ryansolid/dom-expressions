@@ -11,7 +11,7 @@ export function renderToNodeStream(code) {
     completed = 0,
     checkEnd = () => {
       if (completed === count) {
-        stream$1.push(null);
+        stream.push(null);
         delete hydration$1.context;
       }
     };
