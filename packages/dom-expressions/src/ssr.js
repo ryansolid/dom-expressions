@@ -18,7 +18,7 @@ export function renderToNodeStream(code) {
   hydration.register = p => {
     const id = ++count;
     p.then(d => {
-      stream.push(`<script>_$HYDRATION.resolveResource(${id}, ${d})</script>`);
+      stream.push(`<script>_$HYDRATION.resolveResource(${id}, ${JSON.stringify(d)})</script>`);
       ++completed && checkEnd();
     });
   };
