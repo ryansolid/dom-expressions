@@ -142,7 +142,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
         } else node[`__${name}`] = value;
         delegateEvents([name]);
       } else node[lc] = value;
-    } else if ((info = Attributes[prop])) {
+    } else if (!isSVG && (info = Attributes[prop])) {
       if (info.type === "attribute") {
         setAttribute(node, prop, value);
       } else node[info.alias] = value;
