@@ -2,7 +2,6 @@ import { createComponent as _$createComponent } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
-const _ck$ = ["render"];
 
 const template1 = _$ssr(["<div>", "</div>"], _$escape(simple));
 
@@ -24,23 +23,23 @@ const template5 = _$ssr(
 const template6 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => !!state.dynamic, true);
+    const _c$2 = _$memo(() => !!state.dynamic, true);
 
-    return () => _c$() && _$escape(good());
+    return () => _c$2() && _$escape(good());
   })()
 );
 
 const template7 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => state.count > 5, true);
+    const _c$3 = _$memo(() => state.count > 5, true);
 
     return () =>
-      _c$()
+      _c$3()
         ? (() => {
-            const _c$ = _$memo(() => !!state.dynamic, true);
+            const _c$4 = _$memo(() => !!state.dynamic, true);
 
-            return () => (_c$() ? _$escape(best) : _$escape(good()));
+            return () => (_c$4() ? _$escape(best) : _$escape(good()));
           })()
         : _$escape(bad);
   })()
@@ -49,18 +48,18 @@ const template7 = _$ssr(
 const template8 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => !!(state.dynamic && state.something), true);
+    const _c$5 = _$memo(() => !!(state.dynamic && state.something), true);
 
-    return () => _c$() && _$escape(good());
+    return () => _c$5() && _$escape(good());
   })()
 );
 
 const template9 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => state.dynamic, true);
+    const _c$6 = _$memo(() => state.dynamic, true);
 
-    return () => (_c$() && _$escape(good())) || _$escape(bad);
+    return () => (_c$6() && _$escape(good())) || _$escape(bad);
   })()
 );
 
@@ -71,67 +70,57 @@ const template10 = _$ssr(["<div>", "</div>"], () =>
 const template11 = _$ssr(
   ["<div>", "</div>"],
   (() => {
-    const _c$ = _$memo(() => !!state.a, true);
+    const _c$7 = _$memo(() => !!state.a, true);
 
     return () =>
-      _c$()
+      _c$7()
         ? _$escape(a())
         : (() => {
-            const _c$ = _$memo(() => !!state.b, true);
+            const _c$8 = _$memo(() => !!state.b, true);
 
-            return () => (_c$() ? _$escape(b()) : state.c ? "c" : "fallback");
+            return () => (_c$8() ? _$escape(b()) : state.c ? "c" : "fallback");
           })();
   })()
 );
 
-const template12 = _$createComponent(
-  Comp,
-  {
-    render: (() => {
-      const _c$ = _$memo(() => !!state.dynamic, true);
+const template12 = (() => {
+  const _c$9 = _$memo(() => !!state.dynamic, true);
 
-      return () => (_c$() ? good() : bad);
-    })()
-  },
-  _ck$
-); // no dynamic predicate
+  return _$createComponent(Comp, {
+    get render() {
+      return _c$9() ? good() : bad;
+    }
+  });
+})(); // no dynamic predicate
 
-const template13 = _$createComponent(
-  Comp,
-  {
-    render: () => (state.dynamic ? good : bad)
-  },
-  _ck$
-);
+const template13 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic ? good : bad;
+  }
+});
 
-const template14 = _$createComponent(
-  Comp,
-  {
-    render: (() => {
-      const _c$ = _$memo(() => !!state.dynamic, true);
+const template14 = (() => {
+  const _c$10 = _$memo(() => !!state.dynamic, true);
 
-      return () => _c$() && good();
-    })()
-  },
-  _ck$
-); // no dynamic predicate
+  return _$createComponent(Comp, {
+    get render() {
+      return _c$10() && good();
+    }
+  });
+})(); // no dynamic predicate
 
-const template15 = _$createComponent(
-  Comp,
-  {
-    render: () => state.dynamic && good
-  },
-  _ck$
-);
+const template15 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic && good;
+  }
+});
 
-const template16 = _$createComponent(
-  Comp,
-  {
-    render: (() => {
-      const _c$ = _$memo(() => state.dynamic, true);
+const template16 = (() => {
+  const _c$11 = _$memo(() => state.dynamic, true);
 
-      return () => _c$() || good();
-    })()
-  },
-  _ck$
-);
+  return _$createComponent(Comp, {
+    get render() {
+      return _c$11() || good();
+    }
+  });
+})();

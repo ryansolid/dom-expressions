@@ -1,10 +1,10 @@
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
+import { assignProps as _$assignProps } from "r-dom";
+import { dynamicProperty as _$dynamicProperty } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
-const _ck$ = ["children"],
-  _ck$2 = ["fallback"];
 
 const Child = props => [
   _$ssr(
@@ -23,27 +23,27 @@ const template = props => {
     _$getHydrationKey(),
     _$createComponent(
       Child,
-      Object.assign(
+      _$assignProps(
         {
           name: "John"
         },
-        Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
+        Object.keys(props).reduce((m$, k$) => _$dynamicProperty(m$, k$), {}),
         {
           booleanProperty: true,
-          children: () => _$ssr(['<div _hk="', '">From Parent</div>'], _$getHydrationKey())
+
+          get children() {
+            return _$ssr(['<div _hk="', '">From Parent</div>'], _$getHydrationKey());
+          }
         }
-      ),
-      ["children", ...Object.keys(props)]
+      )
     ),
-    _$createComponent(
-      Child,
-      {
-        name: "Jason",
-        children: () =>
-          _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), _$escape(content))
-      },
-      _ck$
-    ),
+    _$createComponent(Child, {
+      name: "Jason",
+
+      get children() {
+        return _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), _$escape(content));
+      }
+    }),
     _$createComponent(Context.Consumer, {
       children: context => context
     })
@@ -58,57 +58,49 @@ const template2 = _$createComponent(Child, {
   "hyphen-ated": state.data
 });
 
-const template3 = _$createComponent(
-  Child,
-  {
-    children: () => [
+const template3 = _$createComponent(Child, {
+  get children() {
+    return [
       _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()),
       _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()),
       _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()),
       "After"
-    ]
-  },
-  _ck$
-);
+    ];
+  }
+});
 
-const template4 = _$createComponent(
-  Child,
-  {
-    children: () => _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey())
-  },
-  _ck$
-);
+const template4 = _$createComponent(Child, {
+  get children() {
+    return _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+  }
+});
 
 const template5 = _$createComponent(Child, {
   dynamic: state.dynamic,
   children: state.dynamic
 }); // builtIns
 
-const template6 = _$createComponent(
-  _$For,
-  {
-    each: state.list,
-    fallback: () => _$createComponent(Loading, {}),
-    children: item => item
-  },
-  _ck$2
-);
+const template6 = _$createComponent(_$For, {
+  each: state.list,
 
-const template7 = _$createComponent(
-  Child,
-  {
-    children: () => [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), state.dynamic]
+  get fallback() {
+    return _$createComponent(Loading, {});
   },
-  _ck$
-);
 
-const template8 = _$createComponent(
-  Child,
-  {
-    children: () => [item => item, item => item]
-  },
-  _ck$
-);
+  children: item => item
+});
+
+const template7 = _$createComponent(Child, {
+  get children() {
+    return [_$ssr(['<div _hk="', '"></div>'], _$getHydrationKey()), state.dynamic];
+  }
+});
+
+const template8 = _$createComponent(Child, {
+  get children() {
+    return [item => item, item => item];
+  }
+});
 
 const template9 = _$createComponent(_garbage, {
   children: "Hi"

@@ -14,11 +14,5 @@ export default path => {
       )
     );
   }
-  if (path.scope.data.childKeys) {
-    const declarators = [...path.scope.data.childKeys.values()].map(o =>
-      t.variableDeclarator(o.identifier, t.arrayExpression(o.dynamicKeys))
-    );
-    path.node.body.unshift(t.variableDeclaration("const", declarators));
-  }
   if (path.scope.data.templates) appendTemplates(path, path.scope.data.templates);
 };

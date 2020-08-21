@@ -2,7 +2,6 @@ import { createComponent as _$createComponent } from "r-dom";
 import { ssrSpread as _$ssrSpread } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
-const _ck$ = ["children"];
 
 const template = _$ssr(
   '<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%"></stop></linearGradient></svg>'
@@ -38,10 +37,8 @@ const template4 = _$ssr('<rect x="50" y="20" width="150" height="150"></rect>');
 
 const template5 = _$ssr('<rect x="50" y="20" width="150" height="150"></rect>');
 
-const template6 = _$createComponent(
-  Component,
-  {
-    children: () => _$ssr('<rect x="50" y="20" width="150" height="150"></rect>')
-  },
-  _ck$
-);
+const template6 = _$createComponent(Component, {
+  get children() {
+    return _$ssr('<rect x="50" y="20" width="150" height="150"></rect>');
+  }
+});

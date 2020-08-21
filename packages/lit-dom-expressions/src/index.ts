@@ -6,7 +6,8 @@ import {
   createComponent,
   delegateEvents,
   classList,
-  style
+  style,
+  dynamicProperty
 } from "dom-expressions/src/runtime";
 
 interface Runtime {
@@ -16,6 +17,7 @@ interface Runtime {
   delegateEvents: typeof delegateEvents;
   classList: typeof classList;
   style: typeof style;
+  dynamicProperty: typeof dynamicProperty;
 }
 type TemplateCreate = (tmpl: HTMLTemplateElement[], data: any[], r: Runtime) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
@@ -60,6 +62,12 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       (el as any)[`__${ev}`] = expr[0];
       (el as any)[`__${ev}Data`] = expr[1];
     } else (el as any)[`__${ev}`] = expr;
+  };
+  (r as any).wrapProps = (props: any) => {
+    for (const k in props) {
+      if (typeof props[k] === "function" && !props[k].length) dynamicProperty(props, k);
+    }
+    return props;
   };
 
   function createTemplate(statics: TemplateStringsArray) {
@@ -173,18 +181,16 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   function processComponent(node: IDom, options: any) {
     const keys = Object.keys(node.attrs),
       props = [],
-      componentIdentifier = options.counter++,
-      dynamicKeys: string[] = [];
+      componentIdentifier = options.counter++;
 
     for (let i = 0; i < keys.length; i++) {
       const name = keys[i],
         value = node.attrs[name];
 
       if (value === "###") {
-        dynamicKeys.push(`"${name}"`);
         let count = options.counter++;
         props.push(
-          `${name}: typeof exprs[${count}] === "function" ? exprs[${count}] : () => exprs[${count}]`
+          `${name}: exprs[${count}]`
         );
       } else props.push(`${name}: "${value}"`);
     }
@@ -194,7 +200,6 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       node.children[0].content === "#"
     ) {
       props.push(`children: () => exprs[${options.counter++}]`);
-      dynamicKeys.push('"children"');
     } else if (node.children.length) {
       const children = { type: "fragment", children: node.children } as IDom,
         childOptions = Object.assign({}, options, {
@@ -204,7 +209,6 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
         });
       parseNode(children, childOptions);
       props.push(`children: () => { ${childOptions.exprs.join(";\n")}}`);
-      dynamicKeys.push('"children"');
       options.templateId = childOptions.templateId;
       options.counter = childOptions.counter;
     }
@@ -216,15 +220,15 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
 
     if (options.parent)
       options.exprs.push(
-        `r.insert(${options.parent}, r.createComponent(exprs[${componentIdentifier}], {${
+        `r.insert(${options.parent}, r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${
           props.join(", ") || ""
-        }}, [${dynamicKeys}])${tag ? `, ${tag}` : ""})`
+        }}))${tag ? `, ${tag}` : ""})`
       );
     else
       options.exprs.push(
-        `${options.fragment ? "" : "return "}r.createComponent(exprs[${componentIdentifier}], {${
+        `${options.fragment ? "" : "return "}r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${
           props.join(", ") || ""
-        }}, [${dynamicKeys}])`
+        }}))`
       );
     options.path = tag;
     options.first = false;

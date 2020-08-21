@@ -2,6 +2,8 @@ import { template as _$template } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
+import { assignProps as _$assignProps } from "r-dom";
+import { dynamicProperty as _$dynamicProperty } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
 const _tmpl$ = _$template(`<div>Hello </div>`, 2),
@@ -10,11 +12,6 @@ const _tmpl$ = _$template(`<div>Hello </div>`, 2),
   _tmpl$4 = _$template(`<div> | <!----> | <!----> | <!----> | <!----> | </div>`, 6),
   _tmpl$5 = _$template(`<div> | <!----> | <!----> | </div>`, 4),
   _tmpl$6 = _$template(`<div> | <!----> |  |  | <!----> | </div>`, 4);
-
-const _ck$ = ["children"],
-  _ck$2 = ["dynamic", "hyphen-ated"],
-  _ck$3 = ["children", "dynamic"],
-  _ck$4 = ["each", "fallback"];
 
 const Child = props => [
   (() => {
@@ -47,56 +44,58 @@ const template = props => {
       _el$4,
       _$createComponent(
         Child,
-        Object.assign(
+        _$assignProps(
           {
             name: "John"
           },
-          Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
+          Object.keys(props).reduce((m$, k$) => _$dynamicProperty(m$, k$), {}),
           {
-            ref: r$ => {
+            ref(r$) {
               const _ref$2 = childRef;
               typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
             },
+
             booleanProperty: true,
-            children: () => _tmpl$3.cloneNode(true)
+
+            get children() {
+              return _tmpl$3.cloneNode(true);
+            }
           }
-        ),
-        ["children", ...Object.keys(props)]
+        )
       ),
       null
     );
 
     _$insert(
       _el$4,
-      _$createComponent(
-        Child,
-        {
-          name: "Jason",
-          ref: r$ => {
-            const _ref$3 = props.ref;
-            typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
-          },
-          children: () => {
-            const _el$6 = _tmpl$2.cloneNode(true);
+      _$createComponent(Child, {
+        name: "Jason",
 
-            _$insert(_el$6, content);
-
-            return _el$6;
-          }
+        ref(r$) {
+          const _ref$3 = props.ref;
+          typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
         },
-        _ck$
-      ),
+
+        get children() {
+          const _el$6 = _tmpl$2.cloneNode(true);
+
+          _$insert(_el$6, content);
+
+          return _el$6;
+        }
+      }),
       null
     );
 
     _$insert(
       _el$4,
       _$createComponent(Context.Consumer, {
-        ref: r$ => {
+        ref(r$) {
           const _ref$4 = props.consumerRef();
 
           typeof _ref$4 === "function" && _ref$4(r$);
         },
+
         children: context => context
       }),
       null
@@ -106,74 +105,68 @@ const template = props => {
   })();
 };
 
-const template2 = _$createComponent(
-  Child,
-  {
-    name: "Jake",
-    dynamic: () => state.data,
-    stale: state.data,
-    handleClick: clickHandler,
-    "hyphen-ated": () => state.data,
-    ref: el => (e = el)
-  },
-  _ck$2
-);
+const template2 = _$createComponent(Child, {
+  name: "Jake",
 
-const template3 = _$createComponent(
-  Child,
-  {
-    children: () => [
-      _tmpl$2.cloneNode(true),
-      _tmpl$2.cloneNode(true),
-      _tmpl$2.cloneNode(true),
-      "After"
-    ]
+  get dynamic() {
+    return state.data;
   },
-  _ck$
-);
 
-const template4 = _$createComponent(
-  Child,
-  {
-    children: () => _tmpl$2.cloneNode(true)
-  },
-  _ck$
-);
+  stale: state.data,
+  handleClick: clickHandler,
 
-const template5 = _$createComponent(
-  Child,
-  {
-    dynamic: () => state.dynamic,
-    children: () => state.dynamic
+  get ["hyphen-ated"]() {
+    return state.data;
   },
-  _ck$3
-); // builtIns
 
-const template6 = _$createComponent(
-  _$For,
-  {
-    each: () => state.list,
-    fallback: () => _$createComponent(Loading, {}),
-    children: item => item
-  },
-  _ck$4
-);
+  ref: el => (e = el)
+});
 
-const template7 = _$createComponent(
-  Child,
-  {
-    children: () => [_tmpl$2.cloneNode(true), _$memo(() => state.dynamic)]
-  },
-  _ck$
-);
+const template3 = _$createComponent(Child, {
+  get children() {
+    return [_tmpl$2.cloneNode(true), _tmpl$2.cloneNode(true), _tmpl$2.cloneNode(true), "After"];
+  }
+});
 
-const template8 = _$createComponent(
-  Child,
-  {
-    children: () => [item => item, item => item]
+const template4 = _$createComponent(Child, {
+  get children() {
+    return _tmpl$2.cloneNode(true);
+  }
+});
+
+const template5 = _$createComponent(Child, {
+  get dynamic() {
+    return state.dynamic;
   },
-  _ck$
-);
+
+  get children() {
+    return state.dynamic;
+  }
+}); // builtIns
+
+const template6 = _$createComponent(_$For, {
+  get each() {
+    return state.list;
+  },
+
+  get fallback() {
+    return _$createComponent(Loading, {});
+  },
+
+  children: item => item
+});
+
+const template7 = _$createComponent(Child, {
+  get children() {
+    return [_tmpl$2.cloneNode(true), _$memo(() => state.dynamic)];
+  }
+});
+
+const template8 = _$createComponent(Child, {
+  get children() {
+    return [item => item, item => item];
+  }
+});
 
 const template9 = _$createComponent(_garbage, {
   children: "Hi"

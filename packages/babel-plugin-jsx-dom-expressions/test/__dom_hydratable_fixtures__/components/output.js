@@ -2,6 +2,8 @@ import { template as _$template } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
+import { assignProps as _$assignProps } from "r-dom";
+import { dynamicProperty as _$dynamicProperty } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
@@ -19,11 +21,6 @@ const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
     14
   ),
   _tmpl$7 = _$template(`<div> | <!--#--><!--/--> |  |  | <!--#--><!--/--> | </div>`, 6);
-
-const _ck$ = ["children"],
-  _ck$2 = ["dynamic", "hyphen-ated"],
-  _ck$3 = ["children", "dynamic"],
-  _ck$4 = ["each", "fallback"];
 
 const Child = props => [
   (() => {
@@ -69,21 +66,24 @@ const template = props => {
       _el$6,
       _$createComponent(
         Child,
-        Object.assign(
+        _$assignProps(
           {
             name: "John"
           },
-          Object.keys(props).reduce((m$, k$) => ((m$[k$] = () => props[k$]), m$), {}),
+          Object.keys(props).reduce((m$, k$) => _$dynamicProperty(m$, k$), {}),
           {
-            ref: r$ => {
+            ref(r$) {
               const _ref$2 = childRef;
               typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
             },
+
             booleanProperty: true,
-            children: () => _$getNextElement(_tmpl$3)
+
+            get children() {
+              return _$getNextElement(_tmpl$3);
+            }
           }
-        ),
-        ["children", ...Object.keys(props)]
+        )
       ),
       _el$10,
       _co$2
@@ -91,24 +91,22 @@ const template = props => {
 
     _$insert(
       _el$6,
-      _$createComponent(
-        Child,
-        {
-          name: "Jason",
-          ref: r$ => {
-            const _ref$3 = props.ref;
-            typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
-          },
-          children: () => {
-            const _el$8 = _$getNextElement(_tmpl$2);
+      _$createComponent(Child, {
+        name: "Jason",
 
-            _$insert(_el$8, content, undefined, Array.prototype.slice.call(_el$8.childNodes, 0));
-
-            return _el$8;
-          }
+        ref(r$) {
+          const _ref$3 = props.ref;
+          typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
         },
-        _ck$
-      ),
+
+        get children() {
+          const _el$8 = _$getNextElement(_tmpl$2);
+
+          _$insert(_el$8, content, undefined, Array.prototype.slice.call(_el$8.childNodes, 0));
+
+          return _el$8;
+        }
+      }),
       _el$12,
       _co$3
     );
@@ -126,74 +124,73 @@ const template = props => {
   })();
 };
 
-const template2 = _$createComponent(
-  Child,
-  {
-    name: "Jake",
-    dynamic: () => state.data,
-    stale: state.data,
-    handleClick: clickHandler,
-    "hyphen-ated": () => state.data,
-    ref: el => (e = el)
-  },
-  _ck$2
-);
+const template2 = _$createComponent(Child, {
+  name: "Jake",
 
-const template3 = _$createComponent(
-  Child,
-  {
-    children: () => [
+  get dynamic() {
+    return state.data;
+  },
+
+  stale: state.data,
+  handleClick: clickHandler,
+
+  get ["hyphen-ated"]() {
+    return state.data;
+  },
+
+  ref: el => (e = el)
+});
+
+const template3 = _$createComponent(Child, {
+  get children() {
+    return [
       _$getNextElement(_tmpl$2),
       _$getNextElement(_tmpl$2),
       _$getNextElement(_tmpl$2),
       "After"
-    ]
-  },
-  _ck$
-);
+    ];
+  }
+});
 
-const template4 = _$createComponent(
-  Child,
-  {
-    children: () => _$getNextElement(_tmpl$2)
-  },
-  _ck$
-);
+const template4 = _$createComponent(Child, {
+  get children() {
+    return _$getNextElement(_tmpl$2);
+  }
+});
 
-const template5 = _$createComponent(
-  Child,
-  {
-    dynamic: () => state.dynamic,
-    children: () => state.dynamic
+const template5 = _$createComponent(Child, {
+  get dynamic() {
+    return state.dynamic;
   },
-  _ck$3
-); // builtIns
 
-const template6 = _$createComponent(
-  _$For,
-  {
-    each: () => state.list,
-    fallback: () => _$createComponent(Loading, {}),
-    children: item => item
-  },
-  _ck$4
-);
+  get children() {
+    return state.dynamic;
+  }
+}); // builtIns
 
-const template7 = _$createComponent(
-  Child,
-  {
-    children: () => [_$getNextElement(_tmpl$2), _$memo(() => state.dynamic)]
+const template6 = _$createComponent(_$For, {
+  get each() {
+    return state.list;
   },
-  _ck$
-);
 
-const template8 = _$createComponent(
-  Child,
-  {
-    children: () => [item => item, item => item]
+  get fallback() {
+    return _$createComponent(Loading, {});
   },
-  _ck$
-);
+
+  children: item => item
+});
+
+const template7 = _$createComponent(Child, {
+  get children() {
+    return [_$getNextElement(_tmpl$2), _$memo(() => state.dynamic)];
+  }
+});
+
+const template8 = _$createComponent(Child, {
+  get children() {
+    return [item => item, item => item];
+  }
+});
 
 const template9 = _$createComponent(_garbage, {
   children: "Hi"

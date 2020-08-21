@@ -24,8 +24,6 @@ const _tmpl$ = _$template(
     4
   );
 
-const _ck$ = ["children"];
-
 const template = _tmpl$.cloneNode(true);
 
 const template2 = (() => {
@@ -77,13 +75,11 @@ const template4 = _tmpl$4.cloneNode(true);
 
 const template5 = _tmpl$4.cloneNode(true);
 
-const template6 = _$createComponent(
-  Component,
-  {
-    children: () => _tmpl$4.cloneNode(true)
-  },
-  _ck$
-);
+const template6 = _$createComponent(Component, {
+  get children() {
+    return _tmpl$4.cloneNode(true);
+  }
+});
 
 const template7 = (() => {
   const _el$9 = _tmpl$5.cloneNode(true),

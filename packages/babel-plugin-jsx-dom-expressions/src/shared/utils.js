@@ -54,7 +54,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   if (config.generate === "ssr" && !config.async) {
     checkMember = false;
     checkCallExpressions = false;
-  };
+  }
   const expr = path.node;
   if (t.isFunction(expr)) return false;
   if (expr.leadingComments && expr.leadingComments[0].value.trim() === config.staticMarker) {
@@ -141,7 +141,7 @@ export function toEventName(name) {
 export function transformCondition(path, deep) {
   const expr = path.node;
   registerImportMethod(path, "memo");
-  let dTest, cond;
+  let dTest, cond, id;
   if (
     t.isConditionalExpression(expr) &&
     (isDynamic(path.get("consequent"), {
@@ -152,9 +152,10 @@ export function transformCondition(path, deep) {
     dTest = isDynamic(path.get("test"), { checkMember: true });
     if (dTest) {
       cond = expr.test;
+      id = path.scope.generateUidIdentifier("_c$");
       if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
-      expr.test = t.callExpression(t.identifier("_c$"), []);
+      expr.test = t.callExpression(id, []);
       if (t.isConditionalExpression(expr.consequent) || t.isLogicalExpression(expr.consequent)) {
         expr.consequent = transformCondition(path.get("consequent"), true);
       }
@@ -174,30 +175,34 @@ export function transformCondition(path, deep) {
       }));
     if (dTest) {
       cond = nextPath.node.left;
+      id = path.scope.generateUidIdentifier("_c$")
       if (expr.operator !== "||" && !t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
-      nextPath.node.left = t.callExpression(t.identifier("_c$"), []);
+      nextPath.node.left = t.callExpression(id, []);
     }
   }
   if (dTest) {
-    return t.callExpression(
-      t.arrowFunctionExpression(
-        [],
-        t.blockStatement([
-          t.variableDeclaration("const", [
-            t.variableDeclarator(
-              t.identifier("_c$"),
-              t.callExpression(t.identifier("_$memo"), [
-                t.arrowFunctionExpression([], cond),
-                t.booleanLiteral(true)
-              ])
-            )
-          ]),
-          t.returnStatement(t.arrowFunctionExpression([], expr))
-        ])
-      ),
-      []
-    );
+    const statements = [
+      t.variableDeclaration("const", [
+        t.variableDeclarator(
+         id,
+          t.callExpression(t.identifier("_$memo"), [
+            t.arrowFunctionExpression([], cond),
+            t.booleanLiteral(true)
+          ])
+        )
+      ]),
+      t.arrowFunctionExpression([], expr)
+    ];
+    return deep
+      ? t.callExpression(
+          t.arrowFunctionExpression(
+            [],
+            t.blockStatement([statements[0], t.returnStatement(statements[1])])
+          ),
+          []
+        )
+      : statements;
   }
   return deep ? expr : t.arrowFunctionExpression([], expr);
 }

@@ -16,10 +16,8 @@ import { createTemplate as createTemplateSSR } from "../ssr/template";
 export default function transformComponent(path) {
   let props = [],
     runningObject = [],
-    exprs,
-    tagName = getTagName(path.node),
-    dynamicSpreads = [],
-    dynamicKeys = [];
+    exprs = [],
+    tagName = getTagName(path.node);
 
   if (config.builtIns.indexOf(tagName) > -1) {
     registerImportMethod(path, tagName);
@@ -38,11 +36,7 @@ export default function transformComponent(path) {
         }
         const key = t.identifier("k$"),
           memo = t.identifier("m$");
-        dynamicSpreads.push(
-          t.callExpression(t.memberExpression(t.identifier("Object"), t.identifier("keys")), [
-            node.argument
-          ])
-        );
+        registerImportMethod(path, "dynamicProperty");
         props.push(
           t.callExpression(
             t.memberExpression(
@@ -54,14 +48,7 @@ export default function transformComponent(path) {
             [
               t.arrowFunctionExpression(
                 [memo, key],
-                t.sequenceExpression([
-                  t.assignmentExpression(
-                    "=",
-                    t.memberExpression(memo, key, true),
-                    t.arrowFunctionExpression([], t.memberExpression(node.argument, key, true))
-                  ),
-                  memo
-                ])
+                t.callExpression(t.identifier("_$dynamicProperty"), [memo, key])
               ),
               t.objectExpression([])
             ]
@@ -79,28 +66,26 @@ export default function transformComponent(path) {
             if (t.isLVal(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
-                t.objectProperty(
+                t.objectMethod(
+                  "method",
                   t.identifier("ref"),
-                  t.arrowFunctionExpression(
-                    [t.identifier("r$")],
-                    t.blockStatement([
-                      t.variableDeclaration(
-                        'const',
-                        [t.variableDeclarator(refIdentifier, value.expression)]
-                      ),
-                      t.expressionStatement(
-                        t.conditionalExpression(
-                          t.binaryExpression(
-                            "===",
-                            t.unaryExpression("typeof", refIdentifier),
-                            t.stringLiteral("function")
-                          ),
-                          t.callExpression(refIdentifier, [t.identifier("r$")]),
-                          t.assignmentExpression("=", value.expression, t.identifier("r$"))
-                        )
+                  [t.identifier("r$")],
+                  t.blockStatement([
+                    t.variableDeclaration("const", [
+                      t.variableDeclarator(refIdentifier, value.expression)
+                    ]),
+                    t.expressionStatement(
+                      t.conditionalExpression(
+                        t.binaryExpression(
+                          "===",
+                          t.unaryExpression("typeof", refIdentifier),
+                          t.stringLiteral("function")
+                        ),
+                        t.callExpression(refIdentifier, [t.identifier("r$")]),
+                        t.assignmentExpression("=", value.expression, t.identifier("r$"))
                       )
-                    ])
-                  )
+                    )
+                  ])
                 )
               );
             } else if (t.isFunction(value.expression)) {
@@ -108,28 +93,26 @@ export default function transformComponent(path) {
             } else if (t.isCallExpression(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
-                t.objectProperty(
+                t.objectMethod(
+                  "method",
                   t.identifier("ref"),
-                  t.arrowFunctionExpression(
-                    [t.identifier("r$")],
-                    t.blockStatement([
-                      t.variableDeclaration(
-                        'const',
-                        [t.variableDeclarator(refIdentifier, value.expression)]
-                      ),
-                      t.expressionStatement(
-                        t.logicalExpression(
-                          '&&',
-                          t.binaryExpression(
-                            "===",
-                            t.unaryExpression("typeof", refIdentifier),
-                            t.stringLiteral("function")
-                          ),
-                          t.callExpression(refIdentifier, [t.identifier("r$")])
-                        )
+                  [t.identifier("r$")],
+                  t.blockStatement([
+                    t.variableDeclaration("const", [
+                      t.variableDeclarator(refIdentifier, value.expression)
+                    ]),
+                    t.expressionStatement(
+                      t.logicalExpression(
+                        "&&",
+                        t.binaryExpression(
+                          "===",
+                          t.unaryExpression("typeof", refIdentifier),
+                          t.stringLiteral("function")
+                        ),
+                        t.callExpression(refIdentifier, [t.identifier("r$")])
                       )
-                    ])
-                  )
+                    )
+                  ])
                 )
               );
             }
@@ -139,14 +122,25 @@ export default function transformComponent(path) {
               checkTags: true
             })
           ) {
-            dynamicKeys.push(t.stringLiteral(key));
-            const expr =
+            let expr =
               config.wrapConditionals &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
                 ? transformCondition(attribute.get("value").get("expression"))
                 : t.arrowFunctionExpression([], value.expression);
-            runningObject.push(t.objectProperty(wrapName(key), expr));
+            if (expr.length > 1) {
+              exprs.push(expr[0]);
+              expr = expr[1];
+            }
+            runningObject.push(
+              t.objectMethod(
+                "get",
+                wrapName(key),
+                [],
+                t.blockStatement([t.returnStatement(expr.body)]),
+                !t.isValidIdentifier(key)
+              )
+            );
           } else runningObject.push(t.objectProperty(wrapName(key), value.expression));
         else runningObject.push(t.objectProperty(wrapName(key), value));
       }
@@ -154,45 +148,41 @@ export default function transformComponent(path) {
 
   const childResult = transformComponentChildren(path.get("children"));
   if (childResult && childResult[0]) {
-    childResult[1] && dynamicKeys.push(t.stringLiteral("children"));
-    runningObject.push(t.objectProperty(t.identifier("children"), childResult[0]));
+    if (childResult[1]) {
+      runningObject.push(
+        t.objectMethod(
+          "get",
+          t.identifier("children"),
+          [],
+          t.isExpression(childResult[0].body)
+            ? t.blockStatement([t.returnStatement(childResult[0].body)])
+            : childResult[0].body
+        )
+      );
+    } else runningObject.push(t.objectProperty(t.identifier("children"), childResult[0]));
   }
   props.push(t.objectExpression(runningObject));
 
   if (props.length > 1) {
-    props = [
-      t.callExpression(t.memberExpression(t.identifier("Object"), t.identifier("assign")), props)
-    ];
+    registerImportMethod(path, "assignProps");
+    props = [t.callExpression(t.identifier("_$assignProps"), props)];
   }
-  dynamicKeys.sort((a, b) => a.value.toLowerCase().localeCompare(b.value.toLowerCase()));
-  let dynamics;
-  if (dynamicSpreads.length) {
-    if (dynamicSpreads.length === 1 && !dynamicKeys.length) dynamics = dynamicSpreads[0];
-    else {
-      dynamicKeys.push.apply(
-        dynamicKeys,
-        dynamicSpreads.map(s => t.spreadElement(s))
-      );
-      dynamics = t.arrayExpression(dynamicKeys);
-    }
-  } else if (dynamicKeys.length) {
-    const hash = dynamicKeys.map(k => k.value).join("|"),
-      childKeys =
-        path.scope.getProgramParent().data.childKeys ||
-        (path.scope.getProgramParent().data.childKeys = new Map());
-    if (!childKeys.has(hash)) {
-      const identifier = path.scope.generateUidIdentifier("ck$");
-      childKeys.set(hash, { identifier, dynamicKeys });
-      dynamics = identifier;
-    } else {
-      dynamics = childKeys.get(hash).identifier;
-    }
-  }
-
   registerImportMethod(path, "createComponent");
   const componentArgs = [tagNameToIdentifier(tagName), props[0]];
-  if (dynamics) componentArgs.push(dynamics);
-  exprs = [t.callExpression(t.identifier("_$createComponent"), componentArgs)];
+  exprs.push(t.callExpression(t.identifier("_$createComponent"), componentArgs));
+
+  // handle hoisting conditionals
+  if (exprs.length > 1) {
+    exprs = [
+      t.callExpression(
+        t.arrowFunctionExpression(
+          [],
+          t.blockStatement([exprs[0], t.returnStatement(exprs[1])])
+        ),
+        []
+      )
+    ];
+  }
   return { exprs, template: "", component: true };
 }
 

@@ -76,7 +76,13 @@ export function transformNode(path, info = {}) {
         ? transformCondition(path.get("expression"))
         : t.arrowFunctionExpression([], node.expression);
     return {
-      exprs: [expr],
+      exprs:
+        expr.length > 1
+          ? [t.callExpression(
+              t.arrowFunctionExpression([], t.blockStatement([expr[0], t.returnStatement(expr[1])])),
+              []
+            )]
+          : [expr],
       template: "",
       dynamic: true
     };

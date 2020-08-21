@@ -3,7 +3,6 @@ import { ssrSpread as _$ssrSpread } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
-const _ck$ = ["children"];
 
 const template = _$ssr(
   [
@@ -51,14 +50,11 @@ const template5 = _$ssr(
   _$getHydrationKey()
 );
 
-const template6 = _$createComponent(
-  Component,
-  {
-    children: () =>
-      _$ssr(
-        ['<rect _hk="', '" x="50" y="20" width="150" height="150"></rect>'],
-        _$getHydrationKey()
-      )
-  },
-  _ck$
-);
+const template6 = _$createComponent(Component, {
+  get children() {
+    return _$ssr(
+      ['<rect _hk="', '" x="50" y="20" width="150" height="150"></rect>'],
+      _$getHydrationKey()
+    );
+  }
+});

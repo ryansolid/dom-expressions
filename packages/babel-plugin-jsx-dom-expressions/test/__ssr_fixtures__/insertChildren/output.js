@@ -1,8 +1,9 @@
+import { assignProps as _$assignProps } from "r-dom";
+import { dynamicProperty as _$dynamicProperty } from "r-dom";
 import { ssrSpread as _$ssrSpread } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
-const _ck$ = ["children"];
 
 const children = _$ssr("<div></div>");
 
@@ -38,13 +39,12 @@ const template9 = _$ssr(
 
 const template10 = _$createComponent(
   Module,
-  Object.assign(
-    Object.keys(dynamic).reduce((m$, k$) => ((m$[k$] = () => dynamic[k$]), m$), {}),
+  _$assignProps(
+    Object.keys(dynamic).reduce((m$, k$) => _$dynamicProperty(m$, k$), {}),
     {
       children: "Hello"
     }
-  ),
-  Object.keys(dynamic)
+  )
 );
 
 const template11 = _$ssr(["<module>", "</module>"], _$escape(state.children));
@@ -67,10 +67,8 @@ const template16 = _$createComponent(Module, {
 
 const template18 = _$ssr(["<module>Hi ", "</module>"], _$escape(children));
 
-const template19 = _$createComponent(
-  Module,
-  {
-    children: () => ["Hi ", children]
-  },
-  _ck$
-);
+const template19 = _$createComponent(Module, {
+  get children() {
+    return ["Hi ", children];
+  }
+});

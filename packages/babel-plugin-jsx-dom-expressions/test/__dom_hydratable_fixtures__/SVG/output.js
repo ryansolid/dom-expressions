@@ -22,8 +22,6 @@ const _tmpl$ = _$template(
     6
   );
 
-const _ck$ = ["children"];
-
 const template = _$getNextElement(_tmpl$);
 
 const template2 = (() => {
@@ -77,13 +75,11 @@ const template4 = _$getNextElement(_tmpl$4);
 
 const template5 = _$getNextElement(_tmpl$4);
 
-const template6 = _$createComponent(
-  Component,
-  {
-    children: () => _$getNextElement(_tmpl$4)
-  },
-  _ck$
-);
+const template6 = _$createComponent(Component, {
+  get children() {
+    return _$getNextElement(_tmpl$4);
+  }
+});
 
 const template7 = (() => {
   const _el$9 = _$getNextElement(_tmpl$5),

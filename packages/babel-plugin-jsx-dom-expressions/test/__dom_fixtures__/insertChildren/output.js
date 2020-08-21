@@ -1,4 +1,6 @@
 import { template as _$template } from "r-dom";
+import { assignProps as _$assignProps } from "r-dom";
+import { dynamicProperty as _$dynamicProperty } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
@@ -7,8 +9,6 @@ const _tmpl$ = _$template(`<div></div>`, 2),
   _tmpl$2 = _$template(`<module></module>`, 2),
   _tmpl$3 = _$template(`<module>Hello</module>`, 2),
   _tmpl$4 = _$template(`<module>Hi </module>`, 2);
-
-const _ck$ = ["children"];
 
 const children = _tmpl$.cloneNode(true);
 
@@ -46,13 +46,11 @@ const template5 = (() => {
   return _el$5;
 })();
 
-const template6 = _$createComponent(
-  Module,
-  {
-    children: () => dynamic.children
-  },
-  _ck$
-);
+const template6 = _$createComponent(Module, {
+  get children() {
+    return dynamic.children;
+  }
+});
 
 const template7 = (() => {
   const _el$6 = _tmpl$2.cloneNode(true);
@@ -82,13 +80,12 @@ const template9 = (() => {
 
 const template10 = _$createComponent(
   Module,
-  Object.assign(
-    Object.keys(dynamic).reduce((m$, k$) => ((m$[k$] = () => dynamic[k$]), m$), {}),
+  _$assignProps(
+    Object.keys(dynamic).reduce((m$, k$) => _$dynamicProperty(m$, k$), {}),
     {
       children: "Hello"
     }
-  ),
-  Object.keys(dynamic)
+  )
 );
 
 const template11 = (() => {
@@ -123,13 +120,11 @@ const template15 = (() => {
   return _el$11;
 })();
 
-const template16 = _$createComponent(
-  Module,
-  {
-    children: () => dynamic.children
-  },
-  _ck$
-);
+const template16 = _$createComponent(Module, {
+  get children() {
+    return dynamic.children;
+  }
+});
 
 const template18 = (() => {
   const _el$12 = _tmpl$4.cloneNode(true);
@@ -139,10 +134,8 @@ const template18 = (() => {
   return _el$12;
 })();
 
-const template19 = _$createComponent(
-  Module,
-  {
-    children: () => ["Hi ", children]
-  },
-  _ck$
-);
+const template19 = _$createComponent(Module, {
+  get children() {
+    return ["Hi ", children];
+  }
+});

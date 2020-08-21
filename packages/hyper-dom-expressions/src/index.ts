@@ -3,7 +3,8 @@ import {
   spread,
   assign,
   createComponent,
-  delegateEvents
+  delegateEvents,
+  dynamicProperty
 } from "dom-expressions/src/runtime";
 
 interface Runtime {
@@ -12,6 +13,7 @@ interface Runtime {
   assign: typeof assign;
   createComponent: typeof createComponent;
   delegateEvents: typeof delegateEvents;
+  dynamicProperty: typeof dynamicProperty;
 }
 
 type ExpandableNode = Node & { [key: string]: any };
@@ -49,7 +51,7 @@ export function createHyperScript(r: Runtime): HyperScript {
         let dynamic = false;
         for (const k in l) {
           if (typeof l[k] === "function" && k !== "ref" && k.slice(0, 2) !== "on") {
-            dynamicProperty(l, k);
+            r.dynamicProperty(l, k);
             dynamic = true;
           }
         }
@@ -59,18 +61,15 @@ export function createHyperScript(r: Runtime): HyperScript {
       } else if ("function" === type) {
         if (!e) {
           let props: Props | undefined,
-            dynamic = [],
             next = args[0];
           if (next == null || typeof next === "object" && !Array.isArray(next) && !(next instanceof Element))
             props = args.shift();
           props || (props = {});
+          props.children = (args.length > 1 ? args : args[0]) || props.children;
           for (const k in props) {
-            if (typeof props[k] === "function") dynamic.push(k);
+            if (typeof props[k] === "function" && !props[k].length) dynamicProperty(props, k);
           }
-          props.children = args.length > 1 ? args : args[0];
-          if (props.children && typeof props.children === "function" && !props.children.length)
-            dynamic.push("children");
-          e = r.createComponent(l, props, dynamic);
+          e = r.createComponent(l, props);
           args = [];
         } else r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
       }
@@ -108,14 +107,4 @@ export function createHyperScript(r: Runtime): HyperScript {
   }
 
   return h;
-}
-
-function dynamicProperty(props: any, key: string) {
-  const src = props[key];
-  Object.defineProperty(props, key, {
-    get() {
-      return src();
-    },
-    enumerable: true
-  });
 }
