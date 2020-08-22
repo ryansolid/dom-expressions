@@ -48,7 +48,14 @@ export default function transformComponent(path) {
             [
               t.arrowFunctionExpression(
                 [memo, key],
-                t.callExpression(t.identifier("_$dynamicProperty"), [memo, key])
+                t.sequenceExpression([
+                  t.assignmentExpression(
+                    "=",
+                    t.memberExpression(memo, key, true),
+                    t.arrowFunctionExpression([], t.memberExpression(node.argument, key, true))
+                  ),
+                  t.callExpression(t.identifier("_$dynamicProperty"), [memo, key])
+                ])
               ),
               t.objectExpression([])
             ]

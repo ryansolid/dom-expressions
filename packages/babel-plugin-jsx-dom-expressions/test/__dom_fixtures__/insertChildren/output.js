@@ -81,7 +81,10 @@ const template9 = (() => {
 const template10 = _$createComponent(
   Module,
   _$assignProps(
-    Object.keys(dynamic).reduce((m$, k$) => _$dynamicProperty(m$, k$), {}),
+    Object.keys(dynamic).reduce(
+      (m$, k$) => ((m$[k$] = () => dynamic[k$]), _$dynamicProperty(m$, k$)),
+      {}
+    ),
     {
       children: "Hello"
     }

@@ -64,7 +64,10 @@ const template = props => {
           {
             name: "John"
           },
-          Object.keys(props).reduce((m$, k$) => _$dynamicProperty(m$, k$), {}),
+          Object.keys(props).reduce(
+            (m$, k$) => ((m$[k$] = () => props[k$]), _$dynamicProperty(m$, k$)),
+            {}
+          ),
           {
             ref(r$) {
               const _ref$2 = childRef;
