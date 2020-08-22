@@ -18,8 +18,10 @@
     "test:coverage": "npm run build && jest --coverage",
     "prepublishOnly": "npm run build"
   },
+  "dependencies": {
+    "dom-expressions": "^0.19.10"
+  },
   "devDependencies": {
-    "dom-expressions": "^0.19.10",
     "html-parse-string": "0.0.5"
   }
 }
