@@ -149,14 +149,16 @@ export default function transformComponent(path) {
   const childResult = transformComponentChildren(path.get("children"));
   if (childResult && childResult[0]) {
     if (childResult[1]) {
+      const body =
+        t.isCallExpression(childResult[0]) && t.isFunction(childResult[0].callee)
+          ? childResult[0].callee.body
+          : childResult[0].body;
       runningObject.push(
         t.objectMethod(
           "get",
           t.identifier("children"),
           [],
-          t.isExpression(childResult[0].body)
-            ? t.blockStatement([t.returnStatement(childResult[0].body)])
-            : childResult[0].body
+          t.isExpression(body) ? t.blockStatement([t.returnStatement(body)]) : body
         )
       );
     } else runningObject.push(t.objectProperty(t.identifier("children"), childResult[0]));
@@ -175,10 +177,7 @@ export default function transformComponent(path) {
   if (exprs.length > 1) {
     exprs = [
       t.callExpression(
-        t.arrowFunctionExpression(
-          [],
-          t.blockStatement([exprs[0], t.returnStatement(exprs[1])])
-        ),
+        t.arrowFunctionExpression([], t.blockStatement([exprs[0], t.returnStatement(exprs[1])])),
         []
       )
     ];

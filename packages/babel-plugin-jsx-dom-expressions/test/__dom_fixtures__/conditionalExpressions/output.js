@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { effect as _$effect } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { insert as _$insert } from "r-dom";
@@ -189,4 +190,48 @@ const template16 = (() => {
       return _c$11() || good();
     }
   });
+})();
+
+const template17 = (() => {
+  const _c$12 = _$memo(() => !!state.dynamic, true);
+
+  return _$createComponent(Comp, {
+    get render() {
+      return _c$12() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+    }
+  });
+})();
+
+const template18 = _$createComponent(Comp, {
+  get children() {
+    const _c$13 = _$memo(() => !!state.dynamic, true);
+
+    return () => (_c$13() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+  }
+});
+
+const template19 = (() => {
+  const _el$12 = _tmpl$.cloneNode(true);
+
+  _$effect(
+    () =>
+      (_el$12.innerHTML = state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}))
+  );
+
+  return _el$12;
+})();
+
+const template20 = (() => {
+  const _el$13 = _tmpl$.cloneNode(true);
+
+  _$insert(
+    _el$13,
+    (() => {
+      const _c$14 = _$memo(() => !!state.dynamic, true);
+
+      return () => (_c$14() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+    })()
+  );
+
+  return _el$13;
 })();
