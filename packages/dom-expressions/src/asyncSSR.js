@@ -68,7 +68,7 @@ export function ssr(t, ...nodes) {
   };
 }
 
-function resolveSSRNode(node) {
+export function resolveSSRNode(node) {
   if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
   const t = typeof node;
   if (node && t === "object") return resolveSSRNode(node.t);
