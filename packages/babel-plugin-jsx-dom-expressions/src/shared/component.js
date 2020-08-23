@@ -182,9 +182,10 @@ export default function transformComponent(path) {
 
   // handle hoisting conditionals
   if (exprs.length > 1) {
+    const ret = exprs.pop();
     exprs = [
       t.callExpression(
-        t.arrowFunctionExpression([], t.blockStatement([exprs[0], t.returnStatement(exprs[1])])),
+        t.arrowFunctionExpression([], t.blockStatement([...exprs, t.returnStatement(ret)])),
         []
       )
     ];
