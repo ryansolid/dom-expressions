@@ -1,23 +1,15 @@
 import { parse, stringify, IDom } from "html-parse-string";
 import { NonComposedEvents } from "dom-expressions/src/constants";
-import {
-  effect,
-  insert,
-  createComponent,
-  delegateEvents,
-  classList,
-  style,
-  dynamicProperty
-} from "dom-expressions/src/runtime";
 
+type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 interface Runtime {
-  effect: typeof effect;
-  insert: typeof insert;
-  createComponent: typeof createComponent;
-  delegateEvents: typeof delegateEvents;
-  classList: typeof classList;
-  style: typeof style;
-  dynamicProperty: typeof dynamicProperty;
+  effect<T>(fn: (prev?: T) => T, init?: T): any;
+  insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
+  createComponent(Comp: (props: any) => any, props: any): any;
+  delegateEvents(eventNames: string[]): void;
+  classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): void;
+  style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
+  dynamicProperty(props: any, key: string): any;
 }
 type TemplateCreate = (tmpl: HTMLTemplateElement[], data: any[], r: Runtime) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
@@ -65,7 +57,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   };
   (r as any).wrapProps = (props: any) => {
     for (const k in props) {
-      if (typeof props[k] === "function" && !props[k].length) dynamicProperty(props, k);
+      if (typeof props[k] === "function" && !props[k].length) r.dynamicProperty(props, k);
     }
     return props;
   };
@@ -189,9 +181,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
 
       if (value === "###") {
         let count = options.counter++;
-        props.push(
-          `${name}: exprs[${count}]`
-        );
+        props.push(`${name}: exprs[${count}]`);
       } else props.push(`${name}: "${value}"`);
     }
     if (
@@ -220,15 +210,17 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
 
     if (options.parent)
       options.exprs.push(
-        `r.insert(${options.parent}, r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${
+        `r.insert(${
+          options.parent
+        }, r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${
           props.join(", ") || ""
         }}))${tag ? `, ${tag}` : ""})`
       );
     else
       options.exprs.push(
-        `${options.fragment ? "" : "return "}r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${
-          props.join(", ") || ""
-        }}))`
+        `${
+          options.fragment ? "" : "return "
+        }r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${props.join(", ") || ""}}))`
       );
     options.path = tag;
     options.first = false;

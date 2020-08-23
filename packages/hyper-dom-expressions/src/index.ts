@@ -1,19 +1,10 @@
-import {
-  insert,
-  spread,
-  assign,
-  createComponent,
-  delegateEvents,
-  dynamicProperty
-} from "dom-expressions/src/runtime";
-
+type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 interface Runtime {
-  insert: typeof insert;
-  spread: typeof spread;
-  assign: typeof assign;
-  createComponent: typeof createComponent;
-  delegateEvents: typeof delegateEvents;
-  dynamicProperty: typeof dynamicProperty;
+  insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
+  spread(node: Element, accessor: any, isSVG?: Boolean, skipChildren?: Boolean): void;
+  assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
+  createComponent(Comp: (props: any) => any, props: any): any;
+  dynamicProperty(props: any, key: string): any;
 }
 
 type ExpandableNode = Node & { [key: string]: any };
@@ -62,12 +53,15 @@ export function createHyperScript(r: Runtime): HyperScript {
         if (!e) {
           let props: Props | undefined,
             next = args[0];
-          if (next == null || typeof next === "object" && !Array.isArray(next) && !(next instanceof Element))
+          if (
+            next == null ||
+            (typeof next === "object" && !Array.isArray(next) && !(next instanceof Element))
+          )
             props = args.shift();
           props || (props = {});
           props.children = (args.length > 1 ? args : args[0]) || props.children;
           for (const k in props) {
-            if (typeof props[k] === "function" && !props[k].length) dynamicProperty(props, k);
+            if (typeof props[k] === "function" && !props[k].length) r.dynamicProperty(props, k);
           }
           e = r.createComponent(l, props);
           args = [];

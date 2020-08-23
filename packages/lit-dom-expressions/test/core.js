@@ -9,29 +9,14 @@ function memo(fn, equal) {
   return s;
 }
 
-function createComponent(Comp, props, dynamicKeys) {
-  if (dynamicKeys) {
-    for (let i = 0; i < dynamicKeys.length; i++) dynamicProperty(props, dynamicKeys[i]);
-  }
-
-  let c;
+function createComponent(Comp, props) {
   if (Comp.prototype && Comp.prototype.isClassComponent) {
-    c = sample(() => {
+    return sample(() => {
       const comp = new Comp(props);
       return comp.render(props);
     });
-  } else c = sample(() => Comp(props));
-  return typeof c === "function" ? memo(c) : c;;
-}
-
-function dynamicProperty(props, key) {
-  const src = props[key];
-  Object.defineProperty(props, key, {
-    get() {
-      return src();
-    },
-    enumerable: true
-  });
+  }
+  return sample(() => Comp(props));
 }
 
 export { root, S as effect, memo, createComponent, currentContext };
