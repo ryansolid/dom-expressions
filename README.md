@@ -55,20 +55,7 @@ function memo(fn, equal) {
 }
 
 function createComponent(Comp, props, dynamicKeys) {
-  if (dynamicKeys) {
-    for (let i = 0; i < dynamicKeys.length; i++) dynamicProperty(props, dynamicKeys[i]);
-  }
   return sample(() => Comp(props));
-}
-
-function dynamicProperty(props, key) {
-  const src = props[key];
-  Object.defineProperty(props, key, {
-    get() {
-      return src();
-    },
-    enumerable: true
-  });
 }
 
 export { root, S as effect, memo, createComponent, currentContext };
