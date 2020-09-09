@@ -240,16 +240,32 @@ const ATTR_REGEX = /[&<"]/g,
 
 export function escape(html, attr) {
   if (typeof html !== "string") return html;
-  return html.replace(attr ? ATTR_REGEX : CONTENT_REGEX, m => {
-    switch (m) {
-      case "&":
-        return "&amp;";
-      case "<":
-        return "&lt;";
-      case '"':
-        return "&quot;";
+  const match = (attr ? ATTR_REGEX : CONTENT_REGEX).exec(html);
+  if (!match) return html;
+  let index = 0;
+  let lastIndex = 0;
+  let out = "";
+  let escape = "";
+  for (index = match.index; index < html.length; index++) {
+    switch (html.charCodeAt(index)) {
+      case 34: // "
+        if (!attr) continue;
+        escape = "&quot;";
+        break;
+      case 38: // &
+        escape = "&amp;";
+        break;
+      case 60: // <
+        escape = "&lt;";
+        break;
+      default:
+        continue;
     }
-  });
+    if (lastIndex !== index) out += html.substring(lastIndex, index);
+    lastIndex = index + 1;
+    out += escape;
+  }
+  return lastIndex !== index ? out + html.substring(lastIndex, index) : out;
 }
 
 // Hydrate
