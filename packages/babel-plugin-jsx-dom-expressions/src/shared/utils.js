@@ -221,6 +221,7 @@ export function escapeHTML(html, attr) {
   for (index = match.index; index < html.length; index++) {
     switch (html.charCodeAt(index)) {
       case 34: // "
+        if (!attr) continue;
         escape = "&quot;";
         break;
       case 38: // &
