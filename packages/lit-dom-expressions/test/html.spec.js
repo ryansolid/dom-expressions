@@ -11,7 +11,8 @@ const FIXTURES = [
   "<div>First</div>middle<p>after1</p><div>Last</div><p>after2</p>",
   '<div id="main"><div>John R.<span>Smith</span></div><div>After</div></div>',
   "<div>John R.<span>Smith</span></div>",
-  "<div><div>Hi</div></div>"
+  "<div><div>Hi</div></div>",
+  "<div><b>Hello, my name is: <i>John</i></b></div>"
 ];
 
 describe("Test HTML", () => {
@@ -146,4 +147,16 @@ describe("Test HTML", () => {
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[6]);
     });
   });
+
+  test("Test whitespace trim", () => {
+    const name = "John";
+    const template = html`
+      <div>
+        <b>Hello, my name is:     <i> ${name}</i></b>
+      </div>
+    `;
+    const div = document.createElement("div");
+    div.appendChild(template);
+    expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[7]);
+  })
 });

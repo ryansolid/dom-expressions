@@ -73,9 +73,10 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       .replace(selfClosing, fullClosing)
       .replace(/<(<!--#-->)/g, "<###")
       .replace(attrSeeker, attrReplacer)
-      .replace(/>\n+/g, ">")
-      .replace(/\s+</g, "<")
-      .replace(/>\s+/g, ">");
+      .replace(/>\n+\s*/g, ">")
+      .replace(/\n+\s*</g, "<")
+      .replace(/\s+</g, " <")
+      .replace(/>\s+/g, "> ");
 
     const [html, code] = parseTemplate(parse(markup)),
       templates: HTMLTemplateElement[] = [];
