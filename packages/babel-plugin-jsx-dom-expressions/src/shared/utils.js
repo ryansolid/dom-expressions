@@ -210,6 +210,7 @@ export function transformCondition(path, deep) {
 const ATTR_REGEX = /[&<"]/g,
   CONTENT_REGEX = /[&<]/g;
 
+// Modified from https://github.com/component/escape-html by Doug Wilson MIT
 export function escapeHTML(html, attr) {
   if (typeof html !== "string") return html;
   const match = (attr ? ATTR_REGEX : CONTENT_REGEX).exec(html);
