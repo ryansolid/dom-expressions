@@ -235,8 +235,8 @@ export function ssrSpread(props, isSVG) {
   };
 }
 
-const ATTR_REGEX = /[&<"]/g,
-  CONTENT_REGEX = /[&<]/g;
+const ATTR_REGEX = /[&<"]/,
+  CONTENT_REGEX = /[&<]/;
 
 // Modified from https://github.com/component/escape-html by Doug Wilson MIT
 export function escape(html, attr) {
