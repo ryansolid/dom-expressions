@@ -207,8 +207,8 @@ export function transformCondition(path, deep) {
   return deep ? expr : t.arrowFunctionExpression([], expr);
 }
 
-const ATTR_REGEX = /[&<"]/g,
-  CONTENT_REGEX = /[&<]/g;
+const ATTR_REGEX = /[&<"]/,
+  CONTENT_REGEX = /[&<]/;
 
 // Modified from https://github.com/component/escape-html by Doug Wilson MIT
 export function escapeHTML(html, attr) {
