@@ -322,7 +322,7 @@ export function runHydrationEvents() {
 }
 
 export function getHydrationKey() {
-  return hydration.context.id;
+  return globalThis._$HYDRATION.context.id;
 }
 
 export function generateHydrationScript({
