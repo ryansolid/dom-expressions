@@ -1,10 +1,9 @@
 import { root, memo } from "rxcore";
 import { insert } from "./runtime";
 
-const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
-
 export function renderToString(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
+  const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
   hydration.resources = {};
   hydration.asyncSSR = true;
@@ -22,6 +21,7 @@ export function renderToString(code, options = {}) {
 
 export function renderDOMToString(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
+  const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
   hydration.resources = {};
   hydration.asyncSSR = true;

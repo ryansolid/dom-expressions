@@ -15,7 +15,8 @@ export default {
   external: ["@babel/plugin-syntax-jsx", "@babel/helper-module-imports", "@babel/types"],
   output: {
     file: "index.js",
-    format: "cjs"
+    format: "cjs",
+    exports: "auto"
   },
   plugins
 };

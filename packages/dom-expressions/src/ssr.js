@@ -1,11 +1,10 @@
 import { Readable } from "stream";
 
-const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
-
 export function renderToNodeStream(code) {
   const stream = new Readable({
     read() {}
   });
+  const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
   let count = 0,
     completed = 0,
@@ -28,6 +27,7 @@ export function renderToNodeStream(code) {
 }
 
 export function renderToString(code) {
+  const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
   return resolveSSRNode(code());
 }

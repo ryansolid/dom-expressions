@@ -2,8 +2,8 @@ import { Attributes, SVGAttributes, SVGNamespace, NonComposedEvents } from "./co
 import { root, effect, memo, currentContext, createComponent } from "rxcore";
 import reconcileArrays from "./reconcile";
 
-const eventRegistry = new Set(),
-  hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
+const eventRegistry = new Set();
+let hydration = null;
 
 export { effect, memo, currentContext, createComponent };
 
@@ -17,6 +17,7 @@ export function render(code, element) {
 }
 
 export function hydrate(code, element) {
+  hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0, registry: {} };
   const templates = element.querySelectorAll(`*[_hk]`);
   Array.prototype.reduce.call(
@@ -38,7 +39,7 @@ export function template(html, check, isSVG) {
   const t = document.createElement("template");
   t.innerHTML = html;
   if (check && t.innerHTML.split("<").length - 1 !== check)
-    throw(`Template html does not match input:\n${t.innerHTML}\n\n${html}`);
+    throw `Template html does not match input:\n${t.innerHTML}\n\n${html}`;
   let node = t.content.firstChild;
   if (isSVG) node = node.firstChild;
   return node;
@@ -271,6 +272,7 @@ export function escape(html, attr) {
 
 // Hydrate
 export function getNextElement(template, isSSR) {
+  hydration = globalThis._$HYDRATION;
   const hydrate = hydration.context;
   let node, key;
   if (
@@ -290,7 +292,7 @@ export function getNextMarker(start) {
   let end = start,
     count = 0,
     current = [];
-  if (hydration.context && hydration.context.registry) {
+  if (hydration && hydration.context && hydration.context.registry) {
     while (end) {
       if (end.nodeType === 8) {
         const v = end.nodeValue;
@@ -308,7 +310,7 @@ export function getNextMarker(start) {
 }
 
 export function runHydrationEvents() {
-  if (hydration && hydration.events) {
+  if (hydration.events) {
     const { completed, events } = hydration;
     while (events.length) {
       const [el, e] = events[0];
@@ -323,14 +325,19 @@ export function getHydrationKey() {
   return hydration.context.id;
 }
 
-export function generateHydrationScript({ eventNames = ["click", "input", "blur"], streaming, resolved } = {}) {
+export function generateHydrationScript({
+  eventNames = ["click", "input", "blur"],
+  streaming,
+  resolved
+} = {}) {
   let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
   if (streaming) {
-    s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`
+    s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`;
   }
-  if (resolved) s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(_$HYDRATION.resources || {})}');`;
+  if (resolved)
+    s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(_$HYDRATION.resources || {})}');`;
   return s;
 }
 
@@ -394,7 +401,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       } else current = parent.textContent = value;
     }
   } else if (value == null || t === "boolean") {
-    if (hydration.context && hydration.context.registry) return current;
+    if (hydration && hydration.context && hydration.context.registry) return current;
     current = cleanChildren(parent, current, marker);
   } else if (t === "function") {
     effect(() => (current = insertExpression(parent, value(), current, marker)));
@@ -405,7 +412,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (hydration.context && hydration.context.registry) return array;
+    if (hydration && hydration.context && hydration.context.registry) return array;
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
