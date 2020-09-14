@@ -33,12 +33,6 @@ export default function reconcileArrays(parentNode, a, b) {
     } else if (a[aEnd - 1] === b[bEnd - 1]) {
       aEnd--;
       bEnd--;
-    // swap forward
-    } else if (aEnd - aStart === 1 && bEnd - bStart === 1) {
-      if (map && map.has(a[aStart]) || a[aStart].parentNode !== parentNode) {
-        parentNode.insertBefore(b[bStart], bEnd < bLength ? b[bEnd] : after);
-      } else parentNode.replaceChild(b[bStart], a[aStart]);
-      break;
     // swap backward
     } else if (a[aStart] === b[bEnd - 1] && b[bStart] === a[aEnd - 1]) {
       const node = a[--aEnd].nextSibling;
@@ -55,15 +49,15 @@ export default function reconcileArrays(parentNode, a, b) {
         while (i < bEnd) map.set(b[i], i++);
       }
 
-      if (map.has(a[aStart])) {
-        const index = map.get(a[aStart]);
-
+      const index = map.get(a[aStart]);
+      if (index != null) {
         if (bStart < index && index < bEnd) {
           let i = aStart,
-            sequence = 1;
+            sequence = 1,
+            t;
 
           while (++i < aEnd && i < bEnd) {
-            if (!map.has(a[i]) || map.get(a[i]) !== index + sequence) break;
+            if ((t = map.get(a[i])) == null || t !== index + sequence) break;
             sequence++;
           }
 
