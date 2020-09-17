@@ -7,11 +7,11 @@ let hydration = null;
 
 export { effect, memo, currentContext, createComponent };
 
-export function render(code, element) {
+export function render(code, element, init) {
   let disposer;
   root(dispose => {
     disposer = dispose;
-    insert(element, code(), element.firstChild ? null : undefined);
+    insert(element, code(), element.firstChild ? null : undefined, init);
   });
   return disposer;
 }
@@ -30,7 +30,7 @@ export function hydrate(code, element) {
     },
     hydration.context.registry
   );
-  const dispose = render(code, element);
+  const dispose = render(code, element, [...element.childNodes]);
   delete hydration.context;
   return dispose;
 }
@@ -412,7 +412,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (hydration && hydration.context && hydration.context.registry) return array;
+    if (hydration && hydration.context && hydration.context.registry && current.length) return current;
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
