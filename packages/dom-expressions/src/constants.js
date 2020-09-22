@@ -6,6 +6,15 @@ const Types = {
     href: {
       type: Types.ATTRIBUTE
     },
+    width: {
+      type: Types.ATTRIBUTE
+    },
+    height: {
+      type: Types.ATTRIBUTE
+    },
+    role: {
+      type: Types.ATTRIBUTE
+    },
     style: {
       type: Types.PROPERTY,
       alias: "style.cssText"
@@ -17,9 +26,6 @@ const Types = {
     class: {
       type: Types.PROPERTY,
       alias: "className"
-    },
-    role: {
-      type: Types.ATTRIBUTE
     },
     // React compat
     spellCheck: {
