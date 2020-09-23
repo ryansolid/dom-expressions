@@ -17,6 +17,7 @@ import transformFragmentChildren from "./fragment";
 
 export function transformJSX(path, { opts }) {
   Object.assign(config, opts);
+  const replace = transformThis(path);
   const result = transformNode(
     path,
     t.isJSXFragment(path.node)
@@ -26,7 +27,27 @@ export function transformJSX(path, { opts }) {
         }
   );
   const template = config.generate === "ssr" ? createTemplateSSR : createTemplateDOM;
-  path.replaceWith(template(path, result, false));
+  path.replaceWith(replace(template(path, result, false)));
+}
+
+export function transformThis(path) {
+  let thisId;
+  path.traverse({
+    ThisExpression(path) {
+      thisId || (thisId = path.scope.generateUidIdentifier("self$"));
+      path.replaceWith(thisId);
+    }
+  });
+  return node => {
+    if (thisId) {
+      let parent = path.getStatementParent().parent;
+      const decl = t.variableDeclaration("const", [
+        t.variableDeclarator(thisId, t.thisExpression())
+      ]);
+      parent.body.unshift(decl);
+    }
+    return node;
+  };
 }
 
 export function transformNode(path, info = {}) {
@@ -78,10 +99,15 @@ export function transformNode(path, info = {}) {
     return {
       exprs:
         expr.length > 1
-          ? [t.callExpression(
-              t.arrowFunctionExpression([], t.blockStatement([expr[0], t.returnStatement(expr[1])])),
-              []
-            )]
+          ? [
+              t.callExpression(
+                t.arrowFunctionExpression(
+                  [],
+                  t.blockStatement([expr[0], t.returnStatement(expr[1])])
+                ),
+                []
+              )
+            ]
           : [expr],
       template: "",
       dynamic: true

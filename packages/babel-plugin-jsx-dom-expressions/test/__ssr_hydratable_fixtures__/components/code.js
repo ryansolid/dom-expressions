@@ -110,3 +110,11 @@ const template12 = (
     {" | "}
   </div>
 );
+
+class Template13 {
+  render() {
+    <Component prop={this.something}>
+      <Nested prop={this.data}>{this.content}</Nested>
+    </Component>;
+  }
+}

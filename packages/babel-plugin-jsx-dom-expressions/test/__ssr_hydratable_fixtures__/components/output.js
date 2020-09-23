@@ -183,3 +183,20 @@ const template12 = _$ssr(
     children: "show"
   })
 );
+
+class Template13 {
+  render() {
+    const _self$ = this;
+
+    _$createComponent(Component, {
+      prop: _self$.something,
+
+      get children() {
+        return _$createComponent(Nested, {
+          prop: _self$.data,
+          children: _self$.content
+        });
+      }
+    });
+  }
+}
