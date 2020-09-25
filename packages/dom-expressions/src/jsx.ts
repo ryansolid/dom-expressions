@@ -1961,7 +1961,7 @@ declare global {
       // others
       align?: "start" | "end" | "center" | "baseline" | "stretch" | "left" | "right";
       part?: string;
-      exportparts: string;
+      exportparts?: string;
     }
 
     // HTML Elements
