@@ -40,11 +40,11 @@ export function transformThis(path) {
   });
   return node => {
     if (thisId) {
-      let parent = path.getStatementParent().parent;
+      let parent = path.getStatementParent();
       const decl = t.variableDeclaration("const", [
         t.variableDeclarator(thisId, t.thisExpression())
       ]);
-      parent.body.unshift(decl);
+      parent.insertBefore(decl);
     }
     return node;
   };
