@@ -276,6 +276,8 @@ const NonComposedEvents = new Set([
   "mouseenter",
   "mouseleave",
   "paste",
+  "pointerenter",
+  "pointerleave",
   "progress",
   "reset",
   "scroll",
