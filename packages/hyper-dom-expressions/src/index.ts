@@ -5,6 +5,7 @@ interface Runtime {
   assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
   dynamicProperty(props: any, key: string): any;
+  SVGElements: Set<string>;
 }
 
 type ExpandableNode = Node & { [key: string]: any };
@@ -83,7 +84,10 @@ export function createHyperScript(r: Runtime): HyperScript {
         const v = m[i],
           s = v.substring(1, v.length);
         if (!v) continue;
-        if (!e) e = document.createElement(v);
+        if (!e)
+          e = r.SVGElements.has(v)
+            ? document.createElementNS("http://www.w3.org/2000/svg", v)
+            : document.createElement(v);
         else if (v[0] === ".") e.classList.add(s);
         else if (v[0] === "#") e.setAttribute("id", s);
       }

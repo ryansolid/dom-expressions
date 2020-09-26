@@ -1,6 +1,7 @@
 import { Attributes, SVGAttributes, SVGNamespace, NonComposedEvents } from "./constants";
 import { root, effect, memo, currentContext, createComponent } from "rxcore";
 import reconcileArrays from "./reconcile";
+export { Attributes, SVGElements, SVGAttributes, SVGNamespace, NonComposedEvents } from "./constants";
 
 const eventRegistry = new Set();
 let hydration = null;

@@ -6,7 +6,7 @@ const html = createHTML(r);
 
 const FIXTURES = [
   '<div id="main"><h1>Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label class="name" for="entry">Edit:</label><input id="entry" type="text"></div>',
-  '<div id="main" class="selected also" refset="true"><h1 title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
+  '<div id="main" class="selected also" refset="true"><h1 class="hello" title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
   '<div id="main"><button>Click Bound</button><button>Click Delegated</button><button>Click Listener</button></div>',
   "<div>First</div>middle<p>after1</p><div>Last</div><p>after2</p>",
   '<div id="main"><div>John R.<span>Smith</span></div><div>After</div></div>',
@@ -42,7 +42,7 @@ describe("Test HTML", () => {
             el.setAttribute("refset", "true");
           }}
         >
-          <h1 title=${welcoming} style=${() => ({ "background-color": "red" })}>
+          <h1 class=${welcoming} title=${welcoming} style=${() => ({ "background-color": "red" })}>
             <a href="/" ref=${r => (link = r)}>Welcome</a>
           </h1>
         </div>
