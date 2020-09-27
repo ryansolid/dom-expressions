@@ -283,6 +283,7 @@ const NonComposedEvents = new Set([
   "scroll",
   "select",
   "submit",
+  "toggle",
   "transitionstart",
   "transitioncancel",
   "transitionend",

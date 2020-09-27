@@ -366,7 +366,7 @@ function eventHandler(e) {
     const handler = node[key];
     if (handler) {
       const data = node[`${key}Data`];
-      data ? handler(data, e) : handler(e);
+      data !== undefined ? handler(data, e) : handler(e);
       if (e.cancelBubble) return;
     }
     node = node.host && node.host instanceof Node ? node.host : node.parentNode;
