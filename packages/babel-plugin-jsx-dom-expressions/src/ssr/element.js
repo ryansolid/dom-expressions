@@ -8,7 +8,8 @@ import {
   registerImportMethod,
   filterChildren,
   checkLength,
-  escapeHTML
+  escapeHTML,
+  reservedNameSpaces
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -104,7 +105,7 @@ function escapeExpression(path, expression, attr) {
       expression.callee.body.body = expression.callee.body.body.map(e => {
         if (t.isReturnStatement(e)) e.argument = escapeExpression(path, e.argument, attr);
         return e;
-      })
+      });
     } else expression.callee.body = escapeExpression(path, expression.callee.body, attr);
     return expression;
   }
@@ -168,13 +169,25 @@ function transformAttributes(path, results) {
     }
 
     let value = node.value,
-      key = node.name.name;
+      key = t.isJSXNamespacedName(node.name)
+        ? `${node.name.namespace.name}:${node.name.name.name}`
+        : node.name.name,
+      reservedNameSpace =
+        t.isJSXNamespacedName(node.name) && reservedNameSpaces[node.name.namespace.name];
+    if (
+      t.isJSXNamespacedName(node.name) &&
+      reservedNameSpace &&
+      !t.isJSXExpressionContainer(value)
+    ) {
+      node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+    }
+
     if (
       t.isJSXExpressionContainer(value) &&
-      (key.toLowerCase() !== key ||
+      (reservedNameSpace || key.toLowerCase() !== key ||
         !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
     ) {
-      if (key === "ref" || key.startsWith("on")) return;
+      if (key === "ref" || key.startsWith("use:") || key.startsWith("on")) return;
       else if (
         key === "children" ||
         key === "textContent" ||

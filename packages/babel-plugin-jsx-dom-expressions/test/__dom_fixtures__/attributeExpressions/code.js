@@ -42,3 +42,5 @@ const template7 = <div ref={refTarget} />;
 const template8 = <div ref={e => console.log(e)} />;
 
 const template9 = <div ref={refFactory()} />
+
+const tempate10 = <div use:something use:another={thing} />

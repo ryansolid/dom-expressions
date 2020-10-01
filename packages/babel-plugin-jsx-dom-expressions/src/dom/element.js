@@ -226,7 +226,7 @@ function transformAttributes(path, results) {
         reservedNameSpace &&
         !t.isJSXExpressionContainer(value)
       ) {
-        node.value = value = t.JSXExpressionContainer(value);
+        node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
       }
       if (
         t.isJSXExpressionContainer(value) &&
@@ -259,13 +259,12 @@ function transformAttributes(path, results) {
           } else if (t.isCallExpression(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration(
-                'const',
-                [t.variableDeclarator(refIdentifier, value.expression)]
-              ),
+              t.variableDeclaration("const", [
+                t.variableDeclarator(refIdentifier, value.expression)
+              ]),
               t.expressionStatement(
                 t.logicalExpression(
-                  '&&',
+                  "&&",
                   t.binaryExpression(
                     "===",
                     t.unaryExpression("typeof", refIdentifier),
@@ -276,6 +275,15 @@ function transformAttributes(path, results) {
               )
             );
           }
+        } else if (key.startsWith("use:")) {
+          results.exprs.unshift(
+            t.expressionStatement(
+              t.callExpression(t.identifier(node.name.name.name), [
+                elem,
+                t.arrowFunctionExpression([], t.isJSXEmptyExpression(value.expression) ? t.booleanLiteral(true) : value.expression)
+              ])
+            )
+          );
         } else if (key === "children") {
           children = value;
         } else if (key.startsWith("on")) {
@@ -397,9 +405,7 @@ function transformAttributes(path, results) {
           else key = key.toLowerCase();
         }
         if (isProperty) {
-          results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value, isSVG))
-          );
+          results.exprs.push(t.expressionStatement(setAttr(attribute, elem, key, value, isSVG)));
         } else {
           results.template += ` ${key}`;
           results.template += value ? `="${value.value}"` : `=""`;

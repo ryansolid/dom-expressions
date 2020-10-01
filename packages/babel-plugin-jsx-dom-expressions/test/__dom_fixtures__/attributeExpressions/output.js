@@ -141,3 +141,11 @@ const template9 = (() => {
   typeof _ref$3 === "function" && _ref$3(_el$14);
   return _el$14;
 })();
+
+const tempate10 = (() => {
+  const _el$15 = _tmpl$3.cloneNode(true);
+
+  another(_el$15, () => thing);
+  something(_el$15, () => true);
+  return _el$15;
+})();

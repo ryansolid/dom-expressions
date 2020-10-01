@@ -3,7 +3,10 @@ import { addNamed } from "@babel/helper-module-imports";
 import config from "../config";
 
 export const reservedNameSpaces = {
-  style: true
+  class: true,
+  on: true,
+  style: true,
+  use: true
 };
 
 export function registerImportMethod(path, name) {
