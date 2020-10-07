@@ -44,7 +44,7 @@ const template3 = _$ssr(
 
 const template4 = _$ssr(['<div class="', '"></div>'], `hi ${_$escape(state.class, true)}`);
 
-const template5 = _$ssr(['<div style="', '" textcontent="Hi"></div>'], _$ssrStyle(someStyle()));
+const template5 = _$ssr(['<div style="', '">Hi</div>'], _$ssrStyle(someStyle()));
 
 const template6 = _$ssr(
   ['<div style="', '"></div>'],

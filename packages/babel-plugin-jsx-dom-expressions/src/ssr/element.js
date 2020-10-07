@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { SVGAttributes, SVGElements } from "dom-expressions/src/constants";
+import { Aliases, ChildProperties, SVGElements } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import config from "../config";
 import {
@@ -48,17 +48,8 @@ export function transformElement(path, info) {
 }
 
 function toAttribute(key, isSVG) {
-  if (isSVG) {
-    const attr = SVGAttributes[key];
-
-    if (attr) {
-      if (attr.alias) key = attr.alias;
-    } else key = key.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
-  } else {
-    const attr = SVGAttributes[key];
-    if (attr && attr.alias) key = attr.alias;
-    key = key.toLowerCase();
-  }
+  key = Aliases[key] || key;
+  !isSVG && (key = key.toLowerCase());
   return key;
 }
 
@@ -175,8 +166,7 @@ function transformAttributes(path, results) {
       reservedNameSpace =
         t.isJSXNamespacedName(node.name) && reservedNameSpaces[node.name.namespace.name];
     if (
-      t.isJSXNamespacedName(node.name) &&
-      reservedNameSpace &&
+      ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
       !t.isJSXExpressionContainer(value)
     ) {
       node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
@@ -184,16 +174,13 @@ function transformAttributes(path, results) {
 
     if (
       t.isJSXExpressionContainer(value) &&
-      (reservedNameSpace || key.toLowerCase() !== key ||
+      (reservedNameSpace ||
+        ChildProperties.has(key) ||
+        key.toLowerCase() !== key ||
         !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
     ) {
       if (key === "ref" || key.startsWith("use:") || key.startsWith("on")) return;
-      else if (
-        key === "children" ||
-        key === "textContent" ||
-        key === "innerText" ||
-        key === "innerHTML"
-      ) {
+      else if (ChildProperties.has(key)) {
         children = value;
         if (key === "innerHTML") path.doNotEscape = true;
       } else {

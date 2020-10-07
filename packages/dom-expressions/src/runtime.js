@@ -1,7 +1,14 @@
-import { Attributes, SVGAttributes, SVGNamespace, NonComposedEvents } from "./constants";
+import { Properties, ChildProperties, Aliases, SVGNamespace, NonComposedEvents } from "./constants";
 import { root, effect, memo, currentContext, createComponent } from "rxcore";
 import reconcileArrays from "./reconcile";
-export { Attributes, SVGElements, SVGAttributes, SVGNamespace, NonComposedEvents } from "./constants";
+export {
+  Properties,
+  ChildProperties,
+  Aliases,
+  SVGElements,
+  SVGNamespace,
+  NonComposedEvents
+} from "./constants";
 
 const eventRegistry = new Set();
 let hydration = null;
@@ -14,7 +21,10 @@ export function render(code, element, init) {
     disposer = dispose;
     insert(element, code(), element.firstChild ? null : undefined, init);
   });
-  return disposer;
+  return () => {
+    disposer();
+    element.textContent = "";
+  };
 }
 
 export function hydrate(code, element) {
@@ -116,7 +126,7 @@ export function insert(parent, accessor, marker, initial) {
 }
 
 export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
-  let info;
+  let isCE;
   for (const prop in props) {
     if (prop === "children") {
       if (!skipChildren) insertExpression(node, props.children);
@@ -126,6 +136,8 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
     if (value === prevProps[prop]) continue;
     if (prop === "style") {
       style(node, value, prevProps[prop]);
+    } else if (prop === "class" && !isSVG) {
+      node.className = value;
     } else if (prop === "classList") {
       classList(node, value, prevProps[prop]);
     } else if (prop === "ref") {
@@ -144,23 +156,18 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
         } else node[`__${name}`] = value;
         delegateEvents([name]);
       } else node[lc] = value;
-    } else if (!isSVG && (info = Attributes[prop])) {
-      if (info.type === "attribute") {
-        setAttribute(node, prop, value);
-      } else node[info.alias] = value;
-    } else if (isSVG || prop.indexOf("-") > -1 || prop.indexOf(":") > -1) {
-      const ns = prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
+    } else if (
+      ChildProperties.has(prop) ||
+      (!isSVG && Properties.has(prop)) ||
+      (isCE = node.nodeName.includes("-"))
+    ) {
+      if (isCE && prop.indexOf("-")) node[camelize(prop)] = value;
+      else node[prop] = value;
+    } else {
+      const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
       if (ns) setAttributeNS(node, ns, prop, value);
-      else if ((info = SVGAttributes[prop])) {
-        if (info.alias) setAttribute(node, info.alias, value);
-        else setAttribute(node, prop, value);
-      } else
-        setAttribute(
-          node,
-          prop.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`),
-          value
-        );
-    } else node[prop] = value;
+      else setAttribute(node, Aliases[prop] || prop, value);
+    }
     prevProps[prop] = value;
   }
 }
@@ -210,7 +217,7 @@ export function ssrStyle(value) {
   return result;
 }
 
-export function ssrSpread(props, isSVG) {
+export function ssrSpread(props) {
   return () => {
     if (typeof props === "function") props = props();
     // TODO: figure out how to handle props.children
@@ -228,8 +235,7 @@ export function ssrSpread(props, isSVG) {
       } else if (prop === "classList") {
         result += `class="${ssrClassList(value)}"`;
       } else {
-        const key = toSSRAttribute(prop, isSVG);
-        result += `${key}="${escape(value, true)}"`;
+        result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
       }
       if (i !== keys.length - 1) result += " ";
     }
@@ -343,6 +349,10 @@ export function generateHydrationScript({
 }
 
 // Internal Functions
+function camelize(name) {
+  return name.replace(/-([a-z])/g, (_, w) => w.toUpperCase());
+}
+
 function eventHandler(e) {
   const key = `__${e.type}`;
   let node = (e.composedPath && e.composedPath()[0]) || e.target;
@@ -413,7 +423,8 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (hydration && hydration.context && hydration.context.registry && current.length) return current;
+    if (hydration && hydration.context && hydration.context.registry && current.length)
+      return current;
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
@@ -489,18 +500,4 @@ function cleanChildren(parent, current, marker, replacement) {
     }
   } else parent.insertBefore(node, marker);
   return [node];
-}
-
-function toSSRAttribute(key, isSVG) {
-  if (isSVG) {
-    const attr = SVGAttributes[key];
-    if (attr) {
-      if (attr.alias) key = attr.alias;
-    } else key = key.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
-  } else {
-    const attr = SVGAttributes[key];
-    if (attr && attr.alias) key = attr.alias;
-    key = key.toLowerCase();
-  }
-  return key;
 }

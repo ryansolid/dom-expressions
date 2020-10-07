@@ -110,9 +110,12 @@ function wrapDynamics(path, dynamics) {
             dynamics[0].elem,
             dynamics[0].key,
             dynamics[0].value,
-            dynamics[0].isSVG,
-            true,
-            prevValue
+            {
+              isSVG: dynamics[0].isSVG,
+              isCE: dynamics[0].isCE,
+              dynamic: true,
+              prevId: prevValue
+            }
           )
         )
       ])
@@ -122,7 +125,7 @@ function wrapDynamics(path, dynamics) {
     statements = [],
     identifiers = [],
     prevId = t.identifier("_p$");
-  dynamics.forEach(({ elem, key, value, isSVG }) => {
+  dynamics.forEach(({ elem, key, value, isSVG, isCE }) => {
     const identifier = path.scope.generateUidIdentifier("v$");
     identifiers.push(identifier);
     decls.push(t.variableDeclarator(identifier, value));
@@ -133,7 +136,7 @@ function wrapDynamics(path, dynamics) {
           t.assignmentExpression(
             "=",
             prev,
-            setAttr(path, elem, key, identifier, isSVG, true, prev)
+            setAttr(path, elem, key, identifier, { isSVG, isCE, dynamic: true, prevId: prev })
           )
         )
       );
@@ -148,8 +151,7 @@ function wrapDynamics(path, dynamics) {
               elem,
               key,
               t.assignmentExpression("=", t.memberExpression(prevId, identifier), identifier),
-              isSVG,
-              true
+              { isSVG, isCE, dynamic: true }
             )
           )
         )

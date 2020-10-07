@@ -1925,8 +1925,8 @@ declare global {
       accessKey?: string;
       className?: string;
       class?: string;
-      contentEditable?: boolean | "inherit";
-      contextMenu?: string;
+      contenteditable?: boolean | "inherit";
+      contextmenu?: string;
       dir?: HTMLDir;
       draggable?: boolean;
       hidden?: boolean;
@@ -1934,7 +1934,6 @@ declare global {
       lang?: string;
       spellcheck?: boolean;
       style?: CSSProperties | string;
-      tabIndex?: number | string;
       tabindex?: number | string;
       title?: string;
       translate?: "yes" | "no";
@@ -1950,13 +1949,13 @@ declare global {
       vocab?: string;
 
       // Non-standard Attributes
-      autoCapitalize?: HTMLAutocapitalize;
+      autocapitalize?: HTMLAutocapitalize;
       color?: string;
-      itemProp?: string;
-      itemScope?: boolean;
-      itemType?: string;
-      itemId?: string;
-      itemRef?: string;
+      itemprop?: string;
+      itemscope?: boolean;
+      itemtype?: string;
+      itemid?: string;
+      itemref?: string;
 
       // others
       align?: "start" | "end" | "center" | "baseline" | "stretch" | "left" | "right";
@@ -1972,7 +1971,7 @@ declare global {
       hreflang?: string;
       media?: string;
       ping?: string;
-      referrerPolicy?: HTMLReferrerPolicy;
+      referrerpolicy?: HTMLReferrerPolicy;
       rel?: string;
       target?: string;
       type?: string;
@@ -1987,7 +1986,7 @@ declare global {
       href?: string;
       hreflang?: string;
       ping?: string;
-      referrerPolicy?: HTMLReferrerPolicy;
+      referrerpolicy?: HTMLReferrerPolicy;
       rel?: string;
       shape?: "rect" | "circle" | "poly" | "default";
       target?: string;
@@ -2006,11 +2005,11 @@ declare global {
       autofocus?: boolean;
       disabled?: boolean;
       form?: string;
-      formAction?: string;
-      formEnctype?: HTMLFormEncType;
-      formMethod?: HTMLFormMethod;
-      formNoValidate?: boolean;
-      formTarget?: string;
+      formaction?: string;
+      formenctype?: HTMLFormEncType;
+      formmethod?: HTMLFormMethod;
+      formnovalidate?: boolean;
+      formtarget?: string;
       name?: string;
       type?: "submit" | "reset" | "button";
       value?: string;
@@ -2056,14 +2055,14 @@ declare global {
     }
 
     interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
-      acceptCharset?: string;
+      acceptcharset?: string;
       action?: string;
       autocomplete?: string;
       encoding?: HTMLFormEncType;
       enctype?: HTMLFormEncType;
       method?: HTMLFormMethod;
       name?: string;
-      noValidate?: boolean;
+      novalidate?: boolean;
       target?: string;
     }
 
@@ -2072,7 +2071,7 @@ declare global {
       allowfullscreen?: boolean;
       height?: number | string;
       name?: string;
-      referrerPolicy?: HTMLReferrerPolicy;
+      referrerpolicy?: HTMLReferrerPolicy;
       sandbox?: HTMLIframeSandbox;
       src?: string;
       srcdoc?: string;
@@ -2081,10 +2080,10 @@ declare global {
 
     interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
       alt?: string;
-      crossOrigin?: HTMLCrossorigin;
+      crossorigin?: HTMLCrossorigin;
       decoding?: "sync" | "async" | "auto";
       height?: number | string;
-      referrerPolicy?: HTMLReferrerPolicy;
+      referrerpolicy?: HTMLReferrerPolicy;
       sizes?: string;
       src?: string;
       srcset?: string;
@@ -2098,25 +2097,25 @@ declare global {
       autofocus?: boolean;
       capture?: boolean | string;
       checked?: boolean;
-      crossOrigin?: HTMLCrossorigin;
+      crossorigin?: HTMLCrossorigin;
       disabled?: boolean;
       form?: string;
-      formAction?: string;
-      formEnctype?: HTMLFormEncType;
-      formMethod?: HTMLFormMethod;
-      formNoValidate?: boolean;
-      formTarget?: string;
+      formaction?: string;
+      formenctype?: HTMLFormEncType;
+      formmethod?: HTMLFormMethod;
+      formnovalidate?: boolean;
+      formtarget?: string;
       height?: number | string;
       list?: string;
       max?: number | string;
-      maxLength?: number | string;
+      maxlength?: number | string;
       min?: number | string;
-      minLength?: number | string;
+      minlength?: number | string;
       multiple?: boolean;
       name?: string;
       pattern?: string;
       placeholder?: string;
-      readOnly?: boolean;
+      readonly?: boolean;
       required?: boolean;
       size?: number | string;
       src?: string;
@@ -2153,13 +2152,13 @@ declare global {
 
     interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
       as?: HTMLLinkAs;
-      crossOrigin?: HTMLCrossorigin;
+      crossorigin?: HTMLCrossorigin;
       disabled?: boolean;
       href?: string;
       hreflang?: string;
       integrity?: string;
       media?: string;
-      referrerPolicy?: HTMLReferrerPolicy;
+      referrerpolicy?: HTMLReferrerPolicy;
       rel?: string;
       sizes?: string;
       type?: string;
@@ -2172,9 +2171,9 @@ declare global {
     interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
       autoplay?: boolean;
       controls?: boolean;
-      crossOrigin?: HTMLCrossorigin;
+      crossorigin?: HTMLCrossorigin;
       loop?: boolean;
-      mediaGroup?: string;
+      mediagroup?: string;
       muted?: boolean;
       preload?: "none" | "metadata" | "auto" | "";
       src?: string;
@@ -2188,7 +2187,7 @@ declare global {
     interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
       charset?: string;
       content?: string;
-      httpEquiv?: string;
+      httpequiv?: string;
       name?: string;
     }
 
@@ -2212,7 +2211,7 @@ declare global {
       height?: number | string;
       name?: string;
       type?: string;
-      useMap?: string;
+      usemap?: string;
       width?: number | string;
     }
 
@@ -2253,12 +2252,12 @@ declare global {
     interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
       async?: boolean;
       charset?: string;
-      crossOrigin?: HTMLCrossorigin;
+      crossorigin?: HTMLCrossorigin;
       defer?: boolean;
       integrity?: string;
-      noModule?: boolean;
+      noodule?: boolean;
       nonce?: string;
-      referrerPolicy?: HTMLReferrerPolicy;
+      referrerpolicy?: HTMLReferrerPolicy;
       src?: string;
       type?: string;
     }
@@ -2295,9 +2294,9 @@ declare global {
     }
 
     interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
-      colSpan?: number | string;
+      colspan?: number | string;
       headers?: string;
-      rowSpan?: number | string;
+      rowspan?: number | string;
     }
 
     interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2307,11 +2306,11 @@ declare global {
       dirname?: string;
       disabled?: boolean;
       form?: string;
-      maxLength?: number | string;
-      minLength?: number | string;
+      maxlength?: number | string;
+      minlength?: number | string;
       name?: string;
       placeholder?: string;
-      readOnly?: boolean;
+      readonly?: boolean;
       required?: boolean;
       rows?: number | string;
       value?: string | string[] | number;
@@ -2319,9 +2318,9 @@ declare global {
     }
 
     interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
-      colSpan?: number | string;
+      colspan?: number | string;
       headers?: string;
-      rowSpan?: number | string;
+      rowspan?: number | string;
     }
 
     interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2425,15 +2424,16 @@ declare global {
       transform?: string;
     }
 
-    interface XLinkSVGAttributes {
-      xlinkActuate?: string;
-      xlinkArcrole?: string;
-      xlinkHref?: string;
-      xlinkRole?: string;
-      xlinkShow?: string;
-      xlinkTitle?: string;
-      xlinkType?: string;
-    }
+    // Fix when namespaces introduced
+    // interface XLinkSVGAttributes {
+    //   xlinkActuate?: string;
+    //   xlinkArcrole?: string;
+    //   xlinkHref?: string;
+    //   xlinkRole?: string;
+    //   xlinkShow?: string;
+    //   xlinkTitle?: string;
+    //   xlinkType?: string;
+    // }
 
     interface ConditionalProcessingSVGAttributes {
       requiredExtensions?: string;
@@ -2479,7 +2479,7 @@ declare global {
     }
 
     interface PresentationSVGAttributes {
-      alignmentBaseline?:
+      "alignment-baseline"?:
         | "auto"
         | "baseline"
         | "before-edge"
@@ -2493,19 +2493,19 @@ declare global {
         | "hanging"
         | "mathematical"
         | "inherit";
-      baselineShift?: number | string;
+      "baseline-shift"?: number | string;
       clip?: string;
-      clipPath?: string;
-      clipRule?: "nonzero" | "evenodd" | "inherit";
+      "clip-path"?: string;
+      "clip-rule"?: "nonzero" | "evenodd" | "inherit";
       color?: string;
-      colorInterpolation?: "auto" | "sRGB" | "linearRGB" | "inherit";
-      colorInterpolationFilters?: "auto" | "sRGB" | "linearRGB" | "inherit";
-      colorProfile?: string;
-      colorRendering?: "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit";
+      "color-interpolation"?: "auto" | "sRGB" | "linearRGB" | "inherit";
+      "color-interpolation-filters"?: "auto" | "sRGB" | "linearRGB" | "inherit";
+      "color-profile"?: string;
+      "color-rendering"?: "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit";
       cursor?: string;
       direction?: "ltr" | "rtl" | "inherit";
       display?: string;
-      dominantBaseline?:
+      "dominant-baseline"?:
         | "auto"
         | "text-bottom"
         | "alphabetic"
@@ -2516,33 +2516,33 @@ declare global {
         | "hanging"
         | "text-top"
         | "inherit";
-      enableBackground?: string;
+      "enable-background"?: string;
       fill?: string;
-      fillOpacity?: number | string | "inherit";
-      fillRule?: "nonzero" | "evenodd" | "inherit";
+      "fill-opacity"?: number | string | "inherit";
+      "fill-rule"?: "nonzero" | "evenodd" | "inherit";
       filter?: string;
-      floodColor?: string;
-      floodOpacity?: number | string | "inherit";
-      fontFamily?: string;
-      fontSize?: string;
-      fontSizeAdjust?: number | string;
-      fontStretch?: string;
-      fontStyle?: "normal" | "italic" | "oblique" | "inherit";
-      fontVariant?: string;
-      fontWeight?: number | string;
-      glyphOrientationHorizontal?: string;
-      glyphOrientationVertical?: string;
-      imageRendering?: "auto" | "optimizeQuality" | "optimizeSpeed" | "inherit";
+      "flood-color"?: string;
+      "flood-opacity"?: number | string | "inherit";
+      "font-family"?: string;
+      "font-size"?: string;
+      "font-size-adjust"?: number | string;
+      "font-stretch"?: string;
+      "font-style"?: "normal" | "italic" | "oblique" | "inherit";
+      "font-variant"?: string;
+      "font-weight"?: number | string;
+      "glyph-orientation-horizontal"?: string;
+      "glyph-orientation-vertical"?: string;
+      "image-rendering"?: "auto" | "optimizeQuality" | "optimizeSpeed" | "inherit";
       kerning?: string;
-      letterSpacing?: number | string;
-      lightingColor?: string;
-      markerEnd?: string;
-      markerMid?: string;
-      markerStart?: string;
+      "letter-spacing"?: number | string;
+      "lighting-color"?: string;
+      "marker-end"?: string;
+      "marker-mid"?: string;
+      "marker-start"?: string;
       mask?: string;
       opacity?: number | string | "inherit";
       overflow?: "visible" | "hidden" | "scroll" | "auto" | "inherit";
-      pointerEvents?:
+      "pointer-events"?:
         | "bounding-box"
         | "visiblePainted"
         | "visibleFill"
@@ -2555,29 +2555,29 @@ declare global {
         | "all"
         | "none"
         | "inherit";
-      shapeRendering?: "auto" | "optimizeSpeed" | "crispEdges" | "geometricPrecision" | "inherit";
-      stopColor?: string;
-      stopOpacity?: number | string | "inherit";
+      "shape-rendering"?: "auto" | "optimizeSpeed" | "crispEdges" | "geometricPrecision" | "inherit";
+      "stop-color"?: string;
+      "stop-opacity"?: number | string | "inherit";
       stroke?: string;
-      strokeDasharray?: string;
-      strokeDashoffset?: number | string;
-      strokeLinecap?: "butt" | "round" | "square" | "inherit";
-      strokeLinejoin?: "arcs" | "bevel" | "miter" | "miter-clip" | "round" | "inherit";
-      strokeMiterlimit?: number | string | "inherit";
-      strokeOpacity?: number | string | "inherit";
-      strokeWidth?: number | string;
-      textAnchor?: "start" | "middle" | "end" | "inherit";
-      textDecoration?: "none" | "underline" | "overline" | "line-through" | "blink" | "inherit";
-      textRendering?:
+      "stroke-dasharray"?: string;
+      "stroke-dashoffset"?: number | string;
+      "stroke-linecap"?: "butt" | "round" | "square" | "inherit";
+      "stroke-linejoin"?: "arcs" | "bevel" | "miter" | "miter-clip" | "round" | "inherit";
+      "stroke-miterlimit"?: number | string | "inherit";
+      "stroke-opacity"?: number | string | "inherit";
+      "stroke-width"?: number | string;
+      "text-anchor"?: "start" | "middle" | "end" | "inherit";
+      "text-decoration"?: "none" | "underline" | "overline" | "line-through" | "blink" | "inherit";
+      "text-rendering"?:
         | "auto"
         | "optimizeSpeed"
         | "optimizeLegibility"
         | "geometricPrecision"
         | "inherit";
-      unicodeBidi?: string;
+      "unicode-bidi"?: string;
       visibility?: "visible" | "hidden" | "collapse" | "inherit";
-      wordSpacing?: number | string;
-      writingMode?: "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit";
+      "word-spacing"?: number | string;
+      "writing-mode"?: "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit";
     }
 
     interface AnimationElementSVGAttributes<T>
@@ -2589,19 +2589,19 @@ declare global {
       extends CoreSVGAttributes<T>,
         Pick<
           PresentationSVGAttributes,
-          | "clipPath"
+          | "clip-path"
           | "mask"
           | "cursor"
           | "opacity"
           | "filter"
-          | "enableBackground"
-          | "colorInterpolation"
-          | "colorRendering"
+          | "enable-background"
+          | "color-interpolation"
+          | "color-rendering"
         > {}
 
     interface FilterPrimitiveElementSVGAttributes<T>
       extends CoreSVGAttributes<T>,
-        Pick<PresentationSVGAttributes, "colorInterpolationFilters"> {
+        Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
       x?: number | string;
       y?: number | string;
       width?: number | string;
@@ -2625,7 +2625,7 @@ declare global {
 
     interface GradientElementSVGAttributes<T>
       extends CoreSVGAttributes<T>,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         ExternalResourceSVGAttributes,
         StylableSVGAttributes {
       gradientUnits?: SVGUnits;
@@ -2637,16 +2637,16 @@ declare global {
       extends CoreSVGAttributes<T>,
         Pick<
           PresentationSVGAttributes,
-          | "clipRule"
+          | "clip-rule"
           | "mask"
-          | "pointerEvents"
+          | "pointer-events"
           | "cursor"
           | "opacity"
           | "filter"
           | "display"
           | "visibility"
-          | "colorInterpolation"
-          | "colorRendering"
+          | "color-interpolation"
+          | "color-rendering"
         > {}
 
     interface LightSourceElementSVGAttributes<T> extends CoreSVGAttributes<T> {}
@@ -2663,52 +2663,52 @@ declare global {
           PresentationSVGAttributes,
           | "color"
           | "fill"
-          | "fillRule"
-          | "fillOpacity"
+          | "fill-rule"
+          | "fill-opacity"
           | "stroke"
-          | "strokeWidth"
-          | "strokeLinecap"
-          | "strokeLinejoin"
-          | "strokeMiterlimit"
-          | "strokeDasharray"
-          | "strokeDashoffset"
-          | "strokeOpacity"
-          | "shapeRendering"
+          | "stroke-width"
+          | "stroke-linecap"
+          | "stroke-linejoin"
+          | "stroke-miterlimit"
+          | "stroke-dasharray"
+          | "stroke-dashoffset"
+          | "stroke-opacity"
+          | "shape-rendering"
         > {}
 
     interface TextContentElementSVGAttributes<T>
       extends CoreSVGAttributes<T>,
         Pick<
           PresentationSVGAttributes,
-          | "fontFamily"
-          | "fontStyle"
-          | "fontVariant"
-          | "fontWeight"
-          | "fontStretch"
-          | "fontSize"
-          | "fontSizeAdjust"
+          | "font-family"
+          | "font-style"
+          | "font-variant"
+          | "font-weight"
+          | "font-stretch"
+          | "font-size"
+          | "font-size-adjust"
           | "kerning"
-          | "letterSpacing"
-          | "wordSpacing"
-          | "textDecoration"
-          | "glyphOrientationHorizontal"
-          | "glyphOrientationVertical"
+          | "letter-spacing"
+          | "word-spacing"
+          | "text-decoration"
+          | "glyph-orientation-horizontal"
+          | "glyph-orientation-vertical"
           | "direction"
-          | "unicodeBidi"
-          | "textAnchor"
-          | "dominantBaseline"
+          | "unicode-bidi"
+          | "text-anchor"
+          | "dominant-baseline"
           | "color"
           | "fill"
-          | "fillRule"
-          | "fillOpacity"
+          | "fill-rule"
+          | "fill-opacity"
           | "stroke"
-          | "strokeWidth"
-          | "strokeLinecap"
-          | "strokeLinejoin"
-          | "strokeMiterlimit"
-          | "strokeDasharray"
-          | "strokeDashoffset"
-          | "strokeOpacity"
+          | "stroke-width"
+          | "stroke-linecap"
+          | "stroke-linejoin"
+          | "stroke-miterlimit"
+          | "stroke-dasharray"
+          | "stroke-dashoffset"
+          | "stroke-opacity"
         > {}
 
     interface ZoomAndPanSVGAttributes {
@@ -2717,16 +2717,16 @@ declare global {
 
     interface AnimateSVGAttributes<T>
       extends AnimationElementSVGAttributes<T>,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         AnimationAttributeTargetSVGAttributes,
         AnimationTimingSVGAttributes,
         AnimationValueSVGAttributes,
         AnimationAdditionSVGAttributes,
-        Pick<PresentationSVGAttributes, "colorInterpolation" | "colorRendering"> {}
+        Pick<PresentationSVGAttributes, "color-interpolation" | "color-rendering"> {}
 
     interface AnimateMotionSVGAttributes<T>
       extends AnimationElementSVGAttributes<T>,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         AnimationTimingSVGAttributes,
         AnimationValueSVGAttributes,
         AnimationAdditionSVGAttributes {
@@ -2738,7 +2738,7 @@ declare global {
 
     interface AnimateTransformSVGAttributes<T>
       extends AnimationElementSVGAttributes<T>,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         AnimationAttributeTargetSVGAttributes,
         AnimationTimingSVGAttributes,
         AnimationValueSVGAttributes,
@@ -2763,7 +2763,7 @@ declare global {
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes,
-        Pick<PresentationSVGAttributes, "clipPath"> {
+        Pick<PresentationSVGAttributes, "clip-path"> {
       clipPathUnits?: SVGUnits;
     }
 
@@ -2839,7 +2839,7 @@ declare global {
       extends FilterPrimitiveElementSVGAttributes<T>,
         SingleInputFilterSVGAttributes,
         StylableSVGAttributes,
-        Pick<PresentationSVGAttributes, "color" | "lightingColor"> {
+        Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
       surfaceScale?: number | string;
       diffuseConstant?: number | string;
       kernelUnitLength?: number | string;
@@ -2862,7 +2862,7 @@ declare global {
     interface FeFloodSVGAttributes<T>
       extends FilterPrimitiveElementSVGAttributes<T>,
         StylableSVGAttributes,
-        Pick<PresentationSVGAttributes, "color" | "floodColor" | "floodOpacity"> {}
+        Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
 
     interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
       type?: "identity" | "table" | "discrete" | "linear" | "gamma";
@@ -2883,7 +2883,7 @@ declare global {
 
     interface FeImageSVGAttributes<T>
       extends FilterPrimitiveElementSVGAttributes<T>,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         ExternalResourceSVGAttributes,
         StylableSVGAttributes {
       preserveAspectRatio: SVGPreserveAspectRatio;
@@ -2923,7 +2923,7 @@ declare global {
       extends FilterPrimitiveElementSVGAttributes<T>,
         SingleInputFilterSVGAttributes,
         StylableSVGAttributes,
-        Pick<PresentationSVGAttributes, "color" | "lightingColor"> {
+        Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
       surfaceScale?: string;
       specularConstant?: string;
       specularExponent?: string;
@@ -2958,7 +2958,7 @@ declare global {
 
     interface FilterSVGAttributes<T>
       extends CoreSVGAttributes<T>,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         ExternalResourceSVGAttributes,
         StylableSVGAttributes {
       filterUnits?: SVGUnits;
@@ -2995,10 +2995,10 @@ declare global {
       extends NewViewportSVGAttributes<T>,
         GraphicsElementSVGAttributes<T>,
         ConditionalProcessingSVGAttributes,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes,
-        Pick<PresentationSVGAttributes, "colorProfile" | "imageRendering"> {
+        Pick<PresentationSVGAttributes, "color-profile" | "image-rendering"> {
       x?: number | string;
       y?: number | string;
       width?: number | string;
@@ -3013,7 +3013,7 @@ declare global {
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes,
-        Pick<PresentationSVGAttributes, "markerStart" | "markerMid" | "markerEnd"> {
+        Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
       x1?: number | string;
       y1?: number | string;
       x2?: number | string;
@@ -3063,7 +3063,7 @@ declare global {
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes,
-        Pick<PresentationSVGAttributes, "markerStart" | "markerMid" | "markerEnd"> {
+        Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
       d?: string;
       pathLength?: number | string;
     }
@@ -3071,7 +3071,7 @@ declare global {
     interface PatternSVGAttributes<T>
       extends ContainerElementSVGAttributes<T>,
         ConditionalProcessingSVGAttributes,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         FitToViewBoxSVGAttributes,
@@ -3092,7 +3092,7 @@ declare global {
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes,
-        Pick<PresentationSVGAttributes, "markerStart" | "markerMid" | "markerEnd"> {
+        Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
       points?: string;
     }
 
@@ -3103,7 +3103,7 @@ declare global {
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes,
-        Pick<PresentationSVGAttributes, "markerStart" | "markerMid" | "markerEnd"> {
+        Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
       points?: string;
     }
 
@@ -3133,7 +3133,7 @@ declare global {
     interface StopSVGAttributes<T>
       extends CoreSVGAttributes<T>,
         StylableSVGAttributes,
-        Pick<PresentationSVGAttributes, "color" | "stopColor" | "stopOpacity"> {
+        Pick<PresentationSVGAttributes, "color" | "stop-color" | "stop-opacity"> {
       offset?: number | string;
     }
 
@@ -3147,7 +3147,7 @@ declare global {
         ZoomAndPanSVGAttributes,
         Pick<PresentationSVGAttributes, "display" | "visibility"> {
       version?: string;
-      baseProfile?: string;
+      "base-profile"?: string;
       x?: number | string;
       y?: number | string;
       width?: number | string;
@@ -3178,7 +3178,7 @@ declare global {
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes,
-        Pick<PresentationSVGAttributes, "writingMode" | "textRendering"> {
+        Pick<PresentationSVGAttributes, "writing-mode" | "text-rendering"> {
       x?: number | string;
       y?: number | string;
       dx?: number | string;
@@ -3191,12 +3191,12 @@ declare global {
     interface TextPathSVGAttributes<T>
       extends TextContentElementSVGAttributes<T>,
         ConditionalProcessingSVGAttributes,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         Pick<
           PresentationSVGAttributes,
-          "alignmentBaseline" | "baselineShift" | "display" | "visibility"
+          "alignment-baseline" | "baseline-shift" | "display" | "visibility"
         > {
       startOffset?: number | string;
       method?: "align" | "stretch";
@@ -3210,7 +3210,7 @@ declare global {
         StylableSVGAttributes,
         Pick<
           PresentationSVGAttributes,
-          "alignmentBaseline" | "baselineShift" | "display" | "visibility"
+          "alignment-baseline" | "baseline-shift" | "display" | "visibility"
         > {
       x?: number | string;
       y?: number | string;
@@ -3224,7 +3224,7 @@ declare global {
     interface UseSVGAttributes<T>
       extends GraphicsElementSVGAttributes<T>,
         ConditionalProcessingSVGAttributes,
-        XLinkSVGAttributes,
+        // XLinkSVGAttributes,
         ExternalResourceSVGAttributes,
         StylableSVGAttributes,
         TransformableSVGAttributes {

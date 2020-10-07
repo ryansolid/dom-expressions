@@ -1,12 +1,8 @@
-declare type AttributeInfo = {
-  [key: string]: {
-    type: string;
-    alias?: string;
-  };
-};
-export const Attributes: AttributeInfo;
+export const Aliases: Record<string, string>;
 
-export const SVGAttributes: AttributeInfo;
+export const Properties: Set<string>;
+
+export const ChildProperties: Set<string>;
 
 export const NonComposedEvents: Set<string>;
 

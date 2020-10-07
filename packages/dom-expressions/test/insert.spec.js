@@ -79,13 +79,14 @@ describe("r.insert", () => {
   it('can spread over element', () => {
     const node = document.createElement("span");
     S.root(() => {
-      r.spread(node, () => ({href: '/', for: 'id', classList: {danger: true}, events: {custom: e => e}, style: {color: 'red'}, something: 'good'}))
+      r.spread(node, () => ({href: '/', for: 'id', classList: {danger: true}, on: {custom: e => e}, style: {color: 'red'}, notProp: 'good'}))
     })
     expect(node.getAttribute('href')).toBe('/');
-    expect(node.htmlFor).toBe('id');
+    expect(node.getAttribute('for')).toBe('id');
     expect(node.className).toBe('danger');
     expect(node.style.color).toBe('red');
-    expect(node.something).toBe('good');
+    expect(node.notProp).toBeUndefined();
+    expect(node.getAttribute("notprop")).toBe('good');
   })
 
   it("can insert an array of strings", () => {

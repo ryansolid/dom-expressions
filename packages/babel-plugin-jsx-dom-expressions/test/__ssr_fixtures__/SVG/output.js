@@ -41,3 +41,19 @@ const template6 = _$createComponent(Component, {
     return _$ssr('<rect x="50" y="20" width="150" height="150"></rect>');
   }
 });
+
+const template7 = _$ssr(
+  [
+    '<svg viewBox="',
+    '" xmlns="http://www.w3.org/2000/svg"><a xlink:href="',
+    '"><text x="10" y="25">MDN Web Docs</text></a></svg>'
+  ],
+  "0 0 160 40",
+  _$escape(url, true)
+);
+
+const template8 = _$ssr(
+  ['<svg viewBox="', '" xmlns="http://www.w3.org/2000/svg"><text x="10" y="25">', "</text></svg>"],
+  "0 0 160 40",
+  _$escape(text)
+);

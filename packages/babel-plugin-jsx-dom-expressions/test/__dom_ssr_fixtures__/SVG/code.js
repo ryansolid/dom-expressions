@@ -1,7 +1,7 @@
 const template = (
   <svg width="400" height="180">
     <rect
-      strokeWidth="2"
+      stroke-width="2"
       x="50"
       y="20"
       rx="20"
@@ -20,7 +20,7 @@ const template2 = (
   <svg width="400" height="180">
     <rect
       className={state.name}
-      strokeWidth={state.width}
+      stroke-width={state.width}
       x={state.x}
       y={state.y}
       rx="20"
@@ -64,5 +64,11 @@ const template7 = (
         MDN Web Docs
       </text>
     </a>
+  </svg>
+);
+
+const template8 = (
+  <svg viewBox={"0 0 160 40"} xmlns="http://www.w3.org/2000/svg">
+    <text x="10" y="25" textContent={text} />
   </svg>
 );

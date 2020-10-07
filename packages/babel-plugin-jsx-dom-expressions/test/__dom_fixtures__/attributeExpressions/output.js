@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { style as _$style } from "r-dom";
+import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
@@ -36,7 +37,7 @@ const template = (() => {
           selected: selected()
         };
 
-      _v$ !== _p$._v$ && (_el$2.title = _p$._v$ = _v$);
+      _v$ !== _p$._v$ && _$setAttribute(_el$2, "title", (_p$._v$ = _v$));
       _v$2 !== _p$._v$2 && _el$2.style.setProperty("background-color", (_p$._v$2 = _v$2));
       _p$._v$3 = _$classList(_el$2, _v$3, _p$._v$3);
       return _p$;
@@ -68,13 +69,13 @@ const template2 = (() => {
 const template3 = (() => {
   const _el$8 = _tmpl$3.cloneNode(true);
 
-  _el$8.id = state.id;
+  _$setAttribute(_el$8, "id", state.id);
 
   _el$8.style.setProperty("background-color", state.color);
 
   _el$8.textContent = state.content;
 
-  _$effect(() => (_el$8.name = state.name));
+  _$effect(() => _$setAttribute(_el$8, "name", state.name));
 
   return _el$8;
 })();

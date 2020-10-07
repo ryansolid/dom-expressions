@@ -1,7 +1,8 @@
 import * as t from "@babel/types";
 import {
-  Attributes,
-  SVGAttributes,
+  Aliases,
+  Properties,
+  ChildProperties,
   SVGNamespace,
   NonComposedEvents,
   SVGElements
@@ -15,6 +16,7 @@ import {
   registerImportMethod,
   filterChildren,
   toEventName,
+  toPropertyName,
   checkLength,
   isStaticExpressionContainer,
   reservedNameSpaces
@@ -54,7 +56,7 @@ export function transformElement(path, info) {
   return results;
 }
 
-export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
+export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE }) {
   if (name.startsWith("style:")) {
     const key = name.slice(6);
     return t.callExpression(
@@ -74,6 +76,10 @@ export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
     );
   }
 
+  if (name === "class") {
+    return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("className")), value);
+  }
+
   if (name === "classList") {
     registerImportMethod(path, "classList");
     return t.callExpression(
@@ -86,34 +92,26 @@ export function setAttr(path, elem, name, value, isSVG, dynamic, prevId) {
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
-  let isNameSpaced = name.indexOf(":") > -1,
-    isAttribute = name.indexOf("-") > -1 || isNameSpaced,
-    attribute = isSVG ? SVGAttributes[name] : Attributes[name];
-
-  if (attribute) {
-    if (attribute.type === "attribute") isAttribute = true;
-    if (attribute.alias) name = attribute.alias;
-  } else if (isSVG) {
-    isAttribute = true;
-    name = name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
+  if (ChildProperties.has(name) || (!isSVG && Properties.has(name)) || isCE) {
+    if (isCE) name = toPropertyName(name);
+    return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
   }
 
-  if (isAttribute) {
-    const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
-    if (ns) {
-      registerImportMethod(path, "setAttributeNS");
-      return t.callExpression(t.identifier("_$setAttributeNS"), [
-        elem,
-        t.stringLiteral(ns),
-        t.stringLiteral(name),
-        value
-      ]);
-    } else {
-      registerImportMethod(path, "setAttribute");
-      return t.callExpression(t.identifier("_$setAttribute"), [elem, t.stringLiteral(name), value]);
-    }
+  let isNameSpaced = name.indexOf(":") > -1;
+  name = Aliases[name] || name;
+  const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
+  if (ns) {
+    registerImportMethod(path, "setAttributeNS");
+    return t.callExpression(t.identifier("_$setAttributeNS"), [
+      elem,
+      t.stringLiteral(ns),
+      t.stringLiteral(name),
+      value
+    ]);
+  } else {
+    registerImportMethod(path, "setAttribute");
+    return t.callExpression(t.identifier("_$setAttribute"), [elem, t.stringLiteral(name), value]);
   }
-  return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
 }
 
 function transformAttributes(path, results) {
@@ -123,6 +121,7 @@ function transformAttributes(path, results) {
   const spread = t.identifier("_$spread"),
     tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
+    isCE = tagName.includes("-"),
     hasChildren = path.node.children.length > 0,
     attributes = path.get("openingElement").get("attributes"),
     classAttributes = attributes.filter(
@@ -280,7 +279,12 @@ function transformAttributes(path, results) {
             t.expressionStatement(
               t.callExpression(t.identifier(node.name.name.name), [
                 elem,
-                t.arrowFunctionExpression([], t.isJSXEmptyExpression(value.expression) ? t.booleanLiteral(true) : value.expression)
+                t.arrowFunctionExpression(
+                  [],
+                  t.isJSXEmptyExpression(value.expression)
+                    ? t.booleanLiteral(true)
+                    : value.expression
+                )
               ])
             )
           );
@@ -382,31 +386,19 @@ function transformAttributes(path, results) {
             );
             nextElem = textId;
           }
-          results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG });
+          results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG, isCE });
         } else {
           results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value.expression, isSVG))
+            t.expressionStatement(setAttr(attribute, elem, key, value.expression, { isSVG, isCE }))
           );
         }
       } else {
-        let isProperty = false;
         if (t.isJSXExpressionContainer(value)) value = value.expression;
-        if (isSVG) {
-          const attr = SVGAttributes[key];
-
-          if (attr) {
-            if (attr.alias) key = attr.alias;
-            if (attr.type === "property") isProperty = true;
-          } else key = key.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
+        key = Aliases[key] || key;
+        if (value && (ChildProperties.has(key) || (!isSVG && Properties.has(key)))) {
+          results.exprs.push(t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE })));
         } else {
-          const attr = SVGAttributes[key];
-          if (attr && attr.alias) key = attr.alias;
-          if (attr && attr.type === "property") isProperty = true;
-          else key = key.toLowerCase();
-        }
-        if (isProperty) {
-          results.exprs.push(t.expressionStatement(setAttr(attribute, elem, key, value, isSVG)));
-        } else {
+          !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
           results.template += value ? `="${value.value}"` : `=""`;
         }

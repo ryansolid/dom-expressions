@@ -1,6 +1,7 @@
 import { template as _$template } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { memo as _$memo } from "r-dom";
+import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 
 const _tmpl$ = _$template(`<div>First</div>`, 2),
@@ -13,7 +14,7 @@ const multiDynamic = [
   (() => {
     const _el$5 = _tmpl$.cloneNode(true);
 
-    _$effect(() => (_el$5.id = state.first));
+    _$effect(() => _$setAttribute(_el$5, "id", state.first));
 
     return _el$5;
   })(),
@@ -21,7 +22,7 @@ const multiDynamic = [
   (() => {
     const _el$6 = _tmpl$2.cloneNode(true);
 
-    _$effect(() => (_el$6.id = state.last));
+    _$effect(() => _$setAttribute(_el$6, "id", state.last));
 
     return _el$6;
   })(),

@@ -1,260 +1,35 @@
-const Types = {
-    ATTRIBUTE: "attribute",
-    PROPERTY: "property"
-  },
-  Attributes = {
-    href: {
-      type: Types.ATTRIBUTE
-    },
-    width: {
-      type: Types.ATTRIBUTE
-    },
-    height: {
-      type: Types.ATTRIBUTE
-    },
-    role: {
-      type: Types.ATTRIBUTE
-    },
-    style: {
-      type: Types.PROPERTY,
-      alias: "style.cssText"
-    },
-    for: {
-      type: Types.PROPERTY,
-      alias: "htmlFor"
-    },
-    class: {
-      type: Types.PROPERTY,
-      alias: "className"
-    },
-    // React compat
-    spellCheck: {
-      type: Types.PROPERTY,
-      alias: "spellcheck"
-    },
-    allowFullScreen: {
-      type: Types.PROPERTY,
-      alias: "allowFullscreen"
-    },
-    autoCapitalize: {
-      type: Types.PROPERTY,
-      alias: "autocapitalize"
-    },
-    autoFocus: {
-      type: Types.PROPERTY,
-      alias: "autofocus"
-    },
-    autoPlay: {
-      type: Types.PROPERTY,
-      alias: "autoplay"
-    }
-  },
-  SVGAttributes = {
-    innerHTML: {
-      type: Types.PROPERTY
-    },
-    textContent: {
-      type: Types.PROPERTY
-    },
-    innerText: {
-      type: Types.PROPERTY
-    },
-    className: {
-      type: Types.ATTRIBUTE,
-      alias: "class"
-    },
-    htmlFor: {
-      type: Types.ATTRIBUTE,
-      alias: "for"
-    },
-    tabIndex: {
-      type: Types.ATTRIBUTE,
-      alias: "tabindex"
-    },
-    allowReorder: {
-      type: Types.ATTRIBUTE
-    },
-    attributeName: {
-      type: Types.ATTRIBUTE
-    },
-    attributeType: {
-      type: Types.ATTRIBUTE
-    },
-    autoReverse: {
-      type: Types.ATTRIBUTE
-    },
-    baseFrequency: {
-      type: Types.ATTRIBUTE
-    },
-    calcMode: {
-      type: Types.ATTRIBUTE
-    },
-    clipPathUnits: {
-      type: Types.ATTRIBUTE
-    },
-    contentScriptType: {
-      type: Types.ATTRIBUTE
-    },
-    contentStyleType: {
-      type: Types.ATTRIBUTE
-    },
-    diffuseConstant: {
-      type: Types.ATTRIBUTE
-    },
-    edgeMode: {
-      type: Types.ATTRIBUTE
-    },
-    externalResourcesRequired: {
-      type: Types.ATTRIBUTE
-    },
-    filterRes: {
-      type: Types.ATTRIBUTE
-    },
-    filterUnits: {
-      type: Types.ATTRIBUTE
-    },
-    gradientTransform: {
-      type: Types.ATTRIBUTE
-    },
-    gradientUnits: {
-      type: Types.ATTRIBUTE
-    },
-    kernelMatrix: {
-      type: Types.ATTRIBUTE
-    },
-    kernelUnitLength: {
-      type: Types.ATTRIBUTE
-    },
-    keyPoints: {
-      type: Types.ATTRIBUTE
-    },
-    keySplines: {
-      type: Types.ATTRIBUTE
-    },
-    keyTimes: {
-      type: Types.ATTRIBUTE
-    },
-    lengthAdjust: {
-      type: Types.ATTRIBUTE
-    },
-    limitingConeAngle: {
-      type: Types.ATTRIBUTE
-    },
-    markerHeight: {
-      type: Types.ATTRIBUTE
-    },
-    markerUnits: {
-      type: Types.ATTRIBUTE
-    },
-    maskContentUnits: {
-      type: Types.ATTRIBUTE
-    },
-    maskUnits: {
-      type: Types.ATTRIBUTE
-    },
-    numOctaves: {
-      type: Types.ATTRIBUTE
-    },
-    pathLength: {
-      type: Types.ATTRIBUTE
-    },
-    patternContentUnits: {
-      type: Types.ATTRIBUTE
-    },
-    patternTransform: {
-      type: Types.ATTRIBUTE
-    },
-    patternUnits: {
-      type: Types.ATTRIBUTE
-    },
-    pointsAtX: {
-      type: Types.ATTRIBUTE
-    },
-    pointsAtY: {
-      type: Types.ATTRIBUTE
-    },
-    pointsAtZ: {
-      type: Types.ATTRIBUTE
-    },
-    preserveAlpha: {
-      type: Types.ATTRIBUTE
-    },
-    preserveAspectRatio: {
-      type: Types.ATTRIBUTE
-    },
-    primitiveUnits: {
-      type: Types.ATTRIBUTE
-    },
-    refX: {
-      type: Types.ATTRIBUTE
-    },
-    refY: {
-      type: Types.ATTRIBUTE
-    },
-    repeatCount: {
-      type: Types.ATTRIBUTE
-    },
-    repeatDur: {
-      type: Types.ATTRIBUTE
-    },
-    requiredExtensions: {
-      type: Types.ATTRIBUTE
-    },
-    requiredFeatures: {
-      type: Types.ATTRIBUTE
-    },
-    specularConstant: {
-      type: Types.ATTRIBUTE
-    },
-    specularExponent: {
-      type: Types.ATTRIBUTE
-    },
-    spreadMethod: {
-      type: Types.ATTRIBUTE
-    },
-    startOffset: {
-      type: Types.ATTRIBUTE
-    },
-    stdDeviation: {
-      type: Types.ATTRIBUTE
-    },
-    stitchTiles: {
-      type: Types.ATTRIBUTE
-    },
-    surfaceScale: {
-      type: Types.ATTRIBUTE
-    },
-    systemLanguage: {
-      type: Types.ATTRIBUTE
-    },
-    tableValues: {
-      type: Types.ATTRIBUTE
-    },
-    targetX: {
-      type: Types.ATTRIBUTE
-    },
-    targetY: {
-      type: Types.ATTRIBUTE
-    },
-    textLength: {
-      type: Types.ATTRIBUTE
-    },
-    viewBox: {
-      type: Types.ATTRIBUTE
-    },
-    viewTarget: {
-      type: Types.ATTRIBUTE
-    },
-    xChannelSelector: {
-      type: Types.ATTRIBUTE
-    },
-    yChannelSelector: {
-      type: Types.ATTRIBUTE
-    },
-    zoomAndPan: {
-      type: Types.ATTRIBUTE
-    }
-  };
+const Properties = new Set([
+  "className",
+  "autocapitalize",
+  "autofocus",
+  "allowfullscreen",
+  "autoplay",
+  "capture",
+  "checked",
+  "controls",
+  "default",
+  "disabled",
+  "hidden",
+  "indeterminate",
+  "loop",
+  "muted",
+  "novalidate",
+  "open",
+  "readOnly",
+  "required",
+  "reversed",
+  "scoped",
+  "seamless",
+  "selected"
+]);
+
+const ChildProperties = new Set(["innerHTML", "textContent", "innerText", "children"]);
+
+// React Compat
+const Aliases = {
+  className: "class",
+  htmlFor: "for"
+};
 
 // list of Element events that will not be delegated even if camelCased
 const NonComposedEvents = new Set([
@@ -376,6 +151,6 @@ const SVGElements = new Set([
 const SVGNamespace = {
   xlink: "http://www.w3.org/1999/xlink",
   xml: "http://www.w3.org/XML/1998/namespace"
-}
+};
 
-export { Attributes, SVGAttributes, NonComposedEvents, SVGElements, SVGNamespace };
+export { Properties, ChildProperties, Aliases, NonComposedEvents, SVGElements, SVGNamespace };

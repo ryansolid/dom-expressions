@@ -1,12 +1,6 @@
 import { parse, stringify, IDom } from "html-parse-string";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
-declare type AttributeInfo = {
-  [key: string]: {
-    type: string;
-    alias?: string;
-  };
-};
 interface Runtime {
   effect<T>(fn: (prev?: T) => T, init?: T): any;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
@@ -17,8 +11,9 @@ interface Runtime {
   dynamicProperty(props: any, key: string): any;
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
-  Attributes: AttributeInfo;
-  SVGAttributes: AttributeInfo;
+  Aliases: Record<string, string>;
+  Properties: Set<string>;
+  ChildProperties: Set<string>;
   NonComposedEvents: Set<string>;
   SVGElements: Set<string>;
   SVGNamespace: Record<string, string>;
@@ -57,6 +52,10 @@ function replaceAttributes($0: string, $1: string, $2: string, $3: string) {
 
 function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
+}
+
+function toPropertyName(name: string) {
+  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
 }
 
 export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag {
@@ -102,9 +101,8 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     return templates;
   }
 
-  function parseKeyValue(tag: string, name: string, isSVG: boolean, options: any) {
+  function parseKeyValue(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
     let count = options.counter++,
-      info,
       expr = `!doNotWrap ? exprs[${count}]() : exprs[${count}]`;
     if (name === "style") {
       options.exprs.push(`r.style(${tag}, ${expr})`);
@@ -122,27 +120,17 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
         `const v${id} = ${expr}`,
         `for (const e in v${id}) ${tag}.addEventListener(e, v${id}[e], true)`
       );
-    } else if (!isSVG && (info = r.Attributes[name])) {
-      if (info.type === "attribute") {
-        options.exprs.push(`r.setAttribute(${tag},"${name}",${expr})`);
-      } else options.exprs.push(`${tag}.${info.alias} = ${expr}`);
-    } else if (isSVG || name.indexOf("-") > -1 || name.indexOf(":") > -1) {
-      const ns = name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
+    } else if (r.ChildProperties.has(name) || (!isSVG && r.Properties.has(name)) || isCE) {
+      if (isCE) name = toPropertyName(name);
+      options.exprs.push(`${tag}.${name} = ${expr}`);
+    } else {
+      const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);
-      else if ((info = r.SVGAttributes[name])) {
-        if (info.alias) options.exprs.push(`r.setAttribute(${tag},"${info.alias}",${expr})`);
-        else options.exprs.push(`r.setAttribute(${tag},"${name}",${expr})`);
-      } else
-        options.exprs.push(
-          `r.setAttribute(${tag},"${name.replace(
-            /([A-Z])/g,
-            g => `-${g[0].toLowerCase()}`
-          )}",${expr})`
-        );
-    } else options.exprs.push(`${tag}.${name} = ${expr}`);
+      else options.exprs.push(`r.setAttribute(${tag},"${r.Aliases[name] || name}",${expr})`);
+    }
   }
 
-  function parseAttribute(tag: string, name: string, isSVG: boolean, options: any) {
+  function parseAttribute(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
     if (name.slice(0, 2) === "on" && name !== "on" && name !== "onCapture") {
       const lc = name.toLowerCase();
       if (delegateEvents && !r.NonComposedEvents.has(lc.slice(2))) {
@@ -155,7 +143,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
-      parseKeyValue(tag, name, isSVG, childOptions);
+      parseKeyValue(tag, name, isSVG, isCE, childOptions);
       options.decl.push(`_fn${count} = doNotWrap => {\n${childOptions.exprs.join(";\n")};\n}`);
       options.exprs.push(
         `typeof exprs[${count}] === "function" ? r.effect(_fn${count}) : _fn${count}(true)`
@@ -310,12 +298,13 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       );
       const keys = Object.keys(node.attrs);
       const isSVG = r.SVGElements.has(node.name);
+      const isCE = node.name.includes("-");
       for (let i = 0; i < keys.length; i++) {
         const name = keys[i],
           value = node.attrs[name];
         if (value === "###") {
           delete node.attrs[name];
-          parseAttribute(tag, name, isSVG, options);
+          parseAttribute(tag, name, isSVG, isCE, options);
         }
       }
       options.path = tag;
