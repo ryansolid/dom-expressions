@@ -161,7 +161,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       (!isSVG && Properties.has(prop)) ||
       (isCE = node.nodeName.includes("-"))
     ) {
-      if (isCE && prop.indexOf("-")) node[camelize(prop)] = value;
+      if (isCE && prop.indexOf("-")) node[toPropertyName(prop)] = value;
       else node[prop] = value;
     } else {
       const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
@@ -349,8 +349,8 @@ export function generateHydrationScript({
 }
 
 // Internal Functions
-function camelize(name) {
-  return name.replace(/-([a-z])/g, (_, w) => w.toUpperCase());
+function toPropertyName(name) {
+  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
 }
 
 function eventHandler(e) {

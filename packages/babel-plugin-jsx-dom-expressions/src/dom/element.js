@@ -57,14 +57,20 @@ export function transformElement(path, info) {
 }
 
 export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE }) {
-  if (name.startsWith("style:")) {
-    const key = name.slice(6);
+  // pull out namespace
+  let parts, namespace;
+  if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
+    name = parts[1];
+    namespace = parts[0];
+  }
+
+  if (namespace === "style") {
     return t.callExpression(
       t.memberExpression(
         t.memberExpression(elem, t.identifier("style")),
         t.identifier("setProperty")
       ),
-      [t.stringLiteral(key), value]
+      [t.stringLiteral(name), value]
     );
   }
 
@@ -92,7 +98,10 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
-  if (ChildProperties.has(name) || (!isSVG && Properties.has(name)) || isCE) {
+  if (
+    namespace !== "attr" &&
+    (ChildProperties.has(name) || (!isSVG && Properties.has(name)) || isCE || namespace === "prop")
+  ) {
     if (isCE) name = toPropertyName(name);
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
   }
@@ -219,7 +228,7 @@ function transformAttributes(path, results) {
           ? `${node.name.namespace.name}:${node.name.name.name}`
           : node.name.name,
         reservedNameSpace =
-          t.isJSXNamespacedName(node.name) && reservedNameSpaces[node.name.namespace.name];
+          t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
       if (
         t.isJSXNamespacedName(node.name) &&
         reservedNameSpace &&
@@ -396,7 +405,9 @@ function transformAttributes(path, results) {
         if (t.isJSXExpressionContainer(value)) value = value.expression;
         key = Aliases[key] || key;
         if (value && (ChildProperties.has(key) || (!isSVG && Properties.has(key)))) {
-          results.exprs.push(t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE })));
+          results.exprs.push(
+            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE }))
+          );
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;

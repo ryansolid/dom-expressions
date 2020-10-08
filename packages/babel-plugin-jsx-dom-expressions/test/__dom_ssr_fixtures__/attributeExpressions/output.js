@@ -92,6 +92,8 @@ const template4 = (() => {
 const template5 = (() => {
   const _el$10 = _$getNextElement(_tmpl$3, true);
 
+  _el$10.textContent = "Hi";
+
   _$effect(_$p => _$style(_el$10, someStyle(), _$p));
 
   return _el$10;
@@ -140,4 +142,19 @@ const template9 = (() => {
 
   typeof _ref$3 === "function" && _ref$3(_el$14);
   return _el$14;
+})();
+
+const template10 = (() => {
+  const _el$15 = _$getNextElement(_tmpl$3, true);
+
+  another(_el$15, () => thing);
+  something(_el$15, () => true);
+  return _el$15;
+})();
+
+const template11 = (() => {
+  const _el$16 = _$getNextElement(_tmpl$3, true);
+
+  _el$16.htmlFor = thing;
+  return _el$16;
 })();

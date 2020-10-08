@@ -54,6 +54,13 @@ function toAttribute(key, isSVG) {
 }
 
 function setAttr(results, name, value, isSVG) {
+  // strip out namespaces for now, everything at this point is an attribute
+  let parts, namespace;
+  if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
+    name = parts[1];
+    namespace = parts[0];
+  }
+
   name = toAttribute(name, isSVG);
   appendToTemplate(results.template, ` ${name}="`);
   results.template.push(`"`);
@@ -164,7 +171,7 @@ function transformAttributes(path, results) {
         ? `${node.name.namespace.name}:${node.name.name.name}`
         : node.name.name,
       reservedNameSpace =
-        t.isJSXNamespacedName(node.name) && reservedNameSpaces[node.name.namespace.name];
+        t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
     if (
       ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
       !t.isJSXExpressionContainer(value)
@@ -176,7 +183,6 @@ function transformAttributes(path, results) {
       t.isJSXExpressionContainer(value) &&
       (reservedNameSpace ||
         ChildProperties.has(key) ||
-        key.toLowerCase() !== key ||
         !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
     ) {
       if (key === "ref" || key.startsWith("use:") || key.startsWith("on")) return;

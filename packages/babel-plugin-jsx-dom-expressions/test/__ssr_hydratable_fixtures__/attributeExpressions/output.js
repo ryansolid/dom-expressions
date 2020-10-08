@@ -54,7 +54,7 @@ const template4 = _$ssr(
 );
 
 const template5 = _$ssr(
-  ['<div _hk="', '" style="', '"></div>'],
+  ['<div _hk="', '" style="', '">Hi</div>'],
   _$getHydrationKey(),
   _$ssrStyle(someStyle())
 );
@@ -74,3 +74,13 @@ let refTarget;
 const template7 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
 
 const template8 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+
+const template9 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+
+const template10 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+
+const template11 = _$ssr(
+  ['<div _hk="', '" for="', '"></div>'],
+  _$getHydrationKey(),
+  _$escape(thing, true)
+);

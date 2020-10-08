@@ -143,10 +143,17 @@ const template9 = (() => {
   return _el$14;
 })();
 
-const tempate10 = (() => {
+const template10 = (() => {
   const _el$15 = _tmpl$3.cloneNode(true);
 
   another(_el$15, () => thing);
   something(_el$15, () => true);
   return _el$15;
+})();
+
+const template11 = (() => {
+  const _el$16 = _tmpl$3.cloneNode(true);
+
+  _el$16.htmlFor = thing;
+  return _el$16;
 })();
