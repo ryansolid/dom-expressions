@@ -65,4 +65,4 @@ const template9 = _$ssr("<div></div>");
 
 const template10 = _$ssr("<div></div>");
 
-const template11 = _$ssr(['<div for="', '"></div>'], _$escape(thing, true));
+const template11 = _$ssr("<div></div>");

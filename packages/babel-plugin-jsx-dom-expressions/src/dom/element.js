@@ -102,7 +102,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
     namespace !== "attr" &&
     (ChildProperties.has(name) || (!isSVG && Properties.has(name)) || isCE || namespace === "prop")
   ) {
-    if (isCE) name = toPropertyName(name);
+    if (isCE && namespace !== "prop") name = toPropertyName(name);
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
   }
 

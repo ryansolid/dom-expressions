@@ -3,16 +3,18 @@ import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 
 const template = _$ssr(
-  ['<my-element _hk="', '" some-attr="', '" notprop="', '"></my-element>'],
+  ['<my-element _hk="', '" some-attr="', '" notprop="', '" my-attr="', '"></my-element>'],
   _$getHydrationKey(),
   _$escape(name, true),
+  _$escape(data, true),
   _$escape(data, true)
 );
 
 const template2 = _$ssr(
-  ['<my-element _hk="', '" some-attr="', '" notprop="', '"></my-element>'],
+  ['<my-element _hk="', '" some-attr="', '" notprop="', '" my-attr="', '"></my-element>'],
   _$getHydrationKey(),
   _$escape(state.name, true),
+  _$escape(state.data, true),
   _$escape(state.data, true)
 );
 

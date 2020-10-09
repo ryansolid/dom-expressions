@@ -185,7 +185,7 @@ function transformAttributes(path, results) {
         ChildProperties.has(key) ||
         !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
     ) {
-      if (key === "ref" || key.startsWith("use:") || key.startsWith("on")) return;
+      if (key === "ref" || key.startsWith("use:") || key.startsWith("prop:") || key.startsWith("on")) return;
       else if (ChildProperties.has(key)) {
         children = value;
         if (key === "innerHTML") path.doNotEscape = true;

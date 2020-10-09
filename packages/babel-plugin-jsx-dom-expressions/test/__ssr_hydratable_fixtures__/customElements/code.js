@@ -1,6 +1,15 @@
-const template = <my-element some-attr={name} notProp={data} />;
+const template = (
+  <my-element some-attr={name} notProp={data} attr:my-attr={data} prop:someProp={data} />
+);
 
-const template2 = <my-element some-attr={state.name} notProp={state.data} />;
+const template2 = (
+  <my-element
+    some-attr={state.name}
+    notProp={state.data}
+    attr:my-attr={state.data}
+    prop:someProp={state.data}
+  />
+);
 
 const template3 = (
   <my-element>
