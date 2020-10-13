@@ -123,6 +123,9 @@ function transformAttributes(path, results) {
     attributes = path.get("openingElement").get("attributes"),
     classAttributes = attributes.filter(
       a => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
+    ),
+    styleAttributes = attributes.filter(
+      a => t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "style"
     );
   // combine class propertoes
   if (classAttributes.length > 1) {
@@ -144,6 +147,33 @@ function transformAttributes(path, results) {
       i && attributes.splice(classAttributes[i].key);
     }
     first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
+  }
+  if (styleAttributes.length) {
+    const properties = [];
+    const styleAttribute = attributes.find(a => a.node.name.name === "style");
+    for (let i = 0; i < styleAttributes.length; i++) {
+      const attr = styleAttributes[i].node;
+      const computed = !t.isValidIdentifier(attr.name.name.name);
+      properties.push(
+        t.objectProperty(
+          computed ? t.stringLiteral(attr.name.name.name) : t.identifier(attr.name.name.name),
+          t.isJSXExpressionContainer(attr.value) ? attr.value.expression : attr.value
+        )
+      );
+      (styleAttribute || i) && attributes.splice(styleAttributes[i].key);
+    }
+    if (
+      styleAttribute &&
+      t.isJSXExpressionContainer(styleAttribute.node.value) &&
+      t.isObjectExpression(styleAttribute.node.value.expression)
+    ) {
+      styleAttribute.node.value.expression.properties.push(...properties);
+    } else {
+      styleAttributes[0].node = t.jsxAttribute(
+        t.jsxIdentifier("style"),
+        t.jsxExpressionContainer(t.objectExpression(properties))
+      );
+    }
   }
 
   attributes.forEach(attribute => {
@@ -185,7 +215,13 @@ function transformAttributes(path, results) {
         ChildProperties.has(key) ||
         !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
     ) {
-      if (key === "ref" || key.startsWith("use:") || key.startsWith("prop:") || key.startsWith("on")) return;
+      if (
+        key === "ref" ||
+        key.startsWith("use:") ||
+        key.startsWith("prop:") ||
+        key.startsWith("on")
+      )
+        return;
       else if (ChildProperties.has(key)) {
         children = value;
         if (key === "innerHTML") path.doNotEscape = true;

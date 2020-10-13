@@ -51,7 +51,8 @@ const template6 = _$ssr(
   _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",
-    ...props.style
+    ...props.style,
+    "padding-top": props.top
   })
 );
 

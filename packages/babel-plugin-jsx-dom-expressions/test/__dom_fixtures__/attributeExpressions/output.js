@@ -101,16 +101,22 @@ const template5 = (() => {
 const template6 = (() => {
   const _el$11 = _tmpl$3.cloneNode(true);
 
-  _$effect(_$p =>
-    _$style(
-      _el$11,
-      {
-        "background-color": color(),
-        "margin-right": "40px",
-        ...props.style
-      },
-      _$p
-    )
+  _$effect(
+    _p$ => {
+      const _v$4 = {
+          "background-color": color(),
+          "margin-right": "40px",
+          ...props.style
+        },
+        _v$5 = props.top;
+      _p$._v$4 = _$style(_el$11, _v$4, _p$._v$4);
+      _v$5 !== _p$._v$5 && _el$11.style.setProperty("padding-top", (_p$._v$5 = _v$5));
+      return _p$;
+    },
+    {
+      _v$4: undefined,
+      _v$5: undefined
+    }
   );
 
   return _el$11;
