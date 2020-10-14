@@ -22,6 +22,12 @@ declare global {
       (): Element;
     }
 
+    interface ElementClass {
+      render(props: any): Element;
+    }
+
+    type LibraryManagedAttributes<Component, Props> = Props;
+
     // Let TS know the name of the `children` property in order for it to be able to type check them.
     // https://github.com/Microsoft/TypeScript/issues/18357
     interface ElementChildrenAttribute {
@@ -1017,7 +1023,7 @@ declare global {
        */
       hyphens?: CSSWideKeyword | any;
 
-      imeMode?: CSSWideKeyword | any;
+      "ime-mode"?: CSSWideKeyword | any;
 
       /**
        * Defines how the browser distributes space between and around flex items
@@ -1260,12 +1266,12 @@ declare global {
       /**
        * Controls how extra content exceeding the x-axis of the bounding box of an element is rendered.
        */
-      overflowX?: CSSWideKeyword | "auto" | "hidden" | "scroll" | "visible";
+      "overflow-x"?: CSSWideKeyword | "auto" | "hidden" | "scroll" | "visible";
 
       /**
        * Controls how extra content exceeding the y-axis of the bounding box of an element is rendered.
        */
-      overflowY?: CSSWideKeyword | "auto" | "hidden" | "scroll" | "visible";
+      "overflow-y"?: CSSWideKeyword | "auto" | "hidden" | "scroll" | "visible";
 
       /**
        * The padding optional CSS property sets the required padding space on one to four sides of an element.
@@ -1961,7 +1967,7 @@ declare global {
       align?: "start" | "end" | "center" | "baseline" | "stretch" | "left" | "right";
       part?: string;
       exportparts?: string;
-      inputmode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+      inputmode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
     }
 
     // HTML Elements
@@ -2556,7 +2562,12 @@ declare global {
         | "all"
         | "none"
         | "inherit";
-      "shape-rendering"?: "auto" | "optimizeSpeed" | "crispEdges" | "geometricPrecision" | "inherit";
+      "shape-rendering"?:
+        | "auto"
+        | "optimizeSpeed"
+        | "crispEdges"
+        | "geometricPrecision"
+        | "inherit";
       "stop-color"?: string;
       "stop-opacity"?: number | string | "inherit";
       stroke?: string;

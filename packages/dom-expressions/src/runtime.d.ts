@@ -39,7 +39,7 @@ export function generateHydrationScript(options: { eventNames: string[], streami
 
 export function ssrClassList(value: { [k: string]: boolean }): string;
 export function ssrStyle(value: { [k: string]: string }): string;
-export function ssrSpread(accessor: any, isSVG: boolean, skipChildren: boolean): () => string;
+export function ssrSpread(accessor: any): () => string;
 export function escape(html: string): string;
 
 declare type AttributeInfo = {
