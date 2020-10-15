@@ -1968,6 +1968,19 @@ declare global {
       part?: string;
       exportparts?: string;
       inputmode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+
+      // camelcase
+      contentEditable?: boolean | "inherit";
+      contextMenu?: string;
+      tabIndex?: number | string;
+      autoCapitalize?: HTMLAutocapitalize;
+      itemProp?: string;
+      itemScope?: boolean;
+      itemType?: string;
+      itemId?: string;
+      itemRef?: string;
+      exportParts?: string;
+      inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
     }
 
     // HTML Elements
@@ -1982,6 +1995,9 @@ declare global {
       rel?: string;
       target?: string;
       type?: string;
+
+      // camelcase
+      referrerPolicy?: HTMLReferrerPolicy;
     }
 
     interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
@@ -1997,6 +2013,9 @@ declare global {
       rel?: string;
       shape?: "rect" | "circle" | "poly" | "default";
       target?: string;
+
+      // camelcase
+      referrerPolicy?: HTMLReferrerPolicy;
     }
 
     interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2020,6 +2039,13 @@ declare global {
       name?: string;
       type?: "submit" | "reset" | "button";
       value?: string;
+
+      // camelcase
+      formAction?: string;
+      formEnctype?: HTMLFormEncType;
+      formMethod?: HTMLFormMethod;
+      formNoValidate?: boolean;
+      formTarget?: string;
     }
 
     interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2071,6 +2097,10 @@ declare global {
       name?: string;
       novalidate?: boolean;
       target?: string;
+
+      // camelcase
+      acceptCharset?: string;
+      noValidate?: boolean;
     }
 
     interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2083,6 +2113,9 @@ declare global {
       src?: string;
       srcdoc?: string;
       width?: number | string;
+
+      // camelcase
+      referrerPolicy?: HTMLReferrerPolicy;
     }
 
     interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2095,6 +2128,10 @@ declare global {
       src?: string;
       srcset?: string;
       width?: number | string;
+
+      // camelcase
+      crossOrigin?: HTMLCrossorigin;
+      referrerPolicy?: HTMLReferrerPolicy;
     }
 
     interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2130,6 +2167,17 @@ declare global {
       type?: string;
       value?: string | string[] | number;
       width?: number | string;
+
+      // camelcase
+      crossOrigin?: HTMLCrossorigin;
+      formAction?: string;
+      formEnctype?: HTMLFormEncType;
+      formMethod?: HTMLFormMethod;
+      formNoValidate?: boolean;
+      formTarget?: string;
+      maxLength?: number | string;
+      minLength?: number | string;
+      readOnly?: boolean;
     }
 
     interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2169,6 +2217,10 @@ declare global {
       rel?: string;
       sizes?: string;
       type?: string;
+
+      // camelcase
+      crossOrigin?: HTMLCrossorigin;
+      referrerPolicy?: HTMLReferrerPolicy;
     }
 
     interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2184,6 +2236,10 @@ declare global {
       muted?: boolean;
       preload?: "none" | "metadata" | "auto" | "";
       src?: string;
+
+      // camelcase
+      crossOrigin?: HTMLCrossorigin;
+      mediaGroup?: string;
     }
 
     interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2196,6 +2252,9 @@ declare global {
       content?: string;
       httpequiv?: string;
       name?: string;
+
+      // camelcase
+      httpEquiv?: string;
     }
 
     interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2220,6 +2279,9 @@ declare global {
       type?: string;
       usemap?: string;
       width?: number | string;
+
+      //camelcase
+      useMap?: string;
     }
 
     interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2243,6 +2305,7 @@ declare global {
     interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
       form?: string;
       htmlFor?: string;
+      for?: string;
       name?: string;
     }
 
@@ -2267,6 +2330,11 @@ declare global {
       referrerpolicy?: HTMLReferrerPolicy;
       src?: string;
       type?: string;
+
+      // camelcase
+      crossOrigin?: HTMLCrossorigin;
+      noModule?: boolean;
+      referrerPolicy?: HTMLReferrerPolicy;
     }
 
     interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2304,6 +2372,10 @@ declare global {
       colspan?: number | string;
       headers?: string;
       rowspan?: number | string;
+
+      // camelcase
+      colSpan?: number | string;
+      rowSpan?: number | string;
     }
 
     interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2322,15 +2394,25 @@ declare global {
       rows?: number | string;
       value?: string | string[] | number;
       wrap?: "hard" | "soft" | "off";
+
+      // camelcase
+      maxLength?: number | string;
+      minLength?: number | string;
+      readOnly?: boolean;
     }
 
     interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
       colspan?: number | string;
       headers?: string;
       rowspan?: number | string;
+
+      // camelcase
+      colSpan?: number | string;
+      rowSpan?: number | string;
     }
 
     interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
+      datetime?: string;
       dateTime?: string;
     }
 

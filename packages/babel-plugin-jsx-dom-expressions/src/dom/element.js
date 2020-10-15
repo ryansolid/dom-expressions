@@ -108,6 +108,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
 
   let isNameSpaced = name.indexOf(":") > -1;
   name = Aliases[name] || name;
+  !isSVG && (name = name.toLowerCase());
   const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
   if (ns) {
     registerImportMethod(path, "setAttributeNS");
