@@ -35,7 +35,7 @@ export function assignProps(target: any, ...sources: any): any
 export function getHydrationKey(): string;
 export function getNextElement(template: HTMLTemplateElement, isSSR: boolean): Node;
 export function getNextMarker(start: Node): [Node, Array<Node>];
-export function generateHydrationScript(options: { eventNames: string[], streaming: boolean }): string;
+export function generateHydrationScript(options?: { eventNames?: string[], streaming?: boolean, resolved?: boolean }): string;
 
 export function ssrClassList(value: { [k: string]: boolean }): string;
 export function ssrStyle(value: { [k: string]: string }): string;
