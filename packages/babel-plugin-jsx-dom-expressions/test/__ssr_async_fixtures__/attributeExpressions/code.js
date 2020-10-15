@@ -32,9 +32,11 @@ const template3 = (
 
 const template4 = <div class="hi" className={state.class} />;
 
-const template5 = <div style={someStyle()} textContent="Hi" />;
+const template5 = <div class="a" className="b"></div>
 
-const template6 = (
+const template6 = <div style={someStyle()} textContent="Hi" />;
+
+const template7 = (
   <div
     style={{ "background-color": color(), "margin-right": "40px", ...props.style }}
     style:padding-top={props.top}
@@ -42,12 +44,12 @@ const template6 = (
 );
 
 let refTarget;
-const template7 = <div ref={refTarget} />;
+const template8 = <div ref={refTarget} />;
 
-const template8 = <div ref={e => console.log(e)} />;
+const template9 = <div ref={e => console.log(e)} />;
 
-const template9 = <div ref={refFactory()} />;
+const template10 = <div ref={refFactory()} />;
 
-const template10 = <div use:something use:another={thing} />;
+const template11 = <div use:something use:another={thing} />;
 
-const template11 = <div prop:htmlFor={thing} />;
+const template12 = <div prop:htmlFor={thing} />;

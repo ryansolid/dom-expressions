@@ -41,11 +41,16 @@ const template3 = _$ssr(
   _$escape(state.content)
 );
 
-const template4 = _$ssr(['<div class="', '"></div>'], () => `hi ${_$escape(state.class, true)}`);
+const template4 = _$ssr(
+  ['<div class="', '"></div>'],
+  () => `hi ${_$escape(state.class, true) || ""}`
+);
 
-const template5 = _$ssr(['<div style="', '">Hi</div>'], () => _$ssrStyle(someStyle()));
+const template5 = _$ssr(['<div class="', '"></div>'], `a  b`);
 
-const template6 = _$ssr(['<div style="', '"></div>'], () =>
+const template6 = _$ssr(['<div style="', '">Hi</div>'], () => _$ssrStyle(someStyle()));
+
+const template7 = _$ssr(['<div style="', '"></div>'], () =>
   _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",
@@ -56,8 +61,6 @@ const template6 = _$ssr(['<div style="', '"></div>'], () =>
 
 let refTarget;
 
-const template7 = _$ssr("<div></div>");
-
 const template8 = _$ssr("<div></div>");
 
 const template9 = _$ssr("<div></div>");
@@ -65,3 +68,5 @@ const template9 = _$ssr("<div></div>");
 const template10 = _$ssr("<div></div>");
 
 const template11 = _$ssr("<div></div>");
+
+const template12 = _$ssr("<div></div>");

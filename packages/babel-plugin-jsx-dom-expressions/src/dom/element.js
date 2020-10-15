@@ -145,15 +145,15 @@ function transformAttributes(path, results) {
       const attr = classAttributes[i].node,
         isLast = i === classAttributes.length - 1;
       if (!t.isJSXExpressionContainer(attr.value)) {
-        quasis.pop();
+        const prev = quasis.pop();
         quasis.push(
-          t.TemplateElement({ raw: (i ? " " : "") + `${attr.value.value}` + (isLast ? "" : " ") })
+          t.TemplateElement({ raw: (prev ? prev.value.raw : "") + (i ? " " : "") + `${attr.value.value}` + (isLast ? "" : " ") })
         );
       } else {
-        values.push(attr.value.expression);
+        values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
         quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
       }
-      i && attributes.splice(classAttributes[i].key);
+      i && attributes.splice(classAttributes[i].key, 1);
     }
     first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
   }

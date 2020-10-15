@@ -50,16 +50,18 @@ const template3 = _$ssr(
 const template4 = _$ssr(
   ['<div _hk="', '" class="', '"></div>'],
   _$getHydrationKey(),
-  `hi ${_$escape(state.class, true)}`
+  `hi ${_$escape(state.class, true) || ""}`
 );
 
-const template5 = _$ssr(
+const template5 = _$ssr(['<div _hk="', '" class="', '"></div>'], _$getHydrationKey(), `a  b`);
+
+const template6 = _$ssr(
   ['<div _hk="', '" style="', '">Hi</div>'],
   _$getHydrationKey(),
   _$ssrStyle(someStyle())
 );
 
-const template6 = _$ssr(
+const template7 = _$ssr(
   ['<div _hk="', '" style="', '"></div>'],
   _$getHydrationKey(),
   _$ssrStyle({
@@ -72,8 +74,6 @@ const template6 = _$ssr(
 
 let refTarget;
 
-const template7 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
-
 const template8 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
 
 const template9 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
@@ -81,3 +81,5 @@ const template9 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
 const template10 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
 
 const template11 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+
+const template12 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());

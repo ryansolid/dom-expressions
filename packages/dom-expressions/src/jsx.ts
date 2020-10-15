@@ -2262,7 +2262,7 @@ declare global {
       crossorigin?: HTMLCrossorigin;
       defer?: boolean;
       integrity?: string;
-      noodule?: boolean;
+      nomodule?: boolean;
       nonce?: string;
       referrerpolicy?: HTMLReferrerPolicy;
       src?: string;

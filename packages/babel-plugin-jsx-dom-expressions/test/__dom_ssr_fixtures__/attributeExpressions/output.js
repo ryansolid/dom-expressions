@@ -84,7 +84,7 @@ const template3 = (() => {
 const template4 = (() => {
   const _el$9 = _$getNextElement(_tmpl$3, true);
 
-  _$effect(() => (_el$9.className = `hi ${state.class}`));
+  _$effect(() => (_el$9.className = `hi ${state.class || ""}`));
 
   return _el$9;
 })();
@@ -92,15 +92,22 @@ const template4 = (() => {
 const template5 = (() => {
   const _el$10 = _$getNextElement(_tmpl$3, true);
 
-  _el$10.textContent = "Hi";
-
-  _$effect(_$p => _$style(_el$10, someStyle(), _$p));
-
+  _el$10.className = `a  b`;
   return _el$10;
 })();
 
 const template6 = (() => {
   const _el$11 = _$getNextElement(_tmpl$3, true);
+
+  _el$11.textContent = "Hi";
+
+  _$effect(_$p => _$style(_el$11, someStyle(), _$p));
+
+  return _el$11;
+})();
+
+const template7 = (() => {
+  const _el$12 = _$getNextElement(_tmpl$3, true);
 
   _$effect(
     _p$ => {
@@ -110,8 +117,8 @@ const template6 = (() => {
           ...props.style
         },
         _v$5 = props.top;
-      _p$._v$4 = _$style(_el$11, _v$4, _p$._v$4);
-      _v$5 !== _p$._v$5 && _el$11.style.setProperty("padding-top", (_p$._v$5 = _v$5));
+      _p$._v$4 = _$style(_el$12, _v$4, _p$._v$4);
+      _v$5 !== _p$._v$5 && _el$12.style.setProperty("padding-top", (_p$._v$5 = _v$5));
       return _p$;
     },
     {
@@ -120,47 +127,47 @@ const template6 = (() => {
     }
   );
 
-  return _el$11;
+  return _el$12;
 })();
 
 let refTarget;
 
-const template7 = (() => {
-  const _el$12 = _$getNextElement(_tmpl$3, true);
-
-  const _ref$2 = refTarget;
-  typeof _ref$2 === "function" ? _ref$2(_el$12) : (refTarget = _el$12);
-  return _el$12;
-})();
-
 const template8 = (() => {
   const _el$13 = _$getNextElement(_tmpl$3, true);
 
-  (e => console.log(e))(_el$13);
-
+  const _ref$2 = refTarget;
+  typeof _ref$2 === "function" ? _ref$2(_el$13) : (refTarget = _el$13);
   return _el$13;
 })();
 
 const template9 = (() => {
   const _el$14 = _$getNextElement(_tmpl$3, true);
 
-  const _ref$3 = refFactory();
+  (e => console.log(e))(_el$14);
 
-  typeof _ref$3 === "function" && _ref$3(_el$14);
   return _el$14;
 })();
 
 const template10 = (() => {
   const _el$15 = _$getNextElement(_tmpl$3, true);
 
-  another(_el$15, () => thing);
-  something(_el$15, () => true);
+  const _ref$3 = refFactory();
+
+  typeof _ref$3 === "function" && _ref$3(_el$15);
   return _el$15;
 })();
 
 const template11 = (() => {
   const _el$16 = _$getNextElement(_tmpl$3, true);
 
-  _el$16.htmlFor = thing;
+  another(_el$16, () => thing);
+  something(_el$16, () => true);
   return _el$16;
+})();
+
+const template12 = (() => {
+  const _el$17 = _$getNextElement(_tmpl$3, true);
+
+  _el$17.htmlFor = thing;
+  return _el$17;
 })();
