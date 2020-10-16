@@ -1,4 +1,3 @@
-import { template } from "@babel/core";
 import { parse, stringify, IDom } from "html-parse-string";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
