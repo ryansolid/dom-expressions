@@ -161,7 +161,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       (!isSVG && Properties.has(prop)) ||
       (isCE = node.nodeName.includes("-"))
     ) {
-      if (isCE && prop.indexOf("-")) node[toPropertyName(prop)] = value;
+      if (isCE) node[toPropertyName(prop)] = value;
       else node[prop] = value;
     } else {
       const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
