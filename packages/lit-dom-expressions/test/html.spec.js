@@ -12,7 +12,8 @@ const FIXTURES = [
   '<div id="main"><div>John R.<span>Smith</span></div><div>After</div></div>',
   "<div>John R.<span>Smith</span></div>",
   "<div><div>Hi</div></div>",
-  "<div><b>Hello, my name is: <i>John</i></b></div>"
+  "<div><b>Hello, my name is: <i>John</i></b></div>",
+  "<style>.something{color:red}</style>"
 ];
 
 describe("Test HTML", () => {
@@ -159,4 +160,14 @@ describe("Test HTML", () => {
     div.appendChild(template);
     expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[7]);
   })
+});
+
+test("Test style tag", () => {
+  const color = "red";
+  const template = html`
+    <style>.something{color:${color}}</style>
+  `;
+  const div = document.createElement("div");
+  div.appendChild(template);
+  expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[8]);
 });

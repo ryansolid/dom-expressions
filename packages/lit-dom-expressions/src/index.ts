@@ -1,3 +1,4 @@
+import { template } from "@babel/core";
 import { parse, stringify, IDom } from "html-parse-string";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
@@ -41,6 +42,7 @@ const findAttributes = new RegExp(
   "gi"
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
+const marker = "<!--#-->";
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -95,6 +97,18 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     for (let i = 0; i < html.length; i++) {
       templates.push(document.createElement("template"));
       templates[i].innerHTML = html[i];
+      const nomarkers = templates[i].content.querySelectorAll("script,style");
+      for (let j = 0; j < nomarkers.length; j++) {
+        const d = (nomarkers[j].firstChild as Text)!.data || "";
+        if (d.indexOf(marker) > -1) {
+          const parts = d.split(marker).reduce((memo, p, i) => {
+            i && memo.push("");
+            memo.push(p);
+            return memo;
+          }, [] as string[]);
+          nomarkers[i].firstChild?.replaceWith(...parts);
+        }
+      }
     }
     (templates[0] as CreateableTemplate).create = code;
     cache.set(statics, templates);
