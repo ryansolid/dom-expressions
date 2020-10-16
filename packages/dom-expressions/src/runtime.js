@@ -243,38 +243,51 @@ export function ssrSpread(props) {
   };
 }
 
-const ATTR_REGEX = /[&<"]/,
-  CONTENT_REGEX = /[&<]/;
+export function escape(s, attr) {
+  if (typeof s !== "string") return s;
+  const delim = attr ? '"' : '<';
+  const escDelim = attr ? '&quot;' : '&lt;';
+  let iDelim = s.indexOf(delim);
+  let iAmp = s.indexOf('&');
 
-// Modified from https://github.com/component/escape-html by Doug Wilson MIT
-export function escape(html, attr) {
-  if (typeof html !== "string") return html;
-  const match = (attr ? ATTR_REGEX : CONTENT_REGEX).exec(html);
-  if (!match) return html;
-  let index = 0;
-  let lastIndex = 0;
-  let out = "";
-  let escape = "";
-  for (index = match.index; index < html.length; index++) {
-    switch (html.charCodeAt(index)) {
-      case 34: // "
-        if (!attr) continue;
-        escape = "&quot;";
-        break;
-      case 38: // &
-        escape = "&amp;";
-        break;
-      case 60: // <
-        escape = "&lt;";
-        break;
-      default:
-        continue;
+  if (iDelim < 0 && iAmp < 0)
+    return s;
+
+  let left = 0, out = '';
+
+  while (iDelim >= 0 && iAmp >= 0) {
+    if (iDelim < iAmp) {
+      if (left < iDelim)
+        out += s.substring(left, iDelim);
+      out += escDelim;
+      left = iDelim + 1;
+      iDelim = s.indexOf(delim, left);
+    } else {
+      if (left < iAmp)
+        out += s.substring(left, iAmp);
+      out += '&amp;';
+      left = iAmp + 1;
+      iAmp = s.indexOf('&', left);
     }
-    if (lastIndex !== index) out += html.substring(lastIndex, index);
-    lastIndex = index + 1;
-    out += escape;
   }
-  return lastIndex !== index ? out + html.substring(lastIndex, index) : out;
+
+  if (iDelim >= 0) {
+    do {
+      if (left < iDelim)
+        out += s.substring(left, iDelim);
+      out += escDelim;
+      left = iDelim + 1;
+      iDelim = s.indexOf(delim, left);
+    } while (iDelim >= 0);
+  } else while (iAmp >= 0) {
+    if (left < iAmp)
+      out += s.substring(left, iAmp);
+    out += '&amp;'
+    left = iAmp + 1;
+    iAmp = s.indexOf('&', left);
+  }
+
+  return left < s.length ? out + s.substring(left) : out;
 }
 
 // Hydrate
