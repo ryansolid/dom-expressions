@@ -106,7 +106,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
             memo.push(p);
             return memo;
           }, [] as string[]);
-          nomarkers[i].firstChild?.replaceWith(...parts);
+          nomarkers[i].firstChild!.replaceWith(...parts);
         }
       }
     }
