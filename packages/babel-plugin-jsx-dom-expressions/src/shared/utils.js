@@ -62,7 +62,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   }
   const expr = path.node;
   if (t.isFunction(expr)) return false;
-  if (expr.leadingComments && expr.leadingComments[0].value.trim() === config.staticMarker) {
+  if (expr.leadingComments && expr.leadingComments[0] && expr.leadingComments[0].value.trim() === config.staticMarker) {
     expr.leadingComments.shift();
     return false;
   }
