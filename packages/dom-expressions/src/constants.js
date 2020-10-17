@@ -20,7 +20,8 @@ const Properties = new Set([
   "reversed",
   "scoped",
   "seamless",
-  "selected"
+  "selected",
+  "value"
 ]);
 
 const ChildProperties = new Set(["innerHTML", "textContent", "innerText", "children"]);
