@@ -98,11 +98,13 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
+  const isChildProp = ChildProperties.has(name);
+  const isProp = Properties.has(name);
   if (
     namespace !== "attr" &&
-    (ChildProperties.has(name) || (!isSVG && Properties.has(name)) || isCE || namespace === "prop")
+    (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")
   ) {
-    if (isCE && namespace !== "prop") name = toPropertyName(name);
+    if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
   }
 

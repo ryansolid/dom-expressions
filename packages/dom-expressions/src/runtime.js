@@ -126,7 +126,7 @@ export function insert(parent, accessor, marker, initial) {
 }
 
 export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
-  let isCE;
+  let isCE, isProp, isChildProp;
   for (const prop in props) {
     if (prop === "children") {
       if (!skipChildren) insertExpression(node, props.children);
@@ -157,11 +157,11 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
         delegateEvents([name]);
       } else node[lc] = value;
     } else if (
-      ChildProperties.has(prop) ||
-      (!isSVG && Properties.has(prop)) ||
+      (isChildProp = ChildProperties.has(prop)) ||
+      (!isSVG && (isProp = Properties.has(prop))) ||
       (isCE = node.nodeName.includes("-"))
     ) {
-      if (isCE) node[toPropertyName(prop)] = value;
+      if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
       else node[prop] = value;
     } else {
       const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
