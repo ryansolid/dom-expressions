@@ -37,7 +37,9 @@ const template5 = _$ssr(
 );
 
 const template6 = _$createComponent(Module, {
-  children: dynamic.children
+  get children() {
+    return dynamic.children;
+  }
 });
 
 const template7 = _$ssr(

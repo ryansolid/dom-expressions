@@ -24,7 +24,9 @@ const template4 = _$ssr(["<module>", "</module>"], _$createComponent(Hello, {}))
 const template5 = _$ssr(["<module>", "</module>"], _$escape(dynamic.children));
 
 const template6 = _$createComponent(Module, {
-  children: dynamic.children
+  get children() {
+    return dynamic.children;
+  }
 });
 
 const template7 = _$ssr(["<module ", "></module>"], _$ssrSpread(dynamic, false, false));
@@ -65,7 +67,9 @@ const template14 = _$createComponent(Module, {
 const template15 = _$ssr(["<module>", "</module>"], _$escape(dynamic.children));
 
 const template16 = _$createComponent(Module, {
-  children: dynamic.children
+  get children() {
+    return dynamic.children;
+  }
 });
 
 const template18 = _$ssr(["<module>Hi ", "</module>"], _$escape(children));

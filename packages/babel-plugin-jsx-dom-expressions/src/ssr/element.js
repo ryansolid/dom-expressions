@@ -160,7 +160,7 @@ function transformAttributes(path, results) {
           t.isJSXExpressionContainer(attr.value) ? attr.value.expression : attr.value
         )
       );
-      (styleAttribute || i) && attributes.splice(styleAttributes[i].key);
+      (styleAttribute || i) && attributes.splice(styleAttributes[i].key, 1);
     }
     if (
       styleAttribute &&
@@ -185,7 +185,8 @@ function transformAttributes(path, results) {
       results.templateValues.push(
         t.callExpression(t.identifier("_$ssrSpread"), [
           isDynamic(attribute.get("argument"), {
-            checkMember: true
+            checkMember: true,
+            native: true
           })
             ? t.arrowFunctionExpression([], node.argument)
             : node.argument,
@@ -230,7 +231,8 @@ function transformAttributes(path, results) {
           doEscape = true;
         if (
           isDynamic(attribute.get("value").get("expression"), {
-            checkMember: true
+            checkMember: true,
+            native: true
           })
         )
           dynamic = true;

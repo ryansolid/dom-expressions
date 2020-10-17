@@ -49,10 +49,17 @@ const template = props => {
 
 const template2 = _$createComponent(Child, {
   name: "Jake",
-  dynamic: state.data,
+
+  get dynamic() {
+    return state.data;
+  },
+
   stale: state.data,
   handleClick: clickHandler,
-  "hyphen-ated": state.data
+
+  get ["hyphen-ated"]() {
+    return state.data;
+  }
 });
 
 const template3 = _$createComponent(Child, {
@@ -68,12 +75,19 @@ const template4 = _$createComponent(Child, {
 });
 
 const template5 = _$createComponent(Child, {
-  dynamic: state.dynamic,
-  children: state.dynamic
+  get dynamic() {
+    return state.dynamic;
+  },
+
+  get children() {
+    return state.dynamic;
+  }
 }); // builtIns
 
 const template6 = _$createComponent(_$For, {
-  each: state.list,
+  get each() {
+    return state.list;
+  },
 
   get fallback() {
     return _$createComponent(Loading, {});
@@ -84,7 +98,7 @@ const template6 = _$createComponent(_$For, {
 
 const template7 = _$createComponent(Child, {
   get children() {
-    return [_$ssr("<div></div>"), state.dynamic];
+    return [_$ssr("<div></div>"), () => state.dynamic];
   }
 });
 
@@ -157,12 +171,19 @@ class Template13 {
     const _self$ = this;
 
     _$createComponent(Component, {
-      prop: _self$.something,
+      get prop() {
+        return _self$.something;
+      },
 
       get children() {
         return _$createComponent(Nested, {
-          prop: _self$.data,
-          children: _self$.content
+          get prop() {
+            return _self$.data;
+          },
+
+          get children() {
+            return _self$.content;
+          }
         });
       }
     });

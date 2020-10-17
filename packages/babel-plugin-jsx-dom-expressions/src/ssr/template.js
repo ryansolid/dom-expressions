@@ -1,6 +1,5 @@
 import * as t from "@babel/types";
 import { registerImportMethod } from "../shared/utils";
-import config from "../config";
 
 export function createTemplate(path, result) {
   if (!result.template) {

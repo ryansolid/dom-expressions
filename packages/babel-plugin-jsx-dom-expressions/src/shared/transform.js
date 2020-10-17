@@ -86,13 +86,15 @@ export function transformNode(path, info = {}) {
     if (
       !isDynamic(path.get("expression"), {
         checkMember: true,
-        checkTags: !!info.componentChild
+        checkTags: !!info.componentChild,
+        native: !info.componentChild
       })
     ) {
       return { exprs: [node.expression], template: "" };
     }
     const expr =
       config.wrapConditionals &&
+      (config.generate !== "ssr" || config.async) &&
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))
         ? transformCondition(path.get("expression"))
         : t.arrowFunctionExpression([], node.expression);
@@ -115,7 +117,8 @@ export function transformNode(path, info = {}) {
   } else if (t.isJSXSpreadChild(node)) {
     if (
       !isDynamic(path.get("expression"), {
-        checkMember: true
+        checkMember: true,
+        native: !info.componentChild
       })
     )
       return { exprs: [node.expression], template: "" };

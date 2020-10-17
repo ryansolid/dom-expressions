@@ -34,21 +34,31 @@ const template11 = _$ssr(
 );
 
 const template12 = _$createComponent(Comp, {
-  render: state.dynamic ? good() : bad
+  get render() {
+    return state.dynamic ? good() : bad;
+  }
 }); // no dynamic predicate
 
 const template13 = _$createComponent(Comp, {
-  render: state.dynamic ? good : bad
+  get render() {
+    return state.dynamic ? good : bad;
+  }
 });
 
 const template14 = _$createComponent(Comp, {
-  render: state.dynamic && good()
+  get render() {
+    return state.dynamic && good();
+  }
 }); // no dynamic predicate
 
 const template15 = _$createComponent(Comp, {
-  render: state.dynamic && good
+  get render() {
+    return state.dynamic && good;
+  }
 });
 
 const template16 = _$createComponent(Comp, {
-  render: state.dynamic || good()
+  get render() {
+    return state.dynamic || good();
+  }
 });
