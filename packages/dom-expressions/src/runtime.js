@@ -245,47 +245,44 @@ export function ssrSpread(props) {
 
 export function escape(s, attr) {
   if (typeof s !== "string") return s;
-  const delim = attr ? '"' : '<';
-  const escDelim = attr ? '&quot;' : '&lt;';
+  const delim = attr ? '"' : "<";
+  const escDelim = attr ? "&quot;" : "&lt;";
   let iDelim = s.indexOf(delim);
-  let iAmp = s.indexOf('&');
+  let iAmp = s.indexOf("&");
 
-  if (iDelim < 0 && iAmp < 0)
-    return s;
+  if (iDelim < 0 && iAmp < 0) return s;
 
-  let left = 0, out = '';
+  let left = 0,
+    out = "";
 
   while (iDelim >= 0 && iAmp >= 0) {
     if (iDelim < iAmp) {
-      if (left < iDelim)
-        out += s.substring(left, iDelim);
+      if (left < iDelim) out += s.substring(left, iDelim);
       out += escDelim;
       left = iDelim + 1;
       iDelim = s.indexOf(delim, left);
     } else {
-      if (left < iAmp)
-        out += s.substring(left, iAmp);
-      out += '&amp;';
+      if (left < iAmp) out += s.substring(left, iAmp);
+      out += "&amp;";
       left = iAmp + 1;
-      iAmp = s.indexOf('&', left);
+      iAmp = s.indexOf("&", left);
     }
   }
 
   if (iDelim >= 0) {
     do {
-      if (left < iDelim)
-        out += s.substring(left, iDelim);
+      if (left < iDelim) out += s.substring(left, iDelim);
       out += escDelim;
       left = iDelim + 1;
       iDelim = s.indexOf(delim, left);
     } while (iDelim >= 0);
-  } else while (iAmp >= 0) {
-    if (left < iAmp)
-      out += s.substring(left, iAmp);
-    out += '&amp;'
-    left = iAmp + 1;
-    iAmp = s.indexOf('&', left);
-  }
+  } else
+    while (iAmp >= 0) {
+      if (left < iAmp) out += s.substring(left, iAmp);
+      out += "&amp;";
+      left = iAmp + 1;
+      iAmp = s.indexOf("&", left);
+    }
 
   return left < s.length ? out + s.substring(left) : out;
 }
@@ -392,7 +389,8 @@ function eventHandler(e) {
       data !== undefined ? handler(data, e) : handler(e);
       if (e.cancelBubble) return;
     }
-    node = node.host && node.host instanceof Node ? node.host : node.parentNode;
+    node =
+      node.host && node.host !== node && node.host instanceof Node ? node.host : node.parentNode;
   }
 }
 
