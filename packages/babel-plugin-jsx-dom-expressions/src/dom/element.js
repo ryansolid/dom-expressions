@@ -407,7 +407,7 @@ function transformAttributes(path, results) {
       } else {
         if (t.isJSXExpressionContainer(value)) value = value.expression;
         key = Aliases[key] || key;
-        if (value && (ChildProperties.has(key) || (!isSVG && Properties.has(key)))) {
+        if (value && ChildProperties.has(key)) {
           results.exprs.push(
             t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE }))
           );
