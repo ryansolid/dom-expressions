@@ -12,6 +12,4 @@ export function ssrSpread(accessor: any): () => string;
 export function escape(html: string): string;
 export function generateHydrationScript(options?: {
   eventNames?: string[];
-  streaming?: boolean;
-  resolved?: boolean;
 }): string;

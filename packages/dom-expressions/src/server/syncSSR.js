@@ -1,4 +1,5 @@
 import { Readable } from "stream";
+import { resolveSSRNode } from "./ssr";
 export * from "./ssr";
 
 export function renderToNodeStream(code) {
@@ -44,14 +45,6 @@ export function ssr(t, ...nodes) {
     t = result;
   }
   return { t };
-}
-
-export function resolveSSRNode(node) {
-  if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
-  const t = typeof node;
-  if (node && t === "object") return resolveSSRNode(node.t);
-  if (t === "function") return resolveSSRNode(node());
-  return t === "string" ? node : JSON.stringify(node);
 }
 
 export function generateHydrationScript({

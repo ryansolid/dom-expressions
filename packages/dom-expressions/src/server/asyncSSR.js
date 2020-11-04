@@ -1,4 +1,5 @@
 import { root, memo } from "rxcore";
+import { resolveSSRNode } from "./ssr";
 export * from "./ssr";
 
 export function renderToString(code, options = {}) {
@@ -6,7 +7,6 @@ export function renderToString(code, options = {}) {
   const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
   hydration.resources = {};
-  hydration.asyncSSR = true;
   return root(() => {
     const rendered = code();
     if (typeof rendered === "object" && "then" in rendered) {
@@ -38,14 +38,6 @@ export function ssr(t, ...nodes) {
       return result;
     }
   };
-}
-
-export function resolveSSRNode(node) {
-  if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
-  const t = typeof node;
-  if (node && t === "object") return resolveSSRNode(node.t);
-  if (t === "function") return resolveSSRNode(node());
-  return t === "string" ? node : JSON.stringify(node);
 }
 
 export function generateHydrationScript({
