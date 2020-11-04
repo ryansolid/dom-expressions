@@ -6,7 +6,7 @@ import { getHydrationKey as _$getHydrationKey } from "r-dom";
 
 const template = _$ssr(
   [
-    '<svg _hk="',
+    '<svg data-hk="',
     '" width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%"></stop></linearGradient></svg>'
   ],
   _$getHydrationKey()
@@ -14,7 +14,7 @@ const template = _$ssr(
 
 const template2 = _$ssr(
   [
-    '<svg _hk="',
+    '<svg data-hk="',
     '" width="400" height="180"><rect class="',
     '" stroke-width="',
     '" x="',
@@ -35,25 +35,25 @@ const template2 = _$ssr(
 );
 
 const template3 = _$ssr(
-  ['<svg _hk="', '" width="400" height="180"><rect ', "></rect></svg>"],
+  ['<svg data-hk="', '" width="400" height="180"><rect ', "></rect></svg>"],
   _$getHydrationKey(),
   _$ssrSpread(props, true, false)
 );
 
 const template4 = _$ssr(
-  ['<rect _hk="', '" x="50" y="20" width="150" height="150"></rect>'],
+  ['<rect data-hk="', '" x="50" y="20" width="150" height="150"></rect>'],
   _$getHydrationKey()
 );
 
 const template5 = _$ssr(
-  ['<rect _hk="', '" x="50" y="20" width="150" height="150"></rect>'],
+  ['<rect data-hk="', '" x="50" y="20" width="150" height="150"></rect>'],
   _$getHydrationKey()
 );
 
 const template6 = _$createComponent(Component, {
   get children() {
     return _$ssr(
-      ['<rect _hk="', '" x="50" y="20" width="150" height="150"></rect>'],
+      ['<rect data-hk="', '" x="50" y="20" width="150" height="150"></rect>'],
       _$getHydrationKey()
     );
   }
@@ -61,7 +61,7 @@ const template6 = _$createComponent(Component, {
 
 const template7 = _$ssr(
   [
-    '<svg _hk="',
+    '<svg data-hk="',
     '" viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><a xlink:href="',
     '"><text x="10" y="25">MDN Web Docs</text></a></svg>'
   ],
@@ -71,7 +71,7 @@ const template7 = _$ssr(
 
 const template8 = _$ssr(
   [
-    '<svg _hk="',
+    '<svg data-hk="',
     '" viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><text x="10" y="25">',
     "</text></svg>"
   ],

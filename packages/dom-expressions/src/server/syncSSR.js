@@ -1,4 +1,5 @@
 import { Readable } from "stream";
+export * from "./ssr";
 
 export function renderToNodeStream(code) {
   const stream = new Readable({
@@ -51,4 +52,17 @@ export function resolveSSRNode(node) {
   if (node && t === "object") return resolveSSRNode(node.t);
   if (t === "function") return resolveSSRNode(node());
   return t === "string" ? node : JSON.stringify(node);
+}
+
+export function generateHydrationScript({
+  eventNames = ["click", "input", "blur"],
+  streaming
+} = {}) {
+  let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
+    '","'
+  )}"].forEach(t=>document.addEventListener(t,e))})();`;
+  if (streaming) {
+    s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`;
+  }
+  return s;
 }

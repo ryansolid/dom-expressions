@@ -6,7 +6,7 @@ import { createComponent as _$createComponent } from "r-dom";
 import { ssr as _$ssr } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 
-const children = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+const children = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 
 const dynamic = {
   children
@@ -17,21 +17,21 @@ const template = _$createComponent(Module, {
 });
 
 const template2 = _$ssr(
-  ['<module _hk="', '">', "</module>"],
+  ['<module data-hk="', '">', "</module>"],
   _$getHydrationKey(),
   _$escape(children)
 );
 
-const template3 = _$ssr(['<module _hk="', '">Hello</module>'], _$getHydrationKey());
+const template3 = _$ssr(['<module data-hk="', '">Hello</module>'], _$getHydrationKey());
 
 const template4 = _$ssr(
-  ['<module _hk="', '">', "</module>"],
+  ['<module data-hk="', '">', "</module>"],
   _$getHydrationKey(),
   _$createComponent(Hello, {})
 );
 
 const template5 = _$ssr(
-  ['<module _hk="', '">', "</module>"],
+  ['<module data-hk="', '">', "</module>"],
   _$getHydrationKey(),
   _$escape(dynamic.children)
 );
@@ -43,19 +43,19 @@ const template6 = _$createComponent(Module, {
 });
 
 const template7 = _$ssr(
-  ['<module _hk="', '" ', "></module>"],
+  ['<module data-hk="', '" ', "></module>"],
   _$getHydrationKey(),
   _$ssrSpread(dynamic, false, false)
 );
 
 const template8 = _$ssr(
-  ['<module _hk="', '" ', ">Hello</module>"],
+  ['<module data-hk="', '" ', ">Hello</module>"],
   _$getHydrationKey(),
   _$ssrSpread(dynamic, false, true)
 );
 
 const template9 = _$ssr(
-  ['<module _hk="', '" ', ">", "</module>"],
+  ['<module data-hk="', '" ', ">", "</module>"],
   _$getHydrationKey(),
   _$ssrSpread(dynamic, false, true),
   _$escape(dynamic.children)
@@ -75,7 +75,7 @@ const template10 = _$createComponent(
 );
 
 const template11 = _$ssr(
-  ['<module _hk="', '">', "</module>"],
+  ['<module data-hk="', '">', "</module>"],
   _$getHydrationKey(),
   _$escape(state.children)
 );

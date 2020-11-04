@@ -32,7 +32,7 @@ const Aliases = {
   htmlFor: "for"
 };
 
-// list of Element events that will not be delegated even if camelCased
+// list of Element events that will not be delegated
 const NonComposedEvents = new Set([
   "abort",
   "animationstart",

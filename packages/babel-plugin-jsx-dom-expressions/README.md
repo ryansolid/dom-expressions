@@ -79,7 +79,7 @@ The name of the runtime module to import the methods from.
 
 ### generate
 
-The output mode of the compiler. Can be "dom"(default), "ssr". "dom" is standard output. "ssr" is for server side rendering that is hydrateable.
+The output mode of the compiler. Can be "dom"(default), "ssr". "dom" is standard output. "ssr" is for server side rendering of strings.
 
 ### hydratable
 

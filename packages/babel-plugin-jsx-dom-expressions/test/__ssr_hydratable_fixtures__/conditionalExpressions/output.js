@@ -3,64 +3,64 @@ import { ssr as _$ssr } from "r-dom";
 import { escape as _$escape } from "r-dom";
 import { getHydrationKey as _$getHydrationKey } from "r-dom";
 
-const template1 = _$ssr(['<div _hk="', '">', "</div>"], _$getHydrationKey(), _$escape(simple));
+const template1 = _$ssr(['<div data-hk="', '">', "</div>"], _$getHydrationKey(), _$escape(simple));
 
 const template2 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   _$escape(state.dynamic)
 );
 
 const template3 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   simple ? _$escape(good) : _$escape(bad)
 );
 
 const template4 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   simple ? _$escape(good()) : _$escape(bad)
 );
 
 const template5 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   state.dynamic ? _$escape(good()) : _$escape(bad)
 );
 
 const template6 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   state.dynamic && _$escape(good())
 );
 
 const template7 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   state.count > 5 ? (state.dynamic ? _$escape(best) : _$escape(good())) : _$escape(bad)
 );
 
 const template8 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   state.dynamic && state.something && _$escape(good())
 );
 
 const template9 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   (state.dynamic && _$escape(good())) || _$escape(bad)
 );
 
 const template10 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"
 );
 
 const template11 = _$ssr(
-  ['<div _hk="', '">', "</div>"],
+  ['<div data-hk="', '">', "</div>"],
   _$getHydrationKey(),
   state.a ? _$escape(a()) : state.b ? _$escape(b()) : state.c ? "c" : "fallback"
 );

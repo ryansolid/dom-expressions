@@ -58,7 +58,6 @@ export function appendTemplates(path, templates) {
 
 function registerTemplate(path, results) {
   const { generate, hydratable } = config;
-  const generateIsHydrateOrSsr = hydratable || generate === "dom-ssr";
   let decl;
   if (results.template.length) {
     const templates =
@@ -76,13 +75,13 @@ function registerTemplate(path, results) {
         isSVG: results.isSVG
       });
     }
-    generateIsHydrateOrSsr && registerImportMethod(path, "getNextElement");
+    hydratable && registerImportMethod(path, "getNextElement");
     decl = t.variableDeclarator(
       results.id,
-      generateIsHydrateOrSsr
+      hydratable
         ? t.callExpression(
             t.identifier("_$getNextElement"),
-            generate === "dom-ssr" ? [templateId, t.booleanLiteral(true)] : [templateId]
+            [templateId]
           )
         : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
             t.booleanLiteral(true)

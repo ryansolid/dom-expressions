@@ -1,5 +1,5 @@
 import * as r from "../src/runtime";
-import * as r2 from "../src/asyncSSR";
+import * as r2 from "../src/server/asyncSSR";
 import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" class="selected" style="color:red"><h1 custom-attr="1" disabled="" title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
@@ -17,16 +17,16 @@ const Comp1 = () => {
       "custom-attr": "1"
     });
 
-  return r2.ssr`<div id="main" ${r.ssrSpread(results, false, true)} class="${r.ssrClassList({
+  return r2.ssr`<div id="main" ${r2.ssrSpread(results, false, true)} class="${r2.ssrClassList({
     selected: selected()
-  })}" style="${r.ssrStyle({
+  })}" style="${r2.ssrStyle({
     color: color()
-  })}"><h1 ${r.ssrSpread(() => dynamic(), false, true)} disabled="" title="${() =>
+  })}"><h1 ${r2.ssrSpread(() => dynamic(), false, true)} disabled="" title="${() =>
     welcoming()}" style="${() =>
-    r.ssrStyle({
+    r2.ssrStyle({
       "background-color": color()
     })}" class="${() =>
-    r.ssrClassList({
+    r2.ssrClassList({
       selected: selected()
     })}"><a href="/">Welcome</a></h1></div>`;
 };
@@ -34,7 +34,7 @@ const Comp1 = () => {
 const Comp2 = () => {
   const greeting = "Hello",
     name="<div/>"
-  return r2.ssr`<span> ${r.escape(greeting)} ${r.escape(name)} </span>`;
+  return r2.ssr`<span> ${r2.escape(greeting)} ${r2.escape(name)} </span>`;
 }
 
 describe("renderToString", () => {
