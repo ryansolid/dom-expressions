@@ -1,5 +1,5 @@
-import { ssr as _$ssr } from "r-dom";
-import { getHydrationKey as _$getHydrationKey } from "r-dom";
+import { ssr as _$ssr } from "r-server";
+import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const template = _$ssr(
   [

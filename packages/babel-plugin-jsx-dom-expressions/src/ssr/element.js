@@ -179,11 +179,11 @@ function transformAttributes(path, results) {
   attributes.forEach(attribute => {
     const node = attribute.node;
     if (t.isJSXSpreadAttribute(node)) {
-      registerImportMethod(attribute, "ssrSpread");
+      registerImportMethod(attribute, "spread");
       appendToTemplate(results.template, " ");
       results.template.push("");
       results.templateValues.push(
-        t.callExpression(t.identifier("_$ssrSpread"), [
+        t.callExpression(t.identifier("_$spread"), [
           isDynamic(attribute.get("argument"), {
             checkMember: true,
             native: true
@@ -265,14 +265,14 @@ function transformAttributes(path, results) {
             }
             value.expression = res;
           } else {
-            registerImportMethod(path, "ssrStyle");
-            value.expression = t.callExpression(t.identifier("_$ssrStyle"), [value.expression]);
+            registerImportMethod(path, "style");
+            value.expression = t.callExpression(t.identifier("_$style"), [value.expression]);
           }
           doEscape = false;
         }
         if (key === "classList") {
-          registerImportMethod(path, "ssrClassList");
-          value.expression = t.callExpression(t.identifier("_$ssrClassList"), [value.expression]);
+          registerImportMethod(path, "classList");
+          value.expression = t.callExpression(t.identifier("_$classList"), [value.expression]);
           key = "class";
           doEscape = false;
         }

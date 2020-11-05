@@ -1,7 +1,7 @@
-import { createComponent as _$createComponent } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
-import { escape as _$escape } from "r-dom";
-import { getHydrationKey as _$getHydrationKey } from "r-dom";
+import { createComponent as _$createComponent } from "r-server";
+import { ssr as _$ssr } from "r-server";
+import { escape as _$escape } from "r-server";
+import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const template1 = _$ssr(['<div data-hk="', '">', "</div>"], _$getHydrationKey(), _$escape(simple));
 

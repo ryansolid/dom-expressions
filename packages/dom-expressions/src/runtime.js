@@ -1,5 +1,6 @@
 import { Properties, ChildProperties, Aliases, SVGNamespace, NonComposedEvents } from "./constants";
 import { root, effect, memo, currentContext, createComponent } from "rxcore";
+import { getHydrationKey } from "./shared";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -9,6 +10,7 @@ export {
   SVGNamespace,
   NonComposedEvents
 } from "./constants";
+export { assignProps, dynamicProperty } from "./shared";
 
 const eventRegistry = new Set();
 let hydration = null;
@@ -153,25 +155,6 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
   }
 }
 
-export function dynamicProperty(props, key) {
-  const src = props[key];
-  Object.defineProperty(props, key, {
-    get() {
-      return src();
-    },
-    enumerable: true
-  });
-  return props;
-}
-
-export function assignProps(target, ...sources) {
-  for (let i = 0; i < sources.length; i++) {
-    const descriptors = Object.getOwnPropertyDescriptors(sources[i]);
-    Object.defineProperties(target, descriptors);
-  }
-  return target;
-}
-
 // Hydrate
 export function hydrate(code, element) {
   hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
@@ -239,10 +222,6 @@ export function runHydrationEvents() {
       events.shift();
     }
   }
-}
-
-export function getHydrationKey() {
-  return globalThis._$HYDRATION.context.id;
 }
 
 // Internal Functions

@@ -2,21 +2,16 @@ import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
 import config from "../config";
 
-export const reservedNameSpaces = new Set([
-  "class",
-  "on",
-  "style",
-  "use",
-  "prop",
-  "attr"
-]);
+export const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
 
 export function registerImportMethod(path, name) {
   const imports =
     path.scope.getProgramParent().data.imports ||
     (path.scope.getProgramParent().data.imports = new Set());
   if (!imports.has(name)) {
-    addNamed(path, name, config.moduleName, { nameHint: `_$${name}` });
+    addNamed(path, name, config.moduleName, {
+      nameHint: `_$${name}`
+    });
     imports.add(name);
   }
 }
@@ -62,7 +57,11 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   }
   const expr = path.node;
   if (t.isFunction(expr)) return false;
-  if (expr.leadingComments && expr.leadingComments[0] && expr.leadingComments[0].value.trim() === config.staticMarker) {
+  if (
+    expr.leadingComments &&
+    expr.leadingComments[0] &&
+    expr.leadingComments[0].value.trim() === config.staticMarker
+  ) {
     expr.leadingComments.shift();
     return false;
   }
@@ -144,7 +143,7 @@ export function toEventName(name) {
 }
 
 export function toAttributeName(name) {
-  return name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`)
+  return name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
 }
 
 export function toPropertyName(name) {
@@ -188,7 +187,7 @@ export function transformCondition(path, deep) {
       }));
     if (dTest) {
       cond = nextPath.node.left;
-      id = path.scope.generateUidIdentifier("_c$")
+      id = path.scope.generateUidIdentifier("_c$");
       if (expr.operator !== "||" && !t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       nextPath.node.left = t.callExpression(id, []);
@@ -209,12 +208,12 @@ export function transformCondition(path, deep) {
     ];
     return deep
       ? t.callExpression(
-        t.arrowFunctionExpression(
-          [],
-          t.blockStatement([statements[0], t.returnStatement(statements[1])])
-        ),
-        []
-      )
+          t.arrowFunctionExpression(
+            [],
+            t.blockStatement([statements[0], t.returnStatement(statements[1])])
+          ),
+          []
+        )
       : statements;
   }
   return deep ? expr : t.arrowFunctionExpression([], expr);
@@ -222,45 +221,44 @@ export function transformCondition(path, deep) {
 
 export function escapeHTML(s, attr) {
   if (typeof s !== "string") return s;
-  const delim = attr ? '"' : '<';
-  const escDelim = attr ? '&quot;' : '&lt;';
+  const delim = attr ? '"' : "<";
+  const escDelim = attr ? "&quot;" : "&lt;";
   let iDelim = s.indexOf(delim);
-  let iAmp = s.indexOf('&');
+  let iAmp = s.indexOf("&");
 
   if (iDelim < 0 && iAmp < 0) return s;
 
-  let left = 0, out = '';
+  let left = 0,
+    out = "";
 
   while (iDelim >= 0 && iAmp >= 0) {
     if (iDelim < iAmp) {
-      if (left < iDelim)
-        out += s.substring(left, iDelim);
+      if (left < iDelim) out += s.substring(left, iDelim);
       out += escDelim;
       left = iDelim + 1;
       iDelim = s.indexOf(delim, left);
     } else {
-      if (left < iAmp)
-        out += s.substring(left, iAmp);
-      out += '&amp;';
+      if (left < iAmp) out += s.substring(left, iAmp);
+      out += "&amp;";
       left = iAmp + 1;
-      iAmp = s.indexOf('&', left);
+      iAmp = s.indexOf("&", left);
     }
   }
 
   if (iDelim >= 0) {
     do {
-      if (left < iDelim)
-        out += s.substring(left, iDelim);
+      if (left < iDelim) out += s.substring(left, iDelim);
       out += escDelim;
       left = iDelim + 1;
       iDelim = s.indexOf(delim, left);
     } while (iDelim >= 0);
-  } else while (iAmp >= 0) {
-    if (left < iAmp)
-      out += s.substring(left, iAmp);
-    out += '&amp;'
-    left = iAmp + 1;
-    iAmp = s.indexOf('&', left);
+  } else {
+    while (iAmp >= 0) {
+      if (left < iAmp) out += s.substring(left, iAmp);
+      out += "&amp;";
+      left = iAmp + 1;
+      iAmp = s.indexOf("&", left);
+    }
   }
 
   return left < s.length ? out + s.substring(left) : out;

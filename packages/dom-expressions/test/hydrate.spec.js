@@ -27,7 +27,7 @@ describe("r.hydrate", () => {
     result = r2.renderToString(() =>
       r2.ssr(
         ['<span data-hk="', '"><!--#-->', "<!--/--> John</span>"],
-        r.getHydrationKey(),
+        r2.getHydrationKey(),
         r2.escape("Hi")
       )
     );
@@ -63,7 +63,7 @@ describe("r.hydrate", () => {
     result = r2.renderToString(() =>
       r2.ssr(
         ['<span data-hk="', '"><!--#-->', "<!--/--> John</span>"],
-        r.getHydrationKey(),
+        r2.getHydrationKey(),
         r2.escape(time)
       )
     );
@@ -99,9 +99,9 @@ describe("r.hydrate", () => {
 
   it("hydrates fragments", () => {
     result = r2.renderToString(() => [
-      r2.ssr(['<div data-hk="', '">First</div>'], r.getHydrationKey()),
+      r2.ssr(['<div data-hk="', '">First</div>'], r2.getHydrationKey()),
       "middle",
-      r2.ssr(['<div data-hk="', '">Last</div>'], r.getHydrationKey())
+      r2.ssr(['<div data-hk="', '">Last</div>'], r2.getHydrationKey())
     ]);
     rendered = result;
     expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="0">Last</div>`);
@@ -137,9 +137,9 @@ describe("r.hydrate", () => {
 
   it("hydrates fragments with dynamic", () => {
     result = r2.renderToString(() => [
-      r2.ssr(['<div data-hk="', '">First</div>'], r.getHydrationKey()),
+      r2.ssr(['<div data-hk="', '">First</div>'], r2.getHydrationKey()),
       S(() => "middle"),
-      r2.ssr(['<div data-hk="', '">Last</div>'], r.getHydrationKey())
+      r2.ssr(['<div data-hk="', '">Last</div>'], r2.getHydrationKey())
     ]);
     rendered = result;
     expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="0">Last</div>`);
@@ -175,9 +175,9 @@ describe("r.hydrate", () => {
 
   it("hydrates fragments with dynamic template", () => {
     result = r2.renderToString(() => [
-      r2.ssr(['<div data-hk="', '">First</div>'], r.getHydrationKey()),
-      S(() => r2.ssr(['<div data-hk="', '">First</div>'], r.getHydrationKey())),
-      r2.ssr(['<div data-hk="', '">Last</div>'], r.getHydrationKey())
+      r2.ssr(['<div data-hk="', '">First</div>'], r2.getHydrationKey()),
+      S(() => r2.ssr(['<div data-hk="', '">First</div>'], r2.getHydrationKey())),
+      r2.ssr(['<div data-hk="', '">Last</div>'], r2.getHydrationKey())
     ]);
     rendered = result;
     expect(rendered).toBe(
@@ -223,12 +223,12 @@ describe("r.hydrate", () => {
     const signal = S.data();
     result = r2.renderToString(async () => {
       const multiExpression = [
-        r2.ssr`<div data-hk="${r.getHydrationKey()}">First</div>`,
+        r2.ssr`<div data-hk="${r2.getHydrationKey()}">First</div>`,
         signal,
-        r2.ssr`<div data-hk="${r.getHydrationKey()}">Last</div>`
+        r2.ssr`<div data-hk="${r2.getHydrationKey()}">Last</div>`
       ];
       await new Promise(r => setTimeout(r, 20));
-      signal(r2.ssr`<div data-hk="${r.getHydrationKey()}">First</div>`);
+      signal(r2.ssr`<div data-hk="${r2.getHydrationKey()}">First</div>`);
       return multiExpression;
     });
     rendered = await result;
@@ -244,7 +244,7 @@ describe("r.hydrate", () => {
         ctx = nextHydrateContext();
       setTimeout(() => {
         setHydrateContext(ctx);
-        signal(r2.ssr`<div data-hk="${r.getHydrationKey()}">Last</div>`);
+        signal(r2.ssr`<div data-hk="${r2.getHydrationKey()}">Last</div>`);
         done(multiExpression);
       }, 20);
       return signal;
@@ -253,9 +253,9 @@ describe("r.hydrate", () => {
       () =>
         new Promise(done => {
           multiExpression = [
-            r2.ssr`<div data-hk="${r.getHydrationKey()}">First</div>`,
+            r2.ssr`<div data-hk="${r2.getHydrationKey()}">First</div>`,
             lazyH(done),
-            r2.ssr`<div data-hk="${r.getHydrationKey()}">Last</div>`
+            r2.ssr`<div data-hk="${r2.getHydrationKey()}">Last</div>`
           ];
         })
     );
@@ -315,12 +315,12 @@ describe("r.hydrate", () => {
       result = r2.renderToString(
         async () => {
           const multiExpression = [
-            r2.ssr`<div data-hk="${r.getHydrationKey()}">First</div>`,
+            r2.ssr`<div data-hk="${r2.getHydrationKey()}">First</div>`,
             signal,
-            r2.ssr`<div data-hk="${r.getHydrationKey()}">Last</div>`
+            r2.ssr`<div data-hk="${r2.getHydrationKey()}">Last</div>`
           ];
           await new Promise(r => setTimeout(r, 20));
-          signal(r.ssr`<div data-hk="${r.getHydrationKey()}">Last</div>`);
+          signal(r2.ssr`<div data-hk="${r2.getHydrationKey()}">Last</div>`);
           return multiExpression;
         },
         { timeoutMs: 0 }

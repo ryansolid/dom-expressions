@@ -1,6 +1,6 @@
-import { ssr as _$ssr } from "r-dom";
-import { escape as _$escape } from "r-dom";
-import { getHydrationKey as _$getHydrationKey } from "r-dom";
+import { ssr as _$ssr } from "r-server";
+import { escape as _$escape } from "r-server";
+import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const template = _$ssr(
   ['<my-element data-hk="', '" some-attr="', '" notprop="', '" my-attr="', '"></my-element>'],

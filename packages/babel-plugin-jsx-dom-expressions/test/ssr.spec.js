@@ -5,7 +5,7 @@ const plugin = require('../index');
 pluginTester({
   plugin,
   pluginOptions: {
-    moduleName: 'r-dom',
+    moduleName: 'r-server',
     builtIns: ['For'],
     generate: "ssr",
     contextToCustomElements: true,

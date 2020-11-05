@@ -1,10 +1,10 @@
-import { assignProps as _$assignProps } from "r-dom";
-import { dynamicProperty as _$dynamicProperty } from "r-dom";
-import { ssrSpread as _$ssrSpread } from "r-dom";
-import { escape as _$escape } from "r-dom";
-import { createComponent as _$createComponent } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
-import { getHydrationKey as _$getHydrationKey } from "r-dom";
+import { assignProps as _$assignProps } from "r-server";
+import { dynamicProperty as _$dynamicProperty } from "r-server";
+import { spread as _$spread } from "r-server";
+import { escape as _$escape } from "r-server";
+import { createComponent as _$createComponent } from "r-server";
+import { ssr as _$ssr } from "r-server";
+import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const children = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 
@@ -45,19 +45,19 @@ const template6 = _$createComponent(Module, {
 const template7 = _$ssr(
   ['<module data-hk="', '" ', "></module>"],
   _$getHydrationKey(),
-  _$ssrSpread(dynamic, false, false)
+  _$spread(dynamic, false, false)
 );
 
 const template8 = _$ssr(
   ['<module data-hk="', '" ', ">Hello</module>"],
   _$getHydrationKey(),
-  _$ssrSpread(dynamic, false, true)
+  _$spread(dynamic, false, true)
 );
 
 const template9 = _$ssr(
   ['<module data-hk="', '" ', ">", "</module>"],
   _$getHydrationKey(),
-  _$ssrSpread(dynamic, false, true),
+  _$spread(dynamic, false, true),
   _$escape(dynamic.children)
 );
 

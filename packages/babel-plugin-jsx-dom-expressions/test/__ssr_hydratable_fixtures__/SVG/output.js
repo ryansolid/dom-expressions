@@ -1,8 +1,8 @@
-import { createComponent as _$createComponent } from "r-dom";
-import { ssrSpread as _$ssrSpread } from "r-dom";
-import { escape as _$escape } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
-import { getHydrationKey as _$getHydrationKey } from "r-dom";
+import { createComponent as _$createComponent } from "r-server";
+import { spread as _$spread } from "r-server";
+import { escape as _$escape } from "r-server";
+import { ssr as _$ssr } from "r-server";
+import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const template = _$ssr(
   [
@@ -37,7 +37,7 @@ const template2 = _$ssr(
 const template3 = _$ssr(
   ['<svg data-hk="', '" width="400" height="180"><rect ', "></rect></svg>"],
   _$getHydrationKey(),
-  _$ssrSpread(props, true, false)
+  _$spread(props, true, false)
 );
 
 const template4 = _$ssr(

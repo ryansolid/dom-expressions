@@ -1,7 +1,8 @@
 import { Aliases } from "../constants";
+export { effect, memo, currentContext, createComponent } from "rxcore";
+export { assignProps, dynamicProperty, getHydrationKey } from "../shared";
 
-// SSR
-export function ssrClassList(value) {
+export function classList(value) {
   let classKeys = Object.keys(value),
     result = "";
   for (let i = 0, len = classKeys.length; i < len; i++) {
@@ -14,7 +15,7 @@ export function ssrClassList(value) {
   return result;
 }
 
-export function ssrStyle(value) {
+export function style(value) {
   if (typeof value === "string") return value;
   let result = "";
   const k = Object.keys(value);
@@ -26,7 +27,7 @@ export function ssrStyle(value) {
   return result;
 }
 
-export function ssrSpread(props) {
+export function spread(props) {
   return () => {
     if (typeof props === "function") props = props();
     // TODO: figure out how to handle props.children

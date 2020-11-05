@@ -1,9 +1,9 @@
-import { For as _$For } from "r-dom";
-import { createComponent as _$createComponent } from "r-dom";
-import { assignProps as _$assignProps } from "r-dom";
-import { dynamicProperty as _$dynamicProperty } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
-import { escape as _$escape } from "r-dom";
+import { For as _$For } from "r-server";
+import { createComponent as _$createComponent } from "r-server";
+import { assignProps as _$assignProps } from "r-server";
+import { dynamicProperty as _$dynamicProperty } from "r-server";
+import { ssr as _$ssr } from "r-server";
+import { escape as _$escape } from "r-server";
 
 const Child = props => [
   _$ssr(["<div>Hello ", "</div>"], _$escape(props.name)),

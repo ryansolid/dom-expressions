@@ -1,6 +1,6 @@
-import { escape as _$escape } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
-import { getHydrationKey as _$getHydrationKey } from "r-dom";
+import { escape as _$escape } from "r-server";
+import { ssr as _$ssr } from "r-server";
+import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const trailing = _$ssr(['<span data-hk="', '">Hello </span>'], _$getHydrationKey());
 

@@ -1,7 +1,7 @@
-import { createComponent as _$createComponent } from "r-dom";
-import { ssrSpread as _$ssrSpread } from "r-dom";
-import { escape as _$escape } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
+import { createComponent as _$createComponent } from "r-server";
+import { spread as _$spread } from "r-server";
+import { escape as _$escape } from "r-server";
+import { ssr as _$ssr } from "r-server";
 
 const template = _$ssr(
   '<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%"></stop></linearGradient></svg>'
@@ -30,7 +30,7 @@ const template2 = _$ssr(
 
 const template3 = _$ssr(
   ['<svg width="400" height="180"><rect ', "></rect></svg>"],
-  _$ssrSpread(props, true, false)
+  _$spread(props, true, false)
 );
 
 const template4 = _$ssr('<rect x="50" y="20" width="150" height="150"></rect>');
