@@ -1,5 +1,5 @@
 import * as r from "../src/runtime";
-import * as r2 from "../src/server/asyncSSR";
+import * as r2 from "../src/asyncSSR";
 import S from "s-js";
 
 function setHydrateContext(context) {

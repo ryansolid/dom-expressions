@@ -6,9 +6,9 @@ export function renderToString<T>(
 ): T extends Promise<any> ? Promise<string> : string;
 export function ssr(template: string[] | string, ...nodes: any[]): { t: string | (() => string) };
 export function resolveSSRNode(node: any): string;
-export function classList(value: { [k: string]: boolean }): string;
-export function style(value: { [k: string]: string }): string;
-export function spread(accessor: any): () => string;
+export function ssrClassList(value: { [k: string]: boolean }): string;
+export function ssrStyle(value: { [k: string]: string }): string;
+export function ssrSpread(accessor: any): () => string;
 export function escape(html: string): string;
 export function generateHydrationScript(options?: { eventNames?: string[] }): string;
 export function getHydrationKey(): string;

@@ -1,8 +1,8 @@
-import { Aliases } from "../constants";
+import { Aliases } from "./constants";
 export { effect, memo, currentContext, createComponent } from "rxcore";
-export { assignProps, dynamicProperty, getHydrationKey } from "../shared";
+export { assignProps, dynamicProperty, getHydrationKey } from "./shared";
 
-export function classList(value) {
+export function ssrClassList(value) {
   let classKeys = Object.keys(value),
     result = "";
   for (let i = 0, len = classKeys.length; i < len; i++) {
@@ -15,7 +15,7 @@ export function classList(value) {
   return result;
 }
 
-export function style(value) {
+export function ssrStyle(value) {
   if (typeof value === "string") return value;
   let result = "";
   const k = Object.keys(value);
@@ -27,7 +27,7 @@ export function style(value) {
   return result;
 }
 
-export function spread(props) {
+export function ssrSpread(props) {
   return () => {
     if (typeof props === "function") props = props();
     // TODO: figure out how to handle props.children

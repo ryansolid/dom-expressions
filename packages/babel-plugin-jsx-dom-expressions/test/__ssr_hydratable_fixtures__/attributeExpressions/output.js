@@ -1,8 +1,8 @@
-import { style as _$style } from "r-server";
+import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
-import { classList as _$classList } from "r-server";
-import { spread as _$spread } from "r-server";
+import { ssrClassList as _$ssrClassList } from "r-server";
+import { ssrSpread as _$ssrSpread } from "r-server";
 import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const template = _$ssr(
@@ -18,15 +18,15 @@ const template = _$ssr(
     '"><a href="/">Welcome</a></h1></div>'
   ],
   _$getHydrationKey(),
-  _$spread(results, false, true),
-  _$classList({
+  _$ssrSpread(results, false, true),
+  _$ssrClassList({
     selected: selected
   }),
   "color:" + _$escape(color, true),
-  _$spread(results(), false, true),
+  _$ssrSpread(results(), false, true),
   _$escape(welcoming(), true),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
-  _$classList({
+  _$ssrClassList({
     selected: selected()
   })
 );
@@ -58,13 +58,13 @@ const template5 = _$ssr(['<div data-hk="', '" class="', '"></div>'], _$getHydrat
 const template6 = _$ssr(
   ['<div data-hk="', '" style="', '">Hi</div>'],
   _$getHydrationKey(),
-  _$style(someStyle())
+  _$ssrStyle(someStyle())
 );
 
 const template7 = _$ssr(
   ['<div data-hk="', '" style="', '"></div>'],
   _$getHydrationKey(),
-  _$style({
+  _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",
     ...props.style,

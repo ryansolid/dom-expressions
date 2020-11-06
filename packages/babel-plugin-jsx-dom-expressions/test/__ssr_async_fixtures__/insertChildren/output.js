@@ -1,6 +1,6 @@
 import { assignProps as _$assignProps } from "r-server";
 import { dynamicProperty as _$dynamicProperty } from "r-server";
-import { spread as _$spread } from "r-server";
+import { ssrSpread as _$ssrSpread } from "r-server";
 import { escape as _$escape } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
 import { ssr as _$ssr } from "r-server";
@@ -29,11 +29,11 @@ const template6 = _$createComponent(Module, {
   }
 });
 
-const template7 = _$ssr(["<module ", "></module>"], _$spread(dynamic, false, false));
+const template7 = _$ssr(["<module ", "></module>"], _$ssrSpread(dynamic, false, false));
 
-const template8 = _$ssr(["<module ", ">Hello</module>"], _$spread(dynamic, false, true));
+const template8 = _$ssr(["<module ", ">Hello</module>"], _$ssrSpread(dynamic, false, true));
 
-const template9 = _$ssr(["<module ", ">", "</module>"], _$spread(dynamic, false, true), () =>
+const template9 = _$ssr(["<module ", ">", "</module>"], _$ssrSpread(dynamic, false, true), () =>
   _$escape(dynamic.children)
 );
 

@@ -1,5 +1,5 @@
 import { createComponent as _$createComponent } from "r-server";
-import { spread as _$spread } from "r-server";
+import { ssrSpread as _$ssrSpread } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
 
@@ -30,7 +30,7 @@ const template2 = _$ssr(
 
 const template3 = _$ssr(
   ['<svg width="400" height="180"><rect ', "></rect></svg>"],
-  _$spread(props, true, false)
+  _$ssrSpread(props, true, false)
 );
 
 const template4 = _$ssr('<rect x="50" y="20" width="150" height="150"></rect>');

@@ -1,4 +1,4 @@
-import * as r from "../src/server/asyncSSR";
+import * as r from "../src/asyncSSR";
 import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" class="selected" style="color:red"><h1 custom-attr="1" disabled="" title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
@@ -16,25 +16,25 @@ const Comp1 = () => {
       "custom-attr": "1"
     });
 
-  return r.ssr`<div id="main" ${r.spread(results, false, true)} class="${r.classList({
+  return r.ssr`<div id="main" ${r.ssrSpread(results, false, true)} class="${r.ssrClassList({
     selected: selected()
-  })}" style="${r.style({
+  })}" style="${r.ssrStyle({
     color: color()
-  })}"><h1 ${r.spread(() => dynamic(), false, true)} disabled="" title="${() =>
+  })}"><h1 ${r.ssrSpread(() => dynamic(), false, true)} disabled="" title="${() =>
     welcoming()}" style="${() =>
-    r.style({
+    r.ssrStyle({
       "background-color": color()
     })}" class="${() =>
-    r.classList({
+    r.ssrClassList({
       selected: selected()
     })}"><a href="/">Welcome</a></h1></div>`;
 };
 
 const Comp2 = () => {
   const greeting = "Hello",
-    name="<div/>"
+    name = "<div/>";
   return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)} </span>`;
-}
+};
 
 describe("renderToString", () => {
   it("renders as expected", async () => {
