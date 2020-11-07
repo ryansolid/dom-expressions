@@ -82,6 +82,14 @@ export function setAttributeNS(node, namespace, name, value) {
 }
 
 export function classList(node, value, prev) {
+  if(Array.isArray(value)) {
+     for (let i = 0, len = value.length; i < len; i++) {
+       const classNames = value[i].split(/\s+/);
+       for (let j = 0, nameLen = classNames.length; j < nameLen; j++)
+          node.classList.toggle(classNames[j]);
+     }
+     return value;
+  }
   const classKeys = Object.keys(value);
   for (let i = 0, len = classKeys.length; i < len; i++) {
     const key = classKeys[i],
