@@ -20,7 +20,7 @@ export function setAttribute(node: Element, name: string, value: any): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
 export function classList(
   node: Element,
-  value: { [k: string]: boolean },
+  value: { [k: string]: boolean } | string[],
   prev?: { [k: string]: boolean }
 ): void;
 export function style(
