@@ -1,7 +1,6 @@
 import { For as _$For } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
 import { assignProps as _$assignProps } from "r-server";
-import { dynamicProperty as _$dynamicProperty } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 
@@ -21,10 +20,7 @@ const template = props => {
         {
           name: "John"
         },
-        Object.keys(props).reduce(
-          (m$, k$) => ((m$[k$] = () => props[k$]), _$dynamicProperty(m$, k$)),
-          {}
-        ),
+        props,
         {
           booleanProperty: true,
 

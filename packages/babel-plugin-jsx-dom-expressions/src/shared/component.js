@@ -34,33 +34,7 @@ export default function transformComponent(path) {
           props.push(t.objectExpression(runningObject));
           runningObject = [];
         }
-        const key = t.identifier("k$"),
-          memo = t.identifier("m$");
-        registerImportMethod(path, "dynamicProperty");
-        props.push(
-          t.callExpression(
-            t.memberExpression(
-              t.callExpression(t.memberExpression(t.identifier("Object"), t.identifier("keys")), [
-                node.argument
-              ]),
-              t.identifier("reduce")
-            ),
-            [
-              t.arrowFunctionExpression(
-                [memo, key],
-                t.sequenceExpression([
-                  t.assignmentExpression(
-                    "=",
-                    t.memberExpression(memo, key, true),
-                    t.arrowFunctionExpression([], t.memberExpression(node.argument, key, true))
-                  ),
-                  t.callExpression(t.identifier("_$dynamicProperty"), [memo, key])
-                ])
-              ),
-              t.objectExpression([])
-            ]
-          )
-        );
+        props.push(node.argument);
       } else {
         const value = node.value || t.booleanLiteral(true),
           key = t.isJSXNamespacedName(node.name)

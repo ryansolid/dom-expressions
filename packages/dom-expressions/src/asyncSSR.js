@@ -6,6 +6,7 @@ export function renderToString(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
   const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
+  hydration.asyncSSR = true;
   hydration.resources = {};
   return root(() => {
     const rendered = code();

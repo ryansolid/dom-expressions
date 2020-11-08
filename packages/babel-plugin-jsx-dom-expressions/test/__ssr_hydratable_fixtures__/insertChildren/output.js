@@ -1,5 +1,4 @@
 import { assignProps as _$assignProps } from "r-server";
-import { dynamicProperty as _$dynamicProperty } from "r-server";
 import { ssrSpread as _$ssrSpread } from "r-server";
 import { escape as _$escape } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
@@ -63,15 +62,9 @@ const template9 = _$ssr(
 
 const template10 = _$createComponent(
   Module,
-  _$assignProps(
-    Object.keys(dynamic).reduce(
-      (m$, k$) => ((m$[k$] = () => dynamic[k$]), _$dynamicProperty(m$, k$)),
-      {}
-    ),
-    {
-      children: "Hello"
-    }
-  )
+  _$assignProps(dynamic, {
+    children: "Hello"
+  })
 );
 
 const template11 = _$ssr(
