@@ -15,8 +15,7 @@
   "scripts": {
     "build": "rollup -c && tsc",
     "test": "npm run build && jest",
-    "test:coverage": "npm run build && jest --coverage",
-    "prepublishOnly": "npm run build"
+    "test:coverage": "npm run build && jest --coverage"
   },
   "devDependencies": {
     "dom-expressions": "^0.23.0-beta.3",
