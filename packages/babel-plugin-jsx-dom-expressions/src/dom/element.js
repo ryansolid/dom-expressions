@@ -82,7 +82,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
     );
   }
 
-  if (name === "class") {
+  if (!isSVG && name === "class") {
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("className")), value);
   }
 

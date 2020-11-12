@@ -29,12 +29,10 @@ const multiDynamic = [
   "After"
 ];
 const singleExpression = inserted;
-
-const singleDynamic = () => inserted();
-
+const singleDynamic = inserted;
 const firstStatic = [inserted, _tmpl$3.cloneNode(true)];
-const firstDynamic = [_$memo(() => inserted()), _tmpl$3.cloneNode(true)];
+const firstDynamic = [_$memo(inserted), _tmpl$3.cloneNode(true)];
 const firstComponent = [_$createComponent(Component, {}), _tmpl$3.cloneNode(true)];
 const lastStatic = [_tmpl$3.cloneNode(true), inserted];
-const lastDynamic = [_tmpl$3.cloneNode(true), _$memo(() => inserted())];
+const lastDynamic = [_tmpl$3.cloneNode(true), _$memo(inserted)];
 const lastComponent = [_tmpl$3.cloneNode(true), _$createComponent(Component, {})];

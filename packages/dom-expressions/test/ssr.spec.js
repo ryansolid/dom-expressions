@@ -1,4 +1,5 @@
 import * as r from "../src/asyncSSR";
+import * as r2 from "../src/syncSSR";
 import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" class="selected" style="color:red"><h1 custom-attr="1" disabled="" title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
@@ -44,3 +45,34 @@ describe("renderToString", () => {
     expect(res).toBe(fixture2);
   });
 });
+
+describe("renderToNodeStream", () => {
+  function streamToString (stream) {
+    const chunks = []
+    return new Promise((resolve, reject) => {
+      stream.on('data', chunk => chunks.push(chunk))
+      stream.on('error', reject)
+      stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    })
+  }
+  it("renders as expected", async () => {
+    let res = await streamToString(r2.renderToNodeStream(Comp2));
+    expect(res).toBe(fixture2);
+  });
+});
+
+// describe("renderToWebStream", () => {
+//   function streamToString (stream) {
+//     const chunks = []
+//     const reader = stream.getReader()
+//     return reader.read().then(function processText({ done, value }) {
+//       if (done) return chunks.join("");
+//       chunks.push(value);
+//       return reader.read().then(processText);
+//     });
+//   }
+//   it("renders as expected", async () => {
+//     let res = await streamToString(r2.renderToWebStream(Comp2));
+//     expect(res).toBe(fixture2);
+//   });
+// });

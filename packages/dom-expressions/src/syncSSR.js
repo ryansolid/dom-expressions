@@ -28,6 +28,34 @@ export function renderToNodeStream(code) {
   return stream;
 }
 
+export function renderToWebStream(code) {
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+  const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
+  hydration.context = { id: "0", count: 0 };
+  let count = 0,
+    completed = 0,
+    checkEnd = () => {
+      if (completed === count) {
+        writer.close();
+        delete hydration.context;
+      }
+    };
+  hydration.register = p => {
+    const id = ++count;
+    p.then(d => {
+      writer.write(
+        encoder.encode(`<script>_$HYDRATION.resolveResource(${id}, ${JSON.stringify(d)})</script>`)
+      );
+      ++completed && checkEnd();
+    });
+  };
+  writer.write(encoder.encode(resolveSSRNode(code())));
+  setTimeout(checkEnd);
+  return readable;
+}
+
 export function renderToString(code) {
   const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };

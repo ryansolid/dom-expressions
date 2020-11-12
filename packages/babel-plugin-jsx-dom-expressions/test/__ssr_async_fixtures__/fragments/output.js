@@ -10,12 +10,10 @@ const multiDynamic = [
   "After"
 ];
 const singleExpression = inserted;
-
-const singleDynamic = () => inserted();
-
+const singleDynamic = inserted;
 const firstStatic = [inserted, _$ssr("<div></div>")];
-const firstDynamic = [() => inserted(), _$ssr("<div></div>")];
+const firstDynamic = [inserted, _$ssr("<div></div>")];
 const firstComponent = [_$createComponent(Component, {}), _$ssr("<div></div>")];
 const lastStatic = [_$ssr("<div></div>"), inserted];
-const lastDynamic = [_$ssr("<div></div>"), () => inserted()];
+const lastDynamic = [_$ssr("<div></div>"), inserted];
 const lastComponent = [_$ssr("<div></div>"), _$createComponent(Component, {})];
