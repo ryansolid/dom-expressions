@@ -1,6 +1,6 @@
-import { createComponent as _$createComponent } from "r-dom";
-import { escape as _$escape } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
+import { createComponent as _$createComponent } from "r-server";
+import { escape as _$escape } from "r-server";
+import { ssr as _$ssr } from "r-server";
 const multiStatic = [_$ssr("<div>First</div>"), _$ssr("<div>Last</div>")];
 const multiExpression = [_$ssr("<div>First</div>"), inserted, _$ssr("<div>Last</div>"), "After"];
 const multiDynamic = [

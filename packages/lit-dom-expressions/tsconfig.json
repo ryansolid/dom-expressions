@@ -6,6 +6,7 @@
     "target": "esnext",
     "moduleResolution": "node",
     "strict": true,
-    "lib": ["es2018", "DOM"]
-  }
+    "lib": ["es2018", "DOM"],
+  },
+  "include": ["src"]
 }

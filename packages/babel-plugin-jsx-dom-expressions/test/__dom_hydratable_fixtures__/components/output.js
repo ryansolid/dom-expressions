@@ -3,7 +3,6 @@ import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { assignProps as _$assignProps } from "r-dom";
-import { dynamicProperty as _$dynamicProperty } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
@@ -70,10 +69,7 @@ const template = props => {
           {
             name: "John"
           },
-          Object.keys(props).reduce(
-            (m$, k$) => ((m$[k$] = () => props[k$]), _$dynamicProperty(m$, k$)),
-            {}
-          ),
+          props,
           {
             ref(r$) {
               const _ref$2 = childRef;
@@ -117,6 +113,12 @@ const template = props => {
     _$insert(
       _el$6,
       _$createComponent(Context.Consumer, {
+        ref(r$) {
+          const _ref$4 = props.consumerRef();
+
+          typeof _ref$4 === "function" && _ref$4(r$);
+        },
+
         children: context => context
       }),
       _el$14,
@@ -405,3 +407,9 @@ class Template13 {
     });
   }
 }
+
+const Template14 = _$createComponent(Component, {
+  get children() {
+    return data();
+  }
+});

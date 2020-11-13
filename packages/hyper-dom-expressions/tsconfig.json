@@ -6,5 +6,6 @@
     "target": "esnext",
     "moduleResolution": "node",
     "strict": true
-  }
+  },
+  "include": ["src"]
 }

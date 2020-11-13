@@ -7,6 +7,7 @@ export default {
   nonDelegateEvents: [],
   builtIns: [],
   wrapConditionals: true,
+  wrapSpreads: true,
   contextToCustomElements: false,
   hydratableEvents: null,
   staticMarker: "@once"

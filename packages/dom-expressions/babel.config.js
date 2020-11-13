@@ -7,12 +7,12 @@ module.exports = {
           "babel-plugin-transform-rename-import",
           {
             original: "rxcore",
-            replacement: "../test/core"
+            replacement: __dirname + "/test/core"
           }
         ],
         [
           "babel-plugin-jsx-dom-expressions",
-          { moduleName: "../src/runtime", wrapConditionals: true }
+          { moduleName: "../src/runtime" }
         ]
       ]
     }

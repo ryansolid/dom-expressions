@@ -34,7 +34,7 @@ export function transformElement(path, info) {
     };
   if (info.topLevel && config.hydratable) {
     registerImportMethod(path, "getHydrationKey");
-    appendToTemplate(results.template, ` _hk="`);
+    appendToTemplate(results.template, ` data-hk="`);
     results.template.push(`"`);
     results.templateValues.push(t.callExpression(t.identifier("_$getHydrationKey"), []));
   }

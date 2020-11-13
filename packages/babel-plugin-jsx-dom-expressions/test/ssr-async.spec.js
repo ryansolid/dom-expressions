@@ -5,12 +5,13 @@ const plugin = require('../index');
 pluginTester({
   plugin,
   pluginOptions: {
-    moduleName: 'r-dom',
+    moduleName: 'r-server',
     builtIns: ['For'],
     generate: "ssr",
     async: true,
     contextToCustomElements: true,
-    staticMarker: "@once"
+    staticMarker: "@once",
+    wrapSpreads: false
   },
   title: 'Convert JSX',
   fixtures: path.join(__dirname, '__ssr_async_fixtures__'),

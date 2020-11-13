@@ -1,13 +1,13 @@
-import { ssrStyle as _$ssrStyle } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
-import { escape as _$escape } from "r-dom";
-import { ssrClassList as _$ssrClassList } from "r-dom";
-import { ssrSpread as _$ssrSpread } from "r-dom";
-import { getHydrationKey as _$getHydrationKey } from "r-dom";
+import { ssrStyle as _$ssrStyle } from "r-server";
+import { ssr as _$ssr } from "r-server";
+import { escape as _$escape } from "r-server";
+import { ssrClassList as _$ssrClassList } from "r-server";
+import { ssrSpread as _$ssrSpread } from "r-server";
+import { getHydrationKey as _$getHydrationKey } from "r-server";
 
 const template = _$ssr(
   [
-    '<div _hk="',
+    '<div data-hk="',
     '" id="main" ',
     ' class="',
     '" style="',
@@ -32,14 +32,14 @@ const template = _$ssr(
 );
 
 const template2 = _$ssr(
-  ['<div _hk="', '"><div>', "</div><div>", "</div></div>"],
+  ['<div data-hk="', '"><div>', "</div><div>", "</div></div>"],
   _$getHydrationKey(),
   _$escape(rowId),
   _$escape(row.label)
 );
 
 const template3 = _$ssr(
-  ['<div _hk="', '" id="', '" style="', '" name="', '">', "</div>"],
+  ['<div data-hk="', '" id="', '" style="', '" name="', '">', "</div>"],
   _$getHydrationKey(),
   _$escape(state.id, true),
   "background-color:" + _$escape(state.color, true),
@@ -48,21 +48,21 @@ const template3 = _$ssr(
 );
 
 const template4 = _$ssr(
-  ['<div _hk="', '" class="', '"></div>'],
+  ['<div data-hk="', '" class="', '"></div>'],
   _$getHydrationKey(),
   `hi ${_$escape(state.class, true) || ""}`
 );
 
-const template5 = _$ssr(['<div _hk="', '" class="', '"></div>'], _$getHydrationKey(), `a  b`);
+const template5 = _$ssr(['<div data-hk="', '" class="', '"></div>'], _$getHydrationKey(), `a  b`);
 
 const template6 = _$ssr(
-  ['<div _hk="', '" style="', '">Hi</div>'],
+  ['<div data-hk="', '" style="', '">Hi</div>'],
   _$getHydrationKey(),
   _$ssrStyle(someStyle())
 );
 
 const template7 = _$ssr(
-  ['<div _hk="', '" style="', '"></div>'],
+  ['<div data-hk="', '" style="', '"></div>'],
   _$getHydrationKey(),
   _$ssrStyle({
     "background-color": color(),
@@ -74,12 +74,12 @@ const template7 = _$ssr(
 
 let refTarget;
 
-const template8 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+const template8 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 
-const template9 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+const template9 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 
-const template10 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+const template10 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 
-const template11 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+const template11 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 
-const template12 = _$ssr(['<div _hk="', '"></div>'], _$getHydrationKey());
+const template12 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());

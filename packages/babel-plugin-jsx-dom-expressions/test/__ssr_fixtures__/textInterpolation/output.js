@@ -1,5 +1,5 @@
-import { escape as _$escape } from "r-dom";
-import { ssr as _$ssr } from "r-dom";
+import { escape as _$escape } from "r-server";
+import { ssr as _$ssr } from "r-server";
 
 const trailing = _$ssr("<span>Hello </span>");
 

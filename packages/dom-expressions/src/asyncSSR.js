@@ -1,12 +1,13 @@
 import { root, memo } from "rxcore";
-import { insert } from "./runtime";
+import { resolveSSRNode } from "./ssr";
+export * from "./ssr";
 
 export function renderToString(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
   const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
-  hydration.resources = {};
   hydration.asyncSSR = true;
+  hydration.resources = {};
   return root(() => {
     const rendered = code();
     if (typeof rendered === "object" && "then" in rendered) {
@@ -16,34 +17,6 @@ export function renderToString(code, options = {}) {
       return Promise.race([rendered, timeout]).then(resolveSSRNode);
     }
     return resolveSSRNode(rendered);
-  });
-}
-
-export function renderDOMToString(code, options = {}) {
-  options = { timeoutMs: 30000, ...options };
-  const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
-  hydration.context = { id: "0", count: 0 };
-  hydration.resources = {};
-  hydration.asyncSSR = true;
-  const container = document.createElement("div");
-  document.body.appendChild(container);
-  return root(d1 => {
-    const rendered = code();
-
-    function resolve(rendered) {
-      root(d2 => (insert(container, rendered), d1(), d2()));
-      const html = container.innerHTML;
-      document.body.removeChild(container);
-      return html;
-    }
-
-    if (typeof rendered === "object" && "then" in rendered) {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
-      );
-      return Promise.race([rendered, timeout]).then(resolve);
-    }
-    return resolve(rendered);
   });
 }
 
@@ -68,10 +41,12 @@ export function ssr(t, ...nodes) {
   };
 }
 
-export function resolveSSRNode(node) {
-  if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
-  const t = typeof node;
-  if (node && t === "object") return resolveSSRNode(node.t);
-  if (t === "function") return resolveSSRNode(node());
-  return t === "string" ? node : JSON.stringify(node);
+export function generateHydrationScript({
+  eventNames = ["click", "input", "blur"]
+} = {}) {
+  let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
+    '","'
+  )}"].forEach(t=>document.addEventListener(t,e))})();`;
+  s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(_$HYDRATION.resources || {})}');`;
+  return s;
 }

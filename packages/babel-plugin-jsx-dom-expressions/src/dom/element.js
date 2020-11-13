@@ -82,7 +82,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
     );
   }
 
-  if (name === "class") {
+  if (!isSVG && name === "class") {
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("className")), value);
   }
 
@@ -100,10 +100,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  if (
-    namespace !== "attr" &&
-    (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")
-  ) {
+  if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
     if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
   }
@@ -150,7 +147,13 @@ function transformAttributes(path, results) {
       if (!t.isJSXExpressionContainer(attr.value)) {
         const prev = quasis.pop();
         quasis.push(
-          t.TemplateElement({ raw: (prev ? prev.value.raw : "") + (i ? " " : "") + `${attr.value.value}` + (isLast ? "" : " ") })
+          t.TemplateElement({
+            raw:
+              (prev ? prev.value.raw : "") +
+              (i ? " " : "") +
+              `${attr.value.value}` +
+              (isLast ? "" : " ")
+          })
         );
       } else {
         values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
@@ -303,7 +306,6 @@ function transformAttributes(path, results) {
         } else if (key === "children") {
           children = value;
         } else if (key.startsWith("on")) {
-          if (config.generate === "dom-ssr") return;
           const ev = toEventName(key);
           if (!ev || ev === "capture") {
             value.expression.properties.forEach(prop => {
@@ -494,7 +496,7 @@ function transformChildren(path, results) {
     } else if (child.exprs.length) {
       registerImportMethod(path, "insert");
       const multi = checkLength(filteredChildren),
-        markers = (generate === "dom-ssr" || hydratable) && multi;
+        markers = hydratable && multi;
       // boxed by textNodes
       if (markers || wrappedByText(childNodes, index)) {
         let exprId, contentId;
@@ -620,9 +622,6 @@ function detectExpressions(children, index) {
             t.isJSXSpreadAttribute(attr) ||
             ["textContent", "innerHTML", "innerText"].includes(attr.name.name) ||
             (t.isJSXExpressionContainer(attr.value) &&
-              (config.generate !== "dom-ssr" ||
-                typeof attr.name.name !== "string" ||
-                !attr.name.name.startsWith("on")) &&
               !(
                 t.isStringLiteral(attr.value.expression) ||
                 t.isNumericLiteral(attr.value.expression)

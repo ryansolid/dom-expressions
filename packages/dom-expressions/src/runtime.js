@@ -1,5 +1,6 @@
 import { Properties, ChildProperties, Aliases, SVGNamespace, NonComposedEvents } from "./constants";
 import { root, effect, memo, currentContext, createComponent } from "rxcore";
+import { getHydrationKey } from "./shared";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -9,6 +10,7 @@ export {
   SVGNamespace,
   NonComposedEvents
 } from "./constants";
+export { assignProps, dynamicProperty } from "./shared";
 
 const eventRegistry = new Set();
 let hydration = null;
@@ -25,25 +27,6 @@ export function render(code, element, init) {
     disposer();
     element.textContent = "";
   };
-}
-
-export function hydrate(code, element) {
-  hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
-  hydration.context = { id: "0", count: 0, registry: {} };
-  const templates = element.querySelectorAll(`*[_hk]`);
-  Array.prototype.reduce.call(
-    templates,
-    (memo, node) => {
-      const id = node.getAttribute("_hk"),
-        list = memo[id] || (memo[id] = []);
-      list.push(node);
-      return memo;
-    },
-    hydration.context.registry
-  );
-  const dispose = render(code, element, [...element.childNodes]);
-  delete hydration.context;
-  return dispose;
 }
 
 export function template(html, check, isSVG) {
@@ -172,125 +155,28 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
   }
 }
 
-export function dynamicProperty(props, key) {
-  const src = props[key];
-  Object.defineProperty(props, key, {
-    get() {
-      return src();
-    },
-    enumerable: true
-  });
-  return props;
-}
-
-export function assignProps(target, ...sources) {
-  for (let i = 0; i < sources.length; i++) {
-    const descriptors = Object.getOwnPropertyDescriptors(sources[i]);
-    Object.defineProperties(target, descriptors);
-  }
-  return target;
-}
-
-// SSR
-export function ssrClassList(value) {
-  let classKeys = Object.keys(value),
-    result = "";
-  for (let i = 0, len = classKeys.length; i < len; i++) {
-    const key = classKeys[i],
-      classValue = !!value[key];
-    if (!key || !classValue) continue;
-    i && (result += " ");
-    result += key;
-  }
-  return result;
-}
-
-export function ssrStyle(value) {
-  if (typeof value === "string") return value;
-  let result = "";
-  const k = Object.keys(value);
-  for (let i = 0; i < k.length; i++) {
-    const s = k[i];
-    if (i) result += ";";
-    result += `${s}:${escape(value[s], true)}`;
-  }
-  return result;
-}
-
-export function ssrSpread(props) {
-  return () => {
-    if (typeof props === "function") props = props();
-    // TODO: figure out how to handle props.children
-    const keys = Object.keys(props);
-    let result = "";
-    for (let i = 0; i < keys.length; i++) {
-      const prop = keys[i];
-      if (prop === "children") {
-        console.warn(`SSR currently does not support spread children.`);
-        continue;
-      }
-      const value = props[prop];
-      if (prop === "style") {
-        result += `style="${ssrStyle(value)}"`;
-      } else if (prop === "classList") {
-        result += `class="${ssrClassList(value)}"`;
-      } else {
-        result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
-      }
-      if (i !== keys.length - 1) result += " ";
-    }
-    return result;
-  };
-}
-
-export function escape(s, attr) {
-  if (typeof s !== "string") return s;
-  const delim = attr ? '"' : "<";
-  const escDelim = attr ? "&quot;" : "&lt;";
-  let iDelim = s.indexOf(delim);
-  let iAmp = s.indexOf("&");
-
-  if (iDelim < 0 && iAmp < 0) return s;
-
-  let left = 0,
-    out = "";
-
-  while (iDelim >= 0 && iAmp >= 0) {
-    if (iDelim < iAmp) {
-      if (left < iDelim) out += s.substring(left, iDelim);
-      out += escDelim;
-      left = iDelim + 1;
-      iDelim = s.indexOf(delim, left);
-    } else {
-      if (left < iAmp) out += s.substring(left, iAmp);
-      out += "&amp;";
-      left = iAmp + 1;
-      iAmp = s.indexOf("&", left);
-    }
-  }
-
-  if (iDelim >= 0) {
-    do {
-      if (left < iDelim) out += s.substring(left, iDelim);
-      out += escDelim;
-      left = iDelim + 1;
-      iDelim = s.indexOf(delim, left);
-    } while (iDelim >= 0);
-  } else
-    while (iAmp >= 0) {
-      if (left < iAmp) out += s.substring(left, iAmp);
-      out += "&amp;";
-      left = iAmp + 1;
-      iAmp = s.indexOf("&", left);
-    }
-
-  return left < s.length ? out + s.substring(left) : out;
-}
-
 // Hydrate
+export function hydrate(code, element) {
+  hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
+  hydration.context = { id: "0", count: 0, registry: {} };
+  const templates = element.querySelectorAll(`*[data-hk]`);
+  Array.prototype.reduce.call(
+    templates,
+    (memo, node) => {
+      const id = node.getAttribute("data-hk"),
+        list = memo[id] || (memo[id] = []);
+      list.push(node);
+      return memo;
+    },
+    hydration.context.registry
+  );
+  const dispose = render(code, element, [...element.childNodes]);
+  delete hydration.context;
+  return dispose;
+}
+
 export function getNextElement(template, isSSR) {
-  hydration = globalThis._$HYDRATION;
-  const hydrate = hydration.context;
+  const hydrate = hydration && hydration.context;
   let node, key;
   if (
     !hydrate ||
@@ -298,7 +184,7 @@ export function getNextElement(template, isSSR) {
     !((key = getHydrationKey()) && hydrate.registry[key] && (node = hydrate.registry[key].shift()))
   ) {
     const el = template.cloneNode(true);
-    if (isSSR && hydrate) el.setAttribute("_hk", getHydrationKey());
+    if (isSSR && hydrate) el.setAttribute("data-hk", getHydrationKey());
     return el;
   }
   if (hydration && hydration.completed) hydration.completed.add(node);
@@ -336,26 +222,6 @@ export function runHydrationEvents() {
       events.shift();
     }
   }
-}
-
-export function getHydrationKey() {
-  return globalThis._$HYDRATION.context.id;
-}
-
-export function generateHydrationScript({
-  eventNames = ["click", "input", "blur"],
-  streaming,
-  resolved
-} = {}) {
-  let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
-    '","'
-  )}"].forEach(t=>document.addEventListener(t,e))})();`;
-  if (streaming) {
-    s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`;
-  }
-  if (resolved)
-    s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(_$HYDRATION.resources || {})}');`;
-  return s;
 }
 
 // Internal Functions
