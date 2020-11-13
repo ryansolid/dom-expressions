@@ -10,7 +10,8 @@ pluginTester({
     generate: "ssr",
     hydratable: true,
     contextToCustomElements: true,
-    staticMarker: "@once"
+    staticMarker: "@once",
+    wrapSpreads: false
   },
   title: 'Convert JSX',
   fixtures: path.join(__dirname, '__ssr_hydratable_fixtures__'),

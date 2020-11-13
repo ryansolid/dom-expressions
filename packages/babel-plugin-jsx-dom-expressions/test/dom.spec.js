@@ -11,7 +11,8 @@ pluginTester({
     delegateEvents: true,
     wrapConditionals: true,
     contextToCustomElements: true,
-    staticMarker: "@once"
+    staticMarker: "@once",
+    wrapSpreads: false
   },
   title: 'Convert JSX',
   fixtures: path.join(__dirname, '__dom_fixtures__'),
