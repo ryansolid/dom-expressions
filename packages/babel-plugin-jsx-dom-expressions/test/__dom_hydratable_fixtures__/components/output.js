@@ -113,6 +113,12 @@ const template = props => {
     _$insert(
       _el$6,
       _$createComponent(Context.Consumer, {
+        ref(r$) {
+          const _ref$4 = props.consumerRef();
+
+          typeof _ref$4 === "function" && _ref$4(r$);
+        },
+
         children: context => context
       }),
       _el$14,
@@ -401,3 +407,9 @@ class Template13 {
     });
   }
 }
+
+const Template14 = _$createComponent(Component, {
+  get children() {
+    return data();
+  }
+});

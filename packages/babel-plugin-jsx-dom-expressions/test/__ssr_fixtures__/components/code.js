@@ -17,7 +17,7 @@ const template = props => {
         {/* Comment Node */}
         <div>{content}</div>
       </Child>
-      <Context.Consumer>{context => context}</Context.Consumer>
+      <Context.Consumer ref={props.consumerRef()}>{context => context}</Context.Consumer>
     </div>
   );
 };
@@ -118,3 +118,5 @@ class Template13 {
     </Component>;
   }
 }
+
+const Template14 = <Component>{data()}</Component>;

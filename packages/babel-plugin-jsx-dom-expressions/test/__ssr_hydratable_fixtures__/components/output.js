@@ -217,3 +217,9 @@ class Template13 {
     });
   }
 }
+
+const Template14 = _$createComponent(Component, {
+  get children() {
+    return data();
+  }
+});
