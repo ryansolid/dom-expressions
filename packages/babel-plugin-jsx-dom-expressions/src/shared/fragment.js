@@ -11,7 +11,7 @@ export default function transformFragmentChildren(children, results) {
     singleChild = filteredChildren.length === 1,
     childNodes = filteredChildren.map(path => {
       if (t.isJSXText(path.node)) return t.stringLiteral(trimWhitespace(path.node.extra.raw));
-      const child = transformNode(path, { topLevel: true });
+      const child = transformNode(path, { topLevel: true, fragmentChild: true });
       return createTemplate(path, child, !singleChild);
     });
   results.exprs.push(singleChild ? childNodes[0] : t.arrayExpression(childNodes));

@@ -76,3 +76,61 @@ const template11 = _$ssr(
 const template12 = _$createComponent(Module, {
   children: state.children
 });
+
+const template13 = _$ssr(
+  ['<module data-hk="', '">', "</module>"],
+  _$getHydrationKey(),
+  _$escape(children)
+);
+
+const template14 = _$createComponent(Module, {
+  children: children
+});
+
+const template15 = _$ssr(
+  ['<module data-hk="', '">', "</module>"],
+  _$getHydrationKey(),
+  _$escape(dynamic.children)
+);
+
+const template16 = _$createComponent(Module, {
+  get children() {
+    return dynamic.children;
+  }
+});
+
+const template18 = _$ssr(
+  ['<module data-hk="', '">Hi <!--#-->', "<!--/--></module>"],
+  _$getHydrationKey(),
+  _$escape(children)
+);
+
+const template19 = _$createComponent(Module, {
+  get children() {
+    return ["Hi ", children];
+  }
+});
+
+const template20 = _$ssr(
+  ['<module data-hk="', '">', "</module>"],
+  _$getHydrationKey(),
+  _$escape(children())
+);
+
+const template21 = _$createComponent(Module, {
+  get children() {
+    return children();
+  }
+});
+
+const template22 = _$ssr(
+  ['<module data-hk="', '">', "</module>"],
+  _$getHydrationKey(),
+  _$escape(state.children())
+);
+
+const template23 = _$createComponent(Module, {
+  get children() {
+    return state.children();
+  }
+});

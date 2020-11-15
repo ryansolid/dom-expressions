@@ -24,3 +24,7 @@ const template15 = <module>{...dynamic.children}</module>
 const template16 = <Module>{...dynamic.children}</Module>
 const template18 = <module>Hi {...children}</module>
 const template19 = <Module>Hi {...children}</Module>
+const template20 = <module>{children()}</module>
+const template21 = <Module>{children()}</Module>
+const template22 = <module>{state.children()}</module>
+const template23 = <Module>{state.children()}</Module>

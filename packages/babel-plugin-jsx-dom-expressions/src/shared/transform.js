@@ -97,7 +97,11 @@ export function transformNode(path, info = {}) {
       (config.generate !== "ssr" || config.async) &&
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))
         ? transformCondition(path.get("expression"))
-        : !info.componentChild && t.isCallExpression(node.expression) && node.expression.arguments.length === 0
+        : !info.componentChild &&
+          (config.generate !== "ssr" || info.fragmentChild) &&
+          t.isCallExpression(node.expression) &&
+          !t.isMemberExpression(node.expression.callee) &&
+          node.expression.arguments.length === 0
         ? node.expression.callee
         : t.arrowFunctionExpression([], node.expression);
     return {

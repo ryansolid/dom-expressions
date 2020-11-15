@@ -135,3 +135,31 @@ const template19 = _$createComponent(Module, {
     return ["Hi ", children];
   }
 });
+
+const template20 = (() => {
+  const _el$13 = _tmpl$2.cloneNode(true);
+
+  _$insert(_el$13, children);
+
+  return _el$13;
+})();
+
+const template21 = _$createComponent(Module, {
+  get children() {
+    return children();
+  }
+});
+
+const template22 = (() => {
+  const _el$14 = _tmpl$2.cloneNode(true);
+
+  _$insert(_el$14, () => state.children());
+
+  return _el$14;
+})();
+
+const template23 = _$createComponent(Module, {
+  get children() {
+    return state.children();
+  }
+});

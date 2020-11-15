@@ -72,3 +72,19 @@ const template19 = _$createComponent(Module, {
     return ["Hi ", children];
   }
 });
+
+const template20 = _$ssr(["<module>", "</module>"], _$escape(children()));
+
+const template21 = _$createComponent(Module, {
+  get children() {
+    return children();
+  }
+});
+
+const template22 = _$ssr(["<module>", "</module>"], _$escape(state.children()));
+
+const template23 = _$createComponent(Module, {
+  get children() {
+    return state.children();
+  }
+});
