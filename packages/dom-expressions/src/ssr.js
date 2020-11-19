@@ -100,7 +100,8 @@ export function escape(s, attr) {
 export function resolveSSRNode(node) {
   if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
   const t = typeof node;
-  if (node && t === "object") return resolveSSRNode(node.t);
+  if (node == null || t === "boolean") return "";
+  if (t === "object") return resolveSSRNode(node.t);
   if (t === "function") return resolveSSRNode(node());
-  return t === "string" ? node : JSON.stringify(node);
+  return t === "string" ? node : String(node);
 }
