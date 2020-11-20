@@ -54,7 +54,11 @@ export function ssrSpread(props) {
 }
 
 export function escape(s, attr) {
-  if (typeof s !== "string") return s;
+  const t = typeof s;
+  if (t !== "string") {
+    if (attr && t === "boolean") return String(s);
+    return s;
+  }
   const delim = attr ? '"' : "<";
   const escDelim = attr ? "&quot;" : "&lt;";
   let iDelim = s.indexOf(delim);
@@ -98,10 +102,11 @@ export function escape(s, attr) {
 }
 
 export function resolveSSRNode(node) {
-  if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
   const t = typeof node;
+  if (t === "string") return node;
   if (node == null || t === "boolean") return "";
+  if (Array.isArray(node)) return node.map(resolveSSRNode).join("");
   if (t === "object") return resolveSSRNode(node.t);
   if (t === "function") return resolveSSRNode(node());
-  return t === "string" ? node : String(node);
+  return String(node);
 }

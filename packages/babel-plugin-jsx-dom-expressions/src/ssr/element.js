@@ -68,12 +68,7 @@ function setAttr(results, name, value, isSVG) {
 }
 
 function escapeExpression(path, expression, attr) {
-  if (
-    t.isStringLiteral(expression) ||
-    t.isNumericLiteral(expression) ||
-    t.isJSXElement(expression) ||
-    t.isJSXFragment(expression)
-  ) {
+  if (t.isStringLiteral(expression) || t.isNumericLiteral(expression)) {
     return expression;
   } else if (t.isFunction(expression)) {
     expression.body = escapeExpression(path, expression.body, attr);
@@ -138,7 +133,13 @@ function transformAttributes(path, results) {
       if (!t.isJSXExpressionContainer(attr.value)) {
         const prev = quasis.pop();
         quasis.push(
-          t.TemplateElement({ raw: (prev ? prev.value.raw : "") + (i ? " " : "") + `${attr.value.value}` + (isLast ? "" : " ") })
+          t.TemplateElement({
+            raw:
+              (prev ? prev.value.raw : "") +
+              (i ? " " : "") +
+              `${attr.value.value}` +
+              (isLast ? "" : " ")
+          })
         );
       } else {
         values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
@@ -297,7 +298,7 @@ function transformAttributes(path, results) {
 }
 
 function transformChildren(path, results) {
-  const { hydratable } = config,
+  const { hydratable, async } = config,
     doEscape = !path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"), true);
   filteredChildren.forEach(node => {
