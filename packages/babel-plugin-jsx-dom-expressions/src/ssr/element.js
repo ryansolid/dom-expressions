@@ -1,5 +1,10 @@
 import * as t from "@babel/types";
-import { Aliases, ChildProperties, SVGElements } from "dom-expressions/src/constants";
+import {
+  BooleanAttributes,
+  Aliases,
+  ChildProperties,
+  SVGElements
+} from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import config from "../config";
 import {
@@ -238,6 +243,17 @@ function transformAttributes(path, results) {
         )
           dynamic = true;
 
+        if (BooleanAttributes.has(key)) {
+          registerImportMethod(attribute, "ssrBoolean");
+          results.template.push("");
+          const fn =  t.callExpression(t.identifier("_$ssrBoolean"), [
+            t.identifier(key), value.expression
+          ]);
+          results.templateValues.push(
+            dynamic ? t.arrowFunctionExpression([], fn) : fn
+          );
+          return;
+        }
         if (key === "style") {
           if (
             t.isJSXExpressionContainer(value) &&

@@ -1,3 +1,4 @@
+import { ssrBoolean as _$ssrBoolean } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
@@ -83,3 +84,15 @@ const template10 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 const template11 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 
 const template12 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
+
+const template13 = _$ssr(
+  ['<input data-hk="', '" type="checkbox"', ">"],
+  _$getHydrationKey(),
+  _$ssrBoolean(checked, true)
+);
+
+const template14 = _$ssr(
+  ['<input data-hk="', '" type="checkbox"', ">"],
+  _$getHydrationKey(),
+  _$ssrBoolean(checked, state.visible)
+);

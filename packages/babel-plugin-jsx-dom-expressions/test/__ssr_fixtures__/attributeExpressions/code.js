@@ -32,7 +32,7 @@ const template3 = (
 
 const template4 = <div class="hi" className={state.class} />;
 
-const template5 = <div class="a" className="b"></div>
+const template5 = <div class="a" className="b"></div>;
 
 const template6 = <div style={someStyle()} textContent="Hi" />;
 
@@ -53,3 +53,7 @@ const template10 = <div ref={refFactory()} />;
 const template11 = <div use:something use:another={thing} />;
 
 const template12 = <div prop:htmlFor={thing} />;
+
+const template13 = <input type="checkbox" checked={true} />;
+
+const template14 = <input type="checkbox" checked={state.visible} />;

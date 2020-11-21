@@ -1,3 +1,4 @@
+import { ssrBoolean as _$ssrBoolean } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
@@ -69,3 +70,7 @@ const template10 = _$ssr("<div></div>");
 const template11 = _$ssr("<div></div>");
 
 const template12 = _$ssr("<div></div>");
+
+const template13 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean(checked, true));
+
+const template14 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean(checked, state.visible));

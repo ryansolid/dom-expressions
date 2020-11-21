@@ -1,4 +1,4 @@
-import { Aliases } from "./constants";
+import { Aliases, BooleanAttributes } from "./constants";
 export { effect, memo, currentContext, createComponent } from "rxcore";
 export { assignProps, dynamicProperty, getHydrationKey } from "./shared";
 
@@ -44,6 +44,9 @@ export function ssrSpread(props) {
         result += `style="${ssrStyle(value)}"`;
       } else if (prop === "classList") {
         result += `class="${ssrClassList(value)}"`;
+      } else if (BooleanAttributes.has(prop)) {
+        if (value) result += prop;
+        else continue;
       } else {
         result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
       }
@@ -51,6 +54,10 @@ export function ssrSpread(props) {
     }
     return result;
   };
+}
+
+export function ssrBoolean(key, value) {
+  return value ? " " + key : "";
 }
 
 export function escape(s, attr) {

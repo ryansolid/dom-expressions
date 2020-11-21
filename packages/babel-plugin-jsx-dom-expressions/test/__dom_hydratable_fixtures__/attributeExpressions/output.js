@@ -9,7 +9,8 @@ import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
   _tmpl$2 = _$template(`<div><div></div><div></div></div>`, 6),
-  _tmpl$3 = _$template(`<div></div>`, 2);
+  _tmpl$3 = _$template(`<div></div>`, 2),
+  _tmpl$4 = _$template(`<input type="checkbox">`, 1);
 
 const template = (() => {
   const _el$ = _$getNextElement(_tmpl$),
@@ -173,4 +174,19 @@ const template12 = (() => {
 
   _el$17.htmlFor = thing;
   return _el$17;
+})();
+
+const template13 = (() => {
+  const _el$18 = _$getNextElement(_tmpl$4);
+
+  _el$18.checked = true;
+  return _el$18;
+})();
+
+const template14 = (() => {
+  const _el$19 = _$getNextElement(_tmpl$4);
+
+  _$effect(() => (_el$19.checked = state.visible));
+
+  return _el$19;
 })();

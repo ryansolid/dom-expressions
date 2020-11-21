@@ -1,27 +1,39 @@
-const Properties = new Set([
-  "className",
-  "autocapitalize",
-  "autofocus",
+const booleans = [
   "allowfullscreen",
+  "allowpaymentrequest",
+  "async",
+  "autofocus",
   "autoplay",
-  "capture",
   "checked",
   "controls",
   "default",
   "disabled",
+  "formnovalidate",
   "hidden",
-  "indeterminate",
+  "ismap",
+  "itemscope",
   "loop",
+  "multiple",
   "muted",
+  "nomodule",
   "novalidate",
   "open",
-  "readOnly",
+  "playsinline",
+  "readonly",
   "required",
   "reversed",
-  "scoped",
   "seamless",
   "selected",
-  "value"
+  "truespeed"
+];
+
+const BooleanAttributes = new Set(booleans);
+
+const Properties = new Set([
+  "className",
+  "indeterminate",
+  "value",
+  ...booleans
 ]);
 
 const ChildProperties = new Set(["innerHTML", "textContent", "innerText", "children"]);
@@ -154,4 +166,4 @@ const SVGNamespace = {
   xml: "http://www.w3.org/XML/1998/namespace"
 };
 
-export { Properties, ChildProperties, Aliases, NonComposedEvents, SVGElements, SVGNamespace };
+export { BooleanAttributes, Properties, ChildProperties, Aliases, NonComposedEvents, SVGElements, SVGNamespace };
