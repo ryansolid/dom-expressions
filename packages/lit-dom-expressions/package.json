@@ -1,7 +1,7 @@
 {
   "name": "lit-dom-expressions",
   "description": "A Fine-Grained Rendering Runtime API using Tagged Template Literals",
-  "version": "0.23.4",
+  "version": "0.23.5",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -18,7 +18,7 @@
     "test:coverage": "npm run build && jest --coverage"
   },
   "devDependencies": {
-    "dom-expressions": "^0.23.4",
+    "dom-expressions": "^0.23.5",
     "html-parse-string": "0.0.5"
   }
 }
