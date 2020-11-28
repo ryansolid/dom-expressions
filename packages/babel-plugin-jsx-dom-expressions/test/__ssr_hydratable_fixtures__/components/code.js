@@ -1,3 +1,5 @@
+import { Show } from "somewhere"
+
 const Child = props => (
   <>
     <div ref={props.ref}>Hello {props.name}</div>
@@ -49,7 +51,7 @@ const template5 = <Child dynamic={state.dynamic}>{state.dynamic}</Child>;
 // builtIns
 const template6 = (
   <For each={state.list} fallback={<Loading />}>
-    {item => item}
+    {item => <Show when={state.condition}>{item}</Show>}
   </For>
 );
 

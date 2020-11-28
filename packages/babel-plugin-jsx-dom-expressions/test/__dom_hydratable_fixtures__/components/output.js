@@ -21,6 +21,8 @@ const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
   ),
   _tmpl$7 = _$template(`<div> | <!--#--><!--/--> |  |  | <!--#--><!--/--> | </div>`, 6);
 
+import { Show } from "somewhere";
+
 const Child = props => [
   (() => {
     const _el$ = _$getNextElement(_tmpl$),
@@ -182,7 +184,14 @@ const template6 = _$createComponent(_$For, {
     return _$createComponent(Loading, {});
   },
 
-  children: item => item
+  children: item =>
+    _$createComponent(Show, {
+      get when() {
+        return state.condition;
+      },
+
+      children: item
+    })
 });
 
 const template7 = _$createComponent(Child, {

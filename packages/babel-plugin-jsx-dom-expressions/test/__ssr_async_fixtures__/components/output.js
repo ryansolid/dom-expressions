@@ -3,6 +3,7 @@ import { createComponent as _$createComponent } from "r-server";
 import { assignProps as _$assignProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
+import { Show } from "somewhere";
 
 const Child = props => [
   _$ssr(["<div>Hello ", "</div>"], () => _$escape(props.name)),
@@ -89,7 +90,14 @@ const template6 = _$createComponent(_$For, {
     return _$createComponent(Loading, {});
   },
 
-  children: item => item
+  children: item =>
+    _$createComponent(Show, {
+      get when() {
+        return state.condition;
+      },
+
+      children: item
+    })
 });
 
 const template7 = _$createComponent(Child, {

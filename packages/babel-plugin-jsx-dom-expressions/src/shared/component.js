@@ -19,7 +19,7 @@ export default function transformComponent(path) {
     exprs = [],
     tagName = getTagName(path.node);
 
-  if (config.builtIns.indexOf(tagName) > -1) {
+  if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
     registerImportMethod(path, tagName);
     tagName = `_$${tagName}`;
   }

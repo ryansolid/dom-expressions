@@ -6,7 +6,7 @@ pluginTester({
   plugin,
   pluginOptions: {
     moduleName: 'r-dom',
-    builtIns: ['For'],
+    builtIns: ['For', 'Show'],
     generate: "dom",
     hydratable: true,
     contextToCustomElements: true,

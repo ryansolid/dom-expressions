@@ -12,6 +12,8 @@ const _tmpl$ = _$template(`<div>Hello </div>`, 2),
   _tmpl$5 = _$template(`<div> | <!----> | <!----> | </div>`, 4),
   _tmpl$6 = _$template(`<div> | <!----> |  |  | <!----> | </div>`, 4);
 
+import { Show } from "somewhere";
+
 const Child = props => [
   (() => {
     const _el$ = _tmpl$.cloneNode(true),
@@ -152,7 +154,14 @@ const template6 = _$createComponent(_$For, {
     return _$createComponent(Loading, {});
   },
 
-  children: item => item
+  children: item =>
+    _$createComponent(Show, {
+      get when() {
+        return state.condition;
+      },
+
+      children: item
+    })
 });
 
 const template7 = _$createComponent(Child, {

@@ -6,7 +6,7 @@ pluginTester({
   plugin,
   pluginOptions: {
     moduleName: 'r-server',
-    builtIns: ['For'],
+    builtIns: ['For', 'Show'],
     generate: "ssr",
     contextToCustomElements: true,
     staticMarker: "@once",
