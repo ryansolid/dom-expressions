@@ -42,6 +42,7 @@ const findAttributes = new RegExp(
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 const marker = "<!--#-->";
+const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -116,7 +117,17 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
 
   function parseKeyValue(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
     let count = options.counter++,
-      expr = `!doNotWrap ? exprs[${count}]() : exprs[${count}]`;
+      expr = `!doNotWrap ? exprs[${count}]() : exprs[${count}]`,
+      parts,
+      namespace;
+
+    if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
+      name = parts[1];
+      namespace = parts[0];
+    }
+    const isChildProp = r.ChildProperties.has(name);
+    const isProp = r.Properties.has(name);
+
     if (name === "style") {
       options.exprs.push(`r.style(${tag}, ${expr})`);
     } else if (name === "classList") {
@@ -133,8 +144,11 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
         `const v${id} = ${expr}`,
         `for (const e in v${id}) ${tag}.addEventListener(e, v${id}[e], true)`
       );
-    } else if (r.ChildProperties.has(name) || (!isSVG && r.Properties.has(name)) || isCE) {
-      if (isCE) name = toPropertyName(name);
+    } else if (
+      namespace !== "attr" &&
+      (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")
+    ) {
+      if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
       options.exprs.push(`${tag}.${name} = ${expr}`);
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
