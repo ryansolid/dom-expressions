@@ -1,7 +1,7 @@
 {
   "name": "dom-expressions-build",
   "description": "A Fine-Grained Runtime for Performant DOM Rendering",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -42,6 +42,6 @@
     "rollup": "^2.33.1",
     "rollup-plugin-cleanup": "^3.2.1",
     "s-js": "0.4.9",
-    "typescript": "~4.0.5"
+    "typescript": "~4.1.2"
   }
 }
