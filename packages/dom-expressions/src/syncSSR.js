@@ -46,7 +46,11 @@ export function renderToWebStream(code) {
     const id = ++count;
     p.then(d => {
       writer.write(
-        encoder.encode(`<script>_$HYDRATION.resolveResource(${id}, ${JSON.stringify(d)})</script>`)
+        encoder.encode(
+          `<script>_$HYDRATION.resolveResource(${id}, ${JSON.stringify(d)
+            .replace(/'/g, "\\'")
+            .replace(/\\\"/g, '\\\\\\"')})</script>`
+        )
       );
       ++completed && checkEnd();
     });

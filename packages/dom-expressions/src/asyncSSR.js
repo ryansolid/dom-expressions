@@ -41,12 +41,12 @@ export function ssr(t, ...nodes) {
   };
 }
 
-export function generateHydrationScript({
-  eventNames = ["click", "input", "blur"]
-} = {}) {
+export function generateHydrationScript({ eventNames = ["click", "input", "blur"] } = {}) {
   let s = `(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
-  s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(_$HYDRATION.resources || {}).replace(/'/g, "\\\'").replace(/\\\"/g, '\\\\\\\"')}');`;
+  s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(_$HYDRATION.resources || {})
+    .replace(/'/g, "\\'")
+    .replace(/\\\"/g, '\\\\\\"')}');`;
   return s;
 }
