@@ -52,7 +52,7 @@ export function renderToWebStream(code) {
             .replace(/\\\"/g, '\\\\\\"')})</script>`
         )
       );
-      ++completed && checkEnd();
+      ++completed && setTimeout(checkEnd);
     });
   };
   writer.write(encoder.encode(resolveSSRNode(code())));
