@@ -138,6 +138,8 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
           node[`__${name}Data`] = value[1];
         } else node[`__${name}`] = value;
         delegateEvents([name]);
+      } else if (Array.isArray(value)) {
+        node[lc] = (e) => value[0](value[1], e);
       } else node[lc] = value;
     } else if (
       (isChildProp = ChildProperties.has(prop)) ||
