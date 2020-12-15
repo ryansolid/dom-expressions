@@ -8,6 +8,7 @@ export function renderToNodeStream(code) {
   });
   const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
+  hydration.streamSSR = true;
   let count = 0,
     completed = 0,
     checkEnd = () => {
@@ -34,10 +35,11 @@ export function renderToWebStream(code) {
   const encoder = new TextEncoder();
   const hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
   hydration.context = { id: "0", count: 0 };
+  hydration.streamSSR = true;
   let count = 0,
     completed = 0,
     checkEnd = () => {
-      if (completed === count) {
+      if (hydration.context && completed === count) {
         writer.close();
         delete hydration.context;
       }
@@ -52,7 +54,7 @@ export function renderToWebStream(code) {
             .replace(/\\\"/g, '\\\\\\"')})</script>`
         )
       );
-      ++completed && setTimeout(checkEnd);
+      ++completed && checkEnd();
     });
   };
   writer.write(encoder.encode(resolveSSRNode(code())));
