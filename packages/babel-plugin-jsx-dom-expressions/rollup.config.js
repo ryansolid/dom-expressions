@@ -4,9 +4,7 @@ import path from "path";
 const plugins = [
   nodeResolve({
     rootDir: path.join(process.cwd(), "../.."),
-    customResolveOptions: {
-      moduleDirectory: ["node_modules", "packages"]
-    }
+    moduleDirectories: ["node_modules", "packages"]
   })
 ];
 
