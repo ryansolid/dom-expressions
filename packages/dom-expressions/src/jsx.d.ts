@@ -2794,6 +2794,7 @@ export namespace JSX {
     height?: number | string;
     contentScriptType?: string;
     contentStyleType?: string;
+    xmlns?: string;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
