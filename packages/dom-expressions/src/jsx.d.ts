@@ -2785,7 +2785,7 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
-      Pick<PresentationSVGAttributes, "display" | "visibility"> {
+      PresentationSVGAttributes {
     version?: string;
     "base-profile"?: string;
     x?: number | string;
