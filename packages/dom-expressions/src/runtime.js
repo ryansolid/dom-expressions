@@ -139,7 +139,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
         } else node[`__${name}`] = value;
         delegateEvents([name]);
       } else if (Array.isArray(value)) {
-        node[lc] = (e) => value[0](value[1], e);
+        node[lc] = e => value[0](value[1], e);
       } else node[lc] = value;
     } else if (
       (isChildProp = ChildProperties.has(prop)) ||
@@ -294,7 +294,11 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     if (hydration && hydration.context && hydration.context.registry) return current;
     current = cleanChildren(parent, current, marker);
   } else if (t === "function") {
-    effect(() => (current = insertExpression(parent, value(), current, marker)));
+    effect(() => {
+      let v = value();
+      while (typeof v === "function") v = v();
+      current = insertExpression(parent, v, current, marker);
+    });
     return () => current;
   } else if (Array.isArray(value)) {
     const array = [];
@@ -348,8 +352,9 @@ function normalizeIncomingArray(normalized, array, unwrap) {
       normalized.push(document.createTextNode(item));
     } else if (t === "function") {
       if (unwrap) {
-        const idx = item();
-        dynamic = normalizeIncomingArray(normalized, Array.isArray(idx) ? idx : [idx]) || dynamic;
+        while (typeof item === "function") item = item();
+        dynamic =
+          normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item]) || dynamic;
       } else {
         normalized.push(item);
         dynamic = true;

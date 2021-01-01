@@ -25,7 +25,17 @@ export function ssr(t, ...nodes) {
 
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
-    if (typeof n === "function") nodes[i] = memo(() => resolveSSRNode(n()));
+    if (typeof n === "function") nodes[i] = memo(() => {
+      let v = n();
+      if (typeof v === "function") {
+        return memo(() => {
+          let val = v();
+          while(typeof val === "function") val = val();
+          return resolveSSRNode(val);
+        })
+      }
+      return resolveSSRNode(v)
+    });
   }
 
   return {
