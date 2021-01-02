@@ -71,6 +71,6 @@ const template11 = _$ssr("<div></div>");
 
 const template12 = _$ssr("<div></div>");
 
-const template13 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean(checked, true));
+const template13 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean("checked", true));
 
-const template14 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean(checked, state.visible));
+const template14 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean("checked", state.visible));

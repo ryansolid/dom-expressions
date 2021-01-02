@@ -88,11 +88,11 @@ const template12 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
 const template13 = _$ssr(
   ['<input data-hk="', '" type="checkbox"', ">"],
   _$getHydrationKey(),
-  _$ssrBoolean(checked, true)
+  _$ssrBoolean("checked", true)
 );
 
 const template14 = _$ssr(
   ['<input data-hk="', '" type="checkbox"', ">"],
   _$getHydrationKey(),
-  _$ssrBoolean(checked, state.visible)
+  _$ssrBoolean("checked", state.visible)
 );

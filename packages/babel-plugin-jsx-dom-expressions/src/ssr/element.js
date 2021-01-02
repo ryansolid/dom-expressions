@@ -247,7 +247,7 @@ function transformAttributes(path, results) {
           registerImportMethod(attribute, "ssrBoolean");
           results.template.push("");
           const fn =  t.callExpression(t.identifier("_$ssrBoolean"), [
-            t.identifier(key), value.expression
+            t.stringLiteral(key), value.expression
           ]);
           results.templateValues.push(
             dynamic ? t.arrowFunctionExpression([], fn) : fn
