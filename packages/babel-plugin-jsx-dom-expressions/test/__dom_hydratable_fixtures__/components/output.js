@@ -7,19 +7,16 @@ import { getNextElement as _$getNextElement } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
-const _tmpl$ = _$template(`<div>Hello <!--#--><!--/--></div>`, 4),
+const _tmpl$ = _$template(`<div>Hello <!#><!/></div>`, 4),
   _tmpl$2 = _$template(`<div></div>`, 2),
   _tmpl$3 = _$template(`<div>From Parent</div>`, 2),
-  _tmpl$4 = _$template(`<div><!--#--><!--/--><!--#--><!--/--><!--#--><!--/--></div>`, 8),
+  _tmpl$4 = _$template(`<div><!#><!/><!#><!/><!#><!/></div>`, 8),
   _tmpl$5 = _$template(
-    `<div><!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--> | <!--#--><!--/--></div>`,
+    `<div><!#><!/> | <!#><!/> | <!#><!/> | <!#><!/> | <!#><!/> | <!#><!/></div>`,
     14
   ),
-  _tmpl$6 = _$template(
-    `<div><!--#--><!--/--> | <!--#--><!--/--><!--#--><!--/--> | <!--#--><!--/--><!--#--><!--/--> | <!--#--><!--/--></div>`,
-    14
-  ),
-  _tmpl$7 = _$template(`<div> | <!--#--><!--/--> |  |  | <!--#--><!--/--> | </div>`, 6);
+  _tmpl$6 = _$template(`<div><!#><!/> | <!#><!/><!#><!/> | <!#><!/><!#><!/> | <!#><!/></div>`, 14),
+  _tmpl$7 = _$template(`<div> | <!#><!/> |  |  | <!#><!/> | </div>`, 6);
 
 import { Show } from "somewhere";
 

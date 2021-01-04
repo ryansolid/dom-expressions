@@ -564,7 +564,7 @@ function transformChildren(path, results) {
 function createPlaceholder(path, results, tempPath, i, char) {
   const exprId = path.scope.generateUidIdentifier("el$");
   let contentId;
-  results.template += `<!--${char}-->`;
+  results.template += `<!${char}>`;
   if (config.hydratable && char === "/") {
     registerImportMethod(path, "getNextMarker");
     contentId = path.scope.generateUidIdentifier("co$");

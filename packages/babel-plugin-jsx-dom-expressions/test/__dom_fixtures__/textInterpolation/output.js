@@ -5,8 +5,8 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
   _tmpl$2 = _$template(`<span> John</span>`, 2),
   _tmpl$3 = _$template(`<span>Hello John</span>`, 2),
   _tmpl$4 = _$template(`<span> </span>`, 2),
-  _tmpl$5 = _$template(`<span> <!----> <!----> </span>`, 4),
-  _tmpl$6 = _$template(`<span> <!----> </span>`, 3),
+  _tmpl$5 = _$template(`<span> <!> <!> </span>`, 4),
+  _tmpl$6 = _$template(`<span> <!> </span>`, 3),
   _tmpl$7 = _$template(`<span>Hello</span>`, 2),
   _tmpl$8 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
 
