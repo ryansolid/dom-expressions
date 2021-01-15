@@ -1,6 +1,6 @@
 import * as S from "s-js";
 import { createHyperScript } from "../dist/hyper-dom-expressions";
-import * as r from "dom-expressions/src/runtime";
+import * as r from "dom-expressions/src/client";
 
 const h = createHyperScript(r);
 

@@ -18,5 +18,6 @@ export function assignProps(target, ...sources) {
 }
 
 export function getHydrationKey() {
-  return globalThis._$HYDRATION.context.id;
+  const hydrate = globalThis._$HYDRATION.context;
+  return `${hydrate.id}${hydrate.count++}`
 }

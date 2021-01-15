@@ -134,7 +134,7 @@ export default function transformComponent(path) {
           ) {
             let expr =
               config.wrapConditionals &&
-              (config.generate !== "ssr" || config.async) &&
+              config.generate !== "ssr" &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
                 ? transformCondition(attribute.get("value").get("expression"))

@@ -45,5 +45,5 @@ export function assignProps(target: unknown, ...sources: unknown[]): unknown;
 
 export function hydrate(fn: () => JSX.Element, node: MountableElement): void;
 export function getHydrationKey(): string;
-export function getNextElement(template: HTMLTemplateElement, isSSR: boolean): Node;
+export function getNextElement(template: HTMLTemplateElement): Node;
 export function getNextMarker(start: Node): [Node, Array<Node>];

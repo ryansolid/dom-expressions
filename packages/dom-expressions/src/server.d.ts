@@ -1,17 +1,44 @@
+// forward declarations
+declare namespace NodeJS {
+  interface ReadableStream {}
+}
+
 export function renderToString<T>(
   fn: () => T,
   options?: {
+    eventNames?: string[];
+  }
+): string;
+export function renderToStringAsync<T>(
+  fn: () => T,
+  options?: {
+    eventNames?: string[];
     timeoutMs?: number;
   }
-): T extends Promise<any> ? Promise<string> : string;
-export function ssr(template: string[] | string, ...nodes: any[]): { t: string | (() => string) };
+): Promise<string>;
+export function renderToNodeStream<T>(
+  fn: () => T,
+  options?: {
+    eventNames?: string[];
+  }
+): NodeJS.ReadableStream;
+export function renderToWebStream<T>(
+  fn: () => T,
+  options?: {
+    eventNames?: string[];
+  }
+): ReadableStream;
+export function ssr(template: string[] | string, ...nodes: any[]): { t: string };
 export function resolveSSRNode(node: any): string;
 export function ssrClassList(value: { [k: string]: boolean }): string;
 export function ssrStyle(value: { [k: string]: string }): string;
 export function ssrSpread(accessor: any): () => string;
 export function ssrBoolean(key: string, value: boolean): string;
 export function escape(html: string): string;
-export function generateHydrationScript(options?: { eventNames?: string[] }): string;
+export function generateHydrationScript(options?: {
+  eventNames?: string[];
+  streaming?: boolean;
+}): string;
 export function getHydrationKey(): string;
 export function effect<T>(fn: (prev?: T) => T, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;

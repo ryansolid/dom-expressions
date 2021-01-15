@@ -1,5 +1,4 @@
-import * as r from "../src/asyncSSR";
-import * as r2 from "../src/syncSSR";
+import * as r from "../src/server";
 import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" checked class="selected" style="color:red"><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
@@ -44,9 +43,9 @@ const Comp2 = () => {
 describe("renderToString", () => {
   it("renders as expected", async () => {
     let res = r.renderToString(Comp1);
-    expect(res).toBe(fixture);
+    expect(res.split("<script>")[0]).toBe(fixture);
     res = r.renderToString(Comp2);
-    expect(res).toBe(fixture2);
+    expect(res.split("<script>")[0]).toBe(fixture2);
   });
 });
 
@@ -60,8 +59,8 @@ describe("renderToNodeStream", () => {
     });
   }
   it("renders as expected", async () => {
-    let res = await streamToString(r2.renderToNodeStream(Comp2));
-    expect(res).toBe(fixture2);
+    let res = await streamToString(r.renderToNodeStream(Comp2));
+    expect(res.split("<script>")[0]).toBe(fixture2);
   });
 });
 
@@ -76,7 +75,7 @@ describe("renderToNodeStream", () => {
 //     });
 //   }
 //   it("renders as expected", async () => {
-//     let res = await streamToString(r2.renderToWebStream(Comp2));
+//     let res = await streamToString(r.renderToWebStream(Comp2));
 //     expect(res).toBe(fixture2);
 //   });
 // });

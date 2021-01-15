@@ -94,7 +94,7 @@ export function transformNode(path, info = {}) {
     }
     const expr =
       config.wrapConditionals &&
-      (config.generate !== "ssr" || config.async) &&
+      config.generate !== "ssr" &&
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))
         ? transformCondition(path.get("expression"))
         : !info.componentChild &&

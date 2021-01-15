@@ -160,34 +160,22 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 // Hydrate
 export function hydrate(code, element) {
   hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
-  hydration.context = { id: "0", count: 0, registry: {} };
+  hydration.context = { id: "", count: 0, registry: new Map() };
   const templates = element.querySelectorAll(`*[data-hk]`);
-  Array.prototype.reduce.call(
-    templates,
-    (memo, node) => {
-      const id = node.getAttribute("data-hk"),
-        list = memo[id] || (memo[id] = []);
-      list.push(node);
-      return memo;
-    },
-    hydration.context.registry
-  );
+  for (let i = 0; i < templates.length; i++) {
+    const node = templates[i];
+    hydration.context.registry.set(node.getAttribute("data-hk"), node);
+  }
   const dispose = render(code, element, [...element.childNodes]);
   delete hydration.context;
   return dispose;
 }
 
-export function getNextElement(template, isSSR) {
+export function getNextElement(template) {
   const hydrate = hydration && hydration.context;
   let node, key;
-  if (
-    !hydrate ||
-    !hydrate.registry ||
-    !((key = getHydrationKey()) && hydrate.registry[key] && (node = hydrate.registry[key].shift()))
-  ) {
-    const el = template.cloneNode(true);
-    if (isSSR && hydrate) el.setAttribute("data-hk", getHydrationKey());
-    return el;
+  if (!hydrate || !hydrate.registry || !(node = hydrate.registry.get((key = getHydrationKey())))) {
+    return template.cloneNode(true);
   }
   if (hydration && hydration.completed) hydration.completed.add(node);
   return node;

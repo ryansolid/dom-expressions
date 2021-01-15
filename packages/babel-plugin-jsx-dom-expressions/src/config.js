@@ -2,7 +2,6 @@ export default {
   moduleName: "dom",
   generate: "dom",
   hydratable: false,
-  async: false,
   delegateEvents: true,
   nonDelegateEvents: [],
   builtIns: [],

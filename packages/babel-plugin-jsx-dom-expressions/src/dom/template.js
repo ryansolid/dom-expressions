@@ -57,7 +57,7 @@ export function appendTemplates(path, templates) {
 }
 
 function registerTemplate(path, results) {
-  const { generate, hydratable } = config;
+  const { hydratable } = config;
   let decl;
   if (results.template.length) {
     const templates =
