@@ -2016,6 +2016,7 @@ export namespace JSX {
     crossorigin?: HTMLCrossorigin;
     decoding?: "sync" | "async" | "auto";
     height?: number | string;
+    loading?: "eager" | "lazy";
     referrerpolicy?: HTMLReferrerPolicy;
     referrerPolicy?: HTMLReferrerPolicy;
     sizes?: string;
