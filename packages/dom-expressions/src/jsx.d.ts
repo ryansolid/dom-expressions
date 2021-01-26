@@ -2016,13 +2016,16 @@ export namespace JSX {
     crossorigin?: HTMLCrossorigin;
     decoding?: "sync" | "async" | "auto";
     height?: number | string;
+    loading?: "eager" | "lazy";
     referrerpolicy?: HTMLReferrerPolicy;
+    referrerPolicy?: HTMLReferrerPolicy;
     sizes?: string;
     src?: string;
     srcset?: string;
+    srcSet?: string;
+    useMap?: string;
     width?: number | string;
     crossOrigin?: HTMLCrossorigin;
-    referrerPolicy?: HTMLReferrerPolicy;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string;
