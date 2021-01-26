@@ -2023,6 +2023,7 @@ export namespace JSX {
     src?: string;
     srcset?: string;
     srcSet?: string;
+    usemap?: string;
     useMap?: string;
     width?: number | string;
     crossOrigin?: HTMLCrossorigin;
