@@ -1,3 +1,5 @@
+import { sharedConfig } from "rxcore";
+
 export function dynamicProperty(props, key) {
   const src = props[key];
   Object.defineProperty(props, key, {
@@ -18,6 +20,6 @@ export function assignProps(target, ...sources) {
 }
 
 export function getHydrationKey() {
-  const hydrate = globalThis._$HYDRATION.context;
-  return `${hydrate.id}${hydrate.count++}`
+  const hydrate = sharedConfig.context;
+  return `${hydrate.id}${hydrate.count++}`;
 }

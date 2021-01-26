@@ -1,21 +1,22 @@
 import { Readable } from "stream";
 import { Aliases, BooleanAttributes } from "./constants";
-export { effect, memo, currentContext, createComponent } from "rxcore";
+import { sharedConfig } from "rxcore";
+export { createComponent } from "rxcore";
 export { assignProps, dynamicProperty, getHydrationKey } from "./shared";
 
 export function renderToString(code, options = {}) {
-  globalThis._$HYDRATION = {
-    context: { id: "", count: 0 }
-  };
+  sharedConfig.context = { id: "", count: 0 };
   return resolveSSRNode(code()) + generateHydrationScript(options);
 }
 
 export function renderToStringAsync(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
   let resources;
-  globalThis._$HYDRATION = {
-    context: { id: "", count: 0 },
+  sharedConfig.context = {
+    id: "",
+    count: 0,
     resources: (resources = {}),
+    suspense: {},
     async: true
   };
   const timeout = new Promise((_, reject) =>
@@ -30,22 +31,21 @@ export function renderToNodeStream(code, options = {}) {
   const stream = new Readable({
     read() {}
   });
-  const hydration = (globalThis._$HYDRATION = {
-    context: { id: "", count: 0 },
-    streaming: true
-  });
+  sharedConfig.context = { id: "", count: 0, streaming: true, suspense: {} };
   let count = 0,
     completed = 0,
     checkEnd = () => {
       if (completed === count) {
         stream.push(null);
-        delete hydration.context;
+        delete sharedConfig.context;
       }
     };
-  hydration.register = p => {
-    const id = ++count;
+  sharedConfig.context.writeResource = (id, p) => {
+    count++;
     p.then(d => {
-      stream.push(`<script>_$HYDRATION.resolveResource(${id}, ${JSON.stringify(d)})</script>`);
+      stream.push( `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
+        .replace(/'/g, "\\'")
+        .replace(/\\\"/g, '\\\\\\"')})</script>`);
       ++completed && checkEnd();
     });
   };
@@ -58,24 +58,21 @@ export function renderToWebStream(code, options = {}) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
-  const hydration = (globalThis._$HYDRATION = {
-    context: { id: "", count: 0 },
-    streaming: true
-  });
+  sharedConfig.context = { id: "", count: 0, streaming: true };
   let count = 0,
     completed = 0,
     checkEnd = () => {
-      if (hydration.context && completed === count) {
+      if (sharedConfig.context && completed === count) {
         writer.close();
-        delete hydration.context;
+        delete sharedConfig.context;
       }
     };
-  hydration.register = p => {
-    const id = ++count;
+  sharedConfig.context.writeResource = (id, p) => {
+    count++;
     p.then(d => {
       writer.write(
         encoder.encode(
-          `<script>_$HYDRATION.resolveResource(${id}, ${JSON.stringify(d)
+          `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
             .replace(/'/g, "\\'")
             .replace(/\\\"/g, '\\\\\\"')})</script>`
         )
@@ -235,6 +232,6 @@ function generateHydrationScript({
   if (resources)
     s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(resources || {})
       .replace(/'/g, "\\'")
-      .replace(/\\\"/g, '\\\\\\"')}')}');`;
+      .replace(/\\\"/g, '\\\\\\"')}');`;
   return s + `</script>`;
 }

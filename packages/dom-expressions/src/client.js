@@ -1,5 +1,5 @@
 import { Properties, ChildProperties, Aliases, SVGNamespace, NonComposedEvents } from "./constants";
-import { root, effect, memo, currentContext, createComponent } from "rxcore";
+import { root, effect, memo, currentContext, createComponent, sharedConfig } from "rxcore";
 import { getHydrationKey } from "./shared";
 import reconcileArrays from "./reconcile";
 export {
@@ -13,7 +13,6 @@ export {
 export { assignProps, dynamicProperty } from "./shared";
 
 const eventRegistry = new Set();
-let hydration = null;
 
 export { effect, memo, currentContext, createComponent };
 
@@ -159,25 +158,33 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 
 // Hydrate
 export function hydrate(code, element) {
-  hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
-  hydration.context = { id: "", count: 0, registry: new Map() };
-  const templates = element.querySelectorAll(`*[data-hk]`);
-  for (let i = 0; i < templates.length; i++) {
-    const node = templates[i];
-    hydration.context.registry.set(node.getAttribute("data-hk"), node);
-  }
+  Object.assign(sharedConfig, globalThis._$HYDRATION);
+  sharedConfig.context = { id: "", count: 0 };
+  sharedConfig.registry = new Map();
+  gatherHydratable(element);
   const dispose = render(code, element, [...element.childNodes]);
-  delete hydration.context;
+  delete sharedConfig.context;
   return dispose;
 }
 
+export function gatherHydratable(element) {
+  const templates = element.querySelectorAll(`*[data-hk]`);
+  for (let i = 0; i < templates.length; i++) {
+    const node = templates[i];
+    sharedConfig.registry.set(node.getAttribute("data-hk"), node);
+  }
+}
+
 export function getNextElement(template) {
-  const hydrate = hydration && hydration.context;
   let node, key;
-  if (!hydrate || !hydrate.registry || !(node = hydrate.registry.get((key = getHydrationKey())))) {
+  if (
+    !sharedConfig.context ||
+    !(node = sharedConfig.registry.get(key = getHydrationKey()))
+  ) {
     return template.cloneNode(true);
   }
-  if (hydration && hydration.completed) hydration.completed.add(node);
+  if (sharedConfig.completed) sharedConfig.completed.add(node);
+  sharedConfig.registry.delete(key);
   return node;
 }
 
@@ -185,7 +192,7 @@ export function getNextMarker(start) {
   let end = start,
     count = 0,
     current = [];
-  if (hydration && hydration.context && hydration.context.registry) {
+  if (sharedConfig.context) {
     while (end) {
       if (end.nodeType === 8) {
         const v = end.nodeValue;
@@ -203,8 +210,8 @@ export function getNextMarker(start) {
 }
 
 export function runHydrationEvents() {
-  if (hydration.events) {
-    const { completed, events } = hydration;
+  if (sharedConfig.events) {
+    const { completed, events } = sharedConfig;
     while (events.length) {
       const [el, e] = events[0];
       if (!completed.has(el)) return;
@@ -279,7 +286,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       } else current = parent.textContent = value;
     }
   } else if (value == null || t === "boolean") {
-    if (hydration && hydration.context && hydration.context.registry) return current;
+    if (sharedConfig.context) return current;
     current = cleanChildren(parent, current, marker);
   } else if (t === "function") {
     effect(() => {
@@ -294,8 +301,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (hydration && hydration.context && hydration.context.registry && current.length)
-      return current;
+    if (sharedConfig.context && current.length) return current;
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
