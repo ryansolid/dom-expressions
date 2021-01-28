@@ -17,6 +17,7 @@ export default function transformComponent(path) {
   let props = [],
     runningObject = [],
     exprs = [],
+    dynamicSpread = false,
     tagName = getTagName(path.node);
 
   if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
@@ -34,36 +35,13 @@ export default function transformComponent(path) {
           props.push(t.objectExpression(runningObject));
           runningObject = [];
         }
-        if (!config.wrapSpreads) props.push(node.argument);
-        else {
-          const key = t.identifier("k$"),
-            memo = t.identifier("m$");
-          registerImportMethod(path, "dynamicProperty");
-          props.push(
-            t.callExpression(
-              t.memberExpression(
-                t.callExpression(t.memberExpression(t.identifier("Object"), t.identifier("keys")), [
-                  node.argument
-                ]),
-                t.identifier("reduce")
-              ),
-              [
-                t.arrowFunctionExpression(
-                  [memo, key],
-                  t.sequenceExpression([
-                    t.assignmentExpression(
-                      "=",
-                      t.memberExpression(memo, key, true),
-                      t.arrowFunctionExpression([], t.memberExpression(node.argument, key, true))
-                    ),
-                    t.callExpression(t.identifier("_$dynamicProperty"), [memo, key])
-                  ])
-                ),
-                t.objectExpression([])
-              ]
-            )
-          );
+        if (
+          config.generate !== "ssr" &&
+          isDynamic(attribute.get("argument"), { checkMember: true })
+        ) {
+          dynamicSpread = true;
         }
+        props.push(node.argument);
       } else {
         const value = node.value || t.booleanLiteral(true),
           key = t.isJSXNamespacedName(node.name)
@@ -177,8 +155,19 @@ export default function transformComponent(path) {
   props.push(t.objectExpression(runningObject));
 
   if (props.length > 1) {
-    registerImportMethod(path, "assignProps");
-    props = [t.callExpression(t.identifier("_$assignProps"), props)];
+    if (config.generate === "ssr") {
+      registerImportMethod(path, "assignProps");
+      props = [t.callExpression(t.identifier("_$assignProps"), props)];
+    } else {
+      registerImportMethod(path, "componentSpread");
+      props = [
+        t.callExpression(t.identifier("_$componentSpread"), [
+          dynamicSpread
+            ? t.arrowFunctionExpression([], t.arrayExpression(props))
+            : t.arrayExpression(props)
+        ])
+      ];
+    }
   }
   registerImportMethod(path, "createComponent");
   const componentArgs = [tagNameToIdentifier(tagName), props[0]];

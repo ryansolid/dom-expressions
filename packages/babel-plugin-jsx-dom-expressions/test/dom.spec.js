@@ -8,11 +8,9 @@ pluginTester({
     moduleName: 'r-dom',
     builtIns: ['For', 'Show'],
     generate: "dom",
-    delegateEvents: true,
     wrapConditionals: true,
     contextToCustomElements: true,
-    staticMarker: "@once",
-    wrapSpreads: false
+    staticMarker: "@once"
   },
   title: 'Convert JSX',
   fixtures: path.join(__dirname, '__dom_fixtures__'),

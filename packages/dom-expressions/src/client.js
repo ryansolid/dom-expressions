@@ -1,6 +1,5 @@
 import { Properties, ChildProperties, Aliases, SVGNamespace, DelegatedEvents } from "./constants";
 import { root, effect, memo, currentContext, createComponent, sharedConfig } from "rxcore";
-import { getHydrationKey } from "./shared";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -10,7 +9,6 @@ export {
   SVGNamespace,
   DelegatedEvents
 } from "./constants";
-export { assignProps, dynamicProperty } from "./shared";
 
 const eventRegistry = new Set();
 
@@ -101,6 +99,51 @@ export function spread(node, accessor, isSVG, skipChildren) {
   } else spreadExpression(node, accessor, undefined, isSVG, skipChildren);
 }
 
+export function componentSpread(accessor) {
+  const isDynamic = typeof accessor === "function";
+  if (isDynamic) accessor = memo(accessor);
+  const get = property => {
+    const list = isDynamic ? accessor() : accessor;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const v = list[i][property];
+      if (v !== undefined) return v;
+    }
+  };
+  return new Proxy(
+    {},
+    {
+      get(_, property) {
+        return get(property);
+      },
+      has(_, property) {
+        return get(property) !== undefined;
+      },
+      getOwnPropertyDescriptor() {
+        return { configurable: true, enumerable: true };
+      },
+      ownKeys() {
+        const keys = [];
+        const list = isDynamic ? accessor() : accessor;
+        for (let i = 0; i < list.length; i++) {
+          keys.push(...Object.keys(list[i]));
+        }
+        return [...new Set(keys)];
+      }
+    }
+  );
+}
+
+export function dynamicProperty(props, key) {
+  const src = props[key];
+  Object.defineProperty(props, key, {
+    get() {
+      return src();
+    },
+    enumerable: true
+  });
+  return props;
+}
+
 export function insert(parent, accessor, marker, initial) {
   if (marker !== undefined && !initial) initial = [];
   if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
@@ -177,10 +220,7 @@ export function gatherHydratable(element) {
 
 export function getNextElement(template) {
   let node, key;
-  if (
-    !sharedConfig.context ||
-    !(node = sharedConfig.registry.get(key = getHydrationKey()))
-  ) {
+  if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     return template.cloneNode(true);
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
@@ -378,4 +418,9 @@ function cleanChildren(parent, current, marker, replacement) {
     }
   } else parent.insertBefore(node, marker);
   return [node];
+}
+
+export function getHydrationKey() {
+  const hydrate = sharedConfig.context;
+  return `${hydrate.id}${hydrate.count++}`;
 }

@@ -10,8 +10,7 @@ pluginTester({
     generate: "dom",
     hydratable: true,
     contextToCustomElements: true,
-    staticMarker: "@once",
-    wrapSpreads: false
+    staticMarker: "@once"
   },
   title: 'Convert JSX',
   fixtures: path.join(__dirname, '__dom_hydratable_fixtures__'),

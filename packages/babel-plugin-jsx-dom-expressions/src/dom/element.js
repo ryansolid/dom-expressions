@@ -322,10 +322,7 @@ function transformAttributes(path, results) {
                 )
               );
             });
-          } else if (
-            config.delegateEvents &&
-            (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1)
-          ) {
+          } else if (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1) {
             // can only hydrate delegated events
             hasHydratableEvent = true;
             const events =

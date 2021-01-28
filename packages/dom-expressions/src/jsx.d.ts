@@ -46,7 +46,7 @@ export namespace JSX {
   }
   type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
   interface IntrinsicAttributes {
-    ref?: HTMLElement | ((e: HTMLElement) => void);
+    ref?: unknown | ((e: unknown) => void);
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void);

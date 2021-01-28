@@ -2,7 +2,7 @@ import { template as _$template } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
-import { assignProps as _$assignProps } from "r-dom";
+import { componentSpread as _$componentSpread } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
@@ -64,7 +64,7 @@ const template = props => {
       _el$6,
       _$createComponent(
         Child,
-        _$assignProps(
+        _$componentSpread([
           {
             name: "John"
           },
@@ -81,7 +81,7 @@ const template = props => {
               return _$getNextElement(_tmpl$3);
             }
           }
-        )
+        ])
       ),
       _el$10,
       _co$2
