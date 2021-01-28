@@ -3,11 +3,10 @@ export default {
   generate: "dom",
   hydratable: false,
   delegateEvents: true,
-  nonDelegateEvents: [],
+  delegatedEvents: [],
   builtIns: [],
   wrapConditionals: true,
   wrapSpreads: true,
   contextToCustomElements: false,
-  hydratableEvents: null,
   staticMarker: "@once"
 };

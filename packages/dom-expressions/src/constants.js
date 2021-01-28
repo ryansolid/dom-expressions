@@ -29,12 +29,7 @@ const booleans = [
 
 const BooleanAttributes = new Set(booleans);
 
-const Properties = new Set([
-  "className",
-  "indeterminate",
-  "value",
-  ...booleans
-]);
+const Properties = new Set(["className", "indeterminate", "value", ...booleans]);
 
 const ChildProperties = new Set(["innerHTML", "textContent", "innerText", "children"]);
 
@@ -44,38 +39,21 @@ const Aliases = {
   htmlFor: "for"
 };
 
-// list of Element events that will not be delegated
-const NonComposedEvents = new Set([
-  "abort",
-  "animationstart",
-  "animationend",
-  "animationiteration",
-  "blur",
-  "change",
-  "copy",
-  "cut",
-  "error",
-  "focus",
-  "gotpointercapture",
-  "load",
-  "loadend",
-  "loadstart",
-  "lostpointercapture",
-  "mouseenter",
-  "mouseleave",
-  "paste",
-  "pointerenter",
-  "pointerleave",
-  "progress",
-  "reset",
-  "scroll",
-  "select",
-  "submit",
-  "toggle",
-  "transitionstart",
-  "transitioncancel",
-  "transitionend",
-  "transitionrun"
+// list of Element events that will be delegated
+const DelegatedEvents = new Set([
+  "click",
+  "dblclick",
+  "focusin",
+  "focusout",
+  "keydown",
+  "keypress",
+  "keyup",
+  "mousedown",
+  "mousemove",
+  "mouseup",
+  "touchend",
+  "touchmove",
+  "touchstart"
 ]);
 
 const SVGElements = new Set([
@@ -166,4 +144,12 @@ const SVGNamespace = {
   xml: "http://www.w3.org/XML/1998/namespace"
 };
 
-export { BooleanAttributes, Properties, ChildProperties, Aliases, NonComposedEvents, SVGElements, SVGNamespace };
+export {
+  BooleanAttributes,
+  Properties,
+  ChildProperties,
+  Aliases,
+  DelegatedEvents,
+  SVGElements,
+  SVGNamespace
+};

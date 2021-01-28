@@ -13,7 +13,8 @@ const hydrationEventHandler = (e) => {
 )}"].forEach(name => document.addEventListener(name, hydrationEventHandler));`;
 
 // streaming
-`const resources = h.resources;
+`const h = _$HYDRATION;
+const resources = {};
 h.resolveResource = (id, data) => {
   const r = resources[id];
   if(!r) return resources[id] = data;

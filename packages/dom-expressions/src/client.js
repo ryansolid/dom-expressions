@@ -1,4 +1,4 @@
-import { Properties, ChildProperties, Aliases, SVGNamespace, NonComposedEvents } from "./constants";
+import { Properties, ChildProperties, Aliases, SVGNamespace, DelegatedEvents } from "./constants";
 import { root, effect, memo, currentContext, createComponent, sharedConfig } from "rxcore";
 import { getHydrationKey } from "./shared";
 import reconcileArrays from "./reconcile";
@@ -8,7 +8,7 @@ export {
   Aliases,
   SVGElements,
   SVGNamespace,
-  NonComposedEvents
+  DelegatedEvents
 } from "./constants";
 export { assignProps, dynamicProperty } from "./shared";
 
@@ -130,16 +130,16 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       for (const eventName in value) node.addEventListener(eventName, value[eventName], true);
     } else if (prop.slice(0, 2) === "on") {
       const lc = prop.toLowerCase();
-      if (!NonComposedEvents.has(lc.slice(2))) {
+      if (DelegatedEvents.has(lc.slice(2))) {
         const name = lc.slice(2);
         if (Array.isArray(value)) {
-          node[`__${name}`] = value[0];
-          node[`__${name}Data`] = value[1];
-        } else node[`__${name}`] = value;
+          node[`$$${name}`] = value[0];
+          node[`$$${name}Data`] = value[1];
+        } else node[`$$${name}`] = value;
         delegateEvents([name]);
       } else if (Array.isArray(value)) {
-        node[lc] = e => value[0](value[1], e);
-      } else node[lc] = value;
+        node.addEventListener(lc, e => value[0](value[1], e));
+      } else node.addEventListener(lc, value);
     } else if (
       (isChildProp = ChildProperties.has(prop)) ||
       (!isSVG && (isProp = Properties.has(prop))) ||
@@ -227,7 +227,7 @@ function toPropertyName(name) {
 }
 
 function eventHandler(e) {
-  const key = `__${e.type}`;
+  const key = `$$${e.type}`;
   let node = (e.composedPath && e.composedPath()[0]) || e.target;
   // reverse Shadow DOM retargetting
   if (e.target !== node) {

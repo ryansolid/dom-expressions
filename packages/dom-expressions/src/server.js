@@ -227,7 +227,7 @@ function generateHydrationScript({
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
   if (streaming) {
-    s += `(()=>{const e=_$HYDRATION,r={};let o=0;e.resolveResource=((e,o)=>{const t=r[e];if(!t)return r[e]=o;delete r[e],t(o)}),e.loadResource=(()=>{const e=++o,t=r[e];if(!t){let o,t=new Promise(e=>o=e);return r[e]=o,t}return delete r[e],Promise.resolve(t)})})();`;
+    s += `(()=>{const e=_$HYDRATION,r={};e.resolveResource=((e,o)=>{const s=r[e];if(!s)return r[e]=o;delete r[e],s(o)}),e.loadResource=(e=>{const o=r[e];if(!o){let o,s=new Promise(e=>o=e);return r[e]=o,s}return delete r[e],Promise.resolve(o)})})();`;
   }
   if (resources)
     s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(resources || {})

@@ -15,7 +15,7 @@ describe("create element with various spreads", () => {
 
     expect(span).toBeDefined();
     expect(span.textContent).toBe("Hi");
-    expect(span.__click).toBeDefined();
+    expect(span.$$click).toBeDefined();
     expect(span.getAttribute("data-mode")).toBe("stealth");
     disposer();
   });
@@ -34,7 +34,7 @@ describe("create element with various spreads", () => {
 
     expect(span).toBeDefined();
     expect(span.textContent).toBe("Holla");
-    expect(span.__click).toBeDefined();
+    expect(span.$$click).toBeDefined();
     disposer();
   });
 });
