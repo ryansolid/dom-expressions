@@ -118,8 +118,14 @@ export function componentSpread(accessor) {
       has(_, property) {
         return get(property) !== undefined;
       },
-      getOwnPropertyDescriptor() {
-        return { configurable: true, enumerable: true };
+      getOwnPropertyDescriptor(_, property) {
+        return {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return get(property);
+          }
+        };
       },
       ownKeys() {
         const keys = [];
