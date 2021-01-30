@@ -1,6 +1,8 @@
 import * as r from "../src/client";
 import * as r2 from "../src/server";
 
+globalThis._$HYDRATION = {};
+
 function setHydrateContext(context) {
   globalThis._$HYDRATION.context = context;
 }
@@ -29,8 +31,8 @@ describe("r.hydrate", () => {
         r2.escape("Hi")
       )
     );
-    rendered = result;
-    expect(rendered.split("<script>")[0]).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
+    rendered = result.html;
+    expect(rendered).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -65,8 +67,8 @@ describe("r.hydrate", () => {
         r2.escape(time)
       )
     );
-    rendered = result;
-    expect(rendered.split("<script>")[0]).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span>`);
+    rendered = result.html;
+    expect(rendered).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -101,8 +103,8 @@ describe("r.hydrate", () => {
       "middle",
       r2.ssr(['<div data-hk="', '">Last</div>'], r2.getHydrationKey())
     ]);
-    rendered = result;
-    expect(rendered.split("<script>")[0]).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`);
+    rendered = result.html;
+    expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -125,7 +127,7 @@ describe("r.hydrate", () => {
       ];
       r.insert(container, multiExpression, undefined, [...container.childNodes]);
     }, container);
-    expect(container.innerHTML.split("<script>")[0]).toBe(
+    expect(container.innerHTML).toBe(
       `<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`
     );
     expect(container.firstChild).toBe(el1);

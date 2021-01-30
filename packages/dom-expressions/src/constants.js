@@ -41,16 +41,24 @@ const Aliases = {
 
 // list of Element events that will be delegated
 const DelegatedEvents = new Set([
+  "beforeinput",
   "click",
   "dblclick",
   "focusin",
   "focusout",
+  "input",
   "keydown",
-  "keypress",
   "keyup",
   "mousedown",
   "mousemove",
+  "mouseout",
+  "mouseover",
   "mouseup",
+  "pointerdown",
+  "pointermove",
+  "pointerout",
+  "pointerover",
+  "pointerup",
   "touchend",
   "touchmove",
   "touchstart"

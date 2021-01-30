@@ -26,7 +26,6 @@ export function spread<T>(
   isSVG?: Boolean,
   skipChildren?: Boolean
 ): void;
-export function componentSpread<T>(accessor: (() => Partial<T>[]) | Partial<T>[]): T;
 export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
@@ -41,6 +40,7 @@ export function style(
   prev?: { [k: string]: string }
 ): void;
 export function currentContext(): unknown;
+export function assignProps(target: unknown, ...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
 
 export function hydrate(fn: () => JSX.Element, node: MountableElement): void;

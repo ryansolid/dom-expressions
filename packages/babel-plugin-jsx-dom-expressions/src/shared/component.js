@@ -17,7 +17,6 @@ export default function transformComponent(path) {
   let props = [],
     runningObject = [],
     exprs = [],
-    dynamicSpread = false,
     tagName = getTagName(path.node);
 
   if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
@@ -34,12 +33,6 @@ export default function transformComponent(path) {
         if (runningObject.length) {
           props.push(t.objectExpression(runningObject));
           runningObject = [];
-        }
-        if (
-          config.generate !== "ssr" &&
-          isDynamic(attribute.get("argument"), { checkMember: true })
-        ) {
-          dynamicSpread = true;
         }
         props.push(node.argument);
       } else {
@@ -155,19 +148,8 @@ export default function transformComponent(path) {
   props.push(t.objectExpression(runningObject));
 
   if (props.length > 1) {
-    if (config.generate === "ssr") {
-      registerImportMethod(path, "assignProps");
-      props = [t.callExpression(t.identifier("_$assignProps"), props)];
-    } else {
-      registerImportMethod(path, "componentSpread");
-      props = [
-        t.callExpression(t.identifier("_$componentSpread"), [
-          dynamicSpread
-            ? t.arrowFunctionExpression([], t.arrayExpression(props))
-            : t.arrayExpression(props)
-        ])
-      ];
-    }
+    registerImportMethod(path, "assignProps");
+    props = [t.callExpression(t.identifier("_$assignProps"), props)];
   }
   registerImportMethod(path, "createComponent");
   const componentArgs = [tagNameToIdentifier(tagName), props[0]];

@@ -99,44 +99,12 @@ export function spread(node, accessor, isSVG, skipChildren) {
   } else spreadExpression(node, accessor, undefined, isSVG, skipChildren);
 }
 
-export function componentSpread(accessor) {
-  const isDynamic = typeof accessor === "function";
-  if (isDynamic) accessor = memo(accessor);
-  const get = property => {
-    const list = isDynamic ? accessor() : accessor;
-    for (let i = list.length - 1; i >= 0; i--) {
-      const v = list[i][property];
-      if (v !== undefined) return v;
-    }
-  };
-  return new Proxy(
-    {},
-    {
-      get(_, property) {
-        return get(property);
-      },
-      has(_, property) {
-        return get(property) !== undefined;
-      },
-      getOwnPropertyDescriptor(_, property) {
-        return {
-          configurable: true,
-          enumerable: true,
-          get() {
-            return get(property);
-          }
-        };
-      },
-      ownKeys() {
-        const keys = [];
-        const list = isDynamic ? accessor() : accessor;
-        for (let i = 0; i < list.length; i++) {
-          keys.push(...Object.keys(list[i]));
-        }
-        return [...new Set(keys)];
-      }
-    }
-  );
+export function assignProps(target, ...sources) {
+  for (let i = 0; i < sources.length; i++) {
+    const descriptors = Object.getOwnPropertyDescriptors(sources[i]);
+    Object.defineProperties(target, descriptors);
+  }
+  return target;
 }
 
 export function dynamicProperty(props, key) {
@@ -207,12 +175,18 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 
 // Hydrate
 export function hydrate(code, element) {
-  Object.assign(sharedConfig, globalThis._$HYDRATION);
-  sharedConfig.context = { id: "", count: 0 };
+  sharedConfig.resources = globalThis._$HYDRATION.resources;
+	sharedConfig.completed = globalThis._$HYDRATION.completed;
+	sharedConfig.events = globalThis._$HYDRATION.events;
+  sharedConfig.context = {
+    id: "",
+    count: 0,
+		loadResource: globalThis._$HYDRATION.loadResource
+  };
   sharedConfig.registry = new Map();
   gatherHydratable(element);
   const dispose = render(code, element, [...element.childNodes]);
-  delete sharedConfig.context;
+  sharedConfig.context = null;
   return dispose;
 }
 

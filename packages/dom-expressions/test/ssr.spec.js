@@ -43,9 +43,9 @@ const Comp2 = () => {
 describe("renderToString", () => {
   it("renders as expected", async () => {
     let res = r.renderToString(Comp1);
-    expect(res.split("<script>")[0]).toBe(fixture);
+    expect(res.html).toBe(fixture);
     res = r.renderToString(Comp2);
-    expect(res.split("<script>")[0]).toBe(fixture2);
+    expect(res.html).toBe(fixture2);
   });
 });
 
@@ -59,8 +59,8 @@ describe("renderToNodeStream", () => {
     });
   }
   it("renders as expected", async () => {
-    let res = await streamToString(r.renderToNodeStream(Comp2));
-    expect(res.split("<script>")[0]).toBe(fixture2);
+    let res = await streamToString(r.renderToNodeStream(Comp2).stream);
+    expect(res).toBe(fixture2);
   });
 });
 

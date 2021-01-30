@@ -1,11 +1,11 @@
 import { Readable } from "stream";
 import { Aliases, BooleanAttributes } from "./constants";
-import { sharedConfig } from "rxcore";
+import { sharedConfig, asyncWrap } from "rxcore";
 export { createComponent } from "rxcore";
 
 export function renderToString(code, options = {}) {
   sharedConfig.context = { id: "", count: 0 };
-  return resolveSSRNode(code()) + generateHydrationScript(options);
+  return { html: resolveSSRNode(code()), script: generateHydrationScript(options) };
 }
 
 export function renderToStringAsync(code, options = {}) {
@@ -21,8 +21,11 @@ export function renderToStringAsync(code, options = {}) {
   const timeout = new Promise((_, reject) =>
     setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
   );
-  return Promise.race([code(), timeout]).then(res => {
-    return resolveSSRNode(res) + generateHydrationScript({ resources, ...options });
+  return Promise.race([asyncWrap(code), timeout]).then(res => {
+    return {
+      html: resolveSSRNode(res),
+      script: generateHydrationScript({ resources, ...options })
+    };
   });
 }
 
@@ -42,15 +45,17 @@ export function renderToNodeStream(code, options = {}) {
   sharedConfig.context.writeResource = (id, p) => {
     count++;
     p.then(d => {
-      stream.push( `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
-        .replace(/'/g, "\\'")
-        .replace(/\\\"/g, '\\\\\\"')})</script>`);
+      stream.push(
+        `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
+          .replace(/'/g, "\\'")
+          .replace(/\\\"/g, '\\\\\\"')})</script>`
+      );
       ++completed && checkEnd();
     });
   };
-  stream.push(resolveSSRNode(code()) + generateHydrationScript({ streaming: true, ...options }));
+  stream.push(resolveSSRNode(code()));
   setTimeout(checkEnd);
-  return stream;
+  return { stream, script: generateHydrationScript({ streaming: true, ...options }) };
 }
 
 export function renderToWebStream(code, options = {}) {
@@ -79,13 +84,9 @@ export function renderToWebStream(code, options = {}) {
       ++completed && checkEnd();
     });
   };
-  writer.write(
-    encoder.encode(
-      resolveSSRNode(code()) + generateHydrationScript({ streaming: true, ...options })
-    )
-  );
+  writer.write(encoder.encode(resolveSSRNode(code())));
   setTimeout(checkEnd);
-  return readable;
+  return { stream: readable, script: generateHydrationScript({ streaming: true, ...options }) };
 }
 
 export function ssr(t, ...nodes) {
@@ -230,11 +231,7 @@ export function getHydrationKey() {
   return `${hydrate.id}${hydrate.count++}`;
 }
 
-function generateHydrationScript({
-  eventNames = ["click", "input", "blur"],
-  streaming,
-  resources
-} = {}) {
+function generateHydrationScript({ eventNames = ["click", "input"], streaming, resources } = {}) {
   let s = `<script>(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
