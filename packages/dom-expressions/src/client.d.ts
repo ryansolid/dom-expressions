@@ -39,8 +39,8 @@ export function style(
   value: { [k: string]: string },
   prev?: { [k: string]: string }
 ): void;
-export function currentContext(): unknown;
-export function assignProps(target: unknown, ...sources: unknown[]): unknown;
+export function getOwner(): unknown;
+export function mergeProps(target: unknown, ...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
 
 export function hydrate(fn: () => JSX.Element, node: MountableElement): void;

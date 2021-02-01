@@ -1,5 +1,5 @@
 import { template as _$template } from "r-dom";
-import { assignProps as _$assignProps } from "r-dom";
+import { mergeProps as _$mergeProps } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
@@ -79,7 +79,7 @@ const template9 = (() => {
 
 const template10 = _$createComponent(
   Module,
-  _$assignProps(dynamic, {
+  _$mergeProps(dynamic, {
     children: "Hello"
   })
 );

@@ -1,5 +1,5 @@
 import { Properties, ChildProperties, Aliases, SVGNamespace, DelegatedEvents } from "./constants";
-import { root, effect, memo, currentContext, createComponent, sharedConfig } from "rxcore";
+import { root, effect, memo, getOwner, createComponent, sharedConfig } from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -12,7 +12,7 @@ export {
 
 const eventRegistry = new Set();
 
-export { effect, memo, currentContext, createComponent };
+export { effect, memo, getOwner, createComponent };
 
 export function render(code, element, init) {
   let disposer;
@@ -99,7 +99,8 @@ export function spread(node, accessor, isSVG, skipChildren) {
   } else spreadExpression(node, accessor, undefined, isSVG, skipChildren);
 }
 
-export function assignProps(target, ...sources) {
+export function mergeProps(...sources) {
+  const target = {};
   for (let i = 0; i < sources.length; i++) {
     const descriptors = Object.getOwnPropertyDescriptors(sources[i]);
     Object.defineProperties(target, descriptors);

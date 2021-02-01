@@ -218,7 +218,8 @@ export function resolveSSRNode(node) {
   return String(node);
 }
 
-export function assignProps(target, ...sources) {
+export function mergeProps(...sources) {
+  const target = {};
   for (let i = 0; i < sources.length; i++) {
     const descriptors = Object.getOwnPropertyDescriptors(sources[i]);
     Object.defineProperties(target, descriptors);

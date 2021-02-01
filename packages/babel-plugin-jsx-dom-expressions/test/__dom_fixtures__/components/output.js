@@ -2,7 +2,7 @@ import { template as _$template } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
-import { assignProps as _$assignProps } from "r-dom";
+import { mergeProps as _$mergeProps } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
 const _tmpl$ = _$template(`<div>Hello </div>`, 2),
@@ -45,7 +45,7 @@ const template = props => {
       _el$4,
       _$createComponent(
         Child,
-        _$assignProps(
+        _$mergeProps(
           {
             name: "John"
           },
@@ -71,7 +71,7 @@ const template = props => {
       _el$4,
       _$createComponent(
         Child,
-        _$assignProps(
+        _$mergeProps(
           {
             name: "Jason"
           },

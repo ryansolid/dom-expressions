@@ -1,6 +1,6 @@
 import { For as _$For } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
-import { assignProps as _$assignProps } from "r-server";
+import { mergeProps as _$mergeProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 import { Show } from "somewhere";
@@ -17,7 +17,7 @@ const template = props => {
     ["<div>", "", "", "</div>"],
     _$createComponent(
       Child,
-      _$assignProps(
+      _$mergeProps(
         {
           name: "John"
         },

@@ -1,4 +1,4 @@
-import { assignProps as _$assignProps } from "r-server";
+import { mergeProps as _$mergeProps } from "r-server";
 import { ssrSpread as _$ssrSpread } from "r-server";
 import { escape as _$escape } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
@@ -62,7 +62,7 @@ const template9 = _$ssr(
 
 const template10 = _$createComponent(
   Module,
-  _$assignProps(dynamic, {
+  _$mergeProps(dynamic, {
     children: "Hello"
   })
 );

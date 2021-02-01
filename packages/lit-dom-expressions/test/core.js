@@ -1,6 +1,6 @@
 import S, { root, value, sample } from "s-js";
 
-const currentContext = null;
+const getOwner = null;
 const sharedConfig = {};
 
 function memo(fn, equal) {
@@ -20,4 +20,4 @@ function createComponent(Comp, props) {
   return sample(() => Comp(props));
 }
 
-export { root, S as effect, memo, createComponent, currentContext, sharedConfig };
+export { root, S as effect, memo, createComponent, getOwner, sharedConfig };

@@ -629,13 +629,13 @@ function detectExpressions(children, index) {
 }
 
 function contextToCustomElement(path, results) {
-  registerImportMethod(path, "currentContext");
+  registerImportMethod(path, "getOwner");
   results.exprs.push(
     t.expressionStatement(
       t.assignmentExpression(
         "=",
-        t.memberExpression(results.id, t.identifier("_context")),
-        t.callExpression(t.identifier("_$currentContext"), [])
+        t.memberExpression(results.id, t.identifier("_$owner")),
+        t.callExpression(t.identifier("_$getOwner"), [])
       )
     )
   );

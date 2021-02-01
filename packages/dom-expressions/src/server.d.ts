@@ -49,5 +49,5 @@ export function getHydrationKey(): string;
 export function effect<T>(fn: (prev?: T) => T, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
-export function assignProps(target: unknown, ...sources: unknown[]): unknown;
-export function currentContext(): unknown;
+export function mergeProps(...sources: unknown[]): unknown;
+export function getOwner(): unknown;

@@ -148,8 +148,8 @@ export default function transformComponent(path) {
   props.push(t.objectExpression(runningObject));
 
   if (props.length > 1) {
-    registerImportMethod(path, "assignProps");
-    props = [t.callExpression(t.identifier("_$assignProps"), props)];
+    registerImportMethod(path, "mergeProps");
+    props = [t.callExpression(t.identifier("_$mergeProps"), props)];
   }
   registerImportMethod(path, "createComponent");
   const componentArgs = [tagNameToIdentifier(tagName), props[0]];
