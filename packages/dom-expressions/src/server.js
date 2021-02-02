@@ -240,7 +240,12 @@ function generateHydrationScript({ eventNames = ["click", "input"], streaming, r
     s += `(()=>{const e=_$HYDRATION,r={};e.resolveResource=((e,o)=>{const s=r[e];if(!s)return r[e]=o;delete r[e],s(o)}),e.loadResource=(e=>{const o=r[e];if(!o){let o,s=new Promise(e=>o=e);return r[e]=o,s}return delete r[e],Promise.resolve(o)})})();`;
   }
   if (resources)
-    s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(resources || {})
+    s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(
+      Object.keys(resources).reduce((r, k) => {
+        r[k] = resources[k].data;
+        return r;
+      }, {})
+    )
       .replace(/'/g, "\\'")
       .replace(/\\\"/g, '\\\\\\"')}');`;
   return s + `</script>`;
