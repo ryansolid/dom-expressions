@@ -5,9 +5,7 @@ import { escape as _$escape } from "r-server";
 import { ssrClassList as _$ssrClassList } from "r-server";
 import { ssrSpread as _$ssrSpread } from "r-server";
 import { getHydrationKey as _$getHydrationKey } from "r-server";
-
-const template = _$ssr(
-  [
+const _tmpl$ = [
     '<div data-hk="',
     '" id="main" ',
     ' class="',
@@ -18,6 +16,16 @@ const template = _$ssr(
     '" class="',
     '"><a href="/">Welcome</a></h1></div>'
   ],
+  _tmpl$2 = ['<div data-hk="', '"><div>', "</div><div>", "</div></div>"],
+  _tmpl$3 = ['<div data-hk="', '" id="', '" style="', '" name="', '">', "</div>"],
+  _tmpl$4 = ['<div data-hk="', '" class="', '"></div>'],
+  _tmpl$5 = ['<div data-hk="', '" style="', '">Hi</div>'],
+  _tmpl$6 = ['<div data-hk="', '" style="', '"></div>'],
+  _tmpl$7 = ['<div data-hk="', '"></div>'],
+  _tmpl$8 = ['<input data-hk="', '" type="checkbox"', ">"];
+
+const template = _$ssr(
+  _tmpl$,
   _$getHydrationKey(),
   _$ssrSpread(results, false, true),
   _$ssrClassList({
@@ -32,15 +40,10 @@ const template = _$ssr(
   })
 );
 
-const template2 = _$ssr(
-  ['<div data-hk="', '"><div>', "</div><div>", "</div></div>"],
-  _$getHydrationKey(),
-  _$escape(rowId),
-  _$escape(row.label)
-);
+const template2 = _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(rowId), _$escape(row.label));
 
 const template3 = _$ssr(
-  ['<div data-hk="', '" id="', '" style="', '" name="', '">', "</div>"],
+  _tmpl$3,
   _$getHydrationKey(),
   _$escape(state.id, true),
   "background-color:" + _$escape(state.color, true),
@@ -48,22 +51,14 @@ const template3 = _$ssr(
   _$escape(state.content)
 );
 
-const template4 = _$ssr(
-  ['<div data-hk="', '" class="', '"></div>'],
-  _$getHydrationKey(),
-  `hi ${_$escape(state.class, true) || ""}`
-);
+const template4 = _$ssr(_tmpl$4, _$getHydrationKey(), `hi ${_$escape(state.class, true) || ""}`);
 
-const template5 = _$ssr(['<div data-hk="', '" class="', '"></div>'], _$getHydrationKey(), `a  b`);
+const template5 = _$ssr(_tmpl$4, _$getHydrationKey(), `a  b`);
 
-const template6 = _$ssr(
-  ['<div data-hk="', '" style="', '">Hi</div>'],
-  _$getHydrationKey(),
-  _$ssrStyle(someStyle())
-);
+const template6 = _$ssr(_tmpl$5, _$getHydrationKey(), _$ssrStyle(someStyle()));
 
 const template7 = _$ssr(
-  ['<div data-hk="', '" style="', '"></div>'],
+  _tmpl$6,
   _$getHydrationKey(),
   _$ssrStyle({
     "background-color": color(),
@@ -75,24 +70,16 @@ const template7 = _$ssr(
 
 let refTarget;
 
-const template8 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
+const template8 = _$ssr(_tmpl$7, _$getHydrationKey());
 
-const template9 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
+const template9 = _$ssr(_tmpl$7, _$getHydrationKey());
 
-const template10 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
+const template10 = _$ssr(_tmpl$7, _$getHydrationKey());
 
-const template11 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
+const template11 = _$ssr(_tmpl$7, _$getHydrationKey());
 
-const template12 = _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
+const template12 = _$ssr(_tmpl$7, _$getHydrationKey());
 
-const template13 = _$ssr(
-  ['<input data-hk="', '" type="checkbox"', ">"],
-  _$getHydrationKey(),
-  _$ssrBoolean("checked", true)
-);
+const template13 = _$ssr(_tmpl$8, _$getHydrationKey(), _$ssrBoolean("checked", true));
 
-const template14 = _$ssr(
-  ['<input data-hk="', '" type="checkbox"', ">"],
-  _$getHydrationKey(),
-  _$ssrBoolean("checked", state.visible)
-);
+const template14 = _$ssr(_tmpl$8, _$getHydrationKey(), _$ssrBoolean("checked", state.visible));

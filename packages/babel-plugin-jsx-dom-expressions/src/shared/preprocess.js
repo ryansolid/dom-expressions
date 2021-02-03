@@ -11,4 +11,8 @@ export default path => {
     }
     path.skip();
   }
+  path.state = {
+    templates: [],
+    events: new Set()
+  }
 };

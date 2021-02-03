@@ -6,22 +6,40 @@ export function createTemplate(path, result) {
     return result.exprs[0];
   }
 
-  // uncomment to optimize non-hoisted, needs more thorough testing
-  // if (!config.async) {
-  //   if (!Array.isArray(result.template)) return t.stringLiteral(result.template);
-  //   if (result.template.length === 1) return t.stringLiteral(result.template[0]);
-  //   const quasis = result.template.map(tmpl => t.TemplateElement({ raw: tmpl }));
-  //   return t.TemplateLiteral(quasis, result.templateValues);
-  // }
+  let template, id;
 
   registerImportMethod(path, "ssr");
-  if (!Array.isArray(result.template))
-    return t.callExpression(t.identifier(`_$ssr`), [t.stringLiteral(result.template)]);
-  if (result.template.length === 1)
-    return t.callExpression(t.identifier(`_$ssr`), [t.stringLiteral(result.template[0])]);
-  const strings = result.template.map(tmpl => t.stringLiteral(tmpl));
-  return t.callExpression(t.identifier(`_$ssr`), [
-    t.arrayExpression(strings),
-    ...result.templateValues
-  ]);
+  if (!Array.isArray(result.template)) {
+    template = t.stringLiteral(result.template);
+  } else if (result.template.length === 1) {
+    template = t.stringLiteral(result.template[0]);
+  } else {
+    const strings = result.template.map(tmpl => t.stringLiteral(tmpl));
+    template = t.arrayExpression(strings);
+  }
+
+  const found = path.state.templates.find(tmp => {
+    if (t.isArrayExpression(tmp[1]) && t.isArrayExpression(template)) {
+      return tmp[1].elements.every(
+        (el, i) => template.elements[i] && el.value === template.elements[i].value
+      );
+    }
+    return tmp[1].value === template.value;
+  });
+  if (!found) {
+    id = path.scope.generateUidIdentifier("tmpl$");
+    path.state.templates.push([id, template]);
+  } else id = found[0];
+
+  return t.callExpression(
+    t.identifier(`_$ssr`),
+    result.template.length > 1 ? [id, ...result.templateValues] : [id]
+  );
+}
+
+export function appendTemplates(path, templates) {
+  const declarators = templates.map(template => {
+    return t.variableDeclarator(template[0], template[1]);
+  });
+  path.node.body.unshift(t.variableDeclaration("const", declarators));
 }

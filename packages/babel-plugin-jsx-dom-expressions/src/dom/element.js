@@ -325,9 +325,7 @@ function transformAttributes(path, results) {
           } else if (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1) {
             // can only hydrate delegated events
             hasHydratableEvent = true;
-            const events =
-              attribute.scope.getProgramParent().data.events ||
-              (attribute.scope.getProgramParent().data.events = new Set());
+            const events = attribute.state.events
             events.add(ev);
             let handler = value.expression;
             if (t.isArrayExpression(value.expression)) {

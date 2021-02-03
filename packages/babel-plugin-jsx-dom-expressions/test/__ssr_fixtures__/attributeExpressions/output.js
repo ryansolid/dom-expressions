@@ -4,9 +4,7 @@ import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrClassList as _$ssrClassList } from "r-server";
 import { ssrSpread as _$ssrSpread } from "r-server";
-
-const template = _$ssr(
-  [
+const _tmpl$ = [
     '<div id="main" ',
     ' class="',
     '" style="',
@@ -16,6 +14,16 @@ const template = _$ssr(
     '" class="',
     '"><a href="/">Welcome</a></h1></div>'
   ],
+  _tmpl$2 = ["<div><div>", "</div><div>", "</div></div>"],
+  _tmpl$3 = ['<div id="', '" style="', '" name="', '">', "</div>"],
+  _tmpl$4 = ['<div class="', '"></div>'],
+  _tmpl$5 = ['<div style="', '">Hi</div>'],
+  _tmpl$6 = ['<div style="', '"></div>'],
+  _tmpl$7 = "<div></div>",
+  _tmpl$8 = ['<input type="checkbox"', ">"];
+
+const template = _$ssr(
+  _tmpl$,
   _$ssrSpread(results, false, true),
   _$ssrClassList({
     selected: selected
@@ -29,28 +37,24 @@ const template = _$ssr(
   })
 );
 
-const template2 = _$ssr(
-  ["<div><div>", "</div><div>", "</div></div>"],
-  _$escape(rowId),
-  _$escape(row.label)
-);
+const template2 = _$ssr(_tmpl$2, _$escape(rowId), _$escape(row.label));
 
 const template3 = _$ssr(
-  ['<div id="', '" style="', '" name="', '">', "</div>"],
+  _tmpl$3,
   _$escape(state.id, true),
   "background-color:" + _$escape(state.color, true),
   _$escape(state.name, true),
   _$escape(state.content)
 );
 
-const template4 = _$ssr(['<div class="', '"></div>'], `hi ${_$escape(state.class, true) || ""}`);
+const template4 = _$ssr(_tmpl$4, `hi ${_$escape(state.class, true) || ""}`);
 
-const template5 = _$ssr(['<div class="', '"></div>'], `a  b`);
+const template5 = _$ssr(_tmpl$4, `a  b`);
 
-const template6 = _$ssr(['<div style="', '">Hi</div>'], _$ssrStyle(someStyle()));
+const template6 = _$ssr(_tmpl$5, _$ssrStyle(someStyle()));
 
 const template7 = _$ssr(
-  ['<div style="', '"></div>'],
+  _tmpl$6,
   _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",
@@ -61,16 +65,16 @@ const template7 = _$ssr(
 
 let refTarget;
 
-const template8 = _$ssr("<div></div>");
+const template8 = _$ssr(_tmpl$7);
 
-const template9 = _$ssr("<div></div>");
+const template9 = _$ssr(_tmpl$7);
 
-const template10 = _$ssr("<div></div>");
+const template10 = _$ssr(_tmpl$7);
 
-const template11 = _$ssr("<div></div>");
+const template11 = _$ssr(_tmpl$7);
 
-const template12 = _$ssr("<div></div>");
+const template12 = _$ssr(_tmpl$7);
 
-const template13 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean("checked", true));
+const template13 = _$ssr(_tmpl$8, _$ssrBoolean("checked", true));
 
-const template14 = _$ssr(['<input type="checkbox"', ">"], _$ssrBoolean("checked", state.visible));
+const template14 = _$ssr(_tmpl$8, _$ssrBoolean("checked", state.visible));

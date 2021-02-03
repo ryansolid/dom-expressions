@@ -3,18 +3,26 @@ import { createComponent as _$createComponent } from "r-server";
 import { mergeProps as _$mergeProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
+const _tmpl$ = ["<div>Hello ", "</div>"],
+  _tmpl$2 = ["<div>", "</div>"],
+  _tmpl$3 = "<div>From Parent</div>",
+  _tmpl$4 = ["<div>", "", "", "</div>"],
+  _tmpl$5 = "<div></div>",
+  _tmpl$6 = ["<div>", " | ", " | ", " | ", " | ", " | ", "</div>"],
+  _tmpl$7 = ["<div>", " | ", "", " | ", "", " | ", "</div>"],
+  _tmpl$8 = ["<div> | ", " |  |  | ", " | </div>"];
 import { Show } from "somewhere";
 
 const Child = props => [
-  _$ssr(["<div>Hello ", "</div>"], _$escape(props.name)),
-  _$ssr(["<div>", "</div>"], _$escape(props.children))
+  _$ssr(_tmpl$, _$escape(props.name)),
+  _$ssr(_tmpl$2, _$escape(props.children))
 ];
 
 const template = props => {
   let childRef;
   const { content } = props;
   return _$ssr(
-    ["<div>", "", "", "</div>"],
+    _tmpl$4,
     _$createComponent(
       Child,
       _$mergeProps(
@@ -26,7 +34,7 @@ const template = props => {
           booleanProperty: true,
 
           get children() {
-            return _$ssr("<div>From Parent</div>");
+            return _$ssr(_tmpl$3);
           }
         }
       )
@@ -35,7 +43,7 @@ const template = props => {
       name: "Jason",
 
       get children() {
-        return _$ssr(["<div>", "</div>"], _$escape(content));
+        return _$ssr(_tmpl$2, _$escape(content));
       }
     }),
     _$createComponent(Context.Consumer, {
@@ -61,13 +69,13 @@ const template2 = _$createComponent(Child, {
 
 const template3 = _$createComponent(Child, {
   get children() {
-    return [_$ssr("<div></div>"), _$ssr("<div></div>"), _$ssr("<div></div>"), "After"];
+    return [_$ssr(_tmpl$5), _$ssr(_tmpl$5), _$ssr(_tmpl$5), "After"];
   }
 });
 
 const template4 = _$createComponent(Child, {
   get children() {
-    return _$ssr("<div></div>");
+    return _$ssr(_tmpl$5);
   }
 });
 
@@ -102,7 +110,7 @@ const template6 = _$createComponent(_$For, {
 
 const template7 = _$createComponent(Child, {
   get children() {
-    return [_$ssr("<div></div>"), () => state.dynamic];
+    return [_$ssr(_tmpl$5), () => state.dynamic];
   }
 });
 
@@ -117,7 +125,7 @@ const template9 = _$createComponent(_garbage, {
 });
 
 const template10 = _$ssr(
-  ["<div>", " | ", " | ", " | ", " | ", " | ", "</div>"],
+  _tmpl$6,
   _$createComponent(Link, {
     children: "new"
   }),
@@ -139,7 +147,7 @@ const template10 = _$ssr(
 );
 
 const template11 = _$ssr(
-  ["<div>", " | ", "", " | ", "", " | ", "</div>"],
+  _tmpl$7,
   _$createComponent(Link, {
     children: "new"
   }),
@@ -161,7 +169,7 @@ const template11 = _$ssr(
 );
 
 const template12 = _$ssr(
-  ["<div> | ", " |  |  | ", " | </div>"],
+  _tmpl$8,
   _$createComponent(Link, {
     children: "comments"
   }),
