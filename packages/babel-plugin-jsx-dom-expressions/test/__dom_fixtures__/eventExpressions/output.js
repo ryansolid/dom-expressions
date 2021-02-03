@@ -15,15 +15,15 @@ const template = (() => {
     _el$6 = _el$5.nextSibling,
     _el$7 = _el$6.nextSibling;
 
-  _el$2.onchange = () => console.log("bound");
+  _el$2.addEventListener("change", () => console.log("bound"));
 
-  _el$3.onchange = e => (id => console.log("bound", id))(id, e);
+  _el$3.addEventListener("change", e => (id => console.log("bound", id))(id, e));
 
-  _el$4.__click = () => console.log("delegated");
+  _el$4.$$click = () => console.log("delegated");
 
-  _el$5.__click = id => console.log("delegated", id);
+  _el$5.$$click = id => console.log("delegated", id);
 
-  _el$5.__clickData = rowId;
+  _el$5.$$clickData = rowId;
 
   _el$6.addEventListener("click", () => console.log("listener"));
 

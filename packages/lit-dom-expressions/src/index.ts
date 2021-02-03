@@ -14,7 +14,7 @@ interface Runtime {
   Aliases: Record<string, string>;
   Properties: Set<string>;
   ChildProperties: Set<string>;
-  NonComposedEvents: Set<string>;
+  DelegatedEvents: Set<string>;
   SVGElements: Set<string>;
   SVGNamespace: Record<string, string>;
 }
@@ -64,9 +64,9 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   let uuid = 1;
   (r as any).delegate = (el: Node, ev: string, expr: any) => {
     if (Array.isArray(expr)) {
-      (el as any)[`__${ev}`] = expr[0];
-      (el as any)[`__${ev}Data`] = expr[1];
-    } else (el as any)[`__${ev}`] = expr;
+      (el as any)[`$$${ev}`] = expr[0];
+      (el as any)[`$$${ev}Data`] = expr[1];
+    } else (el as any)[`$$${ev}`] = expr;
   };
   (r as any).wrapProps = (props: any) => {
     for (const k in props) {
@@ -132,17 +132,13 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       options.exprs.push(`r.style(${tag}, ${expr})`);
     } else if (name === "classList") {
       options.exprs.push(`r.classList(${tag}, ${expr})`);
-    } else if (name === "on") {
+    } else if (name === "on" || name === "onCapture") {
       const id = uuid++;
       options.exprs.push(
         `const v${id} = ${expr}`,
-        `for (const e in v${id}) ${tag}.addEventListener(e, v${id}[e])`
-      );
-    } else if (name === "onCapture") {
-      const id = uuid++;
-      options.exprs.push(
-        `const v${id} = ${expr}`,
-        `for (const e in v${id}) ${tag}.addEventListener(e, v${id}[e], true)`
+        `for (const e in v${id}) ${tag}.addEventListener(e,v${id}[e]${
+          name === "onCapture" ? ",true" : ""
+        })`
       );
     } else if (
       namespace !== "attr" &&
@@ -159,12 +155,11 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
 
   function parseAttribute(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
     if (name.slice(0, 2) === "on" && name !== "on" && name !== "onCapture") {
-      const lc = name.toLowerCase();
-      if (delegateEvents && !r.NonComposedEvents.has(lc.slice(2))) {
-        const e = lc.slice(2);
-        options.delegatedEvents.add(e);
-        options.exprs.push(`r.delegate(${tag},"${e}",exprs[${options.counter++}])`);
-      } else options.exprs.push(`${tag}.${lc} = exprs[${options.counter++}]`);
+      const lc = name.slice(2).toLowerCase();
+      if (delegateEvents && r.DelegatedEvents.has(lc)) {
+        options.delegatedEvents.add(lc);
+        options.exprs.push(`r.delegate(${tag},"${lc}",exprs[${options.counter++}])`);
+      } else options.exprs.push(`${tag}.addEventListener("${lc}",exprs[${options.counter++}])`);
     } else if (name === "ref") {
       options.exprs.push(`exprs[${options.counter++}](${tag})`);
     } else {

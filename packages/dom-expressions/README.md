@@ -45,6 +45,7 @@ Example:
 import S, { root, value, sample } from "s-js";
 
 const currentContext = null;
+const sharedConfig = {};
 
 function memo(fn, equal) {
   if (typeof fn !== "function") return fn;
@@ -58,7 +59,7 @@ function createComponent(Comp, props, dynamicKeys) {
   return sample(() => Comp(props));
 }
 
-export { root, S as effect, memo, createComponent, currentContext };
+export { root, S as effect, memo, createComponent, currentContext, sharedConfig };
 ```
 
 ## Runtime Renderers

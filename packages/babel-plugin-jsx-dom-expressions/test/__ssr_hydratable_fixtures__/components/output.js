@@ -1,29 +1,57 @@
 import { For as _$For } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
-import { assignProps as _$assignProps } from "r-server";
+import { mergeProps as _$mergeProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 import { getHydrationKey as _$getHydrationKey } from "r-server";
+const _tmpl$ = ['<div data-hk="', '">Hello <!--#-->', "<!--/--></div>"],
+  _tmpl$2 = ['<div data-hk="', '">', "</div>"],
+  _tmpl$3 = ['<div data-hk="', '">From Parent</div>'],
+  _tmpl$4 = [
+    '<div data-hk="',
+    '"><!--#-->',
+    "<!--/--><!--#-->",
+    "<!--/--><!--#-->",
+    "<!--/--></div>"
+  ],
+  _tmpl$5 = ['<div data-hk="', '"></div>'],
+  _tmpl$6 = [
+    '<div data-hk="',
+    '"><!--#-->',
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--></div>"
+  ],
+  _tmpl$7 = [
+    '<div data-hk="',
+    '"><!--#-->',
+    "<!--/--> | <!--#-->",
+    "<!--/--><!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--><!--#-->",
+    "<!--/--> | <!--#-->",
+    "<!--/--></div>"
+  ],
+  _tmpl$8 = ['<div data-hk="', '"> | <!--#-->', "<!--/--> |  |  | <!--#-->", "<!--/--> | </div>"];
 import { Show } from "somewhere";
 
 const Child = props => [
-  _$ssr(
-    ['<div data-hk="', '">Hello <!--#-->', "<!--/--></div>"],
-    _$getHydrationKey(),
-    _$escape(props.name)
-  ),
-  _$ssr(['<div data-hk="', '">', "</div>"], _$getHydrationKey(), _$escape(props.children))
+  _$ssr(_tmpl$, _$getHydrationKey(), _$escape(props.name)),
+  _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(props.children))
 ];
 
 const template = props => {
   let childRef;
   const { content } = props;
   return _$ssr(
-    ['<div data-hk="', '"><!--#-->', "<!--/--><!--#-->", "<!--/--><!--#-->", "<!--/--></div>"],
+    _tmpl$4,
     _$getHydrationKey(),
     _$createComponent(
       Child,
-      _$assignProps(
+      _$mergeProps(
         {
           name: "John"
         },
@@ -32,7 +60,7 @@ const template = props => {
           booleanProperty: true,
 
           get children() {
-            return _$ssr(['<div data-hk="', '">From Parent</div>'], _$getHydrationKey());
+            return _$ssr(_tmpl$3, _$getHydrationKey());
           }
         }
       )
@@ -41,7 +69,7 @@ const template = props => {
       name: "Jason",
 
       get children() {
-        return _$ssr(['<div data-hk="', '">', "</div>"], _$getHydrationKey(), _$escape(content));
+        return _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(content));
       }
     }),
     _$createComponent(Context.Consumer, {
@@ -68,9 +96,9 @@ const template2 = _$createComponent(Child, {
 const template3 = _$createComponent(Child, {
   get children() {
     return [
-      _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey()),
-      _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey()),
-      _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey()),
+      _$ssr(_tmpl$5, _$getHydrationKey()),
+      _$ssr(_tmpl$5, _$getHydrationKey()),
+      _$ssr(_tmpl$5, _$getHydrationKey()),
       "After"
     ];
   }
@@ -78,7 +106,7 @@ const template3 = _$createComponent(Child, {
 
 const template4 = _$createComponent(Child, {
   get children() {
-    return _$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey());
+    return _$ssr(_tmpl$5, _$getHydrationKey());
   }
 });
 
@@ -113,7 +141,7 @@ const template6 = _$createComponent(_$For, {
 
 const template7 = _$createComponent(Child, {
   get children() {
-    return [_$ssr(['<div data-hk="', '"></div>'], _$getHydrationKey()), () => state.dynamic];
+    return [_$ssr(_tmpl$5, _$getHydrationKey()), () => state.dynamic];
   }
 });
 
@@ -128,16 +156,7 @@ const template9 = _$createComponent(_garbage, {
 });
 
 const template10 = _$ssr(
-  [
-    '<div data-hk="',
-    '"><!--#-->',
-    "<!--/--> | <!--#-->",
-    "<!--/--> | <!--#-->",
-    "<!--/--> | <!--#-->",
-    "<!--/--> | <!--#-->",
-    "<!--/--> | <!--#-->",
-    "<!--/--></div>"
-  ],
+  _tmpl$6,
   _$getHydrationKey(),
   _$createComponent(Link, {
     children: "new"
@@ -160,16 +179,7 @@ const template10 = _$ssr(
 );
 
 const template11 = _$ssr(
-  [
-    '<div data-hk="',
-    '"><!--#-->',
-    "<!--/--> | <!--#-->",
-    "<!--/--><!--#-->",
-    "<!--/--> | <!--#-->",
-    "<!--/--><!--#-->",
-    "<!--/--> | <!--#-->",
-    "<!--/--></div>"
-  ],
+  _tmpl$7,
   _$getHydrationKey(),
   _$createComponent(Link, {
     children: "new"
@@ -192,7 +202,7 @@ const template11 = _$ssr(
 );
 
 const template12 = _$ssr(
-  ['<div data-hk="', '"> | <!--#-->', "<!--/--> |  |  | <!--#-->", "<!--/--> | </div>"],
+  _tmpl$8,
   _$getHydrationKey(),
   _$createComponent(Link, {
     children: "comments"

@@ -1,6 +1,5 @@
-import { Properties, ChildProperties, Aliases, SVGNamespace, NonComposedEvents } from "./constants";
-import { root, effect, memo, currentContext, createComponent } from "rxcore";
-import { getHydrationKey } from "./shared";
+import { Properties, ChildProperties, Aliases, SVGNamespace, DelegatedEvents } from "./constants";
+import { root, effect, memo, getOwner, createComponent, sharedConfig } from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -8,14 +7,12 @@ export {
   Aliases,
   SVGElements,
   SVGNamespace,
-  NonComposedEvents
+  DelegatedEvents
 } from "./constants";
-export { assignProps, dynamicProperty } from "./shared";
 
 const eventRegistry = new Set();
-let hydration = null;
 
-export { effect, memo, currentContext, createComponent };
+export { effect, memo, getOwner, createComponent };
 
 export function render(code, element, init) {
   let disposer;
@@ -102,6 +99,26 @@ export function spread(node, accessor, isSVG, skipChildren) {
   } else spreadExpression(node, accessor, undefined, isSVG, skipChildren);
 }
 
+export function mergeProps(...sources) {
+  const target = {};
+  for (let i = 0; i < sources.length; i++) {
+    const descriptors = Object.getOwnPropertyDescriptors(sources[i]);
+    Object.defineProperties(target, descriptors);
+  }
+  return target;
+}
+
+export function dynamicProperty(props, key) {
+  const src = props[key];
+  Object.defineProperty(props, key, {
+    get() {
+      return src();
+    },
+    enumerable: true
+  });
+  return props;
+}
+
 export function insert(parent, accessor, marker, initial) {
   if (marker !== undefined && !initial) initial = [];
   if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
@@ -131,16 +148,16 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       for (const eventName in value) node.addEventListener(eventName, value[eventName], true);
     } else if (prop.slice(0, 2) === "on") {
       const lc = prop.toLowerCase();
-      if (!NonComposedEvents.has(lc.slice(2))) {
+      if (DelegatedEvents.has(lc.slice(2))) {
         const name = lc.slice(2);
         if (Array.isArray(value)) {
-          node[`__${name}`] = value[0];
-          node[`__${name}Data`] = value[1];
-        } else node[`__${name}`] = value;
+          node[`$$${name}`] = value[0];
+          node[`$$${name}Data`] = value[1];
+        } else node[`$$${name}`] = value;
         delegateEvents([name]);
       } else if (Array.isArray(value)) {
-        node[lc] = e => value[0](value[1], e);
-      } else node[lc] = value;
+        node.addEventListener(lc, e => value[0](value[1], e));
+      } else node.addEventListener(lc, value);
     } else if (
       (isChildProp = ChildProperties.has(prop)) ||
       (!isSVG && (isProp = Properties.has(prop))) ||
@@ -159,37 +176,36 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 
 // Hydrate
 export function hydrate(code, element) {
-  hydration = globalThis._$HYDRATION || (globalThis._$HYDRATION = {});
-  hydration.context = { id: "0", count: 0, registry: {} };
-  const templates = element.querySelectorAll(`*[data-hk]`);
-  Array.prototype.reduce.call(
-    templates,
-    (memo, node) => {
-      const id = node.getAttribute("data-hk"),
-        list = memo[id] || (memo[id] = []);
-      list.push(node);
-      return memo;
-    },
-    hydration.context.registry
-  );
+  sharedConfig.resources = globalThis._$HYDRATION.resources;
+	sharedConfig.completed = globalThis._$HYDRATION.completed;
+	sharedConfig.events = globalThis._$HYDRATION.events;
+  sharedConfig.context = {
+    id: "",
+    count: 0,
+		loadResource: globalThis._$HYDRATION.loadResource
+  };
+  sharedConfig.registry = new Map();
+  gatherHydratable(element);
   const dispose = render(code, element, [...element.childNodes]);
-  delete hydration.context;
+  sharedConfig.context = null;
   return dispose;
 }
 
-export function getNextElement(template, isSSR) {
-  const hydrate = hydration && hydration.context;
-  let node, key;
-  if (
-    !hydrate ||
-    !hydrate.registry ||
-    !((key = getHydrationKey()) && hydrate.registry[key] && (node = hydrate.registry[key].shift()))
-  ) {
-    const el = template.cloneNode(true);
-    if (isSSR && hydrate) el.setAttribute("data-hk", getHydrationKey());
-    return el;
+export function gatherHydratable(element) {
+  const templates = element.querySelectorAll(`*[data-hk]`);
+  for (let i = 0; i < templates.length; i++) {
+    const node = templates[i];
+    sharedConfig.registry.set(node.getAttribute("data-hk"), node);
   }
-  if (hydration && hydration.completed) hydration.completed.add(node);
+}
+
+export function getNextElement(template) {
+  let node, key;
+  if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
+    return template.cloneNode(true);
+  }
+  if (sharedConfig.completed) sharedConfig.completed.add(node);
+  sharedConfig.registry.delete(key);
   return node;
 }
 
@@ -197,7 +213,7 @@ export function getNextMarker(start) {
   let end = start,
     count = 0,
     current = [];
-  if (hydration && hydration.context && hydration.context.registry) {
+  if (sharedConfig.context) {
     while (end) {
       if (end.nodeType === 8) {
         const v = end.nodeValue;
@@ -215,8 +231,8 @@ export function getNextMarker(start) {
 }
 
 export function runHydrationEvents() {
-  if (hydration.events) {
-    const { completed, events } = hydration;
+  if (sharedConfig.events) {
+    const { completed, events } = sharedConfig;
     while (events.length) {
       const [el, e] = events[0];
       if (!completed.has(el)) return;
@@ -232,7 +248,7 @@ function toPropertyName(name) {
 }
 
 function eventHandler(e) {
-  const key = `__${e.type}`;
+  const key = `$$${e.type}`;
   let node = (e.composedPath && e.composedPath()[0]) || e.target;
   // reverse Shadow DOM retargetting
   if (e.target !== node) {
@@ -291,7 +307,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       } else current = parent.textContent = value;
     }
   } else if (value == null || t === "boolean") {
-    if (hydration && hydration.context && hydration.context.registry) return current;
+    if (sharedConfig.context) return current;
     current = cleanChildren(parent, current, marker);
   } else if (t === "function") {
     effect(() => {
@@ -306,8 +322,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (hydration && hydration.context && hydration.context.registry && current.length)
-      return current;
+    if (sharedConfig.context && current.length) return current;
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
@@ -384,4 +399,9 @@ function cleanChildren(parent, current, marker, replacement) {
     }
   } else parent.insertBefore(node, marker);
   return [node];
+}
+
+export function getHydrationKey() {
+  const hydrate = sharedConfig.context;
+  return `${hydrate.id}${hydrate.count++}`;
 }

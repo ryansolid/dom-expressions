@@ -57,12 +57,10 @@ export function appendTemplates(path, templates) {
 }
 
 function registerTemplate(path, results) {
-  const { generate, hydratable } = config;
+  const { hydratable } = config;
   let decl;
   if (results.template.length) {
-    const templates =
-      path.scope.getProgramParent().data.templates ||
-      (path.scope.getProgramParent().data.templates = []);
+    const templates = path.state.templates;
     let templateDef, templateId;
     if ((templateDef = templates.find(t => t.template === results.template))) {
       templateId = templateDef.id;

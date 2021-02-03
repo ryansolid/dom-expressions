@@ -12,7 +12,7 @@ module.exports = {
         ],
         [
           "babel-plugin-jsx-dom-expressions",
-          { moduleName: "../src/runtime" }
+          { moduleName: "../src/client" }
         ]
       ]
     }

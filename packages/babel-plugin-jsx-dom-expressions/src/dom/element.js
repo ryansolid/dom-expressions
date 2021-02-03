@@ -4,7 +4,7 @@ import {
   Properties,
   ChildProperties,
   SVGNamespace,
-  NonComposedEvents,
+  DelegatedEvents,
   SVGElements
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
@@ -322,18 +322,10 @@ function transformAttributes(path, results) {
                 )
               );
             });
-          } else if (
-            config.delegateEvents &&
-            !NonComposedEvents.has(ev) &&
-            config.nonDelegateEvents.indexOf(ev) === -1
-          ) {
+          } else if (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1) {
             // can only hydrate delegated events
-            hasHydratableEvent = config.hydratableEvents
-              ? config.hydratableEvents.includes(ev)
-              : true;
-            const events =
-              attribute.scope.getProgramParent().data.events ||
-              (attribute.scope.getProgramParent().data.events = new Set());
+            hasHydratableEvent = true;
+            const events = attribute.state.events
             events.add(ev);
             let handler = value.expression;
             if (t.isArrayExpression(value.expression)) {
@@ -342,7 +334,7 @@ function transformAttributes(path, results) {
                 t.expressionStatement(
                   t.assignmentExpression(
                     "=",
-                    t.memberExpression(t.identifier(elem.name), t.identifier(`__${ev}Data`)),
+                    t.memberExpression(elem, t.identifier(`$$${ev}Data`)),
                     value.expression.elements[1]
                   )
                 )
@@ -352,7 +344,7 @@ function transformAttributes(path, results) {
               t.expressionStatement(
                 t.assignmentExpression(
                   "=",
-                  t.memberExpression(t.identifier(elem.name), t.identifier(`__${ev}`)),
+                  t.memberExpression(elem, t.identifier(`$$${ev}`)),
                   handler
                 )
               )
@@ -370,11 +362,10 @@ function transformAttributes(path, results) {
             }
             results.exprs.unshift(
               t.expressionStatement(
-                t.assignmentExpression(
-                  "=",
-                  t.memberExpression(t.identifier(elem.name), t.identifier(`on${ev}`)),
+                t.callExpression(t.memberExpression(elem, t.identifier("addEventListener")), [
+                  t.stringLiteral(ev),
                   handler
-                )
+                ])
               )
             );
           }
@@ -636,13 +627,13 @@ function detectExpressions(children, index) {
 }
 
 function contextToCustomElement(path, results) {
-  registerImportMethod(path, "currentContext");
+  registerImportMethod(path, "getOwner");
   results.exprs.push(
     t.expressionStatement(
       t.assignmentExpression(
         "=",
-        t.memberExpression(results.id, t.identifier("_context")),
-        t.callExpression(t.identifier("_$currentContext"), [])
+        t.memberExpression(results.id, t.identifier("_$owner")),
+        t.callExpression(t.identifier("_$getOwner"), [])
       )
     )
   );

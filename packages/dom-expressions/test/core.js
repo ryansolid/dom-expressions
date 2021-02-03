@@ -1,6 +1,14 @@
 import S, { root, value, sample } from "s-js";
 
-const currentContext = null;
+const getOwner = null;
+const sharedConfig = {};
+
+function asyncWrap(fn) {
+  return new Promise(resolve => {
+    const res = fn();
+    setTimeout(() => resolve(res), 1000)
+  })
+}
 
 function memo(fn, equal) {
   if (!equal) return S(fn);
@@ -19,4 +27,4 @@ function createComponent(Comp, props) {
   return sample(() => Comp(props));
 }
 
-export { root, S as effect, memo, createComponent, currentContext };
+export { root, S as effect, memo, createComponent, getOwner, sharedConfig, asyncWrap };

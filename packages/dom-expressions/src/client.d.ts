@@ -2,7 +2,7 @@ import { JSX } from "./jsx";
 export const Aliases: Record<string, string>;
 export const Properties: Set<string>;
 export const ChildProperties: Set<string>;
-export const NonComposedEvents: Set<string>;
+export const DelegatedEvents: Set<string>;
 export const SVGElements: Set<string>;
 export const SVGNamespace: Record<string, string>;
 
@@ -39,11 +39,12 @@ export function style(
   value: { [k: string]: string },
   prev?: { [k: string]: string }
 ): void;
-export function currentContext(): unknown;
+export function getOwner(): unknown;
+export function mergeProps(target: unknown, ...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
-export function assignProps(target: unknown, ...sources: unknown[]): unknown;
 
 export function hydrate(fn: () => JSX.Element, node: MountableElement): void;
+export function gatherHydratable(node: Element): void;
 export function getHydrationKey(): string;
-export function getNextElement(template: HTMLTemplateElement, isSSR: boolean): Node;
+export function getNextElement(template: HTMLTemplateElement): Node;
 export function getNextMarker(start: Node): [Node, Array<Node>];

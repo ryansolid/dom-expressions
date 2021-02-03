@@ -2,7 +2,7 @@ import { template as _$template } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
-import { assignProps as _$assignProps } from "r-dom";
+import { mergeProps as _$mergeProps } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
 const _tmpl$ = _$template(`<div>Hello </div>`, 2),
@@ -45,7 +45,7 @@ const template = props => {
       _el$4,
       _$createComponent(
         Child,
-        _$assignProps(
+        _$mergeProps(
           {
             name: "John"
           },
@@ -69,22 +69,29 @@ const template = props => {
 
     _$insert(
       _el$4,
-      _$createComponent(Child, {
-        name: "Jason",
+      _$createComponent(
+        Child,
+        _$mergeProps(
+          {
+            name: "Jason"
+          },
+          dynamicSpread(),
+          {
+            ref(r$) {
+              const _ref$3 = props.ref;
+              typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
+            },
 
-        ref(r$) {
-          const _ref$3 = props.ref;
-          typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
-        },
+            get children() {
+              const _el$6 = _tmpl$2.cloneNode(true);
 
-        get children() {
-          const _el$6 = _tmpl$2.cloneNode(true);
+              _$insert(_el$6, content);
 
-          _$insert(_el$6, content);
-
-          return _el$6;
-        }
-      }),
+              return _el$6;
+            }
+          }
+        )
+      ),
       null
     );
 

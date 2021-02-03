@@ -2,13 +2,10 @@ export default {
   moduleName: "dom",
   generate: "dom",
   hydratable: false,
-  async: false,
-  delegateEvents: true,
-  nonDelegateEvents: [],
+  delegatedEvents: [],
   builtIns: [],
+  requireImportSource: false,
   wrapConditionals: true,
-  wrapSpreads: true,
   contextToCustomElements: false,
-  hydratableEvents: null,
   staticMarker: "@once"
 };

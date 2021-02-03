@@ -314,7 +314,7 @@ function transformAttributes(path, results) {
 }
 
 function transformChildren(path, results) {
-  const { hydratable, async } = config,
+  const { hydratable } = config,
     doEscape = !path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"), true);
   filteredChildren.forEach(node => {
