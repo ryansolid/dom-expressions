@@ -322,10 +322,13 @@ function transformAttributes(path, results) {
                 )
               );
             });
-          } else if (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1) {
+          } else if (
+            config.delegateEvents &&
+            (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1)
+          ) {
             // can only hydrate delegated events
             hasHydratableEvent = true;
-            const events = attribute.state.events
+            const events = attribute.state.events;
             events.add(ev);
             let handler = value.expression;
             if (t.isArrayExpression(value.expression)) {
