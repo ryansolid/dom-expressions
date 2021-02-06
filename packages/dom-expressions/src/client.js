@@ -155,8 +155,8 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
         } else node[`$$${name}`] = value;
         delegateEvents([name]);
       } else if (Array.isArray(value)) {
-        node.addEventListener(lc, e => value[0](value[1], e));
-      } else node.addEventListener(lc, value);
+        node.addEventListener(name, e => value[0](value[1], e));
+      } else node.addEventListener(name, value);
     } else if (
       (isChildProp = ChildProperties.has(prop)) ||
       (!isSVG && (isProp = Properties.has(prop))) ||
