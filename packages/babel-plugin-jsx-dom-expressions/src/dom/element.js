@@ -18,7 +18,7 @@ import {
   toEventName,
   toPropertyName,
   checkLength,
-  isStaticExpressionContainer,
+  getStaticExpression,
   reservedNameSpaces
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
@@ -594,7 +594,7 @@ function detectExpressions(children, index) {
     if (
       t.isJSXExpressionContainer(node) &&
       !t.isJSXEmptyExpression(node.expression) &&
-      !isStaticExpressionContainer(children[index - 1])
+      !getStaticExpression(children[index - 1])
     )
       return true;
     let tagName;
@@ -603,7 +603,7 @@ function detectExpressions(children, index) {
   for (let i = index; i < children.length; i++) {
     const child = children[i].node;
     if (t.isJSXExpressionContainer(child)) {
-      if (!t.isJSXEmptyExpression(child.expression) && !isStaticExpressionContainer(children[i]))
+      if (!t.isJSXEmptyExpression(child.expression) && !getStaticExpression(children[i]))
         return true;
     } else if (t.isJSXElement(child)) {
       const tagName = getTagName(child);

@@ -8,7 +8,9 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
   _tmpl$5 = _$template(`<span> <!> <!> </span>`, 4),
   _tmpl$6 = _$template(`<span> <!> </span>`, 3),
   _tmpl$7 = _$template(`<span>Hello</span>`, 2),
-  _tmpl$8 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
+  _tmpl$8 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2),
+  _tmpl$9 = _$template(`<span>Hi&lt;script>alert();&lt;/script></span>`, 2),
+  _tmpl$10 = _$template(`<span>Hello World!</span>`, 2);
 
 const trailing = _tmpl$.cloneNode(true);
 
@@ -88,3 +90,9 @@ const multiLineNoTrailingSpace = _tmpl$3.cloneNode(true);
 /* prettier-ignore */
 
 const escape = _tmpl$8.cloneNode(true);
+
+const injection = _tmpl$9.cloneNode(true);
+
+let value = "World";
+
+const evaluated = _tmpl$10.cloneNode(true);

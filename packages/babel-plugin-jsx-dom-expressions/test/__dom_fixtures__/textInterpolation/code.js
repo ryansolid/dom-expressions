@@ -39,3 +39,8 @@ const multiLineNoTrailingSpace = <span>
 const escape = <span>
   &nbsp;&lt;Hi&gt;&nbsp;
 </span>
+
+const injection = <span>Hi{"<script>alert();</script>"}</span>
+
+let value = "World";
+const evaluated = <span>Hello {value + "!"}</span>

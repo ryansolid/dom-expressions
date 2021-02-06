@@ -10,7 +10,8 @@ import {
   isDynamic,
   trimWhitespace,
   transformCondition,
-  isStaticExpressionContainer
+  getStaticExpression,
+  escapeHTML
 } from "./utils";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
@@ -52,6 +53,7 @@ export function transformThis(path) {
 
 export function transformNode(path, info = {}) {
   const node = path.node;
+  let staticValue;
   if (t.isJSXElement(node)) {
     let tagName = getTagName(node);
     if (isComponent(tagName)) return transformComponent(path);
@@ -61,13 +63,11 @@ export function transformNode(path, info = {}) {
     let results = { template: "", decl: [], exprs: [], dynamics: [] };
     transformFragmentChildren(path.get("children"), results);
     return results;
-  } else if (t.isJSXText(node) || isStaticExpressionContainer(path)) {
+  } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path))) {
     const text = trimWhitespace(
-      t.isJSXExpressionContainer(node)
-        ? t.isTemplateLiteral(node.expression)
-          ? node.expression.quasis[0].value.raw
-          : node.expression.value.toString()
-        : node.extra.raw
+        staticValue !== undefined
+          ? escapeHTML(staticValue)
+          : node.extra.raw
     );
     if (!text.length) return null;
     const results = {

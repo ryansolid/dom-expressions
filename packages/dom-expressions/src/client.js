@@ -147,9 +147,8 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
     } else if (prop === "onCapture") {
       for (const eventName in value) node.addEventListener(eventName, value[eventName], true);
     } else if (prop.slice(0, 2) === "on") {
-      const lc = prop.toLowerCase();
-      if (DelegatedEvents.has(lc.slice(2))) {
-        const name = lc.slice(2);
+      const name = prop.slice(2).toLowerCase();
+      if (DelegatedEvents.has(name)) {
         if (Array.isArray(value)) {
           node[`$$${name}`] = value[0];
           node[`$$${name}Data`] = value[1];

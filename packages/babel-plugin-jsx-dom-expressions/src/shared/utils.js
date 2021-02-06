@@ -93,15 +93,15 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   return dynamic;
 }
 
-export function isStaticExpressionContainer(path) {
+export function getStaticExpression(path) {
   const node = path.node;
+  let value;
   return (
     t.isJSXExpressionContainer(node) &&
     t.isJSXElement(path.parent) &&
     !isComponent(getTagName(path.parent)) &&
-    (t.isStringLiteral(node.expression) ||
-      t.isNumericLiteral(node.expression) ||
-      (t.isTemplateLiteral(node.expression) && node.expression.expressions.length === 0))
+    (value = path.get("expression").evaluate().value) !== undefined &&
+    value
   );
 }
 

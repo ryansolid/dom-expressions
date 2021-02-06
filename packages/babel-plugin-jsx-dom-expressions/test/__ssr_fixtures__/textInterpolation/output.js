@@ -9,7 +9,9 @@ const _tmpl$ = "<span>Hello </span>",
   _tmpl$7 = ["<span> ", " ", " </span>"],
   _tmpl$8 = ["<span> ", "", " </span>"],
   _tmpl$9 = "<span>Hello</span>",
-  _tmpl$10 = "<span>&nbsp;&lt;Hi&gt;&nbsp;</span>";
+  _tmpl$10 = "<span>&nbsp;&lt;Hi&gt;&nbsp;</span>",
+  _tmpl$11 = "<span>Hi&lt;script>alert();&lt;/script></span>",
+  _tmpl$12 = "<span>Hello World!</span>";
 
 const trailing = _$ssr(_tmpl$);
 
@@ -38,4 +40,13 @@ const multiLine = _$ssr(_tmpl$9);
 const multiLineTrailingSpace = _$ssr(_tmpl$3);
 /* prettier-ignore */
 
+const multiLineNoTrailingSpace = _$ssr(_tmpl$3);
+/* prettier-ignore */
+
 const escape = _$ssr(_tmpl$10);
+
+const injection = _$ssr(_tmpl$11);
+
+let value = "World";
+
+const evaluated = _$ssr(_tmpl$12);
