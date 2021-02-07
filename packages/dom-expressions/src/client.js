@@ -61,6 +61,17 @@ export function setAttributeNS(node, namespace, name, value) {
   else node.setAttributeNS(namespace, name, value);
 }
 
+export function addEventListener(node, name, handler, delegate) {
+  if (delegate) {
+    if (Array.isArray(handler)) {
+      node[`$$${name}`] = handler[0];
+      node[`$$${name}Data`] = handler[1];
+    } else node[`$$${name}`] = handler;
+  } else if (Array.isArray(handler)) {
+    node.addEventListener(name, e => handler[0](handler[1], e));
+  } else node.addEventListener(name, handler);
+}
+
 export function classList(node, value, prev) {
   const classKeys = Object.keys(value);
   for (let i = 0, len = classKeys.length; i < len; i++) {
@@ -74,23 +85,21 @@ export function classList(node, value, prev) {
   return value;
 }
 
-export function style(node, value, prev) {
+export function style(node, value, prev = {}) {
   const nodeStyle = node.style;
   if (typeof value === "string") return (nodeStyle.cssText = value);
-
+  typeof prev === "string" && (prev = {});
   let v, s;
-  if (prev != null && typeof prev !== "string") {
-    for (s in value) {
-      v = value[s];
-      v !== prev[s] && nodeStyle.setProperty(s, v);
-    }
-    for (s in prev) {
-      value[s] == null && nodeStyle.removeProperty(s);
-    }
-  } else {
-    for (s in value) nodeStyle.setProperty(s, value[s]);
+  for (s in prev) {
+    value[s] == null && nodeStyle.removeProperty(s);
+    delete prev[s];
   }
-  return value;
+  for (s in value) {
+    v = value[s];
+    v !== prev[s] && nodeStyle.setProperty(s, v);
+    prev[v] = v;
+  }
+  return prev;
 }
 
 export function spread(node, accessor, isSVG, skipChildren) {
@@ -148,15 +157,9 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       for (const eventName in value) node.addEventListener(eventName, value[eventName], true);
     } else if (prop.slice(0, 2) === "on") {
       const name = prop.slice(2).toLowerCase();
-      if (DelegatedEvents.has(name)) {
-        if (Array.isArray(value)) {
-          node[`$$${name}`] = value[0];
-          node[`$$${name}Data`] = value[1];
-        } else node[`$$${name}`] = value;
-        delegateEvents([name]);
-      } else if (Array.isArray(value)) {
-        node.addEventListener(name, e => value[0](value[1], e));
-      } else node.addEventListener(name, value);
+      const delegate = DelegatedEvents.has(name);
+      addEventListener(node, name, value, delegate);
+      delegate && delegateEvents([name]);
     } else if (
       (isChildProp = ChildProperties.has(prop)) ||
       (!isSVG && (isProp = Properties.has(prop))) ||
@@ -176,12 +179,12 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 // Hydrate
 export function hydrate(code, element) {
   sharedConfig.resources = globalThis._$HYDRATION.resources;
-	sharedConfig.completed = globalThis._$HYDRATION.completed;
-	sharedConfig.events = globalThis._$HYDRATION.events;
+  sharedConfig.completed = globalThis._$HYDRATION.completed;
+  sharedConfig.events = globalThis._$HYDRATION.events;
   sharedConfig.context = {
     id: "",
     count: 0,
-		loadResource: globalThis._$HYDRATION.loadResource
+    loadResource: globalThis._$HYDRATION.loadResource
   };
   sharedConfig.registry = new Map();
   gatherHydratable(element);

@@ -5,6 +5,7 @@ interface Runtime {
   effect<T>(fn: (prev?: T) => T, init?: T): any;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   createComponent(Comp: (props: any) => any, props: any): any;
+  addEventHandler(node: Element, name: string, handler: () => void, delegate: boolean): void;
   delegateEvents(eventNames: string[]): void;
   classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): void;
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
@@ -62,12 +63,6 @@ function toPropertyName(name: string) {
 
 export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag {
   let uuid = 1;
-  (r as any).delegate = (el: Node, ev: string, expr: any) => {
-    if (Array.isArray(expr)) {
-      (el as any)[`$$${ev}`] = expr[0];
-      (el as any)[`$$${ev}Data`] = expr[1];
-    } else (el as any)[`$$${ev}`] = expr;
-  };
   (r as any).wrapProps = (props: any) => {
     for (const k in props) {
       if (typeof props[k] === "function" && !props[k].length) r.dynamicProperty(props, k);
@@ -156,10 +151,9 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   function parseAttribute(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
     if (name.slice(0, 2) === "on" && name !== "on" && name !== "onCapture") {
       const lc = name.slice(2).toLowerCase();
-      if (delegateEvents && r.DelegatedEvents.has(lc)) {
-        options.delegatedEvents.add(lc);
-        options.exprs.push(`r.delegate(${tag},"${lc}",exprs[${options.counter++}])`);
-      } else options.exprs.push(`${tag}.addEventListener("${lc}",exprs[${options.counter++}])`);
+      const delegate = delegateEvents && r.DelegatedEvents.has(lc);
+      options.exprs.push(`r.addEventListener(${tag},"${lc}",exprs[${options.counter++}],${delegate})`);
+      delegate && options.delegatedEvents.add(lc);
     } else if (name === "ref") {
       options.exprs.push(`exprs[${options.counter++}](${tag})`);
     } else {

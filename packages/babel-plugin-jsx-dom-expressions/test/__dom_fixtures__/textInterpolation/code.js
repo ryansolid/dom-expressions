@@ -44,3 +44,6 @@ const injection = <span>Hi{"<script>alert();</script>"}</span>
 
 let value = "World";
 const evaluated = <span>Hello {value + "!"}</span>
+
+let number = 4 + 5;
+const evaluatedNonString = <span>4 + 5 = {number}</span>

@@ -333,44 +333,91 @@ function transformAttributes(path, results) {
             let handler = value.expression;
             if (t.isArrayExpression(value.expression)) {
               handler = value.expression.elements[0];
+
+              if (value.expression.elements.length > 1) {
+                results.exprs.unshift(
+                  t.expressionStatement(
+                    t.assignmentExpression(
+                      "=",
+                      t.memberExpression(elem, t.identifier(`$$${ev}Data`)),
+                      value.expression.elements[1]
+                    )
+                  )
+                );
+              }
               results.exprs.unshift(
                 t.expressionStatement(
                   t.assignmentExpression(
                     "=",
-                    t.memberExpression(elem, t.identifier(`$$${ev}Data`)),
-                    value.expression.elements[1]
+                    t.memberExpression(elem, t.identifier(`$$${ev}`)),
+                    handler
                   )
                 )
               );
-            }
-            results.exprs.unshift(
-              t.expressionStatement(
-                t.assignmentExpression(
-                  "=",
-                  t.memberExpression(elem, t.identifier(`$$${ev}`)),
-                  handler
+            } else if (t.isFunction(value.expression)) {
+              results.exprs.unshift(
+                t.expressionStatement(
+                  t.assignmentExpression(
+                    "=",
+                    t.memberExpression(elem, t.identifier(`$$${ev}`)),
+                    handler
+                  )
                 )
-              )
-            );
+              );
+            } else {
+              registerImportMethod(path, "addEventListener");
+              results.exprs.unshift(
+                t.expressionStatement(
+                  t.callExpression(t.identifier("_$addEventListener"), [
+                    elem,
+                    t.stringLiteral(ev),
+                    handler,
+                    t.booleanLiteral(true)
+                  ])
+                )
+              );
+            }
           } else {
             let handler = value.expression;
             if (t.isArrayExpression(value.expression)) {
-              handler = t.arrowFunctionExpression(
-                [t.identifier("e")],
-                t.callExpression(value.expression.elements[0], [
-                  value.expression.elements[1],
-                  t.identifier("e")
-                ])
+              if (value.expression.elements.length > 1) {
+                handler = t.arrowFunctionExpression(
+                  [t.identifier("e")],
+                  t.callExpression(value.expression.elements[0], [
+                    value.expression.elements[1],
+                    t.identifier("e")
+                  ])
+                );
+              } else handler = value.expression.elements[0];
+              results.exprs.unshift(
+                t.expressionStatement(
+                  t.callExpression(t.memberExpression(elem, t.identifier("addEventListener")), [
+                    t.stringLiteral(ev),
+                    handler
+                  ])
+                )
+              );
+            } else if (t.isFunction(value.expression)) {
+              results.exprs.unshift(
+                t.expressionStatement(
+                  t.callExpression(t.memberExpression(elem, t.identifier("addEventListener")), [
+                    t.stringLiteral(ev),
+                    handler
+                  ])
+                )
+              );
+            } else {
+              registerImportMethod(path, "addEventListener");
+              results.exprs.unshift(
+                t.expressionStatement(
+                  t.callExpression(t.identifier("_$addEventListener"), [
+                    elem,
+                    t.stringLiteral(ev),
+                    handler
+                  ])
+                )
               );
             }
-            results.exprs.unshift(
-              t.expressionStatement(
-                t.callExpression(t.memberExpression(elem, t.identifier("addEventListener")), [
-                  t.stringLiteral(ev),
-                  handler
-                ])
-              )
-            );
           }
         } else if (
           isDynamic(attribute.get("value").get("expression"), {

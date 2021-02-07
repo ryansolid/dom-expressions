@@ -10,7 +10,8 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
   _tmpl$7 = _$template(`<span>Hello</span>`, 2),
   _tmpl$8 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2),
   _tmpl$9 = _$template(`<span>Hi&lt;script>alert();&lt;/script></span>`, 2),
-  _tmpl$10 = _$template(`<span>Hello World!</span>`, 2);
+  _tmpl$10 = _$template(`<span>Hello World!</span>`, 2),
+  _tmpl$11 = _$template(`<span>4 + 5 = 9</span>`, 2);
 
 const trailing = _tmpl$.cloneNode(true);
 
@@ -96,3 +97,7 @@ const injection = _tmpl$9.cloneNode(true);
 let value = "World";
 
 const evaluated = _tmpl$10.cloneNode(true);
+
+let number = 4 + 5;
+
+const evaluatedNonString = _tmpl$11.cloneNode(true);

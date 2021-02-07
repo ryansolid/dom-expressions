@@ -66,7 +66,7 @@ export function transformNode(path, info = {}) {
   } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path))) {
     const text = trimWhitespace(
         staticValue !== undefined
-          ? escapeHTML(staticValue)
+          ? escapeHTML(staticValue.toString())
           : node.extra.raw
     );
     if (!text.length) return null;
