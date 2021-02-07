@@ -5,7 +5,7 @@ interface Runtime {
   effect<T>(fn: (prev?: T) => T, init?: T): any;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   createComponent(Comp: (props: any) => any, props: any): any;
-  addEventHandler(node: Element, name: string, handler: () => void, delegate: boolean): void;
+  addEventListener(node: Element, name: string, handler: () => void, delegate: boolean): void;
   delegateEvents(eventNames: string[]): void;
   classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): void;
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
