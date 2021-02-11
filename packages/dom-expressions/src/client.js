@@ -96,8 +96,10 @@ export function style(node, value, prev = {}) {
   }
   for (s in value) {
     v = value[s];
-    v !== prev[s] && nodeStyle.setProperty(s, v);
-    prev[v] = v;
+    if (v !== prev[s]) {
+      nodeStyle.setProperty(s, v);
+      prev[s] = v;
+    }
   }
   return prev;
 }
