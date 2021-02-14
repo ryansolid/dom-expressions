@@ -44,6 +44,7 @@ export function renderToNodeStream(code, options = {}) {
     };
   sharedConfig.context.writeResource = (id, p) => {
     count++;
+    Promise.resolve().then(() => stream.push(`<script>_$HYDRATION.startResource("${id}")</script>`));
     p.then(d => {
       stream.push(
         `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
@@ -73,6 +74,7 @@ export function renderToWebStream(code, options = {}) {
     };
   sharedConfig.context.writeResource = (id, p) => {
     count++;
+    Promise.resolve().then(() => writer.write(encoder.encode(`<script>_$HYDRATION.startResource("${id}")</script>`)));
     p.then(d => {
       writer.write(
         encoder.encode(
@@ -237,7 +239,7 @@ function generateHydrationScript({ eventNames = ["click", "input"], streaming, r
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
   if (streaming) {
-    s += `(()=>{const e=_$HYDRATION,r={};e.resolveResource=((e,o)=>{const s=r[e];if(!s)return r[e]=o;delete r[e],s(o)}),e.loadResource=(e=>{const o=r[e];if(!o){let o,s=new Promise(e=>o=e);return r[e]=o,s}return delete r[e],Promise.resolve(o)})})();`;
+    s += `(()=>{const e=_$HYDRATION,o={};e.startResource=e=>{let r;o[e]=[new Promise(e=>r=e),r]},e.resolveResource=(e,r)=>{const n=o[e];if(!n)return o[e]=[r];n[1](r)},e.loadResource=e=>{const r=o[e];if(r)return r[0]}})();`;
   }
   if (resources)
     s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(

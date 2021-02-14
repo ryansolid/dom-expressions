@@ -15,20 +15,16 @@ const hydrationEventHandler = (e) => {
 // streaming
 `const h = _$HYDRATION;
 const resources = {};
+h.startResource = (id) => {
+  let resolve;
+  resources[id] = [new Promise(r => resolve = r), resolve]
+}
 h.resolveResource = (id, data) => {
   const r = resources[id];
-  if(!r) return resources[id] = data;
-  delete resources[id];
-  r(data);
+  if(!r) return resources[id] = [data];
+  r[1](data);
 };
 h.loadResource = (id) => {
   const r = resources[id];
-  if(!r) {
-    let r,
-      p = new Promise(res => r = res);
-    resources[id] = r;
-    return p;
-  }
-  delete resources[id];
-  return Promise.resolve(r);
+  if(r) return r[0];
 }`
