@@ -44,7 +44,7 @@ export function getOwner(): unknown;
 export function mergeProps(target: unknown, ...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
 
-export function hydrate(fn: () => JSX.Element, node: MountableElement): void;
+export function hydrate(fn: () => JSX.Element, node: MountableElement): () => void;
 export function gatherHydratable(node: Element): void;
 export function getHydrationKey(): string;
 export function getNextElement(template: HTMLTemplateElement): Node;
