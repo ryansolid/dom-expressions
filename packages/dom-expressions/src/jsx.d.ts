@@ -4,6 +4,7 @@
  * https://github.com/adamhaile/surplus/blob/master/index.d.ts
  * https://github.com/infernojs/inferno/blob/master/packages/inferno/src/core/types.ts
  */
+type DOMElement = Element;
 
 export namespace JSX {
   type Element =
@@ -30,7 +31,7 @@ export namespace JSX {
     (
       e: E & {
         currentTarget: T;
-        target: T;
+        target: DOMElement;
       }
     ): void;
   }
@@ -39,7 +40,7 @@ export namespace JSX {
       data: any,
       e: E & {
         currentTarget: T;
-        target: T;
+        target: DOMElement;
       }
     ) => void;
     1: any;
