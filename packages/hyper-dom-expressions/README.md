@@ -49,13 +49,13 @@ Libraries may expose access to h in different ways. For example Solid has it's o
 
 ## Differences from JSX
 
-There are also several small differences but generally follows HyperScript conventions. All attributes are props (so use className) and to indicate attributes wrap in 'attrs' object. Ref work by passing a function. Keep in mind you need to wrap expressions in functions if you want them to be observed. For attributes since wrapping in a function is the only indicator of reactivity, passing a non-event function as a value requires wrapping it in a function.
+There are also several small differences but generally follows HyperScript conventions. Ref work by passing a function. Keep in mind you need to wrap expressions in functions if you want them to be observed. For attributes since wrapping in a function is the only indicator of reactivity, passing a non-event function as a value requires wrapping it in a function.
 
 Fragments are just arrays. Components are handled by passing a Function to the first argument of the h function. Ie:
 ```jsx
 const view = <>
   <Component prop={value} />
-  {( someValue() )}
+  {someValue()}
 </>
 
 // is equivalent to:
