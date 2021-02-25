@@ -123,6 +123,20 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   }
 }
 
+function detectResolvableEventHandler(attribute, handler) {
+  while (t.isIdentifier(handler)) {
+    const lookup = attribute.scope.getBinding(handler.name)
+    if (lookup) {
+      if (t.isVariableDeclarator(lookup.path.node)) {
+        handler = lookup.path.node.init;
+      } else if (t.isFunctionDeclaration(lookup.path.node)) {
+        return true
+      } else return false;
+    } else return false;
+  }
+  return t.isFunction(handler);
+}
+
 function transformAttributes(path, results) {
   let elem = results.id,
     hasHydratableEvent = false,
@@ -328,23 +342,23 @@ function transformAttributes(path, results) {
           ) {
             // can only hydrate delegated events
             hasHydratableEvent = true;
-            const events = attribute.state.events;
+            const events = path.state.events;
             events.add(ev);
             let handler = value.expression;
-            if (t.isArrayExpression(value.expression)) {
-              handler = value.expression.elements[0];
-
-              if (value.expression.elements.length > 1) {
+            const resolveable = detectResolvableEventHandler(attribute, handler);
+            if (t.isArrayExpression(handler)) {
+              if (handler.elements.length > 1) {
                 results.exprs.unshift(
                   t.expressionStatement(
                     t.assignmentExpression(
                       "=",
                       t.memberExpression(elem, t.identifier(`$$${ev}Data`)),
-                      value.expression.elements[1]
+                      handler.elements[1]
                     )
                   )
                 );
               }
+              handler = handler.elements[0];
               results.exprs.unshift(
                 t.expressionStatement(
                   t.assignmentExpression(
@@ -354,7 +368,7 @@ function transformAttributes(path, results) {
                   )
                 )
               );
-            } else if (t.isFunction(value.expression)) {
+            } else if (t.isFunction(handler) || resolveable) {
               results.exprs.unshift(
                 t.expressionStatement(
                   t.assignmentExpression(
@@ -379,16 +393,17 @@ function transformAttributes(path, results) {
             }
           } else {
             let handler = value.expression;
-            if (t.isArrayExpression(value.expression)) {
-              if (value.expression.elements.length > 1) {
+            const resolveable = detectResolvableEventHandler(attribute, handler);
+            if (t.isArrayExpression(handler)) {
+              if (handler.elements.length > 1) {
                 handler = t.arrowFunctionExpression(
                   [t.identifier("e")],
-                  t.callExpression(value.expression.elements[0], [
-                    value.expression.elements[1],
+                  t.callExpression(handler.elements[0], [
+                    handler.elements[1],
                     t.identifier("e")
                   ])
                 );
-              } else handler = value.expression.elements[0];
+              } else handler = handler.elements[0];
               results.exprs.unshift(
                 t.expressionStatement(
                   t.callExpression(t.memberExpression(elem, t.identifier("addEventListener")), [
@@ -397,7 +412,7 @@ function transformAttributes(path, results) {
                   ])
                 )
               );
-            } else if (t.isFunction(value.expression)) {
+            } else if (t.isFunction(handler) || resolveable) {
               results.exprs.unshift(
                 t.expressionStatement(
                   t.callExpression(t.memberExpression(elem, t.identifier("addEventListener")), [
