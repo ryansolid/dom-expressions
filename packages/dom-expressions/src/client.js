@@ -10,7 +10,7 @@ export {
   DelegatedEvents
 } from "./constants";
 
-const eventRegistry = new Set();
+const $$EVENTS = Symbol("delegated-events");
 
 export { effect, memo, getOwner, createComponent };
 
@@ -37,18 +37,21 @@ export function template(html, check, isSVG) {
 }
 
 export function delegateEvents(eventNames) {
+  const e = document[$$EVENTS] || (document[$$EVENTS] = new Set());
   for (let i = 0, l = eventNames.length; i < l; i++) {
     const name = eventNames[i];
-    if (!eventRegistry.has(name)) {
-      eventRegistry.add(name);
+    if (!e.has(name)) {
+      e.add(name);
       document.addEventListener(name, eventHandler);
     }
   }
 }
 
 export function clearDelegatedEvents() {
-  for (let name of eventRegistry.keys()) document.removeEventListener(name, eventHandler);
-  eventRegistry.clear();
+  if (document[$$EVENTS]) {
+    for (let name of document[$$EVENTS].keys()) document.removeEventListener(name, eventHandler);
+    delete document[$$EVENTS];
+  }
 }
 
 export function setAttribute(node, name, value) {
