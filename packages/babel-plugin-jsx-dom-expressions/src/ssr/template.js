@@ -18,7 +18,10 @@ export function createTemplate(path, result) {
     template = t.arrayExpression(strings);
   }
 
-  const found = path.state.templates.find(tmp => {
+  const templates =
+      path.scope.getProgramParent().data.templates ||
+      (path.scope.getProgramParent().data.templates = []);
+  const found = templates.find(tmp => {
     if (t.isArrayExpression(tmp[1]) && t.isArrayExpression(template)) {
       return tmp[1].elements.every(
         (el, i) => template.elements[i] && el.value === template.elements[i].value
@@ -28,7 +31,7 @@ export function createTemplate(path, result) {
   });
   if (!found) {
     id = path.scope.generateUidIdentifier("tmpl$");
-    path.state.templates.push([id, template]);
+    templates.push([id, template]);
   } else id = found[0];
 
   return t.callExpression(
