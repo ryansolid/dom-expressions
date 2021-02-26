@@ -6,18 +6,18 @@ import config from "../config";
 
 // add to the top/bottom of the module.
 export default path => {
-  if (path.state.events.size) {
+  if (path.scope.data.events) {
     registerImportMethod(path, "delegateEvents");
     path.node.body.push(
       t.expressionStatement(
         t.callExpression(t.identifier("_$delegateEvents"), [
-          t.arrayExpression(Array.from(path.state.events).map(e => t.stringLiteral(e)))
+          t.arrayExpression(Array.from(path.scope.data.events).map(e => t.stringLiteral(e)))
         ])
       )
     );
   }
-  if (path.state.templates.length) {
+  if (path.scope.data.templates) {
     const appendTemplates = config.generate === "ssr" ? appendTemplatesSSR : appendTemplatesDOM;
-    appendTemplates(path, path.state.templates);
+    appendTemplates(path, path.scope.data.templates);
   }
 };

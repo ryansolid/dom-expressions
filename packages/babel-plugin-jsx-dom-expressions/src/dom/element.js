@@ -342,7 +342,9 @@ function transformAttributes(path, results) {
           ) {
             // can only hydrate delegated events
             hasHydratableEvent = true;
-            const events = path.state.events;
+            const events =
+              attribute.scope.getProgramParent().data.events ||
+              (attribute.scope.getProgramParent().data.events = new Set());
             events.add(ev);
             let handler = value.expression;
             const resolveable = detectResolvableEventHandler(attribute, handler);

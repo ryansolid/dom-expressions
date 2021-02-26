@@ -60,7 +60,9 @@ function registerTemplate(path, results) {
   const { hydratable } = config;
   let decl;
   if (results.template.length) {
-    const templates = path.state.templates;
+    const templates =
+      path.scope.getProgramParent().data.templates ||
+      (path.scope.getProgramParent().data.templates = []);
     let templateDef, templateId;
     if ((templateDef = templates.find(t => t.template === results.template))) {
       templateId = templateDef.id;
