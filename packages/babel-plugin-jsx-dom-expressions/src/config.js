@@ -8,5 +8,7 @@ export default {
   requireImportSource: false,
   wrapConditionals: true,
   contextToCustomElements: false,
-  staticMarker: "@once"
+  staticMarker: "@once",
+  setAttributesWrapper: "effect",
+  dynamicExpressionWrapper: "memo",
 };
