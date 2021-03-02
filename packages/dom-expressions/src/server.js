@@ -44,7 +44,9 @@ export function renderToNodeStream(code, options = {}) {
     };
   sharedConfig.context.writeResource = (id, p) => {
     count++;
-    Promise.resolve().then(() => stream.push(`<script>_$HYDRATION.startResource("${id}")</script>`));
+    Promise.resolve().then(() =>
+      stream.push(`<script>_$HYDRATION.startResource("${id}")</script>`)
+    );
     p.then(d => {
       stream.push(
         `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
@@ -74,7 +76,9 @@ export function renderToWebStream(code, options = {}) {
     };
   sharedConfig.context.writeResource = (id, p) => {
     count++;
-    Promise.resolve().then(() => writer.write(encoder.encode(`<script>_$HYDRATION.startResource("${id}")</script>`)));
+    Promise.resolve().then(() =>
+      writer.write(encoder.encode(`<script>_$HYDRATION.startResource("${id}")</script>`))
+    );
     p.then(d => {
       writer.write(
         encoder.encode(
@@ -129,33 +133,31 @@ export function ssrStyle(value) {
   return result;
 }
 
-export function ssrSpread(props) {
-  return () => {
-    if (typeof props === "function") props = props();
-    // TODO: figure out how to handle props.children
-    const keys = Object.keys(props);
-    let result = "";
-    for (let i = 0; i < keys.length; i++) {
-      const prop = keys[i];
-      if (prop === "children") {
-        console.warn(`SSR currently does not support spread children.`);
-        continue;
-      }
-      const value = props[prop];
-      if (prop === "style") {
-        result += `style="${ssrStyle(value)}"`;
-      } else if (prop === "classList") {
-        result += `class="${ssrClassList(value)}"`;
-      } else if (BooleanAttributes.has(prop)) {
-        if (value) result += prop;
-        else continue;
-      } else {
-        result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
-      }
-      if (i !== keys.length - 1) result += " ";
+export function ssrSpread(props, isSVG, skipChildren) {
+  if (typeof props === "function") props = props();
+  // TODO: figure out how to handle props.children
+  const keys = Object.keys(props);
+  let result = "";
+  for (let i = 0; i < keys.length; i++) {
+    const prop = keys[i];
+    if (!skipChildren && prop === "children") {
+      console.warn(`SSR currently does not support spread children.`);
+      continue;
     }
-    return result;
-  };
+    const value = props[prop];
+    if (prop === "style") {
+      result += `style="${ssrStyle(value)}"`;
+    } else if (prop === "classList") {
+      result += `class="${ssrClassList(value)}"`;
+    } else if (BooleanAttributes.has(prop)) {
+      if (value) result += prop;
+      else continue;
+    } else {
+      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+    }
+    if (i !== keys.length - 1) result += " ";
+  }
+  return result;
 }
 
 export function ssrBoolean(key, value) {
