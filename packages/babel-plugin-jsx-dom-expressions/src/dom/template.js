@@ -28,9 +28,9 @@ export function createTemplate(path, result, wrap) {
       );
     }
   }
-  if (wrap && result.dynamic && config.dynamicExpressionWrapper) {
-    registerImportMethod(path, config.dynamicExpressionWrapper);
-    return t.callExpression(t.identifier(`_$${config.dynamicExpressionWrapper}`), [result.exprs[0]]);
+  if (wrap && result.dynamic && config.memoWrapper) {
+    registerImportMethod(path, config.memoWrapper);
+    return t.callExpression(t.identifier(`_$${config.memoWrapper}`), [result.exprs[0]]);
   }
   return result.exprs[0];
 }
@@ -94,9 +94,9 @@ function registerTemplate(path, results) {
 
 function wrapDynamics(path, dynamics) {
   if (!dynamics.length) return;
-  registerImportMethod(path, config.setAttributesWrapper);
+  registerImportMethod(path, config.effectWrapper);
 
-  const setAttributesWrapperId = `_$${config.setAttributesWrapper}`;
+  const effectWrapperId = `_$${config.effectWrapper}`;
 
   if (dynamics.length === 1) {
     const prevValue =
@@ -105,7 +105,7 @@ function wrapDynamics(path, dynamics) {
         : undefined;
 
     return t.expressionStatement(
-      t.callExpression(t.identifier(setAttributesWrapperId), [
+      t.callExpression(t.identifier(effectWrapperId), [
         t.arrowFunctionExpression(
           prevValue ? [prevValue] : [],
           setAttr(
@@ -163,7 +163,7 @@ function wrapDynamics(path, dynamics) {
   });
 
   return t.expressionStatement(
-    t.callExpression(t.identifier(setAttributesWrapperId), [
+    t.callExpression(t.identifier(effectWrapperId), [
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([

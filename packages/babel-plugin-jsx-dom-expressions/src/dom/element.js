@@ -437,7 +437,7 @@ function transformAttributes(path, results) {
             }
           }
         } else if (
-          config.setAttributesWrapper && isDynamic(attribute.get("value").get("expression"), {
+          config.effectWrapper && isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
           })
         ) {

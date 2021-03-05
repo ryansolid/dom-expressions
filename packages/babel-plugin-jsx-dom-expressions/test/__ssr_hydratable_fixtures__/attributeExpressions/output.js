@@ -16,7 +16,7 @@ const _tmpl$ = [
     '" class="',
     '"><a href="/">Welcome</a></h1></div>'
   ],
-  _tmpl$2 = ['<div data-hk="', '"><div>', "</div><div>", "</div></div>"],
+  _tmpl$2 = ['<div data-hk="', '"><div>', "</div><div>", "</div><div><div/></div></div>"],
   _tmpl$3 = ['<div data-hk="', '" id="', '" style="', '" name="', '">', "</div>"],
   _tmpl$4 = ['<div data-hk="', '" class="', '"></div>'],
   _tmpl$5 = ['<div data-hk="', '" style="', '">Hi</div>'],

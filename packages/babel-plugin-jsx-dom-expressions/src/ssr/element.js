@@ -315,17 +315,17 @@ function transformAttributes(path, results) {
 
 function transformChildren(path, results) {
   const { hydratable } = config,
-    doEscape = !path.doNotEscape;
+    doNotEscape = path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"), true);
   filteredChildren.forEach(node => {
-    const child = transformNode(node);
+    const child = transformNode(node, { doNotEscape });
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {
       const multi = checkLength(filteredChildren),
         markers = hydratable && multi;
 
-      if (doEscape && !child.component) child.exprs[0] = escapeExpression(path, child.exprs[0]);
+      if (!doNotEscape && !child.component) child.exprs[0] = escapeExpression(path, child.exprs[0]);
 
       // boxed by textNodes
       if (markers) {

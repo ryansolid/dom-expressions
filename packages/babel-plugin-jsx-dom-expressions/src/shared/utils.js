@@ -152,8 +152,8 @@ export function toPropertyName(name) {
 
 export function transformCondition(path, deep) {
   const expr = path.node;
-  if (config.dynamicExpressionWrapper) {
-    registerImportMethod(path, config.dynamicExpressionWrapper);
+  if (config.memoWrapper) {
+    registerImportMethod(path, config.memoWrapper);
   }
   let dTest, cond, id;
   if (
@@ -200,8 +200,8 @@ export function transformCondition(path, deep) {
       t.variableDeclaration("const", [
         t.variableDeclarator(
           id,
-          config.dynamicExpressionWrapper
-            ? t.callExpression(t.identifier(`_$${config.dynamicExpressionWrapper}`), [
+          config.memoWrapper
+            ? t.callExpression(t.identifier(`_$${config.memoWrapper}`), [
                 t.arrowFunctionExpression([], cond),
                 t.booleanLiteral(true)
             ])

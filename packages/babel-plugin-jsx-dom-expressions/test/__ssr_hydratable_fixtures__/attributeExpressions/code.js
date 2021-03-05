@@ -18,6 +18,7 @@ const template2 = (
   <div>
     <div textContent={rowId} />
     <div textContent={row.label} />
+    <div innerHTML={"<div/>"}/>
   </div>
 );
 

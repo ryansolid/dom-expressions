@@ -9,6 +9,6 @@ export default {
   wrapConditionals: true,
   contextToCustomElements: false,
   staticMarker: "@once",
-  setAttributesWrapper: "effect",
-  dynamicExpressionWrapper: "memo",
+  effectWrapper: "effect",
+  memoWrapper: "memo"
 };
