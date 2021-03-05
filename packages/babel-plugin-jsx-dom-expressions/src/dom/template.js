@@ -28,9 +28,9 @@ export function createTemplate(path, result, wrap) {
       );
     }
   }
-  if (wrap && result.dynamic) {
-    registerImportMethod(path, "memo");
-    return t.callExpression(t.identifier("_$memo"), [result.exprs[0]]);
+  if (wrap && result.dynamic && config.dynamicExpressionWrapper) {
+    registerImportMethod(path, config.dynamicExpressionWrapper);
+    return t.callExpression(t.identifier(`_$${config.dynamicExpressionWrapper}`), [result.exprs[0]]);
   }
   return result.exprs[0];
 }
@@ -94,14 +94,18 @@ function registerTemplate(path, results) {
 
 function wrapDynamics(path, dynamics) {
   if (!dynamics.length) return;
-  registerImportMethod(path, "effect");
+  registerImportMethod(path, config.setAttributesWrapper);
+
+  const setAttributesWrapperId = `_$${config.setAttributesWrapper}`;
+
   if (dynamics.length === 1) {
     const prevValue =
       dynamics[0].key === "classList" || dynamics[0].key === "style"
         ? t.identifier("_$p")
         : undefined;
+
     return t.expressionStatement(
-      t.callExpression(t.identifier("_$effect"), [
+      t.callExpression(t.identifier(setAttributesWrapperId), [
         t.arrowFunctionExpression(
           prevValue ? [prevValue] : [],
           setAttr(
@@ -159,7 +163,7 @@ function wrapDynamics(path, dynamics) {
   });
 
   return t.expressionStatement(
-    t.callExpression(t.identifier("_$effect"), [
+    t.callExpression(t.identifier(setAttributesWrapperId), [
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([
