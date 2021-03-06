@@ -37,10 +37,7 @@ export function renderToNodeStream(code, options = {}) {
   let count = 0,
     completed = 0,
     checkEnd = () => {
-      if (completed === count) {
-        stream.push(null);
-        delete sharedConfig.context;
-      }
+      if (completed === count) stream.push(null);
     };
   sharedConfig.context.writeResource = (id, p) => {
     count++;
@@ -62,16 +59,20 @@ export function renderToNodeStream(code, options = {}) {
 }
 
 export function renderToWebStream(code, options = {}) {
-  const { readable, writable } = new TransformStream();
-  const writer = writable.getWriter();
+  let checkEnd;
+  const tmp = [];
   const encoder = new TextEncoder();
+  const done = new Promise(resolve => {
+    checkEnd = () => {
+      if (completed === count) resolve();
+    };
+  });
   sharedConfig.context = { id: "", count: 0, streaming: true };
   let count = 0,
     completed = 0,
-    checkEnd = () => {
-      if (sharedConfig.context && completed === count) {
-        writer.close();
-        delete sharedConfig.context;
+    writer = {
+      write(payload) {
+        tmp.push(payload);
       }
     };
   sharedConfig.context.writeResource = (id, p) => {
@@ -91,8 +92,15 @@ export function renderToWebStream(code, options = {}) {
     });
   };
   writer.write(encoder.encode(resolveSSRNode(code())));
-  setTimeout(checkEnd);
-  return { stream: readable, script: generateHydrationScript({ streaming: true, ...options }) };
+  return {
+    writeTo(w) {
+      writer = w;
+      tmp.map(chunk => writer.write(chunk));
+      setTimeout(checkEnd);
+      return done;
+    },
+    script: generateHydrationScript({ streaming: true, ...options })
+  };
 }
 
 export function ssr(t, ...nodes) {

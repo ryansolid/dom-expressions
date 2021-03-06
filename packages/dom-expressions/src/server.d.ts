@@ -5,13 +5,8 @@ declare namespace NodeJS {
 
 type RenderToStringResults = {
   html: string;
-  script: string
-}
-
-type RenderToStreamResults<T> = {
-  stream: T;
   script: string;
-}
+};
 
 export function renderToString<T>(
   fn: () => T,
@@ -31,13 +26,20 @@ export function renderToNodeStream<T>(
   options?: {
     eventNames?: string[];
   }
-): RenderToStreamResults<NodeJS.ReadableStream>;
+): {
+  stream: NodeJS.ReadableStream;
+  script: string;
+};
+
 export function renderToWebStream<T>(
   fn: () => T,
   options?: {
     eventNames?: string[];
   }
-): RenderToStreamResults<ReadableStream>;
+): {
+  writeTo: (writer: WritableStreamDefaultWriter) => Promise<void>;
+  script: string;
+};
 export function ssr(template: string[] | string, ...nodes: any[]): { t: string };
 export function resolveSSRNode(node: any): string;
 export function ssrClassList(value: { [k: string]: boolean }): string;
