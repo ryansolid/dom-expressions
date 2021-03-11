@@ -238,14 +238,18 @@ export function getNextMarker(start) {
 }
 
 export function runHydrationEvents() {
-  if (sharedConfig.events) {
-    const { completed, events } = sharedConfig;
-    while (events.length) {
-      const [el, e] = events[0];
-      if (!completed.has(el)) return;
-      eventHandler(e);
-      events.shift();
-    }
+  if (sharedConfig.events && !sharedConfig.events.queued) {
+    queueMicrotask(() => {
+      const { completed, events } = sharedConfig;
+      events.queued = false;
+      while (events.length) {
+        const [el, e] = events[0];
+        if (!completed.has(el)) return;
+        eventHandler(e);
+        events.shift();
+      }
+    });
+    sharedConfig.events.queued = true;
   }
 }
 
