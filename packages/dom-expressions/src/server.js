@@ -42,11 +42,17 @@ export function renderToNodeStream(code, options = {}) {
   sharedConfig.context.writeResource = (id, p) => {
     count++;
     Promise.resolve().then(() =>
-      stream.push(`<script>_$HYDRATION.startResource("${id}")</script>`)
+      stream.push(
+        `<script${
+          options.nonce ? ` nonce="${options.nonce}"` : ""
+        }>_$HYDRATION.startResource("${id}")</script>`
+      )
     );
     p.then(d => {
       stream.push(
-        `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
+        `<script${
+          options.nonce ? ` nonce="${options.nonce}"` : ""
+        }>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
           .replace(/'/g, "\\'")
           .replace(/\\\"/g, '\\\\\\"')})</script>`
       );
@@ -78,12 +84,20 @@ export function renderToWebStream(code, options = {}) {
   sharedConfig.context.writeResource = (id, p) => {
     count++;
     Promise.resolve().then(() =>
-      writer.write(encoder.encode(`<script>_$HYDRATION.startResource("${id}")</script>`))
+      writer.write(
+        encoder.encode(
+          `<script${
+            options.nonce ? ` nonce="${options.nonce}"` : ""
+          }>_$HYDRATION.startResource("${id}")</script>`
+        )
+      )
     );
     p.then(d => {
       writer.write(
         encoder.encode(
-          `<script>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
+          `<script${
+            options.nonce ? ` nonce="${options.nonce}"` : ""
+          }>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
             .replace(/'/g, "\\'")
             .replace(/\\\"/g, '\\\\\\"')})</script>`
         )
@@ -244,8 +258,15 @@ export function getHydrationKey() {
   return `${hydrate.id}${hydrate.count++}`;
 }
 
-function generateHydrationScript({ eventNames = ["click", "input"], streaming, resources } = {}) {
-  let s = `<script>(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
+function generateHydrationScript({
+  eventNames = ["click", "input"],
+  streaming,
+  resources,
+  nonce
+} = {}) {
+  let s = `<script${
+    nonce ? ` nonce="${nonce}"` : ""
+  }>(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
   if (streaming) {

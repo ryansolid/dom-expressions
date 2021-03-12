@@ -12,6 +12,7 @@ export function renderToString<T>(
   fn: () => T,
   options?: {
     eventNames?: string[];
+    nonce?: string;
   }
 ): RenderToStringResults;
 export function renderToStringAsync<T>(
@@ -19,12 +20,15 @@ export function renderToStringAsync<T>(
   options?: {
     eventNames?: string[];
     timeoutMs?: number;
+    nonce?: string;
   }
 ): Promise<RenderToStringResults>;
 export function renderToNodeStream<T>(
   fn: () => T,
   options?: {
     eventNames?: string[];
+    nonce?: string;
+    nonce?: string;
   }
 ): {
   stream: NodeJS.ReadableStream;
@@ -35,6 +39,7 @@ export function renderToWebStream<T>(
   fn: () => T,
   options?: {
     eventNames?: string[];
+    nonce?: string;
   }
 ): {
   writeTo: (writer: WritableStreamDefaultWriter) => Promise<void>;

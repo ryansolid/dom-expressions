@@ -44,8 +44,9 @@ describe("renderToString", () => {
   it("renders as expected", async () => {
     let res = r.renderToString(Comp1);
     expect(res.html).toBe(fixture);
-    res = r.renderToString(Comp2);
+    res = r.renderToString(Comp2, { nonce: "1a2s3d4f5g" });
     expect(res.html).toBe(fixture2);
+    expect(res.script.includes("1a2s3d4f5g")).toBeTruthy()
   });
 });
 
@@ -59,7 +60,7 @@ describe("renderToNodeStream", () => {
     });
   }
   it("renders as expected", async () => {
-    let res = await streamToString(r.renderToNodeStream(Comp2).stream);
+    let res = await streamToString(r.renderToNodeStream(Comp2, { nonce: "1a2s3d4f5g" }).stream);
     expect(res).toBe(fixture2);
   });
 });
