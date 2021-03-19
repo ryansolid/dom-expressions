@@ -54,7 +54,7 @@ function memo(fn, equal) {
   return s;
 }
 
-function createComponent(Comp, props, dynamicKeys) {
+function createComponent(Comp, props) {
   return sample(() => Comp(props));
 }
 
