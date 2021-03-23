@@ -679,6 +679,7 @@ function detectExpressions(children, index) {
           attr =>
             t.isJSXSpreadAttribute(attr) ||
             ["textContent", "innerHTML", "innerText"].includes(attr.name.name) ||
+            (attr.name.namespace && attr.name.namespace.name === "use") ||
             (t.isJSXExpressionContainer(attr.value) &&
               !(
                 t.isStringLiteral(attr.value.expression) ||
