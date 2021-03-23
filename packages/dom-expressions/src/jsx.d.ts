@@ -163,7 +163,7 @@ export namespace JSX {
     oninput?: EventHandlerUnion<T, InputEvent>;
     onreset?: EventHandlerUnion<T, Event>;
     onsubmit?: EventHandlerUnion<
-      t,
+      T,
       Event & {
         submitter: HTMLElement;
       }
