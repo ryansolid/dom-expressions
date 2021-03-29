@@ -1,7 +1,6 @@
 import { template as _$template } from "r-dom";
 import { style as _$style } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
-import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
@@ -16,9 +15,7 @@ const template = (() => {
 
   _$spread(_el$, results, false, true);
 
-  _$classList(_el$, {
-    selected: selected
-  });
+  _el$.classList.toggle("selected", selected);
 
   _el$.style.setProperty("color", color);
 
@@ -30,9 +27,7 @@ const template = (() => {
 
   _el$2.style.setProperty("margin-right", "40px");
 
-  _$classList(_el$2, {
-    selected: selected()
-  });
+  _el$2.classList.toggle("selected", selected());
 
   const _ref$ = link;
   typeof _ref$ === "function" ? _ref$(_el$3) : (link = _el$3);
@@ -108,6 +103,8 @@ const template7 = (() => {
   });
 
   _el$12.style.setProperty("padding-top", props.top);
+
+  _el$12.classList.toggle("my-class", props.active);
 
   return _el$12;
 })();

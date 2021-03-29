@@ -156,10 +156,10 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       classList(node, value, prevProps[prop]);
     } else if (prop === "ref") {
       value(node);
-    } else if (prop === "on") {
-      for (const eventName in value) node.addEventListener(eventName, value[eventName]);
-    } else if (prop === "onCapture") {
-      for (const eventName in value) node.addEventListener(eventName, value[eventName], true);
+    } else if (prop.slice(0, 3) === "on:") {
+      node.addEventListener(prop.slice(3), value);
+    } else if (prop.slice(0, 10) === "oncapture:") {
+      node.addEventListener(prop.slice(10), value, true);
     } else if (prop.slice(0, 2) === "on") {
       const name = prop.slice(2).toLowerCase();
       const delegate = DelegatedEvents.has(name);

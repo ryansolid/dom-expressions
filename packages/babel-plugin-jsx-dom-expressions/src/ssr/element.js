@@ -115,6 +115,34 @@ function escapeExpression(path, expression, attr) {
   );
 }
 
+function transformToObject(attrName, attributes, selectedAttributes) {
+  const properties = [];
+  const existingAttribute = attributes.find(a => a.node.name.name === attrName);
+  for (let i = 0; i < selectedAttributes.length; i++) {
+    const attr = selectedAttributes[i].node;
+    const computed = !t.isValidIdentifier(attr.name.name.name);
+    properties.push(
+      t.objectProperty(
+        computed ? t.stringLiteral(attr.name.name.name) : t.identifier(attr.name.name.name),
+        t.isJSXExpressionContainer(attr.value) ? attr.value.expression : attr.value
+      )
+    );
+    (existingAttribute || i) && attributes.splice(selectedAttributes[i].key, 1);
+  }
+  if (
+    existingAttribute &&
+    t.isJSXExpressionContainer(existingAttribute.node.value) &&
+    t.isObjectExpression(existingAttribute.node.value.expression)
+  ) {
+    existingAttribute.node.value.expression.properties.push(...properties);
+  } else {
+    selectedAttributes[0].node = t.jsxAttribute(
+      t.jsxIdentifier(attrName),
+      t.jsxExpressionContainer(t.objectExpression(properties))
+    );
+  }
+}
+
 function transformAttributes(path, results) {
   let children;
   const tagName = getTagName(path.node),
@@ -126,6 +154,9 @@ function transformAttributes(path, results) {
     ),
     styleAttributes = attributes.filter(
       a => t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "style"
+    ),
+    classNamespaceAttributes = attributes.filter(
+      a => t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "class"
     );
   // combine class propertoes
   if (classAttributes.length > 1) {
@@ -154,33 +185,9 @@ function transformAttributes(path, results) {
     }
     first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
   }
-  if (styleAttributes.length) {
-    const properties = [];
-    const styleAttribute = attributes.find(a => a.node.name.name === "style");
-    for (let i = 0; i < styleAttributes.length; i++) {
-      const attr = styleAttributes[i].node;
-      const computed = !t.isValidIdentifier(attr.name.name.name);
-      properties.push(
-        t.objectProperty(
-          computed ? t.stringLiteral(attr.name.name.name) : t.identifier(attr.name.name.name),
-          t.isJSXExpressionContainer(attr.value) ? attr.value.expression : attr.value
-        )
-      );
-      (styleAttribute || i) && attributes.splice(styleAttributes[i].key, 1);
-    }
-    if (
-      styleAttribute &&
-      t.isJSXExpressionContainer(styleAttribute.node.value) &&
-      t.isObjectExpression(styleAttribute.node.value.expression)
-    ) {
-      styleAttribute.node.value.expression.properties.push(...properties);
-    } else {
-      styleAttributes[0].node = t.jsxAttribute(
-        t.jsxIdentifier("style"),
-        t.jsxExpressionContainer(t.objectExpression(properties))
-      );
-    }
-  }
+  if (styleAttributes.length) transformToObject("style", attributes, styleAttributes);
+  if (classNamespaceAttributes.length)
+    transformToObject("classList", attributes, classNamespaceAttributes);
 
   attributes.forEach(attribute => {
     const node = attribute.node;
@@ -246,12 +253,11 @@ function transformAttributes(path, results) {
         if (BooleanAttributes.has(key)) {
           registerImportMethod(attribute, "ssrBoolean");
           results.template.push("");
-          const fn =  t.callExpression(t.identifier("_$ssrBoolean"), [
-            t.stringLiteral(key), value.expression
+          const fn = t.callExpression(t.identifier("_$ssrBoolean"), [
+            t.stringLiteral(key),
+            value.expression
           ]);
-          results.templateValues.push(
-            dynamic ? t.arrowFunctionExpression([], fn) : fn
-          );
+          results.templateValues.push(dynamic ? t.arrowFunctionExpression([], fn) : fn);
           return;
         }
         if (key === "style") {

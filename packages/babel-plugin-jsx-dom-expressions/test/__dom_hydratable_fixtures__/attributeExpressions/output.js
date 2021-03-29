@@ -4,7 +4,6 @@ import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
-import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
@@ -19,9 +18,7 @@ const template = (() => {
 
   _$spread(_el$, results, false, true);
 
-  _$classList(_el$, {
-    selected: selected
-  });
+  _el$.classList.toggle("selected", selected);
 
   _el$.style.setProperty("color", color);
 
@@ -36,13 +33,11 @@ const template = (() => {
     _p$ => {
       const _v$ = welcoming(),
         _v$2 = color(),
-        _v$3 = {
-          selected: selected()
-        };
+        _v$3 = selected();
 
       _v$ !== _p$._v$ && _$setAttribute(_el$2, "title", (_p$._v$ = _v$));
       _v$2 !== _p$._v$2 && _el$2.style.setProperty("background-color", (_p$._v$2 = _v$2));
-      _p$._v$3 = _$classList(_el$2, _v$3, _p$._v$3);
+      _v$3 !== _p$._v$3 && _el$2.classList.toggle("selected", (_p$._v$3 = _v$3));
       return _p$;
     },
     {
@@ -122,14 +117,17 @@ const template7 = (() => {
           "margin-right": "40px",
           ...props.style
         },
-        _v$5 = props.top;
+        _v$5 = props.top,
+        _v$6 = props.active;
       _p$._v$4 = _$style(_el$13, _v$4, _p$._v$4);
       _v$5 !== _p$._v$5 && _el$13.style.setProperty("padding-top", (_p$._v$5 = _v$5));
+      _v$6 !== _p$._v$6 && _el$13.classList.toggle("my-class", (_p$._v$6 = _v$6));
       return _p$;
     },
     {
       _v$4: undefined,
-      _v$5: undefined
+      _v$5: undefined,
+      _v$6: undefined
     }
   );
 

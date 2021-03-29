@@ -54,14 +54,28 @@ export namespace JSX {
     classList?: {
       [k: string]: boolean | undefined;
     };
-    on?: {
-      [key: string]: EventHandler<T, CustomEvent>;
-    };
-    onCapture?: {
-      [key: string]: EventHandler<T, CustomEvent>;
-    };
   }
-  interface DOMAttributes<T> extends CustomAttributes<T> {
+  interface Actions {}
+  interface ExplicitProperties {}
+  interface ExplicitAttributes {}
+  interface CustomEvents {}
+  interface CustomCaptureEvents {}
+  type ActionAttributes = {
+    [Key in keyof Actions as `use:${Key}`]?: Actions[Key];
+  };
+  type PropAttributes = {
+    [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key];
+  };
+  type AttrAttributes = {
+    [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key];
+  };
+  type OnAttributes<T> = {
+    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
+  }
+  type OnCaptureAttributes<T> = {
+    [Key in keyof CustomEvents as `oncapture:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
+  }
+  interface DOMAttributes<T> extends CustomAttributes<T>, ActionAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
     children?: Element;
     innerHTML?: string;
     innerText?: string;

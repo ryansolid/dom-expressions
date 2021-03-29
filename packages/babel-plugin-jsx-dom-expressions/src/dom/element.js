@@ -74,6 +74,16 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
     );
   }
 
+  if (namespace === "class") {
+    return t.callExpression(
+      t.memberExpression(
+        t.memberExpression(elem, t.identifier("classList")),
+        t.identifier("toggle")
+      ),
+      [t.stringLiteral(name), value]
+    );
+  }
+
   if (name === "style") {
     registerImportMethod(path, "style");
     return t.callExpression(
@@ -125,12 +135,12 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
 
 function detectResolvableEventHandler(attribute, handler) {
   while (t.isIdentifier(handler)) {
-    const lookup = attribute.scope.getBinding(handler.name)
+    const lookup = attribute.scope.getBinding(handler.name);
     if (lookup) {
       if (t.isVariableDeclarator(lookup.path.node)) {
         handler = lookup.path.node.init;
       } else if (t.isFunctionDeclaration(lookup.path.node)) {
-        return true
+        return true;
       } else return false;
     } else return false;
   }
@@ -140,13 +150,13 @@ function detectResolvableEventHandler(attribute, handler) {
 function transformAttributes(path, results) {
   let elem = results.id,
     hasHydratableEvent = false,
-    children;
+    children,
+    attributes = path.get("openingElement").get("attributes");
   const spread = t.identifier("_$spread"),
     tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
     isCE = tagName.includes("-"),
-    hasChildren = path.node.children.length > 0,
-    attributes = path.get("openingElement").get("attributes"),
+    hasChildren = path.node.children.length > 0,    
     classAttributes = attributes.filter(
       a => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
     );
@@ -183,6 +193,7 @@ function transformAttributes(path, results) {
   );
 
   // preprocess styles
+  attributes = path.get("openingElement").get("attributes");
   const styleAttribute = attributes.find(
     a =>
       a.node.name &&
@@ -215,6 +226,40 @@ function transformAttributes(path, results) {
     });
     if (!styleAttribute.node.value.expression.properties.length)
       path.get("openingElement").node.attributes.splice(styleAttribute.key, 1);
+  }
+
+  // preprocess classList
+  attributes = path.get("openingElement").get("attributes");
+  const classListAttribute = attributes.find(
+    a =>
+      a.node.name &&
+      a.node.name.name === "classList" &&
+      t.isJSXExpressionContainer(a.node.value) &&
+      t.isObjectExpression(a.node.value.expression) &&
+      !a.node.value.expression.properties.some(p => t.isSpreadElement(p) || p.computed)
+  );
+  if (classListAttribute) {
+    let i = 0,
+      leading = classListAttribute.node.value.expression.leadingComments;
+    classListAttribute.node.value.expression.properties.slice().forEach((p, index) => {
+      if (leading) p.value.leadingComments = leading;
+      path
+        .get("openingElement")
+        .node.attributes.splice(
+          classListAttribute.key + ++i,
+          0,
+          t.JSXAttribute(
+            t.JSXNamespacedName(
+              t.JSXIdentifier("class"),
+              t.JSXIdentifier(t.isIdentifier(p.key) ? p.key.name : p.key.value)
+            ),
+            t.JSXExpressionContainer(p.value)
+          )
+        );
+      classListAttribute.node.value.expression.properties.splice(index - i - 1, 1);
+    });
+    if (!classListAttribute.node.value.expression.properties.length)
+      path.get("openingElement").node.attributes.splice(classListAttribute.key, 1);
   }
 
   path
@@ -321,21 +366,18 @@ function transformAttributes(path, results) {
           children = value;
         } else if (key.startsWith("on")) {
           const ev = toEventName(key);
-          if (!ev || ev === "capture") {
-            value.expression.properties.forEach(prop => {
-              const listenerOptions = [
-                t.stringLiteral(prop.key.name || prop.key.value),
-                prop.value
-              ];
-              results.exprs.push(
-                t.expressionStatement(
-                  t.callExpression(
-                    t.memberExpression(elem, t.identifier("addEventListener")),
-                    ev ? listenerOptions.concat(t.booleanLiteral(true)) : listenerOptions
-                  )
+          if (key.startsWith("on:") || key.startsWith("oncapture:")) {
+            const listenerOptions = [t.stringLiteral(key.split(":")[1]), value.expression];
+            results.exprs.push(
+              t.expressionStatement(
+                t.callExpression(
+                  t.memberExpression(elem, t.identifier("addEventListener")),
+                  key.startsWith("oncapture:")
+                    ? listenerOptions.concat(t.booleanLiteral(true))
+                    : listenerOptions
                 )
-              );
-            });
+              )
+            );
           } else if (
             config.delegateEvents &&
             (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1)
@@ -400,10 +442,7 @@ function transformAttributes(path, results) {
               if (handler.elements.length > 1) {
                 handler = t.arrowFunctionExpression(
                   [t.identifier("e")],
-                  t.callExpression(handler.elements[0], [
-                    handler.elements[1],
-                    t.identifier("e")
-                  ])
+                  t.callExpression(handler.elements[0], [handler.elements[1], t.identifier("e")])
                 );
               } else handler = handler.elements[0];
               results.exprs.unshift(
@@ -437,7 +476,8 @@ function transformAttributes(path, results) {
             }
           }
         } else if (
-          config.effectWrapper && isDynamic(attribute.get("value").get("expression"), {
+          config.effectWrapper &&
+          isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
           })
         ) {

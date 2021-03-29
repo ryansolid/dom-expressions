@@ -56,7 +56,7 @@ describe("Test HyperScript", () => {
     const template = h("#main", [
       h("button", { onclick: () => (exec.bound = true) }, "Click Bound"),
       h("button", { onClick: () => (exec.delegated = true) }, "Click Delegated"),
-      h("button", { on: { click: () => (exec.listener = true) } }, "Click Listener")
+      h("button", { "on:click": () => (exec.listener = true) }, "Click Listener")
     ]);
     expect(template.outerHTML).toBe(FIXTURES[2]);
     document.body.appendChild(template);

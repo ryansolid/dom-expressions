@@ -139,17 +139,17 @@ Important:
 
 - Event delegates aren't cleaned up automatically off Document. If you will be completely unmounting the library and wish to remove the handlers from the current page use `clearDelegatedEvents`.
 
-### on/onCapture
+### on:/oncapture:
 
 To bypass event delegation and use normal Level 3 "addEventListener" events.
 
 ```jsx
-<div on={{ "Weird-Event": e => alert(e.detail) }} />
+<div on:Weird-Event={e => alert(e.detail)} />
 ```
 
 To use capture event:
 ```jsx
-<div onCapture={{ "Weird-Event": e => alert(e.detail) }} />
+<div oncapture:Weird-Event={e => alert(e.detail)} />
 ```
 
 ### classList

@@ -18,7 +18,7 @@ const _tmpl$ = [
   _tmpl$3 = ['<div id="', '" style="', '" name="', '">', "</div>"],
   _tmpl$4 = ['<div class="', '"></div>'],
   _tmpl$5 = ['<div style="', '">Hi</div>'],
-  _tmpl$6 = ['<div style="', '"></div>'],
+  _tmpl$6 = ['<div style="', '" class="', '"></div>'],
   _tmpl$7 = "<div></div>",
   _tmpl$8 = ['<input type="checkbox"', ">"];
 
@@ -60,6 +60,9 @@ const template7 = _$ssr(
     "margin-right": "40px",
     ...props.style,
     "padding-top": props.top
+  }),
+  _$ssrClassList({
+    "my-class": props.active
   })
 );
 

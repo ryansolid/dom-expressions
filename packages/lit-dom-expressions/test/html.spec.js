@@ -61,7 +61,7 @@ describe("Test HTML", () => {
         <button onClick=${[v => (exec.delegated = v), true]}>
           Click Delegated
         </button>
-        <button on=${{ click: () => (exec.listener = true) }}>
+        <button on:click=${() => (exec.listener = true)}>
           Click Listener
         </button>
       </div>

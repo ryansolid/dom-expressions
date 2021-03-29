@@ -2,7 +2,7 @@ import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
 import config from "../config";
 
-export const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
+export const reservedNameSpaces = new Set(["class", "on", "oncapture", "style", "use", "prop", "attr"]);
 
 export function registerImportMethod(path, name) {
   const imports =

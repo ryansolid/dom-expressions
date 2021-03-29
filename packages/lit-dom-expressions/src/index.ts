@@ -43,7 +43,7 @@ const findAttributes = new RegExp(
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 const marker = "<!--#-->";
-const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
+const reservedNameSpaces = new Set(["class", "on", "oncapture", "style", "use", "prop", "attr"]);
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -124,17 +124,9 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     const isProp = r.Properties.has(name);
 
     if (name === "style") {
-      options.exprs.push(`r.style(${tag}, ${expr})`);
+      options.exprs.push(`r.style(${tag},${expr})`);
     } else if (name === "classList") {
-      options.exprs.push(`r.classList(${tag}, ${expr})`);
-    } else if (name === "on" || name === "onCapture") {
-      const id = uuid++;
-      options.exprs.push(
-        `const v${id} = ${expr}`,
-        `for (const e in v${id}) ${tag}.addEventListener(e,v${id}[e]${
-          name === "onCapture" ? ",true" : ""
-        })`
-      );
+      options.exprs.push(`r.classList(${tag},${expr})`);
     } else if (
       namespace !== "attr" &&
       (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")
@@ -149,11 +141,22 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   }
 
   function parseAttribute(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
-    if (name.slice(0, 2) === "on" && name !== "on" && name !== "onCapture") {
-      const lc = name.slice(2).toLowerCase();
-      const delegate = delegateEvents && r.DelegatedEvents.has(lc);
-      options.exprs.push(`r.addEventListener(${tag},"${lc}",exprs[${options.counter++}],${delegate})`);
-      delegate && options.delegatedEvents.add(lc);
+    if (name.slice(0, 2) === "on") {
+      if (!name.includes(":")) {
+        const lc = name.slice(2).toLowerCase();
+        const delegate = delegateEvents && r.DelegatedEvents.has(lc);
+        options.exprs.push(
+          `r.addEventListener(${tag},"${lc}",exprs[${options.counter++}],${delegate})`
+        );
+        delegate && options.delegatedEvents.add(lc);
+      } else {
+        let capture = name.startsWith("oncapture:");
+        options.exprs.push(
+          `${tag}.addEventListener("${name.slice(capture ? 10 : 3)}",exprs[${options.counter++}]${
+            capture ? ",true" : ""
+          })`
+        );
+      }
     } else if (name === "ref") {
       options.exprs.push(`exprs[${options.counter++}](${tag})`);
     } else {
