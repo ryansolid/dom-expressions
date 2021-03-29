@@ -296,6 +296,10 @@ export namespace JSX {
      */
     "animation-direction"?: CSSWideKeyword | any;
     /**
+     * Defines how long an animation runs for.
+     */
+     "animation-duration"?: CSSWideKeyword | any;
+    /**
      * Specifies how many times an animation cycle should play.
      */
     "animation-iteration-count"?: CSSWideKeyword | any;

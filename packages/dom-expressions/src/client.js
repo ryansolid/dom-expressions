@@ -55,12 +55,12 @@ export function clearDelegatedEvents() {
 }
 
 export function setAttribute(node, name, value) {
-  if (value === false || value == null) node.removeAttribute(name);
+  if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
-  if (value === false || value == null) node.removeAttributeNS(namespace, name);
+  if (value == null) node.removeAttributeNS(namespace, name);
   else node.setAttributeNS(namespace, name, value);
 }
 
