@@ -7,7 +7,7 @@ const template = (
       style={{ "background-color": color(), "margin-right": "40px" }}
       classList={{ selected: selected() }}
     >
-      <a href={"/"} ref={link}>
+      <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
         Welcome
       </a>
     </h1>
@@ -18,7 +18,7 @@ const template2 = (
   <div>
     <div textContent={rowId} />
     <div textContent={row.label} />
-    <div innerHTML={"<div/>"}/>
+    <div innerHTML={"<div/>"} />
   </div>
 );
 
@@ -31,7 +31,7 @@ const template3 = (
   />
 );
 
-const template4 = <div class="hi" className={state.class} />;
+const template4 = <div class="hi" className={state.class} classList={{ "ccc:ddd": true }} />;
 
 const template5 = <div class="a" className="b"></div>;
 
@@ -41,6 +41,7 @@ const template7 = (
   <div
     style={{ "background-color": color(), "margin-right": "40px", ...props.style }}
     style:padding-top={props.top}
+    class:my-class={props.active}
   />
 );
 

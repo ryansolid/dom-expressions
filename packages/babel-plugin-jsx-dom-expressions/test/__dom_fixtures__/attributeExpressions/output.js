@@ -2,6 +2,7 @@ import { template as _$template } from "r-dom";
 import { style as _$style } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
+import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
@@ -26,6 +27,10 @@ const template = (() => {
 
   const _ref$ = link;
   typeof _ref$ === "function" ? _ref$(_el$3) : (link = _el$3);
+
+  _$classList(_el$3, {
+    "ccc ddd": true
+  });
 
   _$effect(
     _p$ => {
@@ -80,6 +85,10 @@ const template3 = (() => {
 
 const template4 = (() => {
   const _el$10 = _tmpl$3.cloneNode(true);
+
+  _$classList(_el$10, {
+    "ccc:ddd": true
+  });
 
   _$effect(() => (_el$10.className = `hi ${state.class || ""}`));
 

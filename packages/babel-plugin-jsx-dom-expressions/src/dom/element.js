@@ -156,7 +156,7 @@ function transformAttributes(path, results) {
     tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
     isCE = tagName.includes("-"),
-    hasChildren = path.node.children.length > 0,    
+    hasChildren = path.node.children.length > 0,
     classAttributes = attributes.filter(
       a => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
     );
@@ -236,7 +236,12 @@ function transformAttributes(path, results) {
       a.node.name.name === "classList" &&
       t.isJSXExpressionContainer(a.node.value) &&
       t.isObjectExpression(a.node.value.expression) &&
-      !a.node.value.expression.properties.some(p => t.isSpreadElement(p) || p.computed)
+      !a.node.value.expression.properties.some(
+        p =>
+          t.isSpreadElement(p) ||
+          p.computed ||
+          (t.isStringLiteral(p.key) && (p.key.value.includes(" ") || p.key.value.includes(":")))
+      )
   );
   if (classListAttribute) {
     let i = 0,

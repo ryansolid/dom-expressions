@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { style as _$style } from "r-dom";
+import { classList as _$classList } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
@@ -31,6 +32,11 @@ const template = (() => {
 
   const _ref$ = link;
   typeof _ref$ === "function" ? _ref$(_el$3) : (link = _el$3);
+
+  _$classList(_el$3, {
+    "ccc ddd": true
+  });
+
   return _el$;
 })();
 
@@ -74,6 +80,11 @@ const template4 = (() => {
   const _el$9 = _tmpl$3.cloneNode(true);
 
   _el$9.className = `hi ${state.class || ""}`;
+
+  _$classList(_el$9, {
+    "ccc:ddd": true
+  });
+
   return _el$9;
 })();
 
