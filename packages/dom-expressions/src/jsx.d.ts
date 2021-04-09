@@ -3173,6 +3173,7 @@ export namespace JSX {
     y?: number | string;
     width?: number | string;
     height?: number | string;
+    href?: string;
   }
   interface ViewSVGAttributes<T>
     extends CoreSVGAttributes<T>,
