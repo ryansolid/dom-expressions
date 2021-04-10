@@ -1,6 +1,6 @@
 # Lit DOM Expressions
 
-[![Build Status](https://img.shields.io/travis/com/ryansolid/dom-expressions.svg?style=flat)](https://travis-ci.com/ryansolid/dom-expressions)
+[![Build Status](https://github.com/ryansolid/dom-expressions/workflows/DOMExpressions%20CI/badge.svg)](https://github.com/ryansolid/dom-expressions/actions/workflows/main-ci.yml)
 [![NPM Version](https://img.shields.io/npm/v/lit-dom-expressions.svg?style=flat)](https://www.npmjs.com/package/lit-dom-expressions)
 ![](https://img.shields.io/bundlephobia/minzip/lit-dom-expressions.svg?style=flat)
 ![](https://img.shields.io/npm/dt/lit-dom-expressions.svg?style=flat)
