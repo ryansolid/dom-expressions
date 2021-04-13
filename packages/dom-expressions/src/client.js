@@ -75,15 +75,22 @@ export function addEventListener(node, name, handler, delegate) {
   } else node.addEventListener(name, handler);
 }
 
-export function classList(node, value, prev) {
-  const classKeys = Object.keys(value);
-  for (let i = 0, len = classKeys.length; i < len; i++) {
+export function classList(node, value, prev = {}) {
+  const classKeys = Object.keys(value),
+    prevKeys = Object.keys(prev);
+  let i, len;
+  for (i = 0, len = prevKeys.length; i < len; i++) {
+    const key = prevKeys[i];
+    if (!key || key === "undefined" || key in value) continue;
+    toggleClassKey(node, key, false);
+    delete prev[key];
+  }
+  for (i = 0, len = classKeys.length; i < len; i++) {
     const key = classKeys[i],
-      classValue = !!value[key],
-      classNames = key.split(/\s+/);
-    if (!key || (prev && prev[key] === classValue)) continue;
-    for (let j = 0, nameLen = classNames.length; j < nameLen; j++)
-      node.classList.toggle(classNames[j], classValue);
+      classValue = !!value[key];
+    if (!key || key === "undefined" || prev[key] === classValue) continue;
+    toggleClassKey(node, key, classValue);
+    prev[key] = classValue;
   }
   return value;
 }
@@ -256,6 +263,12 @@ export function runHydrationEvents() {
 // Internal Functions
 function toPropertyName(name) {
   return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
+}
+
+function toggleClassKey(node, key, value) {
+  const classNames = key.split(/\s+/);
+  for (let i = 0, nameLen = classNames.length; i < nameLen; i++)
+    node.classList.toggle(classNames[i], value);
 }
 
 function eventHandler(e) {

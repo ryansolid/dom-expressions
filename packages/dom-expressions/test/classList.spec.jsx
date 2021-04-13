@@ -25,4 +25,17 @@ describe("Test classList binding", () => {
       expect(div.className).toBe("color danger");
     });
   });
+
+  test("Computed binding", () => {
+    let div;
+    S.root(() => {
+      const className = S.data("active");
+      div = <div classList={{ [className()]: true }} />;
+      expect(div.className).toBe("active");
+      className("danger");
+      expect(div.className).toBe("danger");
+      className(undefined);
+      expect(div.className).toBe("");
+    });
+  });
 });
