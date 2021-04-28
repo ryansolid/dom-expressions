@@ -55,13 +55,13 @@ export namespace JSX {
       [k: string]: boolean | undefined;
     };
   }
-  interface Actions {}
+  interface Directives {}
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
   interface CustomEvents {}
   interface CustomCaptureEvents {}
-  type ActionAttributes = {
-    [Key in keyof Actions as `use:${Key}`]?: Actions[Key];
+  type DirectiveAttributes = {
+    [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
   type PropAttributes = {
     [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key];
@@ -75,7 +75,7 @@ export namespace JSX {
   type OnCaptureAttributes<T> = {
     [Key in keyof CustomEvents as `oncapture:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
   }
-  interface DOMAttributes<T> extends CustomAttributes<T>, ActionAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
+  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
     children?: Element;
     innerHTML?: string;
     innerText?: string;
