@@ -29,8 +29,8 @@ export function render(code, element, init) {
 export function template(html, check, isSVG) {
   const t = document.createElement("template");
   t.innerHTML = html;
-  if (check && t.innerHTML.split("<").length - 1 !== check)
-    throw `Template html does not match input:\n${t.innerHTML}\n\n${html}`;
+  if ("_DX_DEV_" && check && t.innerHTML.split("<").length - 1 !== check)
+    throw `The browser resolved template HTML does not match JSX input:\n${t.innerHTML}\n\n${html}. Is your HTML properly formed?`;
   let node = t.content.firstChild;
   if (isSVG) node = node.firstChild;
   return node;
@@ -370,7 +370,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       parent.appendChild(value);
     } else parent.replaceChild(value, parent.firstChild);
     current = value;
-  } else console.warn(`Skipped inserting`, value);
+  } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
 
   return current;
 }
