@@ -64,8 +64,9 @@ function toPropertyName(name: string) {
 export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag {
   let uuid = 1;
   (r as any).wrapProps = (props: any) => {
-    for (const k in props) {
-      if (typeof props[k] === "function" && !props[k].length) r.dynamicProperty(props, k);
+    const d = Object.getOwnPropertyDescriptors(props);
+    for (const k in d) {
+      if (typeof d[k].value === "function" && !d[k].value.length) r.dynamicProperty(props, k);
     }
     return props;
   };

@@ -9,7 +9,8 @@ const FIXTURES = [
   '<div id="main" class="selected" refset="true"><h1 title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
   '<div id="main"><button>Click Bound</button><button>Click Delegated</button><button>Click Listener</button></div>',
   "<div>First</div>middle<div>Last</div>",
-  '<div id="main"><div>John R.<span>Smith</span></div></div>'
+  '<div id="main"><div>John R.<span>Smith</span></div></div>',
+  '<div id="main"><div name="John"><span>Smith</span></div></div>'
 ];
 
 describe("Test HyperScript", () => {
@@ -94,6 +95,18 @@ describe("Test HyperScript", () => {
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML).toBe(FIXTURES[4]);
+    });
+  });
+
+  test("Component Spread", () => {
+    const Comp = props => h("div", props);
+    S.root(() => {
+      const template = h("#main", [
+        h(Comp, { name: () => "John" }, () => h("span", "Smith"))
+      ]);
+      const div = document.createElement("div");
+      div.appendChild(template);
+      expect(div.innerHTML).toBe(FIXTURES[5]);
     });
   });
 });

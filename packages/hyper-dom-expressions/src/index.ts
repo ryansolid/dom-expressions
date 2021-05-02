@@ -41,11 +41,12 @@ export function createHyperScript(r: Runtime): HyperScript {
         r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
       } else if ("object" === type) {
         let dynamic = false;
-        for (const k in l) {
-          if (typeof l[k] === "function" && k !== "ref" && k.slice(0, 2) !== "on") {
+        const d = Object.getOwnPropertyDescriptors(l);
+        for (const k in d) {
+          if (k !== "ref" && k.slice(0, 2) !== "on" && typeof d[k].value === "function") {
             r.dynamicProperty(l, k);
             dynamic = true;
-          }
+          } else if (d[k].get) dynamic = true;
         }
         dynamic
           ? r.spread(e as Element, l, e instanceof SVGElement, !!args.length)
@@ -60,9 +61,12 @@ export function createHyperScript(r: Runtime): HyperScript {
           )
             props = args.shift();
           props || (props = {});
-          props.children = (args.length > 1 ? args : args[0]) || props.children;
-          for (const k in props) {
-            if (typeof props[k] === "function" && !props[k].length) r.dynamicProperty(props, k);
+          if (args.length) {
+            props.children = args.length > 1 ? args : args[0];
+          }
+          const d = Object.getOwnPropertyDescriptors(props);
+          for (const k in d) {
+            if (typeof d[k].value === "function" && !d[k].value.length) r.dynamicProperty(props, k);
           }
           e = r.createComponent(l, props);
           args = [];
