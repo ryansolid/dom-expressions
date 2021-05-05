@@ -87,6 +87,8 @@ export namespace JSX {
     onCompositionStart?: EventHandlerUnion<T, CompositionEvent>;
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent>;
     onFocus?: EventHandlerUnion<T, FocusEvent>;
+    onFocusOut?: EventHandlerUnion<T, FocusEvent>;
+    onFocusIn?: EventHandlerUnion<T, FocusEvent>;
     onBlur?: EventHandlerUnion<T, FocusEvent>;
     onChange?: EventHandlerUnion<T, Event>;
     onInput?: EventHandlerUnion<T, InputEvent>;
@@ -172,6 +174,8 @@ export namespace JSX {
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent>;
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent>;
     onfocus?: EventHandlerUnion<T, FocusEvent>;
+    onfocusout?: EventHandlerUnion<T, FocusEvent>;
+    onfocusin?: EventHandlerUnion<T, FocusEvent>;
     onblur?: EventHandlerUnion<T, FocusEvent>;
     onchange?: EventHandlerUnion<T, Event>;
     oninput?: EventHandlerUnion<T, InputEvent>;
