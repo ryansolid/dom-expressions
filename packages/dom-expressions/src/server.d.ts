@@ -28,7 +28,6 @@ export function renderToNodeStream<T>(
   options?: {
     eventNames?: string[];
     nonce?: string;
-    nonce?: string;
   }
 ): {
   stream: NodeJS.ReadableStream;
