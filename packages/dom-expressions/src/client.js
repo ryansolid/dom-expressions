@@ -92,7 +92,7 @@ export function classList(node, value, prev = {}) {
     toggleClassKey(node, key, classValue);
     prev[key] = classValue;
   }
-  return value;
+  return prev;
 }
 
 export function style(node, value, prev = {}) {

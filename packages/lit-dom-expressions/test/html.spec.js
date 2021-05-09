@@ -13,7 +13,8 @@ const FIXTURES = [
   "<div>John R.<span>Smith</span></div>",
   "<div><div>Hi</div></div>",
   "<div><b>Hello, my name is: <i>John</i></b></div>",
-  "<style>.something{color:red}</style>"
+  "<style>.something{color:red}</style>",
+  '<div class="second"></div>'
 ];
 
 describe("Test HTML", () => {
@@ -103,9 +104,7 @@ describe("Test HTML", () => {
 
   test("Components", () => {
     const Comp = props =>
-      html`
-        <div>${() => props.name + " " + props.middle}${props.children}</div>
-      `;
+      html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
     S.root(() => {
       const template = html`
         <div id="main">
@@ -121,13 +120,9 @@ describe("Test HTML", () => {
 
   test("Top Level Components", () => {
     const Comp = props =>
-      html`
-        <div>${() => props.name + " " + props.middle}${props.children}</div>
-      `;
+      html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
     S.root(() => {
-      const template = html`
-        <${Comp} name=${() => "John"} middle="R."><span>Smith</span><//>
-      `;
+      const template = html` <${Comp} name=${() => "John"} middle="R."><span>Smith</span><//> `;
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[5]);
@@ -135,14 +130,9 @@ describe("Test HTML", () => {
   });
 
   test("Nested Components", () => {
-    const Comp = props =>
-      html`
-        <div>${() => props.children}</div>
-      `;
+    const Comp = props => html` <div>${() => props.children}</div> `;
     S.root(() => {
-      const template = html`
-        <${Comp}><${Comp}>Hi<//><//>
-      `;
+      const template = html` <${Comp}><${Comp}>Hi<//><//> `;
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[6]);
@@ -153,21 +143,33 @@ describe("Test HTML", () => {
     const name = "John";
     const template = html`
       <div>
-        <b>Hello, my name is:     <i> ${name}</i></b>
+        <b>Hello, my name is: <i> ${name}</i></b>
       </div>
     `;
     const div = document.createElement("div");
     div.appendChild(template);
     expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[7]);
-  })
+  });
 });
 
 test("Test style tag", () => {
   const color = "red";
+  // prettier-ignore
   const template = html`
     <style>.something{color:${color}}</style>
   `;
   const div = document.createElement("div");
   div.appendChild(template);
   expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[8]);
+});
+
+test("Test double toggle classList", () => {
+  S.root(() => {
+    const d = S.data("first");
+    const template = html` <div classList=${() => ({ [d()]: true })} /> `;
+    const div = document.createElement("div");
+    div.appendChild(template);
+    d("second");
+    expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[9]);
+  });
 });

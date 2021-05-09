@@ -125,9 +125,13 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     const isProp = r.Properties.has(name);
 
     if (name === "style") {
-      options.exprs.push(`r.style(${tag},${expr})`);
+      const prev = `_$v${uuid++}`;
+      options.decl.push(`${prev}={}`);
+      options.exprs.push(`r.style(${tag},${expr},${prev})`);
     } else if (name === "classList") {
-      options.exprs.push(`r.classList(${tag},${expr})`);
+      const prev = `_$v${uuid++}`;
+      options.decl.push(`${prev}={}`);
+      options.exprs.push(`r.classList(${tag},${expr},${prev})`);
     } else if (
       namespace !== "attr" &&
       (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")
