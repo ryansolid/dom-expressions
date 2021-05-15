@@ -52,7 +52,7 @@ export function renderToNodeStream(code, options = {}) {
       stream.push(
         `<script${
           options.nonce ? ` nonce="${options.nonce}"` : ""
-        }>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
+        }>_$HYDRATION.resolveResource("${id}", ${(JSON.stringify(d) || "undefined")
           .replace(/'/g, "\\'")
           .replace(/\\\"/g, '\\\\\\"')})</script>`
       );
@@ -97,7 +97,7 @@ export function renderToWebStream(code, options = {}) {
         encoder.encode(
           `<script${
             options.nonce ? ` nonce="${options.nonce}"` : ""
-          }>_$HYDRATION.resolveResource("${id}", ${JSON.stringify(d)
+          }>_$HYDRATION.resolveResource("${id}", ${(JSON.stringify(d) || "undefined")
             .replace(/'/g, "\\'")
             .replace(/\\\"/g, '\\\\\\"')})</script>`
         )
