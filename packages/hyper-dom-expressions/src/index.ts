@@ -38,7 +38,7 @@ export function createHyperScript(r: Runtime): HyperScript {
       } else if (Array.isArray(l)) {
         for (let i = 0; i < l.length; i++) item(l[i]);
       } else if (l instanceof Element) {
-        r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
+        r.insert(e as Element, l, multiExpression ? null : undefined);
       } else if ("object" === type) {
         let dynamic = false;
         const d = Object.getOwnPropertyDescriptors(l);
@@ -70,7 +70,7 @@ export function createHyperScript(r: Runtime): HyperScript {
           }
           e = r.createComponent(l, props);
           args = [];
-        } else r.insert(e as Element, l, undefined, multiExpression ? null : undefined);
+        } else r.insert(e as Element, l, multiExpression ? null : undefined);
       }
     }
     typeof args[0] === "string" && detectMultiExpression(args);
