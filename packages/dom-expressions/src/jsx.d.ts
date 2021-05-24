@@ -2604,6 +2604,7 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes {}
   interface ContainerElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "clip-path"
