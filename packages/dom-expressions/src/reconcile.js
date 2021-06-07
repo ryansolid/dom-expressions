@@ -9,6 +9,18 @@ export default function reconcileArrays(parentNode, a, b) {
     map = null;
 
   while (aStart < aEnd || bStart < bEnd) {
+    // common prefix
+    while(a[aStart] === b[bStart]) {
+      aStart++;
+      bStart++;
+      if (aStart >= aEnd && bStart >= bEnd) return;
+    }
+    // common suffix
+    while (a[aEnd - 1] === b[bEnd - 1]) {
+      aEnd--;
+      bEnd--;
+      if (aStart >= aEnd && bStart >= bEnd) return;
+    }
     // append
     if (aEnd === aStart) {
       const node =
@@ -25,14 +37,6 @@ export default function reconcileArrays(parentNode, a, b) {
         if (!map || !map.has(a[aStart])) parentNode.removeChild(a[aStart]);
         aStart++;
       }
-    // common prefix
-    } else if (a[aStart] === b[bStart]) {
-      aStart++;
-      bStart++;
-    // common suffix
-    } else if (a[aEnd - 1] === b[bEnd - 1]) {
-      aEnd--;
-      bEnd--;
     // swap backward
     } else if (a[aStart] === b[bEnd - 1] && b[bStart] === a[aEnd - 1]) {
       const node = a[--aEnd].nextSibling;
