@@ -11,7 +11,9 @@ const Comp1 = () => {
     results = {
       "data-id": "12",
       "aria-role": "button",
-      get checked() { return selected() }
+      get checked() {
+        return selected();
+      }
     },
     dynamic = () => ({
       "custom-attr": "1"
@@ -46,22 +48,26 @@ describe("renderToString", () => {
     expect(res.html).toBe(fixture);
     res = r.renderToString(Comp2, { nonce: "1a2s3d4f5g" });
     expect(res.html).toBe(fixture2);
-    expect(res.script.includes("1a2s3d4f5g")).toBeTruthy()
+    expect(res.script.includes("1a2s3d4f5g")).toBeTruthy();
   });
 });
 
-describe("renderToNodeStream", () => {
-  function streamToString(stream) {
+describe("pipeToNodeWritable", () => {
+  it("renders as expected", done => {
     const chunks = [];
-    return new Promise((resolve, reject) => {
-      stream.on("data", chunk => chunks.push(chunk));
-      stream.on("error", reject);
-      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    });
-  }
-  it("renders as expected", async () => {
-    let res = await streamToString(r.renderToNodeStream(Comp2, { nonce: "1a2s3d4f5g" }).stream);
-    expect(res).toBe(fixture2);
+    r.pipeToNodeWritable(
+      Comp2,
+      {
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          expect(chunks.join("")).toBe(fixture2);
+          done();
+        }
+      },
+      { nonce: "1a2s3d4f5g" }
+    );
   });
 });
 

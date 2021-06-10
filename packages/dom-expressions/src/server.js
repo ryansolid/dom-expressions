@@ -1,11 +1,14 @@
-import { Readable } from "stream";
 import { Aliases, BooleanAttributes } from "./constants";
 import { sharedConfig, asyncWrap } from "rxcore";
+import devalue from "devalue";
 export { createComponent } from "rxcore";
 
 export function renderToString(code, options = {}) {
   sharedConfig.context = { id: "", count: 0 };
-  return { html: resolveSSRNode(code()), script: generateHydrationScript(options) };
+  return {
+    html: resolveSSRNode(code()),
+    script: options.noScript ? undefined : generateHydrationScript(options)
+  };
 }
 
 export function renderToStringAsync(code, options = {}) {
@@ -24,97 +27,115 @@ export function renderToStringAsync(code, options = {}) {
   return Promise.race([asyncWrap(code), timeout]).then(res => {
     return {
       html: resolveSSRNode(res),
-      script: generateHydrationScript({ resources, ...options })
+      script: options.noScript ? undefined : generateHydrationScript({ resources, ...options })
     };
   });
 }
 
-export function renderToNodeStream(code, options = {}) {
-  const stream = new Readable({
-    read() {}
-  });
-  sharedConfig.context = { id: "", count: 0, streaming: true, suspense: {} };
-  let count = 0,
-    completed = 0,
-    checkEnd = () => {
-      if (completed === count) stream.push(null);
-    };
-  sharedConfig.context.writeResource = (id, p) => {
-    count++;
-    Promise.resolve().then(() =>
-      stream.push(
-        `<script${
-          options.nonce ? ` nonce="${options.nonce}"` : ""
-        }>_$HYDRATION.startResource("${id}")</script>`
-      )
-    );
-    p.then(d => {
-      stream.push(
-        `<script${
-          options.nonce ? ` nonce="${options.nonce}"` : ""
-        }>_$HYDRATION.resolveResource("${id}", ${(JSON.stringify(d) || "undefined")
-          .replace(/'/g, "\\'")
-          .replace(/\\\"/g, '\\\\\\"')})</script>`
-      );
-      ++completed && checkEnd();
-    });
-  };
-  stream.push(resolveSSRNode(code()));
-  setTimeout(checkEnd);
-  return { stream, script: generateHydrationScript({ streaming: true, ...options }) };
-}
-
-export function renderToWebStream(code, options = {}) {
-  let checkEnd;
+export function pipeToNodeWritable(code, writable, options = {}) {
+  const { eventNames, nonce, noScript, onReady, onComplete } = options;
   const tmp = [];
-  const encoder = new TextEncoder();
-  const done = new Promise(resolve => {
-    checkEnd = () => {
-      if (completed === count) resolve();
-    };
-  });
-  sharedConfig.context = { id: "", count: 0, streaming: true };
   let count = 0,
     completed = 0,
-    writer = {
+    buffer = {
       write(payload) {
         tmp.push(payload);
       }
     };
+  const result = {
+    writable,
+    abort() {
+      completed = count;
+      checkEnd();
+    },
+    script: noScript ? undefined : generateHydrationScript({ streaming: true, eventNames, nonce })
+  };
+  const checkEnd = () => {
+    if (completed === count) {
+      onComplete && onComplete(result);
+      writable.end();
+    }
+  };
+
+  sharedConfig.context = { id: "", count: 0, streaming: true, suspense: {} };
   sharedConfig.context.writeResource = (id, p) => {
     count++;
-    Promise.resolve().then(() =>
-      writer.write(
+    queueMicrotask(() =>
+      buffer.write(
+        `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HYDRATION.startResource("${id}")</script>`
+      )
+    );
+    p.then(d => {
+      buffer.write(
+        `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HYDRATION.resolveResource("${id}", ${devalue(
+          d
+        )})</script>`
+      );
+      ++completed && checkEnd();
+    });
+  };
+
+  buffer.write(resolveSSRNode(code()));
+  onReady && onReady(result);
+  buffer = writable;
+  tmp.forEach(chunk => buffer.write(chunk));
+  setTimeout(checkEnd);
+}
+
+export function pipeToWritable(code, writable, options = {}) {
+  const { eventNames, nonce, noScript, onReady, onComplete } = options;
+  const tmp = [];
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+  sharedConfig.context = { id: "", count: 0, streaming: true };
+  let count = 0,
+    completed = 0,
+    buffer = {
+      write(payload) {
+        tmp.push(payload);
+      }
+    };
+  const result = {
+    writable: { write: c => writer.write(encoder(c)) },
+    abort() {
+      completed = count;
+      checkEnd();
+    },
+    script: noScript ? undefined : generateHydrationScript({ streaming: true, eventNames, nonce })
+  };
+  const checkEnd = () => {
+    if (completed === count) {
+      onEnd && onComplete(result);
+      writable.close();
+    }
+  };
+
+  sharedConfig.context.writeResource = (id, p) => {
+    count++;
+    queueMicrotask(() =>
+      buffer.write(
         encoder.encode(
-          `<script${
-            options.nonce ? ` nonce="${options.nonce}"` : ""
-          }>_$HYDRATION.startResource("${id}")</script>`
+          `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HYDRATION.startResource("${id}")</script>`
         )
       )
     );
     p.then(d => {
-      writer.write(
+      buffer.write(
         encoder.encode(
           `<script${
-            options.nonce ? ` nonce="${options.nonce}"` : ""
-          }>_$HYDRATION.resolveResource("${id}", ${(JSON.stringify(d) || "undefined")
-            .replace(/'/g, "\\'")
-            .replace(/\\\"/g, '\\\\\\"')})</script>`
+            nonce ? ` nonce="${nonce}"` : ""
+          }>_$HYDRATION.resolveResource("${id}", ${devalue(d)})</script>`
         )
       );
       ++completed && checkEnd();
     });
   };
-  writer.write(encoder.encode(resolveSSRNode(code())));
-  return {
-    writeTo(w) {
-      writer = w;
-      tmp.map(chunk => writer.write(chunk));
-      setTimeout(checkEnd);
-      return done;
-    },
-    script: generateHydrationScript({ streaming: true, ...options })
-  };
+
+  buffer.write(encoder.encode(resolveSSRNode(code())));
+  onReady && onReady(result);
+  buffer = writer;
+  tmp.forEach(chunk => writer.write(chunk));
+  setTimeout(checkEnd);
 }
 
 export function ssr(t, ...nodes) {
@@ -273,13 +294,11 @@ function generateHydrationScript({
     s += `(()=>{const e=_$HYDRATION,o={};e.startResource=e=>{let r;o[e]=[new Promise(e=>r=e),r]},e.resolveResource=(e,r)=>{const n=o[e];if(!n)return o[e]=[r];n[1](r)},e.loadResource=e=>{const r=o[e];if(r)return r[0]}})();`;
   }
   if (resources)
-    s += `_$HYDRATION.resources = JSON.parse('${JSON.stringify(
+    s += `_$HYDRATION.resources = ${devalue(
       Object.keys(resources).reduce((r, k) => {
         r[k] = resources[k].data;
         return r;
       }, {})
-    )
-      .replace(/'/g, "\\'")
-      .replace(/\\\"/g, '\\\\\\"')}');`;
+    )};`;
   return s + `</script>`;
 }
