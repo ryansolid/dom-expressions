@@ -43,7 +43,9 @@ export function pipeToNodeWritable(code, writable, options = {}) {
       }
     };
   const result = {
-    writable,
+    write(c) {
+      writable.write(c);
+    },
     abort() {
       completed = count;
       checkEnd();
@@ -52,8 +54,9 @@ export function pipeToNodeWritable(code, writable, options = {}) {
   };
   const checkEnd = () => {
     if (completed === count) {
-      onComplete && onComplete(result);
-      writable.end();
+      let p;
+      if ((p = onComplete && onComplete(result))) p.then(() => writable.end());
+      else writable.end();
     }
   };
 
@@ -96,7 +99,9 @@ export function pipeToWritable(code, writable, options = {}) {
       }
     };
   const result = {
-    writable: { write: c => writer.write(encoder(c)) },
+    write(c) {
+      writer.write(encoder(c));
+    },
     abort() {
       completed = count;
       checkEnd();
@@ -105,8 +110,9 @@ export function pipeToWritable(code, writable, options = {}) {
   };
   const checkEnd = () => {
     if (completed === count) {
-      onEnd && onComplete(result);
-      writable.close();
+      let p;
+      if ((p = onComplete && onComplete(result))) p.then(() => writable.close());
+      else writable.close();
     }
   };
 

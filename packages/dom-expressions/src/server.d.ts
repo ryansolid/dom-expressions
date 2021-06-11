@@ -4,6 +4,7 @@ export type RenderToStringResults = {
 };
 
 export type PipeToWritableResults = {
+  write: (v: string) => void;
   abort: () => void;
   script: string;
 }
@@ -32,8 +33,8 @@ export function pipeToNodeWritable<T>(
     eventNames?: string[];
     nonce?: string;
     noScript?: boolean;
-    onReady?: (writable: { write: (v: string) => void }, r: PipeToWritableResults) => void;
-    onComplete?: (writable: { write: (v: string) => void }, r: PipeToWritableResults) => void;
+    onReady?: (r: PipeToWritableResults) => void;
+    onComplete?: (r: PipeToWritableResults) => void | Promise<void>;
   }
 ): void;
 
@@ -44,8 +45,8 @@ export function pipeToWritable<T>(
     eventNames?: string[];
     nonce?: string;
     noScript?: boolean;
-    onReady?: (writable: { write: (v: string) => void }, r: PipeToWritableResults) => void;
-    onComplete?: (writable: { write: (v: string) => void }, r: PipeToWritableResults) => void;
+    onReady?: (r: PipeToWritableResults) => void;
+    onComplete?: (r: PipeToWritableResults) => void | Promise<void>;
   }
 ): void;
 export function ssr(template: string[] | string, ...nodes: any[]): { t: string };
