@@ -223,6 +223,11 @@ export function getNextElement(template) {
   return node;
 }
 
+export function getNextMatch(el, nodeName) {
+  while (el && el.localName !== nodeName) el = el.nextSibling;
+  return el;
+}
+
 export function getNextMarker(start) {
   let end = start,
     count = 0,

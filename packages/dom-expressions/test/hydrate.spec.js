@@ -24,14 +24,13 @@ describe("r.hydrate", () => {
   let result, rendered;
 
   it("hydrates simple text", () => {
-    result = r2.renderToString(() =>
+    rendered = r2.renderToString(() =>
       r2.ssr(
         ['<span data-hk="', '"><!--#-->', "<!--/--> John</span>"],
         r2.getHydrationKey(),
         r2.escape("Hi")
       )
-    );
-    rendered = result.html;
+    ).split("<script>")[0];
     expect(rendered).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
@@ -60,14 +59,13 @@ describe("r.hydrate", () => {
 
   it("hydrates with an updated timestamp", () => {
     const time = Date.now();
-    result = r2.renderToString(() =>
+    rendered = r2.renderToString(() =>
       r2.ssr(
         ['<span data-hk="', '"><!--#-->', "<!--/--> John</span>"],
         r2.getHydrationKey(),
         r2.escape(time)
       )
-    );
-    rendered = result.html;
+    ).split("<script>")[0];
     expect(rendered).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
@@ -98,12 +96,11 @@ describe("r.hydrate", () => {
   });
 
   it("hydrates fragments", () => {
-    result = r2.renderToString(() => [
+    rendered = r2.renderToString(() => [
       r2.ssr(['<div data-hk="', '">First</div>'], r2.getHydrationKey()),
       "middle",
       r2.ssr(['<div data-hk="', '">Last</div>'], r2.getHydrationKey())
-    ]);
-    rendered = result.html;
+    ]).split("<script>")[0];
     expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`);
     // gather refs
     container.innerHTML = rendered;

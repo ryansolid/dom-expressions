@@ -33,7 +33,8 @@ export function transformElement(path, info) {
       exprs: [],
       dynamics: [],
       postExprs: [],
-      isSVG: wrapSVG
+      isSVG: wrapSVG,
+      tagName
     };
   if (wrapSVG) results.template = "<svg>" + results.template;
   if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
@@ -554,8 +555,9 @@ function wrappedByText(list, startIndex) {
 }
 
 function transformChildren(path, results) {
-  const { generate, hydratable } = config;
+  const { hydratable } = config;
   let tempPath = results.id && results.id.name,
+    tagName = getTagName(path.node),
     nextPlaceholder,
     i = 0;
   const filteredChildren = filterChildren(path.get("children"), true),
@@ -580,13 +582,22 @@ function transformChildren(path, results) {
     if (!child) return;
     results.template += child.template;
     if (child.id) {
+      if (hydratable && tagName === "html") {
+        registerImportMethod(path, "getNextMatch");
+      }
+      const walk = t.memberExpression(
+        t.identifier(tempPath),
+        t.identifier(i === 0 ? "firstChild" : "nextSibling")
+      );
       results.decl.push(
         t.variableDeclarator(
           child.id,
-          t.memberExpression(
-            t.identifier(tempPath),
-            t.identifier(i === 0 ? "firstChild" : "nextSibling")
-          )
+          hydratable && tagName === "html"
+            ? t.callExpression(t.identifier("_$getNextMatch"), [
+                walk,
+                t.stringLiteral(child.tagName)
+              ])
+            : walk
         )
       );
       results.decl.push(...child.decl);

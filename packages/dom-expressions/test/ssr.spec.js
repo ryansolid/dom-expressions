@@ -45,10 +45,9 @@ const Comp2 = () => {
 describe("renderToString", () => {
   it("renders as expected", async () => {
     let res = r.renderToString(Comp1);
-    expect(res.html).toBe(fixture);
-    res = r.renderToString(Comp2, { nonce: "1a2s3d4f5g" });
-    expect(res.html).toBe(fixture2);
-    expect(res.script.includes("1a2s3d4f5g")).toBeTruthy();
+    expect(res.split("<script")[0]).toBe(fixture);
+    res = r.renderToString(Comp2);
+    expect(res.split("<script")[0]).toBe(fixture2);
   });
 });
 
@@ -62,7 +61,7 @@ describe("pipeToNodeWritable", () => {
           chunks.push(v);
         },
         end() {
-          expect(chunks.join("")).toBe(fixture2);
+          expect(chunks.join("").split("<script")[0]).toBe(fixture2);
           done();
         }
       },

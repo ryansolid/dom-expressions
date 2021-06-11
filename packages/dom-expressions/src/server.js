@@ -5,10 +5,7 @@ export { createComponent } from "rxcore";
 
 export function renderToString(code, options = {}) {
   sharedConfig.context = { id: "", count: 0 };
-  return {
-    html: resolveSSRNode(code()),
-    script: options.noScript ? undefined : generateHydrationScript(options)
-  };
+  return resolveSSRNode(code()) + (options.noScript ? "" : generateHydrationScript(options));
 }
 
 export function renderToStringAsync(code, options = {}) {
@@ -25,15 +22,21 @@ export function renderToStringAsync(code, options = {}) {
     setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
   );
   return Promise.race([asyncWrap(code), timeout]).then(res => {
-    return {
-      html: resolveSSRNode(res),
-      script: options.noScript ? undefined : generateHydrationScript({ resources, ...options })
-    };
+    return (
+      resolveSSRNode(res) +
+      (options.noScript ? undefined : generateHydrationScript({ resources, ...options }))
+    );
   });
 }
 
 export function pipeToNodeWritable(code, writable, options = {}) {
-  const { eventNames, nonce, noScript, onReady, onComplete } = options;
+  const {
+    eventNames,
+    nonce,
+    noScript,
+    onReady = ({ startWriting }) => startWriting(),
+    onComplete
+  } = options;
   const tmp = [];
   let count = 0,
     completed = 0,
@@ -43,20 +46,23 @@ export function pipeToNodeWritable(code, writable, options = {}) {
       }
     };
   const result = {
+    startWriting() {
+      buffer = writable;
+      tmp.forEach(chunk => buffer.write(chunk));
+      setTimeout(checkEnd);
+    },
     write(c) {
       writable.write(c);
     },
     abort() {
       completed = count;
       checkEnd();
-    },
-    script: noScript ? undefined : generateHydrationScript({ streaming: true, eventNames, nonce })
+    }
   };
   const checkEnd = () => {
     if (completed === count) {
-      let p;
-      if ((p = onComplete && onComplete(result))) p.then(() => writable.end());
-      else writable.end();
+      onComplete && onComplete(result);
+      writable.end();
     }
   };
 
@@ -79,14 +85,18 @@ export function pipeToNodeWritable(code, writable, options = {}) {
   };
 
   buffer.write(resolveSSRNode(code()));
-  onReady && onReady(result);
-  buffer = writable;
-  tmp.forEach(chunk => buffer.write(chunk));
-  setTimeout(checkEnd);
+  onReady(result);
+  !noScript && buffer.write(generateHydrationScript({ streaming: true, eventNames, nonce }));
 }
 
 export function pipeToWritable(code, writable, options = {}) {
-  const { eventNames, nonce, noScript, onReady, onComplete } = options;
+  const {
+    eventNames,
+    nonce,
+    noScript,
+    onReady = ({ startWriting }) => startWriting(),
+    onComplete
+  } = options;
   const tmp = [];
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
@@ -99,20 +109,23 @@ export function pipeToWritable(code, writable, options = {}) {
       }
     };
   const result = {
+    startWriting() {
+      buffer = writer;
+      tmp.forEach(chunk => writer.write(chunk));
+      setTimeout(checkEnd);
+    },
     write(c) {
       writer.write(encoder(c));
     },
     abort() {
       completed = count;
       checkEnd();
-    },
-    script: noScript ? undefined : generateHydrationScript({ streaming: true, eventNames, nonce })
+    }
   };
   const checkEnd = () => {
     if (completed === count) {
-      let p;
-      if ((p = onComplete && onComplete(result))) p.then(() => writable.close());
-      else writable.close();
+      onComplete && onComplete(result);
+      writable.close();
     }
   };
 
@@ -138,10 +151,9 @@ export function pipeToWritable(code, writable, options = {}) {
   };
 
   buffer.write(encoder.encode(resolveSSRNode(code())));
-  onReady && onReady(result);
-  buffer = writer;
-  tmp.forEach(chunk => writer.write(chunk));
-  setTimeout(checkEnd);
+  onReady(result);
+  !noScript &&
+    buffer.write(encoder.encode(generateHydrationScript({ streaming: true, eventNames, nonce })));
 }
 
 export function ssr(t, ...nodes) {

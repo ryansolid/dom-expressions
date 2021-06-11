@@ -48,4 +48,5 @@ export function hydrate(fn: () => JSX.Element, node: MountableElement): () => vo
 export function gatherHydratable(node: Element): void;
 export function getHydrationKey(): string;
 export function getNextElement(template: HTMLTemplateElement): Node;
+export function getNextMatch(start: Node, nodeName: string): Node;
 export function getNextMarker(start: Node): [Node, Array<Node>];
