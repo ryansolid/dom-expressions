@@ -16,10 +16,10 @@
     "report:coverage": "cat ./coverage/lcov.info | ../../node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "dependencies": {
-    "babel-plugin-transform-rename-import": "^2.3.0"
+    "babel-plugin-transform-rename-import": "^2.3.0",
+    "devalue": "^2.0.1"
   },
   "devDependencies": {
-    "babel-plugin-jsx-dom-expressions": "^0.28.0",
-    "devalue": "^2.0.1"
+    "babel-plugin-jsx-dom-expressions": "^0.28.0"
   }
 }
