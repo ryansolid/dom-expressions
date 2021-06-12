@@ -75,7 +75,7 @@ export namespace JSX {
   type OnCaptureAttributes<T> = {
     [Key in keyof CustomEvents as `oncapture:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
   }
-  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
+  interface DOMAttributes<T> extends CustomAttributes<T>, ActionAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T>, Record<string, any> {
     children?: Element;
     innerHTML?: string;
     innerText?: string;
@@ -256,7 +256,7 @@ export namespace JSX {
   type CSSWideKeyword = "initial" | "inherit" | "unset";
   type CSSPercentage = string;
   type CSSLength = number | string;
-  interface CSSProperties {
+  interface CSSProperties extends Record<string, any> {
     /**
      * Aligns a flex container's lines within the flex container when there is extra space in the cross-axis, similar to how justify-content aligns individual items within the main-axis.
      */
@@ -1895,7 +1895,7 @@ export namespace JSX {
     "aria-valuetext"?: string;
   }
 
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T>, Record<string, any> {
     accessKey?: string;
     className?: string;
     class?: string;
@@ -2601,7 +2601,8 @@ export namespace JSX {
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
-      ConditionalProcessingSVGAttributes {}
+      ConditionalProcessingSVGAttributes,
+      Record<string, any> {}
   interface ContainerElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
@@ -3187,7 +3188,7 @@ export namespace JSX {
       ZoomAndPanSVGAttributes {
     viewTarget?: string;
   }
-  interface IntrinsicElements {
+  interface IntrinsicElements extends Record<string, HTMLAttributes<any>> {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
     address: HTMLAttributes<HTMLElement>;
