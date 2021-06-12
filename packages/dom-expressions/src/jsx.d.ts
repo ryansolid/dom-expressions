@@ -75,7 +75,7 @@ export namespace JSX {
   type OnCaptureAttributes<T> = {
     [Key in keyof CustomEvents as `oncapture:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
   }
-  interface DOMAttributes<T> extends CustomAttributes<T>, ActionAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T>, Record<string, any> {
+  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T>, Record<string, any> {
     children?: Element;
     innerHTML?: string;
     innerText?: string;
