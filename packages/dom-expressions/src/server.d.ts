@@ -2,14 +2,13 @@ export type PipeToWritableResults = {
   startWriting: () => void;
   write: (v: string) => void;
   abort: () => void;
-}
+};
 
 export function renderToString<T>(
   fn: () => T,
   options?: {
     eventNames?: string[];
     nonce?: string;
-    noScript?: boolean;
   }
 ): string;
 export function renderToStringAsync<T>(
@@ -18,7 +17,6 @@ export function renderToStringAsync<T>(
     eventNames?: string[];
     timeoutMs?: number;
     nonce?: string;
-    noScript?: boolean;
   }
 ): Promise<string>;
 export function pipeToNodeWritable<T>(
@@ -27,7 +25,6 @@ export function pipeToNodeWritable<T>(
   options?: {
     eventNames?: string[];
     nonce?: string;
-    noScript?: boolean;
     onReady?: (r: PipeToWritableResults) => void;
     onComplete?: (r: PipeToWritableResults) => void;
   }
@@ -38,7 +35,6 @@ export function pipeToWritable<T>(
   options?: {
     eventNames?: string[];
     nonce?: string;
-    noScript?: boolean;
     onReady?: (r: PipeToWritableResults) => void;
     onComplete?: (r: PipeToWritableResults) => void;
   }
@@ -56,3 +52,5 @@ export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
+export function HydrationScript(): JSX.Element;
+export function generateHydrationScript(options: { eventNames: string[]; nonce: string }): string;

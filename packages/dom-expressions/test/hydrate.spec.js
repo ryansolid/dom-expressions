@@ -30,7 +30,7 @@ describe("r.hydrate", () => {
         r2.getHydrationKey(),
         r2.escape("Hi")
       )
-    ).split("<script>")[0];
+    );
     expect(rendered).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
@@ -65,7 +65,7 @@ describe("r.hydrate", () => {
         r2.getHydrationKey(),
         r2.escape(time)
       )
-    ).split("<script>")[0];
+    );
     expect(rendered).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
@@ -100,7 +100,7 @@ describe("r.hydrate", () => {
       r2.ssr(['<div data-hk="', '">First</div>'], r2.getHydrationKey()),
       "middle",
       r2.ssr(['<div data-hk="', '">Last</div>'], r2.getHydrationKey())
-    ]).split("<script>")[0];
+    ]);
     expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`);
     // gather refs
     container.innerHTML = rendered;

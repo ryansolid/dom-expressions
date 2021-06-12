@@ -434,3 +434,7 @@ export function getHydrationKey() {
   const hydrate = sharedConfig.context;
   return `${hydrate.id}${hydrate.count++}`;
 }
+
+export function HydrationScript() {
+  return;
+}

@@ -4,39 +4,38 @@ import devalue from "devalue";
 export { createComponent } from "rxcore";
 
 export function renderToString(code, options = {}) {
-  sharedConfig.context = { id: "", count: 0 };
-  return resolveSSRNode(code()) + (options.noScript ? "" : generateHydrationScript(options));
+  sharedConfig.context = { id: "", count: 0, meta: {} };
+  let html = resolveSSRNode(code());
+  if (sharedConfig.context.meta.bootstrap) {
+    html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
+  }
+  return html;
 }
 
 export function renderToStringAsync(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
-  let resources;
   sharedConfig.context = {
     id: "",
     count: 0,
-    resources: (resources = {}),
+    resources: {},
     suspense: {},
+    meta: {},
     async: true
   };
   const timeout = new Promise((_, reject) =>
     setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
   );
   return Promise.race([asyncWrap(code), timeout]).then(res => {
-    return (
-      resolveSSRNode(res) +
-      (options.noScript ? undefined : generateHydrationScript({ resources, ...options }))
-    );
+    let html = resolveSSRNode(res);
+    if (sharedConfig.context.meta.bootstrap) {
+      html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
+    }
+    return html;
   });
 }
 
 export function pipeToNodeWritable(code, writable, options = {}) {
-  const {
-    eventNames,
-    nonce,
-    noScript,
-    onReady = ({ startWriting }) => startWriting(),
-    onComplete
-  } = options;
+  const { nonce, onReady = ({ startWriting }) => startWriting(), onComplete } = options;
   const tmp = [];
   let count = 0,
     completed = 0,
@@ -66,7 +65,7 @@ export function pipeToNodeWritable(code, writable, options = {}) {
     }
   };
 
-  sharedConfig.context = { id: "", count: 0, streaming: true, suspense: {} };
+  sharedConfig.context = { id: "", count: 0, streaming: true, suspense: {}, meta: {} };
   sharedConfig.context.writeResource = (id, p) => {
     count++;
     queueMicrotask(() =>
@@ -84,23 +83,20 @@ export function pipeToNodeWritable(code, writable, options = {}) {
     });
   };
 
-  buffer.write(resolveSSRNode(code()));
+  let html = resolveSSRNode(code());
+  if (sharedConfig.context.meta.bootstrap) {
+    html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
+  }
+  buffer.write(html);
   onReady(result);
-  !noScript && buffer.write(generateHydrationScript({ streaming: true, eventNames, nonce }));
 }
 
 export function pipeToWritable(code, writable, options = {}) {
-  const {
-    eventNames,
-    nonce,
-    noScript,
-    onReady = ({ startWriting }) => startWriting(),
-    onComplete
-  } = options;
+  const { nonce, onReady = ({ startWriting }) => startWriting(), onComplete } = options;
   const tmp = [];
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
-  sharedConfig.context = { id: "", count: 0, streaming: true };
+  sharedConfig.context = { id: "", count: 0, streaming: true, suspense: {}, meta: {} };
   let count = 0,
     completed = 0,
     buffer = {
@@ -150,10 +146,12 @@ export function pipeToWritable(code, writable, options = {}) {
     });
   };
 
-  buffer.write(encoder.encode(resolveSSRNode(code())));
+  let html = resolveSSRNode(code());
+  if (sharedConfig.context.meta.bootstrap) {
+    html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
+  }
+  buffer.write(encoder.encode(html));
   onReady(result);
-  !noScript &&
-    buffer.write(encoder.encode(generateHydrationScript({ streaming: true, eventNames, nonce })));
 }
 
 export function ssr(t, ...nodes) {
@@ -297,26 +295,28 @@ export function getHydrationKey() {
   return `${hydrate.id}${hydrate.count++}`;
 }
 
-function generateHydrationScript({
-  eventNames = ["click", "input"],
-  streaming,
-  resources,
-  nonce
-} = {}) {
+export function HydrationScript() {
+  sharedConfig.context.meta.bootstrap = true;
+  return ssr("%%BOOTSTRAP%%");
+}
+
+export function generateHydrationScript({ eventNames = ["click", "input"], nonce } = {}) {
   let s = `<script${
     nonce ? ` nonce="${nonce}"` : ""
   }>(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
-  if (streaming) {
+  if (sharedConfig.context.streaming) {
     s += `(()=>{const e=_$HYDRATION,o={};e.startResource=e=>{let r;o[e]=[new Promise(e=>r=e),r]},e.resolveResource=(e,r)=>{const n=o[e];if(!n)return o[e]=[r];n[1](r)},e.loadResource=e=>{const r=o[e];if(r)return r[0]}})();`;
   }
-  if (resources)
+  if (sharedConfig.context.resources) {
+    const resources = sharedConfig.context.resources;
     s += `_$HYDRATION.resources = ${devalue(
       Object.keys(resources).reduce((r, k) => {
         r[k] = resources[k].data;
         return r;
       }, {})
     )};`;
+  }
   return s + `</script>`;
 }

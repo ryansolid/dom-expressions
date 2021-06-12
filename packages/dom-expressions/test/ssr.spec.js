@@ -3,6 +3,7 @@ import * as S from "s-js";
 
 const fixture = `<div id="main" data-id="12" aria-role="button" checked class="selected" style="color:red"><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span> Hello &lt;div/> </span>`;
+const fixture3 = `<span> Hello &lt;div/> <script nonce="1a2s3d4f5g">(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};[\"click\",\"input\"].forEach(t=>document.addEventListener(t,e))})();</script></span>`
 
 const Comp1 = () => {
   const selected = S.data(true),
@@ -42,12 +43,20 @@ const Comp2 = () => {
   return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)} </span>`;
 };
 
+const Comp3 = () => {
+  const greeting = "Hello",
+    name = "<div/>";
+  return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)} ${r.HydrationScript()}</span>`;
+};
+
 describe("renderToString", () => {
   it("renders as expected", async () => {
     let res = r.renderToString(Comp1);
-    expect(res.split("<script")[0]).toBe(fixture);
+    expect(res).toBe(fixture);
     res = r.renderToString(Comp2);
-    expect(res.split("<script")[0]).toBe(fixture2);
+    expect(res).toBe(fixture2);
+    res = r.renderToString(Comp3, { nonce: "1a2s3d4f5g" });
+    expect(res).toBe(fixture3);
   });
 });
 
@@ -61,11 +70,10 @@ describe("pipeToNodeWritable", () => {
           chunks.push(v);
         },
         end() {
-          expect(chunks.join("").split("<script")[0]).toBe(fixture2);
+          expect(chunks.join("")).toBe(fixture2);
           done();
         }
-      },
-      { nonce: "1a2s3d4f5g" }
+      }
     );
   });
 });
