@@ -10,10 +10,10 @@ export default function reconcileArrays(parentNode, a, b) {
 
   while (aStart < aEnd || bStart < bEnd) {
     // common prefix
-    while(a[aStart] === b[bStart]) {
+    if (a[aStart] === b[bStart]) {
       aStart++;
       bStart++;
-      if (aStart >= aEnd && bStart >= bEnd) return;
+      continue;
     }
     // common suffix
     while (a[aEnd - 1] === b[bEnd - 1]) {
