@@ -331,7 +331,7 @@ function transformChildren(path, results) {
       const multi = checkLength(filteredChildren),
         markers = hydratable && multi;
 
-      if (!doNotEscape && !child.component) child.exprs[0] = escapeExpression(path, child.exprs[0]);
+      if (!doNotEscape) child.exprs[0] = escapeExpression(path, child.exprs[0]);
 
       // boxed by textNodes
       if (markers) {

@@ -25,7 +25,7 @@ const template2 = _$ssr(_tmpl$2, _$escape(children));
 
 const template3 = _$ssr(_tmpl$3);
 
-const template4 = _$ssr(_tmpl$2, _$createComponent(Hello, {}));
+const template4 = _$ssr(_tmpl$2, _$escape(_$createComponent(Hello, {})));
 
 const template5 = _$ssr(_tmpl$2, _$escape(dynamic.children));
 

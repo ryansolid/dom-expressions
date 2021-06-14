@@ -26,7 +26,7 @@ const template2 = _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(children));
 
 const template3 = _$ssr(_tmpl$3, _$getHydrationKey());
 
-const template4 = _$ssr(_tmpl$2, _$getHydrationKey(), _$createComponent(Hello, {}));
+const template4 = _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(_$createComponent(Hello, {})));
 
 const template5 = _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(dynamic.children));
 

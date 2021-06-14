@@ -5,7 +5,7 @@ export { createComponent } from "rxcore";
 
 export function renderToString(code, options = {}) {
   sharedConfig.context = { id: "", count: 0, meta: {} };
-  let html = resolveSSRNode(code());
+  let html = resolveSSRNode(escape(code()));
   if (sharedConfig.context.meta.bootstrap) {
     html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
   }
@@ -25,7 +25,7 @@ export function renderToStringAsync(code, options = {}) {
   const timeout = new Promise((_, reject) =>
     setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
   );
-  return Promise.race([asyncWrap(code), timeout]).then(res => {
+  return Promise.race([asyncWrap(() => escape(code())), timeout]).then(res => {
     let html = resolveSSRNode(res);
     if (sharedConfig.context.meta.bootstrap) {
       html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
@@ -83,7 +83,7 @@ export function pipeToNodeWritable(code, writable, options = {}) {
     });
   };
 
-  let html = resolveSSRNode(code());
+  let html = resolveSSRNode(escape(code()));
   if (sharedConfig.context.meta.bootstrap) {
     html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
   }
@@ -146,7 +146,7 @@ export function pipeToWritable(code, writable, options = {}) {
     });
   };
 
-  let html = resolveSSRNode(code());
+  let html = resolveSSRNode(escape(code()));
   if (sharedConfig.context.meta.bootstrap) {
     html = html.replace("%%BOOTSTRAP%%", generateHydrationScript(options));
   }
@@ -226,6 +226,7 @@ export function ssrBoolean(key, value) {
 export function escape(s, attr) {
   const t = typeof s;
   if (t !== "string") {
+    if (!attr && t === "function") return escape(s(), attr);
     if (attr && t === "boolean") return String(s);
     return s;
   }

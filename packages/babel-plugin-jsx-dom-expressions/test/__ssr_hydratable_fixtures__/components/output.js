@@ -49,32 +49,38 @@ const template = props => {
   return _$ssr(
     _tmpl$4,
     _$getHydrationKey(),
-    _$createComponent(
-      Child,
-      _$mergeProps(
-        {
-          name: "John"
-        },
-        props,
-        {
-          booleanProperty: true,
+    _$escape(
+      _$createComponent(
+        Child,
+        _$mergeProps(
+          {
+            name: "John"
+          },
+          props,
+          {
+            booleanProperty: true,
 
-          get children() {
-            return _$ssr(_tmpl$3, _$getHydrationKey());
+            get children() {
+              return _$ssr(_tmpl$3, _$getHydrationKey());
+            }
           }
-        }
+        )
       )
     ),
-    _$createComponent(Child, {
-      name: "Jason",
+    _$escape(
+      _$createComponent(Child, {
+        name: "Jason",
 
-      get children() {
-        return _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(content));
-      }
-    }),
-    _$createComponent(Context.Consumer, {
-      children: context => context
-    })
+        get children() {
+          return _$ssr(_tmpl$2, _$getHydrationKey(), _$escape(content));
+        }
+      })
+    ),
+    _$escape(
+      _$createComponent(Context.Consumer, {
+        children: context => context
+      })
+    )
   );
 };
 
@@ -158,58 +164,86 @@ const template9 = _$createComponent(_garbage, {
 const template10 = _$ssr(
   _tmpl$6,
   _$getHydrationKey(),
-  _$createComponent(Link, {
-    children: "new"
-  }),
-  _$createComponent(Link, {
-    children: "comments"
-  }),
-  _$createComponent(Link, {
-    children: "show"
-  }),
-  _$createComponent(Link, {
-    children: "ask"
-  }),
-  _$createComponent(Link, {
-    children: "jobs"
-  }),
-  _$createComponent(Link, {
-    children: "submit"
-  })
+  _$escape(
+    _$createComponent(Link, {
+      children: "new"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "comments"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "show"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "ask"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "jobs"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "submit"
+    })
+  )
 );
 
 const template11 = _$ssr(
   _tmpl$7,
   _$getHydrationKey(),
-  _$createComponent(Link, {
-    children: "new"
-  }),
-  _$createComponent(Link, {
-    children: "comments"
-  }),
-  _$createComponent(Link, {
-    children: "show"
-  }),
-  _$createComponent(Link, {
-    children: "ask"
-  }),
-  _$createComponent(Link, {
-    children: "jobs"
-  }),
-  _$createComponent(Link, {
-    children: "submit"
-  })
+  _$escape(
+    _$createComponent(Link, {
+      children: "new"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "comments"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "show"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "ask"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "jobs"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "submit"
+    })
+  )
 );
 
 const template12 = _$ssr(
   _tmpl$8,
   _$getHydrationKey(),
-  _$createComponent(Link, {
-    children: "comments"
-  }),
-  _$createComponent(Link, {
-    children: "show"
-  })
+  _$escape(
+    _$createComponent(Link, {
+      children: "comments"
+    })
+  ),
+  _$escape(
+    _$createComponent(Link, {
+      children: "show"
+    })
+  )
 );
 
 class Template13 {
