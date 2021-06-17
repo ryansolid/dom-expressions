@@ -1,9 +1,13 @@
 import * as r from "../src/server";
 import * as S from "s-js";
 
+globalThis.TextEncoder = function () {
+  return { encode: v => v };
+};
+
 const fixture = `<div id="main" data-id="12" aria-role="button" checked class="selected" style="color:red"><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span> Hello &lt;div/> </span>`;
-const fixture3 = `<span> Hello &lt;div/> <script nonce="1a2s3d4f5g">(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};[\"click\",\"input\"].forEach(t=>document.addEventListener(t,e))})();</script></span>`
+const fixture3 = `<span> Hello &lt;div/> <script nonce="1a2s3d4f5g">(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};[\"click\",\"input\"].forEach(t=>document.addEventListener(t,e))})();</script></span>`;
 
 const Comp1 = () => {
   const selected = S.data(true),
@@ -63,33 +67,33 @@ describe("renderToString", () => {
 describe("pipeToNodeWritable", () => {
   it("renders as expected", done => {
     const chunks = [];
-    r.pipeToNodeWritable(
-      Comp2,
-      {
-        write(v) {
-          chunks.push(v);
-        },
-        end() {
-          expect(chunks.join("")).toBe(fixture2);
-          done();
-        }
+    r.pipeToNodeWritable(Comp2, {
+      write(v) {
+        chunks.push(v);
+      },
+      end() {
+        expect(chunks.join("")).toBe(fixture2);
+        done();
       }
-    );
+    });
   });
 });
 
-// describe("renderToWebStream", () => {
-//   function streamToString (stream) {
-//     const chunks = []
-//     const reader = stream.getReader()
-//     return reader.read().then(function processText({ done, value }) {
-//       if (done) return chunks.join("");
-//       chunks.push(value);
-//       return reader.read().then(processText);
-//     });
-//   }
-//   it("renders as expected", async () => {
-//     let res = await streamToString(r.renderToWebStream(Comp2));
-//     expect(res).toBe(fixture2);
-//   });
-// });
+describe("pipeToWritable", () => {
+  it("renders as expected", done => {
+    const chunks = [];
+    r.pipeToWritable(Comp2, {
+      getWriter() {
+        return {
+          write(v) {
+            chunks.push(v);
+          }
+        };
+      },
+      close() {
+        expect(chunks.join("")).toBe(fixture2);
+        done();
+      }
+    });
+  });
+});

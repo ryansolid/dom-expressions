@@ -1,7 +1,7 @@
 import * as r from "../src/client";
 import * as r2 from "../src/server";
 
-globalThis._$HYDRATION = {};
+globalThis._$HYDRATION = { events: [], completed: new WeakSet() };
 
 function setHydrateContext(context) {
   globalThis._$HYDRATION.context = context;
@@ -49,6 +49,7 @@ describe("r.hydrate", () => {
         return _el$;
       })();
       r.insert(container, leadingExpr, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
     }, container);
     expect(container.innerHTML).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
     expect(container.firstChild).toBe(el1);
@@ -85,6 +86,7 @@ describe("r.hydrate", () => {
         return _el$;
       })();
       r.insert(container, leadingExpr, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
     }, container);
     expect(container.innerHTML).toBe(
       `<span data-hk="0"><!--#-->${updatedTime}<!--/--> John</span>`
@@ -123,6 +125,7 @@ describe("r.hydrate", () => {
         })()
       ];
       r.insert(container, multiExpression, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
     }, container);
     expect(container.innerHTML).toBe(
       `<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`

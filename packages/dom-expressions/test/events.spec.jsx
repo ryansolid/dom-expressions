@@ -1,3 +1,4 @@
+import * as r from "../src/client";
 import * as S from "s-js";
 
 describe("Test Synthetic event bubbling", () => {
@@ -59,4 +60,14 @@ describe("Test Synthetic event bubbling", () => {
     eventTarget.dispatchEvent(event);
     expect(count).toBe(1);
   });
+
+  test("clear events", () => {
+    r.clearDelegatedEvents();
+    eventTarget = Elements.el1;
+    count = 0;
+    stopPropagation = false;
+    var event = new MouseEvent("click", { bubbles: true });
+    eventTarget.dispatchEvent(event);
+    expect(count).toBe(0);
+  })
 });

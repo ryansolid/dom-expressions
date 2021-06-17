@@ -19,7 +19,6 @@ export default function reconcileArrays(parentNode, a, b) {
     while (a[aEnd - 1] === b[bEnd - 1]) {
       aEnd--;
       bEnd--;
-      if (aStart >= aEnd && bStart >= bEnd) return;
     }
     // append
     if (aEnd === aStart) {
