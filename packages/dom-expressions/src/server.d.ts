@@ -53,4 +53,4 @@ export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): J
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function HydrationScript(): JSX.Element;
-export function generateHydrationScript(options: { eventNames: string[]; nonce: string }): string;
+export function generateHydrationScript(): string;
