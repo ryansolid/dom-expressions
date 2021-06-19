@@ -36,7 +36,7 @@ export function template(html, check, isSVG) {
   return node;
 }
 
-export function delegateEvents(eventNames) {
+export function delegateEvents(eventNames, document = window.document) {
   const e = document[$$EVENTS] || (document[$$EVENTS] = new Set());
   for (let i = 0, l = eventNames.length; i < l; i++) {
     const name = eventNames[i];
@@ -47,7 +47,7 @@ export function delegateEvents(eventNames) {
   }
 }
 
-export function clearDelegatedEvents() {
+export function clearDelegatedEvents(document = window.document) {
   if (document[$$EVENTS]) {
     for (let name of document[$$EVENTS].keys()) document.removeEventListener(name, eventHandler);
     delete document[$$EVENTS];
