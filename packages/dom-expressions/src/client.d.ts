@@ -18,8 +18,8 @@ export function insert<T>(
   init?: JSX.Element
 ): JSX.Element;
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
-export function delegateEvents(eventNames: string[]): void;
-export function clearDelegatedEvents(): void;
+export function delegateEvents(eventNames: string[], d?: Document): void;
+export function clearDelegatedEvents(d?: Document): void;
 export function spread<T>(
   node: Element,
   accessor: (() => T) | T,
