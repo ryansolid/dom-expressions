@@ -154,6 +154,21 @@ export function pipeToWritable(code, writable, options = {}) {
   onReady(result);
 }
 
+// components
+export function HydrationScript() {
+  sharedConfig.context.meta.bootstrap = true;
+  return ssr("%%BOOTSTRAP%%");
+}
+
+export function NoHydration(props) {
+  const c = sharedConfig.context;
+  delete sharedConfig.context;
+  const children = props.children;
+  sharedConfig.context = c;
+  return children;
+}
+
+// rendering
 export function ssr(t, ...nodes) {
   if (nodes.length) {
     let result = "";
@@ -221,6 +236,11 @@ export function ssrSpread(props, isSVG, skipChildren) {
 
 export function ssrBoolean(key, value) {
   return value ? " " + key : "";
+}
+
+export function ssrHydrationKey() {
+  const hk = getHydrationKey()
+  return hk ? ` data-hk="${hk}"` : "";
 }
 
 export function escape(s, attr) {
@@ -293,12 +313,7 @@ export function mergeProps(...sources) {
 
 export function getHydrationKey() {
   const hydrate = sharedConfig.context;
-  return `${hydrate.id}${hydrate.count++}`;
-}
-
-export function HydrationScript() {
-  sharedConfig.context.meta.bootstrap = true;
-  return ssr("%%BOOTSTRAP%%");
+  return hydrate && `${hydrate.id}${hydrate.count++}`;
 }
 
 export function generateHydrationScript() {

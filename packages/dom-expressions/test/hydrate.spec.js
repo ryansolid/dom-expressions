@@ -25,11 +25,7 @@ describe("r.hydrate", () => {
 
   it("hydrates simple text", () => {
     rendered = r2.renderToString(() =>
-      r2.ssr(
-        ['<span data-hk="', '"><!--#-->', "<!--/--> John</span>"],
-        r2.getHydrationKey(),
-        r2.escape("Hi")
-      )
+      r2.ssr(["<span", "><!--#-->", "<!--/--> John</span>"], r2.ssrHydrationKey(), r2.escape("Hi"))
     );
     expect(rendered).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
     // gather refs
@@ -61,11 +57,7 @@ describe("r.hydrate", () => {
   it("hydrates with an updated timestamp", () => {
     const time = Date.now();
     rendered = r2.renderToString(() =>
-      r2.ssr(
-        ['<span data-hk="', '"><!--#-->', "<!--/--> John</span>"],
-        r2.getHydrationKey(),
-        r2.escape(time)
-      )
+      r2.ssr(["<span", "><!--#-->", "<!--/--> John</span>"], r2.ssrHydrationKey(), r2.escape(time))
     );
     expect(rendered).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span>`);
     // gather refs
@@ -99,9 +91,9 @@ describe("r.hydrate", () => {
 
   it("hydrates fragments", () => {
     rendered = r2.renderToString(() => [
-      r2.ssr(['<div data-hk="', '">First</div>'], r2.getHydrationKey()),
+      r2.ssr(["<div", ">First</div>"], r2.ssrHydrationKey()),
       "middle",
-      r2.ssr(['<div data-hk="', '">Last</div>'], r2.getHydrationKey())
+      r2.ssr(["<div", ">Last</div>"], r2.ssrHydrationKey())
     ]);
     expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`);
     // gather refs
@@ -141,8 +133,8 @@ describe("r.hydrate", () => {
       result = r2.renderToStringAsync(
         async () => {
           const multiExpression = [
-            r2.ssr`<div data-hk="${r2.getHydrationKey()}">First</div>`,
-            r2.ssr`<div data-hk="${r2.getHydrationKey()}">Last</div>`
+            r2.ssr`<div${r2.ssrHydrationKey()}>First</div>`,
+            r2.ssr`<div${r2.ssrHydrationKey()}>Last</div>`
           ];
           await new Promise(r => setTimeout(r, 20));
           return multiExpression;
@@ -154,5 +146,20 @@ describe("r.hydrate", () => {
       errored = true;
     }
     expect(errored).toBe(true);
+  });
+
+  it("skips hydrating simple text", () => {
+    rendered = r2.renderToString(() =>
+      r2.createComponent(r2.NoHydration, {
+        get children() {
+          return r2.ssr(
+            ["<span", "><!--#-->", "<!--/--> John</span>"],
+            r2.ssrHydrationKey(),
+            r2.escape("Hi")
+          );
+        }
+      })
+    );
+    expect(rendered).toBe(`<span><!--#-->Hi<!--/--> John</span>`);
   });
 });

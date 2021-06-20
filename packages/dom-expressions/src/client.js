@@ -435,6 +435,11 @@ export function getHydrationKey() {
   return `${hydrate.id}${hydrate.count++}`;
 }
 
+// Components
 export function HydrationScript() {
   return;
+}
+
+export function NoHydration(props) {
+  return sharedConfig.context ? undefined : props.children;
 }

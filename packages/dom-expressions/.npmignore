@@ -1,5 +1,6 @@
 test/
 coverage/
+assets/
 .travis.yml
 *.config.js
 hydrationScripts/

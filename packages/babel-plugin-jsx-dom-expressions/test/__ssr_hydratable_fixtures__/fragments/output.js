@@ -1,30 +1,30 @@
 import { createComponent as _$createComponent } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
-import { getHydrationKey as _$getHydrationKey } from "r-server";
-const _tmpl$ = ['<div data-hk="', '">First</div>'],
-  _tmpl$2 = ['<div data-hk="', '">Last</div>'],
-  _tmpl$3 = ['<div data-hk="', '" id="', '">First</div>'],
-  _tmpl$4 = ['<div data-hk="', '" id="', '">Last</div>'],
-  _tmpl$5 = ['<div data-hk="', '"></div>'];
-const multiStatic = [_$ssr(_tmpl$, _$getHydrationKey()), _$ssr(_tmpl$2, _$getHydrationKey())];
+import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
+const _tmpl$ = ["<div", ">First</div>"],
+  _tmpl$2 = ["<div", ">Last</div>"],
+  _tmpl$3 = ["<div", ' id="', '">First</div>'],
+  _tmpl$4 = ["<div", ' id="', '">Last</div>'],
+  _tmpl$5 = ["<div", "></div>"];
+const multiStatic = [_$ssr(_tmpl$, _$ssrHydrationKey()), _$ssr(_tmpl$2, _$ssrHydrationKey())];
 const multiExpression = [
-  _$ssr(_tmpl$, _$getHydrationKey()),
+  _$ssr(_tmpl$, _$ssrHydrationKey()),
   inserted,
-  _$ssr(_tmpl$2, _$getHydrationKey()),
+  _$ssr(_tmpl$2, _$ssrHydrationKey()),
   "After"
 ];
 const multiDynamic = [
-  _$ssr(_tmpl$3, _$getHydrationKey(), _$escape(state.first, true)),
+  _$ssr(_tmpl$3, _$ssrHydrationKey(), _$escape(state.first, true)),
   state.inserted,
-  _$ssr(_tmpl$4, _$getHydrationKey(), _$escape(state.last, true)),
+  _$ssr(_tmpl$4, _$ssrHydrationKey(), _$escape(state.last, true)),
   "After"
 ];
 const singleExpression = inserted;
 const singleDynamic = inserted();
-const firstStatic = [inserted, _$ssr(_tmpl$5, _$getHydrationKey())];
-const firstDynamic = [inserted(), _$ssr(_tmpl$5, _$getHydrationKey())];
-const firstComponent = [_$createComponent(Component, {}), _$ssr(_tmpl$5, _$getHydrationKey())];
-const lastStatic = [_$ssr(_tmpl$5, _$getHydrationKey()), inserted];
-const lastDynamic = [_$ssr(_tmpl$5, _$getHydrationKey()), inserted()];
-const lastComponent = [_$ssr(_tmpl$5, _$getHydrationKey()), _$createComponent(Component, {})];
+const firstStatic = [inserted, _$ssr(_tmpl$5, _$ssrHydrationKey())];
+const firstDynamic = [inserted(), _$ssr(_tmpl$5, _$ssrHydrationKey())];
+const firstComponent = [_$createComponent(Component, {}), _$ssr(_tmpl$5, _$ssrHydrationKey())];
+const lastStatic = [_$ssr(_tmpl$5, _$ssrHydrationKey()), inserted];
+const lastDynamic = [_$ssr(_tmpl$5, _$ssrHydrationKey()), inserted()];
+const lastComponent = [_$ssr(_tmpl$5, _$ssrHydrationKey()), _$createComponent(Component, {})];
