@@ -37,3 +37,19 @@ const template14 = <Comp render={state.dynamic && good()} />;
 const template15 = <Comp render={state.dynamic && good} />;
 
 const template16 = <Comp render={state.dynamic || good()} />;
+
+const template17 = <Comp render={state.dynamic ? <Comp/> : <Comp/>} />;
+
+const template18 = <Comp>{state.dynamic ? <Comp/> : <Comp/>}</Comp>;
+
+const template19 = <div innerHTML={state.dynamic ? <Comp/> : <Comp/>} />;
+
+const template20 = <div>{state.dynamic ? <Comp/> : <Comp/>}</div>;
+
+const template21 = <Comp render={state?.dynamic ? "a" : "b"} />;
+
+const template22 = <Comp>{state?.dynamic ? "a" : "b"}</Comp>;
+
+const template23 = <div innerHTML={state?.dynamic ? "a" : "b"} />;
+
+const template24 = <div>{state?.dynamic ? "a" : "b"}</div>;

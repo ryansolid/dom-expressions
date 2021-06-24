@@ -235,3 +235,31 @@ const template20 = (() => {
 
   return _el$13;
 })();
+
+const template21 = _$createComponent(Comp, {
+  get render() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template22 = _$createComponent(Comp, {
+  get children() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template23 = (() => {
+  const _el$14 = _tmpl$.cloneNode(true);
+
+  _$effect(() => (_el$14.innerHTML = state?.dynamic ? "a" : "b"));
+
+  return _el$14;
+})();
+
+const template24 = (() => {
+  const _el$15 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$15, () => (state?.dynamic ? "a" : "b"));
+
+  return _el$15;
+})();

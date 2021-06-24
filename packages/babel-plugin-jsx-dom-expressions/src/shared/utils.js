@@ -67,7 +67,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   }
   if (
     (checkCallExpressions && t.isCallExpression(expr)) ||
-    (checkMember && t.isMemberExpression(expr)) ||
+    (checkMember && (t.isMemberExpression(expr) || t.isOptionalMemberExpression(expr))) ||
     (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr)))
   )
     return true;
@@ -81,6 +81,9 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
       checkCallExpressions && (dynamic = true) && p.stop();
     },
     MemberExpression(p) {
+      checkMember && (dynamic = true) && p.stop();
+    },
+    OptionalMemberExpression(p) {
       checkMember && (dynamic = true) && p.stop();
     },
     JSXElement(p) {

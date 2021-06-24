@@ -60,3 +60,41 @@ const template16 = _$createComponent(Comp, {
     return state.dynamic || good();
   }
 });
+
+const template17 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+  }
+});
+
+const template18 = _$createComponent(Comp, {
+  get children() {
+    return state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+  }
+});
+
+const template19 = _$ssr(
+  _tmpl$,
+  state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})
+);
+
+const template20 = _$ssr(
+  _tmpl$,
+  state.dynamic ? _$escape(_$createComponent(Comp, {})) : _$escape(_$createComponent(Comp, {}))
+);
+
+const template21 = _$createComponent(Comp, {
+  get render() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template22 = _$createComponent(Comp, {
+  get children() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template23 = _$ssr(_tmpl$, state?.dynamic ? "a" : "b");
+
+const template24 = _$ssr(_tmpl$, state?.dynamic ? "a" : "b");
