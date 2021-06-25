@@ -307,6 +307,7 @@ function transformAttributes(path, results) {
         setAttr(results, key, value.expression, isSVG);
       }
     } else {
+      if (key === "$ServerOnly") return;
       if (t.isJSXExpressionContainer(value)) value = value.expression;
       key = toAttribute(key, isSVG);
       appendToTemplate(results.template, ` ${key}`);
