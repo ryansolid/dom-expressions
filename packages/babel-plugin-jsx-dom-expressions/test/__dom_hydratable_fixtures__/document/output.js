@@ -1,27 +1,27 @@
-import { template as _$template } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { getNextMatch as _$getNextMatch } from "r-dom";
+import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
-
-const _tmpl$ = _$template(
-  `<html lang="en"><head><title>🔥 Blazing 🔥</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="/styles.css"><script></script></head><body><div></div></body></html>`,
-  15
-);
+import { createComponent as _$createComponent } from "r-dom";
 
 const template = (() => {
-  const _el$ = _$getNextElement(_tmpl$),
+  const _el$ = _$getNextElement(),
     _el$2 = _$getNextMatch(_el$.firstChild, "head"),
     _el$3 = _el$2.firstChild,
     _el$4 = _el$3.nextSibling,
     _el$5 = _el$4.nextSibling,
     _el$6 = _el$5.nextSibling,
     _el$7 = _el$6.nextSibling,
-    _el$8 = _$getNextMatch(_el$2.nextSibling, "body"),
-    _el$9 = _el$8.firstChild;
+    [_el$8, _co$] = _$getNextMarker(_el$7.nextSibling),
+    _el$9 = _$getNextMatch(_el$2.nextSibling, "body"),
+    _el$10 = _el$9.firstChild,
+    _el$12 = _el$10.nextSibling,
+    [_el$13, _co$2] = _$getNextMarker(_el$12.nextSibling),
+    _el$11 = _el$13.nextSibling;
 
-  _el$7.innerHTML = script;
+  _$insert(_el$2, _$createComponent(Assets, {}), _el$8, _co$);
 
-  _$insert(_el$9, test, undefined, Array.prototype.slice.call(_el$9.childNodes, 0));
+  _$insert(_el$9, _$createComponent(App, {}), _el$13, _co$2);
 
   return _el$;
 })();

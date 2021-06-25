@@ -54,6 +54,7 @@ export namespace JSX {
     classList?: {
       [k: string]: boolean | undefined;
     };
+    $ServerOnly?: boolean;
   }
   interface Directives {}
   interface ExplicitProperties {}

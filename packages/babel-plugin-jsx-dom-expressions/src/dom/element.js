@@ -36,6 +36,7 @@ export function transformElement(path, info) {
       isSVG: wrapSVG,
       tagName
     };
+  if (tagName === "html" && config.hydratable) results.skipTemplate = true;
   if (wrapSVG) results.template = "<svg>" + results.template;
   if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
   transformAttributes(path, results);
@@ -511,6 +512,10 @@ function transformAttributes(path, results) {
           );
         }
       } else {
+        if (config.hydratable && key === "$ServerOnly") {
+          results.skipTemplate = true;
+          return;
+        }
         if (t.isJSXExpressionContainer(value)) value = value.expression;
         key = Aliases[key] || key;
         if (value && ChildProperties.has(key)) {

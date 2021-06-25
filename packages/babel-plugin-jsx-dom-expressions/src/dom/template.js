@@ -60,29 +60,28 @@ function registerTemplate(path, results) {
   const { hydratable } = config;
   let decl;
   if (results.template.length) {
-    const templates =
-      path.scope.getProgramParent().data.templates ||
-      (path.scope.getProgramParent().data.templates = []);
     let templateDef, templateId;
-    if ((templateDef = templates.find(t => t.template === results.template))) {
-      templateId = templateDef.id;
-    } else {
-      templateId = path.scope.generateUidIdentifier("tmpl$");
-      templates.push({
-        id: templateId,
-        template: results.template,
-        elementCount: results.template.split("<").length - 1,
-        isSVG: results.isSVG
-      });
+    if (!results.skipTemplate) {
+      const templates =
+        path.scope.getProgramParent().data.templates ||
+        (path.scope.getProgramParent().data.templates = []);
+      if ((templateDef = templates.find(t => t.template === results.template))) {
+        templateId = templateDef.id;
+      } else {
+        templateId = path.scope.generateUidIdentifier("tmpl$");
+        templates.push({
+          id: templateId,
+          template: results.template,
+          elementCount: results.template.split("<").length - 1,
+          isSVG: results.isSVG
+        });
+      }
     }
     hydratable && registerImportMethod(path, "getNextElement");
     decl = t.variableDeclarator(
       results.id,
       hydratable
-        ? t.callExpression(
-            t.identifier("_$getNextElement"),
-            [templateId]
-          )
+        ? t.callExpression(t.identifier("_$getNextElement"), templateId ? [templateId] : [])
         : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
             t.booleanLiteral(true)
           ])
@@ -108,18 +107,12 @@ function wrapDynamics(path, dynamics) {
       t.callExpression(t.identifier(effectWrapperId), [
         t.arrowFunctionExpression(
           prevValue ? [prevValue] : [],
-          setAttr(
-            path,
-            dynamics[0].elem,
-            dynamics[0].key,
-            dynamics[0].value,
-            {
-              isSVG: dynamics[0].isSVG,
-              isCE: dynamics[0].isCE,
-              dynamic: true,
-              prevId: prevValue
-            }
-          )
+          setAttr(path, dynamics[0].elem, dynamics[0].key, dynamics[0].value, {
+            isSVG: dynamics[0].isSVG,
+            isCE: dynamics[0].isCE,
+            dynamic: true,
+            prevId: prevValue
+          })
         )
       ])
     );
