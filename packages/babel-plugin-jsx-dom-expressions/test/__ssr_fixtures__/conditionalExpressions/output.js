@@ -98,3 +98,24 @@ const template22 = _$createComponent(Comp, {
 const template23 = _$ssr(_tmpl$, state?.dynamic ? "a" : "b");
 
 const template24 = _$ssr(_tmpl$, state?.dynamic ? "a" : "b");
+
+const template25 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template26 = _$createComponent(Comp, {
+  get children() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template27 = _$ssr(_tmpl$, state.dynamic ?? _$createComponent(Comp, {}));
+
+const template28 = _$ssr(_tmpl$, _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {})));
+
+const template29 = _$ssr(
+  _tmpl$,
+  (thing() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3())
+);

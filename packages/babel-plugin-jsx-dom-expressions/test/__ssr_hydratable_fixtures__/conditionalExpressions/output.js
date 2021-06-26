@@ -79,3 +79,69 @@ const template16 = _$createComponent(Comp, {
     return state.dynamic || good();
   }
 });
+
+const template17 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+  }
+});
+
+const template18 = _$createComponent(Comp, {
+  get children() {
+    return state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+  }
+});
+
+const template19 = _$ssr(
+  _tmpl$,
+  _$ssrHydrationKey(),
+  state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})
+);
+
+const template20 = _$ssr(
+  _tmpl$,
+  _$ssrHydrationKey(),
+  state.dynamic ? _$escape(_$createComponent(Comp, {})) : _$escape(_$createComponent(Comp, {}))
+);
+
+const template21 = _$createComponent(Comp, {
+  get render() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template22 = _$createComponent(Comp, {
+  get children() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template23 = _$ssr(_tmpl$, _$ssrHydrationKey(), state?.dynamic ? "a" : "b");
+
+const template24 = _$ssr(_tmpl$, _$ssrHydrationKey(), state?.dynamic ? "a" : "b");
+
+const template25 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template26 = _$createComponent(Comp, {
+  get children() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template27 = _$ssr(_tmpl$, _$ssrHydrationKey(), state.dynamic ?? _$createComponent(Comp, {}));
+
+const template28 = _$ssr(
+  _tmpl$,
+  _$ssrHydrationKey(),
+  _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {}))
+);
+
+const template29 = _$ssr(
+  _tmpl$,
+  _$ssrHydrationKey(),
+  (thing() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3())
+);

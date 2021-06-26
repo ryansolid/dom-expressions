@@ -111,7 +111,7 @@ const template9 = (() => {
   _$insert(
     _el$9,
     (() => {
-      const _c$6 = _$memo(() => state.dynamic, true);
+      const _c$6 = _$memo(() => !!state.dynamic, true);
 
       return () => (_c$6() && good()) || bad;
     })()
@@ -182,31 +182,27 @@ const template15 = _$createComponent(Comp, {
   }
 });
 
-const template16 = (() => {
-  const _c$11 = _$memo(() => state.dynamic, true);
-
-  return _$createComponent(Comp, {
-    get render() {
-      return _c$11() || good();
-    }
-  });
-})();
+const template16 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic || good();
+  }
+});
 
 const template17 = (() => {
-  const _c$12 = _$memo(() => !!state.dynamic, true);
+  const _c$11 = _$memo(() => !!state.dynamic, true);
 
   return _$createComponent(Comp, {
     get render() {
-      return _c$12() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+      return _c$11() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
     }
   });
 })();
 
 const template18 = _$createComponent(Comp, {
   get children() {
-    const _c$13 = _$memo(() => !!state.dynamic, true);
+    const _c$12 = _$memo(() => !!state.dynamic, true);
 
-    return () => (_c$13() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+    return () => (_c$12() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
   }
 });
 
@@ -227,9 +223,9 @@ const template20 = (() => {
   _$insert(
     _el$13,
     (() => {
-      const _c$14 = _$memo(() => !!state.dynamic, true);
+      const _c$13 = _$memo(() => !!state.dynamic, true);
 
-      return () => (_c$14() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+      return () => (_c$13() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
     })()
   );
 
@@ -262,4 +258,47 @@ const template24 = (() => {
   _$insert(_el$15, () => (state?.dynamic ? "a" : "b"));
 
   return _el$15;
+})();
+
+const template25 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template26 = _$createComponent(Comp, {
+  get children() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template27 = (() => {
+  const _el$16 = _tmpl$.cloneNode(true);
+
+  _$effect(() => (_el$16.innerHTML = state.dynamic ?? _$createComponent(Comp, {})));
+
+  return _el$16;
+})();
+
+const template28 = (() => {
+  const _el$17 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$17, () => state.dynamic ?? _$createComponent(Comp, {}));
+
+  return _el$17;
+})();
+
+const template29 = (() => {
+  const _el$18 = _tmpl$.cloneNode(true);
+
+  _$insert(
+    _el$18,
+    (() => {
+      const _c$14 = _$memo(() => !!thing(), true);
+
+      return () => (_c$14() && thing1()) ?? thing2() ?? thing3();
+    })()
+  );
+
+  return _el$18;
 })();

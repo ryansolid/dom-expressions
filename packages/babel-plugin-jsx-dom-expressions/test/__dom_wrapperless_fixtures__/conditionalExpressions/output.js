@@ -150,3 +150,65 @@ const template20 = (() => {
 
   return _el$13;
 })();
+
+const template21 = _$createComponent(Comp, {
+  get render() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template22 = _$createComponent(Comp, {
+  get children() {
+    return state?.dynamic ? "a" : "b";
+  }
+});
+
+const template23 = (() => {
+  const _el$14 = _tmpl$.cloneNode(true);
+
+  _el$14.innerHTML = state?.dynamic ? "a" : "b";
+  return _el$14;
+})();
+
+const template24 = (() => {
+  const _el$15 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$15, () => (state?.dynamic ? "a" : "b"));
+
+  return _el$15;
+})();
+
+const template25 = _$createComponent(Comp, {
+  get render() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template26 = _$createComponent(Comp, {
+  get children() {
+    return state.dynamic ?? _$createComponent(Comp, {});
+  }
+});
+
+const template27 = (() => {
+  const _el$16 = _tmpl$.cloneNode(true);
+
+  _el$16.innerHTML = state.dynamic ?? _$createComponent(Comp, {});
+  return _el$16;
+})();
+
+const template28 = (() => {
+  const _el$17 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$17, () => state.dynamic ?? _$createComponent(Comp, {}));
+
+  return _el$17;
+})();
+
+const template29 = (() => {
+  const _el$18 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$18, () => (thing() && thing1()) ?? thing2() ?? thing3());
+
+  return _el$18;
+})();

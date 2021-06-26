@@ -183,17 +183,17 @@ export function transformCondition(path, deep) {
   } else if (t.isLogicalExpression(expr)) {
     let nextPath = path;
     // handle top-level or, ie cond && <A/> || <B/>
-    if (expr.operator === "||" && t.isLogicalExpression(expr.left)) {
+    while (nextPath.node.operator !== "&&" && t.isLogicalExpression(expr.left)) {
       nextPath = nextPath.get("left");
     }
-    isDynamic(nextPath.get("right"), { checkTags: true }) &&
+    nextPath.node.operator === "&&" && isDynamic(nextPath.get("right"), { checkTags: true }) &&
       (dTest = isDynamic(nextPath.get("left"), {
         checkMember: true
       }));
     if (dTest) {
       cond = nextPath.node.left;
       id = path.scope.generateUidIdentifier("_c$");
-      if (expr.operator !== "||" && !t.isBinaryExpression(cond))
+      if (nextPath.node.operator === "&&" && !t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       nextPath.node.left = t.callExpression(id, []);
     }
