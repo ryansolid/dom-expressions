@@ -2,7 +2,15 @@ import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
 import config from "../config";
 
-export const reservedNameSpaces = new Set(["class", "on", "oncapture", "style", "use", "prop", "attr"]);
+export const reservedNameSpaces = new Set([
+  "class",
+  "on",
+  "oncapture",
+  "style",
+  "use",
+  "prop",
+  "attr"
+]);
 
 export function registerImportMethod(path, name) {
   const imports =
@@ -186,14 +194,15 @@ export function transformCondition(path, deep) {
     while (nextPath.node.operator !== "&&" && t.isLogicalExpression(expr.left)) {
       nextPath = nextPath.get("left");
     }
-    nextPath.node.operator === "&&" && isDynamic(nextPath.get("right"), { checkTags: true }) &&
+    nextPath.node.operator === "&&" &&
+      isDynamic(nextPath.get("right"), { checkTags: true }) &&
       (dTest = isDynamic(nextPath.get("left"), {
         checkMember: true
       }));
     if (dTest) {
       cond = nextPath.node.left;
       id = path.scope.generateUidIdentifier("_c$");
-      if (nextPath.node.operator === "&&" && !t.isBinaryExpression(cond))
+      if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       nextPath.node.left = t.callExpression(id, []);
     }
@@ -207,7 +216,7 @@ export function transformCondition(path, deep) {
             ? t.callExpression(t.identifier(`_$${config.memoWrapper}`), [
                 t.arrowFunctionExpression([], cond),
                 t.booleanLiteral(true)
-            ])
+              ])
             : t.arrowFunctionExpression([], cond)
         )
       ]),
