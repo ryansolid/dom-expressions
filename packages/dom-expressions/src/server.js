@@ -68,7 +68,7 @@ export function pipeToNodeWritable(code, writable, options = {}) {
   sharedConfig.context = Object.assign({ id: "", count: 0, streaming: true, suspense: {}, meta: {} }, options);
   sharedConfig.context.writeResource = (id, p) => {
     count++;
-    queueMicrotask(() =>
+    Promise.resolve().then(() =>
       buffer.write(
         `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HYDRATION.startResource("${id}")</script>`
       )
@@ -111,7 +111,7 @@ export function pipeToWritable(code, writable, options = {}) {
       setTimeout(checkEnd);
     },
     write(c) {
-      writer.write(encoder(c));
+      writer.write(encoder.encode(c));
     },
     abort() {
       completed = count;
@@ -127,7 +127,7 @@ export function pipeToWritable(code, writable, options = {}) {
 
   sharedConfig.context.writeResource = (id, p) => {
     count++;
-    queueMicrotask(() =>
+    Promise.resolve().then(() =>
       buffer.write(
         encoder.encode(
           `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HYDRATION.startResource("${id}")</script>`
