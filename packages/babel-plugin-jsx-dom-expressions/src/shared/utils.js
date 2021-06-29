@@ -191,7 +191,7 @@ export function transformCondition(path, deep) {
   } else if (t.isLogicalExpression(expr)) {
     let nextPath = path;
     // handle top-level or, ie cond && <A/> || <B/>
-    while (nextPath.node.operator !== "&&" && t.isLogicalExpression(expr.left)) {
+    while (nextPath.node.operator !== "&&" && t.isLogicalExpression(nextPath.node.left)) {
       nextPath = nextPath.get("left");
     }
     nextPath.node.operator === "&&" &&

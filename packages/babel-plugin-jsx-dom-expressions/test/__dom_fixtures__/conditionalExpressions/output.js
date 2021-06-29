@@ -302,3 +302,11 @@ const template29 = (() => {
 
   return _el$18;
 })();
+
+const template30 = (() => {
+  const _el$19 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$19, () => thing() || thing1() || thing2());
+
+  return _el$19;
+})();

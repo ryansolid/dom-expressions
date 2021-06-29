@@ -119,3 +119,5 @@ const template29 = _$ssr(
   _tmpl$,
   (thing() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3())
 );
+
+const template30 = _$ssr(_tmpl$, _$escape(thing()) || _$escape(thing1()) || _$escape(thing2()));

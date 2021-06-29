@@ -57,3 +57,5 @@ const template27 = <div innerHTML={state.dynamic ?? <Comp />} />;
 const template28 = <div>{state.dynamic ?? <Comp />}</div>;
 
 const template29 = <div>{(thing() && thing1()) ?? thing2() ?? thing3()}</div>;
+
+const template30 = <div>{thing() || thing1() || thing2()}</div>;
