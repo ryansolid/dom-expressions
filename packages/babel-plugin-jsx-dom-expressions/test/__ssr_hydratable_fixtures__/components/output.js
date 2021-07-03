@@ -62,13 +62,20 @@ const template = props => {
       )
     ),
     _$escape(
-      _$createComponent(Child, {
-        name: "Jason",
-
-        get children() {
-          return _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(content));
-        }
-      })
+      _$createComponent(
+        Child,
+        _$mergeProps(
+          {
+            name: "Jason"
+          },
+          dynamicSpread(),
+          {
+            get children() {
+              return _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(content));
+            }
+          }
+        )
+      )
     ),
     _$escape(
       _$createComponent(Context.Consumer, {
@@ -248,6 +255,8 @@ class Template13 {
       get prop() {
         return _self$.something;
       },
+
+      onClick: () => this.shouldStay,
 
       get children() {
         return _$createComponent(Nested, {

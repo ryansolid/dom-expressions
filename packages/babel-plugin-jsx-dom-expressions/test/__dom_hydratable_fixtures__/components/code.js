@@ -15,7 +15,7 @@ const template = props => {
       <Child name="John" {...props} ref={childRef} booleanProperty>
         <div>From Parent</div>
       </Child>
-      <Child name="Jason" ref={props.ref}>
+      <Child name="Jason" {...dynamicSpread()} ref={props.ref}>
         {/* Comment Node */}
         <div>{content}</div>
       </Child>
@@ -115,7 +115,7 @@ const template12 = (
 
 class Template13 {
   render() {
-    <Component prop={this.something}>
+    <Component prop={this.something} onClick={() => this.shouldStay}>
       <Nested prop={this.data}>{this.content}</Nested>
     </Component>;
   }

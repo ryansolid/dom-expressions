@@ -37,7 +37,10 @@ export function transformThis(path) {
     ThisExpression(path) {
       thisId || (thisId = path.scope.generateUidIdentifier("self$"));
       path.replaceWith(thisId);
-    }
+    },
+    Function(p) {
+      p.skip();
+    },
   });
   return node => {
     if (thisId) {

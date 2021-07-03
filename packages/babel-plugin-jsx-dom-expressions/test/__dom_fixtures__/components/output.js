@@ -345,6 +345,8 @@ class Template13 {
         return _self$.something;
       },
 
+      onClick: () => this.shouldStay,
+
       get children() {
         return _$createComponent(Nested, {
           get prop() {

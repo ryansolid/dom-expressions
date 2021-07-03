@@ -89,22 +89,29 @@ const template = props => {
 
     _$insert(
       _el$6,
-      _$createComponent(Child, {
-        name: "Jason",
+      _$createComponent(
+        Child,
+        _$mergeProps(
+          {
+            name: "Jason"
+          },
+          dynamicSpread(),
+          {
+            ref(r$) {
+              const _ref$3 = props.ref;
+              typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
+            },
 
-        ref(r$) {
-          const _ref$3 = props.ref;
-          typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
-        },
+            get children() {
+              const _el$8 = _$getNextElement(_tmpl$2);
 
-        get children() {
-          const _el$8 = _$getNextElement(_tmpl$2);
+              _$insert(_el$8, content, undefined, Array.prototype.slice.call(_el$8.childNodes, 0));
 
-          _$insert(_el$8, content, undefined, Array.prototype.slice.call(_el$8.childNodes, 0));
-
-          return _el$8;
-        }
-      }),
+              return _el$8;
+            }
+          }
+        )
+      ),
       _el$12,
       _co$3
     );
@@ -398,6 +405,8 @@ class Template13 {
       get prop() {
         return _self$.something;
       },
+
+      onClick: () => this.shouldStay,
 
       get children() {
         return _$createComponent(Nested, {
