@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { createComponent as _$createComponent } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
@@ -10,8 +11,12 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
   _tmpl$5 = _$template(`<span><!#><!/> John</span>`, 4),
   _tmpl$6 = _$template(`<span><!#><!/> <!#><!/></span>`, 6),
   _tmpl$7 = _$template(`<span> <!#><!/> <!#><!/> </span>`, 6),
-  _tmpl$8 = _$template(`<span>Hello</span>`, 2),
-  _tmpl$9 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2);
+  _tmpl$8 = _$template(`<span> <!#><!/><!#><!/> </span>`, 6),
+  _tmpl$9 = _$template(`<span>Hello</span>`, 2),
+  _tmpl$10 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2),
+  _tmpl$11 = _$template(`<span>Hi&lt;script>alert();&lt;/script></span>`, 2),
+  _tmpl$12 = _$template(`<span>Hello World!</span>`, 2),
+  _tmpl$13 = _$template(`<span>4 + 5 = 9</span>`, 2);
 
 const trailing = _$getNextElement(_tmpl$);
 
@@ -77,10 +82,44 @@ const multiExprSpaced = (() => {
 })();
 /* prettier-ignore */
 
-const multiLine = _$getNextElement(_tmpl$8);
+const multiExprTogether = (() => {
+  const _el$26 = _$getNextElement(_tmpl$8),
+        _el$27 = _el$26.firstChild,
+        _el$29 = _el$27.nextSibling,
+        [_el$30, _co$7] = _$getNextMarker(_el$29.nextSibling),
+        _el$31 = _el$30.nextSibling,
+        [_el$32, _co$8] = _$getNextMarker(_el$31.nextSibling),
+        _el$28 = _el$32.nextSibling;
+
+  _$insert(_el$26, greeting, _el$30, _co$7);
+
+  _$insert(_el$26, name, _el$32, _co$8);
+
+  return _el$26;
+})();
+/* prettier-ignore */
+
+const multiLine = _$getNextElement(_tmpl$9);
 /* prettier-ignore */
 
 const multiLineTrailingSpace = _$getNextElement(_tmpl$3);
 /* prettier-ignore */
 
-const escape = _$getNextElement(_tmpl$9);
+const multiLineNoTrailingSpace = _$getNextElement(_tmpl$3);
+/* prettier-ignore */
+
+const escape = _$getNextElement(_tmpl$10);
+
+const escape2 = _$createComponent(Comp, {
+  children: "<Hi> "
+});
+
+const injection = _$getNextElement(_tmpl$11);
+
+let value = "World";
+
+const evaluated = _$getNextElement(_tmpl$12);
+
+let number = 4 + 5;
+
+const evaluatedNonString = _$getNextElement(_tmpl$13);

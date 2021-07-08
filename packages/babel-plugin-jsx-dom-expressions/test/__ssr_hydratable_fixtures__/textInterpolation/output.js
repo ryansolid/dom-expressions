@@ -1,3 +1,4 @@
+import { createComponent as _$createComponent } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
@@ -10,7 +11,10 @@ const _tmpl$ = ["<span", ">Hello </span>"],
   _tmpl$7 = ["<span", "> <!--#-->", "<!--/--> <!--#-->", "<!--/--> </span>"],
   _tmpl$8 = ["<span", "> <!--#-->", "<!--/--><!--#-->", "<!--/--> </span>"],
   _tmpl$9 = ["<span", ">Hello</span>"],
-  _tmpl$10 = ["<span", ">&nbsp;&lt;Hi&gt;&nbsp;</span>"];
+  _tmpl$10 = ["<span", ">&nbsp;&lt;Hi&gt;&nbsp;</span>"],
+  _tmpl$11 = ["<span", ">Hi&lt;script>alert();&lt;/script></span>"],
+  _tmpl$12 = ["<span", ">Hello World!</span>"],
+  _tmpl$13 = ["<span", ">4 + 5 = 9</span>"];
 
 const trailing = _$ssr(_tmpl$, _$ssrHydrationKey());
 
@@ -39,4 +43,21 @@ const multiLine = _$ssr(_tmpl$9, _$ssrHydrationKey());
 const multiLineTrailingSpace = _$ssr(_tmpl$3, _$ssrHydrationKey());
 /* prettier-ignore */
 
+const multiLineNoTrailingSpace = _$ssr(_tmpl$3, _$ssrHydrationKey());
+/* prettier-ignore */
+
 const escape = _$ssr(_tmpl$10, _$ssrHydrationKey());
+
+const escape2 = _$createComponent(Comp, {
+  children: "<Hi> "
+});
+
+const injection = _$ssr(_tmpl$11, _$ssrHydrationKey());
+
+let value = "World";
+
+const evaluated = _$ssr(_tmpl$12, _$ssrHydrationKey());
+
+let number = 4 + 5;
+
+const evaluatedNonString = _$ssr(_tmpl$13, _$ssrHydrationKey());

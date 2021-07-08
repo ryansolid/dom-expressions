@@ -30,6 +30,24 @@ const multiLineTrailingSpace = <span>
 </span>
 
 /* prettier-ignore */
+const multiLineNoTrailingSpace = <span>
+  Hello
+  John
+</span>
+
+/* prettier-ignore */
 const escape = <span>
   &nbsp;&lt;Hi&gt;&nbsp;
 </span>
+
+const escape2 = <Comp>
+  &nbsp;&lt;Hi&gt;&nbsp;
+</Comp>
+
+const injection = <span>Hi{"<script>alert();</script>"}</span>
+
+let value = "World";
+const evaluated = <span>Hello {value + "!"}</span>
+
+let number = 4 + 5;
+const evaluatedNonString = <span>4 + 5 = {number}</span>

@@ -1,3 +1,4 @@
+import { createComponent as _$createComponent } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
 const _tmpl$ = "<span>Hello </span>",
@@ -11,7 +12,8 @@ const _tmpl$ = "<span>Hello </span>",
   _tmpl$9 = "<span>Hello</span>",
   _tmpl$10 = "<span>&nbsp;&lt;Hi&gt;&nbsp;</span>",
   _tmpl$11 = "<span>Hi&lt;script>alert();&lt;/script></span>",
-  _tmpl$12 = "<span>Hello World!</span>";
+  _tmpl$12 = "<span>Hello World!</span>",
+  _tmpl$13 = "<span>4 + 5 = 9</span>";
 
 const trailing = _$ssr(_tmpl$);
 
@@ -45,8 +47,16 @@ const multiLineNoTrailingSpace = _$ssr(_tmpl$3);
 
 const escape = _$ssr(_tmpl$10);
 
+const escape2 = _$createComponent(Comp, {
+  children: "<Hi> "
+});
+
 const injection = _$ssr(_tmpl$11);
 
 let value = "World";
 
 const evaluated = _$ssr(_tmpl$12);
+
+let number = 4 + 5;
+
+const evaluatedNonString = _$ssr(_tmpl$13);

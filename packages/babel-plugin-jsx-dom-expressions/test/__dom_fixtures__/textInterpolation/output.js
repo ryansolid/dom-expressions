@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { createComponent as _$createComponent } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
 const _tmpl$ = _$template(`<span>Hello </span>`, 2),
@@ -91,6 +92,10 @@ const multiLineNoTrailingSpace = _tmpl$3.cloneNode(true);
 /* prettier-ignore */
 
 const escape = _tmpl$8.cloneNode(true);
+
+const escape2 = _$createComponent(Comp, {
+  children: "<Hi> "
+});
 
 const injection = _tmpl$9.cloneNode(true);
 

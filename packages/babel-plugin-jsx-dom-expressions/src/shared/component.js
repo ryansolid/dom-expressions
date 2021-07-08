@@ -176,7 +176,7 @@ function transformComponentChildren(children) {
 
   let transformedChildren = filteredChildren.map(path => {
     if (t.isJSXText(path.node)) {
-      return t.stringLiteral(trimWhitespace(path.node.extra.raw));
+      return t.stringLiteral(trimWhitespace(path.node.extra.rawValue));
     } else {
       const child = transformNode(path, {
         topLevel: true,

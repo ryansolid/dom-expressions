@@ -40,7 +40,14 @@ const escape = <span>
   &nbsp;&lt;Hi&gt;&nbsp;
 </span>
 
+const escape2 = <Comp>
+  &nbsp;&lt;Hi&gt;&nbsp;
+</Comp>
+
 const injection = <span>Hi{"<script>alert();</script>"}</span>
 
 let value = "World";
 const evaluated = <span>Hello {value + "!"}</span>
+
+let number = 4 + 5;
+const evaluatedNonString = <span>4 + 5 = {number}</span>
