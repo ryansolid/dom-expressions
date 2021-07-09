@@ -10,7 +10,7 @@ export {
   DelegatedEvents
 } from "./constants";
 
-const $$EVENTS = Symbol("delegated-events");
+const $$EVENTS = "_$DX_DELEGATE";
 
 export { effect, memo, getOwner, createComponent };
 
