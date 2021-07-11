@@ -297,7 +297,7 @@ function eventHandler(e) {
 
   while (node !== null) {
     const handler = node[key];
-    if (handler) {
+    if (handler && !node.disabled) {
       const data = node[`${key}Data`];
       data !== undefined ? handler(data, e) : handler(e);
       if (e.cancelBubble) return;
