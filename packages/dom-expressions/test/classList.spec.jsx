@@ -38,4 +38,12 @@ describe("Test classList binding", () => {
       expect(div.className).toBe("");
     });
   });
+
+  test("With leading/trailing spaces", () => {
+    let div;
+    S.root(() => {
+      div = <div classList={{ " color ": S.data(true) }} />;
+      expect(div.className).toBe("color");
+    });
+  });
 });

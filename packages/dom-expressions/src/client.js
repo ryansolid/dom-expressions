@@ -271,7 +271,7 @@ function toPropertyName(name) {
 }
 
 function toggleClassKey(node, key, value) {
-  const classNames = key.split(/\s+/);
+  const classNames = key.trim().split(/\s+/);
   for (let i = 0, nameLen = classNames.length; i < nameLen; i++)
     node.classList.toggle(classNames[i], value);
 }
