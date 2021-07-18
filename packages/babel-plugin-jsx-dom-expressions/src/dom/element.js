@@ -490,20 +490,18 @@ function transformAttributes(path, results) {
         ) {
           let nextElem = elem;
           if (key === "textContent") {
-            const textId = attribute.scope.generateUidIdentifier("el$");
-            results.exprs.push(
-              t.expressionStatement(
-                t.assignmentExpression(
-                  "=",
-                  t.memberExpression(elem, t.identifier("textContent")),
-                  value.expression
+            nextElem = attribute.scope.generateUidIdentifier("el$");
+            children = t.JSXText(" ");
+            children.extra = { raw: " ", rawValue: " "}
+            results.decl.push(
+              t.variableDeclarator(
+                nextElem,
+                t.memberExpression(
+                  elem,
+                  t.identifier("firstChild")
                 )
-              ),
-              t.variableDeclaration("const", [
-                t.variableDeclarator(textId, t.memberExpression(elem, t.identifier("firstChild")))
-              ])
+              )
             );
-            nextElem = textId;
           }
           results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG, isCE });
         } else {

@@ -8,7 +8,7 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
-  _tmpl$2 = _$template(`<div><div></div><div></div><div></div></div>`, 8),
+  _tmpl$2 = _$template(`<div><div></div><div> </div><div></div></div>`, 8),
   _tmpl$3 = _$template(`<div></div>`, 2),
   _tmpl$4 = _$template(`<input type="checkbox">`, 1);
 
@@ -61,11 +61,10 @@ const template2 = (() => {
   const _el$4 = _$getNextElement(_tmpl$2),
     _el$5 = _el$4.firstChild,
     _el$6 = _el$5.nextSibling,
+    _el$7 = _el$6.firstChild,
     _el$8 = _el$6.nextSibling;
 
   _el$5.textContent = rowId;
-  _el$6.textContent = row.label;
-  const _el$7 = _el$6.firstChild;
   _el$8.innerHTML = "<div/>";
 
   _$effect(() => (_el$7.data = row.label));
