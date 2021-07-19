@@ -1958,6 +1958,7 @@ export namespace JSX {
       | "menuitem"
       | "menuitemcheckbox"
       | "menuitemradio"
+      | "meter"
       | "navigation"
       | "none"
       | "note"
