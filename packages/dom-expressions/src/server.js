@@ -4,7 +4,7 @@ import devalue from "devalue";
 export { createComponent } from "rxcore";
 
 export function renderToString(code, options = {}) {
-  sharedConfig.context = Object.assign({ id: "", count: 0, assets: {} }, options);
+  sharedConfig.context = Object.assign({ id: "", count: 0, assets: [] }, options);
   let html = resolveSSRNode(escape(code()));
   return injectAssets(sharedConfig.context.assets, html);
 }
@@ -17,7 +17,7 @@ export function renderToStringAsync(code, options = {}) {
       count: 0,
       resources: {},
       suspense: {},
-      assets: {},
+      assets: [],
       async: true
     },
     options
@@ -63,7 +63,7 @@ export function pipeToNodeWritable(code, writable, options = {}) {
   };
 
   sharedConfig.context = Object.assign(
-    { id: "", count: 0, streaming: true, suspense: {}, meta: {} },
+    { id: "", count: 0, streaming: true, suspense: {}, assets: [] },
     options
   );
   sharedConfig.context.writeResource = (id, p) => {
@@ -95,7 +95,7 @@ export function pipeToWritable(code, writable, options = {}) {
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
   sharedConfig.context = Object.assign(
-    { id: "", count: 0, streaming: true, suspense: {}, meta: {} },
+    { id: "", count: 0, streaming: true, suspense: {}, assets: [] },
     options
   );
   let count = 0,
@@ -155,17 +155,17 @@ export function pipeToWritable(code, writable, options = {}) {
 
 // components
 export function Assets(props) {
-  sharedConfig.context.assets[props.key] = () => NoHydration({
+  sharedConfig.context.assets.push(() => NoHydration({
     get children() {
       return resolveSSRNode(props.children);
     }
-  });
-  return ssr(`%%${props.key}%%`);
+  }));
+  return ssr(`%%$${sharedConfig.context.assets.length - 1}%%`);
 }
 
 export function HydrationScript() {
-  sharedConfig.context.assets.BOOTSTRAP = generateHydrationScript;
-  return ssr("%%BOOTSTRAP%%");
+  sharedConfig.context.assets.push(generateHydrationScript);
+  return ssr(`%%$${sharedConfig.context.assets.length - 1}%%`);
 }
 
 export function NoHydration(props) {
@@ -346,8 +346,8 @@ export function generateHydrationScript() {
 }
 
 function injectAssets(assets, html) {
-  for (const k in assets) {
-    html = html.replace(`%%${k}%%`, assets[k]());
+  for (let i = 0; i < assets.length; i++) {
+    html = html.replace(`%%$${i}%%`, assets[i]());
   }
   return html;
 }
