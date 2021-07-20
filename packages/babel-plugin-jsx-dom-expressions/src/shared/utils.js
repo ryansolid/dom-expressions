@@ -138,6 +138,9 @@ export function checkLength(children) {
 }
 
 export function trimWhitespace(text) {
+  if (/^[\r\n\s]+$/.test(text)) {
+    return " ";
+  }
   text = text.replace(/\r/g, "");
   if (/\n/g.test(text)) {
     text = text
