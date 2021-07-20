@@ -12,7 +12,7 @@ export {
 
 const $$EVENTS = "_$DX_DELEGATE";
 
-export { effect, memo, getOwner, createComponent };
+export { effect, memo, getOwner, createComponent, Assets as HydrationScript };
 
 export function render(code, element, init) {
   let disposer;
@@ -436,7 +436,7 @@ export function getHydrationKey() {
 }
 
 // Components
-export function HydrationScript() {
+export function Assets() {
   return;
 }
 

@@ -51,3 +51,5 @@ const evaluated = <span>Hello {value + "!"}</span>
 
 let number = 4 + 5;
 const evaluatedNonString = <span>4 + 5 = {number}</span>
+
+const newLineLiteral = <div>{s}{"\n"}d</div>

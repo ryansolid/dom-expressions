@@ -4,33 +4,30 @@ import devalue from "devalue";
 export { createComponent } from "rxcore";
 
 export function renderToString(code, options = {}) {
-  sharedConfig.context = Object.assign({ id: "", count: 0, meta: {} }, options);
+  sharedConfig.context = Object.assign({ id: "", count: 0, assets: {} }, options);
   let html = resolveSSRNode(escape(code()));
-  if (sharedConfig.context.meta.bootstrap) {
-    html = html.replace("%%BOOTSTRAP%%", generateHydrationScript());
-  }
-  return html;
+  return injectAssets(sharedConfig.context.assets, html);
 }
 
 export function renderToStringAsync(code, options = {}) {
   options = { timeoutMs: 30000, ...options };
-  sharedConfig.context = Object.assign({
-    id: "",
-    count: 0,
-    resources: {},
-    suspense: {},
-    meta: {},
-    async: true
-  }, options);
+  const context = (sharedConfig.context = Object.assign(
+    {
+      id: "",
+      count: 0,
+      resources: {},
+      suspense: {},
+      assets: {},
+      async: true
+    },
+    options
+  ));
   const timeout = new Promise((_, reject) =>
     setTimeout(() => reject("renderToString timed out"), options.timeoutMs)
   );
   return Promise.race([asyncWrap(() => escape(code())), timeout]).then(res => {
     let html = resolveSSRNode(res);
-    if (sharedConfig.context.meta.bootstrap) {
-      html = html.replace("%%BOOTSTRAP%%", generateHydrationScript());
-    }
-    return html;
+    return injectAssets(context.assets, html);
   });
 }
 
@@ -65,7 +62,10 @@ export function pipeToNodeWritable(code, writable, options = {}) {
     }
   };
 
-  sharedConfig.context = Object.assign({ id: "", count: 0, streaming: true, suspense: {}, meta: {} }, options);
+  sharedConfig.context = Object.assign(
+    { id: "", count: 0, streaming: true, suspense: {}, meta: {} },
+    options
+  );
   sharedConfig.context.writeResource = (id, p) => {
     count++;
     Promise.resolve().then(() =>
@@ -84,9 +84,7 @@ export function pipeToNodeWritable(code, writable, options = {}) {
   };
 
   let html = resolveSSRNode(escape(code()));
-  if (sharedConfig.context.meta.bootstrap) {
-    html = html.replace("%%BOOTSTRAP%%", generateHydrationScript());
-  }
+  html = injectAssets(sharedConfig.context.assets, html);
   buffer.write(html);
   onReady(result);
 }
@@ -96,7 +94,10 @@ export function pipeToWritable(code, writable, options = {}) {
   const tmp = [];
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
-  sharedConfig.context = Object.assign({ id: "", count: 0, streaming: true, suspense: {}, meta: {} }, options);
+  sharedConfig.context = Object.assign(
+    { id: "", count: 0, streaming: true, suspense: {}, meta: {} },
+    options
+  );
   let count = 0,
     completed = 0,
     buffer = {
@@ -147,16 +148,23 @@ export function pipeToWritable(code, writable, options = {}) {
   };
 
   let html = resolveSSRNode(escape(code()));
-  if (sharedConfig.context.meta.bootstrap) {
-    html = html.replace("%%BOOTSTRAP%%", generateHydrationScript());
-  }
+  html = injectAssets(sharedConfig.context.assets, html);
   buffer.write(encoder.encode(html));
   onReady(result);
 }
 
 // components
+export function Assets(props) {
+  sharedConfig.context.assets[props.key] = () => NoHydration({
+    get children() {
+      return resolveSSRNode(props.children);
+    }
+  });
+  return ssr(`%%${props.key}%%`);
+}
+
 export function HydrationScript() {
-  sharedConfig.context.meta.bootstrap = true;
+  sharedConfig.context.assets.BOOTSTRAP = generateHydrationScript;
   return ssr("%%BOOTSTRAP%%");
 }
 
@@ -239,7 +247,7 @@ export function ssrBoolean(key, value) {
 }
 
 export function ssrHydrationKey() {
-  const hk = getHydrationKey()
+  const hk = getHydrationKey();
   return hk ? ` data-hk="${hk}"` : "";
 }
 
@@ -335,4 +343,11 @@ export function generateHydrationScript() {
     )};`;
   }
   return s + `</script>`;
+}
+
+function injectAssets(assets, html) {
+  for (const k in assets) {
+    html = html.replace(`%%${k}%%`, assets[k]());
+  }
+  return html;
 }

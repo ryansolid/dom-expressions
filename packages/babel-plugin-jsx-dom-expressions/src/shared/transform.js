@@ -40,7 +40,7 @@ export function transformThis(path) {
     },
     Function(p) {
       p.skip();
-    },
+    }
   });
   return node => {
     if (thisId) {
@@ -67,13 +67,12 @@ export function transformNode(path, info = {}) {
     transformFragmentChildren(path.get("children"), results);
     return results;
   } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path))) {
-    const text = trimWhitespace(
+    const text =
       staticValue !== undefined
         ? !info.doNotEscape
           ? escapeHTML(staticValue.toString())
           : staticValue.toString()
-        : node.extra.raw
-    );
+        : trimWhitespace(node.extra.raw);
     if (!text.length) return null;
     const results = {
       template: text,

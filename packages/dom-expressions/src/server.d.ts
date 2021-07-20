@@ -39,6 +39,7 @@ export function pipeToWritable<T>(
     onComplete?: (r: PipeToWritableResults) => void;
   }
 ): void;
+export function Assets(): JSX.Element;
 export function HydrationScript(): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export function ssr(template: string[] | string, ...nodes: any[]): { t: string };
