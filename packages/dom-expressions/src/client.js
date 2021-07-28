@@ -351,7 +351,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (sharedConfig.context && current.length) return current;
+    if (sharedConfig.context && current && current.length) return current;
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;

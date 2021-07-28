@@ -79,8 +79,8 @@ export namespace JSX {
   interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
     children?: Element;
     innerHTML?: string;
-    innerText?: string;
-    textContent?: string;
+    innerText?: string | number;
+    textContent?: string | number;
     onCopy?: EventHandlerUnion<T, ClipboardEvent>;
     onCut?: EventHandlerUnion<T, ClipboardEvent>;
     onPaste?: EventHandlerUnion<T, ClipboardEvent>;
