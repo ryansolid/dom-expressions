@@ -195,7 +195,9 @@ function transformComponentChildren(children) {
       !t.isJSXText(filteredChildren[0])
     ) {
       transformedChildren =
-        t.isCallExpression(transformedChildren) && !transformedChildren.arguments.length
+        t.isCallExpression(transformedChildren) &&
+        !transformedChildren.arguments.length &&
+        !t.isIdentifier(transformedChildren.callee)
           ? transformedChildren.callee
           : t.arrowFunctionExpression([], transformedChildren);
       dynamic = true;

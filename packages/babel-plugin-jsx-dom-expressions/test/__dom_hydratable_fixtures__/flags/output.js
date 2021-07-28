@@ -18,3 +18,17 @@ const template = (() => {
 
   return _el$;
 })();
+
+const template2 = _$createComponent(Component, {
+  get children() {
+    return _$getNextElement();
+  }
+});
+
+const template3 = _$createComponent(Component, {
+  get children() {
+    return [_$getNextElement(), _$getNextElement()];
+  }
+});
+
+const template4 = _$getNextElement();
