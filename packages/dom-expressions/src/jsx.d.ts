@@ -1998,7 +1998,6 @@ export namespace JSX {
     itemtype?: string;
     itemid?: string;
     itemref?: string;
-    align?: "start" | "end" | "center" | "baseline" | "stretch" | "left" | "right";
     part?: string;
     exportparts?: string;
     inputmode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
