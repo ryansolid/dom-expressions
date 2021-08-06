@@ -148,15 +148,21 @@ function transformAttributes(path, results) {
     isSVG = SVGElements.has(tagName),
     hasChildren = path.node.children.length > 0,
     attributes = path.get("openingElement").get("attributes"),
-    classAttributes = attributes.filter(
-      a => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
-    ),
     styleAttributes = attributes.filter(
       a => t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "style"
     ),
     classNamespaceAttributes = attributes.filter(
       a => t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "class"
     );
+  if (classNamespaceAttributes.length)
+    transformToObject("classList", attributes, classNamespaceAttributes);
+  const classAttributes = attributes.filter(
+    a =>
+      a.node.name &&
+      (a.node.name.name === "class" ||
+        a.node.name.name === "className" ||
+        a.node.name.name === "classList")
+  );
   // combine class propertoes
   if (classAttributes.length > 1) {
     const first = classAttributes[0].node,
@@ -177,16 +183,19 @@ function transformAttributes(path, results) {
           })
         );
       } else {
-        values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
+        let expr = attr.value.expression;
+        if (attr.name.name === "classList") {
+          registerImportMethod(path, "ssrClassList");
+          expr = t.callExpression(t.identifier("_$ssrClassList"), [expr]);
+        }
+        values.push(t.logicalExpression("||", expr, t.stringLiteral("")));
         quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
       }
-      i && attributes.splice(classAttributes[i].key, 1);
+      i && attributes.splice(attributes.indexOf(classAttributes[i].node), 1);
     }
     first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
   }
   if (styleAttributes.length) transformToObject("style", attributes, styleAttributes);
-  if (classNamespaceAttributes.length)
-    transformToObject("classList", attributes, classNamespaceAttributes);
 
   attributes.forEach(attribute => {
     const node = attribute.node;

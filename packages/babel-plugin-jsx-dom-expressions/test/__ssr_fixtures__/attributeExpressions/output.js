@@ -17,12 +17,11 @@ const _tmpl$ = [
   ],
   _tmpl$2 = ["<div><div>", "</div><div>", "</div><div><div/></div></div>"],
   _tmpl$3 = ['<div id="', '" style="', '" name="', '">', "</div>"],
-  _tmpl$4 = ['<div class="', '" class="', '"></div>'],
-  _tmpl$5 = ['<div class="', '"></div>'],
-  _tmpl$6 = ['<div style="', '">Hi</div>'],
-  _tmpl$7 = ['<div style="', '" class="', '"></div>'],
-  _tmpl$8 = "<div></div>",
-  _tmpl$9 = ['<input type="checkbox"', ">"];
+  _tmpl$4 = ['<div class="', '"></div>'],
+  _tmpl$5 = ['<div style="', '">Hi</div>'],
+  _tmpl$6 = ['<div style="', '" class="', '"></div>'],
+  _tmpl$7 = "<div></div>",
+  _tmpl$8 = ['<input type="checkbox"', ">"];
 
 const template = _$ssr(
   _tmpl$,
@@ -54,18 +53,22 @@ const template3 = _$ssr(
 
 const template4 = _$ssr(
   _tmpl$4,
-  `hi ${_$escape(state.class, true) || ""}`,
-  _$ssrClassList({
-    "ccc:ddd": true
-  })
+  `hi ${_$escape(state.class, true) || ""} ${
+    _$escape(
+      _$ssrClassList({
+        "ccc:ddd": true
+      }),
+      true
+    ) || ""
+  }`
 );
 
-const template5 = _$ssr(_tmpl$5, `a  b`);
+const template5 = _$ssr(_tmpl$4, `a  b`);
 
-const template6 = _$ssr(_tmpl$6, _$ssrStyle(someStyle()));
+const template6 = _$ssr(_tmpl$5, _$ssrStyle(someStyle()));
 
 const template7 = _$ssr(
-  _tmpl$7,
+  _tmpl$6,
   _$ssrStyle({
     "background-color": color(),
     "margin-right": "40px",
@@ -79,16 +82,16 @@ const template7 = _$ssr(
 
 let refTarget;
 
-const template8 = _$ssr(_tmpl$8);
+const template8 = _$ssr(_tmpl$7);
 
-const template9 = _$ssr(_tmpl$8);
+const template9 = _$ssr(_tmpl$7);
 
-const template10 = _$ssr(_tmpl$8);
+const template10 = _$ssr(_tmpl$7);
 
-const template11 = _$ssr(_tmpl$8);
+const template11 = _$ssr(_tmpl$7);
 
-const template12 = _$ssr(_tmpl$8);
+const template12 = _$ssr(_tmpl$7);
 
-const template13 = _$ssr(_tmpl$9, _$ssrBoolean("checked", true));
+const template13 = _$ssr(_tmpl$8, _$ssrBoolean("checked", true));
 
-const template14 = _$ssr(_tmpl$9, _$ssrBoolean("checked", state.visible));
+const template14 = _$ssr(_tmpl$8, _$ssrBoolean("checked", state.visible));
