@@ -1,5 +1,6 @@
 import { JSX } from "./jsx";
 export const Aliases: Record<string, string>;
+export const PropAliases: Record<string, string>;
 export const Properties: Set<string>;
 export const ChildProperties: Set<string>;
 export const DelegatedEvents: Set<string>;
