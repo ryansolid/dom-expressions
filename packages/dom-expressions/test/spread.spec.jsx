@@ -8,12 +8,13 @@ describe("create element with various spreads", () => {
 
     S.root(dispose => {
       disposer = dispose;
-      <Component ref={span} onClick={() => console.log("click")} data-mode="stealth">
+      <Component class="Hello" ref={span} onClick={() => console.log("click")} data-mode="stealth">
         Hi
       </Component>;
     });
 
     expect(span).toBeDefined();
+    expect(span.className).toBe("Hello")
     expect(span.textContent).toBe("Hi");
     expect(span.$$click).toBeDefined();
     expect(span.getAttribute("data-mode")).toBe("stealth");

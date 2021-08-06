@@ -7,7 +7,7 @@ const template = (
       style={{ "background-color": color(), "margin-right": "40px" }}
       classList={{ selected: selected() }}
     >
-      <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
+      <a href={"/"} ref={link} classList={{ "ccc ddd": true }} readonly={value}>
         Welcome
       </a>
     </h1>

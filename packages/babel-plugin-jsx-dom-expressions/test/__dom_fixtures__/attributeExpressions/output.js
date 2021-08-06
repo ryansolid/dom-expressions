@@ -32,6 +32,8 @@ const template = (() => {
     "ccc ddd": true
   });
 
+  _el$3.readOnly = value;
+
   _$effect(
     _p$ => {
       const _v$ = welcoming(),

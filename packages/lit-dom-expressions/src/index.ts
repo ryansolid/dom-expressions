@@ -13,6 +13,7 @@ interface Runtime {
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
   Aliases: Record<string, string>;
+  PropAliases: Record<string, string>;
   Properties: Set<string>;
   ChildProperties: Set<string>;
   DelegatedEvents: Set<string>;
@@ -134,10 +135,10 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       options.exprs.push(`r.classList(${tag},${expr},${prev})`);
     } else if (
       namespace !== "attr" &&
-      (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")
+      (isChildProp || (!isSVG && (r.PropAliases[name] || isProp)) || isCE || namespace === "prop")
     ) {
       if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
-      options.exprs.push(`${tag}.${name} = ${expr}`);
+      options.exprs.push(`${tag}.${r.PropAliases[name] || name} = ${expr}`);
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);

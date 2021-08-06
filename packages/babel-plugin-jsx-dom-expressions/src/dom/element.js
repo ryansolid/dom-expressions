@@ -1,6 +1,7 @@
 import * as t from "@babel/types";
 import {
   Aliases,
+  PropAliases,
   Properties,
   ChildProperties,
   SVGNamespace,
@@ -112,9 +113,10 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
+  const alias = PropAliases[name];
   if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
     if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
-    return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(name)), value);
+    return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(alias || name)), value);
   }
 
   let isNameSpaced = name.indexOf(":") > -1;

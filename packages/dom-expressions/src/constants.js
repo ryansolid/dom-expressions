@@ -29,7 +29,7 @@ const booleans = [
 
 const BooleanAttributes = new Set(booleans);
 
-const Properties = new Set(["className", "indeterminate", "value", ...booleans]);
+const Properties = new Set(["className", "indeterminate", "value", "readOnly", ...booleans]);
 
 const ChildProperties = new Set(["innerHTML", "textContent", "innerText", "children"]);
 
@@ -38,6 +38,11 @@ const Aliases = {
   className: "class",
   htmlFor: "for"
 };
+
+const PropAliases = {
+  class: "className",
+  readonly: "readOnly"
+}
 
 // list of Element events that will be delegated
 const DelegatedEvents = new Set([
@@ -156,6 +161,7 @@ export {
   BooleanAttributes,
   Properties,
   ChildProperties,
+  PropAliases,
   Aliases,
   DelegatedEvents,
   SVGElements,

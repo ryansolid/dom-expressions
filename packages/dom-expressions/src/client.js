@@ -1,9 +1,17 @@
-import { Properties, ChildProperties, Aliases, SVGNamespace, DelegatedEvents } from "./constants";
+import {
+  Properties,
+  ChildProperties,
+  Aliases,
+  PropAliases,
+  SVGNamespace,
+  DelegatedEvents
+} from "./constants";
 import { root, effect, memo, getOwner, createComponent, sharedConfig } from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
   ChildProperties,
+  PropAliases,
   Aliases,
   SVGElements,
   SVGNamespace,
@@ -157,8 +165,6 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
     if (value === prevProps[prop]) continue;
     if (prop === "style") {
       style(node, value, prevProps[prop]);
-    } else if (prop === "class" && !isSVG) {
-      node.className = value;
     } else if (prop === "classList") {
       classList(node, value, prevProps[prop]);
     } else if (prop === "ref") {
@@ -174,11 +180,11 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       delegate && delegateEvents([name]);
     } else if (
       (isChildProp = ChildProperties.has(prop)) ||
-      (!isSVG && (isProp = Properties.has(prop))) ||
+      (!isSVG && (PropAliases[prop] || (isProp = Properties.has(prop)))) ||
       (isCE = node.nodeName.includes("-"))
     ) {
       if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
-      else node[prop] = value;
+      else node[PropAliases[prop] || prop] = value;
     } else {
       const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
       if (ns) setAttributeNS(node, ns, prop, value);
