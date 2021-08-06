@@ -185,6 +185,11 @@ function transformAttributes(path, results) {
       } else {
         let expr = attr.value.expression;
         if (attr.name.name === "classList") {
+          if (t.isObjectExpression(expr) && !expr.properties.some(p => t.isSpreadElement(p))) {
+            transformClasslistObject(expr, values, quasis);
+            i && attributes.splice(attributes.indexOf(classAttributes[i].node), 1);
+            continue;
+          }
           registerImportMethod(path, "ssrClassList");
           expr = t.callExpression(t.identifier("_$ssrClassList"), [expr]);
         }
@@ -302,8 +307,21 @@ function transformAttributes(path, results) {
           doEscape = false;
         }
         if (key === "classList") {
-          registerImportMethod(path, "ssrClassList");
-          value.expression = t.callExpression(t.identifier("_$ssrClassList"), [value.expression]);
+          if (
+            t.isObjectExpression(value.expression) &&
+            !value.expression.properties.some(p => t.isSpreadElement(p))
+          ) {
+            const values = [],
+              quasis = [t.TemplateElement({ raw: "" })];
+            transformClasslistObject(value.expression, values, quasis);
+            if (!values.length) value.expression = t.stringLiteral(quasis[0].value.raw);
+            else if (values.length === 1 && !quasis[0].value.raw && !quasis[1].value.raw) {
+              value.expression = values[0];
+            } else value.expression = t.templateLiteral(quasis, values);
+          } else {
+            registerImportMethod(path, "ssrClassList");
+            value.expression = t.callExpression(t.identifier("_$ssrClassList"), [value.expression]);
+          }
           key = "class";
           doEscape = false;
         }
@@ -326,6 +344,32 @@ function transformAttributes(path, results) {
   if (!hasChildren && children) {
     path.node.children.push(children);
   }
+}
+
+function transformClasslistObject(expr, values, quasis) {
+  expr.properties.forEach((prop, i) => {
+    const isLast = expr.properties.length - 1 === i;
+    let key = prop.key;
+    if (t.isIdentifier(prop.key) && !prop.computed) key = t.stringLiteral(key.name);
+    else if (prop.computed) {
+      registerImportMethod(path, "escape");
+      key = t.callExpression(t.identifier("_$escape"), [prop.key, t.booleanLiteral(true)]);
+    } else key = t.stringLiteral(escapeHTML(prop.key.value));
+    if (!prop.computed && t.isBooleanLiteral(prop.value)) {
+      if (prop.value.value === true) {
+        const prev = quasis.pop();
+        quasis.push(
+          t.TemplateElement({
+            raw:
+              (prev ? prev.value.raw : "") + (i ? " " : "") + `${key.value}` + (isLast ? "" : " ")
+          })
+        );
+      }
+    } else {
+      values.push(t.conditionalExpression(prop.value, key, t.stringLiteral("")));
+      quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+    }
+  });
 }
 
 function transformChildren(path, results) {

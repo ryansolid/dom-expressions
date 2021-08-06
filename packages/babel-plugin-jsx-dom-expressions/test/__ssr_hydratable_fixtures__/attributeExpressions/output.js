@@ -2,7 +2,6 @@ import { ssrBoolean as _$ssrBoolean } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
-import { ssrClassList as _$ssrClassList } from "r-server";
 import { ssrSpread as _$ssrSpread } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 const _tmpl$ = [
@@ -29,19 +28,13 @@ const template = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
   _$ssrSpread(results, false, true),
-  _$ssrClassList({
-    selected: selected
-  }),
+  selected ? "selected" : "",
   "color:" + _$escape(color, true),
   _$ssrSpread(results(), false, true),
   _$escape(welcoming(), true),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
-  _$ssrClassList({
-    selected: selected()
-  }),
-  _$ssrClassList({
-    "ccc ddd": true
-  })
+  selected() ? "selected" : "",
+  "ccc ddd"
 );
 
 const template2 = _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(rowId), _$escape(row.label));
@@ -58,14 +51,7 @@ const template3 = _$ssr(
 const template4 = _$ssr(
   _tmpl$4,
   _$ssrHydrationKey(),
-  `hi ${_$escape(state.class, true) || ""} ${
-    _$escape(
-      _$ssrClassList({
-        "ccc:ddd": true
-      }),
-      true
-    ) || ""
-  }`
+  `hi ${_$escape(state.class, true) || ""} ccc:ddd`
 );
 
 const template5 = _$ssr(_tmpl$4, _$ssrHydrationKey(), `a  b`);
@@ -81,9 +67,7 @@ const template7 = _$ssr(
     ...props.style,
     "padding-top": props.top
   }),
-  _$ssrClassList({
-    "my-class": props.active
-  })
+  props.active ? "my-class" : ""
 );
 
 let refTarget;
