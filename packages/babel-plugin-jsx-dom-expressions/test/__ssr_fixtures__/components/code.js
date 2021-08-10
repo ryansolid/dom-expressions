@@ -122,3 +122,5 @@ class Template13 {
 }
 
 const Template14 = <Component>{data()}</Component>;
+
+const Teamplate15 = <Component {...props}/>

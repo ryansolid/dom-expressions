@@ -30,7 +30,7 @@ const template = _$ssr(
   _$ssrSpread(results(), false, true),
   _$escape(welcoming(), true),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
-  selected() ? "selected" : "",
+  `${selected() ? "selected" : ""} ${_$escape(something, true)}`,
   "ccc ddd"
 );
 

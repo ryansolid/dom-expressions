@@ -250,3 +250,5 @@ const Template14 = _$createComponent(Component, {
     return data();
   }
 });
+
+const Teamplate15 = _$createComponent(Component, props);

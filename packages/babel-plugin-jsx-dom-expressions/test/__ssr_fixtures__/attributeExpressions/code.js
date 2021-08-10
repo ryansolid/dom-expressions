@@ -5,7 +5,7 @@ const template = (
       disabled
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
-      classList={{ selected: selected() }}
+      classList={{ selected: selected(), [something]: true }}
     >
       <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
         Welcome

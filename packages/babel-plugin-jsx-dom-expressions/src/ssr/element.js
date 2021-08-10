@@ -186,7 +186,7 @@ function transformAttributes(path, results) {
         let expr = attr.value.expression;
         if (attr.name.name === "classList") {
           if (t.isObjectExpression(expr) && !expr.properties.some(p => t.isSpreadElement(p))) {
-            transformClasslistObject(expr, values, quasis);
+            transformClasslistObject(path, expr, values, quasis);
             i && attributes.splice(attributes.indexOf(classAttributes[i].node), 1);
             continue;
           }
@@ -313,7 +313,7 @@ function transformAttributes(path, results) {
           ) {
             const values = [],
               quasis = [t.TemplateElement({ raw: "" })];
-            transformClasslistObject(value.expression, values, quasis);
+            transformClasslistObject(path, value.expression, values, quasis);
             if (!values.length) value.expression = t.stringLiteral(quasis[0].value.raw);
             else if (values.length === 1 && !quasis[0].value.raw && !quasis[1].value.raw) {
               value.expression = values[0];
@@ -346,7 +346,7 @@ function transformAttributes(path, results) {
   }
 }
 
-function transformClasslistObject(expr, values, quasis) {
+function transformClasslistObject(path, expr, values, quasis) {
   expr.properties.forEach((prop, i) => {
     const isLast = expr.properties.length - 1 === i;
     let key = prop.key;
@@ -355,15 +355,20 @@ function transformClasslistObject(expr, values, quasis) {
       registerImportMethod(path, "escape");
       key = t.callExpression(t.identifier("_$escape"), [prop.key, t.booleanLiteral(true)]);
     } else key = t.stringLiteral(escapeHTML(prop.key.value));
-    if (!prop.computed && t.isBooleanLiteral(prop.value)) {
+    if (t.isBooleanLiteral(prop.value)) {
       if (prop.value.value === true) {
-        const prev = quasis.pop();
-        quasis.push(
-          t.TemplateElement({
-            raw:
-              (prev ? prev.value.raw : "") + (i ? " " : "") + `${key.value}` + (isLast ? "" : " ")
-          })
-        );
+        if (!prop.computed) {
+          const prev = quasis.pop();
+          quasis.push(
+            t.TemplateElement({
+              raw:
+                (prev ? prev.value.raw : "") + (i ? " " : "") + `${key.value}` + (isLast ? "" : " ")
+            })
+          );
+        } else {
+          values.push(key);
+          quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+        }
       }
     } else {
       values.push(t.conditionalExpression(prop.value, key, t.stringLiteral("")));
