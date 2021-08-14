@@ -145,9 +145,9 @@ export default function transformComponent(path) {
       );
     } else runningObject.push(t.objectProperty(t.identifier("children"), childResult[0]));
   }
-  props.push(t.objectExpression(runningObject));
+  if (runningObject.length || !props.length) props.push(t.objectExpression(runningObject));
 
-  if (props.length > 1 && runningObject.length) {
+  if (props.length > 1) {
     registerImportMethod(path, "mergeProps");
     props = [t.callExpression(t.identifier("_$mergeProps"), props)];
   }
