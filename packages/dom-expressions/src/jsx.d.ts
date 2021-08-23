@@ -3215,7 +3215,7 @@ export namespace JSX {
     datalist: HTMLAttributes<HTMLDataListElement>;
     dd: HTMLAttributes<HTMLElement>;
     del: HTMLAttributes<HTMLElement>;
-    details: DetailsHtmlAttributes<HTMLElement>;
+    details: DetailsHtmlAttributes<HTMLDetailsElement>;
     dfn: HTMLAttributes<HTMLElement>;
     dialog: DialogHtmlAttributes<HTMLElement>;
     div: HTMLAttributes<HTMLDivElement>;
