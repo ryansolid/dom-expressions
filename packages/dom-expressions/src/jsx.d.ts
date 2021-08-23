@@ -19,7 +19,7 @@ export namespace JSX {
   interface ArrayElement extends Array<Element> {}
   interface FunctionElement {
     (): Element;
-  
+  }
   interface ElementClass {
     render(props: any): Element;
   }
