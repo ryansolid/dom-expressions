@@ -191,6 +191,7 @@ export function ssr(t, ...nodes) {
 }
 
 export function ssrClassList(value) {
+  if (!value) return "";
   let classKeys = Object.keys(value),
     result = "";
   for (let i = 0, len = classKeys.length; i < len; i++) {
@@ -204,6 +205,7 @@ export function ssrClassList(value) {
 }
 
 export function ssrStyle(value) {
+  if (!value) return "";
   if (typeof value === "string") return value;
   let result = "";
   const k = Object.keys(value);

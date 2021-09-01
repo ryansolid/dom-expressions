@@ -3,6 +3,7 @@ const template = (
     <h1
       {...results()}
       disabled
+      readonly=""
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
       classList={{ selected: selected() }}

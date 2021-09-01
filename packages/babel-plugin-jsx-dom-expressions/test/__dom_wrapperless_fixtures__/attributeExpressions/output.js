@@ -4,7 +4,10 @@ import { classList as _$classList } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
-const _tmpl$ = _$template(`<div id="main"><h1 disabled=""><a href="/">Welcome</a></h1></div>`, 6),
+const _tmpl$ = _$template(
+    `<div id="main"><h1 disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    6
+  ),
   _tmpl$2 = _$template(`<div><div></div><div></div><div></div></div>`, 8),
   _tmpl$3 = _$template(`<div></div>`, 2),
   _tmpl$4 = _$template(`<input type="checkbox">`, 1);
@@ -37,6 +40,7 @@ const template = (() => {
     "ccc ddd": true
   });
 
+  _el$3.readOnly = value;
   return _el$;
 })();
 

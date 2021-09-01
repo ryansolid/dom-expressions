@@ -8,7 +8,7 @@ const _tmpl$ = [
     ' class="',
     '" style="',
     '"><h1 ',
-    ' disabled="" title="',
+    ' disabled readonly="" title="',
     '" style="',
     '" class="',
     '"><a href="/" class="',

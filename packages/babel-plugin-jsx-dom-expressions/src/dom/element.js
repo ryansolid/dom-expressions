@@ -525,7 +525,7 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
-          results.template += value ? `="${value.value}"` : `=""`;
+          results.template += value ? `="${value.value}"` : "";
         }
       }
     });
