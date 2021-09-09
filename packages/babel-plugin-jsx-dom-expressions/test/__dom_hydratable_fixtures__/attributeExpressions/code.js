@@ -2,6 +2,7 @@ const selected = true;
 const template = (
   <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
     <h1
+      class="base"
       {...results()}
       disabled
       readonly=""

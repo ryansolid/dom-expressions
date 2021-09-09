@@ -8,12 +8,13 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(
-    `<div id="main"><h1 disabled readonly="" class="selected"><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base selected" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = _$template(`<div><div></div><div> </div><div></div></div>`, 8),
   _tmpl$3 = _$template(`<div></div>`, 2),
-  _tmpl$4 = _$template(`<input type="checkbox">`, 1);
+  _tmpl$4 = _$template(`<div class="a b"></div>`, 2),
+  _tmpl$5 = _$template(`<input type="checkbox">`, 1);
 
 const selected = true;
 
@@ -105,12 +106,7 @@ const template4 = (() => {
   return _el$10;
 })();
 
-const template5 = (() => {
-  const _el$11 = _$getNextElement(_tmpl$3);
-
-  _el$11.className = `a  b`;
-  return _el$11;
-})();
+const template5 = _$getNextElement(_tmpl$4);
 
 const template6 = (() => {
   const _el$12 = _$getNextElement(_tmpl$3);
@@ -192,14 +188,14 @@ const template12 = (() => {
 })();
 
 const template13 = (() => {
-  const _el$19 = _$getNextElement(_tmpl$4);
+  const _el$19 = _$getNextElement(_tmpl$5);
 
   _el$19.checked = true;
   return _el$19;
 })();
 
 const template14 = (() => {
-  const _el$20 = _$getNextElement(_tmpl$4);
+  const _el$20 = _$getNextElement(_tmpl$5);
 
   _$effect(() => (_el$20.checked = state.visible));
 

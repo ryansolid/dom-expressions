@@ -223,7 +223,6 @@ function transformAttributes(path, results) {
     classListProperties.slice().forEach((propPath, index) => {
       const p = propPath.node;
       const { confident, value: computed } = propPath.get("value").evaluate();
-      console.log("classList", confident, computed)
       if (leading) p.value.leadingComments = leading;
       if (!confident) {
         path
@@ -273,11 +272,7 @@ function transformAttributes(path, results) {
         const prev = quasis.pop();
         quasis.push(
           t.TemplateElement({
-            raw:
-              (prev ? prev.value.raw : "") +
-              (i ? " " : "") +
-              `${attr.value.value}` +
-              (isLast ? "" : " ")
+            raw: (prev ? prev.value.raw : "") + `${attr.value.value}` + (isLast ? "" : " ")
           })
         );
       } else {
@@ -286,7 +281,8 @@ function transformAttributes(path, results) {
       }
       i && attributes.splice(classAttributes[i].key, 1);
     }
-    first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
+    if (values.length) first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
+    else first.value = t.stringLiteral(quasis[0].value.raw);
   }
   path.get("openingElement").set(
     "attributes",

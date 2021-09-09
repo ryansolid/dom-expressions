@@ -9,10 +9,10 @@ const _tmpl$ = [
     ' id="main" ',
     ' class="',
     '" style="',
-    '"><h1 ',
+    '"><h1 class="',
+    '" ',
     ' disabled readonly="" title="',
     '" style="',
-    '" class="',
     '"><a href="/" class="',
     '"',
     ">Welcome</a></h1></div>"
@@ -32,10 +32,10 @@ const template = _$ssr(
   _$ssrSpread(results, false, true),
   unknown ? "selected" : "",
   "color:" + _$escape(color, true),
+  `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
   _$ssrSpread(results(), false, true),
   _$escape(welcoming(), true),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
-  `${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
   "ccc ddd",
   _$ssrBoolean("readonly", value)
 );
