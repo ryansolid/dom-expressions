@@ -116,7 +116,11 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   const alias = PropAliases[name];
   if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
     if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
-    return t.assignmentExpression("=", t.memberExpression(elem, t.identifier(alias || name)), value);
+    return t.assignmentExpression(
+      "=",
+      t.memberExpression(elem, t.identifier(alias || name)),
+      value
+    );
   }
 
   let isNameSpaced = name.indexOf(":") > -1;
@@ -160,44 +164,9 @@ function transformAttributes(path, results) {
     tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
     isCE = tagName.includes("-"),
-    hasChildren = path.node.children.length > 0,
-    classAttributes = attributes.filter(
-      a => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
-    );
-  // combine class propertoes
-  if (classAttributes.length > 1) {
-    const first = classAttributes[0].node,
-      values = [],
-      quasis = [t.TemplateElement({ raw: "" })];
-    for (let i = 0; i < classAttributes.length; i++) {
-      const attr = classAttributes[i].node,
-        isLast = i === classAttributes.length - 1;
-      if (!t.isJSXExpressionContainer(attr.value)) {
-        const prev = quasis.pop();
-        quasis.push(
-          t.TemplateElement({
-            raw:
-              (prev ? prev.value.raw : "") +
-              (i ? " " : "") +
-              `${attr.value.value}` +
-              (isLast ? "" : " ")
-          })
-        );
-      } else {
-        values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
-        quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
-      }
-      i && attributes.splice(classAttributes[i].key, 1);
-    }
-    first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
-  }
-  path.get("openingElement").set(
-    "attributes",
-    attributes.map(a => a.node)
-  );
+    hasChildren = path.node.children.length > 0;
 
   // preprocess styles
-  attributes = path.get("openingElement").get("attributes");
   const styleAttribute = attributes.find(
     a =>
       a.node.name &&
@@ -249,27 +218,80 @@ function transformAttributes(path, results) {
   );
   if (classListAttribute) {
     let i = 0,
-      leading = classListAttribute.node.value.expression.leadingComments;
-    classListAttribute.node.value.expression.properties.slice().forEach((p, index) => {
+      leading = classListAttribute.node.value.expression.leadingComments,
+      classListProperties = classListAttribute.get("value").get("expression").get("properties");
+    classListProperties.slice().forEach((propPath, index) => {
+      const p = propPath.node;
+      const { confident, value: computed } = propPath.get("value").evaluate();
+      console.log("classList", confident, computed)
       if (leading) p.value.leadingComments = leading;
-      path
-        .get("openingElement")
-        .node.attributes.splice(
-          classListAttribute.key + ++i,
-          0,
-          t.JSXAttribute(
-            t.JSXNamespacedName(
+      if (!confident) {
+        path
+          .get("openingElement")
+          .node.attributes.splice(
+            classListAttribute.key + ++i,
+            0,
+            t.JSXAttribute(
+              t.JSXNamespacedName(
+                t.JSXIdentifier("class"),
+                t.JSXIdentifier(t.isIdentifier(p.key) ? p.key.name : p.key.value)
+              ),
+              t.JSXExpressionContainer(p.value)
+            )
+          );
+      } else if (computed) {
+        path
+          .get("openingElement")
+          .node.attributes.splice(
+            classListAttribute.key + ++i,
+            0,
+            t.JSXAttribute(
               t.JSXIdentifier("class"),
-              t.JSXIdentifier(t.isIdentifier(p.key) ? p.key.name : p.key.value)
-            ),
-            t.JSXExpressionContainer(p.value)
-          )
-        );
-      classListAttribute.node.value.expression.properties.splice(index - i - 1, 1);
+              t.stringLiteral(t.isIdentifier(p.key) ? p.key.name : p.key.value)
+            )
+          );
+      }
+      classListProperties.splice(index - i - 1, 1);
     });
-    if (!classListAttribute.node.value.expression.properties.length)
+    if (!classListProperties.length)
       path.get("openingElement").node.attributes.splice(classListAttribute.key, 1);
   }
+
+  // combine class properties
+  attributes = path.get("openingElement").get("attributes");
+  const classAttributes = attributes.filter(
+    a => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
+  );
+  if (classAttributes.length > 1) {
+    const first = classAttributes[0].node,
+      values = [],
+      quasis = [t.TemplateElement({ raw: "" })];
+    for (let i = 0; i < classAttributes.length; i++) {
+      const attr = classAttributes[i].node,
+        isLast = i === classAttributes.length - 1;
+      if (!t.isJSXExpressionContainer(attr.value)) {
+        const prev = quasis.pop();
+        quasis.push(
+          t.TemplateElement({
+            raw:
+              (prev ? prev.value.raw : "") +
+              (i ? " " : "") +
+              `${attr.value.value}` +
+              (isLast ? "" : " ")
+          })
+        );
+      } else {
+        values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
+        quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+      }
+      i && attributes.splice(classAttributes[i].key, 1);
+    }
+    first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
+  }
+  path.get("openingElement").set(
+    "attributes",
+    attributes.map(a => a.node)
+  );
 
   path
     .get("openingElement")
@@ -494,15 +516,9 @@ function transformAttributes(path, results) {
           if (key === "textContent") {
             nextElem = attribute.scope.generateUidIdentifier("el$");
             children = t.JSXText(" ");
-            children.extra = { raw: " ", rawValue: " "}
+            children.extra = { raw: " ", rawValue: " " };
             results.decl.push(
-              t.variableDeclarator(
-                nextElem,
-                t.memberExpression(
-                  elem,
-                  t.identifier("firstChild")
-                )
-              )
+              t.variableDeclarator(nextElem, t.memberExpression(elem, t.identifier("firstChild")))
             );
           }
           results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG, isCE });

@@ -1,6 +1,6 @@
-import { ssrBoolean as _$ssrBoolean } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssr as _$ssr } from "r-server";
+import { ssrBoolean as _$ssrBoolean } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrSpread as _$ssrSpread } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
@@ -14,7 +14,8 @@ const _tmpl$ = [
     '" style="',
     '" class="',
     '"><a href="/" class="',
-    '">Welcome</a></h1></div>'
+    '"',
+    ">Welcome</a></h1></div>"
   ],
   _tmpl$2 = ["<div", "><div>", "</div><div>", "</div><div><div/></div></div>"],
   _tmpl$3 = ["<div", ' id="', '" style="', '" name="', '">', "</div>"],
@@ -23,18 +24,20 @@ const _tmpl$ = [
   _tmpl$6 = ["<div", ' style="', '" class="', '"></div>'],
   _tmpl$7 = ["<div", "></div>"],
   _tmpl$8 = ["<input", ' type="checkbox"', ">"];
+const selected = true;
 
 const template = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
   _$ssrSpread(results, false, true),
-  selected ? "selected" : "",
+  unknown ? "selected" : "",
   "color:" + _$escape(color, true),
   _$ssrSpread(results(), false, true),
   _$escape(welcoming(), true),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
-  `${selected() ? "selected" : ""} ${_$escape(something, true)}`,
-  "ccc ddd"
+  `${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
+  "ccc ddd",
+  _$ssrBoolean("readonly", value)
 );
 
 const template2 = _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(rowId), _$escape(row.label));

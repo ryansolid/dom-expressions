@@ -6,12 +6,14 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(
-    `<div id="main"><h1 disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 disabled readonly="" class="selected"><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = _$template(`<div><div></div><div> </div><div></div></div>`, 8),
   _tmpl$3 = _$template(`<div></div>`, 2),
   _tmpl$4 = _$template(`<input type="checkbox">`, 1);
+
+const selected = true;
 
 const template = (() => {
   const _el$ = _tmpl$.cloneNode(true),
@@ -20,7 +22,7 @@ const template = (() => {
 
   _$spread(_el$, results, false, true);
 
-  _el$.classList.toggle("selected", selected);
+  _el$.classList.toggle("selected", unknown);
 
   _el$.style.setProperty("color", color);
 
@@ -41,11 +43,11 @@ const template = (() => {
     _p$ => {
       const _v$ = welcoming(),
         _v$2 = color(),
-        _v$3 = selected();
+        _v$3 = dynamic();
 
       _v$ !== _p$._v$ && _$setAttribute(_el$2, "title", (_p$._v$ = _v$));
       _v$2 !== _p$._v$2 && _el$2.style.setProperty("background-color", (_p$._v$2 = _v$2));
-      _v$3 !== _p$._v$3 && _el$2.classList.toggle("selected", (_p$._v$3 = _v$3));
+      _v$3 !== _p$._v$3 && _el$2.classList.toggle("dynamic", (_p$._v$3 = _v$3));
       return _p$;
     },
     {

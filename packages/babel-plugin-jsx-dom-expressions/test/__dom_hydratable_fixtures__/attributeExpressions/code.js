@@ -1,12 +1,13 @@
+const selected = true;
 const template = (
-  <div id="main" {...results} classList={{ selected: selected }} style={{ color }}>
+  <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
     <h1
       {...results()}
       disabled
       readonly=""
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
-      classList={{ selected: selected() }}
+      classList={{ dynamic: dynamic(), selected }}
     >
       <a href={"/"} ref={link} classList={{ "ccc ddd": true }} readonly={value}>
         Welcome

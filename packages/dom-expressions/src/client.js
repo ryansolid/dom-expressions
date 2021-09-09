@@ -105,7 +105,7 @@ export function classList(node, value, prev = {}) {
 
 export function style(node, value, prev = {}) {
   const nodeStyle = node.style;
-  if (typeof value === "string") return (nodeStyle.cssText = value);
+  if (value == null || typeof value === "string") return (nodeStyle.cssText = value);
   typeof prev === "string" && (prev = {});
   let v, s;
   for (s in prev) {
