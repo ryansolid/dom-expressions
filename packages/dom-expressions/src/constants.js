@@ -1,6 +1,5 @@
 const booleans = [
   "allowfullscreen",
-  "allowpaymentrequest",
   "async",
   "autofocus",
   "autoplay",
@@ -10,8 +9,8 @@ const booleans = [
   "disabled",
   "formnovalidate",
   "hidden",
+  "indeterminate",
   "ismap",
-  "itemscope",
   "loop",
   "multiple",
   "muted",
@@ -23,13 +22,12 @@ const booleans = [
   "required",
   "reversed",
   "seamless",
-  "selected",
-  "truespeed"
+  "selected"
 ];
 
 const BooleanAttributes = new Set(booleans);
 
-const Properties = new Set(["className", "indeterminate", "value", "readOnly", ...booleans]);
+const Properties = new Set(["className", "value", "readOnly", "formNoValidate", "isMap", "noModule", "playsInline", ...booleans]);
 
 const ChildProperties = new Set(["innerHTML", "textContent", "innerText", "children"]);
 
@@ -41,6 +39,10 @@ const Aliases = {
 
 const PropAliases = {
   class: "className",
+  formnovalidate: "formNoValidate",
+  ismap: "isMap",
+  nomodule: "noModule",
+  playsinline: "playsInline",
   readonly: "readOnly"
 }
 

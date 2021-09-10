@@ -2125,6 +2125,8 @@ export namespace JSX {
     crossorigin?: HTMLCrossorigin;
     decoding?: "sync" | "async" | "auto";
     height?: number | string;
+    ismap?: boolean;
+    isMap?: boolean;
     loading?: "eager" | "lazy";
     referrerpolicy?: HTMLReferrerPolicy;
     referrerPolicy?: HTMLReferrerPolicy;
