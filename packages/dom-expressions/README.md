@@ -23,7 +23,7 @@ It is designed to be used with a companion render API. Currently there is a JSX 
 
 ## Runtime Generator
 
-Dom Expressions is designed to allow ypu to create a runtime to be tree shakeable. It does that by using "babel-plugin-transform-rename-import" to rename the import to your reactive core file. Setup the babel plugin and then `export * from "dom-expressions/src/runtime"`from your runtime. Be sure to not exclude the dom-expressions node_module.
+Dom Expressions is designed to allow you to create a runtime to be tree shakeable. It does that by using "babel-plugin-transform-rename-import" to rename the import to your reactive core file. Setup the babel plugin and then `export * from "dom-expressions/src/runtime"`from your runtime. Be sure to not exclude the dom-expressions node_module.
 
 ```js
 {
