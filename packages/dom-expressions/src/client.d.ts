@@ -30,12 +30,16 @@ export function spread<T>(
 export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
-export function addEventListener(node: Element, name: string, handler: () => void, delegate: boolean): void;
-export function classList(
+export function addEventListener(
   node: Element,
-  value: { [k: string]: boolean },
-  prev?: { [k: string]: boolean }
+  name: string,
+  handler: () => void,
+  delegate: boolean
 ): void;
+type ClassList =
+  | { [k: string]: boolean }
+  | (ClassList | string | number | boolean | null | undefined)[];
+export function classList(node: Element, value: ClassList, prev?: { [k: string]: boolean }): void;
 export function style(
   node: Element,
   value: { [k: string]: string },

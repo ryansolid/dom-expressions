@@ -84,8 +84,7 @@ export function addEventListener(node, name, handler, delegate) {
 }
 
 export function classList(node, value, prev = {}) {
-  const classKeys = Object.keys(value),
-    prevKeys = Object.keys(prev);
+  const prevKeys = Object.keys(prev);
   let i, len;
   for (i = 0, len = prevKeys.length; i < len; i++) {
     const key = prevKeys[i];
@@ -93,13 +92,28 @@ export function classList(node, value, prev = {}) {
     toggleClassKey(node, key, false);
     delete prev[key];
   }
-  for (i = 0, len = classKeys.length; i < len; i++) {
-    const key = classKeys[i],
-      classValue = !!value[key];
-    if (!key || key === "undefined" || prev[key] === classValue) continue;
-    toggleClassKey(node, key, classValue);
-    prev[key] = classValue;
-  }
+  (function setClasses(classes) {
+    if (classes instanceof Array) {
+      for (const key of classes) {
+        // classList setting classes for all numbers except for 0 may be
+        // unexpected behavior, you must explicity omit 0 using `n || false`
+        if (!key && key !== 0) continue;
+        if (typeof key === 'object') { // Both objects and arrays
+          setClasses(key);
+          continue;
+        }
+        toggleClassKey(node, key, true);
+        prev[key] = true;
+      }
+    } else if (typeof classes === 'object') {
+      for (const [key, enabled] of Object.entries(classes)) {
+        if (!enabled) continue;
+        toggleClassKey(node, key, true);
+        prev[key] = true
+      }
+    }
+  })(value);
+
   return prev;
 }
 
