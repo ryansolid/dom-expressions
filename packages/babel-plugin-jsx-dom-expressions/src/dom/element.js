@@ -577,7 +577,7 @@ function transformChildren(path, results) {
     tagName = getTagName(path.node),
     nextPlaceholder,
     i = 0;
-  const filteredChildren = filterChildren(path.get("children"), true),
+  const filteredChildren = filterChildren(path.get("children")),
     childNodes = filteredChildren
       .map(
         (child, index) =>
@@ -761,7 +761,7 @@ function detectExpressions(children, index) {
         )
       )
         return true;
-      const nextChildren = filterChildren(children[i].get("children"), true);
+      const nextChildren = filterChildren(children[i].get("children"));
       if (nextChildren.length) if (detectExpressions(nextChildren, 0)) return true;
     }
   }

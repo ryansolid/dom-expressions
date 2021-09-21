@@ -6,7 +6,10 @@ import { effect as _$effect } from "r-dom";
 
 const _tmpl$ = _$template(`<div>First</div>`, 2),
   _tmpl$2 = _$template(`<div>Last</div>`, 2),
-  _tmpl$3 = _$template(`<div></div>`, 2);
+  _tmpl$3 = _$template(`<div></div>`, 2),
+  _tmpl$4 = _$template(`<span>1</span>`, 2),
+  _tmpl$5 = _$template(`<span>2</span>`, 2),
+  _tmpl$6 = _$template(`<span>3</span>`, 2);
 
 const multiStatic = [_tmpl$.cloneNode(true), _tmpl$2.cloneNode(true)];
 const multiExpression = [_tmpl$.cloneNode(true), inserted, _tmpl$2.cloneNode(true), "After"];
@@ -36,3 +39,15 @@ const firstComponent = [_$createComponent(Component, {}), _tmpl$3.cloneNode(true
 const lastStatic = [_tmpl$3.cloneNode(true), inserted];
 const lastDynamic = [_tmpl$3.cloneNode(true), _$memo(inserted)];
 const lastComponent = [_tmpl$3.cloneNode(true), _$createComponent(Component, {})];
+const spaces = [
+  _tmpl$4.cloneNode(true),
+  " ",
+  _tmpl$5.cloneNode(true),
+  " ",
+  _tmpl$6.cloneNode(true)
+];
+const multiLineTrailing = [
+  _tmpl$4.cloneNode(true),
+  _tmpl$5.cloneNode(true),
+  _tmpl$6.cloneNode(true)
+];

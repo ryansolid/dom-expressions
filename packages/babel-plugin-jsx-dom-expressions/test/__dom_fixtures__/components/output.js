@@ -10,7 +10,10 @@ const _tmpl$ = _$template(`<div>Hello </div>`, 2),
   _tmpl$3 = _$template(`<div>From Parent</div>`, 2),
   _tmpl$4 = _$template(`<div> | <!> | <!> | <!> | <!> | </div>`, 6),
   _tmpl$5 = _$template(`<div> | <!> | <!> | </div>`, 4),
-  _tmpl$6 = _$template(`<div> | <!> |  |  | <!> | </div>`, 4);
+  _tmpl$6 = _$template(`<div> | <!> |  |  | <!> | </div>`, 4),
+  _tmpl$7 = _$template(`<span>1</span>`, 2),
+  _tmpl$8 = _$template(`<span>2</span>`, 2),
+  _tmpl$9 = _$template(`<span>3</span>`, 2);
 
 import { Show } from "somewhere";
 
@@ -379,3 +382,15 @@ const Template16 = _$createComponent(
     props
   )
 );
+
+const Template17 = _$createComponent(Pre, {
+  get children() {
+    return [_tmpl$7.cloneNode(true), " ", _tmpl$8.cloneNode(true), " ", _tmpl$9.cloneNode(true)];
+  }
+});
+
+const Template18 = _$createComponent(Pre, {
+  get children() {
+    return [_tmpl$7.cloneNode(true), _tmpl$8.cloneNode(true), _tmpl$9.cloneNode(true)];
+  }
+});

@@ -7,7 +7,10 @@ import { getNextElement as _$getNextElement } from "r-dom";
 
 const _tmpl$ = _$template(`<div>First</div>`, 2),
   _tmpl$2 = _$template(`<div>Last</div>`, 2),
-  _tmpl$3 = _$template(`<div></div>`, 2);
+  _tmpl$3 = _$template(`<div></div>`, 2),
+  _tmpl$4 = _$template(`<span>1</span>`, 2),
+  _tmpl$5 = _$template(`<span>2</span>`, 2),
+  _tmpl$6 = _$template(`<span>3</span>`, 2);
 
 const multiStatic = [_$getNextElement(_tmpl$), _$getNextElement(_tmpl$2)];
 const multiExpression = [_$getNextElement(_tmpl$), inserted, _$getNextElement(_tmpl$2), "After"];
@@ -37,3 +40,15 @@ const firstComponent = [_$createComponent(Component, {}), _$getNextElement(_tmpl
 const lastStatic = [_$getNextElement(_tmpl$3), inserted];
 const lastDynamic = [_$getNextElement(_tmpl$3), _$memo(inserted)];
 const lastComponent = [_$getNextElement(_tmpl$3), _$createComponent(Component, {})];
+const spaces = [
+  _$getNextElement(_tmpl$4),
+  " ",
+  _$getNextElement(_tmpl$5),
+  " ",
+  _$getNextElement(_tmpl$6)
+];
+const multiLineTrailing = [
+  _$getNextElement(_tmpl$4),
+  _$getNextElement(_tmpl$5),
+  _$getNextElement(_tmpl$6)
+];

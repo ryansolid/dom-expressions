@@ -16,7 +16,10 @@ const _tmpl$ = _$template(`<div>Hello <!#><!/></div>`, 4),
     14
   ),
   _tmpl$6 = _$template(`<div><!#><!/> | <!#><!/><!#><!/> | <!#><!/><!#><!/> | <!#><!/></div>`, 14),
-  _tmpl$7 = _$template(`<div> | <!#><!/> |  |  | <!#><!/> | </div>`, 6);
+  _tmpl$7 = _$template(`<div> | <!#><!/> |  |  | <!#><!/> | </div>`, 6),
+  _tmpl$8 = _$template(`<span>1</span>`, 2),
+  _tmpl$9 = _$template(`<span>2</span>`, 2),
+  _tmpl$10 = _$template(`<span>3</span>`, 2);
 
 import { Show } from "somewhere";
 
@@ -440,3 +443,21 @@ const Template16 = _$createComponent(
     props
   )
 );
+
+const Template17 = _$createComponent(Pre, {
+  get children() {
+    return [
+      _$getNextElement(_tmpl$8),
+      " ",
+      _$getNextElement(_tmpl$9),
+      " ",
+      _$getNextElement(_tmpl$10)
+    ];
+  }
+});
+
+const Template18 = _$createComponent(Pre, {
+  get children() {
+    return [_$getNextElement(_tmpl$8), _$getNextElement(_tmpl$9), _$getNextElement(_tmpl$10)];
+  }
+});

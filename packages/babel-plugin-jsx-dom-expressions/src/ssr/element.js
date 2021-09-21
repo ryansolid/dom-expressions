@@ -380,7 +380,7 @@ function transformClasslistObject(path, expr, values, quasis) {
 function transformChildren(path, results) {
   const { hydratable } = config,
     doNotEscape = path.doNotEscape;
-  const filteredChildren = filterChildren(path.get("children"), true);
+  const filteredChildren = filterChildren(path.get("children"));
   filteredChildren.forEach(node => {
     const child = transformNode(node, { doNotEscape });
     appendToTemplate(results.template, child.template);

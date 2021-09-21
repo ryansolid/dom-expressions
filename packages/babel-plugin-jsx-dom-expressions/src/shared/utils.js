@@ -117,12 +117,11 @@ export function getStaticExpression(path) {
 }
 
 // remove unnecessary JSX Text nodes
-export function filterChildren(children, loose) {
+export function filterChildren(children) {
   return children.filter(
     ({ node: child }) =>
       !(t.isJSXExpressionContainer(child) && t.isJSXEmptyExpression(child.expression)) &&
-      (!t.isJSXText(child) ||
-        (loose ? !/^[\r\n]\s*$/.test(child.extra.raw) : !/^\s*$/.test(child.extra.raw)))
+      (!t.isJSXText(child) || !/^[\r\n]\s*$/.test(child.extra.raw))
   );
 }
 

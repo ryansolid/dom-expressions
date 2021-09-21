@@ -174,18 +174,20 @@ function transformComponentChildren(children) {
   if (!filteredChildren.length) return;
   let dynamic = false;
 
-  let transformedChildren = filteredChildren.map(path => {
+  let transformedChildren = filteredChildren.reduce((memo, path) => {
     if (t.isJSXText(path.node)) {
-      return t.stringLiteral(trimWhitespace(path.node.extra.rawValue));
+      const v = trimWhitespace(path.node.extra.rawValue);
+      if (v.length) memo.push(t.stringLiteral(v));
     } else {
       const child = transformNode(path, {
         topLevel: true,
         componentChild: true
       });
       dynamic = dynamic || child.dynamic;
-      return createTemplate(path, child, filteredChildren.length > 1);
+      memo.push(createTemplate(path, child, filteredChildren.length > 1));
     }
-  });
+    return memo;
+  }, []);
 
   if (filteredChildren.length === 1) {
     transformedChildren = transformedChildren[0];
