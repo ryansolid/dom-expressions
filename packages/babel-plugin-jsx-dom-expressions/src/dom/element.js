@@ -335,7 +335,6 @@ function transformAttributes(path, results) {
       ) {
         if (key === "ref") {
           // Normalize expressions for non-null and type-as
-          console.log(value.expression);
           while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
             value.expression = value.expression.expression;
           }
