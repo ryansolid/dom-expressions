@@ -44,6 +44,10 @@ export default function transformComponent(path) {
         if (t.isJSXExpressionContainer(value))
           if (key === "ref") {
             if (config.generate === "ssr") return;
+            // Normalize expressions for non-null and type-as
+            while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
+              value.expression = value.expression.expression;
+            }
             if (t.isLVal(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
