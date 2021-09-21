@@ -45,7 +45,7 @@ export default function transformComponent(path) {
           if (key === "ref") {
             if (config.generate === "ssr") return;
             // Normalize expressions for non-null and type-as
-            while (t.isTSNonNullExpression(value.expession) || t.isTSAsExpression(value.expression)) {
+            while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
               value.expression = value.expression.expression;
             }
             if (t.isLVal(value.expression)) {

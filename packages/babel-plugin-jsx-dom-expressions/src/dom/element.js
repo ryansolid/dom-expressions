@@ -334,6 +334,11 @@ function transformAttributes(path, results) {
           !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
       ) {
         if (key === "ref") {
+          // Normalize expressions for non-null and type-as
+          console.log(value.expression);
+          while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
+            value.expression = value.expression.expression;
+          }
           if (t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
