@@ -84,7 +84,7 @@ export function addEventListener(node, name, handler, delegate) {
 }
 
 export function classList(node, value, prev = {}) {
-  const classKeys = Object.keys(value),
+  const classKeys = Object.keys(value || {}),
     prevKeys = Object.keys(prev);
   let i, len;
   for (i = 0, len = prevKeys.length; i < len; i++) {
