@@ -46,4 +46,22 @@ describe("Test classList binding", () => {
       expect(div.className).toBe("color");
     });
   });
+
+  test("Tailwind Style", () => {
+    let div;
+    S.root(() => {
+      div = (
+        <div
+          classList={{
+            "px-2.5 py-1.5 text-xs": false,
+            "px-3 py-2 text-sm": false,
+            "px-4 py-2 text-sm": true,
+            "px-4 py-2 text-base": false,
+            "px-6 py-3 text-base": false
+          }}
+        />
+      );
+      expect(div.className).toBe("px-4 py-2 text-sm");
+    });
+  });
 });

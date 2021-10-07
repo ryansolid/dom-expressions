@@ -89,15 +89,15 @@ export function classList(node, value, prev = {}) {
   let i, len;
   for (i = 0, len = prevKeys.length; i < len; i++) {
     const key = prevKeys[i];
-    if (!key || key === "undefined" || key in value) continue;
+    if (!key || key === "undefined" || value[key]) continue;
     toggleClassKey(node, key, false);
     delete prev[key];
   }
   for (i = 0, len = classKeys.length; i < len; i++) {
     const key = classKeys[i],
       classValue = !!value[key];
-    if (!key || key === "undefined" || prev[key] === classValue) continue;
-    toggleClassKey(node, key, classValue);
+    if (!key || key === "undefined" || prev[key] === classValue || !classValue) continue;
+    toggleClassKey(node, key, true);
     prev[key] = classValue;
   }
   return prev;
