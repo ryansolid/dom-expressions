@@ -20,7 +20,7 @@ This library uses a heuristic whether to dynamic wrap expressions based on if th
 ```jsx
 const view = ({ item }) => {
   const itemId = item.id;
-  <tr class={itemId === selected() ? "danger" : ""}>
+  return <tr class={itemId === selected() ? "danger" : ""}>
     <td class="col-md-1">{itemId}</td>
     <td class="col-md-4">
       <a onclick={e => select(item, e)}>{item.label}</a>
