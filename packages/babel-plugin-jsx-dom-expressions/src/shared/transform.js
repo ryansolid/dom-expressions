@@ -1,9 +1,10 @@
 import * as t from "@babel/types";
-import config from "../config";
 import { transformElement as transformElementDOM } from "../dom/element";
 import { createTemplate as createTemplateDOM } from "../dom/template";
 import { transformElement as transformElementSSR } from "../ssr/element";
 import { createTemplate as createTemplateSSR } from "../ssr/template";
+import { transformElement as transformElementUniversal } from "../universal/element";
+import { createTemplate as createTemplateUniversal } from "../universal/template";
 import {
   getTagName,
   isComponent,
@@ -11,13 +12,14 @@ import {
   trimWhitespace,
   transformCondition,
   getStaticExpression,
-  escapeHTML
+  escapeHTML,
+  getConfig
 } from "./utils";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
 
-export function transformJSX(path, { opts }) {
-  Object.assign(config, opts);
+export function transformJSX(path) {
+  const config = getConfig(path);
   const replace = transformThis(path);
   const result = transformNode(
     path,
@@ -27,7 +29,12 @@ export function transformJSX(path, { opts }) {
           topLevel: true
         }
   );
-  const template = config.generate === "ssr" ? createTemplateSSR : createTemplateDOM;
+  const template =
+    config.generate === "universal"
+      ? createTemplateUniversal
+      : config.generate === "ssr"
+      ? createTemplateSSR
+      : createTemplateDOM;
   path.replaceWith(replace(template(path, result, false)));
 }
 
@@ -55,16 +62,22 @@ export function transformThis(path) {
 }
 
 export function transformNode(path, info = {}) {
+  const config = getConfig(path);
   const node = path.node;
   let staticValue;
   if (t.isJSXElement(node)) {
     let tagName = getTagName(node);
     if (isComponent(tagName)) return transformComponent(path);
-    const element = config.generate === "ssr" ? transformElementSSR : transformElementDOM;
+    const element =
+      config.generate === "universal"
+        ? transformElementUniversal
+        : config.generate === "ssr"
+        ? transformElementSSR
+        : transformElementDOM;
     return element(path, info);
   } else if (t.isJSXFragment(node)) {
     let results = { template: "", decl: [], exprs: [], dynamics: [] };
-    transformFragmentChildren(path.get("children"), results);
+    transformFragmentChildren(path.get("children"), results, config);
     return results;
   } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path))) {
     const text =

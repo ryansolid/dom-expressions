@@ -1,5 +1,5 @@
-import * as r from "../src/client";
-import * as r2 from "../src/server";
+import * as r from "../../src/client";
+import * as r2 from "../../src/server";
 
 globalThis._$HYDRATION = { events: [], completed: new WeakSet() };
 

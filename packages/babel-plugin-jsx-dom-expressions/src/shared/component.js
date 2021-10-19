@@ -1,7 +1,7 @@
 import * as t from "@babel/types";
 import { decode } from 'html-entities';
-import config from "../config";
 import {
+  getConfig,
   getTagName,
   isDynamic,
   registerImportMethod,
@@ -13,12 +13,15 @@ import {
 import { transformNode } from "./transform";
 import { createTemplate as createTemplateDOM } from "../dom/template";
 import { createTemplate as createTemplateSSR } from "../ssr/template";
+import { createTemplate as createTemplateUniversal } from "../universal/template";
 
 export default function transformComponent(path) {
-  let props = [],
+  let exprs = [],
+    config = getConfig(path),
+    tagName = getTagName(path.node),
+    props = [],
     runningObject = [],
-    exprs = [],
-    tagName = getTagName(path.node);
+    hasChildren = path.node.children.length > 0;
 
   if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
     registerImportMethod(path, tagName);
@@ -42,11 +45,15 @@ export default function transformComponent(path) {
             ? `${node.name.namespace.name}:${node.name.name.name}`
             : node.name.name,
           wrapName = t.isValidIdentifier(key) ? t.identifier : t.stringLiteral;
+        if (hasChildren && key === "children") return;
         if (t.isJSXExpressionContainer(value))
           if (key === "ref") {
             if (config.generate === "ssr") return;
             // Normalize expressions for non-null and type-as
-            while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
+            while (
+              t.isTSNonNullExpression(value.expression) ||
+              t.isTSAsExpression(value.expression)
+            ) {
               value.expression = value.expression.expression;
             }
             let binding,
@@ -138,7 +145,7 @@ export default function transformComponent(path) {
       }
     });
 
-  const childResult = transformComponentChildren(path.get("children"));
+  const childResult = transformComponentChildren(path.get("children"), config);
   if (childResult && childResult[0]) {
     if (childResult[1]) {
       const body =
@@ -178,8 +185,13 @@ export default function transformComponent(path) {
   return { exprs, template: "", component: true };
 }
 
-function transformComponentChildren(children) {
-  const createTemplate = config.generate === "ssr" ? createTemplateSSR : createTemplateDOM,
+function transformComponentChildren(children, config) {
+  const createTemplate =
+      config.generate === "universal"
+        ? createTemplateUniversal
+        : config.generate === "ssr"
+        ? createTemplateSSR
+        : createTemplateDOM,
     filteredChildren = filterChildren(children);
   if (!filteredChildren.length) return;
   let dynamic = false;

@@ -1,13 +1,18 @@
 import * as t from "@babel/types";
 import { decode } from 'html-entities';
-import config from "../config";
 import { filterChildren, trimWhitespace } from "./utils";
 import { transformNode } from "./transform";
 import { createTemplate as createTemplateDOM } from "../dom/template";
 import { createTemplate as createTemplateSSR } from "../ssr/template";
+import { createTemplate as createTemplateUniversal } from "../universal/template";
 
-export default function transformFragmentChildren(children, results) {
-  const createTemplate = config.generate === "ssr" ? createTemplateSSR : createTemplateDOM,
+export default function transformFragmentChildren(children, results, config) {
+  const createTemplate =
+      config.generate === "universal"
+        ? createTemplateUniversal
+        : config.generate === "ssr"
+        ? createTemplateSSR
+        : createTemplateDOM,
     filteredChildren = filterChildren(children),
     singleChild = filteredChildren.length === 1,
     childNodes = filteredChildren.reduce((memo, path) => {

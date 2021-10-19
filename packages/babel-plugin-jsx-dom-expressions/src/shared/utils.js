@@ -1,6 +1,5 @@
 import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
-import config from "../config";
 
 export const reservedNameSpaces = new Set([
   "class",
@@ -12,12 +11,16 @@ export const reservedNameSpaces = new Set([
   "attr"
 ]);
 
+export function getConfig(path) {
+  return path.hub.file.metadata.config;
+}
+
 export function registerImportMethod(path, name) {
   const imports =
     path.scope.getProgramParent().data.imports ||
     (path.scope.getProgramParent().data.imports = new Set());
   if (!imports.has(name)) {
-    addNamed(path, name, config.moduleName, {
+    addNamed(path, name, getConfig(path).moduleName, {
       nameHint: `_$${name}`
     });
     imports.add(name);
@@ -59,6 +62,7 @@ export function isComponent(tagName) {
 }
 
 export function isDynamic(path, { checkMember, checkTags, checkCallExpressions = true, native }) {
+  const config = getConfig(path);
   if (config.generate === "ssr" && native) {
     checkMember = false;
     checkCallExpressions = false;
@@ -160,7 +164,31 @@ export function toPropertyName(name) {
   return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
 }
 
+export function wrappedByText(list, startIndex) {
+  let index = startIndex,
+    wrapped;
+  while (--index >= 0) {
+    const node = list[index];
+    if (!node) continue;
+    if (node.text) {
+      wrapped = true;
+      break;
+    }
+    if (node.id) return false;
+  }
+  if (!wrapped) return false;
+  index = startIndex;
+  while (++index < list.length) {
+    const node = list[index];
+    if (!node) continue;
+    if (node.text) return true;
+    if (node.id) return false;
+  }
+  return false;
+}
+
 export function transformCondition(path, deep) {
+  const config = getConfig(path);
   const expr = path.node;
   if (config.memoWrapper) {
     registerImportMethod(path, config.memoWrapper);

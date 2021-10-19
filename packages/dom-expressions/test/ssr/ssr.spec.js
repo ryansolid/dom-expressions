@@ -1,4 +1,4 @@
-import * as r from "../src/server";
+import * as r from "../../src/server";
 import * as S from "s-js";
 
 globalThis.TextEncoder = function () {

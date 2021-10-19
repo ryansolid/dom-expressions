@@ -6,7 +6,6 @@ import {
   SVGElements
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
-import config from "../config";
 import {
   getTagName,
   isDynamic,
@@ -14,7 +13,8 @@ import {
   filterChildren,
   checkLength,
   escapeHTML,
-  reservedNameSpaces
+  reservedNameSpaces,
+  getConfig
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -29,6 +29,7 @@ function appendToTemplate(template, value) {
 
 export function transformElement(path, info) {
   let tagName = getTagName(path.node),
+    config = getConfig(path),
     voidTag = VoidElements.indexOf(tagName) > -1,
     results = {
       template: [`<${tagName}`],
@@ -45,7 +46,7 @@ export function transformElement(path, info) {
   transformAttributes(path, results);
   appendToTemplate(results.template, ">");
   if (!voidTag) {
-    transformChildren(path, results);
+    transformChildren(path, results, config);
     appendToTemplate(results.template, `</${tagName}>`);
   }
   return results;
@@ -377,9 +378,8 @@ function transformClasslistObject(path, expr, values, quasis) {
   });
 }
 
-function transformChildren(path, results) {
-  const { hydratable } = config,
-    doNotEscape = path.doNotEscape;
+function transformChildren(path, results, { hydratable }) {
+  const doNotEscape = path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"));
   filteredChildren.forEach(node => {
     const child = transformNode(node, { doNotEscape });
