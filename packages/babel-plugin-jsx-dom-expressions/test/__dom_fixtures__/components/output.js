@@ -17,26 +17,31 @@ const _tmpl$ = _$template(`<div>Hello </div>`, 2),
 
 import { Show } from "somewhere";
 
-const Child = props => [
-  (() => {
-    const _el$ = _tmpl$.cloneNode(true),
-      _el$2 = _el$.firstChild;
+const Child = props => {
+  const [s, set] = createSignal();
+  return [
+    (() => {
+      const _el$ = _tmpl$.cloneNode(true),
+        _el$2 = _el$.firstChild;
 
-    const _ref$ = props.ref;
-    typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
+      const _ref$ = props.ref;
+      typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
 
-    _$insert(_el$, () => props.name, null);
+      _$insert(_el$, () => props.name, null);
 
-    return _el$;
-  })(),
-  (() => {
-    const _el$3 = _tmpl$2.cloneNode(true);
+      return _el$;
+    })(),
+    (() => {
+      const _el$3 = _tmpl$2.cloneNode(true);
 
-    _$insert(_el$3, () => props.children);
+      set(_el$3);
 
-    return _el$3;
-  })()
-];
+      _$insert(_el$3, () => props.children);
+
+      return _el$3;
+    })()
+  ];
+};
 
 const template = props => {
   let childRef;
@@ -139,7 +144,11 @@ const template3 = _$createComponent(Child, {
   }
 });
 
+const [s, set] = createSignal();
+
 const template4 = _$createComponent(Child, {
+  ref: set,
+
   get children() {
     return _tmpl$2.cloneNode(true);
   }

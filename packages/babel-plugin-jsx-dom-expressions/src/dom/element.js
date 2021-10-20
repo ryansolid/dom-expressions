@@ -335,10 +335,18 @@ function transformAttributes(path, results) {
       ) {
         if (key === "ref") {
           // Normalize expressions for non-null and type-as
-          while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
+          while (
+            t.isTSNonNullExpression(value.expression) ||
+            t.isTSAsExpression(value.expression)
+          ) {
             value.expression = value.expression.expression;
           }
-          if (t.isLVal(value.expression)) {
+          let binding,
+            isFunction =
+              t.isIdentifier(value.expression) &&
+              (binding = path.scope.getBinding(value.expression.name)) &&
+              binding.kind === "const";
+          if (!isFunction && t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
               t.variableDeclaration("const", [
@@ -356,7 +364,7 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (t.isFunction(value.expression)) {
+          } else if (isFunction || t.isFunction(value.expression)) {
             results.exprs.unshift(
               t.expressionStatement(t.callExpression(value.expression, [elem]))
             );

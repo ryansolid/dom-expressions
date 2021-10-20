@@ -23,33 +23,38 @@ const _tmpl$ = _$template(`<div>Hello <!#><!/></div>`, 4),
 
 import { Show } from "somewhere";
 
-const Child = props => [
-  (() => {
-    const _el$ = _$getNextElement(_tmpl$),
-      _el$2 = _el$.firstChild,
-      _el$3 = _el$2.nextSibling,
-      [_el$4, _co$] = _$getNextMarker(_el$3.nextSibling);
+const Child = props => {
+  const [s, set] = createSignal();
+  return [
+    (() => {
+      const _el$ = _$getNextElement(_tmpl$),
+        _el$2 = _el$.firstChild,
+        _el$3 = _el$2.nextSibling,
+        [_el$4, _co$] = _$getNextMarker(_el$3.nextSibling);
 
-    const _ref$ = props.ref;
-    typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
+      const _ref$ = props.ref;
+      typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
 
-    _$insert(_el$, () => props.name, _el$4, _co$);
+      _$insert(_el$, () => props.name, _el$4, _co$);
 
-    return _el$;
-  })(),
-  (() => {
-    const _el$5 = _$getNextElement(_tmpl$2);
+      return _el$;
+    })(),
+    (() => {
+      const _el$5 = _$getNextElement(_tmpl$2);
 
-    _$insert(
-      _el$5,
-      () => props.children,
-      undefined,
-      Array.prototype.slice.call(_el$5.childNodes, 0)
-    );
+      set(_el$5);
 
-    return _el$5;
-  })()
-];
+      _$insert(
+        _el$5,
+        () => props.children,
+        undefined,
+        Array.prototype.slice.call(_el$5.childNodes, 0)
+      );
+
+      return _el$5;
+    })()
+  ];
+};
 
 const template = props => {
   let childRef;
@@ -166,7 +171,11 @@ const template3 = _$createComponent(Child, {
   }
 });
 
+const [s, set] = createSignal();
+
 const template4 = _$createComponent(Child, {
+  ref: set,
+
   get children() {
     return _$getNextElement(_tmpl$2);
   }

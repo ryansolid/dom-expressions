@@ -1,4 +1,5 @@
 const selected = true;
+let link;
 const template = (
   <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
     <h1

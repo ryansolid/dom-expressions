@@ -1,11 +1,12 @@
 import { Show } from "somewhere"
 
-const Child = props => (
-  <>
+const Child = props => {
+  const [s, set] = createSignal();
+  return <>
     <div ref={props.ref}>Hello {props.name}</div>
-    <div>{props.children}</div>
+    <div ref={set}>{props.children}</div>
   </>
-);
+};
 
 const template = props => {
   let childRef;
@@ -44,7 +45,8 @@ const template3 = (
   </Child>
 );
 
-const template4 = <Child>{<div />}</Child>;
+const [s, set] = createSignal();
+const template4 = <Child ref={set}>{<div />}</Child>;
 
 const template5 = <Child dynamic={state.dynamic}>{state.dynamic}</Child>;
 

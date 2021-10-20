@@ -17,6 +17,7 @@ const _tmpl$ = _$template(
   _tmpl$5 = _$template(`<input type="checkbox">`, 1);
 
 const selected = true;
+let link;
 
 const template = (() => {
   const _el$ = _$getNextElement(_tmpl$),

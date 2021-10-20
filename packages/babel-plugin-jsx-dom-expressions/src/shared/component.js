@@ -49,7 +49,12 @@ export default function transformComponent(path) {
             while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
               value.expression = value.expression.expression;
             }
-            if (t.isLVal(value.expression)) {
+            let binding,
+            isFunction =
+              t.isIdentifier(value.expression) &&
+              (binding = path.scope.getBinding(value.expression.name)) &&
+              binding.kind === "const";
+            if (!isFunction && t.isLVal(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
                 t.objectMethod(
@@ -74,7 +79,7 @@ export default function transformComponent(path) {
                   ])
                 )
               );
-            } else if (t.isFunction(value.expression)) {
+            } else if (isFunction || t.isFunction(value.expression)) {
               runningObject.push(t.objectProperty(t.identifier("ref"), value.expression));
             } else if (t.isCallExpression(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
