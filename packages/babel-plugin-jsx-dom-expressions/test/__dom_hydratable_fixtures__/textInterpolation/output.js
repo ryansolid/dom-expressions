@@ -109,10 +109,14 @@ const multiLineNoTrailingSpace = _$getNextElement(_tmpl$3);
 /* prettier-ignore */
 
 const escape = _$getNextElement(_tmpl$10);
+/* prettier-ignore */
 
 const escape2 = _$createComponent(Comp, {
-  children: "<Hi> "
+  children: "\xA0<Hi>\xA0"
 });
+/* prettier-ignore */
+
+const escape3 = "\xA0<Hi>\xA0";
 
 const injection = _$getNextElement(_tmpl$11);
 

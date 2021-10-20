@@ -97,10 +97,14 @@ const multiLineNoTrailingSpace = _tmpl$3.cloneNode(true);
 /* prettier-ignore */
 
 const escape = _tmpl$8.cloneNode(true);
+/* prettier-ignore */
 
 const escape2 = _$createComponent(Comp, {
-  children: "<Hi> "
+  children: "\xA0<Hi>\xA0"
 });
+/* prettier-ignore */
+
+const escape3 = "\xA0<Hi>\xA0";
 
 const injection = _tmpl$9.cloneNode(true);
 

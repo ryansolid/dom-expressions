@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+import { decode } from 'html-entities';
 import config from "../config";
 import {
   getTagName,
@@ -180,7 +181,7 @@ function transformComponentChildren(children) {
 
   let transformedChildren = filteredChildren.reduce((memo, path) => {
     if (t.isJSXText(path.node)) {
-      const v = trimWhitespace(path.node.extra.rawValue);
+      const v =  decode(trimWhitespace(path.node.extra.raw));
       if (v.length) memo.push(t.stringLiteral(v));
     } else {
       const child = transformNode(path, {

@@ -47,10 +47,14 @@ const multiLineNoTrailingSpace = _$ssr(_tmpl$3, _$ssrHydrationKey());
 /* prettier-ignore */
 
 const escape = _$ssr(_tmpl$10, _$ssrHydrationKey());
+/* prettier-ignore */
 
 const escape2 = _$createComponent(Comp, {
-  children: "<Hi> "
+  children: "\xA0<Hi>\xA0"
 });
+/* prettier-ignore */
+
+const escape3 = "\xA0<Hi>\xA0";
 
 const injection = _$ssr(_tmpl$11, _$ssrHydrationKey());
 

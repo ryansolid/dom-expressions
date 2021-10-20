@@ -2116,7 +2116,7 @@ export namespace JSX {
     height?: number | string;
     name?: string;
     referrerpolicy?: HTMLReferrerPolicy;
-    sandbox?: HTMLIframeSandbox;
+    sandbox?: HTMLIframeSandbox | string;
     src?: string;
     srcdoc?: string;
     width?: number | string;

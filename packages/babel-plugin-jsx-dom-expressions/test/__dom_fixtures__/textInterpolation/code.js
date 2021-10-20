@@ -40,9 +40,15 @@ const escape = <span>
   &nbsp;&lt;Hi&gt;&nbsp;
 </span>
 
+/* prettier-ignore */
 const escape2 = <Comp>
   &nbsp;&lt;Hi&gt;&nbsp;
 </Comp>
+
+/* prettier-ignore */
+const escape3 = <>
+  &nbsp;&lt;Hi&gt;&nbsp;
+</>
 
 const injection = <span>Hi{"<script>alert();</script>"}</span>
 

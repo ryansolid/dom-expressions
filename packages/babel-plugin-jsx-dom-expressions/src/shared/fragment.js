@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+import { decode } from 'html-entities';
 import config from "../config";
 import { filterChildren, trimWhitespace } from "./utils";
 import { transformNode } from "./transform";
@@ -11,7 +12,7 @@ export default function transformFragmentChildren(children, results) {
     singleChild = filteredChildren.length === 1,
     childNodes = filteredChildren.reduce((memo, path) => {
       if (t.isJSXText(path.node)) {
-        const v = trimWhitespace(path.node.extra.raw);
+        const v =  decode(trimWhitespace(path.node.extra.raw));
         if (v.length) memo.push(t.stringLiteral(v));
       } else {
         const child = transformNode(path, { topLevel: true, fragmentChild: true });
