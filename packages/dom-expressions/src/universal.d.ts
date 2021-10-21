@@ -5,21 +5,21 @@ export interface RendererOptions<NodeType> {
   isTextNode(node: NodeType): boolean;
   setProperty<T>(node: NodeType, name: string, value: T, prev?: T): void;
   insertNode(parent: NodeType, node: NodeType, anchor?: NodeType): void;
-  removeNode(parent: NodeType, node: NodeType);
+  removeNode(parent: NodeType, node: NodeType): void;
   getParentNode(node: NodeType): NodeType;
   getFirstChild(node: NodeType): NodeType;
   getNextSibling(node: NodeType): NodeType;
 }
 
 export interface Renderer<NodeType> {
-  render(code: () => JSX.Element, node: NodeType): () => void;
+  render(code: () => NodeType, node: NodeType): () => void;
   effect<T>(fn: (prev?: T) => T, init?: T): void;
   memo<T>(fn: () => T, equal: boolean): () => T;
-  createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
+  createComponent<T>(Comp: (props: T) => NodeType, props: T): NodeType;
   createElement(tag: string): NodeType;
   createTextNode(value: string): NodeType;
-  insertNode(parent: NodeType, node: NodeType, anchor?: NodeType);
-  insert<T>(parent: any, accessor: (() => T) | T, marker?: any | null): JSX.Element;
+  insertNode(parent: NodeType, node: NodeType, anchor?: NodeType): void;
+  insert<T>(parent: any, accessor: (() => T) | T, marker?: any | null): NodeType;
   spread<T>(node: any, accessor: (() => T) | T, skipChildren?: Boolean): void;
   setProp<T>(node: NodeType, name: string, value: T, prev?: T): T;
   mergeProps(...sources: unknown[]): unknown;
