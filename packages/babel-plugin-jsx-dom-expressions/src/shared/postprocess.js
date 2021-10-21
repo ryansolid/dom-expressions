@@ -1,11 +1,11 @@
 import * as t from "@babel/types";
-import { registerImportMethod } from "./utils";
+import { getConfig, registerImportMethod } from "./utils";
 import { appendTemplates as appendTemplatesDOM } from "../dom/template";
 import { appendTemplates as appendTemplatesSSR } from "../ssr/template";
-import config from "../config";
 
 // add to the top/bottom of the module.
 export default path => {
+  const config = getConfig(path)
   if (path.scope.data.events) {
     registerImportMethod(path, "delegateEvents");
     path.node.body.push(

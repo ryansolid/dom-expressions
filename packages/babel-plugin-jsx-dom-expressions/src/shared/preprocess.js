@@ -1,6 +1,7 @@
 import config from "../config";
 
-export default path => {
+export default (path, { opts })  => {
+  path.hub.file.metadata.config = Object.assign({}, config, opts);
   const lib = config.requireImportSource;
   if (lib) {
     const comments = path.hub.file.ast.comments;

@@ -103,7 +103,7 @@ const template = props => {
           {
             name: "Jason"
           },
-          dynamicSpread(),
+          dynamicSpread,
           {
             ref(r$) {
               const _ref$3 = props.ref;

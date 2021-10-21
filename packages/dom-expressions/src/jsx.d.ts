@@ -1674,6 +1674,7 @@ export namespace JSX {
     | "unsafe-url";
   type HTMLIframeSandbox =
     | "allow-downloads-without-user-activation"
+    | "allow-downloads"
     | "allow-forms"
     | "allow-modals"
     | "allow-orientation-lock"

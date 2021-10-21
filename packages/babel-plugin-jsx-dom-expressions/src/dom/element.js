@@ -9,7 +9,6 @@ import {
   SVGElements
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
-import config from "../config";
 import {
   getTagName,
   isDynamic,
@@ -20,12 +19,15 @@ import {
   toPropertyName,
   checkLength,
   getStaticExpression,
-  reservedNameSpaces
+  reservedNameSpaces,
+  wrappedByText,
+  getConfig
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
 export function transformElement(path, info) {
   let tagName = getTagName(path.node),
+    config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
     results = {
@@ -46,7 +48,7 @@ export function transformElement(path, info) {
   }
   results.template += ">";
   if (!voidTag) {
-    transformChildren(path, results);
+    transformChildren(path, results, config);
     results.template += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
@@ -164,7 +166,8 @@ function transformAttributes(path, results) {
     tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
     isCE = tagName.includes("-"),
-    hasChildren = path.node.children.length > 0;
+    hasChildren = path.node.children.length > 0,
+    config = getConfig(path);
 
   // preprocess styles
   const styleAttribute = attributes.find(
@@ -303,7 +306,9 @@ function transformAttributes(path, results) {
               isDynamic(attribute.get("argument"), {
                 checkMember: true
               })
-                ? t.arrowFunctionExpression([], node.argument)
+                ? t.isCallExpression(node.argument)
+                  ? node.argument.callee
+                  : t.arrowFunctionExpression([], node.argument)
                 : node.argument,
               t.booleanLiteral(isSVG),
               t.booleanLiteral(hasChildren)
@@ -560,31 +565,7 @@ function transformAttributes(path, results) {
   results.hasHydratableEvent = results.hasHydratableEvent || hasHydratableEvent;
 }
 
-function wrappedByText(list, startIndex) {
-  let index = startIndex,
-    wrapped;
-  while (--index >= 0) {
-    const node = list[index];
-    if (!node) continue;
-    if (node.text) {
-      wrapped = true;
-      break;
-    }
-    if (node.id) return false;
-  }
-  if (!wrapped) return false;
-  index = startIndex;
-  while (++index < list.length) {
-    const node = list[index];
-    if (!node) continue;
-    if (node.text) return true;
-    if (node.id) return false;
-  }
-  return false;
-}
-
-function transformChildren(path, results) {
-  const { hydratable } = config;
+function transformChildren(path, results, config) {
   let tempPath = results.id && results.id.name,
     tagName = getTagName(path.node),
     nextPlaceholder,
@@ -594,7 +575,7 @@ function transformChildren(path, results) {
       .map(
         (child, index) =>
           transformNode(child, {
-            skipId: !results.id || !detectExpressions(filteredChildren, index)
+            skipId: !results.id || !detectExpressions(filteredChildren, index, config)
           })
         // combine adjacent textNodes
       )
@@ -611,7 +592,7 @@ function transformChildren(path, results) {
     if (!child) return;
     results.template += child.template;
     if (child.id) {
-      if (hydratable && tagName === "html") {
+      if (config.hydratable && tagName === "html") {
         registerImportMethod(path, "getNextMatch");
       }
       const walk = t.memberExpression(
@@ -621,7 +602,7 @@ function transformChildren(path, results) {
       results.decl.push(
         t.variableDeclarator(
           child.id,
-          hydratable && tagName === "html"
+          config.hydratable && tagName === "html"
             ? t.callExpression(t.identifier("_$getNextMatch"), [
                 walk,
                 t.stringLiteral(child.tagName)
@@ -639,7 +620,7 @@ function transformChildren(path, results) {
     } else if (child.exprs.length) {
       registerImportMethod(path, "insert");
       const multi = checkLength(filteredChildren),
-        markers = hydratable && multi;
+        markers = config.hydratable && multi;
       // boxed by textNodes
       if (markers || wrappedByText(childNodes, index)) {
         let exprId, contentId;
@@ -676,7 +657,7 @@ function transformChildren(path, results) {
           t.expressionStatement(
             t.callExpression(
               t.identifier("_$insert"),
-              hydratable
+              config.hydratable
                 ? [
                     results.id,
                     child.exprs[0],
@@ -705,7 +686,8 @@ function transformChildren(path, results) {
 }
 
 function createPlaceholder(path, results, tempPath, i, char) {
-  const exprId = path.scope.generateUidIdentifier("el$");
+  const exprId = path.scope.generateUidIdentifier("el$"),
+    config = getConfig(path);
   let contentId;
   results.template += `<!${char}>`;
   if (config.hydratable && char === "/") {
@@ -737,7 +719,7 @@ function nextChild(children, index) {
 }
 
 // reduce unnecessary refs
-function detectExpressions(children, index) {
+function detectExpressions(children, index, config) {
   if (children[index - 1]) {
     const node = children[index - 1].node;
     if (
@@ -774,7 +756,7 @@ function detectExpressions(children, index) {
       )
         return true;
       const nextChildren = filterChildren(children[i].get("children"));
-      if (nextChildren.length) if (detectExpressions(nextChildren, 0)) return true;
+      if (nextChildren.length) if (detectExpressions(nextChildren, 0, config)) return true;
     }
   }
 }

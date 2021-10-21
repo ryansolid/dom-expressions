@@ -1,7 +1,7 @@
 import * as t from "@babel/types";
-import { decode } from 'html-entities';
-import config from "../config";
+import { decode } from "html-entities";
 import {
+  getConfig,
   getTagName,
   isDynamic,
   registerImportMethod,
@@ -13,12 +13,15 @@ import {
 import { transformNode } from "./transform";
 import { createTemplate as createTemplateDOM } from "../dom/template";
 import { createTemplate as createTemplateSSR } from "../ssr/template";
+import { createTemplate as createTemplateUniversal } from "../universal/template";
 
 export default function transformComponent(path) {
-  let props = [],
+  let exprs = [],
+    config = getConfig(path),
+    tagName = getTagName(path.node),
+    props = [],
     runningObject = [],
-    exprs = [],
-    tagName = getTagName(path.node);
+    hasChildren = path.node.children.length > 0;
 
   if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
     registerImportMethod(path, tagName);
@@ -35,25 +38,37 @@ export default function transformComponent(path) {
           props.push(t.objectExpression(runningObject));
           runningObject = [];
         }
-        props.push(node.argument);
+        props.push(
+          isDynamic(attribute.get("argument"), {
+            checkMember: true
+          })
+            ? t.isCallExpression(node.argument)
+              ? node.argument.callee
+              : t.arrowFunctionExpression([], node.argument)
+            : node.argument
+        );
       } else {
         const value = node.value || t.booleanLiteral(true),
           key = t.isJSXNamespacedName(node.name)
             ? `${node.name.namespace.name}:${node.name.name.name}`
             : node.name.name,
           wrapName = t.isValidIdentifier(key) ? t.identifier : t.stringLiteral;
+        if (hasChildren && key === "children") return;
         if (t.isJSXExpressionContainer(value))
           if (key === "ref") {
             if (config.generate === "ssr") return;
             // Normalize expressions for non-null and type-as
-            while (t.isTSNonNullExpression(value.expression) || t.isTSAsExpression(value.expression)) {
+            while (
+              t.isTSNonNullExpression(value.expression) ||
+              t.isTSAsExpression(value.expression)
+            ) {
               value.expression = value.expression.expression;
             }
             let binding,
-            isFunction =
-              t.isIdentifier(value.expression) &&
-              (binding = path.scope.getBinding(value.expression.name)) &&
-              binding.kind === "const";
+              isFunction =
+                t.isIdentifier(value.expression) &&
+                (binding = path.scope.getBinding(value.expression.name)) &&
+                binding.kind === "const";
             if (!isFunction && t.isLVal(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
@@ -138,7 +153,7 @@ export default function transformComponent(path) {
       }
     });
 
-  const childResult = transformComponentChildren(path.get("children"));
+  const childResult = transformComponentChildren(path.get("children"), config);
   if (childResult && childResult[0]) {
     if (childResult[1]) {
       const body =
@@ -178,15 +193,20 @@ export default function transformComponent(path) {
   return { exprs, template: "", component: true };
 }
 
-function transformComponentChildren(children) {
-  const createTemplate = config.generate === "ssr" ? createTemplateSSR : createTemplateDOM,
+function transformComponentChildren(children, config) {
+  const createTemplate =
+      config.generate === "universal"
+        ? createTemplateUniversal
+        : config.generate === "ssr"
+        ? createTemplateSSR
+        : createTemplateDOM,
     filteredChildren = filterChildren(children);
   if (!filteredChildren.length) return;
   let dynamic = false;
 
   let transformedChildren = filteredChildren.reduce((memo, path) => {
     if (t.isJSXText(path.node)) {
-      const v =  decode(trimWhitespace(path.node.extra.raw));
+      const v = decode(trimWhitespace(path.node.extra.raw));
       if (v.length) memo.push(t.stringLiteral(v));
     } else {
       const child = transformNode(path, {

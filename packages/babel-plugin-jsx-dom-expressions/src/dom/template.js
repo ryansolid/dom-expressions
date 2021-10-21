@@ -1,9 +1,9 @@
 import * as t from "@babel/types";
-import config from "../config";
-import { registerImportMethod } from "../shared/utils";
+import { getConfig, registerImportMethod } from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
+  const config = getConfig(path);
   if (result.id) {
     registerTemplate(path, result);
     if (
@@ -57,7 +57,7 @@ export function appendTemplates(path, templates) {
 }
 
 function registerTemplate(path, results) {
-  const { hydratable } = config;
+  const { hydratable } = getConfig(path);
   let decl;
   if (results.template.length) {
     let templateDef, templateId;
@@ -93,6 +93,7 @@ function registerTemplate(path, results) {
 
 function wrapDynamics(path, dynamics) {
   if (!dynamics.length) return;
+  const config = getConfig(path);
   registerImportMethod(path, config.effectWrapper);
 
   const effectWrapperId = `_$${config.effectWrapper}`;

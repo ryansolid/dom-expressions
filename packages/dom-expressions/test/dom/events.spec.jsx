@@ -1,4 +1,4 @@
-import * as r from "../src/client";
+import * as r from "../../src/client";
 import * as S from "s-js";
 
 describe("Test Synthetic event bubbling", () => {
