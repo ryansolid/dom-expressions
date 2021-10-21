@@ -4,11 +4,13 @@ type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Nod
 interface Runtime {
   effect<T>(fn: (prev?: T) => T, init?: T): any;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
+  spread<T>(node: Element, accessor: (() => T) | T, isSVG?: Boolean, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
   addEventListener(node: Element, name: string, handler: () => void, delegate: boolean): void;
   delegateEvents(eventNames: string[]): void;
   classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): void;
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
+  mergeProps(...sources: unknown[]): unknown;
   dynamicProperty(props: any, key: string): any;
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
@@ -82,6 +84,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     markup = markup
       .replace(selfClosing, fullClosing)
       .replace(/<(<!--#-->)/g, "<###")
+      .replace(/\.\.\.(<!--#-->)/g, "###")
       .replace(attrSeeker, attrReplacer)
       .replace(/>\n+\s*/g, ">")
       .replace(/\n+\s*</g, "<")
@@ -214,18 +217,32 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     options.templateId = childOptions.templateId;
   }
 
+  function processComponentProps(propGroups: (string | string[])[]) {
+    let result = []
+    for (const props of propGroups) {
+      if (Array.isArray(props)) {
+        if (!props.length) continue;
+        result.push(`r.wrapProps({${props.join(",") || ""}})`)
+      } else result.push(props);
+    }
+    return result.length > 1 ? `r.mergeProps(${result.join(",")})`: result[0];
+  }
+
   function processComponent(node: IDom, options: any) {
+    let props: string[] = [];
     const keys = Object.keys(node.attrs),
-      props = [],
+      propGroups: (string | string[])[] = [props],
       componentIdentifier = options.counter++;
 
     for (let i = 0; i < keys.length; i++) {
       const name = keys[i],
         value = node.attrs[name];
 
-      if (value === "###") {
-        let count = options.counter++;
-        props.push(`${name}: exprs[${count}]`);
+      if (name === "###") {
+        propGroups.push(`exprs[${options.counter++}]`);
+        propGroups.push((props = []));
+      } else if (value === "###") {
+        props.push(`${name}: exprs[${options.counter++}]`);
       } else props.push(`${name}: "${value}"`);
     }
     if (
@@ -256,15 +273,15 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       options.exprs.push(
         `r.insert(${
           options.parent
-        }, r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${
-          props.join(", ") || ""
-        }}))${tag ? `, ${tag}` : ""})`
+        }, r.createComponent(exprs[${componentIdentifier}],${processComponentProps(propGroups)})${
+          tag ? `, ${tag}` : ""
+        })`
       );
     else
       options.exprs.push(
         `${
           options.fragment ? "" : "return "
-        }r.createComponent(exprs[${componentIdentifier}], r.wrapProps({${props.join(", ") || ""}}))`
+        }r.createComponent(exprs[${componentIdentifier}],${processComponentProps(propGroups)})`
       );
     options.path = tag;
     options.first = false;
@@ -330,6 +347,11 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
         if (value === "###") {
           delete node.attrs[name];
           parseAttribute(tag, name, isSVG, isCE, options);
+        } else if (name === "###") {
+          delete node.attrs[name];
+          options.exprs.push(
+            `r.spread(${tag},exprs[${options.counter++}],${isSVG},${!!node.children.length})`
+          );
         }
       }
       options.path = tag;

@@ -42,7 +42,7 @@ export function style(
   prev?: { [k: string]: string }
 ): void;
 export function getOwner(): unknown;
-export function mergeProps(target: unknown, ...sources: unknown[]): unknown;
+export function mergeProps(...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
 
 export function hydrate(fn: () => JSX.Element, node: MountableElement): () => void;

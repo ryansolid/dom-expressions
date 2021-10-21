@@ -6,10 +6,10 @@ const html = createHTML(r);
 
 const FIXTURES = [
   '<div id="main"><h1 random="">Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label class="name" for="entry">Edit:</label><input id="entry" type="text" readonly=""></div>',
-  '<div id="main" class="selected also" refset="true"><h1 class="hello" title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
+  '<div id="main" class="selected also" refset="true" title="hi"><h1 class="hello" title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
   '<div id="main"><button>Click Bound</button><button>Click Delegated</button><button>Click Listener</button></div>',
   "<div>First</div>middle<p>after1</p><div>Last</div><p>after2</p>",
-  '<div id="main"><div>John R.<span>Smith</span></div><div>After</div></div>',
+  '<div id="main" title="hi"><div>John R.<span>Smith</span></div><div>After</div></div>',
   "<div>John R.<span>Smith</span></div>",
   "<div><div>Hi</div></div>",
   "<div><b>Hello, my name is: <i>John</i></b></div>",
@@ -43,6 +43,7 @@ describe("Test HTML", () => {
           ref=${el => {
             el.setAttribute("refset", "true");
           }}
+          ...${() => ({title: "hi"})}
         >
           <h1 class=${welcoming} title=${welcoming} style=${() => ({ "background-color": "red" })}>
             <a href="/" ref=${r => (link = r)}>Welcome</a>
@@ -107,7 +108,7 @@ describe("Test HTML", () => {
       html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
     S.root(() => {
       const template = html`
-        <div id="main">
+        <div id="main" ...${() => ({title: "hi"})}>
           <${Comp} name=${() => "John"} middle="R."><span>Smith</span><//>
           <div>After</div>
         </div>

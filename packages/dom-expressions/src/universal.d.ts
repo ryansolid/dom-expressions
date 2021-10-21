@@ -22,7 +22,7 @@ export interface Renderer<NodeType> {
   insert<T>(parent: any, accessor: (() => T) | T, marker?: any | null): JSX.Element;
   spread<T>(node: any, accessor: (() => T) | T, skipChildren?: Boolean): void;
   setProp<T>(node: NodeType, name: string, value: T, prev?: T): T;
-  mergeProps(target: unknown, ...sources: unknown[]): unknown;
+  mergeProps(...sources: unknown[]): unknown;
 }
 
 export function createRenderer<NodeType>(options: RendererOptions<NodeType>): Renderer<NodeType>;
