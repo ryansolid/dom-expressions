@@ -71,7 +71,7 @@ const template = props => {
           {
             name: "Jason"
           },
-          dynamicSpread(),
+          dynamicSpread,
           {
             get children() {
               return _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(content));

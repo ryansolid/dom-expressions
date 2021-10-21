@@ -306,7 +306,9 @@ function transformAttributes(path, results) {
               isDynamic(attribute.get("argument"), {
                 checkMember: true
               })
-                ? t.arrowFunctionExpression([], node.argument)
+                ? t.isCallExpression(node.argument)
+                  ? node.argument.callee
+                  : t.arrowFunctionExpression([], node.argument)
                 : node.argument,
               t.booleanLiteral(isSVG),
               t.booleanLiteral(hasChildren)

@@ -26,7 +26,7 @@ const template = (() => {
 
   _el$.style.setProperty("color", color);
 
-  _$spread(_el$2, () => results(), false, true);
+  _$spread(_el$2, results, false, true);
 
   _$setAttribute(_el$2, "title", welcoming());
 

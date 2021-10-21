@@ -133,18 +133,22 @@ const multiLineNoTrailingSpace = (() => {
 const escape = (() => {
   const _el$26 = _$createElement("span");
 
-  _$insertNode(_el$26, _$createTextNode("&nbsp;&lt;Hi&gt;&nbsp;"));
+  _$insertNode(_el$26, _$createTextNode("\xA0<Hi>\xA0"));
 
   return _el$26;
 })();
+/* prettier-ignore */
 
 const escape2 = _$createComponent(Comp, {
-  children: "<Hi> "
+  children: "\xA0<Hi>\xA0"
 });
+/* prettier-ignore */
+
+const escape3 = "\xA0<Hi>\xA0";
 
 const injection = (() => {
   const _el$28 = _$createElement("span"),
-    _el$29 = _$createTextNode("Hi&lt;script>alert();&lt;/script>");
+    _el$29 = _$createTextNode("Hi<script>alert();</script>");
 
   _$insertNode(_el$28, _el$29);
 

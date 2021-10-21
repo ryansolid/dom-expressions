@@ -265,7 +265,9 @@ export function createRenderer({
 function mergeProps(...sources) {
   const target = {};
   for (let i = 0; i < sources.length; i++) {
-    const descriptors = Object.getOwnPropertyDescriptors(sources[i]);
+    let source = sources[i];
+    if (typeof source === "function") source = source();
+    const descriptors = Object.getOwnPropertyDescriptors(source);
     Object.defineProperties(target, descriptors);
   }
   return target;

@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+import { decode } from "html-entities";
 import {
   getTagName,
   isDynamic,
@@ -55,7 +56,9 @@ function transformAttributes(path, results) {
               isDynamic(attribute.get("argument"), {
                 checkMember: true
               })
-                ? t.arrowFunctionExpression([], node.argument)
+                ? t.isCallExpression(node.argument)
+                  ? node.argument.callee
+                  : t.arrowFunctionExpression([], node.argument)
                 : node.argument,
               t.booleanLiteral(hasChildren)
             ])
@@ -187,7 +190,6 @@ function transformChildren(path, results) {
   const appends = [];
   childNodes.forEach((child, index) => {
     if (!child) return;
-    // results.template += child.template;
     if (child.id) {
       registerImportMethod(path, "insertNode");
       let insert = child.id;
@@ -197,18 +199,18 @@ function transformChildren(path, results) {
           results.decl.push(
             t.variableDeclarator(
               child.id,
-              t.callExpression(t.identifier("_$createTextNode"), [t.stringLiteral(child.template)])
+              t.callExpression(t.identifier("_$createTextNode"), [
+                t.stringLiteral(decode(child.template))
+              ])
             )
           );
-        } else insert = t.callExpression(t.identifier("_$createTextNode"), [t.stringLiteral(child.template)])
+        } else
+          insert = t.callExpression(t.identifier("_$createTextNode"), [
+            t.stringLiteral(decode(child.template))
+          ]);
       }
       appends.push(
-        t.expressionStatement(
-          t.callExpression(t.identifier("_$insertNode"), [
-            results.id,
-            insert
-          ])
-        )
+        t.expressionStatement(t.callExpression(t.identifier("_$insertNode"), [results.id, insert]))
       );
       results.decl.push(...child.decl);
       results.exprs.push(...child.exprs);

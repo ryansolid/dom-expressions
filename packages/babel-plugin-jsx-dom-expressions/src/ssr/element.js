@@ -215,7 +215,9 @@ function transformAttributes(path, results) {
             checkMember: true,
             native: true
           })
-            ? t.arrowFunctionExpression([], node.argument)
+            ? t.isCallExpression(node.argument)
+              ? node.argument.callee
+              : t.arrowFunctionExpression([], node.argument)
             : node.argument,
           t.booleanLiteral(isSVG),
           t.booleanLiteral(hasChildren)

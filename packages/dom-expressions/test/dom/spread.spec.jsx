@@ -38,6 +38,41 @@ describe("create element with various spreads", () => {
     expect(span.$$click).toBeDefined();
     disposer();
   });
+
+  it("should properly spread functions", () => {
+    let span, disposer;
+
+    const s = S.data({
+      ref(el) { span = el; },
+      className: "Hello",
+      children: "Hi",
+      onClick() { console.log("click") },
+      "data-mode": "stealth"
+    })
+    S.root(dispose => {
+      disposer = dispose;
+      <span {...s()} />;
+    });
+
+    expect(span).toBeDefined();
+    expect(span.className).toBe("Hello");
+    expect(span.textContent).toBe("Hi");
+    expect(span.$$click).toBeDefined();
+    expect(span.getAttribute("data-mode")).toBe("stealth");
+    s({
+      ref(el) { span = el; },
+      className: "Other",
+      children: "Holla",
+      onClick() { console.log("click") },
+      "data-mode": "visible"
+    });
+    expect(span).toBeDefined();
+    expect(span.className).toBe("Other");
+    expect(span.textContent).toBe("Holla");
+    expect(span.$$click).toBeDefined();
+    expect(span.getAttribute("data-mode")).toBe("visible");
+    disposer();
+  });
 });
 
 describe("create component with various spreads", () => {
@@ -84,5 +119,30 @@ describe("create component with various spreads", () => {
     expect(span.textContent).toBe("Holla");
     expect(span.$$click).toBeDefined();
     disposer();
+  });
+
+  it("should properly spread functions", () => {
+    let span, disposer;
+
+    const s = S.data({
+      ref(el) { span = el; },
+      className: "Hello",
+      onClick() { console.log("click") },
+      "data-mode": "stealth"
+    })
+    const Component = props => <span {...props}/>;
+
+    S.root(dispose => {
+      disposer = dispose;
+      <Component {...s()}>
+        Hi
+      </Component>;
+    });
+
+    expect(span).toBeDefined();
+    expect(span.className).toBe("Hello");
+    expect(span.textContent).toBe("Hi");
+    expect(span.$$click).toBeDefined();
+    expect(span.getAttribute("data-mode")).toBe("stealth");
   });
 });

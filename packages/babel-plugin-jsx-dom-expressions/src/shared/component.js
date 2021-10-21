@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { decode } from 'html-entities';
+import { decode } from "html-entities";
 import {
   getConfig,
   getTagName,
@@ -38,7 +38,15 @@ export default function transformComponent(path) {
           props.push(t.objectExpression(runningObject));
           runningObject = [];
         }
-        props.push(node.argument);
+        props.push(
+          isDynamic(attribute.get("argument"), {
+            checkMember: true
+          })
+            ? t.isCallExpression(node.argument)
+              ? node.argument.callee
+              : t.arrowFunctionExpression([], node.argument)
+            : node.argument
+        );
       } else {
         const value = node.value || t.booleanLiteral(true),
           key = t.isJSXNamespacedName(node.name)
@@ -57,10 +65,10 @@ export default function transformComponent(path) {
               value.expression = value.expression.expression;
             }
             let binding,
-            isFunction =
-              t.isIdentifier(value.expression) &&
-              (binding = path.scope.getBinding(value.expression.name)) &&
-              binding.kind === "const";
+              isFunction =
+                t.isIdentifier(value.expression) &&
+                (binding = path.scope.getBinding(value.expression.name)) &&
+                binding.kind === "const";
             if (!isFunction && t.isLVal(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
@@ -198,7 +206,7 @@ function transformComponentChildren(children, config) {
 
   let transformedChildren = filteredChildren.reduce((memo, path) => {
     if (t.isJSXText(path.node)) {
-      const v =  decode(trimWhitespace(path.node.extra.raw));
+      const v = decode(trimWhitespace(path.node.extra.raw));
       if (v.length) memo.push(t.stringLiteral(v));
     } else {
       const child = transformNode(path, {

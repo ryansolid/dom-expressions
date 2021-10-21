@@ -25,7 +25,7 @@ const template = (() => {
 
   _$setProp(_el$2, "class", "base");
 
-  _$spread(_el$2, () => results(), true);
+  _$spread(_el$2, results, true);
 
   _$setProp(_el$2, "disabled", true);
 
