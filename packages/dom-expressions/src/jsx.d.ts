@@ -11,7 +11,7 @@ export namespace JSX {
     | Node
     | ArrayElement
     | FunctionElement
-    | string
+    | (string & {})
     | number
     | boolean
     | null
