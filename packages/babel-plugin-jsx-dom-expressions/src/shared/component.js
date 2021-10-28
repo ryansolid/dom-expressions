@@ -42,7 +42,7 @@ export default function transformComponent(path) {
           isDynamic(attribute.get("argument"), {
             checkMember: true
           })
-            ? t.isCallExpression(node.argument)
+            ? t.isCallExpression(node.argument) && !node.argument.arguments.length
               ? node.argument.callee
               : t.arrowFunctionExpression([], node.argument)
             : node.argument

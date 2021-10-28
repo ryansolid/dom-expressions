@@ -1,4 +1,5 @@
 const selected = true;
+let link;
 const template = (
   <div id="main" {...results} style={{ color }}>
     <h1
@@ -18,7 +19,7 @@ const template = (
 );
 
 const template2 = (
-  <div>
+  <div {...getProps("test")}>
     <div textContent={rowId} />
     <div textContent={row.label} />
     <div innerHTML={"<div/>"} />

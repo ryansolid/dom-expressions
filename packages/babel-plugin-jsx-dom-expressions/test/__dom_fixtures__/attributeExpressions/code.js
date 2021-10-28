@@ -19,7 +19,7 @@ const template = (
 );
 
 const template2 = (
-  <div>
+  <div {...getProps("test")}>
     <div textContent={rowId} />
     <div textContent={row.label} />
     <div innerHTML={"<div/>"} />

@@ -5,6 +5,7 @@ import { spread as _$spread } from "r-custom";
 import { setProp as _$setProp } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
 const selected = true;
+let link;
 
 const template = (() => {
   const _el$ = _$createElement("div"),
@@ -78,6 +79,8 @@ const template2 = (() => {
   _$insertNode(_el$5, _el$7);
 
   _$insertNode(_el$5, _el$8);
+
+  _$spread(_el$5, () => getProps("test"), true);
 
   _$setProp(_el$6, "textContent", rowId);
 

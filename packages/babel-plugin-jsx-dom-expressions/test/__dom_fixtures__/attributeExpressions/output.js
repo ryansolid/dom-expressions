@@ -69,6 +69,8 @@ const template2 = (() => {
     _el$7 = _el$6.firstChild,
     _el$8 = _el$6.nextSibling;
 
+  _$spread(_el$4, () => getProps("test"), false, true);
+
   _el$5.textContent = rowId;
   _el$8.innerHTML = "<div/>";
 

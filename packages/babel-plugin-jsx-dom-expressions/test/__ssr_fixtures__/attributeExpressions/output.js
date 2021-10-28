@@ -15,7 +15,7 @@ const _tmpl$ = [
     '"',
     ">Welcome</a></h1></div>"
   ],
-  _tmpl$2 = ["<div><div>", "</div><div>", "</div><div><div/></div></div>"],
+  _tmpl$2 = ["<div ", "><div>", "</div><div>", "</div><div><div/></div></div>"],
   _tmpl$3 = ['<div id="', '" style="', '" name="', '">', "</div>"],
   _tmpl$4 = ['<div class="', '"></div>'],
   _tmpl$5 = ['<div style="', '">Hi</div>'],
@@ -23,6 +23,7 @@ const _tmpl$ = [
   _tmpl$7 = "<div></div>",
   _tmpl$8 = ['<input type="checkbox"', ">"];
 const selected = true;
+let link;
 
 const template = _$ssr(
   _tmpl$,
@@ -37,7 +38,12 @@ const template = _$ssr(
   _$ssrBoolean("readonly", value)
 );
 
-const template2 = _$ssr(_tmpl$2, _$escape(rowId), _$escape(row.label));
+const template2 = _$ssr(
+  _tmpl$2,
+  _$ssrSpread(getProps("test"), false, true),
+  _$escape(rowId),
+  _$escape(row.label)
+);
 
 const template3 = _$ssr(
   _tmpl$3,
