@@ -2874,7 +2874,8 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    preserveAspectRatio: SVGPreserveAspectRatio;
+    preserveAspectRatio?: SVGPreserveAspectRatio;
+    href?: string;
   }
   interface FeMergeSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2977,6 +2978,7 @@ export namespace JSX {
     width?: number | string;
     height?: number | string;
     preserveAspectRatio?: ImagePreserveAspectRatio;
+    href?: string;
   }
   interface LineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
