@@ -1,9 +1,11 @@
 const selected = true;
+let id = "my-h1";
 let link;
 const template = (
   <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
     <h1
       class="base"
+      id={id}
       {...results()}
       disabled
       readonly=""

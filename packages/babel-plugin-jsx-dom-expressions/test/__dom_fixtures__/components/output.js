@@ -403,3 +403,5 @@ const Template18 = _$createComponent(Pre, {
     return [_tmpl$7.cloneNode(true), _tmpl$8.cloneNode(true), _tmpl$9.cloneNode(true)];
   }
 });
+
+const Template19 = _$createComponent(Component, _$mergeProps(s.dynamic));

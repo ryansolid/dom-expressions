@@ -6,7 +6,7 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(
-    `<div id="main"><h1 class="base selected" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base selected" id="my-h1" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = _$template(`<div><div></div><div> </div><div></div></div>`, 8),
@@ -15,6 +15,7 @@ const _tmpl$ = _$template(
   _tmpl$5 = _$template(`<input type="checkbox">`, 1);
 
 const selected = true;
+let id = "my-h1";
 let link;
 
 const template = (() => {

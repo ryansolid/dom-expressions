@@ -21,6 +21,7 @@ export default function transformComponent(path) {
     tagName = getTagName(path.node),
     props = [],
     runningObject = [],
+    dynamicSpread = false,
     hasChildren = path.node.children.length > 0;
 
   if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
@@ -41,7 +42,7 @@ export default function transformComponent(path) {
         props.push(
           isDynamic(attribute.get("argument"), {
             checkMember: true
-          })
+          }) && (dynamicSpread = true)
             ? t.isCallExpression(node.argument) && !node.argument.arguments.length
               ? node.argument.callee
               : t.arrowFunctionExpression([], node.argument)
@@ -172,7 +173,7 @@ export default function transformComponent(path) {
   }
   if (runningObject.length || !props.length) props.push(t.objectExpression(runningObject));
 
-  if (props.length > 1) {
+  if (props.length > 1 || dynamicSpread) {
     registerImportMethod(path, "mergeProps");
     props = [t.callExpression(t.identifier("_$mergeProps"), props)];
   }

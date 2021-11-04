@@ -326,6 +326,16 @@ function transformAttributes(path, results) {
           : node.name.name,
         reservedNameSpace =
           t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
+      if (t.isJSXExpressionContainer(value)) {
+        const evaluated = attribute.get("value").get("expression").evaluate().value;
+        let type;
+        if (
+          evaluated !== undefined &&
+          ((type = typeof evaluated) === "string" || type === "number")
+        ) {
+          value = t.stringLiteral(String(evaluated));
+        }
+      }
       if (
         t.isJSXNamespacedName(node.name) &&
         reservedNameSpace &&

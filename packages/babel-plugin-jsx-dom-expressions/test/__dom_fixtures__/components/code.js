@@ -135,3 +135,5 @@ const Template18 = <Pre>
   <span>2</span> 
   <span>3</span>
 </Pre>
+
+const Template19 = <Component {...s.dynamic()} />

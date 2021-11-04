@@ -36,7 +36,7 @@ const template2 = (() => {
 
   _el$3.style.setProperty("stroke", "black");
 
-  _el$3.style.setProperty("opacity", 0.5);
+  _el$3.style.setProperty("opacity", "0.5");
 
   _$effect(
     _p$ => {
