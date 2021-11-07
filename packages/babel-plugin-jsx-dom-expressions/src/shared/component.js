@@ -134,7 +134,7 @@ export default function transformComponent(path) {
               config.generate !== "ssr" &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
-                ? transformCondition(attribute.get("value").get("expression"))
+                ? transformCondition(attribute.get("value").get("expression"), true)
                 : t.arrowFunctionExpression([], value.expression);
             if (expr.length > 1) {
               exprs.push(expr[0]);

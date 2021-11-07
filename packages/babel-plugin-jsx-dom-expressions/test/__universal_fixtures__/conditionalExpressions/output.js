@@ -149,15 +149,11 @@ const template11 = (() => {
   return _el$11;
 })();
 
-const template12 = (() => {
-  const _c$9 = _$memo(() => !!state.dynamic, true);
-
-  return _$createComponent(Comp, {
-    get render() {
-      return _c$9() ? good() : bad;
-    }
-  });
-})(); // no dynamic predicate
+const template12 = _$createComponent(Comp, {
+  get render() {
+    return _$memo(() => !!state.dynamic, true)() ? good() : bad;
+  }
+}); // no dynamic predicate
 
 const template13 = _$createComponent(Comp, {
   get render() {
@@ -165,15 +161,11 @@ const template13 = _$createComponent(Comp, {
   }
 });
 
-const template14 = (() => {
-  const _c$10 = _$memo(() => !!state.dynamic, true);
-
-  return _$createComponent(Comp, {
-    get render() {
-      return _c$10() && good();
-    }
-  });
-})(); // no dynamic predicate
+const template14 = _$createComponent(Comp, {
+  get render() {
+    return _$memo(() => !!state.dynamic, true)() && good();
+  }
+}); // no dynamic predicate
 
 const template15 = _$createComponent(Comp, {
   get render() {
@@ -187,21 +179,19 @@ const template16 = _$createComponent(Comp, {
   }
 });
 
-const template17 = (() => {
-  const _c$11 = _$memo(() => !!state.dynamic, true);
-
-  return _$createComponent(Comp, {
-    get render() {
-      return _c$11() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
-    }
-  });
-})();
+const template17 = _$createComponent(Comp, {
+  get render() {
+    return _$memo(() => !!state.dynamic, true)()
+      ? _$createComponent(Comp, {})
+      : _$createComponent(Comp, {});
+  }
+});
 
 const template18 = _$createComponent(Comp, {
   get children() {
-    const _c$12 = _$memo(() => !!state.dynamic, true);
-
-    return () => (_c$12() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+    return _$memo(() => !!state.dynamic, true)()
+      ? _$createComponent(Comp, {})
+      : _$createComponent(Comp, {});
   }
 });
 
@@ -226,9 +216,9 @@ const template20 = (() => {
   _$insert(
     _el$13,
     (() => {
-      const _c$13 = _$memo(() => !!state.dynamic, true);
+      const _c$9 = _$memo(() => !!state.dynamic, true);
 
-      return () => (_c$13() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+      return () => (_c$9() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
     })()
   );
 
@@ -299,9 +289,9 @@ const template29 = (() => {
   _$insert(
     _el$18,
     (() => {
-      const _c$14 = _$memo(() => !!thing(), true);
+      const _c$10 = _$memo(() => !!thing(), true);
 
-      return () => (_c$14() && thing1()) ?? thing2() ?? thing3();
+      return () => (_c$10() && thing1()) ?? thing2() ?? thing3();
     })()
   );
 

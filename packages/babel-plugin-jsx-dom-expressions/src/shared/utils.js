@@ -187,12 +187,10 @@ export function wrappedByText(list, startIndex) {
   return false;
 }
 
-export function transformCondition(path, deep) {
+export function transformCondition(path, inline, deep) {
   const config = getConfig(path);
   const expr = path.node;
-  if (config.memoWrapper) {
-    registerImportMethod(path, config.memoWrapper);
-  }
+  registerImportMethod(path, config.memoWrapper);
   let dTest, cond, id;
   if (
     t.isConditionalExpression(expr) &&
@@ -204,15 +202,20 @@ export function transformCondition(path, deep) {
     dTest = isDynamic(path.get("test"), { checkMember: true });
     if (dTest) {
       cond = expr.test;
-      id = path.scope.generateUidIdentifier("_c$");
       if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
+      id = inline
+        ? t.callExpression(t.identifier(`_$${config.memoWrapper}`), [
+            t.arrowFunctionExpression([], cond),
+            t.booleanLiteral(true)
+          ])
+        : path.scope.generateUidIdentifier("_c$");
       expr.test = t.callExpression(id, []);
       if (t.isConditionalExpression(expr.consequent) || t.isLogicalExpression(expr.consequent)) {
-        expr.consequent = transformCondition(path.get("consequent"), true);
+        expr.consequent = transformCondition(path.get("consequent"), inline, true);
       }
       if (t.isConditionalExpression(expr.alternate) || t.isLogicalExpression(expr.alternate)) {
-        expr.alternate = transformCondition(path.get("alternate"), true);
+        expr.alternate = transformCondition(path.get("alternate"), inline, true);
       }
     }
   } else if (t.isLogicalExpression(expr)) {
@@ -228,13 +231,20 @@ export function transformCondition(path, deep) {
       }));
     if (dTest) {
       cond = nextPath.node.left;
-      id = path.scope.generateUidIdentifier("_c$");
       if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
+      id = inline
+        ? t.callExpression(t.identifier(`_$${config.memoWrapper}`), [
+            t.arrowFunctionExpression([], cond),
+            t.booleanLiteral(true)
+          ])
+        : path.scope.generateUidIdentifier("_c$");
       nextPath.node.left = t.callExpression(id, []);
     }
   }
   if (dTest) {
+    if (inline) return t.arrowFunctionExpression([], expr);
+
     const statements = [
       t.variableDeclaration("const", [
         t.variableDeclarator(
