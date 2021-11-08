@@ -242,9 +242,7 @@ export function transformCondition(path, inline, deep) {
       nextPath.node.left = t.callExpression(id, []);
     }
   }
-  if (dTest) {
-    if (inline) return t.arrowFunctionExpression([], expr);
-
+  if (dTest && !inline) {
     const statements = [
       t.variableDeclaration("const", [
         t.variableDeclarator(

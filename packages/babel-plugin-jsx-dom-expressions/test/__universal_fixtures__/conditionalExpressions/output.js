@@ -305,3 +305,13 @@ const template30 = (() => {
 
   return _el$19;
 })();
+
+const template31 = _$createComponent(Comp, {
+  get value() {
+    return _$memo(() => !!count(), true)()
+      ? _$memo(() => !!count(), true)()
+        ? count()
+        : count()
+      : count();
+  }
+});
