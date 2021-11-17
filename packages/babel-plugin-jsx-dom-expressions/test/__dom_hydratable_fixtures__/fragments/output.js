@@ -33,7 +33,9 @@ const multiDynamic = [
   "After"
 ];
 const singleExpression = inserted;
-const singleDynamic = inserted;
+
+const singleDynamic = _$memo(inserted);
+
 const firstStatic = [inserted, _$getNextElement(_tmpl$3)];
 const firstDynamic = [_$memo(inserted), _$getNextElement(_tmpl$3)];
 const firstComponent = [_$createComponent(Component, {}), _$getNextElement(_tmpl$3)];

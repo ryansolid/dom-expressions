@@ -155,11 +155,13 @@ export function pipeToWritable(code, writable, options = {}) {
 
 // components
 export function Assets(props) {
-  sharedConfig.context.assets.push(() => NoHydration({
-    get children() {
-      return resolveSSRNode(props.children);
-    }
-  }));
+  sharedConfig.context.assets.push(() =>
+    NoHydration({
+      get children() {
+        return resolveSSRNode(props.children);
+      }
+    })
+  );
   return ssr(`%%$${sharedConfig.context.assets.length - 1}%%`);
 }
 
@@ -236,6 +238,8 @@ export function ssrSpread(props, isSVG, skipChildren) {
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
       else continue;
+    } else if (prop === "ref" || prop.slice(0, 2) === "on") {
+      continue;
     } else {
       result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
     }
@@ -332,7 +336,7 @@ export function generateHydrationScript() {
   const { nonce, streaming, resources, eventNames = ["click", "input"] } = sharedConfig.context;
   let s = `<script${
     nonce ? ` nonce="${nonce}"` : ""
-  }>(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
+  }>(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};["${eventNames.join(
     '","'
   )}"].forEach(t=>document.addEventListener(t,e))})();`;
   if (streaming) {

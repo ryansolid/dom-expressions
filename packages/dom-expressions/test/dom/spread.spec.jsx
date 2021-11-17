@@ -47,6 +47,7 @@ describe("create element with various spreads", () => {
       className: "Hello",
       children: "Hi",
       onClick() { console.log("click") },
+      align: "center",
       "data-mode": "stealth"
     })
     S.root(dispose => {
@@ -58,6 +59,7 @@ describe("create element with various spreads", () => {
     expect(span.className).toBe("Hello");
     expect(span.textContent).toBe("Hi");
     expect(span.$$click).toBeDefined();
+    expect(span.getAttribute("align")).toBe("center");
     expect(span.getAttribute("data-mode")).toBe("stealth");
     s({
       ref(el) { span = el; },
@@ -70,6 +72,7 @@ describe("create element with various spreads", () => {
     expect(span.className).toBe("Other");
     expect(span.textContent).toBe("Holla");
     expect(span.$$click).toBeDefined();
+    expect(span.getAttribute("align")).toBe(null);
     expect(span.getAttribute("data-mode")).toBe("visible");
     disposer();
   });

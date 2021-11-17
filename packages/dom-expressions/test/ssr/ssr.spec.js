@@ -7,7 +7,7 @@ globalThis.TextEncoder = function () {
 
 const fixture = `<div id="main" data-id="12" aria-role="button" checked class="selected" style="color:red"><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span> Hello &lt;div/> </span>`;
-const fixture3 = `<span> Hello &lt;div/><script nonce="1a2s3d4f5g">(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")&&e||t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};[\"click\",\"input\"].forEach(t=>document.addEventListener(t,e))})();</script><link rel="modulepreload" href="chunk.js"></span>`;
+const fixture3 = `<span> Hello &lt;div/><script nonce="1a2s3d4f5g">(()=>{_$HYDRATION={events:[],completed:new WeakSet};const t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),e=e=>{let o=e.composedPath&&e.composedPath()[0]||e.target,s=t(o);s&&!_$HYDRATION.completed.has(s)&&_$HYDRATION.events.push([s,e])};[\"click\",\"input\"].forEach(t=>document.addEventListener(t,e))})();</script><link rel="modulepreload" href="chunk.js"></span>`;
 
 const Comp1 = () => {
   const selected = S.data(true),
@@ -16,6 +16,7 @@ const Comp1 = () => {
     results = {
       "data-id": "12",
       "aria-role": "button",
+      onClick: () => console.log("never"),
       get checked() {
         return selected();
       }

@@ -157,41 +157,19 @@ export function insert(parent, accessor, marker, initial) {
 }
 
 export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
-  let isCE, isProp, isChildProp;
+  for (const prop in prevProps) {
+    if (!(prop in props)) {
+      if (prop === "children") continue;
+      assignProp(node, prop, null, prevProps[prop], isSVG);
+    }
+  }
   for (const prop in props) {
     if (prop === "children") {
       if (!skipChildren) insertExpression(node, props.children);
       continue;
     }
     const value = props[prop];
-    if (value === prevProps[prop]) continue;
-    if (prop === "style") {
-      style(node, value, prevProps[prop]);
-    } else if (prop === "classList") {
-      classList(node, value, prevProps[prop]);
-    } else if (prop === "ref") {
-      value(node);
-    } else if (prop.slice(0, 3) === "on:") {
-      node.addEventListener(prop.slice(3), value);
-    } else if (prop.slice(0, 10) === "oncapture:") {
-      node.addEventListener(prop.slice(10), value, true);
-    } else if (prop.slice(0, 2) === "on") {
-      const name = prop.slice(2).toLowerCase();
-      const delegate = DelegatedEvents.has(name);
-      addEventListener(node, name, value, delegate);
-      delegate && delegateEvents([name]);
-    } else if (
-      (isChildProp = ChildProperties.has(prop)) ||
-      (!isSVG && (PropAliases[prop] || (isProp = Properties.has(prop)))) ||
-      (isCE = node.nodeName.includes("-"))
-    ) {
-      if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
-      else node[PropAliases[prop] || prop] = value;
-    } else {
-      const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
-      if (ns) setAttributeNS(node, ns, prop, value);
-      else setAttribute(node, Aliases[prop] || prop, value);
-    }
+    assignProp(node, prop, value, prevProps[prop], isSVG);
     prevProps[prop] = value;
   }
 }
@@ -282,6 +260,36 @@ function toggleClassKey(node, key, value) {
   const classNames = key.trim().split(/\s+/);
   for (let i = 0, nameLen = classNames.length; i < nameLen; i++)
     node.classList.toggle(classNames[i], value);
+}
+
+function assignProp(node, prop, value, prev, isSVG) {
+  let isCE, isProp, isChildProp;
+  if (prop === "style") return style(node, value, prev);
+  if (prop === "classList") return classList(node, value, prev);
+  if (value === prev) return;
+  if (prop === "ref") {
+    value(node);
+  } else if (prop.slice(0, 3) === "on:") {
+    node.addEventListener(prop.slice(3), value);
+  } else if (prop.slice(0, 10) === "oncapture:") {
+    node.addEventListener(prop.slice(10), value, true);
+  } else if (prop.slice(0, 2) === "on") {
+    const name = prop.slice(2).toLowerCase();
+    const delegate = DelegatedEvents.has(name);
+    addEventListener(node, name, value, delegate);
+    delegate && delegateEvents([name]);
+  } else if (
+    (isChildProp = ChildProperties.has(prop)) ||
+    (!isSVG && (PropAliases[prop] || (isProp = Properties.has(prop)))) ||
+    (isCE = node.nodeName.includes("-"))
+  ) {
+    if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
+    else node[PropAliases[prop] || prop] = value;
+  } else {
+    const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
+    if (ns) setAttributeNS(node, ns, prop, value);
+    else setAttribute(node, Aliases[prop] || prop, value);
+  }
 }
 
 function eventHandler(e) {

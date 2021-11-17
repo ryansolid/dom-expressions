@@ -111,6 +111,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       }
     }
     (templates[0] as CreateableTemplate).create = code;
+    console.log("templates", html, code.toString())
     cache.set(statics, templates);
     return templates;
   }
@@ -256,7 +257,8 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
         childOptions = Object.assign({}, options, {
           first: true,
           decl: [],
-          exprs: []
+          exprs: [],
+          parent: false
         });
       parseNode(children, childOptions);
       props.push(`children: () => { ${childOptions.exprs.join(";\n")}}`);
@@ -312,8 +314,8 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
             decl: [],
             exprs: []
           });
-          parseNode(child, childOptions);
           options.templateNodes.push([child]);
+          parseNode(child, childOptions);
           parts.push(
             `function() { ${
               childOptions.decl.join(",\n") +

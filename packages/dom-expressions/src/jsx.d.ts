@@ -92,6 +92,7 @@ export namespace JSX {
     onFocusIn?: EventHandlerUnion<T, FocusEvent>;
     onBlur?: EventHandlerUnion<T, FocusEvent>;
     onChange?: EventHandlerUnion<T, Event>;
+    onInvalid?: EventHandlerUnion<T, Event>;
     onInput?: EventHandlerUnion<T, InputEvent>;
     onBeforeInput?: EventHandlerUnion<T, InputEvent>;
     onReset?: EventHandlerUnion<T, Event>;
@@ -180,6 +181,7 @@ export namespace JSX {
     onfocusin?: EventHandlerUnion<T, FocusEvent>;
     onblur?: EventHandlerUnion<T, FocusEvent>;
     onchange?: EventHandlerUnion<T, Event>;
+    oninvalid?: EventHandlerUnion<T, Event>;
     oninput?: EventHandlerUnion<T, InputEvent>;
     onbeforeinput?: EventHandlerUnion<T, InputEvent>;
     onreset?: EventHandlerUnion<T, Event>;
