@@ -111,7 +111,6 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       }
     }
     (templates[0] as CreateableTemplate).create = code;
-    console.log("templates", html, code.toString())
     cache.set(statics, templates);
     return templates;
   }
