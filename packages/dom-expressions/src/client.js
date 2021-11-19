@@ -169,8 +169,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       continue;
     }
     const value = props[prop];
-    assignProp(node, prop, value, prevProps[prop], isSVG);
-    prevProps[prop] = value;
+    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG);
   }
 }
 
@@ -266,7 +265,7 @@ function assignProp(node, prop, value, prev, isSVG) {
   let isCE, isProp, isChildProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
-  if (value === prev) return;
+  if (value === prev) return prev;
   if (prop === "ref") {
     value(node);
   } else if (prop.slice(0, 3) === "on:") {
@@ -290,6 +289,7 @@ function assignProp(node, prop, value, prev, isSVG) {
     if (ns) setAttributeNS(node, ns, prop, value);
     else setAttribute(node, Aliases[prop] || prop, value);
   }
+  return value;
 }
 
 function eventHandler(e) {

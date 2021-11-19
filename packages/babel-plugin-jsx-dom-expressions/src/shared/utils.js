@@ -110,12 +110,13 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
 
 export function getStaticExpression(path) {
   const node = path.node;
-  let value;
+  let value, type;
   return (
     t.isJSXExpressionContainer(node) &&
     t.isJSXElement(path.parent) &&
     !isComponent(getTagName(path.parent)) &&
     (value = path.get("expression").evaluate().value) !== undefined &&
+    ((type = typeof value) === "string" || type === "number") &&
     value
   );
 }

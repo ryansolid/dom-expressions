@@ -9,7 +9,9 @@ const _tmpl$ = "<div></div>",
   _tmpl$4 = ["<module ", "></module>"],
   _tmpl$5 = ["<module ", ">Hello</module>"],
   _tmpl$6 = ["<module ", ">", "</module>"],
-  _tmpl$7 = ["<module>Hi ", "</module>"];
+  _tmpl$7 = ["<module>Hi ", "</module>"],
+  _tmpl$8 = "<div>Test 1</div>",
+  _tmpl$9 = ["<div>", "</div>"];
 
 const children = _$ssr(_tmpl$);
 
@@ -91,3 +93,8 @@ const template23 = _$createComponent(Module, {
     return state.children();
   }
 });
+
+const tiles = [];
+tiles.push(_$ssr(_tmpl$8));
+
+const template24 = _$ssr(_tmpl$9, _$escape(tiles));

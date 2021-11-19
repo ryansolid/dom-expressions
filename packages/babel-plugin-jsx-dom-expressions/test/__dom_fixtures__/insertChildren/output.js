@@ -7,7 +7,8 @@ import { createComponent as _$createComponent } from "r-dom";
 const _tmpl$ = _$template(`<div></div>`, 2),
   _tmpl$2 = _$template(`<module></module>`, 2),
   _tmpl$3 = _$template(`<module>Hello</module>`, 2),
-  _tmpl$4 = _$template(`<module>Hi </module>`, 2);
+  _tmpl$4 = _$template(`<module>Hi </module>`, 2),
+  _tmpl$5 = _$template(`<div>Test 1</div>`, 2);
 
 const children = _tmpl$.cloneNode(true);
 
@@ -163,3 +164,14 @@ const template23 = _$createComponent(Module, {
     return state.children();
   }
 });
+
+const tiles = [];
+tiles.push(_tmpl$5.cloneNode(true));
+
+const template24 = (() => {
+  const _el$16 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$16, tiles);
+
+  return _el$16;
+})();
