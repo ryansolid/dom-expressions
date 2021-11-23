@@ -307,7 +307,7 @@ function eventHandler(e) {
   Object.defineProperty(e, "currentTarget", {
     configurable: true,
     get() {
-      return node;
+      return node || document;
     }
   });
 
