@@ -1,16 +1,16 @@
 import * as r from "../../src/client";
 import * as r2 from "../../src/server";
 
-globalThis._$HYDRATION = { events: [], completed: new WeakSet() };
+globalThis._$HY = { events: [], completed: new WeakSet(), queue:[] };
 
 function setHydrateContext(context) {
-  globalThis._$HYDRATION.context = context;
+  globalThis._$HY.context = context;
 }
 
 function nextHydrateContext() {
-  return globalThis._$HYDRATION && globalThis._$HYDRATION.context
+  return globalThis._$HY && globalThis._$HY.context
     ? {
-        id: `${globalThis._$HYDRATION.context.id}.${globalThis._$HYDRATION.context.count++}`,
+        id: `${globalThis._$HY.context.id}.${globalThis._$HY.context.count++}`,
         count: 0
       }
     : undefined;
@@ -27,7 +27,7 @@ describe("r.hydrate", () => {
     rendered = r2.renderToString(() =>
       r2.ssr(["<span", "><!--#-->", "<!--/--> John</span>"], r2.ssrHydrationKey(), r2.escape("Hi"))
     );
-    expect(rendered).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
+    expect(rendered).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span><script>_$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]()</script>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -47,7 +47,7 @@ describe("r.hydrate", () => {
       r.insert(container, leadingExpr, undefined, [...container.childNodes]);
       r.runHydrationEvents();
     }, container);
-    expect(container.innerHTML).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
+    expect(container.innerHTML).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span><script>_$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]()</script>`);
     expect(container.firstChild).toBe(el1);
     expect(el1.firstChild).toBe(el2);
     expect(el2.nextSibling).toBe(el3);
@@ -59,7 +59,7 @@ describe("r.hydrate", () => {
     rendered = r2.renderToString(() =>
       r2.ssr(["<span", "><!--#-->", "<!--/--> John</span>"], r2.ssrHydrationKey(), r2.escape(time))
     );
-    expect(rendered).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span>`);
+    expect(rendered).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span><script>_$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]()</script>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -80,6 +80,7 @@ describe("r.hydrate", () => {
       r.insert(container, leadingExpr, undefined, [...container.childNodes]);
       r.runHydrationEvents();
     }, container);
+    _$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]();
     expect(container.innerHTML).toBe(
       `<span data-hk="0"><!--#-->${updatedTime}<!--/--> John</span>`
     );
@@ -95,7 +96,7 @@ describe("r.hydrate", () => {
       "middle",
       r2.ssr(["<div", ">Last</div>"], r2.ssrHydrationKey())
     ]);
-    expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`);
+    expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div><script>_$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]()</script>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -120,7 +121,7 @@ describe("r.hydrate", () => {
       r.runHydrationEvents();
     }, container);
     expect(container.innerHTML).toBe(
-      `<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`
+      `<div data-hk="0">First</div>middle<div data-hk="1">Last</div><script>_$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]()</script>`
     );
     expect(container.firstChild).toBe(el1);
     expect(el1.nextSibling).toEqual(el2);
@@ -160,6 +161,6 @@ describe("r.hydrate", () => {
         }
       })
     );
-    expect(rendered).toBe(`<span><!--#-->Hi<!--/--> John</span>`);
+    expect(rendered).toBe(`<span><!--#-->Hi<!--/--> John</span><script>_$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]()</script>`);
   });
 });

@@ -17,6 +17,7 @@ import {
   getConfig
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
+import { createTemplate } from "./template";
 
 function appendToTemplate(template, value) {
   let array;
@@ -36,7 +37,8 @@ export function transformElement(path, info) {
       templateValues: [],
       decl: [],
       exprs: [],
-      dynamics: []
+      dynamics: [],
+      tagName
     };
   if (info.topLevel && config.hydratable) {
     registerImportMethod(path, "ssrHydrationKey");
@@ -46,7 +48,7 @@ export function transformElement(path, info) {
   transformAttributes(path, results);
   appendToTemplate(results.template, ">");
   if (!voidTag) {
-    transformChildren(path, results, config);
+    transformChildren(path, results, {...config, ...info});
     appendToTemplate(results.template, `</${tagName}>`);
   }
   return results;
@@ -384,6 +386,24 @@ function transformChildren(path, results, { hydratable }) {
   const doNotEscape = path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"));
   filteredChildren.forEach(node => {
+    if (t.isJSXElement(node.node) && (getTagName(node.node) === "head")) {
+      const child = transformNode(node, { doNotEscape, hydratable: false });
+      registerImportMethod(path, "NoHydration");
+      results.template.push("");
+      results.templateValues.push(
+        t.callExpression(t.identifier("_$NoHydration"), [
+          t.objectExpression([
+            t.objectMethod(
+              "get",
+              t.identifier("children"),
+              [],
+              t.blockStatement([t.returnStatement(createTemplate(path, child))])
+            )
+          ])
+        ])
+      );
+      return;
+    }
     const child = transformNode(node, { doNotEscape });
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);

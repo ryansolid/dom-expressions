@@ -602,6 +602,7 @@ function transformChildren(path, results, config) {
     if (!child) return;
     results.template += child.template;
     if (child.id) {
+      if (child.tagName === "head") return;
       if (config.hydratable && tagName === "html") {
         registerImportMethod(path, "getNextMatch");
       }

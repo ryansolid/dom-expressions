@@ -7,40 +7,45 @@ export type PipeToWritableResults = {
 export function renderToString<T>(
   fn: () => T,
   options?: {
-    eventNames?: string[];
     nonce?: string;
   }
 ): string;
 export function renderToStringAsync<T>(
   fn: () => T,
   options?: {
-    eventNames?: string[];
     timeoutMs?: number;
     nonce?: string;
   }
 ): Promise<string>;
-export function pipeToNodeWritable<T>(
+export function renderToPipeableStream<T>(
   fn: () => T,
-  writable: { write: (v: string) => void },
   options?: {
-    eventNames?: string[];
     nonce?: string;
-    onReady?: (r: PipeToWritableResults) => void;
-    onComplete?: (r: PipeToWritableResults) => void;
+    onCompleteShell?: () => void;
+    onCompleteAll?: () => void;
   }
-): void;
+): { pipe: (writable: { write: (v: string) => void }) => void };
 export function pipeToWritable<T>(
   fn: () => T,
   writable: WritableStream,
   options?: {
-    eventNames?: string[];
     nonce?: string;
-    onReady?: (r: PipeToWritableResults) => void;
-    onComplete?: (r: PipeToWritableResults) => void;
+    onCompleteShell?: (res: PipeToWritableResults) => void;
+    onCompleteAll?: () => void;
   }
 ): void;
+export function pipeToNodeWritable<T>(
+  fn: () => T,
+  writable: { write: (v: string) => void },
+  options?: {
+    nonce?: string;
+    onCompleteShell?: () => void;
+    onCompleteAll?: () => void;
+  }
+): void;
+
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
-export function HydrationScript(): JSX.Element;
+export function HydrationScript(props: { nonce?: string; eventNames?: string[] }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export function ssr(template: string[] | string, ...nodes: any[]): { t: string };
 export function resolveSSRNode(node: any): string;
@@ -56,4 +61,4 @@ export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
-export function generateHydrationScript(): string;
+export function generateHydrationScript(options: { nonce?: string; eventNames?: string[] }): string;
