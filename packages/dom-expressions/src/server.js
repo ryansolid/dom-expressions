@@ -105,25 +105,25 @@ export function renderToPipeableStream(code, options) {
       return value => {
         registry.delete(key);
         if (!value) return;
-        Promise.resolve().then(() => {
-          buffer.write(
-            `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
-              !scriptFlushed ? REPLACE_SCRIPT : ""
-            }$df("${key}")</script>`
-          );
-          scriptFlushed = true;
-          checkEnd();
-        });
+        buffer.write(
+          `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
+            !scriptFlushed ? REPLACE_SCRIPT : ""
+          }$df("${key}")</script>`
+        );
+        scriptFlushed = true;
+        checkEnd();
       };
     }
   };
 
   let html = resolveSSRNode(escape(code()));
   html = injectAssets(sharedConfig.context.assets, html);
-  buffer.write(html);
   Promise.resolve().then(() => {
-    writeInitialScript();
-    buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${SYNC_SCRIPT}</script>`);
+    buffer.write(
+      html + `<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.length ? tasks.join(";") + ";" : ""}${SYNC_SCRIPT}</script>`
+    );
+    tasks.length = 0;
+    scheduled = false;
     onCompleteShell && onCompleteShell();
   });
 
@@ -223,29 +223,30 @@ export function pipeToWritable(code, writable, options = {}) {
       return value => {
         registry.delete(key);
         if (!value) return;
-        Promise.resolve().then(() => {
-          buffer.write(
-            encoder.encode(
-              `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
-                !scriptFlushed ? REPLACE_SCRIPT : ""
-              }$df("${key}")</script>`
-            )
-          );
-          scriptFlushed = true;
-          checkEnd();
-        });
+        buffer.write(
+          encoder.encode(
+            `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
+              !scriptFlushed ? REPLACE_SCRIPT : ""
+            }$df("${key}")</script>`
+          )
+        );
+        scriptFlushed = true;
+        checkEnd();
       };
     }
   };
 
   let html = resolveSSRNode(escape(code()));
   html = injectAssets(sharedConfig.context.assets, html);
-  buffer.write(encoder.encode(html));
   Promise.resolve().then(() => {
-    writeInitialScript();
     buffer.write(
-      encoder.encode(`<script${nonce ? ` nonce="${nonce}"` : ""}>${SYNC_SCRIPT}</script>`)
+      encoder.encode(
+        html +
+          `<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.length ? tasks.join(";") + ";" : ""}${SYNC_SCRIPT}</script>`
+      )
     );
+    tasks.length = 0;
+    scheduled = false;
     onCompleteShell && onCompleteShell(result);
   });
 }
