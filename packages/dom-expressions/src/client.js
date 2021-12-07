@@ -175,11 +175,6 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 
 // Hydrate
 export function hydrate(code, element) {
-  if (!globalThis._$HY.sync) {
-    let dispose;
-    globalThis._$HY.queue.push(() => dispose = hydrate(code, element));
-    return () => dispose();
-  }
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = globalThis._$HY.load;

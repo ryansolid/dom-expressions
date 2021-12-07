@@ -4,15 +4,11 @@ import devalue from "devalue";
 export { createComponent } from "rxcore";
 
 const REPLACE_SCRIPT = `function $df(e,t){t=document.getElementById(e),document.getElementById("pl"+e).replaceWith(...t.childNodes),_$HY.set(e)}`;
-const SYNC_SCRIPT = `_$HY.sync=!0;for(let e=0;e<_$HY.queue.length;e++)_$HY.queue[e]()`;
 
 export function renderToString(code, options = {}) {
   sharedConfig.context = { id: "", count: 0, suspense: {}, assets: [], nonce: options.nonce };
   let html = resolveSSRNode(escape(code()));
-  return (
-    injectAssets(sharedConfig.context.assets, html) +
-    `<script${options.nonce ? ` nonce="${options.nonce}"` : ""}>${SYNC_SCRIPT}</script>`
-  );
+  return injectAssets(sharedConfig.context.assets, html);
 }
 
 export function renderToStringAsync(code, options = {}) {
@@ -33,11 +29,9 @@ export function renderToStringAsync(code, options = {}) {
     setTimeout(() => reject("renderToString timed out"), timeoutMs)
   );
   return Promise.race([asyncWrap(() => escape(code())), timeout]).then(res => {
-    let html = resolveSSRNode(res);
-    html += `<script${nonce ? ` nonce="${nonce}"` : ""}>${
-      scripts.length ? scripts + ";" : ""
-    }${SYNC_SCRIPT}</script>`;
-    return injectAssets(context.assets, html);
+    let html = injectAssets(context.assets, resolveSSRNode(res));
+    if (scripts.length) html = injectScripts(html, scripts, nonce);
+    return html;
   });
 }
 
@@ -119,9 +113,8 @@ export function renderToPipeableStream(code, options) {
   let html = resolveSSRNode(escape(code()));
   html = injectAssets(sharedConfig.context.assets, html);
   Promise.resolve().then(() => {
-    buffer.write(
-      html + `<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.length ? tasks.join(";") + ";" : ""}${SYNC_SCRIPT}</script>`
-    );
+    if (tasks.length) html = injectScripts(html, tasks.join(";"), nonce);
+    buffer.write(html);
     tasks.length = 0;
     scheduled = false;
     onCompleteShell && onCompleteShell();
@@ -239,12 +232,8 @@ export function pipeToWritable(code, writable, options = {}) {
   let html = resolveSSRNode(escape(code()));
   html = injectAssets(sharedConfig.context.assets, html);
   Promise.resolve().then(() => {
-    buffer.write(
-      encoder.encode(
-        html +
-          `<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.length ? tasks.join(";") + ";" : ""}${SYNC_SCRIPT}</script>`
-      )
-    );
+    if (tasks.length) html = injectScripts(html, tasks.join(";"), nonce);
+    buffer.write(encoder.encode(html));
     tasks.length = 0;
     scheduled = false;
     onCompleteShell && onCompleteShell(result);
@@ -443,7 +432,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet,queue:[]}));</script>`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}));</script><!xs>`;
 }
 
 function injectAssets(assets, html) {
@@ -451,6 +440,15 @@ function injectAssets(assets, html) {
     html = html.replace(`%%$${i}%%`, assets[i]());
   }
   return html;
+}
+
+function injectScripts(html, scripts, nonce) {
+  const tag = `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>`;
+  const index = html.indexOf("<!xs>")
+  if (index > -1) {
+    return html.slice(0, index) + tag + html.slice(index);
+  }
+  return html + tag;
 }
 
 const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;
