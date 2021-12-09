@@ -36,10 +36,10 @@ export function renderToStringAsync(code, options = {}) {
 }
 
 export function renderToPipeableStream(code, options) {
-  const { nonce, onCompleteShell, onCompleteAll } = options;
+  const { nonce, onCompleteShell, onCompleteAll, dataOnly } = options;
   const tmp = [];
   const tasks = [];
-  const registry = new Set();
+  const registry = new Map();
   const checkEnd = () => {
     if (!registry.size && !completed) {
       onCompleteAll && onCompleteAll(result);
@@ -69,6 +69,7 @@ export function renderToPipeableStream(code, options) {
     count: 0,
     async: true,
     streaming: true,
+    dataOnly,
     resources: {},
     suspense: {},
     assets: [],
@@ -86,25 +87,26 @@ export function renderToPipeableStream(code, options) {
       });
     },
     registerFragment(key) {
-      registry.add(key);
-      Promise.resolve().then(() => {
-        if (registry.has(key)) {
-          if (!scheduled) {
-            Promise.resolve().then(writeInitialScript);
-            scheduled = true;
-          }
-          tasks.push(`_$HY.init("${key}")`);
+      registry.set(key, []);
+      if (!dataOnly) {
+        if (!scheduled) {
+          Promise.resolve().then(writeInitialScript);
+          scheduled = true;
         }
-      });
+        tasks.push(`_$HY.init("${key}")`);
+      }
       return value => {
+        const keys = registry.get(key);
         registry.delete(key);
-        if (!value) return;
-        buffer.write(
-          `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
-            !scriptFlushed ? REPLACE_SCRIPT : ""
-          }$df("${key}")</script>`
-        );
-        scriptFlushed = true;
+        if (waitForFragments(registry, key)) return;
+        if (value) {
+          buffer.write(
+            `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
+              !scriptFlushed ? REPLACE_SCRIPT : ""
+            }${keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""}$df("${key}")</script>`
+          );
+          scriptFlushed = true;
+        }
         checkEnd();
       };
     }
@@ -132,12 +134,17 @@ export function renderToPipeableStream(code, options) {
 
 // Atleast until Cloudflare gets ReadableStreams
 export function pipeToWritable(code, writable, options = {}) {
-  const { nonce, onCompleteShell = ({ startWriting }) => startWriting(), onCompleteAll } = options;
+  const {
+    nonce,
+    onCompleteShell = ({ startWriting }) => startWriting(),
+    onCompleteAll,
+    dataOnly
+  } = options;
   const tmp = [];
   const tasks = [];
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
-  const registry = new Set();
+  const registry = new Map();
   const checkEnd = () => {
     if (!registry.size && !completed) {
       onCompleteAll && onCompleteAll(result);
@@ -184,6 +191,7 @@ export function pipeToWritable(code, writable, options = {}) {
     count: 0,
     async: true,
     streaming: true,
+    dataOnly,
     resources: {},
     suspense: {},
     assets: [],
@@ -203,27 +211,28 @@ export function pipeToWritable(code, writable, options = {}) {
       });
     },
     registerFragment(key) {
-      registry.add(key);
-      Promise.resolve().then(() => {
-        if (registry.has(key)) {
-          if (!scheduled) {
-            Promise.resolve().then(writeInitialScript);
-            scheduled = true;
-          }
-          tasks.push(`_$HY.init("${key}")`);
+      registry.set(key, []);
+      if (!dataOnly) {
+        if (!scheduled) {
+          Promise.resolve().then(writeInitialScript);
+          scheduled = true;
         }
-      });
+        tasks.push(`_$HY.init("${key}")`);
+      }
       return value => {
+        const keys = registry.get(key);
         registry.delete(key);
-        if (!value) return;
-        buffer.write(
-          encoder.encode(
-            `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
-              !scriptFlushed ? REPLACE_SCRIPT : ""
-            }$df("${key}")</script>`
-          )
-        );
-        scriptFlushed = true;
+        if (waitForFragments(registry, key, keys)) return;
+        if (value) {
+          buffer.write(
+            encoder.encode(
+              `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
+                !scriptFlushed ? REPLACE_SCRIPT : ""
+              }${keys.length ? keys.map(k => `_$HY.set("${k}");`) : ""}$df("${key}")</script>`
+            )
+          );
+          scriptFlushed = true;
+        }
         checkEnd();
       };
     }
@@ -432,7 +441,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}));</script><!xs>`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.unset=(e)=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}));</script><!xs>`;
 }
 
 function injectAssets(assets, html) {
@@ -444,11 +453,21 @@ function injectAssets(assets, html) {
 
 function injectScripts(html, scripts, nonce) {
   const tag = `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>`;
-  const index = html.indexOf("<!xs>")
+  const index = html.indexOf("<!xs>");
   if (index > -1) {
     return html.slice(0, index) + tag + html.slice(index);
   }
   return html + tag;
+}
+
+function waitForFragments(registry, key) {
+  for (const k of [...registry.keys()].reverse()) {
+    if (key.startsWith(k)) {
+      registry.get(k).push(key);
+      return true;
+    }
+  }
+  return false;
 }
 
 const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;

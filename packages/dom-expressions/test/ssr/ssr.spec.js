@@ -7,7 +7,7 @@ globalThis.TextEncoder = function () {
 
 const fixture = `<div id="main" data-id="12" aria-role="button" checked class="selected" style="color:red"><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span> Hello &lt;div/> </span>`;
-const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),[\"click\",\"input\"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}));</script><!xs><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
+const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),[\"click\",\"input\"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.unset=(e)=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}));</script><!xs><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
 
 const Comp1 = () => {
   const selected = S.data(true),

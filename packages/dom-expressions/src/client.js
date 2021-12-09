@@ -360,8 +360,8 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       return () => current;
     }
     if (sharedConfig.context && current && current.length) {
-      for (let i; i < array.length; i++) {
-        if (array[i].parentNode) return array;
+      for (let i = 0; i < array.length; i++) {
+        if (array[i].parentNode) return current = array;
       }
       return current;
     }

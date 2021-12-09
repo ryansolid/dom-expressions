@@ -21,9 +21,12 @@
     if(!res) return resources[id] = [data];
     res[1](data);
   };
+  h.unset = (id) => {
+    delete resources[id];
+  };
   h.load = (id, res) => {
     res = resources[id];
     if(res) return res[0];
   }
-})(window._$HY || (_$HY = { events: [], completed: new WeakSet(), queue: [] }));
+})(window._$HY || (_$HY = { events: [], completed: new WeakSet() }));
 `
