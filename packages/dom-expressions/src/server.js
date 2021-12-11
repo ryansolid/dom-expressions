@@ -3,12 +3,24 @@ import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,t){t=document.getElementById(e),document.getElementById("pl"+e).replaceWith(...t.childNodes),_$HY.set(e)}`;
+const REPLACE_SCRIPT = `function $df(e,y,t){t=document.getElementById(e),document.getElementById("pl"+e).replaceWith(...t.childNodes),_$HY.set(e,y)}`;
+const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;
 
 export function renderToString(code, options = {}) {
-  sharedConfig.context = { id: "", count: 0, suspense: {}, assets: [], nonce: options.nonce };
-  let html = resolveSSRNode(escape(code()));
-  return injectAssets(sharedConfig.context.assets, html);
+  let scripts = "";
+  sharedConfig.context = {
+    id: "",
+    count: 0,
+    suspense: {},
+    assets: [],
+    nonce: options.nonce,
+    writeResource(id, p, error) {
+      if (error) scripts += `_$HY.set("${id}", ${serializeError(p)});`;
+    }
+  };
+  let html = injectAssets(sharedConfig.context.assets, resolveSSRNode(escape(code())));
+  if (scripts.length) html = injectScripts(html, scripts, options.nonce);
+  return html;
 }
 
 export function renderToStringAsync(code, options = {}) {
@@ -23,11 +35,46 @@ export function renderToStringAsync(code, options = {}) {
     nonce
   });
   let scripts = "";
-  sharedConfig.context.writeResource = (id, p) =>
-    p.then(d => (scripts += `_$HY.set("${id}", ${devalue(d)});`));
+  sharedConfig.context.writeResource = (id, p, error) => {
+    if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
+    p.then(d => (scripts += `_$HY.set("${id}", ${devalue(d)});`)).catch(
+      () => (scripts += `_$HY.set("${id}", null);`)
+    );
+  };
   const timeout = new Promise((_, reject) =>
     setTimeout(() => reject("renderToString timed out"), timeoutMs)
   );
+
+  function asyncWrap(fn) {
+    return new Promise(resolve => {
+      const registry = new Set();
+      const cache = Object.create(null);
+      sharedConfig.context.registerFragment = register;
+      const rendered = fn();
+      if (!registry.size) resolve(rendered);
+      function register(key) {
+        registry.add(key);
+        return (value = "", error) => {
+          cache[key] = value;
+          registry.delete(key);
+          if (error)
+            return (scripts += `_$HY.set("${key}", Promise.resolve(${serializeError(error)}));`);
+          if (!registry.size)
+            Promise.resolve().then(() => {
+              let source = resolveSSRNode(rendered);
+              let final = "";
+              let match;
+              while ((match = source.match(FRAGMENT_REPLACE))) {
+                final += source.substring(0, match.index);
+                source = cache[match[1]] + source.substring(match.index + match[0].length);
+              }
+              resolve(final + source);
+            });
+          return true;
+        };
+      }
+    });
+  }
   return Promise.race([asyncWrap(() => escape(code())), timeout]).then(res => {
     let html = injectAssets(context.assets, resolveSSRNode(res));
     if (scripts.length) html = injectScripts(html, scripts, nonce);
@@ -35,7 +82,7 @@ export function renderToStringAsync(code, options = {}) {
   });
 }
 
-export function renderToPipeableStream(code, options) {
+export function renderToPipeableStream(code, options = {}) {
   const { nonce, onCompleteShell, onCompleteAll, dataOnly } = options;
   const tmp = [];
   const tasks = [];
@@ -48,7 +95,7 @@ export function renderToPipeableStream(code, options) {
     }
   };
   const writeInitialScript = () => {
-    if (tasks.length) {
+    if (tasks.length && !completed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.join(";")}</script>`);
       tasks.length = 0;
     }
@@ -74,16 +121,23 @@ export function renderToPipeableStream(code, options) {
     suspense: {},
     assets: [],
     nonce,
-    writeResource(id, p) {
+    writeResource(id, p, error) {
       if (!scheduled) {
         Promise.resolve().then(writeInitialScript);
         scheduled = true;
       }
+      if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
       tasks.push(`_$HY.init("${id}")`);
       p.then(d => {
-        buffer.write(
-          `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", ${devalue(d)})</script>`
-        );
+        !completed &&
+          buffer.write(
+            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", ${devalue(d)})</script>`
+          );
+      }).catch(() => {
+        !completed &&
+          buffer.write(
+            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null)</script>`
+          );
       });
     },
     registerFragment(key) {
@@ -95,19 +149,22 @@ export function renderToPipeableStream(code, options) {
         }
         tasks.push(`_$HY.init("${key}")`);
       }
-      return value => {
+      return (value, error) => {
         const keys = registry.get(key);
         registry.delete(key);
         if (waitForFragments(registry, key)) return;
-        if (value) {
+        if ((value !== undefined || error) && !completed) {
           buffer.write(
-            `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
-              !scriptFlushed ? REPLACE_SCRIPT : ""
-            }${keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""}$df("${key}")</script>`
+            `<div hidden id="${key}">${value !== undefined ? value : " "}</div><script${
+              nonce ? ` nonce="${nonce}"` : ""
+            }>${!scriptFlushed ? REPLACE_SCRIPT : ""}${
+              keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""
+            }$df("${key}"${error ? "," + serializeError(error) : ""})</script>`
           );
           scriptFlushed = true;
         }
         checkEnd();
+        return true;
       };
     }
   };
@@ -196,18 +253,27 @@ export function pipeToWritable(code, writable, options = {}) {
     suspense: {},
     assets: [],
     nonce,
-    writeResource(id, p) {
+    writeResource(id, p, error) {
       if (!scheduled) {
         Promise.resolve().then(writeInitialScript);
         scheduled = true;
       }
+      if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
       tasks.push(`_$HY.init("${id}")`);
       p.then(d => {
-        buffer.write(
-          encoder.encode(
-            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", ${devalue(d)})</script>`
-          )
-        );
+        !completed &&
+          buffer.write(
+            encoder.encode(
+              `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", ${devalue(d)})</script>`
+            )
+          );
+      }).catch(() => {
+        !completed &&
+          buffer.write(
+            encoder.encode(
+              `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null)</script>`
+            )
+          );
       });
     },
     registerFragment(key) {
@@ -219,21 +285,24 @@ export function pipeToWritable(code, writable, options = {}) {
         }
         tasks.push(`_$HY.init("${key}")`);
       }
-      return value => {
+      return (value, error) => {
         const keys = registry.get(key);
         registry.delete(key);
         if (waitForFragments(registry, key, keys)) return;
-        if (value) {
+        if ((value !== undefined || error) && !completed) {
           buffer.write(
             encoder.encode(
-              `<div hidden id="${key}">${value}</div><script${nonce ? ` nonce="${nonce}"` : ""}>${
-                !scriptFlushed ? REPLACE_SCRIPT : ""
-              }${keys.length ? keys.map(k => `_$HY.set("${k}");`) : ""}$df("${key}")</script>`
+              `<div hidden id="${key}">${value !== undefined ? value : " "}</div><script${
+                nonce ? ` nonce="${nonce}"` : ""
+              }>${!scriptFlushed ? REPLACE_SCRIPT : ""}${
+                keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""
+              }$df("${key}"${error ? "," + serializeError(error) : ""})</script>`
             )
           );
           scriptFlushed = true;
         }
         checkEnd();
+        return true;
       };
     }
   };
@@ -441,7 +510,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.unset=(e)=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}));</script><!xs>`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.unset=(e)=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}))</script><!xs>`;
 }
 
 function injectAssets(assets, html) {
@@ -460,6 +529,10 @@ function injectScripts(html, scripts, nonce) {
   return html + tag;
 }
 
+function serializeError(error) {
+  return error.message ? `new Error(${devalue(error.message)})` : devalue(error);
+}
+
 function waitForFragments(registry, key) {
   for (const k of [...registry.keys()].reverse()) {
     if (key.startsWith(k)) {
@@ -468,33 +541,4 @@ function waitForFragments(registry, key) {
     }
   }
   return false;
-}
-
-const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;
-function asyncWrap(fn) {
-  return new Promise(resolve => {
-    const registry = new Set();
-    const cache = Object.create(null);
-    sharedConfig.context.registerFragment = register;
-    const rendered = fn();
-    if (!registry.size) resolve(rendered);
-    function register(key) {
-      registry.add(key);
-      return value => {
-        if (value) cache[key] = value;
-        registry.delete(key);
-        if (!registry.size)
-          Promise.resolve().then(() => {
-            let source = resolveSSRNode(rendered);
-            let final = "";
-            let match;
-            while ((match = source.match(FRAGMENT_REPLACE))) {
-              final += source.substring(0, match.index);
-              source = cache[match[1]] + source.substring(match.index + match[0].length);
-            }
-            resolve(final + source);
-          });
-      };
-    }
-  });
 }
