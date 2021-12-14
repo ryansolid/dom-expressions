@@ -1,13 +1,8 @@
-export type PipeToWritableResults = {
-  startWriting: () => void;
-  write: (v: string) => void;
-  abort: () => void;
-};
-
 export function renderToString<T>(
   fn: () => T,
   options?: {
     nonce?: string;
+    renderId?: string;
   }
 ): string;
 export function renderToStringAsync<T>(
@@ -15,37 +10,22 @@ export function renderToStringAsync<T>(
   options?: {
     timeoutMs?: number;
     nonce?: string;
+    renderId?: string;
   }
 ): Promise<string>;
-export function renderToPipeableStream<T>(
+export function renderToStream<T>(
   fn: () => T,
   options?: {
     nonce?: string;
     dataOnly?: boolean;
+    renderId?: string;
     onCompleteShell?: () => void;
     onCompleteAll?: () => void;
   }
-): { pipe: (writable: { write: (v: string) => void }) => void };
-export function pipeToWritable<T>(
-  fn: () => T,
-  writable: WritableStream,
-  options?: {
-    nonce?: string;
-    dataOnly?: boolean;
-    onCompleteShell?: (res: PipeToWritableResults) => void;
-    onCompleteAll?: () => void;
-  }
-): void;
-export function pipeToNodeWritable<T>(
-  fn: () => T,
-  writable: { write: (v: string) => void },
-  options?: {
-    nonce?: string;
-    dataOnly?: boolean;
-    onCompleteShell?: () => void;
-    onCompleteAll?: () => void;
-  }
-): void;
+): {
+  pipe: (writable: { write: (v: string) => void }) => void;
+  pipeTo: (writable: WritableStream) => void;
+};
 
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function HydrationScript(props: { nonce?: string; eventNames?: string[] }): JSX.Element;
@@ -65,3 +45,28 @@ export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): J
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function generateHydrationScript(options: { nonce?: string; eventNames?: string[] }): string;
+
+// deprecated
+export type LegacyResults = {
+  startWriting: () => void;
+};
+export function pipeToWritable<T>(
+  fn: () => T,
+  writable: WritableStream,
+  options?: {
+    nonce?: string;
+    dataOnly?: boolean;
+    onReady?: (res: LegacyResults) => void;
+    onCompleteAll?: () => void;
+  }
+): void;
+export function pipeToNodeWritable<T>(
+  fn: () => T,
+  writable: { write: (v: string) => void },
+  options?: {
+    nonce?: string;
+    dataOnly?: boolean;
+    onReady?: (res: LegacyResults) => void;
+    onCompleteAll?: () => void;
+  }
+): void;

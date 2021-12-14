@@ -30,7 +30,12 @@ export function spread<T>(
 export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
-export function addEventListener(node: Element, name: string, handler: () => void, delegate: boolean): void;
+export function addEventListener(
+  node: Element,
+  name: string,
+  handler: () => void,
+  delegate: boolean
+): void;
 export function classList(
   node: Element,
   value: { [k: string]: boolean },
@@ -45,7 +50,11 @@ export function getOwner(): unknown;
 export function mergeProps(...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
 
-export function hydrate(fn: () => JSX.Element, node: MountableElement): () => void;
+export function hydrate(
+  fn: () => JSX.Element,
+  node: MountableElement,
+  options: { renderId?: string }
+): () => void;
 export function getHydrationKey(): string;
 export function getNextElement(template?: HTMLTemplateElement): Element;
 export function getNextMatch(start: Node, elementName: string): Element;

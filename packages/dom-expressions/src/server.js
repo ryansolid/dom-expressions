@@ -9,7 +9,7 @@ const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;
 export function renderToString(code, options = {}) {
   let scripts = "";
   sharedConfig.context = {
-    id: "",
+    id: options.renderId || "",
     count: 0,
     suspense: {},
     assets: [],
@@ -24,9 +24,9 @@ export function renderToString(code, options = {}) {
 }
 
 export function renderToStringAsync(code, options = {}) {
-  const { nonce, timeoutMs = 30000 } = options;
+  const { nonce, renderId, timeoutMs = 30000 } = options;
   const context = (sharedConfig.context = {
-    id: "",
+    id: renderId || "",
     count: 0,
     resources: {},
     suspense: {},
@@ -82,8 +82,8 @@ export function renderToStringAsync(code, options = {}) {
   });
 }
 
-export function renderToPipeableStream(code, options = {}) {
-  const { nonce, onCompleteShell, onCompleteAll, dataOnly } = options;
+export function renderToStream(code, options = {}) {
+  const { nonce, onCompleteShell, onCompleteAll, dataOnly, renderId } = options;
   const tmp = [];
   const tasks = [];
   const registry = new Map();
@@ -112,7 +112,7 @@ export function renderToPipeableStream(code, options = {}) {
     }
   };
   sharedConfig.context = {
-    id: "",
+    id: renderId || "",
     count: 0,
     async: true,
     streaming: true,
@@ -185,144 +185,23 @@ export function renderToPipeableStream(code, options = {}) {
       tmp.forEach(chunk => buffer.write(chunk));
       if (completed) writable.end();
       else setTimeout(checkEnd);
-    }
-  };
-}
-
-// Atleast until Cloudflare gets ReadableStreams
-export function pipeToWritable(code, writable, options = {}) {
-  const {
-    nonce,
-    onCompleteShell = ({ startWriting }) => startWriting(),
-    onCompleteAll,
-    dataOnly
-  } = options;
-  const tmp = [];
-  const tasks = [];
-  const writer = writable.getWriter();
-  const encoder = new TextEncoder();
-  const registry = new Map();
-  const checkEnd = () => {
-    if (!registry.size && !completed) {
-      onCompleteAll && onCompleteAll(result);
-      writable && writable.close();
-      completed = true;
-    }
-  };
-  const writeInitialScript = () => {
-    if (tasks.length) {
-      buffer.write(
-        encoder.encode(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.join(";")}</script>`)
-      );
-      tasks.length = 0;
-    }
-    scheduled = false;
-  };
-
-  let completed = false;
-  let scriptFlushed = false;
-  let scheduled = true;
-  let buffer = {
-    write(payload) {
-      tmp.push(payload);
-    }
-  };
-
-  const result = {
-    startWriting() {
-      buffer = writer;
-      tmp.forEach(chunk => writer.write(chunk));
-      setTimeout(checkEnd);
     },
-    write(c) {
-      writer.write(encoder.encode(c));
-    },
-    abort() {
-      registry.clear();
-      checkEnd();
-    }
-  };
-
-  sharedConfig.context = {
-    id: "",
-    count: 0,
-    async: true,
-    streaming: true,
-    dataOnly,
-    resources: {},
-    suspense: {},
-    assets: [],
-    nonce,
-    writeResource(id, p, error) {
-      if (!scheduled) {
-        Promise.resolve().then(writeInitialScript);
-        scheduled = true;
-      }
-      if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
-      tasks.push(`_$HY.init("${id}")`);
-      p.then(d => {
-        !completed &&
-          buffer.write(
-            encoder.encode(
-              `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", ${devalue(d)})</script>`
-            )
-          );
-      }).catch(() => {
-        !completed &&
-          buffer.write(
-            encoder.encode(
-              `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null)</script>`
-            )
-          );
-      });
-    },
-    registerFragment(key) {
-      registry.set(key, []);
-      if (!dataOnly) {
-        if (!scheduled) {
-          Promise.resolve().then(writeInitialScript);
-          scheduled = true;
-        }
-        tasks.push(`_$HY.init("${key}")`);
-      }
-      return (value, error) => {
-        const keys = registry.get(key);
-        registry.delete(key);
-        if (waitForFragments(registry, key, keys)) return;
-        if ((value !== undefined || error) && !completed) {
-          buffer.write(
-            encoder.encode(
-              `<div hidden id="${key}">${value !== undefined ? value : " "}</div><script${
-                nonce ? ` nonce="${nonce}"` : ""
-              }>${!scriptFlushed ? REPLACE_SCRIPT : ""}${
-                keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""
-              }$df("${key}"${error ? "," + serializeError(error) : ""})</script>`
-            )
-          );
-          scriptFlushed = true;
-        }
-        checkEnd();
-        return true;
+    pipeTo(w) {
+      const encoder = new TextEncoder();
+      const writer = w.getWriter();
+      writable = {
+        end() { w.close() }
       };
+      buffer = {
+        write(payload) {
+          writer.write(encoder.encode(payload))
+        }
+      }
+      tmp.forEach(chunk => buffer.write(chunk));
+      if (completed) writable.end();
+      else setTimeout(checkEnd);
     }
   };
-
-  let html = resolveSSRNode(escape(code()));
-  html = injectAssets(sharedConfig.context.assets, html);
-  Promise.resolve().then(() => {
-    if (tasks.length) html = injectScripts(html, tasks.join(";"), nonce);
-    buffer.write(encoder.encode(html));
-    tasks.length = 0;
-    scheduled = false;
-    onCompleteShell && onCompleteShell(result);
-  });
-}
-
-/**
- * @deprecated Replaced by renderToPipeableStream
- */
-export function pipeToNodeWritable(code, writable, options = {}) {
-  renderToPipeableStream(code, options).pipe(writable);
 }
 
 // components
@@ -541,4 +420,38 @@ function waitForFragments(registry, key) {
     }
   }
   return false;
+}
+
+/**
+ * @deprecated Replaced by renderToStream
+ */
+export function pipeToNodeWritable(code, writable, options = {}) {
+  if (options.onReady) {
+    options.onCompleteShell = () => {
+      options.onReady({
+        startWriting() {
+          stream.pipe(writable);
+        }
+      });
+    };
+  }
+  const stream = renderToStream(code, options);
+  if (!options.onReady) stream.pipe(writable);
+}
+
+/**
+ * @deprecated Replaced by renderToStream
+ */
+export function pipeToWritable(code, writable, options = {}) {
+  if (options.onReady) {
+    options.onCompleteShell = () => {
+      options.onReady({
+        startWriting() {
+          stream.pipeTo(writable);
+        }
+      });
+    };
+  }
+  const stream = renderToStream(code, options);
+  if (!options.onReady) stream.pipeTo(writable);
 }

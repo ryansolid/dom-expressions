@@ -174,17 +174,17 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 }
 
 // Hydrate
-export function hydrate(code, element) {
+export function hydrate(code, element, options={}) {
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = globalThis._$HY.load;
   sharedConfig.gather = (root) => gatherHydratable(element, root);
   sharedConfig.registry = new Map();
   sharedConfig.context = {
-    id: "",
+    id: options.renderId || "",
     count: 0
   };
-  gatherHydratable(element);
+  gatherHydratable(element, options.renderId);
   const dispose = render(code, element, [...element.childNodes]);
   sharedConfig.context = null;
   return dispose;
