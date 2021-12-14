@@ -26,7 +26,9 @@ export function render(code, element, init) {
   let disposer;
   root(dispose => {
     disposer = dispose;
-    insert(element, code(), element.firstChild ? null : undefined, init);
+    element === document
+      ? code()
+      : insert(element, code(), element.firstChild ? null : undefined, init);
   });
   return () => {
     disposer();
@@ -174,11 +176,11 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 }
 
 // Hydrate
-export function hydrate(code, element, options={}) {
+export function hydrate(code, element, options = {}) {
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = globalThis._$HY.load;
-  sharedConfig.gather = (root) => gatherHydratable(element, root);
+  sharedConfig.gather = root => gatherHydratable(element, root);
   sharedConfig.registry = new Map();
   sharedConfig.context = {
     id: options.renderId || "",
@@ -361,7 +363,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     if (sharedConfig.context && current && current.length) {
       for (let i = 0; i < array.length; i++) {
-        if (array[i].parentNode) return current = array;
+        if (array[i].parentNode) return (current = array);
       }
       return current;
     }
