@@ -31,7 +31,7 @@ function jsxElementNameToString(node) {
   if (t.isJSXMemberExpression(node)) {
     return `${jsxElementNameToString(node.object)}.${node.property.name}`;
   }
-  if (t.isJSXIdentifier(node)) {
+  if (t.isJSXIdentifier(node) || t.isIdentifier(node)) {
     return node.name;
   }
   return `${node.namespace.name}:${node.name.name}`;

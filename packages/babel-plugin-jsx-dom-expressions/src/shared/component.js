@@ -2,10 +2,8 @@ import * as t from "@babel/types";
 import { decode } from "html-entities";
 import {
   getConfig,
-  getTagName,
   isDynamic,
   registerImportMethod,
-  tagNameToIdentifier,
   filterChildren,
   trimWhitespace,
   transformCondition
@@ -15,18 +13,31 @@ import { createTemplate as createTemplateDOM } from "../dom/template";
 import { createTemplate as createTemplateSSR } from "../ssr/template";
 import { createTemplate as createTemplateUniversal } from "../universal/template";
 
+function convertComponentIdentifier(node) {
+  if (t.isJSXIdentifier(node)) {
+    node.type = "Identifier";
+  } else if (t.isJSXMemberExpression(node)) {
+    return t.memberExpression(
+      convertComponentIdentifier(node.object, node),
+      convertComponentIdentifier(node.property, node),
+    );
+  }
+
+  return node;
+}
+
 export default function transformComponent(path) {
   let exprs = [],
     config = getConfig(path),
-    tagName = getTagName(path.node),
+    tagId = convertComponentIdentifier(path.node.openingElement.name),
     props = [],
     runningObject = [],
     dynamicSpread = false,
     hasChildren = path.node.children.length > 0;
 
-  if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
-    registerImportMethod(path, tagName);
-    tagName = `_$${tagName}`;
+  if (config.builtIns.indexOf(tagId.name) > -1 && !path.scope.hasBinding(tagId.name)) {
+    registerImportMethod(path, tagId.name);
+    tagId.name = `_$${tagId.name}`;
   }
 
   path
@@ -174,7 +185,7 @@ export default function transformComponent(path) {
     props = [t.callExpression(t.identifier("_$mergeProps"), props)];
   }
   registerImportMethod(path, "createComponent");
-  const componentArgs = [tagNameToIdentifier(tagName), props[0]];
+  const componentArgs = [tagId, props[0]];
   exprs.push(t.callExpression(t.identifier("_$createComponent"), componentArgs));
 
   // handle hoisting conditionals
