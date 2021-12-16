@@ -53,7 +53,7 @@ export function transformElement(path, info) {
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
     results.postExprs.push(
-      t.expressionStatement(t.callExpression(registerImportMethod(path, "runHydrationEvents")), [])
+      t.expressionStatement(t.callExpression(registerImportMethod(path, "runHydrationEvents"), []))
     );
   }
   if (wrapSVG) results.template += "</svg>";
