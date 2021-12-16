@@ -19,7 +19,8 @@
     "test:coverage": "lerna run test:coverage --parallel",
     "build": "lerna run build --concurrency=1 --stream",
     "publish:release": "lerna run build && lerna publish",
-    "report:coverage": "lerna run report:coverage --parallel"
+    "report:coverage": "lerna run report:coverage --parallel",
+    "bootstrap": "lerna bootstrap"
   },
   "devDependencies": {
     "@babel/core": "^7.15.5",

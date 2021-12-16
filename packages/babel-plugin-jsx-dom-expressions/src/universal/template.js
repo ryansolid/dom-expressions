@@ -29,8 +29,7 @@ export function createTemplate(path, result, wrap) {
     }
   }
   if (wrap && result.dynamic && config.memoWrapper) {
-    registerImportMethod(path, config.memoWrapper);
-    return t.callExpression(t.identifier(`_$${config.memoWrapper}`), [result.exprs[0]]);
+    return t.callExpression(registerImportMethod(path, config.memoWrapper), [result.exprs[0]]);
   }
   return result.exprs[0];
 }
@@ -38,15 +37,14 @@ export function createTemplate(path, result, wrap) {
 function wrapDynamics(path, dynamics) {
   if (!dynamics.length) return;
   const config = getConfig(path);
-  registerImportMethod(path, config.effectWrapper);
 
-  const effectWrapperId = `_$${config.effectWrapper}`;
+  const effectWrapperId = registerImportMethod(path, config.effectWrapper);
 
   if (dynamics.length === 1) {
     const prevValue = t.identifier("_$p");
 
     return t.expressionStatement(
-      t.callExpression(t.identifier(effectWrapperId), [
+      t.callExpression(effectWrapperId, [
         t.arrowFunctionExpression(
           [prevValue],
           setAttr(path, dynamics[0].elem, dynamics[0].key, dynamics[0].value, {
@@ -84,7 +82,7 @@ function wrapDynamics(path, dynamics) {
   });
 
   return t.expressionStatement(
-    t.callExpression(t.identifier(effectWrapperId), [
+    t.callExpression(effectWrapperId, [
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([

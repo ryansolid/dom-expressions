@@ -17,6 +17,9 @@ jobs:
     with:
       node-version: 14
 
+  - name: Bootstrap packages
+    run: npm run bootstrap
+
   - name: Installing deps
     run: npm install
 
