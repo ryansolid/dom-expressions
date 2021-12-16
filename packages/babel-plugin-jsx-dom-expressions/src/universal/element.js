@@ -21,11 +21,10 @@ export function transformElement(path, info) {
       tagName
     };
 
-  registerImportMethod(path, "createElement");
   results.decl.push(
     t.variableDeclarator(
       results.id,
-      t.callExpression(t.identifier("_$createElement"), [t.stringLiteral(tagName)])
+      t.callExpression(registerImportMethod(path, "createElement"), [t.stringLiteral(tagName)])
     )
   );
 
@@ -38,7 +37,6 @@ export function transformElement(path, info) {
 function transformAttributes(path, results) {
   let children;
   const elem = results.id,
-    spread = t.identifier("_$spread"),
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
 
@@ -48,10 +46,9 @@ function transformAttributes(path, results) {
     .forEach(attribute => {
       const node = attribute.node;
       if (t.isJSXSpreadAttribute(node)) {
-        registerImportMethod(attribute, "spread");
         results.exprs.push(
           t.expressionStatement(
-            t.callExpression(spread, [
+            t.callExpression(registerImportMethod(attribute, "spread"), [
               elem,
               isDynamic(attribute.get("argument"), {
                 checkMember: true
@@ -167,10 +164,9 @@ function transformAttributes(path, results) {
 }
 
 export function setAttr(path, elem, name, value, { prevId } = {}) {
-  registerImportMethod(path, "setProp");
   if (!value) value = t.booleanLiteral(true);
   return t.callExpression(
-    t.identifier("_$setProp"),
+    registerImportMethod(path, "setProp"),
     prevId ? [elem, t.stringLiteral(name), value, prevId] : [elem, t.stringLiteral(name), value]
   );
 }
@@ -191,36 +187,36 @@ function transformChildren(path, results) {
   childNodes.forEach((child, index) => {
     if (!child) return;
     if (child.id) {
-      registerImportMethod(path, "insertNode");
+      const insertNode = registerImportMethod(path, "insertNode");
       let insert = child.id;
       if (child.text) {
-        registerImportMethod(path, "createTextNode");
+        const createTextNode = registerImportMethod(path, "createTextNode");
         if (multi) {
           results.decl.push(
             t.variableDeclarator(
               child.id,
-              t.callExpression(t.identifier("_$createTextNode"), [
+              t.callExpression(createTextNode, [
                 t.stringLiteral(decode(child.template))
               ])
             )
           );
         } else
-          insert = t.callExpression(t.identifier("_$createTextNode"), [
+          insert = t.callExpression(createTextNode, [
             t.stringLiteral(decode(child.template))
           ]);
       }
       appends.push(
-        t.expressionStatement(t.callExpression(t.identifier("_$insertNode"), [results.id, insert]))
+        t.expressionStatement(t.callExpression(insertNode, [results.id, insert]))
       );
       results.decl.push(...child.decl);
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
     } else if (child.exprs.length) {
-      registerImportMethod(path, "insert");
+      const insert = registerImportMethod(path, "insert");
       if (multi) {
         results.exprs.push(
           t.expressionStatement(
-            t.callExpression(t.identifier("_$insert"), [
+            t.callExpression(insert, [
               results.id,
               child.exprs[0],
               nextChild(childNodes, index) || t.nullLiteral()
@@ -230,7 +226,7 @@ function transformChildren(path, results) {
       } else {
         results.exprs.push(
           t.expressionStatement(
-            t.callExpression(t.identifier("_$insert"), [results.id, child.exprs[0]])
+            t.callExpression(insert, [results.id, child.exprs[0]])
           )
         );
       }

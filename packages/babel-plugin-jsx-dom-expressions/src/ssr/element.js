@@ -39,9 +39,8 @@ export function transformElement(path, info) {
       dynamics: []
     };
   if (info.topLevel && config.hydratable) {
-    registerImportMethod(path, "ssrHydrationKey");
     results.template.push("");
-    results.templateValues.push(t.callExpression(t.identifier("_$ssrHydrationKey"), []));
+    results.templateValues.push(t.callExpression(registerImportMethod(path, "ssrHydrationKey"), []));
   }
   transformAttributes(path, results);
   appendToTemplate(results.template, ">");
@@ -108,9 +107,8 @@ function escapeExpression(path, expression, attr) {
     return expression;
   }
 
-  registerImportMethod(path, "escape");
   return t.callExpression(
-    t.identifier("_$escape"),
+    registerImportMethod(path, "escape"),
     [expression].concat(attr ? [t.booleanLiteral(true)] : [])
   );
 }
@@ -191,8 +189,7 @@ function transformAttributes(path, results) {
             i && attributes.splice(attributes.indexOf(classAttributes[i].node), 1);
             continue;
           }
-          registerImportMethod(path, "ssrClassList");
-          expr = t.callExpression(t.identifier("_$ssrClassList"), [expr]);
+          expr = t.callExpression(registerImportMethod(path, "ssrClassList"), [expr]);
         }
         values.push(t.logicalExpression("||", expr, t.stringLiteral("")));
         quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
@@ -206,11 +203,10 @@ function transformAttributes(path, results) {
   attributes.forEach(attribute => {
     const node = attribute.node;
     if (t.isJSXSpreadAttribute(node)) {
-      registerImportMethod(attribute, "ssrSpread");
       appendToTemplate(results.template, " ");
       results.template.push("");
       results.templateValues.push(
-        t.callExpression(t.identifier("_$ssrSpread"), [
+        t.callExpression(registerImportMethod(attribute, "ssrSpread"), [
           isDynamic(attribute.get("argument"), {
             checkMember: true,
             native: true
@@ -267,9 +263,8 @@ function transformAttributes(path, results) {
           dynamic = true;
 
         if (BooleanAttributes.has(key)) {
-          registerImportMethod(attribute, "ssrBoolean");
           results.template.push("");
-          const fn = t.callExpression(t.identifier("_$ssrBoolean"), [
+          const fn = t.callExpression(registerImportMethod(attribute, "ssrBoolean"), [
             t.stringLiteral(key),
             value.expression
           ]);
@@ -282,7 +277,6 @@ function transformAttributes(path, results) {
             t.isObjectExpression(value.expression) &&
             !value.expression.properties.some(p => t.isSpreadElement(p))
           ) {
-            registerImportMethod(path, "escape");
             const props = value.expression.properties.map((p, i) =>
               t.binaryExpression(
                 "+",
@@ -295,7 +289,7 @@ function transformAttributes(path, results) {
                   ? p.value
                   : t.isTemplateLiteral(p.value) && p.value.expressions.length === 0
                   ? t.stringLiteral(escapeHTML(p.value.quasis[0].value.raw))
-                  : t.callExpression(t.identifier("_$escape"), [p.value, t.booleanLiteral(true)])
+                  : t.callExpression(registerImportMethod(path, "escape"), [p.value, t.booleanLiteral(true)])
               )
             );
             let res = props[0];
@@ -304,8 +298,7 @@ function transformAttributes(path, results) {
             }
             value.expression = res;
           } else {
-            registerImportMethod(path, "ssrStyle");
-            value.expression = t.callExpression(t.identifier("_$ssrStyle"), [value.expression]);
+            value.expression = t.callExpression(registerImportMethod(path, "ssrStyle"), [value.expression]);
           }
           doEscape = false;
         }
@@ -322,8 +315,7 @@ function transformAttributes(path, results) {
               value.expression = values[0];
             } else value.expression = t.templateLiteral(quasis, values);
           } else {
-            registerImportMethod(path, "ssrClassList");
-            value.expression = t.callExpression(t.identifier("_$ssrClassList"), [value.expression]);
+            value.expression = t.callExpression(registerImportMethod(path, "ssrClassList"), [value.expression]);
           }
           key = "class";
           doEscape = false;
@@ -355,8 +347,7 @@ function transformClasslistObject(path, expr, values, quasis) {
     let key = prop.key;
     if (t.isIdentifier(prop.key) && !prop.computed) key = t.stringLiteral(key.name);
     else if (prop.computed) {
-      registerImportMethod(path, "escape");
-      key = t.callExpression(t.identifier("_$escape"), [prop.key, t.booleanLiteral(true)]);
+      key = t.callExpression(registerImportMethod(path, "escape"), [prop.key, t.booleanLiteral(true)]);
     } else key = t.stringLiteral(escapeHTML(prop.key.value));
     if (t.isBooleanLiteral(prop.value)) {
       if (prop.value.value === true) {

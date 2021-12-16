@@ -7,10 +7,9 @@ import { appendTemplates as appendTemplatesSSR } from "../ssr/template";
 export default path => {
   const config = getConfig(path)
   if (path.scope.data.events) {
-    registerImportMethod(path, "delegateEvents");
     path.node.body.push(
       t.expressionStatement(
-        t.callExpression(t.identifier("_$delegateEvents"), [
+        t.callExpression(registerImportMethod(path, "delegateEvents"), [
           t.arrayExpression(Array.from(path.scope.data.events).map(e => t.stringLiteral(e)))
         ])
       )

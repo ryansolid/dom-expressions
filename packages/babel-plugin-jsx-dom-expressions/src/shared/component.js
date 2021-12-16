@@ -36,8 +36,8 @@ export default function transformComponent(path) {
     hasChildren = path.node.children.length > 0;
 
   if (config.builtIns.indexOf(tagId.name) > -1 && !path.scope.hasBinding(tagId.name)) {
-    registerImportMethod(path, tagId.name);
-    tagId.name = `_$${tagId.name}`;
+    const newTagId = registerImportMethod(path, tagId.name);
+    tagId.name = newTagId.name;
   }
 
   path
@@ -181,12 +181,10 @@ export default function transformComponent(path) {
   if (runningObject.length || !props.length) props.push(t.objectExpression(runningObject));
 
   if (props.length > 1 || dynamicSpread) {
-    registerImportMethod(path, "mergeProps");
-    props = [t.callExpression(t.identifier("_$mergeProps"), props)];
+    props = [t.callExpression(registerImportMethod(path, "mergeProps"), props)];
   }
-  registerImportMethod(path, "createComponent");
   const componentArgs = [tagId, props[0]];
-  exprs.push(t.callExpression(t.identifier("_$createComponent"), componentArgs));
+  exprs.push(t.callExpression(registerImportMethod(path, "createComponent"), componentArgs));
 
   // handle hoisting conditionals
   if (exprs.length > 1) {
