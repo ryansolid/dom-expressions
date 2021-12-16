@@ -127,9 +127,11 @@ function transformAttributes(path, results) {
             );
           }
         } else if (key.startsWith("use:")) {
+          // Some trick to treat JSXIdentifier as Identifier
+          node.name.name.type = 'Identifier';
           results.exprs.unshift(
             t.expressionStatement(
-              t.callExpression(t.identifier(node.name.name.name), [
+              t.callExpression(node.name.name, [
                 elem,
                 t.arrowFunctionExpression(
                   [],

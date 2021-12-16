@@ -119,9 +119,12 @@ function transformToObject(attrName, attributes, selectedAttributes) {
   for (let i = 0; i < selectedAttributes.length; i++) {
     const attr = selectedAttributes[i].node;
     const computed = !t.isValidIdentifier(attr.name.name.name);
+    if (!computed) {
+      attr.name.name.type = 'Identifier';
+    }
     properties.push(
       t.objectProperty(
-        computed ? t.stringLiteral(attr.name.name.name) : t.identifier(attr.name.name.name),
+        computed ? t.stringLiteral(attr.name.name.name) : attr.name.name,
         t.isJSXExpressionContainer(attr.value) ? attr.value.expression : attr.value
       )
     );

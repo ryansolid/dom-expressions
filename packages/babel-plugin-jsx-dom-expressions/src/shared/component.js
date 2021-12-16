@@ -26,6 +26,26 @@ function convertComponentIdentifier(node) {
   return node;
 }
 
+
+function convertJSXIdentifier(node) {
+  if (t.isJSXIdentifier(node)) {
+    if (t.isValidIdentifier(node.name, false)) {
+      node.type = "Identifier";
+    } else {
+      return t.stringLiteral(node.name);
+    }
+  } else if (t.isJSXMemberExpression(node)) {
+    return t.memberExpression(
+      convertJSXIdentifier(node.object),
+      convertJSXIdentifier(node.property),
+    );
+  } else if (t.isJSXNamespacedName(node)) {
+    return t.stringLiteral(`${node.namespace.name}:${node.name.name}`);
+  }
+
+  return node;
+}
+
 export default function transformComponent(path) {
   let exprs = [],
     config = getConfig(path),
@@ -61,10 +81,8 @@ export default function transformComponent(path) {
         );
       } else {
         const value = node.value || t.booleanLiteral(true),
-          key = t.isJSXNamespacedName(node.name)
-            ? `${node.name.namespace.name}:${node.name.name.name}`
-            : node.name.name,
-          wrapName = t.isValidIdentifier(key) ? t.identifier : t.stringLiteral;
+          id = convertJSXIdentifier(node.name),
+          key = id.name;
         if (hasChildren && key === "children") return;
         if (t.isJSXExpressionContainer(value))
           if (key === "ref") {
@@ -150,14 +168,14 @@ export default function transformComponent(path) {
             runningObject.push(
               t.objectMethod(
                 "get",
-                wrapName(key),
+                id,
                 [],
                 t.blockStatement([t.returnStatement(expr.body)]),
                 !t.isValidIdentifier(key)
               )
             );
-          } else runningObject.push(t.objectProperty(wrapName(key), value.expression));
-        else runningObject.push(t.objectProperty(wrapName(key), value));
+          } else runningObject.push(t.objectProperty(id, value.expression));
+        else runningObject.push(t.objectProperty(id, value));
       }
     });
 
