@@ -383,6 +383,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     current = array;
   } else if (value instanceof Node) {
+    if (sharedConfig.context) return current = value.parentNode ? value : current;
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
       cleanChildren(parent, current, null, value);
