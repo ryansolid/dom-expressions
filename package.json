@@ -37,7 +37,7 @@
     "coveralls": "^3.1.1",
     "jest": "~26.6.3",
     "jest-ts-webcompat-resolver": "^1.0.0",
-    "jsdom": "^17.0.0",
+    "jsdom": "^19.0.0",
     "lerna": "^4.0.0",
     "rimraf": "^3.0.2",
     "rollup": "^2.52.3",
