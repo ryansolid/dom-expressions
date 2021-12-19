@@ -193,7 +193,7 @@ export function renderToStream(code, options = {}) {
       const writer = w.getWriter();
       writable = {
         end() {
-          w.close();
+          writer.close();
         }
       };
       buffer = {
