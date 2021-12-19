@@ -1,4 +1,3 @@
-// event
 `
 ((h, lookup, resources={}) => {
   lookup = el =>
@@ -13,13 +12,13 @@
       if (el && !h.completed.has(el)) h.events.push([el, e]);
     })
   );
-  h.init = (id, res) => {
-    resources[id] = [new Promise(r => res = r), res]
+  h.init = (id, res, rej) => {
+    resources[id] = [new Promise((r, e) => (res = r, rej = e)), res, rej]
   }
-  h.set = (id, data, res) => {
+  h.set = (id, data, err, res) => {
     res = resources[id];
-    if(!res) return resources[id] = [data];
-    res[1](data);
+    if (res) err ? res[2](err) : res[1](data);
+    resources[id] = [data]
   };
   h.unset = (id) => {
     delete resources[id];

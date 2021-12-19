@@ -133,10 +133,12 @@ export function renderToStream(code, options = {}) {
           buffer.write(
             `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", ${devalue(d)})</script>`
           );
-      }).catch(() => {
+      }).catch(err => {
         !completed &&
           buffer.write(
-            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null)</script>`
+            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null, ${serializeError(
+              err
+            )})</script>`
           );
       });
     },
@@ -190,13 +192,15 @@ export function renderToStream(code, options = {}) {
       const encoder = new TextEncoder();
       const writer = w.getWriter();
       writable = {
-        end() { w.close() }
+        end() {
+          w.close();
+        }
       };
       buffer = {
         write(payload) {
-          writer.write(encoder.encode(payload))
+          writer.write(encoder.encode(payload));
         }
-      }
+      };
       tmp.forEach(chunk => buffer.write(chunk));
       if (completed) writable.end();
       else setTimeout(checkEnd);
@@ -389,7 +393,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let n=o.composedPath&&o.composedPath()[0]||o.target,s=t(n);s&&!e.completed.has(s)&&e.events.push([s,o])})))),e.init=(e,t)=>{o[e]=[new Promise((e=>t=e)),t]},e.set=(e,t,n)=>{if(!(n=o[e]))return o[e]=[t];n[1](t)},e.unset=(e)=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}))</script><!xs>`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,n=t(s);n&&!e.completed.has(n)&&e.events.push([n,o])})))),e.init=(e,t,s)=>{o[e]=[new Promise(((e,o)=>(t=e,s=o))),t,s]},e.set=(e,t,s,n)=>{(n=o[e])&&(s?n[2](s):n[1](t)),o[e]=[t]},e.unset=e=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}))</script><!xs>`;
 }
 
 function injectAssets(assets, html) {
