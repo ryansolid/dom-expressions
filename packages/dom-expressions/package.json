@@ -11,8 +11,8 @@
   "readmeFilename": "README.md",
   "sideEffects": false,
   "scripts": {
-    "test": "jest",
-    "test:coverage": "jest --coverage",
+    "test": "jest --no-cache",
+    "test:coverage": "jest --coverage --no-cache",
     "report:coverage": "cat ./coverage/lcov.info | ../../node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "dependencies": {

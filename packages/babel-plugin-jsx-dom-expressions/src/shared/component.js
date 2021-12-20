@@ -8,10 +8,7 @@ import {
   trimWhitespace,
   transformCondition
 } from "./utils";
-import { transformNode } from "./transform";
-import { createTemplate as createTemplateDOM } from "../dom/template";
-import { createTemplate as createTemplateSSR } from "../ssr/template";
-import { createTemplate as createTemplateUniversal } from "../universal/template";
+import { transformNode, getCreateTemplate } from "./transform";
 
 function convertComponentIdentifier(node) {
   if (t.isJSXIdentifier(node)) {
@@ -220,13 +217,7 @@ export default function transformComponent(path) {
 }
 
 function transformComponentChildren(children, config) {
-  const createTemplate =
-      config.generate === "universal"
-        ? createTemplateUniversal
-        : config.generate === "ssr"
-        ? createTemplateSSR
-        : createTemplateDOM,
-    filteredChildren = filterChildren(children);
+  const filteredChildren = filterChildren(children);
   if (!filteredChildren.length) return;
   let dynamic = false;
 
@@ -240,7 +231,7 @@ function transformComponentChildren(children, config) {
         componentChild: true
       });
       dynamic = dynamic || child.dynamic;
-      memo.push(createTemplate(path, child, filteredChildren.length > 1));
+      memo.push(getCreateTemplate(config, path, child)(path, child, filteredChildren.length > 1));
     }
     return memo;
   }, []);

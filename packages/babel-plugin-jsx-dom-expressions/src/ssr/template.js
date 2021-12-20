@@ -18,20 +18,24 @@ export function createTemplate(path, result) {
   }
 
   const templates =
-      path.scope.getProgramParent().data.templates ||
-      (path.scope.getProgramParent().data.templates = []);
+    path.scope.getProgramParent().data.templates ||
+    (path.scope.getProgramParent().data.templates = []);
   const found = templates.find(tmp => {
-    if (t.isArrayExpression(tmp[1]) && t.isArrayExpression(template)) {
-      return tmp[1].elements.every(
+    if (t.isArrayExpression(tmp.template) && t.isArrayExpression(template)) {
+      return tmp.template.elements.every(
         (el, i) => template.elements[i] && el.value === template.elements[i].value
       );
     }
-    return tmp[1].value === template.value;
+    return tmp.template.value === template.value;
   });
   if (!found) {
     id = path.scope.generateUidIdentifier("tmpl$");
-    templates.push([id, template]);
-  } else id = found[0];
+    templates.push({
+      id,
+      template,
+      renderer: "ssr"
+    });
+  } else id = found.id;
 
   return t.callExpression(
     registerImportMethod(path, "ssr"),
@@ -41,7 +45,7 @@ export function createTemplate(path, result) {
 
 export function appendTemplates(path, templates) {
   const declarators = templates.map(template => {
-    return t.variableDeclarator(template[0], template[1]);
+    return t.variableDeclarator(template.id, template.template);
   });
   path.node.body.unshift(t.variableDeclaration("const", declarators));
 }

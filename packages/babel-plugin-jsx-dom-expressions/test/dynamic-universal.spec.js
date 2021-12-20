@@ -7,7 +7,7 @@ pluginTester({
   pluginOptions: {
     moduleName: "r-custom",
     builtIns: ["For", "Show"],
-    generate: "universal",
+    generate: "dynamic",
     staticMarker: "@once"
   },
   title: "Convert JSX",

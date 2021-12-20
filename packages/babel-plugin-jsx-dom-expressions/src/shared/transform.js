@@ -30,12 +30,9 @@ export function transformJSX(path) {
           topLevel: true
         }
   );
-  const template =
-    config.generate === "universal"
-      ? createTemplateUniversal
-      : config.generate === "ssr"
-      ? createTemplateSSR
-      : createTemplateDOM;
+
+  const template = getCreateTemplate(config, path, result);
+
   path.replaceWith(replace(template(path, result, false)));
 }
 
@@ -64,17 +61,10 @@ export function transformNode(path, info = {}) {
   const node = path.node;
   let staticValue;
   if (t.isJSXElement(node)) {
-    let tagName = getTagName(node);
-    if (isComponent(tagName)) return transformComponent(path);
-    const element =
-      config.generate === "universal"
-        ? transformElementUniversal
-        : config.generate === "ssr"
-        ? transformElementSSR
-        : transformElementDOM;
-    return element(path, info);
+    return transformElement(config, path, info);
   } else if (t.isJSXFragment(node)) {
     let results = { template: "", decl: [], exprs: [], dynamics: [] };
+    // <><div /><Component /></>
     transformFragmentChildren(path.get("children"), results, config);
     return results;
   } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path))) {
@@ -86,7 +76,7 @@ export function transformNode(path, info = {}) {
         : trimWhitespace(node.extra.raw);
     if (!text.length) return null;
     const results = {
-      template: config.generate === "dom" ? escapeBackticks(text) : text,
+      template: config.generate === "ssr" ? text : escapeBackticks(text),
       decl: [],
       exprs: [],
       dynamics: [],
@@ -150,4 +140,44 @@ export function transformNode(path, info = {}) {
       dynamic: true
     };
   }
+}
+
+export function getCreateTemplate(config, path, result) {
+  if ((result.tagName && result.renderer === "dom") || config.generate === "dom") {
+    return createTemplateDOM;
+  }
+
+  if (result.renderer === "ssr" || config.generate === "ssr") {
+    return createTemplateSSR;
+  }
+
+  return createTemplateUniversal;
+}
+
+export function transformElement(config, path, info = {}) {
+  const node = path.node;
+  let tagName = getTagName(node);
+  // <Component ...></Component>
+  if (isComponent(tagName)) return transformComponent(path);
+
+  // <div ...></div>
+  // const element = getTransformElemet(config, path, tagName);
+
+  let tagRenderer;
+  for (var renderer of config.renderers ?? []) {
+    if (renderer.elements.indexOf(tagName) !== -1) {
+      tagRenderer = renderer;
+      break;
+    }
+  }
+
+  if (tagRenderer?.name === "dom" || getConfig(path).generate === "dom") {
+    return transformElementDOM(path, info);
+  }
+
+  if (getConfig(path).generate === "ssr") {
+    return transformElementSSR(path, info);
+  }
+
+  return transformElementUniversal(path, info);
 }

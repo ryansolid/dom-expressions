@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { getConfig, registerImportMethod } from "../shared/utils";
+import { getConfig, getRendererConfig, registerImportMethod } from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -44,14 +44,14 @@ export function appendTemplates(path, templates) {
       template.id,
       t.addComment(
         t.callExpression(
-          registerImportMethod(path, "template"),
+          registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [
             t.templateLiteral([t.templateElement(tmpl, true)], []),
             t.numericLiteral(template.elementCount)
           ].concat(template.isSVG ? t.booleanLiteral(template.isSVG) : [])
         ),
-        'leading',
-        '#__PURE__'
+        "leading",
+        "#__PURE__"
       )
     );
   });
@@ -75,14 +75,18 @@ function registerTemplate(path, results) {
           id: templateId,
           template: results.template,
           elementCount: results.template.split("<").length - 1,
-          isSVG: results.isSVG
+          isSVG: results.isSVG,
+          renderer: "dom"
         });
       }
     }
     decl = t.variableDeclarator(
       results.id,
       hydratable
-        ? t.callExpression(registerImportMethod(path, "getNextElement"), templateId ? [templateId] : [])
+        ? t.callExpression(
+            registerImportMethod(path, "getNextElement", getRendererConfig(path, "dom").moduleName),
+            templateId ? [templateId] : []
+          )
         : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
             t.booleanLiteral(true)
           ])

@@ -32,7 +32,7 @@ const template = (() => {
 
   _$setProp(_el$2, "readonly", "");
 
-  _$insertNode(_el$3, _$createTextNode("Welcome"));
+  _$insertNode(_el$3, _$createTextNode(`Welcome`));
 
   const _ref$ = link;
   typeof _ref$ === "function" ? _ref$(_el$3) : (link = _el$3);
@@ -235,7 +235,7 @@ const template14 = (() => {
 const template15 = (() => {
   const _el$21 = _$createElement("div");
 
-  _$insertNode(_el$21, _$createTextNode("`$`"));
+  _$insertNode(_el$21, _$createTextNode(`\`$\``));
 
   _$setProp(_el$21, "class", "`a");
 
@@ -245,7 +245,7 @@ const template15 = (() => {
 const template16 = (() => {
   const _el$23 = _$createElement("button");
 
-  _$insertNode(_el$23, _$createTextNode("Write"));
+  _$insertNode(_el$23, _$createTextNode(`Write`));
 
   _$setProp(_el$23, "class", "static");
 
@@ -261,7 +261,7 @@ const template16 = (() => {
 const template17 = (() => {
   const _el$25 = _$createElement("button");
 
-  _$insertNode(_el$25, _$createTextNode("Hi"));
+  _$insertNode(_el$25, _$createTextNode(`Hi`));
 
   _$setProp(_el$25, "classList", {
     a: true,

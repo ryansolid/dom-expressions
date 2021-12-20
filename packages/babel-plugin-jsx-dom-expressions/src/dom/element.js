@@ -21,6 +21,7 @@ import {
   getStaticExpression,
   reservedNameSpaces,
   wrappedByText,
+  getRendererConfig,
   getConfig,
   escapeBackticks
 } from "../shared/utils";
@@ -38,7 +39,8 @@ export function transformElement(path, info) {
       dynamics: [],
       postExprs: [],
       isSVG: wrapSVG,
-      tagName
+      tagName,
+      renderer: "dom"
     };
   if (tagName === "html" && config.hydratable) results.skipTemplate = true;
   if (wrapSVG) results.template = "<svg>" + results.template;
@@ -53,9 +55,12 @@ export function transformElement(path, info) {
     results.template += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
-    results.postExprs.push(
-      t.expressionStatement(t.callExpression(registerImportMethod(path, "runHydrationEvents"), []))
+    let runHydrationEvents = registerImportMethod(
+      path,
+      "runHydrationEvents",
+      getRendererConfig(path, "dom").moduleName
     );
+    results.postExprs.push(t.expressionStatement(t.callExpression(runHydrationEvents, [])));
   }
   if (wrapSVG) results.template += "</svg>";
   return results;
@@ -91,10 +96,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   }
 
   if (name === "style") {
-    return t.callExpression(
-      registerImportMethod(path, "style"),
-      prevId ? [elem, value, prevId] : [elem, value]
-    );
+    return t.callExpression(registerImportMethod(path, "style", getRendererConfig(path, "dom").moduleName), prevId ? [elem, value, prevId] : [elem, value]);
   }
 
   if (!isSVG && name === "class") {
@@ -102,10 +104,11 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   }
 
   if (name === "classList") {
-    return t.callExpression(
-      registerImportMethod(path, "classList"),
-      prevId ? [elem, value, prevId] : [elem, value]
-    );
+    return t.callExpression(registerImportMethod(
+      path,
+      "classList",
+      getRendererConfig(path, "dom").moduleName
+    ), prevId ? [elem, value, prevId] : [elem, value]);
   }
 
   if (config.hydratable && name === "innerHTML") {
@@ -136,14 +139,22 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   !isSVG && (name = name.toLowerCase());
   const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
   if (ns) {
-    return t.callExpression(registerImportMethod(path, "setAttributeNS"), [
+    return t.callExpression(registerImportMethod(
+      path,
+      "setAttributeNS",
+      getRendererConfig(path, "dom").moduleName
+    ), [
       elem,
       t.stringLiteral(ns),
       t.stringLiteral(name),
       value
     ]);
   } else {
-    return t.callExpression(registerImportMethod(path, "setAttribute"), [elem, t.stringLiteral(name), value]);
+    return t.callExpression(registerImportMethod(
+      path,
+      "setAttribute",
+      getRendererConfig(path, "dom").moduleName
+    ), [elem, t.stringLiteral(name), value]);
   }
 }
 
@@ -303,7 +314,11 @@ function transformAttributes(path, results) {
       if (t.isJSXSpreadAttribute(node)) {
         results.exprs.push(
           t.expressionStatement(
-            t.callExpression(registerImportMethod(attribute, "spread"), [
+            t.callExpression(registerImportMethod(
+              attribute,
+              "spread",
+              getRendererConfig(path, "dom").moduleName
+            ), [
               elem,
               isDynamic(attribute.get("argument"), {
                 checkMember: true
@@ -483,7 +498,11 @@ function transformAttributes(path, results) {
             } else {
               results.exprs.unshift(
                 t.expressionStatement(
-                  t.callExpression(registerImportMethod(path, "addEventListener"), [
+                  t.callExpression(registerImportMethod(
+                    path,
+                    "addEventListener",
+                    getRendererConfig(path, "dom").moduleName
+                  ), [
                     elem,
                     t.stringLiteral(ev),
                     handler,
@@ -522,11 +541,11 @@ function transformAttributes(path, results) {
             } else {
               results.exprs.unshift(
                 t.expressionStatement(
-                  t.callExpression(registerImportMethod(path, "addEventListener"), [
-                    elem,
-                    t.stringLiteral(ev),
-                    handler
-                  ])
+                  t.callExpression(registerImportMethod(
+                    path,
+                    "addEventListener",
+                    getRendererConfig(path, "dom").moduleName
+                  ), [elem, t.stringLiteral(ev), handler])
                 )
               );
             }
@@ -602,11 +621,22 @@ function transformChildren(path, results, config) {
 
   childNodes.forEach((child, index) => {
     if (!child) return;
+    if (child.tagName && child.renderer !== "dom") {
+      throw new Error(`<${child.tagName}> is not supported in <${tagName}>.
+      Wrap the usage with a component that would render this element, eg. Canvas`);
+    }
+
     results.template += child.template;
     if (child.id) {
       if (child.tagName === "head") return;
+
+      let getNextMatch;
       if (config.hydratable && tagName === "html") {
-        registerImportMethod(path, "getNextMatch");
+        getNextMatch = registerImportMethod(
+          path,
+          "getNextMatch",
+          getRendererConfig(path, "dom").moduleName
+        );
       }
       const walk = t.memberExpression(
         t.identifier(tempPath),
@@ -616,10 +646,7 @@ function transformChildren(path, results, config) {
         t.variableDeclarator(
           child.id,
           config.hydratable && tagName === "html"
-            ? t.callExpression(registerImportMethod(path, "getNextMatch"), [
-                walk,
-                t.stringLiteral(child.tagName)
-              ])
+            ? t.callExpression(getNextMatch, [walk, t.stringLiteral(child.tagName)])
             : walk
         )
       );
@@ -631,7 +658,7 @@ function transformChildren(path, results, config) {
       nextPlaceholder = null;
       i++;
     } else if (child.exprs.length) {
-      const insert = registerImportMethod(path, "insert");
+      let insert = registerImportMethod(path, "insert", getRendererConfig(path, "dom").moduleName);
       const multi = checkLength(filteredChildren),
         markers = config.hydratable && multi;
       // boxed by textNodes
@@ -689,9 +716,10 @@ function createPlaceholder(path, results, tempPath, i, char) {
     results.decl.push(
       t.variableDeclarator(
         t.arrayPattern([exprId, contentId]),
-        t.callExpression(registerImportMethod(path, "getNextMarker"), [
-          t.memberExpression(t.identifier(tempPath), t.identifier("nextSibling"))
-        ])
+        t.callExpression(
+          registerImportMethod(path, "getNextMarker", getRendererConfig(path, "dom").moduleName),
+          [t.memberExpression(t.identifier(tempPath), t.identifier("nextSibling"))]
+        )
       )
     );
   } else
@@ -760,7 +788,10 @@ function contextToCustomElement(path, results) {
       t.assignmentExpression(
         "=",
         t.memberExpression(results.id, t.identifier("_$owner")),
-        t.callExpression(registerImportMethod(path, "getOwner"), [])
+        t.callExpression(
+          registerImportMethod(path, "getOwner", getRendererConfig(path, "dom").moduleName),
+          []
+        )
       )
     )
   );
