@@ -15,7 +15,8 @@ export function renderToString(code, options = {}) {
     assets: [],
     nonce: options.nonce,
     writeResource(id, p, error) {
-      if (error) scripts += `_$HY.set("${id}", ${serializeError(p)});`;
+      if (error) return scripts += `_$HY.set("${id}", ${serializeError(p)});`;
+      scripts += `_$HY.set("${id}", ${devalue(p)});`
     }
   };
   let html = injectAssets(sharedConfig.context.assets, resolveSSRNode(escape(code())));
@@ -24,6 +25,7 @@ export function renderToString(code, options = {}) {
 }
 
 export function renderToStringAsync(code, options = {}) {
+  let scripts = "";
   const { nonce, renderId, timeoutMs = 30000 } = options;
   const context = (sharedConfig.context = {
     id: renderId || "",
@@ -32,15 +34,16 @@ export function renderToStringAsync(code, options = {}) {
     suspense: {},
     assets: [],
     async: true,
-    nonce
+    nonce,
+    writeResource(id, p, error) {
+      if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
+      if (typeof p !== "object" || !("then" in p))
+        return (scripts += `_$HY.set("${id}", ${devalue(p)});`);
+      p.then(d => (scripts += `_$HY.set("${id}", ${devalue(d)});`)).catch(
+        () => (scripts += `_$HY.set("${id}", null);`)
+      );
+    }
   });
-  let scripts = "";
-  sharedConfig.context.writeResource = (id, p, error) => {
-    if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
-    p.then(d => (scripts += `_$HY.set("${id}", ${devalue(d)});`)).catch(
-      () => (scripts += `_$HY.set("${id}", null);`)
-    );
-  };
   const timeout = new Promise((_, reject) =>
     setTimeout(() => reject("renderToString timed out"), timeoutMs)
   );
@@ -59,6 +62,7 @@ export function renderToStringAsync(code, options = {}) {
           registry.delete(key);
           if (error)
             return (scripts += `_$HY.set("${key}", Promise.resolve(${serializeError(error)}));`);
+          scripts += `_$HY.set("${key}", true);`;
           if (!registry.size)
             Promise.resolve().then(() => {
               let source = resolveSSRNode(rendered);
@@ -83,7 +87,7 @@ export function renderToStringAsync(code, options = {}) {
 }
 
 export function renderToStream(code, options = {}) {
-  const { nonce, onCompleteShell, onCompleteAll, dataOnly, renderId } = options;
+  const { nonce, onCompleteShell, onCompleteAll, renderId } = options;
   const tmp = [];
   const tasks = [];
   const registry = new Map();
@@ -116,7 +120,6 @@ export function renderToStream(code, options = {}) {
     count: 0,
     async: true,
     streaming: true,
-    dataOnly,
     resources: {},
     suspense: {},
     assets: [],
@@ -127,6 +130,8 @@ export function renderToStream(code, options = {}) {
         scheduled = true;
       }
       if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
+      if (typeof p !== "object" || !("then" in p))
+        return tasks.push(`_$HY.set("${id}", ${devalue(p)})`);
       tasks.push(`_$HY.init("${id}")`);
       p.then(d => {
         !completed &&
@@ -144,13 +149,11 @@ export function renderToStream(code, options = {}) {
     },
     registerFragment(key) {
       registry.set(key, []);
-      if (!dataOnly) {
-        if (!scheduled) {
-          Promise.resolve().then(writeInitialScript);
-          scheduled = true;
-        }
-        tasks.push(`_$HY.init("${key}")`);
+      if (!scheduled) {
+        Promise.resolve().then(writeInitialScript);
+        scheduled = true;
       }
+      tasks.push(`_$HY.init("${key}")`);
       return (value, error) => {
         const keys = registry.get(key);
         registry.delete(key);
@@ -194,7 +197,7 @@ export function renderToStream(code, options = {}) {
       writable = {
         end() {
           writer.releaseLock();
-          w.close()
+          w.close();
         }
       };
       buffer = {
