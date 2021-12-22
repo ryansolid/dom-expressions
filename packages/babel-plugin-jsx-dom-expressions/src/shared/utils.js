@@ -18,15 +18,15 @@ export function getConfig(path) {
 export function registerImportMethod(path, name) {
   const imports =
     path.scope.getProgramParent().data.imports ||
-    (path.scope.getProgramParent().data.imports = new Map());
+    (path.scope.getProgramParent().data.imports = new Set());
+  const identifier = t.identifier(`_$${name}`)
   if (!imports.has(name)) {
-    const identifier = addNamed(path, name, getConfig(path).moduleName, {
+    addNamed(path, name, getConfig(path).moduleName, {
       nameHint: `_$${name}`
     });
-    imports.set(name, identifier);
-    return identifier;
+    imports.add(name);
   }
-  return imports.get(name);
+  return identifier;
 }
 
 function jsxElementNameToString(node) {
