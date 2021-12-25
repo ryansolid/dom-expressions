@@ -29,8 +29,7 @@ export function createTemplate(path, result, wrap) {
     }
   }
   if (wrap && result.dynamic && config.memoWrapper) {
-    registerImportMethod(path, config.memoWrapper);
-    return t.callExpression(t.identifier(`_$${config.memoWrapper}`), [result.exprs[0]]);
+    return t.callExpression(registerImportMethod(path, config.memoWrapper), [result.exprs[0]]);
   }
   return result.exprs[0];
 }
@@ -41,11 +40,10 @@ export function appendTemplates(path, templates) {
       cooked: template.template,
       raw: template.template
     };
-    registerImportMethod(path, "template");
     return t.variableDeclarator(
       template.id,
       t.callExpression(
-        t.identifier("_$template"),
+        registerImportMethod(path, "template"),
         [
           t.templateLiteral([t.templateElement(tmpl, true)], []),
           t.numericLiteral(template.elementCount)
@@ -77,11 +75,10 @@ function registerTemplate(path, results) {
         });
       }
     }
-    hydratable && registerImportMethod(path, "getNextElement");
     decl = t.variableDeclarator(
       results.id,
       hydratable
-        ? t.callExpression(t.identifier("_$getNextElement"), templateId ? [templateId] : [])
+        ? t.callExpression(registerImportMethod(path, "getNextElement"), templateId ? [templateId] : [])
         : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
             t.booleanLiteral(true)
           ])
@@ -94,9 +91,8 @@ function registerTemplate(path, results) {
 function wrapDynamics(path, dynamics) {
   if (!dynamics.length) return;
   const config = getConfig(path);
-  registerImportMethod(path, config.effectWrapper);
 
-  const effectWrapperId = `_$${config.effectWrapper}`;
+  const effectWrapperId = registerImportMethod(path, config.effectWrapper);
 
   if (dynamics.length === 1) {
     const prevValue =
@@ -105,7 +101,7 @@ function wrapDynamics(path, dynamics) {
         : undefined;
 
     return t.expressionStatement(
-      t.callExpression(t.identifier(effectWrapperId), [
+      t.callExpression(effectWrapperId, [
         t.arrowFunctionExpression(
           prevValue ? [prevValue] : [],
           setAttr(path, dynamics[0].elem, dynamics[0].key, dynamics[0].value, {
@@ -157,7 +153,7 @@ function wrapDynamics(path, dynamics) {
   });
 
   return t.expressionStatement(
-    t.callExpression(t.identifier(effectWrapperId), [
+    t.callExpression(effectWrapperId, [
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([

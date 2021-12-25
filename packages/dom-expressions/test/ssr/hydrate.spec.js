@@ -1,16 +1,16 @@
 import * as r from "../../src/client";
 import * as r2 from "../../src/server";
 
-globalThis._$HYDRATION = { events: [], completed: new WeakSet() };
+globalThis._$HY = { events: [], completed: new WeakSet() };
 
 function setHydrateContext(context) {
-  globalThis._$HYDRATION.context = context;
+  globalThis._$HY.context = context;
 }
 
 function nextHydrateContext() {
-  return globalThis._$HYDRATION && globalThis._$HYDRATION.context
+  return globalThis._$HY && globalThis._$HY.context
     ? {
-        id: `${globalThis._$HYDRATION.context.id}.${globalThis._$HYDRATION.context.count++}`,
+        id: `${globalThis._$HY.context.id}.${globalThis._$HY.context.count++}`,
         count: 0
       }
     : undefined;

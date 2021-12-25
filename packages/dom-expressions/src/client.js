@@ -26,7 +26,9 @@ export function render(code, element, init) {
   let disposer;
   root(dispose => {
     disposer = dispose;
-    insert(element, code(), element.firstChild ? null : undefined, init);
+    element === document
+      ? code()
+      : insert(element, code(), element.firstChild ? null : undefined, init);
   });
   return () => {
     disposer();
@@ -174,28 +176,20 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
 }
 
 // Hydrate
-export function hydrate(code, element) {
-  sharedConfig.resources = globalThis._$HYDRATION.resources;
-  sharedConfig.completed = globalThis._$HYDRATION.completed;
-  sharedConfig.events = globalThis._$HYDRATION.events;
-  sharedConfig.context = {
-    id: "",
-    count: 0,
-    loadResource: globalThis._$HYDRATION.loadResource
-  };
+export function hydrate(code, element, options = {}) {
+  sharedConfig.completed = globalThis._$HY.completed;
+  sharedConfig.events = globalThis._$HY.events;
+  sharedConfig.load = globalThis._$HY.load;
+  sharedConfig.gather = root => gatherHydratable(element, root);
   sharedConfig.registry = new Map();
-  gatherHydratable(element);
+  sharedConfig.context = {
+    id: options.renderId || "",
+    count: 0
+  };
+  gatherHydratable(element, options.renderId);
   const dispose = render(code, element, [...element.childNodes]);
   sharedConfig.context = null;
   return dispose;
-}
-
-export function gatherHydratable(element) {
-  const templates = element.querySelectorAll(`*[data-hk]`);
-  for (let i = 0; i < templates.length; i++) {
-    const node = templates[i];
-    sharedConfig.registry.set(node.getAttribute("data-hk"), node);
-  }
 }
 
 export function getNextElement(template) {
@@ -367,7 +361,12 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (sharedConfig.context && current && current.length) return current;
+    if (sharedConfig.context && current && current.length) {
+      for (let i = 0; i < array.length; i++) {
+        if (array[i].parentNode) return (current = array);
+      }
+      return current;
+    }
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
@@ -384,6 +383,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     current = array;
   } else if (value instanceof Node) {
+    if (sharedConfig.context) return current = value.parentNode ? value : current;
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
       cleanChildren(parent, current, null, value);
@@ -444,6 +444,15 @@ function cleanChildren(parent, current, marker, replacement) {
     }
   } else parent.insertBefore(node, marker);
   return [node];
+}
+
+function gatherHydratable(element, root) {
+  const templates = element.querySelectorAll(`*[data-hk]`);
+  for (let i = 0; i < templates.length; i++) {
+    const node = templates[i];
+    const key = node.getAttribute("data-hk");
+    if (!root || key.startsWith(root)) sharedConfig.registry.set(key, node);
+  }
 }
 
 export function getHydrationKey() {

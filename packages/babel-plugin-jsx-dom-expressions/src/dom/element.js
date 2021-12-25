@@ -21,7 +21,8 @@ import {
   getStaticExpression,
   reservedNameSpaces,
   wrappedByText,
-  getConfig
+  getConfig,
+  escapeBackticks
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -52,9 +53,8 @@ export function transformElement(path, info) {
     results.template += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
-    registerImportMethod(path, "runHydrationEvents");
     results.postExprs.push(
-      t.expressionStatement(t.callExpression(t.identifier("_$runHydrationEvents"), []))
+      t.expressionStatement(t.callExpression(registerImportMethod(path, "runHydrationEvents"), []))
     );
   }
   if (wrapSVG) results.template += "</svg>";
@@ -90,9 +90,8 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   }
 
   if (name === "style") {
-    registerImportMethod(path, "style");
     return t.callExpression(
-      t.identifier("_$style"),
+      registerImportMethod(path, "style"),
       prevId ? [elem, value, prevId] : [elem, value]
     );
   }
@@ -102,9 +101,8 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   }
 
   if (name === "classList") {
-    registerImportMethod(path, "classList");
     return t.callExpression(
-      t.identifier("_$classList"),
+      registerImportMethod(path, "classList"),
       prevId ? [elem, value, prevId] : [elem, value]
     );
   }
@@ -130,16 +128,14 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   !isSVG && (name = name.toLowerCase());
   const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
   if (ns) {
-    registerImportMethod(path, "setAttributeNS");
-    return t.callExpression(t.identifier("_$setAttributeNS"), [
+    return t.callExpression(registerImportMethod(path, "setAttributeNS"), [
       elem,
       t.stringLiteral(ns),
       t.stringLiteral(name),
       value
     ]);
   } else {
-    registerImportMethod(path, "setAttribute");
-    return t.callExpression(t.identifier("_$setAttribute"), [elem, t.stringLiteral(name), value]);
+    return t.callExpression(registerImportMethod(path, "setAttribute"), [elem, t.stringLiteral(name), value]);
   }
 }
 
@@ -162,8 +158,7 @@ function transformAttributes(path, results) {
     hasHydratableEvent = false,
     children,
     attributes = path.get("openingElement").get("attributes");
-  const spread = t.identifier("_$spread"),
-    tagName = getTagName(path.node),
+  const tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
     isCE = tagName.includes("-"),
     hasChildren = path.node.children.length > 0,
@@ -298,10 +293,9 @@ function transformAttributes(path, results) {
     .forEach(attribute => {
       const node = attribute.node;
       if (t.isJSXSpreadAttribute(node)) {
-        registerImportMethod(attribute, "spread");
         results.exprs.push(
           t.expressionStatement(
-            t.callExpression(spread, [
+            t.callExpression(registerImportMethod(attribute, "spread"), [
               elem,
               isDynamic(attribute.get("argument"), {
                 checkMember: true
@@ -403,9 +397,11 @@ function transformAttributes(path, results) {
             );
           }
         } else if (key.startsWith("use:")) {
+          // Some trick to treat JSXIdentifier as Identifier
+          node.name.name.type = 'Identifier';
           results.exprs.unshift(
             t.expressionStatement(
-              t.callExpression(t.identifier(node.name.name.name), [
+              t.callExpression(node.name.name, [
                 elem,
                 t.arrowFunctionExpression(
                   [],
@@ -477,10 +473,9 @@ function transformAttributes(path, results) {
                 )
               );
             } else {
-              registerImportMethod(path, "addEventListener");
               results.exprs.unshift(
                 t.expressionStatement(
-                  t.callExpression(t.identifier("_$addEventListener"), [
+                  t.callExpression(registerImportMethod(path, "addEventListener"), [
                     elem,
                     t.stringLiteral(ev),
                     handler,
@@ -517,10 +512,9 @@ function transformAttributes(path, results) {
                 )
               );
             } else {
-              registerImportMethod(path, "addEventListener");
               results.exprs.unshift(
                 t.expressionStatement(
-                  t.callExpression(t.identifier("_$addEventListener"), [
+                  t.callExpression(registerImportMethod(path, "addEventListener"), [
                     elem,
                     t.stringLiteral(ev),
                     handler
@@ -564,7 +558,7 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
-          results.template += value ? `="${value.value}"` : "";
+          results.template += value ? `="${escapeBackticks(value.value)}"` : "";
         }
       }
     });
@@ -602,6 +596,7 @@ function transformChildren(path, results, config) {
     if (!child) return;
     results.template += child.template;
     if (child.id) {
+      if (child.tagName === "head") return;
       if (config.hydratable && tagName === "html") {
         registerImportMethod(path, "getNextMatch");
       }
@@ -613,7 +608,7 @@ function transformChildren(path, results, config) {
         t.variableDeclarator(
           child.id,
           config.hydratable && tagName === "html"
-            ? t.callExpression(t.identifier("_$getNextMatch"), [
+            ? t.callExpression(registerImportMethod(path, "getNextMatch"), [
                 walk,
                 t.stringLiteral(child.tagName)
               ])
@@ -628,7 +623,7 @@ function transformChildren(path, results, config) {
       nextPlaceholder = null;
       i++;
     } else if (child.exprs.length) {
-      registerImportMethod(path, "insert");
+      const insert = registerImportMethod(path, "insert");
       const multi = checkLength(filteredChildren),
         markers = config.hydratable && multi;
       // boxed by textNodes
@@ -644,7 +639,7 @@ function transformChildren(path, results, config) {
         results.exprs.push(
           t.expressionStatement(
             t.callExpression(
-              t.identifier("_$insert"),
+              insert,
               contentId
                 ? [results.id, child.exprs[0], exprId, contentId]
                 : [results.id, child.exprs[0], exprId]
@@ -655,7 +650,7 @@ function transformChildren(path, results, config) {
       } else if (multi) {
         results.exprs.push(
           t.expressionStatement(
-            t.callExpression(t.identifier("_$insert"), [
+            t.callExpression(insert, [
               results.id,
               child.exprs[0],
               nextChild(childNodes, index) || t.nullLiteral()
@@ -666,7 +661,7 @@ function transformChildren(path, results, config) {
         results.exprs.push(
           t.expressionStatement(
             t.callExpression(
-              t.identifier("_$insert"),
+              insert,
               config.hydratable
                 ? [
                     results.id,
@@ -701,12 +696,11 @@ function createPlaceholder(path, results, tempPath, i, char) {
   let contentId;
   results.template += `<!${char}>`;
   if (config.hydratable && char === "/") {
-    registerImportMethod(path, "getNextMarker");
     contentId = path.scope.generateUidIdentifier("co$");
     results.decl.push(
       t.variableDeclarator(
         t.arrayPattern([exprId, contentId]),
-        t.callExpression(t.identifier("_$getNextMarker"), [
+        t.callExpression(registerImportMethod(path, "getNextMarker"), [
           t.memberExpression(t.identifier(tempPath), t.identifier("nextSibling"))
         ])
       )
@@ -772,13 +766,12 @@ function detectExpressions(children, index, config) {
 }
 
 function contextToCustomElement(path, results) {
-  registerImportMethod(path, "getOwner");
   results.exprs.push(
     t.expressionStatement(
       t.assignmentExpression(
         "=",
         t.memberExpression(results.id, t.identifier("_$owner")),
-        t.callExpression(t.identifier("_$getOwner"), [])
+        t.callExpression(registerImportMethod(path, "getOwner"), [])
       )
     )
   );

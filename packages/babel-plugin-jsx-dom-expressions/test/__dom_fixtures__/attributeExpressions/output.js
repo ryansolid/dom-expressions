@@ -12,7 +12,8 @@ const _tmpl$ = _$template(
   _tmpl$2 = _$template(`<div><div></div><div> </div><div></div></div>`, 8),
   _tmpl$3 = _$template(`<div></div>`, 2),
   _tmpl$4 = _$template(`<div class="a b"></div>`, 2),
-  _tmpl$5 = _$template(`<input type="checkbox">`, 1);
+  _tmpl$5 = _$template(`<input type="checkbox">`, 1),
+  _tmpl$6 = _$template(`<div class="\`a">\`$\`</div>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -201,3 +202,5 @@ const template14 = (() => {
 
   return _el$20;
 })();
+
+const template15 = _tmpl$6.cloneNode(true);

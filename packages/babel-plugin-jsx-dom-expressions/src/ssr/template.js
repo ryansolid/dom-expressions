@@ -8,7 +8,6 @@ export function createTemplate(path, result) {
 
   let template, id;
 
-  registerImportMethod(path, "ssr");
   if (!Array.isArray(result.template)) {
     template = t.stringLiteral(result.template);
   } else if (result.template.length === 1) {
@@ -35,7 +34,7 @@ export function createTemplate(path, result) {
   } else id = found[0];
 
   return t.callExpression(
-    t.identifier(`_$ssr`),
+    registerImportMethod(path, "ssr"),
     result.template.length > 1 ? [id, ...result.templateValues] : [id]
   );
 }

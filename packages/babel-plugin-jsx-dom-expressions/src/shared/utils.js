@@ -19,19 +19,21 @@ export function registerImportMethod(path, name) {
   const imports =
     path.scope.getProgramParent().data.imports ||
     (path.scope.getProgramParent().data.imports = new Set());
+  const identifier = t.identifier(`_$${name}`)
   if (!imports.has(name)) {
     addNamed(path, name, getConfig(path).moduleName, {
       nameHint: `_$${name}`
     });
     imports.add(name);
   }
+  return identifier;
 }
 
 function jsxElementNameToString(node) {
   if (t.isJSXMemberExpression(node)) {
     return `${jsxElementNameToString(node.object)}.${node.property.name}`;
   }
-  if (t.isJSXIdentifier(node)) {
+  if (t.isJSXIdentifier(node) || t.isIdentifier(node)) {
     return node.name;
   }
   return `${node.namespace.name}:${node.name.name}`;
@@ -191,7 +193,7 @@ export function wrappedByText(list, startIndex) {
 export function transformCondition(path, inline, deep) {
   const config = getConfig(path);
   const expr = path.node;
-  registerImportMethod(path, config.memoWrapper);
+  const memo = registerImportMethod(path, config.memoWrapper);
   let dTest, cond, id;
   if (
     t.isConditionalExpression(expr) &&
@@ -206,7 +208,7 @@ export function transformCondition(path, inline, deep) {
       if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       id = inline
-        ? t.callExpression(t.identifier(`_$${config.memoWrapper}`), [
+        ? t.callExpression(memo, [
             t.arrowFunctionExpression([], cond),
             t.booleanLiteral(true)
           ])
@@ -235,7 +237,7 @@ export function transformCondition(path, inline, deep) {
       if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       id = inline
-        ? t.callExpression(t.identifier(`_$${config.memoWrapper}`), [
+        ? t.callExpression(memo, [
             t.arrowFunctionExpression([], cond),
             t.booleanLiteral(true)
           ])
@@ -249,7 +251,7 @@ export function transformCondition(path, inline, deep) {
         t.variableDeclarator(
           id,
           config.memoWrapper
-            ? t.callExpression(t.identifier(`_$${config.memoWrapper}`), [
+            ? t.callExpression(memo, [
                 t.arrowFunctionExpression([], cond),
                 t.booleanLiteral(true)
               ])
@@ -269,6 +271,10 @@ export function transformCondition(path, inline, deep) {
       : statements;
   }
   return deep ? expr : t.arrowFunctionExpression([], expr);
+}
+
+export function escapeBackticks(value) {
+  return value.replaceAll("`", "\\`");
 }
 
 export function escapeHTML(s, attr) {

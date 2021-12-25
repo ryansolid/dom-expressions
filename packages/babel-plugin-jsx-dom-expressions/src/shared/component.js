@@ -2,10 +2,8 @@ import * as t from "@babel/types";
 import { decode } from "html-entities";
 import {
   getConfig,
-  getTagName,
   isDynamic,
   registerImportMethod,
-  tagNameToIdentifier,
   filterChildren,
   trimWhitespace,
   transformCondition
@@ -15,18 +13,51 @@ import { createTemplate as createTemplateDOM } from "../dom/template";
 import { createTemplate as createTemplateSSR } from "../ssr/template";
 import { createTemplate as createTemplateUniversal } from "../universal/template";
 
+function convertComponentIdentifier(node) {
+  if (t.isJSXIdentifier(node)) {
+    node.type = "Identifier";
+  } else if (t.isJSXMemberExpression(node)) {
+    return t.memberExpression(
+      convertComponentIdentifier(node.object, node),
+      convertComponentIdentifier(node.property, node),
+    );
+  }
+
+  return node;
+}
+
+
+function convertJSXIdentifier(node) {
+  if (t.isJSXIdentifier(node)) {
+    if (t.isValidIdentifier(node.name, false)) {
+      node.type = "Identifier";
+    } else {
+      return t.stringLiteral(node.name);
+    }
+  } else if (t.isJSXMemberExpression(node)) {
+    return t.memberExpression(
+      convertJSXIdentifier(node.object),
+      convertJSXIdentifier(node.property),
+    );
+  } else if (t.isJSXNamespacedName(node)) {
+    return t.stringLiteral(`${node.namespace.name}:${node.name.name}`);
+  }
+
+  return node;
+}
+
 export default function transformComponent(path) {
   let exprs = [],
     config = getConfig(path),
-    tagName = getTagName(path.node),
+    tagId = convertComponentIdentifier(path.node.openingElement.name),
     props = [],
     runningObject = [],
     dynamicSpread = false,
     hasChildren = path.node.children.length > 0;
 
-  if (config.builtIns.indexOf(tagName) > -1 && !path.scope.hasBinding(tagName)) {
-    registerImportMethod(path, tagName);
-    tagName = `_$${tagName}`;
+  if (config.builtIns.indexOf(tagId.name) > -1 && !path.scope.hasBinding(tagId.name)) {
+    const newTagId = registerImportMethod(path, tagId.name);
+    tagId.name = newTagId.name;
   }
 
   path
@@ -50,10 +81,8 @@ export default function transformComponent(path) {
         );
       } else {
         const value = node.value || t.booleanLiteral(true),
-          key = t.isJSXNamespacedName(node.name)
-            ? `${node.name.namespace.name}:${node.name.name.name}`
-            : node.name.name,
-          wrapName = t.isValidIdentifier(key) ? t.identifier : t.stringLiteral;
+          id = convertJSXIdentifier(node.name),
+          key = id.name;
         if (hasChildren && key === "children") return;
         if (t.isJSXExpressionContainer(value))
           if (key === "ref") {
@@ -139,14 +168,14 @@ export default function transformComponent(path) {
             runningObject.push(
               t.objectMethod(
                 "get",
-                wrapName(key),
+                id,
                 [],
                 t.blockStatement([t.returnStatement(expr.body)]),
                 !t.isValidIdentifier(key)
               )
             );
-          } else runningObject.push(t.objectProperty(wrapName(key), value.expression));
-        else runningObject.push(t.objectProperty(wrapName(key), value));
+          } else runningObject.push(t.objectProperty(id, value.expression));
+        else runningObject.push(t.objectProperty(id, value));
       }
     });
 
@@ -170,12 +199,10 @@ export default function transformComponent(path) {
   if (runningObject.length || !props.length) props.push(t.objectExpression(runningObject));
 
   if (props.length > 1 || dynamicSpread) {
-    registerImportMethod(path, "mergeProps");
-    props = [t.callExpression(t.identifier("_$mergeProps"), props)];
+    props = [t.callExpression(registerImportMethod(path, "mergeProps"), props)];
   }
-  registerImportMethod(path, "createComponent");
-  const componentArgs = [tagNameToIdentifier(tagName), props[0]];
-  exprs.push(t.callExpression(t.identifier("_$createComponent"), componentArgs));
+  const componentArgs = [tagId, props[0]];
+  exprs.push(t.callExpression(registerImportMethod(path, "createComponent"), componentArgs));
 
   // handle hoisting conditionals
   if (exprs.length > 1) {
