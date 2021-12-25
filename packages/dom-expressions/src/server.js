@@ -40,7 +40,7 @@ export function renderToStringAsync(code, options = {}) {
       if (typeof p !== "object" || !("then" in p))
         return (scripts += `_$HY.set("${id}", ${devalue(p)});`);
       p.then(d => (scripts += `_$HY.set("${id}", ${devalue(d)});`)).catch(
-        () => (scripts += `_$HY.set("${id}", null);`)
+        () => (scripts += `_$HY.set("${id}", {});`)
       );
     }
   });
@@ -141,7 +141,7 @@ export function renderToStream(code, options = {}) {
       }).catch(err => {
         !completed &&
           buffer.write(
-            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null)</script>`
+            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", {})</script>`
           );
       });
     },
