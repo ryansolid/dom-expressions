@@ -428,6 +428,7 @@ function waitForFragments(registry, key) {
   return false;
 }
 
+/* istanbul ignore next */
 /**
  * @deprecated Replaced by renderToStream
  */
@@ -445,6 +446,7 @@ export function pipeToNodeWritable(code, writable, options = {}) {
   if (!options.onReady) stream.pipe(writable);
 }
 
+/* istanbul ignore next */
 /**
  * @deprecated Replaced by renderToStream
  */
