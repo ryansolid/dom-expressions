@@ -21,7 +21,8 @@ const _tmpl$ = [
   _tmpl$5 = ['<div style="', '">Hi</div>'],
   _tmpl$6 = ['<div style="', '" class="', '"></div>'],
   _tmpl$7 = "<div></div>",
-  _tmpl$8 = ['<input type="checkbox"', ">"];
+  _tmpl$8 = ['<input type="checkbox"', ">"],
+  _tmpl$9 = '<div class="`a">`$`</div>';
 const selected = true;
 let link;
 
@@ -85,3 +86,5 @@ const template12 = _$ssr(_tmpl$7);
 const template13 = _$ssr(_tmpl$8, _$ssrBoolean("checked", true));
 
 const template14 = _$ssr(_tmpl$8, _$ssrBoolean("checked", state.visible));
+
+const template15 = _$ssr(_tmpl$9);

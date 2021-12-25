@@ -21,7 +21,8 @@ import {
   getStaticExpression,
   reservedNameSpaces,
   wrappedByText,
-  getConfig
+  getConfig,
+  escapeBackticks
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -557,7 +558,7 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
-          results.template += value ? `="${value.value}"` : "";
+          results.template += value ? `="${escapeBackticks(value.value)}"` : "";
         }
       }
     });

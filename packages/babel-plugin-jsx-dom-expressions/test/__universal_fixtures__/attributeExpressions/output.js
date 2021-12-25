@@ -230,3 +230,13 @@ const template14 = (() => {
 
   return _el$20;
 })();
+
+const template15 = (() => {
+  const _el$21 = _$createElement("div");
+
+  _$insertNode(_el$21, _$createTextNode("`$`"));
+
+  _$setProp(_el$21, "class", "`a");
+
+  return _el$21;
+})();

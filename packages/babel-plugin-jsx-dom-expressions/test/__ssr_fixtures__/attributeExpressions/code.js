@@ -63,3 +63,5 @@ const template12 = <div prop:htmlFor={thing} />;
 const template13 = <input type="checkbox" checked={true} />;
 
 const template14 = <input type="checkbox" checked={state.visible} />;
+
+const template15 = <div class="`a">`$`</div>;

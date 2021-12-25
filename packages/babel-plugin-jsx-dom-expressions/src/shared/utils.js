@@ -273,6 +273,10 @@ export function transformCondition(path, inline, deep) {
   return deep ? expr : t.arrowFunctionExpression([], expr);
 }
 
+export function escapeBackticks(value) {
+  return value.replaceAll("`", "\\`");
+}
+
 export function escapeHTML(s, attr) {
   if (typeof s !== "string") return s;
   const delim = attr ? '"' : "<";

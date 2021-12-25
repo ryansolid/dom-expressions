@@ -13,7 +13,8 @@ import {
   transformCondition,
   getStaticExpression,
   escapeHTML,
-  getConfig
+  getConfig,
+  escapeBackticks
 } from "./utils";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
@@ -88,7 +89,7 @@ export function transformNode(path, info = {}) {
         : trimWhitespace(node.extra.raw);
     if (!text.length) return null;
     const results = {
-      template: text,
+      template: config.generate === "dom" ? escapeBackticks(text) : text,
       decl: [],
       exprs: [],
       dynamics: [],
