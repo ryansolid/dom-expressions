@@ -15,8 +15,8 @@ export function renderToString(code, options = {}) {
     assets: [],
     nonce: options.nonce,
     writeResource(id, p, error) {
-      if (error) return scripts += `_$HY.set("${id}", ${serializeError(p)});`;
-      scripts += `_$HY.set("${id}", ${devalue(p)});`
+      if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
+      scripts += `_$HY.set("${id}", ${devalue(p)});`;
     }
   };
   let html = injectAssets(sharedConfig.context.assets, resolveSSRNode(escape(code())));
@@ -58,11 +58,11 @@ export function renderToStringAsync(code, options = {}) {
       function register(key) {
         registry.add(key);
         return (value = "", error) => {
+          if (!registry.has(key)) return;
           cache[key] = value;
           registry.delete(key);
-          if (error)
-            return (scripts += `_$HY.set("${key}", Promise.resolve(${serializeError(error)}));`);
-          scripts += `_$HY.set("${key}", true);`;
+          if (error) scripts += `_$HY.set("${key}", Promise.resolve(${serializeError(error)}));`;
+          else scripts += `_$HY.set("${key}", true);`;
           if (!registry.size)
             Promise.resolve().then(() => {
               let source = resolveSSRNode(rendered);
@@ -141,9 +141,7 @@ export function renderToStream(code, options = {}) {
       }).catch(err => {
         !completed &&
           buffer.write(
-            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null, ${serializeError(
-              err
-            )})</script>`
+            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", null)</script>`
           );
       });
     },
@@ -397,7 +395,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,n=t(s);n&&!e.completed.has(n)&&e.events.push([n,o])})))),e.init=(e,t,s)=>{o[e]=[new Promise(((e,o)=>(t=e,s=o))),t,s]},e.set=(e,t,s,n)=>{(n=o[e])&&(s?n[2](s):n[1](t)),o[e]=[t]},e.unset=e=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}))</script><!xs>`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,n=t(s);n&&!e.completed.has(n)&&e.events.push([n,o])})))),e.init=(e,t)=>{o[e]=[new Promise(((e,o)=>t=e)),t]},e.set=(e,t,s)=>{(s=o[e])&&s[1](t),o[e]=[t]},e.unset=e=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}))</script><!xs>`;
 }
 
 function injectAssets(assets, html) {
