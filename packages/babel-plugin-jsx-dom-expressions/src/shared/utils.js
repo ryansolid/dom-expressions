@@ -274,7 +274,7 @@ export function transformCondition(path, inline, deep) {
 }
 
 export function escapeBackticks(value) {
-  return value.replaceAll("`", "\\`");
+  return value.replace(/`/g, "\\`");
 }
 
 export function escapeHTML(s, attr) {
