@@ -383,13 +383,13 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     current = array;
   } else if (value instanceof Node) {
-    if (sharedConfig.context) return current = value.parentNode ? value : current;
+    if (sharedConfig.context) return (current = value.parentNode ? value : current);
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
       cleanChildren(parent, current, null, value);
     } else if (current == null || current === "" || !parent.firstChild) {
       parent.appendChild(value);
-    } else parent.replaceChild(value, parent.firstChild);
+    } else parent.replaceChild(value, multi ? current : parent.firstChild);
     current = value;
   } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
 
