@@ -37,7 +37,7 @@ export function renderToStringAsync(code, options = {}) {
     nonce,
     writeResource(id, p, error) {
       if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
-      if (typeof p !== "object" || !("then" in p))
+      if (!p || typeof p !== "object" || !("then" in p))
         return (scripts += `_$HY.set("${id}", ${devalue(p)});`);
       p.then(d => (scripts += `_$HY.set("${id}", ${devalue(d)});`)).catch(
         () => (scripts += `_$HY.set("${id}", {});`)
@@ -130,7 +130,7 @@ export function renderToStream(code, options = {}) {
         scheduled = true;
       }
       if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
-      if (typeof p !== "object" || !("then" in p))
+      if (!p || typeof p !== "object" || !("then" in p))
         return tasks.push(`_$HY.set("${id}", ${devalue(p)})`);
       tasks.push(`_$HY.init("${id}")`);
       p.then(d => {
