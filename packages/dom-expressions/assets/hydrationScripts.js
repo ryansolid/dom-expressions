@@ -13,12 +13,12 @@
     })
   );
   h.init = (id, res) => {
-    resources[id] = [new Promise((r, e) => res = r), res]
+    resources[id] = [new Promise((r, e) => res = r), res];
   }
   h.set = (id, data, res) => {
     res = resources[id];
     if (res) res[1](data);
-    resources[id] = [data]
+    resources[id] = [data];
   };
   h.unset = (id) => {
     delete resources[id];

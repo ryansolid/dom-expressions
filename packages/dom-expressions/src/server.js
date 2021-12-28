@@ -3,7 +3,7 @@ import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,y,t){t=document.getElementById(e),document.getElementById("pl"+e).replaceWith(...t.childNodes),_$HY.set(e,y)}`;
+const REPLACE_SCRIPT = `function $df(e,y,t){t=document.getElementById(e),document.getElementById("pl"+e).replaceWith(...t.childNodes),_$HY.set(e,y||null)}`;
 const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;
 
 export function renderToString(code, options = {}) {
@@ -62,7 +62,7 @@ export function renderToStringAsync(code, options = {}) {
           cache[key] = value;
           registry.delete(key);
           if (error) scripts += `_$HY.set("${key}", Promise.resolve(${serializeError(error)}));`;
-          else scripts += `_$HY.set("${key}", true);`;
+          else scripts += `_$HY.set("${key}", null);`;
           if (!registry.size)
             Promise.resolve().then(() => {
               let source = resolveSSRNode(rendered);
