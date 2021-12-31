@@ -1,8 +1,8 @@
 import config from "../config";
 
 export default (path, { opts })  => {
-  path.hub.file.metadata.config = Object.assign({}, config, opts);
-  const lib = config.requireImportSource;
+  const merged = path.hub.file.metadata.config = Object.assign({}, config, opts);
+  const lib = merged.requireImportSource;
   if (lib) {
     const comments = path.hub.file.ast.comments;
     for(let i = 0; i < comments.length; i++) {
