@@ -29,7 +29,7 @@ function convertComponentIdentifier(node) {
 
 function convertJSXIdentifier(node) {
   if (t.isJSXIdentifier(node)) {
-    if (t.isValidIdentifier(node.name, false)) {
+    if (t.isValidIdentifier(node.name)) {
       node.type = "Identifier";
     } else {
       return t.stringLiteral(node.name);

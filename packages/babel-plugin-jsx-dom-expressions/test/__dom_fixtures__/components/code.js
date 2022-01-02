@@ -137,3 +137,5 @@ const Template18 = <Pre>
 </Pre>
 
 const Template19 = <Component {...s.dynamic()} />
+
+const Template20 = <Component class={prop.red ? "red" : "green"} />
