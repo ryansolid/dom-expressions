@@ -42,12 +42,14 @@ export function transformElement(path, info) {
     };
   if (info.topLevel && config.hydratable) {
     results.template.push("");
-    results.templateValues.push(t.callExpression(registerImportMethod(path, "ssrHydrationKey"), []));
+    results.templateValues.push(
+      t.callExpression(registerImportMethod(path, "ssrHydrationKey"), [])
+    );
   }
   transformAttributes(path, results);
   appendToTemplate(results.template, ">");
   if (!voidTag) {
-    transformChildren(path, results, {...config, ...info});
+    transformChildren(path, results, { ...config, ...info });
     appendToTemplate(results.template, `</${tagName}>`);
   }
   return results;
@@ -122,7 +124,7 @@ function transformToObject(attrName, attributes, selectedAttributes) {
     const attr = selectedAttributes[i].node;
     const computed = !t.isValidIdentifier(attr.name.name.name);
     if (!computed) {
-      attr.name.name.type = 'Identifier';
+      attr.name.name.type = "Identifier";
     }
     properties.push(
       t.objectProperty(
@@ -294,7 +296,10 @@ function transformAttributes(path, results) {
                   ? p.value
                   : t.isTemplateLiteral(p.value) && p.value.expressions.length === 0
                   ? t.stringLiteral(escapeHTML(p.value.quasis[0].value.raw))
-                  : t.callExpression(registerImportMethod(path, "escape"), [p.value, t.booleanLiteral(true)])
+                  : t.callExpression(registerImportMethod(path, "escape"), [
+                      p.value,
+                      t.booleanLiteral(true)
+                    ])
               )
             );
             let res = props[0];
@@ -303,7 +308,9 @@ function transformAttributes(path, results) {
             }
             value.expression = res;
           } else {
-            value.expression = t.callExpression(registerImportMethod(path, "ssrStyle"), [value.expression]);
+            value.expression = t.callExpression(registerImportMethod(path, "ssrStyle"), [
+              value.expression
+            ]);
           }
           doEscape = false;
         }
@@ -320,7 +327,9 @@ function transformAttributes(path, results) {
               value.expression = values[0];
             } else value.expression = t.templateLiteral(quasis, values);
           } else {
-            value.expression = t.callExpression(registerImportMethod(path, "ssrClassList"), [value.expression]);
+            value.expression = t.callExpression(registerImportMethod(path, "ssrClassList"), [
+              value.expression
+            ]);
           }
           key = "class";
           doEscape = false;
@@ -352,7 +361,10 @@ function transformClasslistObject(path, expr, values, quasis) {
     let key = prop.key;
     if (t.isIdentifier(prop.key) && !prop.computed) key = t.stringLiteral(key.name);
     else if (prop.computed) {
-      key = t.callExpression(registerImportMethod(path, "escape"), [prop.key, t.booleanLiteral(true)]);
+      key = t.callExpression(registerImportMethod(path, "escape"), [
+        prop.key,
+        t.booleanLiteral(true)
+      ]);
     } else key = t.stringLiteral(escapeHTML(prop.key.value));
     if (t.isBooleanLiteral(prop.value)) {
       if (prop.value.value === true) {
@@ -380,7 +392,7 @@ function transformChildren(path, results, { hydratable }) {
   const doNotEscape = path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"));
   filteredChildren.forEach(node => {
-    if (t.isJSXElement(node.node) && (getTagName(node.node) === "head")) {
+    if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
       const child = transformNode(node, { doNotEscape, hydratable: false });
       registerImportMethod(path, "NoHydration");
       results.template.push("");
@@ -399,6 +411,7 @@ function transformChildren(path, results, { hydratable }) {
       return;
     }
     const child = transformNode(node, { doNotEscape });
+    if (!child) return;
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {

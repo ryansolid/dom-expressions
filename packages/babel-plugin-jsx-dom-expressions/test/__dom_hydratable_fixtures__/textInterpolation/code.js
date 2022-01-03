@@ -36,17 +36,17 @@ const multiLineNoTrailingSpace = <span>
 </span>
 
 /* prettier-ignore */
-const escape = <span>
+const escape = <span> 
   &nbsp;&lt;Hi&gt;&nbsp;
 </span>
 
 /* prettier-ignore */
-const escape2 = <Comp>
+const escape2 = <Comp> 
   &nbsp;&lt;Hi&gt;&nbsp;
 </Comp>
 
 /* prettier-ignore */
-const escape3 = <>
+const escape3 = <> 
   &nbsp;&lt;Hi&gt;&nbsp;
 </>
 
