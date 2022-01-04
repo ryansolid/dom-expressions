@@ -1,5 +1,5 @@
 `
-((h, lookup, resources={}) => {
+((h, lookup) => {
   lookup = el =>
     el &&
     el.hasAttribute &&
@@ -13,19 +13,19 @@
     })
   );
   h.init = (id, res) => {
-    resources[id] = [new Promise((r, e) => res = r), res];
+    h.r[id] = [new Promise((r, e) => res = r), res];
   }
   h.set = (id, data, res) => {
-    res = resources[id];
+    res = h.r[id];
     if (res) res[1](data);
-    resources[id] = [data];
+    h.r[id] = [data];
   };
   h.unset = (id) => {
-    delete resources[id];
+    delete h.r[id];
   };
   h.load = (id, res) => {
-    res = resources[id];
+    res = h.r[id];
     if(res) return res[0];
   }
-})(window._$HY || (_$HY = { events: [], completed: new WeakSet() }));
+})(window._$HY || (_$HY = { events: [], completed: new WeakSet(), r: {} }));
 `

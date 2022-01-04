@@ -27,6 +27,7 @@ export function renderToString(code, options = {}) {
 export function renderToStringAsync(code, options = {}) {
   let scripts = "";
   const { nonce, renderId, timeoutMs = 30000 } = options;
+  const dedupe = new WeakMap();
   const context = (sharedConfig.context = {
     id: renderId || "",
     count: 0,
@@ -38,8 +39,8 @@ export function renderToStringAsync(code, options = {}) {
     writeResource(id, p, error) {
       if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
       if (!p || typeof p !== "object" || !("then" in p))
-        return (scripts += `_$HY.set("${id}", ${devalue(p)});`);
-      p.then(d => (scripts += `_$HY.set("${id}", ${devalue(d)});`)).catch(
+        return (scripts += serializeSet(dedupe, id, p));
+      p.then(d => (scripts += serializeSet(dedupe, id, d))).catch(
         () => (scripts += `_$HY.set("${id}", {});`)
       );
     }
@@ -91,6 +92,7 @@ export function renderToStream(code, options = {}) {
   const tmp = [];
   const tasks = [];
   const registry = new Map();
+  const dedupe = new WeakMap();
   const checkEnd = () => {
     if (!registry.size && !completed) {
       onCompleteAll && onCompleteAll(result);
@@ -131,18 +133,16 @@ export function renderToStream(code, options = {}) {
       }
       if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
       if (!p || typeof p !== "object" || !("then" in p))
-        return tasks.push(`_$HY.set("${id}", ${devalue(p)})`);
+        return tasks.push(serializeSet(dedupe, id, p));
       tasks.push(`_$HY.init("${id}")`);
       p.then(d => {
         !completed &&
           buffer.write(
-            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", ${devalue(d)})</script>`
+            `<script${nonce ? ` nonce="${nonce}"` : ""}>${serializeSet(dedupe, id, d)}</script>`
           );
-      }).catch(err => {
+      }).catch(() => {
         !completed &&
-          buffer.write(
-            `<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", {})</script>`
-          );
+          buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", {})</script>`);
       });
     },
     registerFragment(key) {
@@ -393,9 +393,9 @@ export function getHydrationKey() {
 export function generateHydrationScript({ eventNames = ["click", "input"], nonce }) {
   return `<script${
     nonce ? ` nonce="${nonce}"` : ""
-  }>((e,t,o={})=>{t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
+  }>var e,t;e=window._$HY||(_$HY={events:[],completed:new WeakSet,r:{}}),t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,n=t(s);n&&!e.completed.has(n)&&e.events.push([n,o])})))),e.init=(e,t)=>{o[e]=[new Promise(((e,o)=>t=e)),t]},e.set=(e,t,s)=>{(s=o[e])&&s[1](t),o[e]=[t]},e.unset=e=>{delete o[e]},e.load=(e,t)=>{if(t=o[e])return t[0]}})(window._$HY||(_$HY={events:[],completed:new WeakSet}))</script><!xs>`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])})))),e.init=(t,o)=>{e.r[t]=[new Promise(((e,t)=>o=e)),o]},e.set=(t,o,s)=>{(s=e.r[t])&&s[1](o),e.r[t]=[o]},e.unset=t=>{delete e.r[t]},e.load=(t,o)=>{if(o=e.r[t])return o[0]};</script><!xs>`;
 }
 
 function injectAssets(assets, html) {
@@ -426,6 +426,13 @@ function waitForFragments(registry, key) {
     }
   }
   return false;
+}
+
+function serializeSet(registry, key, value) {
+  const exist = registry.get(value);
+  if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0]);`;
+  registry.set(value, key);
+  return `_$HY.set("${key}", ${devalue(value)});`;
 }
 
 /* istanbul ignore next */
