@@ -442,7 +442,8 @@ function cleanChildren(parent, current, marker, replacement) {
         else isParent && parent.removeChild(el);
       } else inserted = true;
     }
-  } else parent.insertBefore(node, marker);
+  } else if (current instanceof Node) parent.replaceChild(node, current);
+  else parent.insertBefore(node, marker);
   return [node];
 }
 
