@@ -53,7 +53,7 @@ export function dynamicProperty(props: unknown, key: string): unknown;
 export function hydrate(
   fn: () => JSX.Element,
   node: MountableElement,
-  options: { renderId?: string }
+  options?: { renderId?: string }
 ): () => void;
 export function getHydrationKey(): string;
 export function getNextElement(template?: HTMLTemplateElement): Element;
