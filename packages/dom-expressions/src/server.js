@@ -431,7 +431,7 @@ function waitForFragments(registry, key) {
 function serializeSet(registry, key, value) {
   const exist = registry.get(value);
   if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0]);`;
-  registry.set(value, key);
+  value !== null && typeof value === "object" && registry.set(value, key);
   return `_$HY.set("${key}", ${devalue(value)});`;
 }
 
