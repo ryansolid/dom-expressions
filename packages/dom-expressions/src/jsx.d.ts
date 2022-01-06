@@ -3160,6 +3160,7 @@ export namespace JSX {
     startOffset?: number | string;
     method?: "align" | "stretch";
     spacing?: "auto" | "exact";
+    href?: string;
   }
   interface TSpanSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
