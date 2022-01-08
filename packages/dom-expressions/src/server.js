@@ -390,12 +390,12 @@ export function getHydrationKey() {
   return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
 }
 
-export function generateHydrationScript({ eventNames = ["click", "input"], nonce }) {
+export function generateHydrationScript({ eventNames = ["click", "input"], nonce } = {}) {
   return `<script${
     nonce ? ` nonce="${nonce}"` : ""
   }>var e,t;e=window._$HY||(_$HY={events:[],completed:new WeakSet,r:{}}),t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])})))),e.init=(t,o)=>{e.r[t]=[new Promise(((e,t)=>o=e)),o]},e.set=(t,o,s)=>{(s=e.r[t])&&s[1](o),e.r[t]=[o]},e.unset=t=>{delete e.r[t]},e.load=(t,o)=>{if(o=e.r[t])return o[0]};</script><!xs>`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])})))),e.init=(t,o)=>{e.r[t]=[new Promise(((e,t)=>o=e)),o]},e.set=(t,o,s)=>{(s=e.r[t])&&s[1](o),e.r[t]=[o]},e.unset=t=>{delete e.r[t]},e.load=(t,o)=>{if(o=e.r[t])return o[0]};</script><!--xs-->`;
 }
 
 function injectAssets(assets, html) {
@@ -407,7 +407,7 @@ function injectAssets(assets, html) {
 
 function injectScripts(html, scripts, nonce) {
   const tag = `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>`;
-  const index = html.indexOf("<!xs>");
+  const index = html.indexOf("<!--xs-->");
   if (index > -1) {
     return html.slice(0, index) + tag + html.slice(index);
   }
