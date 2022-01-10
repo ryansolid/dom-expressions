@@ -662,26 +662,7 @@ function transformChildren(path, results, config) {
           t.expressionStatement(
             t.callExpression(
               insert,
-              config.hydratable
-                ? [
-                    results.id,
-                    child.exprs[0],
-                    t.identifier("undefined"),
-                    t.callExpression(
-                      t.memberExpression(
-                        t.memberExpression(
-                          t.memberExpression(t.identifier("Array"), t.identifier("prototype")),
-                          t.identifier("slice")
-                        ),
-                        t.identifier("call")
-                      ),
-                      [
-                        t.memberExpression(results.id, t.identifier("childNodes")),
-                        t.numericLiteral(0)
-                      ]
-                    )
-                  ]
-                : [results.id, child.exprs[0]]
+              [results.id, child.exprs[0]]
             )
           )
         );

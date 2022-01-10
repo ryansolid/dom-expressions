@@ -33,7 +33,7 @@ export default function reconcileArrays(parentNode, a, b) {
     // remove
     } else if (bEnd === bStart) {
       while (aStart < aEnd) {
-        if (!map || !map.has(a[aStart])) parentNode.removeChild(a[aStart]);
+        if (!map || !map.has(a[aStart])) a[aStart].remove();
         aStart++;
       }
     // swap backward
@@ -69,7 +69,7 @@ export default function reconcileArrays(parentNode, a, b) {
             while (bStart < index) parentNode.insertBefore(b[bStart++], node);
           } else parentNode.replaceChild(b[bStart++], a[aStart++]);
         } else aStart++;
-      } else parentNode.removeChild(a[aStart++]);
+      } else a[aStart++].remove();
     }
   }
 }

@@ -326,6 +326,7 @@ function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
+  if (sharedConfig.context && !current) current = [...parent.childNodes];
   while (typeof current === "function") current = current();
   if (value === current) return current;
   const t = typeof value,
@@ -439,7 +440,7 @@ function cleanChildren(parent, current, marker, replacement) {
         const isParent = el.parentNode === parent;
         if (!inserted && !i)
           isParent ? parent.replaceChild(node, el) : parent.insertBefore(node, marker);
-        else isParent && parent.removeChild(el);
+        else isParent && el.remove();
       } else inserted = true;
     }
   } else if (current instanceof Node) parent.replaceChild(node, current);

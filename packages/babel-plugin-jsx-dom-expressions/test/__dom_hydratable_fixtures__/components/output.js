@@ -44,12 +44,7 @@ const Child = props => {
 
       set(_el$5);
 
-      _$insert(
-        _el$5,
-        () => props.children,
-        undefined,
-        Array.prototype.slice.call(_el$5.childNodes, 0)
-      );
+      _$insert(_el$5, () => props.children);
 
       return _el$5;
     })()
@@ -113,7 +108,7 @@ const template = props => {
             get children() {
               const _el$8 = _$getNextElement(_tmpl$2);
 
-              _$insert(_el$8, content, undefined, Array.prototype.slice.call(_el$8.childNodes, 0));
+              _$insert(_el$8, content);
 
               return _el$8;
             }
