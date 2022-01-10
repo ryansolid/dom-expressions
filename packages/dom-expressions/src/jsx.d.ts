@@ -31,7 +31,7 @@ export namespace JSX {
     (
       e: E & {
         currentTarget: T;
-        target: DOMElement;
+        target: E extends InputEvent ? HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement : DOMElement;
       }
     ): void;
   }
@@ -40,7 +40,7 @@ export namespace JSX {
       data: any,
       e: E & {
         currentTarget: T;
-        target: DOMElement;
+        target: E extends InputEvent ? HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement : DOMElement;
       }
     ) => void;
     1: any;
