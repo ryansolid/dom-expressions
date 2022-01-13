@@ -384,13 +384,14 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     current = array;
   } else if (value instanceof Node) {
-    if (sharedConfig.context) return (current = value.parentNode ? value : current);
+    if (sharedConfig.context)
+      return (current = value.parentNode ? (multi ? [value] : value) : current);
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
       cleanChildren(parent, current, null, value);
     } else if (current == null || current === "" || !parent.firstChild) {
       parent.appendChild(value);
-    } else parent.replaceChild(value, multi ? current : parent.firstChild);
+    } else parent.replaceChild(value, parent.firstChild);
     current = value;
   } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
 
@@ -443,8 +444,7 @@ function cleanChildren(parent, current, marker, replacement) {
         else isParent && el.remove();
       } else inserted = true;
     }
-  } else if (current instanceof Node) parent.replaceChild(node, current);
-  else parent.insertBefore(node, marker);
+  } else parent.insertBefore(node, marker);
   return [node];
 }
 
