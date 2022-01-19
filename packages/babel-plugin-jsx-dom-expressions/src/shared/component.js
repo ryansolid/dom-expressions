@@ -15,17 +15,20 @@ import { createTemplate as createTemplateUniversal } from "../universal/template
 
 function convertComponentIdentifier(node) {
   if (t.isJSXIdentifier(node)) {
-    node.type = "Identifier";
+    if (t.isValidIdentifier(node.name)) node.type = "Identifier";
+    else return t.stringLiteral(node.name);
   } else if (t.isJSXMemberExpression(node)) {
+    const prop = convertComponentIdentifier(node.property)
+    const computed = t.isStringLiteral(prop);
     return t.memberExpression(
-      convertComponentIdentifier(node.object, node),
-      convertComponentIdentifier(node.property, node),
+      convertComponentIdentifier(node.object),
+      prop,
+      computed
     );
   }
 
   return node;
 }
-
 
 function convertJSXIdentifier(node) {
   if (t.isJSXIdentifier(node)) {
@@ -37,7 +40,7 @@ function convertJSXIdentifier(node) {
   } else if (t.isJSXMemberExpression(node)) {
     return t.memberExpression(
       convertJSXIdentifier(node.object),
-      convertJSXIdentifier(node.property),
+      convertJSXIdentifier(node.property)
     );
   } else if (t.isJSXNamespacedName(node)) {
     return t.stringLiteral(`${node.namespace.name}:${node.name.name}`);
