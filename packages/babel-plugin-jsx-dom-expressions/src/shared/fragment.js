@@ -14,7 +14,6 @@ export default function transformFragmentChildren(children, results, config) {
         ? createTemplateSSR
         : createTemplateDOM,
     filteredChildren = filterChildren(children),
-    singleChild = filteredChildren.length === 1,
     childNodes = filteredChildren.reduce((memo, path) => {
       if (t.isJSXText(path.node)) {
         const v =  decode(trimWhitespace(path.node.extra.raw));
@@ -25,5 +24,5 @@ export default function transformFragmentChildren(children, results, config) {
       }
       return memo;
     }, []);
-  results.exprs.push(singleChild ? childNodes[0] : t.arrayExpression(childNodes));
+  results.exprs.push(childNodes.length === 1 ? childNodes[0] : t.arrayExpression(childNodes));
 }

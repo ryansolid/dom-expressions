@@ -13,7 +13,9 @@ const _tmpl$ = "<span>Hello </span>",
   _tmpl$10 = "<span>&nbsp;&lt;Hi&gt;&nbsp;</span>",
   _tmpl$11 = "<span>Hi&lt;script>alert();&lt;/script></span>",
   _tmpl$12 = "<span>Hello World!</span>",
-  _tmpl$13 = "<span>4 + 5 = 9</span>";
+  _tmpl$13 = "<span>4 + 5 = 9</span>",
+  _tmpl$14 = ["<div>", "\nd</div>"],
+  _tmpl$15 = ["<div>", "</div>"];
 
 const trailing = _$ssr(_tmpl$);
 
@@ -64,3 +66,13 @@ const evaluated = _$ssr(_tmpl$12);
 let number = 4 + 5;
 
 const evaluatedNonString = _$ssr(_tmpl$13);
+
+const newLineLiteral = _$ssr(_tmpl$14, _$escape(s));
+
+const trailingSpace = _$ssr(_tmpl$15, _$escape(expr));
+
+const trailingSpaceComp = _$createComponent(Comp, {
+  children: expr
+});
+
+const trailingSpaceFrag = expr;

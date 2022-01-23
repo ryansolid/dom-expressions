@@ -246,7 +246,7 @@ function transformComponentChildren(children, config) {
     return memo;
   }, []);
 
-  if (filteredChildren.length === 1) {
+  if (transformedChildren.length === 1) {
     transformedChildren = transformedChildren[0];
     if (
       !t.isJSXExpressionContainer(filteredChildren[0]) &&

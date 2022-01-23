@@ -17,7 +17,8 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
     `<div>
 d</div>`,
     2
-  );
+  ),
+  _tmpl$13 = _$template(`<div></div>`, 2);
 
 const trailing = _tmpl$.cloneNode(true);
 
@@ -124,3 +125,17 @@ const newLineLiteral = (() => {
 
   return _el$27;
 })();
+
+const trailingSpace = (() => {
+  const _el$29 = _tmpl$13.cloneNode(true);
+
+  _$insert(_el$29, expr);
+
+  return _el$29;
+})();
+
+const trailingSpaceComp = _$createComponent(Comp, {
+  children: expr
+});
+
+const trailingSpaceFrag = expr;

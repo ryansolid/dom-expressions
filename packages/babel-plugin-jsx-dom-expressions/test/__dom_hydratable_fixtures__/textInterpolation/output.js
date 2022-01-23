@@ -16,7 +16,13 @@ const _tmpl$ = _$template(`<span>Hello </span>`, 2),
   _tmpl$10 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2),
   _tmpl$11 = _$template(`<span>Hi&lt;script>alert();&lt;/script></span>`, 2),
   _tmpl$12 = _$template(`<span>Hello World!</span>`, 2),
-  _tmpl$13 = _$template(`<span>4 + 5 = 9</span>`, 2);
+  _tmpl$13 = _$template(`<span>4 + 5 = 9</span>`, 2),
+  _tmpl$14 = _$template(
+    `<div><!#><!/>
+d</div>`,
+    4
+  ),
+  _tmpl$15 = _$template(`<div></div>`, 2);
 
 const trailing = _$getNextElement(_tmpl$);
 
@@ -127,3 +133,28 @@ const evaluated = _$getNextElement(_tmpl$12);
 let number = 4 + 5;
 
 const evaluatedNonString = _$getNextElement(_tmpl$13);
+
+const newLineLiteral = (() => {
+  const _el$40 = _$getNextElement(_tmpl$14),
+    _el$42 = _el$40.firstChild,
+    [_el$43, _co$9] = _$getNextMarker(_el$42.nextSibling),
+    _el$41 = _el$43.nextSibling;
+
+  _$insert(_el$40, s, _el$43, _co$9);
+
+  return _el$40;
+})();
+
+const trailingSpace = (() => {
+  const _el$44 = _$getNextElement(_tmpl$15);
+
+  _$insert(_el$44, expr);
+
+  return _el$44;
+})();
+
+const trailingSpaceComp = _$createComponent(Comp, {
+  children: expr
+});
+
+const trailingSpaceFrag = expr;

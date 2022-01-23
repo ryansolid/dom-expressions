@@ -187,3 +187,17 @@ const newLineLiteral = (() => {
 
   return _el$37;
 })();
+
+const trailingSpace = (() => {
+  const _el$40 = _$createElement("div");
+
+  _$insert(_el$40, expr);
+
+  return _el$40;
+})();
+
+const trailingSpaceComp = _$createComponent(Comp, {
+  children: expr
+});
+
+const trailingSpaceFrag = expr;
