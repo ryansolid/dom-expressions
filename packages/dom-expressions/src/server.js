@@ -95,12 +95,13 @@ export function renderToStream(code, options = {}) {
   const dedupe = new WeakMap();
   const checkEnd = () => {
     if (!registry.size && !completed) {
+      writeTasks();
       onCompleteAll && onCompleteAll(result);
       writable && writable.end();
       completed = true;
     }
   };
-  const writeInitialScript = () => {
+  const writeTasks = () => {
     if (tasks.length && !completed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.join(";")}</script>`);
       tasks.length = 0;
@@ -128,7 +129,7 @@ export function renderToStream(code, options = {}) {
     nonce,
     writeResource(id, p, error) {
       if (!scheduled) {
-        Promise.resolve().then(writeInitialScript);
+        Promise.resolve().then(writeTasks);
         scheduled = true;
       }
       if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
@@ -148,7 +149,7 @@ export function renderToStream(code, options = {}) {
     registerFragment(key) {
       registry.set(key, []);
       if (!scheduled) {
-        Promise.resolve().then(writeInitialScript);
+        Promise.resolve().then(writeTasks);
         scheduled = true;
       }
       tasks.push(`_$HY.init("${key}")`);
