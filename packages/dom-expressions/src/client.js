@@ -375,7 +375,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
         appendNodes(parent, array, marker);
       } else reconcileArrays(parent, current, array);
     } else {
-      current && cleanChildren(parent, current);
+      current && cleanChildren(parent);
       appendNodes(parent, array);
     }
     current = array;
