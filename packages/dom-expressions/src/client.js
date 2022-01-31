@@ -369,18 +369,14 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       return current;
     }
     if (array.length === 0) {
-      current = cleanChildren(parent, current, marker);
-      if (multi) return current;
+      cleanChildren(parent, current, marker);
+    } else if (Array.isArray(current)) {
+      if (current.length === 0) {
+        appendNodes(parent, array, marker);
+      } else reconcileArrays(parent, current, array);
     } else {
-      if (Array.isArray(current)) {
-        if (current.length === 0) {
-          appendNodes(parent, array, marker);
-        } else reconcileArrays(parent, current, array);
-      } else if (current == null || current === "") {
-        appendNodes(parent, array);
-      } else {
-        reconcileArrays(parent, (multi && current) || [parent.firstChild], array);
-      }
+      current && cleanChildren(parent, current);
+      appendNodes(parent, array);
     }
     current = array;
   } else if (value instanceof Node) {

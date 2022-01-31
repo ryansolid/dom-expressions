@@ -3,7 +3,7 @@ import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,y,t){t=document.getElementById(e),document.getElementById("pl"+e).replaceWith(...t.childNodes),_$HY.set(e,y||null)}`;
+const REPLACE_SCRIPT = `function $df(e,y,t,g){t=document.getElementById(e),g=document.getElementById("pl"+e),g&&g.replaceWith(...t.childNodes),_$HY.set(e,y||null)}`;
 const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;
 
 export function renderToString(code, options = {}) {
@@ -154,18 +154,20 @@ export function renderToStream(code, options = {}) {
       }
       tasks.push(`_$HY.init("${key}")`);
       return (value, error) => {
-        const keys = registry.get(key);
-        registry.delete(key);
-        if (waitForFragments(registry, key)) return;
-        if ((value !== undefined || error) && !completed) {
-          buffer.write(
-            `<div hidden id="${key}">${value !== undefined ? value : " "}</div><script${
-              nonce ? ` nonce="${nonce}"` : ""
-            }>${!scriptFlushed ? REPLACE_SCRIPT : ""}${
-              keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""
-            }$df("${key}"${error ? "," + serializeError(error) : ""})</script>`
-          );
-          scriptFlushed = true;
+        if (registry.has(key)) {
+          const keys = registry.get(key);
+          registry.delete(key);
+          if (waitForFragments(registry, key)) return;
+          if ((value !== undefined || error) && !completed) {
+            buffer.write(
+              `<div hidden id="${key}">${value !== undefined ? value : " "}</div><script${
+                nonce ? ` nonce="${nonce}"` : ""
+              }>${!scriptFlushed ? REPLACE_SCRIPT : ""}${
+                keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""
+              }$df("${key}"${error ? "," + serializeError(error) : ""})</script>`
+            );
+            scriptFlushed = true;
+          }
         }
         checkEnd();
         return true;
