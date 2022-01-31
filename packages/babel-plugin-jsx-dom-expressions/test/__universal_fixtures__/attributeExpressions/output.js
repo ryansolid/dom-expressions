@@ -198,6 +198,7 @@ const template10 = (() => {
 const template11 = (() => {
   const _el$17 = _$createElement("div");
 
+  zero(_el$17, () => 0);
   another(_el$17, () => thing);
   something(_el$17, () => true);
   return _el$17;

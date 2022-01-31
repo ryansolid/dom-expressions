@@ -176,6 +176,7 @@ const template10 = (() => {
 const template11 = (() => {
   const _el$17 = _tmpl$3.cloneNode(true);
 
+  zero(_el$17, () => 0);
   another(_el$17, () => thing);
   something(_el$17, () => true);
   return _el$17;

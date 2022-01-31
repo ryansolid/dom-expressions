@@ -8,15 +8,17 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = _$template(
-    `<div id="main"><h1 class="base selected" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base selected" id="my-h1" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = _$template(`<div><div></div><div> </div><div></div></div>`, 8),
   _tmpl$3 = _$template(`<div></div>`, 2),
   _tmpl$4 = _$template(`<div class="a b"></div>`, 2),
-  _tmpl$5 = _$template(`<input type="checkbox">`, 1);
+  _tmpl$5 = _$template(`<input type="checkbox">`, 1),
+  _tmpl$6 = _$template(`<div class="\`a">\`$\`</div>`, 2);
 
 const selected = true;
+let id = "my-h1";
 let link;
 
 const template = (() => {
@@ -73,10 +75,14 @@ const template2 = (() => {
     _el$7 = _el$6.firstChild,
     _el$8 = _el$6.nextSibling;
 
+  _$spread(_el$4, () => getProps("test"), false, true);
+
   _el$5.textContent = rowId;
   _el$8.innerHTML = "<div/>";
 
   _$effect(() => (_el$7.data = row.label));
+
+  _$runHydrationEvents();
 
   return _el$4;
 })();
@@ -176,6 +182,7 @@ const template10 = (() => {
 const template11 = (() => {
   const _el$17 = _$getNextElement(_tmpl$3);
 
+  zero(_el$17, () => 0);
   another(_el$17, () => thing);
   something(_el$17, () => true);
   return _el$17;
@@ -202,3 +209,5 @@ const template14 = (() => {
 
   return _el$20;
 })();
+
+const template15 = _$getNextElement(_tmpl$6);
