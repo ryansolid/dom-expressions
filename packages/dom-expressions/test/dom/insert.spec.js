@@ -11,6 +11,12 @@ describe("r.insert", () => {
     expect(res.childNodes.length).toBe(0);
   });
 
+  it("inserts html", () => {
+    const parent = container.cloneNode(true);
+    r.innerHTML(parent, "<div />");
+    expect(parent.innerHTML).toBe("<div></div>");
+  });
+
   it("inserts nothing for undefined", () => {
     const res = insert(undefined);
     expect(res.innerHTML).toBe("");

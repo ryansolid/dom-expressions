@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { style as _$style } from "r-dom";
+import { innerHTML as _$innerHTML } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
@@ -78,7 +79,8 @@ const template2 = (() => {
   _$spread(_el$4, () => getProps("test"), false, true);
 
   _el$5.textContent = rowId;
-  _el$8.innerHTML = "<div/>";
+
+  _$innerHTML(_el$8, "<div/>");
 
   _$effect(() => (_el$7.data = row.label));
 

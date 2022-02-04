@@ -152,6 +152,10 @@ export function dynamicProperty(props, key) {
   return props;
 }
 
+export function innerHTML(parent, content) {
+  !sharedConfig.context && (parent.innerHTML = content);
+}
+
 export function insert(parent, accessor, marker, initial) {
   if (marker !== undefined && !initial) initial = [];
   if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);

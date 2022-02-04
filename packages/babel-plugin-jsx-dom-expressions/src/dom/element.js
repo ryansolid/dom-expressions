@@ -63,6 +63,7 @@ export function transformElement(path, info) {
 
 export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE }) {
   // pull out namespace
+  const config = getConfig(path)
   let parts, namespace;
   if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
     name = parts[1];
@@ -104,6 +105,13 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
     return t.callExpression(
       registerImportMethod(path, "classList"),
       prevId ? [elem, value, prevId] : [elem, value]
+    );
+  }
+
+  if (config.hydratable && name === "innerHTML") {
+    return t.callExpression(
+      registerImportMethod(path, "innerHTML"),
+      [elem, value]
     );
   }
 
