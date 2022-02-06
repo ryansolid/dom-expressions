@@ -2085,6 +2085,8 @@ export namespace JSX {
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: boolean;
+    onToggle?: EventHandlerUnion<T, Event>;
+    ontoggle?: EventHandlerUnion<T, Event>;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: boolean;
