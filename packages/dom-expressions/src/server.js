@@ -96,7 +96,12 @@ export function renderToStream(code, options = {}) {
   const checkEnd = () => {
     if (!registry.size && !completed) {
       writeTasks();
-      onCompleteAll && onCompleteAll(result);
+      onCompleteAll &&
+        onCompleteAll({
+          write(v) {
+            !completed && buffer.write(v);
+          }
+        });
       writable && writable.end();
       completed = true;
     }
@@ -182,7 +187,12 @@ export function renderToStream(code, options = {}) {
     buffer.write(html);
     tasks.length = 0;
     scheduled = false;
-    onCompleteShell && onCompleteShell();
+    onCompleteShell &&
+      onCompleteShell({
+        write(v) {
+          !completed && buffer.write(v);
+        }
+      });
   });
 
   return {
@@ -444,8 +454,9 @@ function serializeSet(registry, key, value) {
  */
 export function pipeToNodeWritable(code, writable, options = {}) {
   if (options.onReady) {
-    options.onCompleteShell = () => {
+    options.onCompleteShell = ({ write }) => {
       options.onReady({
+        write,
         startWriting() {
           stream.pipe(writable);
         }
@@ -462,8 +473,9 @@ export function pipeToNodeWritable(code, writable, options = {}) {
  */
 export function pipeToWritable(code, writable, options = {}) {
   if (options.onReady) {
-    options.onCompleteShell = () => {
+    options.onCompleteShell = ({ write }) => {
       options.onReady({
+        write,
         startWriting() {
           stream.pipeTo(writable);
         }

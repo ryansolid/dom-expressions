@@ -18,8 +18,8 @@ export function renderToStream<T>(
   options?: {
     nonce?: string;
     renderId?: string;
-    onCompleteShell?: () => void;
-    onCompleteAll?: () => void;
+    onCompleteShell?: (info: { write: (v: string) => void }) => void;
+    onCompleteAll?: (info: { write: (v: string) => void }) => void;
   }
 ): {
   pipe: (writable: { write: (v: string) => void }) => void;
@@ -47,6 +47,7 @@ export function generateHydrationScript(options: { nonce?: string; eventNames?: 
 
 // deprecated
 export type LegacyResults = {
+  write: (text: string) => void;
   startWriting: () => void;
 };
 export function pipeToWritable<T>(
