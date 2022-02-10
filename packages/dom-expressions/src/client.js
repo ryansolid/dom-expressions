@@ -373,7 +373,8 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       return current;
     }
     if (array.length === 0) {
-      cleanChildren(parent, current, marker);
+      current = cleanChildren(parent, current, marker);
+      if (multi) return current;
     } else if (Array.isArray(current)) {
       if (current.length === 0) {
         appendNodes(parent, array, marker);
