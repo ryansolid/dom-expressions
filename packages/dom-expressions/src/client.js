@@ -385,7 +385,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     current = array;
   } else if (value instanceof Node) {
-    if (sharedConfig.context)
+    if (sharedConfig.context && current && current.length)
       return (current = value.parentNode ? (multi ? [value] : value) : current);
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
