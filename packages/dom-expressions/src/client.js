@@ -366,11 +366,10 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (sharedConfig.context && current && current.length) {
+    if (sharedConfig.context) {
       for (let i = 0; i < array.length; i++) {
         if (array[i].parentNode) return (current = array);
       }
-      return current;
     }
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
@@ -385,8 +384,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     current = array;
   } else if (value instanceof Node) {
-    if (sharedConfig.context && current && current.length)
-      return (current = value.parentNode ? (multi ? [value] : value) : current);
+    if (sharedConfig.context && value.parentNode) return (current = multi ? [value] : value);
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
       cleanChildren(parent, current, null, value);
