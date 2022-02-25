@@ -57,12 +57,25 @@ export namespace JSX {
     $ServerOnly?: boolean;
   }
   interface Directives {}
+  interface DirectiveFunctions {}
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
   interface CustomEvents {}
   interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
+  };
+  type DirectiveFunctionAttributes<T> = {
+    [Key in keyof DirectiveFunctions as `use:${Key}`]?:
+      // If function has no arguments, value is arbitrary
+      Parameters<DirectiveFunctions[Key]>['length'] extends 0 ? any :
+      // Otherwise (at least one argument), check its type matches element type
+      T extends Parameters<DirectiveFunctions[Key]>[0] ? (
+        // If function has only one argument, value is arbitrary
+        Parameters<DirectiveFunctions[Key]>['length'] extends 1 ? any :
+        // Otherwise (at least two arguments), value must match second argument
+        Parameters<DirectiveFunctions[Key]>[1]
+      ) : never;
   };
   type PropAttributes = {
     [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key];
@@ -76,7 +89,7 @@ export namespace JSX {
   type OnCaptureAttributes<T> = {
     [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<T, CustomCaptureEvents[Key]>;
   }
-  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
+  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, DirectiveFunctionAttributes<T>, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
     children?: Element;
     innerHTML?: string;
     innerText?: string | number;
