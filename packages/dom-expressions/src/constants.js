@@ -51,6 +51,7 @@ const DelegatedEvents = new Set([
   "beforeinput",
   "click",
   "dblclick",
+  "contextmenu",
   "focusin",
   "focusout",
   "input",
