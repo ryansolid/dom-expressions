@@ -4,15 +4,15 @@ import { createComponent as _$createComponent } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-dom";
 import { insert as _$insert } from "r-dom";
 
-const _tmpl$ = _$template(`<div>Hello </div>`, 2),
-  _tmpl$2 = _$template(`<div></div>`, 2),
-  _tmpl$3 = _$template(`<div>From Parent</div>`, 2),
-  _tmpl$4 = _$template(`<div> | <!> | <!> | <!> | <!> | </div>`, 6),
-  _tmpl$5 = _$template(`<div> | <!> | <!> | </div>`, 4),
-  _tmpl$6 = _$template(`<div> | <!> |  |  | <!> | </div>`, 4),
-  _tmpl$7 = _$template(`<span>1</span>`, 2),
-  _tmpl$8 = _$template(`<span>2</span>`, 2),
-  _tmpl$9 = _$template(`<span>3</span>`, 2);
+const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello </div>`, 2),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<div></div>`, 2),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div>From Parent</div>`, 2),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<div> | <!> | <!> | <!> | <!> | </div>`, 6),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div> | <!> | <!> | </div>`, 4),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div> | <!> |  |  | <!> | </div>`, 4),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<span>1</span>`, 2),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<span>2</span>`, 2),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<span>3</span>`, 2);
 
 import { Show } from "somewhere";
 

@@ -4,11 +4,11 @@ import { spread as _$spread } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 
-const _tmpl$ = _$template(`<div></div>`, 2),
-  _tmpl$2 = _$template(`<module></module>`, 2),
-  _tmpl$3 = _$template(`<module>Hello</module>`, 2),
-  _tmpl$4 = _$template(`<module>Hi </module>`, 2),
-  _tmpl$5 = _$template(`<div>Test 1</div>`, 2);
+const _tmpl$ = /*#__PURE__*/ _$template(`<div></div>`, 2),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<module></module>`, 2),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<module>Hello</module>`, 2),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<module>Hi </module>`, 2),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div>Test 1</div>`, 2);
 
 const children = _tmpl$.cloneNode(true);
 
