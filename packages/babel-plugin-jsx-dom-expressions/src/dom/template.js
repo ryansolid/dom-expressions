@@ -42,12 +42,16 @@ export function appendTemplates(path, templates) {
     };
     return t.variableDeclarator(
       template.id,
-      t.callExpression(
-        registerImportMethod(path, "template"),
-        [
-          t.templateLiteral([t.templateElement(tmpl, true)], []),
-          t.numericLiteral(template.elementCount)
-        ].concat(template.isSVG ? t.booleanLiteral(template.isSVG) : [])
+      t.addComment(
+        t.callExpression(
+          registerImportMethod(path, "template"),
+          [
+            t.templateLiteral([t.templateElement(tmpl, true)], []),
+            t.numericLiteral(template.elementCount)
+          ].concat(template.isSVG ? t.booleanLiteral(template.isSVG) : [])
+        ),
+        'leading',
+        '#__PURE__'
       )
     );
   });

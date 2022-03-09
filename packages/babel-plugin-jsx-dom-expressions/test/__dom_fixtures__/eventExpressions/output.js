@@ -2,7 +2,7 @@ import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 
-const _tmpl$ = _$template(
+const _tmpl$ = /*#__PURE__*/ _$template(
   `<div id="main"><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Listener</button><button>Click Capture</button></div>`,
   26
 );

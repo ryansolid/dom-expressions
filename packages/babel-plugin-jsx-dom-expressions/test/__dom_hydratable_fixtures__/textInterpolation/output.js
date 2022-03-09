@@ -4,25 +4,25 @@ import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 
-const _tmpl$ = _$template(`<span>Hello </span>`, 2),
-  _tmpl$2 = _$template(`<span> John</span>`, 2),
-  _tmpl$3 = _$template(`<span>Hello John</span>`, 2),
-  _tmpl$4 = _$template(`<span>Hello <!#><!/></span>`, 4),
-  _tmpl$5 = _$template(`<span><!#><!/> John</span>`, 4),
-  _tmpl$6 = _$template(`<span><!#><!/> <!#><!/></span>`, 6),
-  _tmpl$7 = _$template(`<span> <!#><!/> <!#><!/> </span>`, 6),
-  _tmpl$8 = _$template(`<span> <!#><!/><!#><!/> </span>`, 6),
-  _tmpl$9 = _$template(`<span>Hello</span>`, 2),
-  _tmpl$10 = _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2),
-  _tmpl$11 = _$template(`<span>Hi&lt;script>alert();&lt;/script></span>`, 2),
-  _tmpl$12 = _$template(`<span>Hello World!</span>`, 2),
-  _tmpl$13 = _$template(`<span>4 + 5 = 9</span>`, 2),
-  _tmpl$14 = _$template(
+const _tmpl$ = /*#__PURE__*/ _$template(`<span>Hello </span>`, 2),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<span> John</span>`, 2),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<span>Hello John</span>`, 2),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<span>Hello <!#><!/></span>`, 4),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<span><!#><!/> John</span>`, 4),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<span><!#><!/> <!#><!/></span>`, 6),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<span> <!#><!/> <!#><!/> </span>`, 6),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<span> <!#><!/><!#><!/> </span>`, 6),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<span>Hello</span>`, 2),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;</span>`, 2),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<span>Hi&lt;script>alert();&lt;/script></span>`, 2),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<span>Hello World!</span>`, 2),
+  _tmpl$13 = /*#__PURE__*/ _$template(`<span>4 + 5 = 9</span>`, 2),
+  _tmpl$14 = /*#__PURE__*/ _$template(
     `<div><!#><!/>
 d</div>`,
     4
   ),
-  _tmpl$15 = _$template(`<div></div>`, 2);
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div></div>`, 2);
 
 const trailing = _$getNextElement(_tmpl$);
 

@@ -4,9 +4,12 @@ import { getNextElement as _$getNextElement } from "r-dom";
 import { getOwner as _$getOwner } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 
-const _tmpl$ = _$template(`<my-element></my-element>`, 2),
-  _tmpl$2 = _$template(`<my-element><header slot="head">Title</header></my-element>`, 4),
-  _tmpl$3 = _$template(`<slot name="head"></slot>`, 2);
+const _tmpl$ = /*#__PURE__*/ _$template(`<my-element></my-element>`, 2),
+  _tmpl$2 = /*#__PURE__*/ _$template(
+    `<my-element><header slot="head">Title</header></my-element>`,
+    4
+  ),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<slot name="head"></slot>`, 2);
 
 const template = (() => {
   const _el$ = _$getNextElement(_tmpl$);

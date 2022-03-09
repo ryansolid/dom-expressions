@@ -5,15 +5,15 @@ import { effect as _$effect } from "r-dom";
 import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
-const _tmpl$ = _$template(
+const _tmpl$ = /*#__PURE__*/ _$template(
     `<div id="main"><h1 class="base selected" id="my-h1" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
-  _tmpl$2 = _$template(`<div><div></div><div> </div><div></div></div>`, 8),
-  _tmpl$3 = _$template(`<div></div>`, 2),
-  _tmpl$4 = _$template(`<div class="a b"></div>`, 2),
-  _tmpl$5 = _$template(`<input type="checkbox">`, 1),
-  _tmpl$6 = _$template(`<div class="\`a">\`$\`</div>`, 2);
+  _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div></div></div>`, 8),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div></div>`, 2),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2);
 
 const selected = true;
 let id = "my-h1";
