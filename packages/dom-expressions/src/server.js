@@ -4,7 +4,7 @@ import devalue from "devalue";
 export { createComponent } from "rxcore";
 
 const REPLACE_SCRIPT = `function $df(e,y,t,g){t=document.getElementById(e),g=document.getElementById("pl"+e),g&&g.replaceWith(...t.childNodes),_$HY.set(e,y||null)}`;
-const FRAGMENT_REPLACE = /<!\[([\d.]+)\]>/;
+const FRAGMENT_REPLACE = /<!\[([\d-]+)\]>/;
 
 export function renderToString(code, options = {}) {
   let scripts = "";
