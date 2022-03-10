@@ -54,41 +54,6 @@ describe("r.hydrate", () => {
     expect(el3.nextSibling).toBe(el4);
   });
 
-  it("hydrates with an updated timestamp", () => {
-    const time = Date.now();
-    rendered = r2.renderToString(() =>
-      r2.ssr(["<span", "><!--#-->", "<!--/--> John</span>"], r2.ssrHydrationKey(), r2.escape(time))
-    );
-    expect(rendered).toBe(`<span data-hk="0"><!--#-->${time}<!--/--> John</span>`);
-    // gather refs
-    container.innerHTML = rendered;
-    const el1 = container.firstChild,
-      el2 = el1.firstChild,
-      el3 = el2.nextSibling,
-      el4 = el3.nextSibling;
-
-    const updatedTime = Date.now();
-    r.hydrate(() => {
-      const leadingExpr = (function () {
-        const _el$ = r.getNextElement(_tmpl$),
-          _el$2 = _el$.firstChild,
-          [_el$3, _co$] = r.getNextMarker(_el$2.nextSibling);
-        r.insert(_el$, updatedTime, _el$3, _co$);
-        r.runHydrationEvents(_el$.getAttribute("data-hk"));
-        return _el$;
-      })();
-      r.insert(container, leadingExpr, undefined, [...container.childNodes]);
-      r.runHydrationEvents();
-    }, container);
-    expect(container.innerHTML).toBe(
-      `<span data-hk="0"><!--#-->${updatedTime}<!--/--> John</span>`
-    );
-    expect(container.firstChild).toBe(el1);
-    expect(el1.firstChild).toBe(el2);
-    expect(el2.nextSibling).toBe(el3);
-    expect(el3.nextSibling).toBe(el4);
-  });
-
   it("hydrates fragments", () => {
     rendered = r2.renderToString(() => [
       r2.ssr(["<div", ">First</div>"], r2.ssrHydrationKey()),
