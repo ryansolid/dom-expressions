@@ -338,6 +338,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
   parent = (multi && current[0] && current[0].parentNode) || parent;
 
   if (t === "string" || t === "number") {
+    if (sharedConfig.context) return current;
     if (t === "number") value = value.toString();
     if (multi) {
       let node = current[0];
