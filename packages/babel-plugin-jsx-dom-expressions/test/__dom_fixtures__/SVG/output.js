@@ -28,10 +28,10 @@ const _tmpl$ = /*#__PURE__*/ _$template(
     4
   );
 
-const template = _tmpl$.cloneNode(true);
+const template = _tmpl$();
 
 const template2 = (() => {
-  const _el$2 = _tmpl$2.cloneNode(true),
+  const _el$2 = _tmpl$2(),
     _el$3 = _el$2.firstChild;
 
   _el$3.style.setProperty("fill", "red");
@@ -67,7 +67,7 @@ const template2 = (() => {
 })();
 
 const template3 = (() => {
-  const _el$4 = _tmpl$3.cloneNode(true),
+  const _el$4 = _tmpl$3(),
     _el$5 = _el$4.firstChild;
 
   _$spread(_el$5, props, true, false);
@@ -75,18 +75,18 @@ const template3 = (() => {
   return _el$4;
 })();
 
-const template4 = _tmpl$4.cloneNode(true);
+const template4 = _tmpl$4();
 
-const template5 = _tmpl$4.cloneNode(true);
+const template5 = _tmpl$4();
 
 const template6 = _$createComponent(Component, {
   get children() {
-    return _tmpl$4.cloneNode(true);
+    return _tmpl$4();
   }
 });
 
 const template7 = (() => {
-  const _el$9 = _tmpl$5.cloneNode(true),
+  const _el$9 = _tmpl$5(),
     _el$10 = _el$9.firstChild;
 
   _$setAttributeNS(_el$10, "http://www.w3.org/1999/xlink", "xlink:href", url);
@@ -95,7 +95,7 @@ const template7 = (() => {
 })();
 
 const template8 = (() => {
-  const _el$11 = _tmpl$6.cloneNode(true),
+  const _el$11 = _tmpl$6(),
     _el$12 = _el$11.firstChild;
 
   _el$12.textContent = text;

@@ -37,13 +37,17 @@ export function render(code, element, init) {
 }
 
 export function template(html, check, isSVG) {
-  const t = document.createElement("template");
-  t.innerHTML = html;
-  if ("_DX_DEV_" && check && t.innerHTML.split("<").length - 1 !== check)
-    throw `The browser resolved template HTML does not match JSX input:\n${t.innerHTML}\n\n${html}. Is your HTML properly formed?`;
-  let node = t.content.firstChild;
-  if (isSVG) node = node.firstChild;
-  return node;
+  var setup = () => {
+    const t = document.createElement("template");
+    t.innerHTML = html;
+    if ("_DX_DEV_" && check && t.innerHTML.split("<").length - 1 !== check)
+      throw `The browser resolved template HTML does not match JSX input:\n${t.innerHTML}\n\n${html}. Is your HTML properly formed?`;
+    let node = t.content.firstChild;
+    if (isSVG) node = node.firstChild;
+    setup = () => node.cloneNode(true);
+    return setup();
+  }
+  return function() { return setup(); }
 }
 
 export function delegateEvents(eventNames, document = window.document) {
@@ -199,7 +203,7 @@ export function hydrate(code, element, options = {}) {
 export function getNextElement(template) {
   let node, key;
   if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
-    return template.cloneNode(true);
+    return template();
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
   sharedConfig.registry.delete(key);

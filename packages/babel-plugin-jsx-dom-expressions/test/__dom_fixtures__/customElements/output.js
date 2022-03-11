@@ -11,7 +11,7 @@ const _tmpl$ = /*#__PURE__*/ _$template(`<my-element></my-element>`, 2),
   _tmpl$3 = /*#__PURE__*/ _$template(`<slot name="head"></slot>`, 2);
 
 const template = (() => {
-  const _el$ = _tmpl$.cloneNode(true);
+  const _el$ = _tmpl$();
 
   _el$.someAttr = name;
   _el$.notprop = data;
@@ -24,7 +24,7 @@ const template = (() => {
 })();
 
 const template2 = (() => {
-  const _el$2 = _tmpl$.cloneNode(true);
+  const _el$2 = _tmpl$();
 
   _el$2._$owner = _$getOwner();
 
@@ -52,14 +52,14 @@ const template2 = (() => {
 })();
 
 const template3 = (() => {
-  const _el$3 = _tmpl$2.cloneNode(true);
+  const _el$3 = _tmpl$2();
 
   _el$3._$owner = _$getOwner();
   return _el$3;
 })();
 
 const template4 = (() => {
-  const _el$4 = _tmpl$3.cloneNode(true);
+  const _el$4 = _tmpl$3();
 
   _el$4._$owner = _$getOwner();
   return _el$4;

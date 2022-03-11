@@ -16,7 +16,7 @@ const _tmpl$ = /*#__PURE__*/ _$template(
 const selected = true;
 
 const template = (() => {
-  const _el$ = _tmpl$.cloneNode(true),
+  const _el$ = _tmpl$(),
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.firstChild;
 
@@ -48,7 +48,7 @@ const template = (() => {
 })();
 
 const template2 = (() => {
-  const _el$4 = _tmpl$2.cloneNode(true),
+  const _el$4 = _tmpl$2(),
     _el$5 = _el$4.firstChild,
     _el$6 = _el$5.nextSibling,
     _el$7 = _el$6.nextSibling;
@@ -60,7 +60,7 @@ const template2 = (() => {
 })();
 
 const template3 = (() => {
-  const _el$8 = _tmpl$3.cloneNode(true);
+  const _el$8 = _tmpl$3();
 
   _$setAttribute(
     _el$8,
@@ -84,7 +84,7 @@ const template3 = (() => {
 })();
 
 const template4 = (() => {
-  const _el$9 = _tmpl$3.cloneNode(true);
+  const _el$9 = _tmpl$3();
 
   _el$9.className = `hi ${state.class || ""}`;
 
@@ -95,10 +95,10 @@ const template4 = (() => {
   return _el$9;
 })();
 
-const template5 = _tmpl$4.cloneNode(true);
+const template5 = _tmpl$4();
 
 const template6 = (() => {
-  const _el$11 = _tmpl$3.cloneNode(true);
+  const _el$11 = _tmpl$3();
 
   _$style(_el$11, someStyle());
 
@@ -107,7 +107,7 @@ const template6 = (() => {
 })();
 
 const template7 = (() => {
-  const _el$12 = _tmpl$3.cloneNode(true);
+  const _el$12 = _tmpl$3();
 
   _$style(_el$12, {
     "background-color": color(),
@@ -125,7 +125,7 @@ const template7 = (() => {
 let refTarget;
 
 const template8 = (() => {
-  const _el$13 = _tmpl$3.cloneNode(true);
+  const _el$13 = _tmpl$3();
 
   const _ref$2 = refTarget;
   typeof _ref$2 === "function" ? _ref$2(_el$13) : (refTarget = _el$13);
@@ -133,7 +133,7 @@ const template8 = (() => {
 })();
 
 const template9 = (() => {
-  const _el$14 = _tmpl$3.cloneNode(true);
+  const _el$14 = _tmpl$3();
 
   (e => console.log(e))(_el$14);
 
@@ -141,7 +141,7 @@ const template9 = (() => {
 })();
 
 const template10 = (() => {
-  const _el$15 = _tmpl$3.cloneNode(true);
+  const _el$15 = _tmpl$3();
 
   const _ref$3 = refFactory();
 
@@ -150,7 +150,7 @@ const template10 = (() => {
 })();
 
 const template11 = (() => {
-  const _el$16 = _tmpl$3.cloneNode(true);
+  const _el$16 = _tmpl$3();
 
   another(_el$16, () => thing);
   something(_el$16, () => true);
@@ -158,21 +158,21 @@ const template11 = (() => {
 })();
 
 const template12 = (() => {
-  const _el$17 = _tmpl$3.cloneNode(true);
+  const _el$17 = _tmpl$3();
 
   _el$17.htmlFor = thing;
   return _el$17;
 })();
 
 const template13 = (() => {
-  const _el$18 = _tmpl$5.cloneNode(true);
+  const _el$18 = _tmpl$5();
 
   _el$18.checked = true;
   return _el$18;
 })();
 
 const template14 = (() => {
-  const _el$19 = _tmpl$5.cloneNode(true);
+  const _el$19 = _tmpl$5();
 
   _el$19.checked = state.visible;
   return _el$19;

@@ -18,7 +18,7 @@ import { Show } from "somewhere";
 
 const Child = props => [
   (() => {
-    const _el$ = _tmpl$.cloneNode(true),
+    const _el$ = _tmpl$(),
       _el$2 = _el$.firstChild;
 
     const _ref$ = props.ref;
@@ -29,7 +29,7 @@ const Child = props => [
     return _el$;
   })(),
   (() => {
-    const _el$3 = _tmpl$2.cloneNode(true);
+    const _el$3 = _tmpl$2();
 
     _$insert(_el$3, () => props.children);
 
@@ -41,7 +41,7 @@ const template = props => {
   let childRef;
   const { content } = props;
   return (() => {
-    const _el$4 = _tmpl$2.cloneNode(true);
+    const _el$4 = _tmpl$2();
 
     _$insert(
       _el$4,
@@ -61,7 +61,7 @@ const template = props => {
             booleanProperty: true,
 
             get children() {
-              return _tmpl$3.cloneNode(true);
+              return _tmpl$3();
             }
           }
         )
@@ -85,7 +85,7 @@ const template = props => {
             },
 
             get children() {
-              const _el$6 = _tmpl$2.cloneNode(true);
+              const _el$6 = _tmpl$2();
 
               _$insert(_el$6, content);
 
@@ -134,13 +134,13 @@ const template2 = _$createComponent(Child, {
 
 const template3 = _$createComponent(Child, {
   get children() {
-    return [_tmpl$2.cloneNode(true), _tmpl$2.cloneNode(true), _tmpl$2.cloneNode(true), "After"];
+    return [_tmpl$2(), _tmpl$2(), _tmpl$2(), "After"];
   }
 });
 
 const template4 = _$createComponent(Child, {
   get children() {
-    return _tmpl$2.cloneNode(true);
+    return _tmpl$2();
   }
 });
 
@@ -175,7 +175,7 @@ const template6 = _$createComponent(_$For, {
 
 const template7 = _$createComponent(Child, {
   get children() {
-    return [_tmpl$2.cloneNode(true), () => state.dynamic];
+    return [_tmpl$2(), () => state.dynamic];
   }
 });
 
@@ -190,7 +190,7 @@ const template9 = _$createComponent(_garbage, {
 });
 
 const template10 = (() => {
-  const _el$12 = _tmpl$4.cloneNode(true),
+  const _el$12 = _tmpl$4(),
     _el$13 = _el$12.firstChild,
     _el$18 = _el$13.nextSibling,
     _el$14 = _el$18.nextSibling,
@@ -253,7 +253,7 @@ const template10 = (() => {
 })();
 
 const template11 = (() => {
-  const _el$22 = _tmpl$5.cloneNode(true),
+  const _el$22 = _tmpl$5(),
     _el$23 = _el$22.firstChild,
     _el$26 = _el$23.nextSibling,
     _el$24 = _el$26.nextSibling,
@@ -312,7 +312,7 @@ const template11 = (() => {
 })();
 
 const template12 = (() => {
-  const _el$28 = _tmpl$6.cloneNode(true),
+  const _el$28 = _tmpl$6(),
     _el$29 = _el$28.firstChild,
     _el$34 = _el$29.nextSibling,
     _el$30 = _el$34.nextSibling,
@@ -384,12 +384,12 @@ const Template16 = _$createComponent(
 
 const Template17 = _$createComponent(Pre, {
   get children() {
-    return [_tmpl$7.cloneNode(true), " ", _tmpl$8.cloneNode(true), " ", _tmpl$9.cloneNode(true)];
+    return [_tmpl$7(), " ", _tmpl$8(), " ", _tmpl$9()];
   }
 });
 
 const Template18 = _$createComponent(Pre, {
   get children() {
-    return [_tmpl$7.cloneNode(true), _tmpl$8.cloneNode(true), _tmpl$9.cloneNode(true)];
+    return [_tmpl$7(), _tmpl$8(), _tmpl$9()];
   }
 });

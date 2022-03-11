@@ -9,7 +9,7 @@ export const SVGNamespace: Record<string, string>;
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
-export function template(html: string, count: number, isSVG?: boolean): Element;
+export function template(html: string, count: number, isSVG?: boolean): () => Element;
 export function effect<T>(fn: (prev?: T) => T, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function insert<T>(
@@ -57,7 +57,7 @@ export function hydrate(
   options?: { renderId?: string }
 ): () => void;
 export function getHydrationKey(): string;
-export function getNextElement(template?: HTMLTemplateElement): Element;
+export function getNextElement(template?: () => HTMLTemplateElement): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 export function getNextMarker(start: Node): [Node, Array<Node>];
 export function Assets(props: { children?: JSX.Element }): JSX.Element;

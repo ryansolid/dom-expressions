@@ -13,4 +13,4 @@ const template4 = _$createComponent(module["a-b"], {});
 
 const template5 = _$createComponent(module["a-b"]["c-d"], {});
 
-const template6 = _tmpl$.cloneNode(true);
+const template6 = _tmpl$();

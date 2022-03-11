@@ -83,9 +83,7 @@ function registerTemplate(path, results) {
       results.id,
       hydratable
         ? t.callExpression(registerImportMethod(path, "getNextElement"), templateId ? [templateId] : [])
-        : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
-            t.booleanLiteral(true)
-          ])
+        : t.callExpression(templateId, [])
     );
   }
   results.decl.unshift(decl);

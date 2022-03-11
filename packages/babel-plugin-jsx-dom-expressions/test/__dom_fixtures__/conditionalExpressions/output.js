@@ -7,7 +7,7 @@ import { insert as _$insert } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(`<div></div>`, 2);
 
 const template1 = (() => {
-  const _el$ = _tmpl$.cloneNode(true);
+  const _el$ = _tmpl$();
 
   _$insert(_el$, simple);
 
@@ -15,7 +15,7 @@ const template1 = (() => {
 })();
 
 const template2 = (() => {
-  const _el$2 = _tmpl$.cloneNode(true);
+  const _el$2 = _tmpl$();
 
   _$insert(_el$2, () => state.dynamic);
 
@@ -23,7 +23,7 @@ const template2 = (() => {
 })();
 
 const template3 = (() => {
-  const _el$3 = _tmpl$.cloneNode(true);
+  const _el$3 = _tmpl$();
 
   _$insert(_el$3, simple ? good : bad);
 
@@ -31,7 +31,7 @@ const template3 = (() => {
 })();
 
 const template4 = (() => {
-  const _el$4 = _tmpl$.cloneNode(true);
+  const _el$4 = _tmpl$();
 
   _$insert(_el$4, () => (simple ? good() : bad));
 
@@ -39,7 +39,7 @@ const template4 = (() => {
 })();
 
 const template5 = (() => {
-  const _el$5 = _tmpl$.cloneNode(true);
+  const _el$5 = _tmpl$();
 
   _$insert(
     _el$5,
@@ -54,7 +54,7 @@ const template5 = (() => {
 })();
 
 const template6 = (() => {
-  const _el$6 = _tmpl$.cloneNode(true);
+  const _el$6 = _tmpl$();
 
   _$insert(
     _el$6,
@@ -69,7 +69,7 @@ const template6 = (() => {
 })();
 
 const template7 = (() => {
-  const _el$7 = _tmpl$.cloneNode(true);
+  const _el$7 = _tmpl$();
 
   _$insert(
     _el$7,
@@ -91,7 +91,7 @@ const template7 = (() => {
 })();
 
 const template8 = (() => {
-  const _el$8 = _tmpl$.cloneNode(true);
+  const _el$8 = _tmpl$();
 
   _$insert(
     _el$8,
@@ -106,7 +106,7 @@ const template8 = (() => {
 })();
 
 const template9 = (() => {
-  const _el$9 = _tmpl$.cloneNode(true);
+  const _el$9 = _tmpl$();
 
   _$insert(
     _el$9,
@@ -121,7 +121,7 @@ const template9 = (() => {
 })();
 
 const template10 = (() => {
-  const _el$10 = _tmpl$.cloneNode(true);
+  const _el$10 = _tmpl$();
 
   _$insert(_el$10, () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"));
 
@@ -129,7 +129,7 @@ const template10 = (() => {
 })();
 
 const template11 = (() => {
-  const _el$11 = _tmpl$.cloneNode(true);
+  const _el$11 = _tmpl$();
 
   _$insert(
     _el$11,
@@ -197,7 +197,7 @@ const template18 = _$createComponent(Comp, {
 });
 
 const template19 = (() => {
-  const _el$12 = _tmpl$.cloneNode(true);
+  const _el$12 = _tmpl$();
 
   _$effect(
     () =>
@@ -208,7 +208,7 @@ const template19 = (() => {
 })();
 
 const template20 = (() => {
-  const _el$13 = _tmpl$.cloneNode(true);
+  const _el$13 = _tmpl$();
 
   _$insert(
     _el$13,
@@ -235,7 +235,7 @@ const template22 = _$createComponent(Comp, {
 });
 
 const template23 = (() => {
-  const _el$14 = _tmpl$.cloneNode(true);
+  const _el$14 = _tmpl$();
 
   _$effect(() => (_el$14.innerHTML = state?.dynamic ? "a" : "b"));
 
@@ -243,7 +243,7 @@ const template23 = (() => {
 })();
 
 const template24 = (() => {
-  const _el$15 = _tmpl$.cloneNode(true);
+  const _el$15 = _tmpl$();
 
   _$insert(_el$15, () => (state?.dynamic ? "a" : "b"));
 
@@ -263,7 +263,7 @@ const template26 = _$createComponent(Comp, {
 });
 
 const template27 = (() => {
-  const _el$16 = _tmpl$.cloneNode(true);
+  const _el$16 = _tmpl$();
 
   _$effect(() => (_el$16.innerHTML = state.dynamic ?? _$createComponent(Comp, {})));
 
@@ -271,7 +271,7 @@ const template27 = (() => {
 })();
 
 const template28 = (() => {
-  const _el$17 = _tmpl$.cloneNode(true);
+  const _el$17 = _tmpl$();
 
   _$insert(_el$17, () => state.dynamic ?? _$createComponent(Comp, {}));
 
@@ -279,7 +279,7 @@ const template28 = (() => {
 })();
 
 const template29 = (() => {
-  const _el$18 = _tmpl$.cloneNode(true);
+  const _el$18 = _tmpl$();
 
   _$insert(
     _el$18,
@@ -294,7 +294,7 @@ const template29 = (() => {
 })();
 
 const template30 = (() => {
-  const _el$19 = _tmpl$.cloneNode(true);
+  const _el$19 = _tmpl$();
 
   _$insert(_el$19, () => thing() || thing1() || thing2());
 

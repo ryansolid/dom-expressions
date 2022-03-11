@@ -5,4 +5,4 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   9
 );
 
-const template = _tmpl$.cloneNode(true);
+const template = _tmpl$();
