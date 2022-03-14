@@ -241,3 +241,19 @@ const template15 = (() => {
 
   return _el$21;
 })();
+
+const template16 = (() => {
+  const _el$23 = _$createElement("button");
+
+  _$insertNode(_el$23, _$createTextNode("Write"));
+
+  _$setProp(_el$23, "class", "static");
+
+  _$setProp(_el$23, "classList", {
+    hi: "k"
+  });
+
+  _$setProp(_el$23, "type", "button");
+
+  return _el$23;
+})();

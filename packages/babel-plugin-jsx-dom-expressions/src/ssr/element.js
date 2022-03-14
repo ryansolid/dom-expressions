@@ -193,7 +193,7 @@ function transformAttributes(path, results) {
         if (attr.name.name === "classList") {
           if (t.isObjectExpression(expr) && !expr.properties.some(p => t.isSpreadElement(p))) {
             transformClasslistObject(path, expr, values, quasis);
-            i && attributes.splice(attributes.indexOf(classAttributes[i].node), 1);
+            i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
             continue;
           }
           expr = t.callExpression(registerImportMethod(path, "ssrClassList"), [expr]);
@@ -201,7 +201,7 @@ function transformAttributes(path, results) {
         values.push(t.logicalExpression("||", expr, t.stringLiteral("")));
         quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
       }
-      i && attributes.splice(attributes.indexOf(classAttributes[i].node), 1);
+      i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
     }
     first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
   }

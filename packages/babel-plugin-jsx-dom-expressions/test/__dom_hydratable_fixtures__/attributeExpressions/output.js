@@ -16,7 +16,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$3 = /*#__PURE__*/ _$template(`<div></div>`, 2),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
   _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2);
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -213,3 +214,5 @@ const template14 = (() => {
 })();
 
 const template15 = _$getNextElement(_tmpl$6);
+
+const template16 = _$getNextElement(_tmpl$7);
