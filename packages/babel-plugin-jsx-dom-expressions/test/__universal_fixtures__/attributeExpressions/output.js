@@ -257,3 +257,19 @@ const template16 = (() => {
 
   return _el$23;
 })();
+
+const template17 = (() => {
+  const _el$25 = _$createElement("button");
+
+  _$insertNode(_el$25, _$createTextNode("Hi"));
+
+  _$setProp(_el$25, "classList", {
+    a: true,
+    b: true,
+    c: true
+  });
+
+  _$setProp(_el$25, "onClick", increment);
+
+  return _el$25;
+})();

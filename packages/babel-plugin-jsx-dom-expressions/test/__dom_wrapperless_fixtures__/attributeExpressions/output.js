@@ -1,11 +1,12 @@
 import { template as _$template } from "r-dom";
+import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
 import { classList as _$classList } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(
-    `<div id="main"><h1 class="base selected" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base selected" id="my-h1" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div></div><div></div></div>`, 8),
@@ -13,9 +14,12 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
   _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
   _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2);
+  _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2);
 
 const selected = true;
+let id = "my-h1";
+let link;
 
 const template = (() => {
   const _el$ = _tmpl$.cloneNode(true),
@@ -54,6 +58,8 @@ const template2 = (() => {
     _el$5 = _el$4.firstChild,
     _el$6 = _el$5.nextSibling,
     _el$7 = _el$6.nextSibling;
+
+  _$spread(_el$4, () => getProps("test"), false, true);
 
   _el$5.textContent = rowId;
   _el$6.textContent = row.label;
@@ -154,6 +160,7 @@ const template10 = (() => {
 const template11 = (() => {
   const _el$16 = _tmpl$3.cloneNode(true);
 
+  zero(_el$16, () => 0);
   another(_el$16, () => thing);
   something(_el$16, () => true);
   return _el$16;
@@ -183,3 +190,11 @@ const template14 = (() => {
 const template15 = _tmpl$6.cloneNode(true);
 
 const template16 = _tmpl$7.cloneNode(true);
+
+const template17 = (() => {
+  const _el$22 = _tmpl$8.cloneNode(true);
+
+  _$addEventListener(_el$22, "click", increment);
+
+  return _el$22;
+})();

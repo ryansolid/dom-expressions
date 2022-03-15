@@ -1,4 +1,6 @@
 import { template as _$template } from "r-dom";
+import { delegateEvents as _$delegateEvents } from "r-dom";
+import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
@@ -14,7 +16,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
   _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
   _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2);
+  _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -208,3 +211,13 @@ const template14 = (() => {
 const template15 = _tmpl$6.cloneNode(true);
 
 const template16 = _tmpl$7.cloneNode(true);
+
+const template17 = (() => {
+  const _el$23 = _tmpl$8.cloneNode(true);
+
+  _$addEventListener(_el$23, "click", increment, true);
+
+  return _el$23;
+})();
+
+_$delegateEvents(["click"]);

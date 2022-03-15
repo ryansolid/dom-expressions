@@ -285,7 +285,7 @@ function transformAttributes(path, results) {
         values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
         quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
       }
-      i && attributes.splice(classAttributes[i].key, 1);
+      i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
     }
     if (values.length) first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
     else first.value = t.stringLiteral(quasis[0].value.raw);

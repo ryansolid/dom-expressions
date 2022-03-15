@@ -1,8 +1,11 @@
 const selected = true;
+let id = "my-h1";
+let link;
 const template = (
   <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
     <h1
       class="base"
+      id={id}
       {...results()}
       disabled
       readonly=""
@@ -18,7 +21,7 @@ const template = (
 );
 
 const template2 = (
-  <div>
+  <div {...getProps("test")}>
     <div textContent={rowId} />
     <div textContent={row.label} />
     <div innerHTML={"<div/>"} />
@@ -55,7 +58,7 @@ const template9 = <div ref={e => console.log(e)} />;
 
 const template10 = <div ref={refFactory()} />;
 
-const template11 = <div use:something use:another={thing} />;
+const template11 = <div use:something use:another={thing} use:zero={0} />;
 
 const template12 = <div prop:htmlFor={thing} />;
 
@@ -74,5 +77,18 @@ const template16 = (
     type="button"
   >
     Write
+  </button>
+);
+
+const template17 = (
+  <button
+    classList={{
+      a: true,
+      b: true,
+      c: true
+    }}
+    onClick={increment}
+  >
+    Hi
   </button>
 );

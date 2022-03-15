@@ -8,6 +8,7 @@ const _tmpl$ = [
     ' class="',
     '" style="',
     '"><h1 class="',
+    '" id="',
     '" ',
     ' disabled readonly="" title="',
     '" style="',
@@ -23,8 +24,10 @@ const _tmpl$ = [
   _tmpl$7 = "<div></div>",
   _tmpl$8 = ['<input type="checkbox"', ">"],
   _tmpl$9 = '<div class="`a">`$`</div>',
-  _tmpl$10 = ['<button class="', '" type="button">Write</button>'];
+  _tmpl$10 = ['<button class="', '" type="button">Write</button>'],
+  _tmpl$11 = ['<button class="', '">Hi</button>'];
 const selected = true;
+let id = "my-h1";
 let link;
 
 const template = _$ssr(
@@ -33,6 +36,7 @@ const template = _$ssr(
   unknown ? "selected" : "",
   "color:" + _$escape(color, true),
   `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
+  _$escape(id, true),
   _$ssrSpread(results(), false, true),
   _$escape(welcoming(), true),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
@@ -91,3 +95,5 @@ const template14 = _$ssr(_tmpl$8, _$ssrBoolean("checked", state.visible));
 const template15 = _$ssr(_tmpl$9);
 
 const template16 = _$ssr(_tmpl$10, `static ${"k" ? "hi" : ""}`);
+
+const template17 = _$ssr(_tmpl$11, "a  b  c");

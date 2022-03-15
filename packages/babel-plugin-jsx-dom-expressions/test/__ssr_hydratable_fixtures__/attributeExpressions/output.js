@@ -10,6 +10,7 @@ const _tmpl$ = [
     ' class="',
     '" style="',
     '"><h1 class="',
+    '" id="',
     '" ',
     ' disabled readonly="" title="',
     '" style="',
@@ -17,7 +18,7 @@ const _tmpl$ = [
     '"',
     ">Welcome</a></h1></div>"
   ],
-  _tmpl$2 = ["<div", "><div>", "</div><div>", "</div><div><div/></div></div>"],
+  _tmpl$2 = ["<div", " ", "><div>", "</div><div>", "</div><div><div/></div></div>"],
   _tmpl$3 = ["<div", ' id="', '" style="', '" name="', '">', "</div>"],
   _tmpl$4 = ["<div", ' class="', '"></div>'],
   _tmpl$5 = ["<div", ' style="', '">Hi</div>'],
@@ -25,8 +26,11 @@ const _tmpl$ = [
   _tmpl$7 = ["<div", "></div>"],
   _tmpl$8 = ["<input", ' type="checkbox"', ">"],
   _tmpl$9 = ["<div", ' class="`a">`$`</div>'],
-  _tmpl$10 = ["<button", ' class="', '" type="button">Write</button>'];
+  _tmpl$10 = ["<button", ' class="', '" type="button">Write</button>'],
+  _tmpl$11 = ["<button", ' class="', '">Hi</button>'];
 const selected = true;
+let id = "my-h1";
+let link;
 
 const template = _$ssr(
   _tmpl$,
@@ -35,6 +39,7 @@ const template = _$ssr(
   unknown ? "selected" : "",
   "color:" + _$escape(color, true),
   `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
+  _$escape(id, true),
   _$ssrSpread(results(), false, true),
   _$escape(welcoming(), true),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
@@ -42,7 +47,13 @@ const template = _$ssr(
   _$ssrBoolean("readonly", value)
 );
 
-const template2 = _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(rowId), _$escape(row.label));
+const template2 = _$ssr(
+  _tmpl$2,
+  _$ssrHydrationKey(),
+  _$ssrSpread(getProps("test"), false, true),
+  _$escape(rowId),
+  _$escape(row.label)
+);
 
 const template3 = _$ssr(
   _tmpl$3,
@@ -94,3 +105,5 @@ const template14 = _$ssr(_tmpl$8, _$ssrHydrationKey(), _$ssrBoolean("checked", s
 const template15 = _$ssr(_tmpl$9, _$ssrHydrationKey());
 
 const template16 = _$ssr(_tmpl$10, _$ssrHydrationKey(), `static ${"k" ? "hi" : ""}`);
+
+const template17 = _$ssr(_tmpl$11, _$ssrHydrationKey(), "a  b  c");
