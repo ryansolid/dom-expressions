@@ -27,7 +27,8 @@ const _tmpl$ = [
   _tmpl$8 = ["<input", ' type="checkbox"', ">"],
   _tmpl$9 = ["<div", ' class="`a">`$`</div>'],
   _tmpl$10 = ["<button", ' class="', '" type="button">Write</button>'],
-  _tmpl$11 = ["<button", ' class="', '">Hi</button>'];
+  _tmpl$11 = ["<button", ' class="', '">Hi</button>'],
+  _tmpl$12 = ["<div", " ", "></div>"];
 const selected = true;
 let id = "my-h1";
 let link;
@@ -107,3 +108,17 @@ const template15 = _$ssr(_tmpl$9, _$ssrHydrationKey());
 const template16 = _$ssr(_tmpl$10, _$ssrHydrationKey(), `static ${"k" ? "hi" : ""}`);
 
 const template17 = _$ssr(_tmpl$11, _$ssrHydrationKey(), "a  b  c");
+
+const template18 = _$ssr(
+  _tmpl$12,
+  _$ssrHydrationKey(),
+  _$ssrSpread(
+    {
+      get [key()]() {
+        return props.value;
+      }
+    },
+    false,
+    false
+  )
+);

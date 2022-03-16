@@ -404,10 +404,22 @@ const Template18 = _$createComponent(Pre, {
   }
 });
 
-const Template19 = _$createComponent(Component, _$mergeProps(s.dynamic));
+const Template19 = _$createComponent(
+  Component,
+  _$mergeProps(() => s.dynamic())
+);
 
 const Template20 = _$createComponent(Component, {
   get ["class"]() {
     return prop.red ? "red" : "green";
   }
 });
+
+const template21 = _$createComponent(
+  Component,
+  _$mergeProps(() => ({
+    get [key()]() {
+      return props.value;
+    }
+  }))
+);

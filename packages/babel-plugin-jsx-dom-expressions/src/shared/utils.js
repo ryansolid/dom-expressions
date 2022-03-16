@@ -89,6 +89,9 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   let dynamic;
   path.traverse({
     Function(p) {
+      if (t.isObjectMethod(p.node) && p.node.computed) {
+        dynamic = isDynamic(p.get("key"), { checkMember, checkTags, checkCallExpressions, native })
+      }
       p.skip();
     },
     CallExpression(p) {

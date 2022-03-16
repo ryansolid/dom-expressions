@@ -35,10 +35,13 @@ const _tmpl$ = ["<div", ">Hello <!--#-->", "<!--/--></div>"],
   _tmpl$11 = ["<span", ">3</span>"];
 import { Show } from "somewhere";
 
-const Child = props => [
-  _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(props.name)),
-  _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(props.children))
-];
+const Child = props => {
+  const [s, set] = createSignal();
+  return [
+    _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(props.name)),
+    _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(props.children))
+  ];
+};
 
 const template = props => {
   let childRef;
@@ -113,6 +116,8 @@ const template3 = _$createComponent(Child, {
     ];
   }
 });
+
+const [s, set] = createSignal();
 
 const template4 = _$createComponent(Child, {
   get children() {
@@ -315,3 +320,23 @@ const Template18 = _$createComponent(Pre, {
     ];
   }
 });
+
+const Template19 = _$createComponent(
+  Component,
+  _$mergeProps(() => s.dynamic())
+);
+
+const Template20 = _$createComponent(Component, {
+  get ["class"]() {
+    return prop.red ? "red" : "green";
+  }
+});
+
+const template21 = _$createComponent(
+  Component,
+  _$mergeProps(() => ({
+    get [key()]() {
+      return props.value;
+    }
+  }))
+);

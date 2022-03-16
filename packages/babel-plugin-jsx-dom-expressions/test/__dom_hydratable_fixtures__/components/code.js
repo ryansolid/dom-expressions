@@ -135,3 +135,17 @@ const Template18 = <Pre>
   <span>2</span> 
   <span>3</span>
 </Pre>
+
+const Template19 = <Component {...s.dynamic()} />
+
+const Template20 = <Component class={prop.red ? "red" : "green"} />
+
+const template21 = (
+  <Component
+    {...{
+      get [key()]() {
+        return props.value;
+      }
+    }}
+  />
+);

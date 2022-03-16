@@ -273,3 +273,19 @@ const template17 = (() => {
 
   return _el$25;
 })();
+
+const template18 = (() => {
+  const _el$27 = _$createElement("div");
+
+  _$spread(
+    _el$27,
+    () => ({
+      get [key()]() {
+        return props.value;
+      }
+    }),
+    false
+  );
+
+  return _el$27;
+})();

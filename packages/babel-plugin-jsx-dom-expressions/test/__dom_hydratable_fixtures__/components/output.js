@@ -468,3 +468,23 @@ const Template18 = _$createComponent(Pre, {
     return [_$getNextElement(_tmpl$8), _$getNextElement(_tmpl$9), _$getNextElement(_tmpl$10)];
   }
 });
+
+const Template19 = _$createComponent(
+  Component,
+  _$mergeProps(() => s.dynamic())
+);
+
+const Template20 = _$createComponent(Component, {
+  get ["class"]() {
+    return prop.red ? "red" : "green";
+  }
+});
+
+const template21 = _$createComponent(
+  Component,
+  _$mergeProps(() => ({
+    get [key()]() {
+      return props.value;
+    }
+  }))
+);

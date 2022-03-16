@@ -230,4 +230,23 @@ const template17 = (() => {
   return _el$23;
 })();
 
+const template18 = (() => {
+  const _el$24 = _$getNextElement(_tmpl$3);
+
+  _$spread(
+    _el$24,
+    () => ({
+      get [key()]() {
+        return props.value;
+      }
+    }),
+    false,
+    false
+  );
+
+  _$runHydrationEvents();
+
+  return _el$24;
+})();
+
 _$delegateEvents(["click"]);

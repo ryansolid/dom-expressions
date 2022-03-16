@@ -220,4 +220,21 @@ const template17 = (() => {
   return _el$23;
 })();
 
+const template18 = (() => {
+  const _el$24 = _tmpl$3.cloneNode(true);
+
+  _$spread(
+    _el$24,
+    () => ({
+      get [key()]() {
+        return props.value;
+      }
+    }),
+    false,
+    false
+  );
+
+  return _el$24;
+})();
+
 _$delegateEvents(["click"]);

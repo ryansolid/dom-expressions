@@ -18,13 +18,9 @@ function convertComponentIdentifier(node) {
     if (t.isValidIdentifier(node.name)) node.type = "Identifier";
     else return t.stringLiteral(node.name);
   } else if (t.isJSXMemberExpression(node)) {
-    const prop = convertComponentIdentifier(node.property)
+    const prop = convertComponentIdentifier(node.property);
     const computed = t.isStringLiteral(prop);
-    return t.memberExpression(
-      convertComponentIdentifier(node.object),
-      prop,
-      computed
-    );
+    return t.memberExpression(convertComponentIdentifier(node.object), prop, computed);
   }
 
   return node;
@@ -77,7 +73,10 @@ export default function transformComponent(path) {
           isDynamic(attribute.get("argument"), {
             checkMember: true
           }) && (dynamicSpread = true)
-            ? t.isCallExpression(node.argument) && !node.argument.arguments.length
+            ? t.isCallExpression(node.argument) &&
+              !node.argument.arguments.length &&
+              !t.isCallExpression(node.argument.callee) &&
+              !t.isMemberExpression(node.argument.callee)
               ? node.argument.callee
               : t.arrowFunctionExpression([], node.argument)
             : node.argument
