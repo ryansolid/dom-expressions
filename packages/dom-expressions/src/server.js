@@ -428,7 +428,19 @@ function injectScripts(html, scripts, nonce) {
 }
 
 function serializeError(error) {
-  return error.message ? `new Error(${devalue(error.message)})` : devalue(error);
+  if (error.message) {
+    const fields = {};
+    const keys = Object.getOwnPropertyNames(error);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const value = error[key];
+      if (!value || (key !== "message" && typeof value !== "function")) {
+        fields[key] = value;
+      }
+    }
+    return `Object.assign(new Error(${devalue(error.message)}), ${devalue(fields)})`;
+  }
+  return devalue(error);
 }
 
 function waitForFragments(registry, key) {
