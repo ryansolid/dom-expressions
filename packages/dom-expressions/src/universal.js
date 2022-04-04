@@ -218,16 +218,14 @@ export function createRenderer({
         () => (prevProps.children = insertExpression(node, props.children, prevProps.children))
       );
     }
+    props.ref && props.ref(node);
     effect(() => {
       for (const prop in props) {
-        if (prop === "children") continue;
+        if (prop === "children" || prop === "ref") continue;
         const value = props[prop];
         if (value === prevProps[prop]) continue;
-        if (prop === "ref") value(node);
-        else {
-          setProperty(node, prop, value, prevProps[prop]);
-          prevProps[prop] = value;
-        }
+        setProperty(node, prop, value, prevProps[prop]);
+        prevProps[prop] = value;
       }
     });
     return prevProps;
