@@ -21,7 +21,7 @@ export namespace JSX {
     (): Element;
   }
   interface ElementClass {
-    render(props: any): Element;
+    // empty, libs can define requirements downstream
   }
   type LibraryManagedAttributes<Component, Props> = Props;
   interface ElementChildrenAttribute {
