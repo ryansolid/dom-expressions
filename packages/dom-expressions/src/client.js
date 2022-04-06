@@ -456,7 +456,8 @@ function gatherHydratable(element, root) {
   for (let i = 0; i < templates.length; i++) {
     const node = templates[i];
     const key = node.getAttribute("data-hk");
-    if (!root || key.startsWith(root)) sharedConfig.registry.set(key, node);
+    if ((!root || key.startsWith(root)) && !sharedConfig.registry.has(key))
+      sharedConfig.registry.set(key, node);
   }
 }
 
