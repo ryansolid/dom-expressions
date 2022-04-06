@@ -108,8 +108,9 @@ export function classList(node, value, prev = {}) {
 export function style(node, value, prev = {}) {
   const nodeStyle = node.style;
   const prevString = typeof prev === "string";
-  if ((value == null && prevString) || typeof value === "string") return (nodeStyle.cssText = value);
-  prevString && (nodeStyle.cssText = undefined, prev = {});
+  if ((value == null && prevString) || typeof value === "string")
+    return (nodeStyle.cssText = value);
+  prevString && ((nodeStyle.cssText = undefined), (prev = {}));
   value || (value = {});
   let v, s;
   for (s in prev) {
@@ -165,6 +166,7 @@ export function insert(parent, accessor, marker, initial) {
 }
 
 export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef = false) {
+  props || (props = {});
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
@@ -326,6 +328,7 @@ function eventHandler(e) {
 }
 
 function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
+  props || (props = {});
   if (!skipChildren && "children" in props) {
     effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
   }

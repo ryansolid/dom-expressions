@@ -213,6 +213,7 @@ export function createRenderer({
   }
 
   function spreadExpression(node, props, prevProps = {}, skipChildren) {
+    props || (props = {});
     if (!skipChildren && "children" in props) {
       effect(
         () => (prevProps.children = insertExpression(node, props.children, prevProps.children))
