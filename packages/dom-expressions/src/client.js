@@ -107,8 +107,10 @@ export function classList(node, value, prev = {}) {
 
 export function style(node, value, prev = {}) {
   const nodeStyle = node.style;
-  if (value == null || typeof value === "string") return (nodeStyle.cssText = value);
-  typeof prev === "string" && (prev = {});
+  const prevString = typeof prev === "string";
+  if ((value == null && prevString) || typeof value === "string") return (nodeStyle.cssText = value);
+  prevString && (nodeStyle.cssText = undefined, prev = {});
+  value || (value = {});
   let v, s;
   for (s in prev) {
     value[s] == null && nodeStyle.removeProperty(s);
