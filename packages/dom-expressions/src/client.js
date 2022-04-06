@@ -162,11 +162,11 @@ export function insert(parent, accessor, marker, initial) {
   effect(current => insertExpression(parent, accessor(), current, marker), initial);
 }
 
-export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
+export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef = false) {
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      assignProp(node, prop, null, prevProps[prop], isSVG);
+      assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
     }
   }
   for (const prop in props) {
@@ -175,7 +175,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}) {
       continue;
     }
     const value = props[prop];
-    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG);
+    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef);
   }
 }
 
@@ -259,13 +259,15 @@ function toggleClassKey(node, key, value) {
     node.classList.toggle(classNames[i], value);
 }
 
-function assignProp(node, prop, value, prev, isSVG) {
+function assignProp(node, prop, value, prev, isSVG, skipRef) {
   let isCE, isProp, isChildProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
   if (value === prev) return prev;
   if (prop === "ref") {
-    value(node);
+    if (!skipRef) {
+      value(node);
+    }
   } else if (prop.slice(0, 3) === "on:") {
     node.addEventListener(prop.slice(3), value);
   } else if (prop.slice(0, 10) === "oncapture:") {
@@ -325,7 +327,8 @@ function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
   if (!skipChildren && "children" in props) {
     effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
   }
-  effect(() => assign(node, props, isSVG, true, prevProps));
+  props.ref && props.ref(node);
+  effect(() => assign(node, props, isSVG, true, prevProps, true));
   return prevProps;
 }
 
