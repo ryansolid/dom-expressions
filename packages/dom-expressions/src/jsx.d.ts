@@ -3112,7 +3112,7 @@ export namespace JSX {
       ZoomAndPanSVGAttributes,
       PresentationSVGAttributes {
     version?: string;
-    "base-profile"?: string;
+    baseProfile?: string;
     x?: number | string;
     y?: number | string;
     width?: number | string;
