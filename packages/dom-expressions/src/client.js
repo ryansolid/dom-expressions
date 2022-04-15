@@ -315,6 +315,12 @@ function eventHandler(e) {
     }
   });
 
+  // cancel html streaming
+  if (window._$HY && !sharedConfig.done) {
+    sharedConfig.done = true;
+    document.querySelectorAll("[id^=pl-]").forEach(elem => elem.remove());
+  }
+
   while (node !== null) {
     const handler = node[key];
     if (handler && !node.disabled) {

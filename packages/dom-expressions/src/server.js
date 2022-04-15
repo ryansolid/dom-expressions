@@ -3,7 +3,7 @@ import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,y,t,g){t=document.getElementById(e),g=document.getElementById("pl"+e),g&&g.replaceWith(...t.childNodes),_$HY.set(e,y||null)}`;
+const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t||null)}`;
 const FRAGMENT_REPLACE = /<!\[([\d-]+)\]>/;
 
 export function renderToString(code, options = {}) {
