@@ -1997,6 +1997,7 @@ export namespace JSX {
       | "treegrid"
       | "treeitem";
     autocapitalize?: HTMLAutocapitalize;
+    slot?: string;
     color?: string;
     itemprop?: string;
     itemscope?: boolean;
