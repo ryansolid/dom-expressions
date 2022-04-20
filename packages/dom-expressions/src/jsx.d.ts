@@ -15,7 +15,8 @@ export namespace JSX {
     | number
     | boolean
     | null
-    | undefined;
+    | undefined
+    | void;
   interface ArrayElement extends Array<Element> {}
   interface FunctionElement {
     (): Element;
