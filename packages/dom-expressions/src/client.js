@@ -13,6 +13,7 @@ export {
   ChildProperties,
   PropAliases,
   Aliases,
+  DOMElements,
   SVGElements,
   SVGNamespace,
   DelegatedEvents
