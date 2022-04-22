@@ -20,11 +20,11 @@ const template = (() => {
 
   _$setProp(_el$, "id", "main");
 
-  _$insertNode(_el$2, _$createTextNode("div { color: red; }"));
+  _$insertNode(_el$2, _$createTextNode(`div { color: red; }`));
 
-  _$insertNode(_el$4, _$createTextNode("Welcome"));
+  _$insertNode(_el$4, _$createTextNode(`Welcome`));
 
-  _$insertNode(_el$6, _$createTextNode("Edit:"));
+  _$insertNode(_el$6, _$createTextNode(`Edit:`));
 
   _$setProp(_el$6, "for", "entry");
 

@@ -27,7 +27,7 @@ const template2 = (() => {
 const template3 = (() => {
   const _el$3 = _$createElement("module");
 
-  _$insertNode(_el$3, _$createTextNode("Hello"));
+  _$insertNode(_el$3, _$createTextNode(`Hello`));
 
   return _el$3;
 })();
@@ -65,7 +65,7 @@ const template7 = (() => {
 const template8 = (() => {
   const _el$8 = _$createElement("module");
 
-  _$insertNode(_el$8, _$createTextNode("Hello"));
+  _$insertNode(_el$8, _$createTextNode(`Hello`));
 
   _$spread(_el$8, dynamic, true);
 
@@ -129,7 +129,7 @@ const template16 = _$createComponent(Module, {
 
 const template18 = (() => {
   const _el$14 = _$createElement("module"),
-    _el$15 = _$createTextNode("Hi ");
+    _el$15 = _$createTextNode(`Hi `);
 
   _$insertNode(_el$14, _el$15);
 

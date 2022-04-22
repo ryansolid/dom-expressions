@@ -9,14 +9,14 @@ const multiStatic = [
   (() => {
     const _el$ = _$createElement("div");
 
-    _$insertNode(_el$, _$createTextNode("First"));
+    _$insertNode(_el$, _$createTextNode(`First`));
 
     return _el$;
   })(),
   (() => {
     const _el$3 = _$createElement("div");
 
-    _$insertNode(_el$3, _$createTextNode("Last"));
+    _$insertNode(_el$3, _$createTextNode(`Last`));
 
     return _el$3;
   })()
@@ -25,7 +25,7 @@ const multiExpression = [
   (() => {
     const _el$5 = _$createElement("div");
 
-    _$insertNode(_el$5, _$createTextNode("First"));
+    _$insertNode(_el$5, _$createTextNode(`First`));
 
     return _el$5;
   })(),
@@ -33,7 +33,7 @@ const multiExpression = [
   (() => {
     const _el$7 = _$createElement("div");
 
-    _$insertNode(_el$7, _$createTextNode("Last"));
+    _$insertNode(_el$7, _$createTextNode(`Last`));
 
     return _el$7;
   })(),
@@ -43,7 +43,7 @@ const multiDynamic = [
   (() => {
     const _el$9 = _$createElement("div");
 
-    _$insertNode(_el$9, _$createTextNode("First"));
+    _$insertNode(_el$9, _$createTextNode(`First`));
 
     _$effect(_$p => _$setProp(_el$9, "id", state.first, _$p));
 
@@ -53,7 +53,7 @@ const multiDynamic = [
   (() => {
     const _el$11 = _$createElement("div");
 
-    _$insertNode(_el$11, _$createTextNode("Last"));
+    _$insertNode(_el$11, _$createTextNode(`Last`));
 
     _$effect(_$p => _$setProp(_el$11, "id", state.last, _$p));
 
@@ -75,7 +75,7 @@ const spaces = [
   (() => {
     const _el$19 = _$createElement("span");
 
-    _$insertNode(_el$19, _$createTextNode("1"));
+    _$insertNode(_el$19, _$createTextNode(`1`));
 
     return _el$19;
   })(),
@@ -83,7 +83,7 @@ const spaces = [
   (() => {
     const _el$21 = _$createElement("span");
 
-    _$insertNode(_el$21, _$createTextNode("2"));
+    _$insertNode(_el$21, _$createTextNode(`2`));
 
     return _el$21;
   })(),
@@ -91,7 +91,7 @@ const spaces = [
   (() => {
     const _el$23 = _$createElement("span");
 
-    _$insertNode(_el$23, _$createTextNode("3"));
+    _$insertNode(_el$23, _$createTextNode(`3`));
 
     return _el$23;
   })()
@@ -100,21 +100,21 @@ const multiLineTrailing = [
   (() => {
     const _el$25 = _$createElement("span");
 
-    _$insertNode(_el$25, _$createTextNode("1"));
+    _$insertNode(_el$25, _$createTextNode(`1`));
 
     return _el$25;
   })(),
   (() => {
     const _el$27 = _$createElement("span");
 
-    _$insertNode(_el$27, _$createTextNode("2"));
+    _$insertNode(_el$27, _$createTextNode(`2`));
 
     return _el$27;
   })(),
   (() => {
     const _el$29 = _$createElement("span");
 
-    _$insertNode(_el$29, _$createTextNode("3"));
+    _$insertNode(_el$29, _$createTextNode(`3`));
 
     return _el$29;
   })()

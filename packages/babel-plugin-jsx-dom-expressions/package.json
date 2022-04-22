@@ -13,8 +13,8 @@
   "sideEffects": false,
   "scripts": {
     "build": "rollup -c",
-    "test": "npm run build && jest",
-    "test:coverage": "npm run build && jest --coverage",
+    "test": "npm run build && jest --no-cache",
+    "test:coverage": "npm run build && jest --coverage --no-cache",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

@@ -38,8 +38,10 @@ export function transformElement(path, info) {
       decl: [],
       exprs: [],
       dynamics: [],
-      tagName
+      tagName,
+      renderer: "ssr"
     };
+
   if (info.topLevel && config.hydratable) {
     results.template.push("");
     results.templateValues.push(

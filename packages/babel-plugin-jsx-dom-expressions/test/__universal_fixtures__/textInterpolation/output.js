@@ -7,7 +7,7 @@ import { createElement as _$createElement } from "r-custom";
 const trailing = (() => {
   const _el$ = _$createElement("span");
 
-  _$insertNode(_el$, _$createTextNode("Hello "));
+  _$insertNode(_el$, _$createTextNode(`Hello `));
 
   return _el$;
 })();
@@ -15,7 +15,7 @@ const trailing = (() => {
 const leading = (() => {
   const _el$3 = _$createElement("span");
 
-  _$insertNode(_el$3, _$createTextNode(" John"));
+  _$insertNode(_el$3, _$createTextNode(` John`));
 
   return _el$3;
 })();
@@ -24,14 +24,14 @@ const leading = (() => {
 const extraSpaces = (() => {
   const _el$5 = _$createElement("span");
 
-  _$insertNode(_el$5, _$createTextNode("Hello John"));
+  _$insertNode(_el$5, _$createTextNode(`Hello John`));
 
   return _el$5;
 })();
 
 const trailingExpr = (() => {
   const _el$7 = _$createElement("span"),
-    _el$8 = _$createTextNode("Hello ");
+    _el$8 = _$createTextNode(`Hello `);
 
   _$insertNode(_el$7, _el$8);
 
@@ -42,7 +42,7 @@ const trailingExpr = (() => {
 
 const leadingExpr = (() => {
   const _el$9 = _$createElement("span"),
-    _el$10 = _$createTextNode(" John");
+    _el$10 = _$createTextNode(` John`);
 
   _$insertNode(_el$9, _el$10);
 
@@ -54,7 +54,7 @@ const leadingExpr = (() => {
 
 const multiExpr = (() => {
   const _el$11 = _$createElement("span"),
-        _el$12 = _$createTextNode(" ");
+        _el$12 = _$createTextNode(` `);
 
   _$insertNode(_el$11, _el$12);
 
@@ -68,9 +68,9 @@ const multiExpr = (() => {
 
 const multiExprSpaced = (() => {
   const _el$13 = _$createElement("span"),
-        _el$14 = _$createTextNode(" "),
-        _el$15 = _$createTextNode(" "),
-        _el$16 = _$createTextNode(" ");
+        _el$14 = _$createTextNode(` `),
+        _el$15 = _$createTextNode(` `),
+        _el$16 = _$createTextNode(` `);
 
   _$insertNode(_el$13, _el$14);
 
@@ -88,8 +88,8 @@ const multiExprSpaced = (() => {
 
 const multiExprTogether = (() => {
   const _el$17 = _$createElement("span"),
-        _el$18 = _$createTextNode(" "),
-        _el$19 = _$createTextNode(" ");
+        _el$18 = _$createTextNode(` `),
+        _el$19 = _$createTextNode(` `);
 
   _$insertNode(_el$17, _el$18);
 
@@ -106,7 +106,7 @@ const multiExprTogether = (() => {
 const multiLine = (() => {
   const _el$20 = _$createElement("span");
 
-  _$insertNode(_el$20, _$createTextNode("Hello"));
+  _$insertNode(_el$20, _$createTextNode(`Hello`));
 
   return _el$20;
 })();
@@ -115,7 +115,7 @@ const multiLine = (() => {
 const multiLineTrailingSpace = (() => {
   const _el$22 = _$createElement("span");
 
-  _$insertNode(_el$22, _$createTextNode("Hello John"));
+  _$insertNode(_el$22, _$createTextNode(`Hello John`));
 
   return _el$22;
 })();
@@ -124,7 +124,7 @@ const multiLineTrailingSpace = (() => {
 const multiLineNoTrailingSpace = (() => {
   const _el$24 = _$createElement("span");
 
-  _$insertNode(_el$24, _$createTextNode("Hello John"));
+  _$insertNode(_el$24, _$createTextNode(`Hello John`));
 
   return _el$24;
 })();
@@ -133,7 +133,7 @@ const multiLineNoTrailingSpace = (() => {
 const escape = (() => {
   const _el$26 = _$createElement("span");
 
-  _$insertNode(_el$26, _$createTextNode("\xA0<Hi>\xA0"));
+  _$insertNode(_el$26, _$createTextNode(`&nbsp;&lt;Hi&gt;&nbsp;`));
 
   return _el$26;
 })();
@@ -148,7 +148,7 @@ const escape3 = "\xA0<Hi>\xA0";
 
 const injection = (() => {
   const _el$28 = _$createElement("span"),
-    _el$29 = _$createTextNode("Hi<script>alert();</script>");
+    _el$29 = _$createTextNode(`Hi&lt;script>alert();&lt;/script>`);
 
   _$insertNode(_el$28, _el$29);
 
@@ -159,7 +159,7 @@ let value = "World";
 
 const evaluated = (() => {
   const _el$31 = _$createElement("span"),
-    _el$32 = _$createTextNode("Hello World!");
+    _el$32 = _$createTextNode(`Hello World!`);
 
   _$insertNode(_el$31, _el$32);
 
@@ -170,7 +170,7 @@ let number = 4 + 5;
 
 const evaluatedNonString = (() => {
   const _el$34 = _$createElement("span"),
-    _el$35 = _$createTextNode("4 + 5 = 9");
+    _el$35 = _$createTextNode(`4 + 5 = 9`);
 
   _$insertNode(_el$34, _el$35);
 
@@ -179,7 +179,8 @@ const evaluatedNonString = (() => {
 
 const newLineLiteral = (() => {
   const _el$37 = _$createElement("div"),
-    _el$38 = _$createTextNode("\nd");
+    _el$38 = _$createTextNode(`
+d`);
 
   _$insertNode(_el$37, _el$38);
 
