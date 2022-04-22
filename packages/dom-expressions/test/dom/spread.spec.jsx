@@ -44,7 +44,7 @@ describe("create element with various spreads", () => {
 
     const s = S.data({
       ref(el) { span = el; },
-      className: "Hello",
+      class: "Hello",
       children: "Hi",
       onClick() { console.log("click") },
       align: "center",
@@ -63,7 +63,7 @@ describe("create element with various spreads", () => {
     expect(span.getAttribute("data-mode")).toBe("stealth");
     s({
       ref(el) { span = el; },
-      className: "Other",
+      class: "Other",
       children: "Holla",
       onClick() { console.log("click") },
       "data-mode": "visible"
@@ -129,7 +129,7 @@ describe("create component with various spreads", () => {
 
     const s = S.data({
       ref(el) { span = el; },
-      className: "Hello",
+      class: "Hello",
       onClick() { console.log("click") },
       "data-mode": "stealth"
     })

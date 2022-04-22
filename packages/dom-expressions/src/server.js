@@ -295,6 +295,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
   // TODO: figure out how to handle props.children
   const keys = Object.keys(props);
   let result = "";
+  let classResolved;
   for (let i = 0; i < keys.length; i++) {
     const prop = keys[i];
     if (prop === "children") {
@@ -304,8 +305,13 @@ export function ssrSpread(props, isSVG, skipChildren) {
     const value = props[prop];
     if (prop === "style") {
       result += `style="${ssrStyle(value)}"`;
-    } else if (prop === "classList") {
-      result += `class="${ssrClassList(value)}"`;
+    } else if (prop === "class" || prop === "className" || prop === "classList") {
+      if (classResolved) continue;
+      let n;
+      result += `class="${(n = props.class) ? n + " " : ""}${
+        (n = props.className) ? n + " " : ""
+      }${ssrClassList(props.classList)}"`;
+      classResolved = true;
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
       else continue;

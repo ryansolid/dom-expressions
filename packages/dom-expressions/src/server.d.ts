@@ -33,7 +33,7 @@ export function ssr(template: string[] | string, ...nodes: any[]): { t: string }
 export function resolveSSRNode(node: any): string;
 export function ssrClassList(value: { [k: string]: boolean }): string;
 export function ssrStyle(value: { [k: string]: string }): string;
-export function ssrSpread(accessor: any): () => string;
+export function ssrSpread(props: any, isSVG: boolean, skipChildren: boolean): string;
 export function ssrBoolean(key: string, value: boolean): string;
 export function ssrHydrationKey(): string;
 export function escape(html: string): string;
