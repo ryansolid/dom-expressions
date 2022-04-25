@@ -175,3 +175,11 @@ const template24 = (() => {
 
   return _el$16;
 })();
+
+const comma = (() => {
+  const _el$17 = _tmpl$.cloneNode(true);
+
+  _$insert(_el$17, () => (expression(), "static"));
+
+  return _el$17;
+})();

@@ -131,6 +131,7 @@ export function getStaticExpression(path) {
     t.isJSXExpressionContainer(node) &&
     t.isJSXElement(path.parent) &&
     !isComponent(getTagName(path.parent)) &&
+    !t.isSequenceExpression(node.expression) &&
     (value = path.get("expression").evaluate().value) !== undefined &&
     ((type = typeof value) === "string" || type === "number") &&
     value

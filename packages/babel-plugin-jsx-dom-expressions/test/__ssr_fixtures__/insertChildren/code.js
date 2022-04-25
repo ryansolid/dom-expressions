@@ -32,3 +32,5 @@ const template23 = <Module>{state.children()}</Module>
 const tiles = [];
 tiles.push(<div>Test 1</div>);
 const template24 = <div>{tiles}</div>;
+
+const comma = <div>{expression(), "static"}</div>

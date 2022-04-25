@@ -171,3 +171,30 @@ const template23 = _$createComponent(Module, {
     return state.children();
   }
 });
+
+const tiles = [];
+tiles.push(
+  (() => {
+    const _el$18 = _$createElement("div");
+
+    _$insertNode(_el$18, _$createTextNode(`Test 1`));
+
+    return _el$18;
+  })()
+);
+
+const template24 = (() => {
+  const _el$20 = _$createElement("div");
+
+  _$insert(_el$20, tiles);
+
+  return _el$20;
+})();
+
+const comma = (() => {
+  const _el$21 = _$createElement("div");
+
+  _$insert(_el$21, () => (expression(), "static"));
+
+  return _el$21;
+})();

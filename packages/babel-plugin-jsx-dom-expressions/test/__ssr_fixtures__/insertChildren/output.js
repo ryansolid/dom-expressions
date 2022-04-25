@@ -98,3 +98,5 @@ const tiles = [];
 tiles.push(_$ssr(_tmpl$8));
 
 const template24 = _$ssr(_tmpl$9, _$escape(tiles));
+
+const comma = _$ssr(_tmpl$9, _$escape((expression(), "static")));
