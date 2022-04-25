@@ -64,4 +64,16 @@ describe("Test classList binding", () => {
       expect(div.className).toBe("px-4 py-2 text-sm");
     });
   });
+
+  test("With prop class and className", () => {
+    let div;
+    S.root(() => {
+      div = <div
+        className="px-1"
+        class="py-2"
+        classList={{ "text-sm": true, "danger": false }}
+      />;
+      expect(div.className).toBe("px-1 py-2 text-sm");
+    });
+  })
 });
