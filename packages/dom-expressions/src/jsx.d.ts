@@ -71,7 +71,7 @@ export namespace JSX {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
   type DirectiveFunctionAttributes<T> = {
-    [K in keyof DirectiveFunctions as `use:${K}`]?: DirectiveFunctions[K] extends (
+    [K in keyof DirectiveFunctions as string extends K ? never : `use:${K}`]?: DirectiveFunctions[K] extends (
       el: infer E, // will be unknown if not provided
       ...rest: infer R // use rest so that we can check whether it's provided or not
     ) => void
