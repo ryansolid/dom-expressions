@@ -63,7 +63,7 @@ function toAttribute(key, isSVG) {
   return key;
 }
 
-function setAttr(results, name, value, isSVG) {
+function setAttr(attribute, results, name, value, isSVG) {
   // strip out namespaces for now, everything at this point is an attribute
   let parts, namespace;
   if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
@@ -72,9 +72,18 @@ function setAttr(results, name, value, isSVG) {
   }
 
   name = toAttribute(name, isSVG);
-  appendToTemplate(results.template, ` ${name}="`);
-  results.template.push(`"`);
-  results.templateValues.push(value);
+  const attr = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
+    t.stringLiteral(name),
+    value,
+    t.booleanLiteral(false)
+  ]);
+  if (results.template[results.template.length - 1].length) {
+    results.template.push("");
+    results.templateValues.push(attr);
+  } else {
+    const last = results.templateValues.length - 1;
+    results.templateValues[last] = t.binaryExpression("+", results.templateValues[last], attr);
+  }
 }
 
 function escapeExpression(path, expression, attr) {
@@ -261,23 +270,15 @@ function transformAttributes(path, results) {
         children = value;
         if (key === "innerHTML") path.doNotEscape = true;
       } else {
-        let dynamic = false,
-          doEscape = true;
-        if (
-          isDynamic(attribute.get("value").get("expression"), {
-            checkMember: true,
-            native: true
-          })
-        )
-          dynamic = true;
-
+        let doEscape = true;
         if (BooleanAttributes.has(key)) {
           results.template.push("");
-          const fn = t.callExpression(registerImportMethod(attribute, "ssrBoolean"), [
+          const fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
             t.stringLiteral(key),
-            value.expression
+            value.expression,
+            t.booleanLiteral(true)
           ]);
-          results.templateValues.push(dynamic ? t.arrowFunctionExpression([], fn) : fn);
+          results.templateValues.push(fn);
           return;
         }
         if (key === "style") {
@@ -336,13 +337,15 @@ function transformAttributes(path, results) {
           key = "class";
           doEscape = false;
         }
-        if (dynamic)
-          value.expression = t.arrowFunctionExpression(
-            [],
-            doEscape ? escapeExpression(path, value.expression, true) : value.expression
-          );
-        else if (doEscape) value.expression = escapeExpression(path, value.expression, true);
-        setAttr(results, key, value.expression, isSVG);
+        if (doEscape)
+          value.expression = escapeExpression(path, value.expression, true);
+
+        if (!doEscape || t.isLiteral(value.expression) || t.isBinaryExpression(value.expression)) {
+          key = toAttribute(key, isSVG);
+          appendToTemplate(results.template, ` ${key}="`);
+          results.template.push(`"`);
+          results.templateValues.push(value.expression);
+        } else setAttr(attribute, results, key, value.expression, isSVG);
       }
     } else {
       if (key === "$ServerOnly") return;

@@ -315,7 +315,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
       else continue;
-    } else if (prop === "ref" || prop.slice(0, 2) === "on") {
+    } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
       continue;
     } else {
       result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
@@ -325,8 +325,8 @@ export function ssrSpread(props, isSVG, skipChildren) {
   return result;
 }
 
-export function ssrBoolean(key, value) {
-  return value ? " " + key : "";
+export function ssrAttribute(key, value, isBoolean) {
+  return isBoolean ? (value ? " " + key : "") : value != null ? ` ${key}="${value}"` : "";
 }
 
 export function ssrHydrationKey() {
@@ -387,7 +387,7 @@ export function resolveSSRNode(node) {
   const t = typeof node;
   if (t === "string") return node;
   if (node == null || t === "boolean") return "";
-    if (Array.isArray(node)) {
+  if (Array.isArray(node)) {
     let mapped = "";
     for (let i = 0, len = node.length; i < len; i++) mapped += resolveSSRNode(node[i]);
     return mapped;

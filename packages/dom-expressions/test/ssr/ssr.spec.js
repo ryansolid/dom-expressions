@@ -29,11 +29,11 @@ const Comp1 = () => {
     selected: selected()
   })}" style="${r.ssrStyle({
     color: color()
-  })}"${r.ssrBoolean("disabled", !selected())}><h1 ${r.ssrSpread(
+  })}"${r.ssrAttribute("disabled", !selected(), true)}><h1 ${r.ssrSpread(
     () => dynamic(),
     false,
     true
-  )}${r.ssrBoolean("disabled", selected())} title="${() => welcoming()}" style="${() =>
+  )}${r.ssrAttribute("disabled", selected(), true)}${r.ssrAttribute("title", welcoming())} style="${() =>
     r.ssrStyle({
       "background-color": color()
     })}" class="${() =>

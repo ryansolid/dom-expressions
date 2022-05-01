@@ -1,6 +1,6 @@
 import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssr as _$ssr } from "r-server";
-import { ssrBoolean as _$ssrBoolean } from "r-server";
+import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrSpread as _$ssrSpread } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
@@ -10,16 +10,16 @@ const _tmpl$ = [
     ' class="',
     '" style="',
     '"><h1 class="',
-    '" id="',
-    '" ',
-    ' disabled readonly="" title="',
-    '" style="',
+    '"',
+    " ",
+    ' disabled readonly=""',
+    ' style="',
     '"><a href="/" class="',
     '"',
     ">Welcome</a></h1></div>"
   ],
   _tmpl$2 = ["<div", " ", "><div>", "</div><div>", "</div><div><div/></div></div>"],
-  _tmpl$3 = ["<div", ' id="', '" style="', '" name="', '">', "</div>"],
+  _tmpl$3 = ["<div", ' style="', '"', ">", "</div>"],
   _tmpl$4 = ["<div", ' class="', '"></div>'],
   _tmpl$5 = ["<div", ' style="', '">Hi</div>'],
   _tmpl$6 = ["<div", ' style="', '" class="', '"></div>'],
@@ -40,12 +40,12 @@ const template = _$ssr(
   unknown ? "selected" : "",
   "color:" + _$escape(color, true),
   `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
-  _$escape(id, true),
+  _$ssrAttribute("id", _$escape(id, true), false),
   _$ssrSpread(results(), false, true),
-  _$escape(welcoming(), true),
+  _$ssrAttribute("title", _$escape(welcoming(), true), false),
   "background-color:" + _$escape(color(), true) + (";margin-right:" + "40px"),
   "ccc ddd",
-  _$ssrBoolean("readonly", value)
+  _$ssrAttribute("readonly", value, true)
 );
 
 const template2 = _$ssr(
@@ -58,10 +58,18 @@ const template2 = _$ssr(
 
 const template3 = _$ssr(
   _tmpl$3,
-  _$ssrHydrationKey(),
-  _$escape(state.id, true),
+  _$ssrHydrationKey() +
+    _$ssrAttribute(
+      "id",
+      _$escape(
+        /*@once*/
+        state.id,
+        true
+      ),
+      false
+    ),
   "background-color:" + _$escape(state.color, true),
-  _$escape(state.name, true),
+  _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content)
 );
 
@@ -99,9 +107,13 @@ const template11 = _$ssr(_tmpl$7, _$ssrHydrationKey());
 
 const template12 = _$ssr(_tmpl$7, _$ssrHydrationKey());
 
-const template13 = _$ssr(_tmpl$8, _$ssrHydrationKey(), _$ssrBoolean("checked", true));
+const template13 = _$ssr(_tmpl$8, _$ssrHydrationKey(), _$ssrAttribute("checked", true, true));
 
-const template14 = _$ssr(_tmpl$8, _$ssrHydrationKey(), _$ssrBoolean("checked", state.visible));
+const template14 = _$ssr(
+  _tmpl$8,
+  _$ssrHydrationKey(),
+  _$ssrAttribute("checked", state.visible, true)
+);
 
 const template15 = _$ssr(_tmpl$9, _$ssrHydrationKey());
 
