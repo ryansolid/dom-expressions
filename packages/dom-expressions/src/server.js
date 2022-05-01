@@ -291,10 +291,11 @@ export function ssrStyle(value) {
 }
 
 export function ssrSpread(props, isSVG, skipChildren) {
+  let result = "";
+  if (props == null) return results;
   if (typeof props === "function") props = props();
   // TODO: figure out how to handle props.children
   const keys = Object.keys(props);
-  let result = "";
   let classResolved;
   for (let i = 0; i < keys.length; i++) {
     const prop = keys[i];
