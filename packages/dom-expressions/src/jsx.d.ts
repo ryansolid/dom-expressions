@@ -58,8 +58,11 @@ export namespace JSX {
     };
     $ServerOnly?: boolean;
   }
+  type Accessor<T> = () => T
   interface Directives {}
-  interface DirectiveFunctions {}
+  interface DirectiveFunctions {
+    [x: string]: (el: Element, accessor: Accessor<any>) => void;
+  }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
   interface CustomEvents {}
@@ -68,16 +71,18 @@ export namespace JSX {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
   type DirectiveFunctionAttributes<T> = {
-    [Key in keyof DirectiveFunctions as `use:${Key}`]?:
-      // If function has no arguments, value is arbitrary
-      Parameters<DirectiveFunctions[Key]>['length'] extends 0 ? any :
-      // Otherwise (at least one argument), check its type matches element type
-      T extends Parameters<DirectiveFunctions[Key]>[0] ? (
-        // If function has only one argument, value is arbitrary
-        Parameters<DirectiveFunctions[Key]>['length'] extends 1 ? any :
-        // Otherwise (at least two arguments), value must match second argument
-        Parameters<DirectiveFunctions[Key]>[1]
-      ) : never;
+    [K in keyof DirectiveFunctions as `use:${K}`]?: DirectiveFunctions[K] extends (
+      el: infer E, // will be unknown if not provided
+      ...rest: infer R // use rest so that we can check whether it's provided or not
+    ) => void
+      ? T extends E // everything extends unknown if E is unknown
+        ? R extends [infer A] // check if has accessor provided
+          ? A extends Accessor<infer V>
+            ? V // it's an accessor
+            : never // it isn't, type error
+          : true // no accessor provided
+        : never // T is the wrong element
+      : never; // it isn't a function
   };
   type PropAttributes = {
     [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key];
