@@ -2,6 +2,7 @@ import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
+import { className as _$className } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { classList as _$classList } from "r-dom";
@@ -106,7 +107,7 @@ const template4 = (() => {
     "ccc:ddd": true
   });
 
-  _$effect(() => (_el$10.className = `hi ${state.class || ""}`));
+  _$effect(() => _$className(_el$10, `hi ${state.class || ""}`));
 
   return _el$10;
 })();

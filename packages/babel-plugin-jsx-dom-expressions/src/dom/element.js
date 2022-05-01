@@ -100,7 +100,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   }
 
   if (!isSVG && name === "class") {
-    return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("className")), value);
+    return t.callExpression(registerImportMethod(path, "className", getRendererConfig(path, "dom").moduleName), [elem, value]);
   }
 
   if (name === "classList") {

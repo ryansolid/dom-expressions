@@ -1,6 +1,7 @@
 import { template as _$template } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
+import { className as _$className } from "r-dom";
 import { classList as _$classList } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { spread as _$spread } from "r-dom";
@@ -94,7 +95,7 @@ const template3 = (() => {
 const template4 = (() => {
   const _el$9 = _tmpl$3.cloneNode(true);
 
-  _el$9.className = `hi ${state.class || ""}`;
+  _$className(_el$9, `hi ${state.class || ""}`);
 
   _$classList(_el$9, {
     "ccc:ddd": true

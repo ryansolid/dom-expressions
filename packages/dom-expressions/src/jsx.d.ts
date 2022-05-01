@@ -1905,7 +1905,6 @@ export namespace JSX {
 
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string;
-    className?: string;
     class?: string;
     contenteditable?: boolean | "inherit";
     contextmenu?: string;
@@ -2206,7 +2205,6 @@ export namespace JSX {
     name?: string;
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
-    htmlFor?: string;
     for?: string;
     form?: string;
   }
@@ -2293,7 +2291,6 @@ export namespace JSX {
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string;
-    htmlFor?: string;
     for?: string;
     name?: string;
   }
@@ -2467,7 +2464,6 @@ export namespace JSX {
   }
   interface StylableSVGAttributes {
     class?: string;
-    className?: string;
     style?: CSSProperties | string;
   }
   interface TransformableSVGAttributes {

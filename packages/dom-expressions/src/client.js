@@ -75,6 +75,11 @@ export function setAttributeNS(node, namespace, name, value) {
   else node.setAttributeNS(namespace, name, value);
 }
 
+export function className(node, value) {
+  if (value == null) node.removeAttribute("class");
+  else node.className = value;
+}
+
 export function addEventListener(node, name, handler, delegate) {
   if (delegate) {
     if (Array.isArray(handler)) {
@@ -287,7 +292,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     (!isSVG && (PropAliases[prop] || (isProp = Properties.has(prop)))) ||
     (isCE = node.nodeName.includes("-"))
   ) {
-    if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
+    if (prop === "class" || prop === "className") className(node, value);
+    else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[PropAliases[prop] || prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
