@@ -144,8 +144,7 @@ export function mergeProps(...sources) {
   for (let i = 0; i < sources.length; i++) {
     let source = sources[i];
     if (typeof source === "function") source = source();
-    const descriptors = Object.getOwnPropertyDescriptors(source);
-    Object.defineProperties(target, descriptors);
+    if (source) Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
   }
   return target;
 }
