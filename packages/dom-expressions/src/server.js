@@ -39,8 +39,8 @@ export function renderToStringAsync(code, options = {}) {
     writeResource(id, p, error) {
       if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
       if (!p || typeof p !== "object" || !("then" in p))
-        return (scripts += serializeSet(dedupe, id, p));
-      p.then(d => (scripts += serializeSet(dedupe, id, d))).catch(
+        return (scripts += serializeSet(dedupe, id, p)) + ";";
+      p.then(d => (scripts += serializeSet(dedupe, id, d) + ";")).catch(
         () => (scripts += `_$HY.set("${id}", {});`)
       );
     }
@@ -91,6 +91,7 @@ export function renderToStream(code, options = {}) {
   const { nonce, onCompleteShell, onCompleteAll, renderId } = options;
   const tmp = [];
   const tasks = [];
+  const blockingResources = [];
   const registry = new Map();
   const dedupe = new WeakMap();
   const checkEnd = () => {
@@ -106,6 +107,13 @@ export function renderToStream(code, options = {}) {
       completed = true;
     }
   };
+  const pushTask = task => {
+    tasks.push(task);
+    if (!scheduled) {
+      Promise.resolve().then(writeTasks);
+      scheduled = true;
+    }
+  };
   const writeTasks = () => {
     if (tasks.length && !completed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.join(";")}</script>`);
@@ -115,6 +123,7 @@ export function renderToStream(code, options = {}) {
   };
 
   let writable;
+  let firstFlushed = false;
   let completed = false;
   let scriptFlushed = false;
   let scheduled = true;
@@ -132,57 +141,58 @@ export function renderToStream(code, options = {}) {
     suspense: {},
     assets: [],
     nonce,
-    writeResource(id, p, error) {
-      if (!scheduled) {
-        Promise.resolve().then(writeTasks);
-        scheduled = true;
-      }
-      if (error) return tasks.push(`_$HY.set("${id}", ${serializeError(p)})`);
+    writeResource(id, p, error, wait) {
+      if (error) return pushTask(`_$HY.set("${id}", ${serializeError(p)})`);
       if (!p || typeof p !== "object" || !("then" in p))
-        return tasks.push(serializeSet(dedupe, id, p));
-      tasks.push(`_$HY.init("${id}")`);
+        return pushTask(serializeSet(dedupe, id, p));
+      if (wait && !firstFlushed) blockingResources.push(p);
+      else pushTask(`_$HY.init("${id}")`);
       p.then(d => {
-        !completed &&
-          buffer.write(
-            `<script${nonce ? ` nonce="${nonce}"` : ""}>${serializeSet(dedupe, id, d)}</script>`
-          );
+        !completed && pushTask(serializeSet(dedupe, id, d));
       }).catch(() => {
-        !completed &&
-          buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>_$HY.set("${id}", {})</script>`);
+        !completed && pushTask(`_$HY.set("${id}", {})`);
       });
     },
     registerFragment(key) {
-      registry.set(key, []);
-      if (!scheduled) {
-        Promise.resolve().then(writeTasks);
-        scheduled = true;
+      if (!registry.has(key)) {
+        registry.set(key, []);
+        pushTask(`_$HY.init("${key}")`);
       }
-      tasks.push(`_$HY.init("${key}")`);
       return (value, error) => {
         if (registry.has(key)) {
           const keys = registry.get(key);
           registry.delete(key);
           if (waitForFragments(registry, key)) return;
           if ((value !== undefined || error) && !completed) {
-            buffer.write(
-              `<div hidden id="${key}">${value !== undefined ? value : " "}</div><script${
-                nonce ? ` nonce="${nonce}"` : ""
-              }>${!scriptFlushed ? REPLACE_SCRIPT : ""}${
-                keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""
-              }$df("${key}"${error ? "," + serializeError(error) : ""})</script>`
-            );
-            scriptFlushed = true;
+            if (!firstFlushed) {
+              Promise.resolve().then(
+                () => (html = replacePlaceholder(html, key, value !== undefined ? value : ""))
+              );
+              pushTask(
+                `${keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""}_$HY.set("${key}",${
+                  error ? serializeError(error) : "null"
+                })`
+              );
+            } else {
+              buffer.write(`<div hidden id="${key}">${value !== undefined ? value : " "}</div>`);
+              pushTask(
+                `${keys.length ? keys.map(k => `_$HY.unset("${k}")`).join(";") : ""}$df("${key}"${
+                  error ? "," + serializeError(error) : ""
+                })${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`
+              );
+              scriptFlushed = true;
+            }
           }
         }
-        checkEnd();
+        if (firstFlushed) checkEnd();
         return true;
       };
     }
   };
 
   let html = resolveSSRNode(escape(code()));
-  html = injectAssets(sharedConfig.context.assets, html);
-  Promise.resolve().then(() => {
+  function doShell() {
+    html = injectAssets(sharedConfig.context.assets, html);
     if (tasks.length) html = injectScripts(html, tasks.join(";"), nonce);
     buffer.write(html);
     tasks.length = 0;
@@ -193,32 +203,40 @@ export function renderToStream(code, options = {}) {
           !completed && buffer.write(v);
         }
       });
-  });
+  }
 
   return {
     pipe(w) {
-      buffer = writable = w;
-      tmp.forEach(chunk => buffer.write(chunk));
-      if (completed) writable.end();
-      else setTimeout(checkEnd);
+      Promise.allSettled(blockingResources).then(() => {
+        doShell();
+        buffer = writable = w;
+        tmp.forEach(chunk => buffer.write(chunk));
+        firstFlushed = true;
+        if (completed) writable.end();
+        else setTimeout(checkEnd);
+      });
     },
     pipeTo(w) {
-      const encoder = new TextEncoder();
-      const writer = w.getWriter();
-      writable = {
-        end() {
-          writer.releaseLock();
-          w.close();
-        }
-      };
-      buffer = {
-        write(payload) {
-          writer.write(encoder.encode(payload));
-        }
-      };
-      tmp.forEach(chunk => buffer.write(chunk));
-      if (completed) writable.end();
-      else setTimeout(checkEnd);
+      Promise.allSettled(blockingResources).then(() => {
+        doShell();
+        const encoder = new TextEncoder();
+        const writer = w.getWriter();
+        writable = {
+          end() {
+            writer.releaseLock();
+            w.close();
+          }
+        };
+        buffer = {
+          write(payload) {
+            writer.write(encoder.encode(payload));
+          }
+        };
+        tmp.forEach(chunk => buffer.write(chunk));
+        firstFlushed = true;
+        if (completed) writable.end();
+        else setTimeout(checkEnd);
+      });
     }
   };
 }
@@ -465,9 +483,28 @@ function waitForFragments(registry, key) {
 
 function serializeSet(registry, key, value) {
   const exist = registry.get(value);
-  if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0]);`;
+  if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0])`;
   value !== null && typeof value === "object" && registry.set(value, key);
-  return `_$HY.set("${key}", ${devalue(value)});`;
+  return `_$HY.set("${key}", ${devalue(value)})`;
+}
+
+function replacePlaceholder(html, key, value) {
+  const nextRegex = /(<[/]?span[^>]*>)/g;
+  const marker = `<span id="pl-${key}">`;
+
+  const first = html.indexOf(marker);
+  if (first === -1) return html;
+  nextRegex.lastIndex = first + marker.length;
+  let match;
+  let open = 0,
+    close = 0;
+  while ((match = nextRegex.exec(html))) {
+    if (match[0][1] === "/") {
+      close++;
+      if (close > open) break;
+    } else open++;
+  }
+  return html.slice(0, first) + value + html.slice(nextRegex.lastIndex);
 }
 
 /* istanbul ignore next */
