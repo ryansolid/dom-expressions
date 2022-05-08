@@ -20,7 +20,7 @@ describe("Test HyperScript", () => {
       h("span", { style: "color: #555" }, 555),
       h("label.name", { htmlFor: "entry" }, "Edit:"),
       h("input#entry", { type: "text", readonly: true })
-    ]);
+    ])();
     expect(template.outerHTML).toBe(FIXTURES[0]);
   });
 
@@ -46,7 +46,7 @@ describe("Test HyperScript", () => {
           },
           h("a", { href: "/", ref: r => (link = r) }, "Welcome")
         )
-      );
+      )();
       expect(template.outerHTML).toBe(FIXTURES[1]);
     });
   });
@@ -58,7 +58,7 @@ describe("Test HyperScript", () => {
       h("button", { onclick: () => (exec.bound = true) }, "Click Bound"),
       h("button", { onClick: () => (exec.delegated = true) }, "Click Delegated"),
       h("button", { "on:click": () => (exec.listener = true) }, "Click Listener")
-    ]);
+    ])();
     expect(template.outerHTML).toBe(FIXTURES[2]);
     document.body.appendChild(template);
     var event = new MouseEvent("click", { bubbles: true });
@@ -91,7 +91,7 @@ describe("Test HyperScript", () => {
     S.root(() => {
       const template = h("#main", [
         h(Comp, { name: () => "John", middle: "R." }, () => h("span", "Smith"))
-      ]);
+      ])();
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML).toBe(FIXTURES[4]);
@@ -103,7 +103,7 @@ describe("Test HyperScript", () => {
     S.root(() => {
       const template = h("#main", [
         h(Comp, { name: () => "John" }, () => h("span", "Smith"))
-      ]);
+      ])();
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML).toBe(FIXTURES[5]);

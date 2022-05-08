@@ -8,11 +8,13 @@ interface Runtime {
   SVGElements: Set<string>;
 }
 
+const $ELEMENT = Symbol("hyper-element");
+
 type ExpandableNode = Node & { [key: string]: any };
 type Props = { [key: string]: any };
 
 export type HyperScript = {
-  (...args: any[]): ExpandableNode | ExpandableNode[];
+  (...args: any[]): () => ExpandableNode | ExpandableNode[];
 };
 
 // Inspired by https://github.com/hyperhype/hyperscript
@@ -21,6 +23,14 @@ export function createHyperScript(r: Runtime): HyperScript {
     let args: any = [].slice.call(arguments),
       e: ExpandableNode | undefined,
       multiExpression = false;
+
+    typeof args[0] === "string" && detectMultiExpression(args);
+    const ret: (() => ExpandableNode) & {[$ELEMENT]?: boolean} = () => {
+      while (args.length) item(args.shift());
+      return e as ExpandableNode;
+    }
+    ret[$ELEMENT] = true;
+    return ret;
 
     function item(l: any) {
       const type = typeof l;
@@ -70,13 +80,12 @@ export function createHyperScript(r: Runtime): HyperScript {
           }
           e = r.createComponent(l, props);
           args = [];
-        } else r.insert(e as Element, l, multiExpression ? null : undefined);
+        } else {
+          while ((l as any)[$ELEMENT]) l = (l as unknown as () => ExpandableNode)();
+          r.insert(e as Element, l, multiExpression ? null : undefined);
+        }
       }
     }
-    typeof args[0] === "string" && detectMultiExpression(args);
-    while (args.length) item(args.shift());
-    return e as ExpandableNode;
-
     function parseClass(string: string) {
       // Our minimal parser doesn’t understand escaping CSS special
       // characters like `#`. Don’t use them. More reading:
