@@ -25,10 +25,10 @@ export function createHyperScript(r: Runtime): HyperScript {
       multiExpression = false;
 
     typeof args[0] === "string" && detectMultiExpression(args);
-    const ret: (() => ExpandableNode) & {[$ELEMENT]?: boolean} = () => {
+    const ret: (() => ExpandableNode) & { [$ELEMENT]?: boolean } = () => {
       while (args.length) item(args.shift());
       return e as ExpandableNode;
-    }
+    };
     ret[$ELEMENT] = true;
     return ret;
 
@@ -76,12 +76,22 @@ export function createHyperScript(r: Runtime): HyperScript {
           }
           const d = Object.getOwnPropertyDescriptors(props);
           for (const k in d) {
-            if (typeof d[k].value === "function" && !d[k].value.length) r.dynamicProperty(props, k);
+            if (Array.isArray(d[k].value)) {
+              const list = d[k].value;
+              props[k] = () => {
+                for (let i = 0; i < list.length; i++) {
+                  while (list[i][$ELEMENT]) list[i] = list[i]();
+                }
+                return list;
+              };
+              r.dynamicProperty(props, k);
+            } else if (typeof d[k].value === "function" && !d[k].value.length)
+              r.dynamicProperty(props, k);
           }
           e = r.createComponent(l, props);
           args = [];
         } else {
-          while ((l as any)[$ELEMENT]) l = (l as unknown as () => ExpandableNode)();
+          while ((l as any)[$ELEMENT]) l = ((l as unknown) as () => ExpandableNode)();
           r.insert(e as Element, l, multiExpression ? null : undefined);
         }
       }
