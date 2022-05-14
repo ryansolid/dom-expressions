@@ -39,7 +39,7 @@ export function renderToStringAsync(code, options = {}) {
     writeResource(id, p, error) {
       if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
       if (!p || typeof p !== "object" || !("then" in p))
-        return (scripts += serializeSet(dedupe, id, p)) + ";";
+        return (scripts += serializeSet(dedupe, id, p) + ";");
       p.then(d => (scripts += serializeSet(dedupe, id, d) + ";")).catch(
         () => (scripts += `_$HY.set("${id}", {});`)
       );
