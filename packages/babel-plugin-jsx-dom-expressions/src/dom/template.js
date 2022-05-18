@@ -87,6 +87,10 @@ function registerTemplate(path, results) {
             registerImportMethod(path, "getNextElement", getRendererConfig(path, "dom").moduleName),
             templateId ? [templateId] : []
           )
+        : results.hasCustomElement
+        ? t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("importNode")), [
+            templateId, t.booleanLiteral(true)
+          ])
         : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
             t.booleanLiteral(true)
           ])

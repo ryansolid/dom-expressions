@@ -32,6 +32,7 @@ export function transformElement(path, info) {
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
+    isCustomElement = tagName.indexOf("-") > -1,
     results = {
       template: `<${tagName}`,
       decl: [],
@@ -39,6 +40,7 @@ export function transformElement(path, info) {
       dynamics: [],
       postExprs: [],
       isSVG: wrapSVG,
+      hasCustomElement: isCustomElement,
       tagName,
       renderer: "dom"
     };
@@ -46,7 +48,7 @@ export function transformElement(path, info) {
   if (wrapSVG) results.template = "<svg>" + results.template;
   if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
   transformAttributes(path, results);
-  if (config.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1)) {
+  if (config.contextToCustomElements && (tagName === "slot" || isCustomElement)) {
     contextToCustomElement(path, results);
   }
   results.template += ">";
@@ -654,6 +656,7 @@ function transformChildren(path, results, config) {
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
+      results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
       tempPath = child.id.name;
       nextPlaceholder = null;
       i++;
