@@ -215,17 +215,18 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     }
     options.counter = childOptions.counter;
     options.templateId = childOptions.templateId;
+    options.hasCustomElement = options.hasCustomElement || childOptions.hasCustomElement;
   }
 
   function processComponentProps(propGroups: (string | string[])[]) {
-    let result = []
+    let result = [];
     for (const props of propGroups) {
       if (Array.isArray(props)) {
         if (!props.length) continue;
-        result.push(`r.wrapProps({${props.join(",") || ""}})`)
+        result.push(`r.wrapProps({${props.join(",") || ""}})`);
       } else result.push(props);
     }
-    return result.length > 1 ? `r.mergeProps(${result.join(",")})`: result[0];
+    return result.length > 1 ? `r.mergeProps(${result.join(",")})` : result[0];
   }
 
   function processComponent(node: IDom, options: any) {
@@ -334,14 +335,15 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       options.exprs.push(`return [${parts.join(", \n")}]`);
     } else if (node.type === "tag") {
       const tag = `_$el${uuid++}`;
+      const topDecl = !options.decl.length;
+      const templateId = options.templateId;
       options.decl.push(
-        !options.decl.length
-          ? `const ${tag} = tmpls[${options.templateId}].content.firstChild.cloneNode(true)`
-          : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
+        topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
       const keys = Object.keys(node.attrs);
       const isSVG = r.SVGElements.has(node.name);
       const isCE = node.name.includes("-");
+      options.hasCustomElement = isCE;
       for (let i = 0; i < keys.length; i++) {
         const name = keys[i],
           value = node.attrs[name];
@@ -358,17 +360,24 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       options.path = tag;
       options.first = false;
       processChildren(node, options);
+      if (topDecl) {
+        options.decl[0] = options.hasCustomElement
+          ? `const ${tag} = document.importNode(tmpls[${templateId}].content.firstChild, true)`
+          : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
+      }
     } else if (node.type === "text") {
       const tag = `_$el${uuid++}`;
       options.decl.push(`${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`);
       options.path = tag;
       options.first = false;
-    } else if (node.type === "comment" && node.content === "#") {
+    } else if (node.type === "comment") {
       const tag = `_$el${uuid++}`;
       options.decl.push(`${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`);
-      if (options.multi) {
-        options.exprs.push(`r.insert(${options.parent}, exprs[${options.counter++}], ${tag})`);
-      } else options.exprs.push(`r.insert(${options.parent}, exprs[${options.counter++}])`);
+      if (node.content === "#") {
+        if (options.multi) {
+          options.exprs.push(`r.insert(${options.parent}, exprs[${options.counter++}], ${tag})`);
+        } else options.exprs.push(`r.insert(${options.parent}, exprs[${options.counter++}])`);
+      }
       options.path = tag;
       options.first = false;
     }
