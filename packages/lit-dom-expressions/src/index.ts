@@ -41,7 +41,7 @@ const attrPartials =
 
 const attrSeeker = new RegExp(tagName + attrName + attrPartials + "+)([ " + spaces + "]*/?>)", "g");
 const findAttributes = new RegExp(
-  "(" + attrName + "\\s*=\\s*)(['\"(]?)" + "<!--#-->" + "(['\")]?)",
+  "(" + attrName + "\\s*=\\s*)(<!--#-->|['\"(]([\\w\\s]*<!--#-->[\\w\\s]*)*['\")])",
   "gi"
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
@@ -52,8 +52,8 @@ function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
 }
 
-function replaceAttributes($0: string, $1: string, $2: string, $3: string) {
-  return $1 + ($2 || '"') + "###" + ($3 || '"');
+function replaceAttributes($0: string, $1: string, $2: string) {
+  return $1 + ($2[0] === '"' || $2[0] === "'" ? $2.replace(/<!--#-->/g, "###") : '"###"');
 }
 
 function fullClosing($0: string, $1: string, $2: string) {
@@ -115,9 +115,27 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     return templates;
   }
 
-  function parseKeyValue(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
-    let count = options.counter++,
-      expr = `!doNotWrap ? exprs[${count}]() : exprs[${count}]`,
+  function parseKeyValue(
+    tag: string,
+    name: string,
+    value: string,
+    isSVG: boolean,
+    isCE: boolean,
+    options: any
+  ) {
+    let expr =
+        value === "###"
+          ? `!doNotWrap ? exprs[${options.counter}]() : exprs[${options.counter++}]`
+          : value
+              .split("###")
+              .map((v, i) =>
+                i
+                  ? ` + (typeof exprs[${options.counter}] === "function" ? exprs[${
+                      options.counter
+                    }]() : exprs[${options.counter++}]) + "${v}"`
+                  : `"${v}"`
+              )
+              .join(""),
       parts,
       namespace;
 
@@ -149,7 +167,14 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     }
   }
 
-  function parseAttribute(tag: string, name: string, isSVG: boolean, isCE: boolean, options: any) {
+  function parseAttribute(
+    tag: string,
+    name: string,
+    value: string,
+    isSVG: boolean,
+    isCE: boolean,
+    options: any
+  ) {
     if (name.slice(0, 2) === "on") {
       if (!name.includes(":")) {
         const lc = name.slice(2).toLowerCase();
@@ -171,11 +196,24 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
-      parseKeyValue(tag, name, isSVG, isCE, childOptions);
-      options.decl.push(`_fn${count} = doNotWrap => {\n${childOptions.exprs.join(";\n")};\n}`);
-      options.exprs.push(
-        `typeof exprs[${count}] === "function" ? r.effect(_fn${count}) : _fn${count}(true)`
+      parseKeyValue(tag, name, value, isSVG, isCE, childOptions);
+      options.decl.push(
+        `_fn${count} = (${value === "###" ? "doNotWrap" : ""}) => {\n${childOptions.exprs.join(
+          ";\n"
+        )};\n}`
       );
+      if (value === "###") {
+        options.exprs.push(
+          `typeof exprs[${count}] === "function" ? r.effect(_fn${count}) : _fn${count}(true)`
+        );
+      } else {
+        let check = "";
+        for (let i = count; i < childOptions.counter; i++) {
+          i !== count && (check += " || ");
+          check += `typeof exprs[${i}] === "function"`;
+        }
+        options.exprs.push(check + ` ? r.effect(_fn${count}) : _fn${count}()`);
+      }
       options.counter = childOptions.counter;
       options.wrap = false;
     }
@@ -347,9 +385,9 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       for (let i = 0; i < keys.length; i++) {
         const name = keys[i],
           value = node.attrs[name];
-        if (value === "###") {
+        if (value.includes("###")) {
           delete node.attrs[name];
-          parseAttribute(tag, name, isSVG, isCE, options);
+          parseAttribute(tag, name, value, isSVG, isCE, options);
         } else if (name === "###") {
           delete node.attrs[name];
           options.exprs.push(
