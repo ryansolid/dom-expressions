@@ -55,7 +55,7 @@ const template = (() => {
     _p$ => {
       const _v$ = welcoming(),
         _v$2 = color(),
-        _v$3 = dynamic();
+        _v$3 = !!dynamic();
 
       _v$ !== _p$._v$ && _$setAttribute(_el$2, "title", (_p$._v$ = _v$));
       _v$2 !== _p$._v$2 && _el$2.style.setProperty("background-color", (_p$._v$2 = _v$2));
@@ -143,7 +143,8 @@ const template7 = (() => {
           ...props.style
         },
         _v$5 = props.top,
-        _v$6 = props.active;
+        _v$6 = !!props.active;
+
       _p$._v$4 = _$style(_el$13, _v$4, _p$._v$4);
       _v$5 !== _p$._v$5 && _el$13.style.setProperty("padding-top", (_p$._v$5 = _v$5));
       _v$6 !== _p$._v$6 && _el$13.classList.toggle("my-class", (_p$._v$6 = _v$6));

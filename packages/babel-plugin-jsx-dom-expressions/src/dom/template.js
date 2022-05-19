@@ -111,6 +111,9 @@ function wrapDynamics(path, dynamics) {
       dynamics[0].key === "classList" || dynamics[0].key === "style"
         ? t.identifier("_$p")
         : undefined;
+    if (dynamics[0].key.startsWith("class:") && !t.isBooleanLiteral(dynamics[0].value) && !t.isUnaryExpression(dynamics[0].value)) {
+      dynamics[0].value = t.unaryExpression("!", t.unaryExpression("!", dynamics[0].value));
+    };
 
     return t.expressionStatement(
       t.callExpression(effectWrapperId, [
@@ -132,6 +135,9 @@ function wrapDynamics(path, dynamics) {
     prevId = t.identifier("_p$");
   dynamics.forEach(({ elem, key, value, isSVG, isCE }) => {
     const identifier = path.scope.generateUidIdentifier("v$");
+    if (key.startsWith("class:") && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
+      value = t.unaryExpression("!", t.unaryExpression("!", value));
+    };
     identifiers.push(identifier);
     decls.push(t.variableDeclarator(identifier, value));
     if (key === "classList" || key === "style") {
