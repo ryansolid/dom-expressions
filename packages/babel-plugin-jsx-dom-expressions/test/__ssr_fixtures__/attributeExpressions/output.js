@@ -119,3 +119,5 @@ const template18 = _$ssr(
     false
   )
 );
+
+const template19 = _$ssr(_tmpl$4, `bg-red-500 flex flex-col`);

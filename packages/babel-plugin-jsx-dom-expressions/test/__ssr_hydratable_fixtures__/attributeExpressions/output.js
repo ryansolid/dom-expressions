@@ -134,3 +134,5 @@ const template18 = _$ssr(
     false
   )
 );
+
+const template19 = _$ssr(_tmpl$4, _$ssrHydrationKey(), `bg-red-500 flex flex-col`);

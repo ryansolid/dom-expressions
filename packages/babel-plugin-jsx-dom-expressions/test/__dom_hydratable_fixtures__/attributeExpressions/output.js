@@ -21,7 +21,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
   _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
   _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2);
+  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -250,5 +251,7 @@ const template18 = (() => {
 
   return _el$24;
 })();
+
+const template19 = _$getNextElement(_tmpl$9);
 
 _$delegateEvents(["click"]);

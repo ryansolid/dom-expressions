@@ -214,6 +214,7 @@ function transformAttributes(path, results) {
       }
       i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
     }
+    first.name = t.JSXIdentifier("class");
     first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
   }
   if (styleAttributes.length) transformToObject("style", attributes, styleAttributes);
