@@ -87,7 +87,7 @@ export function addEventListener(node, name, handler, delegate) {
       node[`$$${name}Data`] = handler[1];
     } else node[`$$${name}`] = handler;
   } else if (Array.isArray(handler)) {
-    node.addEventListener(name, e => handler[0](handler[1], e));
+    node.addEventListener(name, handler[0] = e => handler[0](handler[1], e));
   } else node.addEventListener(name, handler);
 }
 
@@ -278,14 +278,24 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
       value(node);
     }
   } else if (prop.slice(0, 3) === "on:") {
-    node.addEventListener(prop.slice(3), value);
+    const e = prop.slice(3);
+    prev && node.removeEventListener(e, prev);
+    value && node.addEventListener(e, value);
   } else if (prop.slice(0, 10) === "oncapture:") {
-    node.addEventListener(prop.slice(10), value, true);
+    const e = prop.slice(10);
+    prev && node.removeEventListener(e, prev, true);
+    value && node.addEventListener(e, value, true);
   } else if (prop.slice(0, 2) === "on") {
     const name = prop.slice(2).toLowerCase();
     const delegate = DelegatedEvents.has(name);
-    addEventListener(node, name, value, delegate);
-    delegate && delegateEvents([name]);
+    if (!delegate && prev) {
+      const h = Array.isArray(prev) ? prev[0] : prev;
+      node.removeEventListener(name, h);
+    }
+    if (delegate || value) {
+      addEventListener(node, name, value, delegate);
+      delegate && delegateEvents([name]);
+    }
   } else if (
     (isChildProp = ChildProperties.has(prop)) ||
     (!isSVG && (PropAliases[prop] || (isProp = Properties.has(prop)))) ||

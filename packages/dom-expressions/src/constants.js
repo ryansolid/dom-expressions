@@ -25,11 +25,11 @@ const booleans = [
   "selected"
 ];
 
-const BooleanAttributes = new Set(booleans);
+const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
 
-const Properties = new Set(["className", "value", "readOnly", "formNoValidate", "isMap", "noModule", "playsInline", ...booleans]);
+const Properties = /*#__PURE__*/ new Set(["className", "value", "readOnly", "formNoValidate", "isMap", "noModule", "playsInline", ...booleans]);
 
-const ChildProperties = new Set(["innerHTML", "textContent", "innerText", "children"]);
+const ChildProperties = /*#__PURE__*/ new Set(["innerHTML", "textContent", "innerText", "children"]);
 
 // React Compat
 const Aliases = {
@@ -47,7 +47,7 @@ const PropAliases = {
 }
 
 // list of Element events that will be delegated
-const DelegatedEvents = new Set([
+const DelegatedEvents = /*#__PURE__*/ new Set([
   "beforeinput",
   "click",
   "dblclick",
@@ -72,7 +72,7 @@ const DelegatedEvents = new Set([
   "touchstart"
 ]);
 
-const SVGElements = new Set([
+const SVGElements = /*#__PURE__*/ new Set([
   // "a",
   "altGlyph",
   "altGlyphDef",
@@ -160,7 +160,7 @@ const SVGNamespace = {
   xml: "http://www.w3.org/XML/1998/namespace"
 };
 
-const DOMElements = new Set([
+const DOMElements = /*#__PURE__*/ new Set([
   "html",
   "base",
   "head",
