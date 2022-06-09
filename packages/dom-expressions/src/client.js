@@ -87,7 +87,8 @@ export function addEventListener(node, name, handler, delegate) {
       node[`$$${name}Data`] = handler[1];
     } else node[`$$${name}`] = handler;
   } else if (Array.isArray(handler)) {
-    node.addEventListener(name, handler[0] = e => handler[0](handler[1], e));
+    const handlerFn = handler[0];
+    node.addEventListener(name, (handler[0] = e => handlerFn.call(node, handler[1], e)));
   } else node.addEventListener(name, handler);
 }
 
@@ -341,7 +342,7 @@ function eventHandler(e) {
     const handler = node[key];
     if (handler && !node.disabled) {
       const data = node[`${key}Data`];
-      data !== undefined ? handler(data, e) : handler(e);
+      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
     node =
