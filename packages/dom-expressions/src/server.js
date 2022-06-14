@@ -45,9 +45,10 @@ export function renderToStringAsync(code, options = {}) {
       );
     }
   });
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject("renderToString timed out"), timeoutMs)
-  );
+  let timeoutHandle;
+  const timeout = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(() => reject("renderToString timed out"), timeoutMs);
+  });
 
   function asyncWrap(fn) {
     return new Promise(resolve => {
@@ -81,6 +82,7 @@ export function renderToStringAsync(code, options = {}) {
     });
   }
   return Promise.race([asyncWrap(() => escape(code())), timeout]).then(res => {
+    clearTimeout(timeoutHandle);
     let html = injectAssets(context.assets, resolveSSRNode(res));
     if (scripts.length) html = injectScripts(html, scripts, nonce);
     return html;
