@@ -70,7 +70,7 @@ export function transformElement(path, info) {
 
 export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE }) {
   // pull out namespace
-  const config = getConfig(path)
+  const config = getConfig(path);
   let parts, namespace;
   if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
     name = parts[1];
@@ -98,26 +98,28 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   }
 
   if (name === "style") {
-    return t.callExpression(registerImportMethod(path, "style", getRendererConfig(path, "dom").moduleName), prevId ? [elem, value, prevId] : [elem, value]);
+    return t.callExpression(
+      registerImportMethod(path, "style", getRendererConfig(path, "dom").moduleName),
+      prevId ? [elem, value, prevId] : [elem, value]
+    );
   }
 
   if (!isSVG && name === "class") {
-    return t.callExpression(registerImportMethod(path, "className", getRendererConfig(path, "dom").moduleName), [elem, value]);
+    return t.callExpression(
+      registerImportMethod(path, "className", getRendererConfig(path, "dom").moduleName),
+      [elem, value]
+    );
   }
 
   if (name === "classList") {
-    return t.callExpression(registerImportMethod(
-      path,
-      "classList",
-      getRendererConfig(path, "dom").moduleName
-    ), prevId ? [elem, value, prevId] : [elem, value]);
+    return t.callExpression(
+      registerImportMethod(path, "classList", getRendererConfig(path, "dom").moduleName),
+      prevId ? [elem, value, prevId] : [elem, value]
+    );
   }
 
   if (config.hydratable && name === "innerHTML") {
-    return t.callExpression(
-      registerImportMethod(path, "innerHTML"),
-      [elem, value]
-    );
+    return t.callExpression(registerImportMethod(path, "innerHTML"), [elem, value]);
   }
 
   if (dynamic && name === "textContent") {
@@ -141,22 +143,15 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
   !isSVG && (name = name.toLowerCase());
   const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
   if (ns) {
-    return t.callExpression(registerImportMethod(
-      path,
-      "setAttributeNS",
-      getRendererConfig(path, "dom").moduleName
-    ), [
-      elem,
-      t.stringLiteral(ns),
-      t.stringLiteral(name),
-      value
-    ]);
+    return t.callExpression(
+      registerImportMethod(path, "setAttributeNS", getRendererConfig(path, "dom").moduleName),
+      [elem, t.stringLiteral(ns), t.stringLiteral(name), value]
+    );
   } else {
-    return t.callExpression(registerImportMethod(
-      path,
-      "setAttribute",
-      getRendererConfig(path, "dom").moduleName
-    ), [elem, t.stringLiteral(name), value]);
+    return t.callExpression(
+      registerImportMethod(path, "setAttribute", getRendererConfig(path, "dom").moduleName),
+      [elem, t.stringLiteral(name), value]
+    );
   }
 }
 
@@ -316,22 +311,21 @@ function transformAttributes(path, results) {
       if (t.isJSXSpreadAttribute(node)) {
         results.exprs.push(
           t.expressionStatement(
-            t.callExpression(registerImportMethod(
-              attribute,
-              "spread",
-              getRendererConfig(path, "dom").moduleName
-            ), [
-              elem,
-              isDynamic(attribute.get("argument"), {
-                checkMember: true
-              })
-                ? t.isCallExpression(node.argument) && !node.argument.arguments.length
-                  ? node.argument.callee
-                  : t.arrowFunctionExpression([], node.argument)
-                : node.argument,
-              t.booleanLiteral(isSVG),
-              t.booleanLiteral(hasChildren)
-            ])
+            t.callExpression(
+              registerImportMethod(attribute, "spread", getRendererConfig(path, "dom").moduleName),
+              [
+                elem,
+                isDynamic(attribute.get("argument"), {
+                  checkMember: true
+                })
+                  ? t.isCallExpression(node.argument) && !node.argument.arguments.length
+                    ? node.argument.callee
+                    : t.arrowFunctionExpression([], node.argument)
+                  : node.argument,
+                t.booleanLiteral(isSVG),
+                t.booleanLiteral(hasChildren)
+              ]
+            )
           )
         );
         //NOTE: can't be checked at compile time so add to compiled output
@@ -423,7 +417,7 @@ function transformAttributes(path, results) {
           }
         } else if (key.startsWith("use:")) {
           // Some trick to treat JSXIdentifier as Identifier
-          node.name.name.type = 'Identifier';
+          node.name.name.type = "Identifier";
           results.exprs.unshift(
             t.expressionStatement(
               t.callExpression(node.name.name, [
@@ -500,16 +494,14 @@ function transformAttributes(path, results) {
             } else {
               results.exprs.unshift(
                 t.expressionStatement(
-                  t.callExpression(registerImportMethod(
-                    path,
-                    "addEventListener",
-                    getRendererConfig(path, "dom").moduleName
-                  ), [
-                    elem,
-                    t.stringLiteral(ev),
-                    handler,
-                    t.booleanLiteral(true)
-                  ])
+                  t.callExpression(
+                    registerImportMethod(
+                      path,
+                      "addEventListener",
+                      getRendererConfig(path, "dom").moduleName
+                    ),
+                    [elem, t.stringLiteral(ev), handler, t.booleanLiteral(true)]
+                  )
                 )
               );
             }
@@ -543,11 +535,14 @@ function transformAttributes(path, results) {
             } else {
               results.exprs.unshift(
                 t.expressionStatement(
-                  t.callExpression(registerImportMethod(
-                    path,
-                    "addEventListener",
-                    getRendererConfig(path, "dom").moduleName
-                  ), [elem, t.stringLiteral(ev), handler])
+                  t.callExpression(
+                    registerImportMethod(
+                      path,
+                      "addEventListener",
+                      getRendererConfig(path, "dom").moduleName
+                    ),
+                    [elem, t.stringLiteral(ev), handler]
+                  )
                 )
               );
             }
@@ -559,6 +554,23 @@ function transformAttributes(path, results) {
           })
         ) {
           let nextElem = elem;
+          if (key === "value") {
+            const effectWrapperId = registerImportMethod(path, config.effectWrapper);
+            results.postExprs.push(
+              t.expressionStatement(
+                t.callExpression(effectWrapperId, [
+                  t.arrowFunctionExpression(
+                    [],
+                    setAttr(path, elem, key, value.expression, {
+                      isSVG,
+                      isCE
+                    })
+                  )
+                ])
+              )
+            );
+            return;
+          }
           if (key === "textContent") {
             nextElem = attribute.scope.generateUidIdentifier("el$");
             children = t.JSXText(" ");
@@ -655,6 +667,7 @@ function transformChildren(path, results, config) {
       results.decl.push(...child.decl);
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
+      results.postExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
       tempPath = child.id.name;
@@ -697,12 +710,7 @@ function transformChildren(path, results, config) {
         );
       } else {
         results.exprs.push(
-          t.expressionStatement(
-            t.callExpression(
-              insert,
-              [results.id, child.exprs[0]]
-            )
-          )
+          t.expressionStatement(t.callExpression(insert, [results.id, child.exprs[0]]))
         );
       }
     } else nextPlaceholder = null;

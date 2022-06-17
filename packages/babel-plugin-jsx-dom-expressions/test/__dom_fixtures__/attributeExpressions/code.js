@@ -103,4 +103,11 @@ const template18 = (
   />
 );
 
-const template19 = <div classList={{"bg-red-500": true}} class="flex flex-col"  />
+const template19 = <div classList={{ "bg-red-500": true }} class="flex flex-col" />;
+
+const template20 = (
+  <div>
+    <input value={s()} min={min()} max={max()} onInput={doSomething} />
+    <input value={s2()} min={min()} max={max()} onInput={doSomethingElse} />
+  </div>
+);

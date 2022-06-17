@@ -19,7 +19,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
   _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
   _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2);
+  _tmpl$9 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4);
 
 const selected = true;
 let id = "my-h1";
@@ -242,4 +243,41 @@ const template18 = (() => {
 
 const template19 = _tmpl$9.cloneNode(true);
 
-_$delegateEvents(["click"]);
+const template20 = (() => {
+  const _el$26 = _tmpl$10.cloneNode(true),
+    _el$27 = _el$26.firstChild,
+    _el$28 = _el$27.nextSibling;
+
+  _$addEventListener(_el$27, "input", doSomething, true);
+
+  _$addEventListener(_el$28, "input", doSomethingElse, true);
+
+  _$effect(
+    _p$ => {
+      const _v$7 = min(),
+        _v$8 = max(),
+        _v$9 = min(),
+        _v$10 = max();
+
+      _v$7 !== _p$._v$7 && _$setAttribute(_el$27, "min", (_p$._v$7 = _v$7));
+      _v$8 !== _p$._v$8 && _$setAttribute(_el$27, "max", (_p$._v$8 = _v$8));
+      _v$9 !== _p$._v$9 && _$setAttribute(_el$28, "min", (_p$._v$9 = _v$9));
+      _v$10 !== _p$._v$10 && _$setAttribute(_el$28, "max", (_p$._v$10 = _v$10));
+      return _p$;
+    },
+    {
+      _v$7: undefined,
+      _v$8: undefined,
+      _v$9: undefined,
+      _v$10: undefined
+    }
+  );
+
+  _$effect(() => (_el$27.value = s()));
+
+  _$effect(() => (_el$28.value = s2()));
+
+  return _el$26;
+})();
+
+_$delegateEvents(["click", "input"]);
