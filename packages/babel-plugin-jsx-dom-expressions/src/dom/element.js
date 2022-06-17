@@ -554,7 +554,7 @@ function transformAttributes(path, results) {
           })
         ) {
           let nextElem = elem;
-          if (key === "value") {
+          if (key === "value" || key === "checked") {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
             results.postExprs.push(
               t.expressionStatement(

@@ -287,7 +287,7 @@ const template20 = (() => {
 
   _$effect(() => (_el$27.value = s()));
 
-  _$effect(() => (_el$28.value = s2()));
+  _$effect(() => (_el$28.checked = s2()));
 
   _$runHydrationEvents();
 
