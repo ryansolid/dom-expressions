@@ -394,7 +394,8 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     return () => current;
   } else if (Array.isArray(value)) {
     const array = [];
-    if (normalizeIncomingArray(array, value, unwrapArray)) {
+    const currentArray = current && Array.isArray(current);
+    if (normalizeIncomingArray(array, value, current, unwrapArray)) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
@@ -406,7 +407,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
       if (multi) return current;
-    } else if (Array.isArray(current)) {
+    } else if (currentArray) {
       if (current.length === 0) {
         appendNodes(parent, array, marker);
       } else reconcileArrays(parent, current, array);
@@ -429,10 +430,11 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
   return current;
 }
 
-function normalizeIncomingArray(normalized, array, unwrap) {
+function normalizeIncomingArray(normalized, array, current, unwrap) {
   let dynamic = false;
   for (let i = 0, len = array.length; i < len; i++) {
     let item = array[i],
+      prev = current && current[i],
       t;
     if (item instanceof Node) {
       normalized.push(item);
@@ -440,19 +442,22 @@ function normalizeIncomingArray(normalized, array, unwrap) {
       // matches null, undefined, true or false
       // skip
     } else if (Array.isArray(item)) {
-      dynamic = normalizeIncomingArray(normalized, item) || dynamic;
-    } else if ((t = typeof item) === "string") {
-      normalized.push(document.createTextNode(item));
-    } else if (t === "function") {
+      dynamic = normalizeIncomingArray(normalized, item, prev) || dynamic;
+    } else if ((t = typeof item) === "function") {
       if (unwrap) {
         while (typeof item === "function") item = item();
         dynamic =
-          normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item]) || dynamic;
+          normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item], prev) || dynamic;
       } else {
         normalized.push(item);
         dynamic = true;
       }
-    } else normalized.push(document.createTextNode(item.toString()));
+    } else {
+      const value = t === "string" ? item : item.string();
+      if (prev && prev.nodeType === 3 && prev.data === value) {
+        normalized.push(prev);
+      } else normalized.push(document.createTextNode(value));
+    }
   }
   return dynamic;
 }
