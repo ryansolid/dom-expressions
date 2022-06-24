@@ -617,19 +617,18 @@ function transformChildren(path, results, config) {
     i = 0;
   const filteredChildren = filterChildren(path.get("children")),
     childNodes = filteredChildren
-      .map(
-        (child, index) =>
-          transformNode(child, {
-            skipId: !results.id || !detectExpressions(filteredChildren, index, config)
-          })
-        // combine adjacent textNodes
-      )
-      .reduce((memo, child) => {
-        if (!child) return memo;
+      .reduce((memo, child, index) => {
+        if (child.isJSXFragment()) {
+          throw new Error(`Fragments can only be used top level in JSX. Not used under a <${tagName}>.`);
+        }
+        const transformed = transformNode(child, {
+          skipId: !results.id || !detectExpressions(filteredChildren, index, config)
+        })
+        if (!transformed) return memo;
         const i = memo.length;
-        if (child.text && i && memo[i - 1].text) {
-          memo[i - 1].template += child.template;
-        } else memo.push(child);
+        if (transformed.text && i && memo[i - 1].text) {
+          memo[i - 1].template += transformed.template;
+        } else memo.push(transformed);
         return memo;
       }, []);
 
