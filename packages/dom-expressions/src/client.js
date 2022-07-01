@@ -453,7 +453,8 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
         dynamic = true;
       }
     } else {
-      const value = t === "string" ? item : item.string();
+      // NOTE: is String better than `item + ''`, ``${item}``, `item.toString()` and `item.valueOf()`?
+      const value = String(item);
       if (prev && prev.nodeType === 3 && prev.data === value) {
         normalized.push(prev);
       } else normalized.push(document.createTextNode(value));
