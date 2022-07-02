@@ -28,7 +28,9 @@ const _tmpl$ = [
   _tmpl$9 = ["<div", ' class="`a">`$`</div>'],
   _tmpl$10 = ["<button", ' class="', '" type="button">Write</button>'],
   _tmpl$11 = ["<button", ' class="', '">Hi</button>'],
-  _tmpl$12 = ["<div", " ", "></div>"];
+  _tmpl$12 = ["<div", " ", "></div>"],
+  _tmpl$13 = ["<div", "><input", "><input", "></div>"],
+  _tmpl$14 = ["<div", ' style="', '"></div>'];
 const selected = true;
 let id = "my-h1";
 let link;
@@ -136,3 +138,23 @@ const template18 = _$ssr(
 );
 
 const template19 = _$ssr(_tmpl$4, _$ssrHydrationKey(), `bg-red-500 flex flex-col`);
+
+const template20 = _$ssr(
+  _tmpl$13,
+  _$ssrHydrationKey(),
+  _$ssrAttribute("value", _$escape(s(), true), false) +
+    _$ssrAttribute("min", _$escape(min(), true), false) +
+    _$ssrAttribute("max", _$escape(max(), true), false),
+  _$ssrAttribute("checked", s2(), true) +
+    _$ssrAttribute("min", _$escape(min(), true), false) +
+    _$ssrAttribute("max", _$escape(max(), true), false)
+);
+
+const template21 = _$ssr(
+  _tmpl$14,
+  _$ssrHydrationKey(),
+  _$ssrStyle({
+    a: "static",
+    ...rest
+  })
+);

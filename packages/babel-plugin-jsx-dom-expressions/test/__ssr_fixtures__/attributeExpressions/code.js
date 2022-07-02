@@ -104,3 +104,12 @@ const template18 = (
 );
 
 const template19 = <div classList={{"bg-red-500": true}} class="flex flex-col"  />
+
+const template20 = (
+  <div>
+    <input value={s()} min={min()} max={max()} onInput={doSomething} />
+    <input checked={s2()} min={min()} max={max()} onInput={doSomethingElse} />
+  </div>
+);
+
+const template21 = <div style={{ a: "static", ...rest }} ></div>

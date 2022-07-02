@@ -114,6 +114,9 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     OptionalMemberExpression(p) {
       checkMember && (dynamic = true) && p.stop();
     },
+    SpreadElement(p) {
+      checkMember && (dynamic = true) && p.stop()
+    },
     JSXElement(p) {
       checkTags ? (dynamic = true) && p.stop() : p.skip();
     },

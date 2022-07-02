@@ -299,3 +299,9 @@ const template21 = _$createComponent(
     }
   }))
 );
+
+const template22 = _$createComponent(Component, {
+  get passObject() {
+    return { ...a };
+  }
+});

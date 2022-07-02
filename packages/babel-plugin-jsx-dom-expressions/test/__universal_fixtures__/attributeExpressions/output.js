@@ -289,3 +289,21 @@ const template18 = (() => {
 
   return _el$27;
 })();
+
+const template19 = (() => {
+  const _el$28 = _$createElement("div");
+
+  _$effect(_$p =>
+    _$setProp(
+      _el$28,
+      "style",
+      {
+        a: "static",
+        ...rest
+      },
+      _$p
+    )
+  );
+
+  return _el$28;
+})();

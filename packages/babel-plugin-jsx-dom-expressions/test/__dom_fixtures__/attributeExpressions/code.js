@@ -111,3 +111,5 @@ const template20 = (
     <input checked={s2()} min={min()} max={max()} onInput={doSomethingElse} />
   </div>
 );
+
+const template21 = <div style={{ a: "static", ...rest }} ></div>

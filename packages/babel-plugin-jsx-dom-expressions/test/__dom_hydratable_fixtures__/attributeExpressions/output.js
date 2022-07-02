@@ -294,4 +294,21 @@ const template20 = (() => {
   return _el$26;
 })();
 
+const template21 = (() => {
+  const _el$29 = _$getNextElement(_tmpl$3);
+
+  _$effect(_$p =>
+    _$style(
+      _el$29,
+      {
+        a: "static",
+        ...rest
+      },
+      _$p
+    )
+  );
+
+  return _el$29;
+})();
+
 _$delegateEvents(["click", "input"]);
