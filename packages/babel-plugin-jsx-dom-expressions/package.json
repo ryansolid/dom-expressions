@@ -22,5 +22,8 @@
     "@babel/plugin-syntax-jsx": "^7.16.5",
     "@babel/types": "^7.16.0",
     "html-entities": "2.3.2"
+  },
+  "peerDependencies": {
+    "@babel/core": "^7.0.0"
   }
 }
