@@ -67,12 +67,12 @@ export function clearDelegatedEvents(document = window.document) {
 
 export function setAttribute(node, name, value) {
   if (value == null) node.removeAttribute(name);
-  else node.setAttribute(name, value);
+  else node.setAttribute(name, value === true ? '' : value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
   if (value == null) node.removeAttributeNS(namespace, name);
-  else node.setAttributeNS(namespace, name, value);
+  else node.setAttributeNS(namespace, name, value === true ? '' : value);
 }
 
 export function className(node, value) {
