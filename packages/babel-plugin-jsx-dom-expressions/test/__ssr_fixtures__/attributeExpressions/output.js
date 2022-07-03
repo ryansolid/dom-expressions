@@ -28,7 +28,8 @@ const _tmpl$ = [
   _tmpl$11 = ['<button class="', '">Hi</button>'],
   _tmpl$12 = ["<div ", "></div>"],
   _tmpl$13 = ["<div><input", "><input", "></div>"],
-  _tmpl$14 = ['<div style="', '"></div>'];
+  _tmpl$14 = ['<div style="', '"></div>'],
+  _tmpl$15 = '<div data="&quot;hi&quot;" data2="&quot;"></div>';
 const selected = true;
 let id = "my-h1";
 let link;
@@ -141,3 +142,5 @@ const template21 = _$ssr(
     ...rest
   })
 );
+
+const template22 = _$ssr(_tmpl$15);

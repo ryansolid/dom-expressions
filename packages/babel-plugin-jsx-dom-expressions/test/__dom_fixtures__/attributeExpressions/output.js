@@ -20,7 +20,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
   _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
   _tmpl$9 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4);
+  _tmpl$10 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -296,5 +297,7 @@ const template21 = (() => {
 
   return _el$29;
 })();
+
+const template22 = _tmpl$11.cloneNode(true);
 
 _$delegateEvents(["click", "input"]);

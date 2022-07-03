@@ -23,7 +23,8 @@ import {
   wrappedByText,
   getRendererConfig,
   getConfig,
-  escapeBackticks
+  escapeBackticks,
+  escapeHTML
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -599,7 +600,7 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
-          results.template += value ? `="${escapeBackticks(value.value)}"` : "";
+          results.template += value ? `="${escapeBackticks(escapeHTML(value.value, true))}"` : "";
         }
       }
     });
@@ -616,21 +617,22 @@ function transformChildren(path, results, config) {
     nextPlaceholder,
     i = 0;
   const filteredChildren = filterChildren(path.get("children")),
-    childNodes = filteredChildren
-      .reduce((memo, child, index) => {
-        if (child.isJSXFragment()) {
-          throw new Error(`Fragments can only be used top level in JSX. Not used under a <${tagName}>.`);
-        }
-        const transformed = transformNode(child, {
-          skipId: !results.id || !detectExpressions(filteredChildren, index, config)
-        })
-        if (!transformed) return memo;
-        const i = memo.length;
-        if (transformed.text && i && memo[i - 1].text) {
-          memo[i - 1].template += transformed.template;
-        } else memo.push(transformed);
-        return memo;
-      }, []);
+    childNodes = filteredChildren.reduce((memo, child, index) => {
+      if (child.isJSXFragment()) {
+        throw new Error(
+          `Fragments can only be used top level in JSX. Not used under a <${tagName}>.`
+        );
+      }
+      const transformed = transformNode(child, {
+        skipId: !results.id || !detectExpressions(filteredChildren, index, config)
+      });
+      if (!transformed) return memo;
+      const i = memo.length;
+      if (transformed.text && i && memo[i - 1].text) {
+        memo[i - 1].template += transformed.template;
+      } else memo.push(transformed);
+      return memo;
+    }, []);
 
   childNodes.forEach((child, index) => {
     if (!child) return;
