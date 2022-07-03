@@ -550,9 +550,11 @@ function transformAttributes(path, results) {
           }
         } else if (
           config.effectWrapper &&
-          isDynamic(attribute.get("value").get("expression"), {
+          (isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
-          })
+          }) ||
+            ((key === "classList" || key === "style") &&
+              !attribute.get("value").get("expression").evaluate().confident))
         ) {
           let nextElem = elem;
           if (key === "value" || key === "checked") {
