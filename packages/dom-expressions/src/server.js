@@ -179,7 +179,7 @@ export function renderToStream(code, options = {}) {
             } else {
               buffer.write(`<div hidden id="${key}">${value !== undefined ? value : " "}</div>`);
               pushTask(
-                `${keys.length ? keys.map(k => `_$HY.unset("${k}")`).join(";") : ""}$df("${key}"${
+                `${keys.length ? keys.map(k => `_$HY.unset("${k}")`).join(";") + ";" : ""}$df("${key}"${
                   error ? "," + serializeError(error) : ""
                 })${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`
               );
