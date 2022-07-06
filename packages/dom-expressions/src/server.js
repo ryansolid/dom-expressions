@@ -52,17 +52,18 @@ export function renderToStringAsync(code, options = {}) {
 
   function asyncWrap(fn) {
     return new Promise(resolve => {
-      const registry = new Set();
+      const registry = new Map();
       const cache = Object.create(null);
       sharedConfig.context.registerFragment = register;
       const rendered = fn();
       if (!registry.size) resolve(rendered);
       function register(key) {
-        registry.add(key);
+        if (!registry.has(key)) registry.set(key, []);
         return (value = "", error) => {
           if (!registry.has(key)) return;
           cache[key] = value;
           registry.delete(key);
+          if (waitForFragments(registry, key)) return;
           if (error) scripts += `_$HY.set("${key}", Promise.resolve(${serializeError(error)}));`;
           else scripts += `_$HY.set("${key}", null);`;
           if (!registry.size)
