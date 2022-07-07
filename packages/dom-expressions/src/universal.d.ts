@@ -6,9 +6,9 @@ export interface RendererOptions<NodeType> {
   setProperty<T>(node: NodeType, name: string, value: T, prev?: T): void;
   insertNode(parent: NodeType, node: NodeType, anchor?: NodeType): void;
   removeNode(parent: NodeType, node: NodeType): void;
-  getParentNode(node: NodeType): NodeType;
-  getFirstChild(node: NodeType): NodeType;
-  getNextSibling(node: NodeType): NodeType;
+  getParentNode(node: NodeType): NodeType | undefined;
+  getFirstChild(node: NodeType): NodeType | undefined;
+  getNextSibling(node: NodeType): NodeType | undefined;
 }
 
 export interface Renderer<NodeType> {
