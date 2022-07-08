@@ -1,4 +1,5 @@
 import { parse, stringify, IDom } from "html-parse-string";
+import { r } from "regexr";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 interface Runtime {
@@ -32,19 +33,15 @@ export type HTMLTag = {
 const cache = new Map<TemplateStringsArray, HTMLTemplateElement[]>();
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
-const spaces = " \\f\\n\\r\\t";
-const almostEverything = "[^ " + spaces + "\\/>\"'=]+";
-const attrName = "[ " + spaces + "]+" + almostEverything;
-const tagName = "<([A-Za-z$#]+[A-Za-z0-9:_-]*)((?:";
-const attrPartials =
-  "(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|\\([^)]*?\\)|<[^>]*?>|" + almostEverything + "))?)";
+const spaces = r` \f\n\r\t`;
+const almostEverything = r`[^ ${spaces}\/>"'=]+`;
+const attrName = r`[ ${spaces}]+${almostEverything}`;
+const tagName = `<([A-Za-z$#]+[A-Za-z0-9:_-]*)`;
+const attrPartials = r`(?:\s*=\s*(?:'[^']*?'|"[^"]*?"|\([^)]*?\)|<[^>]*?>|${almostEverything}))?`;
 
-const attrSeeker = new RegExp(tagName + attrName + attrPartials + "+)([ " + spaces + "]*/?>)", "g");
-const findAttributes = new RegExp(
-  "(" + attrName + "\\s*=\\s*)(<!--#-->|['\"(]([\\w\\s]*<!--#-->[\\w\\s]*)*['\")])",
-  "gi"
-);
-const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
+const attrSeeker = r`/${tagName}((?:${attrName}${attrPartials})+)([ ${spaces}]*\/?>)/g`;
+const findAttributes = r`/(${attrName}\s*=\s*)(<!--#-->|['"(]([\w\s]*<!--#-->[\w\s]*)*['")])/gi`;
+const selfClosing = r`/${tagName}((?:${attrName}${attrPartials})*)([ ${spaces}]*\/>)/g`;
 const marker = "<!--#-->";
 const reservedNameSpaces = new Set(["class", "on", "oncapture", "style", "use", "prop", "attr"]);
 

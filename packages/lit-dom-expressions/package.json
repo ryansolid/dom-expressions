@@ -19,6 +19,6 @@
   },
   "devDependencies": {
     "dom-expressions": "^0.33.13",
-    "html-parse-string": "0.0.6"
+    "html-parse-string": "trusktr/improve-attribute-parsing#d65d6a8aaa86321cc4d08c94d2fa055bc8792cfd"
   }
 }
