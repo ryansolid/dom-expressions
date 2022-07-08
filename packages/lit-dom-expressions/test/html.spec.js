@@ -241,6 +241,12 @@ describe("Test HTML", () => {
     // expect(div.attributes.getNamedItem('beep"boop')?.value).toBe("");
     // expect(div.attributes.getNamedItem("y-o")?.value).toBe('123"456=#$%');
     // expect(div.attributes.getNamedItem("#$%'123-")?.value).toBe("");
+
+    // ensure it handles `"` chars correctly
+    const el = html`<lume-box uniforms='{ "iTime": { "value": 0 } }'></lume-box>`;
+
+    expect(el.attributes.length).toBe(1);
+    expect(el.attributes.uniforms?.value).toBe('{ "iTime": { "value": 0 } }');
   });
 
   test("Test style tag", () => {
