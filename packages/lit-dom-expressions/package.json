@@ -15,10 +15,11 @@
   "scripts": {
     "build": "rollup -c && tsc",
     "test": "npm run build && jest",
-    "test:coverage": "npm run build && jest --coverage"
+    "test:coverage": "npm run build && jest --coverage",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "dom-expressions": "^0.33.13",
-    "html-parse-string": "0.0.6"
+    "html-parse-string": "^0.0.7"
   }
 }
