@@ -23,9 +23,6 @@
   h.unset = (id) => {
     delete h.r[id];
   };
-  h.load = (id, res) => {
-    res = h.r[id];
-    if(res) return res[0];
-  }
+  h.load = (id, res) => h.r[id];
 })(window._$HY || (_$HY = { events: [], completed: new WeakSet(), r: {} }));
 `

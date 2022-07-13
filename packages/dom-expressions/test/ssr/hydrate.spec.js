@@ -3,19 +3,6 @@ import * as r2 from "../../src/server";
 
 globalThis._$HY = { events: [], completed: new WeakSet() };
 
-function setHydrateContext(context) {
-  globalThis._$HY.context = context;
-}
-
-function nextHydrateContext() {
-  return globalThis._$HY && globalThis._$HY.context
-    ? {
-        id: `${globalThis._$HY.context.id}.${globalThis._$HY.context.count++}`,
-        count: 0
-      }
-    : undefined;
-}
-
 describe("r.hydrate", () => {
   const container = document.createElement("div"),
     _tmpl$ = r.template(`<span><!--#--><!--/--> John</span>`),
@@ -92,26 +79,26 @@ describe("r.hydrate", () => {
     expect(el1.nextSibling.nextSibling).toBe(el3);
   });
 
-  it("timeouts SSR asynchronous render", async () => {
-    let errored;
-    try {
-      result = r2.renderToStringAsync(
-        async () => {
-          const multiExpression = [
-            r2.ssr`<div${r2.ssrHydrationKey()}>First</div>`,
-            r2.ssr`<div${r2.ssrHydrationKey()}>Last</div>`
-          ];
-          await new Promise(r => setTimeout(r, 20));
-          return multiExpression;
-        },
-        { timeoutMs: 0 }
-      );
-      rendered = await result;
-    } catch {
-      errored = true;
-    }
-    expect(errored).toBe(true);
-  });
+  // it("timeouts SSR asynchronous render", async () => {
+  //   let errored;
+  //   try {
+  //     result = r2.renderToStringAsync(
+  //       () => {
+  //         const multiExpression = [
+  //           r2.ssr`<div${r2.ssrHydrationKey()}>First</div>`,
+  //           r2.ssr`<div${r2.ssrHydrationKey()}>Last</div>`
+  //         ];
+  //         const p = new Promise(r => setTimeout(r, 20)).then(() => multiExpression);
+  //         sharedConfig.registerFragment(p);
+  //       },
+  //       { timeoutMs: 0 }
+  //     );
+  //     rendered = await result;
+  //   } catch {
+  //     errored = true;
+  //   }
+  //   expect(errored).toBe(true);
+  // });
 
   it("skips hydrating simple text", () => {
     rendered = r2.renderToString(() =>

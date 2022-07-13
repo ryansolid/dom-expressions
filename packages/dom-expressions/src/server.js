@@ -3,8 +3,7 @@ import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t||null)}`;
-const FRAGMENT_REPLACE = /<!\[([\d-]+)\]>/;
+const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t||"$$resolved")}`;
 
 export function renderToString(code, options = {}) {
   let scripts = "";
@@ -25,73 +24,19 @@ export function renderToString(code, options = {}) {
 }
 
 export function renderToStringAsync(code, options = {}) {
-  let scripts = "";
-  const { nonce, renderId, timeoutMs = 30000 } = options;
-  const dedupe = new WeakMap();
-  const context = (sharedConfig.context = {
-    id: renderId || "",
-    count: 0,
-    resources: {},
-    suspense: {},
-    assets: [],
-    async: true,
-    nonce,
-    writeResource(id, p, error) {
-      if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
-      if (!p || typeof p !== "object" || !("then" in p))
-        return (scripts += serializeSet(dedupe, id, p) + ";");
-      p.then(d => (scripts += serializeSet(dedupe, id, d) + ";")).catch(
-        () => (scripts += `_$HY.set("${id}", {});`)
-      );
-    }
-  });
+  const { timeoutMs = 30000 } = options;
   let timeoutHandle;
   const timeout = new Promise((_, reject) => {
     timeoutHandle = setTimeout(() => reject("renderToString timed out"), timeoutMs);
   });
-
-  function asyncWrap(fn) {
-    return new Promise(resolve => {
-      const registry = new Map();
-      const cache = Object.create(null);
-      sharedConfig.context.registerFragment = register;
-      const rendered = fn();
-      if (!registry.size) resolve(rendered);
-      function register(key) {
-        if (!registry.has(key)) registry.set(key, []);
-        return (value = "", error) => {
-          if (!registry.has(key)) return;
-          cache[key] = value;
-          registry.delete(key);
-          if (waitForFragments(registry, key)) return;
-          if (error) scripts += `_$HY.set("${key}", Promise.resolve(${serializeError(error)}));`;
-          else scripts += `_$HY.set("${key}", null);`;
-          if (!registry.size)
-            Promise.resolve().then(() => {
-              let source = resolveSSRNode(rendered);
-              let final = "";
-              let match;
-              while ((match = source.match(FRAGMENT_REPLACE))) {
-                final += source.substring(0, match.index);
-                source = cache[match[1]] + source.substring(match.index + match[0].length);
-              }
-              resolve(final + source);
-            });
-          return true;
-        };
-      }
-    });
-  }
-  return Promise.race([asyncWrap(() => escape(code())), timeout]).then(res => {
+  return Promise.race([renderToStream(code, options), timeout]).then(html => {
     clearTimeout(timeoutHandle);
-    let html = injectAssets(context.assets, resolveSSRNode(res));
-    if (scripts.length) html = injectScripts(html, scripts, nonce);
     return html;
   });
 }
 
 export function renderToStream(code, options = {}) {
-  const { nonce, onCompleteShell, onCompleteAll, renderId } = options;
+  let { nonce, onCompleteShell, onCompleteAll, renderId } = options;
   const tmp = [];
   const tasks = [];
   const blockingResources = [];
@@ -112,13 +57,13 @@ export function renderToStream(code, options = {}) {
   };
   const pushTask = task => {
     tasks.push(task);
-    if (!scheduled) {
+    if (!scheduled && firstFlushed) {
       Promise.resolve().then(writeTasks);
       scheduled = true;
     }
   };
   const writeTasks = () => {
-    if (tasks.length && !completed) {
+    if (tasks.length && !completed && firstFlushed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.join(";")}</script>`);
       tasks.length = 0;
     }
@@ -139,7 +84,6 @@ export function renderToStream(code, options = {}) {
     id: renderId || "",
     count: 0,
     async: true,
-    streaming: true,
     resources: {},
     suspense: {},
     assets: [],
@@ -173,7 +117,7 @@ export function renderToStream(code, options = {}) {
               );
               pushTask(
                 `${keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""}_$HY.set("${key}",${
-                  error ? serializeError(error) : "null"
+                  error ? serializeError(error) : '"$$resolved"'
                 })`
               );
             } else {
@@ -187,7 +131,7 @@ export function renderToStream(code, options = {}) {
             }
           }
         }
-        if (firstFlushed) checkEnd();
+        Promise.resolve().then(checkEnd);
         return true;
       };
     }
@@ -209,6 +153,22 @@ export function renderToStream(code, options = {}) {
   }
 
   return {
+    then(fn) {
+      function complete() {
+        doShell();
+        let mapped = "";
+        for (let i = 0, len = tmp.length; i < len; i++) mapped += tmp[i];
+        fn(mapped);
+      }
+      if (onCompleteAll) {
+        ogComplete = onCompleteAll;
+        onCompleteAll = options => {
+          ogComplete(options);
+          complete();
+        };
+      } else onCompleteAll = complete;
+      checkEnd();
+    },
     pipe(w) {
       Promise.allSettled(blockingResources).then(() => {
         doShell();
@@ -439,7 +399,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>var e,t;e=window._$HY||(_$HY={events:[],completed:new WeakSet,r:{}}),t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])})))),e.init=(t,o)=>{e.r[t]=[new Promise(((e,t)=>o=e)),o]},e.set=(t,o,s)=>{(s=e.r[t])&&s[1](o),e.r[t]=[o]},e.unset=t=>{delete e.r[t]},e.load=(t,o)=>{if(o=e.r[t])return o[0]};</script><!--xs-->`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])})))),e.init=(t,o)=>{e.r[t]=[new Promise(((e,t)=>o=e)),o]},e.set=(t,o,s)=>{(s=e.r[t])&&s[1](o),e.r[t]=[o]},e.unset=t=>{delete e.r[t]},e.load=t=>e.r[t];</script><!--xs-->`;
 }
 
 function injectAssets(assets, html) {
