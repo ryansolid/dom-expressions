@@ -3,7 +3,7 @@ import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t||"$$resolved")}`;
+const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t||"$$$")}`;
 
 export function renderToString(code, options = {}) {
   let scripts = "";
@@ -117,7 +117,7 @@ export function renderToStream(code, options = {}) {
               );
               pushTask(
                 `${keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""}_$HY.set("${key}",${
-                  error ? serializeError(error) : '"$$resolved"'
+                  error ? serializeError(error) : '"$$$"'
                 })`
               );
             } else {
