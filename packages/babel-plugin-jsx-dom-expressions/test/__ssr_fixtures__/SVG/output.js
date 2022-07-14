@@ -1,5 +1,5 @@
 import { createComponent as _$createComponent } from "r-server";
-import { ssrSpread as _$ssrSpread } from "r-server";
+import { ssrElement as _$ssrElement } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
@@ -10,7 +10,7 @@ const _tmpl$ =
     ' rx="20" ry="20" width="150" height="150" style="',
     '"></rect></svg>'
   ],
-  _tmpl$3 = ['<svg width="400" height="180"><rect ', "></rect></svg>"],
+  _tmpl$3 = ['<svg width="400" height="180">', "</svg>"],
   _tmpl$4 = '<rect x="50" y="20" width="150" height="150"></rect>',
   _tmpl$5 = [
     '<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><a',
@@ -36,7 +36,7 @@ const template2 = _$ssr(
     (";opacity:" + 0.5)
 );
 
-const template3 = _$ssr(_tmpl$3, _$ssrSpread(props, true, false));
+const template3 = _$ssr(_tmpl$3, _$escape(_$ssrElement("rect", props, undefined, false)));
 
 const template4 = _$ssr(_tmpl$4);
 

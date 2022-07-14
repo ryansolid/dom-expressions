@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+import { decode } from "html-entities";
 import {
   BooleanAttributes,
   Aliases,
@@ -8,15 +9,15 @@ import {
 import VoidElements from "../VoidElements";
 import {
   getTagName,
-  isDynamic,
   registerImportMethod,
   filterChildren,
   checkLength,
   escapeHTML,
   reservedNameSpaces,
-  getConfig
+  getConfig,
+  trimWhitespace
 } from "../shared/utils";
-import { transformNode } from "../shared/transform";
+import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
 
 function appendToTemplate(template, value) {
@@ -29,7 +30,11 @@ function appendToTemplate(template, value) {
 }
 
 export function transformElement(path, info) {
-  let tagName = getTagName(path.node),
+  // contains spread attributes
+  if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
+    return createElement(path, info);
+
+  const tagName = getTagName(path.node),
     config = getConfig(path),
     voidTag = VoidElements.indexOf(tagName) > -1,
     results = {
@@ -159,12 +164,8 @@ function transformToObject(attrName, attributes, selectedAttributes) {
   }
 }
 
-function transformAttributes(path, results) {
-  let children;
-  const tagName = getTagName(path.node),
-    isSVG = SVGElements.has(tagName),
-    hasChildren = path.node.children.length > 0,
-    attributes = path.get("openingElement").get("attributes"),
+function normalizeAttributes(path) {
+  const attributes = path.get("openingElement").get("attributes"),
     styleAttributes = attributes.filter(
       a => t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "style"
     ),
@@ -218,28 +219,18 @@ function transformAttributes(path, results) {
     first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
   }
   if (styleAttributes.length) transformToObject("style", attributes, styleAttributes);
+  return attributes;
+}
+
+function transformAttributes(path, results) {
+  const tagName = getTagName(path.node),
+    isSVG = SVGElements.has(tagName),
+    hasChildren = path.node.children.length > 0,
+    attributes = normalizeAttributes(path);
+  let children;
 
   attributes.forEach(attribute => {
     const node = attribute.node;
-    if (t.isJSXSpreadAttribute(node)) {
-      appendToTemplate(results.template, " ");
-      results.template.push("");
-      results.templateValues.push(
-        t.callExpression(registerImportMethod(attribute, "ssrSpread"), [
-          isDynamic(attribute.get("argument"), {
-            checkMember: true,
-            native: true
-          })
-            ? t.isCallExpression(node.argument) && !node.argument.arguments.length
-              ? node.argument.callee
-              : t.arrowFunctionExpression([], node.argument)
-            : node.argument,
-          t.booleanLiteral(isSVG),
-          t.booleanLiteral(hasChildren)
-        ])
-      );
-      return;
-    }
 
     let value = node.value,
       key = t.isJSXNamespacedName(node.name)
@@ -338,8 +329,7 @@ function transformAttributes(path, results) {
           key = "class";
           doEscape = false;
         }
-        if (doEscape)
-          value.expression = escapeExpression(path, value.expression, true);
+        if (doEscape) value.expression = escapeExpression(path, value.expression, true);
 
         if (!doEscape || t.isLiteral(value.expression) || t.isBinaryExpression(value.expression)) {
           key = toAttribute(key, isSVG);
@@ -353,7 +343,10 @@ function transformAttributes(path, results) {
       if (t.isJSXExpressionContainer(value)) value = value.expression;
       key = toAttribute(key, isSVG);
       appendToTemplate(results.template, ` ${key}`);
-      appendToTemplate(results.template, value ? `="${escapeHTML(value.value, true)}"` : "");
+      appendToTemplate(
+        results.template,
+        value ? `="${escapeHTML(value.value, true)}"` : BooleanAttributes.has(key) ? "" : "true"
+      );
     }
   });
   if (!hasChildren && children) {
@@ -438,4 +431,87 @@ function transformChildren(path, results, { hydratable }) {
       }
     }
   });
+}
+
+function createElement(path, { topLevel }) {
+  const tagName = getTagName(path.node),
+    config = getConfig(path),
+    attributes = normalizeAttributes(path);
+
+  const filteredChildren = filterChildren(path.get("children")),
+    childNodes = filteredChildren.reduce((memo, path) => {
+      if (t.isJSXText(path.node)) {
+        const v = decode(trimWhitespace(path.node.extra.raw));
+        if (v.length) memo.push(t.stringLiteral(v));
+      } else {
+        const child = transformNode(path);
+        memo.push(getCreateTemplate(config, path, child)(path, child, true));
+      }
+      return memo;
+    }, []);
+
+  let transformed;
+  if (attributes.length === 1) {
+    transformed = attributes[0].node.argument;
+  } else {
+    transformed = t.objectExpression(
+      attributes.reduce((memo, attribute) => {
+        const node = attribute.node;
+
+        if (t.isJSXSpreadAttribute(node)) {
+          const expr = node.argument;
+          memo.push(t.spreadElement(expr));
+          return memo;
+        }
+        let value = node.value,
+          key = t.isJSXNamespacedName(node.name)
+            ? `${node.name.namespace.name}:${node.name.name.name}`
+            : node.name.name,
+          reservedNameSpace =
+            t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
+        if (
+          ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
+          !t.isJSXExpressionContainer(value)
+        ) {
+          node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+        }
+
+        if (
+          t.isJSXExpressionContainer(value) &&
+          (reservedNameSpace ||
+            ChildProperties.has(key) ||
+            !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
+        ) {
+          if (
+            key === "ref" ||
+            key.startsWith("use:") ||
+            key.startsWith("prop:") ||
+            key.startsWith("on")
+          )
+            return memo;
+
+          memo.push(t.objectProperty(t.stringLiteral(key), value.expression));
+        } else {
+          if (key === "$ServerOnly") return memo;
+          if (t.isJSXExpressionContainer(value)) value = value.expression;
+          memo.push(t.objectProperty(t.stringLiteral(key), value ? value : t.booleanLiteral(true)));
+        }
+        return memo;
+      }, [])
+    );
+  }
+
+  const exprs = [
+    t.callExpression(registerImportMethod(path, "ssrElement"), [
+      t.stringLiteral(tagName),
+      transformed,
+      childNodes.length
+        ? childNodes.length === 1
+          ? childNodes[0]
+          : t.arrayExpression(childNodes)
+        : t.identifier("undefined"),
+      t.booleanLiteral(Boolean(topLevel && config.hydratable))
+    ])
+  ];
+  return { exprs, template: "" };
 }

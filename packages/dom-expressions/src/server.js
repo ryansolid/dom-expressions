@@ -1,4 +1,4 @@
-import { Aliases, BooleanAttributes } from "./constants";
+import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
@@ -123,9 +123,11 @@ export function renderToStream(code, options = {}) {
             } else {
               buffer.write(`<div hidden id="${key}">${value !== undefined ? value : " "}</div>`);
               pushTask(
-                `${keys.length ? keys.map(k => `_$HY.unset("${k}")`).join(";") + ";" : ""}$df("${key}"${
-                  error ? "," + serializeError(error) : ""
-                })${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`
+                `${
+                  keys.length ? keys.map(k => `_$HY.unset("${k}")`).join(";") + ";" : ""
+                }$df("${key}"${error ? "," + serializeError(error) : ""})${
+                  !scriptFlushed ? ";" + REPLACE_SCRIPT : ""
+                }`
               );
               scriptFlushed = true;
             }
@@ -271,17 +273,15 @@ export function ssrStyle(value) {
   return result;
 }
 
-export function ssrSpread(props, isSVG, skipChildren) {
-  let result = "";
-  if (props == null) return results;
+export function ssrElement(tag, props, children, needsId) {
+  let result = `<${tag}${needsId ? ssrHydrationKey() : ""} `;
   if (typeof props === "function") props = props();
-  // TODO: figure out how to handle props.children
   const keys = Object.keys(props);
   let classResolved;
   for (let i = 0; i < keys.length; i++) {
     const prop = keys[i];
-    if (prop === "children") {
-      !skipChildren && console.warn(`SSR currently does not support spread children.`);
+    if (ChildProperties.has(prop) && children === undefined) {
+      children = prop === "innerHTML" ? props[prop] : escape(props[prop]);
       continue;
     }
     const value = props[prop];
@@ -304,7 +304,8 @@ export function ssrSpread(props, isSVG, skipChildren) {
     }
     if (i !== keys.length - 1) result += " ";
   }
-  return result;
+
+  return { t: result + `>${resolveSSRNode(children)}</${tag}>` };
 }
 
 export function ssrAttribute(key, value, isBoolean) {

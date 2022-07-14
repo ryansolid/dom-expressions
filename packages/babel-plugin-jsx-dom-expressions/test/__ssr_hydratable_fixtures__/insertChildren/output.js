@@ -1,5 +1,5 @@
 import { mergeProps as _$mergeProps } from "r-server";
-import { ssrSpread as _$ssrSpread } from "r-server";
+import { ssrElement as _$ssrElement } from "r-server";
 import { escape as _$escape } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
 import { ssr as _$ssr } from "r-server";
@@ -7,10 +7,7 @@ import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 const _tmpl$ = ["<div", "></div>"],
   _tmpl$2 = ["<module", ">", "</module>"],
   _tmpl$3 = ["<module", ">Hello</module>"],
-  _tmpl$4 = ["<module", " ", "></module>"],
-  _tmpl$5 = ["<module", " ", ">Hello</module>"],
-  _tmpl$6 = ["<module", " ", ">", "</module>"],
-  _tmpl$7 = ["<module", ">Hi <!--#-->", "<!--/--></module>"];
+  _tmpl$4 = ["<module", ">Hi <!--#-->", "<!--/--></module>"];
 
 const children = _$ssr(_tmpl$, _$ssrHydrationKey());
 
@@ -36,16 +33,11 @@ const template6 = _$createComponent(Module, {
   }
 });
 
-const template7 = _$ssr(_tmpl$4, _$ssrHydrationKey(), _$ssrSpread(dynamic, false, false));
+const template7 = _$ssrElement("module", dynamic, undefined, true);
 
-const template8 = _$ssr(_tmpl$5, _$ssrHydrationKey(), _$ssrSpread(dynamic, false, true));
+const template8 = _$ssrElement("module", dynamic, "Hello", true);
 
-const template9 = _$ssr(
-  _tmpl$6,
-  _$ssrHydrationKey(),
-  _$ssrSpread(dynamic, false, true),
-  _$escape(dynamic.children)
-);
+const template9 = _$ssrElement("module", dynamic, dynamic.children, true);
 
 const template10 = _$createComponent(
   Module,
@@ -74,7 +66,7 @@ const template16 = _$createComponent(Module, {
   }
 });
 
-const template18 = _$ssr(_tmpl$7, _$ssrHydrationKey(), _$escape(children));
+const template18 = _$ssr(_tmpl$4, _$ssrHydrationKey(), _$escape(children));
 
 const template19 = _$createComponent(Module, {
   get children() {
