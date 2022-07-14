@@ -526,15 +526,16 @@ export namespace JSX {
     "aria-valuetext"?: string;
   }
 
-  type ClassKeys = `class:${string}`;
-  type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
+  // TODO: Should we allow this?
+  // type ClassKeys = `class:${string}`;
+  // type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
 
-  type CSSAttributes = {
-    [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
-  };
+  // type CSSAttributes = {
+  //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
+  // };
 
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T>, CSSAttributes {
-    [key: ClassKeys]: boolean;
+  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    // [key: ClassKeys]: boolean;
     accessKey?: string;
     class?: string;
     contenteditable?: boolean | "inherit";
