@@ -7,4 +7,3 @@ types/
 test/runtime.js
 packages/babel-plugin-jsx-dom-expressions/index.js
 !packages/babel-plugin-jsx-dom-expressions/types/
-package-lock.json
