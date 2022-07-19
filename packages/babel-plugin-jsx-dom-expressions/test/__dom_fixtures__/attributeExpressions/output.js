@@ -1,5 +1,7 @@
 import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
+import { insert as _$insert } from "r-dom";
+import { memo as _$memo } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
 import { className as _$className } from "r-dom";
@@ -300,5 +302,15 @@ const template21 = (() => {
 })();
 
 const template22 = _tmpl$12.cloneNode(true);
+
+const template23 = (() => {
+  const _el$31 = _tmpl$4.cloneNode(true);
+
+  _$insert(_el$31, () => "t" in test && "true");
+
+  _$effect(() => (_el$31.disabled = "t" in test));
+
+  return _el$31;
+})();
 
 _$delegateEvents(["click", "input"]);

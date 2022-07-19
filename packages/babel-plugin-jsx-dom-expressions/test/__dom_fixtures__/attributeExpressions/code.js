@@ -117,3 +117,5 @@ const template20 = (
 const template21 = <div style={{ a: "static", ...rest }} ></div>
 
 const template22 = <div data="&quot;hi&quot;" data2={"\""} />;
+
+const template23 = <div disabled={"t" in test}>{"t" in test && "true"}</div>

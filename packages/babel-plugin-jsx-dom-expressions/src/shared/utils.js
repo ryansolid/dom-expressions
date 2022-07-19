@@ -92,7 +92,11 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   }
   if (
     (checkCallExpressions && t.isCallExpression(expr)) ||
-    (checkMember && (t.isMemberExpression(expr) || t.isOptionalMemberExpression(expr))) ||
+    (checkMember &&
+      (t.isMemberExpression(expr) ||
+        t.isOptionalMemberExpression(expr) ||
+        t.isSpreadElement(expr) ||
+        (t.isBinaryExpression(expr) && expr.operator === "in"))) ||
     (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr)))
   )
     return true;
@@ -101,7 +105,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   path.traverse({
     Function(p) {
       if (t.isObjectMethod(p.node) && p.node.computed) {
-        dynamic = isDynamic(p.get("key"), { checkMember, checkTags, checkCallExpressions, native })
+        dynamic = isDynamic(p.get("key"), { checkMember, checkTags, checkCallExpressions, native });
       }
       p.skip();
     },
@@ -115,7 +119,10 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
       checkMember && (dynamic = true) && p.stop();
     },
     SpreadElement(p) {
-      checkMember && (dynamic = true) && p.stop()
+      checkMember && (dynamic = true) && p.stop();
+    },
+    BinaryExpression(p) {
+      checkMember && p.node.operator === "in" && (dynamic = true) && p.stop();
     },
     JSXElement(p) {
       checkTags ? (dynamic = true) && p.stop() : p.skip();

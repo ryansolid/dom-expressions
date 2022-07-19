@@ -17,7 +17,8 @@ const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
   _tmpl$12 = ['<button class="', '">Hi</button>'],
   _tmpl$13 = ["<div><input", "><input", "></div>"],
   _tmpl$14 = ['<div style="', '"></div>'],
-  _tmpl$15 = '<div data="&quot;hi&quot;" data2="&quot;"></div>';
+  _tmpl$15 = '<div data="&quot;hi&quot;" data2="&quot;"></div>',
+  _tmpl$16 = ["<div", ">", "</div>"];
 const selected = true;
 let id = "my-h1";
 let link;
@@ -149,3 +150,9 @@ const template21 = _$ssr(
 );
 
 const template22 = _$ssr(_tmpl$15);
+
+const template23 = _$ssr(
+  _tmpl$16,
+  _$ssrAttribute("disabled", "t" in test, true),
+  "t" in test && "true"
+);
