@@ -7,6 +7,7 @@ const template = (
       class="base"
       id={id}
       {...results()}
+      foo
       disabled
       readonly=""
       title={welcoming()}
@@ -30,6 +31,7 @@ const template2 = (
 
 const template3 = (
   <div
+    foo
     id={/*@once*/ state.id}
     style={/*@once*/ { "background-color": state.color }}
     name={state.name}
@@ -103,7 +105,7 @@ const template18 = (
   />
 );
 
-const template19 = <div classList={{"bg-red-500": true}} class="flex flex-col"  />
+const template19 = <div classList={{ "bg-red-500": true }} class="flex flex-col" />;
 
 const template20 = (
   <div>

@@ -27,6 +27,7 @@ import {
   escapeHTML
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
+import { BooleanAttributes } from "../../../dom-expressions/src/constants";
 
 export function transformElement(path, info) {
   let tagName = getTagName(path.node),
@@ -602,7 +603,7 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
-          results.template += value ? `="${escapeBackticks(escapeHTML(value.value, true))}"` : "";
+          results.template += value ? `="${escapeBackticks(escapeHTML(value.value, true))}"` : BooleanAttributes.has(key) ? "" : `="true"`;
         }
       }
     });

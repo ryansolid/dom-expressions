@@ -7,7 +7,7 @@ import { ssrAttribute as _$ssrAttribute } from "r-server";
 const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
   _tmpl$2 = ["<div>", "</div>"],
   _tmpl$3 = "<div><div/></div>",
-  _tmpl$4 = ["<div", ' style="', '"', ">", "</div>"],
+  _tmpl$4 = ["<div", ' foo="true"', ' style="', '"', ">", "</div>"],
   _tmpl$5 = ["<div", ' class="', '"></div>'],
   _tmpl$6 = ["<div", ' style="', '">Hi</div>'],
   _tmpl$7 = ["<div", ' style="', '" class="', '"></div>'],
@@ -41,6 +41,7 @@ const template = _$ssrElement(
       class: `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
       id: id,
       ...results(),
+      foo: true,
       disabled: true,
       readonly: "",
       title: welcoming(),
@@ -64,16 +65,16 @@ const template2 = _$ssrElement(
 
 const template3 = _$ssr(
   _tmpl$4,
-  _$ssrHydrationKey() +
-    _$ssrAttribute(
-      "id",
-      _$escape(
-        /*@once*/
-        state.id,
-        true
-      ),
-      false
+  _$ssrHydrationKey(),
+  _$ssrAttribute(
+    "id",
+    _$escape(
+      /*@once*/
+      state.id,
+      true
     ),
+    false
+  ),
   "background-color:" + _$escape(state.color, true),
   _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content)

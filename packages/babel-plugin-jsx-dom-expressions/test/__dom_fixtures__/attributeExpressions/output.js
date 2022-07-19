@@ -9,19 +9,20 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(
-    `<div id="main"><h1 class="base selected" id="my-h1" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base selected" id="my-h1" foo="true" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div></div></div>`, 8),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<div></div>`, 2),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2);
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div foo="true"></div>`, 2),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<div></div>`, 2),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -104,7 +105,7 @@ const template3 = (() => {
 })();
 
 const template4 = (() => {
-  const _el$10 = _tmpl$3.cloneNode(true);
+  const _el$10 = _tmpl$4.cloneNode(true);
 
   _$classList(_el$10, {
     "ccc:ddd": true
@@ -115,10 +116,10 @@ const template4 = (() => {
   return _el$10;
 })();
 
-const template5 = _tmpl$4.cloneNode(true);
+const template5 = _tmpl$5.cloneNode(true);
 
 const template6 = (() => {
-  const _el$12 = _tmpl$3.cloneNode(true);
+  const _el$12 = _tmpl$4.cloneNode(true);
 
   _el$12.textContent = "Hi";
 
@@ -128,7 +129,7 @@ const template6 = (() => {
 })();
 
 const template7 = (() => {
-  const _el$13 = _tmpl$3.cloneNode(true);
+  const _el$13 = _tmpl$4.cloneNode(true);
 
   _$effect(
     _p$ => {
@@ -158,7 +159,7 @@ const template7 = (() => {
 let refTarget;
 
 const template8 = (() => {
-  const _el$14 = _tmpl$3.cloneNode(true);
+  const _el$14 = _tmpl$4.cloneNode(true);
 
   const _ref$2 = refTarget;
   typeof _ref$2 === "function" ? _ref$2(_el$14) : (refTarget = _el$14);
@@ -166,7 +167,7 @@ const template8 = (() => {
 })();
 
 const template9 = (() => {
-  const _el$15 = _tmpl$3.cloneNode(true);
+  const _el$15 = _tmpl$4.cloneNode(true);
 
   (e => console.log(e))(_el$15);
 
@@ -174,7 +175,7 @@ const template9 = (() => {
 })();
 
 const template10 = (() => {
-  const _el$16 = _tmpl$3.cloneNode(true);
+  const _el$16 = _tmpl$4.cloneNode(true);
 
   const _ref$3 = refFactory();
 
@@ -183,7 +184,7 @@ const template10 = (() => {
 })();
 
 const template11 = (() => {
-  const _el$17 = _tmpl$3.cloneNode(true);
+  const _el$17 = _tmpl$4.cloneNode(true);
 
   zero(_el$17, () => 0);
   another(_el$17, () => thing);
@@ -192,33 +193,33 @@ const template11 = (() => {
 })();
 
 const template12 = (() => {
-  const _el$18 = _tmpl$3.cloneNode(true);
+  const _el$18 = _tmpl$4.cloneNode(true);
 
   _el$18.htmlFor = thing;
   return _el$18;
 })();
 
 const template13 = (() => {
-  const _el$19 = _tmpl$5.cloneNode(true);
+  const _el$19 = _tmpl$6.cloneNode(true);
 
   _el$19.checked = true;
   return _el$19;
 })();
 
 const template14 = (() => {
-  const _el$20 = _tmpl$5.cloneNode(true);
+  const _el$20 = _tmpl$6.cloneNode(true);
 
   _$effect(() => (_el$20.checked = state.visible));
 
   return _el$20;
 })();
 
-const template15 = _tmpl$6.cloneNode(true);
+const template15 = _tmpl$7.cloneNode(true);
 
-const template16 = _tmpl$7.cloneNode(true);
+const template16 = _tmpl$8.cloneNode(true);
 
 const template17 = (() => {
-  const _el$23 = _tmpl$8.cloneNode(true);
+  const _el$23 = _tmpl$9.cloneNode(true);
 
   _$addEventListener(_el$23, "click", increment, true);
 
@@ -226,7 +227,7 @@ const template17 = (() => {
 })();
 
 const template18 = (() => {
-  const _el$24 = _tmpl$3.cloneNode(true);
+  const _el$24 = _tmpl$4.cloneNode(true);
 
   _$spread(
     _el$24,
@@ -242,10 +243,10 @@ const template18 = (() => {
   return _el$24;
 })();
 
-const template19 = _tmpl$9.cloneNode(true);
+const template19 = _tmpl$10.cloneNode(true);
 
 const template20 = (() => {
-  const _el$26 = _tmpl$10.cloneNode(true),
+  const _el$26 = _tmpl$11.cloneNode(true),
     _el$27 = _el$26.firstChild,
     _el$28 = _el$27.nextSibling;
 
@@ -282,7 +283,7 @@ const template20 = (() => {
 })();
 
 const template21 = (() => {
-  const _el$29 = _tmpl$3.cloneNode(true);
+  const _el$29 = _tmpl$4.cloneNode(true);
 
   _$effect(_$p =>
     _$style(
@@ -298,6 +299,6 @@ const template21 = (() => {
   return _el$29;
 })();
 
-const template22 = _tmpl$11.cloneNode(true);
+const template22 = _tmpl$12.cloneNode(true);
 
 _$delegateEvents(["click", "input"]);

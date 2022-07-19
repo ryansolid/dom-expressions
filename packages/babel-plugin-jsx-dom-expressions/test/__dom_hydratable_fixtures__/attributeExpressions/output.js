@@ -12,19 +12,20 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(
-    `<div id="main"><h1 class="base selected" id="my-h1" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base selected" id="my-h1" foo="true" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div></div></div>`, 8),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<div></div>`, 2),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2);
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div foo="true"></div>`, 2),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<div></div>`, 2),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`, 2),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -112,7 +113,7 @@ const template3 = (() => {
 })();
 
 const template4 = (() => {
-  const _el$10 = _$getNextElement(_tmpl$3);
+  const _el$10 = _$getNextElement(_tmpl$4);
 
   _$classList(_el$10, {
     "ccc:ddd": true
@@ -123,10 +124,10 @@ const template4 = (() => {
   return _el$10;
 })();
 
-const template5 = _$getNextElement(_tmpl$4);
+const template5 = _$getNextElement(_tmpl$5);
 
 const template6 = (() => {
-  const _el$12 = _$getNextElement(_tmpl$3);
+  const _el$12 = _$getNextElement(_tmpl$4);
 
   _el$12.textContent = "Hi";
 
@@ -136,7 +137,7 @@ const template6 = (() => {
 })();
 
 const template7 = (() => {
-  const _el$13 = _$getNextElement(_tmpl$3);
+  const _el$13 = _$getNextElement(_tmpl$4);
 
   _$effect(
     _p$ => {
@@ -166,7 +167,7 @@ const template7 = (() => {
 let refTarget;
 
 const template8 = (() => {
-  const _el$14 = _$getNextElement(_tmpl$3);
+  const _el$14 = _$getNextElement(_tmpl$4);
 
   const _ref$2 = refTarget;
   typeof _ref$2 === "function" ? _ref$2(_el$14) : (refTarget = _el$14);
@@ -174,7 +175,7 @@ const template8 = (() => {
 })();
 
 const template9 = (() => {
-  const _el$15 = _$getNextElement(_tmpl$3);
+  const _el$15 = _$getNextElement(_tmpl$4);
 
   (e => console.log(e))(_el$15);
 
@@ -182,7 +183,7 @@ const template9 = (() => {
 })();
 
 const template10 = (() => {
-  const _el$16 = _$getNextElement(_tmpl$3);
+  const _el$16 = _$getNextElement(_tmpl$4);
 
   const _ref$3 = refFactory();
 
@@ -191,7 +192,7 @@ const template10 = (() => {
 })();
 
 const template11 = (() => {
-  const _el$17 = _$getNextElement(_tmpl$3);
+  const _el$17 = _$getNextElement(_tmpl$4);
 
   zero(_el$17, () => 0);
   another(_el$17, () => thing);
@@ -200,33 +201,33 @@ const template11 = (() => {
 })();
 
 const template12 = (() => {
-  const _el$18 = _$getNextElement(_tmpl$3);
+  const _el$18 = _$getNextElement(_tmpl$4);
 
   _el$18.htmlFor = thing;
   return _el$18;
 })();
 
 const template13 = (() => {
-  const _el$19 = _$getNextElement(_tmpl$5);
+  const _el$19 = _$getNextElement(_tmpl$6);
 
   _el$19.checked = true;
   return _el$19;
 })();
 
 const template14 = (() => {
-  const _el$20 = _$getNextElement(_tmpl$5);
+  const _el$20 = _$getNextElement(_tmpl$6);
 
   _$effect(() => (_el$20.checked = state.visible));
 
   return _el$20;
 })();
 
-const template15 = _$getNextElement(_tmpl$6);
+const template15 = _$getNextElement(_tmpl$7);
 
-const template16 = _$getNextElement(_tmpl$7);
+const template16 = _$getNextElement(_tmpl$8);
 
 const template17 = (() => {
-  const _el$23 = _$getNextElement(_tmpl$8);
+  const _el$23 = _$getNextElement(_tmpl$9);
 
   _$addEventListener(_el$23, "click", increment, true);
 
@@ -236,7 +237,7 @@ const template17 = (() => {
 })();
 
 const template18 = (() => {
-  const _el$24 = _$getNextElement(_tmpl$3);
+  const _el$24 = _$getNextElement(_tmpl$4);
 
   _$spread(
     _el$24,
@@ -254,10 +255,10 @@ const template18 = (() => {
   return _el$24;
 })();
 
-const template19 = _$getNextElement(_tmpl$9);
+const template19 = _$getNextElement(_tmpl$10);
 
 const template20 = (() => {
-  const _el$26 = _$getNextElement(_tmpl$10),
+  const _el$26 = _$getNextElement(_tmpl$11),
     _el$27 = _el$26.firstChild,
     _el$28 = _el$27.nextSibling;
 
@@ -296,7 +297,7 @@ const template20 = (() => {
 })();
 
 const template21 = (() => {
-  const _el$29 = _$getNextElement(_tmpl$3);
+  const _el$29 = _$getNextElement(_tmpl$4);
 
   _$effect(_$p =>
     _$style(
@@ -312,6 +313,6 @@ const template21 = (() => {
   return _el$29;
 })();
 
-const template22 = _$getNextElement(_tmpl$11);
+const template22 = _$getNextElement(_tmpl$12);
 
 _$delegateEvents(["click", "input"]);

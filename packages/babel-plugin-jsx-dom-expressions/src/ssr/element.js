@@ -345,7 +345,7 @@ function transformAttributes(path, results) {
       appendToTemplate(results.template, ` ${key}`);
       appendToTemplate(
         results.template,
-        value ? `="${escapeHTML(value.value, true)}"` : BooleanAttributes.has(key) ? "" : "true"
+        value ? `="${escapeHTML(value.value, true)}"` : BooleanAttributes.has(key) ? "" : `="true"`
       );
     }
   });
