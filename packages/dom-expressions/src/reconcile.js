@@ -5,7 +5,7 @@ export default function reconcileArrays(parentNode, a, b) {
     bEnd = bLength,
     aStart = 0,
     bStart = 0,
-    after = a[aEnd - 1].nextSibling,
+    after = a[aEnd - 1]?.nextSibling,
     map = null;
 
   while (aStart < aEnd || bStart < bEnd) {
