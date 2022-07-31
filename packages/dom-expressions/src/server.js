@@ -3,7 +3,7 @@ import { sharedConfig } from "rxcore";
 import devalue from "devalue";
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t||"$$$")}`;
+const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t)}`;
 
 export function renderToString(code, options = {}) {
   let scripts = "";
@@ -37,8 +37,6 @@ export function renderToStringAsync(code, options = {}) {
 
 export function renderToStream(code, options = {}) {
   let { nonce, onCompleteShell, onCompleteAll, renderId } = options;
-  const tmp = [];
-  const tasks = [];
   const blockingResources = [];
   const registry = new Map();
   const dedupe = new WeakMap();
@@ -56,7 +54,7 @@ export function renderToStream(code, options = {}) {
     }
   };
   const pushTask = task => {
-    tasks.push(task);
+    tasks += task + ";";
     if (!scheduled && firstFlushed) {
       Promise.resolve().then(writeTasks);
       scheduled = true;
@@ -64,23 +62,26 @@ export function renderToStream(code, options = {}) {
   };
   const writeTasks = () => {
     if (tasks.length && !completed && firstFlushed) {
-      buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks.join(";")}</script>`);
-      tasks.length = 0;
+      buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
+      tasks = "";
     }
     scheduled = false;
   };
 
+  let context;
   let writable;
+  let tmp = "";
+  let tasks = "";
   let firstFlushed = false;
   let completed = false;
   let scriptFlushed = false;
   let scheduled = true;
   let buffer = {
     write(payload) {
-      tmp.push(payload);
+      tmp+=payload;
     }
   };
-  sharedConfig.context = {
+  sharedConfig.context = context = {
     id: renderId || "",
     count: 0,
     async: true,
@@ -89,10 +90,10 @@ export function renderToStream(code, options = {}) {
     assets: [],
     nonce,
     writeResource(id, p, error, wait) {
-      if (error) return pushTask(`_$HY.set("${id}", ${serializeError(p)})`);
+      if (error) return pushTask(serializeSet(dedupe, id, p, serializeError));
       if (!p || typeof p !== "object" || !("then" in p))
         return pushTask(serializeSet(dedupe, id, p));
-      if (wait && !firstFlushed) blockingResources.push(p);
+      if (!firstFlushed) wait && blockingResources.push(p);
       else pushTask(`_$HY.init("${id}")`);
       p.then(d => {
         !completed && pushTask(serializeSet(dedupe, id, d));
@@ -103,7 +104,7 @@ export function renderToStream(code, options = {}) {
     registerFragment(key) {
       if (!registry.has(key)) {
         registry.set(key, []);
-        pushTask(`_$HY.init("${key}")`);
+        firstFlushed && pushTask(`_$HY.init("${key}")`);
       }
       return (value, error) => {
         if (registry.has(key)) {
@@ -115,11 +116,7 @@ export function renderToStream(code, options = {}) {
               Promise.resolve().then(
                 () => (html = replacePlaceholder(html, key, value !== undefined ? value : ""))
               );
-              pushTask(
-                `${keys.length ? keys.map(k => `_$HY.unset("${k}");`) : ""}_$HY.set("${key}",${
-                  error ? serializeError(error) : '"$$$"'
-                })`
-              );
+              error && pushTask(serializeSet(dedupe, key, error, serializeError));
             } else {
               buffer.write(`<div hidden id="${key}">${value !== undefined ? value : " "}</div>`);
               pushTask(
@@ -141,10 +138,15 @@ export function renderToStream(code, options = {}) {
 
   let html = resolveSSRNode(escape(code()));
   function doShell() {
-    html = injectAssets(sharedConfig.context.assets, html);
-    if (tasks.length) html = injectScripts(html, tasks.join(";"), nonce);
+    html = injectAssets(context.assets, html);
+    for (const key in context.resources) {
+      if (!("data" in context.resources[key] || context.resources[key].ref[0].error))
+        pushTask(`_$HY.init("${key}")`);
+    }
+    for (const key of registry.keys()) pushTask(`_$HY.init("${key}")`);
+    if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
-    tasks.length = 0;
+    tasks = "";
     scheduled = false;
     onCompleteShell &&
       onCompleteShell({
@@ -158,9 +160,7 @@ export function renderToStream(code, options = {}) {
     then(fn) {
       function complete() {
         doShell();
-        let mapped = "";
-        for (let i = 0, len = tmp.length; i < len; i++) mapped += tmp[i];
-        fn(mapped);
+        fn(tmp);
       }
       if (onCompleteAll) {
         ogComplete = onCompleteAll;
@@ -175,7 +175,7 @@ export function renderToStream(code, options = {}) {
       Promise.allSettled(blockingResources).then(() => {
         doShell();
         buffer = writable = w;
-        tmp.forEach(chunk => buffer.write(chunk));
+        buffer.write(tmp);
         firstFlushed = true;
         if (completed) writable.end();
         else setTimeout(checkEnd);
@@ -197,7 +197,7 @@ export function renderToStream(code, options = {}) {
             writer.write(encoder.encode(payload));
           }
         };
-        tmp.forEach(chunk => buffer.write(chunk));
+        buffer.write(tmp);
         firstFlushed = true;
         if (completed) writable.end();
         else setTimeout(checkEnd);
@@ -445,11 +445,11 @@ function waitForFragments(registry, key) {
   return false;
 }
 
-function serializeSet(registry, key, value) {
+function serializeSet(registry, key, value, serializer = devalue) {
   const exist = registry.get(value);
   if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0])`;
   value !== null && typeof value === "object" && registry.set(value, key);
-  return `_$HY.set("${key}", ${devalue(value)})`;
+  return `_$HY.set("${key}", ${serializer(value)})`;
 }
 
 function replacePlaceholder(html, key, value) {
