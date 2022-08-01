@@ -1,4 +1,4 @@
-import { JSX } from "./jsx";
+import { JSX } from "./jsx.js";
 export const Aliases: Record<string, string>;
 export const PropAliases: Record<string, string>;
 export const Properties: Set<string>;
