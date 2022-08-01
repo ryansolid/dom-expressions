@@ -247,13 +247,16 @@ export function NoHydration(props) {
 export function ssr(t, ...nodes) {
   if (nodes.length) {
     let result = "";
-    for (let i = 0; i < t.length; i++) {
+
+    for (let i = 0; i < nodes.length; i++) {
       result += t[i];
       const node = nodes[i];
       if (node !== undefined) result += resolveSSRNode(node);
     }
-    t = result;
+
+    t = result + t[nodes.length];
   }
+
   return { t };
 }
 
