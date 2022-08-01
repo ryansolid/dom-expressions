@@ -11,11 +11,11 @@ import { classList as _$classList } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(
-    `<div id="main"><h1 class="base selected" id="my-h1" foo="true" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base selected" id="my-h1" foo disabled readonly=""><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div></div></div>`, 8),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<div foo="true"></div>`, 2),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div foo></div>`, 2),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div></div>`, 2),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
   _tmpl$6 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1),
