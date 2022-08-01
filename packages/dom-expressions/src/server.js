@@ -78,7 +78,7 @@ export function renderToStream(code, options = {}) {
   let scheduled = true;
   let buffer = {
     write(payload) {
-      tmp+=payload;
+      tmp += payload;
     }
   };
   sharedConfig.context = context = {
@@ -89,6 +89,17 @@ export function renderToStream(code, options = {}) {
     suspense: {},
     assets: [],
     nonce,
+    replace(id, payloadFn) {
+      if (firstFlushed) return;
+      const placeholder = `<!${id}>`;
+      const first = html.indexOf(placeholder);
+      if (first === -1) return;
+      const last = html.indexOf(`<!/${id}>`, first + placeholder.length);
+      html = html.replace(
+        html.slice(first, last + placeholder.length + 1),
+        resolveSSRNode(payloadFn())
+      );
+    },
     writeResource(id, p, error, wait) {
       if (error) return pushTask(serializeSet(dedupe, id, p, serializeError));
       if (!p || typeof p !== "object" || !("then" in p))
@@ -131,7 +142,7 @@ export function renderToStream(code, options = {}) {
           }
         }
         Promise.resolve().then(checkEnd);
-        return true;
+        return firstFlushed;
       };
     }
   };
