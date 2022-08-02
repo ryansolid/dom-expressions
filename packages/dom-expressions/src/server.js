@@ -1,6 +1,6 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig } from "rxcore";
-import devalue from "devalue";
+import stringify from "./serializer";
 export { createComponent } from "rxcore";
 
 const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t)}`;
@@ -15,7 +15,7 @@ export function renderToString(code, options = {}) {
     nonce: options.nonce,
     writeResource(id, p, error) {
       if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
-      scripts += `_$HY.set("${id}", ${devalue(p)});`;
+      scripts += `_$HY.set("${id}", ${stringify(p)});`;
     }
   };
   let html = injectAssets(sharedConfig.context.assets, resolveSSRNode(escape(code())));
@@ -444,9 +444,9 @@ function serializeError(error) {
         fields[key] = value;
       }
     }
-    return `Object.assign(new Error(${devalue(error.message)}), ${devalue(fields)})`;
+    return `Object.assign(new Error(${stringify(error.message)}), ${stringify(fields)})`;
   }
-  return devalue(error);
+  return stringify(error);
 }
 
 function waitForFragments(registry, key) {
@@ -459,7 +459,7 @@ function waitForFragments(registry, key) {
   return false;
 }
 
-function serializeSet(registry, key, value, serializer = devalue) {
+function serializeSet(registry, key, value, serializer = stringify) {
   const exist = registry.get(value);
   if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0])`;
   value !== null && typeof value === "object" && registry.set(value, key);
