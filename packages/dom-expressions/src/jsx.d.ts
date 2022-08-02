@@ -286,7 +286,7 @@ export namespace JSX {
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
   }
-  
+
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
   type HTMLDir = "ltr" | "rtl" | "auto";
   type HTMLFormEncType = "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
@@ -1862,7 +1862,7 @@ export namespace JSX {
     del: HTMLAttributes<HTMLElement>;
     details: DetailsHtmlAttributes<HTMLDetailsElement>;
     dfn: HTMLAttributes<HTMLElement>;
-    dialog: DialogHtmlAttributes<HTMLElement>;
+    dialog: DialogHtmlAttributes<HTMLDialogElement>;
     div: HTMLAttributes<HTMLDivElement>;
     dl: HTMLAttributes<HTMLDListElement>;
     dt: HTMLAttributes<HTMLElement>;
