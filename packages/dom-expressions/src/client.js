@@ -6,7 +6,7 @@ import {
   SVGNamespace,
   DelegatedEvents
 } from "./constants";
-import { root, effect, memo, getOwner, createComponent, sharedConfig } from "rxcore";
+import { root, effect, memo, getOwner, createComponent, sharedConfig, untrack } from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -163,6 +163,10 @@ export function dynamicProperty(props, key) {
 
 export function innerHTML(parent, content) {
   !sharedConfig.context && (parent.innerHTML = content);
+}
+
+export function use(fn, element, arg) {
+  return untrack(() => fn(element, arg));
 }
 
 export function insert(parent, accessor, marker, initial) {

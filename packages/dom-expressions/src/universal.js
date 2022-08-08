@@ -1,4 +1,4 @@
-import { root, effect, memo, createComponent } from "rxcore";
+import { root, effect, memo, createComponent, untrack } from "rxcore";
 
 export function createRenderer({
   createElement,
@@ -257,7 +257,10 @@ export function createRenderer({
     mergeProps,
     effect,
     memo,
-    createComponent
+    createComponent,
+    use(fn, element, arg) {
+      return untrack(() => fn(element, arg));
+    }
   };
 }
 

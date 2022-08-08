@@ -114,14 +114,30 @@ function transformAttributes(path, results) {
                     t.unaryExpression("typeof", refIdentifier),
                     t.stringLiteral("function")
                   ),
-                  t.callExpression(refIdentifier, [elem]),
+                  t.callExpression(
+                    registerImportMethod(
+                      path,
+                      "use",
+                      getRendererConfig(path, "universal").moduleName
+                    ),
+                    [refIdentifier, elem]
+                  ),
                   t.assignmentExpression("=", value.expression, elem)
                 )
               )
             );
           } else if (t.isFunction(value.expression)) {
             results.exprs.unshift(
-              t.expressionStatement(t.callExpression(value.expression, [elem]))
+              t.expressionStatement(
+                t.callExpression(
+                  registerImportMethod(
+                    path,
+                    "use",
+                    getRendererConfig(path, "universal").moduleName
+                  ),
+                  [value.expression, elem]
+                )
+              )
             );
           } else if (t.isCallExpression(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
@@ -137,7 +153,14 @@ function transformAttributes(path, results) {
                     t.unaryExpression("typeof", refIdentifier),
                     t.stringLiteral("function")
                   ),
-                  t.callExpression(refIdentifier, [elem])
+                  t.callExpression(
+                    registerImportMethod(
+                      path,
+                      "use",
+                      getRendererConfig(path, "universal").moduleName
+                    ),
+                    [refIdentifier, elem]
+                  )
                 )
               )
             );
@@ -147,15 +170,19 @@ function transformAttributes(path, results) {
           node.name.name.type = "Identifier";
           results.exprs.unshift(
             t.expressionStatement(
-              t.callExpression(node.name.name, [
-                elem,
-                t.arrowFunctionExpression(
-                  [],
-                  t.isJSXEmptyExpression(value.expression)
-                    ? t.booleanLiteral(true)
-                    : value.expression
-                )
-              ])
+              t.callExpression(
+                registerImportMethod(path, "use", getRendererConfig(path, "universal").moduleName),
+                [
+                  node.name.name,
+                  elem,
+                  t.arrowFunctionExpression(
+                    [],
+                    t.isJSXEmptyExpression(value.expression)
+                      ? t.booleanLiteral(true)
+                      : value.expression
+                  )
+                ]
+              )
             )
           );
         } else if (key === "children") {

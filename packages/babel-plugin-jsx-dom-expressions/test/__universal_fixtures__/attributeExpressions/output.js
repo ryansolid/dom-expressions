@@ -1,6 +1,7 @@
 import { effect as _$effect } from "r-custom";
 import { createTextNode as _$createTextNode } from "r-custom";
 import { insertNode as _$insertNode } from "r-custom";
+import { use as _$use } from "r-custom";
 import { spread as _$spread } from "r-custom";
 import { setProp as _$setProp } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
@@ -35,7 +36,7 @@ const template = (() => {
   _$insertNode(_el$3, _$createTextNode(`Welcome`));
 
   const _ref$ = link;
-  typeof _ref$ === "function" ? _ref$(_el$3) : (link = _el$3);
+  typeof _ref$ === "function" ? _$use(_ref$, _el$3) : (link = _el$3);
 
   _$setProp(_el$3, "href", "/");
 
@@ -174,14 +175,14 @@ const template8 = (() => {
   const _el$14 = _$createElement("div");
 
   const _ref$2 = refTarget;
-  typeof _ref$2 === "function" ? _ref$2(_el$14) : (refTarget = _el$14);
+  typeof _ref$2 === "function" ? _$use(_ref$2, _el$14) : (refTarget = _el$14);
   return _el$14;
 })();
 
 const template9 = (() => {
   const _el$15 = _$createElement("div");
 
-  (e => console.log(e))(_el$15);
+  _$use(e => console.log(e), _el$15);
 
   return _el$15;
 })();
@@ -191,16 +192,19 @@ const template10 = (() => {
 
   const _ref$3 = refFactory();
 
-  typeof _ref$3 === "function" && _ref$3(_el$16);
+  typeof _ref$3 === "function" && _$use(_ref$3, _el$16);
   return _el$16;
 })();
 
 const template11 = (() => {
   const _el$17 = _$createElement("div");
 
-  zero(_el$17, () => 0);
-  another(_el$17, () => thing);
-  something(_el$17, () => true);
+  _$use(zero, _el$17, () => 0);
+
+  _$use(another, _el$17, () => thing);
+
+  _$use(something, _el$17, () => true);
+
   return _el$17;
 })();
 

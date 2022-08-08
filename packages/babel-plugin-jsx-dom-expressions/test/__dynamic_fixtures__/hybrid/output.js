@@ -10,6 +10,7 @@ import { createElement as _$createElement } from "r-custom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-custom";
 import { insert as _$insert } from "r-dom";
+import { use as _$use } from "r-dom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello </div>`, 2),
   _tmpl$2 = /*#__PURE__*/ _$template(`<button></button>`, 2),
@@ -27,7 +28,7 @@ const Child = props => {
         _el$2 = _el$.firstChild;
 
       const _ref$ = props.ref;
-      typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
+      typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
 
       _$insert(_el$, () => props.name, null);
 
@@ -51,7 +52,7 @@ const Child = props => {
       const _el$3 = _tmpl$3.cloneNode(true),
         _el$4 = _el$3.firstChild;
 
-      set(_el$4);
+      _$use(set, _el$4);
 
       _$insert(_el$4, () => props.children);
 
@@ -107,7 +108,7 @@ const Child = props => {
                         _el$8 = _el$7.firstChild;
 
                       const _ref$2 = props.ref;
-                      typeof _ref$2 === "function" ? _ref$2(_el$7) : (props.ref = _el$7);
+                      typeof _ref$2 === "function" ? _$use(_ref$2, _el$7) : (props.ref = _el$7);
 
                       _$insert(_el$7, () => props.name, null);
 

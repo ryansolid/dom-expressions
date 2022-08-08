@@ -11,6 +11,7 @@ import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { classList as _$classList } from "r-dom";
+import { use as _$use } from "r-dom";
 import { spread as _$spread } from "r-dom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(
@@ -49,7 +50,7 @@ const template = (() => {
   _el$2.style.setProperty("margin-right", "40px");
 
   const _ref$ = link;
-  typeof _ref$ === "function" ? _ref$(_el$3) : (link = _el$3);
+  typeof _ref$ === "function" ? _$use(_ref$, _el$3) : (link = _el$3);
 
   _$classList(_el$3, {
     "ccc ddd": true
@@ -172,14 +173,14 @@ const template8 = (() => {
   const _el$14 = _$getNextElement(_tmpl$4);
 
   const _ref$2 = refTarget;
-  typeof _ref$2 === "function" ? _ref$2(_el$14) : (refTarget = _el$14);
+  typeof _ref$2 === "function" ? _$use(_ref$2, _el$14) : (refTarget = _el$14);
   return _el$14;
 })();
 
 const template9 = (() => {
   const _el$15 = _$getNextElement(_tmpl$4);
 
-  (e => console.log(e))(_el$15);
+  _$use(e => console.log(e), _el$15);
 
   return _el$15;
 })();
@@ -189,16 +190,19 @@ const template10 = (() => {
 
   const _ref$3 = refFactory();
 
-  typeof _ref$3 === "function" && _ref$3(_el$16);
+  typeof _ref$3 === "function" && _$use(_ref$3, _el$16);
   return _el$16;
 })();
 
 const template11 = (() => {
   const _el$17 = _$getNextElement(_tmpl$4);
 
-  zero(_el$17, () => 0);
-  another(_el$17, () => thing);
-  something(_el$17, () => true);
+  _$use(zero, _el$17, () => 0);
+
+  _$use(another, _el$17, () => thing);
+
+  _$use(something, _el$17, () => true);
+
   return _el$17;
 })();
 

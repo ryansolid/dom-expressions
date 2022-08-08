@@ -5,6 +5,7 @@ import { mergeProps as _$mergeProps } from "r-custom";
 import { insert as _$insert } from "r-custom";
 import { createTextNode as _$createTextNode } from "r-custom";
 import { insertNode as _$insertNode } from "r-custom";
+import { use as _$use } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
 import { Show } from "somewhere";
 
@@ -16,7 +17,7 @@ const Child = props => [
     _$insertNode(_el$, _el$2);
 
     const _ref$ = props.ref;
-    typeof _ref$ === "function" ? _ref$(_el$) : (props.ref = _el$);
+    typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
 
     _$insert(_el$, () => props.name, null);
 

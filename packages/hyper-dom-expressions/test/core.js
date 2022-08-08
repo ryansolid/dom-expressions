@@ -20,4 +20,4 @@ function createComponent(Comp, props) {
   return sample(() => Comp(props));
 }
 
-export { root, S as effect, memo, createComponent, getOwner, sharedConfig };
+export { root, S as effect, memo, createComponent, getOwner, sharedConfig, sample as untrack };
