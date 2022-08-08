@@ -16,3 +16,29 @@ const template = (() => {
 
   return _el$;
 })();
+
+const templateHead = (() => {
+  const _el$14 = _$getNextElement(),
+    _el$15 = _el$14.firstChild,
+    _el$16 = _el$15.nextSibling,
+    _el$17 = _el$16.nextSibling,
+    _el$18 = _el$17.nextSibling,
+    _el$19 = _el$18.nextSibling,
+    [_el$20, _co$3] = _$getNextMarker(_el$19.nextSibling);
+
+  _$insert(_el$14, _$createComponent(Assets, {}), _el$20, _co$3);
+
+  return _el$14;
+})();
+
+const templateBody = (() => {
+  const _el$21 = _$getNextElement(),
+    _el$22 = _el$21.firstChild,
+    _el$24 = _el$22.nextSibling,
+    [_el$25, _co$4] = _$getNextMarker(_el$24.nextSibling),
+    _el$23 = _el$25.nextSibling;
+
+  _$insert(_el$21, _$createComponent(App, {}), _el$25, _co$4);
+
+  return _el$21;
+})();

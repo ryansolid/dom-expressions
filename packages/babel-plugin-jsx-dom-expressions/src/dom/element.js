@@ -45,7 +45,8 @@ export function transformElement(path, info) {
       tagName,
       renderer: "dom"
     };
-  if (tagName === "html" && config.hydratable) results.skipTemplate = true;
+  if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body"))
+    results.skipTemplate = true;
   if (wrapSVG) results.template = "<svg>" + results.template;
   if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
   transformAttributes(path, results);
