@@ -400,6 +400,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       return () => current;
     }
     if (sharedConfig.context) {
+      if (!array.length) return current;
       for (let i = 0; i < array.length; i++) {
         if (array[i].parentNode) return (current = array);
       }
