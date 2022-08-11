@@ -522,3 +522,42 @@ export function pipeToWritable(code, writable, options = {}) {
   const stream = renderToStream(code, options);
   if (!options.onReady) stream.pipeTo(writable);
 }
+
+/* istanbul ignore next */
+/**
+ * @deprecated Replaced by ssrElement
+ */
+export function ssrSpread(props, isSVG, skipChildren) {
+  let result = "";
+  if (props == null) return results;
+  if (typeof props === "function") props = props();
+  const keys = Object.keys(props);
+  let classResolved;
+  for (let i = 0; i < keys.length; i++) {
+    const prop = keys[i];
+    if (prop === "children") {
+      !skipChildren && console.warn(`SSR currently does not support spread children.`);
+      continue;
+    }
+    const value = props[prop];
+    if (prop === "style") {
+      result += `style="${ssrStyle(value)}"`;
+    } else if (prop === "class" || prop === "className" || prop === "classList") {
+      if (classResolved) continue;
+      let n;
+      result += `class="${(n = props.class) ? n + " " : ""}${
+        (n = props.className) ? n + " " : ""
+      }${ssrClassList(props.classList)}"`;
+      classResolved = true;
+    } else if (BooleanAttributes.has(prop)) {
+      if (value) result += prop;
+      else continue;
+    } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
+      continue;
+    } else {
+      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+    }
+    if (i !== keys.length - 1) result += " ";
+  }
+  return result;
+}
