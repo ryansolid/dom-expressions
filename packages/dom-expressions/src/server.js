@@ -231,8 +231,7 @@ export function Assets(props) {
 
 export function HydrationScript(props) {
   const { nonce } = sharedConfig.context;
-  sharedConfig.context.assets.push(() => generateHydrationScript({ nonce, ...props }));
-  return ssr(`%%$${sharedConfig.context.assets.length - 1}%%`);
+  return ssr(generateHydrationScript({ nonce, ...props }));
 }
 
 export function NoHydration(props) {
