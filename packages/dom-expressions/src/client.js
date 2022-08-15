@@ -21,7 +21,17 @@ export {
 
 const $$EVENTS = "_$DX_DELEGATE";
 
-export { effect, memo, getOwner, createComponent, Assets as HydrationScript };
+export {
+  effect,
+  memo,
+  getOwner,
+  createComponent,
+  voidFn as useAssets,
+  voidFn as getAssets,
+  voidFn as Assets,
+  voidFn as generateHydrationScript,
+  voidFn as HydrationScript
+};
 
 export function render(code, element, init) {
   let disposer;
@@ -505,11 +515,8 @@ export function getHydrationKey() {
   return `${hydrate.id}${hydrate.count++}`;
 }
 
-// Components
-export function Assets() {
-  return;
-}
-
 export function NoHydration(props) {
   return sharedConfig.context ? undefined : props.children;
 }
+
+function voidFn() {}

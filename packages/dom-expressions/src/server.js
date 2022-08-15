@@ -219,14 +219,7 @@ export function renderToStream(code, options = {}) {
 
 // components
 export function Assets(props) {
-  sharedConfig.context.assets.push(() =>
-    NoHydration({
-      get children() {
-        return resolveSSRNode(props.children);
-      }
-    })
-  );
-  return ssr(`%%$${sharedConfig.context.assets.length - 1}%%`);
+  useAssets(() => props.children);
 }
 
 export function HydrationScript(props) {
@@ -408,6 +401,17 @@ export function getHydrationKey() {
   return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
 }
 
+export function useAssets(fn) {
+  sharedConfig.context.assets.push(() => resolveSSRNode(fn()));
+}
+
+export function getAssets() {
+  const assets = sharedConfig.context.assets;
+  let out = "";
+  for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
+  return out;
+}
+
 export function generateHydrationScript({ eventNames = ["click", "input"], nonce } = {}) {
   return `<script${
     nonce ? ` nonce="${nonce}"` : ""
@@ -417,10 +421,10 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
 }
 
 function injectAssets(assets, html) {
-  for (let i = 0; i < assets.length; i++) {
-    html = html.replace(`%%$${i}%%`, assets[i]());
-  }
-  return html;
+  if (!assets || !assets.length) return html;
+  let out = "";
+  for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
+  return html.replace(`<head>`, `<head>` + out);
 }
 
 function injectScripts(html, scripts, nonce) {

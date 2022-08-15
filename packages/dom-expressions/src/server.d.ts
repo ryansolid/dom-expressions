@@ -37,6 +37,8 @@ export function ssrAttribute(key: string, value: any, isBoolean: boolean): strin
 export function ssrHydrationKey(): string;
 export function resolveSSRNode(node: any): string;
 export function escape(html: string): string;
+export function useAsset(fn: () => string): void;
+export function getAssets(): string;
 export function getHydrationKey(): string;
 export function effect<T>(fn: (prev?: T) => T, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;

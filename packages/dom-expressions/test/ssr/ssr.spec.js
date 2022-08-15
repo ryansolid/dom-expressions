@@ -69,12 +69,8 @@ const Comp2 = () => {
 const Comp3 = () => {
   const greeting = "Hello",
     name = "<div/>";
-  return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)}${r.HydrationScript()}${r.Assets({
-    key: "ASSET",
-    get children() {
-      return r.ssr(`<link rel="modulepreload" href="chunk.js">`);
-    }
-  })}</span>`;
+  r.useAssets(() => `<link rel="modulepreload" href="chunk.js">`)
+  return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)}${r.HydrationScript()}${r.getAssets()}</span>`;
 };
 
 describe("renderToString", () => {
