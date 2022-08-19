@@ -532,7 +532,7 @@ export function pipeToWritable(code, writable, options = {}) {
  */
 export function ssrSpread(props, isSVG, skipChildren) {
   let result = "";
-  if (props == null) return results;
+  if (props == null) return result;
   if (typeof props === "function") props = props();
   const keys = Object.keys(props);
   let classResolved;
