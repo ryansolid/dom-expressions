@@ -7,7 +7,8 @@ const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=do
 
 export function renderToString(code, options = {}) {
   let scripts = "";
-  sharedConfig.context = {
+  let context;
+  sharedConfig.context = context = {
     id: options.renderId || "",
     count: 0,
     suspense: {},
@@ -18,7 +19,9 @@ export function renderToString(code, options = {}) {
       scripts += `_$HY.set("${id}", ${stringify(p)});`;
     }
   };
-  let html = injectAssets(sharedConfig.context.assets, resolveSSRNode(escape(code())));
+  let html = resolveSSRNode(escape(code()));
+  sharedConfig.context = undefined;
+  html = injectAssets(context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
   return html;
 }
@@ -149,6 +152,7 @@ export function renderToStream(code, options = {}) {
 
   let html = resolveSSRNode(escape(code()));
   function doShell() {
+    sharedConfig.context = undefined;
     html = injectAssets(context.assets, html);
     for (const key in context.resources) {
       if (!("data" in context.resources[key] || context.resources[key].ref[0].error))
@@ -424,7 +428,7 @@ function injectAssets(assets, html) {
   if (!assets || !assets.length) return html;
   let out = "";
   for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
-  return html.replace(`<head>`, `<head>` + out);
+  return html.replace(`</head>`, out + `</head>`);
 }
 
 function injectScripts(html, scripts, nonce) {
