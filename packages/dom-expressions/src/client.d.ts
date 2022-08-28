@@ -67,4 +67,4 @@ export function getAssets(): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function HydrationScript(): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
-export function getHydrationScript(): string;
+export function generateHydrationScript(): string;
