@@ -53,7 +53,7 @@ export function transformElement(path, info) {
       t.callExpression(registerImportMethod(path, "ssrHydrationKey"), [])
     );
   }
-  transformAttributes(path, results);
+  transformAttributes(path, results, { ...config, ...info });
   appendToTemplate(results.template, ">");
   if (!voidTag) {
     transformChildren(path, results, { ...config, ...info });
@@ -222,7 +222,7 @@ function normalizeAttributes(path) {
   return attributes;
 }
 
-function transformAttributes(path, results) {
+function transformAttributes(path, results, info) {
   const tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
     hasChildren = path.node.children.length > 0,
@@ -259,8 +259,11 @@ function transformAttributes(path, results) {
       )
         return;
       else if (ChildProperties.has(key)) {
-        children = value;
+        if (info.hydratable && key === "textContent" && value && value.expression) {
+          value.expression = t.logicalExpression("||", value.expression, t.stringLiteral(" "));
+        }
         if (key === "innerHTML") path.doNotEscape = true;
+        children = value;
       } else {
         let doEscape = true;
         if (BooleanAttributes.has(key)) {

@@ -65,4 +65,4 @@ const template7 = _$ssr(
   _$ssrAttribute("xlink:href", _$escape(url, true), false)
 );
 
-const template8 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$escape(text));
+const template8 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$escape(text) || " ");

@@ -61,7 +61,11 @@ const template = _$ssrElement(
 const template2 = _$ssrElement(
   "div",
   getProps("test"),
-  [_$ssr(_tmpl$2, _$escape(rowId)), _$ssr(_tmpl$2, _$escape(row.label)), _$ssr(_tmpl$3)],
+  [
+    _$ssr(_tmpl$2, _$escape(rowId) || " "),
+    _$ssr(_tmpl$2, _$escape(row.label) || " "),
+    _$ssr(_tmpl$3)
+  ],
   true
 );
 
@@ -79,7 +83,10 @@ const template3 = _$ssr(
   ),
   "background-color:" + _$escape(state.color, true),
   _$ssrAttribute("name", _$escape(state.name, true), false),
-  _$escape(state.content)
+  _$escape(
+    /*@once*/
+    state.content
+  ) || " "
 );
 
 const template4 = _$ssr(
