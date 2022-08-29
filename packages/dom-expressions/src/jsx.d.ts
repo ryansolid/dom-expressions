@@ -285,6 +285,7 @@ export namespace JSX {
 
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
+    [key: string]: string | number | undefined;
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
