@@ -527,40 +527,6 @@ export namespace JSX {
     "aria-valuenow"?: number | string;
     /** Defines the human readable text alternative of aria-valuenow for a range widget. */
     "aria-valuetext"?: string;
-  }
-
-  // TODO: Should we allow this?
-  // type ClassKeys = `class:${string}`;
-  // type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
-
-  // type CSSAttributes = {
-  //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
-  // };
-
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    // [key: ClassKeys]: boolean;
-    accessKey?: string;
-    class?: string;
-    contenteditable?: boolean | "inherit";
-    contextmenu?: string;
-    dir?: HTMLDir;
-    draggable?: boolean;
-    hidden?: boolean;
-    id?: string;
-    lang?: string;
-    spellcheck?: boolean;
-    style?: CSSProperties | string;
-    tabindex?: number | string;
-    title?: string;
-    translate?: "yes" | "no";
-    about?: string;
-    datatype?: string;
-    inlist?: any;
-    prefix?: string;
-    property?: string;
-    resource?: string;
-    typeof?: string;
-    vocab?: string;
     role?:
       | "alert"
       | "alertdialog"
@@ -632,6 +598,40 @@ export namespace JSX {
       | "tree"
       | "treegrid"
       | "treeitem";
+  }
+
+  // TODO: Should we allow this?
+  // type ClassKeys = `class:${string}`;
+  // type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
+
+  // type CSSAttributes = {
+  //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
+  // };
+
+  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    // [key: ClassKeys]: boolean;
+    accessKey?: string;
+    class?: string;
+    contenteditable?: boolean | "inherit";
+    contextmenu?: string;
+    dir?: HTMLDir;
+    draggable?: boolean;
+    hidden?: boolean;
+    id?: string;
+    lang?: string;
+    spellcheck?: boolean;
+    style?: CSSProperties | string;
+    tabindex?: number | string;
+    title?: string;
+    translate?: "yes" | "no";
+    about?: string;
+    datatype?: string;
+    inlist?: any;
+    prefix?: string;
+    property?: string;
+    resource?: string;
+    typeof?: string;
+    vocab?: string;
     autocapitalize?: HTMLAutocapitalize;
     slot?: string;
     color?: string;
@@ -1091,7 +1091,7 @@ export namespace JSX {
     | "defer xMidYMax slice"
     | "defer xMaxYMax slice";
   type SVGUnits = "userSpaceOnUse" | "objectBoundingBox";
-  interface CoreSVGAttributes<T> extends DOMAttributes<T> {
+  interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     id?: string;
     lang?: string;
     tabIndex?: number | string;
