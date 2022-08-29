@@ -462,7 +462,11 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
       if (unwrap) {
         while (typeof item === "function") item = item();
         dynamic =
-          normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item], prev) || dynamic;
+          normalizeIncomingArray(
+            normalized,
+            Array.isArray(item) ? item : [item],
+            Array.isArray(prev) ? prev : [prev]
+          ) || dynamic;
       } else {
         normalized.push(item);
         dynamic = true;

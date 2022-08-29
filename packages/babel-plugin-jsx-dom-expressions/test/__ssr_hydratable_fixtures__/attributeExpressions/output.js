@@ -36,24 +36,25 @@ const template = _$ssrElement(
       color
     }
   },
-  _$ssrElement(
-    "h1",
-    {
-      class: `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
-      id: id,
-      ...results(),
-      foo: true,
-      disabled: true,
-      readonly: "",
-      title: welcoming(),
-      style: {
-        "background-color": color(),
-        "margin-right": "40px"
-      }
-    },
-    _$ssr(_tmpl$, "ccc ddd", _$ssrAttribute("readonly", value, true)),
-    false
-  ),
+  () =>
+    _$ssrElement(
+      "h1",
+      {
+        class: `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
+        id: id,
+        ...results(),
+        foo: true,
+        disabled: true,
+        readonly: "",
+        title: welcoming(),
+        style: {
+          "background-color": color(),
+          "margin-right": "40px"
+        }
+      },
+      _$ssr(_tmpl$, "ccc ddd", _$ssrAttribute("readonly", value, true)),
+      false
+    ),
   true
 );
 

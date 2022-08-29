@@ -7,7 +7,9 @@ import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 const _tmpl$ = ["<div", "></div>"],
   _tmpl$2 = ["<module", ">", "</module>"],
   _tmpl$3 = ["<module", ">Hello</module>"],
-  _tmpl$4 = ["<module", ">Hi <!--#-->", "<!--/--></module>"];
+  _tmpl$4 = ["<module", ">Hi <!--#-->", "<!--/--></module>"],
+  _tmpl$5 = ["<div", ">Test 1</div>"],
+  _tmpl$6 = ["<div", ">", "</div>"];
 
 const children = _$ssr(_tmpl$, _$ssrHydrationKey());
 
@@ -37,7 +39,7 @@ const template7 = _$ssrElement("module", dynamic, undefined, true);
 
 const template8 = _$ssrElement("module", dynamic, "Hello", true);
 
-const template9 = _$ssrElement("module", dynamic, dynamic.children, true);
+const template9 = _$ssrElement("module", dynamic, () => dynamic.children, true);
 
 const template10 = _$createComponent(
   Module,
@@ -89,3 +91,17 @@ const template23 = _$createComponent(Module, {
     return state.children();
   }
 });
+
+const template24 = _$ssrElement(
+  "module",
+  dynamic,
+  ["Hi", "<!--#-->", () => dynamic.children, "<!--/-->"],
+  true
+);
+
+const tiles = [];
+tiles.push(_$ssr(_tmpl$5, _$ssrHydrationKey()));
+
+const template25 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$escape(tiles));
+
+const comma = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$escape((expression(), "static")));

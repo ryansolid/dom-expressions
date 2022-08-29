@@ -30,12 +30,12 @@ function appendToTemplate(template, value) {
 }
 
 export function transformElement(path, info) {
+  const config = getConfig(path);
   // contains spread attributes
   if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
-    return createElement(path, info);
+    return createElement(path, { ...info, ...config });
 
   const tagName = getTagName(path.node),
-    config = getConfig(path),
     voidTag = VoidElements.indexOf(tagName) > -1,
     results = {
       template: [`<${tagName}`],
@@ -387,6 +387,8 @@ function transformClasslistObject(path, expr, values, quasis) {
 function transformChildren(path, results, { hydratable }) {
   const doNotEscape = path.doNotEscape;
   const filteredChildren = filterChildren(path.get("children"));
+  const multi = checkLength(filteredChildren),
+    markers = hydratable && multi;
   filteredChildren.forEach(node => {
     if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
       const child = transformNode(node, { doNotEscape, hydratable: false });
@@ -411,9 +413,6 @@ function transformChildren(path, results, { hydratable }) {
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {
-      const multi = checkLength(filteredChildren),
-        markers = hydratable && multi;
-
       if (!doNotEscape) child.exprs[0] = escapeExpression(path, child.exprs[0]);
 
       // boxed by textNodes
@@ -430,19 +429,24 @@ function transformChildren(path, results, { hydratable }) {
   });
 }
 
-function createElement(path, { topLevel }) {
+function createElement(path, { topLevel, hydratable }) {
   const tagName = getTagName(path.node),
     config = getConfig(path),
     attributes = normalizeAttributes(path);
 
   const filteredChildren = filterChildren(path.get("children")),
+    multi = checkLength(filteredChildren),
+    markers = hydratable && multi,
     childNodes = filteredChildren.reduce((memo, path) => {
       if (t.isJSXText(path.node)) {
         const v = decode(trimWhitespace(path.node.extra.raw));
         if (v.length) memo.push(t.stringLiteral(v));
       } else {
         const child = transformNode(path);
+        if (markers && child.exprs.length) memo.push(t.stringLiteral("<!--#-->"));
+        if (hydratable && child.exprs.length) child.exprs[0] = t.arrowFunctionExpression([], child.exprs[0]);
         memo.push(getCreateTemplate(config, path, child)(path, child, true));
+        if (markers && child.exprs.length) memo.push(t.stringLiteral("<!--/-->"));
       }
       return memo;
     }, []);

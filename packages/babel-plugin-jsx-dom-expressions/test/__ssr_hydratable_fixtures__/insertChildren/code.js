@@ -28,3 +28,10 @@ const template20 = <module>{children()}</module>
 const template21 = <Module>{children()}</Module>
 const template22 = <module>{state.children()}</module>
 const template23 = <Module>{state.children()}</Module>
+const template24 = <module {...dynamic}>Hi{dynamic.children}</module>;
+
+const tiles = [];
+tiles.push(<div>Test 1</div>);
+const template25 = <div>{tiles}</div>;
+
+const comma = <div>{expression(), "static"}</div>

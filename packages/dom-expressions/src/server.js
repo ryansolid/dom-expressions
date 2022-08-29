@@ -290,8 +290,9 @@ export function ssrElement(tag, props, children, needsId) {
   let classResolved;
   for (let i = 0; i < keys.length; i++) {
     const prop = keys[i];
-    if (ChildProperties.has(prop) && children === undefined) {
-      children = prop === "innerHTML" ? props[prop] : escape(props[prop]);
+    if (ChildProperties.has(prop)) {
+      if (children === undefined)
+        children = prop === "innerHTML" ? props[prop] : escape(props[prop]);
       continue;
     }
     const value = props[prop];
