@@ -223,6 +223,7 @@ export function hydrate(code, element, options = {}) {
 export function getNextElement(template) {
   let node, key;
   if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
+    if ("_DX_DEV_" && !template) throw new Error("Unrecoverable Hydration Mismatch. No template for key: " + key);
     return template.cloneNode(true);
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
