@@ -7,8 +7,7 @@ const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=do
 
 export function renderToString(code, options = {}) {
   let scripts = "";
-  let context;
-  sharedConfig.context = context = {
+  sharedConfig.context = {
     id: options.renderId || "",
     count: 0,
     suspense: {},
@@ -20,8 +19,8 @@ export function renderToString(code, options = {}) {
     }
   };
   let html = resolveSSRNode(escape(code()));
-  sharedConfig.context = undefined;
-  html = injectAssets(context.assets, html);
+  sharedConfig.context.noHydrate = true;
+  html = injectAssets(sharedConfig.context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
   return html;
 }
@@ -152,7 +151,8 @@ export function renderToStream(code, options = {}) {
 
   let html = resolveSSRNode(escape(code()));
   function doShell() {
-    sharedConfig.context = undefined;
+    sharedConfig.context = context;
+    context.noHydrate = true;
     html = injectAssets(context.assets, html);
     for (const key in context.resources) {
       if (!("data" in context.resources[key] || context.resources[key].ref[0].error))
