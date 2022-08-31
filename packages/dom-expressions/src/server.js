@@ -91,6 +91,7 @@ export function renderToStream(code, options = {}) {
     suspense: {},
     assets: [],
     nonce,
+    block(p) { if (!firstFlushed) blockingResources.push(p); },
     replace(id, payloadFn) {
       if (firstFlushed) return;
       const placeholder = `<!${id}>`;
@@ -143,7 +144,7 @@ export function renderToStream(code, options = {}) {
             }
           }
         }
-        Promise.resolve().then(checkEnd);
+        if (!registry.size) Promise.resolve().then(checkEnd);
         return firstFlushed;
       };
     }
@@ -184,7 +185,7 @@ export function renderToStream(code, options = {}) {
           complete();
         };
       } else onCompleteAll = complete;
-      checkEnd();
+      if (!registry.size) Promise.resolve().then(checkEnd);
     },
     pipe(w) {
       Promise.allSettled(blockingResources).then(() => {
