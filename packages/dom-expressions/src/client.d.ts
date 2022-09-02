@@ -13,6 +13,7 @@ export function render(code: () => JSX.Element, element: MountableElement): () =
 export function template(html: string, count: number, isSVG?: boolean): Element;
 export function effect<T>(fn: (prev?: T) => T, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
+export function untrack<T>(fn: () => T): T;
 export function insert<T>(
   parent: MountableElement,
   accessor: (() => T) | T,
