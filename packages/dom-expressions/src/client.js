@@ -24,6 +24,7 @@ const $$EVENTS = "_$DX_DELEGATE";
 export {
   effect,
   memo,
+  untrack,
   getOwner,
   createComponent,
   voidFn as useAssets,

@@ -88,9 +88,18 @@ function registerTemplate(path, results) {
             templateId ? [templateId] : []
           )
         : results.hasCustomElement
-        ? t.callExpression(t.memberExpression(t.identifier("document"), t.identifier("importNode")), [
-            templateId, t.booleanLiteral(true)
-          ])
+        ? t.callExpression(
+            registerImportMethod(path, "untrack", getRendererConfig(path, "dom").moduleName),
+            [
+              t.arrowFunctionExpression(
+                [],
+                t.callExpression(
+                  t.memberExpression(t.identifier("document"), t.identifier("importNode")),
+                  [templateId, t.booleanLiteral(true)]
+                )
+              )
+            ]
+          )
         : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
             t.booleanLiteral(true)
           ])
@@ -111,9 +120,13 @@ function wrapDynamics(path, dynamics) {
       dynamics[0].key === "classList" || dynamics[0].key === "style"
         ? t.identifier("_$p")
         : undefined;
-    if (dynamics[0].key.startsWith("class:") && !t.isBooleanLiteral(dynamics[0].value) && !t.isUnaryExpression(dynamics[0].value)) {
+    if (
+      dynamics[0].key.startsWith("class:") &&
+      !t.isBooleanLiteral(dynamics[0].value) &&
+      !t.isUnaryExpression(dynamics[0].value)
+    ) {
       dynamics[0].value = t.unaryExpression("!", t.unaryExpression("!", dynamics[0].value));
-    };
+    }
 
     return t.expressionStatement(
       t.callExpression(effectWrapperId, [
@@ -137,7 +150,7 @@ function wrapDynamics(path, dynamics) {
     const identifier = path.scope.generateUidIdentifier("v$");
     if (key.startsWith("class:") && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
-    };
+    }
     identifiers.push(identifier);
     decls.push(t.variableDeclarator(identifier, value));
     if (key === "classList" || key === "style") {

@@ -3,6 +3,7 @@ import { parse, stringify, IDom } from "html-parse-string";
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 interface Runtime {
   effect<T>(fn: (prev?: T) => T, init?: T): any;
+  untrack<T>(fn: () => T): T;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   spread<T>(node: Element, accessor: (() => T) | T, isSVG?: Boolean, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
@@ -400,7 +401,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       processChildren(node, options);
       if (topDecl) {
         options.decl[0] = options.hasCustomElement
-          ? `const ${tag} = document.importNode(tmpls[${templateId}].content.firstChild, true)`
+          ? `const ${tag} = r.untrack(() => document.importNode(tmpls[${templateId}].content.firstChild, true))`
           : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
       }
     } else if (node.type === "text") {
