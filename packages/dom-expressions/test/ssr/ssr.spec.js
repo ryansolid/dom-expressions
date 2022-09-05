@@ -8,7 +8,7 @@ globalThis.TextEncoder = function () {
 const fixture = `<div data-hk="0" id="main" data-id="12" aria-role="button" class="static selected" checked style="color:red" ><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span data-hk="0" class="Hello John" > Hello &lt;div/> </span>`;
 const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">var e,t;e=window._$HY||(_$HY={events:[],completed:new WeakSet,r:{}}),t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),[\"click\",\"input\"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])})))),e.init=(t,o)=>{e.r[t]=[new Promise(((e,t)=>o=e)),o]},e.set=(t,o,s)=>{(s=e.r[t])&&s[1](o),e.r[t]=[o]},e.unset=t=>{delete e.r[t]},e.load=t=>e.r[t];</script><!--xs--><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
-const fixture4 = `<span> Hello &lt;div/> </span>`;
+const fixture4 = `<span > Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
   const selected = S.data(true),
@@ -77,11 +77,13 @@ const Comp3 = () => {
 const Comp4 = () => {
   const greeting = "Hello",
     name = "<div/>";
-  return r.ssr`<span${r.ssrSpread(
-    null,
-    false,
-    true
-  )}> ${r.escape(greeting)} ${r.escape(name)} </span>`;
+  return r.ssrElement("span", null, ` ${r.escape(greeting)} ${r.escape(name)} `);
+};
+
+const Comp5 = () => {
+  const greeting = ["Hello"],
+    name = ["<div/>"];
+  return r.ssr`<span > ${r.escape(greeting)} ${r.escape(name)} </span>`
 };
 
 describe("renderToString", () => {
@@ -93,6 +95,8 @@ describe("renderToString", () => {
     res = r.renderToString(Comp3, { nonce: "1a2s3d4f5g" });
     expect(res).toBe(fixture3);
     res = r.renderToString(Comp4);
+    expect(res).toBe(fixture4);
+    res = r.renderToString(Comp5);
     expect(res).toBe(fixture4);
   });
 });

@@ -91,7 +91,9 @@ export function renderToStream(code, options = {}) {
     suspense: {},
     assets: [],
     nonce,
-    block(p) { if (!firstFlushed) blockingResources.push(p); },
+    block(p) {
+      if (!firstFlushed) blockingResources.push(p);
+    },
     replace(id, payloadFn) {
       if (firstFlushed) return;
       const placeholder = `<!${id}>`;
@@ -286,7 +288,8 @@ export function ssrStyle(value) {
 
 export function ssrElement(tag, props, children, needsId) {
   let result = `<${tag}${needsId ? ssrHydrationKey() : ""} `;
-  if (typeof props === "function") props = props();
+  if (props == null) props = {};
+  else if (typeof props === "function") props = props();
   const keys = Object.keys(props);
   let classResolved;
   for (let i = 0; i < keys.length; i++) {
@@ -333,6 +336,11 @@ export function escape(s, attr) {
   const t = typeof s;
   if (t !== "string") {
     if (!attr && t === "function") return escape(s(), attr);
+    if (!attr && Array.isArray(s)) {
+      let r = "";
+      for (let i = 0; i < s.length; i++) r += resolveSSRNode(escape(s[i], attr));
+      return { t: r };
+    }
     if (attr && t === "boolean") return String(s);
     return s;
   }
