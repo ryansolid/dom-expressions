@@ -9,15 +9,16 @@ import * as csstype from 'csstype';
 type DOMElement = Element;
 
 export namespace JSX {
-  type Element =
-    | Node
-    | ArrayElement
-    | FunctionElement
-    | (string & {})
-    | number
-    | boolean
-    | null
-    | undefined;
+  interface ElementRegistry {
+    Node: Node;
+    ArrayElement: ArrayElement;
+    FunctionElement: FunctionElement;
+    "(string & {})": string & {};
+    number: number;
+    boolean: boolean;
+    null: null;
+    undefined: undefined;
+  }
   interface ArrayElement extends Array<Element> {}
   interface FunctionElement {
     (): Element;
