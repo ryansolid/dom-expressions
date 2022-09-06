@@ -1,4 +1,4 @@
-import * as csstype from 'csstype';
+import * as csstype from "csstype";
 
 /**
  * Based on JSX types for Surplus and Inferno and adapted for `dom-expressions`.
@@ -9,16 +9,18 @@ import * as csstype from 'csstype';
 type DOMElement = Element;
 
 export namespace JSX {
-  type FunctionMaybe<T = unknown> = ({ (): T }) | T;
-  type Element =
-    | Node
-    | ArrayElement
-    | FunctionElement
-    | (string & {})
-    | number
-    | boolean
-    | null
-    | undefined;
+  type FunctionMaybe<T = unknown> = { (): T } | T;
+  interface ElementRegistry {
+    Node: Node;
+    ArrayElement: ArrayElement;
+    FunctionElement: FunctionElement;
+    "(string & {})": string & {};
+    number: number;
+    boolean: boolean;
+    null: null;
+    undefined: undefined;
+  }
+  type Element = ElementRegistry[keyof ElementRegistry];
   interface ArrayElement extends Array<Element> {}
   interface FunctionElement {
     (): Element;
@@ -61,7 +63,7 @@ export namespace JSX {
     };
     $ServerOnly?: boolean;
   }
-  type Accessor<T> = () => T
+  type Accessor<T> = () => T;
   interface Directives {}
   interface DirectiveFunctions {
     [x: string]: (el: Element, accessor: Accessor<any>) => void;
@@ -74,7 +76,9 @@ export namespace JSX {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
   type DirectiveFunctionAttributes<T> = {
-    [K in keyof DirectiveFunctions as string extends K ? never : `use:${K}`]?: DirectiveFunctions[K] extends (
+    [K in keyof DirectiveFunctions as string extends K
+      ? never
+      : `use:${K}`]?: DirectiveFunctions[K] extends (
       el: infer E, // will be unknown if not provided
       ...rest: infer R // use rest so that we can check whether it's provided or not
     ) => void
@@ -95,11 +99,21 @@ export namespace JSX {
   };
   type OnAttributes<T> = {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
-  }
+  };
   type OnCaptureAttributes<T> = {
-    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<T, CustomCaptureEvents[Key]>;
-  }
-  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, DirectiveFunctionAttributes<T>, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
+    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
+      T,
+      CustomCaptureEvents[Key]
+    >;
+  };
+  interface DOMAttributes<T>
+    extends CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      OnAttributes<T>,
+      OnCaptureAttributes<T> {
     children?: Element;
     innerHTML?: string;
     innerText?: string | number;
@@ -286,7 +300,7 @@ export namespace JSX {
 
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
-    [key: `-${string}`]: string | number | undefined
+    [key: `-${string}`]: string | number | undefined;
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
@@ -529,76 +543,77 @@ export namespace JSX {
     /** Defines the human readable text alternative of aria-valuenow for a range widget. */
     "aria-valuetext"?: string;
     role?: FunctionMaybe<
-    | "alert"
-    | "alertdialog"
-    | "application"
-    | "article"
-    | "banner"
-    | "button"
-    | "cell"
-    | "checkbox"
-    | "columnheader"
-    | "combobox"
-    | "complementary"
-    | "contentinfo"
-    | "definition"
-    | "dialog"
-    | "directory"
-    | "document"
-    | "feed"
-    | "figure"
-    | "form"
-    | "grid"
-    | "gridcell"
-    | "group"
-    | "heading"
-    | "img"
-    | "link"
-    | "list"
-    | "listbox"
-    | "listitem"
-    | "log"
-    | "main"
-    | "marquee"
-    | "math"
-    | "menu"
-    | "menubar"
-    | "menuitem"
-    | "menuitemcheckbox"
-    | "menuitemradio"
-    | "meter"
-    | "navigation"
-    | "none"
-    | "note"
-    | "option"
-    | "presentation"
-    | "progressbar"
-    | "radio"
-    | "radiogroup"
-    | "region"
-    | "row"
-    | "rowgroup"
-    | "rowheader"
-    | "scrollbar"
-    | "search"
-    | "searchbox"
-    | "separator"
-    | "slider"
-    | "spinbutton"
-    | "status"
-    | "switch"
-    | "tab"
-    | "table"
-    | "tablist"
-    | "tabpanel"
-    | "term"
-    | "textbox"
-    | "timer"
-    | "toolbar"
-    | "tooltip"
-    | "tree"
-    | "treegrid"
-    | "treeitem">;
+      | "alert"
+      | "alertdialog"
+      | "application"
+      | "article"
+      | "banner"
+      | "button"
+      | "cell"
+      | "checkbox"
+      | "columnheader"
+      | "combobox"
+      | "complementary"
+      | "contentinfo"
+      | "definition"
+      | "dialog"
+      | "directory"
+      | "document"
+      | "feed"
+      | "figure"
+      | "form"
+      | "grid"
+      | "gridcell"
+      | "group"
+      | "heading"
+      | "img"
+      | "link"
+      | "list"
+      | "listbox"
+      | "listitem"
+      | "log"
+      | "main"
+      | "marquee"
+      | "math"
+      | "menu"
+      | "menubar"
+      | "menuitem"
+      | "menuitemcheckbox"
+      | "menuitemradio"
+      | "meter"
+      | "navigation"
+      | "none"
+      | "note"
+      | "option"
+      | "presentation"
+      | "progressbar"
+      | "radio"
+      | "radiogroup"
+      | "region"
+      | "row"
+      | "rowgroup"
+      | "rowheader"
+      | "scrollbar"
+      | "search"
+      | "searchbox"
+      | "separator"
+      | "slider"
+      | "spinbutton"
+      | "status"
+      | "switch"
+      | "tab"
+      | "table"
+      | "tablist"
+      | "tabpanel"
+      | "term"
+      | "textbox"
+      | "timer"
+      | "toolbar"
+      | "tooltip"
+      | "tree"
+      | "treegrid"
+      | "treeitem"
+    >;
   }
 
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
@@ -634,7 +649,9 @@ export namespace JSX {
     itemref?: FunctionMaybe<string>;
     part?: FunctionMaybe<string>;
     exportparts?: FunctionMaybe<string>;
-    inputmode?: FunctionMaybe<"none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search">;
+    inputmode?: FunctionMaybe<
+      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search"
+    >;
     contentEditable?: FunctionMaybe<boolean | "inherit">;
     contextMenu?: FunctionMaybe<string>;
     tabIndex?: FunctionMaybe<number | string>;
@@ -645,7 +662,9 @@ export namespace JSX {
     itemId?: FunctionMaybe<string>;
     itemRef?: FunctionMaybe<string>;
     exportParts?: FunctionMaybe<string>;
-    inputMode?: FunctionMaybe<"none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search">;
+    inputMode?: FunctionMaybe<
+      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search"
+    >;
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: FunctionMaybe<any>;
@@ -1004,7 +1023,7 @@ export namespace JSX {
     rowspan?: FunctionMaybe<number | string>;
     colSpan?: FunctionMaybe<number | string>;
     rowSpan?: FunctionMaybe<number | string>;
-    scope?: FunctionMaybe<'col' | 'row' | 'rowgroup' | 'colgroup'>;
+    scope?: FunctionMaybe<"col" | "row" | "rowgroup" | "colgroup">;
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: FunctionMaybe<string>;
@@ -1209,26 +1228,30 @@ export namespace JSX {
       | "stroke"
       | "all"
       | "none"
-      | "inherit">;
-    "shape-rendering"?: FunctionMaybe<"auto" | "optimizeSpeed" | "crispEdges" | "geometricPrecision" | "inherit">;
+      | "inherit"
+    >;
+    "shape-rendering"?: FunctionMaybe<
+      "auto" | "optimizeSpeed" | "crispEdges" | "geometricPrecision" | "inherit"
+    >;
     "stop-color"?: FunctionMaybe<string>;
     "stop-opacity"?: FunctionMaybe<number | string | "inherit">;
     stroke?: FunctionMaybe<string>;
     "stroke-dasharray"?: FunctionMaybe<string>;
     "stroke-dashoffset"?: FunctionMaybe<number | string>;
     "stroke-linecap"?: FunctionMaybe<"butt" | "round" | "square" | "inherit">;
-    "stroke-linejoin"?: FunctionMaybe<"arcs" | "bevel" | "miter" | "miter-clip" | "round" | "inherit">;
+    "stroke-linejoin"?: FunctionMaybe<
+      "arcs" | "bevel" | "miter" | "miter-clip" | "round" | "inherit"
+    >;
     "stroke-miterlimit"?: FunctionMaybe<number | string | "inherit">;
     "stroke-opacity"?: FunctionMaybe<number | string | "inherit">;
     "stroke-width"?: FunctionMaybe<number | string>;
     "text-anchor"?: FunctionMaybe<"start" | "middle" | "end" | "inherit">;
-    "text-decoration"?: FunctionMaybe<"none" | "underline" | "overline" | "line-through" | "blink" | "inherit">;
+    "text-decoration"?: FunctionMaybe<
+      "none" | "underline" | "overline" | "line-through" | "blink" | "inherit"
+    >;
     "text-rendering"?: FunctionMaybe<
-      | "auto"
-      | "optimizeSpeed"
-      | "optimizeLegibility"
-      | "geometricPrecision"
-      | "inherit">;
+      "auto" | "optimizeSpeed" | "optimizeLegibility" | "geometricPrecision" | "inherit"
+    >;
     "unicode-bidi"?: FunctionMaybe<string>;
     visibility?: FunctionMaybe<"visible" | "hidden" | "collapse" | "inherit">;
     "word-spacing"?: FunctionMaybe<number | string>;

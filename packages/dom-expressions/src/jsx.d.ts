@@ -1,4 +1,4 @@
-import * as csstype from 'csstype';
+import * as csstype from "csstype";
 
 /**
  * Based on JSX types for Surplus and Inferno and adapted for `dom-expressions`.
@@ -9,15 +9,17 @@ import * as csstype from 'csstype';
 type DOMElement = Element;
 
 export namespace JSX {
-  type Element =
-    | Node
-    | ArrayElement
-    | FunctionElement
-    | (string & {})
-    | number
-    | boolean
-    | null
-    | undefined;
+  interface ElementRegistry {
+    Node: Node;
+    ArrayElement: ArrayElement;
+    FunctionElement: FunctionElement;
+    "(string & {})": string & {};
+    number: number;
+    boolean: boolean;
+    null: null;
+    undefined: undefined;
+  }
+  type Element = ElementRegistry[keyof ElementRegistry];
   interface ArrayElement extends Array<Element> {}
   interface FunctionElement {
     (): Element;
@@ -60,7 +62,7 @@ export namespace JSX {
     };
     $ServerOnly?: boolean;
   }
-  type Accessor<T> = () => T
+  type Accessor<T> = () => T;
   interface Directives {}
   interface DirectiveFunctions {
     [x: string]: (el: Element, accessor: Accessor<any>) => void;
@@ -73,7 +75,9 @@ export namespace JSX {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
   type DirectiveFunctionAttributes<T> = {
-    [K in keyof DirectiveFunctions as string extends K ? never : `use:${K}`]?: DirectiveFunctions[K] extends (
+    [K in keyof DirectiveFunctions as string extends K
+      ? never
+      : `use:${K}`]?: DirectiveFunctions[K] extends (
       el: infer E, // will be unknown if not provided
       ...rest: infer R // use rest so that we can check whether it's provided or not
     ) => void
@@ -94,11 +98,21 @@ export namespace JSX {
   };
   type OnAttributes<T> = {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
-  }
+  };
   type OnCaptureAttributes<T> = {
-    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<T, CustomCaptureEvents[Key]>;
-  }
-  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, DirectiveFunctionAttributes<T>, PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T> {
+    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
+      T,
+      CustomCaptureEvents[Key]
+    >;
+  };
+  interface DOMAttributes<T>
+    extends CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      OnAttributes<T>,
+      OnCaptureAttributes<T> {
     children?: Element;
     innerHTML?: string;
     innerText?: string | number;
@@ -285,7 +299,7 @@ export namespace JSX {
 
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
-    [key: `-${string}`]: string | number | undefined
+    [key: `-${string}`]: string | number | undefined;
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
@@ -1012,7 +1026,7 @@ export namespace JSX {
     rowspan?: number | string;
     colSpan?: number | string;
     rowSpan?: number | string;
-    scope?: 'col' | 'row' | 'rowgroup' | 'colgroup';
+    scope?: "col" | "row" | "rowgroup" | "colgroup";
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: string;
