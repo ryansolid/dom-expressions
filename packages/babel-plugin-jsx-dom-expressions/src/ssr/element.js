@@ -15,7 +15,8 @@ import {
   escapeHTML,
   reservedNameSpaces,
   getConfig,
-  trimWhitespace
+  trimWhitespace,
+  isDynamic
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -435,7 +436,10 @@ function transformChildren(path, results, { hydratable }) {
 function createElement(path, { topLevel, hydratable }) {
   const tagName = getTagName(path.node),
     config = getConfig(path),
-    attributes = normalizeAttributes(path);
+    attributes = normalizeAttributes(path),
+    dynamic = isDynamic(path, {
+      checkMember: true
+    });
 
   const filteredChildren = filterChildren(path.get("children")),
     multi = checkLength(filteredChildren),
@@ -447,7 +451,6 @@ function createElement(path, { topLevel, hydratable }) {
       } else {
         const child = transformNode(path);
         if (markers && child.exprs.length) memo.push(t.stringLiteral("<!--#-->"));
-        if (hydratable && child.exprs.length) child.exprs[0] = t.arrowFunctionExpression([], child.exprs[0]);
         memo.push(getCreateTemplate(config, path, child)(path, child, true));
         if (markers && child.exprs.length) memo.push(t.stringLiteral("<!--/-->"));
       }
@@ -510,7 +513,12 @@ function createElement(path, { topLevel, hydratable }) {
       t.stringLiteral(tagName),
       transformed,
       childNodes.length
-        ? childNodes.length === 1
+        ? hydratable
+          ? t.arrowFunctionExpression(
+              [],
+              childNodes.length === 1 ? childNodes[0] : t.arrayExpression(childNodes)
+            )
+          : childNodes.length === 1
           ? childNodes[0]
           : t.arrayExpression(childNodes)
         : t.identifier("undefined"),

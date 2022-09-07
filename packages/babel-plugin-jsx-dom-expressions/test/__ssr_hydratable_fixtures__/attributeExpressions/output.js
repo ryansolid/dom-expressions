@@ -52,7 +52,7 @@ const template = _$ssrElement(
           "margin-right": "40px"
         }
       },
-      _$ssr(_tmpl$, "ccc ddd", _$ssrAttribute("readonly", value, true)),
+      () => _$ssr(_tmpl$, "ccc ddd", _$ssrAttribute("readonly", value, true)),
       false
     ),
   true
@@ -61,7 +61,7 @@ const template = _$ssrElement(
 const template2 = _$ssrElement(
   "div",
   getProps("test"),
-  [
+  () => [
     _$ssr(_tmpl$2, _$escape(rowId) || " "),
     _$ssr(_tmpl$2, _$escape(row.label) || " "),
     _$ssr(_tmpl$3)
