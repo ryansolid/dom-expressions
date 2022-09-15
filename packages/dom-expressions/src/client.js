@@ -369,10 +369,10 @@ function eventHandler(e) {
 
 function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
   props || (props = {});
-  if (!skipChildren && "children" in props) {
+  if (!skipChildren) {
     effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
   }
-  props.ref && props.ref(node);
+  effect(() => props.ref && props.ref(node));
   effect(() => assign(node, props, isSVG, true, prevProps, true));
   return prevProps;
 }
