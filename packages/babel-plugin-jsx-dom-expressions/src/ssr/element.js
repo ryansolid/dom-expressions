@@ -461,7 +461,7 @@ function createElement(path, { topLevel, hydratable }) {
   if (attributes.length === 1) {
     transformed = attributes[0].node.argument;
   } else {
-    transformed = t.objectExpression(
+    transformed = t.arrowFunctionExpression([], t.objectExpression(
       attributes.reduce((memo, attribute) => {
         const node = attribute.node;
 
@@ -505,7 +505,7 @@ function createElement(path, { topLevel, hydratable }) {
         }
         return memo;
       }, [])
-    );
+    ));
   }
 
   const exprs = [

@@ -25,7 +25,7 @@ let link;
 
 const template = _$ssrElement(
   "div",
-  {
+  () => ({
     id: "main",
     ...results,
     classList: {
@@ -34,10 +34,10 @@ const template = _$ssrElement(
     style: {
       color
     }
-  },
+  }),
   _$ssrElement(
     "h1",
-    {
+    () => ({
       class: `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
       id: id,
       ...results(),
@@ -49,7 +49,7 @@ const template = _$ssrElement(
         "background-color": color(),
         "margin-right": "40px"
       }
-    },
+    }),
     _$ssr(_tmpl$, "ccc ddd", _$ssrAttribute("readonly", value, true)),
     false
   ),
@@ -156,3 +156,5 @@ const template23 = _$ssr(
   _$ssrAttribute("disabled", "t" in test, true),
   "t" in test && "true"
 );
+
+const template24 = _$ssrElement("a", () => ({ ...props, something: true }), undefined, false);
