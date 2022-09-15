@@ -91,7 +91,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return false;
   }
   if (
-    (checkCallExpressions && t.isCallExpression(expr)) ||
+    (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr))) ||
     (checkMember &&
       (t.isMemberExpression(expr) ||
         t.isOptionalMemberExpression(expr) ||
@@ -110,6 +110,9 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
       p.skip();
     },
     CallExpression(p) {
+      checkCallExpressions && (dynamic = true) && p.stop();
+    },
+    OptionalCallExpression(p) {
       checkCallExpressions && (dynamic = true) && p.stop();
     },
     MemberExpression(p) {

@@ -61,3 +61,7 @@ const template29 = <div>{(thing() && thing1()) ?? thing2() ?? thing3()}</div>;
 const template30 = <div>{thing() || thing1() || thing2()}</div>;
 
 const template31 = <Comp value={count() ? (count() ? count() : count()) : count()} />
+
+const template32 = <div>{something?.()}</div>
+
+const template33 = <Comp>{something?.()}</Comp>

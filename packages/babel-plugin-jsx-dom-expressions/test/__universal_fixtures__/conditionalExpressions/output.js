@@ -315,3 +315,17 @@ const template31 = _$createComponent(Comp, {
       : count();
   }
 });
+
+const template32 = (() => {
+  const _el$20 = _$createElement("div");
+
+  _$insert(_el$20, () => something?.());
+
+  return _el$20;
+})();
+
+const template33 = _$createComponent(Comp, {
+  get children() {
+    return something?.();
+  }
+});

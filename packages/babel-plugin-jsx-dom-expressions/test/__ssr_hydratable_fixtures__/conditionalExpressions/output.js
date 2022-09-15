@@ -151,3 +151,17 @@ const template30 = _$ssr(
   _$ssrHydrationKey(),
   _$escape(thing()) || _$escape(thing1()) || _$escape(thing2())
 );
+
+const template31 = _$createComponent(Comp, {
+  get value() {
+    return count() ? (count() ? count() : count()) : count();
+  }
+});
+
+const template32 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(something?.()));
+
+const template33 = _$createComponent(Comp, {
+  get children() {
+    return something?.();
+  }
+});

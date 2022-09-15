@@ -121,3 +121,17 @@ const template29 = _$ssr(
 );
 
 const template30 = _$ssr(_tmpl$, _$escape(thing()) || _$escape(thing1()) || _$escape(thing2()));
+
+const template31 = _$createComponent(Comp, {
+  get value() {
+    return count() ? (count() ? count() : count()) : count();
+  }
+});
+
+const template32 = _$ssr(_tmpl$, _$escape(something?.()));
+
+const template33 = _$createComponent(Comp, {
+  get children() {
+    return something?.();
+  }
+});
