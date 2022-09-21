@@ -19,7 +19,8 @@ const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
   _tmpl$13 = ["<div", "><input", "><input", "></div>"],
   _tmpl$14 = ["<div", ' style="', '"></div>'],
   _tmpl$15 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
-  _tmpl$16 = ["<div", "", ">", "</div>"];
+  _tmpl$16 = ["<div", "", ">", "</div>"],
+  _tmpl$17 = ["<div", "><!--#-->", "<!--/-->", "</div>"];
 const selected = true;
 let id = "my-h1";
 let link;
@@ -180,3 +181,10 @@ const template23 = _$ssr(
 );
 
 const template24 = _$ssrElement("a", () => ({ ...props, something: true }), undefined, true);
+
+const template25 = _$ssr(
+  _tmpl$17,
+  _$ssrHydrationKey(),
+  _$escape(props.children),
+  _$ssrElement("a", () => ({ ...props, something: true }), undefined, false)
+);

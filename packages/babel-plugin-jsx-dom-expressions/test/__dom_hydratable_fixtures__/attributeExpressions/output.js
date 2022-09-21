@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
+import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
@@ -28,7 +29,9 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
   _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
   _tmpl$11 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2);
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2),
+  _tmpl$13 = /*#__PURE__*/ _$template(`<a something></a>`, 2),
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div><!#><!/><a something></a></div>`, 6);
 
 const selected = true;
 let id = "my-h1";
@@ -329,6 +332,31 @@ const template23 = (() => {
   _$effect(() => (_el$31.disabled = "t" in test));
 
   return _el$31;
+})();
+
+const template24 = (() => {
+  const _el$32 = _$getNextElement(_tmpl$13);
+
+  _$spread(_el$32, props, false, false);
+
+  _$runHydrationEvents();
+
+  return _el$32;
+})();
+
+const template25 = (() => {
+  const _el$33 = _$getNextElement(_tmpl$14),
+    _el$35 = _el$33.firstChild,
+    [_el$36, _co$] = _$getNextMarker(_el$35.nextSibling),
+    _el$34 = _el$36.nextSibling;
+
+  _$insert(_el$33, () => props.children, _el$36, _co$);
+
+  _$spread(_el$34, props, false, false);
+
+  _$runHydrationEvents();
+
+  return _el$33;
 })();
 
 _$delegateEvents(["click", "input"]);

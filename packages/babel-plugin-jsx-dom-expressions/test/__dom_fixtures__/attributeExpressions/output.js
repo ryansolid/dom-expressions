@@ -25,7 +25,9 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
   _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
   _tmpl$11 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2);
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2),
+  _tmpl$13 = /*#__PURE__*/ _$template(`<a something></a>`, 2),
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div><a something></a></div>`, 4);
 
 const selected = true;
 let id = "my-h1";
@@ -315,6 +317,25 @@ const template23 = (() => {
   _$effect(() => (_el$31.disabled = "t" in test));
 
   return _el$31;
+})();
+
+const template24 = (() => {
+  const _el$32 = _tmpl$13.cloneNode(true);
+
+  _$spread(_el$32, props, false, false);
+
+  return _el$32;
+})();
+
+const template25 = (() => {
+  const _el$33 = _tmpl$14.cloneNode(true),
+    _el$34 = _el$33.firstChild;
+
+  _$insert(_el$33, () => props.children, _el$34);
+
+  _$spread(_el$34, props, false, false);
+
+  return _el$33;
 })();
 
 _$delegateEvents(["click", "input"]);

@@ -417,10 +417,10 @@ function transformChildren(path, results, { hydratable }) {
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {
-      if (!doNotEscape) child.exprs[0] = escapeExpression(path, child.exprs[0]);
+      if (!doNotEscape && !child.spreadElement) child.exprs[0] = escapeExpression(path, child.exprs[0]);
 
       // boxed by textNodes
-      if (markers) {
+      if (markers && !child.spreadElement) {
         appendToTemplate(results.template, `<!--#-->`);
         results.template.push("");
         results.templateValues.push(child.exprs[0]);
@@ -436,10 +436,7 @@ function transformChildren(path, results, { hydratable }) {
 function createElement(path, { topLevel, hydratable }) {
   const tagName = getTagName(path.node),
     config = getConfig(path),
-    attributes = normalizeAttributes(path),
-    dynamic = isDynamic(path, {
-      checkMember: true
-    });
+    attributes = normalizeAttributes(path);
 
   const filteredChildren = filterChildren(path.get("children")),
     multi = checkLength(filteredChildren),
@@ -525,5 +522,5 @@ function createElement(path, { topLevel, hydratable }) {
       t.booleanLiteral(Boolean(topLevel && config.hydratable))
     ])
   ];
-  return { exprs, template: "" };
+  return { exprs, template: "", spreadElement: true };
 }

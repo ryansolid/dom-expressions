@@ -46,7 +46,7 @@ const template2 = _$ssr(
 const template3 = _$ssr(
   _tmpl$3,
   _$ssrHydrationKey(),
-  _$escape(_$ssrElement("rect", props, undefined, false))
+  _$ssrElement("rect", props, undefined, false)
 );
 
 const template4 = _$ssr(_tmpl$4, _$ssrHydrationKey());

@@ -36,7 +36,7 @@ const template2 = _$ssr(
     (";opacity:" + 0.5)
 );
 
-const template3 = _$ssr(_tmpl$3, _$escape(_$ssrElement("rect", props, undefined, false)));
+const template3 = _$ssr(_tmpl$3, _$ssrElement("rect", props, undefined, false));
 
 const template4 = _$ssr(_tmpl$4);
 

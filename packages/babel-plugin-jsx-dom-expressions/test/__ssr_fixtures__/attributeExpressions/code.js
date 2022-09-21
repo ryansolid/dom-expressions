@@ -121,3 +121,5 @@ const template22 = <div data="&quot;hi&quot;" data2={"\""} />;
 const template23 = <div disabled={"t" in test}>{"t" in test && "true"}</div>
 
 const template24 = <a {...props} something />
+
+const template25 = <div>{props.children}<a {...props} something /></div>
