@@ -156,7 +156,7 @@ const template6 = _$createComponent(_$For, {
 
 const template7 = _$createComponent(Child, {
   get children() {
-    return [_$ssr(_tmpl$5, _$ssrHydrationKey()), () => state.dynamic];
+    return [_$ssr(_tmpl$5, _$ssrHydrationKey()), state.dynamic];
   }
 });
 

@@ -231,6 +231,14 @@ function transformComponentChildren(children, config) {
         componentChild: true
       });
       dynamic = dynamic || child.dynamic;
+      if (
+        config.generate === "ssr" &&
+        filteredChildren.length > 1 &&
+        child.dynamic &&
+        t.isFunction(child.exprs[0])
+      ) {
+        child.exprs[0] = child.exprs[0].body;
+      }
       memo.push(getCreateTemplate(config, path, child)(path, child, filteredChildren.length > 1));
     }
     return memo;
