@@ -123,12 +123,12 @@ export function classList(node, value, prev = {}) {
   return prev;
 }
 
-export function style(node, value, prev = {}) {
+export function style(node, value, prev) {
+  if (!value) return prev ? setAttribute(node, "style") : value;
   const nodeStyle = node.style;
-  const prevString = typeof prev === "string";
-  if ((value == null && prevString) || typeof value === "string")
-    return (nodeStyle.cssText = value);
-  prevString && ((nodeStyle.cssText = undefined), (prev = {}));
+  if (typeof value === "string") return (nodeStyle.cssText = value);
+  typeof prev === "string" && (nodeStyle.cssText = prev = undefined);
+  prev || (prev = {});
   value || (value = {});
   let v, s;
   for (s in prev) {
@@ -191,7 +191,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
+      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
     }
   }
   for (const prop in props) {
@@ -224,8 +224,10 @@ export function hydrate(code, element, options = {}) {
 export function getNextElement(template) {
   let node, key;
   if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
-    if ("_DX_DEV_" && sharedConfig.context) console.warn("Unable to find DOM nodes for hydration key:", key);
-    if ("_DX_DEV_" && !template) throw new Error("Unrecoverable Hydration Mismatch. No template for key: " + key);
+    if ("_DX_DEV_" && sharedConfig.context)
+      console.warn("Unable to find DOM nodes for hydration key:", key);
+    if ("_DX_DEV_" && !template)
+      throw new Error("Unrecoverable Hydration Mismatch. No template for key: " + key);
     return template.cloneNode(true);
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
