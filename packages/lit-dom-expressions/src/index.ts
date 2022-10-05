@@ -383,17 +383,43 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       const isSVG = r.SVGElements.has(node.name);
       const isCE = node.name.includes("-");
       options.hasCustomElement = isCE;
-      for (let i = 0; i < keys.length; i++) {
-        const name = keys[i],
-          value = node.attrs[name];
-        if (value.includes("###")) {
-          delete node.attrs[name];
-          parseAttribute(tag, name, value, isSVG, isCE, options);
-        } else if (name === "###") {
-          delete node.attrs[name];
-          options.exprs.push(
-            `r.spread(${tag},exprs[${options.counter++}],${isSVG},${!!node.children.length})`
-          );
+      if (keys.includes("###")) {
+        const spreadArgs = [];
+        let current = "";
+        for (let i = 0; i < keys.length; i++) {
+          const name = keys[i],
+            value = node.attrs[name];
+          if (value.includes("###")) {
+            let count = options.counter++;
+            current += `${name}: ${
+              name !== "ref" ? `typeof exprs[${count}] === "function" ? exprs[${count}]() : ` : ""
+            }exprs[${count}],`;
+            delete node.attrs[name];
+          } else if (name === "###") {
+            if (current.length) {
+              spreadArgs.push(`()=>({${current}})`);
+              current = "";
+            }
+            spreadArgs.push(`exprs[${options.counter++}]`);
+            delete node.attrs[name];
+          }
+        }
+        if (current.length) spreadArgs.push(`()=>({${current}})`);
+        options.exprs.push(
+          `r.spread(${tag},${
+            spreadArgs.length === 1
+              ? `typeof ${spreadArgs[0]} === "function" ? r.mergeProps(${spreadArgs[0]}) : ${spreadArgs[0]}`
+              : `r.mergeProps(${spreadArgs.join(",")})`
+          },${isSVG},${!!node.children.length})`
+        );
+      } else {
+        for (let i = 0; i < keys.length; i++) {
+          const name = keys[i],
+            value = node.attrs[name];
+          if (value.includes("###")) {
+            delete node.attrs[name];
+            parseAttribute(tag, name, value, isSVG, isCE, options);
+          }
         }
       }
       options.path = tag;

@@ -24,7 +24,8 @@ import {
   getRendererConfig,
   getConfig,
   escapeBackticks,
-  escapeHTML
+  escapeHTML,
+  canNativeSpread
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -175,6 +176,7 @@ function transformAttributes(path, results) {
   let elem = results.id,
     hasHydratableEvent = false,
     children,
+    spreadExpr,
     attributes = path.get("openingElement").get("attributes");
   const tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
@@ -182,15 +184,29 @@ function transformAttributes(path, results) {
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
 
+  // preprocess spreads
+  if (attributes.some(attribute => t.isJSXSpreadAttribute(attribute.node))) {
+    [attributes, spreadExpr] = processSpreads(path, attributes, { elem, isSVG, hasChildren });
+    path.get("openingElement").set(
+      "attributes",
+      attributes.map(a => a.node)
+    );
+    //NOTE: can't be checked at compile time so add to compiled output
+    hasHydratableEvent = true;
+  }
+
   // preprocess styles
-  const styleAttribute = attributes.find(
-    a =>
-      a.node.name &&
-      a.node.name.name === "style" &&
-      t.isJSXExpressionContainer(a.node.value) &&
-      t.isObjectExpression(a.node.value.expression) &&
-      !a.node.value.expression.properties.some(p => t.isSpreadElement(p))
-  );
+  const styleAttribute = path
+    .get("openingElement")
+    .get("attributes")
+    .find(
+      a =>
+        a.node.name &&
+        a.node.name.name === "style" &&
+        t.isJSXExpressionContainer(a.node.value) &&
+        t.isObjectExpression(a.node.value.expression) &&
+        !a.node.value.expression.properties.some(p => t.isSpreadElement(p))
+    );
   if (styleAttribute) {
     let i = 0,
       leading = styleAttribute.node.value.expression.leadingComments;
@@ -310,31 +326,6 @@ function transformAttributes(path, results) {
     .get("attributes")
     .forEach(attribute => {
       const node = attribute.node;
-      if (t.isJSXSpreadAttribute(node)) {
-        results.exprs.push(
-          t.expressionStatement(
-            t.callExpression(
-              registerImportMethod(attribute, "spread", getRendererConfig(path, "dom").moduleName),
-              [
-                elem,
-                isDynamic(attribute.get("argument"), {
-                  checkMember: true
-                })
-                  ? t.isCallExpression(node.argument) && !node.argument.arguments.length
-                    ? node.argument.callee
-                    : t.arrowFunctionExpression([], node.argument)
-                  : node.argument,
-                t.booleanLiteral(isSVG),
-                t.booleanLiteral(hasChildren)
-              ]
-            )
-          )
-        );
-        //NOTE: can't be checked at compile time so add to compiled output
-        hasHydratableEvent = true;
-        return;
-      }
-
       let value = node.value,
         key = t.isJSXNamespacedName(node.name)
           ? `${node.name.namespace.name}:${node.name.name.name}`
@@ -625,6 +616,7 @@ function transformAttributes(path, results) {
   if (!hasChildren && children) {
     path.node.children.push(children);
   }
+  if (spreadExpr) results.exprs.push(spreadExpr);
 
   results.hasHydratableEvent = results.hasHydratableEvent || hasHydratableEvent;
 }
@@ -825,4 +817,85 @@ function contextToCustomElement(path, results) {
       )
     )
   );
+}
+
+function processSpreads(path, attributes, { elem, isSVG, hasChildren }) {
+  // TODO: skip but collect the names of any properties after the last spread to not overwrite them
+  const filteredAttributes = [];
+  const spreadArgs = [];
+  let runningObject = [];
+  let runningDynamic = false;
+  let dynamicSpread = false;
+  let firstSpread = false;
+  attributes.forEach(attribute => {
+    const node = attribute.node;
+    const key =
+      !t.isJSXSpreadAttribute(node) &&
+      (t.isJSXNamespacedName(node.name)
+        ? `${node.name.namespace.name}:${node.name.name.name}`
+        : node.name.name);
+    if (t.isJSXSpreadAttribute(node)) {
+      firstSpread = true;
+      if (runningObject.length) {
+        spreadArgs.push(
+          runningDynamic
+            ? t.arrowFunctionExpression([], t.objectExpression(runningObject))
+            : t.objectExpression(runningObject)
+        );
+        runningDynamic = false;
+        runningObject = [];
+      }
+      spreadArgs.push(
+        isDynamic(attribute.get("argument"), {
+          checkMember: true
+        }) && (dynamicSpread = true)
+          ? t.isCallExpression(node.argument) &&
+            !node.argument.arguments.length &&
+            !t.isCallExpression(node.argument.callee) &&
+            !t.isMemberExpression(node.argument.callee)
+            ? node.argument.callee
+            : t.arrowFunctionExpression([], node.argument)
+          : node.argument
+      );
+    } else if (
+      (firstSpread ||
+        (t.isJSXExpressionContainer(node.value) &&
+          isDynamic(attribute.get("value").get("expression"), { checkMember: true }))) &&
+      canNativeSpread(key, { checkNameSpaces: true })
+    ) {
+      const isContainer = t.isJSXExpressionContainer(node.value);
+      runningDynamic =
+        runningDynamic ||
+        (isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true }));
+      runningObject.push(
+        t.objectProperty(
+          t.stringLiteral(key),
+          isContainer ? node.value.expression : node.value || t.stringLiteral("")
+        )
+      );
+    } else filteredAttributes.push(attribute);
+  });
+
+  if (runningObject.length) {
+    spreadArgs.push(
+      runningDynamic
+        ? t.arrowFunctionExpression([], t.objectExpression(runningObject))
+        : t.objectExpression(runningObject)
+    );
+  }
+
+  const props =
+    spreadArgs.length === 1 && !dynamicSpread
+      ? spreadArgs[0]
+      : t.callExpression(registerImportMethod(path, "mergeProps"), spreadArgs);
+
+  return [
+    filteredAttributes,
+    t.expressionStatement(
+      t.callExpression(
+        registerImportMethod(path, "spread", getRendererConfig(path, "dom").moduleName),
+        [elem, props, t.booleanLiteral(isSVG), t.booleanLiteral(hasChildren)]
+      )
+    )
+  ];
 }

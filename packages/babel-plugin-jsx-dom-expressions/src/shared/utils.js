@@ -11,6 +11,14 @@ export const reservedNameSpaces = new Set([
   "attr"
 ]);
 
+export const nonSpreadNameSpaces = new Set([
+  "class",
+  "style",
+  "use",
+  "prop",
+  "attr"
+]);
+
 export function getConfig(path) {
   return path.hub.file.metadata.config;
 }
@@ -236,7 +244,7 @@ export function transformCondition(path, inline, deep) {
       if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       id = inline
-        ? t.callExpression(memo, [t.arrowFunctionExpression([], cond), t.booleanLiteral(true)])
+        ? t.callExpression(memo, [t.arrowFunctionExpression([], cond)])
         : path.scope.generateUidIdentifier("_c$");
       expr.test = t.callExpression(id, []);
       if (t.isConditionalExpression(expr.consequent) || t.isLogicalExpression(expr.consequent)) {
@@ -262,7 +270,7 @@ export function transformCondition(path, inline, deep) {
       if (!t.isBinaryExpression(cond))
         cond = t.unaryExpression("!", t.unaryExpression("!", cond, true), true);
       id = inline
-        ? t.callExpression(memo, [t.arrowFunctionExpression([], cond), t.booleanLiteral(true)])
+        ? t.callExpression(memo, [t.arrowFunctionExpression([], cond)])
         : path.scope.generateUidIdentifier("_c$");
       nextPath.node.left = t.callExpression(id, []);
     }
@@ -273,7 +281,7 @@ export function transformCondition(path, inline, deep) {
         t.variableDeclarator(
           id,
           config.memoWrapper
-            ? t.callExpression(memo, [t.arrowFunctionExpression([], cond), t.booleanLiteral(true)])
+            ? t.callExpression(memo, [t.arrowFunctionExpression([], cond)])
             : t.arrowFunctionExpression([], cond)
         )
       ]),
@@ -339,4 +347,11 @@ export function escapeHTML(s, attr) {
   }
 
   return left < s.length ? out + s.substring(left) : out;
+}
+
+export function canNativeSpread(key, { checkNameSpaces } = {}) {
+  if (checkNameSpaces && key.includes(":") && nonSpreadNameSpaces.has(key.split(":")[0])) return false;
+  // TODO: figure out how to detect definitely function ref
+  if (key === "ref") return false;
+  return true;
 }

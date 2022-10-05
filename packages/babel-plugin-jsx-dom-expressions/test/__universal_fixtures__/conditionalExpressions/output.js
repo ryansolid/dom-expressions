@@ -43,7 +43,7 @@ const template5 = (() => {
   _$insert(
     _el$5,
     (() => {
-      const _c$ = _$memo(() => !!state.dynamic, true);
+      const _c$ = _$memo(() => !!state.dynamic);
 
       return () => (_c$() ? good() : bad);
     })()
@@ -58,7 +58,7 @@ const template6 = (() => {
   _$insert(
     _el$6,
     (() => {
-      const _c$2 = _$memo(() => !!state.dynamic, true);
+      const _c$2 = _$memo(() => !!state.dynamic);
 
       return () => _c$2() && good();
     })()
@@ -73,12 +73,12 @@ const template7 = (() => {
   _$insert(
     _el$7,
     (() => {
-      const _c$3 = _$memo(() => state.count > 5, true);
+      const _c$3 = _$memo(() => state.count > 5);
 
       return () =>
         _c$3()
           ? (() => {
-              const _c$4 = _$memo(() => !!state.dynamic, true);
+              const _c$4 = _$memo(() => !!state.dynamic);
 
               return () => (_c$4() ? best : good());
             })()
@@ -95,7 +95,7 @@ const template8 = (() => {
   _$insert(
     _el$8,
     (() => {
-      const _c$5 = _$memo(() => !!(state.dynamic && state.something), true);
+      const _c$5 = _$memo(() => !!(state.dynamic && state.something));
 
       return () => _c$5() && good();
     })()
@@ -110,7 +110,7 @@ const template9 = (() => {
   _$insert(
     _el$9,
     (() => {
-      const _c$6 = _$memo(() => !!state.dynamic, true);
+      const _c$6 = _$memo(() => !!state.dynamic);
 
       return () => (_c$6() && good()) || bad;
     })()
@@ -133,13 +133,13 @@ const template11 = (() => {
   _$insert(
     _el$11,
     (() => {
-      const _c$7 = _$memo(() => !!state.a, true);
+      const _c$7 = _$memo(() => !!state.a);
 
       return () =>
         _c$7()
           ? a()
           : (() => {
-              const _c$8 = _$memo(() => !!state.b, true);
+              const _c$8 = _$memo(() => !!state.b);
 
               return () => (_c$8() ? b() : state.c ? "c" : "fallback");
             })();
@@ -151,7 +151,7 @@ const template11 = (() => {
 
 const template12 = _$createComponent(Comp, {
   get render() {
-    return _$memo(() => !!state.dynamic, true)() ? good() : bad;
+    return _$memo(() => !!state.dynamic)() ? good() : bad;
   }
 }); // no dynamic predicate
 
@@ -163,7 +163,7 @@ const template13 = _$createComponent(Comp, {
 
 const template14 = _$createComponent(Comp, {
   get render() {
-    return _$memo(() => !!state.dynamic, true)() && good();
+    return _$memo(() => !!state.dynamic)() && good();
   }
 }); // no dynamic predicate
 
@@ -181,7 +181,7 @@ const template16 = _$createComponent(Comp, {
 
 const template17 = _$createComponent(Comp, {
   get render() {
-    return _$memo(() => !!state.dynamic, true)()
+    return _$memo(() => !!state.dynamic)()
       ? _$createComponent(Comp, {})
       : _$createComponent(Comp, {});
   }
@@ -189,7 +189,7 @@ const template17 = _$createComponent(Comp, {
 
 const template18 = _$createComponent(Comp, {
   get children() {
-    return _$memo(() => !!state.dynamic, true)()
+    return _$memo(() => !!state.dynamic)()
       ? _$createComponent(Comp, {})
       : _$createComponent(Comp, {});
   }
@@ -216,7 +216,7 @@ const template20 = (() => {
   _$insert(
     _el$13,
     (() => {
-      const _c$9 = _$memo(() => !!state.dynamic, true);
+      const _c$9 = _$memo(() => !!state.dynamic);
 
       return () => (_c$9() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
     })()
@@ -289,7 +289,7 @@ const template29 = (() => {
   _$insert(
     _el$18,
     (() => {
-      const _c$10 = _$memo(() => !!thing(), true);
+      const _c$10 = _$memo(() => !!thing());
 
       return () => (_c$10() && thing1()) ?? thing2() ?? thing3();
     })()
@@ -308,11 +308,7 @@ const template30 = (() => {
 
 const template31 = _$createComponent(Comp, {
   get value() {
-    return _$memo(() => !!count(), true)()
-      ? _$memo(() => !!count(), true)()
-        ? count()
-        : count()
-      : count();
+    return _$memo(() => !!count())() ? (_$memo(() => !!count())() ? count() : count()) : count();
   }
 });
 

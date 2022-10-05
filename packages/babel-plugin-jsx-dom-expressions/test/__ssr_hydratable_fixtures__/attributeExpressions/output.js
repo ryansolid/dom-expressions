@@ -188,3 +188,15 @@ const template25 = _$ssr(
   _$escape(props.children),
   _$ssrElement("a", () => ({ ...props, something: true }), undefined, false)
 );
+
+const template26 = _$ssrElement(
+  "div",
+  () => ({
+    start: "Hi",
+    ...first,
+    middle: middle,
+    ...second
+  }),
+  () => "Hi",
+  true
+);

@@ -6,17 +6,18 @@ import { memo as _$memo } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
 import { className as _$className } from "r-dom";
-import { innerHTML as _$innerHTML } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
+import { innerHTML as _$innerHTML } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { classList as _$classList } from "r-dom";
 import { use as _$use } from "r-dom";
 import { spread as _$spread } from "r-dom";
+import { mergeProps as _$mergeProps } from "r-dom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(
-    `<div id="main"><h1 class="base selected" id="my-h1" foo disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base" id="my-h1"><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div></div></div>`, 8),
@@ -30,8 +31,9 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
   _tmpl$11 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
   _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2),
-  _tmpl$13 = /*#__PURE__*/ _$template(`<a something></a>`, 2),
-  _tmpl$14 = /*#__PURE__*/ _$template(`<div><!#><!/><a something></a></div>`, 6);
+  _tmpl$13 = /*#__PURE__*/ _$template(`<a></a>`, 2),
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div><!#><!/><a></a></div>`, 6),
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div start="Hi">Hi</div>`, 2);
 
 const selected = true;
 let id = "my-h1";
@@ -42,15 +44,39 @@ const template = (() => {
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.firstChild;
 
-  _$spread(_el$, results, false, true);
+  _$spread(
+    _el$,
+    _$mergeProps(results, {
+      classList: {
+        selected: unknown
+      },
+      style: {
+        color
+      }
+    }),
+    false,
+    true
+  );
 
-  _el$.classList.toggle("selected", unknown);
-
-  _el$.style.setProperty("color", color);
-
-  _$spread(_el$2, results, false, true);
-
-  _el$2.style.setProperty("margin-right", "40px");
+  _$spread(
+    _el$2,
+    _$mergeProps(results, () => ({
+      foo: "",
+      disabled: "",
+      readonly: "",
+      title: welcoming(),
+      style: {
+        "background-color": color(),
+        "margin-right": "40px"
+      },
+      classList: {
+        dynamic: dynamic(),
+        selected
+      }
+    })),
+    false,
+    true
+  );
 
   const _ref$ = link;
   typeof _ref$ === "function" ? _$use(_ref$, _el$3) : (link = _el$3);
@@ -60,24 +86,6 @@ const template = (() => {
   });
 
   _el$3.readOnly = value;
-
-  _$effect(
-    _p$ => {
-      const _v$ = welcoming(),
-        _v$2 = color(),
-        _v$3 = !!dynamic();
-
-      _v$ !== _p$._v$ && _$setAttribute(_el$2, "title", (_p$._v$ = _v$));
-      _v$2 !== _p$._v$2 && _el$2.style.setProperty("background-color", (_p$._v$2 = _v$2));
-      _v$3 !== _p$._v$3 && _el$2.classList.toggle("dynamic", (_p$._v$3 = _v$3));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
-    }
-  );
 
   _$runHydrationEvents();
 
@@ -91,7 +99,12 @@ const template2 = (() => {
     _el$7 = _el$6.firstChild,
     _el$8 = _el$6.nextSibling;
 
-  _$spread(_el$4, () => getProps("test"), false, true);
+  _$spread(
+    _el$4,
+    _$mergeProps(() => getProps("test")),
+    false,
+    true
+  );
 
   _el$5.textContent = rowId;
 
@@ -147,23 +160,23 @@ const template7 = (() => {
 
   _$effect(
     _p$ => {
-      const _v$4 = {
+      const _v$ = {
           "background-color": color(),
           "margin-right": "40px",
           ...props.style
         },
-        _v$5 = props.top,
-        _v$6 = !!props.active;
+        _v$2 = props.top,
+        _v$3 = !!props.active;
 
-      _p$._v$4 = _$style(_el$13, _v$4, _p$._v$4);
-      _v$5 !== _p$._v$5 && _el$13.style.setProperty("padding-top", (_p$._v$5 = _v$5));
-      _v$6 !== _p$._v$6 && _el$13.classList.toggle("my-class", (_p$._v$6 = _v$6));
+      _p$._v$ = _$style(_el$13, _v$, _p$._v$);
+      _v$2 !== _p$._v$2 && _el$13.style.setProperty("padding-top", (_p$._v$2 = _v$2));
+      _v$3 !== _p$._v$3 && _el$13.classList.toggle("my-class", (_p$._v$3 = _v$3));
       return _p$;
     },
     {
-      _v$4: undefined,
-      _v$5: undefined,
-      _v$6: undefined
+      _v$: undefined,
+      _v$2: undefined,
+      _v$3: undefined
     }
   );
 
@@ -250,11 +263,11 @@ const template18 = (() => {
 
   _$spread(
     _el$24,
-    () => ({
+    _$mergeProps(() => ({
       get [key()]() {
         return props.value;
       }
-    }),
+    })),
     false,
     false
   );
@@ -277,22 +290,22 @@ const template20 = (() => {
 
   _$effect(
     _p$ => {
-      const _v$7 = min(),
-        _v$8 = max(),
-        _v$9 = min(),
-        _v$10 = max();
+      const _v$4 = min(),
+        _v$5 = max(),
+        _v$6 = min(),
+        _v$7 = max();
 
-      _v$7 !== _p$._v$7 && _$setAttribute(_el$27, "min", (_p$._v$7 = _v$7));
-      _v$8 !== _p$._v$8 && _$setAttribute(_el$27, "max", (_p$._v$8 = _v$8));
-      _v$9 !== _p$._v$9 && _$setAttribute(_el$28, "min", (_p$._v$9 = _v$9));
-      _v$10 !== _p$._v$10 && _$setAttribute(_el$28, "max", (_p$._v$10 = _v$10));
+      _v$4 !== _p$._v$4 && _$setAttribute(_el$27, "min", (_p$._v$4 = _v$4));
+      _v$5 !== _p$._v$5 && _$setAttribute(_el$27, "max", (_p$._v$5 = _v$5));
+      _v$6 !== _p$._v$6 && _$setAttribute(_el$28, "min", (_p$._v$6 = _v$6));
+      _v$7 !== _p$._v$7 && _$setAttribute(_el$28, "max", (_p$._v$7 = _v$7));
       return _p$;
     },
     {
-      _v$7: undefined,
-      _v$8: undefined,
-      _v$9: undefined,
-      _v$10: undefined
+      _v$4: undefined,
+      _v$5: undefined,
+      _v$6: undefined,
+      _v$7: undefined
     }
   );
 
@@ -337,7 +350,14 @@ const template23 = (() => {
 const template24 = (() => {
   const _el$32 = _$getNextElement(_tmpl$13);
 
-  _$spread(_el$32, props, false, false);
+  _$spread(
+    _el$32,
+    _$mergeProps(props, {
+      something: ""
+    }),
+    false,
+    false
+  );
 
   _$runHydrationEvents();
 
@@ -352,11 +372,51 @@ const template25 = (() => {
 
   _$insert(_el$33, () => props.children, _el$36, _co$);
 
-  _$spread(_el$34, props, false, false);
+  _$spread(
+    _el$34,
+    _$mergeProps(props, {
+      something: ""
+    }),
+    false,
+    false
+  );
 
   _$runHydrationEvents();
 
   return _el$33;
+})();
+
+const template26 = (() => {
+  const _el$37 = _$getNextElement(_tmpl$15);
+
+  _$setAttribute(_el$37, "middle", middle);
+
+  _$spread(_el$37, spread, false, true);
+
+  _$runHydrationEvents();
+
+  return _el$37;
+})();
+
+const template27 = (() => {
+  const _el$38 = _$getNextElement(_tmpl$15);
+
+  _$spread(
+    _el$38,
+    _$mergeProps(
+      first,
+      {
+        middle: middle
+      },
+      second
+    ),
+    false,
+    true
+  );
+
+  _$runHydrationEvents();
+
+  return _el$38;
 })();
 
 _$delegateEvents(["click", "input"]);

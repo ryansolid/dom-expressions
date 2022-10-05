@@ -85,7 +85,7 @@ describe("r.insert", () => {
   it('can spread over element', () => {
     const node = document.createElement("span");
     S.root(() => {
-      r.spread(node, () => ({href: '/', for: 'id', classList: {danger: true}, on: {custom: e => e}, style: {color: 'red'}, notProp: 'good'}))
+      r.spread(node, {href: '/', for: 'id', classList: {danger: true}, on: {custom: e => e}, style: {color: 'red'}, notProp: 'good'})
     })
     expect(node.getAttribute('href')).toBe('/');
     expect(node.getAttribute('for')).toBe('id');

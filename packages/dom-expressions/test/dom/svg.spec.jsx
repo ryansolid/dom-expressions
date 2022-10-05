@@ -25,12 +25,12 @@ describe("create simple svg", () => {
 
     S.root(() => <Component />);
     expect(rect.outerHTML).toBe(
-      `<rect width="150" height="150" class="classy" title="hello" x="0" y="0" style="fill: red; stroke: black; stroke-width: 5; opacity: 0.5;"></rect>`
+      `<rect width="150" height="150" x="0" y="0" style="fill: red; stroke: black; stroke-width: 5; opacity: 0.5;" class="classy" title="hello"></rect>`
     );
     x(10);
     y(50);
     expect(rect.outerHTML).toBe(
-      `<rect width="150" height="150" class="classy" title="hello" x="10" y="50" style="fill: red; stroke: black; stroke-width: 5; opacity: 0.5;"></rect>`
+      `<rect width="150" height="150" x="10" y="50" style="fill: red; stroke: black; stroke-width: 5; opacity: 0.5;" class="classy" title="hello"></rect>`
     );
   });
 });

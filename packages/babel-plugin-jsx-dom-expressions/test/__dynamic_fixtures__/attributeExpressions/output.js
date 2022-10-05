@@ -8,9 +8,10 @@ import { effect as _$effect } from "r-custom";
 import { classList as _$classList } from "r-dom";
 import { use as _$use } from "r-dom";
 import { spread as _$spread } from "r-dom";
+import { mergeProps as _$mergeProps } from "r-custom";
 
 const _tmpl$ = /*#__PURE__*/ _$template(
-    `<div id="main"><h1 class="base selected" id="my-h1" disabled readonly=""><a href="/">Welcome</a></h1></div>`,
+    `<div id="main"><h1 class="base" id="my-h1"><a href="/">Welcome</a></h1></div>`,
     6
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div></div></div>`, 8),
@@ -27,15 +28,38 @@ const template = (() => {
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.firstChild;
 
-  _$spread(_el$, results, false, true);
+  _$spread(
+    _el$,
+    _$mergeProps(results, {
+      classList: {
+        selected: unknown
+      },
+      style: {
+        color
+      }
+    }),
+    false,
+    true
+  );
 
-  _el$.classList.toggle("selected", unknown);
-
-  _el$.style.setProperty("color", color);
-
-  _$spread(_el$2, results, false, true);
-
-  _el$2.style.setProperty("margin-right", "40px");
+  _$spread(
+    _el$2,
+    _$mergeProps(results, () => ({
+      disabled: "",
+      readonly: "",
+      title: welcoming(),
+      style: {
+        "background-color": color(),
+        "margin-right": "40px"
+      },
+      classList: {
+        dynamic: dynamic(),
+        selected
+      }
+    })),
+    false,
+    true
+  );
 
   const _ref$ = link;
   typeof _ref$ === "function" ? _$use(_ref$, _el$3) : (link = _el$3);
@@ -45,25 +69,6 @@ const template = (() => {
   });
 
   _el$3.readOnly = value;
-
-  _$effect(
-    _p$ => {
-      const _v$ = welcoming(),
-        _v$2 = color(),
-        _v$3 = !!dynamic();
-
-      _v$ !== _p$._v$ && _$setAttribute(_el$2, "title", (_p$._v$ = _v$));
-      _v$2 !== _p$._v$2 && _el$2.style.setProperty("background-color", (_p$._v$2 = _v$2));
-      _v$3 !== _p$._v$3 && _el$2.classList.toggle("dynamic", (_p$._v$3 = _v$3));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
-    }
-  );
-
   return _el$;
 })();
 
@@ -74,7 +79,12 @@ const template2 = (() => {
     _el$7 = _el$6.firstChild,
     _el$8 = _el$6.nextSibling;
 
-  _$spread(_el$4, () => getProps("test"), false, true);
+  _$spread(
+    _el$4,
+    _$mergeProps(() => getProps("test")),
+    false,
+    true
+  );
 
   _el$5.textContent = rowId;
   _el$8.innerHTML = "<div/>";
@@ -127,23 +137,23 @@ const template7 = (() => {
 
   _$effect(
     _p$ => {
-      const _v$4 = {
+      const _v$ = {
           "background-color": color(),
           "margin-right": "40px",
           ...props.style
         },
-        _v$5 = props.top,
-        _v$6 = !!props.active;
+        _v$2 = props.top,
+        _v$3 = !!props.active;
 
-      _p$._v$4 = _$style(_el$13, _v$4, _p$._v$4);
-      _v$5 !== _p$._v$5 && _el$13.style.setProperty("padding-top", (_p$._v$5 = _v$5));
-      _v$6 !== _p$._v$6 && _el$13.classList.toggle("my-class", (_p$._v$6 = _v$6));
+      _p$._v$ = _$style(_el$13, _v$, _p$._v$);
+      _v$2 !== _p$._v$2 && _el$13.style.setProperty("padding-top", (_p$._v$2 = _v$2));
+      _v$3 !== _p$._v$3 && _el$13.classList.toggle("my-class", (_p$._v$3 = _v$3));
       return _p$;
     },
     {
-      _v$4: undefined,
-      _v$5: undefined,
-      _v$6: undefined
+      _v$: undefined,
+      _v$2: undefined,
+      _v$3: undefined
     }
   );
 

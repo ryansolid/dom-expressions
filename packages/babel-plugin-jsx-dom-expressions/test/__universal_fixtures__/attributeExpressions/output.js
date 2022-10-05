@@ -2,8 +2,9 @@ import { effect as _$effect } from "r-custom";
 import { createTextNode as _$createTextNode } from "r-custom";
 import { insertNode as _$insertNode } from "r-custom";
 import { use as _$use } from "r-custom";
-import { spread as _$spread } from "r-custom";
 import { setProp as _$setProp } from "r-custom";
+import { spread as _$spread } from "r-custom";
+import { mergeProps as _$mergeProps } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
 const selected = true;
 let link;
@@ -17,21 +18,37 @@ const template = (() => {
 
   _$setProp(_el$, "id", "main");
 
-  _$spread(_el$, results, true);
-
-  _$setProp(_el$, "style", {
-    color
-  });
+  _$spread(
+    _el$,
+    _$mergeProps(results, {
+      style: {
+        color
+      }
+    }),
+    true
+  );
 
   _$insertNode(_el$2, _el$3);
 
   _$setProp(_el$2, "class", "base");
 
-  _$spread(_el$2, results, true);
-
-  _$setProp(_el$2, "disabled", true);
-
-  _$setProp(_el$2, "readonly", "");
+  _$spread(
+    _el$2,
+    _$mergeProps(results, () => ({
+      disabled: "",
+      readonly: "",
+      title: welcoming(),
+      style: {
+        "background-color": color(),
+        "margin-right": "40px"
+      },
+      classList: {
+        dynamic: dynamic(),
+        selected
+      }
+    })),
+    true
+  );
 
   _$insertNode(_el$3, _$createTextNode(`Welcome`));
 
@@ -41,30 +58,6 @@ const template = (() => {
   _$setProp(_el$3, "href", "/");
 
   _$setProp(_el$3, "readonly", value);
-
-  _$effect(
-    _p$ => {
-      const _v$ = welcoming(),
-        _v$2 = {
-          "background-color": color(),
-          "margin-right": "40px"
-        },
-        _v$3 = {
-          dynamic: dynamic(),
-          selected
-        };
-
-      _v$ !== _p$._v$ && (_p$._v$ = _$setProp(_el$2, "title", _v$, _p$._v$));
-      _v$2 !== _p$._v$2 && (_p$._v$2 = _$setProp(_el$2, "style", _v$2, _p$._v$2));
-      _v$3 !== _p$._v$3 && (_p$._v$3 = _$setProp(_el$2, "classList", _v$3, _p$._v$3));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
-    }
-  );
 
   return _el$;
 })();
@@ -81,7 +74,11 @@ const template2 = (() => {
 
   _$insertNode(_el$5, _el$8);
 
-  _$spread(_el$5, () => getProps("test"), true);
+  _$spread(
+    _el$5,
+    _$mergeProps(() => getProps("test")),
+    true
+  );
 
   _$setProp(_el$6, "textContent", rowId);
 
@@ -147,22 +144,22 @@ const template7 = (() => {
 
   _$effect(
     _p$ => {
-      const _v$4 = {
+      const _v$ = {
           "background-color": color(),
           "margin-right": "40px",
           ...props.style
         },
-        _v$5 = props.top,
-        _v$6 = props.active;
-      _v$4 !== _p$._v$4 && (_p$._v$4 = _$setProp(_el$13, "style", _v$4, _p$._v$4));
-      _v$5 !== _p$._v$5 && (_p$._v$5 = _$setProp(_el$13, "style:padding-top", _v$5, _p$._v$5));
-      _v$6 !== _p$._v$6 && (_p$._v$6 = _$setProp(_el$13, "class:my-class", _v$6, _p$._v$6));
+        _v$2 = props.top,
+        _v$3 = props.active;
+      _v$ !== _p$._v$ && (_p$._v$ = _$setProp(_el$13, "style", _v$, _p$._v$));
+      _v$2 !== _p$._v$2 && (_p$._v$2 = _$setProp(_el$13, "style:padding-top", _v$2, _p$._v$2));
+      _v$3 !== _p$._v$3 && (_p$._v$3 = _$setProp(_el$13, "class:my-class", _v$3, _p$._v$3));
       return _p$;
     },
     {
-      _v$4: undefined,
-      _v$5: undefined,
-      _v$6: undefined
+      _v$: undefined,
+      _v$2: undefined,
+      _v$3: undefined
     }
   );
 
@@ -283,11 +280,11 @@ const template18 = (() => {
 
   _$spread(
     _el$27,
-    () => ({
+    _$mergeProps(() => ({
       get [key()]() {
         return props.value;
       }
-    }),
+    })),
     false
   );
 

@@ -7,7 +7,8 @@ import {
   filterChildren,
   checkLength,
   getConfig,
-  getRendererConfig
+  getRendererConfig,
+  canNativeSpread
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -44,41 +45,26 @@ export function transformElement(path, info) {
 }
 
 function transformAttributes(path, results) {
-  let children;
+  let children, spreadExpr;
+  let attributes = path.get("openingElement").get("attributes");
   const elem = results.id,
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
+
+  // preprocess spreads
+  if (attributes.some(attribute => t.isJSXSpreadAttribute(attribute.node))) {
+    [attributes, spreadExpr] = processSpreads(path, attributes, { elem, hasChildren });
+    path.get("openingElement").set(
+      "attributes",
+      attributes.map(a => a.node)
+    );
+  }
 
   path
     .get("openingElement")
     .get("attributes")
     .forEach(attribute => {
       const node = attribute.node;
-      if (t.isJSXSpreadAttribute(node)) {
-        results.exprs.push(
-          t.expressionStatement(
-            t.callExpression(
-              registerImportMethod(
-                attribute,
-                "spread",
-                getRendererConfig(path, "universal").moduleName
-              ),
-              [
-                elem,
-                isDynamic(attribute.get("argument"), {
-                  checkMember: true
-                })
-                  ? t.isCallExpression(node.argument) && !node.argument.arguments.length
-                    ? node.argument.callee
-                    : t.arrowFunctionExpression([], node.argument)
-                  : node.argument,
-                t.booleanLiteral(hasChildren)
-              ]
-            )
-          )
-        );
-        return;
-      }
 
       let value = node.value,
         key = t.isJSXNamespacedName(node.name)
@@ -203,6 +189,7 @@ function transformAttributes(path, results) {
         results.exprs.push(t.expressionStatement(setAttr(attribute, elem, key, value)));
       }
     });
+  if (spreadExpr) results.exprs.push(spreadExpr);
   if (!hasChildren && children) {
     path.node.children.push(children);
   }
@@ -294,4 +281,85 @@ function transformChildren(path, results) {
 
 function nextChild(children, index) {
   return children[index + 1] && (children[index + 1].id || nextChild(children, index + 1));
+}
+
+function processSpreads(path, attributes, { elem, hasChildren }) {
+  // TODO: skip but collect the names of any properties after the last spread to not overwrite them
+  const filteredAttributes = [];
+  const spreadArgs = [];
+  let runningObject = [];
+  let runningDynamic = false;
+  let dynamicSpread = false;
+  let firstSpread = false;
+  attributes.forEach(attribute => {
+    const node = attribute.node;
+    const key =
+      !t.isJSXSpreadAttribute(node) &&
+      (t.isJSXNamespacedName(node.name)
+        ? `${node.name.namespace.name}:${node.name.name.name}`
+        : node.name.name);
+    if (t.isJSXSpreadAttribute(node)) {
+      firstSpread = true;
+      if (runningObject.length) {
+        spreadArgs.push(
+          runningDynamic
+            ? t.arrowFunctionExpression([], t.objectExpression(runningObject))
+            : t.objectExpression(runningObject)
+        );
+        runningDynamic = false;
+        runningObject = [];
+      }
+      spreadArgs.push(
+        isDynamic(attribute.get("argument"), {
+          checkMember: true
+        }) && (dynamicSpread = true)
+          ? t.isCallExpression(node.argument) &&
+            !node.argument.arguments.length &&
+            !t.isCallExpression(node.argument.callee) &&
+            !t.isMemberExpression(node.argument.callee)
+            ? node.argument.callee
+            : t.arrowFunctionExpression([], node.argument)
+          : node.argument
+      );
+    } else if (
+      (firstSpread ||
+        (t.isJSXExpressionContainer(node.value) &&
+          isDynamic(attribute.get("value").get("expression"), { checkMember: true }))) &&
+      canNativeSpread(key)
+    ) {
+      const isContainer = t.isJSXExpressionContainer(node.value);
+      runningDynamic =
+        runningDynamic ||
+        (isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true }));
+      runningObject.push(
+        t.objectProperty(
+          t.stringLiteral(key),
+          isContainer ? node.value.expression : node.value || t.stringLiteral("")
+        )
+      );
+    } else filteredAttributes.push(attribute);
+  });
+
+  if (runningObject.length) {
+    spreadArgs.push(
+      runningDynamic
+        ? t.arrowFunctionExpression([], t.objectExpression(runningObject))
+        : t.objectExpression(runningObject)
+    );
+  }
+
+  const props =
+    spreadArgs.length === 1 && !dynamicSpread
+      ? spreadArgs[0]
+      : t.callExpression(registerImportMethod(path, "mergeProps"), spreadArgs);
+
+  return [
+    filteredAttributes,
+    t.expressionStatement(
+      t.callExpression(
+        registerImportMethod(path, "spread", getRendererConfig(path, "universal").moduleName),
+        [elem, props, t.booleanLiteral(hasChildren)]
+      )
+    )
+  ];
 }

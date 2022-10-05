@@ -1,4 +1,4 @@
-import { root, effect, memo, createComponent, untrack } from "rxcore";
+import { root, effect, memo, createComponent, untrack, mergeProps } from "rxcore";
 
 export function createRenderer({
   createElement,
@@ -260,15 +260,4 @@ export function createRenderer({
       return untrack(() => fn(element, arg));
     }
   };
-}
-
-function mergeProps(...sources) {
-  const target = {};
-  for (let i = 0; i < sources.length; i++) {
-    let source = sources[i];
-    if (typeof source === "function") source = source();
-    const descriptors = Object.getOwnPropertyDescriptors(source);
-    Object.defineProperties(target, descriptors);
-  }
-  return target;
 }

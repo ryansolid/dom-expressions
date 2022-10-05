@@ -152,7 +152,7 @@ const Component = props => {
     _$insert(
       _el$14,
       (() => {
-        const _c$ = _$memo(() => !!props.three, true);
+        const _c$ = _$memo(() => !!props.three);
 
         return () =>
           _c$()

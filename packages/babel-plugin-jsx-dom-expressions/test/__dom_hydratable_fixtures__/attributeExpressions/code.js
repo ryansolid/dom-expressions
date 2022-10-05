@@ -123,3 +123,7 @@ const template23 = <div disabled={"t" in test}>{"t" in test && "true"}</div>
 const template24 = <a {...props} something />
 
 const template25 = <div>{props.children}<a {...props} something /></div>
+
+const template26 = <div start="Hi" middle={middle} {...spread}>Hi</div>
+
+const template27 = <div start="Hi" {...first} middle={middle} {...second}>Hi</div>

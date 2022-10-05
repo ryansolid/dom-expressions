@@ -6,7 +6,16 @@ import {
   SVGNamespace,
   DelegatedEvents
 } from "./constants";
-import { root, effect, memo, getOwner, createComponent, sharedConfig, untrack } from "rxcore";
+import {
+  root,
+  effect,
+  memo,
+  getOwner,
+  createComponent,
+  sharedConfig,
+  untrack,
+  mergeProps
+} from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -27,6 +36,7 @@ export {
   untrack,
   getOwner,
   createComponent,
+  mergeProps,
   voidFn as useAssets,
   voidFn as getAssets,
   voidFn as Assets,
@@ -34,14 +44,14 @@ export {
   voidFn as HydrationScript
 };
 
-export function render(code, element, init) {
+export function render(code, element, init, options = {}) {
   let disposer;
   root(dispose => {
     disposer = dispose;
     element === document
       ? code()
       : insert(element, code(), element.firstChild ? null : undefined, init);
-  });
+  }, options.owner);
   return () => {
     disposer();
     element.textContent = "";
@@ -145,20 +155,14 @@ export function style(node, value, prev) {
   return prev;
 }
 
-export function spread(node, accessor, isSVG, skipChildren) {
-  if (typeof accessor === "function") {
-    effect(current => spreadExpression(node, accessor(), current, isSVG, skipChildren));
-  } else spreadExpression(node, accessor, undefined, isSVG, skipChildren);
-}
-
-export function mergeProps(...sources) {
-  const target = {};
-  for (let i = 0; i < sources.length; i++) {
-    let source = sources[i];
-    if (typeof source === "function") source = source();
-    if (source) Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+export function spread(node, props = {}, isSVG, skipChildren) {
+  const prevProps = {};
+  if (!skipChildren) {
+    effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
   }
-  return target;
+  effect(() => props.ref && props.ref(node));
+  effect(() => assign(node, props, isSVG, true, prevProps, true));
+  return prevProps;
 }
 
 export function dynamicProperty(props, key) {
@@ -216,7 +220,7 @@ export function hydrate(code, element, options = {}) {
     count: 0
   };
   gatherHydratable(element, options.renderId);
-  const dispose = render(code, element, [...element.childNodes]);
+  const dispose = render(code, element, [...element.childNodes], options);
   sharedConfig.context = null;
   return dispose;
 }
@@ -294,9 +298,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   if (prop === "classList") return classList(node, value, prev);
   if (value === prev) return prev;
   if (prop === "ref") {
-    if (!skipRef) {
-      value(node);
-    }
+    if (!skipRef) value(node);
   } else if (prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);
     prev && node.removeEventListener(e, prev);
@@ -367,16 +369,6 @@ function eventHandler(e) {
     node =
       node.host && node.host !== node && node.host instanceof Node ? node.host : node.parentNode;
   }
-}
-
-function spreadExpression(node, props, prevProps = {}, isSVG, skipChildren) {
-  props || (props = {});
-  if (!skipChildren) {
-    effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
-  }
-  effect(() => props.ref && props.ref(node));
-  effect(() => assign(node, props, isSVG, true, prevProps, true));
-  return prevProps;
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
