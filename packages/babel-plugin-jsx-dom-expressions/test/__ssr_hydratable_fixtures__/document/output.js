@@ -1,5 +1,5 @@
 import { ssr as _$ssr } from "r-server";
-import { NoHydration as _$NoHydration } from "r-server";
+import { setHydratable as _$setHydratable } from "r-server";
 import { escape as _$escape } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
@@ -27,11 +27,7 @@ const _tmpl$ = [
 const template = _$ssr(
   _tmpl$2,
   _$ssrHydrationKey(),
-  _$NoHydration({
-    get children() {
-      return _$ssr(_tmpl$, _$escape(_$createComponent(Assets, {})));
-    }
-  }),
+  _$setHydratable(() => _$ssr(_tmpl$, _$escape(_$createComponent(Assets, {}))), false),
   _$escape(_$createComponent(App, {}))
 );
 

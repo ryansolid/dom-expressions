@@ -396,18 +396,12 @@ function transformChildren(path, results, { hydratable }) {
   filteredChildren.forEach(node => {
     if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
       const child = transformNode(node, { doNotEscape, hydratable: false });
-      registerImportMethod(path, "NoHydration");
+      registerImportMethod(path, "setHydratable");
       results.template.push("");
       results.templateValues.push(
-        t.callExpression(t.identifier("_$NoHydration"), [
-          t.objectExpression([
-            t.objectMethod(
-              "get",
-              t.identifier("children"),
-              [],
-              t.blockStatement([t.returnStatement(createTemplate(path, child))])
-            )
-          ])
+        t.callExpression(t.identifier("_$setHydratable"), [
+          t.arrowFunctionExpression([], createTemplate(path, child)),
+          t.booleanLiteral(false)
         ])
       );
       return;
@@ -417,7 +411,8 @@ function transformChildren(path, results, { hydratable }) {
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {
-      if (!doNotEscape && !child.spreadElement) child.exprs[0] = escapeExpression(path, child.exprs[0]);
+      if (!doNotEscape && !child.spreadElement)
+        child.exprs[0] = escapeExpression(path, child.exprs[0]);
 
       // boxed by textNodes
       if (markers && !child.spreadElement) {
@@ -458,51 +453,56 @@ function createElement(path, { topLevel, hydratable }) {
   if (attributes.length === 1) {
     transformed = attributes[0].node.argument;
   } else {
-    transformed = t.arrowFunctionExpression([], t.objectExpression(
-      attributes.reduce((memo, attribute) => {
-        const node = attribute.node;
+    transformed = t.arrowFunctionExpression(
+      [],
+      t.objectExpression(
+        attributes.reduce((memo, attribute) => {
+          const node = attribute.node;
 
-        if (t.isJSXSpreadAttribute(node)) {
-          const expr = node.argument;
-          memo.push(t.spreadElement(expr));
-          return memo;
-        }
-        let value = node.value,
-          key = t.isJSXNamespacedName(node.name)
-            ? `${node.name.namespace.name}:${node.name.name.name}`
-            : node.name.name,
-          reservedNameSpace =
-            t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
-        if (
-          ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
-          !t.isJSXExpressionContainer(value)
-        ) {
-          node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
-        }
-
-        if (
-          t.isJSXExpressionContainer(value) &&
-          (reservedNameSpace ||
-            ChildProperties.has(key) ||
-            !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
-        ) {
-          if (
-            key === "ref" ||
-            key.startsWith("use:") ||
-            key.startsWith("prop:") ||
-            key.startsWith("on")
-          )
+          if (t.isJSXSpreadAttribute(node)) {
+            const expr = node.argument;
+            memo.push(t.spreadElement(expr));
             return memo;
+          }
+          let value = node.value,
+            key = t.isJSXNamespacedName(node.name)
+              ? `${node.name.namespace.name}:${node.name.name.name}`
+              : node.name.name,
+            reservedNameSpace =
+              t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
+          if (
+            ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
+            !t.isJSXExpressionContainer(value)
+          ) {
+            node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+          }
 
-          memo.push(t.objectProperty(t.stringLiteral(key), value.expression));
-        } else {
-          if (key === "$ServerOnly") return memo;
-          if (t.isJSXExpressionContainer(value)) value = value.expression;
-          memo.push(t.objectProperty(t.stringLiteral(key), value ? value : t.booleanLiteral(true)));
-        }
-        return memo;
-      }, [])
-    ));
+          if (
+            t.isJSXExpressionContainer(value) &&
+            (reservedNameSpace ||
+              ChildProperties.has(key) ||
+              !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
+          ) {
+            if (
+              key === "ref" ||
+              key.startsWith("use:") ||
+              key.startsWith("prop:") ||
+              key.startsWith("on")
+            )
+              return memo;
+
+            memo.push(t.objectProperty(t.stringLiteral(key), value.expression));
+          } else {
+            if (key === "$ServerOnly") return memo;
+            if (t.isJSXExpressionContainer(value)) value = value.expression;
+            memo.push(
+              t.objectProperty(t.stringLiteral(key), value ? value : t.booleanLiteral(true))
+            );
+          }
+          return memo;
+        }, [])
+      )
+    );
   }
 
   const exprs = [

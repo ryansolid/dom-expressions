@@ -14,6 +14,7 @@ export function renderToString(code, options = {}) {
     assets: [],
     nonce: options.nonce,
     writeResource(id, p, error) {
+      if (sharedConfig.context.noHydrate) return;
       if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
       scripts += `_$HY.set("${id}", ${stringify(p)});`;
     }
@@ -106,11 +107,13 @@ export function renderToStream(code, options = {}) {
       );
     },
     writeResource(id, p, error, wait) {
-      if (error) return pushTask(serializeSet(dedupe, id, p, serializeError));
+      const serverOnly = sharedConfig.context.noHydrate;
+      if (error) return !serverOnly && pushTask(serializeSet(dedupe, id, p, serializeError));
       if (!p || typeof p !== "object" || !("then" in p))
-        return pushTask(serializeSet(dedupe, id, p));
+        return !serverOnly && pushTask(serializeSet(dedupe, id, p));
       if (!firstFlushed) wait && blockingResources.push(p);
-      else pushTask(`_$HY.init("${id}")`);
+      else !serverOnly && pushTask(`_$HY.init("${id}")`);
+      if (serverOnly) return;
       p.then(d => {
         !completed && pushTask(serializeSet(dedupe, id, d));
       }).catch(() => {
@@ -225,21 +228,9 @@ export function renderToStream(code, options = {}) {
 }
 
 // components
-export function Assets(props) {
-  useAssets(() => props.children);
-}
-
 export function HydrationScript(props) {
   const { nonce } = sharedConfig.context;
   return ssr(generateHydrationScript({ nonce, ...props }));
-}
-
-export function NoHydration(props) {
-  const c = sharedConfig.context;
-  c.noHydrate = true;
-  const children = props.children;
-  c.noHydrate = false;
-  return children;
 }
 
 // rendering
@@ -415,6 +406,14 @@ export function getHydrationKey() {
   return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
 }
 
+export function setHydratable(fn, hydratable) {
+  const c = sharedConfig.context;
+  sharedConfig.context = { ...c, id: `${c.id}${c.count++}-`, count: 0, noHydrate: !hydratable };
+  const res = fn();
+  sharedConfig.context = c;
+  return res;
+}
+
 export function useAssets(fn) {
   sharedConfig.context.assets.push(() => resolveSSRNode(fn()));
 }
@@ -500,6 +499,16 @@ function replacePlaceholder(html, key, value) {
     } else open++;
   }
   return html.slice(0, first) + value + html.slice(nextRegex.lastIndex);
+}
+
+// consider deprecating
+export function Assets(props) {
+  useAssets(() => props.children);
+}
+
+
+export function NoHydration(props) {
+  return setHydratable(() => props.children, false);
 }
 
 /* istanbul ignore next */
