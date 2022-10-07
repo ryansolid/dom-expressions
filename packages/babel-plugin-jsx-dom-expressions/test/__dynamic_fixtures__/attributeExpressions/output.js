@@ -44,19 +44,28 @@ const template = (() => {
 
   _$spread(
     _el$2,
-    _$mergeProps(results, () => ({
+    _$mergeProps(results, {
       disabled: "",
       readonly: "",
-      title: welcoming(),
-      style: {
-        "background-color": color(),
-        "margin-right": "40px"
+
+      get title() {
+        return welcoming();
       },
-      classList: {
-        dynamic: dynamic(),
-        selected
+
+      get style() {
+        return {
+          "background-color": color(),
+          "margin-right": "40px"
+        };
+      },
+
+      get classList() {
+        return {
+          dynamic: dynamic(),
+          selected
+        };
       }
-    })),
+    }),
     false,
     true
   );

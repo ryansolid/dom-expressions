@@ -6,7 +6,8 @@ import {
   registerImportMethod,
   filterChildren,
   trimWhitespace,
-  transformCondition
+  transformCondition,
+  convertJSXIdentifier
 } from "./utils";
 import { transformNode, getCreateTemplate } from "./transform";
 
@@ -18,25 +19,6 @@ function convertComponentIdentifier(node) {
     const prop = convertComponentIdentifier(node.property);
     const computed = t.isStringLiteral(prop);
     return t.memberExpression(convertComponentIdentifier(node.object), prop, computed);
-  }
-
-  return node;
-}
-
-function convertJSXIdentifier(node) {
-  if (t.isJSXIdentifier(node)) {
-    if (t.isValidIdentifier(node.name)) {
-      node.type = "Identifier";
-    } else {
-      return t.stringLiteral(node.name);
-    }
-  } else if (t.isJSXMemberExpression(node)) {
-    return t.memberExpression(
-      convertJSXIdentifier(node.object),
-      convertJSXIdentifier(node.property)
-    );
-  } else if (t.isJSXNamespacedName(node)) {
-    return t.stringLiteral(`${node.namespace.name}:${node.name.name}`);
   }
 
   return node;

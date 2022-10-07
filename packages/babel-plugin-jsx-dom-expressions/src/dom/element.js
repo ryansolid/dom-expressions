@@ -25,6 +25,7 @@ import {
   getConfig,
   escapeBackticks,
   escapeHTML,
+  convertJSXIdentifier,
   canNativeSpread
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
@@ -186,7 +187,12 @@ function transformAttributes(path, results) {
 
   // preprocess spreads
   if (attributes.some(attribute => t.isJSXSpreadAttribute(attribute.node))) {
-    [attributes, spreadExpr] = processSpreads(path, attributes, { elem, isSVG, hasChildren });
+    [attributes, spreadExpr] = processSpreads(path, attributes, {
+      elem,
+      isSVG,
+      hasChildren,
+      wrapConditionals: config.wrapConditionals
+    });
     path.get("openingElement").set(
       "attributes",
       attributes.map(a => a.node)
@@ -819,12 +825,11 @@ function contextToCustomElement(path, results) {
   );
 }
 
-function processSpreads(path, attributes, { elem, isSVG, hasChildren }) {
+function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapConditionals }) {
   // TODO: skip but collect the names of any properties after the last spread to not overwrite them
   const filteredAttributes = [];
   const spreadArgs = [];
   let runningObject = [];
-  let runningDynamic = false;
   let dynamicSpread = false;
   let firstSpread = false;
   attributes.forEach(attribute => {
@@ -837,12 +842,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren }) {
     if (t.isJSXSpreadAttribute(node)) {
       firstSpread = true;
       if (runningObject.length) {
-        spreadArgs.push(
-          runningDynamic
-            ? t.arrowFunctionExpression([], t.objectExpression(runningObject))
-            : t.objectExpression(runningObject)
-        );
-        runningDynamic = false;
+        spreadArgs.push(t.objectExpression(runningObject));
         runningObject = [];
       }
       spreadArgs.push(
@@ -864,24 +864,37 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren }) {
       canNativeSpread(key, { checkNameSpaces: true })
     ) {
       const isContainer = t.isJSXExpressionContainer(node.value);
-      runningDynamic =
-        runningDynamic ||
-        (isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true }));
-      runningObject.push(
-        t.objectProperty(
-          t.stringLiteral(key),
-          isContainer ? node.value.expression : node.value || t.stringLiteral("")
-        )
-      );
+      const dynamic =
+        isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });
+      if (dynamic) {
+        const id = convertJSXIdentifier(node.name)
+        let expr =
+          wrapConditionals &&
+          (t.isLogicalExpression(node.value.expression) || t.isConditionalExpression(node.value.expression))
+            ? transformCondition(attribute.get("value").get("expression"), true)
+            : t.arrowFunctionExpression([], node.value.expression);
+        runningObject.push(
+          t.objectMethod(
+            "get",
+            id,
+            [],
+            t.blockStatement([t.returnStatement(expr.body)]),
+            !t.isValidIdentifier(key)
+          )
+        );
+      } else {
+        runningObject.push(
+          t.objectProperty(
+            t.stringLiteral(key),
+            isContainer ? node.value.expression : node.value || t.stringLiteral("")
+          )
+        );
+      }
     } else filteredAttributes.push(attribute);
   });
 
   if (runningObject.length) {
-    spreadArgs.push(
-      runningDynamic
-        ? t.arrowFunctionExpression([], t.objectExpression(runningObject))
-        : t.objectExpression(runningObject)
-    );
+    spreadArgs.push(t.objectExpression(runningObject));
   }
 
   const props =

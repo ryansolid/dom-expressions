@@ -349,6 +349,25 @@ export function escapeHTML(s, attr) {
   return left < s.length ? out + s.substring(left) : out;
 }
 
+export function convertJSXIdentifier(node) {
+  if (t.isJSXIdentifier(node)) {
+    if (t.isValidIdentifier(node.name)) {
+      node.type = "Identifier";
+    } else {
+      return t.stringLiteral(node.name);
+    }
+  } else if (t.isJSXMemberExpression(node)) {
+    return t.memberExpression(
+      convertJSXIdentifier(node.object),
+      convertJSXIdentifier(node.property)
+    );
+  } else if (t.isJSXNamespacedName(node)) {
+    return t.stringLiteral(`${node.namespace.name}:${node.name.name}`);
+  }
+
+  return node;
+}
+
 export function canNativeSpread(key, { checkNameSpaces } = {}) {
   if (checkNameSpaces && key.includes(":") && nonSpreadNameSpaces.has(key.split(":")[0])) return false;
   // TODO: figure out how to detect definitely function ref
