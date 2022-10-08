@@ -38,7 +38,7 @@ const template7 = _$ssrElement("module", dynamic, undefined, false);
 
 const template8 = _$ssrElement("module", dynamic, "Hello", false);
 
-const template9 = _$ssrElement("module", dynamic, dynamic.children, false);
+const template9 = _$ssrElement("module", dynamic, _$escape(dynamic.children), false);
 
 const template10 = _$createComponent(
   Module,
