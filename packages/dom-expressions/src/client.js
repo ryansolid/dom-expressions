@@ -487,7 +487,7 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
   return dynamic;
 }
 
-function appendNodes(parent, array, marker) {
+function appendNodes(parent, array, marker = null) {
   for (let i = 0, len = array.length; i < len; i++) parent.insertBefore(array[i], marker);
 }
 
