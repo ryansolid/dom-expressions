@@ -271,8 +271,11 @@ export function ssrStyle(value) {
   const k = Object.keys(value);
   for (let i = 0; i < k.length; i++) {
     const s = k[i];
-    if (i) result += ";";
-    result += `${s}:${escape(value[s], true)}`;
+    const v = value[s];
+    if (v != undefined) {
+      if (i) result += ";";
+      result += `${s}:${escape(v, true)}`;
+    }
   }
   return result;
 }
