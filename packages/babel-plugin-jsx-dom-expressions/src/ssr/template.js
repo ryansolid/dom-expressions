@@ -39,7 +39,7 @@ export function createTemplate(path, result) {
 
   return t.callExpression(
     registerImportMethod(path, "ssr"),
-    result.template.length > 1 ? [id, ...result.templateValues] : [id]
+    Array.isArray(result.template) && result.template.length > 1 ? [id, ...result.templateValues] : [id]
   );
 }
 

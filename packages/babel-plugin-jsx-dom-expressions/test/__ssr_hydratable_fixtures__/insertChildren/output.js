@@ -39,7 +39,7 @@ const template7 = _$ssrElement("module", dynamic, undefined, true);
 
 const template8 = _$ssrElement("module", dynamic, () => "Hello", true);
 
-const template9 = _$ssrElement("module", dynamic, () => dynamic.children, true);
+const template9 = _$ssrElement("module", dynamic, () => _$escape(dynamic.children), true);
 
 const template10 = _$createComponent(
   Module,
@@ -95,7 +95,7 @@ const template23 = _$createComponent(Module, {
 const template24 = _$ssrElement(
   "module",
   dynamic,
-  () => ["Hi", "<!--#-->", dynamic.children, "<!--/-->"],
+  () => ["Hi", "<!--#-->", _$escape(dynamic.children), "<!--/-->"],
   true
 );
 
