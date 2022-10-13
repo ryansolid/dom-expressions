@@ -39,59 +39,19 @@ function wrapDynamics(path, dynamics) {
   const config = getConfig(path);
 
   const effectWrapperId = registerImportMethod(path, config.effectWrapper);
+  const prevValue = t.identifier("_$p");
 
-  if (dynamics.length === 1) {
-    const prevValue = t.identifier("_$p");
-
+  return dynamics.map(({ elem, key, value }) => {
     return t.expressionStatement(
       t.callExpression(effectWrapperId, [
         t.arrowFunctionExpression(
           [prevValue],
-          setAttr(path, dynamics[0].elem, dynamics[0].key, dynamics[0].value, {
+          setAttr(path, elem, key, value, {
             dynamic: true,
             prevId: prevValue
           })
         )
       ])
     );
-  }
-  const decls = [],
-    statements = [],
-    identifiers = [],
-    prevId = t.identifier("_p$");
-  dynamics.forEach(({ elem, key, value }) => {
-    const identifier = path.scope.generateUidIdentifier("v$");
-    identifiers.push(identifier);
-    decls.push(t.variableDeclarator(identifier, value));
-    const prev = t.memberExpression(prevId, identifier);
-    statements.push(
-      t.expressionStatement(
-        t.logicalExpression(
-          "&&",
-          t.binaryExpression("!==", identifier, t.memberExpression(prevId, identifier)),
-          t.assignmentExpression("=", t.memberExpression(prevId, identifier), setAttr(
-            path,
-            elem,
-            key,
-            identifier,
-            { dynamic: true, prevId: prev }
-          ))
-        )
-      )
-    );
   });
-
-  return t.expressionStatement(
-    t.callExpression(effectWrapperId, [
-      t.arrowFunctionExpression(
-        [prevId],
-        t.blockStatement([
-          t.variableDeclaration("const", decls),
-          ...statements,
-          t.returnStatement(prevId)
-        ])
-      ),
-      t.objectExpression(identifiers.map(id => t.objectProperty(id, t.identifier("undefined"))))
-    ])
-  );
 }

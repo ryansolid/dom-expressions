@@ -42,28 +42,30 @@ const template = (() => {
 
   _$setProp(_el$3, "readonly", value);
 
-  _$effect(
-    _p$ => {
-      const _v$ = welcoming(),
-        _v$2 = {
-          "background-color": color(),
-          "margin-right": "40px"
-        },
-        _v$3 = {
-          dynamic: dynamic(),
-          selected
-        };
+  _$effect(_$p => _$setProp(_el$2, "title", welcoming(), _$p));
 
-      _v$ !== _p$._v$ && (_p$._v$ = _$setProp(_el$2, "title", _v$, _p$._v$));
-      _v$2 !== _p$._v$2 && (_p$._v$2 = _$setProp(_el$2, "style", _v$2, _p$._v$2));
-      _v$3 !== _p$._v$3 && (_p$._v$3 = _$setProp(_el$2, "classList", _v$3, _p$._v$3));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
-    }
+  _$effect(_$p =>
+    _$setProp(
+      _el$2,
+      "style",
+      {
+        "background-color": color(),
+        "margin-right": "40px"
+      },
+      _$p
+    )
+  );
+
+  _$effect(_$p =>
+    _$setProp(
+      _el$2,
+      "classList",
+      {
+        dynamic: dynamic(),
+        selected
+      },
+      _$p
+    )
   );
 
   return _el$;
@@ -145,26 +147,22 @@ const template6 = (() => {
 const template7 = (() => {
   const _el$13 = _$createElement("div");
 
-  _$effect(
-    _p$ => {
-      const _v$4 = {
-          "background-color": color(),
-          "margin-right": "40px",
-          ...props.style
-        },
-        _v$5 = props.top,
-        _v$6 = props.active;
-      _v$4 !== _p$._v$4 && (_p$._v$4 = _$setProp(_el$13, "style", _v$4, _p$._v$4));
-      _v$5 !== _p$._v$5 && (_p$._v$5 = _$setProp(_el$13, "style:padding-top", _v$5, _p$._v$5));
-      _v$6 !== _p$._v$6 && (_p$._v$6 = _$setProp(_el$13, "class:my-class", _v$6, _p$._v$6));
-      return _p$;
-    },
-    {
-      _v$4: undefined,
-      _v$5: undefined,
-      _v$6: undefined
-    }
+  _$effect(_$p =>
+    _$setProp(
+      _el$13,
+      "style",
+      {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      _$p
+    )
   );
+
+  _$effect(_$p => _$setProp(_el$13, "style:padding-top", props.top, _$p));
+
+  _$effect(_$p => _$setProp(_el$13, "class:my-class", props.active, _$p));
 
   return _el$13;
 })();
