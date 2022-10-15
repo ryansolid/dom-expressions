@@ -409,14 +409,6 @@ export function getHydrationKey() {
   return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
 }
 
-export function setHydratable(fn, hydratable) {
-  const c = sharedConfig.context;
-  sharedConfig.context = { ...c, id: `${c.id}${c.count++}-`, count: 0, noHydrate: !hydratable };
-  const res = fn();
-  sharedConfig.context = c;
-  return res;
-}
-
 export function useAssets(fn) {
   sharedConfig.context.assets.push(() => resolveSSRNode(fn()));
 }
@@ -434,6 +426,16 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
   }>var e,t;e=window._$HY||(_$HY={events:[],completed:new WeakSet,r:{}}),t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host instanceof Node?e.host:e.parentNode)),["${eventNames.join(
     '","'
   )}"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])})))),e.init=(t,o)=>{e.r[t]=[new Promise(((e,t)=>o=e)),o]},e.set=(t,o,s)=>{(s=e.r[t])&&s[1](o),e.r[t]=[o]},e.unset=t=>{delete e.r[t]},e.load=t=>e.r[t];</script><!--xs-->`;
+}
+
+export function Hydration(props) {
+  sharedConfig.context.noHydrate = false;
+  return props.children;
+}
+
+export function NoHydration(props) {
+  sharedConfig.context.noHydrate = true;
+  return props.children;
 }
 
 function injectAssets(assets, html) {
@@ -507,11 +509,6 @@ function replacePlaceholder(html, key, value) {
 // consider deprecating
 export function Assets(props) {
   useAssets(() => props.children);
-}
-
-
-export function NoHydration(props) {
-  return setHydratable(() => props.children, false);
 }
 
 /* istanbul ignore next */

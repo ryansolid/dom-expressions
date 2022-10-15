@@ -47,8 +47,27 @@ export function transformElement(path, info) {
       tagName,
       renderer: "dom"
     };
-  if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body"))
+  if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body")) {
     results.skipTemplate = true;
+    if (tagName === "head" && info.topLevel) {
+      const createComponent = registerImportMethod(
+        path,
+        "createComponent",
+        getRendererConfig(path, "dom").moduleName
+      );
+      const NoHydration = registerImportMethod(
+        path,
+        "NoHydration",
+        getRendererConfig(path, "dom").moduleName
+      );
+      results.exprs.push(
+        t.expressionStatement(
+          t.callExpression(createComponent, [NoHydration, t.objectExpression([])])
+        )
+      );
+      return results;
+    }
+  }
   if (wrapSVG) results.template = "<svg>" + results.template;
   if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
   transformAttributes(path, results);
@@ -659,7 +678,26 @@ function transformChildren(path, results, config) {
 
     results.template += child.template;
     if (child.id) {
-      if (child.tagName === "head") return;
+      if (child.tagName === "head") {
+        if (config.hydratable) {
+          const createComponent = registerImportMethod(
+            path,
+            "createComponent",
+            getRendererConfig(path, "dom").moduleName
+          );
+          const NoHydration = registerImportMethod(
+            path,
+            "NoHydration",
+            getRendererConfig(path, "dom").moduleName
+          );
+          results.exprs.push(
+            t.expressionStatement(
+              t.callExpression(createComponent, [NoHydration, t.objectExpression([])])
+            )
+          );
+        }
+        return;
+      }
 
       let getNextMatch;
       if (config.hydratable && tagName === "html") {
@@ -867,10 +905,11 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
       const dynamic =
         isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });
       if (dynamic) {
-        const id = convertJSXIdentifier(node.name)
+        const id = convertJSXIdentifier(node.name);
         let expr =
           wrapConditionals &&
-          (t.isLogicalExpression(node.value.expression) || t.isConditionalExpression(node.value.expression))
+          (t.isLogicalExpression(node.value.expression) ||
+            t.isConditionalExpression(node.value.expression))
             ? transformCondition(attribute.get("value").get("expression"), true)
             : t.arrowFunctionExpression([], node.value.expression);
         runningObject.push(

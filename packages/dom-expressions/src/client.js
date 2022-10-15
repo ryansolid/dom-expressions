@@ -516,12 +516,12 @@ export function getHydrationKey() {
   return `${hydrate.id}${hydrate.count++}`;
 }
 
-export function setHydratable(fn, hydratable) {
-  return sharedConfig.context && (sharedConfig.context.count++, !hydratable) ? undefined : fn();
+export function NoHydration(props) {
+  return sharedConfig.context ? undefined : props.children
 }
 
-export function NoHydration(props) {
-  return setHydratable(() => props.children, false);
+export function Hydration(props) {
+  return props.children;
 }
 
 function voidFn() {}

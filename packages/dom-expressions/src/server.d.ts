@@ -40,7 +40,6 @@ export function ssrAttribute(key: string, value: any, isBoolean: boolean): strin
 export function ssrHydrationKey(): string;
 export function resolveSSRNode(node: any): string;
 export function escape(html: string): string;
-export function setHydratable(fn: () => JSX.Element, hydratable: boolean): JSX.Element;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function getHydrationKey(): string;
@@ -51,6 +50,7 @@ export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function generateHydrationScript(options: { nonce?: string; eventNames?: string[] }): string;
 
+export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 

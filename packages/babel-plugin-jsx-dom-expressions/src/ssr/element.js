@@ -15,8 +15,7 @@ import {
   escapeHTML,
   reservedNameSpaces,
   getConfig,
-  trimWhitespace,
-  isDynamic
+  trimWhitespace
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -49,6 +48,26 @@ export function transformElement(path, info) {
     };
 
   if (info.topLevel && config.hydratable) {
+    if (tagName === "head") {
+      registerImportMethod(path, "NoHydration");
+      registerImportMethod(path, "createComponent");
+      const child = transformElement(path, { ...info, topLevel: false });
+      results.template = "";
+      results.exprs.push(
+        t.callExpression(t.identifier("_$createComponent"), [
+          t.identifier("_$NoHydration"),
+          t.objectExpression([
+            t.objectMethod(
+              "get",
+              t.identifier("children"),
+              [],
+              t.blockStatement([t.returnStatement(createTemplate(path, child))])
+            )
+          ])
+        ])
+      );
+      return results;
+    }
     results.template.push("");
     results.templateValues.push(
       t.callExpression(registerImportMethod(path, "ssrHydrationKey"), [])
@@ -396,12 +415,20 @@ function transformChildren(path, results, { hydratable }) {
   filteredChildren.forEach(node => {
     if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
       const child = transformNode(node, { doNotEscape, hydratable: false });
-      registerImportMethod(path, "setHydratable");
+      registerImportMethod(path, "NoHydration");
+      registerImportMethod(path, "createComponent");
       results.template.push("");
       results.templateValues.push(
-        t.callExpression(t.identifier("_$setHydratable"), [
-          t.arrowFunctionExpression([], createTemplate(path, child)),
-          t.booleanLiteral(false)
+        t.callExpression(t.identifier("_$createComponent"), [
+          t.identifier("_$NoHydration"),
+          t.objectExpression([
+            t.objectMethod(
+              "get",
+              t.identifier("children"),
+              [],
+              t.blockStatement([t.returnStatement(createTemplate(path, child))])
+            )
+          ])
         ])
       );
       return;

@@ -63,12 +63,10 @@ export function getHydrationKey(): string;
 export function getNextElement(template?: HTMLTemplateElement): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 export function getNextMarker(start: Node): [Node, Array<Node>];
-export function setHydratable(fn: () => JSX.Element, hydratable: boolean): JSX.Element;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function HydrationScript(): JSX.Element;
 export function generateHydrationScript(): string;
-
-// deprecated
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
+export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;

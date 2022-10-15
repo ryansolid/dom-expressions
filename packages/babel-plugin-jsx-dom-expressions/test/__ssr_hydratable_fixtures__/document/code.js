@@ -36,3 +36,10 @@ const templateBody = (
     <footer>The Bottom</footer>
   </body>
 );
+
+const templateEmptied = (
+  <html>
+    <Head />
+    <Body />
+  </html>
+);
