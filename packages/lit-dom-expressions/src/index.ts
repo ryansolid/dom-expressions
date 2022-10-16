@@ -100,7 +100,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       templates[i].innerHTML = html[i];
       const nomarkers = templates[i].content.querySelectorAll("script,style");
       for (let j = 0; j < nomarkers.length; j++) {
-        const d = (nomarkers[j].firstChild as Text)!.data || "";
+        const d = (nomarkers[j].firstChild as Text | null)?.data || "";
         if (d.indexOf(marker) > -1) {
           const parts = d.split(marker).reduce((memo, p, i) => {
             i && memo.push("");
