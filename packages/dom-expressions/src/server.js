@@ -257,7 +257,7 @@ export function ssrClassList(value) {
   for (let i = 0, len = classKeys.length; i < len; i++) {
     const key = classKeys[i],
       classValue = !!value[key];
-    if (!key || !classValue) continue;
+    if (!key || key === "undefined" || !classValue) continue;
     i && (result += " ");
     result += key;
   }

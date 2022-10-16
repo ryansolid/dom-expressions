@@ -12,6 +12,7 @@ const fixture4 = `<span > Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
   const selected = S.data(true),
+    something = undefined,
     welcoming = S.data("Hello John"),
     color = S.data("red"),
     results = {
@@ -46,7 +47,8 @@ const Comp1 = () => {
           "background-color": color()
         },
         classList: {
-          selected: selected()
+          selected: selected(),
+          [something]: true
         }
       },
       r.ssr`<a href="/">Welcome</a>`,
