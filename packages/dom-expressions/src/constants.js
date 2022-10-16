@@ -27,24 +27,36 @@ const booleans = [
 
 const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
 
-const Properties = /*#__PURE__*/ new Set(["className", "value", "readOnly", "formNoValidate", "isMap", "noModule", "playsInline", ...booleans]);
+const Properties = /*#__PURE__*/ new Set([
+  "className",
+  "value",
+  "readOnly",
+  "formNoValidate",
+  "isMap",
+  "noModule",
+  "playsInline",
+  ...booleans
+]);
 
-const ChildProperties = /*#__PURE__*/ new Set(["innerHTML", "textContent", "innerText", "children"]);
+const ChildProperties = /*#__PURE__*/ new Set([
+  "innerHTML",
+  "textContent",
+  "innerText",
+  "children"
+]);
 
 // React Compat
-const Aliases = {
-  className: "class",
-  htmlFor: "for"
-};
+const Aliases = Object.create(null);
+Aliases.className = "class";
+Aliases.htmlFor = "for";
 
-const PropAliases = {
-  class: "className",
-  formnovalidate: "formNoValidate",
-  ismap: "isMap",
-  nomodule: "noModule",
-  playsinline: "playsInline",
-  readonly: "readOnly"
-}
+const PropAliases = Object.create(null);
+PropAliases.class = "className";
+PropAliases.formnovalidate = "formNoValidate";
+PropAliases.ismap = "isMap";
+PropAliases.nomodule = "noModule";
+PropAliases.playsinline = "playsInline";
+PropAliases.readonly = "readOnly";
 
 // list of Element events that will be delegated
 const DelegatedEvents = /*#__PURE__*/ new Set([
@@ -433,9 +445,8 @@ const DOMElements = /*#__PURE__*/ new Set([
   "video",
   "wbr",
   "xmp",
-  "input",
+  "input"
 ]);
-
 
 export {
   BooleanAttributes,
