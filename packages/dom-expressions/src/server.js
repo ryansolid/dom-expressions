@@ -429,8 +429,17 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
 }
 
 export function Hydration(props) {
-  sharedConfig.context.noHydrate = false;
-  return props.children;
+  if (!sharedConfig.context.noHydrate) return props.children;
+  const context = sharedConfig.context;
+  sharedConfig.context = {
+    ...context,
+    count: 0,
+    id: `${context.id}${context.count++}-`,
+    noHydrate: false
+  };
+  const res = props.children;
+  sharedConfig.context = context;
+  return res;
 }
 
 export function NoHydration(props) {
