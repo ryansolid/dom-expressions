@@ -611,7 +611,7 @@ export namespace JSX {
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     // [key: ClassKeys]: boolean;
     accessKey?: string;
-    class?: string;
+    class?: string | undefined;
     contenteditable?: boolean | "inherit";
     contextmenu?: string;
     dir?: HTMLDir;
@@ -1098,7 +1098,7 @@ export namespace JSX {
     tabindex?: number | string;
   }
   interface StylableSVGAttributes {
-    class?: string;
+    class?: string | undefined;
     style?: CSSProperties | string;
   }
   interface TransformableSVGAttributes {
