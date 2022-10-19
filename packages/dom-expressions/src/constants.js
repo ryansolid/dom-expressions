@@ -46,17 +46,18 @@ const ChildProperties = /*#__PURE__*/ new Set([
 ]);
 
 // React Compat
-const Aliases = Object.create(null);
-Aliases.className = "class";
-Aliases.htmlFor = "for";
-
-const PropAliases = Object.create(null);
-PropAliases.class = "className";
-PropAliases.formnovalidate = "formNoValidate";
-PropAliases.ismap = "isMap";
-PropAliases.nomodule = "noModule";
-PropAliases.playsinline = "playsInline";
-PropAliases.readonly = "readOnly";
+const Aliases = /*#__PURE__*/ Object.assign(Object.create(null), {
+  className: "class",
+  htmlFor: "for"
+});
+const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
+  class: "className",
+  formnovalidate: "formNoValidate",
+  ismap: "isMap",
+  nomodule: "noModule",
+  playsinline: "playsInline",
+  readonly: "readOnly"
+});
 
 // list of Element events that will be delegated
 const DelegatedEvents = /*#__PURE__*/ new Set([
