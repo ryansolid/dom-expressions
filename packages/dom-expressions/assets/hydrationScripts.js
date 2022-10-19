@@ -21,7 +21,7 @@
     _$HY.r[id] = [new Promise((r, e) => res = r), res];
   },
   set(id, data, res) {
-    res = r[id];
+    res = _$HY.r[id];
     if (res) res[1](data);
     _$HY.r[id] = [data];
   },
