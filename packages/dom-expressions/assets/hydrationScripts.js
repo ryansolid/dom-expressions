@@ -12,17 +12,22 @@
       if (el && !h.completed.has(el)) h.events.push([el, e]);
     })
   );
-  h.init = (id, res) => {
-    h.r[id] = [new Promise((r, e) => res = r), res];
-  }
-  h.set = (id, data, res) => {
-    res = h.r[id];
+})(window._$HY || (_$HY = {
+  events: [],
+  completed: new WeakSet(),
+  r: {},
+  fe() {},
+  init(id, res) {
+    _$HY.r[id] = [new Promise((r, e) => res = r), res];
+  },
+  set(id, data, res) {
+    res = r[id];
     if (res) res[1](data);
-    h.r[id] = [data];
-  };
-  h.unset = (id) => {
-    delete h.r[id];
-  };
-  h.load = (id) => h.r[id];
-})(window._$HY || (_$HY = { events: [], completed: new WeakSet(), r: {} }));
+    _$HY.r[id] = [data];
+  },
+  unset(id) {
+    delete _$HY.r[id];
+  },
+  load: (id) => _$HY.r[id]
+}));
 `
