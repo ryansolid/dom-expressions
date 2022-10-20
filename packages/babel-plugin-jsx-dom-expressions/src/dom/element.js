@@ -26,7 +26,8 @@ import {
   escapeBackticks,
   escapeHTML,
   convertJSXIdentifier,
-  canNativeSpread
+  canNativeSpread,
+  transformCondition
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 

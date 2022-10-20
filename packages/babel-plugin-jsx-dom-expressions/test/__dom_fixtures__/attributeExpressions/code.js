@@ -127,3 +127,5 @@ const template25 = <div>{props.children}<a {...props} something /></div>
 const template26 = <div start="Hi" middle={middle} {...spread}>Hi</div>
 
 const template27 = <div start="Hi" {...first} middle={middle} {...second}>Hi</div>
+
+const template28 = <div start="Hi" {...check() ? first : second} middle={middle() ? "t" : ""}>Hi</div>
