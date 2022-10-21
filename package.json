@@ -20,7 +20,11 @@
     "build": "lerna run build --concurrency=1 --stream",
     "publish:release": "lerna run build && lerna publish",
     "report:coverage": "lerna run report:coverage --parallel",
-    "bootstrap": "lerna bootstrap"
+    "bootstrap": "lerna bootstrap",
+    "init": "npm install && npm run bootstrap"
+  },
+  "engines": {
+    "npm": ">=7.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.16.5",
