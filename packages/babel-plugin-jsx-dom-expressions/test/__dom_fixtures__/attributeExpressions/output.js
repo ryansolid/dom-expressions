@@ -402,4 +402,21 @@ const template27 = (() => {
   return _el$36;
 })();
 
+const template28 = (() => {
+  const _el$37 = _tmpl$15.cloneNode(true);
+
+  _$spread(
+    _el$37,
+    _$mergeProps(() => (check() ? first : second), {
+      get middle() {
+        return middle() ? "t" : "";
+      }
+    }),
+    false,
+    true
+  );
+
+  return _el$37;
+})();
+
 _$delegateEvents(["click", "input"]);
