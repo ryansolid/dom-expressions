@@ -45,8 +45,8 @@ const template = (() => {
   _$spread(
     _el$2,
     _$mergeProps(results, {
-      disabled: "",
-      readonly: "",
+      disabled: true,
+      readonly: true,
 
       get title() {
         return welcoming();

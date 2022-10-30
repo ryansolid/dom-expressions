@@ -35,7 +35,7 @@ const template = (() => {
   _$spread(
     _el$2,
     _$mergeProps(results, {
-      disabled: "",
+      disabled: true,
       readonly: "",
 
       get title() {
