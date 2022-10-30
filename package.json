@@ -26,9 +26,6 @@
   "engines": {
     "npm": ">=7.0.0"
   },
-  "engines": {
-    "npm": ">=7.0.0"
-  },
   "devDependencies": {
     "@babel/core": "^7.16.5",
     "@babel/preset-env": "^7.16.5",
