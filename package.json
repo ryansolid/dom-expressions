@@ -22,6 +22,9 @@
     "report:coverage": "lerna run report:coverage --parallel",
     "bootstrap": "lerna bootstrap"
   },
+  "engines": {
+    "npm": ">=7.0.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.16.5",
     "@babel/preset-env": "^7.16.5",
