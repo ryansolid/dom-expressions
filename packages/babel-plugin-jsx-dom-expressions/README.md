@@ -39,7 +39,7 @@ Compiles to:
 
 ```jsx
 import { insert as _$insert } from "dom";
-import { wrap as _$wrap } from "dom";
+import { effect as _$effect } from "dom";
 
 const _tmpl$ = document.createElement("template");
 _tmpl$.innerHTML = `<tr><td class="col-md-1"></td><td class="col-md-4"><a></a></td><td class="col-md-1"><a><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a></td><td class="col-md-6"></td></tr>`;
@@ -53,7 +53,7 @@ const view = ({ item }) => {
       _el$4 = _el$3.firstChild,
       _el$5 = _el$3.nextSibling,
       _el$6 = _el$5.firstChild;
-    _$wrap(() => (_el$.className = itemId === selected() ? "danger" : ""));
+    _$effect(() => (_el$.className = itemId === selected() ? "danger" : ""));
     _$insert(_el$2, itemId);
     _el$4.onclick = e => select(item, e);
     _$insert(_el$4, () => item.label);
@@ -73,33 +73,76 @@ The use of cloneNode improves repeat insert performance and precompilation reduc
 
 ## Plugin Options
 
-### moduleName (required)
+### moduleName
+
+- Type: `string`
+- Required: Yes
 
 The name of the runtime module to import the methods from.
 
 ### generate
 
+- Type: `'dom' | 'ssr'`
+- Default: `'dom'`
+
 The output mode of the compiler. Can be "dom"(default), "ssr". "dom" is standard output. "ssr" is for server side rendering of strings.
 
 ### hydratable
+
+- Type: `boolean`
+- Default: `false`
 
 Indicate whether the output should contain hydratable markers.
 
 ### delegateEvents
 
+- Type: `boolean`
+- Default: `true`
+
 Boolean to indicate whether to enable automatic event delegation on camelCase.
 
 ### wrapConditionals
+
+- Type: `boolean`
+- Default: `true`
 
 Boolean indicates whether smart conditional detection should be used. This optimizes simple boolean expressions and ternaries in JSX.
 
 ### contextToCustomElements
 
+- Type: `boolean`
+- Default: `false`
+
 Boolean indicates whether to set current render context on Custom Elements and slots. Useful for seemless Context API with Web Components.
 
 ### builtIns
 
+- Type: `boolean`
+- Default: `string[]`
+
 Array of Component exports from module, that aren't included by default with the library. This plugin will automatically import them if it comes across them in the JSX.
+
+### effectWrapper
+
+- Type: `string`
+- Default: `effect`
+  
+This plugin leverages a heuristic for reactive wrapping and lazy evaluation of JSX expressions. This option indicates the reactive wrapper function name (`effect`), defaults to `effect`.
+
+### staticMarker
+
+- Type: `string`
+- Default: `@once`
+
+Comment decorator string indicates the static expression, used to tell the compiler not to wrap them by `effect` function, defaults to `@once`.
+
+### memoWrapper
+
+- Type: `string`
+- Default: `memo`
+
+Memos let you efficiently use a derived value in many reactive computations. This option indicates the memo function name, defaults to `memo`.
+
 
 ## Special Binding
 
