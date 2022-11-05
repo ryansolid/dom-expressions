@@ -59,7 +59,7 @@ const template = (() => {
     _$mergeProps(results, {
       foo: "",
       disabled: true,
-      readonly: true,
+      readonly: "",
 
       get title() {
         return welcoming();

@@ -46,7 +46,7 @@ const template = (() => {
     _el$2,
     _$mergeProps(results, {
       disabled: true,
-      readonly: true,
+      readonly: "",
 
       get title() {
         return welcoming();
