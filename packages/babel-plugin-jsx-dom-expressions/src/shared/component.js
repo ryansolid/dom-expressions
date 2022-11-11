@@ -167,7 +167,6 @@ export default function transformComponent(path) {
         t.isCallExpression(childResult[0]) && t.isFunction(childResult[0].arguments[0])
           ? childResult[0].arguments[0].body
           : childResult[0].body ? childResult[0].body : childResult[0];
-      body === undefined && console.log("FFF", childResult[0]);
       runningObject.push(
         t.objectMethod(
           "get",
