@@ -90,7 +90,7 @@ function writeProp(cur, accessor) {
               case undefined:
                 BUFFER.push("Object.assign(Object.create(null),");
                 writeObject(cur);
-                BUFFER.push("))");
+                BUFFER.push(")");
                 break;
               default:
                 return false;

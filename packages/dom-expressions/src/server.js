@@ -1,6 +1,7 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig } from "rxcore";
 import stringify from "./serializer";
+export { stringify };
 export { createComponent } from "rxcore";
 
 const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t),_$HY.fe(e)}`;
