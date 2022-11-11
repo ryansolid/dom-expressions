@@ -1,6 +1,6 @@
 `
-((h, lookup) => {
-  lookup = el =>
+((h) => {
+  let lookup = el =>
     el &&
     el.hasAttribute &&
     (el.hasAttribute("data-hk") ? el :
@@ -18,7 +18,7 @@
   r: {},
   fe() {},
   init(id, res) {
-    _$HY.r[id] = [new Promise((r, e) => res = r), res];
+    _$HY.r[id] = [new Promise((r) => res = r), res];
   },
   set(id, data, res) {
     res = _$HY.r[id];
