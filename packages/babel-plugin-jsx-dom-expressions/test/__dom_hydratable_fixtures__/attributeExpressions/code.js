@@ -114,16 +114,37 @@ const template20 = (
   </div>
 );
 
-const template21 = <div style={{ a: "static", ...rest }} ></div>
+const template21 = <div style={{ a: "static", ...rest }}></div>;
 
-const template22 = <div data="&quot;hi&quot;" data2={"\""} />;
+const template22 = <div data='"hi"' data2={'"'} />;
 
-const template23 = <div disabled={"t" in test}>{"t" in test && "true"}</div>
+const template23 = <div disabled={"t" in test}>{"t" in test && "true"}</div>;
 
-const template24 = <a {...props} something />
+const template24 = <a {...props} something />;
 
-const template25 = <div>{props.children}<a {...props} something /></div>
+const template25 = (
+  <div>
+    {props.children}
+    <a {...props} something />
+  </div>
+);
 
-const template26 = <div start="Hi" middle={middle} {...spread}>Hi</div>
+const template26 = (
+  <div start="Hi" middle={middle} {...spread}>
+    Hi
+  </div>
+);
 
-const template27 = <div start="Hi" {...first} middle={middle} {...second}>Hi</div>
+const template27 = (
+  <div start="Hi" {...first} middle={middle} {...second}>
+    Hi
+  </div>
+);
+
+const template28 = (
+  <label {...api()}>
+    <span {...api()}>Input is {api() ? "checked" : "unchecked"}</span>
+    <input {...api()} />
+    <div {...api()} />
+  </label>
+);

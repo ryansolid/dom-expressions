@@ -29,7 +29,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2),
   _tmpl$13 = /*#__PURE__*/ _$template(`<a></a>`, 2),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div><a></a></div>`, 4),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<div start="Hi">Hi</div>`, 2);
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div start="Hi">Hi</div>`, 2),
+  _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is </span><input><div></div></label>`, 7);
 
 const selected = true;
 let id = "my-h1";
@@ -403,18 +404,21 @@ const template27 = (() => {
 })();
 
 const template28 = (() => {
-  const _el$37 = _tmpl$15.cloneNode(true);
+  const _el$37 = _tmpl$16.cloneNode(true),
+    _el$38 = _el$37.firstChild,
+    _el$39 = _el$38.firstChild,
+    _el$40 = _el$38.nextSibling,
+    _el$41 = _el$40.nextSibling;
 
-  _$spread(
-    _el$37,
-    _$mergeProps(() => (check() ? first : second), {
-      get middle() {
-        return middle() ? "t" : "";
-      }
-    }),
-    false,
-    true
-  );
+  _$spread(_el$37, _$mergeProps(api), false, true);
+
+  _$spread(_el$38, _$mergeProps(api), false, true);
+
+  _$insert(_el$38, () => (api() ? "checked" : "unchecked"), null);
+
+  _$spread(_el$40, _$mergeProps(api), false, false);
+
+  _$spread(_el$41, _$mergeProps(api), false, false);
 
   return _el$37;
 })();

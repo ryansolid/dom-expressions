@@ -440,3 +440,9 @@ const template23 = _$createComponent(Component, {
     return "t" in test && "true";
   }
 });
+
+const template24 = _$createComponent(Component, {
+  get children() {
+    return state.dynamic;
+  }
+});

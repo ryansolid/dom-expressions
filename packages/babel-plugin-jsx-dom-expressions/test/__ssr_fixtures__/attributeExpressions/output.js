@@ -170,10 +170,32 @@ const template26 = _$ssrElement(
   "div",
   () => ({
     start: "Hi",
+    middle: middle,
+    ...spread
+  }),
+  "Hi",
+  false
+);
+
+const template27 = _$ssrElement(
+  "div",
+  () => ({
+    start: "Hi",
     ...first,
     middle: middle,
     ...second
   }),
   "Hi",
+  false
+);
+
+const template28 = _$ssrElement(
+  "label",
+  api(),
+  [
+    _$ssrElement("span", api(), ["Input is ", api() ? "checked" : "unchecked"], false),
+    _$ssrElement("input", api(), undefined, false),
+    _$ssrElement("div", api(), undefined, false)
+  ],
   false
 );

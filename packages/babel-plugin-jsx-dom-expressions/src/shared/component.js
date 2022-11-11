@@ -164,9 +164,10 @@ export default function transformComponent(path) {
   if (childResult && childResult[0]) {
     if (childResult[1]) {
       const body =
-        t.isCallExpression(childResult[0]) && t.isFunction(childResult[0].callee)
-          ? childResult[0].callee.body
-          : childResult[0].body;
+        t.isCallExpression(childResult[0]) && t.isFunction(childResult[0].arguments[0])
+          ? childResult[0].arguments[0].body
+          : childResult[0].body ? childResult[0].body : childResult[0];
+      body === undefined && console.log("FFF", childResult[0]);
       runningObject.push(
         t.objectMethod(
           "get",

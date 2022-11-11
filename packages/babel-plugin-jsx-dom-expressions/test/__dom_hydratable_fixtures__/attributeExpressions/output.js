@@ -33,7 +33,11 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2),
   _tmpl$13 = /*#__PURE__*/ _$template(`<a></a>`, 2),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div><!#><!/><a></a></div>`, 6),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<div start="Hi">Hi</div>`, 2);
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div start="Hi">Hi</div>`, 2),
+  _tmpl$16 = /*#__PURE__*/ _$template(
+    `<label><span>Input is <!#><!/></span><input><div></div></label>`,
+    9
+  );
 
 const selected = true;
 let id = "my-h1";
@@ -426,6 +430,30 @@ const template27 = (() => {
   _$runHydrationEvents();
 
   return _el$38;
+})();
+
+const template28 = (() => {
+  const _el$39 = _$getNextElement(_tmpl$16),
+    _el$40 = _el$39.firstChild,
+    _el$41 = _el$40.firstChild,
+    _el$42 = _el$41.nextSibling,
+    [_el$43, _co$2] = _$getNextMarker(_el$42.nextSibling),
+    _el$44 = _el$40.nextSibling,
+    _el$45 = _el$44.nextSibling;
+
+  _$spread(_el$39, _$mergeProps(api), false, true);
+
+  _$spread(_el$40, _$mergeProps(api), false, true);
+
+  _$insert(_el$40, () => (api() ? "checked" : "unchecked"), _el$43, _co$2);
+
+  _$spread(_el$44, _$mergeProps(api), false, false);
+
+  _$spread(_el$45, _$mergeProps(api), false, false);
+
+  _$runHydrationEvents();
+
+  return _el$39;
 })();
 
 _$delegateEvents(["click", "input"]);

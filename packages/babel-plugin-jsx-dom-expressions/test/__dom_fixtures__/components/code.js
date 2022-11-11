@@ -153,3 +153,7 @@ const template21 = (
 const template22 = <Component passObject={{ ...a }} ></Component>
 
 const template23 = <Component disabled={"t" in test}>{"t" in test && "true"}</Component>
+
+const template24 = <Component> 
+  {state.dynamic}
+</Component>

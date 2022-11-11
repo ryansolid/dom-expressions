@@ -469,10 +469,10 @@ function createElement(path, { topLevel, hydratable }) {
         if (v.length) memo.push(t.stringLiteral(v));
       } else {
         const child = transformNode(path);
-        if (markers && child.exprs.length) memo.push(t.stringLiteral("<!--#-->"));
+        if (markers && child.exprs.length && !child.spreadElement) memo.push(t.stringLiteral("<!--#-->"));
         if (child.exprs.length && !child.spreadElement) child.exprs[0] = escapeExpression(path, child.exprs[0]);
         memo.push(getCreateTemplate(config, path, child)(path, child, true));
-        if (markers && child.exprs.length) memo.push(t.stringLiteral("<!--/-->"));
+        if (markers && child.exprs.length && !child.spreadElement) memo.push(t.stringLiteral("<!--/-->"));
       }
       return memo;
     }, []);
