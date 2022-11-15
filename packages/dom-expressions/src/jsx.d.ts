@@ -1,4 +1,5 @@
-import * as csstype from 'csstype';
+import type * as csstype from 'csstype';
+import '@types/w3c-css-typed-object-model-level-1';
 
 /**
  * Based on JSX types for Surplus and Inferno and adapted for `dom-expressions`.
@@ -283,9 +284,9 @@ export namespace JSX {
     ontransitionend?: EventHandlerUnion<T, TransitionEvent>;
   }
 
-  interface CSSProperties extends csstype.PropertiesHyphen {
+  interface CSSProperties extends csstype.PropertiesHyphen<0 | (string & {}) | CSSUnitValue> {
     // Override
-    [key: `-${string}`]: string | number | undefined
+    [key: `-${string}`]: string | number | CSSUnitValue | undefined 
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
