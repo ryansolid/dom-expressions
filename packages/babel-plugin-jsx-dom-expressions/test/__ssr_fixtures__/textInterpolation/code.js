@@ -71,3 +71,15 @@ const trailingSpaceComp = <Comp>
 const trailingSpaceFrag = <>
   {expr} 
 </>
+
+const leadingSpaceElement = <span> {expr}</span>
+
+const leadingSpaceComponent = <Div> {expr}</Div>
+
+const leadingSpaceFragment = <> {expr}</>
+
+const trailingSpaceElement = <span>{expr} </span>
+
+const trailingSpaceComponent = <Div>{expr} </Div>
+
+const trailingSpaceFragment = <>{expr} </>

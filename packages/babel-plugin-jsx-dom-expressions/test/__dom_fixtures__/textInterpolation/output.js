@@ -139,3 +139,37 @@ const trailingSpaceComp = _$createComponent(Comp, {
 });
 
 const trailingSpaceFrag = expr;
+
+const leadingSpaceElement = (() => {
+  const _el$30 = _tmpl$4.cloneNode(true),
+    _el$31 = _el$30.firstChild;
+
+  _$insert(_el$30, expr, null);
+
+  return _el$30;
+})();
+
+const leadingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [" ", expr];
+  }
+});
+
+const leadingSpaceFragment = [" ", expr];
+
+const trailingSpaceElement = (() => {
+  const _el$32 = _tmpl$4.cloneNode(true),
+    _el$33 = _el$32.firstChild;
+
+  _$insert(_el$32, expr, _el$33);
+
+  return _el$32;
+})();
+
+const trailingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [expr, " "];
+  }
+});
+
+const trailingSpaceFragment = [expr, " "];

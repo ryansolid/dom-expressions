@@ -36,17 +36,17 @@ const multiLineNoTrailingSpace = <span>
 </span>
 
 /* prettier-ignore */
-const escape = <span>
+const escape = <span> 
   &nbsp;&lt;Hi&gt;&nbsp;
 </span>
 
 /* prettier-ignore */
-const escape2 = <Comp>
+const escape2 = <Comp> 
   &nbsp;&lt;Hi&gt;&nbsp;
 </Comp>
 
 /* prettier-ignore */
-const escape3 = <>
+const escape3 = <> 
   &nbsp;&lt;Hi&gt;&nbsp;
 </>
 
@@ -59,3 +59,27 @@ let number = 4 + 5;
 const evaluatedNonString = <span>4 + 5 = {number}</span>
 
 const newLineLiteral = <div>{s}{"\n"}d</div>
+
+const trailingSpace = <div>
+  {expr} 
+</div>
+
+const trailingSpaceComp = <Comp>
+  {expr} 
+</Comp>
+
+const trailingSpaceFrag = <>
+  {expr} 
+</>
+
+const leadingSpaceElement = <span> {expr}</span>
+
+const leadingSpaceComponent = <Div> {expr}</Div>
+
+const leadingSpaceFragment = <> {expr}</>
+
+const trailingSpaceElement = <span>{expr} </span>
+
+const trailingSpaceComponent = <Div>{expr} </Div>
+
+const trailingSpaceFragment = <>{expr} </>

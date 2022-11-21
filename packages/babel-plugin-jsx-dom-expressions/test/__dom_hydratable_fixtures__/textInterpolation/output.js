@@ -22,7 +22,9 @@ const _tmpl$ = /*#__PURE__*/ _$template(`<span>Hello </span>`, 2),
 d</div>`,
     4
   ),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<div></div>`, 2);
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div></div>`, 2),
+  _tmpl$16 = /*#__PURE__*/ _$template(`<span> <!#><!/></span>`, 4),
+  _tmpl$17 = /*#__PURE__*/ _$template(`<span><!#><!/> </span>`, 4);
 
 const trailing = _$getNextElement(_tmpl$);
 
@@ -158,3 +160,41 @@ const trailingSpaceComp = _$createComponent(Comp, {
 });
 
 const trailingSpaceFrag = expr;
+
+const leadingSpaceElement = (() => {
+  const _el$45 = _$getNextElement(_tmpl$16),
+    _el$46 = _el$45.firstChild,
+    _el$47 = _el$46.nextSibling,
+    [_el$48, _co$10] = _$getNextMarker(_el$47.nextSibling);
+
+  _$insert(_el$45, expr, _el$48, _co$10);
+
+  return _el$45;
+})();
+
+const leadingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [" ", expr];
+  }
+});
+
+const leadingSpaceFragment = [" ", expr];
+
+const trailingSpaceElement = (() => {
+  const _el$49 = _$getNextElement(_tmpl$17),
+    _el$51 = _el$49.firstChild,
+    [_el$52, _co$11] = _$getNextMarker(_el$51.nextSibling),
+    _el$50 = _el$52.nextSibling;
+
+  _$insert(_el$49, expr, _el$52, _co$11);
+
+  return _el$49;
+})();
+
+const trailingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [expr, " "];
+  }
+});
+
+const trailingSpaceFragment = [expr, " "];

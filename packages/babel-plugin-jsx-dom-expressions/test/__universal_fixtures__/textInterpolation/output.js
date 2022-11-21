@@ -202,3 +202,41 @@ const trailingSpaceComp = _$createComponent(Comp, {
 });
 
 const trailingSpaceFrag = expr;
+
+const leadingSpaceElement = (() => {
+  const _el$41 = _$createElement("span"),
+    _el$42 = _$createTextNode(` `);
+
+  _$insertNode(_el$41, _el$42);
+
+  _$insert(_el$41, expr, null);
+
+  return _el$41;
+})();
+
+const leadingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [" ", expr];
+  }
+});
+
+const leadingSpaceFragment = [" ", expr];
+
+const trailingSpaceElement = (() => {
+  const _el$43 = _$createElement("span"),
+    _el$44 = _$createTextNode(` `);
+
+  _$insertNode(_el$43, _el$44);
+
+  _$insert(_el$43, expr, _el$44);
+
+  return _el$43;
+})();
+
+const trailingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [expr, " "];
+  }
+});
+
+const trailingSpaceFragment = [expr, " "];

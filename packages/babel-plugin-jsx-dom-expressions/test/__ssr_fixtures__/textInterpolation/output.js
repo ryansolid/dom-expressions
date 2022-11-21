@@ -15,7 +15,9 @@ const _tmpl$ = "<span>Hello </span>",
   _tmpl$12 = "<span>Hello World!</span>",
   _tmpl$13 = "<span>4 + 5 = 9</span>",
   _tmpl$14 = ["<div>", "\nd</div>"],
-  _tmpl$15 = ["<div>", "</div>"];
+  _tmpl$15 = ["<div>", "</div>"],
+  _tmpl$16 = ["<span> ", "</span>"],
+  _tmpl$17 = ["<span>", " </span>"];
 
 const trailing = _$ssr(_tmpl$);
 
@@ -76,3 +78,23 @@ const trailingSpaceComp = _$createComponent(Comp, {
 });
 
 const trailingSpaceFrag = expr;
+
+const leadingSpaceElement = _$ssr(_tmpl$16, _$escape(expr));
+
+const leadingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [" ", expr];
+  }
+});
+
+const leadingSpaceFragment = [" ", expr];
+
+const trailingSpaceElement = _$ssr(_tmpl$17, _$escape(expr));
+
+const trailingSpaceComponent = _$createComponent(Div, {
+  get children() {
+    return [expr, " "];
+  }
+});
+
+const trailingSpaceFragment = [expr, " "];

@@ -173,7 +173,7 @@ export function checkLength(children) {
   children.forEach(path => {
     const child = path.node;
     !(t.isJSXExpressionContainer(child) && t.isJSXEmptyExpression(child.expression)) &&
-      (!t.isJSXText(child) || !/^\s*$/.test(child.extra.raw)) &&
+      (!t.isJSXText(child) || !/^\s*$/.test(child.extra.raw) || /^ *$/.test(child.extra.raw)) &&
       i++;
   });
   return i > 1;
