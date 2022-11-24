@@ -727,6 +727,8 @@ export namespace JSX {
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: boolean;
+    onClose?: EventHandlerUnion<T, Event>;
+    onCancel?: EventHandlerUnion<T, Event>;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string;
