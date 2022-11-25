@@ -15,6 +15,9 @@ type Props = { [key: string]: any };
 
 export type HyperScript = {
   (...args: any[]): () => ExpandableNode | ExpandableNode[];
+  Fragment: (props: {
+    children: (() => ExpandableNode) | (() => ExpandableNode)[];
+  }) => ExpandableNode[];
 };
 
 // Inspired by https://github.com/hyperhype/hyperscript
@@ -24,6 +27,8 @@ export function createHyperScript(r: Runtime): HyperScript {
       e: ExpandableNode | undefined,
       multiExpression = false;
 
+    while (Array.isArray(args[0])) args = args[0];
+    if (args[0][$ELEMENT]) args.unshift(h.Fragment);
     typeof args[0] === "string" && detectMultiExpression(args);
     const ret: (() => ExpandableNode) & { [$ELEMENT]?: boolean } = () => {
       while (args.length) item(args.shift());
@@ -127,5 +132,6 @@ export function createHyperScript(r: Runtime): HyperScript {
     }
   }
 
+  h.Fragment = (props: any) => props.children;
   return h;
 }

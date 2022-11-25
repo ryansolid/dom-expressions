@@ -79,7 +79,7 @@ describe("Test HyperScript", () => {
     const inserted = S.data("middle");
 
     S.root(() => {
-      const template = [h("div", "First"), inserted, h("div", "Last")];
+      const template = h([h("div", "First"), inserted, h("div", "Last")]);
       const div = document.createElement("div");
       r.insert(div, template);
       expect(div.innerHTML).toBe(FIXTURES[3]);
