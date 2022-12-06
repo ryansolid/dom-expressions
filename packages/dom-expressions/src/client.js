@@ -359,15 +359,14 @@ function eventHandler(e) {
     document.querySelectorAll("[id^=pl-]").forEach(elem => elem.remove());
   }
 
-  while (node !== null) {
+  while (node) {
     const handler = node[key];
     if (handler && !node.disabled) {
       const data = node[`${key}Data`];
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
-    node =
-      node.host && node.host !== node && node.host instanceof Node ? node.host : node.parentNode;
+    node = node._$host || node.parentNode || node.host;
   }
 }
 
