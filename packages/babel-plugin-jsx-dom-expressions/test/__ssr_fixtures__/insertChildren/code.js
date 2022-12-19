@@ -34,3 +34,19 @@ tiles.push(<div>Test 1</div>);
 const template24 = <div>{tiles}</div>;
 
 const comma = <div>{expression(), "static"}</div>
+
+const template25 = <div>{() => children}</div>
+
+const template26 = (
+  <div>{() => {
+    statement;
+    return children;
+  }}</div>
+)
+
+const template27 = (
+  <div>{(() => {
+    statement;
+    return children;
+  })()}</div>
+)
