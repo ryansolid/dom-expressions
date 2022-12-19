@@ -61,7 +61,7 @@ const view = html`
 `;
 ```
 
-Libraries may expose access to html in different ways. For example Solid has it's own entry point 'solid-js/html'.
+Libraries may expose access to html in different ways. For example, Solid has its own entry point 'solid-js/html'.
 
 ## Differences from JSX
 
