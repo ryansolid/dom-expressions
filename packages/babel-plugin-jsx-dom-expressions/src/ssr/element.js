@@ -115,7 +115,12 @@ function escapeExpression(path, expression, attr) {
   if (t.isStringLiteral(expression) || t.isNumericLiteral(expression)) {
     return expression;
   } else if (t.isFunction(expression)) {
-    expression.body = escapeExpression(path, expression.body, attr);
+    if (t.isBlockStatement(expression.body)) {
+      expression.body.body = expression.body.body.map(e => {
+        if (t.isReturnStatement(e)) e.argument = escapeExpression(path, e.argument, attr);
+        return e;
+      });
+    } else expression.body = escapeExpression(path, expression.body, attr);
     return expression;
   } else if (t.isTemplateLiteral(expression)) {
     expression.expressions = expression.expressions.map(e => escapeExpression(path, e, attr));
