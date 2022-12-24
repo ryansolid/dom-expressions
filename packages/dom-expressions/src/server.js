@@ -319,7 +319,16 @@ export function ssrElement(tag, props, children, needsId) {
 }
 
 export function ssrAttribute(key, value, isBoolean) {
-  return isBoolean ? (value ? " " + key : "") : value != null ? ` ${key}="${value}"` : "";
+  if (typeof value === "boolean" && key.startsWith("data-")) {
+    return ` ${key}="${String(value)}"`;
+  }
+  return isBoolean || typeof value === "boolean"
+    ? value
+      ? " " + key
+      : ""
+    : value != null
+    ? ` ${key}="${value}"`
+    : "";
 }
 
 export function ssrHydrationKey() {
@@ -336,7 +345,6 @@ export function escape(s, attr) {
       for (let i = 0; i < s.length; i++) r += resolveSSRNode(escape(s[i], attr));
       return { t: r };
     }
-    if (attr && t === "boolean") return String(s);
     return s;
   }
   const delim = attr ? '"' : "<";
