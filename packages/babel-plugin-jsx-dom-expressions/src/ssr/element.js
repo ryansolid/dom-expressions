@@ -15,7 +15,8 @@ import {
   escapeHTML,
   reservedNameSpaces,
   getConfig,
-  trimWhitespace
+  trimWhitespace,
+  isComponent
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -162,6 +163,8 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
       });
     } else
       expression.callee.body = escapeExpression(path, expression.callee.body, attr, escapeLiterals);
+    return expression;
+  } else if(t.isJSXElement(expression) && !isComponent(getTagName(expression))) {
     return expression;
   }
 
