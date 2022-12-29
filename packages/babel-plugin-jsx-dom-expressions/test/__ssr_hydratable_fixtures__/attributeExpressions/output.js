@@ -20,7 +20,8 @@ const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
   _tmpl$14 = ["<div", ' style="', '"></div>'],
   _tmpl$15 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
   _tmpl$16 = ["<div", "", ">", "</div>"],
-  _tmpl$17 = ["<div", "><!--#-->", "<!--/-->", "</div>"];
+  _tmpl$17 = ["<div", "><!--#-->", "<!--/-->", "</div>"],
+  _tmpl$18 = ["<div", ">", "</div>"];
 const selected = true;
 let id = "my-h1";
 let link;
@@ -226,4 +227,10 @@ const template28 = _$ssrElement(
     _$ssrElement("div", api(), undefined, false)
   ],
   true
+);
+
+const template29 = _$ssr(
+  _tmpl$18,
+  _$ssrHydrationKey() + _$ssrAttribute("attribute", !!someValue, false),
+  !!someValue
 );

@@ -456,4 +456,14 @@ const template28 = (() => {
   return _el$39;
 })();
 
+const template29 = (() => {
+  const _el$46 = _$getNextElement(_tmpl$4);
+
+  _$setAttribute(_el$46, "attribute", !!someValue);
+
+  _$insert(_el$46, !!someValue);
+
+  return _el$46;
+})();
+
 _$delegateEvents(["click", "input"]);

@@ -199,3 +199,5 @@ const template28 = _$ssrElement(
   ],
   false
 );
+
+const template29 = _$ssr(_tmpl$16, _$ssrAttribute("attribute", !!someValue, false), !!someValue);

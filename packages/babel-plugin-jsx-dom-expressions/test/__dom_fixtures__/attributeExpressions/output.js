@@ -423,4 +423,14 @@ const template28 = (() => {
   return _el$37;
 })();
 
+const template29 = (() => {
+  const _el$42 = _tmpl$4.cloneNode(true);
+
+  _$setAttribute(_el$42, "attribute", !!someValue);
+
+  _$insert(_el$42, !!someValue);
+
+  return _el$42;
+})();
+
 _$delegateEvents(["click", "input"]);

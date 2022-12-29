@@ -111,44 +111,57 @@ function setAttr(attribute, results, name, value, isSVG) {
   }
 }
 
-function escapeExpression(path, expression, attr) {
-  if (t.isStringLiteral(expression) || t.isNumericLiteral(expression)) {
+function escapeExpression(path, expression, attr, escapeLiterals) {
+  if (
+    t.isStringLiteral(expression) ||
+    t.isNumericLiteral(expression) ||
+    (t.isTemplateLiteral(expression) && expression.expressions.length === 0)
+  ) {
+    if (escapeLiterals) {
+      if (t.isStringLiteral(expression)) return t.stringLiteral(escapeHTML(expression.value, attr));
+      else if (t.isTemplateLiteral(expression))
+        return t.stringLiteral(escapeHTML(expression.quasis[0].value.raw, attr));
+    }
     return expression;
   } else if (t.isFunction(expression)) {
     if (t.isBlockStatement(expression.body)) {
       expression.body.body = expression.body.body.map(e => {
-        if (t.isReturnStatement(e)) e.argument = escapeExpression(path, e.argument, attr);
+        if (t.isReturnStatement(e))
+          e.argument = escapeExpression(path, e.argument, attr, escapeLiterals);
         return e;
       });
-    } else expression.body = escapeExpression(path, expression.body, attr);
+    } else expression.body = escapeExpression(path, expression.body, attr, escapeLiterals);
     return expression;
   } else if (t.isTemplateLiteral(expression)) {
-    expression.expressions = expression.expressions.map(e => escapeExpression(path, e, attr));
+    expression.expressions = expression.expressions.map(e =>
+      escapeExpression(path, e, attr, escapeLiterals)
+    );
     return expression;
   } else if (t.isUnaryExpression(expression)) {
-    expression.argument = escapeExpression(path, expression.argument, attr);
     return expression;
   } else if (t.isBinaryExpression(expression)) {
-    expression.left = escapeExpression(path, expression.left, attr);
-    expression.right = escapeExpression(path, expression.right, attr);
+    expression.left = escapeExpression(path, expression.left, attr, escapeLiterals);
+    expression.right = escapeExpression(path, expression.right, attr, escapeLiterals);
     return expression;
   } else if (t.isConditionalExpression(expression)) {
-    expression.consequent = escapeExpression(path, expression.consequent, attr);
-    expression.alternate = escapeExpression(path, expression.alternate, attr);
+    expression.consequent = escapeExpression(path, expression.consequent, attr, escapeLiterals);
+    expression.alternate = escapeExpression(path, expression.alternate, attr, escapeLiterals);
     return expression;
   } else if (t.isLogicalExpression(expression)) {
-    expression.right = escapeExpression(path, expression.right, attr);
+    expression.right = escapeExpression(path, expression.right, attr, escapeLiterals);
     if (expression.operator !== "&&") {
-      expression.left = escapeExpression(path, expression.left, attr);
+      expression.left = escapeExpression(path, expression.left, attr, escapeLiterals);
     }
     return expression;
   } else if (t.isCallExpression(expression) && t.isFunction(expression.callee)) {
     if (t.isBlockStatement(expression.callee.body)) {
       expression.callee.body.body = expression.callee.body.body.map(e => {
-        if (t.isReturnStatement(e)) e.argument = escapeExpression(path, e.argument, attr);
+        if (t.isReturnStatement(e))
+          e.argument = escapeExpression(path, e.argument, attr, escapeLiterals);
         return e;
       });
-    } else expression.callee.body = escapeExpression(path, expression.callee.body, attr);
+    } else
+      expression.callee.body = escapeExpression(path, expression.callee.body, attr, escapeLiterals);
     return expression;
   }
 
@@ -313,16 +326,7 @@ function transformAttributes(path, results, info) {
                 t.stringLiteral(
                   (i ? ";" : "") + (t.isIdentifier(p.key) ? p.key.name : p.key.value) + ":"
                 ),
-                t.isStringLiteral(p.value)
-                  ? t.stringLiteral(escapeHTML(p.value.value))
-                  : t.isNumericLiteral(p.value)
-                  ? p.value
-                  : t.isTemplateLiteral(p.value) && p.value.expressions.length === 0
-                  ? t.stringLiteral(escapeHTML(p.value.quasis[0].value.raw))
-                  : t.callExpression(registerImportMethod(path, "escape"), [
-                      p.value,
-                      t.booleanLiteral(true)
-                    ])
+                escapeExpression(path, p.value, true, true)
               )
             );
             let res = props[0];
@@ -474,10 +478,13 @@ function createElement(path, { topLevel, hydratable }) {
         if (v.length) memo.push(t.stringLiteral(v));
       } else {
         const child = transformNode(path);
-        if (markers && child.exprs.length && !child.spreadElement) memo.push(t.stringLiteral("<!--#-->"));
-        if (child.exprs.length && !child.spreadElement) child.exprs[0] = escapeExpression(path, child.exprs[0]);
+        if (markers && child.exprs.length && !child.spreadElement)
+          memo.push(t.stringLiteral("<!--#-->"));
+        if (child.exprs.length && !child.spreadElement)
+          child.exprs[0] = escapeExpression(path, child.exprs[0]);
         memo.push(getCreateTemplate(config, path, child)(path, child, true));
-        if (markers && child.exprs.length && !child.spreadElement) memo.push(t.stringLiteral("<!--/-->"));
+        if (markers && child.exprs.length && !child.spreadElement)
+          memo.push(t.stringLiteral("<!--/-->"));
       }
       return memo;
     }, []);
