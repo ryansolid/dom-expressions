@@ -37,9 +37,13 @@ export function createTemplate(path, result) {
     });
   } else id = found.id;
 
+  if ((!Array.isArray(result.template) || result.template.length === 1) && result.wontEscape)
+    return id;
   return t.callExpression(
     registerImportMethod(path, "ssr"),
-    Array.isArray(result.template) && result.template.length > 1 ? [id, ...result.templateValues] : [id]
+    Array.isArray(result.template) && result.template.length > 1
+      ? [id, ...result.templateValues]
+      : [id]
   );
 }
 

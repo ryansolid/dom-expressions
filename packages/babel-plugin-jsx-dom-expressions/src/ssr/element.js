@@ -45,6 +45,7 @@ export function transformElement(path, info) {
       exprs: [],
       dynamics: [],
       tagName,
+      wontEscape: path.node.wontEscape,
       renderer: "ssr"
     };
 
@@ -165,6 +166,7 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
       expression.callee.body = escapeExpression(path, expression.callee.body, attr, escapeLiterals);
     return expression;
   } else if(t.isJSXElement(expression) && !isComponent(getTagName(expression))) {
+    expression.wontEscape = true;
     return expression;
   }
 
