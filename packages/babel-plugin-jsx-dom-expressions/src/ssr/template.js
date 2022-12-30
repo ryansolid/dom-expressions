@@ -37,8 +37,26 @@ export function createTemplate(path, result) {
     });
   } else id = found.id;
 
-  if ((!Array.isArray(result.template) || result.template.length === 1) && result.wontEscape)
-    return id;
+  if (result.wontEscape) {
+    if (!Array.isArray(result.template) || result.template.length === 1) return id;
+    else if (
+      Array.isArray(result.template) &&
+      result.template.length === 2 &&
+      result.templateValues[0].type === "CallExpression" &&
+      result.templateValues[0].callee.name === "_$ssrHydrationKey"
+    ) {
+      // remove unnecessary ssr call when only hydration key is used
+      return t.binaryExpression(
+        "+",
+        t.binaryExpression(
+          "+",
+          t.memberExpression(id, t.numericLiteral(0), true),
+          result.templateValues[0]
+        ),
+        t.memberExpression(id, t.numericLiteral(1), true)
+      );
+    }
+  }
   return t.callExpression(
     registerImportMethod(path, "ssr"),
     Array.isArray(result.template) && result.template.length > 1
