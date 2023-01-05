@@ -12,6 +12,7 @@ export function renderToString(code, options = {}) {
     id: options.renderId || "",
     count: 0,
     suspense: {},
+    lazy: {},
     assets: [],
     nonce: options.nonce,
     writeResource(id, p, error) {
@@ -90,6 +91,7 @@ export function renderToStream(code, options = {}) {
     count: 0,
     async: true,
     resources: {},
+    lazy: {},
     suspense: {},
     assets: [],
     nonce,
