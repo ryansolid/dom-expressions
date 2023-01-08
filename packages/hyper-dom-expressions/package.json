@@ -14,9 +14,9 @@
   "sideEffects": false,
   "scripts": {
     "build": "rollup -c --bundleConfigAsCjs && tsc",
-    "test": "npm run build && jest",
-    "test:coverage": "npm run build && jest --coverage",
-    "prepare": "npm run build"
+    "test": "pnpm run build && jest",
+    "test:coverage": "pnpm run build && jest --coverage",
+    "prepare": "pnpm run build"
   },
   "devDependencies": {
     "dom-expressions": "^0.35.11"
