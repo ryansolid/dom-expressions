@@ -20,9 +20,7 @@ const _tmpl$ =
     '<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><text x="10" y="25">',
     "</text></svg>"
   ];
-
 const template = _$ssr(_tmpl$);
-
 const template2 = _$ssr(
   _tmpl$2,
   _$ssrAttribute("class", _$escape(state.name, true), false) +
@@ -35,19 +33,13 @@ const template2 = _$ssr(
     (";stroke-width:" + _$escape(props.stroke, true)) +
     (";opacity:" + 0.5)
 );
-
 const template3 = _$ssr(_tmpl$3, _$ssrElement("rect", props, undefined, false));
-
 const template4 = _$ssr(_tmpl$4);
-
 const template5 = _$ssr(_tmpl$4);
-
 const template6 = _$createComponent(Component, {
   get children() {
     return _$ssr(_tmpl$4);
   }
 });
-
 const template7 = _$ssr(_tmpl$5, _$ssrAttribute("xlink:href", _$escape(url, true), false));
-
 const template8 = _$ssr(_tmpl$6, _$escape(text));

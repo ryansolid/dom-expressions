@@ -19,6 +19,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
+    "@babel/core": "^7.16.5",
     "@babel/helper-module-imports": "7.16.0",
     "@babel/plugin-syntax-jsx": "^7.16.5",
     "@babel/types": "^7.16.0",

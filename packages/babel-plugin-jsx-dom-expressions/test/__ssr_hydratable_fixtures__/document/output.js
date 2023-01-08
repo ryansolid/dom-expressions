@@ -23,7 +23,6 @@ const _tmpl$ = [
     "<!--/--><footer>The Bottom</footer></body>"
   ],
   _tmpl$5 = ["<html", "><!--#-->", "<!--/--><!--#-->", "<!--/--></html>"];
-
 const template = _$ssr(
   _tmpl$2,
   _$ssrHydrationKey(),
@@ -34,15 +33,12 @@ const template = _$ssr(
   }),
   _$escape(_$createComponent(App, {}))
 );
-
 const templateHead = _$createComponent(_$NoHydration, {
   get children() {
     return _$ssr(_tmpl$3, _$escape(_$createComponent(Assets, {})));
   }
 });
-
 const templateBody = _$ssr(_tmpl$4, _$ssrHydrationKey(), _$escape(_$createComponent(App, {})));
-
 const templateEmptied = _$ssr(
   _tmpl$5,
   _$ssrHydrationKey(),

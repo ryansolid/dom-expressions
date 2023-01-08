@@ -23,7 +23,6 @@ const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
 const selected = true;
 let id = "my-h1";
 let link;
-
 const template = _$ssrElement(
   "div",
   () => ({
@@ -56,36 +55,22 @@ const template = _$ssrElement(
   ),
   false
 );
-
 const template2 = _$ssrElement(
   "div",
   getProps("test"),
   [_$ssr(_tmpl$2, _$escape(rowId)), _$ssr(_tmpl$2, _$escape(row.label)), _$ssr(_tmpl$3)],
   false
 );
-
 const template3 = _$ssr(
   _tmpl$4,
-  _$ssrAttribute(
-    "id",
-    _$escape(
-      /*@once*/
-      state.id,
-      true
-    ),
-    false
-  ),
+  _$ssrAttribute("id", _$escape(/*@once*/ state.id, true), false),
   "background-color:" + _$escape(state.color, true),
   _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content)
 );
-
 const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class, true) || ""} ccc:ddd`);
-
 const template5 = _$ssr(_tmpl$5, `a  b`);
-
 const template6 = _$ssr(_tmpl$6, _$ssrStyle(someStyle()));
-
 const template7 = _$ssr(
   _tmpl$7,
   _$ssrStyle({
@@ -96,29 +81,17 @@ const template7 = _$ssr(
   }),
   props.active ? "my-class" : ""
 );
-
 let refTarget;
-
 const template8 = _$ssr(_tmpl$8);
-
 const template9 = _$ssr(_tmpl$8);
-
 const template10 = _$ssr(_tmpl$8);
-
 const template11 = _$ssr(_tmpl$8);
-
 const template12 = _$ssr(_tmpl$8);
-
 const template13 = _$ssr(_tmpl$9, _$ssrAttribute("checked", true, true));
-
 const template14 = _$ssr(_tmpl$9, _$ssrAttribute("checked", state.visible, true));
-
 const template15 = _$ssr(_tmpl$10);
-
 const template16 = _$ssr(_tmpl$11, `static ${"k" ? "hi" : ""}`);
-
 const template17 = _$ssr(_tmpl$12, "a  b  c");
-
 const template18 = _$ssrElement(
   "div",
   {
@@ -129,9 +102,7 @@ const template18 = _$ssrElement(
   undefined,
   false
 );
-
 const template19 = _$ssr(_tmpl$5, `bg-red-500 flex flex-col`);
-
 const template20 = _$ssr(
   _tmpl$13,
   _$ssrAttribute("value", _$escape(s(), true), false) +
@@ -141,7 +112,6 @@ const template20 = _$ssr(
     _$ssrAttribute("min", _$escape(min(), true), false) +
     _$ssrAttribute("max", _$escape(max(), true), false)
 );
-
 const template21 = _$ssr(
   _tmpl$14,
   _$ssrStyle({
@@ -149,23 +119,34 @@ const template21 = _$ssr(
     ...rest
   })
 );
-
 const template22 = _$ssr(_tmpl$15);
-
 const template23 = _$ssr(
   _tmpl$16,
   _$ssrAttribute("disabled", "t" in test, true),
   "t" in test && "true"
 );
-
-const template24 = _$ssrElement("a", () => ({ ...props, something: true }), undefined, false);
-
+const template24 = _$ssrElement(
+  "a",
+  () => ({
+    ...props,
+    something: true
+  }),
+  undefined,
+  false
+);
 const template25 = _$ssr(
   _tmpl$17,
   _$escape(props.children),
-  _$ssrElement("a", () => ({ ...props, something: true }), undefined, false)
+  _$ssrElement(
+    "a",
+    () => ({
+      ...props,
+      something: true
+    }),
+    undefined,
+    false
+  )
 );
-
 const template26 = _$ssrElement(
   "div",
   () => ({
@@ -176,7 +157,6 @@ const template26 = _$ssrElement(
   "Hi",
   false
 );
-
 const template27 = _$ssrElement(
   "div",
   () => ({
@@ -188,7 +168,6 @@ const template27 = _$ssrElement(
   "Hi",
   false
 );
-
 const template28 = _$ssrElement(
   "label",
   api(),
@@ -199,5 +178,4 @@ const template28 = _$ssrElement(
   ],
   false
 );
-
 const template29 = _$ssr(_tmpl$16, _$ssrAttribute("attribute", !!someValue, false), !!someValue);
