@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 import * as r from "../../src/client";
 import * as r2 from "../../src/server";
 

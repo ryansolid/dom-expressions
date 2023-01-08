@@ -17,13 +17,13 @@
   },
   "dependencies": {
     "babel-plugin-transform-rename-import": "^2.3.0",
-    "devalue": "^2.0.1"
+    "devalue": "^4.2.0"
   },
   "peerDependencies": {
     "csstype": "^3.0"
   },
   "devDependencies": {
     "babel-plugin-jsx-dom-expressions": "^0.35.10",
-    "csstype": "^3.1.0"
+    "csstype": "^3.1"
   }
 }

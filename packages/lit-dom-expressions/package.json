@@ -13,7 +13,7 @@
   "types": "types/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "rollup -c && tsc",
+    "build": "rollup -c --bundleConfigAsCjs && tsc",
     "test": "npm run build && jest",
     "test:coverage": "npm run build && jest --coverage",
     "prepare": "npm run build"

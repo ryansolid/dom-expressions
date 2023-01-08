@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 import * as S from "s-js";
 
 describe("create simple svg", () => {

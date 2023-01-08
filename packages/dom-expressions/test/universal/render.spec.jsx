@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 import * as r from "./custom";
 import * as S from "s-js";
 
