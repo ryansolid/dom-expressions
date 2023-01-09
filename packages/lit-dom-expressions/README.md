@@ -20,7 +20,7 @@ Upon first instantiation templates are compiled into DOM templates and generated
 Install alongside the DOM Expressions and the fine grained library of your choice. For example with S.js:
 
 ```sh
-> npm install s-js dom-expressions lit-dom-expressions
+> pnpm install s-js dom-expressions lit-dom-expressions
 ```
 
 Create your configuration and run dom-expressions command to generate runtime.js. More info [here](https://github.com/ryansolid/dom-expressions).

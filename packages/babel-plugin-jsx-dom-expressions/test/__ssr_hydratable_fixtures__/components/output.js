@@ -34,7 +34,6 @@ const _tmpl$ = ["<div", ">Hello <!--#-->", "<!--/--></div>"],
   _tmpl$10 = ["<span", ">2</span>"],
   _tmpl$11 = ["<span", ">3</span>"];
 import { Show } from "somewhere";
-
 const Child = props => {
   const [s, set] = createSignal();
   return [
@@ -42,7 +41,6 @@ const Child = props => {
     _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(props.children))
   ];
 };
-
 const template = props => {
   let childRef;
   const { content } = props;
@@ -59,7 +57,6 @@ const template = props => {
           props,
           {
             booleanProperty: true,
-
             get children() {
               return _$ssr(_tmpl$3, _$ssrHydrationKey());
             }
@@ -90,22 +87,17 @@ const template = props => {
     )
   );
 };
-
 const template2 = _$createComponent(Child, {
   name: "Jake",
-
   get dynamic() {
     return state.data;
   },
-
   stale: state.data,
   handleClick: clickHandler,
-
   get ["hyphen-ated"]() {
     return state.data;
   }
 });
-
 const template3 = _$createComponent(Child, {
   get children() {
     return [
@@ -116,60 +108,50 @@ const template3 = _$createComponent(Child, {
     ];
   }
 });
-
 const [s, set] = createSignal();
-
 const template4 = _$createComponent(Child, {
   get children() {
     return _$ssr(_tmpl$5, _$ssrHydrationKey());
   }
 });
-
 const template5 = _$createComponent(Child, {
   get dynamic() {
     return state.dynamic;
   },
-
   get children() {
     return state.dynamic;
   }
-}); // builtIns
+});
 
+// builtIns
 const template6 = _$createComponent(_$For, {
   get each() {
     return state.list;
   },
-
   get fallback() {
     return _$createComponent(Loading, {});
   },
-
   children: item =>
     _$createComponent(Show, {
       get when() {
         return state.condition;
       },
-
       children: item
     })
 });
-
 const template7 = _$createComponent(Child, {
   get children() {
     return [_$ssr(_tmpl$5, _$ssrHydrationKey()), state.dynamic];
   }
 });
-
 const template8 = _$createComponent(Child, {
   get children() {
     return [item => item, item => item];
   }
 });
-
 const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
-
 const template10 = _$ssr(
   _tmpl$6,
   _$ssrHydrationKey(),
@@ -204,7 +186,6 @@ const template10 = _$ssr(
     })
   )
 );
-
 const template11 = _$ssr(
   _tmpl$7,
   _$ssrHydrationKey(),
@@ -239,7 +220,6 @@ const template11 = _$ssr(
     })
   )
 );
-
 const template12 = _$ssr(
   _tmpl$8,
   _$ssrHydrationKey(),
@@ -254,24 +234,19 @@ const template12 = _$ssr(
     })
   )
 );
-
 class Template13 {
   render() {
     const _self$ = this;
-
     _$createComponent(Component, {
       get prop() {
         return _self$.something;
       },
-
       onClick: () => _self$.shouldStay,
-
       get children() {
         return _$createComponent(Nested, {
           get prop() {
             return _self$.data;
           },
-
           get children() {
             return _self$.content;
           }
@@ -280,15 +255,12 @@ class Template13 {
     });
   }
 }
-
 const Template14 = _$createComponent(Component, {
   get children() {
     return data();
   }
 });
-
 const Template15 = _$createComponent(Component, props);
-
 const Template16 = _$createComponent(
   Component,
   _$mergeProps(
@@ -298,7 +270,6 @@ const Template16 = _$createComponent(
     props
   )
 );
-
 const Template17 = _$createComponent(Pre, {
   get children() {
     return [
@@ -310,7 +281,6 @@ const Template17 = _$createComponent(Pre, {
     ];
   }
 });
-
 const Template18 = _$createComponent(Pre, {
   get children() {
     return [
@@ -320,18 +290,15 @@ const Template18 = _$createComponent(Pre, {
     ];
   }
 });
-
 const Template19 = _$createComponent(
   Component,
   _$mergeProps(() => s.dynamic())
 );
-
 const Template20 = _$createComponent(Component, {
   get ["class"]() {
     return prop.red ? "red" : "green";
   }
 });
-
 const template21 = _$createComponent(
   Component,
   _$mergeProps(() => ({
@@ -340,23 +307,21 @@ const template21 = _$createComponent(
     }
   }))
 );
-
 const template22 = _$createComponent(Component, {
   get passObject() {
-    return { ...a };
+    return {
+      ...a
+    };
   }
 });
-
 const template23 = _$createComponent(Component, {
   get disabled() {
     return "t" in test;
   },
-
   get children() {
     return "t" in test && "true";
   }
 });
-
 const template24 = _$createComponent(Component, {
   get children() {
     return state.dynamic;

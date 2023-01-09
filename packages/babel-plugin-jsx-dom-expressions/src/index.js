@@ -6,7 +6,7 @@ import preprocess from "./shared/preprocess";
 export default () => {
   return {
     name: "JSX DOM Expressions",
-    inherits: SyntaxJSX,
+    inherits: SyntaxJSX.default,
     visitor: {
       JSXElement: transformJSX,
       JSXFragment: transformJSX,

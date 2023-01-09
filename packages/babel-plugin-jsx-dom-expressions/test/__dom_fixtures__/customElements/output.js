@@ -3,32 +3,24 @@ import { effect as _$effect } from "r-dom";
 import { untrack as _$untrack } from "r-dom";
 import { getOwner as _$getOwner } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
-
 const _tmpl$ = /*#__PURE__*/ _$template(`<my-element></my-element>`, 2),
   _tmpl$2 = /*#__PURE__*/ _$template(
     `<my-element><header slot="head">Title</header></my-element>`,
     4
   ),
   _tmpl$3 = /*#__PURE__*/ _$template(`<slot name="head"></slot>`, 2);
-
 const template = (() => {
   const _el$ = _$untrack(() => document.importNode(_tmpl$, true));
-
   _el$.someAttr = name;
   _el$.notprop = data;
-
   _$setAttribute(_el$, "my-attr", data);
-
   _el$.someProp = data;
   _el$._$owner = _$getOwner();
   return _el$;
 })();
-
 const template2 = (() => {
   const _el$2 = _$untrack(() => document.importNode(_tmpl$, true));
-
   _el$2._$owner = _$getOwner();
-
   _$effect(
     _p$ => {
       const _v$ = state.name,
@@ -48,20 +40,15 @@ const template2 = (() => {
       _v$4: undefined
     }
   );
-
   return _el$2;
 })();
-
 const template3 = (() => {
   const _el$3 = _$untrack(() => document.importNode(_tmpl$2, true));
-
   _el$3._$owner = _$getOwner();
   return _el$3;
 })();
-
 const template4 = (() => {
   const _el$4 = _tmpl$3.cloneNode(true);
-
   _el$4._$owner = _$getOwner();
   return _el$4;
 })();

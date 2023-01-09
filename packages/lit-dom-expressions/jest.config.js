@@ -1,4 +1,5 @@
 module.exports = {
+  testEnvironment: "jsdom",
   collectCoverageFrom: [
     'dist/lit-dom-expressions.js'
   ],
