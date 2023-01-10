@@ -4,7 +4,7 @@ import stringify from "./serializer";
 export { stringify };
 export { createComponent } from "rxcore";
 
-const REPLACE_SCRIPT = `function $df(e,t,d,l){d=document.getElementById(e),(l=document.getElementById("pl-"+e))&&l.replaceWith(...d.childNodes),d.remove(),_$HY.set(e,t),_$HY.fe(e)}`;
+const REPLACE_SCRIPT = `function $df(e,t,n,o,d){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)d=o.nextSibling,o.remove(),o=d;o.replaceWith(n.content)}n.remove(),_$HY.set(e,t),_$HY.fe(e)}`;
 
 export function renderToString(code, options = {}) {
   let scripts = "";
@@ -140,7 +140,7 @@ export function renderToStream(code, options = {}) {
               );
               error && pushTask(serializeSet(dedupe, key, error, serializeError));
             } else {
-              buffer.write(`<div hidden id="${key}">${value !== undefined ? value : " "}</div>`);
+              buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(
                 `${
                   keys.length ? keys.map(k => `_$HY.unset("${k}")`).join(";") + ";" : ""
@@ -514,22 +514,14 @@ function serializeSet(registry, key, value, serializer = stringify) {
 }
 
 function replacePlaceholder(html, key, value) {
-  const nextRegex = /(<[/]?span[^>]*>)/g;
-  const marker = `<span id="pl-${key}">`;
+  const marker = `<template id="pl-${key}">`;
+  const close = `<!pl-${key}>`
 
   const first = html.indexOf(marker);
   if (first === -1) return html;
-  nextRegex.lastIndex = first + marker.length;
-  let match;
-  let open = 0,
-    close = 0;
-  while ((match = nextRegex.exec(html))) {
-    if (match[0][1] === "/") {
-      close++;
-      if (close > open) break;
-    } else open++;
-  }
-  return html.slice(0, first) + value + html.slice(nextRegex.lastIndex);
+  const last = html.indexOf(close, first + marker.length);
+
+  return html.slice(0, first) + value + html.slice(last + close.length);
 }
 
 // consider deprecating
