@@ -10,5 +10,6 @@ export default {
   contextToCustomElements: false,
   staticMarker: "@once",
   effectWrapper: "effect",
-  memoWrapper: "memo"
+  memoWrapper: "memo",
+  validate: false
 };
