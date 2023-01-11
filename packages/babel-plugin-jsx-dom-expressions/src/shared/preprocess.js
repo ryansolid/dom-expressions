@@ -7,11 +7,10 @@ const { isValidHTMLNesting } = require("validate-html-nesting");
 const JSXValidator = {
   JSXElement(path) {
     const elName = path.node.openingElement.name;
-    if (!t.isJSXIdentifier(elName)) return;
-    const elTagName = elName.name;
-    if (!isComponent(elTagName)) return;
     const parent = path.parent;
-    if (!t.isJSXElement(parent)) return;
+    if (!t.isJSXElement(parent) || !t.isJSXIdentifier(elName)) return;
+    const elTagName = elName.name;
+    if (isComponent(elTagName)) return;
     const parentElName = parent.openingElement.name;
     if (!t.isJSXIdentifier(parentElName)) return;
     const parentElTagName = parentElName.name;

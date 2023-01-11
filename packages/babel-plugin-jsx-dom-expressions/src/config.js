@@ -11,5 +11,5 @@ export default {
   staticMarker: "@once",
   effectWrapper: "effect",
   memoWrapper: "memo",
-  validate: false
+  validate: true
 };
