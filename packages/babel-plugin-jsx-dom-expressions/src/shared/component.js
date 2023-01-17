@@ -71,7 +71,8 @@ export default function transformComponent(path) {
             // Normalize expressions for non-null and type-as
             while (
               t.isTSNonNullExpression(value.expression) ||
-              t.isTSAsExpression(value.expression)
+              t.isTSAsExpression(value.expression) ||
+              t.isTSSatisfiesExpression(value.expression)
             ) {
               value.expression = value.expression.expression;
             }
