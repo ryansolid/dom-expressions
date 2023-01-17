@@ -10,7 +10,7 @@ const plugins = [
 
 export default {
   input: "src/index.js",
-  external: ["@babel/plugin-syntax-jsx", "@babel/helper-module-imports", "@babel/types", "html-entities"],
+  external: ["@babel/plugin-syntax-jsx", "@babel/helper-module-imports", "@babel/types", "html-entities", "validate-html-nesting"],
   output: {
     file: "index.js",
     format: "cjs",

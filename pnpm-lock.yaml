@@ -59,19 +59,19 @@ importers:
       '@babel/plugin-syntax-jsx': ^7.18.6
       '@babel/types': ^7.20.7
       html-entities: 2.3.3
-      validate-html-nesting: ^1.1.0
+      validate-html-nesting: ^1.2.0
     dependencies:
       '@babel/helper-module-imports': 7.18.6
       '@babel/plugin-syntax-jsx': 7.18.6_@babel+core@7.20.12
       '@babel/types': 7.20.7
       html-entities: 2.3.3
-      validate-html-nesting: 1.1.0
+      validate-html-nesting: 1.2.0
     devDependencies:
       '@babel/core': 7.20.12
 
   packages/dom-expressions:
     specifiers:
-      babel-plugin-jsx-dom-expressions: ^0.35.12
+      babel-plugin-jsx-dom-expressions: ^0.35.13
       babel-plugin-transform-rename-import: ^2.3.0
       csstype: ^3.1
       devalue: ^4.2.0
@@ -84,13 +84,13 @@ importers:
 
   packages/hyper-dom-expressions:
     specifiers:
-      dom-expressions: ^0.35.12
+      dom-expressions: ^0.35.13
     devDependencies:
       dom-expressions: link:../dom-expressions
 
   packages/lit-dom-expressions:
     specifiers:
-      dom-expressions: ^0.35.12
+      dom-expressions: ^0.35.13
       html-parse-string: ^0.0.8
     devDependencies:
       dom-expressions: link:../dom-expressions
@@ -7650,8 +7650,8 @@ packages:
       convert-source-map: 1.9.0
     dev: true
 
-  /validate-html-nesting/1.1.0:
-    resolution: {integrity: sha512-m+tQ7mVs2AMXRP0hFFQzmdG2BRMyLJtH39AtCpJDhiHM4oL6eccFnNhnNnwrBRNlPr78Opgh3CC9am2bnaJ2Tg==}
+  /validate-html-nesting/1.2.0:
+    resolution: {integrity: sha512-sI65QUd3T/e5wbQkdPKjikFsIVLPIaOQK+9uowPp6/k609SN8hs5eqBLrnN5DeW9Kd932Q4Imo0fzK2dxoOsCA==}
     dev: false
 
   /validate-npm-package-license/3.0.4:
