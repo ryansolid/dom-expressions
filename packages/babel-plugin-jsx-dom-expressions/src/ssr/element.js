@@ -48,6 +48,7 @@ export function transformElement(path, info) {
       wontEscape: path.node.wontEscape,
       renderer: "ssr"
     };
+  if (tagName === "script" || tagName === "style") path.doNotEscape = true;
 
   if (info.topLevel && config.hydratable) {
     if (tagName === "head") {
