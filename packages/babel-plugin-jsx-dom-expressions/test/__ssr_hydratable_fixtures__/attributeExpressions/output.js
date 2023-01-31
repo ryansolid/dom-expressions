@@ -2,6 +2,7 @@ import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
+import { mergeProps as _$mergeProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
@@ -27,32 +28,46 @@ let id = "my-h1";
 let link;
 const template = _$ssrElement(
   "div",
-  () => ({
-    id: "main",
-    ...results,
-    classList: {
-      selected: unknown
+  _$mergeProps(
+    {
+      id: "main"
     },
-    style: {
-      color
+    results,
+    {
+      classList: {
+        selected: unknown
+      },
+      style: {
+        color
+      }
     }
-  }),
+  ),
   () =>
     _$ssrElement(
       "h1",
-      () => ({
-        class: `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`,
-        id: id,
-        ...results(),
-        foo: true,
-        disabled: true,
-        readonly: "",
-        title: welcoming(),
-        style: {
-          "background-color": color(),
-          "margin-right": "40px"
+      _$mergeProps(
+        {
+          get ["class"]() {
+            return `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`;
+          },
+          id: id
+        },
+        results,
+        {
+          foo: true,
+          disabled: true,
+          readonly: "",
+          get title() {
+            return welcoming();
+          },
+          get style() {
+            return {
+              "background-color": color(),
+              "margin-right": "40px"
+            };
+          }
         }
-      }),
+      ),
       () => _$ssr(_tmpl$, "ccc ddd", _$ssrAttribute("readonly", value, true)),
       false
     ),
@@ -147,8 +162,7 @@ const template23 = _$ssr(
 );
 const template24 = _$ssrElement(
   "a",
-  () => ({
-    ...props,
+  _$mergeProps(props, {
     something: true
   }),
   undefined,
@@ -160,8 +174,7 @@ const template25 = _$ssr(
   _$escape(props.children),
   _$ssrElement(
     "a",
-    () => ({
-      ...props,
+    _$mergeProps(props, {
       something: true
     }),
     undefined,
@@ -170,22 +183,28 @@ const template25 = _$ssr(
 );
 const template26 = _$ssrElement(
   "div",
-  () => ({
-    start: "Hi",
-    middle: middle,
-    ...spread
-  }),
+  _$mergeProps(
+    {
+      start: "Hi",
+      middle: middle
+    },
+    spread
+  ),
   () => "Hi",
   true
 );
 const template27 = _$ssrElement(
   "div",
-  () => ({
-    start: "Hi",
-    ...first,
-    middle: middle,
-    ...second
-  }),
+  _$mergeProps(
+    {
+      start: "Hi"
+    },
+    first,
+    {
+      middle: middle
+    },
+    second
+  ),
   () => "Hi",
   true
 );

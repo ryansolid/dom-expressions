@@ -16,7 +16,9 @@ import {
   reservedNameSpaces,
   getConfig,
   trimWhitespace,
-  isComponent
+  isDynamic,
+  isComponent,
+  convertJSXIdentifier
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -166,7 +168,7 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
     } else
       expression.callee.body = escapeExpression(path, expression.callee.body, attr, escapeLiterals);
     return expression;
-  } else if(t.isJSXElement(expression) && !isComponent(getTagName(expression))) {
+  } else if (t.isJSXElement(expression) && !isComponent(getTagName(expression))) {
     expression.wontEscape = true;
     return expression;
   }
@@ -495,66 +497,133 @@ function createElement(path, { topLevel, hydratable }) {
       return memo;
     }, []);
 
-  let transformed;
+  let props;
   if (attributes.length === 1) {
-    transformed = attributes[0].node.argument;
+    props = [attributes[0].node.argument];
   } else {
-    transformed = t.arrowFunctionExpression(
-      [],
-      t.objectExpression(
-        attributes.reduce((memo, attribute) => {
-          const node = attribute.node;
+    props = [];
+    let runningObject = [],
+      dynamicSpread = false,
+      hasChildren = path.node.children.length > 0;
 
-          if (t.isJSXSpreadAttribute(node)) {
-            const expr = node.argument;
-            memo.push(t.spreadElement(expr));
-            return memo;
-          }
-          let value = node.value,
-            key = t.isJSXNamespacedName(node.name)
-              ? `${node.name.namespace.name}:${node.name.name.name}`
-              : node.name.name,
-            reservedNameSpace =
-              t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
+    attributes.forEach(attribute => {
+      const node = attribute.node;
+      if (t.isJSXSpreadAttribute(node)) {
+        if (runningObject.length) {
+          props.push(t.objectExpression(runningObject));
+          runningObject = [];
+        }
+        props.push(
+          isDynamic(attribute.get("argument"), {
+            checkMember: true
+          }) && (dynamicSpread = true)
+            ? t.isCallExpression(node.argument) &&
+              !node.argument.arguments.length &&
+              !t.isCallExpression(node.argument.callee) &&
+              !t.isMemberExpression(node.argument.callee)
+              ? node.argument.callee
+              : t.arrowFunctionExpression([], node.argument)
+            : node.argument
+        );
+      } else {
+        const value = node.value || t.booleanLiteral(true),
+          id = convertJSXIdentifier(node.name),
+          key = t.isJSXNamespacedName(node.name)
+            ? `${node.name.namespace.name}:${node.name.name.name}`
+            : node.name.name;
+
+        if (hasChildren && key === "children") return;
+        if (
+          key === "ref" ||
+          key.startsWith("use:") ||
+          key.startsWith("prop:") ||
+          key.startsWith("on")
+        )
+          return;
+        if (t.isJSXExpressionContainer(value))
           if (
-            ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
-            !t.isJSXExpressionContainer(value)
+            isDynamic(attribute.get("value").get("expression"), {
+              checkMember: true,
+              checkTags: true
+            })
           ) {
-            node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
-          }
-
-          if (
-            t.isJSXExpressionContainer(value) &&
-            (reservedNameSpace ||
-              ChildProperties.has(key) ||
-              !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
-          ) {
-            if (
-              key === "ref" ||
-              key.startsWith("use:") ||
-              key.startsWith("prop:") ||
-              key.startsWith("on")
-            )
-              return memo;
-
-            memo.push(t.objectProperty(t.stringLiteral(key), value.expression));
-          } else {
-            if (key === "$ServerOnly") return memo;
-            if (t.isJSXExpressionContainer(value)) value = value.expression;
-            memo.push(
-              t.objectProperty(t.stringLiteral(key), value ? value : t.booleanLiteral(true))
+            let expr = t.arrowFunctionExpression([], value.expression);
+            runningObject.push(
+              t.objectMethod(
+                "get",
+                id,
+                [],
+                t.blockStatement([t.returnStatement(expr.body)]),
+                !t.isValidIdentifier(key)
+              )
             );
-          }
-          return memo;
-        }, [])
-      )
-    );
+          } else runningObject.push(t.objectProperty(id, value.expression));
+        else runningObject.push(t.objectProperty(id, value));
+      }
+    });
+
+    if (runningObject.length || !props.length) props.push(t.objectExpression(runningObject));
+
+    if (props.length > 1 || dynamicSpread) {
+      props = [t.callExpression(registerImportMethod(path, "mergeProps"), props)];
+    }
+
+    // transformed = t.arrowFunctionExpression(
+    //   [],
+    //   t.objectExpression(
+    //     attributes.reduce((memo, attribute) => {
+    //       const node = attribute.node;
+
+    //       if (t.isJSXSpreadAttribute(node)) {
+    //         const expr = node.argument;
+    //         memo.push(t.spreadElement(expr));
+    //         return memo;
+    //       }
+    //       let value = node.value,
+    //         key = t.isJSXNamespacedName(node.name)
+    //           ? `${node.name.namespace.name}:${node.name.name.name}`
+    //           : node.name.name,
+    //         reservedNameSpace =
+    //           t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
+    //       if (
+    //         ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
+    //         !t.isJSXExpressionContainer(value)
+    //       ) {
+    //         node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+    //       }
+
+    //       if (
+    //         t.isJSXExpressionContainer(value) &&
+    //         (reservedNameSpace ||
+    //           ChildProperties.has(key) ||
+    //           !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
+    //       ) {
+    //         if (
+    //           key === "ref" ||
+    //           key.startsWith("use:") ||
+    //           key.startsWith("prop:") ||
+    //           key.startsWith("on")
+    //         )
+    //           return memo;
+
+    //         memo.push(t.objectProperty(t.stringLiteral(key), value.expression));
+    //       } else {
+    //         if (key === "$ServerOnly") return memo;
+    //         if (t.isJSXExpressionContainer(value)) value = value.expression;
+    //         memo.push(
+    //           t.objectProperty(t.stringLiteral(key), value ? value : t.booleanLiteral(true))
+    //         );
+    //       }
+    //       return memo;
+    //     }, [])
+    //   )
+    // );
   }
 
   const exprs = [
     t.callExpression(registerImportMethod(path, "ssrElement"), [
       t.stringLiteral(tagName),
-      transformed,
+      props[0],
       childNodes.length
         ? hydratable
           ? t.arrowFunctionExpression(
