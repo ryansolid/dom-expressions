@@ -4,6 +4,8 @@ import stringify from "./serializer";
 export { stringify };
 export { createComponent } from "rxcore";
 
+// Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
+const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
 const REPLACE_SCRIPT = `function $df(e,t,n,o,d){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)d=o.nextSibling,o.remove(),o=d;o.replaceWith(n.content)}n.remove(),_$HY.set(e,t),_$HY.fe(e)}`;
 
 export function renderToString(code, options = {}) {
@@ -285,6 +287,7 @@ export function ssrStyle(value) {
 
 export function ssrElement(tag, props, children, needsId) {
   let result = `<${tag}${needsId ? ssrHydrationKey() : ""} `;
+  const skipChildren = VOID_ELEMENTS.test(tag);
   if (props == null) props = {};
   else if (typeof props === "function") props = props();
   const keys = Object.keys(props);
@@ -292,7 +295,7 @@ export function ssrElement(tag, props, children, needsId) {
   for (let i = 0; i < keys.length; i++) {
     const prop = keys[i];
     if (ChildProperties.has(prop)) {
-      if (children === undefined)
+      if (children === undefined && !skipChildren)
         children = prop === "innerHTML" ? props[prop] : escape(props[prop]);
       continue;
     }
@@ -317,6 +320,9 @@ export function ssrElement(tag, props, children, needsId) {
     if (i !== keys.length - 1) result += " ";
   }
 
+  if (skipChildren) {
+    return { t: result + '/>' };
+  }
   return { t: result + `>${resolveSSRNode(children)}</${tag}>` };
 }
 
