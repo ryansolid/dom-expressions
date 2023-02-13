@@ -1702,6 +1702,7 @@ export namespace JSX {
     patternUnits?: SVGUnits;
     patternContentUnits?: SVGUnits;
     patternTransform?: string;
+    href?: string;
   }
   interface PolygonSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
