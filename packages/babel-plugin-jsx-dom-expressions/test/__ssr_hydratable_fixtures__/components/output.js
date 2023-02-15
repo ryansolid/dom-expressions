@@ -327,3 +327,8 @@ const template24 = _$createComponent(Component, {
     return state.dynamic;
   }
 });
+const template25 = _$createComponent(Component, {
+  get children() {
+    return _$ssr(_tmpl$5, _$ssrHydrationKey());
+  }
+});

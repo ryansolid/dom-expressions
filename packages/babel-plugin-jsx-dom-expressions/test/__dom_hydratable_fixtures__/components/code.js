@@ -157,3 +157,7 @@ const template23 = <Component disabled={"t" in test}>{"t" in test && "true"}</Co
 const template24 = <Component> 
   {state.dynamic}
 </Component>
+
+const template25 = <Component> 
+  <div />
+</Component>
