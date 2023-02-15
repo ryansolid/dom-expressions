@@ -203,11 +203,15 @@ function transformComponentChildren(children, config) {
   const filteredChildren = filterChildren(children);
   if (!filteredChildren.length) return;
   let dynamic = false;
+  let pathNodes = [];
 
   let transformedChildren = filteredChildren.reduce((memo, path) => {
     if (t.isJSXText(path.node)) {
       const v = decode(trimWhitespace(path.node.extra.raw));
-      if (v.length) memo.push(t.stringLiteral(v));
+      if (v.length) {
+        pathNodes.push(path.node);
+        memo.push(t.stringLiteral(v));
+      }
     } else {
       const child = transformNode(path, {
         topLevel: true,
@@ -222,6 +226,7 @@ function transformComponentChildren(children, config) {
       ) {
         child.exprs[0] = child.exprs[0].body;
       }
+      pathNodes.push(path.node);
       memo.push(getCreateTemplate(config, path, child)(path, child, filteredChildren.length > 1));
     }
     return memo;
@@ -230,9 +235,9 @@ function transformComponentChildren(children, config) {
   if (transformedChildren.length === 1) {
     transformedChildren = transformedChildren[0];
     if (
-      !t.isJSXExpressionContainer(filteredChildren[0]) &&
-      !t.isJSXSpreadChild(filteredChildren[0]) &&
-      !t.isJSXText(filteredChildren[0])
+      !t.isJSXExpressionContainer(pathNodes[0]) &&
+      !t.isJSXSpreadChild(pathNodes[0]) &&
+      !t.isJSXText(pathNodes[0])
     ) {
       transformedChildren =
         t.isCallExpression(transformedChildren) &&

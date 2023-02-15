@@ -374,3 +374,8 @@ const template24 = _$createComponent(Component, {
     return state.dynamic;
   }
 });
+const template25 = _$createComponent(Component, {
+  get children() {
+    return _tmpl$2.cloneNode(true);
+  }
+});
