@@ -83,3 +83,5 @@ const trailingSpaceElement = <span>{expr} </span>
 const trailingSpaceComponent = <Div>{expr} </Div>
 
 const trailingSpaceFragment = <>{expr} </>
+
+const escapeAttribute = <div normal="Search&hellip;" title={"Search&hellip;"} />

@@ -1,3 +1,4 @@
+import { setProp as _$setProp } from "r-custom";
 import { createComponent as _$createComponent } from "r-custom";
 import { insert as _$insert } from "r-custom";
 import { createTextNode as _$createTextNode } from "r-custom";
@@ -169,3 +170,9 @@ const trailingSpaceComponent = _$createComponent(Div, {
   }
 });
 const trailingSpaceFragment = [expr, " "];
+const escapeAttribute = (() => {
+  const _el$45 = _$createElement("div");
+  _$setProp(_el$45, "normal", "Search&hellip;");
+  _$setProp(_el$45, "title", "Search&hellip;");
+  return _el$45;
+})();
