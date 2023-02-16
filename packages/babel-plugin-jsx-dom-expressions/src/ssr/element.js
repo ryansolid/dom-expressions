@@ -43,7 +43,7 @@ export function transformElement(path, info) {
     results = {
       template: [`<${tagName}`],
       templateValues: [],
-      decl: [],
+      declarations: [],
       exprs: [],
       dynamics: [],
       tagName,

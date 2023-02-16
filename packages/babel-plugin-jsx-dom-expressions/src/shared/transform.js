@@ -63,7 +63,7 @@ export function transformNode(path, info = {}) {
   if (t.isJSXElement(node)) {
     return transformElement(config, path, info);
   } else if (t.isJSXFragment(node)) {
-    let results = { template: "", decl: [], exprs: [], dynamics: [] };
+    let results = { template: "", declarations: [], exprs: [], dynamics: [] };
     // <><div /><Component /></>
     transformFragmentChildren(path.get("children"), results, config);
     return results;
@@ -77,7 +77,7 @@ export function transformNode(path, info = {}) {
     if (!text.length) return null;
     const results = {
       template: config.generate === "ssr" ? text : escapeBackticks(text),
-      decl: [],
+      declarations: [],
       exprs: [],
       dynamics: [],
       postExprs: [],
