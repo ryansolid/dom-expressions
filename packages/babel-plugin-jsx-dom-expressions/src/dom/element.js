@@ -40,7 +40,7 @@ export function transformElement(path, info) {
     isCustomElement = tagName.indexOf("-") > -1,
     results = {
       template: `<${tagName}`,
-      decl: [],
+      declarations: [],
       exprs: [],
       dynamics: [],
       postExprs: [],
@@ -612,7 +612,7 @@ function transformAttributes(path, results) {
             nextElem = attribute.scope.generateUidIdentifier("el$");
             children = t.JSXText(" ");
             children.extra = { raw: " ", rawValue: " " };
-            results.decl.push(
+            results.declarations.push(
               t.variableDeclarator(nextElem, t.memberExpression(elem, t.identifier("firstChild")))
             );
           }
@@ -713,7 +713,7 @@ function transformChildren(path, results, config) {
         t.identifier(tempPath),
         t.identifier(i === 0 ? "firstChild" : "nextSibling")
       );
-      results.decl.push(
+      results.declarations.push(
         t.variableDeclarator(
           child.id,
           config.hydratable && tagName === "html"
@@ -721,7 +721,7 @@ function transformChildren(path, results, config) {
             : walk
         )
       );
-      results.decl.push(...child.decl);
+      results.declarations.push(...child.declarations);
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
       results.postExprs.push(...child.postExprs);
@@ -781,7 +781,7 @@ function createPlaceholder(path, results, tempPath, i, char) {
   results.template += `<!${char}>`;
   if (config.hydratable && char === "/") {
     contentId = path.scope.generateUidIdentifier("co$");
-    results.decl.push(
+    results.declarations.push(
       t.variableDeclarator(
         t.arrayPattern([exprId, contentId]),
         t.callExpression(
@@ -791,7 +791,7 @@ function createPlaceholder(path, results, tempPath, i, char) {
       )
     );
   } else
-    results.decl.push(
+    results.declarations.push(
       t.variableDeclarator(
         exprId,
         t.memberExpression(
