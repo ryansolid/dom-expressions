@@ -1301,6 +1301,7 @@ export namespace JSX {
     gradientUnits?: SVGUnits;
     gradientTransform?: string;
     spreadMethod?: "pad" | "reflect" | "repeat";
+    href?: string
   }
   interface GraphicsElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
