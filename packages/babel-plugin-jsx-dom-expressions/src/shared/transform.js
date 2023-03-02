@@ -163,13 +163,9 @@ export function transformElement(config, path, info = {}) {
   // <div ...></div>
   // const element = getTransformElemet(config, path, tagName);
 
-  let tagRenderer;
-  for (var renderer of config.renderers ?? []) {
-    if (renderer.elements.indexOf(tagName) !== -1) {
-      tagRenderer = renderer;
-      break;
-    }
-  }
+  const tagRenderer = (config.renderers ?? []).find(
+    renderer => renderer.elements.includes(tagName)
+  )
 
   if (tagRenderer?.name === "dom" || getConfig(path).generate === "dom") {
     return transformElementDOM(path, info);
