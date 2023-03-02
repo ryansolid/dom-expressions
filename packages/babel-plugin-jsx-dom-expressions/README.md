@@ -38,29 +38,33 @@ const view = ({ item }) => {
 Compiles to:
 
 ```jsx
-import { insert as _$insert } from "dom";
+import { template as _$template } from "dom";
+import { delegateEvents as _$delegateEvents } from "dom";
+import { className as _$className } from "dom";
 import { effect as _$effect } from "dom";
+import { insert as _$insert } from "dom";
 
-const _tmpl$ = document.createElement("template");
-_tmpl$.innerHTML = `<tr><td class="col-md-1"></td><td class="col-md-4"><a></a></td><td class="col-md-1"><a><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a></td><td class="col-md-6"></td></tr>`;
-
-const view = ({ item }) => {
+const _tmpl$ = /*#__PURE__*/_$template(`<tr><td class="col-md-1"></td><td class="col-md-4"><a></a></td><td class="col-md-1"><a><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a></td><td class="col-md-6"></td></tr>`, 16);
+const view = ({
+  item
+}) => {
   const itemId = item.id;
-  return (function() {
-    const _el$ = _tmpl$.content.firstChild.cloneNode(true),
+  return (() => {
+    const _el$ = _tmpl$.cloneNode(true),
       _el$2 = _el$.firstChild,
       _el$3 = _el$2.nextSibling,
       _el$4 = _el$3.firstChild,
       _el$5 = _el$3.nextSibling,
       _el$6 = _el$5.firstChild;
-    _$effect(() => (_el$.className = itemId === selected() ? "danger" : ""));
     _$insert(_el$2, itemId);
-    _el$4.onclick = e => select(item, e);
+    _el$4.$$click = e => select(item, e);
     _$insert(_el$4, () => item.label);
-    _el$6.onclick = e => del(item, e);
+    _el$6.$$click = e => del(item, e);
+    _$effect(() => _$className(_el$, itemId === selected() ? "danger" : ""));
     return _el$;
   })();
 };
+_$delegateEvents(["click"]);
 ```
 
 The use of cloneNode improves repeat insert performance and precompilation reduces the number of references to the minimal traversal path. This is a basic example which doesn't leverage event delegation or any of the more advanced features described below.
