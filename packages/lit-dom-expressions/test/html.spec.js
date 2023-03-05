@@ -263,11 +263,23 @@ describe("Test HTML", () => {
   test("Test double toggle classList", () => {
     S.root(() => {
       const d = S.data("first");
-      const template = html` <div classList=${() => ({ [d()]: true })} /> `;
+      const template = html`<div classList=${() => ({ [d()]: true })} />`;
       const div = document.createElement("div");
       div.appendChild(template);
       d("second");
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[9]);
     });
   });
+
+  test("Expressions in Comment", () =>{
+    const name = "John";
+    const template = html`<div>
+      <!--<div name=${name} />-->
+      <b>Hello, my name is: <i>${name}</i></b>
+    </div>`;
+    console.log(template);
+    const div = document.createElement("div");
+    div.appendChild(template);
+    expect(div.innerHTML.replace(`<!--<div name="###"></div>-->`, "")).toBe(FIXTURES[7]);
+  })
 });
