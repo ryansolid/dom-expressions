@@ -383,7 +383,7 @@ function transformAttributes(path, results, info) {
       if (t.isJSXExpressionContainer(value)) value = value.expression;
       key = toAttribute(key, isSVG);
       appendToTemplate(results.template, ` ${key}`);
-      appendToTemplate(results.template, value ? `="${escapeHTML(decode(value.value), true)}"` : "");
+      appendToTemplate(results.template, value ? `="${escapeHTML(value.value, true)}"` : "");
     }
   });
   if (!hasChildren && children) {

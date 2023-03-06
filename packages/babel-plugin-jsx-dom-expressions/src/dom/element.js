@@ -1,5 +1,4 @@
 import * as t from "@babel/types";
-import { decode } from "html-entities";
 import {
   Aliases,
   PropAliases,
@@ -636,7 +635,7 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
-          results.template += value ? `="${escapeBackticks(escapeHTML(decode(value.value), true))}"` : "";
+          results.template += value ? `="${escapeBackticks(escapeHTML(value.value, true))}"` : "";
         }
       }
     });

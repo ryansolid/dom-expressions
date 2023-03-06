@@ -176,3 +176,7 @@ const escapeAttribute = (() => {
   _$setProp(_el$45, "title", "Search&hellip;");
   return _el$45;
 })();
+const escapeCompAttribute = _$createComponent(Div, {
+  normal: "Search\u2026",
+  title: "Search&hellip;"
+});
