@@ -3,6 +3,7 @@ import {
   ChildProperties,
   Aliases,
   PropAliases,
+  getPropAlias,
   SVGNamespace,
   DelegatedEvents
 } from "./constants";
@@ -21,6 +22,7 @@ export {
   Properties,
   ChildProperties,
   PropAliases,
+  getPropAlias,
   Aliases,
   DOMElements,
   SVGElements,
@@ -293,7 +295,8 @@ function toggleClassKey(node, key, value) {
 }
 
 function assignProp(node, prop, value, prev, isSVG, skipRef) {
-  let isCE, isProp, isChildProp;
+  const tagName = node.tagName;
+  let isCE, isProp, isChildProp, propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
   if (value === prev) return prev;
@@ -318,14 +321,21 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
       addEventListener(node, name, value, delegate);
       delegate && delegateEvents([name]);
     }
+  } else if (prop.slice(0, 5) === "attr:") {
+    setAttribute(node, prop.slice(5), value);
   } else if (
+    (forceProp = prop.slice(0, 5) === "prop:") ||
     (isChildProp = ChildProperties.has(prop)) ||
-    (!isSVG && (PropAliases[prop] || (isProp = Properties.has(prop)))) ||
+    (!isSVG && ((propAlias = getPropAlias(prop, tagName)) || (isProp = Properties.has(prop)))) ||
     (isCE = node.nodeName.includes("-"))
   ) {
+    if (forceProp) {
+      prop = prop.slice(5);
+      isProp = true;
+    }
     if (prop === "class" || prop === "className") className(node, value);
     else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
-    else node[PropAliases[prop] || prop] = value;
+    else node[propAlias || prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
     if (ns) setAttributeNS(node, ns, prop, value);

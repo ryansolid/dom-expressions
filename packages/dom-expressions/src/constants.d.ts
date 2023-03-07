@@ -2,6 +2,8 @@ export const Aliases: Record<string, string>;
 
 export const PropAliases: Record<string, string>;
 
+export function getPropAlias(prop: string, tagName: string): string | undefined;
+
 export const BooleanAttributes: Set<string>;
 
 export const Properties: Set<string>;
