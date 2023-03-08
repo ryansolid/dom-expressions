@@ -58,15 +58,30 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, check, isSVG) {
-  const t = document.createElement("template");
-  t.innerHTML = html;
-  if ("_DX_DEV_" && check && t.innerHTML.split("<").length - 1 !== check)
-    throw `The browser resolved template HTML does not match JSX input:\n${t.innerHTML}\n\n${html}. Is your HTML properly formed?`;
-  let node = t.content.firstChild;
-  if (isSVG) node = node.firstChild;
-  return node;
-}
+export const template = function template(
+  templates,
+  html,
+  check,
+  isSVG,
+) {
+  return {
+    cloneNode: e => {
+      if (!templates.has(html)) {
+        const t = document.createElement('template')
+        t.innerHTML = html
+        if ('_DX_DEV_' && check && t.innerHTML.split('<').length - 1 !== check)
+          throw `The browser resolved template HTML does not match JSX input:\n${t.innerHTML}\n\n${html}. Is your HTML properly formed?`
+        templates.set(
+          html,
+          isSVG
+            ? t.content.firstChild.firstChild
+            : t.content.firstChild,
+        )
+      }
+      return templates.get(html).cloneNode(e)
+    },
+  }
+}.bind(null, new Map())
 
 export function delegateEvents(eventNames, document = window.document) {
   const e = document[$$EVENTS] || (document[$$EVENTS] = new Set());
