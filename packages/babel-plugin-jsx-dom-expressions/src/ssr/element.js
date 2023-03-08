@@ -567,57 +567,6 @@ function createElement(path, { topLevel, hydratable }) {
     if (props.length > 1 || dynamicSpread) {
       props = [t.callExpression(registerImportMethod(path, "mergeProps"), props)];
     }
-
-    // transformed = t.arrowFunctionExpression(
-    //   [],
-    //   t.objectExpression(
-    //     attributes.reduce((memo, attribute) => {
-    //       const node = attribute.node;
-
-    //       if (t.isJSXSpreadAttribute(node)) {
-    //         const expr = node.argument;
-    //         memo.push(t.spreadElement(expr));
-    //         return memo;
-    //       }
-    //       let value = node.value,
-    //         key = t.isJSXNamespacedName(node.name)
-    //           ? `${node.name.namespace.name}:${node.name.name.name}`
-    //           : node.name.name,
-    //         reservedNameSpace =
-    //           t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
-    //       if (
-    //         ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
-    //         !t.isJSXExpressionContainer(value)
-    //       ) {
-    //         node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
-    //       }
-
-    //       if (
-    //         t.isJSXExpressionContainer(value) &&
-    //         (reservedNameSpace ||
-    //           ChildProperties.has(key) ||
-    //           !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
-    //       ) {
-    //         if (
-    //           key === "ref" ||
-    //           key.startsWith("use:") ||
-    //           key.startsWith("prop:") ||
-    //           key.startsWith("on")
-    //         )
-    //           return memo;
-
-    //         memo.push(t.objectProperty(t.stringLiteral(key), value.expression));
-    //       } else {
-    //         if (key === "$ServerOnly") return memo;
-    //         if (t.isJSXExpressionContainer(value)) value = value.expression;
-    //         memo.push(
-    //           t.objectProperty(t.stringLiteral(key), value ? value : t.booleanLiteral(true))
-    //         );
-    //       }
-    //       return memo;
-    //     }, [])
-    //   )
-    // );
   }
 
   const exprs = [

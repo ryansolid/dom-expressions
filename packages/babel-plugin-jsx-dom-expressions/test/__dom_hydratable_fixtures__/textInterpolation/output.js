@@ -143,7 +143,7 @@ const leadingSpaceComponent = _$createComponent(Div, {
     return [" ", expr];
   }
 });
-const leadingSpaceFragment = [" ", expr];
+const leadingSpaceFragment = [" ", "<!>", expr];
 const trailingSpaceElement = (() => {
   const _el$49 = _$getNextElement(_tmpl$17),
     _el$51 = _el$49.firstChild,
@@ -157,7 +157,7 @@ const trailingSpaceComponent = _$createComponent(Div, {
     return [expr, " "];
   }
 });
-const trailingSpaceFragment = [expr, " "];
+const trailingSpaceFragment = [expr, "<!>", " "];
 const escapeAttribute = _$getNextElement(_tmpl$18);
 const escapeCompAttribute = _$createComponent(Div, {
   normal: "Search\u2026",
