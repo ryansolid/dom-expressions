@@ -74,10 +74,10 @@ importers:
       babel-plugin-jsx-dom-expressions: ^0.35.18
       babel-plugin-transform-rename-import: ^2.3.0
       csstype: ^3.1
-      devalue: ^4.2.0
+      seroval: ^0.2.1
     dependencies:
       babel-plugin-transform-rename-import: 2.3.0
-      devalue: 4.2.0
+      seroval: 0.2.1
     devDependencies:
       babel-plugin-jsx-dom-expressions: link:../babel-plugin-jsx-dom-expressions
       csstype: 3.1.1
@@ -3871,10 +3871,6 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /devalue/4.2.0:
-    resolution: {integrity: sha512-mbjoAaCL2qogBKgeFxFPOXAUsZchircF+B/79LD4sHH0+NHfYm8gZpQrskKDn5gENGt35+5OI1GUF7hLVnkPDw==}
-    dev: false
-
   /dezalgo/1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
     dependencies:
@@ -7065,6 +7061,11 @@ packages:
     dependencies:
       lru-cache: 6.0.0
     dev: true
+
+  /seroval/0.2.1:
+    resolution: {integrity: sha512-CNjXgbi8cRXsJz52kW9UnpZGrDoAXRASTG6bBy+9LlZJFX72IGhVy9okG7MWvvsASxLqlwq+KDKCnW3sKPoQxA==}
+    engines: {node: '>=10'}
+    dev: false
 
   /set-blocking/2.0.0:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}

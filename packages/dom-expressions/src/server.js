@@ -1,6 +1,6 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig } from "rxcore";
-import stringify from "./serializer";
+import { serialize as stringify } from "seroval";
 export { stringify };
 export { createComponent } from "rxcore";
 
