@@ -250,7 +250,8 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
         continue;
       }
       parseNode(child, childOptions);
-      i++;
+      if (!childOptions.multi && child.type === "comment" && child.content === "#") node.children.splice(i, 1);
+      else i++;
     }
     options.counter = childOptions.counter;
     options.templateId = childOptions.templateId;
@@ -367,8 +368,13 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
           options.templateId = childOptions.templateId;
         } else if (child.type === "text") {
           parts.push(`"${child.content!}"`);
-        } else if (child.type === "comment" && child.content === "#") {
-          parts.push(`exprs[${options.counter++}]`);
+        } else if (child.type === "comment") {
+          if (child.content === "#") parts.push(`exprs[${options.counter++}]`);
+          else if(child.content) {
+            for (let i = 0; i < child.content.split("###").length - 1; i++) {
+              parts.push(`exprs[${options.counter++}]`);
+            }
+          }
         }
       });
       options.exprs.push(`return [${parts.join(", \n")}]`);

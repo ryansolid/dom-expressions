@@ -63,21 +63,21 @@ export function transformNode(path, info = {}) {
   if (t.isJSXElement(node)) {
     return transformElement(config, path, info);
   } else if (t.isJSXFragment(node)) {
-    let results = { template: "", decl: [], exprs: [], dynamics: [] };
+    let results = { template: "", declarations: [], exprs: [], dynamics: [] };
     // <><div /><Component /></>
     transformFragmentChildren(path.get("children"), results, config);
     return results;
   } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path))) {
     const text =
       staticValue !== undefined
-        ? !info.doNotEscape
-          ? escapeHTML(staticValue.toString())
-          : staticValue.toString()
+        ? info.doNotEscape
+          ? staticValue.toString()
+          : escapeHTML(staticValue.toString())
         : trimWhitespace(node.extra.raw);
     if (!text.length) return null;
     const results = {
       template: config.generate === "ssr" ? text : escapeBackticks(text),
-      decl: [],
+      declarations: [],
       exprs: [],
       dynamics: [],
       postExprs: [],
@@ -163,13 +163,9 @@ export function transformElement(config, path, info = {}) {
   // <div ...></div>
   // const element = getTransformElemet(config, path, tagName);
 
-  let tagRenderer;
-  for (var renderer of config.renderers ?? []) {
-    if (renderer.elements.indexOf(tagName) !== -1) {
-      tagRenderer = renderer;
-      break;
-    }
-  }
+  const tagRenderer = (config.renderers ?? []).find(
+    renderer => renderer.elements.includes(tagName)
+  )
 
   if (tagRenderer?.name === "dom" || getConfig(path).generate === "dom") {
     return transformElementDOM(path, info);

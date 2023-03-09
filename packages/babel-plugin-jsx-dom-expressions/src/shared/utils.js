@@ -44,7 +44,7 @@ export function registerImportMethod(path, name, moduleName) {
     // the cloning is required to play well with babel-preset-env which is
     // transpiling import as we add them and using the same identifier causes
     // problems with the multiple identifiers of the same thing
-    return t.cloneDeep(iden);
+    return t.cloneNode(iden);
   }
 }
 

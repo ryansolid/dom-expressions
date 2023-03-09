@@ -5,7 +5,7 @@ import { setAttr } from "./element";
 export function createTemplate(path, result, wrap) {
   const config = getConfig(path);
   if (result.id) {
-    result.decl = t.variableDeclaration("const", result.decl);
+    result.decl = t.variableDeclaration("const", result.declarations);
     if (
       !(result.exprs.length || result.dynamics.length || result.postExprs.length) &&
       result.decl.declarations.length === 1
@@ -55,14 +55,14 @@ function wrapDynamics(path, dynamics) {
       ])
     );
   }
-  const decls = [],
+  const declarations = [],
     statements = [],
     identifiers = [],
     prevId = t.identifier("_p$");
   dynamics.forEach(({ elem, key, value }) => {
     const identifier = path.scope.generateUidIdentifier("v$");
     identifiers.push(identifier);
-    decls.push(t.variableDeclarator(identifier, value));
+    declarations.push(t.variableDeclarator(identifier, value));
     const prev = t.memberExpression(prevId, identifier);
     statements.push(
       t.expressionStatement(
@@ -86,7 +86,7 @@ function wrapDynamics(path, dynamics) {
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([
-          t.variableDeclaration("const", decls),
+          t.variableDeclaration("const", declarations),
           ...statements,
           t.returnStatement(prevId)
         ])

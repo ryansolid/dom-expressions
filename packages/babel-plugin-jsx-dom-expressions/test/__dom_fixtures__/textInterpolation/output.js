@@ -17,7 +17,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(`<span>Hello </span>`, 2),
 d</div>`,
     2
   ),
-  _tmpl$13 = /*#__PURE__*/ _$template(`<div></div>`, 2);
+  _tmpl$13 = /*#__PURE__*/ _$template(`<div></div>`, 2),
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;"></div>`, 2);
 const trailing = _tmpl$.cloneNode(true);
 const leading = _tmpl$2.cloneNode(true);
 
@@ -132,3 +133,8 @@ const trailingSpaceComponent = _$createComponent(Div, {
   }
 });
 const trailingSpaceFragment = [expr, " "];
+const escapeAttribute = _tmpl$14.cloneNode(true);
+const escapeCompAttribute = _$createComponent(Div, {
+  normal: "Search\u2026",
+  title: "Search&hellip;"
+});
