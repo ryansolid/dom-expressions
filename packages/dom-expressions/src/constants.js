@@ -53,20 +53,33 @@ const Aliases = /*#__PURE__*/ Object.assign(Object.create(null), {
 
 const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
   class: "className",
-  formnovalidate: ["formNoValidate", "button", "input"],
-  ismap: ["isMap", "img"],
-  nomodule: ["noModule", "script"],
-  playsinline: ["playsInline", "video"],
-  readonly: ["readOnly", "input", "textarea"]
+  formnovalidate: {
+    $: "formNoValidate",
+    button: 1,
+    input: 1
+  },
+  ismap: {
+    $: "isMap",
+    img: 1
+  },
+  nomodule: {
+    $: "noModule",
+    script: 1
+  },
+  playsinline: {
+    $: "playsInline",
+    video: 1
+  },
+  readonly: {
+    $: "readOnly",
+    input: 1,
+    textarea: 1
+  }
 });
 
 function getPropAlias(prop, tagName) {
-  const a = PropAliases[a];
-  if (Array.isArray(a)) {
-    return a.indexOf(tagName.toLowerCase(), 1) > 0 ? a[0] : undefined;
-  } else if (a) {
-    return a;
-  }
+  const a = PropAliases[prop];
+  return typeof a === "object" ? (a[tagName] ? a["$"] : undefined) : a;
 }
 
 // list of Element events that will be delegated
@@ -463,7 +476,6 @@ export {
   BooleanAttributes,
   Properties,
   ChildProperties,
-  PropAliases,
   getPropAlias,
   Aliases,
   DelegatedEvents,

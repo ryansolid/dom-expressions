@@ -2,7 +2,6 @@ import {
   Properties,
   ChildProperties,
   Aliases,
-  PropAliases,
   getPropAlias,
   SVGNamespace,
   DelegatedEvents
@@ -21,7 +20,6 @@ import reconcileArrays from "./reconcile";
 export {
   Properties,
   ChildProperties,
-  PropAliases,
   getPropAlias,
   Aliases,
   DOMElements,

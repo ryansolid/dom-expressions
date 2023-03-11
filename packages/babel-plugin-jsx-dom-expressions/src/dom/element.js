@@ -1,7 +1,7 @@
 import * as t from "@babel/types";
 import {
   Aliases,
-  PropAliases,
+  getPropAlias,
   Properties,
   ChildProperties,
   SVGNamespace,
@@ -92,7 +92,7 @@ export function transformElement(path, info) {
   return results;
 }
 
-export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE }) {
+export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE, tagName }) {
   // pull out namespace
   const config = getConfig(path);
   let parts, namespace;
@@ -152,7 +152,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE 
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  const alias = PropAliases[name];
+  const alias = getPropAlias(name, tagName);
   if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
     if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
     return t.assignmentExpression(
@@ -598,6 +598,7 @@ function transformAttributes(path, results) {
                   t.arrowFunctionExpression(
                     [],
                     setAttr(path, elem, key, value.expression, {
+                      tagName,
                       isSVG,
                       isCE
                     })
@@ -615,10 +616,10 @@ function transformAttributes(path, results) {
               t.variableDeclarator(nextElem, t.memberExpression(elem, t.identifier("firstChild")))
             );
           }
-          results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG, isCE });
+          results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG, isCE, tagName });
         } else {
           results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value.expression, { isSVG, isCE }))
+            t.expressionStatement(setAttr(attribute, elem, key, value.expression, { isSVG, isCE, tagName }))
           );
         }
       } else {
@@ -630,7 +631,7 @@ function transformAttributes(path, results) {
         key = Aliases[key] || key;
         if (value && ChildProperties.has(key)) {
           results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE }))
+            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE, tagName }))
           );
         } else {
           !isSVG && (key = key.toLowerCase());
