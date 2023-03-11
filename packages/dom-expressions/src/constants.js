@@ -50,14 +50,24 @@ const Aliases = /*#__PURE__*/ Object.assign(Object.create(null), {
   className: "class",
   htmlFor: "for"
 });
+
 const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
   class: "className",
-  formnovalidate: "formNoValidate",
-  ismap: "isMap",
-  nomodule: "noModule",
-  playsinline: "playsInline",
-  readonly: "readOnly"
+  formnovalidate: ["formNoValidate", "button", "input"],
+  ismap: ["isMap", "img"],
+  nomodule: ["noModule", "script"],
+  playsinline: ["playsInline", "video"],
+  readonly: ["readOnly", "input", "textarea"]
 });
+
+function getPropAlias(prop, tagName) {
+  const a = PropAliases[a];
+  if (Array.isArray(a)) {
+    return a.indexOf(tagName.toLowerCase(), 1) > 0 ? a[0] : undefined;
+  } else if (a) {
+    return a;
+  }
+}
 
 // list of Element events that will be delegated
 const DelegatedEvents = /*#__PURE__*/ new Set([
@@ -454,6 +464,7 @@ export {
   Properties,
   ChildProperties,
   PropAliases,
+  getPropAlias,
   Aliases,
   DelegatedEvents,
   SVGElements,
