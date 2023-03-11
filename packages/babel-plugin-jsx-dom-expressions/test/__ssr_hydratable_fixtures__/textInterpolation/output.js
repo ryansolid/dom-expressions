@@ -18,8 +18,9 @@ const _tmpl$ = ["<span", ">Hello </span>"],
   _tmpl$14 = ["<div", "><!--#-->", "<!--/-->\nd</div>"],
   _tmpl$15 = ["<div", ">", "</div>"],
   _tmpl$16 = ["<span", "> <!--#-->", "<!--/--></span>"],
-  _tmpl$17 = ["<span", "><!--#-->", "<!--/--> </span>"],
-  _tmpl$18 = ["<div", ' normal="Search\u2026" title="Search\u2026"></div>'];
+  _tmpl$17 = "<!---->",
+  _tmpl$18 = ["<span", "><!--#-->", "<!--/--> </span>"],
+  _tmpl$19 = ["<div", ' normal="Search\u2026" title="Search&amp;hellip;"></div>'];
 const trailing = _$ssr(_tmpl$, _$ssrHydrationKey());
 const leading = _$ssr(_tmpl$2, _$ssrHydrationKey());
 
@@ -73,12 +74,16 @@ const leadingSpaceComponent = _$createComponent(Div, {
     return [" ", expr];
   }
 });
-const leadingSpaceFragment = [" ", expr];
-const trailingSpaceElement = _$ssr(_tmpl$17, _$ssrHydrationKey(), _$escape(expr));
+const leadingSpaceFragment = [" ", _$ssr(_tmpl$17), expr];
+const trailingSpaceElement = _$ssr(_tmpl$18, _$ssrHydrationKey(), _$escape(expr));
 const trailingSpaceComponent = _$createComponent(Div, {
   get children() {
     return [expr, " "];
   }
 });
-const trailingSpaceFragment = [expr, " "];
-const escapeAttribute = _$ssr(_tmpl$18, _$ssrHydrationKey());
+const trailingSpaceFragment = [expr, _$ssr(_tmpl$17), " "];
+const escapeAttribute = _$ssr(_tmpl$19, _$ssrHydrationKey());
+const escapeCompAttribute = _$createComponent(Div, {
+  normal: "Search\u2026",
+  title: "Search&hellip;"
+});

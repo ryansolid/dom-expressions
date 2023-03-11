@@ -61,7 +61,8 @@ export default function transformComponent(path) {
             : node.argument
         );
       } else {
-        const value = node.value || t.booleanLiteral(true),
+        // handle weird babel bug around HTML entities
+        const value = (t.isStringLiteral(node.value) ? t.stringLiteral(node.value.value): node.value) || t.booleanLiteral(true),
           id = convertJSXIdentifier(node.name),
           key = id.name;
         if (hasChildren && key === "children") return;

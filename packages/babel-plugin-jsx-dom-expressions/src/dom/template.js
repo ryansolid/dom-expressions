@@ -105,8 +105,8 @@ function registerTemplate(path, results) {
           ])
     );
   }
-  results.decl.unshift(decl);
-  results.decl = t.variableDeclaration("const", results.decl);
+  results.declarations.unshift(decl);
+  results.decl = t.variableDeclaration("const", results.declarations);
 }
 
 function wrapDynamics(path, dynamics) {
@@ -142,7 +142,7 @@ function wrapDynamics(path, dynamics) {
       ])
     );
   }
-  const decls = [],
+  const declarations = [],
     statements = [],
     identifiers = [],
     prevId = t.identifier("_p$");
@@ -152,7 +152,7 @@ function wrapDynamics(path, dynamics) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
     }
     identifiers.push(identifier);
-    decls.push(t.variableDeclarator(identifier, value));
+    declarations.push(t.variableDeclarator(identifier, value));
     if (key === "classList" || key === "style") {
       const prev = t.memberExpression(prevId, identifier);
       statements.push(
@@ -188,7 +188,7 @@ function wrapDynamics(path, dynamics) {
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([
-          t.variableDeclaration("const", decls),
+          t.variableDeclaration("const", declarations),
           ...statements,
           t.returnStatement(prevId)
         ])

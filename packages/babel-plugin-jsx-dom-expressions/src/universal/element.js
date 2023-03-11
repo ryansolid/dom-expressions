@@ -16,7 +16,7 @@ export function transformElement(path, info) {
   let tagName = getTagName(path.node),
     results = {
       id: path.scope.generateUidIdentifier("el$"),
-      decl: [],
+      declarations: [],
       exprs: [],
       dynamics: [],
       postExprs: [],
@@ -24,7 +24,7 @@ export function transformElement(path, info) {
       renderer: "universal"
     };
 
-  results.decl.push(
+  results.declarations.push(
     t.variableDeclarator(
       results.id,
       t.callExpression(
@@ -240,7 +240,7 @@ function transformChildren(path, results) {
           getRendererConfig(path, "universal").moduleName
         );
         if (multi) {
-          results.decl.push(
+          results.declarations.push(
             t.variableDeclarator(
               child.id,
               t.callExpression(createTextNode, [
@@ -254,7 +254,7 @@ function transformChildren(path, results) {
           ]);
       }
       appends.push(t.expressionStatement(t.callExpression(insertNode, [results.id, insert])));
-      results.decl.push(...child.decl);
+      results.declarations.push(...child.declarations);
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
     } else if (child.exprs.length) {

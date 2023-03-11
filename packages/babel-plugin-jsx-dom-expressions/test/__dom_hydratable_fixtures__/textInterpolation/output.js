@@ -24,7 +24,7 @@ d</div>`,
   _tmpl$15 = /*#__PURE__*/ _$template(`<div></div>`, 2),
   _tmpl$16 = /*#__PURE__*/ _$template(`<span> <!#><!/></span>`, 4),
   _tmpl$17 = /*#__PURE__*/ _$template(`<span><!#><!/> </span>`, 4),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search…"></div>`, 2);
+  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;"></div>`, 2);
 const trailing = _$getNextElement(_tmpl$);
 const leading = _$getNextElement(_tmpl$2);
 
@@ -143,7 +143,7 @@ const leadingSpaceComponent = _$createComponent(Div, {
     return [" ", expr];
   }
 });
-const leadingSpaceFragment = [" ", expr];
+const leadingSpaceFragment = [" ", "<!>", expr];
 const trailingSpaceElement = (() => {
   const _el$49 = _$getNextElement(_tmpl$17),
     _el$51 = _el$49.firstChild,
@@ -157,5 +157,9 @@ const trailingSpaceComponent = _$createComponent(Div, {
     return [expr, " "];
   }
 });
-const trailingSpaceFragment = [expr, " "];
+const trailingSpaceFragment = [expr, "<!>", " "];
 const escapeAttribute = _$getNextElement(_tmpl$18);
+const escapeCompAttribute = _$createComponent(Div, {
+  normal: "Search\u2026",
+  title: "Search&hellip;"
+});
