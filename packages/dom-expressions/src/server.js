@@ -1,5 +1,5 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
-import { sharedConfig } from "rxcore";
+import { sharedConfig, root } from "rxcore";
 import { serialize as stringify } from "seroval";
 export { stringify };
 export { createComponent } from "rxcore";
@@ -23,7 +23,11 @@ export function renderToString(code, options = {}) {
       scripts += `_$HY.set("${id}", ${stringify(p)});`;
     }
   };
-  let html = resolveSSRNode(escape(code()));
+  let html = root((d) => {
+    resolveSSRNode(escape(code()))
+    d();
+    return r;
+  });
   sharedConfig.context.noHydrate = true;
   html = injectAssets(sharedConfig.context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
@@ -44,6 +48,7 @@ export function renderToStringAsync(code, options = {}) {
 
 export function renderToStream(code, options = {}) {
   let { nonce, onCompleteShell, onCompleteAll, renderId } = options;
+  let dispose;
   const blockingResources = [];
   const registry = new Map();
   const dedupe = new WeakMap();
@@ -58,6 +63,7 @@ export function renderToStream(code, options = {}) {
         });
       writable && writable.end();
       completed = true;
+      dispose();
     }
   };
   const pushTask = task => {
@@ -160,7 +166,10 @@ export function renderToStream(code, options = {}) {
     }
   };
 
-  let html = resolveSSRNode(escape(code()));
+  let html = root((d) => {
+    dispose = d;
+    return resolveSSRNode(escape(code()))
+  });
   function doShell() {
     sharedConfig.context = context;
     context.noHydrate = true;
