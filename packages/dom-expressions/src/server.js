@@ -24,7 +24,7 @@ export function renderToString(code, options = {}) {
     }
   };
   let html = root((d) => {
-    resolveSSRNode(escape(code()))
+    let r = resolveSSRNode(escape(code()));
     d();
     return r;
   });
