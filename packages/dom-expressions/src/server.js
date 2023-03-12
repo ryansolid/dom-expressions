@@ -611,9 +611,10 @@ export function ssrSpread(props, isSVG, skipChildren) {
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
       else continue;
-    } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
+    } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on" || prop.slice(0, 5) === "prop:") {
       continue;
     } else {
+      if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
       result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
