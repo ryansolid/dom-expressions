@@ -117,6 +117,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   }
 
   function parseKeyValue(
+    node: IDom,
     tag: string,
     name: string,
     value: string,
@@ -157,10 +158,10 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       options.exprs.push(`r.classList(${tag},${expr},${prev})`);
     } else if (
       namespace !== "attr" &&
-      (isChildProp || (!isSVG && (r.getPropAlias(name, tag) || isProp)) || isCE || namespace === "prop")
+      (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) || isCE || namespace === "prop")
     ) {
       if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
-      options.exprs.push(`${tag}.${r.getPropAlias(name, tag) || name} = ${expr}`);
+      options.exprs.push(`${tag}.${r.getPropAlias(name, node.name.toUpperCase()) || name} = ${expr}`);
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);
@@ -169,6 +170,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   }
 
   function parseAttribute(
+    node: IDom,
     tag: string,
     name: string,
     value: string,
@@ -197,7 +199,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
-      parseKeyValue(tag, name, value, isSVG, isCE, childOptions);
+      parseKeyValue(node, tag, name, value, isSVG, isCE, childOptions);
       options.decl.push(
         `_fn${count} = (${value === "###" ? "doNotWrap" : ""}) => {\n${childOptions.exprs.join(
           ";\n"
@@ -424,7 +426,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
             value = node.attrs[name];
           if (value.includes("###")) {
             delete node.attrs[name];
-            parseAttribute(tag, name, value, isSVG, isCE, options);
+            parseAttribute(node, tag, name, value, isSVG, isCE, options);
           }
         }
       }

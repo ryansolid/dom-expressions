@@ -55,25 +55,25 @@ const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
   class: "className",
   formnovalidate: {
     $: "formNoValidate",
-    button: 1,
-    input: 1
+    BUTTON: 1,
+    INPUT: 1
   },
   ismap: {
     $: "isMap",
-    img: 1
+    IMG: 1
   },
   nomodule: {
     $: "noModule",
-    script: 1
+    SCRIPT: 1
   },
   playsinline: {
     $: "playsInline",
-    video: 1
+    VIDEO: 1
   },
   readonly: {
     $: "readOnly",
-    input: 1,
-    textarea: 1
+    INPUT: 1,
+    TEXTAREA: 1
   }
 });
 

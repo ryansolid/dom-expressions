@@ -16,7 +16,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div></div></div>`, 8),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div></div>`, 2),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b"></div>`, 2),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1);
+  _tmpl$5 = /*#__PURE__*/ _$template(`<input type="checkbox" readonly="">`, 1),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<input type="checkbox">`, 1);
 const selected = true;
 let id = "my-h1";
 let link;
@@ -41,7 +42,6 @@ const template = (() => {
     _el$2,
     _$mergeProps(results, {
       disabled: true,
-      readonly: "",
       get title() {
         return welcoming();
       },
@@ -66,7 +66,6 @@ const template = (() => {
   _$classList(_el$3, {
     "ccc ddd": true
   });
-  _el$3.readOnly = value;
   return _el$;
 })();
 const template2 = (() => {
@@ -168,7 +167,8 @@ const template13 = (() => {
   return _el$19;
 })();
 const template14 = (() => {
-  const _el$20 = _tmpl$5.cloneNode(true);
+  const _el$20 = _tmpl$6.cloneNode(true);
+  _el$20.readOnly = value;
   _$effect(() => (_el$20.checked = state.visible));
   return _el$20;
 })();

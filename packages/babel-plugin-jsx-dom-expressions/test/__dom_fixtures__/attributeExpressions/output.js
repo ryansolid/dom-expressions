@@ -24,7 +24,7 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$8 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write</button>`, 2),
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi</button>`, 2),
   _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col"></div>`, 2),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input><input></div>`, 4),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly=""><input></div>`, 4),
   _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;"></div>`, 2),
   _tmpl$13 = /*#__PURE__*/ _$template(`<a></a>`, 2),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div><a></a></div>`, 4),
@@ -55,7 +55,6 @@ const template = (() => {
     _$mergeProps(results, {
       foo: "",
       disabled: true,
-      readonly: "",
       get title() {
         return welcoming();
       },
@@ -80,7 +79,6 @@ const template = (() => {
   _$classList(_el$3, {
     "ccc ddd": true
   });
-  _el$3.readOnly = value;
   return _el$;
 })();
 const template2 = (() => {
@@ -215,6 +213,7 @@ const template20 = (() => {
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
   _$addEventListener(_el$28, "input", doSomethingElse, true);
+  _el$28.readOnly = value;
   _$effect(
     _p$ => {
       const _v$4 = min(),

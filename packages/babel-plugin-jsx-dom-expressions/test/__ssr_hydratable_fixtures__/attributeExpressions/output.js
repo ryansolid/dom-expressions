@@ -1,11 +1,11 @@
 import { ssrStyle as _$ssrStyle } from "r-server";
+import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
 import { mergeProps as _$mergeProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
-import { ssrAttribute as _$ssrAttribute } from "r-server";
-const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
+const _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$2 = ["<div>", "</div>"],
   _tmpl$3 = "<div><div/></div>",
   _tmpl$4 = ["<div", " foo", ' style="', '"', ">", "</div>"],
@@ -17,7 +17,7 @@ const _tmpl$ = ['<a href="/" class="', '"', ">Welcome</a>"],
   _tmpl$10 = ["<div", ' class="`a">`$`</div>'],
   _tmpl$11 = ["<button", ' class="', '" type="button">Write</button>'],
   _tmpl$12 = ["<button", ' class="', '">Hi</button>'],
-  _tmpl$13 = ["<div", "><input", "><input", "></div>"],
+  _tmpl$13 = ["<div", "><input", ' readonly=""><input', "", "></div>"],
   _tmpl$14 = ["<div", ' style="', '"></div>'],
   _tmpl$15 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
   _tmpl$16 = ["<div", "", ">", "</div>"],
@@ -56,7 +56,6 @@ const template = _$ssrElement(
         {
           foo: true,
           disabled: true,
-          readonly: "",
           get title() {
             return welcoming();
           },
@@ -68,7 +67,7 @@ const template = _$ssrElement(
           }
         }
       ),
-      () => _$ssr(_tmpl$, "ccc ddd", _$ssrAttribute("readonly", value, true)),
+      () => _$ssr(_tmpl$, "ccc ddd"),
       false
     ),
   true
@@ -143,7 +142,8 @@ const template20 = _$ssr(
     _$ssrAttribute("max", _$escape(max(), true), false),
   _$ssrAttribute("checked", s2(), true) +
     _$ssrAttribute("min", _$escape(min(), true), false) +
-    _$ssrAttribute("max", _$escape(max(), true), false)
+    _$ssrAttribute("max", _$escape(max(), true), false),
+  _$ssrAttribute("readonly", value, true)
 );
 const template21 = _$ssr(
   _tmpl$14,

@@ -152,7 +152,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  const alias = getPropAlias(name, tagName);
+  const alias = getPropAlias(name, tagName.toUpperCase());
   if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
     if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
     return t.assignmentExpression(

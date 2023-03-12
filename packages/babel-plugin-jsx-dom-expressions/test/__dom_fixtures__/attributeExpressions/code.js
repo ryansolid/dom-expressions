@@ -9,12 +9,11 @@ const template = (
       {...results()}
       foo
       disabled
-      readonly=""
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
       classList={{ dynamic: dynamic(), selected }}
     >
-      <a href={"/"} ref={link} classList={{ "ccc ddd": true }} readonly={value}>
+      <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
         Welcome
       </a>
     </h1>
@@ -109,8 +108,8 @@ const template19 = <div classList={{ "bg-red-500": true }} class="flex flex-col"
 
 const template20 = (
   <div>
-    <input value={s()} min={min()} max={max()} onInput={doSomething} />
-    <input checked={s2()} min={min()} max={max()} onInput={doSomethingElse} />
+    <input value={s()} min={min()} max={max()} onInput={doSomething} readonly="" />
+    <input checked={s2()} min={min()} max={max()} onInput={doSomethingElse} readonly={value} />
   </div>
 );
 

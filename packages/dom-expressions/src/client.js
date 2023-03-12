@@ -293,7 +293,6 @@ function toggleClassKey(node, key, value) {
 }
 
 function assignProp(node, prop, value, prev, isSVG, skipRef) {
-  const tagName = node.tagName;
   let isCE, isProp, isChildProp, propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
@@ -324,7 +323,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     (isChildProp = ChildProperties.has(prop)) ||
-    (!isSVG && ((propAlias = getPropAlias(prop, tagName)) || (isProp = Properties.has(prop)))) ||
+    (!isSVG && ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
     (isCE = node.nodeName.includes("-"))
   ) {
     if (forceProp) {

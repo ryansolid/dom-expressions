@@ -8,12 +8,11 @@ const template = (
       id={id}
       {...results()}
       disabled
-      readonly=""
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
       classList={{ dynamic: dynamic(), selected }}
     >
-      <a href={"/"} ref={link} classList={{ "ccc ddd": true }} readonly={value}>
+      <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
         Welcome
       </a>
     </h1>
@@ -62,8 +61,8 @@ const template11 = <div use:something use:another={thing} />;
 
 const template12 = <div prop:htmlFor={thing} />;
 
-const template13 = <input type="checkbox" checked={true} />;
+const template13 = <input type="checkbox" checked={true} readonly="" />;
 
-const template14 = <input type="checkbox" checked={state.visible} />;
+const template14 = <input type="checkbox" checked={state.visible} readonly={value} />;
 
 const template15 = <mesh scale={[1, 1, 1]} rotateX={0} />;
