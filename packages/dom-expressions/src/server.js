@@ -19,7 +19,7 @@ export function renderToString(code, options = {}) {
     nonce: options.nonce,
     writeResource(id, p, error) {
       if (sharedConfig.context.noHydrate) return;
-      if (error) return (scripts += `_$HY.set("${id}", ${serializeError(p)});`);
+      if (error) return (scripts += `_$HY.set("${id}", ${stringify(p)});`);
       scripts += `_$HY.set("${id}", ${stringify(p)});`;
     }
   };
@@ -119,7 +119,7 @@ export function renderToStream(code, options = {}) {
     },
     writeResource(id, p, error, wait) {
       const serverOnly = sharedConfig.context.noHydrate;
-      if (error) return !serverOnly && pushTask(serializeSet(dedupe, id, p, serializeError));
+      if (error) return !serverOnly && pushTask(serializeSet(dedupe, id, p));
       if (!p || typeof p !== "object" || !("then" in p))
         return !serverOnly && pushTask(serializeSet(dedupe, id, p));
       if (!firstFlushed) wait && blockingResources.push(p);
@@ -146,13 +146,13 @@ export function renderToStream(code, options = {}) {
               Promise.resolve().then(
                 () => (html = replacePlaceholder(html, key, value !== undefined ? value : ""))
               );
-              error && pushTask(serializeSet(dedupe, key, error, serializeError));
+              error && pushTask(serializeSet(dedupe, key, error));
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(
                 `${
                   keys.length ? keys.map(k => `_$HY.unset("${k}")`).join(";") + ";" : ""
-                }$df("${key}"${error ? "," + serializeError(error) : ""})${
+                }$df("${key}"${error ? "," + stringify(error) : ""})${
                   !scriptFlushed ? ";" + REPLACE_SCRIPT : ""
                 }`
               );
@@ -495,22 +495,6 @@ function injectScripts(html, scripts, nonce) {
   return html + tag;
 }
 
-function serializeError(error) {
-  if (error.message) {
-    const fields = {};
-    const keys = Object.getOwnPropertyNames(error);
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const value = error[key];
-      if (!value || (key !== "message" && typeof value !== "function")) {
-        fields[key] = value;
-      }
-    }
-    return `Object.assign(new Error(${stringify(error.message)}), ${stringify(fields)})`;
-  }
-  return stringify(error);
-}
-
 function waitForFragments(registry, key) {
   for (const k of [...registry.keys()].reverse()) {
     if (key.startsWith(k)) {
@@ -521,11 +505,11 @@ function waitForFragments(registry, key) {
   return false;
 }
 
-function serializeSet(registry, key, value, serializer = stringify) {
+function serializeSet(registry, key, value) {
   const exist = registry.get(value);
   if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0])`;
   value !== null && typeof value === "object" && registry.set(value, key);
-  return `_$HY.set("${key}", ${serializer(value)})`;
+  return `_$HY.set("${key}", ${stringify(value)})`;
 }
 
 function replacePlaceholder(html, key, value) {

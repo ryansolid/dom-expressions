@@ -74,10 +74,10 @@ importers:
       babel-plugin-jsx-dom-expressions: ^0.35.19
       babel-plugin-transform-rename-import: ^2.3.0
       csstype: ^3.1
-      seroval: ^0.2.1
+      seroval: ^0.3.0
     dependencies:
       babel-plugin-transform-rename-import: 2.3.0
-      seroval: 0.2.1
+      seroval: 0.3.0
     devDependencies:
       babel-plugin-jsx-dom-expressions: link:../babel-plugin-jsx-dom-expressions
       csstype: 3.1.1
@@ -7062,8 +7062,8 @@ packages:
       lru-cache: 6.0.0
     dev: true
 
-  /seroval/0.2.1:
-    resolution: {integrity: sha512-CNjXgbi8cRXsJz52kW9UnpZGrDoAXRASTG6bBy+9LlZJFX72IGhVy9okG7MWvvsASxLqlwq+KDKCnW3sKPoQxA==}
+  /seroval/0.3.0:
+    resolution: {integrity: sha512-s2UKpWT773pR5zglkZRkRowMAsS3VAYsvhdLuC6aqL5pHuKxqidaKedgsbjL46rJcMyJW50oNoJREI4NARFChA==}
     engines: {node: '>=10'}
     dev: false
 
