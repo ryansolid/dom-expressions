@@ -803,6 +803,7 @@ export namespace JSX {
     checked?: boolean;
     crossorigin?: HTMLCrossorigin;
     disabled?: boolean;
+    enterkeyhint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send';
     form?: string;
     formaction?: string;
     formenctype?: HTMLFormEncType;
