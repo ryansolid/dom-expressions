@@ -5,7 +5,8 @@ export { stringify };
 export { createComponent } from "rxcore";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
-const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
+const VOID_ELEMENTS =
+  /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
 const REPLACE_SCRIPT = `function $df(e,t,n,o,d){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)d=o.nextSibling,o.remove(),o=d;o.replaceWith(n.content)}n.remove(),_$HY.set(e,t),_$HY.fe(e)}`;
 
 export function renderToString(code, options = {}) {
@@ -23,8 +24,8 @@ export function renderToString(code, options = {}) {
       scripts += `_$HY.set("${id}", ${stringify(p)});`;
     }
   };
-  let html = root((d) => {
-    const r = resolveSSRNode(escape(code()))
+  let html = root(d => {
+    const r = resolveSSRNode(escape(code()));
     d();
     return r;
   });
@@ -166,9 +167,9 @@ export function renderToStream(code, options = {}) {
     }
   };
 
-  let html = root((d) => {
+  let html = root(d => {
     dispose = d;
-    return resolveSSRNode(escape(code()))
+    return resolveSSRNode(escape(code()));
   });
   function doShell() {
     sharedConfig.context = context;
@@ -273,7 +274,7 @@ export function ssrClassList(value) {
       classValue = !!value[key];
     if (!key || key === "undefined" || !classValue) continue;
     i && (result += " ");
-    result += key;
+    result += escape(key);
   }
   return result;
 }
@@ -314,9 +315,10 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (prop === "class" || prop === "className" || prop === "classList") {
       if (classResolved) continue;
       let n;
-      result += `class="${(n = props.class) ? n + " " : ""}${
-        (n = props.className) ? n + " " : ""
-      }${ssrClassList(props.classList)}"`;
+      result += `class="${
+        escape(((n = props.class) ? n + " " : "") + ((n = props.className) ? n + " " : ""), true) +
+        ssrClassList(props.classList)
+      }"`;
       classResolved = true;
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
@@ -330,7 +332,7 @@ export function ssrElement(tag, props, children, needsId) {
   }
 
   if (skipChildren) {
-    return { t: result + '/>' };
+    return { t: result + "/>" };
   }
   return { t: result + `>${resolveSSRNode(children)}</${tag}>` };
 }
@@ -428,7 +430,7 @@ export function mergeProps(...sources) {
               const v = (sources[i] || {})[key];
               if (v !== undefined) return v;
             }
-          },
+          }
         });
       }
     }
@@ -530,7 +532,7 @@ function serializeSet(registry, key, value, serializer = stringify) {
 
 function replacePlaceholder(html, key, value) {
   const marker = `<template id="pl-${key}">`;
-  const close = `<!pl-${key}>`
+  const close = `<!pl-${key}>`;
 
   const first = html.indexOf(marker);
   if (first === -1) return html;
