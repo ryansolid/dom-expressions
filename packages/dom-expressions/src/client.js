@@ -469,8 +469,7 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
       const value = String(item);
       if (value === "<!>") {
         if (prev && prev.nodeType === 8) normalized.push(prev);
-      } else if (prev && prev.nodeType === 3) {
-        prev.data = value;
+      } else if (prev && prev.nodeType === 3 && prev.data === value) {
         normalized.push(prev);
       } else normalized.push(document.createTextNode(value));
     }
