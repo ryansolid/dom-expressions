@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "babel-plugin-transform-rename-import": "^2.3.0",
-    "seroval": "^0.3.0"
+    "seroval": "^0.4.0"
   },
   "peerDependencies": {
     "csstype": "^3.0"

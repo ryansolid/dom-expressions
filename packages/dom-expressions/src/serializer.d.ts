@@ -1,0 +1,1 @@
+export default function stringify(root: unknown): string;
