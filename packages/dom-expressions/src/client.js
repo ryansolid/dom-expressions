@@ -361,17 +361,7 @@ function eventHandler(e) {
   });
 
   // cancel html streaming
-  if (sharedConfig.registry && !sharedConfig.done) {
-    sharedConfig.done = true;
-    document.querySelectorAll("[id^=pl-]").forEach(elem => {
-      while (elem && elem.nodeType !== 8 && elem.nodeValue !== "pl-" + e) {
-        let x = elem.nextSibling;
-        elem.remove();
-        elem = x;
-      }
-      elem && elem.remove();
-    });
-  }
+  if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
   while (node) {
     const handler = node[key];
@@ -486,8 +476,7 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
       const value = String(item);
       if (value === "<!>") {
         if (prev && prev.nodeType === 8) normalized.push(prev);
-      } else if (prev && prev.nodeType === 3) {
-        prev.data = value;
+      } else if (prev && prev.nodeType === 3 && prev.data === value) {
         normalized.push(prev);
       } else normalized.push(document.createTextNode(value));
     }
