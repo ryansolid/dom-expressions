@@ -354,17 +354,7 @@ function eventHandler(e) {
   });
 
   // cancel html streaming
-  if (sharedConfig.registry && !sharedConfig.done) {
-    sharedConfig.done = true;
-    document.querySelectorAll("[id^=pl-]").forEach(elem => {
-      while (elem && elem.nodeType !== 8 && elem.nodeValue !== "pl-" + e) {
-        let x = elem.nextSibling;
-        elem.remove();
-        elem = x;
-      }
-      elem && elem.remove();
-    });
-  }
+  if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
   while (node) {
     const handler = node[key];
