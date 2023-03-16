@@ -25,9 +25,8 @@ export function renderToString(code, options = {}) {
     }
   };
   let html = root(d => {
-    const r = resolveSSRNode(escape(code()));
-    d();
-    return r;
+    setTimeout(d);
+    return resolveSSRNode(escape(code()));
   });
   sharedConfig.context.noHydrate = true;
   html = injectAssets(sharedConfig.context.assets, html);
@@ -64,7 +63,7 @@ export function renderToStream(code, options = {}) {
         });
       writable && writable.end();
       completed = true;
-      dispose();
+      setTimeout(dispose);
     }
   };
   const pushTask = task => {
