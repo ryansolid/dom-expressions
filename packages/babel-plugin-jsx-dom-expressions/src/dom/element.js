@@ -78,7 +78,7 @@ export function transformElement(path, info) {
   results.template += ">";
   if (!voidTag) {
     transformChildren(path, results, config);
-    results.template += `</${tagName}>`;
+    if (!info.lastElement) results.template += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
     let runHydrationEvents = registerImportMethod(
@@ -616,10 +616,19 @@ function transformAttributes(path, results) {
               t.variableDeclarator(nextElem, t.memberExpression(elem, t.identifier("firstChild")))
             );
           }
-          results.dynamics.push({ elem: nextElem, key, value: value.expression, isSVG, isCE, tagName });
+          results.dynamics.push({
+            elem: nextElem,
+            key,
+            value: value.expression,
+            isSVG,
+            isCE,
+            tagName
+          });
         } else {
           results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value.expression, { isSVG, isCE, tagName }))
+            t.expressionStatement(
+              setAttr(attribute, elem, key, value.expression, { isSVG, isCE, tagName })
+            )
           );
         }
       } else {
@@ -661,6 +670,7 @@ function transformChildren(path, results, config) {
         );
       }
       const transformed = transformNode(child, {
+        lastElement: index === filteredChildren.length - 1,
         skipId: !results.id || !detectExpressions(filteredChildren, index, config)
       });
       if (!transformed) return memo;
@@ -927,7 +937,9 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         runningObject.push(
           t.objectProperty(
             t.stringLiteral(key),
-            isContainer ? node.value.expression : node.value || (Properties.has(key) ? t.booleanLiteral(true) : t.stringLiteral(""))
+            isContainer
+              ? node.value.expression
+              : node.value || (Properties.has(key) ? t.booleanLiteral(true) : t.stringLiteral(""))
           )
         );
       }

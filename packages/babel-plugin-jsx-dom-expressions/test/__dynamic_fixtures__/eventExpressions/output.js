@@ -2,15 +2,14 @@ import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(
-  `<div id="main"><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Listener</button><button>Click Capture</button></div>`,
-  26
+  `<div id="main"><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Change Bound</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Listener</button><button>Click Capture`
 );
 function hoisted1() {
   console.log("hoisted");
 }
 const hoisted2 = () => console.log("hoisted delegated");
 const template = (() => {
-  const _el$ = _tmpl$.cloneNode(true),
+  const _el$ = _tmpl$(),
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.nextSibling,
     _el$4 = _el$3.nextSibling,

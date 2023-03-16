@@ -3,8 +3,7 @@ import { delegateEvents as _$delegateEvents } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(
-  `<div id="main"><button>Change Bound</button><button>Change Bound</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Listener</button><button>Click Capture</button></div>`,
-  14
+  `<div id="main"><button>Change Bound</button><button>Change Bound</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Listener</button><button>Click Capture`
 );
 const template = (() => {
   const _el$ = _$getNextElement(_tmpl$),

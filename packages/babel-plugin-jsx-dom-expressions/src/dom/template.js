@@ -45,10 +45,11 @@ export function appendTemplates(path, templates) {
       t.addComment(
         t.callExpression(
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
-          [
-            t.templateLiteral([t.templateElement(tmpl, true)], []),
-            t.numericLiteral(template.elementCount)
-          ].concat(template.isSVG ? t.booleanLiteral(template.isSVG) : [])
+          [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
+            template.isSVG || template.isCE
+              ? [t.booleanLiteral(template.isSVG), t.booleanLiteral(template.isCE)]
+              : []
+          )
         ),
         "leading",
         "#__PURE__"
@@ -74,8 +75,8 @@ function registerTemplate(path, results) {
         templates.push({
           id: templateId,
           template: results.template,
-          elementCount: results.template.split("<").length - 1,
           isSVG: results.isSVG,
+          isCE: results.hasCustomElement,
           renderer: "dom"
         });
       }
@@ -87,22 +88,7 @@ function registerTemplate(path, results) {
             registerImportMethod(path, "getNextElement", getRendererConfig(path, "dom").moduleName),
             templateId ? [templateId] : []
           )
-        : results.hasCustomElement
-        ? t.callExpression(
-            registerImportMethod(path, "untrack", getRendererConfig(path, "dom").moduleName),
-            [
-              t.arrowFunctionExpression(
-                [],
-                t.callExpression(
-                  t.memberExpression(t.identifier("document"), t.identifier("importNode")),
-                  [templateId, t.booleanLiteral(true)]
-                )
-              )
-            ]
-          )
-        : t.callExpression(t.memberExpression(templateId, t.identifier("cloneNode")), [
-            t.booleanLiteral(true)
-          ])
+        : t.callExpression(templateId, [])
     );
   }
   results.declarations.unshift(decl);
@@ -161,7 +147,13 @@ function wrapDynamics(path, dynamics) {
           t.assignmentExpression(
             "=",
             prev,
-            setAttr(path, elem, key, identifier, { isSVG, isCE, tagName, dynamic: true, prevId: prev })
+            setAttr(path, elem, key, identifier, {
+              isSVG,
+              isCE,
+              tagName,
+              dynamic: true,
+              prevId: prev
+            })
           )
         )
       );

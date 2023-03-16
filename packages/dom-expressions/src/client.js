@@ -58,14 +58,16 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, check, isSVG) {
-  const t = document.createElement("template");
-  t.innerHTML = html;
-  if ("_DX_DEV_" && check && t.innerHTML.split("<").length - 1 !== check)
-    throw `The browser resolved template HTML does not match JSX input:\n${t.innerHTML}\n\n${html}. Is your HTML properly formed?`;
-  let node = t.content.firstChild;
-  if (isSVG) node = node.firstChild;
-  return node;
+export function template(html, isSVG, isCE) {
+  let node;
+  const create = () => {
+    const t = document.createElement("template");
+    t.innerHTML = html;
+    return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
+  };
+  return isCE
+    ? () => (node || (node = create())).cloneNode(true)
+    : () => untrack(() => document.importNode(node || (node = create()), true));
 }
 
 export function delegateEvents(eventNames, document = window.document) {
@@ -232,7 +234,7 @@ export function getNextElement(template) {
       console.warn("Unable to find DOM nodes for hydration key:", key);
     if ("_DX_DEV_" && !template)
       throw new Error("Unrecoverable Hydration Mismatch. No template for key: " + key);
-    return template.cloneNode(true);
+    return template();
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
   sharedConfig.registry.delete(key);
@@ -323,7 +325,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     (isChildProp = ChildProperties.has(prop)) ||
-    (!isSVG && ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
+    (!isSVG &&
+      ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
     (isCE = node.nodeName.includes("-"))
   ) {
     if (forceProp) {

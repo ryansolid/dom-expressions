@@ -7,22 +7,20 @@ import { getNextElement as _$getNextElement } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { use as _$use } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello <!#><!/></div>`, 4),
-  _tmpl$2 = /*#__PURE__*/ _$template(`<div></div>`, 2),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<div>From Parent</div>`, 2),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<div><!#><!/><!#><!/><!#><!/></div>`, 8),
+const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello <!#><!/>`),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<div>`),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div>From Parent`),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<div><!#><!/><!#><!/><!#><!/>`),
   _tmpl$5 = /*#__PURE__*/ _$template(
-    `<div><!#><!/> | <!#><!/> | <!#><!/> | <!#><!/> | <!#><!/> | <!#><!/></div>`,
-    14
+    `<div><!#><!/> | <!#><!/> | <!#><!/> | <!#><!/> | <!#><!/> | <!#><!/>`
   ),
   _tmpl$6 = /*#__PURE__*/ _$template(
-    `<div><!#><!/> | <!#><!/><!#><!/> | <!#><!/><!#><!/> | <!#><!/></div>`,
-    14
+    `<div><!#><!/> | <!#><!/><!#><!/> | <!#><!/><!#><!/> | <!#><!/>`
   ),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<div> | <!#><!/> |  |  | <!#><!/> | </div>`, 6),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<span>1</span>`, 2),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<span>2</span>`, 2),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<span>3</span>`, 2);
+  _tmpl$7 = /*#__PURE__*/ _$template(`<div> | <!#><!/> |  |  | <!#><!/> | `),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<span>1`),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<span>2`),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<span>3`);
 import { Show } from "somewhere";
 const Child = props => {
   const [s, set] = createSignal();

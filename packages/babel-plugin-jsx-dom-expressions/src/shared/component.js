@@ -216,7 +216,8 @@ function transformComponentChildren(children, config) {
     } else {
       const child = transformNode(path, {
         topLevel: true,
-        componentChild: true
+        componentChild: true,
+        lastElement: true
       });
       dynamic = dynamic || child.dynamic;
       if (

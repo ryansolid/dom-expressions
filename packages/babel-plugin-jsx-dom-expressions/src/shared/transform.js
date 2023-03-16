@@ -27,7 +27,8 @@ export function transformJSX(path) {
     t.isJSXFragment(path.node)
       ? {}
       : {
-          topLevel: true
+          topLevel: true,
+          lastElement: true
         }
   );
 

@@ -6,12 +6,12 @@ import { spread as _$spread } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(`<div></div>`, 2),
-  _tmpl$2 = /*#__PURE__*/ _$template(`<module></module>`, 2),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<module>Hello</module>`, 2),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<module>Hi <!#><!/></module>`, 4),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<module>Hi<!#><!/></module>`, 4),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div>Test 1</div>`, 2);
+const _tmpl$ = /*#__PURE__*/ _$template(`<div>`),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<module>`),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<module>Hello`),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<module>Hi <!#><!/>`),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<module>Hi<!#><!/>`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div>Test 1`);
 const children = _$getNextElement(_tmpl$);
 const dynamic = {
   children

@@ -4,21 +4,21 @@ import { createComponent as _$createComponent } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { use as _$use } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello </div>`, 2),
-  _tmpl$2 = /*#__PURE__*/ _$template(`<div></div>`, 2),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<div>From Parent</div>`, 2),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<div> | <!> | <!> | <!> | <!> | </div>`, 6),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<div> | <!> | <!> | </div>`, 4),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div> | <!> |  |  | <!> | </div>`, 4),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<span>1</span>`, 2),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<span>2</span>`, 2),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<span>3</span>`, 2);
+const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello `),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<div>`),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div>From Parent`),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<div> | <!> | <!> | <!> | <!> | `),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div> | <!> | <!> | `),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div> | <!> |  |  | <!> | `),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<span>1`),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<span>2`),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<span>3`);
 import { Show } from "somewhere";
 const Child = props => {
   const [s, set] = createSignal();
   return [
     (() => {
-      const _el$ = _tmpl$.cloneNode(true),
+      const _el$ = _tmpl$(),
         _el$2 = _el$.firstChild;
       const _ref$ = props.ref;
       typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
@@ -26,7 +26,7 @@ const Child = props => {
       return _el$;
     })(),
     (() => {
-      const _el$3 = _tmpl$2.cloneNode(true);
+      const _el$3 = _tmpl$2();
       _$use(set, _el$3);
       _$insert(_el$3, () => props.children);
       return _el$3;
@@ -37,7 +37,7 @@ const template = props => {
   let childRef;
   const { content } = props;
   return (() => {
-    const _el$4 = _tmpl$2.cloneNode(true);
+    const _el$4 = _tmpl$2();
     _$insert(
       _el$4,
       _$createComponent(
@@ -54,7 +54,7 @@ const template = props => {
             },
             booleanProperty: true,
             get children() {
-              return _tmpl$3.cloneNode(true);
+              return _tmpl$3();
             }
           }
         )
@@ -76,7 +76,7 @@ const template = props => {
               typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
             },
             get children() {
-              const _el$6 = _tmpl$2.cloneNode(true);
+              const _el$6 = _tmpl$2();
               _$insert(_el$6, content);
               return _el$6;
             }
@@ -113,14 +113,14 @@ const template2 = _$createComponent(Child, {
 });
 const template3 = _$createComponent(Child, {
   get children() {
-    return [_tmpl$2.cloneNode(true), _tmpl$2.cloneNode(true), _tmpl$2.cloneNode(true), "After"];
+    return [_tmpl$2(), _tmpl$2(), _tmpl$2(), "After"];
   }
 });
 const [s, set] = createSignal();
 const template4 = _$createComponent(Child, {
   ref: set,
   get children() {
-    return _tmpl$2.cloneNode(true);
+    return _tmpl$2();
   }
 });
 const template5 = _$createComponent(Child, {
@@ -150,7 +150,7 @@ const template6 = _$createComponent(_$For, {
 });
 const template7 = _$createComponent(Child, {
   get children() {
-    return [_tmpl$2.cloneNode(true), () => state.dynamic];
+    return [_tmpl$2(), () => state.dynamic];
   }
 });
 const template8 = _$createComponent(Child, {
@@ -162,7 +162,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 const template10 = (() => {
-  const _el$12 = _tmpl$4.cloneNode(true),
+  const _el$12 = _tmpl$4(),
     _el$13 = _el$12.firstChild,
     _el$18 = _el$13.nextSibling,
     _el$14 = _el$18.nextSibling,
@@ -217,7 +217,7 @@ const template10 = (() => {
   return _el$12;
 })();
 const template11 = (() => {
-  const _el$22 = _tmpl$5.cloneNode(true),
+  const _el$22 = _tmpl$5(),
     _el$23 = _el$22.firstChild,
     _el$26 = _el$23.nextSibling,
     _el$24 = _el$26.nextSibling,
@@ -268,7 +268,7 @@ const template11 = (() => {
   return _el$22;
 })();
 const template12 = (() => {
-  const _el$28 = _tmpl$6.cloneNode(true),
+  const _el$28 = _tmpl$6(),
     _el$29 = _el$28.firstChild,
     _el$34 = _el$29.nextSibling,
     _el$30 = _el$34.nextSibling,
@@ -328,12 +328,12 @@ const Template16 = _$createComponent(
 );
 const Template17 = _$createComponent(Pre, {
   get children() {
-    return [_tmpl$7.cloneNode(true), " ", _tmpl$8.cloneNode(true), " ", _tmpl$9.cloneNode(true)];
+    return [_tmpl$7(), " ", _tmpl$8(), " ", _tmpl$9()];
   }
 });
 const Template18 = _$createComponent(Pre, {
   get children() {
-    return [_tmpl$7.cloneNode(true), _tmpl$8.cloneNode(true), _tmpl$9.cloneNode(true)];
+    return [_tmpl$7(), _tmpl$8(), _tmpl$9()];
   }
 });
 const Template19 = _$createComponent(

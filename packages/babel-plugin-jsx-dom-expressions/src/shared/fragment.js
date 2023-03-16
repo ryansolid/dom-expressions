@@ -29,7 +29,7 @@ export default function transformFragmentChildren(children, results, config) {
           prevResult = v;
         }
       } else {
-        const child = transformNode(path, { topLevel: true, fragmentChild: true });
+        const child = transformNode(path, { topLevel: true, fragmentChild: true, lastElement: true });
         const insertMarkers =
           config.hydratable &&
           !child.component &&
