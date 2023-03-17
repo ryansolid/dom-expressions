@@ -77,8 +77,13 @@ export function transformElement(path, info) {
   }
   results.template += ">";
   if (!voidTag) {
+    const toBeClosed = !info.lastElement || (info.toBeClosed && info.toBeClosed.includes(tagName));
+    if (toBeClosed) {
+      results.toBeClosed = info.toBeClosed || [];
+      results.toBeClosed.push(tagName);
+    }
     transformChildren(path, results, config);
-    if (!info.lastElement) results.template += `</${tagName}>`;
+    if (toBeClosed) results.template += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
     let runHydrationEvents = registerImportMethod(
@@ -670,6 +675,7 @@ function transformChildren(path, results, config) {
         );
       }
       const transformed = transformNode(child, {
+        toBeClosed: results.toBeClosed,
         lastElement: index === filteredChildren.length - 1,
         skipId: !results.id || !detectExpressions(filteredChildren, index, config)
       });
