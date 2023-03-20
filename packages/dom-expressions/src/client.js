@@ -378,7 +378,16 @@ function eventHandler(e) {
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
-  if (sharedConfig.context && !current) current = [...parent.childNodes];
+  if (sharedConfig.context) {
+    !current && (current = [...parent.childNodes]);
+    let cleaned = [];
+    for (let i = 0; i < current.length; i++) {
+      const node = current[i];
+      if (node.nodeType === 8) node.remove();
+      else cleaned.push(node);
+    }
+    current = cleaned;
+  }
   while (typeof current === "function") current = current();
   if (value === current) return current;
   const t = typeof value,
@@ -477,9 +486,8 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
     } else {
       // NOTE: is String better than `item + ''`, ``${item}``, `item.toString()` and `item.valueOf()`?
       const value = String(item);
-      if (value === "<!>") {
-        if (prev && prev.nodeType === 8) normalized.push(prev);
-      } else if (prev && prev.nodeType === 3 && prev.data === value) {
+      if (prev && prev.nodeType === 3) {
+        prev.data = value;
         normalized.push(prev);
       } else normalized.push(document.createTextNode(value));
     }
