@@ -77,23 +77,23 @@ importers:
       seroval: ^0.5.0
     dependencies:
       babel-plugin-transform-rename-import: 2.3.0
-      seroval: 0.5.0
     devDependencies:
       babel-plugin-jsx-dom-expressions: link:../babel-plugin-jsx-dom-expressions
       csstype: 3.1.1
+      seroval: 0.5.0
 
   packages/hyper-dom-expressions:
     specifiers:
       dom-expressions: ^0.36.0-beta.3
     devDependencies:
-      dom-expressions: 0.35.22
+      dom-expressions: link:../dom-expressions
 
   packages/lit-dom-expressions:
     specifiers:
       dom-expressions: ^0.36.0-beta.3
       html-parse-string: ^0.0.8
     devDependencies:
-      dom-expressions: 0.35.22
+      dom-expressions: link:../dom-expressions
       html-parse-string: 0.0.8
 
 packages:
@@ -3871,10 +3871,6 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /devalue/4.3.0:
-    resolution: {integrity: sha512-n94yQo4LI3w7erwf84mhRUkUJfhLoCZiLyoOZ/QFsDbcWNZePrLwbQpvZBUG2TNxwV3VjCKPxkiiQA6pe3TrTA==}
-    dev: true
-
   /dezalgo/1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
     dependencies:
@@ -3892,15 +3888,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       path-type: 4.0.0
-    dev: true
-
-  /dom-expressions/0.35.22:
-    resolution: {integrity: sha512-kTR5O+LfCg7Bwmry+54SfgcKdXbYFm9GSPbvWA/sSYcOapMDOxhlLLsVjNx+Mr7kpk79bW0qDl/DZXUoRu/SnQ==}
-    peerDependencies:
-      csstype: ^3.0
-    dependencies:
-      babel-plugin-transform-rename-import: 2.3.0
-      devalue: 4.3.0
     dev: true
 
   /domexception/4.0.0:
@@ -7078,7 +7065,7 @@ packages:
   /seroval/0.5.0:
     resolution: {integrity: sha512-HhHyJhaNP78446cuyUEVVhrJMM9L/c1U83VxJofRiHvyBcqOwMBMlRNG+fTEx7k1BCjH81UoAFcbkzvgmRA6CQ==}
     engines: {node: '>=10'}
-    dev: false
+    dev: true
 
   /set-blocking/2.0.0:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
