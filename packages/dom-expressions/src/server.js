@@ -348,11 +348,10 @@ export function ssrHydrationKey() {
 export function escape(s, attr) {
   const t = typeof s;
   if (t !== "string") {
-    if (!attr && t === "function") return escape(s(), attr);
+    if (!attr && t === "function") return escape(s());
     if (!attr && Array.isArray(s)) {
-      let r = "";
-      for (let i = 0; i < s.length; i++) r += resolveSSRNode(escape(s[i], attr));
-      return { t: r };
+      for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
+      return s;
     }
     if (attr && t === "boolean") return String(s);
     return s;
@@ -404,8 +403,12 @@ export function resolveSSRNode(node) {
   if (t === "string") return node;
   if (node == null || t === "boolean") return "";
   if (Array.isArray(node)) {
+    let prev = {};
     let mapped = "";
-    for (let i = 0, len = node.length; i < len; i++) mapped += resolveSSRNode(node[i]);
+    for (let i = 0, len = node.length; i < len; i++) {
+      if (typeof prev !== "object" && typeof node[i] !== "object") mapped += `<!--!-->`;
+      mapped += resolveSSRNode(prev = node[i]);
+    }
     return mapped;
   }
   if (t === "object") return node.t;
