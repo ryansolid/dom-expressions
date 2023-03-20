@@ -71,7 +71,7 @@ importers:
 
   packages/dom-expressions:
     specifiers:
-      babel-plugin-jsx-dom-expressions: ^0.36.0-beta.3
+      babel-plugin-jsx-dom-expressions: ^0.36.0-beta.4
       babel-plugin-transform-rename-import: ^2.3.0
       csstype: ^3.1
       seroval: ^0.5.0
@@ -84,13 +84,13 @@ importers:
 
   packages/hyper-dom-expressions:
     specifiers:
-      dom-expressions: ^0.36.0-beta.3
+      dom-expressions: ^0.36.0-beta.4
     devDependencies:
       dom-expressions: link:../dom-expressions
 
   packages/lit-dom-expressions:
     specifiers:
-      dom-expressions: ^0.36.0-beta.3
+      dom-expressions: ^0.36.0-beta.4
       html-parse-string: ^0.0.8
     devDependencies:
       dom-expressions: link:../dom-expressions
