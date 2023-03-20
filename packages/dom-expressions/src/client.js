@@ -383,7 +383,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     let cleaned = [];
     for (let i = 0; i < current.length; i++) {
       const node = current[i];
-      if (node.nodeType === 8) node.remove();
+      if (node.nodeType === 8 && node.data === "!") node.remove();
       else cleaned.push(node);
     }
     current = cleaned;
