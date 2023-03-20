@@ -13,8 +13,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$3 = /*#__PURE__*/ _$template(`<svg width="400" height="180"><rect>`),
   _tmpl$4 = /*#__PURE__*/ _$template(
     `<svg><rect x="50" y="20" width="150" height="150"></svg>`,
-    true,
-    false
+    false,
+    true
   ),
   _tmpl$5 = /*#__PURE__*/ _$template(
     `<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><a><text x="10" y="25">MDN Web Docs`

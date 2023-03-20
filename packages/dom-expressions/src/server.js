@@ -108,10 +108,10 @@ export function renderToStream(code, options = {}) {
     },
     replace(id, payloadFn) {
       if (firstFlushed) return;
-      const placeholder = `<!${id}>`;
+      const placeholder = `<!!$${id}>`;
       const first = html.indexOf(placeholder);
       if (first === -1) return;
-      const last = html.indexOf(`<!/${id}>`, first + placeholder.length);
+      const last = html.indexOf(`<!!$/${id}>`, first + placeholder.length);
       html = html.replace(
         html.slice(first, last + placeholder.length + 1),
         resolveSSRNode(payloadFn())
@@ -406,7 +406,7 @@ export function resolveSSRNode(node) {
     let prev = {};
     let mapped = "";
     for (let i = 0, len = node.length; i < len; i++) {
-      if (typeof prev !== "object" && typeof node[i] !== "object") mapped += `<!--!-->`;
+      if (typeof prev !== "object" && typeof node[i] !== "object") mapped += `<!--!$-->`;
       mapped += resolveSSRNode(prev = node[i]);
     }
     return mapped;

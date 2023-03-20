@@ -47,7 +47,7 @@ export function appendTemplates(path, templates) {
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
             template.isSVG || template.isCE
-              ? [t.booleanLiteral(template.isSVG), t.booleanLiteral(template.isCE)]
+              ? [t.booleanLiteral(template.isCE), t.booleanLiteral(template.isSVG)]
               : []
           )
         ),
