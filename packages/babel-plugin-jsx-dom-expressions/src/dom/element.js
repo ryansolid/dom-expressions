@@ -120,7 +120,7 @@ export function transformElement(path, info) {
     if (toBeClosed) {
       results.toBeClosed = info.toBeClosed || [];
       results.toBeClosed.push(tagName);
-      if (tagName === "a") results.toBeClosed.push(BlockElements);
+      if (tagName === "a") results.toBeClosed.push(...BlockElements);
     }
     transformChildren(path, results, config);
     if (toBeClosed) results.template += `</${tagName}>`;
