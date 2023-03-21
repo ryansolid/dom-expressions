@@ -8,7 +8,8 @@ import {
   getConfig,
   getRendererConfig,
   convertJSXIdentifier,
-  canNativeSpread
+  canNativeSpread,
+  transformCondition
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -329,10 +330,11 @@ function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals 
       const dynamic =
         isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });
       if (dynamic) {
-        const id = convertJSXIdentifier(node.name)
+        const id = convertJSXIdentifier(node.name);
         let expr =
           wrapConditionals &&
-          (t.isLogicalExpression(node.value.expression) || t.isConditionalExpression(node.value.expression))
+          (t.isLogicalExpression(node.value.expression) ||
+            t.isConditionalExpression(node.value.expression))
             ? transformCondition(attribute.get("value").get("expression"), true)
             : t.arrowFunctionExpression([], node.value.expression);
         runningObject.push(
