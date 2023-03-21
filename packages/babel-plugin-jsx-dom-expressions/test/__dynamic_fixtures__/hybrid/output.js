@@ -13,7 +13,7 @@ import { insert as _$insert } from "r-dom";
 import { use as _$use } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello `),
   _tmpl$2 = /*#__PURE__*/ _$template(`<button>`),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<div><div></div>`),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<div><div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div><button>`);
 import { Show } from "somewhere";

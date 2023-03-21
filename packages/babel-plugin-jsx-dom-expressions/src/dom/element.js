@@ -702,12 +702,25 @@ function transformAttributes(path, results) {
   results.hasHydratableEvent = results.hasHydratableEvent || hasHydratableEvent;
 }
 
+function findLastElement(children) {
+  let lastElement = -1, tagName;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const node = children[i].node;
+    if (t.isJSXText(node) || getStaticExpression(children[i]) || (t.isJSXElement(node) && (tagName = getTagName(node)) && !isComponent(tagName))) {
+      lastElement = i;
+      break;
+    }
+  }
+  return lastElement;
+}
+
 function transformChildren(path, results, config) {
   let tempPath = results.id && results.id.name,
     tagName = getTagName(path.node),
     nextPlaceholder,
     i = 0;
   const filteredChildren = filterChildren(path.get("children")),
+    lastElement = findLastElement(filteredChildren),
     childNodes = filteredChildren.reduce((memo, child, index) => {
       if (child.isJSXFragment()) {
         throw new Error(
@@ -716,7 +729,7 @@ function transformChildren(path, results, config) {
       }
       const transformed = transformNode(child, {
         toBeClosed: results.toBeClosed,
-        lastElement: index === filteredChildren.length - 1,
+        lastElement: index === lastElement,
         skipId: !results.id || !detectExpressions(filteredChildren, index, config)
       });
       if (!transformed) return memo;
