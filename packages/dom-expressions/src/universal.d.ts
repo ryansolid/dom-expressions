@@ -23,6 +23,7 @@ export interface Renderer<NodeType> {
   spread<T>(node: any, accessor: (() => T) | T, skipChildren?: Boolean): void;
   setProp<T>(node: NodeType, name: string, value: T, prev?: T): T;
   mergeProps(...sources: unknown[]): unknown;
+  use<A, T>(fn: (element: NodeType, arg: A) => T, element: NodeType, arg: A): T;
 }
 
 export function createRenderer<NodeType>(options: RendererOptions<NodeType>): Renderer<NodeType>;
