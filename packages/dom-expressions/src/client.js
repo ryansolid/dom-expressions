@@ -65,9 +65,12 @@ export function template(html, isCE, isSVG) {
     t.innerHTML = html;
     return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
   };
-  return isCE
+  // backwards compatible with older builds
+  const fn = isCE
     ? () => (node || (node = create())).cloneNode(true)
     : () => untrack(() => document.importNode(node || (node = create()), true));
+  fn.cloneNode = fn;
+  return fn;
 }
 
 export function delegateEvents(eventNames, document = window.document) {
