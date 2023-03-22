@@ -853,6 +853,7 @@ export namespace JSX {
     src?: string;
     srcdoc?: string;
     width?: number | string;
+    loading?: "eager" | "lazy";
     referrerPolicy?: HTMLReferrerPolicy;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
