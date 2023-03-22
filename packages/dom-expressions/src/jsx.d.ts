@@ -1,4 +1,4 @@
-import * as csstype from 'csstype';
+import * as csstype from "csstype";
 
 /**
  * Based on JSX types for Surplus and Inferno and adapted for `dom-expressions`.
@@ -9,14 +9,7 @@ import * as csstype from 'csstype';
 type DOMElement = Element;
 
 export namespace JSX {
-  type Element =
-    | Node
-    | ArrayElement
-    | (string & {})
-    | number
-    | boolean
-    | null
-    | undefined;
+  type Element = Node | ArrayElement | (string & {}) | number | boolean | null | undefined;
   interface ArrayElement extends Array<Element> {}
   interface ElementClass {
     // empty, libs can define requirements downstream
@@ -46,6 +39,85 @@ export namespace JSX {
     1: any;
   }
   type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+
+  interface InputEventHandler<T, E extends InputEvent> {
+    (
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ): void;
+  }
+  interface BoundInputEventHandler<T, E extends InputEvent> {
+    0: (
+      data: any,
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ) => void;
+    1: any;
+  }
+  type InputEventHandlerUnion<T, E extends InputEvent> =
+    | InputEventHandler<T, E>
+    | BoundInputEventHandler<T, E>;
+
+  interface ChangeEventHandler<T, E extends Event> {
+    (
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ): void;
+  }
+  interface BoundChangeEventHandler<T, E extends Event> {
+    0: (
+      data: any,
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ) => void;
+    1: any;
+  }
+  type ChangeEventHandlerUnion<T, E extends Event> =
+    | ChangeEventHandler<T, E>
+    | BoundChangeEventHandler<T, E>;
+
+  interface FocusEventHandler<T, E extends FocusEvent> {
+    (
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ): void;
+  }
+  interface BoundFocusEventHandler<T, E extends FocusEvent> {
+    0: (
+      data: any,
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ) => void;
+    1: any;
+  }
+  type FocusEventHandlerUnion<T, E extends FocusEvent> =
+    | FocusEventHandler<T, E>
+    | BoundFocusEventHandler<T, E>;
+
   interface IntrinsicAttributes {
     ref?: unknown | ((e: unknown) => void);
   }
@@ -56,7 +128,7 @@ export namespace JSX {
     };
     $ServerOnly?: boolean;
   }
-  type Accessor<T> = () => T
+  type Accessor<T> = () => T;
   interface Directives {}
   interface DirectiveFunctions {
     [x: string]: (el: Element, accessor: Accessor<any>) => void;
@@ -69,7 +141,9 @@ export namespace JSX {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
   type DirectiveFunctionAttributes<T> = {
-    [K in keyof DirectiveFunctions as string extends K ? never : `use:${K}`]?: DirectiveFunctions[K] extends (
+    [K in keyof DirectiveFunctions as string extends K
+      ? never
+      : `use:${K}`]?: DirectiveFunctions[K] extends (
       el: infer E, // will be unknown if not provided
       ...rest: infer R // use rest so that we can check whether it's provided or not
     ) => void
@@ -90,13 +164,23 @@ export namespace JSX {
   };
   type OnAttributes<T> = {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
-  }
+  };
   type OnCaptureAttributes<T> = {
-    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<T, CustomCaptureEvents[Key]>;
-  }
-  interface DOMAttributes<T> extends CustomAttributes<T>, DirectiveAttributes, DirectiveFunctionAttributes<T>,
-                                     PropAttributes, AttrAttributes, OnAttributes<T>, OnCaptureAttributes<T>,
-                                     CustomEventHandlersCamelCase<T>, CustomEventHandlersLowerCase<T> {
+    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
+      T,
+      CustomCaptureEvents[Key]
+    >;
+  };
+  interface DOMAttributes<T>
+    extends CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      OnAttributes<T>,
+      OnCaptureAttributes<T>,
+      CustomEventHandlersCamelCase<T>,
+      CustomEventHandlersLowerCase<T> {
     children?: Element;
     innerHTML?: string;
     innerText?: string | number;
@@ -108,8 +192,8 @@ export namespace JSX {
     onCompositionEnd?: EventHandlerUnion<T, CompositionEvent>;
     onCompositionStart?: EventHandlerUnion<T, CompositionEvent>;
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent>;
-    onFocusOut?: EventHandlerUnion<T, FocusEvent>;
-    onFocusIn?: EventHandlerUnion<T, FocusEvent>;
+    onFocusOut?: FocusEventHandlerUnion<T, FocusEvent>;
+    onFocusIn?: FocusEventHandlerUnion<T, FocusEvent>;
     onEncrypted?: EventHandlerUnion<T, Event>;
     onDragExit?: EventHandlerUnion<T, DragEvent>;
     // lower case events
@@ -119,8 +203,8 @@ export namespace JSX {
     oncompositionend?: EventHandlerUnion<T, CompositionEvent>;
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent>;
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent>;
-    onfocusout?: EventHandlerUnion<T, FocusEvent>;
-    onfocusin?: EventHandlerUnion<T, FocusEvent>;
+    onfocusout?: FocusEventHandlerUnion<T, FocusEvent>;
+    onfocusin?: FocusEventHandlerUnion<T, FocusEvent>;
     onencrypted?: EventHandlerUnion<T, Event>;
     ondragexit?: EventHandlerUnion<T, DragEvent>;
   }
@@ -130,11 +214,11 @@ export namespace JSX {
     onAnimationIteration?: EventHandlerUnion<T, AnimationEvent>;
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent>;
     onAuxClick?: EventHandlerUnion<T, MouseEvent>;
-    onBeforeInput?: EventHandlerUnion<T, InputEvent>;
-    onBlur?: EventHandlerUnion<T, FocusEvent>;
+    onBeforeInput?: InputEventHandlerUnion<T, InputEvent>;
+    onBlur?: FocusEventHandlerUnion<T, FocusEvent>;
     onCanPlay?: EventHandlerUnion<T, Event>;
     onCanPlayThrough?: EventHandlerUnion<T, Event>;
-    onChange?: EventHandlerUnion<T, Event>;
+    onChange?: ChangeEventHandlerUnion<T, Event>;
     onClick?: EventHandlerUnion<T, MouseEvent>;
     onContextMenu?: EventHandlerUnion<T, MouseEvent>;
     onDblClick?: EventHandlerUnion<T, MouseEvent>;
@@ -149,9 +233,9 @@ export namespace JSX {
     onEmptied?: EventHandlerUnion<T, Event>;
     onEnded?: EventHandlerUnion<T, Event>;
     onError?: EventHandlerUnion<T, Event>;
-    onFocus?: EventHandlerUnion<T, FocusEvent>;
+    onFocus?: FocusEventHandlerUnion<T, FocusEvent>;
     onGotPointerCapture?: EventHandlerUnion<T, PointerEvent>;
-    onInput?: EventHandlerUnion<T, InputEvent>;
+    onInput?: InputEventHandlerUnion<T, InputEvent>;
     onInvalid?: EventHandlerUnion<T, Event>;
     onKeyDown?: EventHandlerUnion<T, KeyboardEvent>;
     onKeyPress?: EventHandlerUnion<T, KeyboardEvent>;
@@ -213,11 +297,11 @@ export namespace JSX {
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent>;
     onanimationstart?: EventHandlerUnion<T, AnimationEvent>;
     onauxclick?: EventHandlerUnion<T, MouseEvent>;
-    onbeforeinput?: EventHandlerUnion<T, InputEvent>;
-    onblur?: EventHandlerUnion<T, FocusEvent>;
+    onbeforeinput?: InputEventHandlerUnion<T, InputEvent>;
+    onblur?: FocusEventHandlerUnion<T, FocusEvent>;
     oncanplay?: EventHandlerUnion<T, Event>;
     oncanplaythrough?: EventHandlerUnion<T, Event>;
-    onchange?: EventHandlerUnion<T, Event>;
+    onchange?: ChangeEventHandlerUnion<T, Event>;
     onclick?: EventHandlerUnion<T, MouseEvent>;
     oncontextmenu?: EventHandlerUnion<T, MouseEvent>;
     ondblclick?: EventHandlerUnion<T, MouseEvent>;
@@ -232,9 +316,9 @@ export namespace JSX {
     onemptied?: EventHandlerUnion<T, Event>;
     onended?: EventHandlerUnion<T, Event>;
     onerror?: EventHandlerUnion<T, Event>;
-    onfocus?: EventHandlerUnion<T, FocusEvent>;
+    onfocus?: FocusEventHandlerUnion<T, FocusEvent>;
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent>;
-    oninput?: EventHandlerUnion<T, InputEvent>;
+    oninput?: InputEventHandlerUnion<T, InputEvent>;
     oninvalid?: EventHandlerUnion<T, Event>;
     onkeydown?: EventHandlerUnion<T, KeyboardEvent>;
     onkeypress?: EventHandlerUnion<T, KeyboardEvent>;
@@ -290,7 +374,7 @@ export namespace JSX {
 
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
-    [key: `-${string}`]: string | number | undefined
+    [key: `-${string}`]: string | number | undefined;
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
@@ -799,7 +883,7 @@ export namespace JSX {
     checked?: boolean;
     crossorigin?: HTMLCrossorigin;
     disabled?: boolean;
-    enterkeyhint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send';
+    enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
     form?: string;
     formaction?: string;
     formenctype?: HTMLFormEncType;
@@ -1023,7 +1107,7 @@ export namespace JSX {
     rowspan?: number | string;
     colSpan?: number | string;
     rowSpan?: number | string;
-    scope?: 'col' | 'row' | 'rowgroup' | 'colgroup';
+    scope?: "col" | "row" | "rowgroup" | "colgroup";
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: string;
@@ -1299,7 +1383,7 @@ export namespace JSX {
     gradientUnits?: SVGUnits;
     gradientTransform?: string;
     spreadMethod?: "pad" | "reflect" | "repeat";
-    href?: string
+    href?: string;
   }
   interface GraphicsElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
