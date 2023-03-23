@@ -27,7 +27,8 @@ import {
   escapeHTML,
   convertJSXIdentifier,
   canNativeSpread,
-  transformCondition
+  transformCondition,
+  trimWhitespace
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -690,7 +691,15 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
-          results.template += value ? `="${escapeBackticks(escapeHTML(value.value, true))}"` : "";
+          if (!value) return;
+          let text = value.value;
+          if (key === "style" || key === "class") {
+            text = trimWhitespace(text)
+            if (key === "style") {
+              text = text.replace(/; /g, ";").replace(/: /g, ":");
+            }
+          }
+          results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
         }
       }
     });

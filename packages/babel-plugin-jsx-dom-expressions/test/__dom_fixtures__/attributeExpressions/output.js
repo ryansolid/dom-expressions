@@ -28,7 +28,10 @@ const _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$13 = /*#__PURE__*/ _$template(`<a>`),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div><a>`),
   _tmpl$15 = /*#__PURE__*/ _$template(`<div start="Hi">Hi`),
-  _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is </span><input><div>`);
+  _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is </span><input><div>`),
+  _tmpl$17 =
+    /*#__PURE__*/ _$template(`<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2
+    random3 random4">`);
 const selected = true;
 let id = "my-h1";
 let link;
@@ -324,4 +327,5 @@ const template29 = (() => {
   _$insert(_el$42, !!someValue);
   return _el$42;
 })();
+const template30 = _tmpl$17();
 _$delegateEvents(["click", "input"]);

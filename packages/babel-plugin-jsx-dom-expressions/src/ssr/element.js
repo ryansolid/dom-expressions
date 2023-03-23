@@ -383,7 +383,15 @@ function transformAttributes(path, results, info) {
       if (t.isJSXExpressionContainer(value)) value = value.expression;
       key = toAttribute(key, isSVG);
       appendToTemplate(results.template, ` ${key}`);
-      appendToTemplate(results.template, value ? `="${escapeHTML(value.value, true)}"` : "");
+      if (!value) return;
+      let text = value.value;
+      if (key === "style" || key === "class") {
+        text = trimWhitespace(text);
+        if (key === "style") {
+          text = text.replace(/; /g, ";").replace(/: /g, ":");
+        }
+      }
+      appendToTemplate(results.template, `="${escapeHTML(text, true)}"`);
     }
   });
   if (!hasChildren && children) {
