@@ -798,6 +798,7 @@ export namespace JSX {
     accept?: string;
     alt?: string;
     autocomplete?: string;
+    autocorrect?: "on" | "off";
     autofocus?: boolean;
     capture?: boolean | string;
     checked?: boolean;
@@ -811,6 +812,7 @@ export namespace JSX {
     formnovalidate?: boolean;
     formtarget?: string;
     height?: number | string;
+    incremental?: boolean;
     list?: string;
     max?: number | string;
     maxlength?: number | string;
@@ -821,6 +823,7 @@ export namespace JSX {
     pattern?: string;
     placeholder?: string;
     readonly?: boolean;
+    results?: number;
     required?: boolean;
     size?: number | string;
     src?: string;
