@@ -847,6 +847,7 @@ export namespace JSX {
     allow?: string;
     allowfullscreen?: boolean;
     height?: number | string;
+    loading?: "eager" | "lazy";
     name?: string;
     referrerpolicy?: HTMLReferrerPolicy;
     sandbox?: HTMLIframeSandbox | string;
