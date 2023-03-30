@@ -19,7 +19,8 @@ const _tmpl$ = ["<span", ">Hello </span>"],
   _tmpl$15 = ["<div", ">", "</div>"],
   _tmpl$16 = ["<span", "> <!--#-->", "<!--/--></span>"],
   _tmpl$17 = ["<span", "><!--#-->", "<!--/--> </span>"],
-  _tmpl$18 = ["<div", ' normal="Search\u2026" title="Search&amp;hellip;"></div>'];
+  _tmpl$18 = ["<div", ' normal="Search\u2026" title="Search&amp;hellip;"></div>'],
+  _tmpl$19 = ["<div", "><div></div><!--#-->", "<!--/--></div>"];
 const trailing = _$ssr(_tmpl$, _$ssrHydrationKey());
 const leading = _$ssr(_tmpl$2, _$ssrHydrationKey());
 
@@ -86,3 +87,4 @@ const escapeCompAttribute = _$createComponent(Div, {
   normal: "Search\u2026",
   title: "Search&hellip;"
 });
+const lastElementExpression = _$ssr(_tmpl$19, _$ssrHydrationKey(), _$escape(expr()));

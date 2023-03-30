@@ -1,7 +1,11 @@
 import { ssr as _$ssr } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 const _tmpl$ = [
-  "<div",
-  ' id="main"><style>div { color: red; }</style><h1>Welcome</h1><label for="entry">Edit:</label><input id="entry" type="text"></div>'
-];
+    "<div",
+    ' id="main"><style>div { color: red; }</style><h1>Welcome</h1><label for="entry">Edit:</label><input id="entry" type="text"></div>'
+  ],
+  _tmpl$2 = ["<div", "><span><a></a></span><span></span></div>"],
+  _tmpl$3 = ["<div", "><div><table><tbody></tbody></table></div><div></div></div>"];
 const template = _$ssr(_tmpl$, _$ssrHydrationKey());
+const template2 = _$ssr(_tmpl$2, _$ssrHydrationKey());
+const template3 = _$ssr(_tmpl$3, _$ssrHydrationKey());

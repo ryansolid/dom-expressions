@@ -21,7 +21,8 @@ d`),
   _tmpl$15 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$16 = /*#__PURE__*/ _$template(`<span> <!#><!/>`),
   _tmpl$17 = /*#__PURE__*/ _$template(`<span><!#><!/> `),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;">`);
+  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;">`),
+  _tmpl$19 = /*#__PURE__*/ _$template(`<div><div></div><!#><!/>`);
 const trailing = _$getNextElement(_tmpl$);
 const leading = _$getNextElement(_tmpl$2);
 
@@ -160,3 +161,11 @@ const escapeCompAttribute = _$createComponent(Div, {
   normal: "Search\u2026",
   title: "Search&hellip;"
 });
+const lastElementExpression = (() => {
+  const _el$54 = _$getNextElement(_tmpl$19),
+    _el$55 = _el$54.firstChild,
+    _el$56 = _el$55.nextSibling,
+    [_el$57, _co$12] = _$getNextMarker(_el$56.nextSibling);
+  _$insert(_el$54, expr, _el$57, _co$12);
+  return _el$54;
+})();

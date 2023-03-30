@@ -87,3 +87,5 @@ const trailingSpaceFragment = <>{expr} </>
 const escapeAttribute = <div normal="Search&hellip;" title={"Search&hellip;"} />
 
 const escapeCompAttribute = <Div normal="Search&hellip;" title={"Search&hellip;"} />
+
+const lastElementExpression = <div><div></div>{expr()}</div>;

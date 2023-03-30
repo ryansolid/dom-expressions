@@ -21,3 +21,25 @@ const template = (() => {
   _$setProp(_el$8, "type", "text");
   return _el$;
 })();
+const template2 = (() => {
+  const _el$9 = _$createElement("div"),
+    _el$10 = _$createElement("span"),
+    _el$11 = _$createElement("a"),
+    _el$12 = _$createElement("span");
+  _$insertNode(_el$9, _el$10);
+  _$insertNode(_el$9, _el$12);
+  _$insertNode(_el$10, _el$11);
+  return _el$9;
+})();
+const template3 = (() => {
+  const _el$13 = _$createElement("div"),
+    _el$14 = _$createElement("div"),
+    _el$15 = _$createElement("table"),
+    _el$16 = _$createElement("tbody"),
+    _el$17 = _$createElement("div");
+  _$insertNode(_el$13, _el$14);
+  _$insertNode(_el$13, _el$17);
+  _$insertNode(_el$14, _el$15);
+  _$insertNode(_el$15, _el$16);
+  return _el$13;
+})();

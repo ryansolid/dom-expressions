@@ -13,6 +13,8 @@ pluginTester({
         name: "dom",
         moduleName: "r-dom",
         elements: [
+          "table",
+          "tbody",
           "div",
           "h1",
           "span",

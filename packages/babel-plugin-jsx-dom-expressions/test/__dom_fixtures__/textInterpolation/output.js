@@ -15,7 +15,8 @@ const _tmpl$ = /*#__PURE__*/ _$template(`<span>Hello `),
   _tmpl$12 = /*#__PURE__*/ _$template(`<div>
 d`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<div>`),
-  _tmpl$14 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;">`);
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;">`),
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div><div>`);
 const trailing = _tmpl$();
 const leading = _tmpl$2();
 
@@ -135,3 +136,9 @@ const escapeCompAttribute = _$createComponent(Div, {
   normal: "Search\u2026",
   title: "Search&hellip;"
 });
+const lastElementExpression = (() => {
+  const _el$35 = _tmpl$15(),
+    _el$36 = _el$35.firstChild;
+  _$insert(_el$35, expr, null);
+  return _el$35;
+})();

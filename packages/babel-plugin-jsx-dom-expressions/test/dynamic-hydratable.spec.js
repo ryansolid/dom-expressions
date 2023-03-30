@@ -12,6 +12,8 @@ pluginTester({
       {
         name: "dom",
         elements: [
+          "table",
+          "tbody",
           "div",
           "h1",
           "span",
@@ -34,7 +36,6 @@ pluginTester({
           "label",
           "text",
           "namespace:tag",
-
           "html",
           "head",
           "body",

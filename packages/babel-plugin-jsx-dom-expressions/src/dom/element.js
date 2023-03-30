@@ -32,6 +32,8 @@ import {
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
+const alwaysClose = ["a", "table", "b", "strong", "small", "i", "em"]
+
 const BlockElements = [
   "address",
   "article",
@@ -117,9 +119,10 @@ export function transformElement(path, info) {
   }
   results.template += ">";
   if (!voidTag) {
+    // always close tags can still be skipped if they have no parents and are the last element
     const toBeClosed = !info.lastElement || (info.toBeClosed && info.toBeClosed.includes(tagName));
     if (toBeClosed) {
-      results.toBeClosed = info.toBeClosed || [];
+      results.toBeClosed = info.toBeClosed || [...alwaysClose];
       results.toBeClosed.push(tagName);
       if (tagName === "a") results.toBeClosed.push(...BlockElements);
     }
@@ -711,11 +714,11 @@ function transformAttributes(path, results) {
   results.hasHydratableEvent = results.hasHydratableEvent || hasHydratableEvent;
 }
 
-function findLastElement(children) {
+function findLastElement(children, hydratable) {
   let lastElement = -1, tagName;
   for (let i = children.length - 1; i >= 0; i--) {
     const node = children[i].node;
-    if (t.isJSXText(node) || getStaticExpression(children[i]) || (t.isJSXElement(node) && (tagName = getTagName(node)) && !isComponent(tagName))) {
+    if (hydratable || t.isJSXText(node) || getStaticExpression(children[i]) || (t.isJSXElement(node) && (tagName = getTagName(node)) && !isComponent(tagName))) {
       lastElement = i;
       break;
     }
@@ -729,7 +732,7 @@ function transformChildren(path, results, config) {
     nextPlaceholder,
     i = 0;
   const filteredChildren = filterChildren(path.get("children")),
-    lastElement = findLastElement(filteredChildren),
+    lastElement = findLastElement(filteredChildren, config.hydratable),
     childNodes = filteredChildren.reduce((memo, child, index) => {
       if (child.isJSXFragment()) {
         throw new Error(
