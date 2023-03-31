@@ -32,7 +32,7 @@ import {
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
-const alwaysClose = ["a", "table", "b", "strong", "small", "i", "em"]
+const alwaysClose = ["a", "table", "textarea", "select", "b", "strong", "small", "i", "em"]
 
 const BlockElements = [
   "address",
