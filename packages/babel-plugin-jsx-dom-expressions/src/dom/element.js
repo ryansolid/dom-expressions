@@ -171,6 +171,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
     namespace = parts[0];
   }
 
+  // TODO: consider moving to a helper
   if (namespace === "style") {
     if (t.isStringLiteral(value)) {
       return t.callExpression(
@@ -199,7 +200,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
         t.memberExpression(elem, t.identifier("style")),
         t.identifier("setProperty")
       ),
-      [t.stringLiteral(name), value]
+      [t.stringLiteral(name), prevId ? prevId : value]
     ), t.callExpression(
       t.memberExpression(
         t.memberExpression(elem, t.identifier("style")),

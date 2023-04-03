@@ -158,6 +158,7 @@ function wrapDynamics(path, dynamics) {
         )
       );
     } else {
+      const prev = key.startsWith("style:") ? identifier : undefined;
       statements.push(
         t.expressionStatement(
           t.logicalExpression(
@@ -168,7 +169,7 @@ function wrapDynamics(path, dynamics) {
               elem,
               key,
               t.assignmentExpression("=", t.memberExpression(prevId, identifier), identifier),
-              { isSVG, isCE, tagName, dynamic: true }
+              { isSVG, isCE, tagName, dynamic: true, prevId: prev }
             )
           )
         )

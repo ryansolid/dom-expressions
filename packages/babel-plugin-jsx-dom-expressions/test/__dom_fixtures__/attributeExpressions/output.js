@@ -139,7 +139,7 @@ const template7 = (() => {
       _p$._v$ = _$style(_el$13, _v$, _p$._v$);
       _v$2 !== _p$._v$2 &&
         ((_p$._v$2 = _v$2) != null
-          ? _el$13.style.setProperty("padding-top", (_p$._v$2 = _v$2))
+          ? _el$13.style.setProperty("padding-top", _v$2)
           : _el$13.style.removeProperty("padding-top"));
       _v$3 !== _p$._v$3 && _el$13.classList.toggle("my-class", (_p$._v$3 = _v$3));
       return _p$;
