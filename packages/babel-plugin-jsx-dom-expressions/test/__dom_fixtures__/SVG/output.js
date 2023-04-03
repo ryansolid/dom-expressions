@@ -40,7 +40,10 @@ const template2 = (() => {
       _v$2 !== _p$._v$2 && _$setAttribute(_el$3, "stroke-width", (_p$._v$2 = _v$2));
       _v$3 !== _p$._v$3 && _$setAttribute(_el$3, "x", (_p$._v$3 = _v$3));
       _v$4 !== _p$._v$4 && _$setAttribute(_el$3, "y", (_p$._v$4 = _v$4));
-      _v$5 !== _p$._v$5 && _el$3.style.setProperty("stroke-width", (_p$._v$5 = _v$5));
+      _v$5 !== _p$._v$5 &&
+        ((_p$._v$5 = _v$5) != null
+          ? _el$3.style.setProperty("stroke-width", (_p$._v$5 = _v$5))
+          : _el$3.style.removeProperty("stroke-width"));
       return _p$;
     },
     {
