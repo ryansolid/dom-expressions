@@ -151,13 +151,41 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
   }
 
   if (namespace === "style") {
-    return t.callExpression(
+    if (t.isStringLiteral(value)) {
+      return t.callExpression(
+        t.memberExpression(
+          t.memberExpression(elem, t.identifier("style")),
+          t.identifier("setProperty")
+        ),
+        [t.stringLiteral(name), value]
+      );
+    }
+    if (t.isNullLiteral(value) || t.isIdentifier(value, { name: "undefined" })) {
+      return t.callExpression(
+        t.memberExpression(
+          t.memberExpression(elem, t.identifier("style")),
+          t.identifier("removeProperty")
+        ),
+        [t.stringLiteral(name)]
+      );
+    }
+    return t.conditionalExpression(t.binaryExpression(
+      "!=",
+      value,
+      t.nullLiteral()
+    ), t.callExpression(
       t.memberExpression(
         t.memberExpression(elem, t.identifier("style")),
         t.identifier("setProperty")
       ),
       [t.stringLiteral(name), value]
-    );
+    ), t.callExpression(
+      t.memberExpression(
+        t.memberExpression(elem, t.identifier("style")),
+        t.identifier("removeProperty")
+      ),
+      [t.stringLiteral(name)]
+    ));
   }
 
   if (namespace === "class") {

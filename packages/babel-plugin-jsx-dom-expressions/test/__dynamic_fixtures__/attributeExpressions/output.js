@@ -87,7 +87,9 @@ const template2 = (() => {
 const template3 = (() => {
   const _el$9 = _tmpl$3();
   _$setAttribute(_el$9, "id", state.id);
-  _el$9.style.setProperty("background-color", state.color);
+  state.color != null
+    ? _el$9.style.setProperty("background-color", state.color)
+    : _el$9.style.removeProperty("background-color");
   _el$9.textContent = state.content;
   _$effect(() => _$setAttribute(_el$9, "name", state.name));
   return _el$9;
@@ -119,7 +121,10 @@ const template7 = (() => {
         _v$2 = props.top,
         _v$3 = !!props.active;
       _p$._v$ = _$style(_el$13, _v$, _p$._v$);
-      _v$2 !== _p$._v$2 && _el$13.style.setProperty("padding-top", (_p$._v$2 = _v$2));
+      _v$2 !== _p$._v$2 &&
+        ((_p$._v$2 = _v$2) != null
+          ? _el$13.style.setProperty("padding-top", (_p$._v$2 = _v$2))
+          : _el$13.style.removeProperty("padding-top"));
       _v$3 !== _p$._v$3 && _el$13.classList.toggle("my-class", (_p$._v$3 = _v$3));
       return _p$;
     },

@@ -163,3 +163,15 @@ const template30 = (
     random3 random4"
   />
 );
+
+const template31 = (
+  <div
+    style={{ "background-color": getStore.itemProperties.color }}
+  />
+);
+
+const template32 = (
+  <div
+    style={{ "background-color": undefined }}
+  />
+);
