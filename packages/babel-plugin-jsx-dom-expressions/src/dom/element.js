@@ -32,7 +32,27 @@ import {
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
-const alwaysClose = ["a", "table", "button", "textarea", "select", "b", "strong", "small", "i", "em"]
+const alwaysClose = [
+  "title",
+  "style",
+  "a",
+  "strong",
+  "small",
+  "b",
+  "u",
+  "i",
+  "em",
+  "s",
+  "code",
+  "object",
+  "table",
+  "button",
+  "textarea",
+  "select",
+  "iframe",
+  "script",
+  "template"
+];
 
 const BlockElements = [
   "address",
@@ -41,6 +61,7 @@ const BlockElements = [
   "blockquote",
   "canvas",
   "dd",
+  "details",
   "div",
   "dl",
   "dt",
@@ -697,7 +718,7 @@ function transformAttributes(path, results) {
           if (!value) return;
           let text = value.value;
           if (key === "style" || key === "class") {
-            text = trimWhitespace(text)
+            text = trimWhitespace(text);
             if (key === "style") {
               text = text.replace(/; /g, ";").replace(/: /g, ":");
             }
@@ -715,10 +736,16 @@ function transformAttributes(path, results) {
 }
 
 function findLastElement(children, hydratable) {
-  let lastElement = -1, tagName;
+  let lastElement = -1,
+    tagName;
   for (let i = children.length - 1; i >= 0; i--) {
     const node = children[i].node;
-    if (hydratable || t.isJSXText(node) || getStaticExpression(children[i]) || (t.isJSXElement(node) && (tagName = getTagName(node)) && !isComponent(tagName))) {
+    if (
+      hydratable ||
+      t.isJSXText(node) ||
+      getStaticExpression(children[i]) ||
+      (t.isJSXElement(node) && (tagName = getTagName(node)) && !isComponent(tagName))
+    ) {
       lastElement = i;
       break;
     }
