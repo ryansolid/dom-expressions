@@ -31,6 +31,7 @@ import {
   trimWhitespace
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
+import { InlineElements, BlockElements } from "./constants";
 
 const alwaysClose = [
   "title",
@@ -52,46 +53,6 @@ const alwaysClose = [
   "iframe",
   "script",
   "template"
-];
-
-const BlockElements = [
-  "address",
-  "article",
-  "aside",
-  "blockquote",
-  "canvas",
-  "dd",
-  "details",
-  "div",
-  "dl",
-  "dt",
-  "fieldset",
-  "figcaption",
-  "figure",
-  "footer",
-  "form",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "header",
-  "hgroup",
-  "hr",
-  "li",
-  "main",
-  "nav",
-  "noscript",
-  "ol",
-  "output",
-  "p",
-  "pre",
-  "section",
-  "table",
-  "tfoot",
-  "ul",
-  "video"
 ];
 
 export function transformElement(path, info) {
@@ -140,12 +101,12 @@ export function transformElement(path, info) {
   }
   results.template += ">";
   if (!voidTag) {
-    // always close tags can still be skipped if they have no parents and are the last element
-    const toBeClosed = !info.lastElement || (info.toBeClosed && info.toBeClosed.includes(tagName));
+    // always close tags can still be skipped if they have no closing parents and are the last element
+    const toBeClosed = !info.lastElement || (info.toBeClosed && info.toBeClosed.has(tagName));
     if (toBeClosed) {
-      results.toBeClosed = info.toBeClosed || [...alwaysClose];
-      results.toBeClosed.push(tagName);
-      if (tagName === "a") results.toBeClosed.push(...BlockElements);
+      results.toBeClosed = new Set(info.toBeClosed || alwaysClose);
+      results.toBeClosed.add(tagName);
+      if (InlineElements.includes(tagName)) results.toBeClosed.add(...BlockElements);
     }
     transformChildren(path, results, config);
     if (toBeClosed) results.template += `</${tagName}>`;
@@ -191,23 +152,23 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
         [t.stringLiteral(name)]
       );
     }
-    return t.conditionalExpression(t.binaryExpression(
-      "!=",
-      value,
-      t.nullLiteral()
-    ), t.callExpression(
-      t.memberExpression(
-        t.memberExpression(elem, t.identifier("style")),
-        t.identifier("setProperty")
+    return t.conditionalExpression(
+      t.binaryExpression("!=", value, t.nullLiteral()),
+      t.callExpression(
+        t.memberExpression(
+          t.memberExpression(elem, t.identifier("style")),
+          t.identifier("setProperty")
+        ),
+        [t.stringLiteral(name), prevId ? prevId : value]
       ),
-      [t.stringLiteral(name), prevId ? prevId : value]
-    ), t.callExpression(
-      t.memberExpression(
-        t.memberExpression(elem, t.identifier("style")),
-        t.identifier("removeProperty")
-      ),
-      [t.stringLiteral(name)]
-    ));
+      t.callExpression(
+        t.memberExpression(
+          t.memberExpression(elem, t.identifier("style")),
+          t.identifier("removeProperty")
+        ),
+        [t.stringLiteral(name)]
+      )
+    );
   }
 
   if (namespace === "class") {
