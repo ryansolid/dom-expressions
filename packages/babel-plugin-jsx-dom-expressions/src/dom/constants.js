@@ -88,5 +88,5 @@ export const BlockElements = [
   "pre",
   "section",
   "table",
-  "ul",
+  "ul"
 ];

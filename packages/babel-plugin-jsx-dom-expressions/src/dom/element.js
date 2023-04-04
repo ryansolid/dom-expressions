@@ -106,7 +106,7 @@ export function transformElement(path, info) {
     if (toBeClosed) {
       results.toBeClosed = new Set(info.toBeClosed || alwaysClose);
       results.toBeClosed.add(tagName);
-      if (InlineElements.includes(tagName)) results.toBeClosed.add(...BlockElements);
+      if (InlineElements.includes(tagName)) BlockElements.forEach(i => results.toBeClosed.add(i));
     }
     transformChildren(path, results, config);
     if (toBeClosed) results.template += `</${tagName}>`;
