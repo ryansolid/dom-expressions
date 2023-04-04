@@ -432,7 +432,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       const isSVG = r.SVGElements.has(node.name);
       const isCE = node.name.includes("-");
       options.hasCustomElement = isCE;
-      if (node.attrs.map(e => e.name).includes("###")) {
+      if (node.attrs.some(e => e.name === "###")) {
         const spreadArgs = [];
         let current = "";
         const newAttrs = [];
