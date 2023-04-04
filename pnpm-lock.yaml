@@ -91,10 +91,10 @@ importers:
   packages/lit-dom-expressions:
     specifiers:
       dom-expressions: ^0.36.6
-      html-parse-string: ^0.0.8
+      html-parse-string: ^0.0.9
     devDependencies:
       dom-expressions: link:../dom-expressions
-      html-parse-string: 0.0.8
+      html-parse-string: 0.0.9
 
 packages:
 
@@ -4523,8 +4523,8 @@ packages:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
     dev: true
 
-  /html-parse-string/0.0.8:
-    resolution: {integrity: sha512-WHEaU9koioRM6zPZ/iePtpN8B6JbbQTy4hpxOKbXVg79mSUUTWY1gODMET68dj0n7LZhjgjFAIVvUJV4bh61Hg==}
+  /html-parse-string/0.0.9:
+    resolution: {integrity: sha512-wyGnsOolHbNrcb8N6bdJF4EHyzd3zVGCb9/mBxeNjAYBDOZqD7YkqLBz7kXtdgHwNnV8lN/BpSDpsI1zm8Sd8g==}
     dev: true
 
   /http-cache-semantics/4.1.0:

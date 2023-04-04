@@ -26,6 +26,22 @@ interface Runtime {
 type TemplateCreate = (tmpl: HTMLTemplateElement[], data: any[], r: Runtime) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
 
+type Options = {
+  path?: string,
+  decl: string[],
+  exprs: string[],
+  delegatedEvents: Set<string>,
+  counter: number,
+  first: boolean,
+  multi: boolean,
+  templateId: number,
+  templateNodes: IDom[][],
+  wrap?: boolean,
+  hasCustomElement?: boolean,
+  parent?: boolean,
+  fragment?: boolean,
+}
+
 export type HTMLTag = {
   (statics: TemplateStringsArray, ...args: unknown[]): Node | Node[];
 };
@@ -34,8 +50,8 @@ const cache = new Map<TemplateStringsArray, HTMLTemplateElement[]>();
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
 const spaces = " \\f\\n\\r\\t";
-const almostEverything = "[^ " + spaces + "\\/>\"'=]+";
-const attrName = "[ " + spaces + "]+" + almostEverything;
+const almostEverything = "[^" + spaces + "\\/>\"'=]+";
+const attrName = "[ " + spaces + "]+(?:use:<!--#-->|" + almostEverything + ')';
 const tagName = "<([A-Za-z$#]+[A-Za-z0-9:_-]*)((?:";
 const attrPartials =
   "(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|\\([^)]*?\\)|<[^>]*?>|" + almostEverything + "))?)";
@@ -54,7 +70,7 @@ function attrReplacer($0: string, $1: string, $2: string, $3: string) {
 }
 
 function replaceAttributes($0: string, $1: string, $2: string) {
-  return $1 + ($2[0] === '"' || $2[0] === "'" ? $2.replace(/<!--#-->/g, "###") : '"###"');
+  return $1.replace(/<!--#-->/g, "###") + ($2[0] === '"' || $2[0] === "'" ? $2.replace(/<!--#-->/g, "###") : '"###"');
 }
 
 function fullClosing($0: string, $1: string, $2: string) {
@@ -65,7 +81,18 @@ function toPropertyName(name: string) {
   return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
 }
 
-export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag {
+function parseDirective(name: string, value: string, tag: string, options: Options) {
+  if (name === 'use:###' && value === '###') {
+    const count = options.counter++;
+    options.exprs.push(
+      `typeof exprs[${count}] === "function" ? r.use(exprs[${count}], ${tag}, exprs[${options.counter++}]) : (()=>{throw new Error("use:### must be a function")})()`
+    );
+  } else {
+    throw new Error(`Not support syntax ${name} must be use:{function}`);
+  }
+}
+
+export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder = (...args) => new Function(...args) }: { delegateEvents?: boolean, functionBuilder?: (...args: string[]) => Function } = {}): HTMLTag {
   let uuid = 1;
   (r as any).wrapProps = (props: any) => {
     const d = Object.getOwnPropertyDescriptors(props);
@@ -75,24 +102,32 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     return props;
   };
 
-  function createTemplate(statics: TemplateStringsArray) {
+  function createTemplate(statics: TemplateStringsArray, opt: { funcBuilder: (...args: string[]) => Function }) {
     let i = 0,
       markup = "";
     for (; i < statics.length - 1; i++) {
       markup = markup + statics[i] + "<!--#-->";
     }
     markup = markup + statics[i];
-    markup = markup
-      .replace(selfClosing, fullClosing)
-      .replace(/<(<!--#-->)/g, "<###")
-      .replace(/\.\.\.(<!--#-->)/g, "###")
-      .replace(attrSeeker, attrReplacer)
-      .replace(/>\n+\s*/g, ">")
-      .replace(/\n+\s*</g, "<")
-      .replace(/\s+</g, " <")
-      .replace(/>\s+/g, "> ");
-
-    const [html, code] = parseTemplate(parse(markup)),
+    const replaceList: [string | RegExp, string | ((substring: string, ...args: any[]) => string)][] = [
+      [selfClosing, fullClosing],
+      [/<(<!--#-->)/g, "<###"],
+      [/\.\.\.(<!--#-->)/g, "###"],
+      [attrSeeker, attrReplacer],
+      [/>\n+\s*/g, ">"],
+      [/\n+\s*</g, "<"],
+      [/\s+</g, " <"],
+      [/>\s+/g, "> "]
+    ];
+    markup = replaceList.reduce((acc, x) => {
+      // if (typeof x[1] === 'string') {
+      //   return acc.replace(x[0], x[1]);
+      // }
+      // @ts-expect-error - TS doesn't like the replace function, you can uncomment the above code to see that everything is fine
+      return acc.replace(x[0], x[1]);
+    }, markup);
+    const pars = parse(markup);
+    const [html, code] = parseTemplate(pars, opt.funcBuilder),
       templates: HTMLTemplateElement[] = [];
 
     for (let i = 0; i < html.length; i++) {
@@ -123,7 +158,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     value: string,
     isSVG: boolean,
     isCE: boolean,
-    options: any
+    options: Options
   ) {
     let expr =
         value === "###"
@@ -176,7 +211,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     value: string,
     isSVG: boolean,
     isCE: boolean,
-    options: any
+    options: Options
   ) {
     if (name.slice(0, 2) === "on") {
       if (!name.includes(":")) {
@@ -222,7 +257,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     }
   }
 
-  function processChildren(node: IDom, options: any) {
+  function processChildren(node: IDom, options: Options) {
     const childOptions = Object.assign({}, options, {
       first: true,
       multi: false,
@@ -271,22 +306,29 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     return result.length > 1 ? `r.mergeProps(${result.join(",")})` : result[0];
   }
 
-  function processComponent(node: IDom, options: any) {
+  function processComponent(node: IDom, options: Options) {
     let props: string[] = [];
     const keys = Object.keys(node.attrs),
       propGroups: (string | string[])[] = [props],
       componentIdentifier = options.counter++;
 
     for (let i = 0; i < keys.length; i++) {
-      const name = keys[i],
-        value = node.attrs[name];
-
-      if (name === "###") {
-        propGroups.push(`exprs[${options.counter++}]`);
-        propGroups.push((props = []));
-      } else if (value === "###") {
-        props.push(`${name}: exprs[${options.counter++}]`);
-      } else props.push(`${name}: "${value}"`);
+      const {type, name, value} = node.attrs[i];
+      if (type === 'attr') {
+        if (name === "###") {
+          propGroups.push(`exprs[${options.counter++}]`);
+          propGroups.push((props = []));
+        } else if (value === "###") {
+          props.push(`${name}: exprs[${options.counter++}]`);
+        } else props.push(`${name}: "${value}"`);
+      } else if (type === 'directive') {
+        const tag = `_$el${uuid++}`;
+        const topDecl = !options.decl.length;
+        options.decl.push(
+          topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
+        );
+        parseDirective(name, value, tag, options);
+      }
     }
     if (
       node.children.length === 1 &&
@@ -331,7 +373,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     options.first = false;
   }
 
-  function parseNode(node: IDom, options: any) {
+  function parseNode(node: IDom, options: Options) {
     if (node.type === "fragment") {
       const parts: string[] = [];
       node.children.forEach((child: IDom) => {
@@ -387,32 +429,38 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
       options.decl.push(
         topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
-      const keys = Object.keys(node.attrs);
       const isSVG = r.SVGElements.has(node.name);
       const isCE = node.name.includes("-");
       options.hasCustomElement = isCE;
-      if (keys.includes("###")) {
+      if (node.attrs.map(e => e.name).includes("###")) {
         const spreadArgs = [];
         let current = "";
-        for (let i = 0; i < keys.length; i++) {
-          const name = keys[i],
-            value = node.attrs[name];
-          if (value.includes("###")) {
-            let count = options.counter++;
-            current += `${name}: ${
-              name !== "ref" ? `typeof exprs[${count}] === "function" ? exprs[${count}]() : ` : ""
-            }exprs[${count}],`;
-            delete node.attrs[name];
-          } else if (name === "###") {
-            if (current.length) {
-              spreadArgs.push(`()=>({${current}})`);
-              current = "";
+        const newAttrs = [];
+        for (let i = 0; i < node.attrs.length; i++) {
+          const {type, name, value} = node.attrs[i];
+          if (type === 'attr') {
+            if (value.includes("###")) {
+              let count = options.counter++;
+              current += `${name}: ${
+                name !== "ref" ? `typeof exprs[${count}] === "function" ? exprs[${count}]() : ` : ""
+              }exprs[${count}],`;
+            } else if (name === "###") {
+              if (current.length) {
+                spreadArgs.push(`()=>({${current}})`);
+                current = "";
+              }
+              spreadArgs.push(`exprs[${options.counter++}]`);
+            } else {
+              newAttrs.push(node.attrs[i]);
             }
-            spreadArgs.push(`exprs[${options.counter++}]`);
-            delete node.attrs[name];
+          } else if (type === 'directive') {
+            parseDirective(name, value, tag, options);
           }
         }
-        if (current.length) spreadArgs.push(`()=>({${current}})`);
+        node.attrs = newAttrs;
+        if (current.length) {
+          spreadArgs.push(`()=>({${current}})`);
+        }
         options.exprs.push(
           `r.spread(${tag},${
             spreadArgs.length === 1
@@ -421,12 +469,18 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
           },${isSVG},${!!node.children.length})`
         );
       } else {
-        for (let i = 0; i < keys.length; i++) {
-          const name = keys[i],
-            value = node.attrs[name];
-          if (value.includes("###")) {
-            delete node.attrs[name];
-            parseAttribute(node, tag, name, value, isSVG, isCE, options);
+        for (let i = 0; i < node.attrs.length; i++) {
+          const {type, name, value} = node.attrs[i];
+          if (type === 'directive') {
+            parseDirective(name, value, tag, options);
+            node.attrs.splice(i, 1);
+            i--;
+          } else if (type === "attr") {
+            if (value.includes("###")) {
+              node.attrs.splice(i, 1);
+              i--;
+              parseAttribute(node, tag, name, value, isSVG, isCE, options);
+            }
           }
         }
       }
@@ -456,8 +510,8 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     }
   }
 
-  function parseTemplate(nodes: IDom[]): [string[], TemplateCreate] {
-    const options = {
+  function parseTemplate(nodes: IDom[], funcBuilder: (...args: string[]) => Function): [string[], TemplateCreate] {
+    const options: Options = {
         path: "",
         decl: [],
         exprs: [],
@@ -483,7 +537,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
     const templateNodes = [origNodes].concat(options.templateNodes);
     return [
       templateNodes.map(t => stringify(t)),
-      new Function(
+      funcBuilder(
         "tmpls",
         "exprs",
         "r",
@@ -496,7 +550,7 @@ export function createHTML(r: Runtime, { delegateEvents = true } = {}): HTMLTag 
   }
 
   function html(statics: TemplateStringsArray, ...args: unknown[]): Node {
-    const templates = cache.get(statics) || createTemplate(statics);
+    const templates = cache.get(statics) || createTemplate(statics, { funcBuilder: functionBuilder });
     return (templates[0] as CreateableTemplate).create(templates, args, r);
   }
 

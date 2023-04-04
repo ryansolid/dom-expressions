@@ -20,6 +20,6 @@
   },
   "devDependencies": {
     "dom-expressions": "^0.36.6",
-    "html-parse-string": "^0.0.8"
+    "html-parse-string": "^0.0.9"
   }
 }
