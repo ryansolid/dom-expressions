@@ -2,9 +2,17 @@ import * as S from "s-js";
 import { createHTML } from "../dist/lit-dom-expressions";
 import * as r from "dom-expressions/src/client";
 
-const html = createHTML(r);
+/** @type {{ bodyFunc: string }[]} */
+const context = [];
+const html = createHTML(r, { functionBuilder: (...args) => {
+  const ctx = context.pop();
+  if (ctx) {
+    expect(args[args.length - 1].replace(/_\$el\d+/g, '_$el')).toBe(ctx.bodyFunc.replace(/_\$el\d+/g, '_$el'));
+  }
+  return new Function(...args);
+}});
 
-const FIXTURES = [
+const FIXTURES = /** @type {const} */ ([
   '<div id="main"><!-- this is a comment --><h1 random="">Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label class="name" for="entry">Edit:</label><input id="entry" type="text" readonly=""></div>',
   '<div id="main" refset="true" class="selected also" title="hi"><h1 class="hello" title="hello John Smith" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
   '<div id="main"><button>Click Bound</button><button>Click Delegated</button><button>Click Listener</button></div>',
@@ -15,7 +23,7 @@ const FIXTURES = [
   "<div><b>Hello, my name is: <i>John</i></b></div>",
   "<style>.something{color:red}</style>",
   '<div class="second"></div>'
-];
+]);
 
 describe("Test HTML", () => {
   test("Simple Elements", () => {
@@ -277,9 +285,24 @@ describe("Test HTML", () => {
       <!--<div name=${name} />-->
       <b>Hello, my name is: <i>${name}</i></b>
     </div>`;
-    console.log(template);
     const div = document.createElement("div");
     div.appendChild(template);
     expect(div.innerHTML.replace(`<!--<div name="###"></div>-->`, "")).toBe(FIXTURES[7]);
-  })
+  });
+
+  test("Directive use", () =>{
+    function directive(el, value) {
+      el.style.backgroundColor = 'red';
+      el.innerHTML += value();
+    }
+    context.push({
+      bodyFunc: 'const _$el1 = tmpls[0].content.firstChild.cloneNode(true),\n'
+      + '_$el2 = _$el1.firstChild,\n'
+      + '_$el3 = _$el2.firstChild;\n'
+      + 'typeof exprs[0] === "function" ? r.use(exprs[0], _$el2, exprs[1]) : (()=>{throw new Error("use:### must be a function")})();\n'
+      + 'return _$el1;\n'
+    });
+    const template = html`<div><div use:${directive}=${() => "world!"}>Hello <//><//> `;
+    expect(template.outerHTML).toBe('<div><div style="background-color: red;">Hello world!</div></div>');
+  });
 });
