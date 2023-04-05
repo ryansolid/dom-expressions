@@ -43,3 +43,20 @@ const template3 = (() => {
   _$insertNode(_el$15, _el$16);
   return _el$13;
 })();
+const template4 = (() => {
+  const _el$18 = _$createElement("div"),
+    _el$19 = _$createElement("div"),
+    _el$20 = _$createElement("footer"),
+    _el$21 = _$createElement("div"),
+    _el$22 = _$createElement("div"),
+    _el$23 = _$createElement("button"),
+    _el$24 = _$createElement("span");
+  _$insertNode(_el$18, _el$19);
+  _$insertNode(_el$18, _el$22);
+  _$insertNode(_el$19, _el$20);
+  _$insertNode(_el$20, _el$21);
+  _$insertNode(_el$22, _el$23);
+  _$insertNode(_el$23, _el$24);
+  _$insertNode(_el$24, _$createTextNode(`0`));
+  return _el$18;
+})();

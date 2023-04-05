@@ -23,6 +23,7 @@ pluginTester({
           "h1",
           "span",
           "header",
+          "footer",
           "slot",
           "my-element",
           "module",

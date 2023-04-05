@@ -68,7 +68,7 @@ export function transformNode(path, info = {}) {
     // <><div /><Component /></>
     transformFragmentChildren(path.get("children"), results, config);
     return results;
-  } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path))) {
+  } else if (t.isJSXText(node) || (staticValue = getStaticExpression(path)) !== false) {
     const text =
       staticValue !== undefined
         ? info.doNotEscape
@@ -164,9 +164,9 @@ export function transformElement(config, path, info = {}) {
   // <div ...></div>
   // const element = getTransformElemet(config, path, tagName);
 
-  const tagRenderer = (config.renderers ?? []).find(
-    renderer => renderer.elements.includes(tagName)
-  )
+  const tagRenderer = (config.renderers ?? []).find(renderer =>
+    renderer.elements.includes(tagName)
+  );
 
   if (tagRenderer?.name === "dom" || getConfig(path).generate === "dom") {
     return transformElementDOM(path, info);

@@ -107,7 +107,7 @@ export function transformElement(path, info) {
       results.toBeClosed = new Set(info.toBeClosed || alwaysClose);
       results.toBeClosed.add(tagName);
       if (InlineElements.includes(tagName)) BlockElements.forEach(i => results.toBeClosed.add(i));
-    }
+    } else results.toBeClosed = info.toBeClosed;
     transformChildren(path, results, config);
     if (toBeClosed) results.template += `</${tagName}>`;
   }
@@ -733,7 +733,7 @@ function findLastElement(children, hydratable) {
     if (
       hydratable ||
       t.isJSXText(node) ||
-      getStaticExpression(children[i]) ||
+      getStaticExpression(children[i]) !== false ||
       (t.isJSXElement(node) && (tagName = getTagName(node)) && !isComponent(tagName))
     ) {
       lastElement = i;
@@ -912,7 +912,7 @@ function detectExpressions(children, index, config) {
     if (
       t.isJSXExpressionContainer(node) &&
       !t.isJSXEmptyExpression(node.expression) &&
-      !getStaticExpression(children[index - 1])
+      getStaticExpression(children[index - 1]) === false
     )
       return true;
     let tagName;
@@ -921,7 +921,7 @@ function detectExpressions(children, index, config) {
   for (let i = index; i < children.length; i++) {
     const child = children[i].node;
     if (t.isJSXExpressionContainer(child)) {
-      if (!t.isJSXEmptyExpression(child.expression) && !getStaticExpression(children[i]))
+      if (!t.isJSXEmptyExpression(child.expression) && getStaticExpression(children[i]) === false)
         return true;
     } else if (t.isJSXElement(child)) {
       const tagName = getTagName(child);

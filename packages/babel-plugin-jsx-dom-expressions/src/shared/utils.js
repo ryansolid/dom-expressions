@@ -11,13 +11,7 @@ export const reservedNameSpaces = new Set([
   "attr"
 ]);
 
-export const nonSpreadNameSpaces = new Set([
-  "class",
-  "style",
-  "use",
-  "prop",
-  "attr"
-]);
+export const nonSpreadNameSpaces = new Set(["class", "style", "use", "prop", "attr"]);
 
 export function getConfig(path) {
   return path.hub.file.metadata.config;
@@ -369,7 +363,8 @@ export function convertJSXIdentifier(node) {
 }
 
 export function canNativeSpread(key, { checkNameSpaces } = {}) {
-  if (checkNameSpaces && key.includes(":") && nonSpreadNameSpaces.has(key.split(":")[0])) return false;
+  if (checkNameSpaces && key.includes(":") && nonSpreadNameSpaces.has(key.split(":")[0]))
+    return false;
   // TODO: figure out how to detect definitely function ref
   if (key === "ref") return false;
   return true;
