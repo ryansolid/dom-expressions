@@ -177,7 +177,10 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
         t.memberExpression(elem, t.identifier("classList")),
         t.identifier("toggle")
       ),
-      [t.stringLiteral(name), value]
+      [
+        t.stringLiteral(name),
+        dynamic ? value : t.unaryExpression("!", t.unaryExpression("!", value))
+      ]
     );
   }
 

@@ -125,8 +125,11 @@ const template6 = (() => {
   _$effect(_$p => _$style(_el$12, someStyle(), _$p));
   return _el$12;
 })();
+let undefVar;
 const template7 = (() => {
   const _el$13 = _tmpl$4();
+  _el$13.classList.toggle("other-class", !!undefVar);
+  _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
     _p$ => {
       const _v$ = {
