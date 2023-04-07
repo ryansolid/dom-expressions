@@ -581,7 +581,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
   const keys = Object.keys(props);
   let classResolved;
   for (let i = 0; i < keys.length; i++) {
-    const prop = keys[i];
+    let prop = keys[i];
     if (prop === "children") {
       !skipChildren && console.warn(`SSR currently does not support spread children.`);
       continue;
