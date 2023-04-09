@@ -874,7 +874,9 @@ export namespace JSX {
     usemap?: string;
     useMap?: string;
     width?: number | string;
-    crossOrigin?: HTMLCrossorigin;
+    crossOrigin?: HTMLCrossorigin
+    elementtiming: string; 
+    fetchpriority: "high" | "low" | "auto";
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string;
