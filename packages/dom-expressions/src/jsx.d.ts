@@ -405,7 +405,8 @@ export namespace JSX {
     | "allow-scripts"
     | "allow-storage-access-by-user-activation"
     | "allow-top-navigation"
-    | "allow-top-navigation-by-user-activation";
+    | "allow-top-navigation-by-user-activation"
+    | "allow-top-navigation-to-custom-protocols;
   type HTMLLinkAs =
     | "audio"
     | "document"
