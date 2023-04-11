@@ -102,7 +102,9 @@ export function transformElement(path, info) {
   results.template += ">";
   if (!voidTag) {
     // always close tags can still be skipped if they have no closing parents and are the last element
-    const toBeClosed = !info.lastElement || (info.toBeClosed && info.toBeClosed.has(tagName));
+    const toBeClosed =
+      !info.lastElement ||
+      (info.toBeClosed && (!config.omitNestedClosingTags || info.toBeClosed.has(tagName)));
     if (toBeClosed) {
       results.toBeClosed = new Set(info.toBeClosed || alwaysClose);
       results.toBeClosed.add(tagName);

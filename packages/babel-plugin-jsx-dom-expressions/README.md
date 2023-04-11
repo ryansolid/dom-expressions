@@ -130,7 +130,7 @@ Array of Component exports from module, that aren't included by default with the
 
 - Type: `string`
 - Default: `effect`
-  
+
 This plugin leverages a heuristic for reactive wrapping and lazy evaluation of JSX expressions. This option indicates the reactive wrapper function name (`effect`), defaults to `effect`.
 
 ### staticMarker
@@ -147,6 +147,19 @@ Comment decorator string indicates the static expression, used to tell the compi
 
 Memos let you efficiently use a derived value in many reactive computations. This option indicates the memo function name, defaults to `memo`.
 
+### validate
+
+- Type: `boolean`
+- Default: `true`
+
+Checks for properly formed HTML by checking for elements that would not be allowed in certain parent elements. This validation isn't complete but includes places where browser would "correct" it and break the DOM walks.
+
+### omitNestedClosingTags
+
+- Type: `boolean`
+- Default: `true`
+
+Removes unnecessary closing tags from the template output. This may not work in all browser-like environments the same. The solution has been tested again Chrome/Edge/Firefox/Safari.
 
 ## Special Binding
 

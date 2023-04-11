@@ -7,6 +7,7 @@ export default {
   builtIns: [],
   requireImportSource: false,
   wrapConditionals: true,
+  omitNestedClosingTags: true,
   contextToCustomElements: false,
   staticMarker: "@once",
   effectWrapper: "effect",
