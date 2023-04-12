@@ -52,7 +52,8 @@ const alwaysClose = [
   "select",
   "iframe",
   "script",
-  "template"
+  "template",
+  "fieldset"
 ];
 
 export function transformElement(path, info) {
