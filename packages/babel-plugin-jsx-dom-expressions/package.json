@@ -1,7 +1,7 @@
 {
   "name": "babel-plugin-jsx-dom-expressions",
   "description": "A JSX to DOM plugin that wraps expressions for fine grained change detection",
-  "version": "0.36.9",
+  "version": "0.36.10",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
