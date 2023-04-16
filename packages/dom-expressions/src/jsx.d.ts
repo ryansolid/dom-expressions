@@ -706,8 +706,9 @@ export namespace JSX {
     contextmenu?: string;
     dir?: HTMLDir;
     draggable?: boolean;
-    hidden?: boolean;
+    hidden?: boolean | 'hidden' | 'until-found';
     id?: string;
+    inert?: boolean;
     lang?: string;
     spellcheck?: boolean;
     style?: CSSProperties | string;
