@@ -413,6 +413,8 @@ function transformAttributes(path, results) {
     attributes.map(a => a.node)
   );
 
+  let needsSpacing = true;
+
   path
     .get("openingElement")
     .get("attributes")
@@ -710,7 +712,7 @@ function transformAttributes(path, results) {
           );
         } else {
           !isSVG && (key = key.toLowerCase());
-          results.template += ` ${key}`;
+          results.template += `${needsSpacing ? ' ' : ''}${key}`;
           if (!value) return;
           
           let text = value.value;
@@ -760,8 +762,10 @@ function transformAttributes(path, results) {
               wrapper = '"';
             }
 
+            needsSpacing = false;
             results.template += `=${wrapper}${text}${wrapper}`;
           } else {
+            needsSpacing = true;
             results.template += `=${text}`;
           }
         }

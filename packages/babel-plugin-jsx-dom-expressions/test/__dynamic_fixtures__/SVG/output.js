@@ -17,10 +17,10 @@ const _tmpl$ = /*#__PURE__*/ _$template(
     true
   ),
   _tmpl$5 = /*#__PURE__*/ _$template(
-    `<svg viewBox='0 0 160 40' xmlns=http://www.w3.org/2000/svg><a><text x=10 y=25>MDN Web Docs`
+    `<svg viewBox='0 0 160 40'xmlns=http://www.w3.org/2000/svg><a><text x=10 y=25>MDN Web Docs`
   ),
   _tmpl$6 = /*#__PURE__*/ _$template(
-    `<svg viewBox='0 0 160 40' xmlns=http://www.w3.org/2000/svg><text x=10 y=25>`
+    `<svg viewBox='0 0 160 40'xmlns=http://www.w3.org/2000/svg><text x=10 y=25>`
   );
 const template = _tmpl$();
 const template2 = (() => {
