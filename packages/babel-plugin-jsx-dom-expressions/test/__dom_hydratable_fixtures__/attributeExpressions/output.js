@@ -15,27 +15,25 @@ import { classList as _$classList } from "r-dom";
 import { use as _$use } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(
-    `<div id="main"><h1 class="base" id="my-h1"><a href="/">Welcome`
-  ),
+const _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a href=/>Welcome`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b">`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<input type="checkbox">`),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="static hi" type="button">Write`),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col">`),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly=""><input>`),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;" data2="&quot;">`),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div class='a b'>`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<div class='\`a'>\`$\``),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<button class='static hi'type=button>Write`),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<button class='a b c'>Hi`),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<div class='bg-red-500 flex flex-col'>`),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly=><input>`),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div data='&quot;hi&quot;'data2='&quot;'>`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<a>`),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div><!#><!/><a>`),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<div start="Hi">Hi`),
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
   _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is <!#><!/></span><input><div>`),
   _tmpl$17 =
-    /*#__PURE__*/ _$template(`<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2
-    random3 random4">`);
+    /*#__PURE__*/ _$template(`<div class='class1 class2 class3 class4 class5 class6'style='color:red;background-color:blue !important;border:1px solid black;font-size:12px;'random='random1 random2
+    random3 random4'>`);
 const selected = true;
 let id = "my-h1";
 let link;

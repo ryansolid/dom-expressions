@@ -763,10 +763,10 @@ function transformAttributes(path, results) {
             }
 
             needsSpacing = false;
-            results.template += `=${wrapper}${text}${wrapper}`;
+            results.template += `=${wrapper}${escapeBackticks(escapeHTML(text, true))}${wrapper}`;
           } else {
             needsSpacing = true;
-            results.template += `=${text}`;
+            results.template += `=${escapeBackticks(escapeHTML(text, true))}`;
           }
         }
       }
