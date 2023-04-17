@@ -712,14 +712,58 @@ function transformAttributes(path, results) {
           !isSVG && (key = key.toLowerCase());
           results.template += ` ${key}`;
           if (!value) return;
+          
           let text = value.value;
+          let hasSingleQuote = false;
+          let hasDoubleQuote = false;
+          let needsQuoting = false;
+
           if (key === "style" || key === "class") {
             text = trimWhitespace(text);
             if (key === "style") {
               text = text.replace(/; /g, ";").replace(/: /g, ":");
             }
           }
-          results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
+
+          for (let i = 0, len = text.length; i < len; i++) {
+            let char = text[i];
+
+            if (char === '"') {
+              needsQuoting = hasDoubleQuote = true;
+            }
+
+            if (char === "'") {
+              needsQuoting = hasSingleQuote = true;
+            }
+
+            if (
+              char === " " ||
+              char === "\t" ||
+              char === "\n" ||
+              char === "\r" ||
+              char === "`" ||
+              char === "=" ||
+              char === "<" ||
+              char === ">"
+            ) {
+              needsQuoting = true;
+            }
+          }
+
+          if (needsQuoting) {
+            let wrapper = "'";
+
+            if (hasSingleQuote && hasDoubleQuote) {
+              wrapper = "'";
+              text = text.replace(/'/g, '&#39;');
+            } else if (hasSingleQuote) {
+              wrapper = '"';
+            }
+
+            results.template += `=${wrapper}${text}${wrapper}`;
+          } else {
+            results.template += `=${text}`;
+          }
         }
       }
     });

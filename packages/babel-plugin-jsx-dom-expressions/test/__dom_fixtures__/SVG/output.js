@@ -5,22 +5,22 @@ import { spread as _$spread } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(
-    `<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%">`
+    `<svg width=400 height=180><rect stroke-width=2 x=50 y=20 rx=20 ry=20 width=150 height=150 style=fill:red;stroke:black;stroke-width:5;opacity:0.5></rect><linearGradient gradientTransform=rotate(25)><stop offset=0%>`
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(
-    `<svg width="400" height="180"><rect rx="20" ry="20" width="150" height="150">`
+    `<svg width=400 height=180><rect rx=20 ry=20 width=150 height=150>`
   ),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<svg width="400" height="180"><rect>`),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<svg width=400 height=180><rect>`),
   _tmpl$4 = /*#__PURE__*/ _$template(
-    `<svg><rect x="50" y="20" width="150" height="150"></svg>`,
+    `<svg><rect x=50 y=20 width=150 height=150></svg>`,
     false,
     true
   ),
   _tmpl$5 = /*#__PURE__*/ _$template(
-    `<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><a><text x="10" y="25">MDN Web Docs`
+    `<svg viewBox='0 0 160 40' xmlns=http://www.w3.org/2000/svg><a><text x=10 y=25>MDN Web Docs`
   ),
   _tmpl$6 = /*#__PURE__*/ _$template(
-    `<svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg"><text x="10" y="25">`
+    `<svg viewBox='0 0 160 40' xmlns=http://www.w3.org/2000/svg><text x=10 y=25>`
   );
 const template = _tmpl$();
 const template2 = (() => {

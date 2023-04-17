@@ -21,7 +21,7 @@ d`),
   _tmpl$15 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$16 = /*#__PURE__*/ _$template(`<span> <!#><!/>`),
   _tmpl$17 = /*#__PURE__*/ _$template(`<span><!#><!/> `),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;">`),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal=Search… title=Search&hellip;>`),
   _tmpl$19 = /*#__PURE__*/ _$template(`<div><div></div><!#><!/>`);
 const trailing = _$getNextElement(_tmpl$);
 const leading = _$getNextElement(_tmpl$2);
