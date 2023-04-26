@@ -1940,10 +1940,18 @@ export namespace JSX {
       ZoomAndPanSVGAttributes {
     viewTarget?: string;
   }
+
+  interface HTMLElementTags extends Pick<IntrinsicElements, keyof HTMLElementTagNameMap> {
+  }
+
+  interface SVGElementTags extends Pick<IntrinsicElements, keyof SVGElementTagNameMap> {
+  }
+
   /**
-   * @type {HTMLElementTagNameMap}
+   * @type {HTMLElementTagNameMap & HTMLElementDeprecatedTagNameMap & SVGElementTagNameMap}
    */
-  interface HTMLElementTags {
+  interface IntrinsicElements {
+    // HTMLElementTags
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
     address: HTMLAttributes<HTMLElement>;
@@ -2055,21 +2063,15 @@ export namespace JSX {
     var: HTMLAttributes<HTMLElement>;
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
-  }
-  /**
-   * @type {HTMLElementDeprecatedTagNameMap}
-   */
-  interface HTMLElementDeprecatedTags {
+
+    // HTMLElementDeprecatedTags
     big: HTMLAttributes<HTMLElement>;
     keygen: KeygenHTMLAttributes<HTMLElement>;
     menuitem: HTMLAttributes<HTMLElement>;
     noindex: HTMLAttributes<HTMLElement>;
     param: ParamHTMLAttributes<HTMLParamElement>;
-  }
-  /**
-   * @type {SVGElementTagNameMap}
-   */
-  interface SVGElementTags {
+
+    // SVGElementTags
     animate: AnimateSVGAttributes<SVGAnimateElement>;
     animateMotion: AnimateMotionSVGAttributes<SVGAnimateMotionElement>;
     animateTransform: AnimateTransformSVGAttributes<SVGAnimateTransformElement>;
@@ -2130,5 +2132,4 @@ export namespace JSX {
     use: UseSVGAttributes<SVGUseElement>;
     view: ViewSVGAttributes<SVGViewElement>;
   }
-  interface IntrinsicElements extends HTMLElementTags, HTMLElementDeprecatedTags, SVGElementTags {}
 }
