@@ -295,11 +295,11 @@ export function ssrStyle(value) {
 }
 
 export function ssrElement(tag, props, children, needsId) {
-  let result = `<${tag}${needsId ? ssrHydrationKey() : ""} `;
-  const skipChildren = VOID_ELEMENTS.test(tag);
   if (props == null) props = {};
   else if (typeof props === "function") props = props();
+  const skipChildren = VOID_ELEMENTS.test(tag);
   const keys = Object.keys(props);
+  let result = `<${tag}${needsId ? ssrHydrationKey() : ""} `;
   let classResolved;
   for (let i = 0; i < keys.length; i++) {
     const prop = keys[i];
@@ -330,10 +330,9 @@ export function ssrElement(tag, props, children, needsId) {
     if (i !== keys.length - 1) result += " ";
   }
 
-  if (skipChildren) {
-    return { t: result + "/>" };
-  }
-  return { t: result + `>${resolveSSRNode(children)}</${tag}>` };
+  if (skipChildren) return { t: result + "/>" };
+  if (typeof children === "function") children = children();
+  return { t: result + `>${resolveSSRNode(children, true)}</${tag}>` };
 }
 
 export function ssrAttribute(key, value, isBoolean) {
@@ -398,7 +397,7 @@ export function escape(s, attr) {
   return left < s.length ? out + s.substring(left) : out;
 }
 
-export function resolveSSRNode(node) {
+export function resolveSSRNode(node, top) {
   const t = typeof node;
   if (t === "string") return node;
   if (node == null || t === "boolean") return "";
@@ -406,7 +405,7 @@ export function resolveSSRNode(node) {
     let prev = {};
     let mapped = "";
     for (let i = 0, len = node.length; i < len; i++) {
-      if (typeof prev !== "object" && typeof node[i] !== "object") mapped += `<!--!$-->`;
+      if (!top && typeof prev !== "object" && typeof node[i] !== "object") mapped += `<!--!$-->`;
       mapped += resolveSSRNode(prev = node[i]);
     }
     return mapped;
