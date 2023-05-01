@@ -706,7 +706,7 @@ export namespace JSX {
     contextmenu?: string;
     dir?: HTMLDir;
     draggable?: boolean;
-    hidden?: boolean | 'hidden' | 'until-found';
+    hidden?: boolean | "hidden" | "until-found";
     id?: string;
     inert?: boolean;
     lang?: string;
@@ -875,8 +875,8 @@ export namespace JSX {
     usemap?: string;
     useMap?: string;
     width?: number | string;
-    crossOrigin?: HTMLCrossorigin
-    elementtiming: string; 
+    crossOrigin?: HTMLCrossorigin;
+    elementtiming: string;
     fetchpriority: "high" | "low" | "auto";
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
