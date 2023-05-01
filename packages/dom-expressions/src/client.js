@@ -446,7 +446,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       appendNodes(parent, array);
     }
     current = array;
-  } else if (value instanceof Node) {
+  } else if (value.nodeType) {
     if (sharedConfig.context && value.parentNode) return (current = multi ? [value] : value);
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
@@ -466,14 +466,14 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
     let item = array[i],
       prev = current && current[i],
       t;
-    if (item instanceof Node) {
-      normalized.push(item);
-    } else if (item == null || item === true || item === false) {
+    if (item == null || item === true || item === false) {
       // matches null, undefined, true or false
       // skip
+    } else if ((t = typeof item) === "object" && item.nodeType) {
+      normalized.push(item);
     } else if (Array.isArray(item)) {
       dynamic = normalizeIncomingArray(normalized, item, prev) || dynamic;
-    } else if ((t = typeof item) === "function") {
+    } else if (t === "function") {
       if (unwrap) {
         while (typeof item === "function") item = item();
         dynamic =

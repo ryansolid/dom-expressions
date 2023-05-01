@@ -4,7 +4,7 @@
     el &&
     el.hasAttribute &&
     (el.hasAttribute("data-hk") ? el :
-      lookup(el.host && el.host instanceof Node ? el.host : el.parentNode));
+      lookup(el.host && el.host.nodeType ? el.host : el.parentNode));
   ["${eventNames.join('", "')}"].forEach(name =>
     document.addEventListener(name, e => {
       let node = (e.composedPath && e.composedPath()[0]) || e.target,
