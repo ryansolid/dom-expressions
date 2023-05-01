@@ -487,12 +487,9 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
         dynamic = true;
       }
     } else {
-      // NOTE: is String better than `item + ''`, ``${item}``, `item.toString()` and `item.valueOf()`?
       const value = String(item);
-      if (prev && prev.nodeType === 3) {
-        prev.data = value;
-        normalized.push(prev);
-      } else normalized.push(document.createTextNode(value));
+      if (prev && prev.nodeType === 3 && prev.data === value) normalized.push(prev);
+      else normalized.push(document.createTextNode(value));
     }
   }
   return dynamic;
