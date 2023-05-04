@@ -876,8 +876,8 @@ export namespace JSX {
     useMap?: string;
     width?: number | string;
     crossOrigin?: HTMLCrossorigin;
-    elementtiming: string;
-    fetchpriority: "high" | "low" | "auto";
+    elementtiming?: string;
+    fetchpriority?: "high" | "low" | "auto";
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string;
