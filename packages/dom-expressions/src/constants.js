@@ -469,7 +469,13 @@ const DOMElements = /*#__PURE__*/ new Set([
   "video",
   "wbr",
   "xmp",
-  "input"
+  "input",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6"
 ]);
 
 export {
