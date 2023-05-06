@@ -84,13 +84,13 @@ importers:
 
   packages/hyper-dom-expressions:
     specifiers:
-      dom-expressions: ^0.36.11
+      dom-expressions: ^0.36.12
     devDependencies:
       dom-expressions: link:../dom-expressions
 
   packages/lit-dom-expressions:
     specifiers:
-      dom-expressions: ^0.36.11
+      dom-expressions: ^0.36.12
       html-parse-string: ^0.0.9
     devDependencies:
       dom-expressions: link:../dom-expressions
