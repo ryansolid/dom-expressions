@@ -705,7 +705,7 @@ export namespace JSX {
     contenteditable?: boolean | "inherit";
     contextmenu?: string;
     dir?: HTMLDir;
-    draggable?: boolean;
+    draggable?: boolean | "false" | "true";
     hidden?: boolean | "hidden" | "until-found";
     id?: string;
     inert?: boolean;
