@@ -283,7 +283,10 @@ export namespace JSX {
     onTouchEnd?: EventHandlerUnion<T, TouchEvent>;
     onTouchMove?: EventHandlerUnion<T, TouchEvent>;
     onTouchStart?: EventHandlerUnion<T, TouchEvent>;
+    onTransitionStart?: EventHandlerUnion<T, TransitionEvent>;
     onTransitionEnd?: EventHandlerUnion<T, TransitionEvent>;
+    onTransitionRun?: EventHandlerUnion<T, TransitionEvent>;
+    onTransitionCancel?: EventHandlerUnion<T, TransitionEvent>;
     onVolumeChange?: EventHandlerUnion<T, Event>;
     onWaiting?: EventHandlerUnion<T, Event>;
     onWheel?: EventHandlerUnion<T, WheelEvent>;
@@ -366,7 +369,10 @@ export namespace JSX {
     ontouchend?: EventHandlerUnion<T, TouchEvent>;
     ontouchmove?: EventHandlerUnion<T, TouchEvent>;
     ontouchstart?: EventHandlerUnion<T, TouchEvent>;
+    ontransitionstart?: EventHandlerUnion<T, TransitionEvent>;
     ontransitionend?: EventHandlerUnion<T, TransitionEvent>;
+    ontransitionrun?: EventHandlerUnion<T, TransitionEvent>;
+    ontransitioncancel?: EventHandlerUnion<T, TransitionEvent>;
     onvolumechange?: EventHandlerUnion<T, Event>;
     onwaiting?: EventHandlerUnion<T, Event>;
     onwheel?: EventHandlerUnion<T, WheelEvent>;
