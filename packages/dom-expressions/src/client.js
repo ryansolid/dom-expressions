@@ -67,8 +67,8 @@ export function template(html, isCE, isSVG) {
   };
   // backwards compatible with older builds
   const fn = isCE
-    ? () => (node || (node = create())).cloneNode(true)
-    : () => untrack(() => document.importNode(node || (node = create()), true));
+    ? () => untrack(() => document.importNode(node || (node = create()), true))
+    : () => (node || (node = create())).cloneNode(true);
   fn.cloneNode = fn;
   return fn;
 }
