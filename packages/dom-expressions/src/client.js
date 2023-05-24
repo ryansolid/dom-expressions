@@ -44,14 +44,19 @@ export {
   voidFn as HydrationScript
 };
 
+const documents = new WeakMap()
+
 export function render(code, element, init, options = {}) {
   let disposer;
+  const owner = { ...options.owner }
+  owner.root = owner
+  documents.set(owner, element.ownerDocument ?? document)
   root(dispose => {
     disposer = dispose;
     element === document
       ? code()
       : insert(element, code(), element.firstChild ? null : undefined, init);
-  }, options.owner);
+  }, owner);
   return () => {
     disposer();
     element.textContent = "";
@@ -67,7 +72,7 @@ export function template(html, isCE, isSVG) {
   };
   // backwards compatible with older builds
   const fn = isCE
-    ? () => untrack(() => document.importNode(node || (node = create()), true))
+    ? () => untrack(() => documents.get(getOwner().root).importNode(node || (node = create()), true))
     : () => (node || (node = create())).cloneNode(true);
   fn.cloneNode = fn;
   return fn;
