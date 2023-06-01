@@ -113,14 +113,6 @@ const template12 = (
   </div>
 );
 
-class Template13 {
-  render() {
-    <Component prop={this.something} onClick={() => this.shouldStay}>
-      <Nested prop={this.data}>{this.content}</Nested>
-    </Component>;
-  }
-}
-
 const Template14 = <Component>{data()}</Component>;
 
 const Template15 = <Component {...props}/>
@@ -130,7 +122,7 @@ const Template16 = <Component something={something} {...props}/>
 const Template17 = <Pre><span>1</span> <span>2</span> <span>3</span></Pre>
 const Template18 = <Pre>
   <span>1</span>
-  <span>2</span> 
+  <span>2</span>
   <span>3</span>
 </Pre>
 
