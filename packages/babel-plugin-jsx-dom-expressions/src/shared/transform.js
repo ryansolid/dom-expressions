@@ -21,7 +21,8 @@ import transformFragmentChildren from "./fragment";
 
 export function transformJSX(path) {
   const config = getConfig(path);
-  const replace = transformThis(path);
+  // TODO should detect if in a `class` to transform `this`
+  // const replaceThis = transformThis(path);
   const result = transformNode(
     path,
     t.isJSXFragment(path.node)
@@ -34,7 +35,8 @@ export function transformJSX(path) {
 
   const template = getCreateTemplate(config, path, result);
 
-  path.replaceWith(replace(template(path, result, false)));
+  // path.replaceWith(replaceThis(template(path, result, false)));
+  path.replaceWith(template(path, result, false));
 }
 
 export function transformThis(path) {
