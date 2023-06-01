@@ -27,12 +27,11 @@ const template = (() => {
   _$addEventListener(_el$4, "change", handler);
   _el$5.addEventListener("change", handler);
   _el$6.addEventListener("change", hoisted1);
-  _el$7.$$click = () => console.log("delegated");
-  _el$8.$$click = id => console.log("delegated", id);
-  _el$8.$$clickData = rowId;
+  _$addEventListener(_el$7, "click", () => console.log("delegated"), true);
+  _$addEventListener(_el$8, "click", [id => console.log("delegated", id), rowId], true);
   _$addEventListener(_el$9, "click", handler, true);
-  _el$10.$$click = handler;
-  _el$11.$$click = hoisted2;
+  _$addEventListener(_el$10, "click", [handler], true);
+  _$addEventListener(_el$11, "click", hoisted2, true);
   _el$12.addEventListener("click", () => console.log("listener"));
   _el$12.addEventListener("CAPS-ev", () => console.log("custom"));
   _el$13.addEventListener("camelClick", () => console.log("listener"), true);

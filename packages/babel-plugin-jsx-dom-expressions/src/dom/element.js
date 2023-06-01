@@ -558,53 +558,19 @@ function transformAttributes(path, results) {
               (attribute.scope.getProgramParent().data.events = new Set());
             events.add(ev);
             let handler = value.expression;
-            const resolveable = detectResolvableEventHandler(attribute, handler);
-            if (t.isArrayExpression(handler)) {
-              if (handler.elements.length > 1) {
-                results.exprs.unshift(
-                  t.expressionStatement(
-                    t.assignmentExpression(
-                      "=",
-                      t.memberExpression(elem, t.identifier(`$$${ev}Data`)),
-                      handler.elements[1]
-                    )
-                  )
-                );
-              }
-              handler = handler.elements[0];
-              results.exprs.unshift(
-                t.expressionStatement(
-                  t.assignmentExpression(
-                    "=",
-                    t.memberExpression(elem, t.identifier(`$$${ev}`)),
-                    handler
-                  )
+
+            results.exprs.unshift(
+              t.expressionStatement(
+                t.callExpression(
+                  registerImportMethod(
+                    path,
+                    "addEventListener",
+                    getRendererConfig(path, "dom").moduleName
+                  ),
+                  [elem, t.stringLiteral(ev), handler, t.booleanLiteral(true)]
                 )
-              );
-            } else if (t.isFunction(handler) || resolveable) {
-              results.exprs.unshift(
-                t.expressionStatement(
-                  t.assignmentExpression(
-                    "=",
-                    t.memberExpression(elem, t.identifier(`$$${ev}`)),
-                    handler
-                  )
-                )
-              );
-            } else {
-              results.exprs.unshift(
-                t.expressionStatement(
-                  t.callExpression(
-                    registerImportMethod(
-                      path,
-                      "addEventListener",
-                      getRendererConfig(path, "dom").moduleName
-                    ),
-                    [elem, t.stringLiteral(ev), handler, t.booleanLiteral(true)]
-                  )
-                )
-              );
-            }
+              )
+            );
           } else {
             let handler = value.expression;
             const resolveable = detectResolvableEventHandler(attribute, handler);

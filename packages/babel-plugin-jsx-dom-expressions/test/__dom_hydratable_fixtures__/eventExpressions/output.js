@@ -2,6 +2,7 @@ import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
+import { addEventListener as _$addEventListener } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(
   `<div id="main"><button>Change Bound</button><button>Change Bound</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Listener</button><button>Click Capture`
 );
@@ -15,9 +16,8 @@ const template = (() => {
     _el$7 = _el$6.nextSibling;
   _el$2.addEventListener("change", () => console.log("bound"));
   _el$3.addEventListener("change", e => (id => console.log("bound", id))(id, e));
-  _el$4.$$click = () => console.log("delegated");
-  _el$5.$$click = id => console.log("delegated", id);
-  _el$5.$$clickData = rowId;
+  _$addEventListener(_el$4, "click", () => console.log("delegated"), true);
+  _$addEventListener(_el$5, "click", [id => console.log("delegated", id), rowId], true);
   _el$6.addEventListener("click", () => console.log("listener"));
   _el$6.addEventListener("CAPS-ev", () => console.log("custom"));
   _el$7.addEventListener("camelClick", () => console.log("listener"), true);

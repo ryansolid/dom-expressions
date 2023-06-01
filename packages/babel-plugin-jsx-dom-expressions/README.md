@@ -40,6 +40,7 @@ Compiles to:
 ```jsx
 import { template as _$template } from "dom";
 import { delegateEvents as _$delegateEvents } from "dom";
+import { addEventListener as _$addEventListener } from "dom";
 import { className as _$className } from "dom";
 import { effect as _$effect } from "dom";
 import { insert as _$insert } from "dom";
@@ -57,9 +58,9 @@ const view = ({
       _el$5 = _el$3.nextSibling,
       _el$6 = _el$5.firstChild;
     _$insert(_el$2, itemId);
-    _el$4.$$click = e => select(item, e);
+    _$addEventListener(_el$4, "click", e => select(item, e), true);
     _$insert(_el$4, () => item.label);
-    _el$6.$$click = e => del(item, e);
+    _$addEventListener(_el$6, "click", e => del(item, e), true);
     _$effect(() => _$className(_el$, itemId === selected() ? "danger" : ""));
     return _el$;
   })();

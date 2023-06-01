@@ -107,15 +107,16 @@ export function className(node, value) {
 }
 
 export function addEventListener(node, name, handler, delegate) {
-  if (delegate) {
-    if (Array.isArray(handler)) {
-      node[`$$${name}`] = handler[0];
-      node[`$$${name}Data`] = handler[1];
-    } else node[`$$${name}`] = handler;
-  } else if (Array.isArray(handler)) {
-    const handlerFn = handler[0];
-    node.addEventListener(name, (handler[0] = e => handlerFn.call(node, handler[1], e)));
-  } else node.addEventListener(name, handler);
+  let key = `$$${name}`;
+  if (!delegate) {
+    key += "Native";
+    if (!node[key]) {
+      node.addEventListener(name, eventHandlerNative);
+    }
+  }
+
+  const e = node[key] || (node[key] = []);
+  e.push(Array.isArray(handler) ? handler : [handler]);
 }
 
 export function classList(node, value, prev = {}) {
@@ -370,13 +371,23 @@ function eventHandler(e) {
   if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
   while (node) {
-    const handler = node[key];
-    if (handler && !node.disabled) {
-      const data = node[`${key}Data`];
-      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
+    const handlers = node[key];
+    if (handlers && !node.disabled) {
+      for (const [handler, data] of handlers) {
+        data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
+      }
       if (e.cancelBubble) return;
     }
     node = node._$host || node.parentNode || node.host;
+  }
+}
+
+function eventHandlerNative(e) {
+  const key = `$$${e.type}Native`;
+  const node = e.target;
+  const handlers = node[key];
+  for (const [handler, data] of handlers) {
+    data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
   }
 }
 
