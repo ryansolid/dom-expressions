@@ -199,7 +199,7 @@ export namespace JSX {
     onProgress?: EventHandlerUnion<T, Event>;
     onRateChange?: EventHandlerUnion<T, Event>;
     onReset?: EventHandlerUnion<T, Event>;
-    onScroll?: EventHandlerUnion<T, UIEvent>;
+    onScroll?: EventHandlerUnion<T, Event>;
     onScrollEnd?: EventHandlerUnion<T, Event>;
     onSeeked?: EventHandlerUnion<T, Event>;
     onSeeking?: EventHandlerUnion<T, Event>;
@@ -286,7 +286,7 @@ export namespace JSX {
     onprogress?: EventHandlerUnion<T, Event>;
     onratechange?: EventHandlerUnion<T, Event>;
     onreset?: EventHandlerUnion<T, Event>;
-    onscroll?: EventHandlerUnion<T, UIEvent>;
+    onscroll?: EventHandlerUnion<T, Event>;
     onscrollend?: EventHandlerUnion<T, Event>;
     onseeked?: EventHandlerUnion<T, Event>;
     onseeking?: EventHandlerUnion<T, Event>;
