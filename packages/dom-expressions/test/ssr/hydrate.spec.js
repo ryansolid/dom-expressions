@@ -13,7 +13,7 @@ describe("r.hydrate", () => {
     _tmpl$3 = r.template(`<div>Last</div>`);
   let result, rendered;
 
-  const container2 = document.createElement("div"),
+  const containerStatic = document.createElement("div"),
   s_tmpl$ = r.template(`<div data-hk="0"><!--#--><!--/--></div>`);
 
   it("hydrates static text", () => {
@@ -23,7 +23,7 @@ describe("r.hydrate", () => {
     );
     expect(renderedHTML).toBe(`<div data-hk="0">1</div>`);
 
-    container2.innerHTML = renderedHTML;
+    containerStatic.innerHTML = renderedHTML;
 
     r.hydrate(() => r.createComponent(() => {
       const sig = () => 1
@@ -38,8 +38,8 @@ describe("r.hydrate", () => {
           return sig();
         }
       });
-    }, {}), container2);
-    expect(container2.innerHTML).toBe(`<div data-hk="0">1</div>`);
+    }, {}), containerStatic);
+    expect(containerStatic.innerHTML).toBe(`<div data-hk="0">1</div>`);
   })
 
   it("hydrates simple text", () => {
