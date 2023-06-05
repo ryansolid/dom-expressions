@@ -13,6 +13,35 @@ describe("r.hydrate", () => {
     _tmpl$3 = r.template(`<div>Last</div>`);
   let result, rendered;
 
+  const container2 = document.createElement("div"),
+  s_tmpl$ = r.template(`<div data-hk="0"><!--#--><!--/--></div>`);
+
+  it("hydrates static text", () => {
+    let renderedHTML
+    renderedHTML = r2.renderToString(() =>
+      r2.ssr(["<div", ">", "</div>"], r2.ssrHydrationKey(), r2.escape("1"))
+    );
+    expect(renderedHTML).toBe(`<div data-hk="0">1</div>`);
+
+    container2.innerHTML = renderedHTML;
+
+    r.hydrate(() => r.createComponent(() => {
+      const sig = () => 1
+      return r.createComponent((props) => {
+        return (() => {
+          const _el$ = s_tmpl$();
+          r.insert(_el$, () => props.children);
+          return _el$;
+        })();
+      }, {
+        get children() {
+          return sig();
+        }
+      });
+    }, {}), container2);
+    expect(container2.innerHTML).toBe(`<div data-hk="0">1</div>`);
+  })
+
   it("hydrates simple text", () => {
     rendered = r2.renderToString(() =>
       r2.ssr(["<span", "><!--#-->", "<!--/--> John</span>"], r2.ssrHydrationKey(), r2.escape("Hi"))
