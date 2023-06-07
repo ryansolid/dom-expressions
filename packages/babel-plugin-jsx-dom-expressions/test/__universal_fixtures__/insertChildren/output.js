@@ -62,11 +62,11 @@ const template10 = _$createComponent(
 );
 const template11 = (() => {
   const _el$11 = _$createElement("module");
-  _$insert(_el$11, state.children);
+  _$insert(_el$11, /*@once*/ state.children);
   return _el$11;
 })();
 const template12 = _$createComponent(Module, {
-  children: state.children
+  children: /*@once*/ state.children
 });
 const template13 = (() => {
   const _el$12 = _$createElement("module");

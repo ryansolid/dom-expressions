@@ -82,7 +82,7 @@ const template3 = _$ssr(
   _$ssrAttribute("id", _$escape(/*@once*/ state.id, true), false),
   "background-color:" + _$escape(state.color, true),
   _$ssrAttribute("name", _$escape(state.name, true), false),
-  _$escape(state.content)
+  _$escape(/*@once*/ state.content)
 );
 const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class, true) || ""} ccc:ddd`);
 const template5 = _$ssr(_tmpl$5, `a  b`);

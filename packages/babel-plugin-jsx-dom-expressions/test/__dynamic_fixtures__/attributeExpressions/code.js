@@ -66,3 +66,17 @@ const template13 = <input type="checkbox" checked={true} readonly="" />;
 const template14 = <input type="checkbox" checked={state.visible} readonly={value} />;
 
 const template15 = <mesh scale={[1, 1, 1]} rotateX={0} />;
+
+const template16 = (
+  <div
+    style={/*@once*/ { "background-color": color(), "margin-right": props.top }}
+  />
+);
+
+const template17 = (
+  <div
+    style={/*@once*/ { "background-color": color(), "margin-right": props.top }}
+    style:padding-top={props.top}
+    class:my-class={props.active}
+  />
+);

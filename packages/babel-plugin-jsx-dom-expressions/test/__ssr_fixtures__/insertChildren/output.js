@@ -34,9 +34,9 @@ const template10 = _$createComponent(
     children: "Hello"
   })
 );
-const template11 = _$ssr(_tmpl$2, _$escape(state.children));
+const template11 = _$ssr(_tmpl$2, _$escape(/*@once*/ state.children));
 const template12 = _$createComponent(Module, {
-  children: state.children
+  children: /*@once*/ state.children
 });
 const template13 = _$ssr(_tmpl$2, _$escape(children));
 const template14 = _$createComponent(Module, {

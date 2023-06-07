@@ -75,11 +75,15 @@ const template2 = (() => {
 })();
 const template3 = (() => {
   const _el$9 = _$createElement("div");
-  _$setProp(_el$9, "id", state.id);
-  _$setProp(_el$9, "style", {
-    "background-color": state.color
-  });
-  _$setProp(_el$9, "textContent", state.content);
+  _$setProp(_el$9, "id", /*@once*/ state.id);
+  _$setProp(
+    _el$9,
+    "style",
+    /*@once*/ {
+      "background-color": state.color
+    }
+  );
+  _$setProp(_el$9, "textContent", /*@once*/ state.content);
   _$effect(_$p => _$setProp(_el$9, "name", state.name, _$p));
   return _el$9;
 })();

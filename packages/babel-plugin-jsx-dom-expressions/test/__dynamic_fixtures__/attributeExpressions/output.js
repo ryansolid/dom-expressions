@@ -86,11 +86,11 @@ const template2 = (() => {
 })();
 const template3 = (() => {
   const _el$9 = _tmpl$3();
-  _$setAttribute(_el$9, "id", state.id);
-  state.color != null
+  _$setAttribute(_el$9, "id", /*@once*/ state.id);
+  /*@once*/ state.color != null
     ? _el$9.style.setProperty("background-color", state.color)
     : _el$9.style.removeProperty("background-color");
-  _el$9.textContent = state.content;
+  _el$9.textContent = /*@once*/ state.content;
   _$effect(() => _$setAttribute(_el$9, "name", state.name));
   return _el$9;
 })();
@@ -181,4 +181,40 @@ const template15 = (() => {
   _$setProp(_el$21, "scale", [1, 1, 1]);
   _$setProp(_el$21, "rotateX", 0);
   return _el$21;
+})();
+const template16 = (() => {
+  const _el$22 = _tmpl$3();
+  /*@once*/ color() != null
+    ? _el$22.style.setProperty("background-color", color())
+    : _el$22.style.removeProperty("background-color");
+  props.top != null
+    ? _el$22.style.setProperty("margin-right", props.top)
+    : _el$22.style.removeProperty("margin-right");
+  return _el$22;
+})();
+const template17 = (() => {
+  const _el$23 = _tmpl$3();
+  /*@once*/ color() != null
+    ? _el$23.style.setProperty("background-color", color())
+    : _el$23.style.removeProperty("background-color");
+  props.top != null
+    ? _el$23.style.setProperty("margin-right", props.top)
+    : _el$23.style.removeProperty("margin-right");
+  _$effect(
+    _p$ => {
+      const _v$4 = props.top,
+        _v$5 = !!props.active;
+      _v$4 !== _p$._v$4 &&
+        ((_p$._v$4 = _v$4) != null
+          ? _el$23.style.setProperty("padding-top", _v$4)
+          : _el$23.style.removeProperty("padding-top"));
+      _v$5 !== _p$._v$5 && _el$23.classList.toggle("my-class", (_p$._v$5 = _v$5));
+      return _p$;
+    },
+    {
+      _v$4: undefined,
+      _v$5: undefined
+    }
+  );
+  return _el$23;
 })();
