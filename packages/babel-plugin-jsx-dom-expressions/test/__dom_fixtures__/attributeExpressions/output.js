@@ -350,4 +350,14 @@ const template32 = (() => {
   _el$45.style.removeProperty("background-color");
   return _el$45;
 })();
+const template33 = (() => {
+  const _el$46 = _tmpl$4();
+  _el$46.style.setProperty("margin-right", "40px");
+  _$effect(() =>
+    color() != null
+      ? _el$46.style.setProperty("background-color", color())
+      : _el$46.style.removeProperty("background-color")
+  );
+  return _el$46;
+})();
 _$delegateEvents(["click", "input"]);

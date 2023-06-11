@@ -378,7 +378,7 @@ export namespace JSX {
     onwheel?: EventHandlerUnion<T, WheelEvent>;
   }
 
-  interface CSSProperties extends csstype.PropertiesHyphen {
+  interface CSSProperties extends csstype.PropertiesHyphen, csstype.Properties {
     // Override
     [key: `-${string}`]: string | number | undefined;
   }

@@ -56,6 +56,8 @@ const alwaysClose = [
   "fieldset"
 ];
 
+const upperCaseChars = /[A-Z]/g;
+
 export function transformElement(path, info) {
   let tagName = getTagName(path.node),
     config = getConfig(path),
@@ -137,6 +139,8 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
 
   // TODO: consider moving to a helper
   if (namespace === "style") {
+    if (upperCaseChars.test(name)) name = name.replace(upperCaseChars, "-$&").toLowerCase();
+
     if (t.isStringLiteral(value)) {
       return t.callExpression(
         t.memberExpression(

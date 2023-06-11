@@ -178,3 +178,9 @@ const template32 = (
     style={{ "background-color": undefined }}
   />
 );
+
+const template33 = (
+  <div
+    style={{ backgroundColor: color(), marginRight: "40px" }}
+  />
+);
