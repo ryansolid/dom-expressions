@@ -741,7 +741,7 @@ export namespace JSX {
     name?: FunctionMaybe<string>;
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
-    acceptcharset?: FunctionMaybe<string>;
+    "accept-charset"?: FunctionMaybe<string>;
     action?: FunctionMaybe<string>;
     autocomplete?: FunctionMaybe<string>;
     encoding?: FunctionMaybe<HTMLFormEncType>;
@@ -750,7 +750,6 @@ export namespace JSX {
     name?: FunctionMaybe<string>;
     novalidate?: FunctionMaybe<boolean>;
     target?: FunctionMaybe<string>;
-    acceptCharset?: FunctionMaybe<string>;
     noValidate?: FunctionMaybe<boolean>;
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -885,9 +884,8 @@ export namespace JSX {
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
     charset?: FunctionMaybe<string>;
     content?: FunctionMaybe<string>;
-    httpequiv?: FunctionMaybe<string>;
+    "http-equiv"?: FunctionMaybe<string>;
     name?: FunctionMaybe<string>;
-    httpEquiv?: FunctionMaybe<string>;
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: FunctionMaybe<string>;
