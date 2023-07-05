@@ -839,7 +839,7 @@ export namespace JSX {
     name?: string;
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
-    acceptcharset?: string;
+    "accept-charset"?: string;
     action?: string;
     autocomplete?: string;
     encoding?: HTMLFormEncType;
@@ -848,7 +848,6 @@ export namespace JSX {
     name?: string;
     novalidate?: boolean;
     target?: string;
-    acceptCharset?: string;
     noValidate?: boolean;
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -989,9 +988,8 @@ export namespace JSX {
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
     charset?: string;
     content?: string;
-    httpequiv?: string;
+    "http-equiv"?: string;
     name?: string;
-    httpEquiv?: string;
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string;
@@ -1101,6 +1099,7 @@ export namespace JSX {
     cols?: number | string;
     dirname?: string;
     disabled?: boolean;
+    enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
     form?: string;
     maxlength?: number | string;
     minlength?: number | string;
