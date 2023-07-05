@@ -198,7 +198,7 @@ export function renderToStream(code, options = {}) {
         fn(tmp);
       }
       if (onCompleteAll) {
-        ogComplete = onCompleteAll;
+        let ogComplete = onCompleteAll;
         onCompleteAll = options => {
           ogComplete(options);
           complete();
