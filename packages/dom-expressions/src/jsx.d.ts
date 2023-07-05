@@ -1101,6 +1101,7 @@ export namespace JSX {
     cols?: number | string;
     dirname?: string;
     disabled?: boolean;
+    enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
     form?: string;
     maxlength?: number | string;
     minlength?: number | string;
