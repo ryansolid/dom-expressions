@@ -108,10 +108,10 @@ export function renderToStream(code, options = {}) {
     },
     replace(id, payloadFn) {
       if (firstFlushed) return;
-      const placeholder = `<!!$${id}>`;
+      const placeholder = `<!--!$${id}-->`;
       const first = html.indexOf(placeholder);
       if (first === -1) return;
-      const last = html.indexOf(`<!!$/${id}>`, first + placeholder.length);
+      const last = html.indexOf(`<!--!$/${id}-->`, first + placeholder.length);
       html = html.replace(
         html.slice(first, last + placeholder.length + 1),
         resolveSSRNode(payloadFn())
