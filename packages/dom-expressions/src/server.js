@@ -517,7 +517,7 @@ function serializeSet(registry, key, value) {
 
 function replacePlaceholder(html, key, value) {
   const marker = `<template id="pl-${key}">`;
-  const close = `<!pl-${key}>`;
+  const close = `<!--pl-${key}-->`;
 
   const first = html.indexOf(marker);
   if (first === -1) return html;
