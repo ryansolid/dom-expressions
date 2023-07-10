@@ -119,13 +119,13 @@ importers:
   packages/hyper-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.36.13
+        specifier: ^0.36.14
         version: link:../dom-expressions
 
   packages/lit-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.36.13
+        specifier: ^0.36.14
         version: link:../dom-expressions
       html-parse-string:
         specifier: ^0.0.9
