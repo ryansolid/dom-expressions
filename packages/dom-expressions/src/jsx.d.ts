@@ -957,8 +957,11 @@ export namespace JSX {
     as?: HTMLLinkAs;
     crossorigin?: HTMLCrossorigin;
     disabled?: boolean;
+    fetchpriority?: "high" | "low" | "auto";
     href?: string;
     hreflang?: string;
+    imagesizes?: string;
+    imagesrcset?: string;
     integrity?: string;
     media?: string;
     referrerpolicy?: HTMLReferrerPolicy;

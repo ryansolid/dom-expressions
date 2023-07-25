@@ -876,8 +876,11 @@ export namespace JSX {
     as?: FunctionMaybe<HTMLLinkAs>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin>;
     disabled?: FunctionMaybe<boolean>;
+    fetchpriority?: FunctionMaybe<"high" | "low" | "auto">;
     href?: FunctionMaybe<string>;
     hreflang?: FunctionMaybe<string>;
+    imagesizes?: FunctionMaybe<string>;
+    imagesrcset?: FunctionMaybe<string>;
     integrity?: FunctionMaybe<string>;
     media?: FunctionMaybe<string>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
