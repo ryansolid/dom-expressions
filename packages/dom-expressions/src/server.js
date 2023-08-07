@@ -217,14 +217,17 @@ export function renderToStream(code, options = {}) {
       });
     },
     pipeTo(w) {
-      Promise.allSettled(blockingResources).then(() => {
+      return Promise.allSettled(blockingResources).then(() => {
         doShell();
         const encoder = new TextEncoder();
         const writer = w.getWriter();
+        let resolve;
+        const p = new Promise(r => (resolve = r));
         writable = {
           end() {
             writer.releaseLock();
             w.close();
+            resolve();
           }
         };
         buffer = {
@@ -236,6 +239,7 @@ export function renderToStream(code, options = {}) {
         firstFlushed = true;
         if (completed) writable.end();
         else setTimeout(checkEnd);
+        return p;
       });
     }
   };
