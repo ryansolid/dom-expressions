@@ -23,7 +23,7 @@ export function renderToStream<T>(
   }
 ): {
   pipe: (writable: { write: (v: string) => void }) => void;
-  pipeTo: (writable: WritableStream) => void;
+  pipeTo: (writable: WritableStream) => Promise<void>;
 };
 
 export function HydrationScript(props: { nonce?: string; eventNames?: string[] }): JSX.Element;
