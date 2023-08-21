@@ -392,3 +392,16 @@ const template27 = _$createComponent(Component, {
     return prop.red ? "red" : "green";
   }
 });
+class Template28 {
+  render() {
+    const _self$2 = this;
+    return _$createComponent(Component, {
+      get when() {
+        const foo = _self$2.value;
+        if ("key" in foo) {
+          return foo;
+        }
+      }
+    });
+  }
+}

@@ -175,3 +175,15 @@ const template27 = <Component
   when={(() => prop.red ? "red" : "green")()}
 />
 
+class Template28 {
+  render() {
+    return <Component
+      when={(() => {
+        const foo = this.value;
+        if ("key" in foo) {
+          return foo
+        }
+      })()}
+    />
+  }
+}
