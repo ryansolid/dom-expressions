@@ -381,11 +381,9 @@ const template25 = _$createComponent(Component, {
 });
 const template26 = _$createComponent(Component, {
   get when() {
-    return (() => {
-      const foo = test();
-      if ("t" in foo) {
-        return foo;
-      }
-    })();
+    const foo = test();
+    if ("t" in foo) {
+      return foo;
+    }
   }
 });

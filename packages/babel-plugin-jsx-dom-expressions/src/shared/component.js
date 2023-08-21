@@ -141,22 +141,44 @@ export default function transformComponent(path) {
               checkTags: true
             })
           ) {
-            let expr =
+            if (
               config.wrapConditionals &&
               config.generate !== "ssr" &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
-                ? transformCondition(attribute.get("value").get("expression"), true)
-                : t.arrowFunctionExpression([], value.expression);
-            runningObject.push(
-              t.objectMethod(
-                "get",
-                id,
-                [],
-                t.blockStatement([t.returnStatement(expr.body)]),
-                !t.isValidIdentifier(key)
-              )
-            );
+            ) {
+              const expr = transformCondition(attribute.get("value").get("expression"), true);
+
+              runningObject.push(
+                t.objectMethod(
+                  "get",
+                  id,
+                  [],
+                  t.blockStatement([t.returnStatement(expr.body)]),
+                  !t.isValidIdentifier(key)
+                )
+              );
+            } else if (
+              t.isCallExpression(value.expression) &&
+              t.isArrowFunctionExpression(value.expression.callee)
+            ) {
+              const callee = value.expression.callee;
+              const body = t.isBlockStatement(callee.body)
+                ? callee.body
+                : t.blockStatement([t.returnStatement(callee.body)]);
+
+              runningObject.push(t.objectMethod("get", id, [], body, !t.isValidIdentifier(key)));
+            } else {
+              runningObject.push(
+                t.objectMethod(
+                  "get",
+                  id,
+                  [],
+                  t.blockStatement([t.returnStatement(value.expression)]),
+                  !t.isValidIdentifier(key)
+                )
+              );
+            }
           } else runningObject.push(t.objectProperty(id, value.expression));
         else runningObject.push(t.objectProperty(id, value));
       }
