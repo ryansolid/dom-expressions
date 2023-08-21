@@ -387,3 +387,8 @@ const template26 = _$createComponent(Component, {
     }
   }
 });
+const template27 = _$createComponent(Component, {
+  get when() {
+    return prop.red ? "red" : "green";
+  }
+});

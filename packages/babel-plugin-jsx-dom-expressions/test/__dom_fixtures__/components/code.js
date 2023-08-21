@@ -170,3 +170,8 @@ const template26 = <Component
     }
   })()}
 />
+
+const template27 = <Component
+  when={(() => prop.red ? "red" : "green")()}
+/>
+
