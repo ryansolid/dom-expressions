@@ -161,3 +161,12 @@ const template24 = <Component>
 const template25 = <Component> 
   <div />
 </Component>
+
+const template26 = <Component
+  when={(() => {
+    const foo = test();
+    if ("t" in foo) {
+      return foo;
+    }
+  })()}
+/>

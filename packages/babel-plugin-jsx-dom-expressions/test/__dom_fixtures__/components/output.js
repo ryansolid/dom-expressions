@@ -379,3 +379,13 @@ const template25 = _$createComponent(Component, {
     return _tmpl$2();
   }
 });
+const template26 = _$createComponent(Component, {
+  get when() {
+    return (() => {
+      const foo = test();
+      if ("t" in foo) {
+        return foo;
+      }
+    })();
+  }
+});
