@@ -914,6 +914,7 @@ export namespace JSX {
     content?: FunctionMaybe<string>;
     "http-equiv"?: FunctionMaybe<string>;
     name?: FunctionMaybe<string>;
+    media?: FunctionMaybe<string>;
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: FunctionMaybe<string>;
