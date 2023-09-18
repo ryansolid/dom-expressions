@@ -113,8 +113,8 @@ importers:
         specifier: ^3.1
         version: 3.1.1
       seroval:
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.10.1
+        version: 0.10.1
 
   packages/hyper-dom-expressions:
     devDependencies:
@@ -7059,8 +7059,8 @@ packages:
       lru-cache: 6.0.0
     dev: true
 
-  /seroval@0.7.0:
-    resolution: {integrity: sha512-GeyRvryi+5aHBsOXK4KexhhjTB8rkBvLfHxK5RWy8S3Dwq/hk7VNFcg2yT0k4f2lGJPYlWHRkV3/UpGjhJ5Scg==}
+  /seroval@0.10.1:
+    resolution: {integrity: sha512-6EzTDEqM8y5Ttt/C+iGltW5tCIZs8OVdFh/XhFvhcKfG5UI1duWTP3VomN/g/vAVnPQjILX+WaXPuAILu0bcIg==}
     engines: {node: '>=10'}
     dev: true
 
