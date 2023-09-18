@@ -1,8 +1,7 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig, root } from "rxcore";
-import stringify from "./serializer";
 import createSerializer from "./serializer";
-export { stringify };
+export { createSerializer };
 export { createComponent } from "rxcore";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
@@ -21,8 +20,7 @@ export function renderToString(code, options = {}) {
     assets: [],
     nonce: options.nonce,
     writeResource(id, p) {
-      if (sharedConfig.context.noHydrate) return;
-      serializer.write(id, p);
+      !sharedConfig.context.noHydrate && serializer.write(id, p);
     }
   };
   let html = root(d => {
@@ -52,6 +50,9 @@ export function renderToStream(code, options = {}) {
   let { nonce, onCompleteShell, onCompleteAll, renderId } = options;
   let dispose;
   const blockingResources = [];
+  const serializer = createSerializer((value) => {
+    // TODO
+  });
   const registry = new Map();
   const dedupe = new WeakMap();
   const checkEnd = () => {
@@ -120,18 +121,21 @@ export function renderToStream(code, options = {}) {
       );
     },
     writeResource(id, p, error, wait) {
+      // TODO this is a draft
       const serverOnly = sharedConfig.context.noHydrate;
-      if (error) return !serverOnly && pushTask(serializeSet(dedupe, id, p));
-      if (!p || typeof p !== "object" || !("then" in p))
-        return !serverOnly && pushTask(serializeSet(dedupe, id, p));
-      if (!firstFlushed) wait && blockingResources.push(p);
-      else !serverOnly && pushTask(`_$HY.init("${id}")`);
-      if (serverOnly) return;
-      p.then(d => {
-        !completed && pushTask(serializeSet(dedupe, id, d));
-      }).catch(() => {
-        !completed && pushTask(`_$HY.set("${id}", {})`);
-      });
+      if (error) return !serverOnly && serializer.write(id, p);
+      if (!firstFlushed) {
+        if (wait) {
+          blockingResources.push(p);
+          !serverOnly && p.then((d) => {
+            serializer.write(id, d);
+          }).catch(() => {
+            serializer.write(id, {});
+          });
+        }
+      } else {
+        !serverOnly && serializer.write(p);
+      }
     },
     registerFragment(key) {
       if (!registry.has(key)) {
@@ -512,13 +516,6 @@ function waitForFragments(registry, key) {
     }
   }
   return false;
-}
-
-function serializeSet(registry, key, value) {
-  const exist = registry.get(value);
-  if (exist) return `_$HY.set("${key}", _$HY.r["${exist}"][0])`;
-  value !== null && typeof value === "object" && registry.set(value, key);
-  return `_$HY.set("${key}", ${stringify(value)})`;
 }
 
 function replacePlaceholder(html, key, value) {
