@@ -1,10 +1,21 @@
-import { serialize, Feature } from "seroval"
+import { Feature, Serializer, CROSS_REFERENCE_HEADER } from "seroval"
 
 const ES2017FLAG = 
   Feature.AggregateError // ES2021
   | Feature.BigInt // ES2020
   | Feature.BigIntTypedArray // ES2020;
 
-export default function stringify(data) {
-  return serialize(data, { disabledFeatures: ES2017FLAG });
+const GLOBAL_IDENTIFIER = '$HY.r'; // TODO this is a pending name
+
+export default function createSerializer(onData) {
+  return new Serializer({
+    globalIdentifier: GLOBAL_IDENTIFIER,
+    disabledFeatures: ES2017FLAG,
+    onData,
+  });
+}
+
+// TODO
+export function getHeaderScript() {
+  return CROSS_REFERENCE_HEADER;
 }

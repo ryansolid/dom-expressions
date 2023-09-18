@@ -1,1 +1,3 @@
-export default function stringify(root: unknown): string;
+import { Serializer } from "seroval";
+
+export default function createSerializer(onData: (value: string) => void): Serializer;
