@@ -995,6 +995,7 @@ export namespace JSX {
     content?: string;
     "http-equiv"?: string;
     name?: string;
+    media?: string;
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string;
