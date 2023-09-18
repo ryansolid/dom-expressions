@@ -1,6 +1,7 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig, root } from "rxcore";
 import stringify from "./serializer";
+import createSerializer from "./serializer";
 export { stringify };
 export { createComponent } from "rxcore";
 
@@ -11,6 +12,7 @@ const REPLACE_SCRIPT = `function $df(e,n,t,o,d){if(t=document.getElementById(e),
 
 export function renderToString(code, options = {}) {
   let scripts = "";
+  const serializer = createSerializer((script) => scripts += script);
   sharedConfig.context = {
     id: options.renderId || "",
     count: 0,
@@ -18,10 +20,9 @@ export function renderToString(code, options = {}) {
     lazy: {},
     assets: [],
     nonce: options.nonce,
-    writeResource(id, p, error) {
+    writeResource(id, p) {
       if (sharedConfig.context.noHydrate) return;
-      if (error) return (scripts += `_$HY.set("${id}", ${stringify(p)});`);
-      scripts += `_$HY.set("${id}", ${stringify(p)});`;
+      serializer.write(id, p);
     }
   };
   let html = root(d => {
@@ -31,6 +32,7 @@ export function renderToString(code, options = {}) {
   sharedConfig.context.noHydrate = true;
   html = injectAssets(sharedConfig.context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
+  serializer.close();
   return html;
 }
 
