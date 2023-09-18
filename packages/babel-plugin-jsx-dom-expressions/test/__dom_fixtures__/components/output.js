@@ -379,3 +379,29 @@ const template25 = _$createComponent(Component, {
     return _tmpl$2();
   }
 });
+const template26 = _$createComponent(Component, {
+  get when() {
+    const foo = test();
+    if ("t" in foo) {
+      return foo;
+    }
+  }
+});
+const template27 = _$createComponent(Component, {
+  get when() {
+    return prop.red ? "red" : "green";
+  }
+});
+class Template28 {
+  render() {
+    const _self$2 = this;
+    return _$createComponent(Component, {
+      get when() {
+        const foo = _self$2.value;
+        if ("key" in foo) {
+          return foo;
+        }
+      }
+    });
+  }
+}
