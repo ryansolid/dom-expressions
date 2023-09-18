@@ -131,7 +131,7 @@ export namespace JSX {
   type Accessor<T> = () => T;
   interface Directives {}
   interface DirectiveFunctions {
-    [x: string]: (el: Element, accessor: Accessor<any>) => void;
+    [x: string]: (el: DOMElement, accessor: Accessor<any>) => void;
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
