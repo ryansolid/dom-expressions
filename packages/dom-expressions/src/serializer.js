@@ -7,7 +7,7 @@ const ES2017FLAG =
 
 const GLOBAL_IDENTIFIER = '$HY.r'; // TODO this is a pending name
 
-export default function createSerializer(onData) {
+export function createSerializer(onData) {
   return new Serializer({
     globalIdentifier: GLOBAL_IDENTIFIER,
     disabledFeatures: ES2017FLAG,

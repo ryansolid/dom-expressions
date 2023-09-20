@@ -10,7 +10,16 @@ globalThis.TextEncoder = function () {
 
 const fixture = `<div data-hk="0" id="main" data-id="12" aria-role="button" class="static selected" checked style="color:red" ><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span data-hk="0" class="Hello John" > Hello &lt;div/> </span>`;
-const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));[\"click\", \"input\"].forEach((o=>document.addEventListener(o,(o=>{let s=o.composedPath&&o.composedPath()[0]||o.target,a=t(s);a&&!e.completed.has(a)&&e.events.push([a,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},init(e,t){_$HY.r[e]=[new Promise((e=>t=e)),t]},set(e,t,o){(o=_$HY.r[e])&&o[1](t),_$HY.r[e]=[t]},unset(e){delete _$HY.r[e]},load:e=>_$HY.r[e]}));</script><!--xs--><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
+const fixture3 = `<span> Hello &lt;div/><script nonce="1a2s3d4f5g">(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["click", "input"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},load:e=>_$HY.r[e]}));
+var $R=[];
+function $P(s,f,p){return (p=new Promise(function(a,b){s=a,f=b})).s=s,p.f=f,p}
+function $uP(i,p){delete (p=$R[i]).s;delete p.f}
+function $Ps(i,d){$R[i].s(d),$uP(i)}
+function $Pf(i,d){$R[i].f(d),$uP(i)}
+function $uS(s){delete s.c}
+function $Se(i,t,d,s,c){switch(c=(s=$R[i]).c,t){case 0:return c.enqueue(d);case 1:return c.error(d),$uS(s);case 2:return c.close(),$uS(s)}}
+function $S(s,c){return(s=new ReadableStream({start:function(t){c=t}})).c=c,s}
+</script><!--xs--><link rel="modulepreload" href="chunk.js"></span>`;
 const fixture4 = `<span > Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
