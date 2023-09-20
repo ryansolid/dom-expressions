@@ -5,7 +5,7 @@ const ES2017FLAG =
   | Feature.BigInt // ES2020
   | Feature.BigIntTypedArray // ES2020;
 
-const GLOBAL_IDENTIFIER = '$HY.r'; // TODO this is a pending name
+const GLOBAL_IDENTIFIER = '_$HY.r'; // TODO this is a pending name
 
 export function createSerializer(onData) {
   return new Serializer({
