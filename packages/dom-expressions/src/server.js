@@ -48,7 +48,7 @@ export function renderToStringAsync(code, options = {}) {
 export function renderToStream(code, options = {}) {
   let { nonce, onCompleteShell, onCompleteAll, renderId } = options;
   let dispose;
-  const blockingResources = [];
+  const blockingPromises = [];
   const pushTask = task => {
     tasks += task + ";";
     if (!scheduled && firstFlushed) {
@@ -103,7 +103,7 @@ export function renderToStream(code, options = {}) {
     assets: [],
     nonce,
     block(p) {
-      if (!firstFlushed) blockingResources.push(p);
+      if (!firstFlushed) blockingPromises.push(p);
     },
     replace(id, payloadFn) {
       if (firstFlushed) return;
@@ -119,7 +119,7 @@ export function renderToStream(code, options = {}) {
     serialize(id, p, wait) {
       const serverOnly = sharedConfig.context.noHydrate;
       if (!firstFlushed && wait && typeof p === "object" && "then" in p) {
-        blockingResources.push(p);
+        blockingPromises.push(p);
         !serverOnly &&
           p
             .then(d => {
@@ -134,12 +134,12 @@ export function renderToStream(code, options = {}) {
       if (!registry.has(key)) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
-        registry.set(key, { resolve, reject, keys: [] });
+        registry.set(key, { resolve, reject });
         serializer.write(key, p);
       }
       return (value, error) => {
         if (registry.has(key)) {
-          const { keys, resolve, reject } = registry.get(key);
+          const { resolve, reject } = registry.get(key);
           registry.delete(key);
           if (waitForFragments(registry, key)) {
             resolve(true);
@@ -150,7 +150,7 @@ export function renderToStream(code, options = {}) {
               Promise.resolve().then(
                 () => (html = replacePlaceholder(html, key, value !== undefined ? value : ""))
               );
-              error && reject(error);
+              error ? reject(error) : resolve(true);
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
@@ -201,7 +201,7 @@ export function renderToStream(code, options = {}) {
       if (!registry.size) Promise.resolve().then(checkEnd);
     },
     pipe(w) {
-      Promise.allSettled(blockingResources).then(() => {
+      Promise.allSettled(blockingPromises).then(() => {
         doShell();
         buffer = writable = w;
         buffer.write(tmp);
@@ -211,7 +211,7 @@ export function renderToStream(code, options = {}) {
       });
     },
     pipeTo(w) {
-      return Promise.allSettled(blockingResources).then(() => {
+      return Promise.allSettled(blockingPromises).then(() => {
         doShell();
         const encoder = new TextEncoder();
         const writer = w.getWriter();
@@ -498,10 +498,7 @@ function injectScripts(html, scripts, nonce) {
 
 function waitForFragments(registry, key) {
   for (const k of [...registry.keys()].reverse()) {
-    if (key.startsWith(k)) {
-      registry.get(k).push(key);
-      return true;
-    }
+    if (key.startsWith(k)) return true;
   }
   return false;
 }
