@@ -4,8 +4,8 @@ import { createComponent as _$createComponent } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 const _tmpl$ = [
     "<div",
-    "><h1>Hello</h1><!--#-->",
-    "<!--/--><!--#-->",
+    "><h1>Hello</h1><!--$-->",
+    "<!--/--><!--$-->",
     "<!--/--><span>More Text</span></div>"
   ],
   _tmpl$2 = ["<div", "></div>"],

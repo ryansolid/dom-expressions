@@ -841,7 +841,7 @@ function transformChildren(path, results, config) {
       // boxed by textNodes
       if (markers || wrappedByText(childNodes, index)) {
         let exprId, contentId;
-        if (markers) tempPath = createPlaceholder(path, results, tempPath, i++, "#")[0].name;
+        if (markers) tempPath = createPlaceholder(path, results, tempPath, i++, "$")[0].name;
         if (nextPlaceholder) {
           exprId = nextPlaceholder;
         } else {

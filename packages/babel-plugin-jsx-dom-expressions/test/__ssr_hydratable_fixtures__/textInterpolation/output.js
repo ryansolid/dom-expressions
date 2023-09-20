@@ -5,22 +5,22 @@ import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 const _tmpl$ = ["<span", ">Hello </span>"],
   _tmpl$2 = ["<span", "> John</span>"],
   _tmpl$3 = ["<span", ">Hello John</span>"],
-  _tmpl$4 = ["<span", ">Hello <!--#-->", "<!--/--></span>"],
-  _tmpl$5 = ["<span", "><!--#-->", "<!--/--> John</span>"],
-  _tmpl$6 = ["<span", "><!--#-->", "<!--/--> <!--#-->", "<!--/--></span>"],
-  _tmpl$7 = ["<span", "> <!--#-->", "<!--/--> <!--#-->", "<!--/--> </span>"],
-  _tmpl$8 = ["<span", "> <!--#-->", "<!--/--><!--#-->", "<!--/--> </span>"],
+  _tmpl$4 = ["<span", ">Hello <!--$-->", "<!--/--></span>"],
+  _tmpl$5 = ["<span", "><!--$-->", "<!--/--> John</span>"],
+  _tmpl$6 = ["<span", "><!--$-->", "<!--/--> <!--$-->", "<!--/--></span>"],
+  _tmpl$7 = ["<span", "> <!--$-->", "<!--/--> <!--$-->", "<!--/--> </span>"],
+  _tmpl$8 = ["<span", "> <!--$-->", "<!--/--><!--$-->", "<!--/--> </span>"],
   _tmpl$9 = ["<span", ">Hello</span>"],
   _tmpl$10 = ["<span", ">&nbsp;&lt;Hi&gt;&nbsp;</span>"],
   _tmpl$11 = ["<span", ">Hi&lt;script>alert();&lt;/script></span>"],
   _tmpl$12 = ["<span", ">Hello World!</span>"],
   _tmpl$13 = ["<span", ">4 + 5 = 9</span>"],
-  _tmpl$14 = ["<div", "><!--#-->", "<!--/-->\nd</div>"],
+  _tmpl$14 = ["<div", "><!--$-->", "<!--/-->\nd</div>"],
   _tmpl$15 = ["<div", ">", "</div>"],
-  _tmpl$16 = ["<span", "> <!--#-->", "<!--/--></span>"],
-  _tmpl$17 = ["<span", "><!--#-->", "<!--/--> </span>"],
+  _tmpl$16 = ["<span", "> <!--$-->", "<!--/--></span>"],
+  _tmpl$17 = ["<span", "><!--$-->", "<!--/--> </span>"],
   _tmpl$18 = ["<div", ' normal="Search\u2026" title="Search&amp;hellip;"></div>'],
-  _tmpl$19 = ["<div", "><div></div><!--#-->", "<!--/--></div>"];
+  _tmpl$19 = ["<div", "><div></div><!--$-->", "<!--/--></div>"];
 const trailing = _$ssr(_tmpl$, _$ssrHydrationKey());
 const leading = _$ssr(_tmpl$2, _$ssrHydrationKey());
 
