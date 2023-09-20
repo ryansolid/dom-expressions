@@ -10,16 +10,7 @@ globalThis.TextEncoder = function () {
 
 const fixture = `<div data-hk="0" id="main" data-id="12" aria-role="button" class="static selected" checked style="color:red" ><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span data-hk="0" class="Hello John" > Hello &lt;div/> </span>`;
-const fixture3 = `<span> Hello &lt;div/><script nonce="1a2s3d4f5g">(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["click", "input"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},load:e=>_$HY.r[e]}));
-var $R=[];
-function $P(s,f,p){return (p=new Promise(function(a,b){s=a,f=b})).s=s,p.f=f,p}
-function $uP(i,p){delete (p=$R[i]).s;delete p.f}
-function $Ps(i,d){$R[i].s(d),$uP(i)}
-function $Pf(i,d){$R[i].f(d),$uP(i)}
-function $uS(s){delete s.c}
-function $Se(i,t,d,s,c){switch(c=(s=$R[i]).c,t){case 0:return c.enqueue(d);case 1:return c.error(d),$uS(s);case 2:return c.close(),$uS(s)}}
-function $S(s,c){return(s=new ReadableStream({start:function(t){c=t}})).c=c,s}
-</script><!--xs--><link rel="modulepreload" href="chunk.js"></span>`;
+const fixture3 = `<span> Hello &lt;div/><script nonce="1a2s3d4f5g">(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["click", "input"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},load:e=>_$HY.r[e]}));var $R=[],$P=(e,$,r)=>((r=new Promise(((r,u)=>{e=r,$=u}))).s=e,r.f=$,r),$uP=(e,$)=>{delete($=$R[e]).s,delete $.f},$Ps=(e,$,r)=>{(r=$R[e]).s($),r.value=$,$uP(e)},$Pf=(e,$)=>{$R[e].f($),$uP(e)},$uS=e=>delete e.c,$Se=(e,$,r,u,s)=>{switch(s=(u=$R[e]).c,$){case 0:return s.enqueue(r);case 1:return s.error(r),$uS(u);case 2:return s.close(),$uS(u)}},$S=(e,$)=>((e=new ReadableStream({start(e){$=e}})).c=$,e);</script><!--xs--><link rel="modulepreload" href="chunk.js"></span>`;
 const fixture4 = `<span > Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
