@@ -257,7 +257,7 @@ export function getNextMarker(start) {
     while (end) {
       if (end.nodeType === 8) {
         const v = end.nodeValue;
-        if (v === "#") count++;
+        if (v === "$") count++;
         else if (v === "/") {
           if (count === 0) return [end, current];
           count--;

@@ -7,7 +7,7 @@ import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 const _tmpl$ = ["<div", "></div>"],
   _tmpl$2 = ["<module", ">", "</module>"],
   _tmpl$3 = ["<module", ">Hello</module>"],
-  _tmpl$4 = ["<module", ">Hi <!--#-->", "<!--/--></module>"],
+  _tmpl$4 = ["<module", ">Hi <!--$-->", "<!--/--></module>"],
   _tmpl$5 = ["<div", ">Test 1</div>"],
   _tmpl$6 = ["<div", ">", "</div>"];
 const children = _$ssr(_tmpl$, _$ssrHydrationKey());
@@ -70,7 +70,7 @@ const template23 = _$createComponent(Module, {
 const template24 = _$ssrElement(
   "module",
   dynamic,
-  () => ["Hi", "<!--#-->", _$escape(dynamic.children), "<!--/-->"],
+  () => ["Hi", "<!--$-->", _$escape(dynamic.children), "<!--/-->"],
   true
 );
 const tiles = [];

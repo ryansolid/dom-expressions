@@ -21,7 +21,7 @@ const _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$14 = ["<div", ' style="', '"></div>'],
   _tmpl$15 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
   _tmpl$16 = ["<div", "", ">", "</div>"],
-  _tmpl$17 = ["<div", "><!--#-->", "<!--/-->", "</div>"],
+  _tmpl$17 = ["<div", "><!--$-->", "<!--/-->", "</div>"],
   _tmpl$18 = ["<div", ">", "</div>"],
   _tmpl$19 = [
     "<div",
@@ -219,7 +219,7 @@ const template28 = _$ssrElement(
     _$ssrElement(
       "span",
       api(),
-      () => ["Input is ", "<!--#-->", api() ? "checked" : "unchecked", "<!--/-->"],
+      () => ["Input is ", "<!--$-->", api() ? "checked" : "unchecked", "<!--/-->"],
       false
     ),
     _$ssrElement("input", api(), undefined, false),

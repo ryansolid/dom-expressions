@@ -9,8 +9,8 @@ import { getNextElement as _$getNextElement } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<module>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<module>Hello`),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<module>Hi <!#><!/>`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<module>Hi<!#><!/>`),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<module>Hi <!$><!/>`),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<module>Hi<!$><!/>`),
   _tmpl$6 = /*#__PURE__*/ _$template(`<div>Test 1`);
 const children = _$getNextElement(_tmpl$);
 const dynamic = {

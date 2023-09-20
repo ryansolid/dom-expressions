@@ -468,7 +468,7 @@ function transformChildren(path, results, { hydratable }) {
 
       // boxed by textNodes
       if (markers && !child.spreadElement) {
-        appendToTemplate(results.template, `<!--#-->`);
+        appendToTemplate(results.template, `<!--$-->`);
         results.template.push("");
         results.templateValues.push(child.exprs[0]);
         appendToTemplate(results.template, `<!--/-->`);
@@ -495,7 +495,7 @@ function createElement(path, { topLevel, hydratable }) {
       } else {
         const child = transformNode(path);
         if (markers && child.exprs.length && !child.spreadElement)
-          memo.push(t.stringLiteral("<!--#-->"));
+          memo.push(t.stringLiteral("<!--$-->"));
         if (child.exprs.length && !child.spreadElement)
           child.exprs[0] = escapeExpression(path, child.exprs[0]);
         memo.push(getCreateTemplate(config, path, child)(path, child, true));

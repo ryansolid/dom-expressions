@@ -6,23 +6,23 @@ import { getNextElement as _$getNextElement } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(`<span>Hello `),
   _tmpl$2 = /*#__PURE__*/ _$template(`<span> John`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<span>Hello John`),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<span>Hello <!#><!/>`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<span><!#><!/> John`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<span><!#><!/> <!#><!/>`),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<span> <!#><!/> <!#><!/> `),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<span> <!#><!/><!#><!/> `),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<span>Hello <!$><!/>`),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<span><!$><!/> John`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<span><!$><!/> <!$><!/>`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<span> <!$><!/> <!$><!/> `),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<span> <!$><!/><!$><!/> `),
   _tmpl$9 = /*#__PURE__*/ _$template(`<span>Hello`),
   _tmpl$10 = /*#__PURE__*/ _$template(`<span>&nbsp;&lt;Hi&gt;&nbsp;`),
   _tmpl$11 = /*#__PURE__*/ _$template(`<span>Hi&lt;script>alert();&lt;/script>`),
   _tmpl$12 = /*#__PURE__*/ _$template(`<span>Hello World!`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<span>4 + 5 = 9`),
-  _tmpl$14 = /*#__PURE__*/ _$template(`<div><!#><!/>
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div><!$><!/>
 d`),
   _tmpl$15 = /*#__PURE__*/ _$template(`<div>`),
-  _tmpl$16 = /*#__PURE__*/ _$template(`<span> <!#><!/>`),
-  _tmpl$17 = /*#__PURE__*/ _$template(`<span><!#><!/> `),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal=Search… title=Search&amp;hellip;>`),
-  _tmpl$19 = /*#__PURE__*/ _$template(`<div><div></div><!#><!/>`);
+  _tmpl$16 = /*#__PURE__*/ _$template(`<span> <!$><!/>`),
+  _tmpl$17 = /*#__PURE__*/ _$template(`<span><!$><!/> `),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<div normal="Search…" title="Search&amp;hellip;">`),
+  _tmpl$19 = /*#__PURE__*/ _$template(`<div><div></div><!$><!/>`);
 const trailing = _$getNextElement(_tmpl$);
 const leading = _$getNextElement(_tmpl$2);
 

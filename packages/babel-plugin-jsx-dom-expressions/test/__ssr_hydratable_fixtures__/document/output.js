@@ -11,19 +11,19 @@ const _tmpl$ = [
   _tmpl$2 = [
     "<html",
     ">",
-    "<body><header><h1>Welcome to the Jungle</h1></header><!--#-->",
+    "<body><header><h1>Welcome to the Jungle</h1></header><!--$-->",
     "<!--/--><footer>The Bottom</footer></body></html>"
   ],
   _tmpl$3 = [
-    '<head><title>\uD83D\uDD25 Blazing \uD83D\uDD25</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="/styles.css"><!--#-->',
+    '<head><title>\uD83D\uDD25 Blazing \uD83D\uDD25</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="/styles.css"><!--$-->',
     "<!--/--></head>"
   ],
   _tmpl$4 = [
     "<body",
-    "><header><h1>Welcome to the Jungle</h1></header><!--#-->",
+    "><header><h1>Welcome to the Jungle</h1></header><!--$-->",
     "<!--/--><footer>The Bottom</footer></body>"
   ],
-  _tmpl$5 = ["<html", "><!--#-->", "<!--/--><!--#-->", "<!--/--></html>"];
+  _tmpl$5 = ["<html", "><!--$-->", "<!--/--><!--$-->", "<!--/--></html>"];
 const template = _$ssr(
   _tmpl$2,
   _$ssrHydrationKey(),
