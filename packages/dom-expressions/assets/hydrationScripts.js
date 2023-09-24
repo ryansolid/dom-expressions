@@ -17,6 +17,7 @@
   completed: new WeakSet(),
   r: {},
   fe() {},
-  load: (id) => _$HY.r[id]
+  load: (id) => _$HY.r[id],
+  has: (id) => id in _$HY.r
 }));
 `
