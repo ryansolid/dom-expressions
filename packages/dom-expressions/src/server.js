@@ -458,7 +458,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '", "'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},load:e=>_$HY.r[e]}));${getHeaderScript()}</script><!--xs-->`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},load:e=>_$HY.r[e],has:e=>e in _$HY.r}));${getHeaderScript()}</script><!--xs-->`;
 }
 
 export function Hydration(props) {

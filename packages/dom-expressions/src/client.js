@@ -218,6 +218,7 @@ export function hydrate(code, element, options = {}) {
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = globalThis._$HY.load;
+  sharedConfig.has = globalThis._$HY.has;
   sharedConfig.gather = root => gatherHydratable(element, root);
   sharedConfig.registry = new Map();
   sharedConfig.context = {
