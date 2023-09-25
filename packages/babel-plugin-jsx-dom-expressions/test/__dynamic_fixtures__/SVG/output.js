@@ -4,6 +4,7 @@ import { createComponent as _$createComponent } from "r-custom";
 import { spread as _$spread } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-custom";
+let _v$, _v$2, _v$3, _v$4, _v$5;
 const _tmpl$ = /*#__PURE__*/ _$template(
     `<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%">`
   ),
@@ -29,31 +30,25 @@ const template2 = (() => {
   _el$3.style.setProperty("fill", "red");
   _el$3.style.setProperty("stroke", "black");
   _el$3.style.setProperty("opacity", "0.5");
-  _$effect(
-    _p$ => {
-      const _v$ = state.name,
-        _v$2 = state.width,
-        _v$3 = state.x,
-        _v$4 = state.y,
-        _v$5 = props.stroke;
-      _v$ !== _p$._v$ && _$setAttribute(_el$3, "class", (_p$._v$ = _v$));
-      _v$2 !== _p$._v$2 && _$setAttribute(_el$3, "stroke-width", (_p$._v$2 = _v$2));
-      _v$3 !== _p$._v$3 && _$setAttribute(_el$3, "x", (_p$._v$3 = _v$3));
-      _v$4 !== _p$._v$4 && _$setAttribute(_el$3, "y", (_p$._v$4 = _v$4));
-      _v$5 !== _p$._v$5 &&
-        ((_p$._v$5 = _v$5) != null
-          ? _el$3.style.setProperty("stroke-width", _v$5)
-          : _el$3.style.removeProperty("stroke-width"));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined,
-      _v$4: undefined,
-      _v$5: undefined
+  _$effect(() => {
+    if (_v$ !== (_v$ = state.name)) {
+      _$setAttribute(_el$3, "class", _v$);
     }
-  );
+    if (_v$2 !== (_v$2 = state.width)) {
+      _$setAttribute(_el$3, "stroke-width", _v$2);
+    }
+    if (_v$3 !== (_v$3 = state.x)) {
+      _$setAttribute(_el$3, "x", _v$3);
+    }
+    if (_v$4 !== (_v$4 = state.y)) {
+      _$setAttribute(_el$3, "y", _v$4);
+    }
+    if (_v$5 !== (_v$5 = props.stroke)) {
+      _v$5 != null
+        ? _el$3.style.setProperty("stroke-width", _v$5)
+        : _el$3.style.removeProperty("stroke-width");
+    }
+  });
   return _el$2;
 })();
 const template3 = (() => {

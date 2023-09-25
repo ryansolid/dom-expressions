@@ -129,65 +129,55 @@ function wrapDynamics(path, dynamics) {
       ])
     );
   }
-  const declarations = [],
-    statements = [],
-    identifiers = [],
-    prevId = t.identifier("_p$");
+
+  const statements = [];
+
   dynamics.forEach(({ elem, key, value, isSVG, isCE, tagName }) => {
     const identifier = path.scope.generateUidIdentifier("v$");
+    path.scope.push({ kind: "let", id: identifier });
+
+    if (key === "classList" || key === "style") {
+      const statement = t.expressionStatement(
+        t.assignmentExpression(
+          "=",
+          identifier,
+          setAttr(path, elem, key, value, {
+            isSVG,
+            isCE,
+            tagName,
+            dynamic: true,
+            prevId: identifier,
+          }),
+        ),
+      );
+
+      statements.push(statement);
+      return;
+    }
+
     if (key.startsWith("class:") && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
     }
-    identifiers.push(identifier);
-    declarations.push(t.variableDeclarator(identifier, value));
-    if (key === "classList" || key === "style") {
-      const prev = t.memberExpression(prevId, identifier);
-      statements.push(
+
+    const statement = t.ifStatement(
+      t.binaryExpression("!==", identifier, t.assignmentExpression("=", identifier, value)),
+      t.blockStatement([
         t.expressionStatement(
-          t.assignmentExpression(
-            "=",
-            prev,
-            setAttr(path, elem, key, identifier, {
-              isSVG,
-              isCE,
-              tagName,
-              dynamic: true,
-              prevId: prev
-            })
-          )
-        )
-      );
-    } else {
-      const prev = key.startsWith("style:") ? identifier : undefined;
-      statements.push(
-        t.expressionStatement(
-          t.logicalExpression(
-            "&&",
-            t.binaryExpression("!==", identifier, t.memberExpression(prevId, identifier)),
-            setAttr(
-              path,
-              elem,
-              key,
-              t.assignmentExpression("=", t.memberExpression(prevId, identifier), identifier),
-              { isSVG, isCE, tagName, dynamic: true, prevId: prev }
-            )
-          )
-        )
-      );
-    }
+          setAttr(path, elem, key, identifier, {
+            isSVG,
+            isCE,
+            tagName,
+            dynamic: true,
+            prevId: identifier,
+          }),
+        ),
+      ]),
+    );
+
+    statements.push(statement);
   });
 
   return t.expressionStatement(
-    t.callExpression(effectWrapperId, [
-      t.arrowFunctionExpression(
-        [prevId],
-        t.blockStatement([
-          t.variableDeclaration("const", declarations),
-          ...statements,
-          t.returnStatement(prevId)
-        ])
-      ),
-      t.objectExpression(identifiers.map(id => t.objectProperty(id, t.identifier("undefined"))))
-    ])
+    t.callExpression(effectWrapperId, [t.arrowFunctionExpression([], t.blockStatement(statements))]),
   );
 }

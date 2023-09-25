@@ -6,6 +6,7 @@ import { setProp as _$setProp } from "r-custom";
 import { spread as _$spread } from "r-custom";
 import { mergeProps as _$mergeProps } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
+let _v$, _v$2, _v$3;
 const selected = true;
 let link;
 const template = (() => {
@@ -106,26 +107,24 @@ const template6 = (() => {
 })();
 const template7 = (() => {
   const _el$13 = _$createElement("div");
-  _$effect(
-    _p$ => {
-      const _v$ = {
-          "background-color": color(),
-          "margin-right": "40px",
-          ...props.style
-        },
-        _v$2 = props.top,
-        _v$3 = props.active;
-      _v$ !== _p$._v$ && (_p$._v$ = _$setProp(_el$13, "style", _v$, _p$._v$));
-      _v$2 !== _p$._v$2 && (_p$._v$2 = _$setProp(_el$13, "style:padding-top", _v$2, _p$._v$2));
-      _v$3 !== _p$._v$3 && (_p$._v$3 = _$setProp(_el$13, "class:my-class", _v$3, _p$._v$3));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
+  _$effect(() => {
+    if (
+      _v$ !==
+      (_v$ = {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      })
+    ) {
+      _$setProp(_el$13, "style", _v$, _v$);
     }
-  );
+    if (_v$2 !== (_v$2 = props.top)) {
+      _$setProp(_el$13, "style:padding-top", _v$2, _v$2);
+    }
+    if (_v$3 !== (_v$3 = props.active)) {
+      _$setProp(_el$13, "class:my-class", _v$3, _v$3);
+    }
+  });
   return _el$13;
 })();
 let refTarget;

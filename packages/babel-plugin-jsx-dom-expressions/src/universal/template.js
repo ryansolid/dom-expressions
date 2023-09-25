@@ -55,43 +55,32 @@ function wrapDynamics(path, dynamics) {
       ])
     );
   }
-  const declarations = [],
-    statements = [],
-    identifiers = [],
-    prevId = t.identifier("_p$");
-  dynamics.forEach(({ elem, key, value }) => {
+
+  const statements = [];
+
+  dynamics.forEach(({ elem, key, value, isSVG, isCE, tagName }) => {
     const identifier = path.scope.generateUidIdentifier("v$");
-    identifiers.push(identifier);
-    declarations.push(t.variableDeclarator(identifier, value));
-    const prev = t.memberExpression(prevId, identifier);
-    statements.push(
-      t.expressionStatement(
-        t.logicalExpression(
-          "&&",
-          t.binaryExpression("!==", identifier, t.memberExpression(prevId, identifier)),
-          t.assignmentExpression("=", t.memberExpression(prevId, identifier), setAttr(
-            path,
-            elem,
-            key,
-            identifier,
-            { dynamic: true, prevId: prev }
-          ))
-        )
-      )
+    path.scope.push({ kind: "let", id: identifier });
+
+    const statement = t.ifStatement(
+      t.binaryExpression("!==", identifier, t.assignmentExpression("=", identifier, value)),
+      t.blockStatement([
+        t.expressionStatement(
+          setAttr(path, elem, key, identifier, {
+            isSVG,
+            isCE,
+            tagName,
+            dynamic: true,
+            prevId: identifier,
+          }),
+        ),
+      ]),
     );
+
+    statements.push(statement);
   });
 
   return t.expressionStatement(
-    t.callExpression(effectWrapperId, [
-      t.arrowFunctionExpression(
-        [prevId],
-        t.blockStatement([
-          t.variableDeclaration("const", declarations),
-          ...statements,
-          t.returnStatement(prevId)
-        ])
-      ),
-      t.objectExpression(identifiers.map(id => t.objectProperty(id, t.identifier("undefined"))))
-    ])
+    t.callExpression(effectWrapperId, [t.arrowFunctionExpression([], t.blockStatement(statements))]),
   );
 }

@@ -11,6 +11,7 @@ import { classList as _$classList } from "r-dom";
 import { use as _$use } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-dom";
+let _v$, _v$2, _v$3, _v$4, _v$5, _v$6, _v$7;
 const _tmpl$ = /*#__PURE__*/ _$template(
     `<div id="main"><h1 class="base" id="my-h1"><a href="/">Welcome`
   ),
@@ -130,29 +131,25 @@ const template7 = (() => {
   const _el$13 = _tmpl$4();
   _el$13.classList.toggle("other-class", !!undefVar);
   _el$13.classList.toggle("other-class2", !!undefVar);
-  _$effect(
-    _p$ => {
-      const _v$ = {
-          "background-color": color(),
-          "margin-right": "40px",
-          ...props.style
-        },
-        _v$2 = props.top,
-        _v$3 = !!props.active;
-      _p$._v$ = _$style(_el$13, _v$, _p$._v$);
-      _v$2 !== _p$._v$2 &&
-        ((_p$._v$2 = _v$2) != null
-          ? _el$13.style.setProperty("padding-top", _v$2)
-          : _el$13.style.removeProperty("padding-top"));
-      _v$3 !== _p$._v$3 && _el$13.classList.toggle("my-class", (_p$._v$3 = _v$3));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
+  _$effect(() => {
+    _v$ = _$style(
+      _el$13,
+      {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      _v$
+    );
+    if (_v$2 !== (_v$2 = props.top)) {
+      _v$2 != null
+        ? _el$13.style.setProperty("padding-top", _v$2)
+        : _el$13.style.removeProperty("padding-top");
     }
-  );
+    if (_v$3 !== (_v$3 = !!props.active)) {
+      _el$13.classList.toggle("my-class", _v$3);
+    }
+  });
   return _el$13;
 })();
 let refTarget;
@@ -224,25 +221,20 @@ const template20 = (() => {
   _$addEventListener(_el$27, "input", doSomething, true);
   _$addEventListener(_el$28, "input", doSomethingElse, true);
   _el$28.readOnly = value;
-  _$effect(
-    _p$ => {
-      const _v$4 = min(),
-        _v$5 = max(),
-        _v$6 = min(),
-        _v$7 = max();
-      _v$4 !== _p$._v$4 && _$setAttribute(_el$27, "min", (_p$._v$4 = _v$4));
-      _v$5 !== _p$._v$5 && _$setAttribute(_el$27, "max", (_p$._v$5 = _v$5));
-      _v$6 !== _p$._v$6 && _$setAttribute(_el$28, "min", (_p$._v$6 = _v$6));
-      _v$7 !== _p$._v$7 && _$setAttribute(_el$28, "max", (_p$._v$7 = _v$7));
-      return _p$;
-    },
-    {
-      _v$4: undefined,
-      _v$5: undefined,
-      _v$6: undefined,
-      _v$7: undefined
+  _$effect(() => {
+    if (_v$4 !== (_v$4 = min())) {
+      _$setAttribute(_el$27, "min", _v$4);
     }
-  );
+    if (_v$5 !== (_v$5 = max())) {
+      _$setAttribute(_el$27, "max", _v$5);
+    }
+    if (_v$6 !== (_v$6 = min())) {
+      _$setAttribute(_el$28, "min", _v$6);
+    }
+    if (_v$7 !== (_v$7 = max())) {
+      _$setAttribute(_el$28, "max", _v$7);
+    }
+  });
   _$effect(() => (_el$27.value = s()));
   _$effect(() => (_el$28.checked = s2()));
   return _el$26;

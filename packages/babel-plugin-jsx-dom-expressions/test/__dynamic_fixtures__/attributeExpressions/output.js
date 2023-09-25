@@ -9,6 +9,7 @@ import { classList as _$classList } from "r-dom";
 import { use as _$use } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-custom";
+let _v$, _v$2, _v$3;
 const _tmpl$ = /*#__PURE__*/ _$template(
     `<div id="main"><h1 class="base" id="my-h1"><a href="/">Welcome`
   ),
@@ -111,29 +112,25 @@ const template6 = (() => {
 })();
 const template7 = (() => {
   const _el$13 = _tmpl$3();
-  _$effect(
-    _p$ => {
-      const _v$ = {
-          "background-color": color(),
-          "margin-right": "40px",
-          ...props.style
-        },
-        _v$2 = props.top,
-        _v$3 = !!props.active;
-      _p$._v$ = _$style(_el$13, _v$, _p$._v$);
-      _v$2 !== _p$._v$2 &&
-        ((_p$._v$2 = _v$2) != null
-          ? _el$13.style.setProperty("padding-top", _v$2)
-          : _el$13.style.removeProperty("padding-top"));
-      _v$3 !== _p$._v$3 && _el$13.classList.toggle("my-class", (_p$._v$3 = _v$3));
-      return _p$;
-    },
-    {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
+  _$effect(() => {
+    _v$ = _$style(
+      _el$13,
+      {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      _v$
+    );
+    if (_v$2 !== (_v$2 = props.top)) {
+      _v$2 != null
+        ? _el$13.style.setProperty("padding-top", _v$2)
+        : _el$13.style.removeProperty("padding-top");
     }
-  );
+    if (_v$3 !== (_v$3 = !!props.active)) {
+      _el$13.classList.toggle("my-class", _v$3);
+    }
+  });
   return _el$13;
 })();
 let refTarget;
