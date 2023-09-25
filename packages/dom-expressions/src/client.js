@@ -431,9 +431,11 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     if (sharedConfig.context) {
       if (!array.length) return current;
-      for (let i = 0; i < array.length; i++) {
-        if (array[i].parentNode) return (current = array);
-      }
+      if (marker === undefined) return [...parent.childNodes];
+      let node = array[0];
+      let nodes = [node];
+      while ((node = node.nextSibling) !== marker) nodes.push(node);
+      return current = nodes;
     }
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
