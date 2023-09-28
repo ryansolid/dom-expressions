@@ -61,8 +61,6 @@ export function renderToStream(code, options = {}) {
       scheduled = true;
     }
   };
-  const serializer = createSerializer(pushTask);
-  const registry = new Map();
   const checkEnd = () => {
     if (!registry.size && !completed) {
       writeTasks();
@@ -77,6 +75,20 @@ export function renderToStream(code, options = {}) {
       setTimeout(dispose);
     }
   };
+  const serializer = createSerializer({
+    scopeId: options.renderId,
+    onData: pushTask,
+    onDone: checkEnd,
+  });
+  const flushEnd = () => {
+    if (!registry.size) {
+      // We are no longer writing any resource
+      // now we just need to wait for the pending promises
+      // to resolve
+      serializer.flush();
+    }
+  };
+  const registry = new Map();
   const writeTasks = () => {
     if (tasks.length && !completed && firstFlushed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
@@ -164,7 +176,7 @@ export function renderToStream(code, options = {}) {
             }
           }
         }
-        if (!registry.size) Promise.resolve().then(checkEnd);
+        if (!registry.size) Promise.resolve().then(flushEnd);
         return firstFlushed;
       };
     }
@@ -203,7 +215,7 @@ export function renderToStream(code, options = {}) {
           complete();
         };
       } else onCompleteAll = complete;
-      if (!registry.size) Promise.resolve().then(checkEnd);
+      if (!registry.size) Promise.resolve().then(flushEnd);
     },
     pipe(w) {
       Promise.allSettled(blockingPromises).then(() => {
@@ -212,7 +224,7 @@ export function renderToStream(code, options = {}) {
         buffer.write(tmp);
         firstFlushed = true;
         if (completed) writable.end();
-        else setTimeout(checkEnd);
+        else setTimeout(flushEnd);
       });
     },
     pipeTo(w) {
@@ -237,7 +249,7 @@ export function renderToStream(code, options = {}) {
         buffer.write(tmp);
         firstFlushed = true;
         if (completed) writable.end();
-        else setTimeout(checkEnd);
+        else setTimeout(flushEnd);
         return p;
       });
     }
