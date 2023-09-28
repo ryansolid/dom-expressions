@@ -25,6 +25,6 @@
   "devDependencies": {
     "babel-plugin-jsx-dom-expressions": "^0.37.0-beta.0",
     "csstype": "^3.1",
-    "seroval": "^0.10.3"
+    "seroval": "^0.10.4"
   }
 }
