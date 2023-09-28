@@ -18,7 +18,7 @@ export function renderToString(code, options = {}) {
         scripts = getLocalHeaderScript(renderId);
       }
       scripts += script;
-    },
+    }
   });
   sharedConfig.context = {
     id: renderId || "",
@@ -86,7 +86,7 @@ export function renderToStream(code, options = {}) {
   const serializer = createSerializer({
     scopeId: options.renderId,
     onData: pushTask,
-    onDone: checkEnd,
+    onDone: checkEnd
   });
   const flushEnd = () => {
     if (!registry.size) {
@@ -337,7 +337,10 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (prop === "class" || prop === "className" || prop === "classList") {
       if (classResolved) continue;
       let n;
-      result += `class="${escape(((n = props.class) ? n + " " : "") + ((n = props.className) ? n + " " : ""), true) + ssrClassList(props.classList)}"`;
+      result += `class="${
+        escape(((n = props.class) ? n + " " : "") + ((n = props.className) ? n + " " : ""), true) +
+        ssrClassList(props.classList)
+      }"`;
       classResolved = true;
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
@@ -476,10 +479,11 @@ export function getAssets() {
 }
 
 export function generateHydrationScript({ eventNames = ["click", "input"], nonce } = {}) {
-  return `<script${nonce ? ` nonce="${nonce}"` : ""
-    }>(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
-      '", "'
-    )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){}}));${getGlobalHeaderScript()}</script><!--xs-->`;
+  return `<script${
+    nonce ? ` nonce="${nonce}"` : ""
+  }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
+    '", "'
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,s=t(a);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});${getGlobalHeaderScript()}</script><!--xs-->`;
 }
 
 export function Hydration(props) {
@@ -600,8 +604,9 @@ export function ssrSpread(props, isSVG, skipChildren) {
     } else if (prop === "class" || prop === "className" || prop === "classList") {
       if (classResolved) continue;
       let n;
-      result += `class="${(n = props.class) ? n + " " : ""}${(n = props.className) ? n + " " : ""
-        }${ssrClassList(props.classList)}"`;
+      result += `class="${(n = props.class) ? n + " " : ""}${
+        (n = props.className) ? n + " " : ""
+      }${ssrClassList(props.classList)}"`;
       classResolved = true;
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
