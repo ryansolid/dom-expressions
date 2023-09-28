@@ -9,15 +9,19 @@ const VOID_ELEMENTS =
 const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}`;
 
 export function renderToString(code, options = {}) {
-  let scripts = getGlobalHeaderScript(options.renderId);
+  const { renderId } = options;
+  let scripts = "";
   const serializer = createSerializer({
-    scopeId: options.renderId,
+    scopeId: renderId,
     onData(script) {
+      if (!scripts) {
+        scripts = getLocalHeaderScript(renderId);
+      }
       scripts += script;
     },
   });
   sharedConfig.context = {
-    id: options.renderId || "",
+    id: renderId || "",
     count: 0,
     suspense: {},
     lazy: {},
@@ -55,6 +59,10 @@ export function renderToStream(code, options = {}) {
   let dispose;
   const blockingPromises = [];
   const pushTask = task => {
+    // TODO is the correct place to put this
+    if (!tasks && !firstFlushed) {
+      tasks = getLocalHeaderScript(renderId);
+    }
     tasks += task + ";";
     if (!scheduled && firstFlushed) {
       Promise.resolve().then(writeTasks);
