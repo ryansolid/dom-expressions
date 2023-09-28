@@ -1,6 +1,6 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig, root } from "rxcore";
-import { createSerializer, getHeaderScript } from "./serializer";
+import { createSerializer, getGlobalHeaderScript, getLocalHeaderScript } from "./serializer";
 export { createComponent } from "rxcore";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
@@ -9,8 +9,13 @@ const VOID_ELEMENTS =
 const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}`;
 
 export function renderToString(code, options = {}) {
-  let scripts = "";
-  const serializer = createSerializer(script => (scripts += script));
+  let scripts = getGlobalHeaderScript(options.renderId);
+  const serializer = createSerializer({
+    scopeId: options.renderId,
+    onData(script) {
+      scripts += script;
+    },
+  });
   sharedConfig.context = {
     id: options.renderId || "",
     count: 0,
@@ -27,9 +32,9 @@ export function renderToString(code, options = {}) {
     return resolveSSRNode(escape(code()));
   });
   sharedConfig.context.noHydrate = true;
+  serializer.close();
   html = injectAssets(sharedConfig.context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
-  serializer.close();
   return html;
 }
 
@@ -458,7 +463,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '", "'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},load:e=>_$HY.r[e],has:e=>e in _$HY.r}));${getHeaderScript()}</script><!--xs-->`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,d=t(a);d&&!e.completed.has(d)&&e.events.push([d,o])}))))})(window._$HY||(_$HY={events:[],completed:new WeakSet,r:{},fe(){},load:e=>_$HY.r[e],has:e=>e in _$HY.r}));${getGlobalHeaderScript()}</script><!--xs-->`;
 }
 
 export function Hydration(props) {
