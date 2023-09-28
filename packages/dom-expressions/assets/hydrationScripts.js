@@ -1,5 +1,5 @@
 `
-((h) => {
+window._$HY || ((h) => {
   let lookup = el =>
     el &&
     el.hasAttribute &&
@@ -12,10 +12,10 @@
       if (el && !h.completed.has(el)) h.events.push([el, e]);
     })
   );
-})(window._$HY || (_$HY = {
+})(_$HY = {
   events: [],
   completed: new WeakSet(),
   r: {},
   fe() {}
-}));
+});
 `
