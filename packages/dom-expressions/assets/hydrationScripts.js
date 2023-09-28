@@ -16,8 +16,6 @@
   events: [],
   completed: new WeakSet(),
   r: {},
-  fe() {},
-  load: (id) => _$HY.r[id],
-  has: (id) => id in _$HY.r
+  fe() {}
 }));
 `
