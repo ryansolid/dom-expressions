@@ -64,9 +64,8 @@ export function renderToStream(code, options = {}) {
       tasks = getLocalHeaderScript(renderId);
     }
     tasks += task + ";";
-    if (!scheduled && firstFlushed) {
-      Promise.resolve().then(writeTasks);
-      scheduled = true;
+    if (!timer && firstFlushed) {
+      timer = setTimeout(writeTasks);
     }
   };
   const checkEnd = () => {
@@ -102,7 +101,8 @@ export function renderToStream(code, options = {}) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
       tasks = "";
     }
-    scheduled = false;
+    timer && clearTimeout(timer);
+    timer = null;
   };
 
   let context;
@@ -112,7 +112,7 @@ export function renderToStream(code, options = {}) {
   let firstFlushed = false;
   let completed = false;
   let scriptFlushed = false;
-  let scheduled = true;
+  let timer = null;
   let buffer = {
     write(payload) {
       tmp += payload;
@@ -201,7 +201,6 @@ export function renderToStream(code, options = {}) {
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
     tasks = "";
-    scheduled = false;
     onCompleteShell &&
       onCompleteShell({
         write(v) {
