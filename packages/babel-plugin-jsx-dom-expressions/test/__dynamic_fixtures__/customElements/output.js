@@ -3,8 +3,8 @@ import { effect as _$effect } from "r-custom";
 import { getOwner as _$getOwner } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 const _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true, false),
-  _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot="head">Title`, true, false),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<slot name="head">`);
+  _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot=head>Title`, true, false),
+  _tmpl$3 = /*#__PURE__*/ _$template(`<slot name=head>`);
 const template = (() => {
   const _el$ = _tmpl$();
   _el$.someAttr = name;

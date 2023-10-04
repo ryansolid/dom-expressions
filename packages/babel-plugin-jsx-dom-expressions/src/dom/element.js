@@ -413,6 +413,8 @@ function transformAttributes(path, results) {
     attributes.map(a => a.node)
   );
 
+  let needsSpacing = true;
+
   path
     .get("openingElement")
     .get("attributes")
@@ -710,16 +712,51 @@ function transformAttributes(path, results) {
           );
         } else {
           !isSVG && (key = key.toLowerCase());
-          results.template += ` ${key}`;
+          results.template += `${needsSpacing ? ' ' : ''}${key}`;
           if (!value) return;
+
           let text = value.value;
+          let needsQuoting = false;
+
           if (key === "style" || key === "class") {
             text = trimWhitespace(text);
             if (key === "style") {
               text = text.replace(/; /g, ";").replace(/: /g, ":");
             }
           }
-          results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
+
+          if (!text.length) {
+            results.template += `=""`;
+            return;
+          }
+
+          for (let i = 0, len = text.length; i < len; i++) {
+            let char = text[i];
+
+            if (
+              char === "'" ||
+              char === '"' ||
+              char === " " ||
+              char === "\t" ||
+              char === "\n" ||
+              char === "\r" ||
+              char === "`" ||
+              char === "=" ||
+              char === "<" ||
+              char === ">"
+            ) {
+              needsQuoting = true;
+            }
+          }
+
+          if (needsQuoting) {
+
+            needsSpacing = false;
+            results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
+          } else {
+            needsSpacing = true;
+            results.template += `=${escapeBackticks(escapeHTML(text, true))}`;
+          }
         }
       }
     });
