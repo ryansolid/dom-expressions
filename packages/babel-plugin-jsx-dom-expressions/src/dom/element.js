@@ -714,10 +714,8 @@ function transformAttributes(path, results) {
           !isSVG && (key = key.toLowerCase());
           results.template += `${needsSpacing ? ' ' : ''}${key}`;
           if (!value) return;
-          
+
           let text = value.value;
-          let hasSingleQuote = false;
-          let hasDoubleQuote = false;
           let needsQuoting = false;
 
           if (key === "style" || key === "class") {
@@ -727,18 +725,17 @@ function transformAttributes(path, results) {
             }
           }
 
+          if (!text.length) {
+            results.template += `=""`;
+            return;
+          }
+
           for (let i = 0, len = text.length; i < len; i++) {
             let char = text[i];
 
-            if (char === '"') {
-              needsQuoting = hasDoubleQuote = true;
-            }
-
-            if (char === "'") {
-              needsQuoting = hasSingleQuote = true;
-            }
-
             if (
+              char === "'" ||
+              char === '"' ||
               char === " " ||
               char === "\t" ||
               char === "\n" ||
@@ -753,17 +750,9 @@ function transformAttributes(path, results) {
           }
 
           if (needsQuoting) {
-            let wrapper = "'";
-
-            if (hasSingleQuote && hasDoubleQuote) {
-              wrapper = "'";
-              text = text.replace(/'/g, '&#39;');
-            } else if (hasSingleQuote) {
-              wrapper = '"';
-            }
 
             needsSpacing = false;
-            results.template += `=${wrapper}${escapeBackticks(escapeHTML(text, true))}${wrapper}`;
+            results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
           } else {
             needsSpacing = true;
             results.template += `=${escapeBackticks(escapeHTML(text, true))}`;

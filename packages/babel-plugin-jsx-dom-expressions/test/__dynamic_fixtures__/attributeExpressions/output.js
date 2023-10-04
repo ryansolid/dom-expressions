@@ -12,8 +12,8 @@ import { mergeProps as _$mergeProps } from "r-custom";
 const _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a href=/>Welcome`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div>`),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<div class='a b'>`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<input type=checkbox readonly=>`),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b">`),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<input type=checkbox readonly="">`),
   _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox>`);
 const selected = true;
 let id = "my-h1";
