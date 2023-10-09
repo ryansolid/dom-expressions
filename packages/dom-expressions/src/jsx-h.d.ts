@@ -1528,6 +1528,15 @@ export namespace JSX {
     azimuth?: FunctionMaybe<number | string>;
     elevation?: FunctionMaybe<number | string>;
   }
+  interface FeDropShadowSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {
+    dx?: FunctionMaybe<number | string>;
+    dy?: FunctionMaybe<number | string>;
+    stdDeviation?: FunctionMaybe<number | string>;
+  }
   interface FeFloodSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
@@ -1702,6 +1711,7 @@ export namespace JSX {
     height?: FunctionMaybe<number | string>;
   }
   interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface PathSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
@@ -1770,6 +1780,10 @@ export namespace JSX {
     rx?: FunctionMaybe<number | string>;
     ry?: FunctionMaybe<number | string>;
   }
+  interface SetSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      StylableSVGAttributes<T>,
+      AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
@@ -2020,7 +2034,7 @@ export namespace JSX {
     feDiffuseLighting: FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>;
     feDisplacementMap: FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>;
     feDistantLight: FeDistantLightSVGAttributes<SVGFEDistantLightElement>;
-    feDropShadow: Partial<SVGFEDropShadowElement>;
+    feDropShadow: FeDropShadowSVGAttributes<SVGFEDropShadowElement>;
     feFlood: FeFloodSVGAttributes<SVGFEFloodElement>;
     feFuncA: FeFuncSVGAttributes<SVGFEFuncAElement>;
     feFuncB: FeFuncSVGAttributes<SVGFEFuncBElement>;
@@ -2046,14 +2060,14 @@ export namespace JSX {
     marker: MarkerSVGAttributes<SVGMarkerElement>;
     mask: MaskSVGAttributes<SVGMaskElement>;
     metadata: MetadataSVGAttributes<SVGMetadataElement>;
-    mpath: Partial<SVGMPathElement>;
+    mpath: MPathSVGAttributes<SVGMPathElement>;
     path: PathSVGAttributes<SVGPathElement>;
     pattern: PatternSVGAttributes<SVGPatternElement>;
     polygon: PolygonSVGAttributes<SVGPolygonElement>;
     polyline: PolylineSVGAttributes<SVGPolylineElement>;
     radialGradient: RadialGradientSVGAttributes<SVGRadialGradientElement>;
     rect: RectSVGAttributes<SVGRectElement>;
-    set: Partial<SVGSetElement>;
+    set: SetSVGAttributes<SVGSetElement>;
     stop: StopSVGAttributes<SVGStopElement>;
     svg: SvgSVGAttributes<SVGSVGElement>;
     switch: SwitchSVGAttributes<SVGSwitchElement>;
