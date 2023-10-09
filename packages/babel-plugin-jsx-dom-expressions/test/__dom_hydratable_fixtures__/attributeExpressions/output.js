@@ -8,7 +8,7 @@ import { style as _$style } from "r-dom";
 import { className as _$className } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
-import { innerHTML as _$innerHTML } from "r-dom";
+import { setProperty as _$setProperty } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { classList as _$classList } from "r-dom";
@@ -98,9 +98,9 @@ const template2 = (() => {
     false,
     true
   );
-  _el$5.textContent = rowId;
-  _$innerHTML(_el$8, "<div/>");
-  _$effect(() => (_el$7.data = row.label));
+  _$setProperty(_el$5, "textContent", rowId);
+  _$setProperty(_el$8, "innerHTML", "<div/>");
+  _$effect(() => _$setProperty(_el$7, "data", row.label));
   _$runHydrationEvents();
   return _el$4;
 })();
@@ -110,7 +110,7 @@ const template3 = (() => {
   state.color != null
     ? _el$9.style.setProperty("background-color", state.color)
     : _el$9.style.removeProperty("background-color");
-  _el$9.textContent = state.content;
+  _$setProperty(_el$9, "textContent", state.content);
   _$effect(() => _$setAttribute(_el$9, "name", state.name));
   return _el$9;
 })();
@@ -125,7 +125,7 @@ const template4 = (() => {
 const template5 = _$getNextElement(_tmpl$5);
 const template6 = (() => {
   const _el$12 = _$getNextElement(_tmpl$4);
-  _el$12.textContent = "Hi";
+  _$setProperty(_el$12, "textContent", "Hi");
   _$effect(_$p => _$style(_el$12, someStyle(), _$p));
   return _el$12;
 })();
@@ -188,12 +188,12 @@ const template12 = (() => {
 })();
 const template13 = (() => {
   const _el$19 = _$getNextElement(_tmpl$6);
-  _el$19.checked = true;
+  _$setProperty(_el$19, "checked", true);
   return _el$19;
 })();
 const template14 = (() => {
   const _el$20 = _$getNextElement(_tmpl$6);
-  _$effect(() => (_el$20.checked = state.visible));
+  _$effect(() => _$setProperty(_el$20, "checked", state.visible));
   return _el$20;
 })();
 const template15 = _$getNextElement(_tmpl$7);
@@ -226,7 +226,7 @@ const template20 = (() => {
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
   _$addEventListener(_el$28, "input", doSomethingElse, true);
-  _el$28.readOnly = value;
+  _$setProperty(_el$28, "readonly", value);
   _$effect(
     _p$ => {
       const _v$4 = min(),
@@ -246,8 +246,8 @@ const template20 = (() => {
       _v$7: undefined
     }
   );
-  _$effect(() => (_el$27.value = s()));
-  _$effect(() => (_el$28.checked = s2()));
+  _$effect(() => _$setProperty(_el$27, "value", s()));
+  _$effect(() => _$setProperty(_el$28, "checked", s2()));
   _$runHydrationEvents();
   return _el$26;
 })();
@@ -269,7 +269,7 @@ const template22 = _$getNextElement(_tmpl$12);
 const template23 = (() => {
   const _el$31 = _$getNextElement(_tmpl$4);
   _$insert(_el$31, () => "t" in test && "true");
-  _$effect(() => (_el$31.disabled = "t" in test));
+  _$effect(() => _$setProperty(_el$31, "disabled", "t" in test));
   return _el$31;
 })();
 const template24 = (() => {

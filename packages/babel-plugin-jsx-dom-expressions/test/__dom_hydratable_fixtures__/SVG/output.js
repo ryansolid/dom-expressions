@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { setProperty as _$setProperty } from "r-dom";
 import { setAttributeNS as _$setAttributeNS } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
@@ -81,6 +82,6 @@ const template7 = (() => {
 const template8 = (() => {
   const _el$11 = _$getNextElement(_tmpl$6),
     _el$12 = _el$11.firstChild;
-  _el$12.textContent = text;
+  _$setProperty(_el$12, "textContent", text);
   return _el$11;
 })();

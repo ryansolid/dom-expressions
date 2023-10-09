@@ -91,17 +91,24 @@ export function clearDelegatedEvents(document = window.document) {
   }
 }
 
+export function setProperty(node, name, value) {
+  !sharedConfig.context && (node[name] = value);
+}
+
 export function setAttribute(node, name, value) {
+  if (sharedConfig.context) return;
   if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
+  if (sharedConfig.context) return;
   if (value == null) node.removeAttributeNS(namespace, name);
   else node.setAttributeNS(namespace, name, value);
 }
 
 export function className(node, value) {
+  if (sharedConfig.context) return;
   if (value == null) node.removeAttribute("class");
   else node.className = value;
 }
@@ -179,10 +186,6 @@ export function dynamicProperty(props, key) {
     enumerable: true
   });
   return props;
-}
-
-export function innerHTML(parent, content) {
-  !sharedConfig.context && (parent.innerHTML = content);
 }
 
 export function use(fn, element, arg) {
@@ -336,7 +339,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     if (forceProp) {
       prop = prop.slice(5);
       isProp = true;
-    }
+    } else if (sharedConfig.context) return value;
     if (prop === "class" || prop === "className") className(node, value);
     else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[propAlias || prop] = value;
@@ -544,3 +547,8 @@ export function Hydration(props) {
 }
 
 function voidFn() {}
+
+// deprecated
+export function innerHTML(parent, content) {
+  !sharedConfig.context && (parent.innerHTML = content);
+}

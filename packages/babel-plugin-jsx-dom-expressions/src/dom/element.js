@@ -208,11 +208,10 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
     );
   }
 
-  if (config.hydratable && name === "innerHTML") {
-    return t.callExpression(registerImportMethod(path, "innerHTML"), [elem, value]);
-  }
-
   if (dynamic && name === "textContent") {
+    if (config.hydratable) {
+      return t.callExpression(registerImportMethod(path, "setProperty"), [elem, t.stringLiteral("data"), value]);
+    }
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
@@ -221,6 +220,9 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
   const alias = getPropAlias(name, tagName.toUpperCase());
   if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
     if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
+    if (config.hydratable && namespace !== "prop") {
+      return t.callExpression(registerImportMethod(path, "setProperty"), [elem, t.stringLiteral(name), value]);
+    }
     return t.assignmentExpression(
       "=",
       t.memberExpression(elem, t.identifier(alias || name)),
