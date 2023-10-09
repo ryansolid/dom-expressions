@@ -1860,7 +1860,7 @@ export namespace JSX {
   }
   interface SetSVGAttributes<T>
     extends CoreSVGAttributes<T>,
-      StylableSVGAttributes<T>,
+      StylableSVGAttributes,
       AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
     extends CoreSVGAttributes<T>,
