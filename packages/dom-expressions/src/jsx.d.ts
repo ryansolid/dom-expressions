@@ -710,7 +710,7 @@ export namespace JSX {
     // [key: ClassKeys]: boolean;
     accessKey?: string;
     class?: string | undefined;
-    contenteditable?: boolean | "inherit";
+    contenteditable?: boolean | "plaintext-only" | "inherit";
     contextmenu?: string;
     dir?: HTMLDir;
     draggable?: boolean | "false" | "true";
@@ -742,7 +742,7 @@ export namespace JSX {
     part?: string;
     exportparts?: string;
     inputmode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
-    contentEditable?: boolean | "inherit";
+    contentEditable?: boolean | "plaintext-only" | "inherit";
     contextMenu?: string;
     tabIndex?: number | string;
     autoCapitalize?: HTMLAutocapitalize;

@@ -634,7 +634,7 @@ export namespace JSX {
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: FunctionMaybe<string>;
     class?: FunctionMaybe<string> | undefined;
-    contenteditable?: FunctionMaybe<boolean | "inherit">;
+    contenteditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit">;
     contextmenu?: FunctionMaybe<string>;
     dir?: FunctionMaybe<HTMLDir>;
     draggable?: FunctionMaybe<boolean>;
@@ -667,7 +667,7 @@ export namespace JSX {
     inputmode?: FunctionMaybe<
       "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search"
     >;
-    contentEditable?: FunctionMaybe<boolean | "inherit">;
+    contentEditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit">;
     contextMenu?: FunctionMaybe<string>;
     tabIndex?: FunctionMaybe<number | string>;
     autoCapitalize?: FunctionMaybe<HTMLAutocapitalize>;
