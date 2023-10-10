@@ -61,6 +61,8 @@ export function render(code, element, init, options = {}) {
 export function template(html, isCE, isSVG) {
   let node;
   const create = () => {
+    if ("_DX_DEV_" && sharedConfig.context)
+      throw new Error("Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration.");
     const t = document.createElement("template");
     t.innerHTML = html;
     return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
@@ -238,9 +240,7 @@ export function getNextElement(template) {
   let node, key;
   if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if ("_DX_DEV_" && sharedConfig.context)
-      console.warn("Unable to find DOM nodes for hydration key:", key);
-    if ("_DX_DEV_" && !template)
-      throw new Error("Unrecoverable Hydration Mismatch. No template for key: " + key);
+      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`);
     return template();
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
