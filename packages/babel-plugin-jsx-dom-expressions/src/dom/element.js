@@ -715,7 +715,10 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += `${needsSpacing ? ' ' : ''}${key}`;
-          if (!value) return;
+          if (!value) {
+            needsSpacing = true;
+            return;
+          }
 
           let text = value.value;
           let needsQuoting = false;
@@ -728,6 +731,7 @@ function transformAttributes(path, results) {
           }
 
           if (!text.length) {
+            needsSpacing = false;
             results.template += `=""`;
             return;
           }
@@ -752,7 +756,6 @@ function transformAttributes(path, results) {
           }
 
           if (needsQuoting) {
-
             needsSpacing = false;
             results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
           } else {
