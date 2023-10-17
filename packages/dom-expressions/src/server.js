@@ -179,7 +179,7 @@ export function renderToStream(code, options = {}) {
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
-              resolve(true);
+              error ? reject(error) : resolve(true);
               scriptFlushed = true;
             }
           }
