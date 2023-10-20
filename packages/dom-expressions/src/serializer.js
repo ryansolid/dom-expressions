@@ -7,13 +7,14 @@ const ES2017FLAG =
 
 const GLOBAL_IDENTIFIER = '_$HY.r'; // TODO this is a pending name
 
-export function createSerializer({ onData, onDone, scopeId }) {
+export function createSerializer({ onData, onDone, scopeId, onError }) {
   return new Serializer({
     scopeId,
     globalIdentifier: GLOBAL_IDENTIFIER,
     disabledFeatures: ES2017FLAG,
     onData,
     onDone,
+    onError,
   });
 }
 

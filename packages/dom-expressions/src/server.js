@@ -85,7 +85,10 @@ export function renderToStream(code, options = {}) {
   const serializer = createSerializer({
     scopeId: options.renderId,
     onData: pushTask,
-    onDone: checkEnd
+    onDone: checkEnd,
+    onError(error) {
+      // TODO handle error
+    },
   });
   const flushEnd = () => {
     if (!registry.size) {
