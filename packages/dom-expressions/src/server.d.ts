@@ -52,7 +52,11 @@ export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): J
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function generateHydrationScript(options: { nonce?: string; eventNames?: string[] }): string;
-export function stringify(root: unknown): string;
+export declare const RequestContext: unique symbol;
+export interface RequestEvent {
+  request: Request;
+}
+export function getRequestEvent(): RequestEvent | undefined;
 
 export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;

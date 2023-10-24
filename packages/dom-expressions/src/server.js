@@ -28,6 +28,7 @@ export function renderToString(code, options = {}) {
     lazy: {},
     assets: [],
     nonce: options.nonce,
+    event: {},
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
     }
@@ -124,6 +125,7 @@ export function renderToStream(code, options = {}) {
     id: renderId || "",
     count: 0,
     async: true,
+    event: {},
     resources: {},
     lazy: {},
     suspense: {},
@@ -538,6 +540,17 @@ function replacePlaceholder(html, key, value) {
   const last = html.indexOf(close, first + marker.length);
 
   return html.slice(0, first) + value + html.slice(last + close.length);
+}
+
+// experimental
+export const RequestContext = Symbol();
+
+export function getRequestEvent() {
+  return (
+    (globalThis[RequestContext] && globalThis[RequestContext].getStore()) ||
+    (sharedConfig.context && sharedConfig.context.event) ||
+    undefined
+  );
 }
 
 // consider deprecating

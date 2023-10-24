@@ -41,7 +41,8 @@ export {
   voidFn as getAssets,
   voidFn as Assets,
   voidFn as generateHydrationScript,
-  voidFn as HydrationScript
+  voidFn as HydrationScript,
+  voidFn as getRequestEvent
 };
 
 export function render(code, element, init, options = {}) {
