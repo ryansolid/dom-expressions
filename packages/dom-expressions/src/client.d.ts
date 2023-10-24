@@ -70,4 +70,7 @@ export function generateHydrationScript(): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
+export interface RequestEvent {
+  request: Request;
+}
 export function getRequestEvent(): RequestEvent | undefined;
