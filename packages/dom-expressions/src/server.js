@@ -18,7 +18,8 @@ export function renderToString(code, options = {}) {
         scripts = getLocalHeaderScript(renderId);
       }
       scripts += script;
-    }
+    },
+    onError: options.onError
   });
   sharedConfig.context = {
     id: renderId || "",
@@ -86,9 +87,7 @@ export function renderToStream(code, options = {}) {
     scopeId: options.renderId,
     onData: pushTask,
     onDone: checkEnd,
-    onError(error) {
-      // TODO handle error
-    },
+    onError: options.onError
   });
   const flushEnd = () => {
     if (!registry.size) {
