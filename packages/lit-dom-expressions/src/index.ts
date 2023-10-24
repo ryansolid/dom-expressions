@@ -9,7 +9,7 @@ interface Runtime {
   createComponent(Comp: (props: any) => any, props: any): any;
   addEventListener(node: Element, name: string, handler: () => void, delegate: boolean): void;
   delegateEvents(eventNames: string[]): void;
-  classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): void;
+  classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): { [k: string]: boolean };
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
   mergeProps(...sources: unknown[]): unknown;
   dynamicProperty(props: any, key: string): any;
