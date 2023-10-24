@@ -44,7 +44,7 @@ export function classList(
   node: Element,
   value: { [k: string]: boolean },
   prev?: { [k: string]: boolean }
-): void;
+): { [k: string]: boolean };
 export function style(
   node: Element,
   value: { [k: string]: string },
