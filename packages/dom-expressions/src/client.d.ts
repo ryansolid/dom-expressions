@@ -73,4 +73,5 @@ export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export interface RequestEvent {
   request: Request;
 }
+export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;

@@ -549,6 +549,9 @@ export function Hydration(props) {
 
 function voidFn() {}
 
+// experimental
+export const RequestContext = Symbol();
+
 // deprecated
 export function innerHTML(parent, content) {
   !sharedConfig.context && (parent.innerHTML = content);
