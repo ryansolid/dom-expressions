@@ -295,7 +295,7 @@ function transformAttributes(path, results, info) {
       t.isJSXExpressionContainer(value) &&
       (reservedNameSpace ||
         ChildProperties.has(key) ||
-        !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
+        !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression) || t.isBooleanLiteral(value.expression)))
     ) {
       if (
         key === "ref" ||
@@ -371,7 +371,7 @@ function transformAttributes(path, results, info) {
         }
         if (doEscape) value.expression = escapeExpression(path, value.expression, true);
 
-        if (!doEscape || t.isLiteral(value.expression) || t.isBinaryExpression(value.expression)) {
+        if (!doEscape || t.isLiteral(value.expression)) {
           key = toAttribute(key, isSVG);
           appendToTemplate(results.template, ` ${key}="`);
           results.template.push(`"`);
@@ -382,9 +382,11 @@ function transformAttributes(path, results, info) {
       if (key === "$ServerOnly") return;
       if (t.isJSXExpressionContainer(value)) value = value.expression;
       key = toAttribute(key, isSVG);
+      const isBoolean = BooleanAttributes.has(key);
+      if (isBoolean && value.value !== "" && !value.value) return;
       appendToTemplate(results.template, ` ${key}`);
       if (!value) return;
-      let text = value.value;
+      let text = isBoolean ? "" : value.value;
       if (key === "style" || key === "class") {
         text = trimWhitespace(text);
         if (key === "style") {
