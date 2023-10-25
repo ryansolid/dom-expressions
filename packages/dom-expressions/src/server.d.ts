@@ -14,6 +14,7 @@ export function renderToStringAsync<T>(
     nonce?: string;
     renderId?: string;
     event?: RequestEvent;
+    noScripts?: boolean;
     onError?: (err: any) => void;
   }
 ): Promise<string>;

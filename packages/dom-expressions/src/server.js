@@ -57,10 +57,11 @@ export function renderToStringAsync(code, options = {}) {
 }
 
 export function renderToStream(code, options = {}) {
-  let { nonce, onCompleteShell, onCompleteAll, renderId } = options;
+  let { nonce, onCompleteShell, onCompleteAll, renderId, noScripts } = options;
   let dispose;
   const blockingPromises = [];
   const pushTask = task => {
+    if (noScripts) return;
     // TODO is the correct place to put this
     if (!tasks && !firstFlushed) {
       tasks = getLocalHeaderScript(renderId);
