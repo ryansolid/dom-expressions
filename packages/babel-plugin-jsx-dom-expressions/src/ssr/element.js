@@ -383,7 +383,7 @@ function transformAttributes(path, results, info) {
       if (t.isJSXExpressionContainer(value)) value = value.expression;
       key = toAttribute(key, isSVG);
       const isBoolean = BooleanAttributes.has(key);
-      if (isBoolean && value.value !== "" && !value.value) return;
+      if (isBoolean && value && value.value !== "" && !value.value) return;
       appendToTemplate(results.template, ` ${key}`);
       if (!value) return;
       let text = isBoolean ? "" : value.value;
