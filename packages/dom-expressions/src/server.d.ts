@@ -3,7 +3,8 @@ export function renderToString<T>(
   options?: {
     nonce?: string;
     renderId?: string;
-    onError: (err: any) => void;
+    event?: RequestEvent;
+    onError?: (err: any) => void;
   }
 ): string;
 export function renderToStringAsync<T>(
@@ -12,7 +13,8 @@ export function renderToStringAsync<T>(
     timeoutMs?: number;
     nonce?: string;
     renderId?: string;
-    onError: (err: any) => void;
+    event?: RequestEvent;
+    onError?: (err: any) => void;
   }
 ): Promise<string>;
 export function renderToStream<T>(
@@ -20,9 +22,10 @@ export function renderToStream<T>(
   options?: {
     nonce?: string;
     renderId?: string;
+    event?: RequestEvent;
     onCompleteShell?: (info: { write: (v: string) => void }) => void;
     onCompleteAll?: (info: { write: (v: string) => void }) => void;
-    onError: (err: any) => void;
+    onError?: (err: any) => void;
   }
 ): {
   pipe: (writable: { write: (v: string) => void }) => void;

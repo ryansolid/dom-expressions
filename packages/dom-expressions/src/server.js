@@ -28,7 +28,7 @@ export function renderToString(code, options = {}) {
     lazy: {},
     assets: [],
     nonce: options.nonce,
-    event: {},
+    event: options.event || {},
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
     }
@@ -125,7 +125,7 @@ export function renderToStream(code, options = {}) {
     id: renderId || "",
     count: 0,
     async: true,
-    event: {},
+    event: options.event || {},
     resources: {},
     lazy: {},
     suspense: {},
