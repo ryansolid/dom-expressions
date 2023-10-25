@@ -3,7 +3,6 @@ export function renderToString<T>(
   options?: {
     nonce?: string;
     renderId?: string;
-    event?: RequestEvent;
     onError?: (err: any) => void;
   }
 ): string;
@@ -13,7 +12,6 @@ export function renderToStringAsync<T>(
     timeoutMs?: number;
     nonce?: string;
     renderId?: string;
-    event?: RequestEvent;
     noScripts?: boolean;
     onError?: (err: any) => void;
   }
@@ -23,7 +21,6 @@ export function renderToStream<T>(
   options?: {
     nonce?: string;
     renderId?: string;
-    event?: RequestEvent;
     onCompleteShell?: (info: { write: (v: string) => void }) => void;
     onCompleteAll?: (info: { write: (v: string) => void }) => void;
     onError?: (err: any) => void;
@@ -59,6 +56,7 @@ export function generateHydrationScript(options: { nonce?: string; eventNames?: 
 export declare const RequestContext: unique symbol;
 export interface RequestEvent {
   request: Request;
+  locals: Record<string | number | symbol, any>;
 }
 export function getRequestEvent(): RequestEvent | undefined;
 

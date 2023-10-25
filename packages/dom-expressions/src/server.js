@@ -28,7 +28,6 @@ export function renderToString(code, options = {}) {
     lazy: {},
     assets: [],
     nonce: options.nonce,
-    event: options.event || {},
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
     }
@@ -126,7 +125,6 @@ export function renderToStream(code, options = {}) {
     id: renderId || "",
     count: 0,
     async: true,
-    event: options.event || {},
     resources: {},
     lazy: {},
     suspense: {},
@@ -547,11 +545,7 @@ function replacePlaceholder(html, key, value) {
 export const RequestContext = Symbol();
 
 export function getRequestEvent() {
-  return (
-    (globalThis[RequestContext] && globalThis[RequestContext].getStore()) ||
-    (sharedConfig.context && sharedConfig.context.event) ||
-    undefined
-  );
+  return globalThis[RequestContext] ? globalThis[RequestContext].getStore() : undefined;
 }
 
 // consider deprecating
