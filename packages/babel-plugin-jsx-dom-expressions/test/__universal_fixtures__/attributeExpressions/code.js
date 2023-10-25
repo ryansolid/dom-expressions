@@ -102,3 +102,5 @@ const template18 = (
 );
 
 const template19 = <div style={{ a: "static", ...rest }} ></div>
+
+const template20 = <div use:something {...somethingElse} use:zero={0} />;

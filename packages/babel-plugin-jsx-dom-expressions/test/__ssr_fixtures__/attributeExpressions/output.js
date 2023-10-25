@@ -23,8 +23,7 @@ const _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$17 = ["<div", ">", "</div>"],
   _tmpl$18 = ["<div>", "", "</div>"],
   _tmpl$19 =
-    '<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\r\n    random3 random4"></div>',
-  _tmpl$20 = '<input readonly="">';
+    '<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\r\n    random3 random4"></div>';
 const selected = true;
 let id = "my-h1";
 let link;
@@ -203,4 +202,3 @@ const template28 = _$ssrElement(
 );
 const template29 = _$ssr(_tmpl$17, _$ssrAttribute("attribute", !!someValue, false), !!someValue);
 const template30 = _$ssr(_tmpl$19);
-const template31 = _$ssr(_tmpl$20);

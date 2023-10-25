@@ -324,7 +324,7 @@ function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals 
       (firstSpread ||
         (t.isJSXExpressionContainer(node.value) &&
           isDynamic(attribute.get("value").get("expression"), { checkMember: true }))) &&
-      canNativeSpread(key)
+      canNativeSpread(key, { checkNameSpaces: true })
     ) {
       const isContainer = t.isJSXExpressionContainer(node.value);
       const dynamic =

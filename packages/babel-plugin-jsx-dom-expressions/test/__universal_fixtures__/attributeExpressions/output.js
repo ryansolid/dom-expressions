@@ -225,3 +225,10 @@ const template19 = (() => {
   );
   return _el$28;
 })();
+const template20 = (() => {
+  const _el$29 = _$createElement("div");
+  _$use(zero, _el$29, () => 0);
+  _$use(something, _el$29, () => true);
+  _$spread(_el$29, somethingElse, false);
+  return _el$29;
+})();
