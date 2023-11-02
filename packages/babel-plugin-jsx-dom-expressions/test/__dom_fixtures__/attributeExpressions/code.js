@@ -182,13 +182,10 @@ const template32 = (
 );
 
 const template33 = (
-  <button class={styles.button}></button>
-);
-
-const template34 = (
-  <button class={styles["foo--bar"]}></button>
-);
-
-const template35 = (
-  <button class={styles[foo()]}></button>
+  <>
+    <button class={styles.button}></button>
+    <button class={styles["foo--bar"]}></button>
+    <button class={styles.foo.bar}></button>
+    <button class={styles[foo()]}></button>
+  </>
 );

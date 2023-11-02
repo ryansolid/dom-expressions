@@ -350,19 +350,26 @@ const template32 = (() => {
   _el$45.style.removeProperty("background-color");
   return _el$45;
 })();
-const template33 = (() => {
-  const _el$46 = _tmpl$18();
-  _$className(_el$46, styles.button);
-  return _el$46;
-})();
-const template34 = (() => {
-  const _el$47 = _tmpl$18();
-  _$className(_el$47, styles["foo--bar"]);
-  return _el$47;
-})();
-const template35 = (() => {
-  const _el$48 = _tmpl$18();
-  _$effect(() => _$className(_el$48, styles[foo()]));
-  return _el$48;
-})();
+const template33 = [
+  (() => {
+    const _el$46 = _tmpl$18();
+    _$className(_el$46, styles.button);
+    return _el$46;
+  })(),
+  (() => {
+    const _el$47 = _tmpl$18();
+    _$className(_el$47, styles["foo--bar"]);
+    return _el$47;
+  })(),
+  (() => {
+    const _el$48 = _tmpl$18();
+    _$effect(() => _$className(_el$48, styles.foo.bar));
+    return _el$48;
+  })(),
+  (() => {
+    const _el$49 = _tmpl$18();
+    _$effect(() => _$className(_el$49, styles[foo()]));
+    return _el$49;
+  })()
+];
 _$delegateEvents(["click", "input"]);
