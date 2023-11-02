@@ -107,25 +107,25 @@ importers:
         version: 2.3.0
     devDependencies:
       babel-plugin-jsx-dom-expressions:
-        specifier: ^0.37.2
+        specifier: ^0.37.8
         version: link:../babel-plugin-jsx-dom-expressions
       csstype:
         specifier: ^3.1
         version: 3.1.1
       seroval:
-        specifier: ^0.12.0
-        version: 0.12.0
+        specifier: ^0.12.2
+        version: 0.12.2
 
   packages/hyper-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.37.3
+        specifier: ^0.37.8
         version: link:../dom-expressions
 
   packages/lit-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.37.3
+        specifier: ^0.37.8
         version: link:../dom-expressions
       html-parse-string:
         specifier: ^0.0.9
@@ -7139,8 +7139,8 @@ packages:
       lru-cache: 6.0.0
     dev: true
 
-  /seroval@0.12.0:
-    resolution: {integrity: sha512-5qvk9WRORhvOdHVtDv6KEKrTDbG8O9nODDdETfQcJ0u9iaZJ6mAASg/nQgPzqtuV9cqln9msE7WNmD+sJomrIw==}
+  /seroval@0.12.2:
+    resolution: {integrity: sha512-eMbwx2m/nc4u790fPU3Zi9fd5jCDlLrUMkXGNOVcVI84Kz5VhGuFcuyjDXmgoWA/PZiMngU4Yb2APg+N3ZaZbw==}
     engines: {node: '>=10'}
     dev: true
 
