@@ -101,10 +101,20 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   }
 
   if (checkMember && t.isMemberExpression(expr)) {
-    // Do not assume import namespace as dynamic.
-    const object = path.get("object");
-    if (object.isIdentifier()) {
-      const binding = path.scope.getBinding(object.node.name);
+    // Do not assume property access on namespaced imports as dynamic.
+    const object = path.get("object").node;
+
+    if (
+      t.isIdentifier(object) &&
+      (!expr.computed ||
+        !isDynamic(path.get("property"), {
+          checkMember,
+          checkTags,
+          checkCallExpressions,
+          native,
+        }))
+    ) {
+      const binding = path.scope.getBinding(object.name);
 
       if (binding && binding.path.isImportNamespaceSpecifier()) {
         return false;
