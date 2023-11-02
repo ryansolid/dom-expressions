@@ -33,7 +33,7 @@ export function renderToString(code, options = {}) {
     },
     pushed: 0,
     push(p) {
-      const id = 'i-' + this.pushed++;
+      const id = this.renderId + 'i-' + this.pushed++;
       this.serialize(id, p);
       return id;
     },
@@ -166,7 +166,7 @@ export function renderToStream(code, options = {}) {
     },
     pushed: 0,
     push(p) {
-      const id = 'i-' + this.pushed++;
+      const id = this.renderId + 'i-' + this.pushed++;
       this.serialize(id, p);
       return id;
     },
