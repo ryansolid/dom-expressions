@@ -1,3 +1,5 @@
+import * as styles from './styles.module.css';
+
 const selected = true;
 let id = "my-h1";
 let link;
@@ -177,4 +179,8 @@ const template32 = (
   <div
     style={{ "background-color": undefined }}
   />
+);
+
+const template33 = (
+  <button class={styles.button}></button>
 );
