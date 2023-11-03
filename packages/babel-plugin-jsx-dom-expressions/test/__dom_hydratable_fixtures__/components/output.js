@@ -30,7 +30,7 @@ const Child = props => {
         _el$2 = _el$.firstChild,
         _el$3 = _el$2.nextSibling,
         [_el$4, _co$] = _$getNextMarker(_el$3.nextSibling);
-      const _ref$ = props.ref;
+      var _ref$ = props.ref;
       typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
       _$insert(_el$, () => props.name, _el$4, _co$);
       return _el$;
@@ -65,7 +65,7 @@ const template = props => {
           props,
           {
             ref(r$) {
-              const _ref$2 = childRef;
+              var _ref$2 = childRef;
               typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
             },
             booleanProperty: true,
@@ -89,7 +89,7 @@ const template = props => {
           dynamicSpread,
           {
             ref(r$) {
-              const _ref$3 = props.ref;
+              var _ref$3 = props.ref;
               typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
             },
             get children() {
@@ -107,7 +107,7 @@ const template = props => {
       _el$6,
       _$createComponent(Context.Consumer, {
         ref(r$) {
-          const _ref$4 = props.consumerRef();
+          var _ref$4 = props.consumerRef();
           typeof _ref$4 === "function" && _ref$4(r$);
         },
         children: context => context

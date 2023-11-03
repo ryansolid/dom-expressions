@@ -49,7 +49,7 @@ const template = (() => {
     true
   );
   _$insertNode(_el$3, _$createTextNode(`Welcome`));
-  const _ref$ = link;
+  var _ref$ = link;
   typeof _ref$ === "function" ? _$use(_ref$, _el$3) : (link = _el$3);
   _$setProp(_el$3, "href", "/");
   _$setProp(_el$3, "readonly", value);
@@ -131,7 +131,7 @@ const template7 = (() => {
 let refTarget;
 const template8 = (() => {
   var _el$14 = _$createElement("div");
-  const _ref$2 = refTarget;
+  var _ref$2 = refTarget;
   typeof _ref$2 === "function" ? _$use(_ref$2, _el$14) : (refTarget = _el$14);
   return _el$14;
 })();
@@ -142,7 +142,7 @@ const template9 = (() => {
 })();
 const template10 = (() => {
   var _el$16 = _$createElement("div");
-  const _ref$3 = refFactory();
+  var _ref$3 = refFactory();
   typeof _ref$3 === "function" && _$use(_ref$3, _el$16);
   return _el$16;
 })();

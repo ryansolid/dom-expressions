@@ -13,7 +13,7 @@ const Child = props => [
     var _el$ = _$createElement("div"),
       _el$2 = _$createTextNode(`Hello `);
     _$insertNode(_el$, _el$2);
-    const _ref$ = props.ref;
+    var _ref$ = props.ref;
     typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
     _$insert(_el$, () => props.name, null);
     return _el$;
@@ -40,7 +40,7 @@ const template = props => {
           props,
           {
             ref(r$) {
-              const _ref$2 = childRef;
+              var _ref$2 = childRef;
               typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
             },
             booleanProperty: true,
@@ -65,7 +65,7 @@ const template = props => {
           dynamicSpread,
           {
             ref(r$) {
-              const _ref$3 = props.ref;
+              var _ref$3 = props.ref;
               typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
             },
             get children() {
@@ -82,7 +82,7 @@ const template = props => {
       _el$4,
       _$createComponent(Context.Consumer, {
         ref(r$) {
-          const _ref$4 = props.consumerRef();
+          var _ref$4 = props.consumerRef();
           typeof _ref$4 === "function" && _ref$4(r$);
         },
         children: context => context

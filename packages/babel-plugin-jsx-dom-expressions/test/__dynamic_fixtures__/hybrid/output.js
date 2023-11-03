@@ -23,7 +23,7 @@ const Child = props => {
     (() => {
       var _el$ = _tmpl$(),
         _el$2 = _el$.firstChild;
-      const _ref$ = props.ref;
+      var _ref$ = props.ref;
       typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
       _$insert(_el$, () => props.name, null);
       _$effect(() =>
@@ -84,7 +84,7 @@ const Child = props => {
                     (() => {
                       var _el$7 = _tmpl$(),
                         _el$8 = _el$7.firstChild;
-                      const _ref$2 = props.ref;
+                      var _ref$2 = props.ref;
                       typeof _ref$2 === "function" ? _$use(_ref$2, _el$7) : (props.ref = _el$7);
                       _$insert(_el$7, () => props.name, null);
                       _$effect(() =>
