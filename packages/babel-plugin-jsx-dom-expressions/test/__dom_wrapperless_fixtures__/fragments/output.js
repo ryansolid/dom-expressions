@@ -8,13 +8,13 @@ const multiStatic = [_tmpl$(), _tmpl$2()];
 const multiExpression = [_tmpl$(), inserted, _tmpl$2(), "After"];
 const multiDynamic = [
   (() => {
-    const _el$5 = _tmpl$();
+    var _el$5 = _tmpl$();
     _$setAttribute(_el$5, "id", state.first);
     return _el$5;
   })(),
   () => state.inserted,
   (() => {
-    const _el$6 = _tmpl$2();
+    var _el$6 = _tmpl$2();
     _$setAttribute(_el$6, "id", state.last);
     return _el$6;
   })(),

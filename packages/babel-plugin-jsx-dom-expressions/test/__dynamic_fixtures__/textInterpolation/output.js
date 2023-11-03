@@ -22,13 +22,13 @@ const leading = _tmpl$2();
 /* prettier-ignore */
 const extraSpaces = _tmpl$3();
 const trailingExpr = (() => {
-  const _el$4 = _tmpl$(),
+  var _el$4 = _tmpl$(),
     _el$5 = _el$4.firstChild;
   _$insert(_el$4, name, null);
   return _el$4;
 })();
 const leadingExpr = (() => {
-  const _el$6 = _tmpl$2(),
+  var _el$6 = _tmpl$2(),
     _el$7 = _el$6.firstChild;
   _$insert(_el$6, greeting, _el$7);
   return _el$6;
@@ -36,7 +36,7 @@ const leadingExpr = (() => {
 
 /* prettier-ignore */
 const multiExpr = (() => {
-  const _el$8 = _tmpl$4(),
+  var _el$8 = _tmpl$4(),
     _el$9 = _el$8.firstChild;
   _$insert(_el$8, greeting, _el$9);
   _$insert(_el$8, name, null);
@@ -45,7 +45,7 @@ const multiExpr = (() => {
 
 /* prettier-ignore */
 const multiExprSpaced = (() => {
-  const _el$10 = _tmpl$5(),
+  var _el$10 = _tmpl$5(),
     _el$11 = _el$10.firstChild,
     _el$14 = _el$11.nextSibling,
     _el$12 = _el$14.nextSibling,
@@ -58,7 +58,7 @@ const multiExprSpaced = (() => {
 
 /* prettier-ignore */
 const multiExprTogether = (() => {
-  const _el$16 = _tmpl$6(),
+  var _el$16 = _tmpl$6(),
     _el$17 = _el$16.firstChild,
     _el$19 = _el$17.nextSibling,
     _el$18 = _el$19.nextSibling;
@@ -92,13 +92,13 @@ const evaluated = _tmpl$10();
 let number = 4 + 5;
 const evaluatedNonString = _tmpl$11();
 const newLineLiteral = (() => {
-  const _el$27 = _tmpl$12(),
+  var _el$27 = _tmpl$12(),
     _el$28 = _el$27.firstChild;
   _$insert(_el$27, s, _el$28);
   return _el$27;
 })();
 const trailingSpace = (() => {
-  const _el$29 = _tmpl$13();
+  var _el$29 = _tmpl$13();
   _$insert(_el$29, expr);
   return _el$29;
 })();
@@ -107,7 +107,7 @@ const trailingSpaceComp = _$createComponent(Comp, {
 });
 const trailingSpaceFrag = expr;
 const leadingSpaceElement = (() => {
-  const _el$30 = _tmpl$4(),
+  var _el$30 = _tmpl$4(),
     _el$31 = _el$30.firstChild;
   _$insert(_el$30, expr, null);
   return _el$30;
@@ -119,7 +119,7 @@ const leadingSpaceComponent = _$createComponent(Div, {
 });
 const leadingSpaceFragment = [" ", expr];
 const trailingSpaceElement = (() => {
-  const _el$32 = _tmpl$4(),
+  var _el$32 = _tmpl$4(),
     _el$33 = _el$32.firstChild;
   _$insert(_el$32, expr, _el$33);
   return _el$32;

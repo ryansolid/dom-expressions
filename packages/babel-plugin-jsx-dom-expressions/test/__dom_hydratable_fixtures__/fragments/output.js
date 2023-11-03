@@ -14,13 +14,13 @@ const multiStatic = [_$getNextElement(_tmpl$), _$getNextElement(_tmpl$2)];
 const multiExpression = [_$getNextElement(_tmpl$), inserted, _$getNextElement(_tmpl$2), "After"];
 const multiDynamic = [
   (() => {
-    const _el$5 = _$getNextElement(_tmpl$);
+    var _el$5 = _$getNextElement(_tmpl$);
     _$effect(() => _$setAttribute(_el$5, "id", state.first));
     return _el$5;
   })(),
   _$memo(() => state.inserted),
   (() => {
-    const _el$6 = _$getNextElement(_tmpl$2);
+    var _el$6 = _$getNextElement(_tmpl$2);
     _$effect(() => _$setAttribute(_el$6, "id", state.last));
     return _el$6;
   })(),

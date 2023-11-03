@@ -38,7 +38,7 @@ const selected = true;
 let id = "my-h1";
 let link;
 const template = (() => {
-  const _el$ = _$getNextElement(_tmpl$),
+  var _el$ = _$getNextElement(_tmpl$),
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.firstChild;
   _$spread(
@@ -87,7 +87,7 @@ const template = (() => {
   return _el$;
 })();
 const template2 = (() => {
-  const _el$4 = _$getNextElement(_tmpl$2),
+  var _el$4 = _$getNextElement(_tmpl$2),
     _el$5 = _el$4.firstChild,
     _el$6 = _el$5.nextSibling,
     _el$7 = _el$6.firstChild,
@@ -105,7 +105,7 @@ const template2 = (() => {
   return _el$4;
 })();
 const template3 = (() => {
-  const _el$9 = _$getNextElement(_tmpl$3);
+  var _el$9 = _$getNextElement(_tmpl$3);
   _$setAttribute(_el$9, "id", state.id);
   state.color != null
     ? _el$9.style.setProperty("background-color", state.color)
@@ -115,7 +115,7 @@ const template3 = (() => {
   return _el$9;
 })();
 const template4 = (() => {
-  const _el$10 = _$getNextElement(_tmpl$4);
+  var _el$10 = _$getNextElement(_tmpl$4);
   _$classList(_el$10, {
     "ccc:ddd": true
   });
@@ -124,13 +124,13 @@ const template4 = (() => {
 })();
 const template5 = _$getNextElement(_tmpl$5);
 const template6 = (() => {
-  const _el$12 = _$getNextElement(_tmpl$4);
+  var _el$12 = _$getNextElement(_tmpl$4);
   _$setProperty(_el$12, "textContent", "Hi");
   _$effect(_$p => _$style(_el$12, someStyle(), _$p));
   return _el$12;
 })();
 const template7 = (() => {
-  const _el$13 = _$getNextElement(_tmpl$4);
+  var _el$13 = _$getNextElement(_tmpl$4);
   _$effect(
     _p$ => {
       const _v$ = {
@@ -158,54 +158,54 @@ const template7 = (() => {
 })();
 let refTarget;
 const template8 = (() => {
-  const _el$14 = _$getNextElement(_tmpl$4);
+  var _el$14 = _$getNextElement(_tmpl$4);
   const _ref$2 = refTarget;
   typeof _ref$2 === "function" ? _$use(_ref$2, _el$14) : (refTarget = _el$14);
   return _el$14;
 })();
 const template9 = (() => {
-  const _el$15 = _$getNextElement(_tmpl$4);
+  var _el$15 = _$getNextElement(_tmpl$4);
   _$use(e => console.log(e), _el$15);
   return _el$15;
 })();
 const template10 = (() => {
-  const _el$16 = _$getNextElement(_tmpl$4);
+  var _el$16 = _$getNextElement(_tmpl$4);
   const _ref$3 = refFactory();
   typeof _ref$3 === "function" && _$use(_ref$3, _el$16);
   return _el$16;
 })();
 const template11 = (() => {
-  const _el$17 = _$getNextElement(_tmpl$4);
+  var _el$17 = _$getNextElement(_tmpl$4);
   _$use(zero, _el$17, () => 0);
   _$use(another, _el$17, () => thing);
   _$use(something, _el$17, () => true);
   return _el$17;
 })();
 const template12 = (() => {
-  const _el$18 = _$getNextElement(_tmpl$4);
+  var _el$18 = _$getNextElement(_tmpl$4);
   _el$18.htmlFor = thing;
   return _el$18;
 })();
 const template13 = (() => {
-  const _el$19 = _$getNextElement(_tmpl$6);
+  var _el$19 = _$getNextElement(_tmpl$6);
   _$setProperty(_el$19, "checked", true);
   return _el$19;
 })();
 const template14 = (() => {
-  const _el$20 = _$getNextElement(_tmpl$6);
+  var _el$20 = _$getNextElement(_tmpl$6);
   _$effect(() => _$setProperty(_el$20, "checked", state.visible));
   return _el$20;
 })();
 const template15 = _$getNextElement(_tmpl$7);
 const template16 = _$getNextElement(_tmpl$8);
 const template17 = (() => {
-  const _el$23 = _$getNextElement(_tmpl$9);
+  var _el$23 = _$getNextElement(_tmpl$9);
   _$addEventListener(_el$23, "click", increment, true);
   _$runHydrationEvents();
   return _el$23;
 })();
 const template18 = (() => {
-  const _el$24 = _$getNextElement(_tmpl$4);
+  var _el$24 = _$getNextElement(_tmpl$4);
   _$spread(
     _el$24,
     _$mergeProps(() => ({
@@ -221,7 +221,7 @@ const template18 = (() => {
 })();
 const template19 = _$getNextElement(_tmpl$10);
 const template20 = (() => {
-  const _el$26 = _$getNextElement(_tmpl$11),
+  var _el$26 = _$getNextElement(_tmpl$11),
     _el$27 = _el$26.firstChild,
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
@@ -252,7 +252,7 @@ const template20 = (() => {
   return _el$26;
 })();
 const template21 = (() => {
-  const _el$29 = _$getNextElement(_tmpl$4);
+  var _el$29 = _$getNextElement(_tmpl$4);
   _$effect(_$p =>
     _$style(
       _el$29,
@@ -267,13 +267,13 @@ const template21 = (() => {
 })();
 const template22 = _$getNextElement(_tmpl$12);
 const template23 = (() => {
-  const _el$31 = _$getNextElement(_tmpl$4);
+  var _el$31 = _$getNextElement(_tmpl$4);
   _$insert(_el$31, () => "t" in test && "true");
   _$effect(() => _$setProperty(_el$31, "disabled", "t" in test));
   return _el$31;
 })();
 const template24 = (() => {
-  const _el$32 = _$getNextElement(_tmpl$13);
+  var _el$32 = _$getNextElement(_tmpl$13);
   _$spread(
     _el$32,
     _$mergeProps(props, {
@@ -286,7 +286,7 @@ const template24 = (() => {
   return _el$32;
 })();
 const template25 = (() => {
-  const _el$33 = _$getNextElement(_tmpl$14),
+  var _el$33 = _$getNextElement(_tmpl$14),
     _el$35 = _el$33.firstChild,
     [_el$36, _co$] = _$getNextMarker(_el$35.nextSibling),
     _el$34 = _el$36.nextSibling;
@@ -303,14 +303,14 @@ const template25 = (() => {
   return _el$33;
 })();
 const template26 = (() => {
-  const _el$37 = _$getNextElement(_tmpl$15);
+  var _el$37 = _$getNextElement(_tmpl$15);
   _$setAttribute(_el$37, "middle", middle);
   _$spread(_el$37, spread, false, true);
   _$runHydrationEvents();
   return _el$37;
 })();
 const template27 = (() => {
-  const _el$38 = _$getNextElement(_tmpl$15);
+  var _el$38 = _$getNextElement(_tmpl$15);
   _$spread(
     _el$38,
     _$mergeProps(
@@ -327,7 +327,7 @@ const template27 = (() => {
   return _el$38;
 })();
 const template28 = (() => {
-  const _el$39 = _$getNextElement(_tmpl$16),
+  var _el$39 = _$getNextElement(_tmpl$16),
     _el$40 = _el$39.firstChild,
     _el$41 = _el$40.firstChild,
     _el$42 = _el$41.nextSibling,
@@ -343,7 +343,7 @@ const template28 = (() => {
   return _el$39;
 })();
 const template29 = (() => {
-  const _el$46 = _$getNextElement(_tmpl$4);
+  var _el$46 = _$getNextElement(_tmpl$4);
   _$setAttribute(_el$46, "attribute", !!someValue);
   _$insert(_el$46, !!someValue);
   return _el$46;

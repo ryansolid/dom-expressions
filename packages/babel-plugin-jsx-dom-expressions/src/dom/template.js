@@ -92,7 +92,7 @@ function registerTemplate(path, results) {
     );
   }
   results.declarations.unshift(decl);
-  results.decl = t.variableDeclaration("const", results.declarations);
+  results.decl = t.variableDeclaration("var", results.declarations);
 }
 
 function wrapDynamics(path, dynamics) {

@@ -26,7 +26,7 @@ const Child = props => {
   const [s, set] = createSignal();
   return [
     (() => {
-      const _el$ = _$getNextElement(_tmpl$),
+      var _el$ = _$getNextElement(_tmpl$),
         _el$2 = _el$.firstChild,
         _el$3 = _el$2.nextSibling,
         [_el$4, _co$] = _$getNextMarker(_el$3.nextSibling);
@@ -36,7 +36,7 @@ const Child = props => {
       return _el$;
     })(),
     (() => {
-      const _el$5 = _$getNextElement(_tmpl$2);
+      var _el$5 = _$getNextElement(_tmpl$2);
       _$use(set, _el$5);
       _$insert(_el$5, () => props.children);
       return _el$5;
@@ -47,7 +47,7 @@ const template = props => {
   let childRef;
   const { content } = props;
   return (() => {
-    const _el$6 = _$getNextElement(_tmpl$4),
+    var _el$6 = _$getNextElement(_tmpl$4),
       _el$9 = _el$6.firstChild,
       [_el$10, _co$2] = _$getNextMarker(_el$9.nextSibling),
       _el$11 = _el$10.nextSibling,
@@ -93,7 +93,7 @@ const template = props => {
               typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
             },
             get children() {
-              const _el$8 = _$getNextElement(_tmpl$2);
+              var _el$8 = _$getNextElement(_tmpl$2);
               _$insert(_el$8, content);
               return _el$8;
             }
@@ -186,7 +186,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 const template10 = (() => {
-  const _el$20 = _$getNextElement(_tmpl$5),
+  var _el$20 = _$getNextElement(_tmpl$5),
     _el$26 = _el$20.firstChild,
     [_el$27, _co$5] = _$getNextMarker(_el$26.nextSibling),
     _el$21 = _el$27.nextSibling,
@@ -255,7 +255,7 @@ const template10 = (() => {
   return _el$20;
 })();
 const template11 = (() => {
-  const _el$38 = _$getNextElement(_tmpl$6),
+  var _el$38 = _$getNextElement(_tmpl$6),
     _el$42 = _el$38.firstChild,
     [_el$43, _co$11] = _$getNextMarker(_el$42.nextSibling),
     _el$39 = _el$43.nextSibling,
@@ -322,7 +322,7 @@ const template11 = (() => {
   return _el$38;
 })();
 const template12 = (() => {
-  const _el$54 = _$getNextElement(_tmpl$7),
+  var _el$54 = _$getNextElement(_tmpl$7),
     _el$55 = _el$54.firstChild,
     _el$60 = _el$55.nextSibling,
     [_el$61, _co$17] = _$getNextMarker(_el$60.nextSibling),

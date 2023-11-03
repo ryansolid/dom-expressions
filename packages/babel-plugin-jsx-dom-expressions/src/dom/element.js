@@ -466,7 +466,7 @@ function transformAttributes(path, results) {
           if (!isFunction && t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("const", [
+              t.variableDeclaration("var", [
                 t.variableDeclarator(refIdentifier, value.expression)
               ]),
               t.expressionStatement(
@@ -496,7 +496,7 @@ function transformAttributes(path, results) {
           } else if (t.isCallExpression(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("const", [
+              t.variableDeclaration("var", [
                 t.variableDeclarator(refIdentifier, value.expression)
               ]),
               t.expressionStatement(

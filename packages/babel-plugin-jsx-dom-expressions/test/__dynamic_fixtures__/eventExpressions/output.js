@@ -9,7 +9,7 @@ function hoisted1() {
 }
 const hoisted2 = () => console.log("hoisted delegated");
 const template = (() => {
-  const _el$ = _tmpl$(),
+  var _el$ = _tmpl$(),
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.nextSibling,
     _el$4 = _el$3.nextSibling,

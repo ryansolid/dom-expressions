@@ -19,7 +19,7 @@ const Child = props => {
   const [s, set] = createSignal();
   return [
     (() => {
-      const _el$ = _tmpl$(),
+      var _el$ = _tmpl$(),
         _el$2 = _el$.firstChild;
       const _ref$ = props.ref;
       typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
@@ -27,7 +27,7 @@ const Child = props => {
       return _el$;
     })(),
     (() => {
-      const _el$3 = _tmpl$2();
+      var _el$3 = _tmpl$2();
       _$use(set, _el$3);
       _$insert(_el$3, () => props.children);
       return _el$3;
@@ -38,7 +38,7 @@ const template = props => {
   let childRef;
   const { content } = props;
   return (() => {
-    const _el$4 = _tmpl$2();
+    var _el$4 = _tmpl$2();
     _$insert(
       _el$4,
       _$createComponent(
@@ -77,7 +77,7 @@ const template = props => {
               typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
             },
             get children() {
-              const _el$6 = _tmpl$2();
+              var _el$6 = _tmpl$2();
               _$insert(_el$6, content);
               return _el$6;
             }
@@ -163,7 +163,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 const template10 = (() => {
-  const _el$12 = _tmpl$4(),
+  var _el$12 = _tmpl$4(),
     _el$13 = _el$12.firstChild,
     _el$18 = _el$13.nextSibling,
     _el$14 = _el$18.nextSibling,
@@ -218,7 +218,7 @@ const template10 = (() => {
   return _el$12;
 })();
 const template11 = (() => {
-  const _el$22 = _tmpl$5(),
+  var _el$22 = _tmpl$5(),
     _el$23 = _el$22.firstChild,
     _el$26 = _el$23.nextSibling,
     _el$24 = _el$26.nextSibling,
@@ -269,7 +269,7 @@ const template11 = (() => {
   return _el$22;
 })();
 const template12 = (() => {
-  const _el$28 = _tmpl$6(),
+  var _el$28 = _tmpl$6(),
     _el$29 = _el$28.firstChild,
     _el$34 = _el$29.nextSibling,
     _el$30 = _el$34.nextSibling,

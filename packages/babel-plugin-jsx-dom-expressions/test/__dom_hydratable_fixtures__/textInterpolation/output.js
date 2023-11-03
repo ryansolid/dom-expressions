@@ -29,7 +29,7 @@ const leading = _$getNextElement(_tmpl$2);
 /* prettier-ignore */
 const extraSpaces = _$getNextElement(_tmpl$3);
 const trailingExpr = (() => {
-  const _el$4 = _$getNextElement(_tmpl$4),
+  var _el$4 = _$getNextElement(_tmpl$4),
     _el$5 = _el$4.firstChild,
     _el$6 = _el$5.nextSibling,
     [_el$7, _co$] = _$getNextMarker(_el$6.nextSibling);
@@ -37,7 +37,7 @@ const trailingExpr = (() => {
   return _el$4;
 })();
 const leadingExpr = (() => {
-  const _el$8 = _$getNextElement(_tmpl$5),
+  var _el$8 = _$getNextElement(_tmpl$5),
     _el$10 = _el$8.firstChild,
     [_el$11, _co$2] = _$getNextMarker(_el$10.nextSibling),
     _el$9 = _el$11.nextSibling;
@@ -47,7 +47,7 @@ const leadingExpr = (() => {
 
 /* prettier-ignore */
 const multiExpr = (() => {
-  const _el$12 = _$getNextElement(_tmpl$6),
+  var _el$12 = _$getNextElement(_tmpl$6),
     _el$14 = _el$12.firstChild,
     [_el$15, _co$3] = _$getNextMarker(_el$14.nextSibling),
     _el$13 = _el$15.nextSibling,
@@ -60,7 +60,7 @@ const multiExpr = (() => {
 
 /* prettier-ignore */
 const multiExprSpaced = (() => {
-  const _el$18 = _$getNextElement(_tmpl$7),
+  var _el$18 = _$getNextElement(_tmpl$7),
     _el$19 = _el$18.firstChild,
     _el$22 = _el$19.nextSibling,
     [_el$23, _co$5] = _$getNextMarker(_el$22.nextSibling),
@@ -75,7 +75,7 @@ const multiExprSpaced = (() => {
 
 /* prettier-ignore */
 const multiExprTogether = (() => {
-  const _el$26 = _$getNextElement(_tmpl$8),
+  var _el$26 = _$getNextElement(_tmpl$8),
     _el$27 = _el$26.firstChild,
     _el$29 = _el$27.nextSibling,
     [_el$30, _co$7] = _$getNextMarker(_el$29.nextSibling),
@@ -112,7 +112,7 @@ const evaluated = _$getNextElement(_tmpl$12);
 let number = 4 + 5;
 const evaluatedNonString = _$getNextElement(_tmpl$13);
 const newLineLiteral = (() => {
-  const _el$40 = _$getNextElement(_tmpl$14),
+  var _el$40 = _$getNextElement(_tmpl$14),
     _el$42 = _el$40.firstChild,
     [_el$43, _co$9] = _$getNextMarker(_el$42.nextSibling),
     _el$41 = _el$43.nextSibling;
@@ -120,7 +120,7 @@ const newLineLiteral = (() => {
   return _el$40;
 })();
 const trailingSpace = (() => {
-  const _el$44 = _$getNextElement(_tmpl$15);
+  var _el$44 = _$getNextElement(_tmpl$15);
   _$insert(_el$44, expr);
   return _el$44;
 })();
@@ -129,7 +129,7 @@ const trailingSpaceComp = _$createComponent(Comp, {
 });
 const trailingSpaceFrag = expr;
 const leadingSpaceElement = (() => {
-  const _el$45 = _$getNextElement(_tmpl$16),
+  var _el$45 = _$getNextElement(_tmpl$16),
     _el$46 = _el$45.firstChild,
     _el$47 = _el$46.nextSibling,
     [_el$48, _co$10] = _$getNextMarker(_el$47.nextSibling);
@@ -143,7 +143,7 @@ const leadingSpaceComponent = _$createComponent(Div, {
 });
 const leadingSpaceFragment = [" ", expr];
 const trailingSpaceElement = (() => {
-  const _el$49 = _$getNextElement(_tmpl$17),
+  var _el$49 = _$getNextElement(_tmpl$17),
     _el$51 = _el$49.firstChild,
     [_el$52, _co$11] = _$getNextMarker(_el$51.nextSibling),
     _el$50 = _el$52.nextSibling;
@@ -162,7 +162,7 @@ const escapeCompAttribute = _$createComponent(Div, {
   title: "Search&hellip;"
 });
 const lastElementExpression = (() => {
-  const _el$54 = _$getNextElement(_tmpl$19),
+  var _el$54 = _$getNextElement(_tmpl$19),
     _el$55 = _el$54.firstChild,
     _el$56 = _el$55.nextSibling,
     [_el$57, _co$12] = _$getNextMarker(_el$56.nextSibling);
