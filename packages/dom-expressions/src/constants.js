@@ -10,6 +10,7 @@ const booleans = [
   "formnovalidate",
   "hidden",
   "indeterminate",
+  "inert",
   "ismap",
   "loop",
   "multiple",
