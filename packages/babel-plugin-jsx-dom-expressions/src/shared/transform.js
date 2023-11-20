@@ -47,11 +47,12 @@ export function transformThis(path) {
   });
   return node => {
     if (thisId) {
-      let parent = path.getStatementParent();
-      const decl = t.variableDeclaration("const", [
-        t.variableDeclarator(thisId, t.thisExpression())
-      ]);
-      parent.insertBefore(decl);
+      const parent = path.scope.getFunctionParent();
+      parent.push({
+        id: thisId,
+        init: t.thisExpression(),
+        kind: 'const',
+      });
     }
     return node;
   };
