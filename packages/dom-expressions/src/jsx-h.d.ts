@@ -51,6 +51,13 @@ export namespace JSX {
     1: any;
   }
   type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+
+  const SERIALIZABLE: unique symbol;
+  interface SerializableAttributeValue {
+    toString(): string;
+    [SERIALIZABLE]: never;
+  }
+
   interface IntrinsicAttributes {
     ref?: unknown | ((e: unknown) => void);
   }
@@ -718,7 +725,7 @@ export namespace JSX {
     autofocus?: FunctionMaybe<boolean>;
     disabled?: FunctionMaybe<boolean>;
     form?: FunctionMaybe<string>;
-    formaction?: FunctionMaybe<string>;
+    formaction?: FunctionMaybe<string | SerializableAttributeValue>;
     formenctype?: FunctionMaybe<HTMLFormEncType>;
     formmethod?: FunctionMaybe<HTMLFormMethod>;
     formnovalidate?: FunctionMaybe<boolean>;
@@ -726,7 +733,7 @@ export namespace JSX {
     name?: FunctionMaybe<string>;
     type?: FunctionMaybe<"submit" | "reset" | "button">;
     value?: FunctionMaybe<string>;
-    formAction?: FunctionMaybe<string>;
+    formAction?: FunctionMaybe<string | SerializableAttributeValue>;
     formEnctype?: FunctionMaybe<HTMLFormEncType>;
     formMethod?: FunctionMaybe<HTMLFormMethod>;
     formNoValidate?: FunctionMaybe<boolean>;
@@ -767,7 +774,7 @@ export namespace JSX {
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
     "accept-charset"?: FunctionMaybe<string>;
-    action?: FunctionMaybe<string>;
+    action?: FunctionMaybe<string | SerializableAttributeValue>;
     autocomplete?: FunctionMaybe<string>;
     encoding?: FunctionMaybe<HTMLFormEncType>;
     enctype?: FunctionMaybe<HTMLFormEncType>;
@@ -819,7 +826,7 @@ export namespace JSX {
     crossorigin?: FunctionMaybe<HTMLCrossorigin>;
     disabled?: FunctionMaybe<boolean>;
     form?: FunctionMaybe<string>;
-    formaction?: FunctionMaybe<string>;
+    formaction?: FunctionMaybe<string | SerializableAttributeValue>;
     formenctype?: FunctionMaybe<HTMLFormEncType>;
     formmethod?: FunctionMaybe<HTMLFormMethod>;
     formnovalidate?: FunctionMaybe<boolean>;
@@ -843,7 +850,7 @@ export namespace JSX {
     value?: FunctionMaybe<string | string[] | number>;
     width?: FunctionMaybe<number | string>;
     crossOrigin?: FunctionMaybe<HTMLCrossorigin>;
-    formAction?: FunctionMaybe<string>;
+    formAction?: FunctionMaybe<string | SerializableAttributeValue>;
     formEnctype?: FunctionMaybe<HTMLFormEncType>;
     formMethod?: FunctionMaybe<HTMLFormMethod>;
     formNoValidate?: FunctionMaybe<boolean>;
