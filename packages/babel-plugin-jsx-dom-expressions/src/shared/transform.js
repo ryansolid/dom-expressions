@@ -37,21 +37,42 @@ export function transformJSX(path) {
   path.replaceWith(replace(template(path, result, false)));
 }
 
+function getTargetFunctionParent(path, parent) {
+  let current = path.scope.getFunctionParent();
+  while (current !== parent && current.path.isArrowFunctionExpression()) {
+    current = current.path.parentPath.scope.getFunctionParent()
+  }
+  return current;
+}
+
 export function transformThis(path) {
   const parent = path.scope.getFunctionParent();
   let thisId;
   path.traverse({
     ThisExpression(path) {
-      let current = path.scope.getFunctionParent();
-
-      while (current !== parent && current.path.isArrowFunctionExpression()) {
-        current = current.path.parentPath.scope.getFunctionParent()
-      }
+      const current = getTargetFunctionParent(path, parent);
       if (current === parent) {
         thisId || (thisId = path.scope.generateUidIdentifier("self$"));
         path.replaceWith(thisId);
       }
-    }
+    },
+    JSXElement(path) {
+      let source = path.get('openingElement').get('name');
+      while (source.isJSXMemberExpression()) {
+        source = source.get('object');
+      }
+      if (source.isJSXIdentifier() && source.node.name === 'this') {
+        const current = getTargetFunctionParent(path, parent);
+        if (current === parent) {
+          thisId || (thisId = path.scope.generateUidIdentifier("self$"));
+          source.replaceWith(t.jsxIdentifier(thisId.name));
+
+          if (path.node.closingElement) {
+            path.node.closingElement.name = path.node.openingElement.name;
+          }
+        }
+      } 
+    },
   });
   return node => {
     if (thisId) {
