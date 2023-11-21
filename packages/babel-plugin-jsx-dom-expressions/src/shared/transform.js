@@ -42,7 +42,11 @@ export function transformThis(path) {
   let thisId;
   path.traverse({
     ThisExpression(path) {
-      const current = path.scope.getFunctionParent();
+      let current = path.scope.getFunctionParent();
+
+      while (current !== parent && current.path.isArrowFunctionExpression()) {
+        current = current.path.parentPath.scope.getFunctionParent()
+      }
       if (current === parent) {
         thisId || (thisId = path.scope.generateUidIdentifier("self$"));
         path.replaceWith(thisId);
