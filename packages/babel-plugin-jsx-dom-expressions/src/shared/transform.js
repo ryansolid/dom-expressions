@@ -38,16 +38,19 @@ export function transformJSX(path) {
 }
 
 export function transformThis(path) {
+  const parent = path.scope.getFunctionParent();
   let thisId;
   path.traverse({
     ThisExpression(path) {
-      thisId || (thisId = path.scope.generateUidIdentifier("self$"));
-      path.replaceWith(thisId);
+      const current = path.scope.getFunctionParent();
+      if (current === parent) {
+        thisId || (thisId = path.scope.generateUidIdentifier("self$"));
+        path.replaceWith(thisId);
+      }
     }
   });
   return node => {
     if (thisId) {
-      const parent = path.scope.getFunctionParent();
       parent.push({
         id: thisId,
         init: t.thisExpression(),
