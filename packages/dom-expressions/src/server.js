@@ -33,10 +33,10 @@ export function renderToString(code, options = {}) {
     },
     pushed: 0,
     push(p) {
-      const id = this.renderId + 'i-' + this.pushed++;
+      const id = this.renderId + "i-" + this.pushed++;
       this.serialize(id, p);
       return id;
-    },
+    }
   };
   let html = root(d => {
     setTimeout(d);
@@ -166,7 +166,7 @@ export function renderToStream(code, options = {}) {
     },
     pushed: 0,
     push(p) {
-      const id = this.renderId + 'i-' + this.pushed++;
+      const id = this.renderId + "i-" + this.pushed++;
       this.serialize(id, p);
       return id;
     },
@@ -174,7 +174,11 @@ export function renderToStream(code, options = {}) {
       if (!registry.has(key)) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
-        registry.set(key, { resolve, reject });
+        // double queue to ensure that Suspense is last but in same flush
+        registry.set(key, {
+          resolve: v => queue(() => queue(() => resolve(v))),
+          reject: e => queue(() => queue(() => reject(e)))
+        });
         serializer.write(key, p);
       }
       return (value, error) => {
@@ -187,9 +191,7 @@ export function renderToStream(code, options = {}) {
           }
           if ((value !== undefined || error) && !completed) {
             if (!firstFlushed) {
-              Promise.resolve().then(
-                () => (html = replacePlaceholder(html, key, value !== undefined ? value : ""))
-              );
+              queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
               error ? reject(error) : resolve(true);
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
@@ -199,7 +201,7 @@ export function renderToStream(code, options = {}) {
             }
           }
         }
-        if (!registry.size) Promise.resolve().then(flushEnd);
+        if (!registry.size) queue(flushEnd);
         return firstFlushed;
       };
     }
@@ -237,7 +239,7 @@ export function renderToStream(code, options = {}) {
           complete();
         };
       } else onCompleteAll = complete;
-      if (!registry.size) Promise.resolve().then(flushEnd);
+      if (!registry.size) queue(flushEnd);
     },
     pipe(w) {
       Promise.allSettled(blockingPromises).then(() => {
@@ -517,6 +519,10 @@ export function Hydration(props) {
 export function NoHydration(props) {
   sharedConfig.context.noHydrate = true;
   return props.children;
+}
+
+function queue(fn) {
+  return Promise.resolve().then(fn);
 }
 
 function injectAssets(assets, html) {
