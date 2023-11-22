@@ -30,7 +30,13 @@ export function renderToString(code, options = {}) {
     nonce: options.nonce,
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
-    }
+    },
+    pushed: 0,
+    push(p) {
+      const id = this.renderId + 'i-' + this.pushed++;
+      this.serialize(id, p);
+      return id;
+    },
   };
   let html = root(d => {
     setTimeout(d);
@@ -157,6 +163,12 @@ export function renderToStream(code, options = {}) {
               serializer.write(id, e);
             });
       } else if (!serverOnly) serializer.write(id, p);
+    },
+    pushed: 0,
+    push(p) {
+      const id = this.renderId + 'i-' + this.pushed++;
+      this.serialize(id, p);
+      return id;
     },
     registerFragment(key) {
       if (!registry.has(key)) {
