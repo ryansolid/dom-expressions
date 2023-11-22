@@ -92,16 +92,50 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     expr.leadingComments.shift();
     return false;
   }
+
   if (
-    (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr))) ||
-    (checkMember &&
-      (t.isMemberExpression(expr) ||
-        t.isOptionalMemberExpression(expr) ||
-        t.isSpreadElement(expr) ||
-        (t.isBinaryExpression(expr) && expr.operator === "in"))) ||
-    (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr)))
-  )
+    checkCallExpressions &&
+    (t.isCallExpression(expr) || t.isOptionalCallExpression(expr))
+  ) {
     return true;
+  }
+
+  if (checkMember && t.isMemberExpression(expr)) {
+    // Do not assume property access on namespaced imports as dynamic.
+    const object = path.get("object").node;
+
+    if (
+      t.isIdentifier(object) &&
+      (!expr.computed ||
+        !isDynamic(path.get("property"), {
+          checkMember,
+          checkTags,
+          checkCallExpressions,
+          native,
+        }))
+    ) {
+      const binding = path.scope.getBinding(object.name);
+
+      if (binding && binding.path.isImportNamespaceSpecifier()) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  if (
+    checkMember &&
+    (t.isOptionalMemberExpression(expr) ||
+      t.isSpreadElement(expr) ||
+      (t.isBinaryExpression(expr) && expr.operator === "in"))
+  ) {
+    return true;
+  }
+
+  if (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr))) {
+    return true;
+  }
 
   let dynamic;
   path.traverse({

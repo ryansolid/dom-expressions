@@ -29,7 +29,9 @@ const _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a
   _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is </span><input><div>`),
   _tmpl$17 =
     /*#__PURE__*/ _$template(`<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2
-    random3 random4">`);
+    random3 random4">`),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<button>`);
+import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
 let link;
@@ -348,4 +350,26 @@ const template32 = (() => {
   _el$45.style.removeProperty("background-color");
   return _el$45;
 })();
+const template33 = [
+  (() => {
+    const _el$46 = _tmpl$18();
+    _$className(_el$46, styles.button);
+    return _el$46;
+  })(),
+  (() => {
+    const _el$47 = _tmpl$18();
+    _$className(_el$47, styles["foo--bar"]);
+    return _el$47;
+  })(),
+  (() => {
+    const _el$48 = _tmpl$18();
+    _$effect(() => _$className(_el$48, styles.foo.bar));
+    return _el$48;
+  })(),
+  (() => {
+    const _el$49 = _tmpl$18();
+    _$effect(() => _$className(_el$49, styles[foo()]));
+    return _el$49;
+  })()
+];
 _$delegateEvents(["click", "input"]);
