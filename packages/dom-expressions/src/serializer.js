@@ -1,4 +1,4 @@
-import { Feature, GLOBAL_CONTEXT_API_SCRIPT, Serializer, getCrossReferenceHeader } from "seroval"
+import { Feature, Serializer, getCrossReferenceHeader } from "seroval"
 
 const ES2017FLAG =
   Feature.AggregateError // ES2021
@@ -16,10 +16,6 @@ export function createSerializer({ onData, onDone, scopeId, onError }) {
     onDone,
     onError,
   });
-}
-
-export function getGlobalHeaderScript() {
-  return GLOBAL_CONTEXT_API_SCRIPT;
 }
 
 export function getLocalHeaderScript(id) {
