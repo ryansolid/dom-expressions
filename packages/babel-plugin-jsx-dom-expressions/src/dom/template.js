@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { getConfig, getRendererConfig, registerImportMethod } from "../shared/utils";
+import { getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -129,50 +129,65 @@ function wrapDynamics(path, dynamics) {
       ])
     );
   }
-  const declarations = [],
-    statements = [],
-    identifiers = [],
-    prevId = t.identifier("_p$");
-  dynamics.forEach(({ elem, key, value, isSVG, isCE, tagName }) => {
-    const identifier = path.scope.generateUidIdentifier("v$");
-    if (key.startsWith("class:") && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
+
+  const prevId = t.identifier("_p$");
+
+  /** @type {t.VariableDeclarator[]} */
+  const declarations = [];
+  /** @type {t.ExpressionStatement[]} */
+  const statements = [];
+  /** @type {t.Identifier[]} */
+  const properties = [];
+
+  dynamics.forEach(({ elem, key, value, isSVG, isCE, tagName }, index) => {
+    const varIdent = path.scope.generateUidIdentifier("v$");
+
+    const propIdent = t.identifier(getNumberedId(index));
+    const propMember = t.memberExpression(prevId, propIdent);
+
+    if (
+      key.startsWith("class:") &&
+      !t.isBooleanLiteral(value) &&
+      !t.isUnaryExpression(value)
+    ) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
     }
-    identifiers.push(identifier);
-    declarations.push(t.variableDeclarator(identifier, value));
+
+    properties.push(propIdent);
+    declarations.push(t.variableDeclarator(varIdent, value));
+
     if (key === "classList" || key === "style") {
-      const prev = t.memberExpression(prevId, identifier);
       statements.push(
         t.expressionStatement(
           t.assignmentExpression(
             "=",
-            prev,
-            setAttr(path, elem, key, identifier, {
+            propMember,
+            setAttr(path, elem, key, varIdent, {
               isSVG,
               isCE,
               tagName,
               dynamic: true,
-              prevId: prev
-            })
-          )
-        )
+              prevId: propMember,
+            }),
+          ),
+        ),
       );
     } else {
-      const prev = key.startsWith("style:") ? identifier : undefined;
+      const prev = key.startsWith("style:") ? varIdent : undefined;
       statements.push(
         t.expressionStatement(
           t.logicalExpression(
             "&&",
-            t.binaryExpression("!==", identifier, t.memberExpression(prevId, identifier)),
+            t.binaryExpression("!==", varIdent, propMember),
             setAttr(
               path,
               elem,
               key,
-              t.assignmentExpression("=", t.memberExpression(prevId, identifier), identifier),
-              { isSVG, isCE, tagName, dynamic: true, prevId: prev }
-            )
-          )
-        )
+              t.assignmentExpression("=", propMember, varIdent),
+              { isSVG, isCE, tagName, dynamic: true, prevId: prev },
+            ),
+          ),
+        ),
       );
     }
   });
@@ -184,10 +199,12 @@ function wrapDynamics(path, dynamics) {
         t.blockStatement([
           t.variableDeclaration("const", declarations),
           ...statements,
-          t.returnStatement(prevId)
-        ])
+          t.returnStatement(prevId),
+        ]),
       ),
-      t.objectExpression(identifiers.map(id => t.objectProperty(id, t.identifier("undefined"))))
-    ])
+      t.objectExpression(
+        properties.map((id) => t.objectProperty(id, t.identifier("undefined"))),
+      ),
+    ]),
   );
 }

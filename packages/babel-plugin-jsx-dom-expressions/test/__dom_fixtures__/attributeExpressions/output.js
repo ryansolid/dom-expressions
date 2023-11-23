@@ -139,18 +139,18 @@ const template7 = (() => {
         },
         _v$2 = props.top,
         _v$3 = !!props.active;
-      _p$._v$ = _$style(_el$13, _v$, _p$._v$);
-      _v$2 !== _p$._v$2 &&
-        ((_p$._v$2 = _v$2) != null
+      _p$.a = _$style(_el$13, _v$, _p$.a);
+      _v$2 !== _p$.b &&
+        ((_p$.b = _v$2) != null
           ? _el$13.style.setProperty("padding-top", _v$2)
           : _el$13.style.removeProperty("padding-top"));
-      _v$3 !== _p$._v$3 && _el$13.classList.toggle("my-class", (_p$._v$3 = _v$3));
+      _v$3 !== _p$.c && _el$13.classList.toggle("my-class", (_p$.c = _v$3));
       return _p$;
     },
     {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
+      a: undefined,
+      b: undefined,
+      c: undefined
     }
   );
   return _el$13;
@@ -230,17 +230,17 @@ const template20 = (() => {
         _v$5 = max(),
         _v$6 = min(),
         _v$7 = max();
-      _v$4 !== _p$._v$4 && _$setAttribute(_el$27, "min", (_p$._v$4 = _v$4));
-      _v$5 !== _p$._v$5 && _$setAttribute(_el$27, "max", (_p$._v$5 = _v$5));
-      _v$6 !== _p$._v$6 && _$setAttribute(_el$28, "min", (_p$._v$6 = _v$6));
-      _v$7 !== _p$._v$7 && _$setAttribute(_el$28, "max", (_p$._v$7 = _v$7));
+      _v$4 !== _p$.a && _$setAttribute(_el$27, "min", (_p$.a = _v$4));
+      _v$5 !== _p$.b && _$setAttribute(_el$27, "max", (_p$.b = _v$5));
+      _v$6 !== _p$.c && _$setAttribute(_el$28, "min", (_p$.c = _v$6));
+      _v$7 !== _p$.d && _$setAttribute(_el$28, "max", (_p$.d = _v$7));
       return _p$;
     },
     {
-      _v$4: undefined,
-      _v$5: undefined,
-      _v$6: undefined,
-      _v$7: undefined
+      a: undefined,
+      b: undefined,
+      c: undefined,
+      d: undefined
     }
   );
   _$effect(() => (_el$27.value = s()));

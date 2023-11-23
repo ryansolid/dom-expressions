@@ -23,17 +23,17 @@ const template2 = (() => {
         _v$2 = state.data,
         _v$3 = state.data,
         _v$4 = state.data;
-      _v$ !== _p$._v$ && (_el$2.someAttr = _p$._v$ = _v$);
-      _v$2 !== _p$._v$2 && (_el$2.notprop = _p$._v$2 = _v$2);
-      _v$3 !== _p$._v$3 && _$setAttribute(_el$2, "my-attr", (_p$._v$3 = _v$3));
-      _v$4 !== _p$._v$4 && (_el$2.someProp = _p$._v$4 = _v$4);
+      _v$ !== _p$.a && (_el$2.someAttr = _p$.a = _v$);
+      _v$2 !== _p$.b && (_el$2.notprop = _p$.b = _v$2);
+      _v$3 !== _p$.c && _$setAttribute(_el$2, "my-attr", (_p$.c = _v$3));
+      _v$4 !== _p$.d && (_el$2.someProp = _p$.d = _v$4);
       return _p$;
     },
     {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined,
-      _v$4: undefined
+      a: undefined,
+      b: undefined,
+      c: undefined,
+      d: undefined
     }
   );
   return _el$2;

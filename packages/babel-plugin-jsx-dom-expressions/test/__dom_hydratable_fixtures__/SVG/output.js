@@ -39,22 +39,22 @@ const template2 = (() => {
         _v$3 = state.x,
         _v$4 = state.y,
         _v$5 = props.stroke;
-      _v$ !== _p$._v$ && _$setAttribute(_el$3, "class", (_p$._v$ = _v$));
-      _v$2 !== _p$._v$2 && _$setAttribute(_el$3, "stroke-width", (_p$._v$2 = _v$2));
-      _v$3 !== _p$._v$3 && _$setAttribute(_el$3, "x", (_p$._v$3 = _v$3));
-      _v$4 !== _p$._v$4 && _$setAttribute(_el$3, "y", (_p$._v$4 = _v$4));
-      _v$5 !== _p$._v$5 &&
-        ((_p$._v$5 = _v$5) != null
+      _v$ !== _p$.a && _$setAttribute(_el$3, "class", (_p$.a = _v$));
+      _v$2 !== _p$.b && _$setAttribute(_el$3, "stroke-width", (_p$.b = _v$2));
+      _v$3 !== _p$.c && _$setAttribute(_el$3, "x", (_p$.c = _v$3));
+      _v$4 !== _p$.d && _$setAttribute(_el$3, "y", (_p$.d = _v$4));
+      _v$5 !== _p$.e &&
+        ((_p$.e = _v$5) != null
           ? _el$3.style.setProperty("stroke-width", _v$5)
           : _el$3.style.removeProperty("stroke-width"));
       return _p$;
     },
     {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined,
-      _v$4: undefined,
-      _v$5: undefined
+      a: undefined,
+      b: undefined,
+      c: undefined,
+      d: undefined,
+      e: undefined
     }
   );
   return _el$2;
