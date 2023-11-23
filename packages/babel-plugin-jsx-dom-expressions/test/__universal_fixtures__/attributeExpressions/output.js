@@ -115,15 +115,15 @@ const template7 = (() => {
         },
         _v$2 = props.top,
         _v$3 = props.active;
-      _v$ !== _p$._v$ && (_p$._v$ = _$setProp(_el$13, "style", _v$, _p$._v$));
-      _v$2 !== _p$._v$2 && (_p$._v$2 = _$setProp(_el$13, "style:padding-top", _v$2, _p$._v$2));
-      _v$3 !== _p$._v$3 && (_p$._v$3 = _$setProp(_el$13, "class:my-class", _v$3, _p$._v$3));
+      _v$ !== _p$.a && (_p$.a = _$setProp(_el$13, "style", _v$, _p$.a));
+      _v$2 !== _p$.b && (_p$.b = _$setProp(_el$13, "style:padding-top", _v$2, _p$.b));
+      _v$3 !== _p$.c && (_p$.c = _$setProp(_el$13, "class:my-class", _v$3, _p$.c));
       return _p$;
     },
     {
-      _v$: undefined,
-      _v$2: undefined,
-      _v$3: undefined
+      a: undefined,
+      b: undefined,
+      c: undefined
     }
   );
   return _el$13;
