@@ -25,17 +25,17 @@ const template2 = (() => {
         _v$2 = state.data,
         _v$3 = state.data,
         _v$4 = state.data;
-      _v$ !== _p$.a && _$setProperty(_el$2, "someAttr", (_p$.a = _v$));
-      _v$2 !== _p$.b && _$setProperty(_el$2, "notprop", (_p$.b = _v$2));
-      _v$3 !== _p$.c && _$setAttribute(_el$2, "my-attr", (_p$.c = _v$3));
-      _v$4 !== _p$.d && (_el$2.someProp = _p$.d = _v$4);
+      _v$ !== _p$.e && _$setProperty(_el$2, "someAttr", (_p$.e = _v$));
+      _v$2 !== _p$.t && _$setProperty(_el$2, "notprop", (_p$.t = _v$2));
+      _v$3 !== _p$.a && _$setAttribute(_el$2, "my-attr", (_p$.a = _v$3));
+      _v$4 !== _p$.o && (_el$2.someProp = _p$.o = _v$4);
       return _p$;
     },
     {
+      e: undefined,
+      t: undefined,
       a: undefined,
-      b: undefined,
-      c: undefined,
-      d: undefined
+      o: undefined
     }
   );
   return _el$2;

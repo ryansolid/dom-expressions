@@ -404,7 +404,7 @@ export function canNativeSpread(key, { checkNameSpaces } = {}) {
   return true;
 }
 
-const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$";
+const chars = "etaoinshrdlucwmfygpbTAOISWCBvkxjqzPHFMDRELNGUKVYJQZX_$";
 const base = chars.length;
 
 export function getNumberedId(num) {
