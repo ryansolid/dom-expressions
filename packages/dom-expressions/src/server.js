@@ -242,7 +242,7 @@ export function renderToStream(code, options = {}) {
       if (!registry.size) queue(flushEnd);
     },
     pipe(w) {
-      Promise.allSettled(blockingPromises).then(() => {
+      allSettled(blockingPromises).then(() => {
         doShell();
         buffer = writable = w;
         buffer.write(tmp);
@@ -252,7 +252,7 @@ export function renderToStream(code, options = {}) {
       });
     },
     pipeTo(w) {
-      return Promise.allSettled(blockingPromises).then(() => {
+      return allSettled(blockingPromises).then(() => {
         doShell();
         const encoder = new TextEncoder();
         const writer = w.getWriter();
@@ -523,6 +523,14 @@ export function NoHydration(props) {
 
 function queue(fn) {
   return Promise.resolve().then(fn);
+}
+
+function allSettled(promises) {
+  let length = promises.length;
+  return Promise.allSettled(promises).then(() => {
+    if (promises.length !== length) return allSettled(promises);
+    return;
+  })
 }
 
 function injectAssets(assets, html) {
