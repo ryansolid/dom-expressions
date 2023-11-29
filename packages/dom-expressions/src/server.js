@@ -33,7 +33,7 @@ export function renderToString(code, options = {}) {
     },
     roots: 0,
     nextRoot() {
-      return this.renderId + "i-" + this.pushed++;
+      return this.renderId + "i-" + this.roots++;
     },
   };
   let html = root(d => {
@@ -164,7 +164,7 @@ export function renderToStream(code, options = {}) {
     },
     roots: 0,
     nextRoot() {
-      return this.renderId + "i-" + this.pushed++;
+      return this.renderId + "i-" + this.roots++;
     },
     registerFragment(key) {
       if (!registry.has(key)) {
