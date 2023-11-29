@@ -19,5 +19,5 @@ export function createSerializer({ onData, onDone, scopeId, onError }) {
 }
 
 export function getLocalHeaderScript(id) {
-  return getCrossReferenceHeader(id);
+  return getCrossReferenceHeader(id) + ';';
 }
