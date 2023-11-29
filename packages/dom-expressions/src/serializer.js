@@ -1,4 +1,4 @@
-import { Feature, Serializer, getCrossReferenceHeader } from "seroval";
+import { Feature, Serializer, getCrossReferenceHeader, createPlugin } from "seroval";
 import { SSRNode } from "./ssr-node";
 
 const ES2017FLAG =
