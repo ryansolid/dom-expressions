@@ -31,12 +31,10 @@ export function renderToString(code, options = {}) {
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
     },
-    pushed: 0,
-    push(p) {
-      const id = this.renderId + "i-" + this.pushed++;
-      this.serialize(id, p);
-      return id;
-    }
+    roots: 0,
+    nextRoot() {
+      return this.renderId + "i-" + this.pushed++;
+    },
   };
   let html = root(d => {
     setTimeout(d);
@@ -164,11 +162,9 @@ export function renderToStream(code, options = {}) {
             });
       } else if (!serverOnly) serializer.write(id, p);
     },
-    pushed: 0,
-    push(p) {
-      const id = this.renderId + "i-" + this.pushed++;
-      this.serialize(id, p);
-      return id;
+    roots: 0,
+    nextRoot() {
+      return this.renderId + "i-" + this.pushed++;
     },
     registerFragment(key) {
       if (!registry.has(key)) {
