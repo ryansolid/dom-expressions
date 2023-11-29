@@ -1,7 +1,7 @@
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig, root } from "rxcore";
-import { createSerializer, getGlobalHeaderScript, getLocalHeaderScript } from "./serializer";
 import { SSRNode, resolveSSRNode } from "./ssr-node";
+import { createSerializer, getLocalHeaderScript } from "./serializer";
 export { createComponent } from "rxcore";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
@@ -31,7 +31,11 @@ export function renderToString(code, options = {}) {
     nonce: options.nonce,
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
-    }
+    },
+    roots: 0,
+    nextRoot() {
+      return this.renderId + "i-" + this.pushed++;
+    },
   };
   let html = root(d => {
     setTimeout(d);
@@ -159,11 +163,19 @@ export function renderToStream(code, options = {}) {
             });
       } else if (!serverOnly) serializer.write(id, p);
     },
+    roots: 0,
+    nextRoot() {
+      return this.renderId + "i-" + this.pushed++;
+    },
     registerFragment(key) {
       if (!registry.has(key)) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
-        registry.set(key, { resolve, reject });
+        // double queue to ensure that Suspense is last but in same flush
+        registry.set(key, {
+          resolve: v => queue(() => queue(() => resolve(v))),
+          reject: e => queue(() => queue(() => reject(e)))
+        });
         serializer.write(key, p);
       }
       return (value, error) => {
@@ -176,9 +188,7 @@ export function renderToStream(code, options = {}) {
           }
           if ((value !== undefined || error) && !completed) {
             if (!firstFlushed) {
-              Promise.resolve().then(
-                () => (html = replacePlaceholder(html, key, value !== undefined ? value : ""))
-              );
+              queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
               error ? reject(error) : resolve(true);
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
@@ -188,7 +198,7 @@ export function renderToStream(code, options = {}) {
             }
           }
         }
-        if (!registry.size) Promise.resolve().then(flushEnd);
+        if (!registry.size) queue(flushEnd);
         return firstFlushed;
       };
     }
@@ -226,10 +236,10 @@ export function renderToStream(code, options = {}) {
           complete();
         };
       } else onCompleteAll = complete;
-      if (!registry.size) Promise.resolve().then(flushEnd);
+      if (!registry.size) queue(flushEnd);
     },
     pipe(w) {
-      Promise.allSettled(blockingPromises).then(() => {
+      allSettled(blockingPromises).then(() => {
         doShell();
         buffer = writable = w;
         buffer.write(tmp);
@@ -239,7 +249,7 @@ export function renderToStream(code, options = {}) {
       });
     },
     pipeTo(w) {
-      return Promise.allSettled(blockingPromises).then(() => {
+      return allSettled(blockingPromises).then(() => {
         doShell();
         const encoder = new TextEncoder();
         const writer = w.getWriter();
@@ -472,7 +482,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '", "'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,s=t(a);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});${getGlobalHeaderScript()}</script><!--xs-->`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,s=t(a);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
 }
 
 export function Hydration(props) {
@@ -492,6 +502,18 @@ export function Hydration(props) {
 export function NoHydration(props) {
   sharedConfig.context.noHydrate = true;
   return props.children;
+}
+
+function queue(fn) {
+  return Promise.resolve().then(fn);
+}
+
+function allSettled(promises) {
+  let length = promises.length;
+  return Promise.allSettled(promises).then(() => {
+    if (promises.length !== length) return allSettled(promises);
+    return;
+  })
 }
 
 function injectAssets(assets, html) {

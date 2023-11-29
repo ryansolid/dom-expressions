@@ -1,4 +1,4 @@
-import { Feature, GLOBAL_CONTEXT_API_SCRIPT, Serializer, createPlugin, getCrossReferenceHeader } from "seroval"
+import { Feature, Serializer, getCrossReferenceHeader } from "seroval";
 import { SSRNode } from "./ssr-node";
 
 const ES2017FLAG =
@@ -15,17 +15,21 @@ const JSXPlugin = createPlugin({
   },
   parse: {
     sync(value, ctx) {
-      return ctx.parse(value.t);
+      // return ctx.parse(value.t);
+      return undefined;
     },
     async(value, ctx) {
-      return ctx.parse(value.t);
+      // return ctx.parse(value.t);
+      return undefined;
     },
     stream(value, ctx) {
-      return ctx.parse(value.t);
+      // return ctx.parse(value.t);
+      return undefined;
     },
   },
   serialize(node, ctx) {
-    return '_$HY.tmpl(' + ctx.serialize(node) + ')';
+    // return '_$HY.tmpl(' + ctx.serialize(node) + ')';
+    return 'void 0';
   },
 });
 
@@ -43,10 +47,6 @@ export function createSerializer({ onData, onDone, scopeId, onError }) {
   });
 }
 
-export function getGlobalHeaderScript() {
-  return GLOBAL_CONTEXT_API_SCRIPT;
-}
-
 export function getLocalHeaderScript(id) {
-  return getCrossReferenceHeader(id);
+  return getCrossReferenceHeader(id) + ';';
 }

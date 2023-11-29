@@ -118,6 +118,12 @@ export namespace JSX {
     | FocusEventHandler<T, E>
     | BoundFocusEventHandler<T, E>;
 
+  const SERIALIZABLE: unique symbol;
+  interface SerializableAttributeValue {
+    toString(): string;
+    [SERIALIZABLE]: never;
+  }
+
   interface IntrinsicAttributes {
     ref?: unknown | ((e: unknown) => void);
   }
@@ -791,7 +797,7 @@ export namespace JSX {
     autofocus?: boolean;
     disabled?: boolean;
     form?: string;
-    formaction?: string;
+    formaction?: string | SerializableAttributeValue;
     formenctype?: HTMLFormEncType;
     formmethod?: HTMLFormMethod;
     formnovalidate?: boolean;
@@ -799,7 +805,7 @@ export namespace JSX {
     name?: string;
     type?: "submit" | "reset" | "button";
     value?: string;
-    formAction?: string;
+    formAction?: string | SerializableAttributeValue;
     formEnctype?: HTMLFormEncType;
     formMethod?: HTMLFormMethod;
     formNoValidate?: boolean;
@@ -842,7 +848,7 @@ export namespace JSX {
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
     "accept-charset"?: string;
-    action?: string;
+    action?: string | SerializableAttributeValue;
     autocomplete?: string;
     encoding?: HTMLFormEncType;
     enctype?: HTMLFormEncType;
@@ -898,7 +904,7 @@ export namespace JSX {
     disabled?: boolean;
     enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
     form?: string;
-    formaction?: string;
+    formaction?: string | SerializableAttributeValue;
     formenctype?: HTMLFormEncType;
     formmethod?: HTMLFormMethod;
     formnovalidate?: boolean;
@@ -924,7 +930,7 @@ export namespace JSX {
     value?: string | string[] | number;
     width?: number | string;
     crossOrigin?: HTMLCrossorigin;
-    formAction?: string;
+    formAction?: string | SerializableAttributeValue;
     formEnctype?: HTMLFormEncType;
     formMethod?: HTMLFormMethod;
     formNoValidate?: boolean;

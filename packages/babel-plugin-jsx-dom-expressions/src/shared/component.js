@@ -13,6 +13,7 @@ import { transformNode, getCreateTemplate } from "./transform";
 
 function convertComponentIdentifier(node) {
   if (t.isJSXIdentifier(node)) {
+    if (node.name === 'this') return t.thisExpression();
     if (t.isValidIdentifier(node.name)) node.type = "Identifier";
     else return t.stringLiteral(node.name);
   } else if (t.isJSXMemberExpression(node)) {
