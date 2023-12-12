@@ -1216,6 +1216,7 @@ export namespace JSX {
     lang?: string;
     tabIndex?: number | string;
     tabindex?: number | string;
+    width?: number | string;
   }
   interface StylableSVGAttributes {
     class?: string | undefined;
