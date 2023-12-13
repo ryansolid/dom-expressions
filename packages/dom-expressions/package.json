@@ -20,11 +20,13 @@
   },
   "peerDependencies": {
     "csstype": "^3.0",
-    "seroval": "^0.15.1"
+    "seroval": "^1.0.0",
+    "seroval-plugins": "^1.0.1"
   },
   "devDependencies": {
     "babel-plugin-jsx-dom-expressions": "^0.37.9",
     "csstype": "^3.1",
-    "seroval": "^0.15.1"
+    "seroval": "^1.0.0",
+    "seroval-plugins": "^1.0.1"
   }
 }
