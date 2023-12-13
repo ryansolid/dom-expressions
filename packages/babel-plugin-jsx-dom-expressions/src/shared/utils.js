@@ -403,3 +403,19 @@ export function canNativeSpread(key, { checkNameSpaces } = {}) {
   if (key === "ref") return false;
   return true;
 }
+
+const chars = "etaoinshrdlucwmfygpbTAOISWCBvkxjqzPHFMDRELNGUKVYJQZX_$";
+const base = chars.length;
+
+export function getNumberedId(num) {
+  let out = "";
+
+  do {
+    const digit = num % base;
+
+    num = Math.floor(num / base);
+    out = chars[digit] + out;
+  } while (num !== 0);
+
+  return out;
+}
