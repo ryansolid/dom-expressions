@@ -315,7 +315,7 @@ export function ssrClassList(value) {
 
 export function ssrStyle(value) {
   if (!value) return "";
-  if (typeof value === "string") return value;
+  if (typeof value === "string") return JSON.stringify(value); // JSON.stringify to guarantee that double quotes in the style string are escaped correctly
   let result = "";
   const k = Object.keys(value);
   for (let i = 0; i < k.length; i++) {
