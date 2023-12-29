@@ -62,6 +62,7 @@ export function renderToStringAsync(code, options = {}) {
 export function renderToStream(code, options = {}) {
   let { nonce, onCompleteShell, onCompleteAll, renderId, noScripts } = options;
   let dispose;
+  let closingTags;
   const blockingPromises = [];
   const pushTask = task => {
     if (noScripts) return;
@@ -80,10 +81,10 @@ export function renderToStream(code, options = {}) {
       onCompleteAll &&
         onCompleteAll({
           write(v) {
-            !completed && buffer.write(v);
+            !completed && write(v);
           }
         });
-      writable && writable.end();
+      end && end();
       completed = true;
       setTimeout(dispose);
     }
@@ -105,7 +106,7 @@ export function renderToStream(code, options = {}) {
   const registry = new Map();
   const writeTasks = () => {
     if (tasks.length && !completed && firstFlushed) {
-      buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
+      write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
       tasks = "";
     }
     timer && clearTimeout(timer);
@@ -113,18 +114,16 @@ export function renderToStream(code, options = {}) {
   };
 
   let context;
-  let writable;
+  let end;
   let tmp = "";
   let tasks = "";
   let firstFlushed = false;
   let completed = false;
   let scriptFlushed = false;
   let timer = null;
-  let buffer = {
-    write(payload) {
-      tmp += payload;
-    }
-  };
+  let write = (payload) => {
+    tmp += payload;
+  }
   sharedConfig.context = context = {
     id: renderId || "",
     count: 0,
@@ -190,7 +189,7 @@ export function renderToStream(code, options = {}) {
               queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
               error ? reject(error) : resolve(true);
             } else {
-              buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
+              write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
               error ? reject(error) : resolve(true);
               scriptFlushed = true;
@@ -212,12 +211,13 @@ export function renderToStream(code, options = {}) {
     context.noHydrate = true;
     html = injectAssets(context.assets, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
-    buffer.write(html);
+    [html, closingTags] = splitOnBodyEnd(html);
+    write(html);
     tasks = "";
     onCompleteShell &&
       onCompleteShell({
         write(v) {
-          !completed && buffer.write(v);
+          !completed && write(v);
         }
       });
   }
@@ -226,6 +226,7 @@ export function renderToStream(code, options = {}) {
     then(fn) {
       function complete() {
         doShell();
+        tmp += closingTags;
         fn(tmp);
       }
       if (onCompleteAll) {
@@ -240,10 +241,14 @@ export function renderToStream(code, options = {}) {
     pipe(w) {
       allSettled(blockingPromises).then(() => {
         doShell();
-        buffer = writable = w;
-        buffer.write(tmp);
+        write = w.write;
+        end = () => {
+          write(closingTags);
+          w.end();
+        }
+        write(tmp);
         firstFlushed = true;
-        if (completed) writable.end();
+        if (completed) end();
         else setTimeout(flushEnd);
       });
     },
@@ -254,21 +259,18 @@ export function renderToStream(code, options = {}) {
         const writer = w.getWriter();
         let resolve;
         const p = new Promise(r => (resolve = r));
-        writable = {
-          end() {
-            writer.releaseLock();
-            w.close();
-            resolve();
-          }
-        };
-        buffer = {
-          write(payload) {
-            writer.write(encoder.encode(payload));
-          }
-        };
-        buffer.write(tmp);
+        end = () => {
+          writer.write(encoder.encode(closingTags))
+          writer.releaseLock();
+          w.close();
+          resolve();
+        }
+        write = (payload) => {
+          writer.write(encoder.encode(payload));
+        }
+        write(tmp);
         firstFlushed = true;
-        if (completed) writable.end();
+        if (completed) end();
         else setTimeout(flushEnd);
         return p;
       });
@@ -561,6 +563,11 @@ function replacePlaceholder(html, key, value) {
   const last = html.indexOf(close, first + marker.length);
 
   return html.slice(0, first) + value + html.slice(last + close.length);
+}
+
+function splitOnBodyEnd(html) {
+  const index = html.lastIndexOf("</body>");
+  return index >= 0 ? [html.slice(0, index), html.slice(index)] : [html, ""];
 }
 
 // experimental
