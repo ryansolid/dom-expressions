@@ -231,14 +231,14 @@ function normalizeAttributes(path) {
   if (classAttributes.length > 1) {
     const first = classAttributes[0].node,
       values = [],
-      quasis = [t.TemplateElement({ raw: "" })];
+      quasis = [t.templateElement({ raw: "" })];
     for (let i = 0; i < classAttributes.length; i++) {
       const attr = classAttributes[i].node,
         isLast = i === classAttributes.length - 1;
       if (!t.isJSXExpressionContainer(attr.value)) {
         const prev = quasis.pop();
         quasis.push(
-          t.TemplateElement({
+          t.templateElement({
             raw:
               (prev ? prev.value.raw : "") +
               (i ? " " : "") +
@@ -257,12 +257,12 @@ function normalizeAttributes(path) {
           expr = t.callExpression(registerImportMethod(path, "ssrClassList"), [expr]);
         }
         values.push(t.logicalExpression("||", expr, t.stringLiteral("")));
-        quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+        quasis.push(t.templateElement({ raw: isLast ? "" : " " }));
       }
       i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
     }
-    first.name = t.JSXIdentifier("class");
-    first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
+    first.name = t.jsxIdentifier("class");
+    first.value = t.jsxExpressionContainer(t.templateLiteral(quasis, values));
   }
   if (styleAttributes.length) transformToObject("style", attributes, styleAttributes);
   return attributes;
@@ -288,7 +288,7 @@ function transformAttributes(path, results, info) {
       ((t.isJSXNamespacedName(node.name) && reservedNameSpace) || ChildProperties.has(key)) &&
       !t.isJSXExpressionContainer(value)
     ) {
-      node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+      node.value = value = t.jsxExpressionContainer(value || t.jsxEmptyExpression());
     }
 
     if (
@@ -355,7 +355,7 @@ function transformAttributes(path, results, info) {
             !value.expression.properties.some(p => t.isSpreadElement(p))
           ) {
             const values = [],
-              quasis = [t.TemplateElement({ raw: "" })];
+              quasis = [t.templateElement({ raw: "" })];
             transformClasslistObject(path, value.expression, values, quasis);
             if (!values.length) value.expression = t.stringLiteral(quasis[0].value.raw);
             else if (values.length === 1 && !quasis[0].value.raw && !quasis[1].value.raw) {
@@ -417,19 +417,19 @@ function transformClasslistObject(path, expr, values, quasis) {
         if (!prop.computed) {
           const prev = quasis.pop();
           quasis.push(
-            t.TemplateElement({
+            t.templateElement({
               raw:
                 (prev ? prev.value.raw : "") + (i ? " " : "") + `${key.value}` + (isLast ? "" : " ")
             })
           );
         } else {
           values.push(key);
-          quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+          quasis.push(t.templateElement({ raw: isLast ? "" : " " }));
         }
       }
     } else {
       values.push(t.conditionalExpression(prop.value, key, t.stringLiteral("")));
-      quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+      quasis.push(t.templateElement({ raw: isLast ? "" : " " }));
     }
   });
 }
