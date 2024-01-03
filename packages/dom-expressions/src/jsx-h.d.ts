@@ -1833,7 +1833,16 @@ export namespace JSX {
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      FitToViewBoxSVGAttributes {}
+      FitToViewBoxSVGAttributes {
+    width?: FunctionMaybe<number | string>;
+    height?: FunctionMaybe<number | string>;
+    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio>;
+    refX?: FunctionMaybe<number | string>;
+    refY?: FunctionMaybe<number | string>;
+    viewBox?: FunctionMaybe<string>;
+    x?: FunctionMaybe<number | string>;
+    y?: FunctionMaybe<number | string>;
+  }
   interface TextSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
