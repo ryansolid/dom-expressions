@@ -75,8 +75,8 @@ importers:
         specifier: 0.4.9
         version: 0.4.9
       typescript:
-        specifier: ~4.9.4
-        version: 4.9.4
+        specifier: ~5.3.3
+        version: 5.3.3
 
   packages/babel-plugin-jsx-dom-expressions:
     dependencies:
@@ -7622,6 +7622,12 @@ packages:
   /typescript@4.9.4:
     resolution: {integrity: sha512-Uz+dTXYzxXXbsFpM86Wh3dKCxrQqUcVMxwU54orwlJjOpO3ao8L7j5lH+dWfTwgCwIuM9GQ2kvVotzYJMXTBZg==}
     engines: {node: '>=4.2.0'}
+    hasBin: true
+    dev: true
+
+  /typescript@5.3.3:
+    resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
+    engines: {node: '>=14.17'}
     hasBin: true
     dev: true
 
