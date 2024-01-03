@@ -86,7 +86,7 @@ const template3 = _$ssr(
   _$escape(state.content)
 );
 const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class, true) || ""} ccc:ddd`);
-const template5 = _$ssr(_tmpl$5, `a  b`);
+const template5 = _$ssr(_tmpl$5, `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrStyle(someStyle()));
 const template7 = _$ssr(
   _tmpl$7,

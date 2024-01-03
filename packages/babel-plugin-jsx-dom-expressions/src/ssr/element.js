@@ -241,7 +241,6 @@ function normalizeAttributes(path) {
           t.templateElement({
             raw:
               (prev ? prev.value.raw : "") +
-              (i ? " " : "") +
               `${attr.value.value}` +
               (isLast ? "" : " ")
           })
@@ -251,6 +250,7 @@ function normalizeAttributes(path) {
         if (attr.name.name === "classList") {
           if (t.isObjectExpression(expr) && !expr.properties.some(p => t.isSpreadElement(p))) {
             transformClasslistObject(path, expr, values, quasis);
+            if (!isLast) quasis[quasis.length - 1].value.raw += " ";
             i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
             continue;
           }

@@ -100,7 +100,7 @@ const template4 = _$ssr(
   _$ssrHydrationKey(),
   `hi ${_$escape(state.class, true) || ""} ccc:ddd`
 );
-const template5 = _$ssr(_tmpl$5, _$ssrHydrationKey(), `a  b`);
+const template5 = _$ssr(_tmpl$5, _$ssrHydrationKey(), `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$ssrStyle(someStyle()));
 const template7 = _$ssr(
   _tmpl$7,
