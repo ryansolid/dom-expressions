@@ -34,7 +34,7 @@ export function renderToString(code, options = {}) {
     roots: 0,
     nextRoot() {
       return this.renderId + "i-" + this.roots++;
-    },
+    }
   };
   let html = root(d => {
     setTimeout(d);
@@ -526,7 +526,7 @@ function allSettled(promises) {
   return Promise.allSettled(promises).then(() => {
     if (promises.length !== length) return allSettled(promises);
     return;
-  })
+  });
 }
 
 function injectAssets(assets, html) {
@@ -567,7 +567,13 @@ function replacePlaceholder(html, key, value) {
 export const RequestContext = Symbol();
 
 export function getRequestEvent() {
-  return globalThis[RequestContext] ? globalThis[RequestContext].getStore() : undefined;
+  return globalThis[RequestContext]
+    ? globalThis[RequestContext].getStore() ||
+        (sharedConfig.context && sharedConfig.context.event) ||
+        console.log(
+          "RequestEvent is missing. This is most likely due to accessing `getRequestEvent` non-managed async scope in a partially polyfilled environment. Try moving it above all `await` calls."
+        )
+    : undefined;
 }
 
 // consider deprecating
