@@ -732,6 +732,7 @@ export namespace JSX {
     about?: string;
     datatype?: string;
     inlist?: any;
+    popover?: boolean | "manual" | "auto";
     prefix?: string;
     property?: string;
     resource?: string;
@@ -802,6 +803,8 @@ export namespace JSX {
     formmethod?: HTMLFormMethod;
     formnovalidate?: boolean;
     formtarget?: string;
+    popovertarget?: string;
+    popovertargetaction?: "hide" | "show" | "toggle";
     name?: string;
     type?: "submit" | "reset" | "button";
     value?: string;
@@ -810,6 +813,8 @@ export namespace JSX {
     formMethod?: HTMLFormMethod;
     formNoValidate?: boolean;
     formTarget?: string;
+    popoverTarget?: string;
+    popoverTargetAction?: "hide" | "show" | "toggle";
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string;

@@ -656,6 +656,7 @@ export namespace JSX {
     about?: FunctionMaybe<string>;
     datatype?: FunctionMaybe<string>;
     inlist?: FunctionMaybe<any>;
+    popover?: FunctionMaybe<boolean | "manual" | "auto">;
     prefix?: FunctionMaybe<string>;
     property?: FunctionMaybe<string>;
     resource?: FunctionMaybe<string>;
@@ -730,6 +731,8 @@ export namespace JSX {
     formmethod?: FunctionMaybe<HTMLFormMethod>;
     formnovalidate?: FunctionMaybe<boolean>;
     formtarget?: FunctionMaybe<string>;
+    popovertarget?: FunctionMaybe<string>;
+    popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle">;
     name?: FunctionMaybe<string>;
     type?: FunctionMaybe<"submit" | "reset" | "button">;
     value?: FunctionMaybe<string>;
@@ -738,6 +741,8 @@ export namespace JSX {
     formMethod?: FunctionMaybe<HTMLFormMethod>;
     formNoValidate?: FunctionMaybe<boolean>;
     formTarget?: FunctionMaybe<string>;
+    popoverTarget?: FunctionMaybe<string>;
+    popoverTargetAction?: FunctionMaybe<"hide" | "show" | "toggle">;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: FunctionMaybe<number | string>;
