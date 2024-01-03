@@ -81,7 +81,7 @@ function transformAttributes(path, results) {
         reservedNameSpace &&
         !t.isJSXExpressionContainer(value)
       ) {
-        node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+        node.value = value = t.jsxExpressionContainer(value || t.jsxEmptyExpression());
       }
       if (t.isJSXExpressionContainer(value)) {
         if (key === "ref") {
