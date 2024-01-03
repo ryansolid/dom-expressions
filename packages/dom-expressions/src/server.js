@@ -315,7 +315,7 @@ export function ssrClassList(value) {
 
 export function ssrStyle(value) {
   if (!value) return "";
-  if (typeof value === "string") return value;
+  if (typeof value === "string") return escape(value, true);
   let result = "";
   const k = Object.keys(value);
   for (let i = 0; i < k.length; i++) {
