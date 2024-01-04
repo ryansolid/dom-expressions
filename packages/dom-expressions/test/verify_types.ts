@@ -34,6 +34,9 @@ interface EventHandlersWithUnimplemented extends JSX.CustomEventHandlersLowerCas
   onwebkittransitionend: any;
   addEventListener: any;
   removeEventListener: any;
+  oncopy: any;
+  oncut: any;
+  onpaste: any;
 }
 
 function verifyCustomGlobalEventHandlers(
