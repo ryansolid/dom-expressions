@@ -6,15 +6,18 @@ import { JSX } from "../src/jsx";
  * This file checks that JSX interfaces extend built-in type definitions from dom.
  * It's not meant to be run with unit tests; it will only report errors in your IDE or `tsc`.
  */
+type Expect<T extends never> = T;
 
-function verifyHTMLElementTags(t: keyof HTMLElementTagNameMap): keyof JSX.HTMLElementTags {
-  return t;
-}
+declare function verifyHTMLElementTags(
+  t: keyof HTMLElementTagNameMap
+): t is keyof JSX.HTMLElementTags;
+type HTMLElementTagsComplement = Exclude<keyof HTMLElementTagNameMap, keyof JSX.HTMLElementTags>;
+type ExpectHTMLElementTags = Expect<HTMLElementTagsComplement>;
 
 type SvgTagsNoDuplicates = keyof JSX.SVGElementTags | "a" | "script" | "style" | "title";
-function verifySVGElementTags(t: keyof SVGElementTagNameMap): SvgTagsNoDuplicates {
-  return t;
-}
+declare function verifySVGElementTags(t: keyof SVGElementTagNameMap): t is SvgTagsNoDuplicates;
+type SVGElementTagsComplement = Exclude<keyof SVGElementTagNameMap, SvgTagsNoDuplicates>;
+type ExpectSVGElementTags = Expect<SVGElementTagsComplement>;
 
 interface EventHandlersWithUnimplemented extends JSX.CustomEventHandlersLowerCase<{}> {
   onanimationcancel: any;
@@ -39,15 +42,22 @@ interface EventHandlersWithUnimplemented extends JSX.CustomEventHandlersLowerCas
   onpaste: any;
 }
 
-function verifyCustomGlobalEventHandlers(
+declare function verifyCustomGlobalEventHandlers(
   t: keyof GlobalEventHandlers
-): keyof EventHandlersWithUnimplemented {
-  return t;
-}
+): t is keyof EventHandlersWithUnimplemented;
+
+type CustomGlobalEventHandlersComplement = Exclude<
+  keyof GlobalEventHandlers,
+  keyof EventHandlersWithUnimplemented
+>;
+type ExpectCustomGlobalEventHandlers = Expect<CustomGlobalEventHandlersComplement>;
 
 type LoweredEventHandlerNames = Lowercase<keyof JSX.CustomEventHandlersCamelCase<{}>>;
-function verifyEventHandlerCaseMatches(
+declare function verifyEventHandlerCaseMatches(
   t: keyof JSX.CustomEventHandlersLowerCase<{}>
-): LoweredEventHandlerNames {
-  return t;
-}
+): t is LoweredEventHandlerNames;
+type EventHandlerCaseMatchesComplement = Exclude<
+  keyof JSX.CustomEventHandlersLowerCase<{}>,
+  LoweredEventHandlerNames
+>;
+type ExpectEventHandlerCaseMatches = Expect<EventHandlerCaseMatchesComplement>;
