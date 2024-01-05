@@ -239,37 +239,41 @@ export function renderToStream(code, options = {}) {
     },
     pipe(w) {
       allSettled(blockingPromises).then(() => {
-        doShell();
-        buffer = writable = w;
-        buffer.write(tmp);
-        firstFlushed = true;
-        if (completed) writable.end();
-        else setTimeout(flushEnd);
+        setTimeout(() => {
+          doShell();
+          buffer = writable = w;
+          buffer.write(tmp);
+          firstFlushed = true;
+          if (completed) writable.end();
+          else queue(flushEnd);
+        });
       });
     },
     pipeTo(w) {
       return allSettled(blockingPromises).then(() => {
-        doShell();
-        const encoder = new TextEncoder();
-        const writer = w.getWriter();
         let resolve;
         const p = new Promise(r => (resolve = r));
-        writable = {
-          end() {
-            writer.releaseLock();
-            w.close();
-            resolve();
-          }
-        };
-        buffer = {
-          write(payload) {
-            writer.write(encoder.encode(payload));
-          }
-        };
-        buffer.write(tmp);
-        firstFlushed = true;
-        if (completed) writable.end();
-        else setTimeout(flushEnd);
+        setTimeout(() => {
+          doShell();
+          const encoder = new TextEncoder();
+          const writer = w.getWriter();
+          writable = {
+            end() {
+              writer.releaseLock();
+              w.close();
+              resolve();
+            }
+          };
+          buffer = {
+            write(payload) {
+              writer.write(encoder.encode(payload));
+            }
+          };
+          buffer.write(tmp);
+          firstFlushed = true;
+          if (completed) writable.end();
+          else queue(flushEnd);
+        });
         return p;
       });
     }
