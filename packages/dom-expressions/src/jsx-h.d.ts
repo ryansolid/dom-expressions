@@ -1995,7 +1995,8 @@ export namespace JSX {
     ruby: HTMLAttributes<HTMLElement>;
     s: HTMLAttributes<HTMLElement>;
     samp: HTMLAttributes<HTMLElement>;
-    script: ScriptHTMLAttributes<HTMLElement>;
+    script: ScriptHTMLAttributes<HTMLScriptElement>;
+    search: HTMLAttributes<HTMLElement>;
     section: HTMLAttributes<HTMLElement>;
     select: SelectHTMLAttributes<HTMLSelectElement>;
     slot: HTMLSlotElementAttributes;
