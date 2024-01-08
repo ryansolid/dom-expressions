@@ -305,7 +305,7 @@ export function transformCondition(path, inline, deep) {
   }
   if (dTest && !inline) {
     const statements = [
-      t.variableDeclaration("const", [
+      t.variableDeclaration("var", [
         t.variableDeclarator(
           id,
           config.memoWrapper

@@ -91,7 +91,7 @@ export default function transformComponent(path) {
                   t.identifier("ref"),
                   [t.identifier("r$")],
                   t.blockStatement([
-                    t.variableDeclaration("const", [
+                    t.variableDeclaration("var", [
                       t.variableDeclarator(refIdentifier, value.expression)
                     ]),
                     t.expressionStatement(
@@ -118,7 +118,7 @@ export default function transformComponent(path) {
                   t.identifier("ref"),
                   [t.identifier("r$")],
                   t.blockStatement([
-                    t.variableDeclaration("const", [
+                    t.variableDeclaration("var", [
                       t.variableDeclarator(refIdentifier, value.expression)
                     ]),
                     t.expressionStatement(

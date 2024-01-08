@@ -1,7 +1,7 @@
 import { ssr as _$ssr } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
-const _tmpl$ = ["<my-element", "></my-element>"],
+var _tmpl$ = ["<my-element", "></my-element>"],
   _tmpl$2 = '<my-element><header slot="head">Title</header></my-element>',
   _tmpl$3 = '<slot name="head"></slot>';
 const template = _$ssr(

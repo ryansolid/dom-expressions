@@ -2,11 +2,11 @@ import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(
+var _tmpl$ = /*#__PURE__*/ _$template(
   `<div id=main><button>Change Bound</button><button>Change Bound</button><button>Click Delegated</button><button>Click Delegated</button><button>Click Listener</button><button>Click Capture`
 );
 const template = (() => {
-  const _el$ = _$getNextElement(_tmpl$),
+  var _el$ = _$getNextElement(_tmpl$),
     _el$2 = _el$.firstChild,
     _el$3 = _el$2.nextSibling,
     _el$4 = _el$3.nextSibling,

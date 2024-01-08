@@ -56,7 +56,7 @@ export function appendTemplates(path, templates) {
       )
     );
   });
-  path.node.body.unshift(t.variableDeclaration("const", declarators));
+  path.node.body.unshift(t.variableDeclaration("var", declarators));
 }
 
 function registerTemplate(path, results) {
@@ -92,7 +92,7 @@ function registerTemplate(path, results) {
     );
   }
   results.declarations.unshift(decl);
-  results.decl = t.variableDeclaration("const", results.declarations);
+  results.decl = t.variableDeclaration("var", results.declarations);
 }
 
 function wrapDynamics(path, dynamics) {
@@ -197,7 +197,7 @@ function wrapDynamics(path, dynamics) {
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([
-          t.variableDeclaration("const", declarations),
+          t.variableDeclaration("var", declarations),
           ...statements,
           t.returnStatement(prevId),
         ]),

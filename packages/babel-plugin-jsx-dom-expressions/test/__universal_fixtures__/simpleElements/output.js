@@ -3,7 +3,7 @@ import { insertNode as _$insertNode } from "r-custom";
 import { setProp as _$setProp } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
 const template = (() => {
-  const _el$ = _$createElement("div"),
+  var _el$ = _$createElement("div"),
     _el$2 = _$createElement("style"),
     _el$4 = _$createElement("h1"),
     _el$6 = _$createElement("label"),
@@ -22,7 +22,7 @@ const template = (() => {
   return _el$;
 })();
 const template2 = (() => {
-  const _el$9 = _$createElement("div"),
+  var _el$9 = _$createElement("div"),
     _el$10 = _$createElement("span"),
     _el$11 = _$createElement("a"),
     _el$12 = _$createElement("span");
@@ -32,7 +32,7 @@ const template2 = (() => {
   return _el$9;
 })();
 const template3 = (() => {
-  const _el$13 = _$createElement("div"),
+  var _el$13 = _$createElement("div"),
     _el$14 = _$createElement("div"),
     _el$15 = _$createElement("table"),
     _el$16 = _$createElement("tbody"),
@@ -44,7 +44,7 @@ const template3 = (() => {
   return _el$13;
 })();
 const template4 = (() => {
-  const _el$18 = _$createElement("div"),
+  var _el$18 = _$createElement("div"),
     _el$19 = _$createElement("div"),
     _el$20 = _$createElement("footer"),
     _el$21 = _$createElement("div"),

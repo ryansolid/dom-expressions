@@ -9,7 +9,7 @@ import { createElement as _$createElement } from "r-custom";
 const selected = true;
 let link;
 const template = (() => {
-  const _el$ = _$createElement("div"),
+  var _el$ = _$createElement("div"),
     _el$2 = _$createElement("h1"),
     _el$3 = _$createElement("a");
   _$insertNode(_el$, _el$2);
@@ -49,14 +49,14 @@ const template = (() => {
     true
   );
   _$insertNode(_el$3, _$createTextNode(`Welcome`));
-  const _ref$ = link;
+  var _ref$ = link;
   typeof _ref$ === "function" ? _$use(_ref$, _el$3) : (link = _el$3);
   _$setProp(_el$3, "href", "/");
   _$setProp(_el$3, "readonly", value);
   return _el$;
 })();
 const template2 = (() => {
-  const _el$5 = _$createElement("div"),
+  var _el$5 = _$createElement("div"),
     _el$6 = _$createElement("div"),
     _el$7 = _$createElement("div"),
     _el$8 = _$createElement("div");
@@ -74,7 +74,7 @@ const template2 = (() => {
   return _el$5;
 })();
 const template3 = (() => {
-  const _el$9 = _$createElement("div");
+  var _el$9 = _$createElement("div");
   _$setProp(_el$9, "id", state.id);
   _$setProp(_el$9, "style", {
     "background-color": state.color
@@ -84,7 +84,7 @@ const template3 = (() => {
   return _el$9;
 })();
 const template4 = (() => {
-  const _el$10 = _$createElement("div");
+  var _el$10 = _$createElement("div");
   _$setProp(_el$10, "class", "hi");
   _$setProp(_el$10, "classList", {
     "ccc:ddd": true
@@ -93,22 +93,22 @@ const template4 = (() => {
   return _el$10;
 })();
 const template5 = (() => {
-  const _el$11 = _$createElement("div");
+  var _el$11 = _$createElement("div");
   _$setProp(_el$11, "class", "a");
   _$setProp(_el$11, "className", "b");
   return _el$11;
 })();
 const template6 = (() => {
-  const _el$12 = _$createElement("div");
+  var _el$12 = _$createElement("div");
   _$setProp(_el$12, "textContent", "Hi");
   _$effect(_$p => _$setProp(_el$12, "style", someStyle(), _$p));
   return _el$12;
 })();
 const template7 = (() => {
-  const _el$13 = _$createElement("div");
+  var _el$13 = _$createElement("div");
   _$effect(
     _p$ => {
-      const _v$ = {
+      var _v$ = {
           "background-color": color(),
           "margin-right": "40px",
           ...props.style
@@ -130,54 +130,54 @@ const template7 = (() => {
 })();
 let refTarget;
 const template8 = (() => {
-  const _el$14 = _$createElement("div");
-  const _ref$2 = refTarget;
+  var _el$14 = _$createElement("div");
+  var _ref$2 = refTarget;
   typeof _ref$2 === "function" ? _$use(_ref$2, _el$14) : (refTarget = _el$14);
   return _el$14;
 })();
 const template9 = (() => {
-  const _el$15 = _$createElement("div");
+  var _el$15 = _$createElement("div");
   _$use(e => console.log(e), _el$15);
   return _el$15;
 })();
 const template10 = (() => {
-  const _el$16 = _$createElement("div");
-  const _ref$3 = refFactory();
+  var _el$16 = _$createElement("div");
+  var _ref$3 = refFactory();
   typeof _ref$3 === "function" && _$use(_ref$3, _el$16);
   return _el$16;
 })();
 const template11 = (() => {
-  const _el$17 = _$createElement("div");
+  var _el$17 = _$createElement("div");
   _$use(zero, _el$17, () => 0);
   _$use(another, _el$17, () => thing);
   _$use(something, _el$17, () => true);
   return _el$17;
 })();
 const template12 = (() => {
-  const _el$18 = _$createElement("div");
+  var _el$18 = _$createElement("div");
   _$setProp(_el$18, "prop:htmlFor", thing);
   return _el$18;
 })();
 const template13 = (() => {
-  const _el$19 = _$createElement("input");
+  var _el$19 = _$createElement("input");
   _$setProp(_el$19, "type", "checkbox");
   _$setProp(_el$19, "checked", true);
   return _el$19;
 })();
 const template14 = (() => {
-  const _el$20 = _$createElement("input");
+  var _el$20 = _$createElement("input");
   _$setProp(_el$20, "type", "checkbox");
   _$effect(_$p => _$setProp(_el$20, "checked", state.visible, _$p));
   return _el$20;
 })();
 const template15 = (() => {
-  const _el$21 = _$createElement("div");
+  var _el$21 = _$createElement("div");
   _$insertNode(_el$21, _$createTextNode(`\`$\``));
   _$setProp(_el$21, "class", "`a");
   return _el$21;
 })();
 const template16 = (() => {
-  const _el$23 = _$createElement("button");
+  var _el$23 = _$createElement("button");
   _$insertNode(_el$23, _$createTextNode(`Write`));
   _$setProp(_el$23, "class", "static");
   _$setProp(_el$23, "classList", {
@@ -187,7 +187,7 @@ const template16 = (() => {
   return _el$23;
 })();
 const template17 = (() => {
-  const _el$25 = _$createElement("button");
+  var _el$25 = _$createElement("button");
   _$insertNode(_el$25, _$createTextNode(`Hi`));
   _$setProp(_el$25, "classList", {
     a: true,
@@ -198,7 +198,7 @@ const template17 = (() => {
   return _el$25;
 })();
 const template18 = (() => {
-  const _el$27 = _$createElement("div");
+  var _el$27 = _$createElement("div");
   _$spread(
     _el$27,
     _$mergeProps(() => ({
@@ -211,7 +211,7 @@ const template18 = (() => {
   return _el$27;
 })();
 const template19 = (() => {
-  const _el$28 = _$createElement("div");
+  var _el$28 = _$createElement("div");
   _$effect(_$p =>
     _$setProp(
       _el$28,
@@ -226,7 +226,7 @@ const template19 = (() => {
   return _el$28;
 })();
 const template20 = (() => {
-  const _el$29 = _$createElement("div");
+  var _el$29 = _$createElement("div");
   _$use(zero, _el$29, () => 0);
   _$use(something, _el$29, () => true);
   _$spread(_el$29, somethingElse, false);

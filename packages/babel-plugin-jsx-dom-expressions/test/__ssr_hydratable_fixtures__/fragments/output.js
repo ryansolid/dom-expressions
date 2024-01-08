@@ -3,7 +3,7 @@ import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
-const _tmpl$ = ["<div", ">First</div>"],
+var _tmpl$ = ["<div", ">First</div>"],
   _tmpl$2 = ["<div", ">Last</div>"],
   _tmpl$3 = ["<div", "></div>"],
   _tmpl$4 = ["<span", ">1</span>"],

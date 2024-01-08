@@ -1,6 +1,6 @@
 import { ssr as _$ssr } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
-const _tmpl$ = [
+var _tmpl$ = [
     "<div",
     ' id="main"><style>div { color: red; }</style><h1>Welcome</h1><label for="entry">Edit:</label><input id="entry" type="text"></div>'
   ],

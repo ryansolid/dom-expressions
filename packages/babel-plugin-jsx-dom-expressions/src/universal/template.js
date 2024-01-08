@@ -5,7 +5,7 @@ import { setAttr } from "./element";
 export function createTemplate(path, result, wrap) {
   const config = getConfig(path);
   if (result.id) {
-    result.decl = t.variableDeclaration("const", result.declarations);
+    result.decl = t.variableDeclaration("var", result.declarations);
     if (
       !(result.exprs.length || result.dynamics.length || result.postExprs.length) &&
       result.decl.declarations.length === 1
@@ -94,7 +94,7 @@ function wrapDynamics(path, dynamics) {
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([
-          t.variableDeclaration("const", declarations),
+          t.variableDeclaration("var", declarations),
           ...statements,
           t.returnStatement(prevId),
         ]),
