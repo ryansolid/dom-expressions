@@ -84,7 +84,7 @@ export function renderToStream(code, options = {}) {
       });
     writable && writable.end();
     completed = true;
-    setTimeout(dispose);
+    if (firstFlushed) dispose();
   };
   const serializer = createSerializer({
     scopeId: options.renderId,
@@ -225,6 +225,7 @@ export function renderToStream(code, options = {}) {
   return {
     then(fn) {
       function complete() {
+        dispose();
         fn(tmp);
       }
       if (onCompleteAll) {
@@ -243,7 +244,10 @@ export function renderToStream(code, options = {}) {
           buffer = writable = w;
           buffer.write(tmp);
           firstFlushed = true;
-          flushEnd();
+          if (completed) {
+            dispose();
+            writable.end();
+          } else flushEnd();
         });
       });
     },
@@ -269,7 +273,10 @@ export function renderToStream(code, options = {}) {
           };
           buffer.write(tmp);
           firstFlushed = true;
-          flushEnd();
+          if (completed) {
+            dispose();
+            writable.end();
+          } else flushEnd();
         });
         return p;
       });
