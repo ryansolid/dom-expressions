@@ -65,7 +65,6 @@ export function renderToStream(code, options = {}) {
   const blockingPromises = [];
   const pushTask = task => {
     if (noScripts) return;
-    // TODO is the correct place to put this
     if (!tasks && !firstFlushed) {
       tasks = getLocalHeaderScript(renderId);
     }
@@ -74,24 +73,23 @@ export function renderToStream(code, options = {}) {
       timer = setTimeout(writeTasks);
     }
   };
-  const checkEnd = () => {
-    if (!registry.size && !completed) {
-      writeTasks();
-      onCompleteAll &&
-        onCompleteAll({
-          write(v) {
-            !completed && buffer.write(v);
-          }
-        });
-      writable && writable.end();
-      completed = true;
-      setTimeout(dispose);
-    }
+  const onDone = () => {
+    writeTasks();
+    doShell();
+    onCompleteAll &&
+      onCompleteAll({
+        write(v) {
+          !completed && buffer.write(v);
+        }
+      });
+    writable && writable.end();
+    completed = true;
+    setTimeout(dispose);
   };
   const serializer = createSerializer({
     scopeId: options.renderId,
     onData: pushTask,
-    onDone: checkEnd,
+    onDone,
     onError: options.onError
   });
   const flushEnd = () => {
@@ -118,6 +116,7 @@ export function renderToStream(code, options = {}) {
   let tasks = "";
   let firstFlushed = false;
   let completed = false;
+  let shellCompleted = false;
   let scriptFlushed = false;
   let timer = null;
   let buffer = {
@@ -208,6 +207,7 @@ export function renderToStream(code, options = {}) {
     return resolveSSRNode(escape(code()));
   });
   function doShell() {
+    if (shellCompleted) return;
     sharedConfig.context = context;
     context.noHydrate = true;
     html = injectAssets(context.assets, html);
@@ -220,12 +220,11 @@ export function renderToStream(code, options = {}) {
           !completed && buffer.write(v);
         }
       });
+    shellCompleted = true;
   }
-
   return {
     then(fn) {
       function complete() {
-        doShell();
         fn(tmp);
       }
       if (onCompleteAll) {
@@ -235,7 +234,7 @@ export function renderToStream(code, options = {}) {
           complete();
         };
       } else onCompleteAll = complete;
-      if (!registry.size) queue(flushEnd);
+      queue(flushEnd);
     },
     pipe(w) {
       allSettled(blockingPromises).then(() => {
@@ -244,8 +243,7 @@ export function renderToStream(code, options = {}) {
           buffer = writable = w;
           buffer.write(tmp);
           firstFlushed = true;
-          if (completed) writable.end();
-          else queue(flushEnd);
+          flushEnd();
         });
       });
     },
@@ -271,8 +269,7 @@ export function renderToStream(code, options = {}) {
           };
           buffer.write(tmp);
           firstFlushed = true;
-          if (completed) writable.end();
-          else queue(flushEnd);
+          flushEnd();
         });
         return p;
       });
