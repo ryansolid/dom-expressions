@@ -308,7 +308,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   let isCE, isProp, isChildProp, propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
-  if (value === prev && (prop !== "value" || prop !== "checked")) return prev;
+  if (value === prev && prop !== "value" && prop !== "checked") return prev;
   if (prop === "ref") {
     if (!skipRef) value(node);
   } else if (prop.slice(0, 3) === "on:") {
