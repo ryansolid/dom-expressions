@@ -549,7 +549,7 @@ export function Hydration(props) {
   return props.children;
 }
 
-function voidFn() {}
+const voidFn = () => undefined
 
 // experimental
 export const RequestContext = Symbol();
