@@ -48,7 +48,7 @@ export {
 export function render(code, element, init, options = {}) {
   if(!element && "_DX_DEV_" && sharedConfig.context) {
      throw new Error(
-        "The `element` passed to `render(..., element)` doesn't exist in the document. Check if element exists in the document."
+        "The `element` passed to `render(..., element)` doesn't exist in the document. Make sure `element` exists in the document."
      );
   }
   let disposer;
