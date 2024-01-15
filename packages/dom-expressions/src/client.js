@@ -402,7 +402,16 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
   if (value === current) return current;
   const t = typeof value,
     multi = marker !== undefined;
-  parent = (multi && current[0] && current[0].parentNode) || parent;
+  const maybeChangedParent = (multi && current[0] && current[0].parentNode);
+  
+  // Don't change the parent if that would lead us to run into "Uncaught DOMException: Failed to execute 'replaceChild' on 'Node': The new child element contains the parent."
+  if(maybeChangedParent && maybeChangedParent !== value){
+    // Previously, if maybeChangedParent was truthy, it was always used (the parent was always assumed to be the same as the parent of the first child).
+    // According to fabiospampinato on discord (https://discord.com/channels/722131463138705510/751355413701591120/1195741968538554438) this is to check if a node should actually be removed from its parent (since it could have moved)
+    // Probably the whole approach here should be re-thought, but the previous assumption above resulted in bug 1 detailed in https://github.com/solidjs/solid/issues/2030
+    // This if statement is the least possible change to make that case work, probably without breaking anything else
+    parent = maybeChangedParent;
+  }
 
   if (t === "string" || t === "number") {
     if (sharedConfig.context) return current;
