@@ -71,7 +71,8 @@ export function transformElement(path, info) {
       isSVG: wrapSVG,
       hasCustomElement: isCustomElement,
       tagName,
-      renderer: "dom"
+      renderer: "dom",
+      skipTemplate: false
     };
   if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body")) {
     results.skipTemplate = true;
@@ -312,12 +313,12 @@ function transformAttributes(path, results) {
           .node.attributes.splice(
             styleAttribute.key + ++i,
             0,
-            t.JSXAttribute(
-              t.JSXNamespacedName(
-                t.JSXIdentifier("style"),
-                t.JSXIdentifier(t.isIdentifier(p.key) ? p.key.name : p.key.value)
+            t.jsxAttribute(
+              t.jsxNamespacedName(
+                t.jsxIdentifier("style"),
+                t.jsxIdentifier(t.isIdentifier(p.key) ? p.key.name : p.key.value)
               ),
-              t.JSXExpressionContainer(p.value)
+              t.jsxExpressionContainer(p.value)
             )
           );
         styleAttribute.node.value.expression.properties.splice(index - i - 1, 1);
@@ -356,12 +357,12 @@ function transformAttributes(path, results) {
           .node.attributes.splice(
             classListAttribute.key + ++i,
             0,
-            t.JSXAttribute(
-              t.JSXNamespacedName(
-                t.JSXIdentifier("class"),
-                t.JSXIdentifier(t.isIdentifier(p.key) ? p.key.name : p.key.value)
+            t.jsxAttribute(
+              t.jsxNamespacedName(
+                t.jsxIdentifier("class"),
+                t.jsxIdentifier(t.isIdentifier(p.key) ? p.key.name : p.key.value)
               ),
-              t.JSXExpressionContainer(p.value)
+              t.jsxExpressionContainer(p.value)
             )
           );
       } else if (computed) {
@@ -370,8 +371,8 @@ function transformAttributes(path, results) {
           .node.attributes.splice(
             classListAttribute.key + ++i,
             0,
-            t.JSXAttribute(
-              t.JSXIdentifier("class"),
+            t.jsxAttribute(
+              t.jsxIdentifier("class"),
               t.stringLiteral(t.isIdentifier(p.key) ? p.key.name : p.key.value)
             )
           );
@@ -390,24 +391,24 @@ function transformAttributes(path, results) {
   if (classAttributes.length > 1) {
     const first = classAttributes[0].node,
       values = [],
-      quasis = [t.TemplateElement({ raw: "" })];
+      quasis = [t.templateElement({ raw: "" })];
     for (let i = 0; i < classAttributes.length; i++) {
       const attr = classAttributes[i].node,
         isLast = i === classAttributes.length - 1;
       if (!t.isJSXExpressionContainer(attr.value)) {
         const prev = quasis.pop();
         quasis.push(
-          t.TemplateElement({
+          t.templateElement({
             raw: (prev ? prev.value.raw : "") + `${attr.value.value}` + (isLast ? "" : " ")
           })
         );
       } else {
         values.push(t.logicalExpression("||", attr.value.expression, t.stringLiteral("")));
-        quasis.push(t.TemplateElement({ raw: isLast ? "" : " " }));
+        quasis.push(t.templateElement({ raw: isLast ? "" : " " }));
       }
       i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
     }
-    if (values.length) first.value = t.JSXExpressionContainer(t.TemplateLiteral(quasis, values));
+    if (values.length) first.value = t.jsxExpressionContainer(t.templateLiteral(quasis, values));
     else first.value = t.stringLiteral(quasis[0].value.raw);
   }
   path.get("openingElement").set(
@@ -443,7 +444,7 @@ function transformAttributes(path, results) {
         reservedNameSpace &&
         !t.isJSXExpressionContainer(value)
       ) {
-        node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+        node.value = value = t.jsxExpressionContainer(value || t.jsxEmptyExpression());
       }
       if (
         t.isJSXExpressionContainer(value) &&
@@ -466,7 +467,7 @@ function transformAttributes(path, results) {
           if (!isFunction && t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("const", [
+              t.variableDeclaration("var", [
                 t.variableDeclarator(refIdentifier, value.expression)
               ]),
               t.expressionStatement(
@@ -496,7 +497,7 @@ function transformAttributes(path, results) {
           } else if (t.isCallExpression(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("const", [
+              t.variableDeclaration("var", [
                 t.variableDeclarator(refIdentifier, value.expression)
               ]),
               t.expressionStatement(
@@ -680,7 +681,7 @@ function transformAttributes(path, results) {
           }
           if (key === "textContent") {
             nextElem = attribute.scope.generateUidIdentifier("el$");
-            children = t.JSXText(" ");
+            children = t.jsxText(" ");
             children.extra = { raw: " ", rawValue: " " };
             results.declarations.push(
               t.variableDeclarator(nextElem, t.memberExpression(elem, t.identifier("firstChild")))

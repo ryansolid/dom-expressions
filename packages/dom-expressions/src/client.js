@@ -63,7 +63,9 @@ export function template(html, isCE, isSVG) {
   let node;
   const create = () => {
     if ("_DX_DEV_" && sharedConfig.context)
-      throw new Error("Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration.");
+      throw new Error(
+        "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
+      );
     const t = document.createElement("template");
     t.innerHTML = html;
     return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
@@ -223,8 +225,8 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
 export function hydrate(code, element, options = {}) {
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
-  sharedConfig.load = (id) => globalThis._$HY.r[id];
-  sharedConfig.has = (id) => id in globalThis._$HY.r;
+  sharedConfig.load = id => globalThis._$HY.r[id];
+  sharedConfig.has = id => id in globalThis._$HY.r;
   sharedConfig.gather = root => gatherHydratable(element, root);
   sharedConfig.registry = new Map();
   sharedConfig.context = {
@@ -408,7 +410,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     if (multi) {
       let node = current[0];
       if (node && node.nodeType === 3) {
-        node.data = value;
+        node.data !== value && (node.data = value);
       } else node = document.createTextNode(value);
       current = cleanChildren(parent, current, marker, node);
     } else {
@@ -439,7 +441,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       let node = array[0];
       let nodes = [node];
       while ((node = node.nextSibling) !== marker) nodes.push(node);
-      return current = nodes;
+      return (current = nodes);
     }
     if (array.length === 0) {
       current = cleanChildren(parent, current, marker);
@@ -547,7 +549,7 @@ export function Hydration(props) {
   return props.children;
 }
 
-function voidFn() {}
+const voidFn = () => undefined
 
 // experimental
 export const RequestContext = Symbol();

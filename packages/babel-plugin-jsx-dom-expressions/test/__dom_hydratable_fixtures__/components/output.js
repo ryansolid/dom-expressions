@@ -7,7 +7,7 @@ import { getNextElement as _$getNextElement } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { use as _$use } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello <!$><!/>`),
+var _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello <!$><!/>`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div>From Parent`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div><!$><!/><!$><!/><!$><!/>`),
@@ -26,17 +26,17 @@ const Child = props => {
   const [s, set] = createSignal();
   return [
     (() => {
-      const _el$ = _$getNextElement(_tmpl$),
+      var _el$ = _$getNextElement(_tmpl$),
         _el$2 = _el$.firstChild,
         _el$3 = _el$2.nextSibling,
         [_el$4, _co$] = _$getNextMarker(_el$3.nextSibling);
-      const _ref$ = props.ref;
+      var _ref$ = props.ref;
       typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
       _$insert(_el$, () => props.name, _el$4, _co$);
       return _el$;
     })(),
     (() => {
-      const _el$5 = _$getNextElement(_tmpl$2);
+      var _el$5 = _$getNextElement(_tmpl$2);
       _$use(set, _el$5);
       _$insert(_el$5, () => props.children);
       return _el$5;
@@ -47,7 +47,7 @@ const template = props => {
   let childRef;
   const { content } = props;
   return (() => {
-    const _el$6 = _$getNextElement(_tmpl$4),
+    var _el$6 = _$getNextElement(_tmpl$4),
       _el$9 = _el$6.firstChild,
       [_el$10, _co$2] = _$getNextMarker(_el$9.nextSibling),
       _el$11 = _el$10.nextSibling,
@@ -65,7 +65,7 @@ const template = props => {
           props,
           {
             ref(r$) {
-              const _ref$2 = childRef;
+              var _ref$2 = childRef;
               typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
             },
             booleanProperty: true,
@@ -89,11 +89,11 @@ const template = props => {
           dynamicSpread,
           {
             ref(r$) {
-              const _ref$3 = props.ref;
+              var _ref$3 = props.ref;
               typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
             },
             get children() {
-              const _el$8 = _$getNextElement(_tmpl$2);
+              var _el$8 = _$getNextElement(_tmpl$2);
               _$insert(_el$8, content);
               return _el$8;
             }
@@ -107,7 +107,7 @@ const template = props => {
       _el$6,
       _$createComponent(Context.Consumer, {
         ref(r$) {
-          const _ref$4 = props.consumerRef();
+          var _ref$4 = props.consumerRef();
           typeof _ref$4 === "function" && _ref$4(r$);
         },
         children: context => context
@@ -186,7 +186,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 const template10 = (() => {
-  const _el$20 = _$getNextElement(_tmpl$5),
+  var _el$20 = _$getNextElement(_tmpl$5),
     _el$26 = _el$20.firstChild,
     [_el$27, _co$5] = _$getNextMarker(_el$26.nextSibling),
     _el$21 = _el$27.nextSibling,
@@ -255,7 +255,7 @@ const template10 = (() => {
   return _el$20;
 })();
 const template11 = (() => {
-  const _el$38 = _$getNextElement(_tmpl$6),
+  var _el$38 = _$getNextElement(_tmpl$6),
     _el$42 = _el$38.firstChild,
     [_el$43, _co$11] = _$getNextMarker(_el$42.nextSibling),
     _el$39 = _el$43.nextSibling,
@@ -322,7 +322,7 @@ const template11 = (() => {
   return _el$38;
 })();
 const template12 = (() => {
-  const _el$54 = _$getNextElement(_tmpl$7),
+  var _el$54 = _$getNextElement(_tmpl$7),
     _el$55 = _el$54.firstChild,
     _el$60 = _el$55.nextSibling,
     [_el$61, _co$17] = _$getNextMarker(_el$60.nextSibling),

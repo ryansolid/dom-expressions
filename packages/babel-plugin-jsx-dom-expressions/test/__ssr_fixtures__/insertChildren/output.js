@@ -3,7 +3,7 @@ import { ssrElement as _$ssrElement } from "r-server";
 import { escape as _$escape } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
 import { ssr as _$ssr } from "r-server";
-const _tmpl$ = "<div></div>",
+var _tmpl$ = "<div></div>",
   _tmpl$2 = ["<module>", "</module>"],
   _tmpl$3 = "<module>Hello</module>",
   _tmpl$4 = ["<module>Hi ", "</module>"],

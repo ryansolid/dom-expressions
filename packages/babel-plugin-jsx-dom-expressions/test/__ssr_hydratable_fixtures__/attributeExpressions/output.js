@@ -5,7 +5,7 @@ import { escape as _$escape } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
 import { mergeProps as _$mergeProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
-const _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
+var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$2 = ["<div>", "</div>"],
   _tmpl$3 = "<div><div/></div>",
   _tmpl$4 = ["<div", " foo", ' style="', '"', ">", "</div>"],
@@ -100,7 +100,7 @@ const template4 = _$ssr(
   _$ssrHydrationKey(),
   `hi ${_$escape(state.class, true) || ""} ccc:ddd`
 );
-const template5 = _$ssr(_tmpl$5, _$ssrHydrationKey(), `a  b`);
+const template5 = _$ssr(_tmpl$5, _$ssrHydrationKey(), `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$ssrStyle(someStyle()));
 const template7 = _$ssr(
   _tmpl$7,

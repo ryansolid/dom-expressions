@@ -75,8 +75,8 @@ importers:
         specifier: 0.4.9
         version: 0.4.9
       typescript:
-        specifier: ~4.9.4
-        version: 4.9.4
+        specifier: ~5.3.3
+        version: 5.3.3
 
   packages/babel-plugin-jsx-dom-expressions:
     dependencies:
@@ -107,25 +107,28 @@ importers:
         version: 2.3.0
     devDependencies:
       babel-plugin-jsx-dom-expressions:
-        specifier: ^0.37.9
+        specifier: ^0.37.13
         version: link:../babel-plugin-jsx-dom-expressions
       csstype:
         specifier: ^3.1
         version: 3.1.1
       seroval:
-        specifier: ^0.15.1
-        version: 0.15.1
+        specifier: ^1.0.2
+        version: 1.0.2
+      seroval-plugins:
+        specifier: ^1.0.2
+        version: 1.0.2(seroval@1.0.2)
 
   packages/hyper-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.37.9
+        specifier: ^0.37.15
         version: link:../dom-expressions
 
   packages/lit-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.37.9
+        specifier: ^0.37.15
         version: link:../dom-expressions
       html-parse-string:
         specifier: ^0.0.9
@@ -3198,7 +3201,7 @@ packages:
   /axios@1.6.1:
     resolution: {integrity: sha512-vfBmhDpKafglh0EldBEbVuoe7DyAavGSLWhuSm5ZSEKQnHhBf0xAAwybbNH1IkrJNGnS/VG4I5yxig1pCEXE4g==}
     dependencies:
-      follow-redirects: 1.15.2
+      follow-redirects: 1.15.4
       form-data: 4.0.0
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -4305,8 +4308,8 @@ packages:
     hasBin: true
     dev: true
 
-  /follow-redirects@1.15.2:
-    resolution: {integrity: sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==}
+  /follow-redirects@1.15.4:
+    resolution: {integrity: sha512-Cr4D/5wlrb0z9dgERpUL3LrmPKVDsETIJhaCMeDfuFYcqa5bldGV6wBsAN6X/vxlXQtFBMrXdXxdL8CbDTGniw==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -7139,8 +7142,17 @@ packages:
       lru-cache: 6.0.0
     dev: true
 
-  /seroval@0.15.1:
-    resolution: {integrity: sha512-OPVtf0qmeC7RW+ScVX+7aOS+xoIM7pWcZ0jOWg2aTZigCydgRB04adfteBRbecZnnrO1WuGQ+C3tLeBBzX2zSQ==}
+  /seroval-plugins@1.0.2(seroval@1.0.2):
+    resolution: {integrity: sha512-4G/G9dFOBfFhw3AO+sn5Y6jyxkpoBwqnN2wxWjl8cGffaW+2lsMJ4baIoJ+E8JHx8iPZd82lvaaBG5QN8JuKhA==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      seroval: '>=0.15'
+    dependencies:
+      seroval: 1.0.2
+    dev: true
+
+  /seroval@1.0.2:
+    resolution: {integrity: sha512-buswWxRzf65ZGUk8MAf3qVtBJHbe5gq6hZyPeqlJCKEIl/tEhUZze0YJg7vB7tFRGgPeneRaP083OB/vDiYLvA==}
     engines: {node: '>=10'}
     dev: true
 
@@ -7610,6 +7622,12 @@ packages:
   /typescript@4.9.4:
     resolution: {integrity: sha512-Uz+dTXYzxXXbsFpM86Wh3dKCxrQqUcVMxwU54orwlJjOpO3ao8L7j5lH+dWfTwgCwIuM9GQ2kvVotzYJMXTBZg==}
     engines: {node: '>=4.2.0'}
+    hasBin: true
+    dev: true
+
+  /typescript@5.3.3:
+    resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
+    engines: {node: '>=14.17'}
     hasBin: true
     dev: true
 

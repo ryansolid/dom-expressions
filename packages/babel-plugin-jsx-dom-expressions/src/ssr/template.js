@@ -69,5 +69,5 @@ export function appendTemplates(path, templates) {
   const declarators = templates.map(template => {
     return t.variableDeclarator(template.id, template.template);
   });
-  path.node.body.unshift(t.variableDeclaration("const", declarators));
+  path.node.body.unshift(t.variableDeclaration("var", declarators));
 }

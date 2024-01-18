@@ -305,7 +305,7 @@ export function transformCondition(path, inline, deep) {
   }
   if (dTest && !inline) {
     const statements = [
-      t.variableDeclaration("const", [
+      t.variableDeclaration("var", [
         t.variableDeclarator(
           id,
           config.memoWrapper
@@ -402,4 +402,20 @@ export function canNativeSpread(key, { checkNameSpaces } = {}) {
   // TODO: figure out how to detect definitely function ref
   if (key === "ref") return false;
   return true;
+}
+
+const chars = "etaoinshrdlucwmfygpbTAOISWCBvkxjqzPHFMDRELNGUKVYJQZX_$";
+const base = chars.length;
+
+export function getNumberedId(num) {
+  let out = "";
+
+  do {
+    const digit = num % base;
+
+    num = Math.floor(num / base);
+    out = chars[digit] + out;
+  } while (num !== 0);
+
+  return out;
 }

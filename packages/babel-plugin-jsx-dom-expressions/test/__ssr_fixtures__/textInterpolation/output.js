@@ -1,7 +1,7 @@
 import { createComponent as _$createComponent } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
-const _tmpl$ = "<span>Hello </span>",
+var _tmpl$ = "<span>Hello </span>",
   _tmpl$2 = "<span> John</span>",
   _tmpl$3 = "<span>Hello John</span>",
   _tmpl$4 = ["<span>Hello ", "</span>"],

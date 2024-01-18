@@ -4,7 +4,7 @@ import { memo as _$memo } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(`<div>First`),
+var _tmpl$ = /*#__PURE__*/ _$template(`<div>First`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div>Last`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<span>1`),
@@ -14,13 +14,13 @@ const multiStatic = [_$getNextElement(_tmpl$), _$getNextElement(_tmpl$2)];
 const multiExpression = [_$getNextElement(_tmpl$), inserted, _$getNextElement(_tmpl$2), "After"];
 const multiDynamic = [
   (() => {
-    const _el$5 = _$getNextElement(_tmpl$);
+    var _el$5 = _$getNextElement(_tmpl$);
     _$effect(() => _$setAttribute(_el$5, "id", state.first));
     return _el$5;
   })(),
   _$memo(() => state.inserted),
   (() => {
-    const _el$6 = _$getNextElement(_tmpl$2);
+    var _el$6 = _$getNextElement(_tmpl$2);
     _$effect(() => _$setAttribute(_el$6, "id", state.last));
     return _el$6;
   })(),

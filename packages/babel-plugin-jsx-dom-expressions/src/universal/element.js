@@ -81,7 +81,7 @@ function transformAttributes(path, results) {
         reservedNameSpace &&
         !t.isJSXExpressionContainer(value)
       ) {
-        node.value = value = t.JSXExpressionContainer(value || t.JSXEmptyExpression());
+        node.value = value = t.jsxExpressionContainer(value || t.jsxEmptyExpression());
       }
       if (t.isJSXExpressionContainer(value)) {
         if (key === "ref") {
@@ -95,7 +95,7 @@ function transformAttributes(path, results) {
           if (t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("const", [
+              t.variableDeclaration("var", [
                 t.variableDeclarator(refIdentifier, value.expression)
               ]),
               t.expressionStatement(
@@ -133,7 +133,7 @@ function transformAttributes(path, results) {
           } else if (t.isCallExpression(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("const", [
+              t.variableDeclaration("var", [
                 t.variableDeclarator(refIdentifier, value.expression)
               ]),
               t.expressionStatement(

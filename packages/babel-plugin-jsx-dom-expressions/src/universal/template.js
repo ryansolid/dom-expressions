@@ -1,11 +1,11 @@
 import * as t from "@babel/types";
-import { getConfig, registerImportMethod } from "../shared/utils";
+import { getConfig, getNumberedId, registerImportMethod } from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
   const config = getConfig(path);
   if (result.id) {
-    result.decl = t.variableDeclaration("const", result.declarations);
+    result.decl = t.variableDeclaration("var", result.declarations);
     if (
       !(result.exprs.length || result.dynamics.length || result.postExprs.length) &&
       result.decl.declarations.length === 1
@@ -55,29 +55,37 @@ function wrapDynamics(path, dynamics) {
       ])
     );
   }
-  const declarations = [],
-    statements = [],
-    identifiers = [],
-    prevId = t.identifier("_p$");
-  dynamics.forEach(({ elem, key, value }) => {
-    const identifier = path.scope.generateUidIdentifier("v$");
-    identifiers.push(identifier);
-    declarations.push(t.variableDeclarator(identifier, value));
-    const prev = t.memberExpression(prevId, identifier);
+
+  const prevId = t.identifier("_p$");
+
+  /** @type {t.VariableDeclarator[]} */
+  const declarations = [];
+  /** @type {t.ExpressionStatement[]} */
+  const statements = [];
+  /** @type {t.Identifier[]} */
+  const properties = [];
+
+  dynamics.forEach(({ elem, key, value }, index) => {
+    const varIdent = path.scope.generateUidIdentifier("v$");
+
+    const propIdent = t.identifier(getNumberedId(index));
+    const propMember = t.memberExpression(prevId, propIdent);
+
+    properties.push(propIdent);
+    declarations.push(t.variableDeclarator(varIdent, value));
+
     statements.push(
       t.expressionStatement(
         t.logicalExpression(
           "&&",
-          t.binaryExpression("!==", identifier, t.memberExpression(prevId, identifier)),
-          t.assignmentExpression("=", t.memberExpression(prevId, identifier), setAttr(
-            path,
-            elem,
-            key,
-            identifier,
-            { dynamic: true, prevId: prev }
-          ))
-        )
-      )
+          t.binaryExpression("!==", varIdent, propMember),
+          t.assignmentExpression(
+            "=",
+            propMember,
+            setAttr(path, elem, key, varIdent, { dynamic: true, prevId: propMember }),
+          ),
+        ),
+      ),
     );
   });
 
@@ -86,12 +94,14 @@ function wrapDynamics(path, dynamics) {
       t.arrowFunctionExpression(
         [prevId],
         t.blockStatement([
-          t.variableDeclaration("const", declarations),
+          t.variableDeclaration("var", declarations),
           ...statements,
-          t.returnStatement(prevId)
-        ])
+          t.returnStatement(prevId),
+        ]),
       ),
-      t.objectExpression(identifiers.map(id => t.objectProperty(id, t.identifier("undefined"))))
-    ])
+      t.objectExpression(
+        properties.map((id) => t.objectProperty(id, t.identifier("undefined"))),
+      ),
+    ]),
   );
 }

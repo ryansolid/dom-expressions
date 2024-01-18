@@ -656,6 +656,7 @@ export namespace JSX {
     about?: FunctionMaybe<string>;
     datatype?: FunctionMaybe<string>;
     inlist?: FunctionMaybe<any>;
+    popover?: FunctionMaybe<boolean | "manual" | "auto">;
     prefix?: FunctionMaybe<string>;
     property?: FunctionMaybe<string>;
     resource?: FunctionMaybe<string>;
@@ -730,6 +731,8 @@ export namespace JSX {
     formmethod?: FunctionMaybe<HTMLFormMethod>;
     formnovalidate?: FunctionMaybe<boolean>;
     formtarget?: FunctionMaybe<string>;
+    popovertarget?: FunctionMaybe<string>;
+    popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle">;
     name?: FunctionMaybe<string>;
     type?: FunctionMaybe<"submit" | "reset" | "button">;
     value?: FunctionMaybe<string>;
@@ -738,6 +741,8 @@ export namespace JSX {
     formMethod?: FunctionMaybe<HTMLFormMethod>;
     formNoValidate?: FunctionMaybe<boolean>;
     formTarget?: FunctionMaybe<string>;
+    popoverTarget?: FunctionMaybe<string>;
+    popoverTargetAction?: FunctionMaybe<"hide" | "show" | "toggle">;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: FunctionMaybe<number | string>;
@@ -1828,7 +1833,16 @@ export namespace JSX {
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      FitToViewBoxSVGAttributes {}
+      FitToViewBoxSVGAttributes {
+    width?: FunctionMaybe<number | string>;
+    height?: FunctionMaybe<number | string>;
+    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio>;
+    refX?: FunctionMaybe<number | string>;
+    refY?: FunctionMaybe<number | string>;
+    viewBox?: FunctionMaybe<string>;
+    x?: FunctionMaybe<number | string>;
+    y?: FunctionMaybe<number | string>;
+  }
   interface TextSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
@@ -1981,7 +1995,8 @@ export namespace JSX {
     ruby: HTMLAttributes<HTMLElement>;
     s: HTMLAttributes<HTMLElement>;
     samp: HTMLAttributes<HTMLElement>;
-    script: ScriptHTMLAttributes<HTMLElement>;
+    script: ScriptHTMLAttributes<HTMLScriptElement>;
+    search: HTMLAttributes<HTMLElement>;
     section: HTMLAttributes<HTMLElement>;
     select: SelectHTMLAttributes<HTMLSelectElement>;
     slot: HTMLSlotElementAttributes;

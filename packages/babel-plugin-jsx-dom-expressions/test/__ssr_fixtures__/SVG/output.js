@@ -3,7 +3,7 @@ import { ssrElement as _$ssrElement } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
-const _tmpl$ =
+var _tmpl$ =
     '<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%"></stop></linearGradient></svg>',
   _tmpl$2 = [
     '<svg width="400" height="180"><rect',

@@ -35,7 +35,7 @@ export function renderToString(code, options = {}) {
     roots: 0,
     nextRoot() {
       return this.renderId + "i-" + this.roots++;
-    },
+    }
   };
   let html = root(d => {
     setTimeout(d);
@@ -66,7 +66,6 @@ export function renderToStream(code, options = {}) {
   const blockingPromises = [];
   const pushTask = task => {
     if (noScripts) return;
-    // TODO is the correct place to put this
     if (!tasks && !firstFlushed) {
       tasks = getLocalHeaderScript(renderId);
     }
@@ -75,24 +74,23 @@ export function renderToStream(code, options = {}) {
       timer = setTimeout(writeTasks);
     }
   };
-  const checkEnd = () => {
-    if (!registry.size && !completed) {
-      writeTasks();
-      onCompleteAll &&
-        onCompleteAll({
-          write(v) {
-            !completed && buffer.write(v);
-          }
-        });
-      writable && writable.end();
-      completed = true;
-      setTimeout(dispose);
-    }
+  const onDone = () => {
+    writeTasks();
+    doShell();
+    onCompleteAll &&
+      onCompleteAll({
+        write(v) {
+          !completed && buffer.write(v);
+        }
+      });
+    writable && writable.end();
+    completed = true;
+    if (firstFlushed) dispose();
   };
   const serializer = createSerializer({
     scopeId: options.renderId,
     onData: pushTask,
-    onDone: checkEnd,
+    onDone,
     onError: options.onError
   });
   const flushEnd = () => {
@@ -119,6 +117,7 @@ export function renderToStream(code, options = {}) {
   let tasks = "";
   let firstFlushed = false;
   let completed = false;
+  let shellCompleted = false;
   let scriptFlushed = false;
   let timer = null;
   let buffer = {
@@ -209,6 +208,7 @@ export function renderToStream(code, options = {}) {
     return resolveSSRNode(escape(code()));
   });
   function doShell() {
+    if (shellCompleted) return;
     sharedConfig.context = context;
     context.noHydrate = true;
     html = injectAssets(context.assets, html);
@@ -221,12 +221,12 @@ export function renderToStream(code, options = {}) {
           !completed && buffer.write(v);
         }
       });
+    shellCompleted = true;
   }
-
   return {
     then(fn) {
       function complete() {
-        doShell();
+        dispose();
         fn(tmp);
       }
       if (onCompleteAll) {
@@ -236,41 +236,49 @@ export function renderToStream(code, options = {}) {
           complete();
         };
       } else onCompleteAll = complete;
-      if (!registry.size) queue(flushEnd);
+      queue(flushEnd);
     },
     pipe(w) {
       allSettled(blockingPromises).then(() => {
-        doShell();
-        buffer = writable = w;
-        buffer.write(tmp);
-        firstFlushed = true;
-        if (completed) writable.end();
-        else setTimeout(flushEnd);
+        setTimeout(() => {
+          doShell();
+          buffer = writable = w;
+          buffer.write(tmp);
+          firstFlushed = true;
+          if (completed) {
+            dispose();
+            writable.end();
+          } else flushEnd();
+        });
       });
     },
     pipeTo(w) {
       return allSettled(blockingPromises).then(() => {
-        doShell();
-        const encoder = new TextEncoder();
-        const writer = w.getWriter();
         let resolve;
         const p = new Promise(r => (resolve = r));
-        writable = {
-          end() {
-            writer.releaseLock();
-            w.close();
-            resolve();
-          }
-        };
-        buffer = {
-          write(payload) {
-            writer.write(encoder.encode(payload));
-          }
-        };
-        buffer.write(tmp);
-        firstFlushed = true;
-        if (completed) writable.end();
-        else setTimeout(flushEnd);
+        setTimeout(() => {
+          doShell();
+          const encoder = new TextEncoder();
+          const writer = w.getWriter();
+          writable = {
+            end() {
+              writer.releaseLock();
+              w.close();
+              resolve();
+            }
+          };
+          buffer = {
+            write(payload) {
+              writer.write(encoder.encode(payload));
+            }
+          };
+          buffer.write(tmp);
+          firstFlushed = true;
+          if (completed) {
+            dispose();
+            writable.end();
+          } else flushEnd();
+        });
         return p;
       });
     }
@@ -316,7 +324,7 @@ export function ssrClassList(value) {
 
 export function ssrStyle(value) {
   if (!value) return "";
-  if (typeof value === "string") return value;
+  if (typeof value === "string") return escape(value, true);
   let result = "";
   const k = Object.keys(value);
   for (let i = 0; i < k.length; i++) {
@@ -513,7 +521,7 @@ function allSettled(promises) {
   return Promise.allSettled(promises).then(() => {
     if (promises.length !== length) return allSettled(promises);
     return;
-  })
+  });
 }
 
 function injectAssets(assets, html) {
@@ -554,7 +562,13 @@ function replacePlaceholder(html, key, value) {
 export const RequestContext = Symbol();
 
 export function getRequestEvent() {
-  return globalThis[RequestContext] ? globalThis[RequestContext].getStore() : undefined;
+  return globalThis[RequestContext]
+    ? globalThis[RequestContext].getStore() ||
+        (sharedConfig.context && sharedConfig.context.event) ||
+        console.log(
+          "RequestEvent is missing. This is most likely due to accessing `getRequestEvent` non-managed async scope in a partially polyfilled environment. Try moving it above all `await` calls."
+        )
+    : undefined;
 }
 
 // consider deprecating

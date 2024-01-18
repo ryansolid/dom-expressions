@@ -4,7 +4,7 @@ import { createComponent as _$createComponent } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { use as _$use } from "r-dom";
-const _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello `),
+var _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello `),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div>From Parent`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div> | <!> | <!> | <!> | <!> | `),
@@ -18,15 +18,15 @@ const Child = props => {
   const [s, set] = createSignal();
   return [
     (() => {
-      const _el$ = _tmpl$(),
+      var _el$ = _tmpl$(),
         _el$2 = _el$.firstChild;
-      const _ref$ = props.ref;
+      var _ref$ = props.ref;
       typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
       _$insert(_el$, () => props.name, null);
       return _el$;
     })(),
     (() => {
-      const _el$3 = _tmpl$2();
+      var _el$3 = _tmpl$2();
       _$use(set, _el$3);
       _$insert(_el$3, () => props.children);
       return _el$3;
@@ -37,7 +37,7 @@ const template = props => {
   let childRef;
   const { content } = props;
   return (() => {
-    const _el$4 = _tmpl$2();
+    var _el$4 = _tmpl$2();
     _$insert(
       _el$4,
       _$createComponent(
@@ -49,7 +49,7 @@ const template = props => {
           props,
           {
             ref(r$) {
-              const _ref$2 = childRef;
+              var _ref$2 = childRef;
               typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
             },
             booleanProperty: true,
@@ -72,11 +72,11 @@ const template = props => {
           dynamicSpread,
           {
             ref(r$) {
-              const _ref$3 = props.ref;
+              var _ref$3 = props.ref;
               typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
             },
             get children() {
-              const _el$6 = _tmpl$2();
+              var _el$6 = _tmpl$2();
               _$insert(_el$6, content);
               return _el$6;
             }
@@ -89,7 +89,7 @@ const template = props => {
       _el$4,
       _$createComponent(Context.Consumer, {
         ref(r$) {
-          const _ref$4 = props.consumerRef();
+          var _ref$4 = props.consumerRef();
           typeof _ref$4 === "function" && _ref$4(r$);
         },
         children: context => context
@@ -162,7 +162,7 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 const template10 = (() => {
-  const _el$12 = _tmpl$4(),
+  var _el$12 = _tmpl$4(),
     _el$13 = _el$12.firstChild,
     _el$18 = _el$13.nextSibling,
     _el$14 = _el$18.nextSibling,
@@ -217,7 +217,7 @@ const template10 = (() => {
   return _el$12;
 })();
 const template11 = (() => {
-  const _el$22 = _tmpl$5(),
+  var _el$22 = _tmpl$5(),
     _el$23 = _el$22.firstChild,
     _el$26 = _el$23.nextSibling,
     _el$24 = _el$26.nextSibling,
@@ -268,7 +268,7 @@ const template11 = (() => {
   return _el$22;
 })();
 const template12 = (() => {
-  const _el$28 = _tmpl$6(),
+  var _el$28 = _tmpl$6(),
     _el$29 = _el$28.firstChild,
     _el$34 = _el$29.nextSibling,
     _el$30 = _el$34.nextSibling,

@@ -3,7 +3,7 @@ import { createComponent as _$createComponent } from "r-server";
 import { mergeProps as _$mergeProps } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
-const _tmpl$ = ["<div>Hello ", "</div>"],
+var _tmpl$ = ["<div>Hello ", "</div>"],
   _tmpl$2 = ["<div>", "</div>"],
   _tmpl$3 = "<div>From Parent</div>",
   _tmpl$4 = ["<div>", "", "", "</div>"],
