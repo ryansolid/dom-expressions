@@ -43,7 +43,7 @@ export function addEventListener(
 ): void;
 type ClassList =
   | Record<string, boolean>
-  | Array<string | number | boolean | null | undefined>;
+  | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
 export function classList(
   node: Element,
   value: ClassList,

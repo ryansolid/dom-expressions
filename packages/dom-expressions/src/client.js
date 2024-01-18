@@ -151,7 +151,8 @@ export function classListToObject(classList) {
 
     for (let i = 0, len = classList.length; i < len; i++) {
       const key = classList[i];
-      if (key || key === 0) result[key] = true;
+      if (typeof key === "object" && key !== null) Object.assign(result, key);
+      else if (key || key === 0) result[key] = true;
     }
 
     return result;
