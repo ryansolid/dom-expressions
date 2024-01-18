@@ -123,4 +123,12 @@ describe("Test classList binding", () => {
       expect(div.className).toBe("0 one three");
     });
   });
+
+  test("Array with objects", () => {
+    let div;
+    S.root(() => {
+      div = <div classList={["one", "two", "three", { two: false, four: true }]} />;
+      expect(div.className).toBe("one three four");
+    });
+  });
 });
