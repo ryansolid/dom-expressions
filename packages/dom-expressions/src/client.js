@@ -136,8 +136,7 @@ export function classListToObject(classList) {
 
     for (let i = 0, len = classList.length; i < len; i++) {
       const key = classList[i];
-      // only handle null here, "" and undefined is handled by classList.
-      if (key !== null) result[key] = true;
+      if (key || key === 0) result[key] = true;
     }
 
     return result;
