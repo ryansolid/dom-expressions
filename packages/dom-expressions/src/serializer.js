@@ -61,15 +61,13 @@ export function createSerializer({ onData, onDone, scopeId, onError }) {
       ResponsePlugin,
       URLSearchParamsPlugin,
       URLPlugin,
+      JSXPlugin
     ],
     globalIdentifier: GLOBAL_IDENTIFIER,
     disabledFeatures: ES2017FLAG,
     onData,
     onDone,
-    onError,
-    plugins: [
-      JSXPlugin,
-    ],
+    onError
   });
 }
 
