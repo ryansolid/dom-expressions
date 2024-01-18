@@ -41,10 +41,13 @@ export function addEventListener(
   handler: EventListener | EventListenerObject | (EventListenerObject & AddEventListenerOptions),
   delegate: boolean
 ): void;
+type ClassList =
+  | Record<string, boolean>
+  | Array<string | number | boolean | null | undefined>;
 export function classList(
   node: Element,
-  value: { [k: string]: boolean },
-  prev?: { [k: string]: boolean }
+  value: ClassList,
+  prev?: ClassList
 ): { [k: string]: boolean };
 export function style(
   node: Element,

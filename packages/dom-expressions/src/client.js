@@ -145,9 +145,28 @@ export function addEventListener(node, name, handler, delegate) {
   } else node.addEventListener(name, handler, typeof handler !== "function" && handler);
 }
 
+export function classListToObject(classList) {
+  if (Array.isArray(classList)) {
+    const result = {};
+
+    for (let i = 0, len = classList.length; i < len; i++) {
+      const key = classList[i];
+      if (key || key === 0) result[key] = true;
+    }
+
+    return result;
+  }
+
+  return classList;
+}
+
 export function classList(node, value, prev = {}) {
-  const classKeys = Object.keys(value || {}),
-    prevKeys = Object.keys(prev);
+  prev = classListToObject(prev);
+  value = classListToObject(value);
+
+  const classKeys = Object.keys(value || {});
+  const prevKeys = Object.keys(prev);
+
   let i, len;
   for (i = 0, len = prevKeys.length; i < len; i++) {
     const key = prevKeys[i];
@@ -155,6 +174,7 @@ export function classList(node, value, prev = {}) {
     toggleClassKey(node, key, false);
     delete prev[key];
   }
+
   for (i = 0, len = classKeys.length; i < len; i++) {
     const key = classKeys[i],
       classValue = !!value[key];
@@ -162,6 +182,7 @@ export function classList(node, value, prev = {}) {
     toggleClassKey(node, key, true);
     prev[key] = classValue;
   }
+
   return prev;
 }
 
