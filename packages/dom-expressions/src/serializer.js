@@ -15,7 +15,6 @@ import {
 
 const ES2017FLAG =
   Feature.AggregateError // ES2021
-  | Feature.BigInt // ES2020
   | Feature.BigIntTypedArray // ES2020;
 
 const GLOBAL_IDENTIFIER = '_$HY.r'; // TODO this is a pending name
