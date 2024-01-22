@@ -46,6 +46,11 @@ export {
 };
 
 export function render(code, element, init, options = {}) {
+  if(!element && "_DX_DEV_") {
+     throw new Error(
+        "The `element` passed to `render(..., element)` doesn't exist in the document. Make sure `element` exists in the document."
+     );
+  }
   let disposer;
   root(dispose => {
     disposer = dispose;
