@@ -66,7 +66,7 @@ const template10 = <div ref={refFactory()} />;
 
 const template11 = <div use:something use:another={thing} use:zero={0} />;
 
-const template12 = <div prop:htmlFor={thing} />;
+const template12 = <div prop:htmlFor={thing} prop:number={123} />;
 
 const template13 = <input type="checkbox" checked={true} />;
 

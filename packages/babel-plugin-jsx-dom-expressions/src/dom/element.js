@@ -436,7 +436,9 @@ function transformAttributes(path, results) {
           evaluated !== undefined &&
           ((type = typeof evaluated) === "string" || type === "number")
         ) {
-          value = t.stringLiteral(String(evaluated));
+          if (type === "number" && (Properties.has(key) || key.startsWith("prop:"))) {
+            value = t.jsxExpressionContainer(t.numericLiteral(evaluated));
+          } else value = t.stringLiteral(String(evaluated));
         }
       }
       if (

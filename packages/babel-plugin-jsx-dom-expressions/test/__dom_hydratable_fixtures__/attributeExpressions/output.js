@@ -33,7 +33,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
   _tmpl$17 =
     /*#__PURE__*/ _$template(`<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2
-    random3 random4">`);
+    random3 random4">`),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<button>`);
+import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
 let link;
@@ -129,8 +131,11 @@ const template6 = (() => {
   _$effect(_$p => _$style(_el$12, someStyle(), _$p));
   return _el$12;
 })();
+let undefVar;
 const template7 = (() => {
   var _el$13 = _$getNextElement(_tmpl$4);
+  _el$13.classList.toggle("other-class", !!undefVar);
+  _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
     _p$ => {
       var _v$ = {
@@ -184,6 +189,7 @@ const template11 = (() => {
 const template12 = (() => {
   var _el$18 = _$getNextElement(_tmpl$4);
   _el$18.htmlFor = thing;
+  _el$18.number = 123;
   return _el$18;
 })();
 const template13 = (() => {
@@ -349,4 +355,40 @@ const template29 = (() => {
   return _el$46;
 })();
 const template30 = _$getNextElement(_tmpl$17);
+const template31 = (() => {
+  var _el$48 = _$getNextElement(_tmpl$4);
+  _$effect(() =>
+    getStore.itemProperties.color != null
+      ? _el$48.style.setProperty("background-color", getStore.itemProperties.color)
+      : _el$48.style.removeProperty("background-color")
+  );
+  return _el$48;
+})();
+const template32 = (() => {
+  var _el$49 = _$getNextElement(_tmpl$4);
+  _el$49.style.removeProperty("background-color");
+  return _el$49;
+})();
+const template33 = [
+  (() => {
+    var _el$50 = _$getNextElement(_tmpl$18);
+    _$className(_el$50, styles.button);
+    return _el$50;
+  })(),
+  (() => {
+    var _el$51 = _$getNextElement(_tmpl$18);
+    _$className(_el$51, styles["foo--bar"]);
+    return _el$51;
+  })(),
+  (() => {
+    var _el$52 = _$getNextElement(_tmpl$18);
+    _$effect(() => _$className(_el$52, styles.foo.bar));
+    return _el$52;
+  })(),
+  (() => {
+    var _el$53 = _$getNextElement(_tmpl$18);
+    _$effect(() => _$className(_el$53, styles[foo()]));
+    return _el$53;
+  })()
+];
 _$delegateEvents(["click", "input"]);
