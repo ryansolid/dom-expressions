@@ -97,7 +97,7 @@ export function renderToStream(code, options = {}) {
       // We are no longer writing any resource
       // now we just need to wait for the pending promises
       // to resolve
-      serializer.flush();
+      queue(() => queue(() => serializer.flush())); // double queue because of elsewhere
     }
   };
   const registry = new Map();
@@ -170,33 +170,36 @@ export function renderToStream(code, options = {}) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
         // double queue to ensure that Suspense is last but in same flush
-        registry.set(key, {
-          resolve: v => queue(() => queue(() => resolve(v))),
-          reject: e => queue(() => queue(() => reject(e)))
-        });
+        registry.set(key, err =>
+          queue(() =>
+            queue(() => {
+              err ? reject(err) : resolve(true);
+              queue(flushEnd);
+            })
+          )
+        );
         serializer.write(key, p);
       }
       return (value, error) => {
         if (registry.has(key)) {
-          const { resolve, reject } = registry.get(key);
+          const resolve = registry.get(key);
           registry.delete(key);
           if (waitForFragments(registry, key)) {
-            resolve(true);
+            resolve();
             return;
           }
-          if ((value !== undefined || error) && !completed) {
+          if (!completed) {
             if (!firstFlushed) {
               queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
-              error ? reject(error) : resolve(true);
+              resolve(error);
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
-              error ? reject(error) : resolve(true);
+              resolve(error);
               scriptFlushed = true;
             }
           }
         }
-        if (!registry.size) queue(flushEnd);
         return firstFlushed;
       };
     }
