@@ -46,7 +46,7 @@ export {
 };
 
 export function render(code, element, init, options = {}) {
-  if(!element && "_DX_DEV_") {
+  if("_DX_DEV_" && !element) {
      throw new Error(
         "The `element` passed to `render(..., element)` doesn't exist. Make sure `element` exists in the document."
      );
