@@ -1,48 +1,31 @@
 import {
-  Properties,
-  ChildProperties,
-  Aliases,
-  getPropAlias,
-  SVGNamespace,
-  DelegatedEvents
-} from "./constants";
-import {
-  root,
-  effect,
-  memo,
-  getOwner,
   createComponent,
+  effect,
+  getOwner,
+  memo,
+  mergeProps,
+  root,
   sharedConfig,
-  untrack,
-  mergeProps
+  untrack
 } from "rxcore";
+import {
+  Aliases,
+  ChildProperties,
+  DelegatedEvents,
+  Properties,
+  SVGNamespace,
+  getPropAlias
+} from "./constants";
 import reconcileArrays from "./reconcile";
 export {
-  Properties,
-  ChildProperties,
-  getPropAlias,
-  Aliases,
-  DOMElements,
-  SVGElements,
-  SVGNamespace,
-  DelegatedEvents
+  Aliases, ChildProperties, DOMElements, DelegatedEvents, Properties, SVGElements,
+  SVGNamespace, getPropAlias
 } from "./constants";
 
 const $$EVENTS = "_$DX_DELEGATE";
 
 export {
-  effect,
-  memo,
-  untrack,
-  getOwner,
-  createComponent,
-  mergeProps,
-  voidFn as useAssets,
-  voidFn as getAssets,
-  voidFn as Assets,
-  voidFn as generateHydrationScript,
-  voidFn as HydrationScript,
-  voidFn as getRequestEvent
+  voidFn as Assets, voidFn as HydrationScript, createComponent, effect, voidFn as generateHydrationScript, voidFn as getAssets, getOwner, voidFn as getRequestEvent, memo, mergeProps, untrack, voidFn as useAssets
 };
 
 export function render(code, element, init, options = {}) {
@@ -562,4 +545,11 @@ export const RequestContext = Symbol();
 // deprecated
 export function innerHTML(parent, content) {
   !sharedConfig.context && (parent.innerHTML = content);
+}
+
+export function useTitle(source) {
+  effect(() => {
+    while (typeof source === 'function') source = source();
+    document.title = source;
+  });
 }

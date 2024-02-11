@@ -1,5 +1,5 @@
+import { root, sharedConfig } from "rxcore";
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
-import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 export { createComponent } from "rxcore";
 
@@ -34,7 +34,8 @@ export function renderToString(code, options = {}) {
     roots: 0,
     nextRoot() {
       return this.renderId + "i-" + this.roots++;
-    }
+    },
+    title: '',
   };
   let html = root(d => {
     setTimeout(d);
@@ -42,6 +43,7 @@ export function renderToString(code, options = {}) {
   });
   sharedConfig.context.noHydrate = true;
   serializer.close();
+  html = injectTitle(sharedConfig.context.title, html);
   html = injectAssets(sharedConfig.context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
   return html;
@@ -202,7 +204,8 @@ export function renderToStream(code, options = {}) {
         }
         return firstFlushed;
       };
-    }
+    },
+    title: '',
   };
 
   let html = root(d => {
@@ -213,6 +216,7 @@ export function renderToStream(code, options = {}) {
     if (shellCompleted) return;
     sharedConfig.context = context;
     context.noHydrate = true;
+    html = injectTitle(context.title, html);
     html = injectAssets(context.assets, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
@@ -673,4 +677,15 @@ export function ssrSpread(props, isSVG, skipChildren) {
     if (i !== keys.length - 1) result += " ";
   }
   return result;
+}
+
+export function useTitle(source) {
+  // TODO should we resolve this eagerly?
+  sharedConfig.context.title = source;
+}
+
+function injectTitle(title, html) {
+  const result = resolveSSRNode(title);
+  // TODO should we put this after the head opening
+  return result ? html.replace(`</head>`, result + `</head>`) : html;
 }
