@@ -1967,11 +1967,16 @@ export namespace JSX {
     textLength?: number | string;
     lengthAdjust?: "spacing" | "spacingAndGlyphs";
   }
+  /**
+   * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
+   */
   interface UseSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
-      ConditionalProcessingSVGAttributes,
-      ExternalResourceSVGAttributes,
+    extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
+      ConditionalProcessingSVGAttributes,
+      GraphicsElementSVGAttributes<T>,
+      PresentationSVGAttributes,
+      ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
     x?: number | string;
     y?: number | string;
