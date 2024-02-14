@@ -478,7 +478,7 @@ function normalizeIncomingArray(normalized, array, current, unwrap) {
   let dynamic = false;
   for (let i = 0, len = array.length; i < len; i++) {
     let item = array[i],
-      prev = current && current[i],
+      prev = current && current[normalized.length],
       t;
     if (item == null || item === true || item === false) {
       // matches null, undefined, true or false
