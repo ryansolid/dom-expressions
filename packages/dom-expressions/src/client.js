@@ -574,6 +574,7 @@ export function useMeta(source) {
 
     if (anchor) {
       anchor = document.createComment('');
+      document.head.appendChild(anchor);
     }
     insert(document.head, source, anchor);
   });
