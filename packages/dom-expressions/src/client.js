@@ -571,11 +571,6 @@ export function useMeta(source) {
     for (let i = 0, len = nodes.length; i < len; i++) {
       document.head.removeChild(nodes[i]);
     }
-
-    if (anchor) {
-      anchor = document.createComment('');
-      document.head.appendChild(anchor);
-    }
     insert(document.head, source, anchor);
   });
 }
