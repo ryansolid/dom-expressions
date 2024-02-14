@@ -12,11 +12,11 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<span>Hello `),
   _tmpl$9 = /*#__PURE__*/ _$template(`<span>Hi&lt;script>alert();&lt;/script>`),
   _tmpl$10 = /*#__PURE__*/ _$template(`<span>Hello World!`),
   _tmpl$11 = /*#__PURE__*/ _$template(`<span>4 + 5 = 9`),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<div>
-d`),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div>\nd`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div normal=Search… title=Search&amp;hellip;>`),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<div><div>`);
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div><div>`),
+  _tmpl$16 = /*#__PURE__*/ _$template(`<p>$\{blah}`);
 const trailing = _tmpl$();
 const leading = _tmpl$2();
 
@@ -142,3 +142,4 @@ const lastElementExpression = (() => {
   _$insert(_el$35, expr, null);
   return _el$35;
 })();
+const messwithTemplates = _tmpl$16();

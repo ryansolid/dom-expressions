@@ -23,7 +23,6 @@ import {
   wrappedByText,
   getRendererConfig,
   getConfig,
-  escapeBackticks,
   escapeHTML,
   convertJSXIdentifier,
   canNativeSpread,
@@ -760,10 +759,10 @@ function transformAttributes(path, results) {
 
           if (needsQuoting) {
             needsSpacing = false;
-            results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
+            results.template += `="${escapeHTML(text, true)}"`;
           } else {
             needsSpacing = true;
-            results.template += `=${escapeBackticks(escapeHTML(text, true))}`;
+            results.template += `=${escapeHTML(text, true)}`;
           }
         }
       }

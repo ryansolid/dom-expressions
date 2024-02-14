@@ -13,8 +13,7 @@ import {
   transformCondition,
   getStaticExpression,
   escapeHTML,
-  getConfig,
-  escapeBackticks
+  getConfig
 } from "./utils";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
@@ -71,7 +70,7 @@ export function transformThis(path) {
             path.node.closingElement.name = path.node.openingElement.name;
           }
         }
-      } 
+      }
     },
   });
   return node => {
@@ -106,7 +105,7 @@ export function transformNode(path, info = {}) {
         : trimWhitespace(node.extra.raw);
     if (!text.length) return null;
     const results = {
-      template: config.generate === "ssr" ? text : escapeBackticks(text),
+      template: text,
       declarations: [],
       exprs: [],
       dynamics: [],

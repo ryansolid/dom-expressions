@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
+import { escapeStringForTemplate, getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -38,7 +38,7 @@ export function appendTemplates(path, templates) {
   const declarators = templates.map(template => {
     const tmpl = {
       cooked: template.template,
-      raw: template.template
+      raw: escapeStringForTemplate(template.template)
     };
     return t.variableDeclarator(
       template.id,

@@ -12,8 +12,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<span>Hello `),
   _tmpl$9 = /*#__PURE__*/ _$template(`<span>Hi&lt;script>alert();&lt;/script>`),
   _tmpl$10 = /*#__PURE__*/ _$template(`<span>Hello World!`),
   _tmpl$11 = /*#__PURE__*/ _$template(`<span>4 + 5 = 9`),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<div>
-d`),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div>\nd`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div normal=Search… title=Search&amp;hellip;>`);
 const trailing = _tmpl$();

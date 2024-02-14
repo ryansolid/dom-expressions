@@ -9,7 +9,8 @@ import {
   getRendererConfig,
   convertJSXIdentifier,
   canNativeSpread,
-  transformCondition
+  transformCondition,
+  escapeStringForTemplate
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -245,13 +246,13 @@ function transformChildren(path, results) {
             t.variableDeclarator(
               child.id,
               t.callExpression(createTextNode, [
-                t.templateLiteral([t.templateElement({ raw: child.template })], [])
+                t.templateLiteral([t.templateElement({ raw: escapeStringForTemplate(child.template) })], [])
               ])
             )
           );
         } else
           insert = t.callExpression(createTextNode, [
-            t.templateLiteral([t.templateElement({ raw: child.template })], [])
+            t.templateLiteral([t.templateElement({ raw: escapeStringForTemplate(child.template) })], [])
           ]);
       }
       appends.push(t.expressionStatement(t.callExpression(insertNode, [results.id, insert])));

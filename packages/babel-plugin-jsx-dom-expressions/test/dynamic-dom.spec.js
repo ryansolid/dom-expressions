@@ -37,7 +37,8 @@ pluginTester({
           "ul",
           "label",
           "text",
-          "namespace:tag"
+          "namespace:tag",
+          "p"
         ]
       }
     ],

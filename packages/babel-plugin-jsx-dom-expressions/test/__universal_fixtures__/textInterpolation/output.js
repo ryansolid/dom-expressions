@@ -129,8 +129,7 @@ const evaluatedNonString = (() => {
 })();
 const newLineLiteral = (() => {
   var _el$37 = _$createElement("div"),
-    _el$38 = _$createTextNode(`
-d`);
+    _el$38 = _$createTextNode(`\nd`);
   _$insertNode(_el$37, _el$38);
   _$insert(_el$37, s, _el$38);
   return _el$37;

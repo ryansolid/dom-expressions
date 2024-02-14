@@ -328,10 +328,6 @@ export function transformCondition(path, inline, deep) {
   return deep ? expr : t.arrowFunctionExpression([], expr);
 }
 
-export function escapeBackticks(value) {
-  return value.replace(/`/g, "\\`");
-}
-
 export function escapeHTML(s, attr) {
   if (typeof s !== "string") return s;
   const delim = attr ? '"' : "<";
@@ -419,3 +415,21 @@ export function getNumberedId(num) {
 
   return out;
 }
+
+export function escapeStringForTemplate(str) {
+	return str.replace(/[{\\`\n\t\b\f\v\r\u2028\u2029]/g, ch => templateEscapes.get(ch))
+}
+
+const templateEscapes = new Map([
+	['{', '\\{'],
+	['`', '\\`'],
+	['\\', '\\\\'],
+	['\n', '\\n'],
+	['\t', '\\t'],
+	['\b', '\\b'],
+	['\f', '\\f'],
+	['\v', '\\v'],
+	['\r', '\\r'],
+	['\u2028', '\\u2028'],
+	['\u2029', '\\u2029']
+])
