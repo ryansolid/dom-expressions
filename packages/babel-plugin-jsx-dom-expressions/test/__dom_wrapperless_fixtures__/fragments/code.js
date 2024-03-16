@@ -68,3 +68,7 @@ const lastComponent = (
     <Component />
   </>
 );
+
+const nestedDynamic = (
+  <>{state.prop ? state.prop ? <div>First</div> : <></> : <></>}</>
+);

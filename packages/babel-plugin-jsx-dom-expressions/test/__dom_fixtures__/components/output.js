@@ -151,7 +151,7 @@ const template6 = _$createComponent(_$For, {
 });
 const template7 = _$createComponent(Child, {
   get children() {
-    return [_tmpl$2(), _$memo(() => state.dynamic)];
+    return [_tmpl$2(), _$memo(() => () => state.dynamic)];
   }
 });
 const template8 = _$createComponent(Child, {
@@ -371,7 +371,7 @@ const template23 = _$createComponent(Component, {
 });
 const template24 = _$createComponent(Component, {
   get children() {
-    return state.dynamic;
+    return () => state.dynamic;
   }
 });
 const template25 = _$createComponent(Component, {

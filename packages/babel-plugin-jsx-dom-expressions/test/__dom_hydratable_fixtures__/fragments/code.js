@@ -75,3 +75,8 @@ const multiLineTrailing = <>
   <span>2</span> 
   <span>3</span>
 </>
+
+const nestedDynamic = (
+  <>{state.prop ? state.prop ? <div>First</div> : <></> : <></>}</>
+);
+

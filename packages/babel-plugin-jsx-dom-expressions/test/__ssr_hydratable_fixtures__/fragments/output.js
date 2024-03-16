@@ -42,3 +42,4 @@ const multiLineTrailing = [
   _$ssr(_tmpl$5, _$ssrHydrationKey()),
   _$ssr(_tmpl$6, _$ssrHydrationKey())
 ];
+const nestedDynamic = state.prop ? (state.prop ? _$ssr(_tmpl$, _$ssrHydrationKey()) : []) : [];

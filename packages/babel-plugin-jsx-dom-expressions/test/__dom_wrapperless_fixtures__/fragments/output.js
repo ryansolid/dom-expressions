@@ -28,3 +28,4 @@ const firstComponent = [_$createComponent(Component, {}), _tmpl$3()];
 const lastStatic = [_tmpl$3(), inserted];
 const lastDynamic = [_tmpl$3(), inserted];
 const lastComponent = [_tmpl$3(), _$createComponent(Component, {})];
+const nestedDynamic = () => (state.prop ? (state.prop ? _tmpl$() : []) : []);

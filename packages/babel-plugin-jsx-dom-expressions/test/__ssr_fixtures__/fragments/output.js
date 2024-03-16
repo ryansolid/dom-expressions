@@ -28,3 +28,4 @@ const lastDynamic = [_$ssr(_tmpl$5), inserted()];
 const lastComponent = [_$ssr(_tmpl$5), _$createComponent(Component, {})];
 const spaces = [_$ssr(_tmpl$6), " ", _$ssr(_tmpl$7), " ", _$ssr(_tmpl$8)];
 const multiLineTrailing = [_$ssr(_tmpl$6), _$ssr(_tmpl$7), _$ssr(_tmpl$8)];
+const nestedDynamic = state.prop ? (state.prop ? _$ssr(_tmpl$) : []) : [];

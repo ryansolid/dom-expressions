@@ -17,7 +17,7 @@ const multiDynamic = [
     _$effect(() => _$setAttribute(_el$5, "id", state.first));
     return _el$5;
   })(),
-  _$memo(() => state.inserted),
+  _$memo(() => () => state.inserted),
   (() => {
     var _el$6 = _tmpl$2();
     _$effect(() => _$setAttribute(_el$6, "id", state.last));
@@ -26,12 +26,23 @@ const multiDynamic = [
   "After"
 ];
 const singleExpression = inserted;
-const singleDynamic = _$memo(inserted);
+const singleDynamic = _$memo(() => inserted);
 const firstStatic = [inserted, _tmpl$3()];
-const firstDynamic = [_$memo(inserted), _tmpl$3()];
+const firstDynamic = [_$memo(() => inserted), _tmpl$3()];
 const firstComponent = [_$createComponent(Component, {}), _tmpl$3()];
 const lastStatic = [_tmpl$3(), inserted];
-const lastDynamic = [_tmpl$3(), _$memo(inserted)];
+const lastDynamic = [_tmpl$3(), _$memo(() => inserted)];
 const lastComponent = [_tmpl$3(), _$createComponent(Component, {})];
 const spaces = [_tmpl$4(), " ", _tmpl$5(), " ", _tmpl$6()];
 const multiLineTrailing = [_tmpl$4(), _tmpl$5(), _tmpl$6()];
+const nestedDynamic = _$memo(() =>
+  (() => {
+    var _c$ = _$memo(() => !!state.prop);
+    return _c$()
+      ? (() => {
+          var _c$2 = _$memo(() => !!state.prop);
+          return _c$2() ? _tmpl$() : [];
+        })()
+      : [];
+  })()
+);

@@ -313,7 +313,7 @@ export function transformCondition(path, inline, deep) {
             : t.arrowFunctionExpression([], cond)
         )
       ]),
-      t.arrowFunctionExpression([], expr)
+      expr
     ];
     return deep
       ? t.callExpression(

@@ -35,3 +35,14 @@ const lastDynamic = [_tmpl$3(), _$memo(inserted)];
 const lastComponent = [_tmpl$3(), _$createComponent(Component, {})];
 const spaces = [_tmpl$4(), " ", _tmpl$5(), " ", _tmpl$6()];
 const multiLineTrailing = [_tmpl$4(), _tmpl$5(), _tmpl$6()];
+const nestedDynamic = _$memo(
+  (() => {
+    var _c$ = _$memo(() => !!state.prop);
+    return _c$()
+      ? (() => {
+          var _c$2 = _$memo(() => !!state.prop);
+          return _c$2() ? _tmpl$() : [];
+        })()
+      : [];
+  })()
+);

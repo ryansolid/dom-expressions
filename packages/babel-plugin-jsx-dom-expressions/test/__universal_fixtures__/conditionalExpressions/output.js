@@ -30,7 +30,7 @@ const template5 = (() => {
     _el$5,
     (() => {
       var _c$ = _$memo(() => !!state.dynamic);
-      return () => (_c$() ? good() : bad);
+      return _c$() ? good() : bad;
     })()
   );
   return _el$5;
@@ -41,7 +41,7 @@ const template6 = (() => {
     _el$6,
     (() => {
       var _c$2 = _$memo(() => !!state.dynamic);
-      return () => _c$2() && good();
+      return _c$2() && good();
     })()
   );
   return _el$6;
@@ -52,13 +52,12 @@ const template7 = (() => {
     _el$7,
     (() => {
       var _c$3 = _$memo(() => state.count > 5);
-      return () =>
-        _c$3()
-          ? (() => {
-              var _c$4 = _$memo(() => !!state.dynamic);
-              return () => (_c$4() ? best : good());
-            })()
-          : bad;
+      return _c$3()
+        ? (() => {
+            var _c$4 = _$memo(() => !!state.dynamic);
+            return _c$4() ? best : good();
+          })()
+        : bad;
     })()
   );
   return _el$7;
@@ -69,7 +68,7 @@ const template8 = (() => {
     _el$8,
     (() => {
       var _c$5 = _$memo(() => !!(state.dynamic && state.something));
-      return () => _c$5() && good();
+      return _c$5() && good();
     })()
   );
   return _el$8;
@@ -80,7 +79,7 @@ const template9 = (() => {
     _el$9,
     (() => {
       var _c$6 = _$memo(() => !!state.dynamic);
-      return () => (_c$6() && good()) || bad;
+      return (_c$6() && good()) || bad;
     })()
   );
   return _el$9;
@@ -96,13 +95,12 @@ const template11 = (() => {
     _el$11,
     (() => {
       var _c$7 = _$memo(() => !!state.a);
-      return () =>
-        _c$7()
-          ? a()
-          : (() => {
-              var _c$8 = _$memo(() => !!state.b);
-              return () => (_c$8() ? b() : state.c ? "c" : "fallback");
-            })();
+      return _c$7()
+        ? a()
+        : (() => {
+            var _c$8 = _$memo(() => !!state.b);
+            return _c$8() ? b() : state.c ? "c" : "fallback";
+          })();
     })()
   );
   return _el$11;
@@ -168,7 +166,7 @@ const template20 = (() => {
     _el$13,
     (() => {
       var _c$9 = _$memo(() => !!state.dynamic);
-      return () => (_c$9() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+      return _c$9() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
     })()
   );
   return _el$13;
@@ -221,7 +219,7 @@ const template29 = (() => {
     _el$18,
     (() => {
       var _c$10 = _$memo(() => !!thing());
-      return () => (_c$10() && thing1()) ?? thing2() ?? thing3();
+      return (_c$10() && thing1()) ?? thing2() ?? thing3();
     })()
   );
   return _el$18;

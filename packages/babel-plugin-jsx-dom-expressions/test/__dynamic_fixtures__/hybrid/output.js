@@ -122,39 +122,38 @@ const Component = props => {
       _el$14,
       (() => {
         var _c$ = _$memo(() => !!props.three);
-        return () =>
-          _c$()
-            ? (() => {
-                var _el$15 = _$createElement("mesh"),
-                  _el$16 = _$createElement("pointLight");
-                _$insertNode(_el$15, _el$16);
-                _$setProp(_el$15, "scale", 2);
-                _$setProp(_el$15, "position", [0, 0, 0]);
+        return _c$()
+          ? (() => {
+              var _el$15 = _$createElement("mesh"),
+                _el$16 = _$createElement("pointLight");
+              _$insertNode(_el$15, _el$16);
+              _$setProp(_el$15, "scale", 2);
+              _$setProp(_el$15, "position", [0, 0, 0]);
+              _$setProp(
+                _el$15,
+                "geometry",
+                (() => {
+                  var _el$17 = _$createElement("boxBufferGeometry");
+                  _$setProp(_el$17, "args", [0, 1, 2]);
+                  return _el$17;
+                })()
+              );
+              _$effect(_$p =>
                 _$setProp(
                   _el$15,
-                  "geometry",
+                  "material",
                   (() => {
-                    var _el$17 = _$createElement("boxBufferGeometry");
-                    _$setProp(_el$17, "args", [0, 1, 2]);
-                    return _el$17;
-                  })()
-                );
-                _$effect(_$p =>
-                  _$setProp(
-                    _el$15,
-                    "material",
-                    (() => {
-                      var _el$18 = _$createElement("basicMaterial");
-                      _$setProp(_el$18, "alpha", 0);
-                      _$effect(_$p => _$setProp(_el$18, "color", s() ? "red" : "green", _$p));
-                      return _el$18;
-                    })(),
-                    _$p
-                  )
-                );
-                return _el$15;
-              })()
-            : _tmpl$5();
+                    var _el$18 = _$createElement("basicMaterial");
+                    _$setProp(_el$18, "alpha", 0);
+                    _$effect(_$p => _$setProp(_el$18, "color", s() ? "red" : "green", _$p));
+                    return _el$18;
+                  })(),
+                  _$p
+                )
+              );
+              return _el$15;
+            })()
+          : _tmpl$5();
       })()
     );
     return _el$14;

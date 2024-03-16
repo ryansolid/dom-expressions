@@ -29,7 +29,7 @@ export function createTemplate(path, result, wrap) {
     }
   }
   if (wrap && result.dynamic && config.memoWrapper) {
-    return t.callExpression(registerImportMethod(path, config.memoWrapper), [result.exprs[0]]);
+    return t.callExpression(registerImportMethod(path, config.memoWrapper), [t.arrowFunctionExpression([], result.exprs[0])]);
   }
   return result.exprs[0];
 }

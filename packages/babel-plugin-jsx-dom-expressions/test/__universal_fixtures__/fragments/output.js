@@ -91,3 +91,20 @@ const multiLineTrailing = [
     return _el$29;
   })()
 ];
+const nestedDynamic = _$memo(
+  (() => {
+    var _c$ = _$memo(() => !!state.prop);
+    return _c$()
+      ? (() => {
+          var _c$2 = _$memo(() => !!state.prop);
+          return _c$2()
+            ? (() => {
+                var _el$31 = _$createElement("div");
+                _$insertNode(_el$31, _$createTextNode(`First`));
+                return _el$31;
+              })()
+            : [];
+        })()
+      : [];
+  })()
+);
