@@ -11,6 +11,7 @@ describe("r.hydrate", () => {
     _tmpl$ = r.template(`<span><!--#--><!--/--> John</span>`),
     _tmpl$2 = r.template(`<div>First</div>`),
     _tmpl$3 = r.template(`<div>Last</div>`);
+  document.body.appendChild(container);
   let result, rendered;
 
   it("hydrates simple text", () => {

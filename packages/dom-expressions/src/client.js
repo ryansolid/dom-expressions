@@ -46,10 +46,10 @@ export {
 };
 
 export function render(code, element, init, options = {}) {
-  if("_DX_DEV_" && !element) {
-     throw new Error(
-        "The `element` passed to `render(..., element)` doesn't exist. Make sure `element` exists in the document."
-     );
+  if ("_DX_DEV_" && !element) {
+    throw new Error(
+      "The `element` passed to `render(..., element)` doesn't exist. Make sure `element` exists in the document."
+    );
   }
   let disposer;
   root(dispose => {
@@ -102,23 +102,24 @@ export function clearDelegatedEvents(document = window.document) {
 }
 
 export function setProperty(node, name, value) {
-  !sharedConfig.context && (node[name] = value);
+  if (!!sharedConfig.context && node.isConnected) return;
+  node[name] = value;
 }
 
 export function setAttribute(node, name, value) {
-  if (sharedConfig.context) return;
+  if (!!sharedConfig.context && node.isConnected) return;
   if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
-  if (sharedConfig.context) return;
+  if (!!sharedConfig.context && node.isConnected) return;
   if (value == null) node.removeAttributeNS(namespace, name);
   else node.setAttributeNS(namespace, name, value);
 }
 
 export function className(node, value) {
-  if (sharedConfig.context) return;
+  if (!!sharedConfig.context && node.isConnected) return;
   if (value == null) node.removeAttribute("class");
   else node.className = value;
 }
@@ -347,7 +348,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     if (forceProp) {
       prop = prop.slice(5);
       isProp = true;
-    } else if (sharedConfig.context) return value;
+    } else if (!!sharedConfig.context && node.isConnected) return value;
     if (prop === "class" || prop === "className") className(node, value);
     else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[propAlias || prop] = value;
@@ -393,7 +394,8 @@ function eventHandler(e) {
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
-  if (sharedConfig.context) {
+  const hydrating = !!sharedConfig.context && parent.isConnected;
+  if (hydrating) {
     !current && (current = [...parent.childNodes]);
     let cleaned = [];
     for (let i = 0; i < current.length; i++) {
@@ -410,7 +412,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
   parent = (multi && current[0] && current[0].parentNode) || parent;
 
   if (t === "string" || t === "number") {
-    if (sharedConfig.context) return current;
+    if (hydrating) return current;
     if (t === "number") value = value.toString();
     if (multi) {
       let node = current[0];
@@ -424,7 +426,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       } else current = parent.textContent = value;
     }
   } else if (value == null || t === "boolean") {
-    if (sharedConfig.context) return current;
+    if (hydrating) return current;
     current = cleanChildren(parent, current, marker);
   } else if (t === "function") {
     effect(() => {
@@ -440,7 +442,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       effect(() => (current = insertExpression(parent, array, current, marker, true)));
       return () => current;
     }
-    if (sharedConfig.context) {
+    if (hydrating) {
       if (!array.length) return current;
       if (marker === undefined) return [...parent.childNodes];
       let node = array[0];
@@ -461,7 +463,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     current = array;
   } else if (value.nodeType) {
-    if (sharedConfig.context && value.parentNode) return (current = multi ? [value] : value);
+    if (hydrating && value.parentNode) return (current = multi ? [value] : value);
     if (Array.isArray(current)) {
       if (multi) return (current = cleanChildren(parent, current, marker, value));
       cleanChildren(parent, current, null, value);
@@ -554,7 +556,7 @@ export function Hydration(props) {
   return props.children;
 }
 
-const voidFn = () => undefined
+const voidFn = () => undefined;
 
 // experimental
 export const RequestContext = Symbol();
