@@ -133,7 +133,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return true;
   }
 
-  if (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr))) {
+  if (checkTags && (t.isJSXElement(expr) || (t.isJSXFragment(expr) && expr.children.length))) {
     return true;
   }
 
@@ -167,7 +167,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
       checkTags ? (dynamic = true) && p.stop() : p.skip();
     },
     JSXFragment(p) {
-      checkTags ? (dynamic = true) && p.stop() : p.skip();
+      checkTags && p.node.children.length ? (dynamic = true) && p.stop() : p.skip();
     }
   });
   return dynamic;
