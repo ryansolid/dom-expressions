@@ -107,7 +107,7 @@ importers:
         version: 2.3.0
     devDependencies:
       babel-plugin-jsx-dom-expressions:
-        specifier: ^0.37.17
+        specifier: ^0.37.19
         version: link:../babel-plugin-jsx-dom-expressions
       csstype:
         specifier: ^3.1
@@ -122,13 +122,13 @@ importers:
   packages/hyper-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.37.17
+        specifier: ^0.37.19
         version: link:../dom-expressions
 
   packages/lit-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.37.17
+        specifier: ^0.37.19
         version: link:../dom-expressions
       html-parse-string:
         specifier: ^0.0.9
