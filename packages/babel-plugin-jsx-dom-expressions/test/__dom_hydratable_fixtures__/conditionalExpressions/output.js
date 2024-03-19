@@ -1,33 +1,34 @@
-import { createTextNode as _$createTextNode } from "r-custom";
-import { insertNode as _$insertNode } from "r-custom";
-import { setProp as _$setProp } from "r-custom";
-import { effect as _$effect } from "r-custom";
-import { createComponent as _$createComponent } from "r-custom";
-import { memo as _$memo } from "r-custom";
-import { insert as _$insert } from "r-custom";
-import { createElement as _$createElement } from "r-custom";
+import { template as _$template } from "r-dom";
+import { setProperty as _$setProperty } from "r-dom";
+import { effect as _$effect } from "r-dom";
+import { createComponent as _$createComponent } from "r-dom";
+import { memo as _$memo } from "r-dom";
+import { getNextElement as _$getNextElement } from "r-dom";
+import { insert as _$insert } from "r-dom";
+var _tmpl$ = /*#__PURE__*/ _$template(`<div>`),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<div>Output`);
 const template1 = (() => {
-  var _el$ = _$createElement("div");
+  var _el$ = _$getNextElement(_tmpl$);
   _$insert(_el$, simple);
   return _el$;
 })();
 const template2 = (() => {
-  var _el$2 = _$createElement("div");
+  var _el$2 = _$getNextElement(_tmpl$);
   _$insert(_el$2, () => state.dynamic);
   return _el$2;
 })();
 const template3 = (() => {
-  var _el$3 = _$createElement("div");
+  var _el$3 = _$getNextElement(_tmpl$);
   _$insert(_el$3, simple ? good : bad);
   return _el$3;
 })();
 const template4 = (() => {
-  var _el$4 = _$createElement("div");
+  var _el$4 = _$getNextElement(_tmpl$);
   _$insert(_el$4, () => (simple ? good() : bad));
   return _el$4;
 })();
 const template5 = (() => {
-  var _el$5 = _$createElement("div");
+  var _el$5 = _$getNextElement(_tmpl$);
   _$insert(
     _el$5,
     (() => {
@@ -38,7 +39,7 @@ const template5 = (() => {
   return _el$5;
 })();
 const template6 = (() => {
-  var _el$6 = _$createElement("div");
+  var _el$6 = _$getNextElement(_tmpl$);
   _$insert(
     _el$6,
     (() => {
@@ -49,7 +50,7 @@ const template6 = (() => {
   return _el$6;
 })();
 const template7 = (() => {
-  var _el$7 = _$createElement("div");
+  var _el$7 = _$getNextElement(_tmpl$);
   _$insert(
     _el$7,
     (() => {
@@ -66,7 +67,7 @@ const template7 = (() => {
   return _el$7;
 })();
 const template8 = (() => {
-  var _el$8 = _$createElement("div");
+  var _el$8 = _$getNextElement(_tmpl$);
   _$insert(
     _el$8,
     (() => {
@@ -77,7 +78,7 @@ const template8 = (() => {
   return _el$8;
 })();
 const template9 = (() => {
-  var _el$9 = _$createElement("div");
+  var _el$9 = _$getNextElement(_tmpl$);
   _$insert(
     _el$9,
     (() => {
@@ -88,12 +89,12 @@ const template9 = (() => {
   return _el$9;
 })();
 const template10 = (() => {
-  var _el$10 = _$createElement("div");
+  var _el$10 = _$getNextElement(_tmpl$);
   _$insert(_el$10, () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"));
   return _el$10;
 })();
 const template11 = (() => {
-  var _el$11 = _$createElement("div");
+  var _el$11 = _$getNextElement(_tmpl$);
   _$insert(
     _el$11,
     (() => {
@@ -153,19 +154,18 @@ const template18 = _$createComponent(Comp, {
   }
 });
 const template19 = (() => {
-  var _el$12 = _$createElement("div");
-  _$effect(_$p =>
-    _$setProp(
+  var _el$12 = _$getNextElement(_tmpl$);
+  _$effect(() =>
+    _$setProperty(
       _el$12,
       "innerHTML",
-      state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}),
-      _$p
+      state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})
     )
   );
   return _el$12;
 })();
 const template20 = (() => {
-  var _el$13 = _$createElement("div");
+  var _el$13 = _$getNextElement(_tmpl$);
   _$insert(
     _el$13,
     (() => {
@@ -186,12 +186,12 @@ const template22 = _$createComponent(Comp, {
   }
 });
 const template23 = (() => {
-  var _el$14 = _$createElement("div");
-  _$effect(_$p => _$setProp(_el$14, "innerHTML", state?.dynamic ? "a" : "b", _$p));
+  var _el$14 = _$getNextElement(_tmpl$);
+  _$effect(() => _$setProperty(_el$14, "innerHTML", state?.dynamic ? "a" : "b"));
   return _el$14;
 })();
 const template24 = (() => {
-  var _el$15 = _$createElement("div");
+  var _el$15 = _$getNextElement(_tmpl$);
   _$insert(_el$15, () => (state?.dynamic ? "a" : "b"));
   return _el$15;
 })();
@@ -206,19 +206,17 @@ const template26 = _$createComponent(Comp, {
   }
 });
 const template27 = (() => {
-  var _el$16 = _$createElement("div");
-  _$effect(_$p =>
-    _$setProp(_el$16, "innerHTML", state.dynamic ?? _$createComponent(Comp, {}), _$p)
-  );
+  var _el$16 = _$getNextElement(_tmpl$);
+  _$effect(() => _$setProperty(_el$16, "innerHTML", state.dynamic ?? _$createComponent(Comp, {})));
   return _el$16;
 })();
 const template28 = (() => {
-  var _el$17 = _$createElement("div");
+  var _el$17 = _$getNextElement(_tmpl$);
   _$insert(_el$17, () => state.dynamic ?? _$createComponent(Comp, {}));
   return _el$17;
 })();
 const template29 = (() => {
-  var _el$18 = _$createElement("div");
+  var _el$18 = _$getNextElement(_tmpl$);
   _$insert(
     _el$18,
     (() => {
@@ -229,7 +227,7 @@ const template29 = (() => {
   return _el$18;
 })();
 const template30 = (() => {
-  var _el$19 = _$createElement("div");
+  var _el$19 = _$getNextElement(_tmpl$);
   _$insert(_el$19, () => thing() || thing1() || thing2());
   return _el$19;
 })();
@@ -239,7 +237,7 @@ const template31 = _$createComponent(Comp, {
   }
 });
 const template32 = (() => {
-  var _el$20 = _$createElement("div");
+  var _el$20 = _$getNextElement(_tmpl$);
   _$insert(_el$20, () => something?.());
   return _el$20;
 })();
@@ -262,13 +260,5 @@ const template42 = _$memo(() =>
   _$memo(() => !!state.a)() ? a() : _$memo(() => !!state.b)() ? b() : state.c ? "c" : "fallback"
 );
 const template43 = _$memo(() =>
-  _$memo(() => !!obj1.prop)()
-    ? _$memo(() => !!obj2.prop)()
-      ? (() => {
-          var _el$21 = _$createElement("div");
-          _$insertNode(_el$21, _$createTextNode(`Output`));
-          return _el$21;
-        })()
-      : []
-    : []
+  _$memo(() => !!obj1.prop)() ? (_$memo(() => !!obj2.prop)() ? _$getNextElement(_tmpl$2) : []) : []
 );

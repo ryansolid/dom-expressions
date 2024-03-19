@@ -130,7 +130,7 @@ export function transformNode(path, info = {}) {
       config.wrapConditionals &&
       config.generate !== "ssr" &&
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))
-        ? transformCondition(path.get("expression"), info.componentChild)
+        ? transformCondition(path.get("expression"), info.componentChild || info.fragmentChild)
         : !info.componentChild &&
           (config.generate !== "ssr" || info.fragmentChild) &&
           t.isCallExpression(node.expression) &&
