@@ -389,7 +389,16 @@ function eventHandler(e) {
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
-    node = node._$host || node.parentNode || node.host;
+    if(node._$host || node.parentNode) {
+      node = node._$host || node.parentNode;
+    }
+    else if(node = node.host) {
+      // walking up shadow DOM so retarget to host
+      Object.defineProperty(e, "target", {
+        configurable: true,
+        value: node
+      });
+    }
   }
 }
 
