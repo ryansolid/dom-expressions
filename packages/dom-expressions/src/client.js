@@ -362,14 +362,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
 
 function eventHandler(e) {
   const key = `$$${e.type}`;
-  let node = (e.composedPath && e.composedPath()[0]) || e.target;
-  // reverse Shadow DOM retargetting
-  if (e.target !== node) {
-    Object.defineProperty(e, "target", {
-      configurable: true,
-      value: node
-    });
-  }
+  let node = e.target;
+  const oriCurrentTarget = e.currentTarget;
 
   // simulate currentTarget
   Object.defineProperty(e, "currentTarget", {
@@ -382,24 +376,48 @@ function eventHandler(e) {
   // cancel html streaming
   if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
-  while (node) {
+  const handleNode = () => {
     const handler = node[key];
     if (handler && !node.disabled) {
       const data = node[`${key}Data`];
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
+    }
+  };
+
+  const retarget = value =>
+    Object.defineProperty(e, "target", {
+      configurable: true,
+      value
+    });
+
+  if (e.composedPath) {
+    const path = e.composedPath();
+    retarget(path[0]);
+    for (let i = 0; i < path.length - 2; i++) {
+      node = path[i];
+      handleNode();
       if (e.cancelBubble) return;
-    }
-    if(node._$host || node.parentNode) {
-      node = node._$host || node.parentNode;
-    }
-    else if(node = node.host) {
-      // walking up shadow DOM so retarget to host
-      Object.defineProperty(e, "target", {
-        configurable: true,
-        value: node
-      });
+      if (node.host && node.contains(e.target) && !node.host._$host) {
+        // retarget when walking up a shadow root except from slots or portals.
+        retarget(node.host);
+      }
+      if (node._$host) {
+        node = node._$host;
+        break; // bubble up from portal mount instead of composedPath
+      }
+      if (node.parentNode === oriCurrentTarget) {
+        return; // don't bubble above root of event delegation
+      }
     }
   }
+  // handle tree above portals and a fallback for browsers that don't support composedPath
+  do {
+    handleNode();
+    if (e.cancelBubble) return;
+    if (node.host && node.contains(e.target) && !node.host._$host) {
+      retarget(node.host);
+    }
+  } while ((node = node._$host || node.parentNode || node.host));
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {

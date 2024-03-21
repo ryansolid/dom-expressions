@@ -46,7 +46,7 @@ describe("Synthetic event target with shadow DOM web components", () => {
   S.root(() =>
     document.body.appendChild(
       <div ref={Elements.outerContainer} onClick={outerOnClick}>
-        <my-component ref={Elements.myComponent}>
+        <my-component id="mycomponent" ref={Elements.myComponent}>
           <button slot="theslot" id="slotbutton" ref={Elements.slotButton}></button>
         </my-component>
       </div>
