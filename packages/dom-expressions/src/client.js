@@ -363,6 +363,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
 function eventHandler(e) {
   const key = `$$${e.type}`;
   let node = e.target;
+  const oriTarget = e.target;
   const oriCurrentTarget = e.currentTarget;
 
   // simulate currentTarget
@@ -384,6 +385,16 @@ function eventHandler(e) {
     }
   };
 
+  const walkUpTree = () => {
+    do {
+      handleNode();
+      if (e.cancelBubble) break;
+      if (node.host && node.contains(e.target) && !node.host._$host) {
+        retarget(node.host);
+      }
+    } while ((node = node._$host || node.parentNode || node.host));
+  }
+
   const retarget = value =>
     Object.defineProperty(e, "target", {
       configurable: true,
@@ -396,28 +407,28 @@ function eventHandler(e) {
     for (let i = 0; i < path.length - 2; i++) {
       node = path[i];
       handleNode();
-      if (e.cancelBubble) return;
+      if (e.cancelBubble) break;
       if (node.host && node.contains(e.target) && !node.host._$host) {
         // retarget when walking up a shadow root except from slots or portals.
         retarget(node.host);
       }
       if (node._$host) {
         node = node._$host;
-        break; // bubble up from portal mount instead of composedPath
+        // bubble up from portal mount instead of composedPath
+        walkUpTree();
+        break;
       }
       if (node.parentNode === oriCurrentTarget) {
-        return; // don't bubble above root of event delegation
+        break; // don't bubble above root of event delegation
       }
     }
   }
-  // handle tree above portals and a fallback for browsers that don't support composedPath
-  do {
-    handleNode();
-    if (e.cancelBubble) return;
-    if (node.host && node.contains(e.target) && !node.host._$host) {
-      retarget(node.host);
-    }
-  } while ((node = node._$host || node.parentNode || node.host));
+  else {
+    // fallback for browsers that don't support composedPath
+    walkUpTree();
+  }
+  // Mixing portals and shadow dom can lead to a nonstandard target, so reset here.
+  retarget(oriTarget);
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
