@@ -183,7 +183,7 @@ export function spread(node, props = {}, isSVG, skipChildren) {
   if (!skipChildren) {
     effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
   }
-  effect(() => props.ref && props.ref(node));
+  effect(() => (typeof props.ref === "function" ? use(props.ref, node) : (props.ref = node)));
   effect(() => assign(node, props, isSVG, true, prevProps, true));
   return prevProps;
 }
