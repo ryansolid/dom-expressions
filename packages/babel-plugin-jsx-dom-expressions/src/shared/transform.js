@@ -134,6 +134,7 @@ export function transformNode(path, info = {}) {
         : !info.componentChild &&
           (config.generate !== "ssr" || info.fragmentChild) &&
           t.isCallExpression(node.expression) &&
+          !t.isCallExpression(node.expression.callee) &&
           !t.isMemberExpression(node.expression.callee) &&
           node.expression.arguments.length === 0
         ? node.expression.callee
