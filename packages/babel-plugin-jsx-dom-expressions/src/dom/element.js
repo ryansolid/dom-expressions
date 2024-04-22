@@ -495,7 +495,7 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (t.isCallExpression(value.expression)) {
+          } else {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
               t.variableDeclaration("var", [

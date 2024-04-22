@@ -32,7 +32,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$15 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
   _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
   _tmpl$17 = /*#__PURE__*/ _$template(
-    `<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2\r\n    random3 random4">`
+    `<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2\n    random3 random4">`
   ),
   _tmpl$18 = /*#__PURE__*/ _$template(`<button>`);
 import * as styles from "./styles.module.css";
@@ -391,4 +391,36 @@ const template33 = [
     return _el$53;
   })()
 ];
+const template34 = (() => {
+  var _el$54 = _$getNextElement(_tmpl$4);
+  _$use(zero, _el$54, () => 0);
+  _$use(something, _el$54, () => true);
+  _$spread(_el$54, somethingElse, false, false);
+  _$runHydrationEvents();
+  return _el$54;
+})();
+const template35 = (() => {
+  var _el$55 = _$getNextElement(_tmpl$4);
+  var _ref$4 = a().b.c;
+  typeof _ref$4 === "function" ? _$use(_ref$4, _el$55) : (a().b.c = _el$55);
+  return _el$55;
+})();
+const template36 = (() => {
+  var _el$56 = _$getNextElement(_tmpl$4);
+  var _ref$5 = a().b?.c;
+  typeof _ref$5 === "function" && _$use(_ref$5, _el$56);
+  return _el$56;
+})();
+const template37 = (() => {
+  var _el$57 = _$getNextElement(_tmpl$4);
+  var _ref$6 = a() ? b : c;
+  typeof _ref$6 === "function" && _$use(_ref$6, _el$57);
+  return _el$57;
+})();
+const template38 = (() => {
+  var _el$58 = _$getNextElement(_tmpl$4);
+  var _ref$7 = a() ?? b;
+  typeof _ref$7 === "function" && _$use(_ref$7, _el$58);
+  return _el$58;
+})();
 _$delegateEvents(["click", "input"]);

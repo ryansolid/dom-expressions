@@ -163,3 +163,13 @@ const template30 = (
     random3 random4"
   />
 );
+
+const template31 = <div use:something {...somethingElse} use:zero={0} />;
+
+const template32 = <div ref={a().b.c} />
+
+const template33 = <div ref={a().b?.c} />
+
+const template34 = <div ref={a() ? b : c} />
+
+const template35 = <div ref={a() ?? b} />

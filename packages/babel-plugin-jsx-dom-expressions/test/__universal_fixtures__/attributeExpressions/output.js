@@ -232,3 +232,27 @@ const template20 = (() => {
   _$spread(_el$29, somethingElse, false);
   return _el$29;
 })();
+const template21 = (() => {
+  var _el$30 = _$createElement("div");
+  var _ref$4 = a().b.c;
+  typeof _ref$4 === "function" ? _$use(_ref$4, _el$30) : (a().b.c = _el$30);
+  return _el$30;
+})();
+const template22 = (() => {
+  var _el$31 = _$createElement("div");
+  var _ref$5 = a().b?.c;
+  typeof _ref$5 === "function" && _$use(_ref$5, _el$31);
+  return _el$31;
+})();
+const template23 = (() => {
+  var _el$32 = _$createElement("div");
+  var _ref$6 = a() ? b : c;
+  typeof _ref$6 === "function" && _$use(_ref$6, _el$32);
+  return _el$32;
+})();
+const template24 = (() => {
+  var _el$33 = _$createElement("div");
+  var _ref$7 = a() ?? b;
+  typeof _ref$7 === "function" && _$use(_ref$7, _el$33);
+  return _el$33;
+})();
