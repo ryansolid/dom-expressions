@@ -373,4 +373,35 @@ const template33 = [
     return _el$49;
   })()
 ];
+const template34 = (() => {
+  var _el$50 = _tmpl$4();
+  _$use(zero, _el$50, () => 0);
+  _$use(something, _el$50, () => true);
+  _$spread(_el$50, somethingElse, false, false);
+  return _el$50;
+})();
+const template35 = (() => {
+  var _el$51 = _tmpl$4();
+  var _ref$4 = a().b.c;
+  typeof _ref$4 === "function" ? _$use(_ref$4, _el$51) : (a().b.c = _el$51);
+  return _el$51;
+})();
+const template36 = (() => {
+  var _el$52 = _tmpl$4();
+  var _ref$5 = a().b?.c;
+  typeof _ref$5 === "function" && _$use(_ref$5, _el$52);
+  return _el$52;
+})();
+const template37 = (() => {
+  var _el$53 = _tmpl$4();
+  var _ref$6 = a() ? b : c;
+  typeof _ref$6 === "function" && _$use(_ref$6, _el$53);
+  return _el$53;
+})();
+const template38 = (() => {
+  var _el$54 = _tmpl$4();
+  var _ref$7 = a() ?? b;
+  typeof _ref$7 === "function" && _$use(_ref$7, _el$54);
+  return _el$54;
+})();
 _$delegateEvents(["click", "input"]);

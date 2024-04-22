@@ -189,3 +189,13 @@ const template33 = (
     <button class={styles[foo()]}></button>
   </>
 );
+
+const template34 = <div use:something {...somethingElse} use:zero={0} />;
+
+const template35 = <div ref={a().b.c} />
+
+const template36 = <div ref={a().b?.c} />
+
+const template37 = <div ref={a() ? b : c} />
+
+const template38 = <div ref={a() ?? b} />

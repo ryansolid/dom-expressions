@@ -26,7 +26,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$19 = ["<div", ">", "</div>"],
   _tmpl$20 = [
     "<div",
-    ' class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\r\n    random3 random4"></div>'
+    ' class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>'
   ];
 const selected = true;
 let id = "my-h1";
@@ -234,3 +234,8 @@ const template29 = _$ssr(
   !!someValue
 );
 const template30 = _$ssr(_tmpl$20, _$ssrHydrationKey());
+const template31 = _$ssrElement("div", somethingElse, undefined, true);
+const template32 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template33 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template34 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template35 = _$ssr(_tmpl$8, _$ssrHydrationKey());
