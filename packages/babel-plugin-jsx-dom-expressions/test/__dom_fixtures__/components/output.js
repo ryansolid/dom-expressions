@@ -405,3 +405,60 @@ class Template28 {
     });
   }
 }
+const _self$7 = this;
+class Template29 extends ParentComponent {
+  constructor() {
+    super();
+    const _self$3 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$3.method;
+      }
+    });
+  }
+  get get() {
+    const _self$4 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$4.method;
+      }
+    });
+  }
+  set set(v) {
+    const _self$5 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$5.method;
+      }
+    });
+  }
+  method() {
+    const _self$6 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$6.method;
+      }
+    });
+  }
+  field = _$createComponent(this.component, {
+    get method() {
+      return _self$7.method;
+    }
+  });
+  fieldArrow = () => {
+    const _self$8 = this;
+    return _$createComponent(this.component, {
+      get method() {
+        return _self$8.method;
+      }
+    });
+  };
+  fieldFunction = function () {
+    const _self$9 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$9.method;
+      }
+    });
+  };
+}
