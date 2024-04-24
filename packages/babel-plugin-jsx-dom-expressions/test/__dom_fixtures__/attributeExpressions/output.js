@@ -30,7 +30,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$17 = /*#__PURE__*/ _$template(
     `<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2\n    random3 random4">`
   ),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<button>`);
+  _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
+  _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -404,4 +405,5 @@ const template38 = (() => {
   typeof _ref$7 === "function" && _$use(_ref$7, _el$54);
   return _el$54;
 })();
+const template39 = _tmpl$19();
 _$delegateEvents(["click", "input"]);

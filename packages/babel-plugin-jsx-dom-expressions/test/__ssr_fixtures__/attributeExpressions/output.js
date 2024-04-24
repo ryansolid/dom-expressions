@@ -10,7 +10,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$4 = ["<div foo", ' style="', '"', ">", "</div>"],
   _tmpl$5 = ['<div class="', '"></div>'],
   _tmpl$6 = ['<div style="', '">Hi</div>'],
-  _tmpl$7 = ['<div style="', '" class="', '"></div>'],
+  _tmpl$7 = ['<div style="', '"', "></div>"],
   _tmpl$8 = "<div></div>",
   _tmpl$9 = '<input type="checkbox" checked="">',
   _tmpl$10 = ['<input type="checkbox"', ">"],
@@ -23,7 +23,10 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$17 = ["<div", ">", "</div>"],
   _tmpl$18 = ["<div>", "", "</div>"],
   _tmpl$19 =
-    '<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>';
+    '<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>',
+  _tmpl$20 = ["<button", "></button>"],
+  _tmpl$21 = '<input value="10">';
+import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
 let link;
@@ -88,6 +91,7 @@ const template3 = _$ssr(
 const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class, true) || ""} ccc:ddd`);
 const template5 = _$ssr(_tmpl$5, `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrStyle(someStyle()));
+let undefVar;
 const template7 = _$ssr(
   _tmpl$7,
   _$ssrStyle({
@@ -96,7 +100,7 @@ const template7 = _$ssr(
     ...props.style,
     "padding-top": props.top
   }),
-  props.active ? "my-class" : ""
+  _$ssrAttribute("other-class", _$escape(undefVar, true), false)
 );
 let refTarget;
 const template8 = _$ssr(_tmpl$8);
@@ -202,8 +206,20 @@ const template28 = _$ssrElement(
 );
 const template29 = _$ssr(_tmpl$17, _$ssrAttribute("attribute", !!someValue, false), !!someValue);
 const template30 = _$ssr(_tmpl$19);
-const template31 = _$ssrElement("div", somethingElse, undefined, false);
-const template32 = _$ssr(_tmpl$8);
-const template33 = _$ssr(_tmpl$8);
-const template34 = _$ssr(_tmpl$8);
+const template31 = _$ssr(
+  _tmpl$15,
+  "background-color:" + _$escape(getStore.itemProperties.color, true)
+);
+const template32 = _$ssr(_tmpl$15, "background-color:" + _$escape(undefined, true));
+const template33 = [
+  _$ssr(_tmpl$20, _$ssrAttribute("class", _$escape(styles.button, true), false)),
+  _$ssr(_tmpl$20, _$ssrAttribute("class", _$escape(styles["foo--bar"], true), false)),
+  _$ssr(_tmpl$20, _$ssrAttribute("class", _$escape(styles.foo.bar, true), false)),
+  _$ssr(_tmpl$20, _$ssrAttribute("class", _$escape(styles[foo()], true), false))
+];
+const template34 = _$ssrElement("div", somethingElse, undefined, false);
 const template35 = _$ssr(_tmpl$8);
+const template36 = _$ssr(_tmpl$8);
+const template37 = _$ssr(_tmpl$8);
+const template38 = _$ssr(_tmpl$8);
+const template39 = _$ssr(_tmpl$21);

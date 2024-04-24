@@ -723,6 +723,7 @@ function transformAttributes(path, results) {
           }
 
           let text = value.value;
+          if (typeof text === "number") text = String(text);
           let needsQuoting = false;
 
           if (key === "style" || key === "class") {
@@ -732,6 +733,7 @@ function transformAttributes(path, results) {
             }
           }
 
+          if (key === "valu") console.log("HHHHHHHHHHHHH", text, text.length)
           if (!text.length) {
             needsSpacing = false;
             results.template += `=""`;
