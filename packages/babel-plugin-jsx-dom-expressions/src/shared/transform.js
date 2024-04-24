@@ -39,7 +39,7 @@ export function transformJSX(path) {
 function getTargetFunctionParent(path, parent) {
   let current = path.scope.getFunctionParent();
   while (current !== parent && current.path.isArrowFunctionExpression()) {
-    current = current.path.parentPath.scope.getFunctionParent()
+    current = current.path.parentPath.scope.getFunctionParent();
   }
   return current;
 }
@@ -56,11 +56,11 @@ export function transformThis(path) {
       }
     },
     JSXElement(path) {
-      let source = path.get('openingElement').get('name');
+      let source = path.get("openingElement").get("name");
       while (source.isJSXMemberExpression()) {
-        source = source.get('object');
+        source = source.get("object");
       }
-      if (source.isJSXIdentifier() && source.node.name === 'this') {
+      if (source.isJSXIdentifier() && source.node.name === "this") {
         const current = getTargetFunctionParent(path, parent);
         if (current === parent) {
           thisId || (thisId = path.scope.generateUidIdentifier("self$"));
@@ -71,15 +71,23 @@ export function transformThis(path) {
           }
         }
       }
-    },
+    }
   });
   return node => {
     if (thisId) {
-      parent.push({
-        id: thisId,
-        init: t.thisExpression(),
-        kind: 'const',
-      });
+      if (!parent || parent.block.type === "ClassMethod") {
+        const stmt = path.getStatementParent();
+        const decl = t.variableDeclaration("const", [
+          t.variableDeclarator(thisId, t.thisExpression())
+        ]);
+        stmt.insertBefore(decl);
+      } else {
+        parent.push({
+          id: thisId,
+          init: t.thisExpression(),
+          kind: "const"
+        });
+      }
     }
     return node;
   };

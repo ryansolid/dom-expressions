@@ -187,3 +187,27 @@ class Template28 {
     />
   }
 }
+
+class Template29 extends ParentComponent {
+  constructor() {
+    super();
+    <this.component method={this.method} />
+  }
+
+  get get() {
+    <this.component method={this.method} />
+  }
+  set set(v) {
+    <this.component method={this.method} />
+  }
+
+  method() {
+    <this.component method={this.method} />
+  }
+  
+  field = <this.component method={this.method} />;
+  fieldArrow = () => <this.component method={this.method} />
+  fieldFunction = function () {
+    <this.component method={this.method} />
+  }
+}
