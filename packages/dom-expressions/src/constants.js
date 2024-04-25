@@ -7,9 +7,9 @@ const reflectedAttributes = [
   "name",
   "rel",
   "role",
+  "sizes",
   "src",
   "srcset",
-  "sizes",
   "title",
   "type"
 ];
