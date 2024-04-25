@@ -227,7 +227,7 @@ function normalizeAttributes(path) {
         a.node.name.name === "className" ||
         a.node.name.name === "classList")
   );
-  // combine class propertoes
+  // combine class properties
   if (classAttributes.length > 1) {
     const first = classAttributes[0].node,
       values = [],
