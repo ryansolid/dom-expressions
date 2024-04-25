@@ -1,3 +1,19 @@
+const reflectedAttributes = [
+  "align",
+  "alt",
+  "href",
+  "id",
+  "loading",
+  "name",
+  "rel",
+  "role",
+  "src",
+  "srcset",
+  "sizes",
+  "title",
+  "type"
+];
+
 const booleans = [
   "allowfullscreen",
   "async",
@@ -30,12 +46,14 @@ const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
 
 const Properties = /*#__PURE__*/ new Set([
   "className",
+  "src",
   "value",
   "readOnly",
   "formNoValidate",
   "isMap",
   "noModule",
   "playsInline",
+  ...reflectedAttributes,
   ...booleans
 ]);
 
@@ -75,6 +93,10 @@ const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
     $: "readOnly",
     INPUT: 1,
     TEXTAREA: 1
+  },
+  src: {
+    $: "src",
+    IMG: 1
   }
 });
 
