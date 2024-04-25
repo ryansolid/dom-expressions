@@ -1820,6 +1820,7 @@ export namespace JSX {
     contentScriptType?: FunctionMaybe<string>;
     contentStyleType?: FunctionMaybe<string>;
     xmlns?: FunctionMaybe<string>;
+    "xmlns:xlink"?: FunctionMaybe<string>;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
