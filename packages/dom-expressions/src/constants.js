@@ -46,7 +46,6 @@ const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
 
 const Properties = /*#__PURE__*/ new Set([
   "className",
-  "src",
   "value",
   "readOnly",
   "formNoValidate",
