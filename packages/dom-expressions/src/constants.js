@@ -93,10 +93,6 @@ const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
     $: "readOnly",
     INPUT: 1,
     TEXTAREA: 1
-  },
-  src: {
-    $: "src",
-    IMG: 1
   }
 });
 
