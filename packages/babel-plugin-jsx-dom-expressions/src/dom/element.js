@@ -733,7 +733,6 @@ function transformAttributes(path, results) {
             }
           }
 
-          if (key === "valu") console.log("HHHHHHHHHHHHH", text, text.length)
           if (!text.length) {
             needsSpacing = false;
             results.template += `=""`;
