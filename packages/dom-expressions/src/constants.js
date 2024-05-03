@@ -1,12 +1,10 @@
 const reflectedAttributes = [
   "align",
   "alt",
-  "href",
   "id",
   "loading",
   "name",
   "rel",
-  "role",
   "sizes",
   "src",
   "srcset",
