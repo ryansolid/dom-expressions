@@ -201,3 +201,5 @@ const template37 = <div ref={a() ? b : c} />
 const template38 = <div ref={a() ?? b} />
 
 const template39 = <input value={10} />
+
+const template40 = <div style={{ color: a() }} />
