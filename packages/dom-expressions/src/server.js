@@ -371,7 +371,7 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
       continue;
     } else {
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -668,7 +668,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
       continue;
     } else {
       if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
