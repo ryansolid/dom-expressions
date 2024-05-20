@@ -76,3 +76,5 @@ const template18 = <div ref={a().b?.c} />
 const template19 = <div ref={a() ? b : c} />
 
 const template20 = <div ref={a() ?? b} />
+
+const template21 = <div style={{ color: a() }} />

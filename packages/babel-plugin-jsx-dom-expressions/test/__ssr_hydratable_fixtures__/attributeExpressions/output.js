@@ -272,3 +272,4 @@ const template36 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template37 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template38 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template39 = _$ssr(_tmpl$22, _$ssrHydrationKey());
+const template40 = _$ssr(_tmpl$15, _$ssrHydrationKey(), "color:" + _$escape(a(), true));

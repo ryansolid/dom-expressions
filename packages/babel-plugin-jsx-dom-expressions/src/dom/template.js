@@ -102,11 +102,16 @@ function wrapDynamics(path, dynamics) {
   const effectWrapperId = registerImportMethod(path, config.effectWrapper);
 
   if (dynamics.length === 1) {
+    let dynamicStyle;
     const prevValue =
-      dynamics[0].key === "classList" || dynamics[0].key === "style"
+      dynamics[0].key === "classList" ||
+      dynamics[0].key === "style" ||
+      (dynamicStyle = dynamics[0].key.startsWith("style:"))
         ? t.identifier("_$p")
         : undefined;
-    if (
+    if (dynamicStyle) {
+      dynamics[0].value = t.assignmentExpression("=", prevValue, dynamics[0].value);
+    } else if (
       dynamics[0].key.startsWith("class:") &&
       !t.isBooleanLiteral(dynamics[0].value) &&
       !t.isUnaryExpression(dynamics[0].value)

@@ -211,3 +211,12 @@ const template20 = (() => {
   typeof _ref$7 === "function" && _$use(_ref$7, _el$26);
   return _el$26;
 })();
+const template21 = (() => {
+  var _el$27 = _tmpl$3();
+  _$effect(_$p =>
+    (_$p = a()) != null
+      ? _el$27.style.setProperty("color", _$p)
+      : _el$27.style.removeProperty("color")
+  );
+  return _el$27;
+})();

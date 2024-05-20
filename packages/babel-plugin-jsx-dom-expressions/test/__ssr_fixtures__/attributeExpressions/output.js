@@ -223,3 +223,4 @@ const template36 = _$ssr(_tmpl$8);
 const template37 = _$ssr(_tmpl$8);
 const template38 = _$ssr(_tmpl$8);
 const template39 = _$ssr(_tmpl$21);
+const template40 = _$ssr(_tmpl$15, "color:" + _$escape(a(), true));

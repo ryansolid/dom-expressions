@@ -358,9 +358,9 @@ const template29 = (() => {
 const template30 = _$getNextElement(_tmpl$17);
 const template31 = (() => {
   var _el$48 = _$getNextElement(_tmpl$4);
-  _$effect(() =>
-    getStore.itemProperties.color != null
-      ? _el$48.style.setProperty("background-color", getStore.itemProperties.color)
+  _$effect(_$p =>
+    (_$p = getStore.itemProperties.color) != null
+      ? _el$48.style.setProperty("background-color", _$p)
       : _el$48.style.removeProperty("background-color")
   );
   return _el$48;
@@ -425,4 +425,13 @@ const template38 = (() => {
   return _el$58;
 })();
 const template39 = _$getNextElement(_tmpl$19);
+const template40 = (() => {
+  var _el$60 = _$getNextElement(_tmpl$4);
+  _$effect(_$p =>
+    (_$p = a()) != null
+      ? _el$60.style.setProperty("color", _$p)
+      : _el$60.style.removeProperty("color")
+  );
+  return _el$60;
+})();
 _$delegateEvents(["click", "input"]);
