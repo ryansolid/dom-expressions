@@ -5,12 +5,13 @@ import * as r from "dom-expressions/src/client";
 const h = createHyperScript(r);
 
 const FIXTURES = [
-  '<div id="main"><h1>Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label class="name" for="entry">Edit:</label><input id="entry" type="text" readonly=""></div>',
+  '<div id="main"><h1>Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label for="entry" class="name">Edit:</label><input id="entry" type="text" readonly=""></div>',
   '<div id="main" refset="true" class="selected"><h1 title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
   '<div id="main"><button>Click Bound</button><button>Click Delegated</button><button>Click Listener</button></div>',
   "<div>First</div>middle<div>Last</div>",
   '<div id="main"><div>John R.<span>Smith</span></div></div>',
-  '<div id="main"><div name="John"><span>Smith</span></div></div>'
+  '<div id="main"><div name="John"><span>Smith</span></div></div>',
+  '<div id="main"><div class="a b"></div></div>'
 ];
 
 describe("Test HyperScript", () => {
@@ -107,6 +108,17 @@ describe("Test HyperScript", () => {
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML).toBe(FIXTURES[5]);
+    });
+  });
+
+  test("Class Spread", () => {
+    S.root(() => {
+      const template = h("#main", [
+        h("div.a", {class:'b'})
+      ])();
+      const div = document.createElement("div");
+      div.appendChild(template);
+      expect(div.innerHTML).toBe(FIXTURES[6]);
     });
   });
 });
