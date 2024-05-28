@@ -413,7 +413,10 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
 
   if (t === "string" || t === "number") {
     if (hydrating) return current;
-    if (t === "number") value = value.toString();
+    if (t === "number") {
+      value = value.toString();
+      if (value === current) return current;
+    }
     if (multi) {
       let node = current[0];
       if (node && node.nodeType === 3) {
