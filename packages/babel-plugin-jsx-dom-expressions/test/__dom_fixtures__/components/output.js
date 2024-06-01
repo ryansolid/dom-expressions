@@ -405,7 +405,6 @@ class Template28 {
     });
   }
 }
-const _self$7 = this;
 class Template29 extends ParentComponent {
   constructor() {
     super();
@@ -440,11 +439,17 @@ class Template29 extends ParentComponent {
       }
     });
   }
-  field = _$createComponent(this.component, {
-    get method() {
-      return _self$7.method;
-    }
-  });
+  field = (() => {
+    const _self$7 = this;
+    return _$createComponent(this.component, {
+      get method() {
+        return _self$7.method;
+      },
+      get comp() {
+        return _$createComponent(_self$7.another, {});
+      }
+    });
+  })();
   fieldArrow = () => {
     const _self$8 = this;
     return _$createComponent(this.component, {

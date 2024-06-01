@@ -76,11 +76,18 @@ export function transformThis(path) {
   return node => {
     if (thisId) {
       if (!parent || parent.block.type === "ClassMethod") {
-        const stmt = path.getStatementParent();
         const decl = t.variableDeclaration("const", [
           t.variableDeclarator(thisId, t.thisExpression())
         ]);
-        stmt.insertBefore(decl);
+        if (parent) {
+          const stmt = path.getStatementParent();
+          stmt.insertBefore(decl);
+        } else {
+          return t.callExpression(
+            t.arrowFunctionExpression([], t.blockStatement([decl, t.returnStatement(node)])),
+            []
+          );
+        }
       } else {
         parent.push({
           id: thisId,
