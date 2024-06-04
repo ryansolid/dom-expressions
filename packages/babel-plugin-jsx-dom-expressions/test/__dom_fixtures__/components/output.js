@@ -390,7 +390,9 @@ const template26 = [
   }),
   _$createComponent(Component, {
     get when() {
-      return val * 2;
+      return ((val = 123) => {
+        return val * 2;
+      })();
     }
   })
 ];
