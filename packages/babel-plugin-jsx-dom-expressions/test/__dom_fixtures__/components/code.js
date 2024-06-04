@@ -162,14 +162,22 @@ const template25 = <Component>
   <div />
 </Component>
 
-const template26 = <Component
-  when={(() => {
-    const foo = test();
-    if ("t" in foo) {
-      return foo;
-    }
-  })()}
-/>
+const template26 = <>
+  <Component
+    when={(() => {
+      const foo = test();
+      if ("t" in foo) {
+        return foo;
+      }
+    })()}
+  />
+
+  <Component
+    when={((val = 123) => {
+      return val * 2
+    })()}
+  />
+</>
 
 const template27 = <Component
   when={(() => prop.red ? "red" : "green")()}
