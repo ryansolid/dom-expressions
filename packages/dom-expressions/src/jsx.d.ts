@@ -221,6 +221,7 @@ export namespace JSX {
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent>;
     onAuxClick?: EventHandlerUnion<T, MouseEvent>;
     onBeforeInput?: InputEventHandlerUnion<T, InputEvent>;
+    onBeforeToggle?: EventHandlerUnion<T, ToggleEvent>;
     onBlur?: FocusEventHandlerUnion<T, FocusEvent>;
     onCanPlay?: EventHandlerUnion<T, Event>;
     onCanPlayThrough?: EventHandlerUnion<T, Event>;
@@ -286,6 +287,7 @@ export namespace JSX {
     >;
     onSuspend?: EventHandlerUnion<T, Event>;
     onTimeUpdate?: EventHandlerUnion<T, Event>;
+    onToggle?: EventHandlerUnion<T, ToggleEvent>;
     onTouchCancel?: EventHandlerUnion<T, TouchEvent>;
     onTouchEnd?: EventHandlerUnion<T, TouchEvent>;
     onTouchMove?: EventHandlerUnion<T, TouchEvent>;
@@ -308,6 +310,7 @@ export namespace JSX {
     onanimationstart?: EventHandlerUnion<T, AnimationEvent>;
     onauxclick?: EventHandlerUnion<T, MouseEvent>;
     onbeforeinput?: InputEventHandlerUnion<T, InputEvent>;
+    onbeforetoggle?: EventHandlerUnion<T, ToggleEvent>;
     onblur?: FocusEventHandlerUnion<T, FocusEvent>;
     oncanplay?: EventHandlerUnion<T, Event>;
     oncanplaythrough?: EventHandlerUnion<T, Event>;
@@ -373,6 +376,7 @@ export namespace JSX {
     >;
     onsuspend?: EventHandlerUnion<T, Event>;
     ontimeupdate?: EventHandlerUnion<T, Event>;
+    ontoggle?: EventHandlerUnion<T, ToggleEvent>;
     ontouchcancel?: EventHandlerUnion<T, TouchEvent>;
     ontouchend?: EventHandlerUnion<T, TouchEvent>;
     ontouchmove?: EventHandlerUnion<T, TouchEvent>;
