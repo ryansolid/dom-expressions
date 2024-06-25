@@ -205,7 +205,7 @@ class Template29 extends ParentComponent {
     <this.component method={this.method} />
   }
   
-  field = <this.component method={this.method} />;
+  field = <this.component method={this.method} comp={<this.another />} />;
   fieldArrow = () => <this.component method={this.method} />
   fieldFunction = function () {
     <this.component method={this.method} />
