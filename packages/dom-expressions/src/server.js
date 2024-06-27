@@ -656,7 +656,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
         (n = props.className) ? n + " " : ""
       }${ssrClassList(props.classList)}"`;
       classResolved = true;
-    } else if (BooleanAttributes.has(prop)) {
+    } else if (prop !== "value" && Properties.has(prop)) {
       if (value) result += prop;
       else continue;
     } else if (
