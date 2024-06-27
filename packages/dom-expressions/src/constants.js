@@ -1,3 +1,17 @@
+const reflectedAttributes = [
+  "align",
+  "alt",
+  "id",
+  "loading",
+  "name",
+  "rel",
+  "sizes",
+  "src",
+  "srcset",
+  "title",
+  "type"
+];
+
 const booleans = [
   "allowfullscreen",
   "async",
@@ -36,6 +50,7 @@ const Properties = /*#__PURE__*/ new Set([
   "isMap",
   "noModule",
   "playsInline",
+  ...reflectedAttributes,
   ...booleans
 ]);
 
