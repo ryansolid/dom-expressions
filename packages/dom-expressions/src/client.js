@@ -411,6 +411,8 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     multi = marker !== undefined;
   parent = (multi && current[0] && current[0].parentNode) || parent;
 
+  if ("_DX_DEV_" && current == value) console.warn("Unnecessary rerender of", parent)
+
   if (t === "string" || t === "number") {
     if (hydrating) return current;
     if (t === "number") {
