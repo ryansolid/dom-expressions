@@ -38,7 +38,8 @@ pluginTester({
           "label",
           "text",
           "namespace:tag",
-          "p"
+          "p",
+          "noscript"
         ]
       }
     ],

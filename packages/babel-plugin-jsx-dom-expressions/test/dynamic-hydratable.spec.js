@@ -44,7 +44,8 @@ pluginTester({
           "meta",
           "link",
           "footer",
-          "script"
+          "script",
+          "noscript"
         ],
         moduleName: "r-dom"
       }

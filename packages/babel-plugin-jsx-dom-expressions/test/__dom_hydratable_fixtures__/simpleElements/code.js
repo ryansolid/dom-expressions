@@ -42,3 +42,12 @@ const template4 = (
     </div>
   </div>
 );
+
+const template5 = (
+  <div>
+    <noscript>
+      No JS!!
+      <style>{"div { color: red; }"}</style>
+    </noscript>
+  </div>
+)

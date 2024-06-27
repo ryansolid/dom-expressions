@@ -6,8 +6,10 @@ var _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$3 = /*#__PURE__*/ _$template(`<div><div><table><tbody></tbody></table></div><div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(
     `<div><div><footer><div></div></footer></div><div><button><span>0`
-  );
+  ),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div><noscript>`);
 const template = _tmpl$();
 const template2 = _tmpl$2();
 const template3 = _tmpl$3();
 const template4 = _tmpl$4();
+const template5 = _tmpl$5();

@@ -38,7 +38,8 @@ pluginTester({
           "label",
           "text",
           "namespace:tag",
-          "path"
+          "path",
+          "noscript"
         ],
         moduleName: "r-dom"
       }
