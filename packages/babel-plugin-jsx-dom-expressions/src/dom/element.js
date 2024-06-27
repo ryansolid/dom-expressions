@@ -60,7 +60,7 @@ export function transformElement(path, info) {
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
-    isCustomElement = tagName.indexOf("-") > -1,
+    isCustomElement = tagName.indexOf("-") > -1 || !!path.get("openingElement").get("attributes").find(a => a.node.name?.name === "is"),
     results = {
       template: `<${tagName}`,
       declarations: [],

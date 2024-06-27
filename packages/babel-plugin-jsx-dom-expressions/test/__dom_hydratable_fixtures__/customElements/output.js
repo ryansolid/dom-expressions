@@ -6,7 +6,8 @@ import { setAttribute as _$setAttribute } from "r-dom";
 import { setProperty as _$setProperty } from "r-dom";
 var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true, false),
   _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot=head>Title`, true, false),
-  _tmpl$3 = /*#__PURE__*/ _$template(`<slot name=head>`);
+  _tmpl$3 = /*#__PURE__*/ _$template(`<slot name=head>`),
+  _tmpl$4 = /*#__PURE__*/ _$template(`<a is=my-element>`, true, false);
 const template = (() => {
   var _el$ = _$getNextElement(_tmpl$);
   _$setProperty(_el$, "someAttr", name);
@@ -49,4 +50,9 @@ const template4 = (() => {
   var _el$4 = _$getNextElement(_tmpl$3);
   _el$4._$owner = _$getOwner();
   return _el$4;
+})();
+const template5 = (() => {
+  var _el$5 = _$getNextElement(_tmpl$4);
+  _el$5._$owner = _$getOwner();
+  return _el$5;
 })();
