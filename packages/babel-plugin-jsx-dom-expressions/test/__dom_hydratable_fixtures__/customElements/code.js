@@ -22,3 +22,5 @@ const template4 = (
     <slot name="head"></slot>
   </>
 );
+
+const template5 = <a is="my-element" />;

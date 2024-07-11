@@ -379,14 +379,23 @@ const template25 = _$createComponent(Component, {
     return _tmpl$2();
   }
 });
-const template26 = _$createComponent(Component, {
-  get when() {
-    const foo = test();
-    if ("t" in foo) {
-      return foo;
+const template26 = [
+  _$createComponent(Component, {
+    get when() {
+      const foo = test();
+      if ("t" in foo) {
+        return foo;
+      }
     }
-  }
-});
+  }),
+  _$createComponent(Component, {
+    get when() {
+      return ((val = 123) => {
+        return val * 2;
+      })();
+    }
+  })
+];
 const template27 = _$createComponent(Component, {
   get when() {
     return prop.red ? "red" : "green";
@@ -405,7 +414,6 @@ class Template28 {
     });
   }
 }
-const _self$7 = this;
 class Template29 extends ParentComponent {
   constructor() {
     super();
@@ -440,11 +448,17 @@ class Template29 extends ParentComponent {
       }
     });
   }
-  field = _$createComponent(this.component, {
-    get method() {
-      return _self$7.method;
-    }
-  });
+  field = (() => {
+    const _self$7 = this;
+    return _$createComponent(this.component, {
+      get method() {
+        return _self$7.method;
+      },
+      get comp() {
+        return _$createComponent(_self$7.another, {});
+      }
+    });
+  })();
   fieldArrow = () => {
     const _self$8 = this;
     return _$createComponent(this.component, {

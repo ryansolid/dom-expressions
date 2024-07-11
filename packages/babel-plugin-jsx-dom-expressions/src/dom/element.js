@@ -51,6 +51,7 @@ const alwaysClose = [
   "select",
   "iframe",
   "script",
+  "noscript",
   "template",
   "fieldset"
 ];
@@ -60,7 +61,7 @@ export function transformElement(path, info) {
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
-    isCustomElement = tagName.indexOf("-") > -1,
+    isCustomElement = tagName.indexOf("-") > -1 || !!path.get("openingElement").get("attributes").find(a => a.node.name?.name === "is"),
     results = {
       template: `<${tagName}`,
       declarations: [],
@@ -111,7 +112,7 @@ export function transformElement(path, info) {
       results.toBeClosed.add(tagName);
       if (InlineElements.includes(tagName)) BlockElements.forEach(i => results.toBeClosed.add(i));
     } else results.toBeClosed = info.toBeClosed;
-    transformChildren(path, results, config);
+    if (tagName !== "noscript") transformChildren(path, results, config);
     if (toBeClosed) results.template += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {

@@ -42,7 +42,6 @@ pluginTester({
           "label",
           "text",
           "namespace:tag",
-
           "html",
           "head",
           "body",
@@ -50,7 +49,8 @@ pluginTester({
           "meta",
           "link",
           "footer",
-          "script"
+          "script",
+          "noscript"
         ],
         moduleName: "r-dom"
       }
