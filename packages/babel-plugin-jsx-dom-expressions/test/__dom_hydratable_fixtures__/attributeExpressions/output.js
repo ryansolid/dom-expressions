@@ -403,7 +403,7 @@ const template34 = (() => {
 const template35 = (() => {
   var _el$55 = _$getNextElement(_tmpl$4);
   var _ref$4 = a().b.c;
-  typeof _ref$4 === "function" ? _$use(_ref$4, _el$55) : (a().b.c = _el$55);
+  typeof _ref$4 === "function" && _$use(_ref$4, _el$55);
   return _el$55;
 })();
 const template36 = (() => {

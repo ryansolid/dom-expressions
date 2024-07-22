@@ -384,7 +384,7 @@ const template34 = (() => {
 const template35 = (() => {
   var _el$51 = _tmpl$4();
   var _ref$4 = a().b.c;
-  typeof _ref$4 === "function" ? _$use(_ref$4, _el$51) : (a().b.c = _el$51);
+  typeof _ref$4 === "function" && _$use(_ref$4, _el$51);
   return _el$51;
 })();
 const template36 = (() => {

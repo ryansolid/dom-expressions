@@ -21,7 +21,7 @@ const Child = props => {
       var _el$ = _tmpl$(),
         _el$2 = _el$.firstChild;
       var _ref$ = props.ref;
-      typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
+      typeof _ref$ === "function" && _$use(_ref$, _el$);
       _$insert(_el$, () => props.name, null);
       return _el$;
     })(),
