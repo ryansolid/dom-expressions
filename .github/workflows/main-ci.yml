@@ -12,13 +12,13 @@ jobs:
  job:
   runs-on: ubuntu-latest
   steps:
-  - uses: actions/checkout@v3
-  - uses: pnpm/action-setup@v2.2.2
+  - uses: actions/checkout@v4
+  - uses: pnpm/action-setup@v4
     with:
       version: 8
-  - uses: actions/setup-node@v3
+  - uses: actions/setup-node@v4
     with:
-      node-version: 16
+      node-version: 20
       cache: 'pnpm'
 
   - name: Installing deps
@@ -33,14 +33,14 @@ jobs:
       pnpm run test:coverage
 
   - name: Coveralls
-    uses: coverallsapp/github-action@master
+    uses: coverallsapp/github-action@v2
     with:
       base-path: packages/dom-expressions
       path-to-lcov: "./packages/dom-expressions/coverage/lcov.info"
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   - name: Archive production artifacts
-    uses: actions/upload-artifact@v2
+    uses: actions/upload-artifact@v3
     with:
       name: dist-folder
       path: |
