@@ -12,37 +12,37 @@ jobs:
  job:
   runs-on: ubuntu-latest
   steps:
-  - uses: actions/checkout@v3
-  - uses: pnpm/action-setup@v2.2.2
-    with:
-      version: 8
-  - uses: actions/setup-node@v3
-    with:
-      node-version: 16
-      cache: 'pnpm'
+    - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 8
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'pnpm'
 
-  - name: Installing deps
-    run: pnpm install
+    - name: Installing deps
+      run: pnpm install
 
-  - name: Building
-    run: pnpm run build
+    - name: Building
+      run: pnpm run build
 
-  - name: Testing & Coverage
-    run: |
-      pnpm run test
-      pnpm run test:coverage
+    - name: Testing & Coverage
+      run: |
+        pnpm run test
+        pnpm run test:coverage
 
-  - name: Coveralls
-    uses: coverallsapp/github-action@master
-    with:
-      base-path: packages/dom-expressions
-      path-to-lcov: "./packages/dom-expressions/coverage/lcov.info"
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        base-path: packages/dom-expressions
+        path-to-lcov: "./packages/dom-expressions/coverage/lcov.info"
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  - name: Archive production artifacts
-    uses: actions/upload-artifact@v2
-    with:
-      name: dist-folder
-      path: |
-        '*/dist'
-        '*/types'
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-folder
+        path: |
+          '*/dist'
+          '*/types'
