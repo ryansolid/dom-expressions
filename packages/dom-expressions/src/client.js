@@ -547,8 +547,7 @@ function gatherHydratable(element, root) {
 }
 
 export function getHydrationKey() {
-  const hydrate = sharedConfig.context;
-  return `${hydrate.id}${hydrate.count++}`;
+  return sharedConfig.getNextContextId();
 }
 
 export function NoHydration(props) {

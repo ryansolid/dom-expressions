@@ -387,7 +387,7 @@ export function ssrAttribute(key, value, isBoolean) {
 
 export function ssrHydrationKey() {
   const hk = getHydrationKey();
-  return hk ? ` data-hk="${hk}"` : "";
+  return hk ? ` data-hk=${hk}` : "";
 }
 
 export function escape(s, attr) {
@@ -487,7 +487,7 @@ export function mergeProps(...sources) {
 
 export function getHydrationKey() {
   const hydrate = sharedConfig.context;
-  return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
+  return hydrate && !hydrate.noHydrate && sharedConfig.getNextContextId();
 }
 
 export function useAssets(fn) {
@@ -515,7 +515,7 @@ export function Hydration(props) {
   sharedConfig.context = {
     ...context,
     count: 0,
-    id: `${context.id}${context.count++}-`,
+    id: sharedConfig.getNextContextId(),
     noHydrate: false
   };
   const res = props.children;
