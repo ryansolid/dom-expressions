@@ -31,7 +31,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
     `<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2\n    random3 random4">`
   ),
   _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
-  _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`);
+  _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`),
+  _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -414,5 +415,14 @@ const template40 = (() => {
       : _el$56.style.removeProperty("color")
   );
   return _el$56;
+})();
+const template41 = (() => {
+  var _el$57 = _tmpl$20(),
+    _el$58 = _el$57.firstChild,
+    _el$59 = _el$58.nextSibling;
+  _$effect(() => (_el$58.value = Color.Red));
+  _$effect(() => (_el$59.value = Color.Blue));
+  _$effect(() => (_el$57.value = state.color));
+  return _el$57;
 })();
 _$delegateEvents(["click", "input"]);

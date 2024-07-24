@@ -799,6 +799,7 @@ function transformChildren(path, results, config) {
   let tempPath = results.id && results.id.name,
     tagName = getTagName(path.node),
     nextPlaceholder,
+    childPostExprs = [],
     i = 0;
   const filteredChildren = filterChildren(path.get("children")),
     lastElement = findLastElement(filteredChildren, config.hydratable),
@@ -874,7 +875,7 @@ function transformChildren(path, results, config) {
       results.declarations.push(...child.declarations);
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
-      results.postExprs.push(...child.postExprs);
+      childPostExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
       tempPath = child.id.name;
@@ -922,6 +923,7 @@ function transformChildren(path, results, config) {
       }
     } else nextPlaceholder = null;
   });
+  results.postExprs.unshift(...childPostExprs);
 }
 
 function createPlaceholder(path, results, tempPath, i, char) {
