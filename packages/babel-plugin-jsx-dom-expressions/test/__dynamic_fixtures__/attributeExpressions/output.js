@@ -190,7 +190,7 @@ const template16 = (() => {
 const template17 = (() => {
   var _el$23 = _tmpl$3();
   var _ref$4 = a().b.c;
-  typeof _ref$4 === "function" ? _$use(_ref$4, _el$23) : (a().b.c = _el$23);
+  typeof _ref$4 === "function" && _$use(_ref$4, _el$23);
   return _el$23;
 })();
 const template18 = (() => {

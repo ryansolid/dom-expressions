@@ -31,7 +31,7 @@ const Child = props => {
         _el$3 = _el$2.nextSibling,
         [_el$4, _co$] = _$getNextMarker(_el$3.nextSibling);
       var _ref$ = props.ref;
-      typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
+      typeof _ref$ === "function" && _$use(_ref$, _el$);
       _$insert(_el$, () => props.name, _el$4, _co$);
       return _el$;
     })(),
