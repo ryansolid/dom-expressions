@@ -1,5 +1,5 @@
+import { root, sharedConfig } from "rxcore";
 import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
-import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 export { createComponent } from "rxcore";
 
@@ -34,7 +34,8 @@ export function renderToString(code, options = {}) {
     roots: 0,
     nextRoot() {
       return this.renderId + "i-" + this.roots++;
-    }
+    },
+    meta: new Map(),
   };
   let html = root(d => {
     setTimeout(d);
@@ -43,6 +44,7 @@ export function renderToString(code, options = {}) {
   sharedConfig.context.noHydrate = true;
   serializer.close();
   html = injectAssets(sharedConfig.context.assets, html);
+  html = injectMeta(sharedConfig.context.meta, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
   return html;
 }
@@ -202,7 +204,8 @@ export function renderToStream(code, options = {}) {
         }
         return firstFlushed;
       };
-    }
+    },
+    meta: new Map(),
   };
 
   let html = root(d => {
@@ -214,6 +217,7 @@ export function renderToStream(code, options = {}) {
     sharedConfig.context = context;
     context.noHydrate = true;
     html = injectAssets(context.assets, html);
+    html = injectMeta(context.meta, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
     tasks = "";
@@ -673,4 +677,17 @@ export function ssrSpread(props, isSVG, skipChildren) {
     if (i !== keys.length - 1) result += " ";
   }
   return result;
+}
+
+export function useMeta(source) {
+  const key = getHydrationKey();
+  sharedConfig.context.meta.set(key, resolveSSRNode(source));
+}
+
+
+function injectMeta(meta, html) {
+  if (!meta || !meta.size) return html;
+  let out = "";
+  for (const [key, value] of meta) out += '<!--m' + key + '-->' + value + '<!--/m' + key + '-->';
+  return html.replace(`</head>`, out + `</head>`);
 }
