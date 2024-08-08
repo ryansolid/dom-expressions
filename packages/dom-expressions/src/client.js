@@ -296,8 +296,12 @@ export function runHydrationEvents() {
       while (events.length) {
         const [el, e] = events[0];
         if (!completed.has(el)) return;
-        eventHandler(e);
         events.shift();
+        eventHandler(e);
+      }
+      if (sharedConfig.done) {
+        sharedConfig.events = _$HY.events = null;
+        sharedConfig.completed = _$HY.completed = null;
       }
     });
     sharedConfig.events.queued = true;
@@ -370,6 +374,10 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
 }
 
 function eventHandler(e) {
+  if (sharedConfig.registry && sharedConfig.events) {
+    if (sharedConfig.events.find(([el, ev]) => ev === e)) return;
+  }
+
   const key = `$$${e.type}`;
   let node = (e.composedPath && e.composedPath()[0]) || e.target;
   // reverse Shadow DOM retargetting
