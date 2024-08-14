@@ -1135,6 +1135,8 @@ export namespace JSX {
     src?: string | undefined;
     srcset?: string | undefined;
     type?: string | undefined;
+    width?: number | undefined;
+    height?: number | undefined;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     media?: string | undefined;
