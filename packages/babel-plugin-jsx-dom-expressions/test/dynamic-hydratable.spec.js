@@ -45,7 +45,9 @@ pluginTester({
           "link",
           "footer",
           "script",
-          "noscript"
+          "noscript",
+          "select",
+          "option"
         ],
         moduleName: "r-dom"
       }

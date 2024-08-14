@@ -39,7 +39,9 @@ pluginTester({
           "text",
           "namespace:tag",
           "p",
-          "noscript"
+          "noscript",
+          "select",
+          "option"
         ]
       }
     ],

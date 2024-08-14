@@ -29,7 +29,8 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
     ' class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>'
   ],
   _tmpl$21 = ["<button", "></button>"],
-  _tmpl$22 = ["<input", ' value="10">'];
+  _tmpl$22 = ["<input", ' value="10">'],
+  _tmpl$23 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"];
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -273,3 +274,9 @@ const template37 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template38 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template39 = _$ssr(_tmpl$22, _$ssrHydrationKey());
 const template40 = _$ssr(_tmpl$15, _$ssrHydrationKey(), "color:" + _$escape(a(), true));
+const template41 = _$ssr(
+  _tmpl$23,
+  _$ssrHydrationKey() + _$ssrAttribute("value", _$escape(state.color, true), false),
+  _$ssrAttribute("value", _$escape(Color.Red, true), false),
+  _$ssrAttribute("value", _$escape(Color.Blue, true), false)
+);

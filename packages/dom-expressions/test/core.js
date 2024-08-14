@@ -1,7 +1,11 @@
 import S, { root, value, sample } from "s-js";
 
 const getOwner = null;
-const sharedConfig = {};
+const sharedConfig = {
+  getNextContextId() {
+    return this.context.id + this.context.count++;
+  }
+};
 
 function memo(fn) {
   const s = value(sample(fn));
