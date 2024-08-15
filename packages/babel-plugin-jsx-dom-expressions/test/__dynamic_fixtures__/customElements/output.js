@@ -19,16 +19,17 @@ const template2 = (() => {
   var _el$2 = _tmpl$();
   _el$2._$owner = _$getOwner();
   _$effect(
-    _p$ => {
-      var _v$ = state.name,
-        _v$2 = state.data,
-        _v$3 = state.data,
-        _v$4 = state.data;
-      _v$ !== _p$.e && (_el$2.someAttr = _p$.e = _v$);
-      _v$2 !== _p$.t && (_el$2.notprop = _p$.t = _v$2);
-      _v$3 !== _p$.a && _$setAttribute(_el$2, "my-attr", (_p$.a = _v$3));
-      _v$4 !== _p$.o && (_el$2.someProp = _p$.o = _v$4);
-      return _p$;
+    () => ({
+      e: state.name,
+      t: state.data,
+      a: state.data,
+      o: state.data
+    }),
+    ({ e, t, a, o }, _p$) => {
+      e !== _p$.e && (_el$2.someAttr = e);
+      t !== _p$.t && (_el$2.notprop = t);
+      a !== _p$.a && _$setAttribute(_el$2, "my-attr", a);
+      o !== _p$.o && (_el$2.someProp = o);
     },
     {
       e: undefined,

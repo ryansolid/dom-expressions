@@ -398,6 +398,15 @@ export function canNativeSpread(key, { checkNameSpaces } = {}) {
   return true;
 }
 
+export function inlineCallExpression(node) {
+  return t.isCallExpression(node) &&
+    !node.arguments.length &&
+    !t.isCallExpression(node.callee) &&
+    !t.isMemberExpression(node.callee)
+    ? node.callee
+    : t.arrowFunctionExpression([], node);
+}
+
 const chars = "etaoinshrdlucwmfygpbTAOISWCBvkxjqzPHFMDRELNGUKVYJQZX_$";
 const base = chars.length;
 

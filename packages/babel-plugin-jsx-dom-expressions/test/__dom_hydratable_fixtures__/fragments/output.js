@@ -15,13 +15,19 @@ const multiExpression = [_$getNextElement(_tmpl$), inserted, _$getNextElement(_t
 const multiDynamic = [
   (() => {
     var _el$5 = _$getNextElement(_tmpl$);
-    _$effect(() => _$setAttribute(_el$5, "id", state.first));
+    _$effect(
+      () => state.first,
+      _v$ => _$setAttribute(_el$5, "id", _v$)
+    );
     return _el$5;
   })(),
   _$memo(() => state.inserted),
   (() => {
     var _el$6 = _$getNextElement(_tmpl$2);
-    _$effect(() => _$setAttribute(_el$6, "id", state.last));
+    _$effect(
+      () => state.last,
+      _v$ => _$setAttribute(_el$6, "id", _v$)
+    );
     return _el$6;
   })(),
   "After"

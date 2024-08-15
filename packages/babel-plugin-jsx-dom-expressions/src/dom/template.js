@@ -1,5 +1,12 @@
 import * as t from "@babel/types";
-import { escapeStringForTemplate, getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
+import {
+  escapeStringForTemplate,
+  getConfig,
+  getNumberedId,
+  getRendererConfig,
+  inlineCallExpression,
+  registerImportMethod
+} from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -124,11 +131,13 @@ function wrapDynamics(path, dynamics) {
       dynamics[0].value = t.unaryExpression("!", t.unaryExpression("!", dynamics[0].value));
     }
 
+    const newValue = t.identifier("_v$");
     return t.expressionStatement(
       t.callExpression(effectWrapperId, [
+        inlineCallExpression(dynamics[0].value),
         t.arrowFunctionExpression(
-          prevValue ? [prevValue] : [],
-          setAttr(path, dynamics[0].elem, dynamics[0].key, dynamics[0].value, {
+          prevValue ? [newValue, prevValue] : [newValue],
+          setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
             isSVG: dynamics[0].isSVG,
             isCE: dynamics[0].isCE,
             tagName: dynamics[0].tagName,
@@ -142,29 +151,23 @@ function wrapDynamics(path, dynamics) {
 
   const prevId = t.identifier("_p$");
 
-  /** @type {t.VariableDeclarator[]} */
-  const declarations = [];
+  /** @type {t.ObjectProperty[]} */
+  const values = [];
   /** @type {t.ExpressionStatement[]} */
   const statements = [];
   /** @type {t.Identifier[]} */
   const properties = [];
 
   dynamics.forEach(({ elem, key, value, isSVG, isCE, tagName }, index) => {
-    const varIdent = path.scope.generateUidIdentifier("v$");
-
     const propIdent = t.identifier(getNumberedId(index));
     const propMember = t.memberExpression(prevId, propIdent);
 
-    if (
-      key.startsWith("class:") &&
-      !t.isBooleanLiteral(value) &&
-      !t.isUnaryExpression(value)
-    ) {
+    if (key.startsWith("class:") && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
     }
 
     properties.push(propIdent);
-    declarations.push(t.variableDeclarator(varIdent, value));
+    values.push(t.objectProperty(propIdent, value));
 
     if (key === "classList" || key === "style") {
       statements.push(
@@ -172,49 +175,44 @@ function wrapDynamics(path, dynamics) {
           t.assignmentExpression(
             "=",
             propMember,
-            setAttr(path, elem, key, varIdent, {
+            setAttr(path, elem, key, propIdent, {
               isSVG,
               isCE,
               tagName,
               dynamic: true,
-              prevId: propMember,
-            }),
-          ),
-        ),
+              prevId: propMember
+            })
+          )
+        )
       );
     } else {
-      const prev = key.startsWith("style:") ? varIdent : undefined;
+      const prev = key.startsWith("style:") ? propIdent : undefined;
       statements.push(
         t.expressionStatement(
           t.logicalExpression(
             "&&",
-            t.binaryExpression("!==", varIdent, propMember),
-            setAttr(
-              path,
-              elem,
-              key,
-              t.assignmentExpression("=", propMember, varIdent),
-              { isSVG, isCE, tagName, dynamic: true, prevId: prev },
-            ),
-          ),
-        ),
+            t.binaryExpression("!==", propIdent, propMember),
+            setAttr(path, elem, key, propIdent, {
+              isSVG,
+              isCE,
+              tagName,
+              dynamic: true,
+              prevId: prev
+            })
+          )
+        )
       );
     }
   });
 
   return t.expressionStatement(
     t.callExpression(effectWrapperId, [
+      t.arrowFunctionExpression([], t.objectExpression(values)),
       t.arrowFunctionExpression(
-        [prevId],
-        t.blockStatement([
-          t.variableDeclaration("var", declarations),
-          ...statements,
-          t.returnStatement(prevId),
-        ]),
+        [t.objectPattern(properties.map(id => t.objectProperty(id, id, false, true))), prevId],
+        t.blockStatement(statements)
       ),
-      t.objectExpression(
-        properties.map((id) => t.objectProperty(id, t.identifier("undefined"))),
-      ),
-    ]),
+      t.objectExpression(properties.map(id => t.objectProperty(id, t.identifier("undefined"))))
+    ])
   );
 }

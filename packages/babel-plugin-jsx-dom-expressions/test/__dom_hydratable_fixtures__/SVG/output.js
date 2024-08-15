@@ -33,21 +33,22 @@ const template2 = (() => {
   _el$3.style.setProperty("stroke", "black");
   _el$3.style.setProperty("opacity", "0.5");
   _$effect(
-    _p$ => {
-      var _v$ = state.name,
-        _v$2 = state.width,
-        _v$3 = state.x,
-        _v$4 = state.y,
-        _v$5 = props.stroke;
-      _v$ !== _p$.e && _$setAttribute(_el$3, "class", (_p$.e = _v$));
-      _v$2 !== _p$.t && _$setAttribute(_el$3, "stroke-width", (_p$.t = _v$2));
-      _v$3 !== _p$.a && _$setAttribute(_el$3, "x", (_p$.a = _v$3));
-      _v$4 !== _p$.o && _$setAttribute(_el$3, "y", (_p$.o = _v$4));
-      _v$5 !== _p$.i &&
-        ((_p$.i = _v$5) != null
-          ? _el$3.style.setProperty("stroke-width", _v$5)
+    () => ({
+      e: state.name,
+      t: state.width,
+      a: state.x,
+      o: state.y,
+      i: props.stroke
+    }),
+    ({ e, t, a, o, i }, _p$) => {
+      e !== _p$.e && _$setAttribute(_el$3, "class", e);
+      t !== _p$.t && _$setAttribute(_el$3, "stroke-width", t);
+      a !== _p$.a && _$setAttribute(_el$3, "x", a);
+      o !== _p$.o && _$setAttribute(_el$3, "y", o);
+      i !== _p$.i &&
+        (i != null
+          ? _el$3.style.setProperty("stroke-width", i)
           : _el$3.style.removeProperty("stroke-width"));
-      return _p$;
     },
     {
       e: undefined,

@@ -73,7 +73,10 @@ const template2 = (() => {
   );
   _$setProp(_el$6, "textContent", rowId);
   _$setProp(_el$8, "innerHTML", "<div/>");
-  _$effect(_$p => _$setProp(_el$7, "textContent", row.label, _$p));
+  _$effect(
+    () => row.label,
+    (_v$, _$p) => _$setProp(_el$7, "textContent", _v$, _$p)
+  );
   return _el$5;
 })();
 const template3 = (() => {
@@ -83,7 +86,10 @@ const template3 = (() => {
     "background-color": state.color
   });
   _$setProp(_el$9, "textContent", state.content);
-  _$effect(_$p => _$setProp(_el$9, "name", state.name, _$p));
+  _$effect(
+    () => state.name,
+    (_v$, _$p) => _$setProp(_el$9, "name", _v$, _$p)
+  );
   return _el$9;
 })();
 const template4 = (() => {
@@ -92,7 +98,10 @@ const template4 = (() => {
   _$setProp(_el$10, "classList", {
     "ccc:ddd": true
   });
-  _$effect(_$p => _$setProp(_el$10, "className", state.class, _$p));
+  _$effect(
+    () => state.class,
+    (_v$, _$p) => _$setProp(_el$10, "className", _v$, _$p)
+  );
   return _el$10;
 })();
 const template5 = (() => {
@@ -104,24 +113,25 @@ const template5 = (() => {
 const template6 = (() => {
   var _el$12 = _$createElement("div");
   _$setProp(_el$12, "textContent", "Hi");
-  _$effect(_$p => _$setProp(_el$12, "style", someStyle(), _$p));
+  _$effect(someStyle, (_v$, _$p) => _$setProp(_el$12, "style", _v$, _$p));
   return _el$12;
 })();
 const template7 = (() => {
   var _el$13 = _$createElement("div");
   _$effect(
-    _p$ => {
-      var _v$ = {
-          "background-color": color(),
-          "margin-right": "40px",
-          ...props.style
-        },
-        _v$2 = props.top,
-        _v$3 = props.active;
-      _v$ !== _p$.e && (_p$.e = _$setProp(_el$13, "style", _v$, _p$.e));
-      _v$2 !== _p$.t && (_p$.t = _$setProp(_el$13, "style:padding-top", _v$2, _p$.t));
-      _v$3 !== _p$.a && (_p$.a = _$setProp(_el$13, "class:my-class", _v$3, _p$.a));
-      return _p$;
+    () => ({
+      e: {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      t: props.top,
+      a: props.active
+    }),
+    ({ e, t, a }, _p$) => {
+      e !== _p$.e && _$setProp(_el$13, "style", e, _p$.e);
+      t !== _p$.t && _$setProp(_el$13, "style:padding-top", t, _p$.t);
+      a !== _p$.a && _$setProp(_el$13, "class:my-class", a, _p$.a);
     },
     {
       e: undefined,
@@ -170,7 +180,10 @@ const template13 = (() => {
 const template14 = (() => {
   var _el$20 = _$createElement("input");
   _$setProp(_el$20, "type", "checkbox");
-  _$effect(_$p => _$setProp(_el$20, "checked", state.visible, _$p));
+  _$effect(
+    () => state.visible,
+    (_v$, _$p) => _$setProp(_el$20, "checked", _v$, _$p)
+  );
   return _el$20;
 })();
 const template15 = (() => {
@@ -215,16 +228,12 @@ const template18 = (() => {
 })();
 const template19 = (() => {
   var _el$28 = _$createElement("div");
-  _$effect(_$p =>
-    _$setProp(
-      _el$28,
-      "style",
-      {
-        a: "static",
-        ...rest
-      },
-      _$p
-    )
+  _$effect(
+    () => ({
+      a: "static",
+      ...rest
+    }),
+    (_v$, _$p) => _$setProp(_el$28, "style", _v$, _$p)
   );
   return _el$28;
 })();

@@ -104,7 +104,10 @@ const template2 = (() => {
   );
   _$setProperty(_el$5, "textContent", rowId);
   _$setProperty(_el$8, "innerHTML", "<div/>");
-  _$effect(() => _$setProperty(_el$7, "data", row.label));
+  _$effect(
+    () => row.label,
+    _v$ => _$setProperty(_el$7, "data", _v$)
+  );
   _$runHydrationEvents();
   return _el$4;
 })();
@@ -115,7 +118,10 @@ const template3 = (() => {
     ? _el$9.style.setProperty("background-color", state.color)
     : _el$9.style.removeProperty("background-color");
   _$setProperty(_el$9, "textContent", state.content);
-  _$effect(() => _$setAttribute(_el$9, "name", state.name));
+  _$effect(
+    () => state.name,
+    _v$ => _$setAttribute(_el$9, "name", _v$)
+  );
   return _el$9;
 })();
 const template4 = (() => {
@@ -123,14 +129,17 @@ const template4 = (() => {
   _$classList(_el$10, {
     "ccc:ddd": true
   });
-  _$effect(() => _$className(_el$10, `hi ${state.class || ""}`));
+  _$effect(
+    () => `hi ${state.class || ""}`,
+    _v$ => _$className(_el$10, _v$)
+  );
   return _el$10;
 })();
 const template5 = _$getNextElement(_tmpl$5);
 const template6 = (() => {
   var _el$12 = _$getNextElement(_tmpl$4);
   _$setProperty(_el$12, "textContent", "Hi");
-  _$effect(_$p => _$style(_el$12, someStyle(), _$p));
+  _$effect(someStyle, (_v$, _$p) => _$style(_el$12, _v$, _$p));
   return _el$12;
 })();
 let undefVar;
@@ -139,21 +148,22 @@ const template7 = (() => {
   _el$13.classList.toggle("other-class", !!undefVar);
   _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
-    _p$ => {
-      var _v$ = {
-          "background-color": color(),
-          "margin-right": "40px",
-          ...props.style
-        },
-        _v$2 = props.top,
-        _v$3 = !!props.active;
-      _p$.e = _$style(_el$13, _v$, _p$.e);
-      _v$2 !== _p$.t &&
-        ((_p$.t = _v$2) != null
-          ? _el$13.style.setProperty("padding-top", _v$2)
+    () => ({
+      e: {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      t: props.top,
+      a: !!props.active
+    }),
+    ({ e, t, a }, _p$) => {
+      _p$.e = _$style(_el$13, e, _p$.e);
+      t !== _p$.t &&
+        (t != null
+          ? _el$13.style.setProperty("padding-top", t)
           : _el$13.style.removeProperty("padding-top"));
-      _v$3 !== _p$.a && _el$13.classList.toggle("my-class", (_p$.a = _v$3));
-      return _p$;
+      a !== _p$.a && _el$13.classList.toggle("my-class", a);
     },
     {
       e: undefined,
@@ -202,7 +212,10 @@ const template13 = (() => {
 })();
 const template14 = (() => {
   var _el$20 = _$getNextElement(_tmpl$6);
-  _$effect(() => _$setProperty(_el$20, "checked", state.visible));
+  _$effect(
+    () => state.visible,
+    _v$ => _$setProperty(_el$20, "checked", _v$)
+  );
   return _el$20;
 })();
 const template15 = _$getNextElement(_tmpl$7);
@@ -237,16 +250,17 @@ const template20 = (() => {
   _$addEventListener(_el$28, "input", doSomethingElse, true);
   _$setProperty(_el$28, "readonly", value);
   _$effect(
-    _p$ => {
-      var _v$4 = min(),
-        _v$5 = max(),
-        _v$6 = min(),
-        _v$7 = max();
-      _v$4 !== _p$.e && _$setAttribute(_el$27, "min", (_p$.e = _v$4));
-      _v$5 !== _p$.t && _$setAttribute(_el$27, "max", (_p$.t = _v$5));
-      _v$6 !== _p$.a && _$setAttribute(_el$28, "min", (_p$.a = _v$6));
-      _v$7 !== _p$.o && _$setAttribute(_el$28, "max", (_p$.o = _v$7));
-      return _p$;
+    () => ({
+      e: min(),
+      t: max(),
+      a: min(),
+      o: max()
+    }),
+    ({ e, t, a, o }, _p$) => {
+      e !== _p$.e && _$setAttribute(_el$27, "min", e);
+      t !== _p$.t && _$setAttribute(_el$27, "max", t);
+      a !== _p$.a && _$setAttribute(_el$28, "min", a);
+      o !== _p$.o && _$setAttribute(_el$28, "max", o);
     },
     {
       e: undefined,
@@ -255,22 +269,19 @@ const template20 = (() => {
       o: undefined
     }
   );
-  _$effect(() => _$setProperty(_el$27, "value", s()));
-  _$effect(() => _$setProperty(_el$28, "checked", s2()));
+  _$effect(s, _v$ => _$setProperty(_el$27, "value", _v$));
+  _$effect(s2, _v$ => _$setProperty(_el$28, "checked", _v$));
   _$runHydrationEvents();
   return _el$26;
 })();
 const template21 = (() => {
   var _el$29 = _$getNextElement(_tmpl$4);
-  _$effect(_$p =>
-    _$style(
-      _el$29,
-      {
-        a: "static",
-        ...rest
-      },
-      _$p
-    )
+  _$effect(
+    () => ({
+      a: "static",
+      ...rest
+    }),
+    (_v$, _$p) => _$style(_el$29, _v$, _$p)
   );
   return _el$29;
 })();
@@ -278,7 +289,10 @@ const template22 = _$getNextElement(_tmpl$12);
 const template23 = (() => {
   var _el$31 = _$getNextElement(_tmpl$4);
   _$insert(_el$31, () => "t" in test && "true");
-  _$effect(() => _$setProperty(_el$31, "disabled", "t" in test));
+  _$effect(
+    () => "t" in test,
+    _v$ => _$setProperty(_el$31, "disabled", _v$)
+  );
   return _el$31;
 })();
 const template24 = (() => {
@@ -360,10 +374,12 @@ const template29 = (() => {
 const template30 = _$getNextElement(_tmpl$17);
 const template31 = (() => {
   var _el$48 = _$getNextElement(_tmpl$4);
-  _$effect(_$p =>
-    (_$p = getStore.itemProperties.color) != null
-      ? _el$48.style.setProperty("background-color", _$p)
-      : _el$48.style.removeProperty("background-color")
+  _$effect(
+    () => (_$p = getStore.itemProperties.color),
+    (_v$, _$p) =>
+      _v$ != null
+        ? _el$48.style.setProperty("background-color", _$p)
+        : _el$48.style.removeProperty("background-color")
   );
   return _el$48;
 })();
@@ -385,12 +401,18 @@ const template33 = [
   })(),
   (() => {
     var _el$52 = _$getNextElement(_tmpl$18);
-    _$effect(() => _$className(_el$52, styles.foo.bar));
+    _$effect(
+      () => styles.foo.bar,
+      _v$ => _$className(_el$52, _v$)
+    );
     return _el$52;
   })(),
   (() => {
     var _el$53 = _$getNextElement(_tmpl$18);
-    _$effect(() => _$className(_el$53, styles[foo()]));
+    _$effect(
+      () => styles[foo()],
+      _v$ => _$className(_el$53, _v$)
+    );
     return _el$53;
   })()
 ];
@@ -429,10 +451,10 @@ const template38 = (() => {
 const template39 = _$getNextElement(_tmpl$19);
 const template40 = (() => {
   var _el$60 = _$getNextElement(_tmpl$4);
-  _$effect(_$p =>
-    (_$p = a()) != null
-      ? _el$60.style.setProperty("color", _$p)
-      : _el$60.style.removeProperty("color")
+  _$effect(
+    () => (_$p = a()),
+    (_v$, _$p) =>
+      _v$ != null ? _el$60.style.setProperty("color", _$p) : _el$60.style.removeProperty("color")
   );
   return _el$60;
 })();
@@ -440,9 +462,18 @@ const template41 = (() => {
   var _el$61 = _$getNextElement(_tmpl$20),
     _el$62 = _el$61.firstChild,
     _el$63 = _el$62.nextSibling;
-  _$effect(() => _$setProperty(_el$62, "value", Color.Red));
-  _$effect(() => _$setProperty(_el$63, "value", Color.Blue));
-  _$effect(() => _$setProperty(_el$61, "value", state.color));
+  _$effect(
+    () => Color.Red,
+    _v$ => _$setProperty(_el$62, "value", _v$)
+  );
+  _$effect(
+    () => Color.Blue,
+    _v$ => _$setProperty(_el$63, "value", _v$)
+  );
+  _$effect(
+    () => state.color,
+    _v$ => _$setProperty(_el$61, "value", _v$)
+  );
   return _el$61;
 })();
 _$delegateEvents(["click", "input"]);
