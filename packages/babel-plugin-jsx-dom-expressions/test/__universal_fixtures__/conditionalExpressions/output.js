@@ -154,13 +154,9 @@ const template18 = _$createComponent(Comp, {
 });
 const template19 = (() => {
   var _el$12 = _$createElement("div");
-  _$effect(_$p =>
-    _$setProp(
-      _el$12,
-      "innerHTML",
-      state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}),
-      _$p
-    )
+  _$effect(
+    () => (state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})),
+    (_v$, _$p) => _$setProp(_el$12, "innerHTML", _v$, _$p)
   );
   return _el$12;
 })();
@@ -187,7 +183,10 @@ const template22 = _$createComponent(Comp, {
 });
 const template23 = (() => {
   var _el$14 = _$createElement("div");
-  _$effect(_$p => _$setProp(_el$14, "innerHTML", state?.dynamic ? "a" : "b", _$p));
+  _$effect(
+    () => (state?.dynamic ? "a" : "b"),
+    (_v$, _$p) => _$setProp(_el$14, "innerHTML", _v$, _$p)
+  );
   return _el$14;
 })();
 const template24 = (() => {
@@ -207,8 +206,9 @@ const template26 = _$createComponent(Comp, {
 });
 const template27 = (() => {
   var _el$16 = _$createElement("div");
-  _$effect(_$p =>
-    _$setProp(_el$16, "innerHTML", state.dynamic ?? _$createComponent(Comp, {}), _$p)
+  _$effect(
+    () => state.dynamic ?? _$createComponent(Comp, {}),
+    (_v$, _$p) => _$setProp(_el$16, "innerHTML", _v$, _$p)
   );
   return _el$16;
 })();
