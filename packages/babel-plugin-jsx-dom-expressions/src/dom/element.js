@@ -27,7 +27,8 @@ import {
   convertJSXIdentifier,
   canNativeSpread,
   transformCondition,
-  trimWhitespace
+  trimWhitespace,
+  inlineCallExpression
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 import { InlineElements, BlockElements } from "./constants";
@@ -717,12 +718,14 @@ function transformAttributes(path, results) {
           let nextElem = elem;
           if (key === "value" || key === "checked") {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
+            const v = t.identifier("_v$");
             results.postExprs.push(
               t.expressionStatement(
                 t.callExpression(effectWrapperId, [
+                  inlineCallExpression(value.expression),
                   t.arrowFunctionExpression(
-                    [],
-                    setAttr(path, elem, key, value.expression, {
+                    [v],
+                    setAttr(path, elem, key, v, {
                       tagName,
                       isSVG,
                       isCE
@@ -1171,12 +1174,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         isDynamic(attribute.get("argument"), {
           checkMember: true
         }) && (dynamicSpread = true)
-          ? t.isCallExpression(node.argument) &&
-            !node.argument.arguments.length &&
-            !t.isCallExpression(node.argument.callee) &&
-            !t.isMemberExpression(node.argument.callee)
-            ? node.argument.callee
-            : t.arrowFunctionExpression([], node.argument)
+          ? inlineCallExpression(node.argument)
           : node.argument
       );
     } else if (

@@ -102,18 +102,15 @@ export function clearDelegatedEvents(document = window.document) {
 }
 
 export function setProperty(node, name, value) {
-  if (isHydrating(node)) return;
   node[name] = value;
 }
 
 export function setAttribute(node, name, value) {
-  if (isHydrating(node)) return;
   if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
-  if (isHydrating(node)) return;
   if (value == null) node.removeAttributeNS(namespace, name);
   else node.setAttributeNS(namespace, name, value);
 }
@@ -124,7 +121,6 @@ export function setBoolAttribute(node, name, value) {
 }
 
 export function className(node, value) {
-  if (isHydrating(node)) return;
   if (value == null) node.removeAttribute("class");
   else node.className = value;
 }
@@ -184,12 +180,24 @@ export function style(node, value, prev) {
 }
 
 export function spread(node, props = {}, isSVG, skipChildren) {
+  // TODO: make this better
   const prevProps = {};
   if (!skipChildren) {
-    effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
+    effect(
+      () => normalize(props.children, prevProps.children),
+      value => {
+        insertExpression(node, value, prevProps.children);
+        prevProps.children = value;
+      }
+    );
   }
-  effect(() => typeof props.ref === "function" && use(props.ref, node));
-  effect(() => assign(node, props, isSVG, true, prevProps, true));
+  effect(
+    () => typeof props.ref === "function" && use(props.ref, node),
+    () => ({})
+  );
+  effect(() => {
+    for (const prop in props) { props[prop]; }
+  }, () => assign(node, props, isSVG, true, prevProps, true));
   return prevProps;
 }
 
@@ -209,9 +217,15 @@ export function use(fn, element, arg) {
 }
 
 export function insert(parent, accessor, marker, initial) {
-  if (marker !== undefined && !initial) initial = [];
-  if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
-  effect(current => insertExpression(parent, accessor(), current, marker), initial);
+  const multi = marker !== undefined;
+  if (multi && !initial) initial = [];
+  if (typeof accessor !== "function")
+    return insertExpression(parent, normalize(accessor, initial, multi), initial, marker);
+  effect(
+    prev => normalize(accessor, prev, multi),
+    (value, current) => insertExpression(parent, value, current, marker),
+    initial
+  );
 }
 
 export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef = false) {
@@ -371,7 +385,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     if (forceProp) {
       prop = prop.slice(5);
       isProp = true;
-    } else if (isHydrating(node)) return value;
+    };
     if (prop === "class" || prop === "className") className(node, value);
     else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[propAlias || prop] = value;
@@ -444,126 +458,74 @@ function eventHandler(e) {
   retarget(oriTarget);
 }
 
-function insertExpression(parent, value, current, marker, unwrapArray) {
-  const hydrating = isHydrating(parent);
-  if (hydrating) {
-    !current && (current = [...parent.childNodes]);
-    let cleaned = [];
-    for (let i = 0; i < current.length; i++) {
-      const node = current[i];
-      if (node.nodeType === 8 && node.data.slice(0, 2) === "!$") node.remove();
-      else cleaned.push(node);
-    }
-    current = cleaned;
-  }
-  while (typeof current === "function") current = current();
-  if (value === current) return current;
+function insertExpression(parent, value, current, marker) {
+  if (value === current) return;
   const t = typeof value,
     multi = marker !== undefined;
   parent = (multi && current[0] && current[0].parentNode) || parent;
 
-  if (t === "string" || t === "number") {
-    if (hydrating) return current;
-    if (t === "number") {
-      value = value.toString();
-      if (value === current) return current;
-    }
-    if (multi) {
-      let node = current[0];
-      if (node && node.nodeType === 3) {
-        node.data !== value && (node.data = value);
-      } else node = document.createTextNode(value);
-      current = cleanChildren(parent, current, marker, node);
-    } else {
-      if (current !== "" && typeof current === "string") {
-        current = parent.firstChild.data = value;
-      } else current = parent.textContent = value;
-    }
-  } else if (value == null || t === "boolean") {
-    if (hydrating) return current;
-    current = cleanChildren(parent, current, marker);
-  } else if (t === "function") {
-    effect(() => {
-      let v = value();
-      while (typeof v === "function") v = v();
-      current = insertExpression(parent, v, current, marker);
-    });
-    return () => current;
-  } else if (Array.isArray(value)) {
-    const array = [];
-    const currentArray = current && Array.isArray(current);
-    if (normalizeIncomingArray(array, value, current, unwrapArray)) {
-      effect(() => (current = insertExpression(parent, array, current, marker, true)));
-      return () => current;
-    }
-    if (hydrating) {
-      if (!array.length) return current;
-      if (marker === undefined) return (current = [...parent.childNodes]);
-      let node = array[0];
-      if (node.parentNode !== parent) return current;
-      const nodes = [node];
-      while ((node = node.nextSibling) !== marker) nodes.push(node);
-      return (current = nodes);
-    }
-    if (array.length === 0) {
-      current = cleanChildren(parent, current, marker);
-      if (multi) return current;
-    } else if (currentArray) {
-      if (current.length === 0) {
-        appendNodes(parent, array, marker);
-      } else reconcileArrays(parent, current, array);
-    } else {
-      current && cleanChildren(parent);
-      appendNodes(parent, array);
-    }
-    current = array;
+  if (t === "string") {
+    if (typeof current === "string") {
+      parent.firstChild.data = value;
+    } else parent.textContent = value;
+  } else if (value === undefined) {
+    cleanChildren(parent, current, marker);
   } else if (value.nodeType) {
-    if (hydrating && value.parentNode) return (current = multi ? [value] : value);
     if (Array.isArray(current)) {
-      if (multi) return (current = cleanChildren(parent, current, marker, value));
-      cleanChildren(parent, current, null, value);
-    } else if (current == null || current === "" || !parent.firstChild) {
+      cleanChildren(parent, current, multi ? marker : null, value);
+    } else if (current === undefined || !parent.firstChild) {
       parent.appendChild(value);
     } else parent.replaceChild(value, parent.firstChild);
-    current = value;
+  } else if (Array.isArray(value)) {
+    const currentArray = current && Array.isArray(current);
+    if (value.length === 0) {
+      cleanChildren(parent, current, marker);
+    } else if (currentArray) {
+      if (current.length === 0) {
+        appendNodes(parent, value, marker);
+      } else reconcileArrays(parent, current, value);
+    } else {
+      current && cleanChildren(parent);
+      appendNodes(parent, value);
+    }
   } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
-
-  return current;
 }
 
-function normalizeIncomingArray(normalized, array, current, unwrap) {
-  let dynamic = false;
+function normalize(value, current, multi) {
+  let t;
+  while ((t = typeof value) === "function") value = value();
+  if (multi && !Array.isArray(value)) value = [value];
+  if (t === "number") value = value.toString();
+  else if (t === "boolean" || value == null || value === "") value = undefined;
+  else if (Array.isArray(value)) {
+    const normalized = [];
+    normalizeIncomingArray(normalized, value, current);
+    return normalized;
+  }
+  return value;
+}
+
+function normalizeIncomingArray(normalized, array, current) {
   for (let i = 0, len = array.length; i < len; i++) {
     let item = array[i],
       prev = current && current[normalized.length],
       t;
-    if (item == null || item === true || item === false) {
+    if (item == null || item === true || item === false || item === "") {
       // matches null, undefined, true or false
       // skip
     } else if ((t = typeof item) === "object" && item.nodeType) {
       normalized.push(item);
     } else if (Array.isArray(item)) {
-      dynamic = normalizeIncomingArray(normalized, item, prev) || dynamic;
+      normalizeIncomingArray(normalized, item, current);
     } else if (t === "function") {
-      if (unwrap) {
-        while (typeof item === "function") item = item();
-        dynamic =
-          normalizeIncomingArray(
-            normalized,
-            Array.isArray(item) ? item : [item],
-            Array.isArray(prev) ? prev : [prev]
-          ) || dynamic;
-      } else {
-        normalized.push(item);
-        dynamic = true;
-      }
+      while (typeof item === "function") item = item();
+      normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item], current);
     } else {
       const value = String(item);
       if (prev && prev.nodeType === 3 && prev.data === value) normalized.push(prev);
       else normalized.push(document.createTextNode(value));
     }
   }
-  return dynamic;
 }
 
 function appendNodes(parent, array, marker = null) {
@@ -572,20 +534,20 @@ function appendNodes(parent, array, marker = null) {
 
 function cleanChildren(parent, current, marker, replacement) {
   if (marker === undefined) return (parent.textContent = "");
-  const node = replacement || document.createTextNode("");
   if (current.length) {
     let inserted = false;
     for (let i = current.length - 1; i >= 0; i--) {
       const el = current[i];
-      if (node !== el) {
+      if (replacement !== el) {
         const isParent = el.parentNode === parent;
-        if (!inserted && !i)
-          isParent ? parent.replaceChild(node, el) : parent.insertBefore(node, marker);
+        if (replacement && !inserted && !i)
+          isParent
+            ? parent.replaceChild(replacement, el)
+            : parent.insertBefore(replacement, marker);
         else isParent && el.remove();
       } else inserted = true;
     }
-  } else parent.insertBefore(node, marker);
-  return [node];
+  } else if (replacement) parent.insertBefore(replacement, marker);
 }
 
 function gatherHydratable(element, root) {
@@ -614,8 +576,3 @@ const voidFn = () => undefined;
 
 // experimental
 export const RequestContext = Symbol();
-
-// deprecated
-export function innerHTML(parent, content) {
-  !sharedConfig.context && (parent.innerHTML = content);
-}
