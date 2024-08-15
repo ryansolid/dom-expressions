@@ -156,7 +156,10 @@ const template2 = (() => {
   );
   _el$5.textContent = rowId;
   _el$8.innerHTML = "<div/>";
-  _$effect(() => (_el$7.data = row.label));
+  _$effect(
+    () => row.label,
+    _v$ => (_el$7.data = _v$)
+  );
   return _el$4;
 })();
 const template3 = (() => {
@@ -166,7 +169,10 @@ const template3 = (() => {
     ? _el$9.style.setProperty("background-color", state.color)
     : _el$9.style.removeProperty("background-color");
   _el$9.textContent = state.content;
-  _$effect(() => _$setAttribute(_el$9, "name", state.name));
+  _$effect(
+    () => state.name,
+    _v$ => _$setAttribute(_el$9, "name", _v$)
+  );
   return _el$9;
 })();
 const template4 = (() => {
@@ -174,14 +180,17 @@ const template4 = (() => {
   _$classList(_el$10, {
     "ccc:ddd": true
   });
-  _$effect(() => _$className(_el$10, `hi ${state.class || ""}`));
+  _$effect(
+    () => `hi ${state.class || ""}`,
+    _v$ => _$className(_el$10, _v$)
+  );
   return _el$10;
 })();
 const template5 = _tmpl$5();
 const template6 = (() => {
   var _el$12 = _tmpl$4();
   _el$12.textContent = "Hi";
-  _$effect(_$p => _$style(_el$12, someStyle(), _$p));
+  _$effect(someStyle, (_v$, _$p) => _$style(_el$12, _v$, _$p));
   return _el$12;
 })();
 let undefVar;
@@ -190,21 +199,22 @@ const template7 = (() => {
   _el$13.classList.toggle("other-class", !!undefVar);
   _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
-    _p$ => {
-      var _v$ = {
-          "background-color": color(),
-          "margin-right": "40px",
-          ...props.style
-        },
-        _v$2 = props.top,
-        _v$3 = !!props.active;
-      _p$.e = _$style(_el$13, _v$, _p$.e);
-      _v$2 !== _p$.t &&
-        ((_p$.t = _v$2) != null
-          ? _el$13.style.setProperty("padding-top", _v$2)
+    () => ({
+      e: {
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style
+      },
+      t: props.top,
+      a: !!props.active
+    }),
+    ({ e, t, a }, _p$) => {
+      _p$.e = _$style(_el$13, e, _p$.e);
+      t !== _p$.t &&
+        (t != null
+          ? _el$13.style.setProperty("padding-top", t)
           : _el$13.style.removeProperty("padding-top"));
-      _v$3 !== _p$.a && _el$13.classList.toggle("my-class", (_p$.a = _v$3));
-      return _p$;
+      a !== _p$.a && _el$13.classList.toggle("my-class", a);
     },
     {
       e: undefined,
@@ -253,7 +263,10 @@ const template13 = (() => {
 })();
 const template14 = (() => {
   var _el$20 = _tmpl$6();
-  _$effect(() => (_el$20.checked = state.visible));
+  _$effect(
+    () => state.visible,
+    _v$ => (_el$20.checked = _v$)
+  );
   return _el$20;
 })();
 const template15 = _tmpl$7();
@@ -286,16 +299,17 @@ const template20 = (() => {
   _$addEventListener(_el$28, "input", doSomethingElse, true);
   _el$28.readOnly = value;
   _$effect(
-    _p$ => {
-      var _v$4 = min(),
-        _v$5 = max(),
-        _v$6 = min(),
-        _v$7 = max();
-      _v$4 !== _p$.e && _$setAttribute(_el$27, "min", (_p$.e = _v$4));
-      _v$5 !== _p$.t && _$setAttribute(_el$27, "max", (_p$.t = _v$5));
-      _v$6 !== _p$.a && _$setAttribute(_el$28, "min", (_p$.a = _v$6));
-      _v$7 !== _p$.o && _$setAttribute(_el$28, "max", (_p$.o = _v$7));
-      return _p$;
+    () => ({
+      e: min(),
+      t: max(),
+      a: min(),
+      o: max()
+    }),
+    ({ e, t, a, o }, _p$) => {
+      e !== _p$.e && _$setAttribute(_el$27, "min", e);
+      t !== _p$.t && _$setAttribute(_el$27, "max", t);
+      a !== _p$.a && _$setAttribute(_el$28, "min", a);
+      o !== _p$.o && _$setAttribute(_el$28, "max", o);
     },
     {
       e: undefined,
@@ -304,21 +318,18 @@ const template20 = (() => {
       o: undefined
     }
   );
-  _$effect(() => (_el$27.value = s()));
-  _$effect(() => (_el$28.checked = s2()));
+  _$effect(s, _v$ => (_el$27.value = _v$));
+  _$effect(s2, _v$ => (_el$28.checked = _v$));
   return _el$26;
 })();
 const template21 = (() => {
   var _el$29 = _tmpl$4();
-  _$effect(_$p =>
-    _$style(
-      _el$29,
-      {
-        a: "static",
-        ...rest
-      },
-      _$p
-    )
+  _$effect(
+    () => ({
+      a: "static",
+      ...rest
+    }),
+    (_v$, _$p) => _$style(_el$29, _v$, _$p)
   );
   return _el$29;
 })();
@@ -326,7 +337,10 @@ const template22 = _tmpl$12();
 const template23 = (() => {
   var _el$31 = _tmpl$4();
   _$insert(_el$31, () => "t" in test && "true");
-  _$effect(() => (_el$31.disabled = "t" in test));
+  _$effect(
+    () => "t" in test,
+    _v$ => (_el$31.disabled = _v$)
+  );
   return _el$31;
 })();
 const template24 = (() => {
@@ -399,10 +413,12 @@ const template29 = (() => {
 const template30 = _tmpl$17();
 const template31 = (() => {
   var _el$44 = _tmpl$4();
-  _$effect(_$p =>
-    (_$p = getStore.itemProperties.color) != null
-      ? _el$44.style.setProperty("background-color", _$p)
-      : _el$44.style.removeProperty("background-color")
+  _$effect(
+    () => (_$p = getStore.itemProperties.color),
+    (_v$, _$p) =>
+      _v$ != null
+        ? _el$44.style.setProperty("background-color", _$p)
+        : _el$44.style.removeProperty("background-color")
   );
   return _el$44;
 })();
@@ -424,12 +440,18 @@ const template33 = [
   })(),
   (() => {
     var _el$48 = _tmpl$18();
-    _$effect(() => _$className(_el$48, styles.foo.bar));
+    _$effect(
+      () => styles.foo.bar,
+      _v$ => _$className(_el$48, _v$)
+    );
     return _el$48;
   })(),
   (() => {
     var _el$49 = _tmpl$18();
-    _$effect(() => _$className(_el$49, styles[foo()]));
+    _$effect(
+      () => styles[foo()],
+      _v$ => _$className(_el$49, _v$)
+    );
     return _el$49;
   })()
 ];
@@ -467,10 +489,10 @@ const template38 = (() => {
 const template39 = _tmpl$19();
 const template40 = (() => {
   var _el$56 = _tmpl$4();
-  _$effect(_$p =>
-    (_$p = a()) != null
-      ? _el$56.style.setProperty("color", _$p)
-      : _el$56.style.removeProperty("color")
+  _$effect(
+    () => (_$p = a()),
+    (_v$, _$p) =>
+      _v$ != null ? _el$56.style.setProperty("color", _$p) : _el$56.style.removeProperty("color")
   );
   return _el$56;
 })();
@@ -478,9 +500,18 @@ const template41 = (() => {
   var _el$57 = _tmpl$20(),
     _el$58 = _el$57.firstChild,
     _el$59 = _el$58.nextSibling;
-  _$effect(() => (_el$58.value = Color.Red));
-  _$effect(() => (_el$59.value = Color.Blue));
-  _$effect(() => (_el$57.value = state.color));
+  _$effect(
+    () => Color.Red,
+    _v$ => (_el$58.value = _v$)
+  );
+  _$effect(
+    () => Color.Blue,
+    _v$ => (_el$59.value = _v$)
+  );
+  _$effect(
+    () => state.color,
+    _v$ => (_el$57.value = _v$)
+  );
   return _el$57;
 })();
 
@@ -506,7 +537,7 @@ const template52 = _tmpl$31();
 const template53 = _tmpl$32();
 const template54 = (() => {
   var _el$72 = _tmpl$33();
-  _$effect(() => _$setBoolAttribute(_el$72, "quack", boolTest()));
+  _$effect(boolTest, _v$ => _$setBoolAttribute(_el$72, "quack", _v$));
   return _el$72;
 })();
 const template55 = (() => {
@@ -521,7 +552,10 @@ const template56 = (() => {
 })();
 const template57 = (() => {
   var _el$75 = _tmpl$36();
-  _$effect(() => _$setBoolAttribute(_el$75, "quack", boolTestObjBinding.value));
+  _$effect(
+    () => boolTestObjBinding.value,
+    _v$ => _$setBoolAttribute(_el$75, "quack", _v$)
+  );
   return _el$75;
 })();
 const template58 = (() => {
