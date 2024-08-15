@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { getConfig, getNumberedId, registerImportMethod } from "../shared/utils";
+import { getConfig, getNumberedId, registerImportMethod, inlineCallExpression } from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -42,12 +42,14 @@ function wrapDynamics(path, dynamics) {
 
   if (dynamics.length === 1) {
     const prevValue = t.identifier("_$p");
+    const newValue = t.identifier("_v$");
 
     return t.expressionStatement(
       t.callExpression(effectWrapperId, [
+        inlineCallExpression(dynamics[0].value),
         t.arrowFunctionExpression(
-          [prevValue],
-          setAttr(path, dynamics[0].elem, dynamics[0].key, dynamics[0].value, {
+          [newValue, prevValue],
+          setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
             dynamic: true,
             prevId: prevValue
           })
@@ -58,50 +60,39 @@ function wrapDynamics(path, dynamics) {
 
   const prevId = t.identifier("_p$");
 
-  /** @type {t.VariableDeclarator[]} */
-  const declarations = [];
+  /** @type {t.ObjectProperty[]} */
+  const values = [];
   /** @type {t.ExpressionStatement[]} */
   const statements = [];
   /** @type {t.Identifier[]} */
   const properties = [];
 
   dynamics.forEach(({ elem, key, value }, index) => {
-    const varIdent = path.scope.generateUidIdentifier("v$");
-
     const propIdent = t.identifier(getNumberedId(index));
     const propMember = t.memberExpression(prevId, propIdent);
 
     properties.push(propIdent);
-    declarations.push(t.variableDeclarator(varIdent, value));
+    values.push(t.objectProperty(propIdent, value));
 
     statements.push(
       t.expressionStatement(
         t.logicalExpression(
           "&&",
-          t.binaryExpression("!==", varIdent, propMember),
-          t.assignmentExpression(
-            "=",
-            propMember,
-            setAttr(path, elem, key, varIdent, { dynamic: true, prevId: propMember }),
-          ),
-        ),
-      ),
+          t.binaryExpression("!==", propIdent, propMember),
+          setAttr(path, elem, key, propIdent, { dynamic: true, prevId: propMember })
+        )
+      )
     );
   });
 
   return t.expressionStatement(
     t.callExpression(effectWrapperId, [
+      t.arrowFunctionExpression([], t.objectExpression(values)),
       t.arrowFunctionExpression(
-        [prevId],
-        t.blockStatement([
-          t.variableDeclaration("var", declarations),
-          ...statements,
-          t.returnStatement(prevId),
-        ]),
+        [t.objectPattern(properties.map(id => t.objectProperty(id, id, false, true))), prevId],
+        t.blockStatement(statements)
       ),
-      t.objectExpression(
-        properties.map((id) => t.objectProperty(id, t.identifier("undefined"))),
-      ),
-    ]),
+      t.objectExpression(properties.map(id => t.objectProperty(id, t.identifier("undefined"))))
+    ])
   );
 }

@@ -35,14 +35,20 @@ const multiDynamic = [
   (() => {
     var _el$9 = _$createElement("div");
     _$insertNode(_el$9, _$createTextNode(`First`));
-    _$effect(_$p => _$setProp(_el$9, "id", state.first, _$p));
+    _$effect(
+      () => state.first,
+      (_v$, _$p) => _$setProp(_el$9, "id", _v$, _$p)
+    );
     return _el$9;
   })(),
   _$memo(() => state.inserted),
   (() => {
     var _el$11 = _$createElement("div");
     _$insertNode(_el$11, _$createTextNode(`Last`));
-    _$effect(_$p => _$setProp(_el$11, "id", state.last, _$p));
+    _$effect(
+      () => state.last,
+      (_v$, _$p) => _$setProp(_el$11, "id", _v$, _$p)
+    );
     return _el$11;
   })(),
   "After"

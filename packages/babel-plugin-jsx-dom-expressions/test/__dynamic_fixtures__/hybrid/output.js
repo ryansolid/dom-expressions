@@ -26,16 +26,17 @@ const Child = props => {
       var _ref$ = props.ref;
       typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
       _$insert(_el$, () => props.name, null);
-      _$effect(() =>
-        _$setAttribute(
-          _el$,
-          "element",
+      _$effect(
+        () =>
           (() => {
             var _el$10 = _tmpl$4();
-            _$effect(() => _$setAttribute(_el$10, "backgroundcolor", s() ? "red" : "green"));
+            _$effect(
+              () => (s() ? "red" : "green"),
+              _v$ => _$setAttribute(_el$10, "backgroundcolor", _v$)
+            );
             return _el$10;
-          })()
-        )
+          })(),
+        _v$ => _$setAttribute(_el$, "element", _v$)
       );
       return _el$;
     })(),
@@ -62,18 +63,18 @@ const Child = props => {
                     return _el$11;
                   })()
                 );
-                _$effect(_$p =>
-                  _$setProp(
-                    _el$5,
-                    "material",
+                _$effect(
+                  () =>
                     (() => {
                       var _el$12 = _$createElement("basicMaterial");
                       _$setProp(_el$12, "alpha", 0);
-                      _$effect(_$p => _$setProp(_el$12, "color", s() ? "red" : "green", _$p));
+                      _$effect(
+                        () => (s() ? "red" : "green"),
+                        (_v$, _$p) => _$setProp(_el$12, "color", _v$, _$p)
+                      );
                       return _el$12;
                     })(),
-                    _$p
-                  )
+                  (_v$, _$p) => _$setProp(_el$5, "material", _v$, _$p)
                 );
                 return _el$5;
               })(),
@@ -87,18 +88,17 @@ const Child = props => {
                       var _ref$2 = props.ref;
                       typeof _ref$2 === "function" ? _$use(_ref$2, _el$7) : (props.ref = _el$7);
                       _$insert(_el$7, () => props.name, null);
-                      _$effect(() =>
-                        _$setAttribute(
-                          _el$7,
-                          "element",
+                      _$effect(
+                        () =>
                           (() => {
                             var _el$13 = _tmpl$4();
-                            _$effect(() =>
-                              _$setAttribute(_el$13, "backgroundcolor", s() ? "red" : "green")
+                            _$effect(
+                              () => (s() ? "red" : "green"),
+                              _v$ => _$setAttribute(_el$13, "backgroundcolor", _v$)
                             );
                             return _el$13;
-                          })()
-                        )
+                          })(),
+                        _v$ => _$setAttribute(_el$7, "element", _v$)
                       );
                       return _el$7;
                     })(),
@@ -139,18 +139,18 @@ const Component = props => {
                     return _el$17;
                   })()
                 );
-                _$effect(_$p =>
-                  _$setProp(
-                    _el$15,
-                    "material",
+                _$effect(
+                  () =>
                     (() => {
                       var _el$18 = _$createElement("basicMaterial");
                       _$setProp(_el$18, "alpha", 0);
-                      _$effect(_$p => _$setProp(_el$18, "color", s() ? "red" : "green", _$p));
+                      _$effect(
+                        () => (s() ? "red" : "green"),
+                        (_v$, _$p) => _$setProp(_el$18, "color", _v$, _$p)
+                      );
                       return _el$18;
                     })(),
-                    _$p
-                  )
+                  (_v$, _$p) => _$setProp(_el$15, "material", _v$, _$p)
                 );
                 return _el$15;
               })()

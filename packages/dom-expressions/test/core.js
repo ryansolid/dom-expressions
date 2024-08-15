@@ -7,6 +7,14 @@ const sharedConfig = {
   }
 };
 
+function effect(track, effect, init) {
+  S(p => {
+    const v = track(p);
+    sample(() => effect(v, p));
+    return v;
+  }, init);
+}
+
 function memo(fn) {
   const s = value(sample(fn));
   S(() => s(fn()));
@@ -82,4 +90,4 @@ function mergeProps(...sources) {
   );
 }
 
-export { root, S as effect, memo, createComponent, getOwner, sharedConfig, sample as untrack, mergeProps };
+export { root, effect, memo, createComponent, getOwner, sharedConfig, sample as untrack, mergeProps };
