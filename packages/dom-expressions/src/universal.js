@@ -13,100 +13,84 @@ export function createRenderer({
   getNextSibling
 }) {
   function insert(parent, accessor, marker, initial) {
-    if (marker !== undefined && !initial) initial = [];
-    if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
-    effect(current => insertExpression(parent, accessor(), current, marker), initial);
+    const multi = marker !== undefined;
+    if (multi && !initial) initial = [];
+    if (typeof accessor !== "function")
+      return insertExpression(parent, normalize(accessor, multi), initial, marker);
+    effect(
+      () => normalize(accessor, multi),
+      (value, current) => insertExpression(parent, value, current, marker),
+      initial
+    );
   }
 
-  function insertExpression(parent, value, current, marker, unwrapArray) {
+  function insertExpression(parent, value, current, marker) {
     while (typeof current === "function") current = current();
-    if (value === current) return current;
+    if (value === current) return;
     const t = typeof value,
       multi = marker !== undefined;
 
-    if (t === "string" || t === "number") {
-      if (t === "number") value = value.toString();
-      if (multi) {
-        let node = current[0];
-        if (node && isTextNode(node)) {
-          replaceText(node, value);
-        } else node = createTextNode(value);
-        current = cleanChildren(parent, current, marker, node);
+    if (t === "string") {
+      if (typeof current === "string") {
+        replaceText(getFirstChild(parent), value);
       } else {
-        if (current !== "" && typeof current === "string") {
-          replaceText(getFirstChild(parent), (current = value));
-        } else {
-          cleanChildren(parent, current, marker, createTextNode(value));
-          current = value;
-        }
+        cleanChildren(parent, current, marker, createTextNode(value));
       }
-    } else if (value == null || t === "boolean") {
-      current = cleanChildren(parent, current, marker);
-    } else if (t === "function") {
-      effect(() => {
-        let v = value();
-        while (typeof v === "function") v = v();
-        current = insertExpression(parent, v, current, marker);
-      });
-      return () => current;
+    } else if (value == null) {
+      cleanChildren(parent, current, marker);
     } else if (Array.isArray(value)) {
-      const array = [];
-      if (normalizeIncomingArray(array, value, unwrapArray)) {
-        effect(() => (current = insertExpression(parent, array, current, marker, true)));
-        return () => current;
-      }
-      if (array.length === 0) {
-        const replacement = cleanChildren(parent, current, marker);
-        if (multi) return (current = replacement);
+      if (value.length === 0) {
+        cleanChildren(parent, current, marker);
       } else {
         if (Array.isArray(current)) {
           if (current.length === 0) {
-            appendNodes(parent, array, marker);
-          } else reconcileArrays(parent, current, array);
-        } else if (current == null || current === "") {
-          appendNodes(parent, array);
+            appendNodes(parent, value, marker);
+          } else reconcileArrays(parent, current, value);
+        } else if (current == null) {
+          appendNodes(parent, value);
         } else {
-          reconcileArrays(parent, (multi && current) || [getFirstChild(parent)], array);
+          reconcileArrays(parent, (multi && current) || [getFirstChild(parent)], value);
         }
       }
-      current = array;
     } else {
       if (Array.isArray(current)) {
-        if (multi) return (current = cleanChildren(parent, current, marker, value));
-        cleanChildren(parent, current, null, value);
-      } else if (current == null || current === "" || !getFirstChild(parent)) {
+        cleanChildren(parent, current, multi ? marker : null, value);
+      } else if (current == null || !getFirstChild(parent)) {
         insertNode(parent, value);
       } else replaceNode(parent, value, getFirstChild(parent));
-      current = value;
     }
-
-    return current;
   }
 
-  function normalizeIncomingArray(normalized, array, unwrap) {
-    let dynamic = false;
+  function normalize(value, multi) {
+    let t;
+    while ((t = typeof value) === "function") value = value();
+    if (multi && !Array.isArray(value)) value = [value];
+    if (t === "number") value = value.toString();
+    else if (t === "boolean" || value == null || value === "") value = undefined;
+    else if (Array.isArray(value)) {
+      const normalized = [];
+      normalizeIncomingArray(normalized, value);
+      return normalized;
+    }
+    return value;
+  }
+
+  function normalizeIncomingArray(normalized, array) {
     for (let i = 0, len = array.length; i < len; i++) {
       let item = array[i],
         t;
-      if (item == null || item === true || item === false) {
+      if (item == null || item === true || item === false || item === "") {
         // matches null, undefined, true or false
         // skip
       } else if (Array.isArray(item)) {
-        dynamic = normalizeIncomingArray(normalized, item) || dynamic;
+        normalizeIncomingArray(normalized, item);
       } else if ((t = typeof item) === "string" || t === "number") {
         normalized.push(createTextNode(item));
       } else if (t === "function") {
-        if (unwrap) {
-          while (typeof item === "function") item = item();
-          dynamic =
-            normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item]) || dynamic;
-        } else {
-          normalized.push(item);
-          dynamic = true;
-        }
+        while (typeof item === "function") item = item();
+        normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item]);
       } else normalized.push(item);
     }
-    return dynamic;
   }
 
   function reconcileArrays(parentNode, a, b) {
@@ -187,20 +171,20 @@ export function createRenderer({
       replacement && insertNode(parent, replacement);
       return "";
     }
-    const node = replacement || createTextNode("");
     if (current.length) {
       let inserted = false;
       for (let i = current.length - 1; i >= 0; i--) {
         const el = current[i];
-        if (node !== el) {
+        if (replacement !== el) {
           const isParent = getParentNode(el) === parent;
-          if (!inserted && !i)
-            isParent ? replaceNode(parent, node, el) : insertNode(parent, node, marker);
+          if (replacement && !inserted && !i)
+            isParent
+              ? replaceNode(parent, replacement, el)
+              : insertNode(parent, replacement, marker);
           else isParent && removeNode(parent, el);
         } else inserted = true;
       }
-    } else insertNode(parent, node, marker);
-    return [node];
+    } else if (replacement) insertNode(parent, replacement, marker);
   }
 
   function appendNodes(parent, array, marker) {
@@ -212,21 +196,42 @@ export function createRenderer({
     removeNode(parent, oldNode);
   }
 
-  function spreadExpression(node, props, prevProps = {}, skipChildren) {
+  // TODO: make this better
+  function spread(node, props, skipChildren) {
+    const prevProps = {};
     props || (props = {});
     if (!skipChildren) {
-      effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
+      effect(
+        () => normalize(props.children),
+        value => {
+          insertExpression(node, value, prevProps.children);
+          prevProps.children = value;
+        }
+      );
     }
-    effect(() => props.ref && props.ref(node));
-    effect(() => {
-      for (const prop in props) {
-        if (prop === "children" || prop === "ref") continue;
-        const value = props[prop];
-        if (value === prevProps[prop]) continue;
-        setProperty(node, prop, value, prevProps[prop]);
-        prevProps[prop] = value;
+    effect(
+      () => props.ref && props.ref(node),
+      () => ({})
+    );
+    effect(
+      () => {
+        const newProps = {};
+        for (const prop in props) {
+          if (prop === "children" || prop === "ref") continue;
+          const value = props[prop];
+          if (value === prevProps[prop]) continue;
+          newProps[prop] = value;
+        }
+        return newProps;
+      },
+      (props) => {
+        for (const prop in props) {
+          const value = props[prop];
+          setProperty(node, prop, value, prevProps[prop]);
+          prevProps[prop] = value;
+        }
       }
-    });
+    );
     return prevProps;
   }
 
@@ -240,11 +245,7 @@ export function createRenderer({
       return disposer;
     },
     insert,
-    spread(node, accessor, skipChildren) {
-      if (typeof accessor === "function") {
-        effect(current => spreadExpression(node, accessor(), current, skipChildren));
-      } else spreadExpression(node, accessor, undefined, skipChildren);
-    },
+    spread,
     createElement,
     createTextNode,
     insertNode,
