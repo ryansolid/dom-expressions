@@ -205,8 +205,8 @@ export function style(node, value, prev) {
   return prev;
 }
 
+// TODO: make this better
 export function spread(node, props = {}, isSVG, skipChildren) {
-  // TODO: make this better
   const prevProps = {};
   if (!skipChildren) {
     effect(
@@ -222,8 +222,13 @@ export function spread(node, props = {}, isSVG, skipChildren) {
     () => ({})
   );
   effect(() => {
-    for (const prop in props) { props[prop]; }
-  }, () => assign(node, props, isSVG, true, prevProps, true));
+    const newProps = {};
+    for (const prop in props) {
+      if (prop === "children" || prop === "ref") continue;
+      newProps[prop] = props[prop];
+    }
+    return newProps;
+  }, props => assign(node, props, isSVG, true, prevProps, true));
   return prevProps;
 }
 

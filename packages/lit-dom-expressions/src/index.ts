@@ -2,7 +2,7 @@ import { parse, stringify, IDom } from "html-parse-string";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 interface Runtime {
-  effect<T>(fn: (prev?: T) => T, init?: T): any;
+  effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
   untrack<T>(fn: () => T): T;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   spread<T>(node: Element, accessor: (() => T) | T, isSVG?: Boolean, skipChildren?: Boolean): void;
