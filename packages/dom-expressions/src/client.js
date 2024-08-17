@@ -133,7 +133,7 @@ export function addEventListener(node, name, handler, delegate) {
   } else if (Array.isArray(handler)) {
     const handlerFn = handler[0];
     node.addEventListener(name, (handler[0] = e => handlerFn.call(node, handler[1], e)));
-  } else node.addEventListener(name, handler);
+  } else node.addEventListener(name, handler, typeof handler !== 'function' && handler);
 }
 
 export function classList(node, value, prev = {}) {
