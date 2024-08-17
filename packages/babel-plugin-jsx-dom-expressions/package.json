@@ -29,7 +29,9 @@
     "@babel/core": "^7.20.12"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.12"
+    "@babel/core": "^7.20.12",
+    "@rollup/plugin-babel": "6.0.3",
+    "@types/babel__core": "^7.20.5"
   },
   "gitHead": "eb463c653325e24824422cff6bfed0d35113ef33"
 }
