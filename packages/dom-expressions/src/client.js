@@ -333,7 +333,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   } else if (prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);
     prev && node.removeEventListener(e, prev);
-    value && node.addEventListener(e, value);
+    value && node.addEventListener(e, value, typeof value !== 'function' && value);
   } else if (prop.slice(0, 10) === "oncapture:") {
     const e = prop.slice(10);
     prev && node.removeEventListener(e, prev, true);
