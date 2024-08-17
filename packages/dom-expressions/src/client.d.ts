@@ -37,7 +37,7 @@ export function setProperty(node: Element, name: string, value: any): void;
 export function addEventListener(
   node: Element,
   name: string,
-  handler: () => void,
+  handler: EventListenerOrEventListenerObject,
   delegate: boolean
 ): void;
 export function classList(
