@@ -1017,6 +1017,8 @@ export namespace JSX {
     src?: FunctionMaybe<string>;
     srcset?: FunctionMaybe<string>;
     type?: FunctionMaybe<string>;
+    width?: number | undefined;
+    height?: number | undefined;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     media?: FunctionMaybe<string>;
