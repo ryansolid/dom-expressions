@@ -270,23 +270,16 @@ export namespace JSX {
     onPointerOut?: EventHandlerUnion<T, PointerEvent> | undefined;
     onPointerOver?: EventHandlerUnion<T, PointerEvent> | undefined;
     onPointerUp?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onProgress?: EventHandlerUnion<T, Event> | undefined;
+    onProgress?: EventHandlerUnion<T, ProgressEvent> | undefined;
     onRateChange?: EventHandlerUnion<T, Event> | undefined;
     onReset?: EventHandlerUnion<T, Event> | undefined;
     onScroll?: EventHandlerUnion<T, Event> | undefined;
     onScrollEnd?: EventHandlerUnion<T, Event> | undefined;
     onSeeked?: EventHandlerUnion<T, Event> | undefined;
     onSeeking?: EventHandlerUnion<T, Event> | undefined;
-    onSelect?: EventHandlerUnion<T, UIEvent> | undefined;
+    onSelect?: EventHandlerUnion<T, Event> | undefined;
     onStalled?: EventHandlerUnion<T, Event> | undefined;
-    onSubmit?:
-      | EventHandlerUnion<
-          T,
-          Event & {
-            submitter: HTMLElement;
-          }
-        >
-      | undefined;
+    onSubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
     onSuspend?: EventHandlerUnion<T, Event> | undefined;
     onTimeUpdate?: EventHandlerUnion<T, Event> | undefined;
     onToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
@@ -361,21 +354,16 @@ export namespace JSX {
     onpointerout?: EventHandlerUnion<T, PointerEvent> | undefined;
     onpointerover?: EventHandlerUnion<T, PointerEvent> | undefined;
     onpointerup?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onprogress?: EventHandlerUnion<T, Event> | undefined;
+    onprogress?: EventHandlerUnion<T, ProgressEvent> | undefined;
     onratechange?: EventHandlerUnion<T, Event> | undefined;
     onreset?: EventHandlerUnion<T, Event> | undefined;
     onscroll?: EventHandlerUnion<T, Event> | undefined;
     onscrollend?: EventHandlerUnion<T, Event> | undefined;
     onseeked?: EventHandlerUnion<T, Event> | undefined;
     onseeking?: EventHandlerUnion<T, Event> | undefined;
-    onselect?: EventHandlerUnion<T, UIEvent> | undefined;
+    onselect?: EventHandlerUnion<T, Event> | undefined;
     onstalled?: EventHandlerUnion<T, Event> | undefined;
-    onsubmit?: EventHandlerUnion<
-      T,
-      Event & {
-        submitter: HTMLElement;
-      }
-    >;
+    onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
     onsuspend?: EventHandlerUnion<T, Event> | undefined;
     ontimeupdate?: EventHandlerUnion<T, Event> | undefined;
     ontoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
