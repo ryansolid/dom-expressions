@@ -57,7 +57,7 @@ export function dynamicProperty(props: unknown, key: string): unknown;
 export function hydrate(
   fn: () => JSX.Element,
   node: MountableElement,
-  options?: { renderId?: string, owner?: unknown }
+  options?: { renderId?: string; owner?: unknown }
 ): () => void;
 export function getHydrationKey(): string;
 export function getNextElement(template?: HTMLTemplateElement): Element;
@@ -75,3 +75,4 @@ export interface RequestEvent {
 }
 export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;
+export function runHydrationEvents(): void;

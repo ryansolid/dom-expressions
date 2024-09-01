@@ -466,7 +466,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       if (marker === undefined) return (current = [...parent.childNodes]);
       let node = array[0];
       if (node.parentNode !== parent) return current;
-      const nodes = [node]
+      const nodes = [node];
       while ((node = node.nextSibling) !== marker) nodes.push(node);
       return (current = nodes);
     }
