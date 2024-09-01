@@ -5,7 +5,7 @@ import * as r from "dom-expressions/src/client";
 const h = createHyperScript(r);
 
 const FIXTURES = [
-  '<div id="main"><h1>Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label for="entry" class="name">Edit:</label><input id="entry" type="text" readonly=""></div>',
+  '<div id="main"><h1>Welcome</h1><p>10Symbol($)</p><span style="color: rgb(85, 85, 85);">555</span><label for="entry" class="name">Edit:</label><input id="entry" type="text" readonly=""></div>',
   '<div id="main" refset="true" class="selected"><h1 title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
   '<div id="main"><button>Click Bound</button><button>Click Delegated</button><button>Click Listener</button></div>',
   "<div>First</div>middle<div>Last</div>",
@@ -16,8 +16,10 @@ const FIXTURES = [
 
 describe("Test HyperScript", () => {
   test("Simple Elements", () => {
+    const dollar = Symbol('$');
     const template = h("#main", [
       h("h1", "Welcome"),
+      h('p', 10n, dollar),
       h("span", { style: "color: #555" }, 555),
       h("label.name", { htmlFor: "entry" }, "Edit:"),
       h("input#entry", { type: "text", readonly: true })

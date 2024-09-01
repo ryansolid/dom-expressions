@@ -48,6 +48,8 @@ export function createHyperScript(r: Runtime): HyperScript {
       } else if (
         "number" === type ||
         "boolean" === type ||
+        "bigint" === type ||
+        "symbol" === type ||
         l instanceof Date ||
         l instanceof RegExp
       ) {

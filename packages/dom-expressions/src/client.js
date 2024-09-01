@@ -67,7 +67,7 @@ export function render(code, element, init, options = {}) {
 export function template(html, isCE, isSVG) {
   let node;
   const create = () => {
-    if ("_DX_DEV_" && sharedConfig.context)
+    if ("_DX_DEV_" && isHydrating())
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
       );
@@ -102,24 +102,24 @@ export function clearDelegatedEvents(document = window.document) {
 }
 
 export function setProperty(node, name, value) {
-  if (!!sharedConfig.context && node.isConnected) return;
+  if (isHydrating(node)) return;
   node[name] = value;
 }
 
 export function setAttribute(node, name, value) {
-  if (!!sharedConfig.context && node.isConnected) return;
+  if (isHydrating(node)) return;
   if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
-  if (!!sharedConfig.context && node.isConnected) return;
+  if (isHydrating(node)) return;
   if (value == null) node.removeAttributeNS(namespace, name);
   else node.setAttributeNS(namespace, name, value);
 }
 
 export function className(node, value) {
-  if (!!sharedConfig.context && node.isConnected) return;
+  if (isHydrating(node)) return;
   if (value == null) node.removeAttribute("class");
   else node.className = value;
 }
@@ -229,6 +229,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
 
 // Hydrate
 export function hydrate(code, element, options = {}) {
+  if (globalThis._$HY.done) return render(code, element, [...element.childNodes], options);
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = id => globalThis._$HY.r[id];
@@ -239,16 +240,20 @@ export function hydrate(code, element, options = {}) {
     id: options.renderId || "",
     count: 0
   };
-  gatherHydratable(element, options.renderId);
-  const dispose = render(code, element, [...element.childNodes], options);
-  sharedConfig.context = null;
-  return dispose;
+  try {
+    gatherHydratable(element, options.renderId);
+    return render(code, element, [...element.childNodes], options);
+  } finally {
+    sharedConfig.context = null;
+  }
 }
 
 export function getNextElement(template) {
-  let node, key;
-  if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
-    if ("_DX_DEV_" && sharedConfig.context)
+  let node,
+    key,
+    hydrating = isHydrating();
+  if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
+    if ("_DX_DEV_" && hydrating)
       throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`);
     return template();
   }
@@ -266,7 +271,7 @@ export function getNextMarker(start) {
   let end = start,
     count = 0,
     current = [];
-  if (sharedConfig.context) {
+  if (isHydrating(start)) {
     while (end) {
       if (end.nodeType === 8) {
         const v = end.nodeValue;
@@ -291,8 +296,12 @@ export function runHydrationEvents() {
       while (events.length) {
         const [el, e] = events[0];
         if (!completed.has(el)) return;
-        eventHandler(e);
         events.shift();
+        eventHandler(e);
+      }
+      if (sharedConfig.done) {
+        sharedConfig.events = _$HY.events = null;
+        sharedConfig.completed = _$HY.completed = null;
       }
     });
     sharedConfig.events.queued = true;
@@ -300,6 +309,10 @@ export function runHydrationEvents() {
 }
 
 // Internal Functions
+function isHydrating(node) {
+  return !!sharedConfig.context && !sharedConfig.done && (!node || node.isConnected);
+}
+
 function toPropertyName(name) {
   return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
 }
@@ -348,7 +361,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     if (forceProp) {
       prop = prop.slice(5);
       isProp = true;
-    } else if (!!sharedConfig.context && node.isConnected) return value;
+    } else if (isHydrating(node)) return value;
     if (prop === "class" || prop === "className") className(node, value);
     else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[propAlias || prop] = value;
@@ -361,6 +374,10 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
 }
 
 function eventHandler(e) {
+  if (sharedConfig.registry && sharedConfig.events) {
+    if (sharedConfig.events.find(([el, ev]) => ev === e)) return;
+  }
+
   const key = `$$${e.type}`;
   let node = (e.composedPath && e.composedPath()[0]) || e.target;
   // reverse Shadow DOM retargetting
@@ -378,8 +395,7 @@ function eventHandler(e) {
       return node || document;
     }
   });
-
-  // cancel html streaming
+  // cancel hydration
   if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
   while (node) {
@@ -394,7 +410,7 @@ function eventHandler(e) {
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
-  const hydrating = !!sharedConfig.context && parent.isConnected;
+  const hydrating = isHydrating(parent);
   if (hydrating) {
     !current && (current = [...parent.childNodes]);
     let cleaned = [];
@@ -447,9 +463,10 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
     }
     if (hydrating) {
       if (!array.length) return current;
-      if (marker === undefined) return [...parent.childNodes];
+      if (marker === undefined) return (current = [...parent.childNodes]);
       let node = array[0];
-      let nodes = [node];
+      if (node.parentNode !== parent) return current;
+      const nodes = [node]
       while ((node = node.nextSibling) !== marker) nodes.push(node);
       return (current = nodes);
     }
