@@ -1,4 +1,4 @@
-import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
+import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
 import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
