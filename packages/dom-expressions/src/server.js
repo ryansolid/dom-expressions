@@ -3,6 +3,17 @@ import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 export { createComponent } from "rxcore";
 
+export {
+  Properties,
+  ChildProperties,
+  getPropAlias,
+  Aliases,
+  DOMElements,
+  SVGElements,
+  SVGNamespace,
+  DelegatedEvents
+} from "./constants.js";
+
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
   /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
