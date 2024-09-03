@@ -186,6 +186,7 @@ const template12 = (() => {
   var _el$18 = _tmpl$4();
   _el$18.htmlFor = thing;
   _el$18.number = 123;
+  _$setAttribute(_el$18, "onclick", "console.log('hi')");
   return _el$18;
 })();
 const template13 = (() => {
