@@ -600,7 +600,8 @@ export namespace JSX {
       | "removals text"
       | "text"
       | "text additions"
-      | "text removals";
+      | "text removals"
+      | undefined;
     /** Indicates that user input is required on the element before a form may be submitted. */
     "aria-required"?: boolean | "false" | "true" | undefined;
     /** Defines a human-readable, author-localized description for the role of an element. */
@@ -713,7 +714,8 @@ export namespace JSX {
       | "tooltip"
       | "tree"
       | "treegrid"
-      | "treeitem";
+      | "treeitem"
+      | undefined;
   }
 
   // TODO: Should we allow this?
@@ -1312,7 +1314,8 @@ export namespace JSX {
       | "alphabetic"
       | "hanging"
       | "mathematical"
-      | "inherit";
+      | "inherit"
+      | undefined;
     "baseline-shift"?: number | string | undefined;
     clip?: string | undefined;
     "clip-path"?: string | undefined;
@@ -1335,7 +1338,8 @@ export namespace JSX {
       | "mathematical"
       | "hanging"
       | "text-top"
-      | "inherit";
+      | "inherit"
+      | undefined;
     "enable-background"?: string | undefined;
     fill?: string | undefined;
     "fill-opacity"?: number | string | "inherit" | undefined;
@@ -1375,7 +1379,8 @@ export namespace JSX {
       | "stroke"
       | "all"
       | "none"
-      | "inherit";
+      | "inherit"
+      | undefined;
     "shape-rendering"?:
       | "auto"
       | "optimizeSpeed"
@@ -1407,7 +1412,8 @@ export namespace JSX {
       | "optimizeSpeed"
       | "optimizeLegibility"
       | "geometricPrecision"
-      | "inherit";
+      | "inherit"
+      | undefined;
     "unicode-bidi"?: string | undefined;
     visibility?: "visible" | "hidden" | "collapse" | "inherit" | undefined;
     "word-spacing"?: number | string | undefined;
