@@ -40,6 +40,7 @@ export namespace JSX {
       }
     ): void;
   }
+
   interface BoundEventHandler<T, E extends Event> {
     0: (
       data: any,

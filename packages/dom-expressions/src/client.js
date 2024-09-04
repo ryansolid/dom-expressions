@@ -133,7 +133,7 @@ export function addEventListener(node, name, handler, delegate) {
   } else if (Array.isArray(handler)) {
     const handlerFn = handler[0];
     node.addEventListener(name, (handler[0] = e => handlerFn.call(node, handler[1], e)));
-  } else node.addEventListener(name, handler, typeof handler !== 'function' && handler);
+  } else node.addEventListener(name, handler, typeof handler !== "function" && handler);
 }
 
 export function classList(node, value, prev = {}) {
@@ -332,8 +332,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     if (!skipRef) value(node);
   } else if (prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);
-    prev && node.removeEventListener(e, prev, typeof prev !== 'function' && prev);
-    value && node.addEventListener(e, value, typeof value !== 'function' && value);
+    prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
+    value && node.addEventListener(e, value, typeof value !== "function" && value);
   } else if (prop.slice(0, 10) === "oncapture:") {
     const e = prop.slice(10);
     prev && node.removeEventListener(e, prev, true);
@@ -466,7 +466,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       if (marker === undefined) return (current = [...parent.childNodes]);
       let node = array[0];
       if (node.parentNode !== parent) return current;
-      const nodes = [node]
+      const nodes = [node];
       while ((node = node.nextSibling) !== marker) nodes.push(node);
       return (current = nodes);
     }
