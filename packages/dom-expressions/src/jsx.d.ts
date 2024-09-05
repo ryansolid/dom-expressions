@@ -141,6 +141,7 @@ export namespace JSX {
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
+  interface ExplicitBoolAttributes {}
   interface CustomEvents {}
   interface CustomCaptureEvents {}
   type DirectiveAttributes = {
@@ -167,6 +168,9 @@ export namespace JSX {
   };
   type AttrAttributes = {
     [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key];
+  };
+  type BoolAttributes = {
+    [Key in keyof ExplicitBoolAttributes as `bool:${Key}`]?: ExplicitBoolAttributes[Key];
   };
   type OnAttributes<T> = {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
