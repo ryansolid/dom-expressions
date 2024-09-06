@@ -70,7 +70,7 @@ export function transformElement(path, info) {
       postExprs: [],
       isSVG: wrapSVG,
       hasCustomElement: isCustomElement,
-      isImportNode: tagName === 'img' && path.get("openingElement").get("attributes").some(a => a.node.name?.name === "loading" && a.node.value?.value === "lazy"),
+      isImportNode: (tagName === 'img'||tagName === 'iframe') && path.get("openingElement").get("attributes").some(a => a.node.name?.name === "loading" && a.node.value?.value === "lazy"),
       tagName,
       renderer: "dom",
       skipTemplate: false

@@ -434,7 +434,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       const isSVG = r.SVGElements.has(node.name);
       const isCE = node.name.includes("-");
       options.hasCustomElement = isCE;
-      options.isImportNode = node.name === 'img' && node.attrs.some((e) => e.name === "loading" && e.value ==='lazy');
+      options.isImportNode = (node.name === 'img'||node.name === 'iframe') && node.attrs.some((e) => e.name === "loading" && e.value ==='lazy');
 
       if (node.attrs.some(e => e.name === "###")) {
         const spreadArgs = [];
