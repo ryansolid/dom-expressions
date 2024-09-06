@@ -70,6 +70,7 @@ export function transformElement(path, info) {
       postExprs: [],
       isSVG: wrapSVG,
       hasCustomElement: isCustomElement,
+      isImportNode: tagName === 'img' && path.get("openingElement").get("attributes").some(a => a.node.name?.name === "loading" && a.node.value?.value === "lazy"),
       tagName,
       renderer: "dom",
       skipTemplate: false
@@ -878,6 +879,7 @@ function transformChildren(path, results, config) {
       childPostExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
+      results.isImportNode = results.isImportNode || child.isImportNode;
       tempPath = child.id.name;
       nextPlaceholder = null;
       i++;

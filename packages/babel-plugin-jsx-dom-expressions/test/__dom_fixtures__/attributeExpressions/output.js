@@ -32,7 +32,11 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   ),
   _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
   _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`),
-  _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`);
+  _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
+  _tmpl$21 = /*#__PURE__*/ _$template(`<img src="">`),
+  _tmpl$22 = /*#__PURE__*/ _$template(`<div><img src="">`),
+  _tmpl$23 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false),
+  _tmpl$24 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -426,4 +430,8 @@ const template41 = (() => {
   _$effect(() => (_el$57.value = state.color));
   return _el$57;
 })();
+const template42 = _tmpl$21();
+const template43 = _tmpl$22();
+const template44 = _tmpl$23();
+const template45 = _tmpl$24();
 _$delegateEvents(["click", "input"]);

@@ -202,3 +202,10 @@ const template41 = (
     <option value={Color.Blue}>Blue</option>
   </select>
 );
+
+const template42 = <img src="" />;
+const template43 = <div><img src=""/></div>;
+
+const template44 = <img src="" loading="lazy"/>;
+const template45 = <div><img src="" loading="lazy"/></div>;
+

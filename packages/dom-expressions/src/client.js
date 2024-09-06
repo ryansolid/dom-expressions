@@ -64,7 +64,7 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, isCE, isSVG) {
+export function template(html, isCEIsImportNode, isSVG) {
   let node;
   const create = () => {
     if ("_DX_DEV_" && isHydrating())
@@ -76,7 +76,7 @@ export function template(html, isCE, isSVG) {
     return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
   };
   // backwards compatible with older builds
-  const fn = isCE
+  const fn = isCEIsImportNode
     ? () => untrack(() => document.importNode(node || (node = create()), true))
     : () => (node || (node = create())).cloneNode(true);
   fn.cloneNode = fn;
