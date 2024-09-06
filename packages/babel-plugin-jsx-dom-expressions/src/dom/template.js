@@ -41,6 +41,10 @@ export function appendTemplates(path, templates) {
       raw: escapeStringForTemplate(template.template)
     };
 
+    /**
+     * For some reason nested elements with loading=lazy are not discovered by `isImportNode`.
+     * Use a regular expression as last resort. Should remove this when `template.isImportNode` is able to discover nested templates.
+     * */
     const shouldUseImportNode = template.isCE || template.isImportNode || /<(img|iframe)[^>]+loading=lazy[^>]*>/.test(template.template)
 
     return t.variableDeclarator(
