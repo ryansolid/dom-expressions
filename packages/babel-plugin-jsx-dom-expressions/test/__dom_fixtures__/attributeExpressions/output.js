@@ -36,7 +36,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$21 = /*#__PURE__*/ _$template(`<img src="">`),
   _tmpl$22 = /*#__PURE__*/ _$template(`<div><img src="">`),
   _tmpl$23 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false),
-  _tmpl$24 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`);
+  _tmpl$24 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
