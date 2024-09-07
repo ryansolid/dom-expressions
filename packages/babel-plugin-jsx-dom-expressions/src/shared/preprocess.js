@@ -8,6 +8,7 @@ const JSXValidator = {
   JSXElement(path) {
     const elName = path.node.openingElement.name;
     const parent = path.parent;
+
     if (!t.isJSXElement(parent) || !t.isJSXIdentifier(elName)) return;
     const elTagName = elName.name;
     if (isComponent(elTagName)) return;

@@ -209,3 +209,9 @@ const template43 = <div><img src=""/></div>;
 const template44 = <img src="" loading="lazy"/>;
 const template45 = <div><img src="" loading="lazy"/></div>;
 
+const template46 = <iframe src=""></iframe>;
+const template47 = <div><iframe src=""></iframe></div>;
+
+const template48 = <iframe src="" loading="lazy"></iframe>;
+const template49 = <div><iframe src="" loading="lazy"></iframe></div>;
+

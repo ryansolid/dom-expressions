@@ -36,7 +36,11 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$21 = /*#__PURE__*/ _$template(`<img src="">`),
   _tmpl$22 = /*#__PURE__*/ _$template(`<div><img src="">`),
   _tmpl$23 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false),
-  _tmpl$24 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false);
+  _tmpl$24 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false),
+  _tmpl$25 = /*#__PURE__*/ _$template(`<iframe src="">`),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<div><iframe src="">`),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false),
+  _tmpl$28 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -434,4 +438,8 @@ const template42 = _tmpl$21();
 const template43 = _tmpl$22();
 const template44 = _tmpl$23();
 const template45 = _tmpl$24();
+const template46 = _tmpl$25();
+const template47 = _tmpl$26();
+const template48 = _tmpl$27();
+const template49 = _tmpl$28();
 _$delegateEvents(["click", "input"]);
