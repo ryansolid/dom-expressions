@@ -120,9 +120,7 @@ export function setAttributeNS(node, namespace, name, value) {
 
 export function setBoolAttribute(node, name, value) {
   if (isHydrating(node)) return;
-  value ?
-    node.setAttribute(name, value) :
-    node.removeAttribute(name)
+  value ? node.setAttribute(name, value) : node.removeAttribute(name);
 }
 
 export function className(node, value) {
@@ -359,12 +357,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   } else if (prop.slice(0, 5) === "attr:") {
     setAttribute(node, prop.slice(5), value);
   } else if (prop.slice(0, 5) === "bool:") {
-    if (isHydrating(node)) return;
-
-    prop = prop.slice(0, 5)
-    value ?
-        node.setAttribute(prop, '') :
-        node.removeAttribute(prop);
+    setBoolAttribute(node, prop.slice(0, 5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     (isChildProp = ChildProperties.has(prop)) ||
@@ -480,7 +473,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       if (marker === undefined) return (current = [...parent.childNodes]);
       let node = array[0];
       if (node.parentNode !== parent) return current;
-      const nodes = [node]
+      const nodes = [node];
       while ((node = node.nextSibling) !== marker) nodes.push(node);
       return (current = nodes);
     }
