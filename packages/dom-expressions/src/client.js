@@ -120,7 +120,7 @@ export function setAttributeNS(node, namespace, name, value) {
 
 export function setBoolAttribute(node, name, value) {
   if (isHydrating(node)) return;
-  value ? node.setAttribute(name, value) : node.removeAttribute(name);
+  value ? node.setAttribute(name, "") : node.removeAttribute(name);
 }
 
 export function className(node, value) {
