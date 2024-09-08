@@ -357,7 +357,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   } else if (prop.slice(0, 5) === "attr:") {
     setAttribute(node, prop.slice(5), value);
   } else if (prop.slice(0, 5) === "bool:") {
-    setBoolAttribute(node, prop.slice(0, 5), value);
+    setBoolAttribute(node, prop.slice(5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     (isChildProp = ChildProperties.has(prop)) ||
