@@ -85,7 +85,6 @@ const template5 = (() => {
 })();
 
 // bool:
-
 function boolTest() {
   return true;
 }
