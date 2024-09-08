@@ -705,6 +705,42 @@ function transformAttributes(path, results) {
             tagName
           });
         } else if(key.slice(0, 5) === 'bool:'){
+
+            // inline it on the template when possible
+            let content = value;
+
+            if (t.isJSXExpressionContainer(content)) content = content.expression;
+
+            function addBoolAttribute() {
+              results.template += `${needsSpacing ? " " : ""}${key.slice(5)}`;
+              needsSpacing = true;
+            }
+
+            switch (content.type) {
+              case "StringLiteral": {
+                if (content.value.length && content.value !== "0") {
+                  addBoolAttribute();
+                }
+                return;
+              }
+              case "NullLiteral": {
+                return;
+              }
+              case "BooleanLiteral": {
+                if (content.value) {
+                  addBoolAttribute();
+                }
+                return;
+              }
+              case "Identifier": {
+                if (content.name === "undefined") {
+                  return;
+                }
+                break;
+              }
+            }
+
+            // when not possible to inline it in the template
             results.exprs.push(
               t.expressionStatement(
                 setAttr(
