@@ -53,7 +53,15 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$37 = /*#__PURE__*/ _$template(`<div>fn`),
   _tmpl$38 = /*#__PURE__*/ _$template(`<div before quack>should have space before`),
   _tmpl$39 = /*#__PURE__*/ _$template(`<div before quack after>should have space before/after`),
-  _tmpl$40 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`);
+  _tmpl$40 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
+  _tmpl$41 = /*#__PURE__*/ _$template(`<img src="">`),
+  _tmpl$42 = /*#__PURE__*/ _$template(`<div><img src="">`),
+  _tmpl$43 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false),
+  _tmpl$44 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false),
+  _tmpl$45 = /*#__PURE__*/ _$template(`<iframe src="">`),
+  _tmpl$46 = /*#__PURE__*/ _$template(`<div><iframe src="">`),
+  _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false),
+  _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -497,4 +505,13 @@ const template59 = _tmpl$38();
 const template60 = _tmpl$39();
 const template61 = _tmpl$40();
 // this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
+
+const template63 = _tmpl$41();
+const template64 = _tmpl$42();
+const template65 = _tmpl$43();
+const template66 = _tmpl$44();
+const template67 = _tmpl$45();
+const template68 = _tmpl$46();
+const template69 = _tmpl$47();
+const template70 = _tmpl$48();
 _$delegateEvents(["click", "input"]);

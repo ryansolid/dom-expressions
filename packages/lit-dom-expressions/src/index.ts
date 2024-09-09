@@ -38,6 +38,7 @@ type Options = {
   templateNodes: IDom[][],
   wrap?: boolean,
   hasCustomElement?: boolean,
+  isImportNode?: boolean,
   parent?: boolean,
   fragment?: boolean,
 }
@@ -293,6 +294,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
     options.counter = childOptions.counter;
     options.templateId = childOptions.templateId;
     options.hasCustomElement = options.hasCustomElement || childOptions.hasCustomElement;
+    options.isImportNode = options.isImportNode || childOptions.isImportNode;
   }
 
   function processComponentProps(propGroups: (string | string[])[]) {
@@ -432,6 +434,8 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       const isSVG = r.SVGElements.has(node.name);
       const isCE = node.name.includes("-") || node.attrs.some((e) => e.name === "is");
       options.hasCustomElement = isCE;
+      options.isImportNode = (node.name === 'img'||node.name === 'iframe') && node.attrs.some((e) => e.name === "loading" && e.value ==='lazy');
+
       if (node.attrs.some(e => e.name === "###")) {
         const spreadArgs = [];
         let current = "";
@@ -488,7 +492,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       options.first = false;
       processChildren(node, options);
       if (topDecl) {
-        options.decl[0] = options.hasCustomElement
+        options.decl[0] = options.hasCustomElement || options.isImportNode
           ? `const ${tag} = r.untrack(() => document.importNode(tmpls[${templateId}].content.firstChild, true))`
           : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
       }

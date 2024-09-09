@@ -62,6 +62,8 @@ export function transformElement(path, info) {
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
     isCustomElement = tagName.indexOf("-") > -1 || path.get("openingElement").get("attributes").some(a => a.node?.name?.name === "is" || a.name?.name === "is"),
+    isImportNode = (tagName === 'img'||tagName === 'iframe') && path.get("openingElement").get("attributes").some(a =>  a.node.name?.name === "loading" && a.node.value?.value === "lazy"
+     ),
     results = {
       template: `<${tagName}`,
       declarations: [],
@@ -70,6 +72,7 @@ export function transformElement(path, info) {
       postExprs: [],
       isSVG: wrapSVG,
       hasCustomElement: isCustomElement,
+      isImportNode,
       tagName,
       renderer: "dom",
       skipTemplate: false
@@ -899,6 +902,8 @@ function transformChildren(path, results, config) {
     }
 
     results.template += child.template;
+    results.isImportNode = results.isImportNode || child.isImportNode;
+
     if (child.id) {
       if (child.tagName === "head") {
         if (config.hydratable) {
@@ -947,6 +952,7 @@ function transformChildren(path, results, config) {
       childPostExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
+      results.isImportNode = results.isImportNode || child.isImportNode;
       tempPath = child.id.name;
       nextPlaceholder = null;
       i++;
