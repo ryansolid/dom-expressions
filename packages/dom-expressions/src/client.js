@@ -258,8 +258,10 @@ export function getNextElement(template) {
     key,
     hydrating = isHydrating();
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
-    if ("_DX_DEV_" && hydrating)
-      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`);
+    if ("_DX_DEV_" && hydrating) {
+      sharedConfig.done = true;
+      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`);
+    }
     return template();
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
