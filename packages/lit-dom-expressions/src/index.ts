@@ -430,7 +430,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
         topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
       const isSVG = r.SVGElements.has(node.name);
-      const isCE = node.name.includes("-");
+      const isCE = node.name.includes("-") || node.attrs.some((e) => e.name === "is");
       options.hasCustomElement = isCE;
       if (node.attrs.some(e => e.name === "###")) {
         const spreadArgs = [];
