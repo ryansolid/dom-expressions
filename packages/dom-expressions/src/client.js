@@ -214,7 +214,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
+      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef, props);
     }
   }
   for (const prop in props) {
@@ -223,7 +223,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
       continue;
     }
     const value = props[prop];
-    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef);
+    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef, props);
   }
 }
 
@@ -323,7 +323,7 @@ function toggleClassKey(node, key, value) {
     node.classList.toggle(classNames[i], value);
 }
 
-function assignProp(node, prop, value, prev, isSVG, skipRef) {
+function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
   let isCE, isProp, isChildProp, propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
@@ -356,7 +356,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     (isChildProp = ChildProperties.has(prop)) ||
     (!isSVG &&
       ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
-    (isCE = node.nodeName.includes("-"))
+    (isCE = (node.nodeName.includes("-") || 'is' in props))
   ) {
     if (forceProp) {
       prop = prop.slice(5);
