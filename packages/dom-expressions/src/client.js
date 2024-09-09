@@ -378,10 +378,28 @@ function eventHandler(e) {
     if (sharedConfig.events.find(([el, ev]) => ev === e)) return;
   }
 
-  const key = `$$${e.type}`;
   let node = e.target;
+  const key = `$$${e.type}`;
   const oriTarget = e.target;
   const oriCurrentTarget = e.currentTarget;
+  const retarget = value =>
+    Object.defineProperty(e, "target", {
+      configurable: true,
+      value
+    });
+  const handleNode = () => {
+    const handler = node[key];
+    if (handler && !node.disabled) {
+      const data = node[`${key}Data`];
+      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
+      if (e.cancelBubble) return;
+    }
+    node.host && node.contains(e.target) && !node.host._$host && retarget(node.host);
+    return true;
+  };
+  const walkUpTree = () => {
+    while (handleNode() && (node = node._$host || node.parentNode || node.host));
+  };
 
   // simulate currentTarget
   Object.defineProperty(e, "currentTarget", {
@@ -393,41 +411,12 @@ function eventHandler(e) {
   // cancel hydration
   if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
-  const handleNode = () => {
-    const handler = node[key];
-    if (handler && !node.disabled) {
-      const data = node[`${key}Data`];
-      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
-    }
-  };
-
-  const walkUpTree = () => {
-    do {
-      handleNode();
-      if (e.cancelBubble) break;
-      if (node.host && node.contains(e.target) && !node.host._$host) {
-        retarget(node.host);
-      }
-    } while ((node = node._$host || node.parentNode || node.host));
-  }
-
-  const retarget = value =>
-    Object.defineProperty(e, "target", {
-      configurable: true,
-      value
-    });
-
   if (e.composedPath) {
     const path = e.composedPath();
     retarget(path[0]);
     for (let i = 0; i < path.length - 2; i++) {
       node = path[i];
-      handleNode();
-      if (e.cancelBubble) break;
-      if (node.host && node.contains(e.target) && !node.host._$host) {
-        // retarget when walking up a shadow root except from slots or portals.
-        retarget(node.host);
-      }
+      if (!handleNode()) break;
       if (node._$host) {
         node = node._$host;
         // bubble up from portal mount instead of composedPath
@@ -439,10 +428,8 @@ function eventHandler(e) {
       }
     }
   }
-  else {
-    // fallback for browsers that don't support composedPath
-    walkUpTree();
-  }
+  // fallback for browsers that don't support composedPath
+  else walkUpTree();
   // Mixing portals and shadow dom can lead to a nonstandard target, so reset here.
   retarget(oriTarget);
 }
@@ -504,7 +491,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       if (marker === undefined) return (current = [...parent.childNodes]);
       let node = array[0];
       if (node.parentNode !== parent) return current;
-      const nodes = [node]
+      const nodes = [node];
       while ((node = node.nextSibling) !== marker) nodes.push(node);
       return (current = nodes);
     }

@@ -37,10 +37,8 @@ describe("Synthetic event target with shadow DOM web components", () => {
       );
     }
   }
-  
+
   customElements.define('my-component', MyComponent);
-
-
 
   document.body.innerHTML = "";
   S.root(() =>
