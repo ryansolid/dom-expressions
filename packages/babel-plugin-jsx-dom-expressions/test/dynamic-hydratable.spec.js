@@ -24,6 +24,8 @@ pluginTester({
           "my-element",
           "module",
           "input",
+          "img",
+          "iframe",
           "button",
           "a",
           "svg",
