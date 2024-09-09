@@ -25,6 +25,7 @@ pluginTester({
           "header",
           "footer",
           "slot",
+          "my-el",
           "my-element",
           "module",
           "input",
