@@ -32,6 +32,7 @@ export function spread<T>(
 export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
+export function setBoolAttribute(node: Element, name: string, value: any): void;
 export function className(node: Element, value: string): void;
 export function setProperty(node: Element, name: string, value: any): void;
 export function addEventListener(

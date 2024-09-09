@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
+import { setBoolAttribute as _$setBoolAttribute } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
@@ -33,14 +34,34 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
   _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`),
   _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
-  _tmpl$21 = /*#__PURE__*/ _$template(`<img src="">`),
-  _tmpl$22 = /*#__PURE__*/ _$template(`<div><img src="">`),
-  _tmpl$23 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false),
-  _tmpl$24 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false),
-  _tmpl$25 = /*#__PURE__*/ _$template(`<iframe src="">`),
-  _tmpl$26 = /*#__PURE__*/ _$template(`<div><iframe src="">`),
-  _tmpl$27 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false),
-  _tmpl$28 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false);
+  _tmpl$21 = /*#__PURE__*/ _$template(`<div>empty string`),
+  _tmpl$22 = /*#__PURE__*/ _$template(`<div>js empty`),
+  _tmpl$23 = /*#__PURE__*/ _$template(`<div quack>hola`),
+  _tmpl$24 = /*#__PURE__*/ _$template(`<div quack>"hola js"`),
+  _tmpl$25 = /*#__PURE__*/ _$template(`<div quack>true`),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<div>false`),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<div quack>1`),
+  _tmpl$28 = /*#__PURE__*/ _$template(`<div>0`),
+  _tmpl$29 = /*#__PURE__*/ _$template(`<div quack>"1"`),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<div>"0"`),
+  _tmpl$31 = /*#__PURE__*/ _$template(`<div>undefined`),
+  _tmpl$32 = /*#__PURE__*/ _$template(`<div>null`),
+  _tmpl$33 = /*#__PURE__*/ _$template(`<div>boolTest()`),
+  _tmpl$34 = /*#__PURE__*/ _$template(`<div>boolTest`),
+  _tmpl$35 = /*#__PURE__*/ _$template(`<div>boolTestBinding`),
+  _tmpl$36 = /*#__PURE__*/ _$template(`<div>boolTestObjBinding.value`),
+  _tmpl$37 = /*#__PURE__*/ _$template(`<div>fn`),
+  _tmpl$38 = /*#__PURE__*/ _$template(`<div before quack>should have space before`),
+  _tmpl$39 = /*#__PURE__*/ _$template(`<div before quack after>should have space before/after`),
+  _tmpl$40 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
+  _tmpl$41 = /*#__PURE__*/ _$template(`<img src="">`),
+  _tmpl$42 = /*#__PURE__*/ _$template(`<div><img src="">`),
+  _tmpl$43 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false),
+  _tmpl$44 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false),
+  _tmpl$45 = /*#__PURE__*/ _$template(`<iframe src="">`),
+  _tmpl$46 = /*#__PURE__*/ _$template(`<div><iframe src="">`),
+  _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false),
+  _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -434,6 +455,15 @@ const template41 = (() => {
   _$effect(() => (_el$57.value = state.color));
   return _el$57;
 })();
+
+// bool:
+function boolTest() {
+  return true;
+}
+const boolTestBinding = false;
+const boolTestObjBinding = {
+  value: false
+};
 const template42 = _tmpl$21();
 const template43 = _tmpl$22();
 const template44 = _tmpl$23();
@@ -442,4 +472,46 @@ const template46 = _tmpl$25();
 const template47 = _tmpl$26();
 const template48 = _tmpl$27();
 const template49 = _tmpl$28();
+const template50 = _tmpl$29();
+const template51 = _tmpl$30();
+const template52 = _tmpl$31();
+const template53 = _tmpl$32();
+const template54 = (() => {
+  var _el$72 = _tmpl$33();
+  _$effect(() => _$setBoolAttribute(_el$72, "quack", boolTest()));
+  return _el$72;
+})();
+const template55 = (() => {
+  var _el$73 = _tmpl$34();
+  _$setBoolAttribute(_el$73, "quack", boolTest);
+  return _el$73;
+})();
+const template56 = (() => {
+  var _el$74 = _tmpl$35();
+  _$setBoolAttribute(_el$74, "quack", boolTestBinding);
+  return _el$74;
+})();
+const template57 = (() => {
+  var _el$75 = _tmpl$36();
+  _$effect(() => _$setBoolAttribute(_el$75, "quack", boolTestObjBinding.value));
+  return _el$75;
+})();
+const template58 = (() => {
+  var _el$76 = _tmpl$37();
+  _$setBoolAttribute(_el$76, "quack", () => false);
+  return _el$76;
+})();
+const template59 = _tmpl$38();
+const template60 = _tmpl$39();
+const template61 = _tmpl$40();
+// this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
+
+const template63 = _tmpl$41();
+const template64 = _tmpl$42();
+const template65 = _tmpl$43();
+const template66 = _tmpl$44();
+const template67 = _tmpl$45();
+const template68 = _tmpl$46();
+const template69 = _tmpl$47();
+const template70 = _tmpl$48();
 _$delegateEvents(["click", "input"]);

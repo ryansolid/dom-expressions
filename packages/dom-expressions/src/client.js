@@ -118,6 +118,11 @@ export function setAttributeNS(node, namespace, name, value) {
   else node.setAttributeNS(namespace, name, value);
 }
 
+export function setBoolAttribute(node, name, value) {
+  if (isHydrating(node)) return;
+  value ? node.setAttribute(name, "") : node.removeAttribute(name);
+}
+
 export function className(node, value) {
   if (isHydrating(node)) return;
   if (value == null) node.removeAttribute("class");
@@ -351,6 +356,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     }
   } else if (prop.slice(0, 5) === "attr:") {
     setAttribute(node, prop.slice(5), value);
+  } else if (prop.slice(0, 5) === "bool:") {
+    setBoolAttribute(node, prop.slice(5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     (isChildProp = ChildProperties.has(prop)) ||
