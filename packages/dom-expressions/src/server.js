@@ -29,7 +29,7 @@ export function renderToString(code, options = {}) {
       if (!scripts) {
         scripts = getLocalHeaderScript(renderId);
       }
-      scripts += script;
+      scripts += script + ";";
     },
     onError: options.onError
   });
