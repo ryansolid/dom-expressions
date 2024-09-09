@@ -1,7 +1,19 @@
-import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
+import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
 import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
-export { createComponent } from "rxcore";
+
+export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
+
+export {
+  Properties,
+  ChildProperties,
+  getPropAlias,
+  Aliases,
+  DOMElements,
+  SVGElements,
+  SVGNamespace,
+  DelegatedEvents
+} from "./constants.js";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
@@ -685,4 +697,34 @@ export function ssrSpread(props, isSVG, skipChildren) {
     if (i !== keys.length - 1) result += " ";
   }
   return result;
+}
+
+// client-only APIs
+
+export {
+  notSup as classList,
+  notSup as style,
+  notSup as insert,
+  notSup as spread,
+  notSup as delegateEvents,
+  notSup as dynamicProperty,
+  notSup as setAttribute,
+  notSup as setAttributeNS,
+  notSup as addEventListener,
+  notSup as render,
+  notSup as template,
+  notSup as setProperty,
+  notSup as className,
+  notSup as assign,
+  notSup as hydrate,
+  notSup as getNextElement,
+  notSup as getNextMatch,
+  notSup as getNextMarker,
+  notSup as runHydrationEvents
+};
+
+function notSup() {
+  throw new Error(
+    "Client-only API called on the server side. Run client-only code in onMount, or conditionally run client-only component with <Show>."
+  );
 }
