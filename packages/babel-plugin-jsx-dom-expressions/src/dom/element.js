@@ -542,15 +542,29 @@ function transformAttributes(path, results) {
           children = value;
         } else if (key.startsWith("on")) {
           const ev = toEventName(key);
-          if (key.startsWith("on:") || key.startsWith("oncapture:")) {
-            const listenerOptions = [t.stringLiteral(key.split(":")[1]), value.expression];
+          if (key.startsWith("on:")) {
+            const args = [elem, t.stringLiteral(key.split(":")[1]), value.expression];
+
+            results.exprs.unshift(
+              t.expressionStatement(
+                t.callExpression(
+                  registerImportMethod(
+                    path,
+                    "addEventListener",
+                    getRendererConfig(path, "dom").moduleName,
+                  ),
+                  args,
+                ),
+              ),
+            );
+          } else if (key.startsWith("oncapture:")) {
+            // deprecated see above condition
+            const args = [t.stringLiteral(key.split(":")[1]), value.expression, t.booleanLiteral(true)];
             results.exprs.push(
               t.expressionStatement(
                 t.callExpression(
                   t.memberExpression(elem, t.identifier("addEventListener")),
-                  key.startsWith("oncapture:")
-                    ? listenerOptions.concat(t.booleanLiteral(true))
-                    : listenerOptions
+                  args
                 )
               )
             );

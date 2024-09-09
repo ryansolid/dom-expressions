@@ -74,3 +74,56 @@ describe("Test Synthetic event bubbling", () => {
     expect(count).toBe(0);
   })
 });
+
+
+// custom event
+describe("Custom Events", () => {
+  test("custom event with event listener options", () => {
+    let elementRegular;
+    let elementOnce;
+
+    let count = 0;
+    let eventTarget;
+
+    function handleClick(e) {
+      expect(e.currentTarget).toBe(eventTarget);
+      expect(e.target).toBe(eventTarget);
+      count++;
+    }
+
+    S.root(() =>
+      document.body.appendChild(
+        <div>
+          <div ref={elementRegular} on:click={{ handleEvent: handleClick }} />
+          <div ref={elementOnce} on:click={{ handleEvent: handleClick, once: true }} />
+        </div>
+      )
+    );
+
+    const event = new MouseEvent("click", { bubbles: true });
+
+    /** Dispatch a click twice to the regular element to check `count` is working a expected */
+
+    eventTarget = elementRegular;
+
+    count = 0;
+
+    eventTarget.dispatchEvent(event);
+    expect(count).toBe(1);
+
+    eventTarget.dispatchEvent(event);
+    expect(count).toBe(2);
+
+    /** Dispatch a click twice to the `once` event handler */
+
+    eventTarget = elementOnce;
+
+    count = 0;
+
+    eventTarget.dispatchEvent(event);
+    expect(count).toBe(1);
+
+    eventTarget.dispatchEvent(event);
+    expect(count).toBe(1);
+  });
+});
