@@ -61,7 +61,7 @@ export function transformElement(path, info) {
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
-    isCustomElement = tagName.indexOf("-") > -1 || !!path.get("openingElement").get("attributes").find(a => a.node.name?.name === "is"),
+    isCustomElement = tagName.indexOf("-") > -1 || path.get("openingElement").get("attributes").some(a => a.node?.name?.name === "is" || a.name?.name === "is"),
     isImportNode = (tagName === 'img'||tagName === 'iframe') && path.get("openingElement").get("attributes").some(a =>  a.node.name?.name === "loading" && a.node.value?.value === "lazy"
      ),
     results = {
@@ -273,7 +273,7 @@ function transformAttributes(path, results) {
     attributes = path.get("openingElement").get("attributes");
   const tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
-    isCE = tagName.includes("-"),
+    isCE = tagName.includes("-") || attributes.some(a => a.node.name?.name === 'is'),
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
 
@@ -1000,7 +1000,7 @@ function detectExpressions(children, index, config) {
     } else if (t.isJSXElement(child)) {
       const tagName = getTagName(child);
       if (isComponent(tagName)) return true;
-      if (config.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1))
+      if (config.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1 || child.openingElement.attributes.some(a => a.name?.name === 'is')))
         return true;
       if (
         child.openingElement.attributes.some(
