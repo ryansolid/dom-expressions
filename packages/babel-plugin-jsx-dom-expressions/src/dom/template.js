@@ -40,14 +40,17 @@ export function appendTemplates(path, templates) {
       cooked: template.template,
       raw: escapeStringForTemplate(template.template)
     };
+
+    const shouldUseImportNode = template.isCE || template.isImportNode
+
     return t.variableDeclarator(
       template.id,
       t.addComment(
         t.callExpression(
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
-            template.isSVG || template.isCE
-              ? [t.booleanLiteral(template.isCE), t.booleanLiteral(template.isSVG)]
+            template.isSVG || shouldUseImportNode
+              ? [t.booleanLiteral(!!shouldUseImportNode), t.booleanLiteral(template.isSVG)]
               : []
           )
         ),
@@ -77,6 +80,7 @@ function registerTemplate(path, results) {
           template: results.template,
           isSVG: results.isSVG,
           isCE: results.hasCustomElement,
+          isImportNode: results.isImportNode,
           renderer: "dom"
         });
       }

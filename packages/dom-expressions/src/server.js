@@ -679,7 +679,19 @@ export function ssrSpread(props, isSVG, skipChildren) {
     ) {
       continue;
     } else {
+      // bool:
+      if (prop.slice(0, 5) === "bool:") {
+
+       if(!value) continue
+       prop = prop.slice(5);
+       result += `${escape(prop)}`;
+
+       continue
+      }
+
+      // attr:
       if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
+
       result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
