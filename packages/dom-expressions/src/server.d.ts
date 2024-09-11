@@ -56,6 +56,7 @@ export function ssrAttribute(key: string, value: any, isBoolean: boolean): strin
 export function ssrHydrationKey(): string;
 export function resolveSSRNode(node: any): string;
 export function escape(html: string): string;
+export function useTitle(title: string | (() => string)): void;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function getHydrationKey(): string;
@@ -74,13 +75,18 @@ export function getRequestEvent(): RequestEvent | undefined;
 
 export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
-export function Assets(props: { children?: JSX.Element }): JSX.Element;
+export function untrack<T>(fn: () => T): T;
 
 // deprecated
+/** @deprecated Replaced by useAssets */
+export function Assets(props: { children?: JSX.Element }): JSX.Element;
+
 export type LegacyResults = {
   write: (text: string) => void;
   startWriting: () => void;
 };
+
+/** @deprecated Replaced by renderToStream */
 export function pipeToWritable<T>(
   fn: () => T,
   writable: WritableStream,
@@ -90,6 +96,8 @@ export function pipeToWritable<T>(
     onCompleteAll?: () => void;
   }
 ): void;
+
+/** @deprecated Replaced by renderToStream */
 export function pipeToNodeWritable<T>(
   fn: () => T,
   writable: { write: (v: string) => void },
@@ -99,8 +107,6 @@ export function pipeToNodeWritable<T>(
     onCompleteAll?: () => void;
   }
 ): void;
-
-export function untrack<T>(fn: () => T): T;
 
 // client-only APIs
 

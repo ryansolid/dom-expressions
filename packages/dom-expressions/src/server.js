@@ -47,7 +47,7 @@ export function renderToString(code, options = {}) {
     nextRoot() {
       return this.renderId + "i-" + this.roots++;
     },
-    title: '',
+    title: ""
   };
   let html = root(d => {
     setTimeout(d);
@@ -116,6 +116,9 @@ export function renderToStream(code, options = {}) {
   };
   const registry = new Map();
   const writeTasks = () => {
+    if (context.title !== flushedTitle) {
+      tasks += `document.title="${(flushedTitle = context.title)}";`;
+    }
     if (tasks.length && !completed && firstFlushed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
       tasks = "";
@@ -132,6 +135,7 @@ export function renderToStream(code, options = {}) {
   let completed = false;
   let shellCompleted = false;
   let scriptFlushed = false;
+  let flushedTitle = "";
   let timer = null;
   let buffer = {
     write(payload) {
@@ -217,7 +221,7 @@ export function renderToStream(code, options = {}) {
         return firstFlushed;
       };
     },
-    title: '',
+    title: ""
   };
 
   let html = root(d => {
@@ -228,7 +232,7 @@ export function renderToStream(code, options = {}) {
     if (shellCompleted) return;
     sharedConfig.context = context;
     context.noHydrate = true;
-    html = injectTitle(context.title, html);
+    html = injectTitle((flushedTitle = context.title), html);
     html = injectAssets(context.assets, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
@@ -603,7 +607,9 @@ export function getRequestEvent() {
     : undefined;
 }
 
-// consider deprecating
+/**
+ * @deprecated Replaced by useAssets
+ */
 export function Assets(props) {
   useAssets(() => props.children);
 }
@@ -700,14 +706,25 @@ export function ssrSpread(props, isSVG, skipChildren) {
 }
 
 export function useTitle(source) {
-  // TODO should we resolve this eagerly?
+  if (typeof source === "function") source = source();
   sharedConfig.context.title = source;
 }
 
 function injectTitle(title, html) {
-  const result = resolveSSRNode(title);
-  // TODO should we put this after the head opening
-  return result ? html.replace(`</head>`, result + `</head>`) : html;
+  if (!title) return html;
+  const head = html.indexOf(`<head`);
+  if (head === -1) return html;
+  const headEnd = html.indexOf(`</head>`, head);
+  const titleStart = html.indexOf(`<title`, head);
+  if (titleStart > headEnd) return html;
+  if (titleStart > -1) {
+    return (
+      html.slice(0, titleStart) +
+      `<title>${title}</title>` +
+      html.slice(html.indexOf(`</title>`, titleStart) + 8)
+    );
+  }
+  return html.slice(0, headEnd) + `<title>${title}</title>` + html.slice(headEnd);
 }
 
 // client-only APIs

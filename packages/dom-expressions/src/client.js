@@ -594,17 +594,17 @@ export function Hydration(props) {
 
 const voidFn = () => undefined;
 
+export function useTitle(source) {
+  effect(() => {
+    if (typeof source === 'function') source = source();
+    isHydrating() || (document.title = source);
+  });
+}
+
 // experimental
 export const RequestContext = Symbol();
 
 // deprecated
 export function innerHTML(parent, content) {
   !sharedConfig.context && (parent.innerHTML = content);
-}
-
-export function useTitle(source) {
-  effect(() => {
-    while (typeof source === 'function') source = source();
-    document.title = source;
-  });
 }
