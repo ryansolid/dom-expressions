@@ -34,4 +34,5 @@ const tiles = [];
 tiles.push(<div>Test 1</div>);
 const template25 = <div>{tiles}</div>;
 
-const comma = <div>{expression(), "static"}</div>
+const comma = <div>{expression(), "static"}</div>;
+const double = <div>{children()()}</div>

@@ -40,6 +40,7 @@ export namespace JSX {
       }
     ): void;
   }
+
   interface BoundEventHandler<T, E extends Event> {
     0: (
       data: any,
@@ -51,6 +52,19 @@ export namespace JSX {
     1: any;
   }
   type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+
+  interface EventHandlerWithOptions<T, E extends Event> extends AddEventListenerOptions {
+    handleEvent: (
+      e: E & {
+        currentTarget: T;
+        target: Element;
+      }
+    ) => void;
+  }
+
+  type CustomEventHandlerUnion<T, E extends Event> =
+    | EventHandler<T, E>
+    | EventHandlerWithOptions<T, E>;
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
@@ -75,7 +89,11 @@ export namespace JSX {
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
+  interface ExplicitBoolAttributes {}
   interface CustomEvents {}
+  /**
+   * @deprecated Replaced by CustomEvents
+  */
   interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
@@ -102,8 +120,11 @@ export namespace JSX {
   type AttrAttributes = {
     [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key];
   };
+  type BoolAttributes = {
+    [Key in keyof ExplicitBoolAttributes as `bool:${Key}`]?: ExplicitBoolAttributes[Key];
+  };
   type OnAttributes<T> = {
-    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
+    [Key in keyof CustomEvents as `on:${Key}`]?: CustomEventHandlerUnion<T, CustomEvents[Key]>;
   };
   type OnCaptureAttributes<T> = {
     [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
@@ -155,6 +176,7 @@ export namespace JSX {
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent>;
     onAuxClick?: EventHandlerUnion<T, MouseEvent>;
     onBeforeInput?: EventHandlerUnion<T, InputEvent>;
+    onBeforeToggle?: EventHandlerUnion<T, ToggleEvent>;
     onBlur?: EventHandlerUnion<T, FocusEvent>;
     onCanPlay?: EventHandlerUnion<T, Event>;
     onCanPlayThrough?: EventHandlerUnion<T, Event>;
@@ -220,6 +242,7 @@ export namespace JSX {
     >;
     onSuspend?: EventHandlerUnion<T, Event>;
     onTimeUpdate?: EventHandlerUnion<T, Event>;
+    onToggle?: EventHandlerUnion<T, ToggleEvent>;
     onTouchCancel?: EventHandlerUnion<T, TouchEvent>;
     onTouchEnd?: EventHandlerUnion<T, TouchEvent>;
     onTouchMove?: EventHandlerUnion<T, TouchEvent>;
@@ -242,6 +265,7 @@ export namespace JSX {
     onanimationstart?: EventHandlerUnion<T, AnimationEvent>;
     onauxclick?: EventHandlerUnion<T, MouseEvent>;
     onbeforeinput?: EventHandlerUnion<T, InputEvent>;
+    onbeforetoggle?: EventHandlerUnion<T, ToggleEvent>;
     onblur?: EventHandlerUnion<T, FocusEvent>;
     oncanplay?: EventHandlerUnion<T, Event>;
     oncanplaythrough?: EventHandlerUnion<T, Event>;
@@ -307,6 +331,7 @@ export namespace JSX {
     >;
     onsuspend?: EventHandlerUnion<T, Event>;
     ontimeupdate?: EventHandlerUnion<T, Event>;
+    ontoggle?: EventHandlerUnion<T, ToggleEvent>;
     ontouchcancel?: EventHandlerUnion<T, TouchEvent>;
     ontouchend?: EventHandlerUnion<T, TouchEvent>;
     ontouchmove?: EventHandlerUnion<T, TouchEvent>;
@@ -1013,6 +1038,8 @@ export namespace JSX {
     src?: FunctionMaybe<string>;
     srcset?: FunctionMaybe<string>;
     type?: FunctionMaybe<string>;
+    width?: FunctionMaybe<number | string>;
+    height?: FunctionMaybe<number | string>;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     media?: FunctionMaybe<string>;
@@ -1820,6 +1847,7 @@ export namespace JSX {
     contentScriptType?: FunctionMaybe<string>;
     contentStyleType?: FunctionMaybe<string>;
     xmlns?: FunctionMaybe<string>;
+    "xmlns:xlink"?: FunctionMaybe<string>;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1890,11 +1918,16 @@ export namespace JSX {
     textLength?: FunctionMaybe<number | string>;
     lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs">;
   }
+  /**
+   * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
+   */
   interface UseSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
-      ConditionalProcessingSVGAttributes,
-      ExternalResourceSVGAttributes,
+    extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
+      ConditionalProcessingSVGAttributes,
+      GraphicsElementSVGAttributes<T>,
+      PresentationSVGAttributes,
+      ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
     x?: FunctionMaybe<number | string>;
     y?: FunctionMaybe<number | string>;

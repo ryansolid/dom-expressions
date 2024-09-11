@@ -11,23 +11,28 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$4 = ["<div", " foo", ' style="', '"', ">", "</div>"],
   _tmpl$5 = ["<div", ' class="', '"></div>'],
   _tmpl$6 = ["<div", ' style="', '">Hi</div>'],
-  _tmpl$7 = ["<div", ' style="', '" class="', '"></div>'],
+  _tmpl$7 = ["<div", ' style="', '"', "></div>"],
   _tmpl$8 = ["<div", "></div>"],
-  _tmpl$9 = ["<input", ' type="checkbox" checked="">'],
-  _tmpl$10 = ["<input", ' type="checkbox"', ">"],
-  _tmpl$11 = ["<div", ' class="`a">`$`</div>'],
-  _tmpl$12 = ["<button", ' class="', '" type="button">Write</button>'],
-  _tmpl$13 = ["<button", ' class="', '">Hi</button>'],
-  _tmpl$14 = ["<div", "><input", ' readonly=""><input', "", "></div>"],
-  _tmpl$15 = ["<div", ' style="', '"></div>'],
-  _tmpl$16 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
-  _tmpl$17 = ["<div", "", ">", "</div>"],
-  _tmpl$18 = ["<div", "><!--$-->", "<!--/-->", "</div>"],
-  _tmpl$19 = ["<div", ">", "</div>"],
-  _tmpl$20 = [
+  _tmpl$9 = ["<div", ' onclick="', '"></div>'],
+  _tmpl$10 = ["<input", ' type="checkbox" checked="">'],
+  _tmpl$11 = ["<input", ' type="checkbox"', ">"],
+  _tmpl$12 = ["<div", ' class="`a">`$`</div>'],
+  _tmpl$13 = ["<button", ' class="', '" type="button">Write</button>'],
+  _tmpl$14 = ["<button", ' class="', '">Hi</button>'],
+  _tmpl$15 = ["<div", "><input", ' readonly=""><input', "", "></div>"],
+  _tmpl$16 = ["<div", ' style="', '"></div>'],
+  _tmpl$17 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
+  _tmpl$18 = ["<div", "", ">", "</div>"],
+  _tmpl$19 = ["<div", "><!--$-->", "<!--/-->", "</div>"],
+  _tmpl$20 = ["<div", ">", "</div>"],
+  _tmpl$21 = [
     "<div",
-    ' class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\r\n    random3 random4"></div>'
-  ];
+    ' class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>'
+  ],
+  _tmpl$22 = ["<button", "></button>"],
+  _tmpl$23 = ["<input", ' value="10">'],
+  _tmpl$24 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"];
+import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
 let link;
@@ -102,6 +107,7 @@ const template4 = _$ssr(
 );
 const template5 = _$ssr(_tmpl$5, _$ssrHydrationKey(), `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$ssrStyle(someStyle()));
+let undefVar;
 const template7 = _$ssr(
   _tmpl$7,
   _$ssrHydrationKey(),
@@ -111,23 +117,23 @@ const template7 = _$ssr(
     ...props.style,
     "padding-top": props.top
   }),
-  props.active ? "my-class" : ""
+  _$ssrAttribute("other-class", _$escape(undefVar, true), false)
 );
 let refTarget;
 const template8 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template9 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template10 = _$ssr(_tmpl$8, _$ssrHydrationKey());
 const template11 = _$ssr(_tmpl$8, _$ssrHydrationKey());
-const template12 = _$ssr(_tmpl$8, _$ssrHydrationKey());
-const template13 = _$ssr(_tmpl$9, _$ssrHydrationKey());
+const template12 = _$ssr(_tmpl$9, _$ssrHydrationKey(), "console.log('hi')");
+const template13 = _$ssr(_tmpl$10, _$ssrHydrationKey());
 const template14 = _$ssr(
-  _tmpl$10,
+  _tmpl$11,
   _$ssrHydrationKey(),
   _$ssrAttribute("checked", state.visible, true)
 );
-const template15 = _$ssr(_tmpl$11, _$ssrHydrationKey());
-const template16 = _$ssr(_tmpl$12, _$ssrHydrationKey(), `static ${"k" ? "hi" : ""}`);
-const template17 = _$ssr(_tmpl$13, _$ssrHydrationKey(), "a  b  c");
+const template15 = _$ssr(_tmpl$12, _$ssrHydrationKey());
+const template16 = _$ssr(_tmpl$13, _$ssrHydrationKey(), `static ${"k" ? "hi" : ""}`);
+const template17 = _$ssr(_tmpl$14, _$ssrHydrationKey(), "a  b  c");
 const template18 = _$ssrElement(
   "div",
   {
@@ -140,7 +146,7 @@ const template18 = _$ssrElement(
 );
 const template19 = _$ssr(_tmpl$5, _$ssrHydrationKey(), `bg-red-500 flex flex-col`);
 const template20 = _$ssr(
-  _tmpl$14,
+  _tmpl$15,
   _$ssrHydrationKey(),
   _$ssrAttribute("value", _$escape(s(), true), false) +
     _$ssrAttribute("min", _$escape(min(), true), false) +
@@ -151,16 +157,16 @@ const template20 = _$ssr(
   _$ssrAttribute("readonly", value, true)
 );
 const template21 = _$ssr(
-  _tmpl$15,
+  _tmpl$16,
   _$ssrHydrationKey(),
   _$ssrStyle({
     a: "static",
     ...rest
   })
 );
-const template22 = _$ssr(_tmpl$16, _$ssrHydrationKey());
+const template22 = _$ssr(_tmpl$17, _$ssrHydrationKey());
 const template23 = _$ssr(
-  _tmpl$17,
+  _tmpl$18,
   _$ssrHydrationKey(),
   _$ssrAttribute("disabled", "t" in test, true),
   "t" in test && "true"
@@ -174,7 +180,7 @@ const template24 = _$ssrElement(
   true
 );
 const template25 = _$ssr(
-  _tmpl$18,
+  _tmpl$19,
   _$ssrHydrationKey(),
   _$escape(props.children),
   _$ssrElement(
@@ -229,8 +235,49 @@ const template28 = _$ssrElement(
   true
 );
 const template29 = _$ssr(
-  _tmpl$19,
+  _tmpl$20,
   _$ssrHydrationKey() + _$ssrAttribute("attribute", !!someValue, false),
   !!someValue
 );
-const template30 = _$ssr(_tmpl$20, _$ssrHydrationKey());
+const template30 = _$ssr(_tmpl$21, _$ssrHydrationKey());
+const template31 = _$ssr(
+  _tmpl$16,
+  _$ssrHydrationKey(),
+  "background-color:" + _$escape(getStore.itemProperties.color, true)
+);
+const template32 = _$ssr(
+  _tmpl$16,
+  _$ssrHydrationKey(),
+  "background-color:" + _$escape(undefined, true)
+);
+const template33 = [
+  _$ssr(
+    _tmpl$22,
+    _$ssrHydrationKey() + _$ssrAttribute("class", _$escape(styles.button, true), false)
+  ),
+  _$ssr(
+    _tmpl$22,
+    _$ssrHydrationKey() + _$ssrAttribute("class", _$escape(styles["foo--bar"], true), false)
+  ),
+  _$ssr(
+    _tmpl$22,
+    _$ssrHydrationKey() + _$ssrAttribute("class", _$escape(styles.foo.bar, true), false)
+  ),
+  _$ssr(
+    _tmpl$22,
+    _$ssrHydrationKey() + _$ssrAttribute("class", _$escape(styles[foo()], true), false)
+  )
+];
+const template34 = _$ssrElement("div", somethingElse, undefined, true);
+const template35 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template36 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template37 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template38 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template39 = _$ssr(_tmpl$23, _$ssrHydrationKey());
+const template40 = _$ssr(_tmpl$16, _$ssrHydrationKey(), "color:" + _$escape(a(), true));
+const template41 = _$ssr(
+  _tmpl$24,
+  _$ssrHydrationKey() + _$ssrAttribute("value", _$escape(state.color, true), false),
+  _$ssrAttribute("value", _$escape(Color.Red, true), false),
+  _$ssrAttribute("value", _$escape(Color.Blue, true), false)
+);

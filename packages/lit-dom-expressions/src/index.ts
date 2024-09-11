@@ -7,7 +7,7 @@ interface Runtime {
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   spread<T>(node: Element, accessor: (() => T) | T, isSVG?: Boolean, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
-  addEventListener(node: Element, name: string, handler: () => void, delegate: boolean): void;
+  addEventListener(node: Element, name: string, handler: EventListener | EventListenerObject | (EventListenerObject & AddEventListenerOptions), delegate: boolean): void;
   delegateEvents(eventNames: string[]): void;
   classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): { [k: string]: boolean };
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
@@ -38,6 +38,7 @@ type Options = {
   templateNodes: IDom[][],
   wrap?: boolean,
   hasCustomElement?: boolean,
+  isImportNode?: boolean,
   parent?: boolean,
   fragment?: boolean,
 }
@@ -293,6 +294,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
     options.counter = childOptions.counter;
     options.templateId = childOptions.templateId;
     options.hasCustomElement = options.hasCustomElement || childOptions.hasCustomElement;
+    options.isImportNode = options.isImportNode || childOptions.isImportNode;
   }
 
   function processComponentProps(propGroups: (string | string[])[]) {
@@ -430,8 +432,10 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
         topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
       const isSVG = r.SVGElements.has(node.name);
-      const isCE = node.name.includes("-");
+      const isCE = node.name.includes("-") || node.attrs.some((e) => e.name === "is");
       options.hasCustomElement = isCE;
+      options.isImportNode = (node.name === 'img'||node.name === 'iframe') && node.attrs.some((e) => e.name === "loading" && e.value ==='lazy');
+
       if (node.attrs.some(e => e.name === "###")) {
         const spreadArgs = [];
         let current = "";
@@ -488,7 +492,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       options.first = false;
       processChildren(node, options);
       if (topDecl) {
-        options.decl[0] = options.hasCustomElement
+        options.decl[0] = options.hasCustomElement || options.isImportNode
           ? `const ${tag} = r.untrack(() => document.importNode(tmpls[${templateId}].content.firstChild, true))`
           : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
       }

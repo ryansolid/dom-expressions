@@ -379,14 +379,23 @@ const template25 = _$createComponent(Component, {
     return _tmpl$2();
   }
 });
-const template26 = _$createComponent(Component, {
-  get when() {
-    const foo = test();
-    if ("t" in foo) {
-      return foo;
+const template26 = [
+  _$createComponent(Component, {
+    get when() {
+      const foo = test();
+      if ("t" in foo) {
+        return foo;
+      }
     }
-  }
-});
+  }),
+  _$createComponent(Component, {
+    get when() {
+      return ((val = 123) => {
+        return val * 2;
+      })();
+    }
+  })
+];
 const template27 = _$createComponent(Component, {
   get when() {
     return prop.red ? "red" : "green";
@@ -404,4 +413,66 @@ class Template28 {
       }
     });
   }
+}
+class Template29 extends ParentComponent {
+  constructor() {
+    super();
+    const _self$3 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$3.method;
+      }
+    });
+  }
+  get get() {
+    const _self$4 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$4.method;
+      }
+    });
+  }
+  set set(v) {
+    const _self$5 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$5.method;
+      }
+    });
+  }
+  method() {
+    const _self$6 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$6.method;
+      }
+    });
+  }
+  field = (() => {
+    const _self$7 = this;
+    return _$createComponent(this.component, {
+      get method() {
+        return _self$7.method;
+      },
+      get comp() {
+        return _$createComponent(_self$7.another, {});
+      }
+    });
+  })();
+  fieldArrow = () => {
+    const _self$8 = this;
+    return _$createComponent(this.component, {
+      get method() {
+        return _self$8.method;
+      }
+    });
+  };
+  fieldFunction = function () {
+    const _self$9 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$9.method;
+      }
+    });
+  };
 }

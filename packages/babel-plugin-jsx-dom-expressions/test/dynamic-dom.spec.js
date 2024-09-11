@@ -21,9 +21,12 @@ pluginTester({
           "header",
           "footer",
           "slot",
+          "my-el",
           "my-element",
           "module",
           "input",
+          "img",
+          "iframe",
           "button",
           "a",
           "svg",
@@ -37,7 +40,11 @@ pluginTester({
           "ul",
           "label",
           "text",
-          "namespace:tag"
+          "namespace:tag",
+          "p",
+          "noscript",
+          "select",
+          "option"
         ]
       }
     ],

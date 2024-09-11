@@ -77,3 +77,4 @@ const tiles = [];
 tiles.push(_$ssr(_tmpl$5, _$ssrHydrationKey()));
 const template25 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$escape(tiles));
 const comma = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$escape((expression(), "static")));
+const double = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$escape(children()()));

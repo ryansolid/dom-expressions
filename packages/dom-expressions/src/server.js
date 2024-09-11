@@ -1,7 +1,19 @@
-import { root, sharedConfig } from "rxcore";
-import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
+import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
+import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
-export { createComponent } from "rxcore";
+
+export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
+
+export {
+  Properties,
+  ChildProperties,
+  getPropAlias,
+  Aliases,
+  DOMElements,
+  SVGElements,
+  SVGNamespace,
+  DelegatedEvents
+} from "./constants.js";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
@@ -17,7 +29,7 @@ export function renderToString(code, options = {}) {
       if (!scripts) {
         scripts = getLocalHeaderScript(renderId);
       }
-      scripts += script;
+      scripts += script + ";";
     },
     onError: options.onError
   });
@@ -375,7 +387,7 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
       continue;
     } else {
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -391,7 +403,7 @@ export function ssrAttribute(key, value, isBoolean) {
 
 export function ssrHydrationKey() {
   const hk = getHydrationKey();
-  return hk ? ` data-hk="${hk}"` : "";
+  return hk ? ` data-hk=${hk}` : "";
 }
 
 export function escape(s, attr) {
@@ -491,7 +503,7 @@ export function mergeProps(...sources) {
 
 export function getHydrationKey() {
   const hydrate = sharedConfig.context;
-  return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
+  return hydrate && !hydrate.noHydrate && sharedConfig.getNextContextId();
 }
 
 export function useAssets(fn) {
@@ -510,7 +522,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '", "'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,s=t(a);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
 }
 
 export function Hydration(props) {
@@ -519,7 +531,7 @@ export function Hydration(props) {
   sharedConfig.context = {
     ...context,
     count: 0,
-    id: `${context.id}${context.count++}-`,
+    id: sharedConfig.getNextContextId(),
     noHydrate: false
   };
   const res = props.children;
@@ -660,7 +672,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
         (n = props.className) ? n + " " : ""
       }${ssrClassList(props.classList)}"`;
       classResolved = true;
-    } else if (BooleanAttributes.has(prop)) {
+    } else if (prop !== "value" && Properties.has(prop)) {
       if (value) result += prop;
       else continue;
     } else if (
@@ -671,8 +683,16 @@ export function ssrSpread(props, isSVG, skipChildren) {
     ) {
       continue;
     } else {
-      if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+      // bool:
+      if (prop.slice(0, 5) === "bool:") {
+        if (!value) continue;
+        prop = prop.slice(5);
+        result += `${escape(prop)}`;
+      } else {
+        // attr:
+        if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
+        result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
+      }
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -688,4 +708,33 @@ function injectTitle(title, html) {
   const result = resolveSSRNode(title);
   // TODO should we put this after the head opening
   return result ? html.replace(`</head>`, result + `</head>`) : html;
+}
+
+// client-only APIs
+export {
+  notSup as classList,
+  notSup as style,
+  notSup as insert,
+  notSup as spread,
+  notSup as delegateEvents,
+  notSup as dynamicProperty,
+  notSup as setAttribute,
+  notSup as setAttributeNS,
+  notSup as addEventListener,
+  notSup as render,
+  notSup as template,
+  notSup as setProperty,
+  notSup as className,
+  notSup as assign,
+  notSup as hydrate,
+  notSup as getNextElement,
+  notSup as getNextMatch,
+  notSup as getNextMarker,
+  notSup as runHydrationEvents
+};
+
+function notSup() {
+  throw new Error(
+    "Client-only API called on the server side. Run client-only code in onMount, or conditionally run client-only component with <Show>."
+  );
 }

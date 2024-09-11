@@ -2,7 +2,8 @@ import { createComponent as _$createComponent } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
-var _tmpl$ = ["<div", ">", "</div>"];
+var _tmpl$ = ["<div", ">", "</div>"],
+  _tmpl$2 = ["<div", ">Output</div>"];
 const template1 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(simple));
 const template2 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(state.dynamic));
 const template3 = _$ssr(_tmpl$, _$ssrHydrationKey(), simple ? _$escape(good) : _$escape(bad));
@@ -136,3 +137,13 @@ const template33 = _$createComponent(Comp, {
     return something?.();
   }
 });
+const template34 = simple ? good : bad;
+const template35 = simple ? good() : bad;
+const template36 = state.dynamic ? good() : bad;
+const template37 = state.dynamic && good();
+const template38 = state.count > 5 ? (state.dynamic ? best : good()) : bad;
+const template39 = state.dynamic && state.something && good();
+const template40 = (state.dynamic && good()) || bad;
+const template41 = state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback";
+const template42 = state.a ? a() : state.b ? b() : state.c ? "c" : "fallback";
+const template43 = obj1.prop ? (obj2.prop ? _$ssr(_tmpl$2, _$ssrHydrationKey()) : []) : [];

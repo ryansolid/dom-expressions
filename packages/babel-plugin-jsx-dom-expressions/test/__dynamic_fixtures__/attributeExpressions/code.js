@@ -66,3 +66,15 @@ const template13 = <input type="checkbox" checked={true} readonly="" />;
 const template14 = <input type="checkbox" checked={state.visible} readonly={value} />;
 
 const template15 = <mesh scale={[1, 1, 1]} rotateX={0} />;
+
+const template16 = <div use:something {...somethingElse} use:zero={0} />;
+
+const template17 = <div ref={a().b.c} />
+
+const template18 = <div ref={a().b?.c} />
+
+const template19 = <div ref={a() ? b : c} />
+
+const template20 = <div ref={a() ?? b} />
+
+const template21 = <div style={{ color: a() }} />

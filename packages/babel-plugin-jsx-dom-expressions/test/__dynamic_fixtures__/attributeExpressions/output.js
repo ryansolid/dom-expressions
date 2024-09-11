@@ -180,3 +180,43 @@ const template15 = (() => {
   _$setProp(_el$21, "rotateX", 0);
   return _el$21;
 })();
+const template16 = (() => {
+  var _el$22 = _tmpl$3();
+  _$use(zero, _el$22, () => 0);
+  _$use(something, _el$22, () => true);
+  _$spread(_el$22, somethingElse, false, false);
+  return _el$22;
+})();
+const template17 = (() => {
+  var _el$23 = _tmpl$3();
+  var _ref$4 = a().b.c;
+  typeof _ref$4 === "function" ? _$use(_ref$4, _el$23) : (a().b.c = _el$23);
+  return _el$23;
+})();
+const template18 = (() => {
+  var _el$24 = _tmpl$3();
+  var _ref$5 = a().b?.c;
+  typeof _ref$5 === "function" && _$use(_ref$5, _el$24);
+  return _el$24;
+})();
+const template19 = (() => {
+  var _el$25 = _tmpl$3();
+  var _ref$6 = a() ? b : c;
+  typeof _ref$6 === "function" && _$use(_ref$6, _el$25);
+  return _el$25;
+})();
+const template20 = (() => {
+  var _el$26 = _tmpl$3();
+  var _ref$7 = a() ?? b;
+  typeof _ref$7 === "function" && _$use(_ref$7, _el$26);
+  return _el$26;
+})();
+const template21 = (() => {
+  var _el$27 = _tmpl$3();
+  _$effect(_$p =>
+    (_$p = a()) != null
+      ? _el$27.style.setProperty("color", _$p)
+      : _el$27.style.removeProperty("color")
+  );
+  return _el$27;
+})();

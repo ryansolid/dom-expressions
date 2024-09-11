@@ -25,9 +25,12 @@ pluginTester({
           "header",
           "footer",
           "slot",
+          "my-el",
           "my-element",
           "module",
           "input",
+          "img",
+          "iframe",
           "button",
           "a",
           "svg",
@@ -42,7 +45,6 @@ pluginTester({
           "label",
           "text",
           "namespace:tag",
-
           "html",
           "head",
           "body",
@@ -50,7 +52,10 @@ pluginTester({
           "meta",
           "link",
           "footer",
-          "script"
+          "script",
+          "noscript",
+          "select",
+          "option"
         ],
         moduleName: "r-dom"
       }

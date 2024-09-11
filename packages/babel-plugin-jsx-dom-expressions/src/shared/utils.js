@@ -8,10 +8,11 @@ export const reservedNameSpaces = new Set([
   "style",
   "use",
   "prop",
-  "attr"
+  "attr",
+  "bool"
 ]);
 
-export const nonSpreadNameSpaces = new Set(["class", "style", "use", "prop", "attr"]);
+export const nonSpreadNameSpaces = new Set(["class", "style", "use", "prop", "attr", "bool"]);
 
 export function getConfig(path) {
   return path.hub.file.metadata.config;
@@ -133,7 +134,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return true;
   }
 
-  if (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr))) {
+  if (checkTags && (t.isJSXElement(expr) || (t.isJSXFragment(expr) && expr.children.length))) {
     return true;
   }
 
@@ -167,7 +168,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
       checkTags ? (dynamic = true) && p.stop() : p.skip();
     },
     JSXFragment(p) {
-      checkTags ? (dynamic = true) && p.stop() : p.skip();
+      checkTags && p.node.children.length ? (dynamic = true) && p.stop() : p.skip();
     }
   });
   return dynamic;
@@ -328,10 +329,6 @@ export function transformCondition(path, inline, deep) {
   return deep ? expr : t.arrowFunctionExpression([], expr);
 }
 
-export function escapeBackticks(value) {
-  return value.replace(/`/g, "\\`");
-}
-
 export function escapeHTML(s, attr) {
   if (typeof s !== "string") return s;
   const delim = attr ? '"' : "<";
@@ -419,3 +416,21 @@ export function getNumberedId(num) {
 
   return out;
 }
+
+export function escapeStringForTemplate(str) {
+	return str.replace(/[{\\`\n\t\b\f\v\r\u2028\u2029]/g, ch => templateEscapes.get(ch))
+}
+
+const templateEscapes = new Map([
+	['{', '\\{'],
+	['`', '\\`'],
+	['\\', '\\\\'],
+	['\n', '\\n'],
+	['\t', '\\t'],
+	['\b', '\\b'],
+	['\f', '\\f'],
+	['\v', '\\v'],
+	['\r', '\\r'],
+	['\u2028', '\\u2028'],
+	['\u2029', '\\u2029']
+])
