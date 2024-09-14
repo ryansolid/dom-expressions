@@ -22,8 +22,8 @@ export default path => {
       // not sure when/why this is not a string
       if (typeof html === "string") {
         if (isInvalidMarkup(html)) {
-          // console.error("Invalid Markup: " + html);
-          throw path.buildCodeFrameError("Invalid Markup: " + html);
+          console.warn("Invalid Markup: " + html);
+          // throw path.buildCodeFrameError("Invalid Markup: " + html);
         }
       }
     }
