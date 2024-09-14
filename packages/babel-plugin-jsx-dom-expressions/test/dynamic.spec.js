@@ -21,9 +21,12 @@ pluginTester({
           "header",
           "footer",
           "slot",
+          "my-el",
           "my-element",
           "module",
           "input",
+          "img",
+          "iframe",
           "button",
           "a",
           "svg",
@@ -38,7 +41,10 @@ pluginTester({
           "label",
           "text",
           "namespace:tag",
-          "path"
+          "path",
+          "noscript",
+          "select",
+          "option"
         ],
         moduleName: "r-dom"
       }

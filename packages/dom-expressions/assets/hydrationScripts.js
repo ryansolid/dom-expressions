@@ -7,8 +7,8 @@ window._$HY || ((h) => {
       lookup(el.host && el.host.nodeType ? el.host : el.parentNode));
   ["${eventNames.join('", "')}"].forEach(name =>
     document.addEventListener(name, e => {
-      let node = (e.composedPath && e.composedPath()[0]) || e.target,
-        el = lookup(node);
+      if (!h.events) return;
+      let el = lookup((e.composedPath && e.composedPath()[0]) || e.target);
       if (el && !h.completed.has(el)) h.events.push([el, e]);
     })
   );

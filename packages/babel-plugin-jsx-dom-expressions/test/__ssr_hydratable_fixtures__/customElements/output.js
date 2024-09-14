@@ -4,7 +4,8 @@ import { escape as _$escape } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 var _tmpl$ = ["<my-element", "></my-element>"],
   _tmpl$2 = ["<my-element", '><header slot="head">Title</header></my-element>'],
-  _tmpl$3 = ["<slot", ' name="head"></slot>'];
+  _tmpl$3 = ["<slot", ' name="head"></slot>'],
+  _tmpl$4 = ["<a", ' is="my-element"></a>'];
 const template = _$ssr(
   _tmpl$,
   _$ssrHydrationKey() +
@@ -21,3 +22,4 @@ const template2 = _$ssr(
 );
 const template3 = _$ssr(_tmpl$2, _$ssrHydrationKey());
 const template4 = _$ssr(_tmpl$3, _$ssrHydrationKey());
+const template5 = _$ssr(_tmpl$4, _$ssrHydrationKey());

@@ -65,3 +65,23 @@ const template31 = <Comp value={count() ? (count() ? count() : count()) : count(
 const template32 = <div>{something?.()}</div>
 
 const template33 = <Comp>{something?.()}</Comp>
+
+const template34 = <>{simple ? good : bad}</>;
+
+const template35 = <>{simple ? good() : bad}</>;
+
+const template36 = <>{state.dynamic ? good() : bad}</>;
+
+const template37 = <>{state.dynamic && good()}</>;
+
+const template38 = <>{state.count > 5 ? (state.dynamic ? best : good()) : bad}</>;
+
+const template39 = <>{state.dynamic && state.something && good()}</>;
+
+const template40 = <>{(state.dynamic && good()) || bad}</>;
+
+const template41 = <>{state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"}</>;
+
+const template42 = <>{state.a ? a() : state.b ? b() : state.c ? "c" : "fallback"}</>;
+
+const template43 = <>{obj1.prop ? obj2.prop ? <div>Output</div> : <></> : <></>}</>

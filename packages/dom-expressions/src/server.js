@@ -1,7 +1,19 @@
-import { root, sharedConfig } from "rxcore";
-import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
+import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
+import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
-export { createComponent } from "rxcore";
+
+export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
+
+export {
+  Properties,
+  ChildProperties,
+  getPropAlias,
+  Aliases,
+  DOMElements,
+  SVGElements,
+  SVGNamespace,
+  DelegatedEvents
+} from "./constants.js";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
@@ -17,7 +29,7 @@ export function renderToString(code, options = {}) {
       if (!scripts) {
         scripts = getLocalHeaderScript(renderId);
       }
-      scripts += script;
+      scripts += script + ";";
     },
     onError: options.onError
   });
@@ -36,6 +48,7 @@ export function renderToString(code, options = {}) {
       return this.renderId + "i-" + this.roots++;
     },
     meta: new Map(),
+    title: ""
   };
   let html = root(d => {
     setTimeout(d);
@@ -43,6 +56,7 @@ export function renderToString(code, options = {}) {
   });
   sharedConfig.context.noHydrate = true;
   serializer.close();
+  html = injectTitle(sharedConfig.context.title, html);
   html = injectAssets(sharedConfig.context.assets, html);
   html = injectMeta(sharedConfig.context.meta, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
@@ -104,6 +118,9 @@ export function renderToStream(code, options = {}) {
   };
   const registry = new Map();
   const writeTasks = () => {
+    if (context.title !== flushedTitle) {
+      tasks += `document.title="${(flushedTitle = context.title)}";`;
+    }
     if (tasks.length && !completed && firstFlushed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
       tasks = "";
@@ -120,6 +137,7 @@ export function renderToStream(code, options = {}) {
   let completed = false;
   let shellCompleted = false;
   let scriptFlushed = false;
+  let flushedTitle = "";
   let timer = null;
   let buffer = {
     write(payload) {
@@ -206,6 +224,7 @@ export function renderToStream(code, options = {}) {
       };
     },
     meta: new Map(),
+    title: ""
   };
 
   let html = root(d => {
@@ -216,6 +235,7 @@ export function renderToStream(code, options = {}) {
     if (shellCompleted) return;
     sharedConfig.context = context;
     context.noHydrate = true;
+    html = injectTitle((flushedTitle = context.title), html);
     html = injectAssets(context.assets, html);
     html = injectMeta(context.meta, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
@@ -375,7 +395,7 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
       continue;
     } else {
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -391,7 +411,7 @@ export function ssrAttribute(key, value, isBoolean) {
 
 export function ssrHydrationKey() {
   const hk = getHydrationKey();
-  return hk ? ` data-hk="${hk}"` : "";
+  return hk ? ` data-hk=${hk}` : "";
 }
 
 export function escape(s, attr) {
@@ -491,7 +511,7 @@ export function mergeProps(...sources) {
 
 export function getHydrationKey() {
   const hydrate = sharedConfig.context;
-  return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
+  return hydrate && !hydrate.noHydrate && sharedConfig.getNextContextId();
 }
 
 export function useAssets(fn) {
@@ -510,7 +530,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '", "'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,s=t(a);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
 }
 
 export function Hydration(props) {
@@ -519,7 +539,7 @@ export function Hydration(props) {
   sharedConfig.context = {
     ...context,
     count: 0,
-    id: `${context.id}${context.count++}-`,
+    id: sharedConfig.getNextContextId(),
     noHydrate: false
   };
   const res = props.children;
@@ -591,7 +611,9 @@ export function getRequestEvent() {
     : undefined;
 }
 
-// consider deprecating
+/**
+ * @deprecated Replaced by useAssets
+ */
 export function Assets(props) {
   useAssets(() => props.children);
 }
@@ -660,7 +682,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
         (n = props.className) ? n + " " : ""
       }${ssrClassList(props.classList)}"`;
       classResolved = true;
-    } else if (BooleanAttributes.has(prop)) {
+    } else if (prop !== "value" && Properties.has(prop)) {
       if (value) result += prop;
       else continue;
     } else if (
@@ -671,8 +693,16 @@ export function ssrSpread(props, isSVG, skipChildren) {
     ) {
       continue;
     } else {
-      if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+      // bool:
+      if (prop.slice(0, 5) === "bool:") {
+        if (!value) continue;
+        prop = prop.slice(5);
+        result += `${escape(prop)}`;
+      } else {
+        // attr:
+        if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
+        result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
+      }
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -690,4 +720,55 @@ function injectMeta(meta, html) {
   let out = "";
   for (const [key, value] of meta) out += '<!--m' + key + '-->' + value + '<!--/m' + key + '-->';
   return html.replace(`</head>`, out + `</head>`);
+}
+
+export function useTitle(source) {
+  if (typeof source === "function") source = source();
+  sharedConfig.context.title = source;
+}
+
+function injectTitle(title, html) {
+  if (!title) return html;
+  const head = html.indexOf(`<head`);
+  if (head === -1) return html;
+  const headEnd = html.indexOf(`</head>`, head);
+  const titleStart = html.indexOf(`<title`, head);
+  if (titleStart > headEnd) return html;
+  if (titleStart > -1) {
+    return (
+      html.slice(0, titleStart) +
+      `<title>${title}</title>` +
+      html.slice(html.indexOf(`</title>`, titleStart) + 8)
+    );
+  }
+  return html.slice(0, headEnd) + `<title>${title}</title>` + html.slice(headEnd);
+}
+
+// client-only APIs
+export {
+  notSup as classList,
+  notSup as style,
+  notSup as insert,
+  notSup as spread,
+  notSup as delegateEvents,
+  notSup as dynamicProperty,
+  notSup as setAttribute,
+  notSup as setAttributeNS,
+  notSup as addEventListener,
+  notSup as render,
+  notSup as template,
+  notSup as setProperty,
+  notSup as className,
+  notSup as assign,
+  notSup as hydrate,
+  notSup as getNextElement,
+  notSup as getNextMatch,
+  notSup as getNextMarker,
+  notSup as runHydrationEvents
+};
+
+function notSup() {
+  throw new Error(
+    "Client-only API called on the server side. Run client-only code in onMount, or conditionally run client-only component with <Show>."
+  );
 }

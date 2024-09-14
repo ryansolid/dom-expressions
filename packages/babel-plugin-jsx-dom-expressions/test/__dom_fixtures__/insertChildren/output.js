@@ -134,3 +134,8 @@ const comma = (() => {
   _$insert(_el$19, () => (expression(), "static"));
   return _el$19;
 })();
+const double = (() => {
+  var _el$20 = _tmpl$();
+  _$insert(_el$20, () => children()());
+  return _el$20;
+})();

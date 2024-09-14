@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
+import { escapeStringForTemplate, getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -38,16 +38,19 @@ export function appendTemplates(path, templates) {
   const declarators = templates.map(template => {
     const tmpl = {
       cooked: template.template,
-      raw: template.template
+      raw: escapeStringForTemplate(template.template)
     };
+
+    const shouldUseImportNode = template.isCE || template.isImportNode
+
     return t.variableDeclarator(
       template.id,
       t.addComment(
         t.callExpression(
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
-            template.isSVG || template.isCE
-              ? [t.booleanLiteral(template.isCE), t.booleanLiteral(template.isSVG)]
+            template.isSVG || shouldUseImportNode
+              ? [t.booleanLiteral(!!shouldUseImportNode), t.booleanLiteral(template.isSVG)]
               : []
           )
         ),
@@ -77,6 +80,7 @@ function registerTemplate(path, results) {
           template: results.template,
           isSVG: results.isSVG,
           isCE: results.hasCustomElement,
+          isImportNode: results.isImportNode,
           renderer: "dom"
         });
       }
@@ -102,11 +106,16 @@ function wrapDynamics(path, dynamics) {
   const effectWrapperId = registerImportMethod(path, config.effectWrapper);
 
   if (dynamics.length === 1) {
+    let dynamicStyle;
     const prevValue =
-      dynamics[0].key === "classList" || dynamics[0].key === "style"
+      dynamics[0].key === "classList" ||
+      dynamics[0].key === "style" ||
+      (dynamicStyle = dynamics[0].key.startsWith("style:"))
         ? t.identifier("_$p")
         : undefined;
-    if (
+    if (dynamicStyle) {
+      dynamics[0].value = t.assignmentExpression("=", prevValue, dynamics[0].value);
+    } else if (
       dynamics[0].key.startsWith("class:") &&
       !t.isBooleanLiteral(dynamics[0].value) &&
       !t.isUnaryExpression(dynamics[0].value)

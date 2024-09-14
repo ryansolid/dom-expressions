@@ -1,4 +1,4 @@
-import * as styles from './styles.module.css';
+import * as styles from "./styles.module.css";
 
 const selected = true;
 let id = "my-h1";
@@ -53,7 +53,7 @@ const template7 = (
     style:padding-top={props.top}
     class:my-class={props.active}
     class:other-class={undefVar}
-    classList={{ 'other-class2': undefVar}}
+    classList={{ "other-class2": undefVar }}
   />
 );
 
@@ -66,7 +66,7 @@ const template10 = <div ref={refFactory()} />;
 
 const template11 = <div use:something use:another={thing} use:zero={0} />;
 
-const template12 = <div prop:htmlFor={thing} prop:number={123} />;
+const template12 = <div prop:htmlFor={thing} prop:number={123} attr:onclick="console.log('hi')" />;
 
 const template13 = <input type="checkbox" checked={true} />;
 
@@ -169,17 +169,9 @@ const template30 = (
   />
 );
 
-const template31 = (
-  <div
-    style={{ "background-color": getStore.itemProperties.color }}
-  />
-);
+const template31 = <div style={{ "background-color": getStore.itemProperties.color }} />;
 
-const template32 = (
-  <div
-    style={{ "background-color": undefined }}
-  />
-);
+const template32 = <div style={{ "background-color": undefined }} />;
 
 const template33 = (
   <>
@@ -188,4 +180,25 @@ const template33 = (
     <button class={styles.foo.bar}></button>
     <button class={styles[foo()]}></button>
   </>
+);
+
+const template34 = <div use:something {...somethingElse} use:zero={0} />;
+
+const template35 = <div ref={a().b.c} />;
+
+const template36 = <div ref={a().b?.c} />;
+
+const template37 = <div ref={a() ? b : c} />;
+
+const template38 = <div ref={a() ?? b} />;
+
+const template39 = <input value={10} />;
+
+const template40 = <div style={{ color: a() }} />;
+
+const template41 = (
+  <select value={state.color}>
+    <option value={Color.Red}>Red</option>
+    <option value={Color.Blue}>Blue</option>
+  </select>
 );

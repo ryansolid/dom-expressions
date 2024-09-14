@@ -13,8 +13,7 @@ import {
   transformCondition,
   getStaticExpression,
   escapeHTML,
-  getConfig,
-  escapeBackticks
+  getConfig
 } from "./utils";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
@@ -40,7 +39,7 @@ export function transformJSX(path) {
 function getTargetFunctionParent(path, parent) {
   let current = path.scope.getFunctionParent();
   while (current !== parent && current.path.isArrowFunctionExpression()) {
-    current = current.path.parentPath.scope.getFunctionParent()
+    current = current.path.parentPath.scope.getFunctionParent();
   }
   return current;
 }
@@ -57,11 +56,11 @@ export function transformThis(path) {
       }
     },
     JSXElement(path) {
-      let source = path.get('openingElement').get('name');
+      let source = path.get("openingElement").get("name");
       while (source.isJSXMemberExpression()) {
-        source = source.get('object');
+        source = source.get("object");
       }
-      if (source.isJSXIdentifier() && source.node.name === 'this') {
+      if (source.isJSXIdentifier() && source.node.name === "this") {
         const current = getTargetFunctionParent(path, parent);
         if (current === parent) {
           thisId || (thisId = path.scope.generateUidIdentifier("self$"));
@@ -71,16 +70,31 @@ export function transformThis(path) {
             path.node.closingElement.name = path.node.openingElement.name;
           }
         }
-      } 
-    },
+      }
+    }
   });
   return node => {
     if (thisId) {
-      parent.push({
-        id: thisId,
-        init: t.thisExpression(),
-        kind: 'const',
-      });
+      if (!parent || parent.block.type === "ClassMethod") {
+        const decl = t.variableDeclaration("const", [
+          t.variableDeclarator(thisId, t.thisExpression())
+        ]);
+        if (parent) {
+          const stmt = path.getStatementParent();
+          stmt.insertBefore(decl);
+        } else {
+          return t.callExpression(
+            t.arrowFunctionExpression([], t.blockStatement([decl, t.returnStatement(node)])),
+            []
+          );
+        }
+      } else {
+        parent.push({
+          id: thisId,
+          init: t.thisExpression(),
+          kind: "const"
+        });
+      }
     }
     return node;
   };
@@ -106,7 +120,7 @@ export function transformNode(path, info = {}) {
         : trimWhitespace(node.extra.raw);
     if (!text.length) return null;
     const results = {
-      template: config.generate === "ssr" ? text : escapeBackticks(text),
+      template: text,
       declarations: [],
       exprs: [],
       dynamics: [],
@@ -131,10 +145,11 @@ export function transformNode(path, info = {}) {
       config.wrapConditionals &&
       config.generate !== "ssr" &&
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))
-        ? transformCondition(path.get("expression"), info.componentChild)
+        ? transformCondition(path.get("expression"), info.componentChild || info.fragmentChild)
         : !info.componentChild &&
           (config.generate !== "ssr" || info.fragmentChild) &&
           t.isCallExpression(node.expression) &&
+          !t.isCallExpression(node.expression.callee) &&
           !t.isMemberExpression(node.expression.callee) &&
           node.expression.arguments.length === 0
         ? node.expression.callee

@@ -161,7 +161,8 @@ export default function transformComponent(path) {
               );
             } else if (
               t.isCallExpression(value.expression) &&
-              t.isArrowFunctionExpression(value.expression.callee)
+              t.isArrowFunctionExpression(value.expression.callee) &&
+              value.expression.callee.params.length === 0
             ) {
               const callee = value.expression.callee;
               const body = t.isBlockStatement(callee.body)
