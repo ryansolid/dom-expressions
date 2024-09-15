@@ -21,9 +21,10 @@ export default path => {
       const html = template.template;
       // not sure when/why this is not a string
       if (typeof html === "string") {
-        if (isInvalidMarkup(html)) {
+        const result = isInvalidMarkup(html);
+        if (result) {
           const message =
-            "The HTML provided is malformed and will yield unexpected output when evaluated by a browser.";
+            "The HTML provided is malformed and will yield unexpected output when evaluated by a browser. ";
           console.warn(message + html);
           // throw path.buildCodeFrameError("Invalid Markup: " + html);
         }

@@ -6,6 +6,15 @@ Object.assign(global, { TextDecoder, TextEncoder });
 const JSDOM = require("jsdom").JSDOM;
 const Element = new JSDOM(`<!DOCTYPE html>`).window.document.body;
 
+/**
+ * Returns an object with information when the markup is invalid
+ *
+ * @param {string} html - The html string to validate
+ * @returns {{
+ *   clean: string; // html stripped of comments, atrributes and content
+ *   browser: string; // what the browser returned from evaluating `clean`
+ * } | null}
+ */
 export function isInvalidMarkup(html) {
   let clean = html
     // remove comments
@@ -23,7 +32,7 @@ export function isInvalidMarkup(html) {
   Element.innerHTML = clean;
 
   // clean for compare
-  const result = Element.innerHTML
+  const browser = Element.innerHTML
     // remove closing tags
     .replace(/<\/[^>]+>/g, "");
 
@@ -32,11 +41,10 @@ export function isInvalidMarkup(html) {
     // remove closing tags
     .replace(/<\/[^>]+>/g, "");
 
-  if (clean !== result) {
+  if (clean !== browser) {
     return {
-      html,
       clean,
-      result
+      browser
     };
   }
 }
