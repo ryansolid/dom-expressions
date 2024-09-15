@@ -18,7 +18,12 @@ const Element = new JSDOM(`<!DOCTYPE html>`).window.document.body;
 export function isInvalidMarkup(html) {
   let clean = html
     // remove comments
-    .replace(/<![^>]*>/g, "")
+    // .replace(/<![^>]*>/g, "")
+
+    // normalize dom-expressions comments, so comments location are also validate
+    .replaceAll("<!>", "<!---->")
+    .replaceAll("<!$>", "<!--$-->")
+    .replaceAll("<!/>", "<!--/-->")
     // remove content
     // content could turn out problematic, think `á` vs `&aacute;`
     .replace(/>([^<]+)</gi, "><")
