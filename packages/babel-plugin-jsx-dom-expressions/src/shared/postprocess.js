@@ -22,7 +22,9 @@ export default path => {
       // not sure when/why this is not a string
       if (typeof html === "string") {
         if (isInvalidMarkup(html)) {
-          console.warn("Invalid Markup: " + html);
+          const message =
+            "The HTML provided is malformed and will yield unexpected output when evaluated by a browser.";
+          console.warn(message + html);
           // throw path.buildCodeFrameError("Invalid Markup: " + html);
         }
       }
