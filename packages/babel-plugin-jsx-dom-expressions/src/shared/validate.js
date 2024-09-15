@@ -38,8 +38,6 @@ export function isInvalidMarkup(html) {
 
   // parse
   Element.innerHTML = html;
-
-  // clean for compare
   const browser = Element.innerHTML;
 
   if (html !== browser) {
