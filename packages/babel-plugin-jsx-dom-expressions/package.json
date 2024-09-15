@@ -23,6 +23,7 @@
     "@babel/plugin-syntax-jsx": "^7.18.6",
     "@babel/types": "^7.20.7",
     "html-entities": "2.3.3",
+    "jest-diff": "^29.7.0",
     "jsdom": "^25.0.0",
     "validate-html-nesting": "^1.2.1"
   },

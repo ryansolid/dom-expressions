@@ -11,12 +11,12 @@ const Element = new JSDOM(`<!DOCTYPE html>`).window.document.body;
  *
  * @param {string} html - The html string to validate
  * @returns {{
- *   clean: string; // html stripped of comments, atrributes and content
+ *   html: string; // html stripped of comments, atrributes and content
  *   browser: string; // what the browser returned from evaluating `clean`
  * } | null}
  */
 export function isInvalidMarkup(html) {
-  let clean = html
+  html = html
     // remove comments
     // .replace(/<![^>]*>/g, "")
 
@@ -24,31 +24,27 @@ export function isInvalidMarkup(html) {
     .replaceAll("<!>", "<!---->")
     .replaceAll("<!$>", "<!--$-->")
     .replaceAll("<!/>", "<!--/-->")
+
     // remove content
     // content could turn out problematic, think `á` vs `&aacute;`
     .replace(/>([^<]+)</gi, "><")
+
     // remove attributes
     .replace(/<([a-z0-9-]+)\s+[^>]+>/gi, "<$1>")
+
     // fix escaping, so doesnt mess up the validation
     // `&lt;script>a();&lt;/script>` -> `&lt;script&gt;a();&lt;/script&gt;`
     .replace(/&lt;([^>]+)>/gi, "&lt;$1&gt;");
 
   // parse
-  Element.innerHTML = clean;
+  Element.innerHTML = html;
 
   // clean for compare
-  const browser = Element.innerHTML
-    // remove closing tags
-    .replace(/<\/[^>]+>/g, "");
+  const browser = Element.innerHTML;
 
-  // clean for compare
-  clean = clean
-    // remove closing tags
-    .replace(/<\/[^>]+>/g, "");
-
-  if (clean !== browser) {
+  if (html !== browser) {
     return {
-      clean,
+      html,
       browser
     };
   }
