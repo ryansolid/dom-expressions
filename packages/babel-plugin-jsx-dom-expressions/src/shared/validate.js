@@ -11,7 +11,7 @@ const Element = new JSDOM(`<!DOCTYPE html>`).window.document.body;
  *
  * @param {string} html - The html string to validate
  * @returns {{
- *   html: string; // html stripped of atrributes and content
+ *   html: string; // html stripped of attributives and content
  *   browser: string; // what the browser returned from evaluating `html`
  * } | null}
  */
@@ -32,7 +32,7 @@ export function isInvalidMarkup(html) {
     // remove content in between tags
     .replace(/>([^<]+)</gi, "><")
 
-    // remove attributes (the lack of quotes will make it missmatch)
+    // remove attributes (the lack of quotes will make it mismatch)
     .replace(/<([a-z0-9-]+)\s+[^>]+>/gi, "<$1>")
 
     // fix escaping, so doesnt mess up the validation
