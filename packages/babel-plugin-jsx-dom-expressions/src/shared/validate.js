@@ -27,10 +27,10 @@ export function isInvalidMarkup(html) {
 
     // remove content (content is problematic, think "doesn't" vs " doesn&#39;t")
     // remove content that isnt in between tags
-    .replace(/^([^<]+)/, "")
-    .replace(/([^>]+)$/, "")
+    .replace(/^[^<]+/, "")
+    .replace(/[^>]+$/, "")
     // remove content in between tags
-    .replace(/>([^<]+)</gi, "><")
+    .replace(/>[^<]+</gi, "><")
 
     // remove attributes (the lack of quotes will make it mismatch)
     .replace(/<([a-z0-9-]+)\s+[^>]+>/gi, "<$1>")
