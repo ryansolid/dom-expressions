@@ -25,13 +25,13 @@ export function isInvalidMarkup(html) {
     .replaceAll("<!$>", "<!--$-->")
     .replaceAll("<!/>", "<!--/-->")
 
-    // replace content (content is problematic, think "doesn't" vs " doesn&#39;t")
-    // replace content that isnt in between tags by an underscore
-    // we can detect if content was moved by the browser if the underscore moves
-    .replace(/^[^<]+/, "_")
-    .replace(/[^>]+$/, "_")
+    // replace content (content is problematic, think "doesn't" vs "doesn&#39;t")
+    // replace content that isnt in between tags by `#text`
+    // we can detect if content was moved by the browser if the `#text` moves
+    .replace(/^[^<]+/, "#text")
+    .replace(/[^>]+$/, "#text")
     // replace content in between tags
-    .replace(/>[^<]+</gi, ">_<")
+    .replace(/>[^<]+</gi, ">#text<")
 
     // remove attributes (the lack of quotes will make it mismatch)
     .replace(/<([a-z0-9-]+)\s+[^>]+>/gi, "<$1>")
