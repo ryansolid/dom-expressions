@@ -28,7 +28,7 @@ export default path => {
             "The HTML provided is malformed and will yield unexpected output when evaluated by a browser.\n";
           console.warn(message);
           console.log(diff(result.html, result.browser));
-          console.log("Original HTML:", html);
+          console.warn("Original HTML:\n", html);
           // throw path.buildCodeFrameError();
         }
       }
