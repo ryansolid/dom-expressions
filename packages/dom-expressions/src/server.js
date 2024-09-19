@@ -673,7 +673,11 @@ function injectHead(tags, html) {
 function appendElement(tag, props) {
   return `(e=>{e=document.head.appendChild(document.createElement("${tag}"));${Object.keys(props)
     .map(k => {
-      if (k === "children") return `e.innerHTML="${resolveSSRNode(escape(props[k]), true)}"`;
+      if (k === "children")
+        return `e.innerHTML="${resolveSSRNode(
+          tag === "script" || tag === "style" ? props[k] : escape(props[k]),
+          true
+        )}"`;
       return `e.setAttribute("${Aliases[k] || escape(k)}","${escape(props[k], true)}")`;
     })
     .join(";")}})();`;
@@ -690,7 +694,8 @@ function streamHeadUpdates(tags) {
   for (let i = 0; i < realized.length; i++) {
     const tag = realized[i];
     if (!prev.has(tag)) {
-      results += appendElement(tag.tag, tag.props);
+      if (tag.tag === "title") results += `document.title="${resolveSSRNode(escape(tag.props.children))}";`;
+      else results += appendElement(tag.tag, tag.props);
     } else prev.delete(tag);
   }
   for (const tag of prev) {
