@@ -1,4 +1,18 @@
 import {
+  createComponent,
+  cleanup,
+  effect,
+  getOwner,
+  memo,
+  mergeProps,
+  root,
+  sharedConfig,
+  untrack
+} from "rxcore";
+import {
+  Aliases,
+  ChildProperties,
+  DelegatedEvents,
   Properties,
   ChildProperties,
   Aliases,
@@ -6,16 +20,6 @@ import {
   SVGNamespace,
   DelegatedEvents
 } from "./constants";
-import {
-  root,
-  effect,
-  memo,
-  getOwner,
-  createComponent,
-  sharedConfig,
-  untrack,
-  mergeProps
-} from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
   Properties,
@@ -612,10 +616,79 @@ export function Hydration(props) {
 
 const voidFn = () => undefined;
 
-export function useTitle(source) {
+// head management
+const cascadedTagInstances = /*#__PURE__*/ Object.create(null);
+function addHeadTag(tag) {
+  const tagKey = `${tag.tag}|${tag.key}`;
+  const hydrating = isHydrating();
+  if (tagKey) {
+    const instances = cascadedTagInstances[tagKey] || (cascadedTagInstances[tagKey] = []);
+    instances.push(tag);
+
+    if (tag.tag === "title") {
+      hydrating || (document.title = tag.props.children);
+      return;
+    }
+
+    const element = tag.ref || (tag.ref = document.createElement(tag.tag));
+    spread(element, tag.props, false, true);
+
+    if (hydrating) return;
+
+    let lastVisited = null;
+    for (var i = instances.length - 2; i >= 0; i--) {
+      if (instances[i] != null) {
+        lastVisited = instances[i];
+        break;
+      }
+    }
+
+    if (!element.parentNode) document.head.appendChild(element);
+    if (lastVisited && lastVisited.ref && lastVisited.ref.parentNode)
+      document.head.removeChild(lastVisited.ref);
+
+    return;
+  }
+
+  const element = tag.ref || (tag.ref = document.createElement(tag.tag));
+  spread(element, tag.props, false, true);
+
+  if (!hydrating && !element.parentNode) document.head.appendChild(element);
+}
+
+function removeHeadTag(tag) {
+  if (!tag.ref) return;
+  const tagKey = `${tag.tag}|${tag.key}`;
+  const t = cascadedTagInstances.get(tagKey);
+  if (t) {
+    if (tag.ref.parentNode) {
+      for (let i = t.length - 1; i >= 0; i--) {
+        if (t[i] != null) {
+          document.head.appendChild(t[i].ref);
+          break;
+        }
+      }
+    }
+
+    t[index] = null;
+    cascadedTagInstances.set(tagKey, t);
+  }
+  tag.ref.parentNode && tag.ref.parentNode.removeChild(tag.ref);
+}
+
+export function useHead(tagDesc) {
+  tagDesc.props = tagDesc.props || {};
+  if (sharedConfig.context) {
+    const id = sharedConfig.getNextContextId(),
+      el = document.querySelector(`[_m=${id}]`);
+    el && el.removeAttribute(`_m`);
+    tagDesc.ref = el;
+  }
   effect(() => {
-    if (typeof source === 'function') source = source();
-    isHydrating() || (document.title = source);
+    tagDesc.key ||
+      (tagDesc.key = tagDesc.tag === "title" ? "_" : tagDesc.props.href || tagDesc.props.src);
+    addHeadTag(tagDesc);
+    cleanup(() => removeHeadTag(tagDesc));
   });
 }
 

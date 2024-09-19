@@ -83,6 +83,5 @@ const notInHeadFragment = (
     <meta name="description" itemprop="section" />
     <script>{`console.log("hi")`}</script>
     <script src="/script.js" />
-    <script src="/async.js" async />
   </>
 );

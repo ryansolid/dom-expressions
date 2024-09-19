@@ -44,7 +44,14 @@ pluginTester({
           "p",
           "noscript",
           "select",
-          "option"
+          "option",
+          "html",
+          "head",
+          "body",
+          "title",
+          "meta",
+          "link",
+          "script"
         ]
       }
     ],

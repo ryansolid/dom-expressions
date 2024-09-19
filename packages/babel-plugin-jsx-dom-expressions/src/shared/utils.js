@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
+import { transformComponentAttributes } from "./component";
 
 export const reservedNameSpaces = new Set([
   "class",
@@ -434,3 +435,32 @@ const templateEscapes = new Map([
 	['\u2028', '\\u2028'],
 	['\u2029', '\\u2029']
 ])
+
+export function detectMetadata(path, tagName, isSVG) {
+  if (
+    tagName === "meta" ||
+    tagName === "link" ||
+    tagName === "script" ||
+    tagName === "style" ||
+    tagName === "base" ||
+    (tagName === "title" && !isSVG)
+  ) {
+    const attributes = path.get("openingElement").get("attributes");
+    let skip = !!attributes.some(a => a.node.name.name === "itemprop");
+    skip = skip || (tagName === "style" && !attributes.some(a => a.node.name.name === "href"));
+    skip = skip || (tagName === "script" && !(attributes.some(a => a.node.name.name === "src") && attributes.some(a => a.node.name.name === "async")));
+    return !skip;
+  }
+}
+
+export function transformMetadata(path) {
+  const tagName = getTagName(path.node);
+  const props = transformComponentAttributes(path);
+  const exprs = [t.callExpression(registerImportMethod(path, "useHead"), [t.objectExpression([
+    t.objectProperty(t.identifier("tag"), t.stringLiteral(tagName)),
+    t.objectProperty(t.identifier("props"), props)
+  ])])];
+  return {
+    exprs, template: "", directInsert: true
+  }
+}

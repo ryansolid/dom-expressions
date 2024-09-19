@@ -28,16 +28,36 @@ function convertComponentIdentifier(node) {
 export default function transformComponent(path) {
   let exprs = [],
     config = getConfig(path),
-    tagId = convertComponentIdentifier(path.node.openingElement.name),
-    props = [],
-    runningObject = [],
-    dynamicSpread = false,
-    hasChildren = path.node.children.length > 0;
+    tagId = convertComponentIdentifier(path.node.openingElement.name);
 
   if (config.builtIns.indexOf(tagId.name) > -1 && !path.scope.hasBinding(tagId.name)) {
     const newTagId = registerImportMethod(path, tagId.name);
     tagId.name = newTagId.name;
   }
+
+  const props = transformComponentAttributes(path);
+  const componentArgs = [tagId, props];
+  exprs.push(t.callExpression(registerImportMethod(path, "createComponent"), componentArgs));
+
+  // handle hoisting conditionals
+  if (exprs.length > 1) {
+    const ret = exprs.pop();
+    exprs = [
+      t.callExpression(
+        t.arrowFunctionExpression([], t.blockStatement([...exprs, t.returnStatement(ret)])),
+        []
+      )
+    ];
+  }
+  return { exprs, template: "", component: true };
+}
+
+export function transformComponentAttributes(path) {
+  let config = getConfig(path),
+    props = [],
+    runningObject = [],
+    dynamicSpread = false,
+    hasChildren = path.node.children.length > 0;
 
   path
     .get("openingElement")
@@ -208,20 +228,7 @@ export default function transformComponent(path) {
   if (props.length > 1 || dynamicSpread) {
     props = [t.callExpression(registerImportMethod(path, "mergeProps"), props)];
   }
-  const componentArgs = [tagId, props[0]];
-  exprs.push(t.callExpression(registerImportMethod(path, "createComponent"), componentArgs));
-
-  // handle hoisting conditionals
-  if (exprs.length > 1) {
-    const ret = exprs.pop();
-    exprs = [
-      t.callExpression(
-        t.arrowFunctionExpression([], t.blockStatement([...exprs, t.returnStatement(ret)])),
-        []
-      )
-    ];
-  }
-  return { exprs, template: "", component: true };
+  return props[0];
 }
 
 function transformComponentChildren(children, config) {

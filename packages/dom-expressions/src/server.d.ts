@@ -56,7 +56,6 @@ export function ssrAttribute(key: string, value: any, isBoolean: boolean): strin
 export function ssrHydrationKey(): string;
 export function resolveSSRNode(node: any): string;
 export function escape(html: string): string;
-export function useTitle(title: string | (() => string)): void;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function getHydrationKey(): string;
@@ -66,6 +65,14 @@ export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): J
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function generateHydrationScript(options: { nonce?: string; eventNames?: string[] }): string;
+
+export interface MetaTagDescription {
+  tag: string;
+  props: Record<string, unknown>;
+  key?: string;
+}
+export function useHead(tagDesc: MetaTagDescription): void;
+
 export declare const RequestContext: unique symbol;
 export interface RequestEvent {
   request: Request;

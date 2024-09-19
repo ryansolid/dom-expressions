@@ -18,7 +18,9 @@ import {
   trimWhitespace,
   isDynamic,
   isComponent,
-  convertJSXIdentifier
+  convertJSXIdentifier,
+  detectMetadata,
+  transformMetadata
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -33,13 +35,16 @@ function appendToTemplate(template, value) {
 }
 
 export function transformElement(path, info) {
-  const config = getConfig(path);
+  const tagName = getTagName(path.node),
+    config = getConfig(path);
+  if (detectMetadata(path, tagName, info.isSVG)) {
+    return transformMetadata(path);
+  }
   // contains spread attributes
   if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
     return createElement(path, { ...info, ...config });
 
-  const tagName = getTagName(path.node),
-    voidTag = VoidElements.indexOf(tagName) > -1,
+  const voidTag = VoidElements.indexOf(tagName) > -1,
     results = {
       template: [`<${tagName}`],
       templateValues: [],
@@ -435,14 +440,16 @@ function transformClasslistObject(path, expr, values, quasis) {
   });
 }
 
-function transformChildren(path, results, { hydratable }) {
+function transformChildren(path, results, info) {
+  const hydratable = info.hydratable;
   const doNotEscape = path.doNotEscape;
+  const isSVG = info.isSVG || SVGElements.has(getTagName(path.node));
   const filteredChildren = filterChildren(path.get("children"));
   const multi = checkLength(filteredChildren),
     markers = hydratable && multi;
   filteredChildren.forEach(node => {
     if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
-      const child = transformNode(node, { doNotEscape, hydratable: false });
+      const child = transformNode(node, { doNotEscape, hydratable: false, isSVG });
       registerImportMethod(path, "NoHydration");
       registerImportMethod(path, "createComponent");
       results.template.push("");
@@ -461,16 +468,16 @@ function transformChildren(path, results, { hydratable }) {
       );
       return;
     }
-    const child = transformNode(node, { doNotEscape });
+    const child = transformNode(node, { doNotEscape, isSVG });
     if (!child) return;
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
     if (child.exprs.length) {
-      if (!doNotEscape && !child.spreadElement)
+      if (!doNotEscape && !child.directInsert)
         child.exprs[0] = escapeExpression(path, child.exprs[0]);
 
       // boxed by textNodes
-      if (markers && !child.spreadElement) {
+      if (markers && !child.directInsert) {
         appendToTemplate(results.template, `<!--$-->`);
         results.template.push("");
         results.templateValues.push(child.exprs[0]);
@@ -497,12 +504,12 @@ function createElement(path, { topLevel, hydratable }) {
         if (v.length) memo.push(t.stringLiteral(v));
       } else {
         const child = transformNode(path);
-        if (markers && child.exprs.length && !child.spreadElement)
+        if (markers && child.exprs.length && !child.directInsert)
           memo.push(t.stringLiteral("<!--$-->"));
-        if (child.exprs.length && !child.spreadElement)
+        if (child.exprs.length && !child.directInsert)
           child.exprs[0] = escapeExpression(path, child.exprs[0]);
         memo.push(getCreateTemplate(config, path, child)(path, child, true));
-        if (markers && child.exprs.length && !child.spreadElement)
+        if (markers && child.exprs.length && !child.directInsert)
           memo.push(t.stringLiteral("<!--/-->"));
       }
       return memo;
@@ -597,5 +604,5 @@ function createElement(path, { topLevel, hydratable }) {
       t.booleanLiteral(Boolean(topLevel && config.hydratable))
     ])
   ];
-  return { exprs, template: "", spreadElement: true };
+  return { exprs, template: "", directInsert: true };
 }

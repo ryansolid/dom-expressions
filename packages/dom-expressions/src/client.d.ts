@@ -64,7 +64,6 @@ export function getHydrationKey(): string;
 export function getNextElement(template?: HTMLTemplateElement): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 export function getNextMarker(start: Node): [Node, Array<Node>];
-export function useTitle(title: string | (() => string)): void;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function HydrationScript(): JSX.Element;
@@ -72,6 +71,14 @@ export function generateHydrationScript(): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
+
+export interface MetaTagDescription {
+  tag: string;
+  props: Record<string, unknown>;
+  key?: string;
+}
+export function useHead(tagDesc: MetaTagDescription): void;
+
 export interface RequestEvent {
   request: Request;
 }

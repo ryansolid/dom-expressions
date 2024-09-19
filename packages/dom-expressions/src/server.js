@@ -1,5 +1,5 @@
 import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
-import { sharedConfig, root } from "rxcore";
+import { sharedConfig, root, cleanup } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
 export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
@@ -39,6 +39,7 @@ export function renderToString(code, options = {}) {
     suspense: {},
     lazy: {},
     assets: [],
+    metadata: [],
     nonce: options.nonce,
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
@@ -48,12 +49,14 @@ export function renderToString(code, options = {}) {
       return this.renderId + "i-" + this.roots++;
     }
   };
+  sharedConfig.context.metadata.cascade = Object.create(null);
   let html = root(d => {
     setTimeout(d);
     return resolveSSRNode(escape(code()));
   });
   sharedConfig.context.noHydrate = true;
   serializer.close();
+  html = injectHead(sharedConfig.context.metadata, html);
   html = injectAssets(sharedConfig.context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
   return html;
@@ -86,8 +89,8 @@ export function renderToStream(code, options = {}) {
     }
   };
   const onDone = () => {
-    writeTasks();
     doShell();
+    writeTasks();
     onCompleteAll &&
       onCompleteAll({
         write(v) {
@@ -114,9 +117,6 @@ export function renderToStream(code, options = {}) {
   };
   const registry = new Map();
   const writeTasks = () => {
-    if (context.title !== flushedTitle) {
-      tasks += `document.title="${(flushedTitle = context.title)}";`;
-    }
     if (tasks.length && !completed && firstFlushed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
       tasks = "";
@@ -133,7 +133,6 @@ export function renderToStream(code, options = {}) {
   let completed = false;
   let shellCompleted = false;
   let scriptFlushed = false;
-  let flushedTitle = "";
   let timer = null;
   let buffer = {
     write(payload) {
@@ -148,6 +147,7 @@ export function renderToStream(code, options = {}) {
     lazy: {},
     suspense: {},
     assets: [],
+    metadata: [],
     nonce,
     block(p) {
       if (!firstFlushed) blockingPromises.push(p);
@@ -211,6 +211,7 @@ export function renderToStream(code, options = {}) {
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
+              if (context.metadata.updated) pushTask(streamHeadUpdates(context.metadata));
               resolve(error);
               scriptFlushed = true;
             }
@@ -220,6 +221,7 @@ export function renderToStream(code, options = {}) {
       };
     }
   };
+  context.metadata.cascade = Object.create(null);
 
   let html = root(d => {
     dispose = d;
@@ -229,6 +231,7 @@ export function renderToStream(code, options = {}) {
     if (shellCompleted) return;
     sharedConfig.context = context;
     context.noHydrate = true;
+    html = injectHead(context.metadata, html);
     html = injectAssets(context.assets, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
@@ -601,6 +604,142 @@ export function getRequestEvent() {
           "RequestEvent is missing. This is most likely due to accessing `getRequestEvent` non-managed async scope in a partially polyfilled environment. Try moving it above all `await` calls."
         )
     : undefined;
+}
+
+// head management
+function addHeadTag(tags, tag) {
+  const tagKey = `${tag.tag}|${tag.key}`;
+  tags.updated = true;
+  if (tagKey) {
+    const instances = tags.cascade[tagKey] || (tags.cascade[tagKey] = []);
+    instances.push(tag);
+    if (instances.length > 1) {
+      const index = tags.indexOf(instances[instances.length - 2]);
+      tags[index] = tag;
+      return;
+    }
+  }
+  tags.push(tagDesc);
+}
+function removeHeadTag(tags, tag) {
+  const tagKey = `${tag.tag}|${tag.key}`;
+  const tagsIndex = tags.indexOf(tag);
+  if (tagKey) {
+    const instances = tags.cascade[tagKey];
+    if (!instances) return;
+    const index = instances.indexOf(tag);
+    if (index !== -1) instances.splice(index, 1);
+    if (tagsIndex === -1) return;
+    if (instances.length){
+      tags[tagsIndex] = instances[instances.length - 1];
+      tags.updated = true;
+      return;
+    }
+  }
+  if (tagsIndex !== -1) {
+    tags.updated = true;
+    tags.splice(index, 1);
+  }
+}
+
+function realizeHeadTags(tags) {
+  return [...tags].sort((a, b) => {
+    const aIndex = a.tag === "title" ? -1 : a.tag === "link" || a.tag === "style" ? 0 : 1;
+    const bIndex = b.tag === "title" ? -1 : b.tag === "link" || b.tag === "style" ? 0 : 1;
+    return aIndex - bIndex;
+  });
+}
+
+function renderHeadTags(tags) {
+  let result = "";
+  for (let i = 0; i < tags.top.length; i++) {
+    const tag = tags.top[i];
+    result += ssrElement(tag.tag, tag.props).t;
+  }
+  return result;
+}
+
+function injectHead(tags, html) {
+  const head = html.indexOf(`<head`);
+  if (head === -1) return html;
+  const headEnd = html.indexOf(`>`, head);
+  if (headEnd === -1) return html;
+  const realized = realizeHeadTags(tags);
+  tags.realized = realized;
+  tags.updated = false;
+  return html.slice(0, headEnd + 1) + renderHeadTags(realized) + html.slice(headEnd + 1);
+}
+
+function appendElement(tag, props) {
+  return `(e=>{e=document.head.appendChild(document.createElement("${tag}"));${Object.keys(props)
+    .map(k => {
+      if (k === "children") return `e.innerHTML="${resolveSSRNode(escape(props[k]), true)}"`;
+      return `e.setAttribute("${Aliases[k] || escape(k)}","${escape(props[k], true)}")`;
+    })
+    .join(";")}})();`;
+}
+
+function removeElement(id) {
+  return `(e=>{e=document.head.querySelector("[_m=${id}]");e&&e.remove()})();`;
+}
+
+function streamHeadUpdates(tags) {
+  let results = "";
+  const realized = realizeHeadTags(tags);
+  const prev = new Set(tags.realized);
+  for (let i = 0; i < realized.length; i++) {
+    const tag = realized[i];
+    if (!prev.has(tag)) {
+      results += appendElement(tag.tag, tag.props);
+    } else prev.delete(tag);
+  }
+  for (const tag of prev) {
+    results += removeElement(tag.props._m);
+  }
+  tags.realized = realized;
+  tags.updated = false;
+  return results;
+}
+
+export function useHead(tagDesc) {
+  const tags = sharedConfig.context.metadata;
+  tagDesc.props = tagDesc.props || {};
+  tagDesc.props._m = sharedConfig.getNextContextId();
+  effect(() => {
+    tagDesc.key ||
+      (tagDesc.key = tagDesc.tag === "title" ? "_" : tagDesc.props.href || tagDesc.props.src);
+    addHeadTag(tags, tagDesc);
+    cleanup(() => removeHeadTag(tags, tagDesc));
+  });
+}
+
+// client-only APIs
+export {
+  notSup as classList,
+  notSup as style,
+  notSup as insert,
+  notSup as spread,
+  notSup as delegateEvents,
+  notSup as dynamicProperty,
+  notSup as setAttribute,
+  notSup as setAttributeNS,
+  notSup as addEventListener,
+  notSup as render,
+  notSup as template,
+  notSup as setProperty,
+  notSup as className,
+  notSup as assign,
+  notSup as hydrate,
+  notSup as getNextElement,
+  notSup as getNextMatch,
+  notSup as getNextMarker,
+  notSup as runHydrationEvents
+};
+
+function notSup() {
+  throw new Error(
+    "Client-only API called on the server side. Run client-only code in onMount, or conditionally run client-only component with <Show>."
+  );
 }
 
 /**
