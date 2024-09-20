@@ -282,6 +282,7 @@ export function runHydrationEvents() {
   if (sharedConfig.events && !sharedConfig.events.queued) {
     queueMicrotask(() => {
       const { completed, events } = sharedConfig;
+      if (!events) return;
       events.queued = false;
       while (events.length) {
         const [el, e] = events[0];
