@@ -619,7 +619,7 @@ function addHeadTag(tags, tag) {
       return;
     }
   }
-  tags.push(tagDesc);
+  tags.push(tag);
 }
 function removeHeadTag(tags, tag) {
   const tagKey = `${tag.tag}|${tag.key}`;
@@ -638,7 +638,7 @@ function removeHeadTag(tags, tag) {
   }
   if (tagsIndex !== -1) {
     tags.updated = true;
-    tags.splice(index, 1);
+    tags.splice(tagsIndex, 1);
   }
 }
 
@@ -652,8 +652,8 @@ function realizeHeadTags(tags) {
 
 function renderHeadTags(tags) {
   let result = "";
-  for (let i = 0; i < tags.top.length; i++) {
-    const tag = tags.top[i];
+  for (let i = 0; i < tags.length; i++) {
+    const tag = tags[i];
     result += ssrElement(tag.tag, tag.props).t;
   }
   return result;
@@ -701,21 +701,20 @@ function streamHeadUpdates(tags) {
   for (const tag of prev) {
     results += removeElement(tag.props._m);
   }
+  if (results) results = `if(!_$HY.done){${results}}`;
   tags.realized = realized;
   tags.updated = false;
   return results;
 }
 
 export function useHead(tagDesc) {
-  const tags = sharedConfig.context.metadata;
   tagDesc.props = tagDesc.props || {};
-  tagDesc.props._m = sharedConfig.getNextContextId();
-  effect(() => {
-    tagDesc.key ||
-      (tagDesc.key = tagDesc.tag === "title" ? "_" : tagDesc.props.href || tagDesc.props.src);
-    addHeadTag(tags, tagDesc);
-    cleanup(() => removeHeadTag(tags, tagDesc));
-  });
+  tagDesc.tag !== "title" && (tagDesc.props._m = sharedConfig.getNextContextId());
+  tagDesc.key ||
+    (tagDesc.key = tagDesc.tag === "title" ? "_" : tagDesc.props.href || tagDesc.props.src);
+  const tags = sharedConfig.context.metadata;
+  addHeadTag(tags, tagDesc);
+  cleanup(() => removeHeadTag(tags, tagDesc));
 }
 
 // client-only APIs

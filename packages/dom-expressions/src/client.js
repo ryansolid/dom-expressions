@@ -626,7 +626,7 @@ function addHeadTag(tag) {
     instances.push(tag);
 
     if (tag.tag === "title") {
-      hydrating || (document.title = tag.props.children);
+      effect(() => hydrating || (document.title = resolveTextChildren(tag.props.children)));
       return;
     }
 
@@ -676,11 +676,23 @@ function removeHeadTag(tag) {
   tag.ref.parentNode && tag.ref.parentNode.removeChild(tag.ref);
 }
 
+function resolveTextChildren(children) {
+  if (typeof children === "function" && !children.length) return resolveTextChildren(children());
+  if (Array.isArray(children)) {
+    let results = "";
+    for (let i = 0; i < children.length; i++) {
+      results += resolveTextChildren(children[i])
+    }
+    return results;
+  }
+  return children;
+}
+
 export function useHead(tagDesc) {
   tagDesc.props = tagDesc.props || {};
   if (sharedConfig.context) {
     const id = sharedConfig.getNextContextId(),
-      el = document.querySelector(`[_m=${id}]`);
+      el = document.querySelector(`[_m="${id}"]`);
     el && el.removeAttribute(`_m`);
     tagDesc.ref = el;
   }
