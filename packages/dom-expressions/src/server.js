@@ -46,8 +46,7 @@ export function renderToString(code, options = {}) {
     roots: 0,
     nextRoot() {
       return this.renderId + "i-" + this.roots++;
-    },
-    title: ""
+    }
   };
   let html = root(d => {
     setTimeout(d);
@@ -55,7 +54,6 @@ export function renderToString(code, options = {}) {
   });
   sharedConfig.context.noHydrate = true;
   serializer.close();
-  html = injectTitle(sharedConfig.context.title, html);
   html = injectAssets(sharedConfig.context.assets, html);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
   return html;
@@ -220,8 +218,7 @@ export function renderToStream(code, options = {}) {
         }
         return firstFlushed;
       };
-    },
-    title: ""
+    }
   };
 
   let html = root(d => {
@@ -232,7 +229,6 @@ export function renderToStream(code, options = {}) {
     if (shellCompleted) return;
     sharedConfig.context = context;
     context.noHydrate = true;
-    html = injectTitle((flushedTitle = context.title), html);
     html = injectAssets(context.assets, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
@@ -705,29 +701,8 @@ export function ssrSpread(props, isSVG, skipChildren) {
   return result;
 }
 
-export function useTitle(source) {
-  if (typeof source === "function") source = source();
-  sharedConfig.context.title = source;
-}
-
-function injectTitle(title, html) {
-  if (!title) return html;
-  const head = html.indexOf(`<head`);
-  if (head === -1) return html;
-  const headEnd = html.indexOf(`</head>`, head);
-  const titleStart = html.indexOf(`<title`, head);
-  if (titleStart > headEnd) return html;
-  if (titleStart > -1) {
-    return (
-      html.slice(0, titleStart) +
-      `<title>${title}</title>` +
-      html.slice(html.indexOf(`</title>`, titleStart) + 8)
-    );
-  }
-  return html.slice(0, headEnd) + `<title>${title}</title>` + html.slice(headEnd);
-}
-
 // client-only APIs
+
 export {
   notSup as classList,
   notSup as style,

@@ -1,31 +1,48 @@
 import {
-  createComponent,
-  effect,
-  getOwner,
-  memo,
-  mergeProps,
-  root,
-  sharedConfig,
-  untrack
-} from "rxcore";
-import {
-  Aliases,
-  ChildProperties,
-  DelegatedEvents,
   Properties,
+  ChildProperties,
+  Aliases,
+  getPropAlias,
   SVGNamespace,
-  getPropAlias
+  DelegatedEvents
 } from "./constants";
+import {
+  root,
+  effect,
+  memo,
+  getOwner,
+  createComponent,
+  sharedConfig,
+  untrack,
+  mergeProps
+} from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
-  Aliases, ChildProperties, DOMElements, DelegatedEvents, Properties, SVGElements,
-  SVGNamespace, getPropAlias
+  Properties,
+  ChildProperties,
+  getPropAlias,
+  Aliases,
+  DOMElements,
+  SVGElements,
+  SVGNamespace,
+  DelegatedEvents
 } from "./constants";
 
 const $$EVENTS = "_$DX_DELEGATE";
 
 export {
-  voidFn as Assets, voidFn as HydrationScript, createComponent, effect, voidFn as generateHydrationScript, voidFn as getAssets, getOwner, voidFn as getRequestEvent, memo, mergeProps, untrack, voidFn as useAssets
+  effect,
+  memo,
+  untrack,
+  getOwner,
+  createComponent,
+  mergeProps,
+  voidFn as useAssets,
+  voidFn as getAssets,
+  voidFn as Assets,
+  voidFn as generateHydrationScript,
+  voidFn as HydrationScript,
+  voidFn as getRequestEvent
 };
 
 export function render(code, element, init, options = {}) {
