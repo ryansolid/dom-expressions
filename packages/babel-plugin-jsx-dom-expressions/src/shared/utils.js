@@ -228,7 +228,7 @@ export function toAttributeName(name) {
 }
 
 export function toPropertyName(name) {
-  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
+  return name.replace(/-([a-z])/g, (_, w) => w.toUpperCase());
 }
 
 export function wrappedByText(list, startIndex) {
