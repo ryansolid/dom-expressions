@@ -114,9 +114,6 @@ export function renderToStream(code, options = {}) {
   };
   const registry = new Map();
   const writeTasks = () => {
-    if (context.title !== flushedTitle) {
-      tasks += `document.title="${(flushedTitle = context.title)}";`;
-    }
     if (tasks.length && !completed && firstFlushed) {
       buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
       tasks = "";
@@ -133,7 +130,6 @@ export function renderToStream(code, options = {}) {
   let completed = false;
   let shellCompleted = false;
   let scriptFlushed = false;
-  let flushedTitle = "";
   let timer = null;
   let buffer = {
     write(payload) {
@@ -603,9 +599,7 @@ export function getRequestEvent() {
     : undefined;
 }
 
-/**
- * @deprecated Replaced by useAssets
- */
+// consider deprecating
 export function Assets(props) {
   useAssets(() => props.children);
 }

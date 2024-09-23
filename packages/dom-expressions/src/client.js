@@ -612,13 +612,6 @@ export function Hydration(props) {
 
 const voidFn = () => undefined;
 
-export function useTitle(source) {
-  effect(() => {
-    if (typeof source === 'function') source = source();
-    isHydrating() || (document.title = source);
-  });
-}
-
 // experimental
 export const RequestContext = Symbol();
 

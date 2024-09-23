@@ -64,7 +64,6 @@ export function getHydrationKey(): string;
 export function getNextElement(template?: HTMLTemplateElement): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 export function getNextMarker(start: Node): [Node, Array<Node>];
-export function useTitle(title: string | (() => string)): void;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function HydrationScript(): JSX.Element;
