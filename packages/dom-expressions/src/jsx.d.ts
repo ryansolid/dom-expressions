@@ -2130,7 +2130,7 @@ export namespace JSX {
     main: HTMLAttributes<HTMLElement>;
     map: MapHTMLAttributes<HTMLMapElement>;
     mark: HTMLAttributes<HTMLElement>;
-    menu: MenuHTMLAttributes<HTMLElement>;
+    menu: MenuHTMLAttributes<HTMLMenuElement>;
     meta: MetaHTMLAttributes<HTMLMetaElement>;
     meter: MeterHTMLAttributes<HTMLElement>;
     nav: HTMLAttributes<HTMLElement>;
