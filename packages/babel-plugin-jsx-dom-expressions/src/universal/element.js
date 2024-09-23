@@ -217,6 +217,7 @@ function transformChildren(path, results) {
       const i = memo.length;
       if (child.text && i && memo[i - 1].text) {
         memo[i - 1].template += child.template;
+        memo[i - 1].templateWithClosingTags += child.templateWithClosingTags || child.template;
       } else memo.push(child);
       return memo;
     }, []);

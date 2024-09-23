@@ -33,8 +33,21 @@ const template = (() => {
   _$addEventListener(_el$9, "click", handler, true);
   _el$10.$$click = handler;
   _el$11.$$click = hoisted2;
-  _el$12.addEventListener("click", () => console.log("listener"));
-  _el$12.addEventListener("CAPS-ev", () => console.log("custom"));
+  _$addEventListener(_el$12, "inlined-to-hoisted2", {
+    handleEvent: hoistedcustomevent2
+  });
+  _$addEventListener(_el$12, "inlined-to-hoisted1", {
+    handleEvent: hoistedCustomEvent1
+  });
+  _$addEventListener(_el$12, "inlined-with-options", {
+    handleEvent: () => console.log("listener"),
+    once: false
+  });
+  _$addEventListener(_el$12, "inlined", () => console.log("listener"));
+  _$addEventListener(_el$12, "hoisted-custom-event2", hoistedCustomEvent2);
+  _$addEventListener(_el$12, "hoisted-custom-event1", hoistedCustomEvent1);
+  _$addEventListener(_el$12, "CAPS-ev3", () => console.log("custom"));
+  _$addEventListener(_el$12, "click", () => console.log("listener"));
   _el$13.addEventListener("camelClick", () => console.log("listener"), true);
   return _el$;
 })();

@@ -33,6 +33,7 @@ export function createTemplate(path, result) {
     templates.push({
       id,
       template,
+      templateWithClosingTags:template,
       renderer: "ssr"
     });
   } else id = found.id;

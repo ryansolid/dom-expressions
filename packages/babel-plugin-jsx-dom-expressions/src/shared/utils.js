@@ -8,10 +8,11 @@ export const reservedNameSpaces = new Set([
   "style",
   "use",
   "prop",
-  "attr"
+  "attr",
+  "bool"
 ]);
 
-export const nonSpreadNameSpaces = new Set(["class", "style", "use", "prop", "attr"]);
+export const nonSpreadNameSpaces = new Set(["class", "style", "use", "prop", "attr", "bool"]);
 
 export function getConfig(path) {
   return path.hub.file.metadata.config;

@@ -58,6 +58,7 @@ export function transformElement(path, info) {
       registerImportMethod(path, "createComponent");
       const child = transformElement(path, { ...info, topLevel: false });
       results.template = "";
+      results.templateWithClosingTags = "";
       results.exprs.push(
         t.callExpression(t.identifier("_$createComponent"), [
           t.identifier("_$NoHydration"),
