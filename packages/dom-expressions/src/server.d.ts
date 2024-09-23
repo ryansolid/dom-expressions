@@ -1,3 +1,15 @@
+import { JSX } from "./jsx.js";
+export const Aliases: Record<string, string>;
+export const Properties: Set<string>;
+export const ChildProperties: Set<string>;
+export const DelegatedEvents: Set<string>;
+export const DOMElements: Set<string>;
+export const SVGElements: Set<string>;
+export const SVGNamespace: Record<string, string>;
+export function getPropAlias(prop: string, tagName: string): string | undefined;
+
+type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
+
 export function renderToString<T>(
   fn: () => T,
   options?: {
@@ -44,6 +56,7 @@ export function ssrAttribute(key: string, value: any, isBoolean: boolean): strin
 export function ssrHydrationKey(): string;
 export function resolveSSRNode(node: any): string;
 export function escape(html: string): string;
+export function useTitle(title: string | (() => string)): void;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function getHydrationKey(): string;
@@ -62,13 +75,18 @@ export function getRequestEvent(): RequestEvent | undefined;
 
 export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
-export function Assets(props: { children?: JSX.Element }): JSX.Element;
+export function untrack<T>(fn: () => T): T;
 
 // deprecated
+/** @deprecated Replaced by useAssets */
+export function Assets(props: { children?: JSX.Element }): JSX.Element;
+
 export type LegacyResults = {
   write: (text: string) => void;
   startWriting: () => void;
 };
+
+/** @deprecated Replaced by renderToStream */
 export function pipeToWritable<T>(
   fn: () => T,
   writable: WritableStream,
@@ -78,6 +96,8 @@ export function pipeToWritable<T>(
     onCompleteAll?: () => void;
   }
 ): void;
+
+/** @deprecated Replaced by renderToStream */
 export function pipeToNodeWritable<T>(
   fn: () => T,
   writable: { write: (v: string) => void },
@@ -87,3 +107,77 @@ export function pipeToNodeWritable<T>(
     onCompleteAll?: () => void;
   }
 ): void;
+
+// client-only APIs
+
+/** @deprecated not supported on the server side */
+export function classList(
+  node: Element,
+  value: { [k: string]: boolean },
+  prev?: { [k: string]: boolean }
+): { [k: string]: boolean };
+
+/** @deprecated not supported on the server side */
+export function style(
+  node: Element,
+  value: { [k: string]: string },
+  prev?: { [k: string]: string }
+): void;
+
+/** @deprecated not supported on the server side */
+export function insert<T>(
+  parent: MountableElement,
+  accessor: (() => T) | T,
+  marker?: Node | null,
+  init?: JSX.Element
+): JSX.Element;
+
+/** @deprecated not supported on the server side */
+export function spread<T>(
+  node: Element,
+  accessor: (() => T) | T,
+  isSVG?: Boolean,
+  skipChildren?: Boolean
+): void;
+
+/** @deprecated not supported on the server side */
+export function delegateEvents(eventNames: string[], d?: Document): void;
+/** @deprecated not supported on the server side */
+export function dynamicProperty(props: unknown, key: string): unknown;
+/** @deprecated not supported on the server side */
+export function setAttribute(node: Element, name: string, value: string): void;
+/** @deprecated not supported on the server side */
+export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
+
+/** @deprecated not supported on the server side */
+export function addEventListener(
+  node: Element,
+  name: string,
+  handler: () => void,
+  delegate: boolean
+): void;
+
+/** @deprecated not supported on the server side */
+export function render(code: () => JSX.Element, element: MountableElement): () => void;
+/** @deprecated not supported on the server side */
+export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
+/** @deprecated not supported on the server side */
+export function setProperty(node: Element, name: string, value: any): void;
+/** @deprecated not supported on the server side */
+export function className(node: Element, value: string): void;
+/** @deprecated not supported on the server side */
+export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
+
+/** @deprecated not supported on the server side */
+export function hydrate(
+  fn: () => JSX.Element,
+  node: MountableElement,
+  options?: { renderId?: string; owner?: unknown }
+): () => void;
+
+/** @deprecated not supported on the server side */
+export function getNextElement(template?: HTMLTemplateElement): Element;
+/** @deprecated not supported on the server side */
+export function getNextMatch(start: Node, elementName: string): Element;
+/** @deprecated not supported on the server side */
+export function getNextMarker(start: Node): [Node, Array<Node>];

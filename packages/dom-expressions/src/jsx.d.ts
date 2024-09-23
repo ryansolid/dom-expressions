@@ -28,6 +28,7 @@ export namespace JSX {
       }
     ): void;
   }
+
   interface BoundEventHandler<T, E extends Event> {
     0: (
       data: any,
@@ -39,6 +40,19 @@ export namespace JSX {
     1: any;
   }
   type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+
+  interface EventHandlerWithOptions<T, E extends Event> extends AddEventListenerOptions {
+    handleEvent: (
+      e: E & {
+        currentTarget: T;
+        target: Element;
+      }
+    ) => void;
+  }
+
+  type CustomEventHandlerUnion<T, E extends Event> =
+    | EventHandler<T, E>
+    | EventHandlerWithOptions<T, E>;
 
   interface InputEventHandler<T, E extends InputEvent> {
     (
@@ -141,7 +155,11 @@ export namespace JSX {
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
+  interface ExplicitBoolAttributes {}
   interface CustomEvents {}
+  /**
+   * @deprecated Replaced by CustomEvents
+  */
   interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
@@ -168,8 +186,11 @@ export namespace JSX {
   type AttrAttributes = {
     [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key];
   };
+  type BoolAttributes = {
+    [Key in keyof ExplicitBoolAttributes as `bool:${Key}`]?: ExplicitBoolAttributes[Key];
+  };
   type OnAttributes<T> = {
-    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
+    [Key in keyof CustomEvents as `on:${Key}`]?: CustomEventHandlerUnion<T, CustomEvents[Key]>;
   };
   type OnCaptureAttributes<T> = {
     [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
@@ -2109,7 +2130,7 @@ export namespace JSX {
     main: HTMLAttributes<HTMLElement>;
     map: MapHTMLAttributes<HTMLMapElement>;
     mark: HTMLAttributes<HTMLElement>;
-    menu: MenuHTMLAttributes<HTMLElement>;
+    menu: MenuHTMLAttributes<HTMLMenuElement>;
     meta: MetaHTMLAttributes<HTMLMetaElement>;
     meter: MeterHTMLAttributes<HTMLElement>;
     nav: HTMLAttributes<HTMLElement>;

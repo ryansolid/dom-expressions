@@ -61,7 +61,9 @@ export function transformElement(path, info) {
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
-    isCustomElement = tagName.indexOf("-") > -1 || !!path.get("openingElement").get("attributes").find(a => a.node.name?.name === "is"),
+    isCustomElement = tagName.indexOf("-") > -1 || path.get("openingElement").get("attributes").some(a => a.node?.name?.name === "is" || a.name?.name === "is"),
+    isImportNode = (tagName === 'img'||tagName === 'iframe') && path.get("openingElement").get("attributes").some(a =>  a.node.name?.name === "loading" && a.node.value?.value === "lazy"
+     ),
     results = {
       template: `<${tagName}`,
       templateWithClosingTags: `<${tagName}`,
@@ -71,6 +73,7 @@ export function transformElement(path, info) {
       postExprs: [],
       isSVG: wrapSVG,
       hasCustomElement: isCustomElement,
+      isImportNode,
       tagName,
       renderer: "dom",
       skipTemplate: false
@@ -225,6 +228,13 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
+  if(namespace === 'bool') {
+    return t.callExpression(
+      registerImportMethod(path, "setBoolAttribute", getRendererConfig(path, "dom").moduleName),
+      [elem, t.stringLiteral(name), value]
+    );
+  }
+
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
   const alias = getPropAlias(name, tagName.toUpperCase());
@@ -279,7 +289,7 @@ function transformAttributes(path, results) {
     attributes = path.get("openingElement").get("attributes");
   const tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
-    isCE = tagName.includes("-"),
+    isCE = tagName.includes("-") || attributes.some(a => a.node.name?.name === 'is'),
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
 
@@ -551,15 +561,29 @@ function transformAttributes(path, results) {
           children = value;
         } else if (key.startsWith("on")) {
           const ev = toEventName(key);
-          if (key.startsWith("on:") || key.startsWith("oncapture:")) {
-            const listenerOptions = [t.stringLiteral(key.split(":")[1]), value.expression];
+          if (key.startsWith("on:")) {
+            const args = [elem, t.stringLiteral(key.split(":")[1]), value.expression];
+
+            results.exprs.unshift(
+              t.expressionStatement(
+                t.callExpression(
+                  registerImportMethod(
+                    path,
+                    "addEventListener",
+                    getRendererConfig(path, "dom").moduleName,
+                  ),
+                  args,
+                ),
+              ),
+            );
+          } else if (key.startsWith("oncapture:")) {
+            // deprecated see above condition
+            const args = [t.stringLiteral(key.split(":")[1]), value.expression, t.booleanLiteral(true)];
             results.exprs.push(
               t.expressionStatement(
                 t.callExpression(
                   t.memberExpression(elem, t.identifier("addEventListener")),
-                  key.startsWith("oncapture:")
-                    ? listenerOptions.concat(t.booleanLiteral(true))
-                    : listenerOptions
+                  args
                 )
               )
             );
@@ -706,6 +730,54 @@ function transformAttributes(path, results) {
             isCE,
             tagName
           });
+        } else if(key.slice(0, 5) === 'bool:'){
+
+            // inline it on the template when possible
+            let content = value;
+
+            if (t.isJSXExpressionContainer(content)) content = content.expression;
+
+            function addBoolAttribute() {
+              results.template += `${needsSpacing ? " " : ""}${key.slice(5)}`;
+              needsSpacing = true;
+            }
+
+            switch (content.type) {
+              case "StringLiteral": {
+                if (content.value.length && content.value !== "0") {
+                  addBoolAttribute();
+                }
+                return;
+              }
+              case "NullLiteral": {
+                return;
+              }
+              case "BooleanLiteral": {
+                if (content.value) {
+                  addBoolAttribute();
+                }
+                return;
+              }
+              case "Identifier": {
+                if (content.name === "undefined") {
+                  return;
+                }
+                break;
+              }
+            }
+
+            // when not possible to inline it in the template
+            results.exprs.push(
+              t.expressionStatement(
+                setAttr(
+                  attribute,
+                  elem,
+                  key,
+                  t.isJSXExpressionContainer(value) ? value.expression : value,
+                  { isSVG, isCE, tagName },
+                ),
+              ),
+            );
         } else {
           results.exprs.push(
             t.expressionStatement(
@@ -845,6 +917,8 @@ function transformChildren(path, results, config) {
 
     results.template += child.template;
     results.templateWithClosingTags += child.templateWithClosingTags || child.template ;
+    results.isImportNode = results.isImportNode || child.isImportNode;
+    
     if (child.id) {
       if (child.tagName === "head") {
         if (config.hydratable) {
@@ -893,6 +967,7 @@ function transformChildren(path, results, config) {
       childPostExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
+      results.isImportNode = results.isImportNode || child.isImportNode;
       tempPath = child.id.name;
       nextPlaceholder = null;
       i++;
@@ -996,7 +1071,7 @@ function detectExpressions(children, index, config) {
     } else if (t.isJSXElement(child)) {
       const tagName = getTagName(child);
       if (isComponent(tagName)) return true;
-      if (config.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1))
+      if (config.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1 || child.openingElement.attributes.some(a => a.name?.name === 'is')))
         return true;
       if (
         child.openingElement.attributes.some(

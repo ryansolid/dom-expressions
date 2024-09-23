@@ -64,7 +64,7 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, isCE, isSVG) {
+export function template(html, isImportNode, isSVG) {
   let node;
   const create = () => {
     if ("_DX_DEV_" && isHydrating())
@@ -76,7 +76,7 @@ export function template(html, isCE, isSVG) {
     return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
   };
   // backwards compatible with older builds
-  const fn = isCE
+  const fn = isImportNode
     ? () => untrack(() => document.importNode(node || (node = create()), true))
     : () => (node || (node = create())).cloneNode(true);
   fn.cloneNode = fn;
@@ -118,6 +118,11 @@ export function setAttributeNS(node, namespace, name, value) {
   else node.setAttributeNS(namespace, name, value);
 }
 
+export function setBoolAttribute(node, name, value) {
+  if (isHydrating(node)) return;
+  value ? node.setAttribute(name, "") : node.removeAttribute(name);
+}
+
 export function className(node, value) {
   if (isHydrating(node)) return;
   if (value == null) node.removeAttribute("class");
@@ -133,7 +138,7 @@ export function addEventListener(node, name, handler, delegate) {
   } else if (Array.isArray(handler)) {
     const handlerFn = handler[0];
     node.addEventListener(name, (handler[0] = e => handlerFn.call(node, handler[1], e)));
-  } else node.addEventListener(name, handler);
+  } else node.addEventListener(name, handler, typeof handler !== "function" && handler);
 }
 
 export function classList(node, value, prev = {}) {
@@ -214,7 +219,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
+      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef, props);
     }
   }
   for (const prop in props) {
@@ -223,7 +228,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
       continue;
     }
     const value = props[prop];
-    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef);
+    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef, props);
   }
 }
 
@@ -253,8 +258,10 @@ export function getNextElement(template) {
     key,
     hydrating = isHydrating();
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
-    if ("_DX_DEV_" && hydrating)
-      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`);
+    if ("_DX_DEV_" && hydrating) {
+      sharedConfig.done = true;
+      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`);
+    }
     return template();
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
@@ -292,6 +299,7 @@ export function runHydrationEvents() {
   if (sharedConfig.events && !sharedConfig.events.queued) {
     queueMicrotask(() => {
       const { completed, events } = sharedConfig;
+      if (!events) return;
       events.queued = false;
       while (events.length) {
         const [el, e] = events[0];
@@ -323,7 +331,7 @@ function toggleClassKey(node, key, value) {
     node.classList.toggle(classNames[i], value);
 }
 
-function assignProp(node, prop, value, prev, isSVG, skipRef) {
+function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
   let isCE, isProp, isChildProp, propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
@@ -332,8 +340,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     if (!skipRef) value(node);
   } else if (prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);
-    prev && node.removeEventListener(e, prev);
-    value && node.addEventListener(e, value);
+    prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
+    value && node.addEventListener(e, value, typeof value !== "function" && value);
   } else if (prop.slice(0, 10) === "oncapture:") {
     const e = prop.slice(10);
     prev && node.removeEventListener(e, prev, true);
@@ -351,12 +359,14 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     }
   } else if (prop.slice(0, 5) === "attr:") {
     setAttribute(node, prop.slice(5), value);
+  } else if (prop.slice(0, 5) === "bool:") {
+    setBoolAttribute(node, prop.slice(5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     (isChildProp = ChildProperties.has(prop)) ||
     (!isSVG &&
       ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
-    (isCE = node.nodeName.includes("-"))
+    (isCE = (node.nodeName.includes("-") || 'is' in props))
   ) {
     if (forceProp) {
       prop = prop.slice(5);
@@ -378,15 +388,28 @@ function eventHandler(e) {
     if (sharedConfig.events.find(([el, ev]) => ev === e)) return;
   }
 
+  let node = e.target;
   const key = `$$${e.type}`;
-  let node = (e.composedPath && e.composedPath()[0]) || e.target;
-  // reverse Shadow DOM retargetting
-  if (e.target !== node) {
+  const oriTarget = e.target;
+  const oriCurrentTarget = e.currentTarget;
+  const retarget = value =>
     Object.defineProperty(e, "target", {
       configurable: true,
-      value: node
+      value
     });
-  }
+  const handleNode = () => {
+    const handler = node[key];
+    if (handler && !node.disabled) {
+      const data = node[`${key}Data`];
+      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
+      if (e.cancelBubble) return;
+    }
+    node.host && node.contains(e.target) && !node.host._$host && retarget(node.host);
+    return true;
+  };
+  const walkUpTree = () => {
+    while (handleNode() && (node = node._$host || node.parentNode || node.host));
+  };
 
   // simulate currentTarget
   Object.defineProperty(e, "currentTarget", {
@@ -398,15 +421,27 @@ function eventHandler(e) {
   // cancel hydration
   if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
-  while (node) {
-    const handler = node[key];
-    if (handler && !node.disabled) {
-      const data = node[`${key}Data`];
-      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
-      if (e.cancelBubble) return;
+  if (e.composedPath) {
+    const path = e.composedPath();
+    retarget(path[0]);
+    for (let i = 0; i < path.length - 2; i++) {
+      node = path[i];
+      if (!handleNode()) break;
+      if (node._$host) {
+        node = node._$host;
+        // bubble up from portal mount instead of composedPath
+        walkUpTree();
+        break;
+      }
+      if (node.parentNode === oriCurrentTarget) {
+        break; // don't bubble above root of event delegation
+      }
     }
-    node = node._$host || node.parentNode || node.host;
   }
+  // fallback for browsers that don't support composedPath
+  else walkUpTree();
+  // Mixing portals and shadow dom can lead to a nonstandard target, so reset here.
+  retarget(oriTarget);
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
@@ -466,7 +501,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       if (marker === undefined) return (current = [...parent.childNodes]);
       let node = array[0];
       if (node.parentNode !== parent) return current;
-      const nodes = [node]
+      const nodes = [node];
       while ((node = node.nextSibling) !== marker) nodes.push(node);
       return (current = nodes);
     }
@@ -576,6 +611,13 @@ export function Hydration(props) {
 }
 
 const voidFn = () => undefined;
+
+export function useTitle(source) {
+  effect(() => {
+    if (typeof source === 'function') source = source();
+    isHydrating() || (document.title = source);
+  });
+}
 
 // experimental
 export const RequestContext = Symbol();
