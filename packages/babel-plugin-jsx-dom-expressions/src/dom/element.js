@@ -66,6 +66,7 @@ export function transformElement(path, info) {
      ),
     results = {
       template: `<${tagName}`,
+      templateWithClosingTags: `<${tagName}`,
       declarations: [],
       exprs: [],
       dynamics: [],
@@ -98,13 +99,17 @@ export function transformElement(path, info) {
       return results;
     }
   }
-  if (wrapSVG) results.template = "<svg>" + results.template;
+  if (wrapSVG) {
+    results.template = "<svg>" + results.template;
+    results.templateWithClosingTags = "<svg>" + results.templateWithClosingTags;
+  }
   if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
   transformAttributes(path, results);
   if (config.contextToCustomElements && (tagName === "slot" || isCustomElement)) {
     contextToCustomElement(path, results);
   }
   results.template += ">";
+  results.templateWithClosingTags += ">";
   if (!voidTag) {
     // always close tags can still be skipped if they have no closing parents and are the last element
     const toBeClosed =
@@ -117,6 +122,7 @@ export function transformElement(path, info) {
     } else results.toBeClosed = info.toBeClosed;
     if (tagName !== "noscript") transformChildren(path, results, config);
     if (toBeClosed) results.template += `</${tagName}>`;
+    results.templateWithClosingTags += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
     let runHydrationEvents = registerImportMethod(
@@ -126,7 +132,10 @@ export function transformElement(path, info) {
     );
     results.postExprs.push(t.expressionStatement(t.callExpression(runHydrationEvents, [])));
   }
-  if (wrapSVG) results.template += "</svg>";
+  if (wrapSVG) {
+    results.template += "</svg>";
+    results.templateWithClosingTags += "</svg>";
+  }
   return results;
 }
 
@@ -790,6 +799,7 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += `${needsSpacing ? ' ' : ''}${key}`;
+          results.templateWithClosingTags += `${needsSpacing ? ' ' : ''}${key}`;
           if (!value) {
             needsSpacing = true;
             return;
@@ -809,6 +819,7 @@ function transformAttributes(path, results) {
           if (!text.length) {
             needsSpacing = false;
             results.template += `=""`;
+            results.templateWithClosingTags += `=""`;
             return;
           }
 
@@ -834,9 +845,11 @@ function transformAttributes(path, results) {
           if (needsQuoting) {
             needsSpacing = false;
             results.template += `="${escapeHTML(text, true)}"`;
+            results.templateWithClosingTags += `="${escapeHTML(text, true)}"`;
           } else {
             needsSpacing = true;
             results.template += `=${escapeHTML(text, true)}`;
+            results.templateWithClosingTags += `=${escapeHTML(text, true)}`;
           }
         }
       }
@@ -890,6 +903,7 @@ function transformChildren(path, results, config) {
       const i = memo.length;
       if (transformed.text && i && memo[i - 1].text) {
         memo[i - 1].template += transformed.template;
+        memo[i - 1].templateWithClosingTags += transformed.templateWithClosingTags || transformed.template;
       } else memo.push(transformed);
       return memo;
     }, []);
@@ -902,8 +916,9 @@ function transformChildren(path, results, config) {
     }
 
     results.template += child.template;
+    results.templateWithClosingTags += child.templateWithClosingTags || child.template ;
     results.isImportNode = results.isImportNode || child.isImportNode;
-
+    
     if (child.id) {
       if (child.tagName === "head") {
         if (config.hydratable) {
@@ -1006,6 +1021,7 @@ function createPlaceholder(path, results, tempPath, i, char) {
     config = getConfig(path);
   let contentId;
   results.template += `<!${char}>`;
+  results.templateWithClosingTags += `<!${char}>`;
   if (config.hydratable && char === "/") {
     contentId = path.scope.generateUidIdentifier("co$");
     results.declarations.push(

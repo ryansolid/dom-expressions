@@ -78,6 +78,7 @@ function registerTemplate(path, results) {
         templates.push({
           id: templateId,
           template: results.template,
+          templateWithClosingTags: results.templateWithClosingTags,
           isSVG: results.isSVG,
           isCE: results.hasCustomElement,
           isImportNode: results.isImportNode,
