@@ -404,7 +404,7 @@ function eventHandler(e) {
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
-    node.host && node.contains(e.target) && !node.host._$host && retarget(node.host);
+    node.host && typeof node.host !== "string" && !node.host._$host && node.contains(e.target) && retarget(node.host);
     return true;
   };
   const walkUpTree = () => {
