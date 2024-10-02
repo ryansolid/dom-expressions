@@ -34,7 +34,7 @@ export function isInvalidMarkup(html) {
     .replace(/>[^<]+</gi, ">#text<")
 
     // remove attributes (the lack of quotes will make it mismatch)
-    .replace(/<([a-z0-9-:]+)\s+[^>]+>/gi, "<$1>")
+    .replace(/<([a-z0-9-]+)\s+[^>]+>/gi, "<$1>")
 
     // fix escaping, so doesnt mess up the validation
     // `&lt;script>a();&lt;/script>` -> `&lt;script&gt;a();&lt;/script&gt;`
