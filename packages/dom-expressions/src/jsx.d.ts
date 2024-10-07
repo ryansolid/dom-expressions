@@ -912,6 +912,7 @@ export namespace JSX {
     draggable?: boolean | "false" | "true" | undefined;
     hidden?: boolean | "hidden" | "until-found" | undefined;
     id?: string | undefined;
+    is?: string | undefined;
     inert?: boolean | undefined;
     lang?: string | undefined;
     spellcheck?: boolean | undefined;
