@@ -157,9 +157,7 @@ export namespace JSX {
   interface ExplicitAttributes {}
   interface ExplicitBoolAttributes {}
   interface CustomEvents {}
-  /**
-   * @deprecated Replaced by CustomEvents
-  */
+  /** @deprecated Replaced by CustomEvents */
   interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
@@ -207,7 +205,8 @@ export namespace JSX {
       OnAttributes<T>,
       OnCaptureAttributes<T>,
       CustomEventHandlersCamelCase<T>,
-      CustomEventHandlersLowerCase<T> {
+      CustomEventHandlersLowerCase<T>,
+      CustomEventHandlersNamespaced<T> {
     children?: Element | undefined;
     innerHTML?: string | undefined;
     innerText?: string | number | undefined;
@@ -234,6 +233,17 @@ export namespace JSX {
     onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onencrypted?: EventHandlerUnion<T, Event> | undefined;
     ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
+    // lower case events
+    "on:copy"?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    "on:cut"?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    "on:paste"?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    "on:compositionend"?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    "on:compositionstart"?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    "on:compositionupdate"?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    "on:focusout"?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    "on:focusin"?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    "on:encrypted"?: EventHandlerUnion<T, Event> | undefined;
+    "on:dragexit"?: EventHandlerUnion<T, DragEvent> | undefined;
   }
   interface CustomEventHandlersCamelCase<T> {
     onAbort?: EventHandlerUnion<T, Event> | undefined;
@@ -316,9 +326,7 @@ export namespace JSX {
     onWaiting?: EventHandlerUnion<T, Event> | undefined;
     onWheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
-  /**
-   * @type {GlobalEventHandlers}
-   */
+  /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
     onabort?: EventHandlerUnion<T, Event> | undefined;
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
@@ -400,6 +408,87 @@ export namespace JSX {
     onwaiting?: EventHandlerUnion<T, Event> | undefined;
     onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
+  interface CustomEventHandlersNamespaced<T> {
+    "on:abort"?: EventHandlerUnion<T, Event> | undefined;
+    "on:animationend"?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    "on:animationiteration"?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    "on:animationstart"?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    "on:auxclick"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:beforeinput"?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    "on:beforetoggle"?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    "on:blur"?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    "on:canplay"?: EventHandlerUnion<T, Event> | undefined;
+    "on:canplaythrough"?: EventHandlerUnion<T, Event> | undefined;
+    "on:change"?: ChangeEventHandlerUnion<T, Event> | undefined;
+    "on:click"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:contextmenu"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:dblclick"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:drag"?: EventHandlerUnion<T, DragEvent> | undefined;
+    "on:dragend"?: EventHandlerUnion<T, DragEvent> | undefined;
+    "on:dragenter"?: EventHandlerUnion<T, DragEvent> | undefined;
+    "on:dragleave"?: EventHandlerUnion<T, DragEvent> | undefined;
+    "on:dragover"?: EventHandlerUnion<T, DragEvent> | undefined;
+    "on:dragstart"?: EventHandlerUnion<T, DragEvent> | undefined;
+    "on:drop"?: EventHandlerUnion<T, DragEvent> | undefined;
+    "on:durationchange"?: EventHandlerUnion<T, Event> | undefined;
+    "on:emptied"?: EventHandlerUnion<T, Event> | undefined;
+    "on:ended"?: EventHandlerUnion<T, Event> | undefined;
+    "on:error"?: EventHandlerUnion<T, Event> | undefined;
+    "on:focus"?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    "on:gotpointercapture"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:input"?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    "on:invalid"?: EventHandlerUnion<T, Event> | undefined;
+    "on:keydown"?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    "on:keypress"?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    "on:keyup"?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    "on:load"?: EventHandlerUnion<T, Event> | undefined;
+    "on:loadeddata"?: EventHandlerUnion<T, Event> | undefined;
+    "on:loadedmetadata"?: EventHandlerUnion<T, Event> | undefined;
+    "on:loadstart"?: EventHandlerUnion<T, Event> | undefined;
+    "on:lostpointercapture"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:mousedown"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:mouseenter"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:mouseleave"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:mousemove"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:mouseout"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:mouseover"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:mouseup"?: EventHandlerUnion<T, MouseEvent> | undefined;
+    "on:pause"?: EventHandlerUnion<T, Event> | undefined;
+    "on:play"?: EventHandlerUnion<T, Event> | undefined;
+    "on:playing"?: EventHandlerUnion<T, Event> | undefined;
+    "on:pointercancel"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:pointerdown"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:pointerenter"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:pointerleave"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:pointermove"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:pointerout"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:pointerover"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:pointerup"?: EventHandlerUnion<T, PointerEvent> | undefined;
+    "on:progress"?: EventHandlerUnion<T, ProgressEvent> | undefined;
+    "on:ratechange"?: EventHandlerUnion<T, Event> | undefined;
+    "on:reset"?: EventHandlerUnion<T, Event> | undefined;
+    "on:scroll"?: EventHandlerUnion<T, Event> | undefined;
+    "on:scrollend"?: EventHandlerUnion<T, Event> | undefined;
+    "on:seeked"?: EventHandlerUnion<T, Event> | undefined;
+    "on:seeking"?: EventHandlerUnion<T, Event> | undefined;
+    "on:select"?: EventHandlerUnion<T, Event> | undefined;
+    "on:stalled"?: EventHandlerUnion<T, Event> | undefined;
+    "on:submit"?: EventHandlerUnion<T, SubmitEvent> | undefined;
+    "on:suspend"?: EventHandlerUnion<T, Event> | undefined;
+    "on:timeupdate"?: EventHandlerUnion<T, Event> | undefined;
+    "on:toggle"?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    "on:touchcancel"?: EventHandlerUnion<T, TouchEvent> | undefined;
+    "on:touchend"?: EventHandlerUnion<T, TouchEvent> | undefined;
+    "on:touchmove"?: EventHandlerUnion<T, TouchEvent> | undefined;
+    "on:touchstart"?: EventHandlerUnion<T, TouchEvent> | undefined;
+    "on:transitionstart"?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    "on:transitionend"?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    "on:transitionrun"?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    "on:transitioncancel"?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    "on:volumechange"?: EventHandlerUnion<T, Event> | undefined;
+    "on:waiting"?: EventHandlerUnion<T, Event> | undefined;
+    "on:wheel"?: EventHandlerUnion<T, WheelEvent> | undefined;
+  }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
@@ -452,43 +541,64 @@ export namespace JSX {
 
   // All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
   interface AriaAttributes {
-    /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
+    /**
+     * Identifies the currently active element when DOM focus is on a composite widget, textbox,
+     * group, or application.
+     */
     "aria-activedescendant"?: string | undefined;
-    /** Indicates whether assistive technologies will present all, or only parts of, the changed region based on the change notifications defined by the aria-relevant attribute. */
+    /**
+     * Indicates whether assistive technologies will present all, or only parts of, the changed
+     * region based on the change notifications defined by the aria-relevant attribute.
+     */
     "aria-atomic"?: boolean | "false" | "true" | undefined;
     /**
-     * Indicates whether inputting text could trigger display of one or more predictions of the user's intended value for an input and specifies how predictions would be
-     * presented if they are made.
+     * Indicates whether inputting text could trigger display of one or more predictions of the
+     * user's intended value for an input and specifies how predictions would be presented if they
+     * are made.
      */
     "aria-autocomplete"?: "none" | "inline" | "list" | "both" | undefined;
-    /** Indicates an element is being modified and that assistive technologies MAY want to wait until the modifications are complete before exposing them to the user. */
+    /**
+     * Indicates an element is being modified and that assistive technologies MAY want to wait until
+     * the modifications are complete before exposing them to the user.
+     */
     "aria-busy"?: boolean | "false" | "true" | undefined;
     /**
      * Indicates the current "checked" state of checkboxes, radio buttons, and other widgets.
+     *
      * @see aria-pressed @see aria-selected.
      */
     "aria-checked"?: boolean | "false" | "mixed" | "true" | undefined;
     /**
      * Defines the total number of columns in a table, grid, or treegrid.
+     *
      * @see aria-colindex.
      */
     "aria-colcount"?: number | string | undefined;
     /**
-     * Defines an element's column index or position with respect to the total number of columns within a table, grid, or treegrid.
+     * Defines an element's column index or position with respect to the total number of columns
+     * within a table, grid, or treegrid.
+     *
      * @see aria-colcount @see aria-colspan.
      */
     "aria-colindex"?: number | string | undefined;
     /**
-     * Defines the number of columns spanned by a cell or gridcell within a table, grid, or treegrid.
+     * Defines the number of columns spanned by a cell or gridcell within a table, grid, or
+     * treegrid.
+     *
      * @see aria-colindex @see aria-rowspan.
      */
     "aria-colspan"?: number | string | undefined;
     /**
-     * Identifies the element (or elements) whose contents or presence are controlled by the current element.
+     * Identifies the element (or elements) whose contents or presence are controlled by the current
+     * element.
+     *
      * @see aria-owns.
      */
     "aria-controls"?: string | undefined;
-    /** Indicates the element that represents the current item within a container or set of related elements. */
+    /**
+     * Indicates the element that represents the current item within a container or set of related
+     * elements.
+     */
     "aria-current"?:
       | boolean
       | "false"
@@ -501,42 +611,57 @@ export namespace JSX {
       | undefined;
     /**
      * Identifies the element (or elements) that describes the object.
+     *
      * @see aria-labelledby
      */
     "aria-describedby"?: string | undefined;
     /**
      * Identifies the element that provides a detailed, extended description for the object.
+     *
      * @see aria-describedby.
      */
     "aria-details"?: string | undefined;
     /**
-     * Indicates that the element is perceivable but disabled, so it is not editable or otherwise operable.
+     * Indicates that the element is perceivable but disabled, so it is not editable or otherwise
+     * operable.
+     *
      * @see aria-hidden @see aria-readonly.
      */
     "aria-disabled"?: boolean | "false" | "true" | undefined;
     /**
-     * Indicates what functions can be performed when a dragged object is released on the drop target.
-     * @deprecated in ARIA 1.1
+     * Indicates what functions can be performed when a dragged object is released on the drop
+     * target.
+     *
+     * @deprecated In ARIA 1.1
      */
     "aria-dropeffect"?: "none" | "copy" | "execute" | "link" | "move" | "popup" | undefined;
     /**
      * Identifies the element that provides an error message for the object.
+     *
      * @see aria-invalid @see aria-describedby.
      */
     "aria-errormessage"?: string | undefined;
-    /** Indicates whether the element, or another grouping element it controls, is currently expanded or collapsed. */
+    /**
+     * Indicates whether the element, or another grouping element it controls, is currently expanded
+     * or collapsed.
+     */
     "aria-expanded"?: boolean | "false" | "true" | undefined;
     /**
-     * Identifies the next element (or elements) in an alternate reading order of content which, at the user's discretion,
-     * allows assistive technology to override the general default of reading in document source order.
+     * Identifies the next element (or elements) in an alternate reading order of content which, at
+     * the user's discretion, allows assistive technology to override the general default of reading
+     * in document source order.
      */
     "aria-flowto"?: string | undefined;
     /**
      * Indicates an element's "grabbed" state in a drag-and-drop operation.
-     * @deprecated in ARIA 1.1
+     *
+     * @deprecated In ARIA 1.1
      */
     "aria-grabbed"?: boolean | "false" | "true" | undefined;
-    /** Indicates the availability and type of interactive popup element, such as menu or dialog, that can be triggered by an element. */
+    /**
+     * Indicates the availability and type of interactive popup element, such as menu or dialog,
+     * that can be triggered by an element.
+     */
     "aria-haspopup"?:
       | boolean
       | "false"
@@ -549,66 +674,88 @@ export namespace JSX {
       | undefined;
     /**
      * Indicates whether the element is exposed to an accessibility API.
+     *
      * @see aria-disabled.
      */
     "aria-hidden"?: boolean | "false" | "true" | undefined;
     /**
      * Indicates the entered value does not conform to the format expected by the application.
+     *
      * @see aria-errormessage.
      */
     "aria-invalid"?: boolean | "false" | "true" | "grammar" | "spelling" | undefined;
-    /** Indicates keyboard shortcuts that an author has implemented to activate or give focus to an element. */
+    /**
+     * Indicates keyboard shortcuts that an author has implemented to activate or give focus to an
+     * element.
+     */
     "aria-keyshortcuts"?: string | undefined;
     /**
      * Defines a string value that labels the current element.
+     *
      * @see aria-labelledby.
      */
     "aria-label"?: string | undefined;
     /**
      * Identifies the element (or elements) that labels the current element.
+     *
      * @see aria-describedby.
      */
     "aria-labelledby"?: string | undefined;
     /** Defines the hierarchical level of an element within a structure. */
     "aria-level"?: number | string | undefined;
-    /** Indicates that an element will be updated, and describes the types of updates the user agents, assistive technologies, and user can expect from the live region. */
+    /**
+     * Indicates that an element will be updated, and describes the types of updates the user
+     * agents, assistive technologies, and user can expect from the live region.
+     */
     "aria-live"?: "off" | "assertive" | "polite" | undefined;
     /** Indicates whether an element is modal when displayed. */
     "aria-modal"?: boolean | "false" | "true" | undefined;
     /** Indicates whether a text box accepts multiple lines of input or only a single line. */
     "aria-multiline"?: boolean | "false" | "true" | undefined;
-    /** Indicates that the user may select more than one item from the current selectable descendants. */
+    /**
+     * Indicates that the user may select more than one item from the current selectable
+     * descendants.
+     */
     "aria-multiselectable"?: boolean | "false" | "true" | undefined;
     /** Indicates whether the element's orientation is horizontal, vertical, or unknown/ambiguous. */
     "aria-orientation"?: "horizontal" | "vertical" | undefined;
     /**
-     * Identifies an element (or elements) in order to define a visual, functional, or contextual parent/child relationship
-     * between DOM elements where the DOM hierarchy cannot be used to represent the relationship.
+     * Identifies an element (or elements) in order to define a visual, functional, or contextual
+     * parent/child relationship between DOM elements where the DOM hierarchy cannot be used to
+     * represent the relationship.
+     *
      * @see aria-controls.
      */
     "aria-owns"?: string | undefined;
     /**
-     * Defines a short hint (a word or short phrase) intended to aid the user with data entry when the control has no value.
-     * A hint could be a sample value or a brief description of the expected format.
+     * Defines a short hint (a word or short phrase) intended to aid the user with data entry when
+     * the control has no value. A hint could be a sample value or a brief description of the
+     * expected format.
      */
     "aria-placeholder"?: string | undefined;
     /**
-     * Defines an element's number or position in the current set of listitems or treeitems. Not required if all elements in the set are present in the DOM.
+     * Defines an element's number or position in the current set of listitems or treeitems. Not
+     * required if all elements in the set are present in the DOM.
+     *
      * @see aria-setsize.
      */
     "aria-posinset"?: number | string | undefined;
     /**
      * Indicates the current "pressed" state of toggle buttons.
+     *
      * @see aria-checked @see aria-selected.
      */
     "aria-pressed"?: boolean | "false" | "mixed" | "true" | undefined;
     /**
      * Indicates that the element is not editable, but is otherwise operable.
+     *
      * @see aria-disabled.
      */
     "aria-readonly"?: boolean | "false" | "true" | undefined;
     /**
-     * Indicates what notifications the user agent will trigger when the accessibility tree within a live region is modified.
+     * Indicates what notifications the user agent will trigger when the accessibility tree within a
+     * live region is modified.
+     *
      * @see aria-atomic.
      */
     "aria-relevant"?:
@@ -629,26 +776,33 @@ export namespace JSX {
     "aria-roledescription"?: string | undefined;
     /**
      * Defines the total number of rows in a table, grid, or treegrid.
+     *
      * @see aria-rowindex.
      */
     "aria-rowcount"?: number | string | undefined;
     /**
-     * Defines an element's row index or position with respect to the total number of rows within a table, grid, or treegrid.
+     * Defines an element's row index or position with respect to the total number of rows within a
+     * table, grid, or treegrid.
+     *
      * @see aria-rowcount @see aria-rowspan.
      */
     "aria-rowindex"?: number | string | undefined;
     /**
      * Defines the number of rows spanned by a cell or gridcell within a table, grid, or treegrid.
+     *
      * @see aria-rowindex @see aria-colspan.
      */
     "aria-rowspan"?: number | string | undefined;
     /**
      * Indicates the current "selected" state of various widgets.
+     *
      * @see aria-checked @see aria-pressed.
      */
     "aria-selected"?: boolean | "false" | "true" | undefined;
     /**
-     * Defines the number of items in the current set of listitems or treeitems. Not required if all elements in the set are present in the DOM.
+     * Defines the number of items in the current set of listitems or treeitems. Not required if all
+     * elements in the set are present in the DOM.
+     *
      * @see aria-posinset.
      */
     "aria-setsize"?: number | string | undefined;
@@ -660,6 +814,7 @@ export namespace JSX {
     "aria-valuemin"?: number | string | undefined;
     /**
      * Defines the current value for a range widget.
+     *
      * @see aria-valuetext.
      */
     "aria-valuenow"?: number | string | undefined;
@@ -2040,9 +2195,7 @@ export namespace JSX {
     textLength?: number | string | undefined;
     lengthAdjust?: "spacing" | "spacingAndGlyphs" | undefined;
   }
-  /**
-   * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
-   */
+  /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
@@ -2064,9 +2217,7 @@ export namespace JSX {
       ZoomAndPanSVGAttributes {
     viewTarget?: string | undefined;
   }
-  /**
-   * @type {HTMLElementTagNameMap}
-   */
+  /** @type {HTMLElementTagNameMap} */
   interface HTMLElementTags {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
@@ -2181,9 +2332,7 @@ export namespace JSX {
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
   }
-  /**
-   * @type {HTMLElementDeprecatedTagNameMap}
-   */
+  /** @type {HTMLElementDeprecatedTagNameMap} */
   interface HTMLElementDeprecatedTags {
     big: HTMLAttributes<HTMLElement>;
     keygen: KeygenHTMLAttributes<HTMLElement>;
@@ -2191,9 +2340,7 @@ export namespace JSX {
     noindex: HTMLAttributes<HTMLElement>;
     param: ParamHTMLAttributes<HTMLParamElement>;
   }
-  /**
-   * @type {SVGElementTagNameMap}
-   */
+  /** @type {SVGElementTagNameMap} */
   interface SVGElementTags {
     animate: AnimateSVGAttributes<SVGAnimateElement>;
     animateMotion: AnimateMotionSVGAttributes<SVGAnimateMotionElement>;
