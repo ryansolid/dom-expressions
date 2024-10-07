@@ -1,10 +1,19 @@
-// fix me: jsdom crashes without this
-const util = require("util");
-const { TextEncoder, TextDecoder } = util;
-Object.assign(global, { TextDecoder, TextEncoder });
+// import parse5 from "parse5";
+const parse5 = require("parse5");
 
-const JSDOM = require("jsdom").JSDOM;
-const Element = new JSDOM(`<!DOCTYPE html>`).window.document.body;
+/** `bodyElement` will be used as a `context` (The place where we run `innerHTML`) */
+const bodyElement = parse5.parse(
+  `<!DOCTYPE html><html><head></head><body></body></html>`
+  // @ts-ignore
+).childNodes[1].childNodes[1];
+
+function innerHTML(htmlFragment) {
+  /** `htmlFragment` will be parsed as if it was set to the `bodyElement`'s `innerHTML` property. */
+  const parsedFragment = parse5.parseFragment(bodyElement, htmlFragment);
+
+  /** `serialize` returns back a string from the parsed nodes */
+  return parse5.serialize(parsedFragment);
+}
 
 /**
  * Returns an object with information when the markup is invalid
@@ -48,10 +57,8 @@ export function isInvalidMarkup(html) {
     .replace(/^<td>/i, "<table><tbody><tr><td>")
     .replace(/<\/td>$/i, "</td></tr></tbody></table>");
 
-  // parse
-  Element.innerHTML = html;
-  // result
-  const browser = Element.innerHTML;
+  /** Parse HTML. `browser` is a string with the supposed resulting html of a real `innerHTML` call */
+  const browser = innerHTML(html);
 
   if (html !== browser) {
     return {

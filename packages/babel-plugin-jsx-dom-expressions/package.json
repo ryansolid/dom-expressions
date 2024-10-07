@@ -24,7 +24,7 @@
     "@babel/types": "^7.20.7",
     "html-entities": "2.3.3",
     "jest-diff": "^29.7.0",
-    "jsdom": "^25.0.0",
+    "parse5": "^7.1.2",
     "validate-html-nesting": "^1.2.1"
   },
   "peerDependencies": {
