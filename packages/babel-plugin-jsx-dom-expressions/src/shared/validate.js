@@ -55,7 +55,25 @@ export function isInvalidMarkup(html) {
     .replace(/<\/tr>$/i, "</tr></tbody></table>")
     // fix tables cells
     .replace(/^<td>/i, "<table><tbody><tr><td>")
-    .replace(/<\/td>$/i, "</td></tr></tbody></table>");
+    .replace(/<\/td>$/i, "</td></tr></tbody></table>")
+    .replace(/^<th>/i, "<table><thead><tr><th>")
+    .replace(/<\/th>$/i, "</th></tr></thead></table>")
+    // fix table components
+    .replace(/^<thead>/i, "<table><thead>")
+    .replace(/<\/thead>$/i, "</thead></table>")
+    .replace(/^<tbody>/i, "<table><tbody>")
+    .replace(/<\/tbody>$/i, "</tbody></table>");
+
+  // skip when equal to:
+  switch (html) {
+    // empty table components
+    case "<table></table>":
+    case "<table><thead></thead></table>":
+    case "<table><tbody></tbody></table>":
+    case "<table><thead></thead><tbody></tbody></table>": {
+      return;
+    }
+  }
 
   /** Parse HTML. `browser` is a string with the supposed resulting html of a real `innerHTML` call */
   const browser = innerHTML(html);
