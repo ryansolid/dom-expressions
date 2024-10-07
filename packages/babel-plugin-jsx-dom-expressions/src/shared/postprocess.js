@@ -18,18 +18,20 @@ export default path => {
     );
   }
   if (path.scope.data.templates?.length) {
-    for (const template of path.scope.data.templates) {
-      const html = template.templateWithClosingTags;
-      // not sure when/why this is not a string
-      if (typeof html === "string") {
-        const result = isInvalidMarkup(html);
-        if (result) {
-          const message =
-            "The HTML provided is malformed and will yield unexpected output when evaluated by a browser.\n";
-          console.warn(message);
-          console.log(diff(result.html, result.browser));
-          console.warn("Original HTML:\n", html);
-          // throw path.buildCodeFrameError();
+    if (path.hub.file.metadata.config.validate) {
+      for (const template of path.scope.data.templates) {
+        const html = template.templateWithClosingTags;
+        // not sure when/why this is not a string
+        if (typeof html === "string") {
+          const result = isInvalidMarkup(html);
+          if (result) {
+            const message =
+              "\nThe HTML provided is malformed and will yield unexpected output when evaluated by a browser.\n";
+            console.warn(message);
+            console.log(diff(result.html, result.browser));
+            console.warn("Original HTML:\n", html);
+            // throw path.buildCodeFrameError();
+          }
         }
       }
     }
