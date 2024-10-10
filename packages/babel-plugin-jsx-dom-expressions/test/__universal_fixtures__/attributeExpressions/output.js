@@ -6,6 +6,9 @@ import { setProp as _$setProp } from "r-custom";
 import { spread as _$spread } from "r-custom";
 import { mergeProps as _$mergeProps } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
+import { binding } from "somewhere";
+function refFn() {}
+const refConst = null;
 const selected = true;
 let link;
 const template = (() => {
@@ -255,4 +258,32 @@ const template24 = (() => {
   var _ref$7 = a() ?? b;
   typeof _ref$7 === "function" && _$use(_ref$7, _el$33);
   return _el$33;
+})();
+const template25 = (() => {
+  var _el$34 = _$createElement("div");
+  _$use(binding, _el$34);
+  return _el$34;
+})();
+const template26 = (() => {
+  var _el$35 = _$createElement("div");
+  var _ref$8 = binding.prop;
+  typeof _ref$8 === "function" ? _$use(_ref$8, _el$35) : (binding.prop = _el$35);
+  return _el$35;
+})();
+const template27 = (() => {
+  var _el$36 = _$createElement("div");
+  var _ref$9 = refFn;
+  typeof _ref$9 === "function" ? _$use(_ref$9, _el$36) : (refFn = _el$36);
+  return _el$36;
+})();
+const template28 = (() => {
+  var _el$37 = _$createElement("div");
+  _$use(refConst, _el$37);
+  return _el$37;
+})();
+const template29 = (() => {
+  var _el$38 = _$createElement("div");
+  var _ref$10 = refUnknown;
+  typeof _ref$10 === "function" ? _$use(_ref$10, _el$38) : (refUnknown = _el$38);
+  return _el$38;
 })();
