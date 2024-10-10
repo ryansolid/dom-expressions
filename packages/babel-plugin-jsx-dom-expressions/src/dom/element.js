@@ -481,11 +481,11 @@ function transformAttributes(path, results) {
             value.expression = value.expression.expression;
           }
           let binding,
-            isFunction =
+            isConstant =
               t.isIdentifier(value.expression) &&
               (binding = path.scope.getBinding(value.expression.name)) &&
-              binding.kind === "const";
-          if (!isFunction && t.isLVal(value.expression)) {
+              (binding.kind === "const" || binding.kind === "module");
+          if (!isConstant && t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
               t.variableDeclaration("var", [
@@ -506,7 +506,7 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (isFunction || t.isFunction(value.expression)) {
+          } else if (isConstant || t.isFunction(value.expression)) {
             results.exprs.unshift(
               t.expressionStatement(
                 t.callExpression(

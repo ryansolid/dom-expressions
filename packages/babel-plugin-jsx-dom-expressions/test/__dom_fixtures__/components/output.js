@@ -14,7 +14,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello `),
   _tmpl$7 = /*#__PURE__*/ _$template(`<span>1`),
   _tmpl$8 = /*#__PURE__*/ _$template(`<span>2`),
   _tmpl$9 = /*#__PURE__*/ _$template(`<span>3`);
-import { Show } from "somewhere";
+import { Show, binding } from "somewhere";
+function refFn() {}
+const refConst = null;
 const Child = props => {
   const [s, set] = createSignal();
   return [
@@ -476,3 +478,27 @@ class Template29 extends ParentComponent {
     });
   };
 }
+const template30 = _$createComponent(Comp, {
+  ref: binding
+});
+const template31 = _$createComponent(Comp, {
+  ref(r$) {
+    var _ref$5 = binding.prop;
+    typeof _ref$5 === "function" ? _ref$5(r$) : (binding.prop = r$);
+  }
+});
+const template32 = _$createComponent(Comp, {
+  ref(r$) {
+    var _ref$6 = refFn;
+    typeof _ref$6 === "function" ? _ref$6(r$) : (refFn = r$);
+  }
+});
+const template33 = _$createComponent(Comp, {
+  ref: refConst
+});
+const template34 = _$createComponent(Comp, {
+  ref(r$) {
+    var _ref$7 = refUnknown;
+    typeof _ref$7 === "function" ? _ref$7(r$) : (refUnknown = r$);
+  }
+});

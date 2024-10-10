@@ -1,4 +1,7 @@
-import { Show } from "somewhere"
+import { Show, binding } from "somewhere"
+
+function refFn() {}
+const refConst = null;
 
 const Child = props => (
   <>
@@ -149,3 +152,10 @@ const template21 = (
 );
 
 const template22 = <Component passObject={{ ...a }} ></Component>
+
+const template23 = <Component ref={binding} />
+const template24 = <Component ref={binding.prop} />
+const template25 = <Component ref={refFn} />
+const template26 = <Component ref={refConst} />
+
+const template27 = <Component ref={refUnknown} />
