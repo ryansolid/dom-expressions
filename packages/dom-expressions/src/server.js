@@ -536,7 +536,8 @@ export function Hydration(props) {
 }
 
 export function NoHydration(props) {
-  sharedConfig.context.noHydrate = true;
+  if (sharedConfig.context)
+    sharedConfig.context.noHydrate = true;
   return props.children;
 }
 
