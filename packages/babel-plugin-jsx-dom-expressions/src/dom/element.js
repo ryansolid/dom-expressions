@@ -799,7 +799,8 @@ function transformAttributes(path, results) {
         } else {
           !isSVG && (key = key.toLowerCase());
           results.template += `${needsSpacing ? ' ' : ''}${key}`;
-          results.templateWithClosingTags += `${needsSpacing ? ' ' : ''}${key}`;
+          // https://github.com/solidjs/solid/issues/2338
+          // results.templateWithClosingTags += `${needsSpacing ? ' ' : ''}${key}`;
           if (!value) {
             needsSpacing = true;
             return;
@@ -819,7 +820,8 @@ function transformAttributes(path, results) {
           if (!text.length) {
             needsSpacing = false;
             results.template += `=""`;
-            results.templateWithClosingTags += `=""`;
+            // https://github.com/solidjs/solid/issues/2338
+            // results.templateWithClosingTags += `=""`;
             return;
           }
 
@@ -845,11 +847,13 @@ function transformAttributes(path, results) {
           if (needsQuoting) {
             needsSpacing = false;
             results.template += `="${escapeHTML(text, true)}"`;
-            results.templateWithClosingTags += `="${escapeHTML(text, true)}"`;
+            // https://github.com/solidjs/solid/issues/2338
+            // results.templateWithClosingTags += `="${escapeHTML(text, true)}"`;
           } else {
             needsSpacing = true;
             results.template += `=${escapeHTML(text, true)}`;
-            results.templateWithClosingTags += `=${escapeHTML(text, true)}`;
+            // https://github.com/solidjs/solid/issues/2338
+            // results.templateWithClosingTags += `=${escapeHTML(text, true)}`;
           }
         }
       }
@@ -918,7 +922,7 @@ function transformChildren(path, results, config) {
     results.template += child.template;
     results.templateWithClosingTags += child.templateWithClosingTags || child.template ;
     results.isImportNode = results.isImportNode || child.isImportNode;
-    
+
     if (child.id) {
       if (child.tagName === "head") {
         if (config.hydratable) {
