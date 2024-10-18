@@ -39,7 +39,7 @@ export namespace JSX {
     ) => void;
     1: any;
   }
-  type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+  type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E> | EventHandlerWithOptions<T, E>; 
 
   interface EventHandlerWithOptions<T, E extends Event> extends AddEventListenerOptions {
     handleEvent: (
