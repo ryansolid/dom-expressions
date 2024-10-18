@@ -136,6 +136,7 @@ export namespace JSX {
       DirectiveFunctionAttributes<T>,
       PropAttributes,
       AttrAttributes,
+      BoolAttributes,
       OnAttributes<T>,
       OnCaptureAttributes<T>,
       CustomEventHandlersCamelCase<T>,
