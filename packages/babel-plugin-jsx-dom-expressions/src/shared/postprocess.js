@@ -3,7 +3,6 @@ import { getRendererConfig, registerImportMethod } from "./utils";
 import { appendTemplates as appendTemplatesDOM } from "../dom/template";
 import { appendTemplates as appendTemplatesSSR } from "../ssr/template";
 import { isInvalidMarkup } from "./validate.js";
-const { diff } = require("jest-diff");
 
 // add to the top/bottom of the module.
 export default path => {
@@ -28,7 +27,8 @@ export default path => {
             const message =
               "\nThe HTML provided is malformed and will yield unexpected output when evaluated by a browser.\n";
             console.warn(message);
-            console.log(diff(result.html, result.browser));
+            console.warn("User HTML:\n", result.html);
+            console.warn("Browser HTML:\n", result.browser);
             console.warn("Original HTML:\n", html);
             // throw path.buildCodeFrameError();
           }
