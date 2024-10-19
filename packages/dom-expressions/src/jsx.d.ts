@@ -29,24 +29,29 @@ export namespace JSX {
     ): void;
   }
 
-  interface BoundEventHandler<T, E extends Event> {
+  interface BoundEventHandler<
+      T,
+      E extends Event,
+      EHandler extends EventHandler<T, any> = EventHandler<T, E>,
+  > {
     0: (
       data: any,
-      e: E & {
-        currentTarget: T;
-        target: DOMElement;
-      }
+      ...e: Parameters<EHandler>,
     ) => void;
     1: any;
   }
-  type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+  type EventHandlerUnion<
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>,
+  > = EHandler | BoundEventHandler<T, E, EHandler>;
 
   interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
       extends AddEventListenerOptions {
     handleEvent: EHandler;
   }
 
-  type EventHandlerWithOptionsUnion<T, E extends Event, EHandler = EventHandler<T, E>> =
+  type EventHandlerWithOptionsUnion<T, E extends Event, EHandler extends EventHandler<T, any> = EventHandler<T, E>> =
     | EHandler
     | EventHandlerWithOptions<T, E, EHandler>;
 
@@ -60,21 +65,7 @@ export namespace JSX {
       }
     ): void;
   }
-  interface BoundInputEventHandler<T, E extends InputEvent> {
-    0: (
-      data: any,
-      e: E & {
-        currentTarget: T;
-        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-          ? T
-          : DOMElement;
-      }
-    ) => void;
-    1: any;
-  }
-  type InputEventHandlerUnion<T, E extends InputEvent> =
-    | InputEventHandler<T, E>
-    | BoundInputEventHandler<T, E>;
+  type InputEventHandlerUnion<T, E extends InputEvent> = EventHandlerUnion<T, E, InputEventHandler<T, E>>;
 
   interface ChangeEventHandler<T, E extends Event> {
     (
@@ -86,21 +77,7 @@ export namespace JSX {
       }
     ): void;
   }
-  interface BoundChangeEventHandler<T, E extends Event> {
-    0: (
-      data: any,
-      e: E & {
-        currentTarget: T;
-        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-          ? T
-          : DOMElement;
-      }
-    ) => void;
-    1: any;
-  }
-  type ChangeEventHandlerUnion<T, E extends Event> =
-    | ChangeEventHandler<T, E>
-    | BoundChangeEventHandler<T, E>;
+  type ChangeEventHandlerUnion<T, E extends Event> = EventHandlerUnion<T, E, ChangeEventHandler<T, E>>;
 
   interface FocusEventHandler<T, E extends FocusEvent> {
     (
@@ -112,21 +89,7 @@ export namespace JSX {
       }
     ): void;
   }
-  interface BoundFocusEventHandler<T, E extends FocusEvent> {
-    0: (
-      data: any,
-      e: E & {
-        currentTarget: T;
-        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-          ? T
-          : DOMElement;
-      }
-    ) => void;
-    1: any;
-  }
-  type FocusEventHandlerUnion<T, E extends FocusEvent> =
-    | FocusEventHandler<T, E>
-    | BoundFocusEventHandler<T, E>;
+  type FocusEventHandlerUnion<T, E extends FocusEvent> = EventHandlerUnion<T, E, FocusEventHandler<T, E>>;
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
