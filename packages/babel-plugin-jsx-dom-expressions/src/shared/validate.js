@@ -64,7 +64,9 @@ export function isInvalidMarkup(html) {
     .replace(/^<thead>/i, "<table><thead>")
     .replace(/<\/thead>$/i, "</thead></table>")
     .replace(/^<tbody>/i, "<table><tbody>")
-    .replace(/<\/tbody>$/i, "</tbody></table>");
+    .replace(/<\/tbody>$/i, "</tbody></table>")
+    .replace(/^<tfoot>/i, "<table><tfoot>")
+    .replace(/<\/tfoot>$/i, "</tfoot></table>");
 
   // skip when equal to:
   switch (html) {
