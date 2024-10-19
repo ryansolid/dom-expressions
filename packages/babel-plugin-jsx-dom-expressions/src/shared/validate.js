@@ -60,6 +60,12 @@ export function isInvalidMarkup(html) {
     .replace(/<\/td>$/i, "</td></tr></tbody></table>")
     .replace(/^<th>/i, "<table><thead><tr><th>")
     .replace(/<\/th>$/i, "</th></tr></thead></table>")
+    // col/colgroup
+    .replace(/^<col>/i, "<table><colgroup><col>")
+    .replace(/<\/col>$/i, "</col></colgroup></table>")
+    .replace(/^<colgroup>/i, "<table><colgroup>")
+    .replace(/<\/colgroup>$/i, "</colgroup></table>")
+
     // fix table components
     .replace(/^<thead>/i, "<table><thead>")
     .replace(/<\/thead>$/i, "</thead></table>")
