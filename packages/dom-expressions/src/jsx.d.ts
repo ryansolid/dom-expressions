@@ -145,7 +145,7 @@ export namespace JSX {
     ref?: T | ((el: T) => void) | undefined;
     classList?: {
       [k: string]: boolean | undefined;
-    };
+    } | undefined;
     $ServerOnly?: boolean | undefined;
   }
   type Accessor<T> = () => T;
