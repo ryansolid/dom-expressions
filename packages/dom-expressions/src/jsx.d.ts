@@ -1332,6 +1332,7 @@ export namespace JSX {
     playsinline?: boolean | undefined;
     poster?: string | undefined;
     width?: number | string | undefined;
+    disablepictureinpicture?: boolean;
   }
   type SVGPreserveAspectRatio =
     | "none"
