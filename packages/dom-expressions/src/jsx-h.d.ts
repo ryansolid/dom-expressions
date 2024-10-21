@@ -62,7 +62,7 @@ export namespace JSX {
     ) => void;
   }
 
-  type CustomEventHandlerUnion<T, E extends Event> =
+  type EventHandlerWithOptionsUnion<T, E extends Event> =
     | EventHandler<T, E>
     | EventHandlerWithOptions<T, E>;
 
@@ -122,7 +122,7 @@ export namespace JSX {
     [Key in keyof ExplicitBoolAttributes as `bool:${Key}`]?: ExplicitBoolAttributes[Key];
   };
   type OnAttributes<T> = {
-    [Key in keyof CustomEvents as `on:${Key}`]?: CustomEventHandlerUnion<T, CustomEvents[Key]>;
+    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandlerWithOptionsUnion<T, CustomEvents[Key]>;
   };
   type OnCaptureAttributes<T> = {
     [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
@@ -136,6 +136,7 @@ export namespace JSX {
       DirectiveFunctionAttributes<T>,
       PropAttributes,
       AttrAttributes,
+      BoolAttributes,
       OnAttributes<T>,
       OnCaptureAttributes<T>,
       CustomEventHandlersCamelCase<T>,
@@ -168,16 +169,16 @@ export namespace JSX {
     onencrypted?: EventHandlerUnion<T, Event>;
     ondragexit?: EventHandlerUnion<T, DragEvent>;
     // namespaced events
-    "on:copy"?: EventHandlerUnion<T, ClipboardEvent>;
-    "on:cut"?: EventHandlerUnion<T, ClipboardEvent>;
-    "on:paste"?: EventHandlerUnion<T, ClipboardEvent>;
-    "on:compositionend"?: EventHandlerUnion<T, CompositionEvent>;
-    "on:compositionstart"?: EventHandlerUnion<T, CompositionEvent>;
-    "on:compositionupdate"?: EventHandlerUnion<T, CompositionEvent>;
-    "on:focusout"?: EventHandlerUnion<T, FocusEvent>;
-    "on:focusin"?: EventHandlerUnion<T, FocusEvent>;
-    "on:encrypted"?: EventHandlerUnion<T, Event>;
-    "on:dragexit"?: EventHandlerUnion<T, DragEvent>;
+    "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent>;
+    "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent>;
+    "on:paste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent>;
+    "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent>;
+    "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent>;
+    "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent>;
+    "on:focusout"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:focusin"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:encrypted"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent>;
   }
   interface CustomEventHandlersCamelCase<T> {
     onAbort?: EventHandlerUnion<T, Event>;
@@ -343,85 +344,85 @@ export namespace JSX {
     onwheel?: EventHandlerUnion<T, WheelEvent>;
   }
   interface CustomEventHandlersNamespaced<T> {
-    "on:abort"?: EventHandlerUnion<T, Event>;
-    "on:animationend"?: EventHandlerUnion<T, AnimationEvent>;
-    "on:animationiteration"?: EventHandlerUnion<T, AnimationEvent>;
-    "on:animationstart"?: EventHandlerUnion<T, AnimationEvent>;
-    "on:auxclick"?: EventHandlerUnion<T, MouseEvent>;
-    "on:beforeinput"?: EventHandlerUnion<T, InputEvent>;
-    "on:beforetoggle"?: EventHandlerUnion<T, ToggleEvent>;
-    "on:blur"?: EventHandlerUnion<T, FocusEvent>;
-    "on:canplay"?: EventHandlerUnion<T, Event>;
-    "on:canplaythrough"?: EventHandlerUnion<T, Event>;
-    "on:change"?: EventHandlerUnion<T, Event>;
-    "on:click"?: EventHandlerUnion<T, MouseEvent>;
-    "on:contextmenu"?: EventHandlerUnion<T, MouseEvent>;
-    "on:dblclick"?: EventHandlerUnion<T, MouseEvent>;
-    "on:drag"?: EventHandlerUnion<T, DragEvent>;
-    "on:dragend"?: EventHandlerUnion<T, DragEvent>;
-    "on:dragenter"?: EventHandlerUnion<T, DragEvent>;
-    "on:dragleave"?: EventHandlerUnion<T, DragEvent>;
-    "on:dragover"?: EventHandlerUnion<T, DragEvent>;
-    "on:dragstart"?: EventHandlerUnion<T, DragEvent>;
-    "on:drop"?: EventHandlerUnion<T, DragEvent>;
-    "on:durationchange"?: EventHandlerUnion<T, Event>;
-    "on:emptied"?: EventHandlerUnion<T, Event>;
-    "on:ended"?: EventHandlerUnion<T, Event>;
-    "on:error"?: EventHandlerUnion<T, Event>;
-    "on:focus"?: EventHandlerUnion<T, FocusEvent>;
-    "on:gotpointercapture"?: EventHandlerUnion<T, PointerEvent>;
-    "on:input"?: EventHandlerUnion<T, InputEvent>;
-    "on:invalid"?: EventHandlerUnion<T, Event>;
-    "on:keydown"?: EventHandlerUnion<T, KeyboardEvent>;
-    "on:keypress"?: EventHandlerUnion<T, KeyboardEvent>;
-    "on:keyup"?: EventHandlerUnion<T, KeyboardEvent>;
-    "on:load"?: EventHandlerUnion<T, Event>;
-    "on:loadeddata"?: EventHandlerUnion<T, Event>;
-    "on:loadedmetadata"?: EventHandlerUnion<T, Event>;
-    "on:loadstart"?: EventHandlerUnion<T, Event>;
-    "on:lostpointercapture"?: EventHandlerUnion<T, PointerEvent>;
-    "on:mousedown"?: EventHandlerUnion<T, MouseEvent>;
-    "on:mouseenter"?: EventHandlerUnion<T, MouseEvent>;
-    "on:mouseleave"?: EventHandlerUnion<T, MouseEvent>;
-    "on:mousemove"?: EventHandlerUnion<T, MouseEvent>;
-    "on:mouseout"?: EventHandlerUnion<T, MouseEvent>;
-    "on:mouseover"?: EventHandlerUnion<T, MouseEvent>;
-    "on:mouseup"?: EventHandlerUnion<T, MouseEvent>;
-    "on:pause"?: EventHandlerUnion<T, Event>;
-    "on:play"?: EventHandlerUnion<T, Event>;
-    "on:playing"?: EventHandlerUnion<T, Event>;
-    "on:pointercancel"?: EventHandlerUnion<T, PointerEvent>;
-    "on:pointerdown"?: EventHandlerUnion<T, PointerEvent>;
-    "on:pointerenter"?: EventHandlerUnion<T, PointerEvent>;
-    "on:pointerleave"?: EventHandlerUnion<T, PointerEvent>;
-    "on:pointermove"?: EventHandlerUnion<T, PointerEvent>;
-    "on:pointerout"?: EventHandlerUnion<T, PointerEvent>;
-    "on:pointerover"?: EventHandlerUnion<T, PointerEvent>;
-    "on:pointerup"?: EventHandlerUnion<T, PointerEvent>;
-    "on:progress"?: EventHandlerUnion<T, Event>;
-    "on:ratechange"?: EventHandlerUnion<T, Event>;
-    "on:reset"?: EventHandlerUnion<T, Event>;
-    "on:scroll"?: EventHandlerUnion<T, Event>;
-    "on:scrollend"?: EventHandlerUnion<T, Event>;
-    "on:seeked"?: EventHandlerUnion<T, Event>;
-    "on:seeking"?: EventHandlerUnion<T, Event>;
-    "on:select"?: EventHandlerUnion<T, UIEvent>;
-    "on:stalled"?: EventHandlerUnion<T, Event>;
-    "on:submit"?: EventHandlerUnion<T, SubmitEvent>;
-    "on:suspend"?: EventHandlerUnion<T, Event>;
-    "on:timeupdate"?: EventHandlerUnion<T, Event>;
-    "on:toggle"?: EventHandlerUnion<T, ToggleEvent>;
-    "on:touchcancel"?: EventHandlerUnion<T, TouchEvent>;
-    "on:touchend"?: EventHandlerUnion<T, TouchEvent>;
-    "on:touchmove"?: EventHandlerUnion<T, TouchEvent>;
-    "on:touchstart"?: EventHandlerUnion<T, TouchEvent>;
-    "on:transitionstart"?: EventHandlerUnion<T, TransitionEvent>;
-    "on:transitionend"?: EventHandlerUnion<T, TransitionEvent>;
-    "on:transitionrun"?: EventHandlerUnion<T, TransitionEvent>;
-    "on:transitioncancel"?: EventHandlerUnion<T, TransitionEvent>;
-    "on:volumechange"?: EventHandlerUnion<T, Event>;
-    "on:waiting"?: EventHandlerUnion<T, Event>;
-    "on:wheel"?: EventHandlerUnion<T, WheelEvent>;
+    "on:abort"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:animationend"?: EventHandlerWithOptionsUnion<T, AnimationEvent>;
+    "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent>;
+    "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent>;
+    "on:auxclick"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:beforeinput"?: EventHandlerWithOptionsUnion<T, InputEvent>;
+    "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent>;
+    "on:blur"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:canplay"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:change"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:dblclick"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:drag"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragend"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragenter"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragleave"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragover"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragstart"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:drop"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:durationchange"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:emptied"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:ended"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:error"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:focus"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:input"?: EventHandlerWithOptionsUnion<T, InputEvent>;
+    "on:invalid"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:keydown"?: EventHandlerWithOptionsUnion<T, KeyboardEvent>;
+    "on:keypress"?: EventHandlerWithOptionsUnion<T, KeyboardEvent>;
+    "on:keyup"?: EventHandlerWithOptionsUnion<T, KeyboardEvent>;
+    "on:load"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:loadeddata"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:loadedmetadata"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:loadstart"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:lostpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:mousedown"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseenter"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseleave"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mousemove"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseout"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseover"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseup"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:pause"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:play"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:playing"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:pointercancel"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerdown"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerenter"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerleave"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointermove"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerout"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerover"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerup"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:progress"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:ratechange"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:reset"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:scroll"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:scrollend"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:seeked"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:seeking"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:select"?: EventHandlerWithOptionsUnion<T, UIEvent>;
+    "on:stalled"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent>;
+    "on:suspend"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:timeupdate"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:toggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent>;
+    "on:touchcancel"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:touchend"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:touchmove"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:touchstart"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:transitionstart"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:transitionend"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:transitionrun"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:transitioncancel"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:volumechange"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:waiting"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent>;
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
