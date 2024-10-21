@@ -1,4 +1,8 @@
 import * as styles from "./styles.module.css";
+import { binding } from "somewhere";
+
+function refFn() {}
+const refConst = null;
 
 const selected = true;
 let id = "my-h1";
@@ -244,3 +248,10 @@ const template69 = <iframe src="" loading="lazy"></iframe>;
 const template70 = <div><iframe src="" loading="lazy"></iframe></div>;
 
 const template71 = <div title="<u>data</u>"/>
+
+const template72 = <div ref={binding} />;
+const template73 = <div ref={binding.prop} />;
+const template74 = <div ref={refFn} />
+const template75 = <div ref={refConst} />
+
+const template76 = <div ref={refUnknown} />
