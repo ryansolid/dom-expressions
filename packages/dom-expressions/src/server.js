@@ -380,8 +380,18 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
       else continue;
-    } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
+    } else if (
+      value == undefined ||
+      prop === "ref" ||
+      prop.slice(0, 2) === "on" ||
+      prop.slice(0, 5) === "prop:"
+    ) {
       continue;
+    } else if (prop.slice(0, 5) === "bool:") {
+      if (!value) continue;
+      result += escape(prop.slice(5));
+    } else if (prop.slice(0, 5) === "attr:") {
+      result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
     } else {
       result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
@@ -606,9 +616,7 @@ export function Assets(props) {
 }
 
 /* istanbul ignore next */
-/**
- * @deprecated Replaced by renderToStream
- */
+/** @deprecated Replaced by renderToStream */
 export function pipeToNodeWritable(code, writable, options = {}) {
   if (options.onReady) {
     options.onCompleteShell = ({ write }) => {
@@ -625,9 +633,7 @@ export function pipeToNodeWritable(code, writable, options = {}) {
 }
 
 /* istanbul ignore next */
-/**
- * @deprecated Replaced by renderToStream
- */
+/** @deprecated Replaced by renderToStream */
 export function pipeToWritable(code, writable, options = {}) {
   if (options.onReady) {
     options.onCompleteShell = ({ write }) => {
@@ -644,9 +650,7 @@ export function pipeToWritable(code, writable, options = {}) {
 }
 
 /* istanbul ignore next */
-/**
- * @deprecated Replaced by ssrElement
- */
+/** @deprecated Replaced by ssrElement */
 export function ssrSpread(props, isSVG, skipChildren) {
   let result = "";
   if (props == null) return result;
@@ -679,17 +683,13 @@ export function ssrSpread(props, isSVG, skipChildren) {
       prop.slice(0, 5) === "prop:"
     ) {
       continue;
+    } else if (prop.slice(0, 5) === "bool:") {
+      if (!value) continue;
+      result += escape(prop.slice(5));
+    } else if (prop.slice(0, 5) === "attr:") {
+      result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
     } else {
-      // bool:
-      if (prop.slice(0, 5) === "bool:") {
-        if (!value) continue;
-        prop = prop.slice(5);
-        result += `${escape(prop)}`;
-      } else {
-        // attr:
-        if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
-        result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
-      }
+      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
