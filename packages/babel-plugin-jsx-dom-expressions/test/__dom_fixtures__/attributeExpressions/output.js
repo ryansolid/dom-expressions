@@ -63,6 +63,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false),
   _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false);
 import * as styles from "./styles.module.css";
+import { binding } from "somewhere";
+function refFn() {}
+const refConst = null;
 const selected = true;
 let id = "my-h1";
 let link;
@@ -514,4 +517,32 @@ const template67 = _tmpl$45();
 const template68 = _tmpl$46();
 const template69 = _tmpl$47();
 const template70 = _tmpl$48();
+const template71 = (() => {
+  var _el$88 = _tmpl$4();
+  _$use(binding, _el$88);
+  return _el$88;
+})();
+const template72 = (() => {
+  var _el$89 = _tmpl$4();
+  var _ref$8 = binding.prop;
+  typeof _ref$8 === "function" ? _$use(_ref$8, _el$89) : (binding.prop = _el$89);
+  return _el$89;
+})();
+const template73 = (() => {
+  var _el$90 = _tmpl$4();
+  var _ref$9 = refFn;
+  typeof _ref$9 === "function" ? _$use(_ref$9, _el$90) : (refFn = _el$90);
+  return _el$90;
+})();
+const template74 = (() => {
+  var _el$91 = _tmpl$4();
+  _$use(refConst, _el$91);
+  return _el$91;
+})();
+const template75 = (() => {
+  var _el$92 = _tmpl$4();
+  var _ref$10 = refUnknown;
+  typeof _ref$10 === "function" ? _$use(_ref$10, _el$92) : (refUnknown = _el$92);
+  return _el$92;
+})();
 _$delegateEvents(["click", "input"]);

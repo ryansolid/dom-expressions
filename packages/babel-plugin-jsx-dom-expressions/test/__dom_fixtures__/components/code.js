@@ -1,4 +1,7 @@
-import { Show } from "somewhere"
+import { Show, binding } from "somewhere"
+
+function refFn() {}
+const refConst = null;
 
 const Child = props => {
   const [s, set] = createSignal();
@@ -219,3 +222,10 @@ class Template29 extends ParentComponent {
     <this.component method={this.method} />
   }
 }
+
+const template30 = <Comp ref={binding} />
+const template31 = <Comp ref={binding.prop} />
+const template32 = <Comp ref={refFn} />
+const template33 = <Comp ref={refConst} />
+
+const template34 = <Comp ref={refUnknown} />
