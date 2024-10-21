@@ -221,14 +221,6 @@ export function toEventName(name) {
   return name.slice(2).toLowerCase();
 }
 
-export function toAttributeName(name) {
-  return name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
-}
-
-export function toPropertyName(name) {
-  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
-}
-
 export function wrappedByText(list, startIndex) {
   let index = startIndex,
     wrapped;
