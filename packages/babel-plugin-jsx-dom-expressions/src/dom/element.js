@@ -16,7 +16,6 @@ import {
   registerImportMethod,
   filterChildren,
   toEventName,
-  toPropertyName,
   checkLength,
   getStaticExpression,
   reservedNameSpaces,
@@ -238,8 +237,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
   const alias = getPropAlias(name, tagName.toUpperCase());
-  if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
-    if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
+  if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || namespace === "prop")) {
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [elem, t.stringLiteral(name), value]);
     }
@@ -252,7 +250,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
 
   let isNameSpaced = name.indexOf(":") > -1;
   name = Aliases[name] || name;
-  !isSVG && (name = name.toLowerCase());
+  /*!isSVG && (name = name.toLowerCase());*/
   const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
   if (ns) {
     return t.callExpression(
@@ -797,7 +795,7 @@ function transformAttributes(path, results) {
             t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE, tagName }))
           );
         } else {
-          !isSVG && (key = key.toLowerCase());
+          /*!isSVG && (key = key.toLowerCase());*/
           results.template += `${needsSpacing ? ' ' : ''}${key}`;
           // https://github.com/solidjs/solid/issues/2338
           // results.templateWithClosingTags += `${needsSpacing ? ' ' : ''}${key}`;

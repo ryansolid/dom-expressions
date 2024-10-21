@@ -219,7 +219,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef, props);
+      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
     }
   }
   for (const prop in props) {
@@ -228,7 +228,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
       continue;
     }
     const value = props[prop];
-    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef, props);
+    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef);
   }
 }
 
@@ -260,7 +260,9 @@ export function getNextElement(template) {
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if ("_DX_DEV_" && hydrating) {
       sharedConfig.done = true;
-      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`);
+      throw new Error(
+        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`
+      );
     }
     return template();
   }
@@ -321,18 +323,14 @@ function isHydrating(node) {
   return !!sharedConfig.context && !sharedConfig.done && (!node || node.isConnected);
 }
 
-function toPropertyName(name) {
-  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
-}
-
 function toggleClassKey(node, key, value) {
   const classNames = key.trim().split(/\s+/);
   for (let i = 0, nameLen = classNames.length; i < nameLen; i++)
     node.classList.toggle(classNames[i], value);
 }
 
-function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
-  let isCE, isProp, isChildProp, propAlias, forceProp;
+function assignProp(node, prop, value, prev, isSVG, skipRef) {
+  let propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
   if (value === prev) return prev;
@@ -363,17 +361,14 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     setBoolAttribute(node, prop.slice(5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
-    (isChildProp = ChildProperties.has(prop)) ||
-    (!isSVG &&
-      ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
-    (isCE = (node.nodeName.includes("-") || 'is' in props))
+    ChildProperties.has(prop) ||
+    (!isSVG && (propAlias = getPropAlias(prop, node.tagName))) ||
+    Properties.has(prop)
   ) {
     if (forceProp) {
       prop = prop.slice(5);
-      isProp = true;
     } else if (isHydrating(node)) return value;
     if (prop === "class" || prop === "className") className(node, value);
-    else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[propAlias || prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
@@ -404,7 +399,11 @@ function eventHandler(e) {
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
-    node.host && typeof node.host !== "string" && !node.host._$host && node.contains(e.target) && retarget(node.host);
+    node.host &&
+      typeof node.host !== "string" &&
+      !node.host._$host &&
+      node.contains(e.target) &&
+      retarget(node.host);
     return true;
   };
   const walkUpTree = () => {
