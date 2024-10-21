@@ -43,7 +43,9 @@ export function isInvalidMarkup(html) {
     .replace(/>[^<]+</gi, ">#text<")
 
     // remove attributes (the lack of quotes will make it mismatch)
-    .replace(/<([a-z0-9-:]+)\s+[^>]+>/gi, "<$1>")
+    // attributes are not longer added to `templateWithClosingTags`
+    // https://github.com/solidjs/solid/issues/2338
+    // .replace(/<([a-z0-9-:]+)\s+[^>]+>/gi, "<$1>")
 
     // fix escaping, so doesnt mess up the validation
     // `&lt;script>a();&lt;/script>` -> `&lt;script&gt;a();&lt;/script&gt;`
@@ -58,11 +60,19 @@ export function isInvalidMarkup(html) {
     .replace(/<\/td>$/i, "</td></tr></tbody></table>")
     .replace(/^<th>/i, "<table><thead><tr><th>")
     .replace(/<\/th>$/i, "</th></tr></thead></table>")
+    // col/colgroup
+    .replace(/^<col>/i, "<table><colgroup><col>")
+    .replace(/<\/col>$/i, "</col></colgroup></table>")
+    .replace(/^<colgroup>/i, "<table><colgroup>")
+    .replace(/<\/colgroup>$/i, "</colgroup></table>")
+
     // fix table components
     .replace(/^<thead>/i, "<table><thead>")
     .replace(/<\/thead>$/i, "</thead></table>")
     .replace(/^<tbody>/i, "<table><tbody>")
-    .replace(/<\/tbody>$/i, "</tbody></table>");
+    .replace(/<\/tbody>$/i, "</tbody></table>")
+    .replace(/^<tfoot>/i, "<table><tfoot>")
+    .replace(/<\/tfoot>$/i, "</tfoot></table>");
 
   // skip when equal to:
   switch (html) {
