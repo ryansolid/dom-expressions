@@ -129,7 +129,7 @@ export function insert<T>(
 /** @deprecated not supported on the server side */
 export function spread<T>(
   node: Element,
-  accessor: (() => T) | T,
+  accessor: T,
   isSVG?: Boolean,
   skipChildren?: Boolean
 ): void;

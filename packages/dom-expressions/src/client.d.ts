@@ -25,7 +25,7 @@ export function delegateEvents(eventNames: string[], d?: Document): void;
 export function clearDelegatedEvents(d?: Document): void;
 export function spread<T>(
   node: Element,
-  accessor: (() => T) | T,
+  accessor: T,
   isSVG?: Boolean,
   skipChildren?: Boolean
 ): void;
