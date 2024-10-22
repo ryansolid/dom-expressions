@@ -8,13 +8,13 @@ var _tmpl$ = ["<my-element", "></my-element>"],
 const template = _$ssr(
   _tmpl$,
   _$ssrAttribute("some-attr", _$escape(name, true), false) +
-    _$ssrAttribute("notprop", _$escape(data, true), false) +
+    _$ssrAttribute("notProp", _$escape(data, true), false) +
     _$ssrAttribute("my-attr", _$escape(data, true), false)
 );
 const template2 = _$ssr(
   _tmpl$,
   _$ssrAttribute("some-attr", _$escape(state.name, true), false) +
-    _$ssrAttribute("notprop", _$escape(state.data, true), false) +
+    _$ssrAttribute("notProp", _$escape(state.data, true), false) +
     _$ssrAttribute("my-attr", _$escape(state.data, true), false)
 );
 const template3 = _$ssr(_tmpl$2);

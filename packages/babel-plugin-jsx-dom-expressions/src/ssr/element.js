@@ -90,7 +90,7 @@ export function transformElement(path, info) {
 
 function toAttribute(key, isSVG) {
   key = Aliases[key] || key;
-  !isSVG && (key = key.toLowerCase());
+  /*!isSVG && (key = key.toLowerCase());*/
   return key;
 }
 

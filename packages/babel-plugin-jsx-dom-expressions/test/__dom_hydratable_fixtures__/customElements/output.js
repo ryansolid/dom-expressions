@@ -3,15 +3,14 @@ import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 import { getOwner as _$getOwner } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
-import { setProperty as _$setProperty } from "r-dom";
 var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true, false),
   _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot=head>Title`, true, false),
   _tmpl$3 = /*#__PURE__*/ _$template(`<slot name=head>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<a is=my-element>`, true, false);
 const template = (() => {
   var _el$ = _$getNextElement(_tmpl$);
-  _$setProperty(_el$, "someAttr", name);
-  _$setProperty(_el$, "notprop", data);
+  _$setAttribute(_el$, "some-attr", name);
+  _$setAttribute(_el$, "notProp", data);
   _$setAttribute(_el$, "my-attr", data);
   _el$.someProp = data;
   _el$._$owner = _$getOwner();
@@ -26,8 +25,8 @@ const template2 = (() => {
         _v$2 = state.data,
         _v$3 = state.data,
         _v$4 = state.data;
-      _v$ !== _p$.e && _$setProperty(_el$2, "someAttr", (_p$.e = _v$));
-      _v$2 !== _p$.t && _$setProperty(_el$2, "notprop", (_p$.t = _v$2));
+      _v$ !== _p$.e && _$setAttribute(_el$2, "some-attr", (_p$.e = _v$));
+      _v$2 !== _p$.t && _$setAttribute(_el$2, "notProp", (_p$.t = _v$2));
       _v$3 !== _p$.a && _$setAttribute(_el$2, "my-attr", (_p$.a = _v$3));
       _v$4 !== _p$.o && (_el$2.someProp = _p$.o = _v$4);
       return _p$;
