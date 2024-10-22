@@ -32,7 +32,7 @@ const Child = props => {
             var _el$10 = _tmpl$4();
             _$effect(
               () => (s() ? "red" : "green"),
-              _v$ => _$setAttribute(_el$10, "backgroundcolor", _v$)
+              _v$ => _$setAttribute(_el$10, "backgroundColor", _v$)
             );
             return _el$10;
           })(),
@@ -94,7 +94,7 @@ const Child = props => {
                             var _el$13 = _tmpl$4();
                             _$effect(
                               () => (s() ? "red" : "green"),
-                              _v$ => _$setAttribute(_el$13, "backgroundcolor", _v$)
+                              _v$ => _$setAttribute(_el$13, "backgroundColor", _v$)
                             );
                             return _el$13;
                           })(),
