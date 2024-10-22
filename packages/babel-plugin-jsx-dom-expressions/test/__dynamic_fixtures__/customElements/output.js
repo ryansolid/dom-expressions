@@ -8,8 +8,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true, false, false),
   _tmpl$4 = /*#__PURE__*/ _$template(`<a is=my-element>`, true, false, false);
 const template = (() => {
   var _el$ = _tmpl$();
-  _el$.someAttr = name;
-  _el$.notprop = data;
+  _$setAttribute(_el$, "some-attr", name);
+  _$setAttribute(_el$, "notProp", data);
   _$setAttribute(_el$, "my-attr", data);
   _el$.someProp = data;
   _el$._$owner = _$getOwner();
@@ -26,8 +26,8 @@ const template2 = (() => {
       o: state.data
     }),
     ({ e, t, a, o }, _p$) => {
-      e !== _p$.e && (_el$2.someAttr = e);
-      t !== _p$.t && (_el$2.notprop = t);
+      e !== _p$.e && _$setAttribute(_el$2, "some-attr", e);
+      t !== _p$.t && _$setAttribute(_el$2, "notProp", t);
       a !== _p$.a && _$setAttribute(_el$2, "my-attr", a);
       o !== _p$.o && (_el$2.someProp = o);
     },
