@@ -1,5 +1,11 @@
 import * as t from "@babel/types";
-import { escapeStringForTemplate, getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
+import {
+  escapeStringForTemplate,
+  getConfig,
+  getNumberedId,
+  getRendererConfig,
+  registerImportMethod
+} from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -155,11 +161,7 @@ function wrapDynamics(path, dynamics) {
     const propIdent = t.identifier(getNumberedId(index));
     const propMember = t.memberExpression(prevId, propIdent);
 
-    if (
-      key.startsWith("class:") &&
-      !t.isBooleanLiteral(value) &&
-      !t.isUnaryExpression(value)
-    ) {
+    if (key.startsWith("class:") && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
     }
 
@@ -177,10 +179,10 @@ function wrapDynamics(path, dynamics) {
               isCE,
               tagName,
               dynamic: true,
-              prevId: propMember,
-            }),
-          ),
-        ),
+              prevId: propMember
+            })
+          )
+        )
       );
     } else {
       const prev = key.startsWith("style:") ? varIdent : undefined;
@@ -189,15 +191,15 @@ function wrapDynamics(path, dynamics) {
           t.logicalExpression(
             "&&",
             t.binaryExpression("!==", varIdent, propMember),
-            setAttr(
-              path,
-              elem,
-              key,
-              t.assignmentExpression("=", propMember, varIdent),
-              { isSVG, isCE, tagName, dynamic: true, prevId: prev },
-            ),
-          ),
-        ),
+            setAttr(path, elem, key, t.assignmentExpression("=", propMember, varIdent), {
+              isSVG,
+              isCE,
+              tagName,
+              dynamic: true,
+              prevId: prev
+            })
+          )
+        )
       );
     }
   });
@@ -209,12 +211,10 @@ function wrapDynamics(path, dynamics) {
         t.blockStatement([
           t.variableDeclaration("var", declarations),
           ...statements,
-          t.returnStatement(prevId),
-        ]),
+          t.returnStatement(prevId)
+        ])
       ),
-      t.objectExpression(
-        properties.map((id) => t.objectProperty(id, t.identifier("undefined"))),
-      ),
-    ]),
+      t.objectExpression(properties.map(id => t.objectProperty(id, t.identifier("undefined"))))
+    ])
   );
 }

@@ -260,7 +260,9 @@ export function getNextElement(template) {
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if ("_DX_DEV_" && hydrating) {
       sharedConfig.done = true;
-      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`);
+      throw new Error(
+        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`
+      );
     }
     return template();
   }
@@ -366,7 +368,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     (isChildProp = ChildProperties.has(prop)) ||
     (!isSVG &&
       ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
-    (isCE = (node.nodeName.includes("-") || 'is' in props))
+    (isCE = node.nodeName.includes("-") || "is" in props)
   ) {
     if (forceProp) {
       prop = prop.slice(5);
@@ -404,7 +406,11 @@ function eventHandler(e) {
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
-    node.host && typeof node.host !== "string" && !node.host._$host && node.contains(e.target) && retarget(node.host);
+    node.host &&
+      typeof node.host !== "string" &&
+      !node.host._$host &&
+      node.contains(e.target) &&
+      retarget(node.host);
     return true;
   };
   const walkUpTree = () => {
