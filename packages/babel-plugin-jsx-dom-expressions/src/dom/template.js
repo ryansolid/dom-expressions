@@ -1,5 +1,11 @@
 import * as t from "@babel/types";
-import { escapeStringForTemplate, getConfig, getNumberedId, getRendererConfig, registerImportMethod } from "../shared/utils";
+import {
+  escapeStringForTemplate,
+  getConfig,
+  getNumberedId,
+  getRendererConfig,
+  registerImportMethod
+} from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -41,7 +47,11 @@ export function appendTemplates(path, templates) {
       raw: escapeStringForTemplate(template.template)
     };
 
-    const shouldUseImportNode = template.isCE || template.isImportNode
+    const shouldUseImportNode = template.isCE || template.isImportNode;
+    const isMathML =
+      /^<(math|annotation|annotation-xml|maction|math|merror|mfrac|mi|mmultiscripts|mn|mo|mover|mpadded|mphantom|mprescripts|mroot|mrow|ms|mspace|msqrt|mstyle|msub|msubsup|msup|mtable|mtd|mtext|mtr|munder|munderover|semantics|menclose|mfenced)(\s|>)/.test(
+        template.template
+      );
 
     return t.variableDeclarator(
       template.id,
@@ -49,8 +59,12 @@ export function appendTemplates(path, templates) {
         t.callExpression(
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
-            template.isSVG || shouldUseImportNode
-              ? [t.booleanLiteral(!!shouldUseImportNode), t.booleanLiteral(template.isSVG)]
+            template.isSVG || shouldUseImportNode || isMathML
+              ? [
+                  t.booleanLiteral(!!shouldUseImportNode),
+                  t.booleanLiteral(template.isSVG),
+                  t.booleanLiteral(isMathML)
+                ]
               : []
           )
         ),
@@ -155,11 +169,7 @@ function wrapDynamics(path, dynamics) {
     const propIdent = t.identifier(getNumberedId(index));
     const propMember = t.memberExpression(prevId, propIdent);
 
-    if (
-      key.startsWith("class:") &&
-      !t.isBooleanLiteral(value) &&
-      !t.isUnaryExpression(value)
-    ) {
+    if (key.startsWith("class:") && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
     }
 
@@ -177,10 +187,10 @@ function wrapDynamics(path, dynamics) {
               isCE,
               tagName,
               dynamic: true,
-              prevId: propMember,
-            }),
-          ),
-        ),
+              prevId: propMember
+            })
+          )
+        )
       );
     } else {
       const prev = key.startsWith("style:") ? varIdent : undefined;
@@ -189,15 +199,15 @@ function wrapDynamics(path, dynamics) {
           t.logicalExpression(
             "&&",
             t.binaryExpression("!==", varIdent, propMember),
-            setAttr(
-              path,
-              elem,
-              key,
-              t.assignmentExpression("=", propMember, varIdent),
-              { isSVG, isCE, tagName, dynamic: true, prevId: prev },
-            ),
-          ),
-        ),
+            setAttr(path, elem, key, t.assignmentExpression("=", propMember, varIdent), {
+              isSVG,
+              isCE,
+              tagName,
+              dynamic: true,
+              prevId: prev
+            })
+          )
+        )
       );
     }
   });
@@ -209,12 +219,10 @@ function wrapDynamics(path, dynamics) {
         t.blockStatement([
           t.variableDeclaration("var", declarations),
           ...statements,
-          t.returnStatement(prevId),
-        ]),
+          t.returnStatement(prevId)
+        ])
       ),
-      t.objectExpression(
-        properties.map((id) => t.objectProperty(id, t.identifier("undefined"))),
-      ),
-    ]),
+      t.objectExpression(properties.map(id => t.objectProperty(id, t.identifier("undefined"))))
+    ])
   );
 }
