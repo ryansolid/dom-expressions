@@ -82,7 +82,7 @@ export function transformElement(path, info) {
           }
         }),
     results = {
-      template: `<${tagName}${inlineLoadingLazy ? ' loading="lazy"' : ""}`,
+      template: `<${tagName}${inlineLoadingLazy ? " loading=lazy" : ""}`,
       templateWithClosingTags: `<${tagName}`,
       declarations: [],
       exprs: [],

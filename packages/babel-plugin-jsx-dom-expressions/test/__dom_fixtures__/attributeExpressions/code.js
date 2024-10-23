@@ -255,3 +255,9 @@ const template74 = <div ref={refFn} />
 const template75 = <div ref={refConst} />
 
 const template76 = <div ref={refUnknown} />
+
+const template77 = <img src="" loading={signal}/>;
+const template78 = <div><img src="" loading={signal}/></div>;
+
+const template79 = <iframe src="" loading={signal}></iframe>;
+const template80 = <div><iframe src="" loading={signal}></iframe></div>;

@@ -62,7 +62,11 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$46 = /*#__PURE__*/ _$template(`<div><iframe src="">`),
   _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false),
   _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false),
-  _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`);
+  _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
+  _tmpl$50 = /*#__PURE__*/ _$template(`<img loading=lazy src="">`, true, false),
+  _tmpl$51 = /*#__PURE__*/ _$template(`<div><img loading=lazy src="">`, true, false),
+  _tmpl$52 = /*#__PURE__*/ _$template(`<iframe loading=lazy src="">`, true, false),
+  _tmpl$53 = /*#__PURE__*/ _$template(`<div><iframe loading=lazy src="">`, true, false);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -546,5 +550,27 @@ const template76 = (() => {
   var _ref$10 = refUnknown;
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$93) : (refUnknown = _el$93);
   return _el$93;
+})();
+const template77 = (() => {
+  var _el$94 = _tmpl$50();
+  _$setAttribute(_el$94, "loading", signal);
+  return _el$94;
+})();
+const template78 = (() => {
+  var _el$95 = _tmpl$51(),
+    _el$96 = _el$95.firstChild;
+  _$setAttribute(_el$96, "loading", signal);
+  return _el$95;
+})();
+const template79 = (() => {
+  var _el$97 = _tmpl$52();
+  _$setAttribute(_el$97, "loading", signal);
+  return _el$97;
+})();
+const template80 = (() => {
+  var _el$98 = _tmpl$53(),
+    _el$99 = _el$98.firstChild;
+  _$setAttribute(_el$99, "loading", signal);
+  return _el$98;
 })();
 _$delegateEvents(["click", "input"]);
