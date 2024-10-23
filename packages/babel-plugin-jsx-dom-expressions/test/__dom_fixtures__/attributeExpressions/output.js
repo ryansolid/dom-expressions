@@ -56,13 +56,15 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$40 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
   _tmpl$41 = /*#__PURE__*/ _$template(`<img src="">`),
   _tmpl$42 = /*#__PURE__*/ _$template(`<div><img src="">`),
-  _tmpl$43 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false),
-  _tmpl$44 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false),
+  _tmpl$43 = /*#__PURE__*/ _$template(`<img src=""loading=lazy>`, true, false, false),
+  _tmpl$44 = /*#__PURE__*/ _$template(`<div><img src=""loading=lazy>`, true, false, false),
   _tmpl$45 = /*#__PURE__*/ _$template(`<iframe src="">`),
   _tmpl$46 = /*#__PURE__*/ _$template(`<div><iframe src="">`),
-  _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false),
-  _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false),
-  _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`);
+  _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src=""loading=lazy>`, true, false, false),
+  _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src=""loading=lazy>`, true, false, false),
+  _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
+  _tmpl$50 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
+  _tmpl$51 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -547,4 +549,6 @@ const template76 = (() => {
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$93) : (refUnknown = _el$93);
   return _el$93;
 })();
+const template77 = _tmpl$50();
+const template78 = _tmpl$51();
 _$delegateEvents(["click", "input"]);

@@ -47,7 +47,11 @@ export function appendTemplates(path, templates) {
       raw: escapeStringForTemplate(template.template)
     };
 
-    const shouldUseImportNode = template.isCE || template.isImportNode
+    const shouldUseImportNode = template.isCE || template.isImportNode;
+    const isMathML =
+      /^<(math|annotation|annotation-xml|maction|math|merror|mfrac|mi|mmultiscripts|mn|mo|mover|mpadded|mphantom|mprescripts|mroot|mrow|ms|mspace|msqrt|mstyle|msub|msubsup|msup|mtable|mtd|mtext|mtr|munder|munderover|semantics|menclose|mfenced)(\s|>)/.test(
+        template.template
+      );
 
     return t.variableDeclarator(
       template.id,
@@ -55,8 +59,12 @@ export function appendTemplates(path, templates) {
         t.callExpression(
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
-            template.isSVG || shouldUseImportNode
-              ? [t.booleanLiteral(!!shouldUseImportNode), t.booleanLiteral(template.isSVG)]
+            template.isSVG || shouldUseImportNode || isMathML
+              ? [
+                  t.booleanLiteral(!!shouldUseImportNode),
+                  t.booleanLiteral(template.isSVG),
+                  t.booleanLiteral(isMathML)
+                ]
               : []
           )
         ),

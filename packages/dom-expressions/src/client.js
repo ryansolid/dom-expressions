@@ -64,16 +64,20 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, isImportNode, isSVG) {
+export function template(html, isImportNode, isSVG, isMathML) {
   let node;
   const create = () => {
     if ("_DX_DEV_" && isHydrating())
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
       );
-    const t = document.createElement("template");
+
+    const t = isMathML
+      ? document.createElementNS("http://www.w3.org/1998/Math/MathML", "template")
+      : document.createElement("template");
     t.innerHTML = html;
-    return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
+
+    return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
   };
   // backwards compatible with older builds
   const fn = isImportNode
