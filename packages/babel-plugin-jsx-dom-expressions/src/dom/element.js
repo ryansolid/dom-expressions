@@ -67,22 +67,14 @@ export function transformElement(path, info) {
         .get("openingElement")
         .get("attributes")
         .some(a => a.node?.name?.name === "is" || a.name?.name === "is"),
-    inlineLoadingLazy = false,
     isImportNode =
       (tagName === "img" || tagName === "iframe") &&
       path
         .get("openingElement")
         .get("attributes")
-        .some(a => {
-          if (a.node.name?.name === "loading") {
-            if (typeof a.node.value?.value !== "string") {
-              inlineLoadingLazy = true;
-            }
-            return true;
-          }
-        }),
+        .some(a => a.node.name?.name === "loading"),
     results = {
-      template: `<${tagName}${inlineLoadingLazy ? " loading=lazy" : ""}`,
+      template: `<${tagName}`,
       templateWithClosingTags: `<${tagName}`,
       declarations: [],
       exprs: [],
