@@ -547,26 +547,4 @@ const template76 = (() => {
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$93) : (refUnknown = _el$93);
   return _el$93;
 })();
-const template77 = (() => {
-  var _el$94 = _tmpl$41();
-  _$setAttribute(_el$94, "loading", signal);
-  return _el$94;
-})();
-const template78 = (() => {
-  var _el$95 = _tmpl$42(),
-    _el$96 = _el$95.firstChild;
-  _$setAttribute(_el$96, "loading", signal);
-  return _el$95;
-})();
-const template79 = (() => {
-  var _el$97 = _tmpl$45();
-  _$setAttribute(_el$97, "loading", signal);
-  return _el$97;
-})();
-const template80 = (() => {
-  var _el$98 = _tmpl$46(),
-    _el$99 = _el$98.firstChild;
-  _$setAttribute(_el$99, "loading", signal);
-  return _el$98;
-})();
 _$delegateEvents(["click", "input"]);
