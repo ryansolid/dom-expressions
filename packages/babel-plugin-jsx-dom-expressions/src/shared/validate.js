@@ -49,30 +49,29 @@ export function isInvalidMarkup(html) {
 
     // fix escaping, so doesnt mess up the validation
     // `&lt;script>a();&lt;/script>` -> `&lt;script&gt;a();&lt;/script&gt;`
-    .replace(/&lt;([^>]+)>/gi, "&lt;$1&gt;")
+    .replace(/&lt;([^>]+)>/gi, "&lt;$1&gt;");
 
-    // edge cases (safe to assume they will use the partial in the right place)
-    // fix tables rows
-    .replace(/^<tr>/i, "<table><tbody><tr>")
-    .replace(/<\/tr>$/i, "</tr></tbody></table>")
-    // fix tables cells
-    .replace(/^<td>/i, "<table><tbody><tr><td>")
-    .replace(/<\/td>$/i, "</td></tr></tbody></table>")
-    .replace(/^<th>/i, "<table><thead><tr><th>")
-    .replace(/<\/th>$/i, "</th></tr></thead></table>")
-    // col/colgroup
-    .replace(/^<col>/i, "<table><colgroup><col>")
-    .replace(/<\/col>$/i, "</col></colgroup></table>")
-    .replace(/^<colgroup>/i, "<table><colgroup>")
-    .replace(/<\/colgroup>$/i, "</colgroup></table>")
+  // edge cases (safe to assume they will use the partial in the right place)
 
-    // fix table components
-    .replace(/^<thead>/i, "<table><thead>")
-    .replace(/<\/thead>$/i, "</thead></table>")
-    .replace(/^<tbody>/i, "<table><tbody>")
-    .replace(/<\/tbody>$/i, "</tbody></table>")
-    .replace(/^<tfoot>/i, "<table><tfoot>")
-    .replace(/<\/tfoot>$/i, "</tfoot></table>");
+  // table cells
+  if (/^<(td|th)>/.test(html)) {
+    html = `<table><tbody><tr>${html}</tr></tbody></table>`;
+  }
+
+  // table rows
+  if (/^<tr>/.test(html)) {
+    html = `<table><tbody>${html}</tbody></table>`;
+  }
+
+  // table misc
+  if (/^<col>/.test(html)) {
+    html = `<table><colgroup>${html}</colgroup></table>`;
+  }
+
+  // table components
+  if (/^<(thead|tbody|tfoot|colgroup|caption)>/.test(html)) {
+    html = `<table>${html}</table>`;
+  }
 
   // skip when equal to:
   switch (html) {
