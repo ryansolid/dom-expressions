@@ -1147,7 +1147,6 @@ export namespace JSX {
     formtarget?: string | undefined;
     height?: number | string | undefined;
     incremental?: boolean | undefined;
-    indeterminate?: boolean | undefined;
     list?: string | undefined;
     max?: number | string | undefined;
     maxlength?: number | string | undefined;
