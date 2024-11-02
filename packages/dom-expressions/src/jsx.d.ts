@@ -113,6 +113,7 @@ export namespace JSX {
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void) | undefined;
+    /** @deprecated Use `clsx` instead. https://www.npmjs.com/package/clsx */
     classList?:
       | {
           [k: string]: boolean | undefined;
