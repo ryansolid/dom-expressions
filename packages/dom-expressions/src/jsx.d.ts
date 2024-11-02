@@ -2311,6 +2311,270 @@ export namespace JSX {
       ZoomAndPanSVGAttributes {
     viewTarget?: string | undefined;
   }
+
+  /** MathML typings come mostly from Preact */
+
+  interface MathMLAnnotationElementAttributes<T> extends HTMLAttributes<T> {
+    encoding?: string;
+  }
+  interface MathMLAnnotationXmlElementAttributes<T> extends HTMLAttributes<T> {
+    encoding?: string;
+  }
+  interface MathMLMactionElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction#actiontype
+     */
+    actiontype?: "statusline" | "toggle";
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction#selection */
+    selection?: string;
+  }
+  interface MathMLMathElementAttributes<T> extends HTMLAttributes<T> {
+    display?: "block" | "inline";
+  }
+  interface MathMLMerrorElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMfracElementAttributes<T> extends HTMLAttributes<T> {
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfrac#denomalign */
+    denomalign?: "center" | "left" | "right";
+    linethickness?: string;
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfrac#numalign */
+    numalign?: "center" | "left" | "right";
+  }
+  interface MathMLMiElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * The only value allowed in the current specification is normal (case insensitive) See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mi#mathvariant
+     */
+    mathvariant?:
+      | "normal"
+      | "bold"
+      | "italic"
+      | "bold-italic"
+      | "double-struck"
+      | "bold-fraktur"
+      | "script"
+      | "bold-script"
+      | "fraktur"
+      | "sans-serif"
+      | "bold-sans-serif"
+      | "sans-serif-italic"
+      | "sans-serif-bold-italic"
+      | "monospace"
+      | "initial"
+      | "tailed"
+      | "looped"
+      | "stretched";
+  }
+
+  interface MathMLMmultiscriptsElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mmultiscripts#subscriptshift
+     */
+    subscriptshift?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mmultiscripts#superscriptshift
+     */
+    superscriptshift?: string;
+  }
+  interface MathMLMnElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMoElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mo#accent
+     */
+    accent?: boolean;
+    fence?: boolean;
+    largeop?: boolean;
+    lspace?: string;
+    maxsize?: string;
+    minsize?: string;
+    movablelimits?: boolean;
+    rspace?: string;
+    separator?: boolean;
+    stretchy?: boolean;
+    symmetric?: boolean;
+  }
+  interface MathMLMoverElementAttributes<T> extends HTMLAttributes<T> {
+    accent?: boolean;
+  }
+  interface MathMLMpaddedElementAttributes<T> extends HTMLAttributes<T> {
+    depth?: string;
+    height?: string;
+    lspace?: string;
+    voffset?: string;
+    width?: string;
+  }
+  interface MathMLMphantomElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMprescriptsElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMrootElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMrowElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMsElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/ms#browser_compatibility
+     */
+    lquote?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/ms#browser_compatibility
+     */
+    rquote?: string;
+  }
+  interface MathMLMspaceElementAttributes<T> extends HTMLAttributes<T> {
+    depth?: string;
+    height?: string;
+    width?: string;
+  }
+  interface MathMLMsqrtElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMstyleElementAttributes<T> extends HTMLAttributes<T> {
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#background */
+    background?: string;
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#color */
+    color?: string;
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#fontsize */
+    fontsize?: string;
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#fontstyle */
+    fontstyle?: string;
+    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#fontweight */
+    fontweight?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#scriptminsize
+     */
+    scriptminsize?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#scriptsizemultiplier
+     */
+    scriptsizemultiplier?: string;
+  }
+  interface MathMLMsubElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msub#subscriptshift
+     */
+    subscriptshift?: string;
+  }
+  interface MathMLMsubsupElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msubsup#subscriptshift
+     */
+    subscriptshift?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msubsup#superscriptshift
+     */
+    superscriptshift?: string;
+  }
+  interface MathMLMsupElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msup#superscriptshift
+     */
+    superscriptshift?: string;
+  }
+  interface MathMLMtableElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#align
+     */
+    align?: "axis" | "baseline" | "bottom" | "center" | "top";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#columnalign
+     */
+    columnalign?: "center" | "left" | "right";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#columnlines
+     */
+    columnlines?: "dashed" | "none" | "solid";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#columnspacing
+     */
+    columnspacing?: string;
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#frame
+     */
+    frame?: "dashed" | "none" | "solid";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#framespacing
+     */
+    framespacing?: string;
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#rowalign
+     */
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#rowlines
+     */
+    rowlines?: "dashed" | "none" | "solid";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#rowspacing
+     */
+    rowspacing?: string;
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#width
+     */
+    width?: string;
+  }
+  interface MathMLMtdElementAttributes<T> extends HTMLAttributes<T> {
+    columnspan?: number;
+    rowspan?: number;
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtd#columnalign
+     */
+    columnalign?: "center" | "left" | "right";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtd#rowalign
+     */
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top";
+  }
+  interface MathMLMtextElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLMtrElementAttributes<T> extends HTMLAttributes<T> {
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtr#columnalign
+     */
+    columnalign?: "center" | "left" | "right";
+    /**
+     * Non-standard attribute See
+     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtr#rowalign
+     */
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top";
+  }
+  interface MathMLMunderElementAttributes<T> extends HTMLAttributes<T> {
+    accentunder?: boolean;
+  }
+  interface MathMLMunderoverElementAttributes<T> extends HTMLAttributes<T> {
+    accent?: boolean;
+    accentunder?: boolean;
+  }
+  interface MathMLSemanticsElementAttributes<T> extends HTMLAttributes<T> {}
+
+  /* MathMLDeprecatedElements */
+
+  interface MathMLMencloseElementAttributes<T> extends HTMLAttributes<T> {
+    notation?: string;
+  }
+  interface MathMLMfencedElementAttributes<T> extends HTMLAttributes<T> {
+    close?: string;
+    open?: string;
+    separators?: string;
+  }
+
   /** @type {HTMLElementTagNameMap} */
   interface HTMLElementTags {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
@@ -2497,5 +2761,48 @@ export namespace JSX {
     use: UseSVGAttributes<SVGUseElement>;
     view: ViewSVGAttributes<SVGViewElement>;
   }
-  interface IntrinsicElements extends HTMLElementTags, HTMLElementDeprecatedTags, SVGElementTags {}
+
+  interface MathMLElementTags {
+    annotation: MathMLAnnotationElementAttributes<MathMLElement>;
+    "annotation-xml": MathMLAnnotationXmlElementAttributes<MathMLElement>;
+    math: MathMLMathElementAttributes<MathMLElement>;
+    merror: MathMLMerrorElementAttributes<MathMLElement>;
+    mfrac: MathMLMfracElementAttributes<MathMLElement>;
+    mi: MathMLMiElementAttributes<MathMLElement>;
+    mmultiscripts: MathMLMmultiscriptsElementAttributes<MathMLElement>;
+    mn: MathMLMnElementAttributes<MathMLElement>;
+    mo: MathMLMoElementAttributes<MathMLElement>;
+    mover: MathMLMoverElementAttributes<MathMLElement>;
+    mpadded: MathMLMpaddedElementAttributes<MathMLElement>;
+    mphantom: MathMLMphantomElementAttributes<MathMLElement>;
+    mprescripts: MathMLMprescriptsElementAttributes<MathMLElement>;
+    mroot: MathMLMrootElementAttributes<MathMLElement>;
+    mrow: MathMLMrowElementAttributes<MathMLElement>;
+    ms: MathMLMsElementAttributes<MathMLElement>;
+    mspace: MathMLMspaceElementAttributes<MathMLElement>;
+    msqrt: MathMLMsqrtElementAttributes<MathMLElement>;
+    mstyle: MathMLMstyleElementAttributes<MathMLElement>;
+    msub: MathMLMsubElementAttributes<MathMLElement>;
+    msubsup: MathMLMsubsupElementAttributes<MathMLElement>;
+    msup: MathMLMsupElementAttributes<MathMLElement>;
+    mtable: MathMLMtableElementAttributes<MathMLElement>;
+    mtd: MathMLMtdElementAttributes<MathMLElement>;
+    mtext: MathMLMtextElementAttributes<MathMLElement>;
+    mtr: MathMLMtrElementAttributes<MathMLElement>;
+    munder: MathMLMunderElementAttributes<MathMLElement>;
+    munderover: MathMLMunderoverElementAttributes<MathMLElement>;
+    semantics: MathMLSemanticsElementAttributes<MathMLElement>;
+    /** @deprecated */
+    maction: MathMLMactionElementAttributes<MathMLElement>;
+    /** @deprecated */
+    menclose: MathMLMencloseElementAttributes<MathMLElement>;
+    /** @deprecated */
+    mfenced: MathMLMfencedElementAttributes<MathMLElement>;
+  }
+
+  interface IntrinsicElements
+    extends HTMLElementTags,
+      HTMLElementDeprecatedTags,
+      SVGElementTags,
+      MathMLElementTags {}
 }
