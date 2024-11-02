@@ -889,7 +889,7 @@ export namespace JSX {
 
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     // [key: ClassKeys]: boolean;
-    accessKey?: string | undefined;
+    accesskey?: string | undefined;
     class?: string | undefined;
     contenteditable?: boolean | "plaintext-only" | "inherit" | undefined;
     contextmenu?: string | undefined;
@@ -934,16 +934,18 @@ export namespace JSX {
       | "decimal"
       | "search"
       | undefined;
-    contentEditable?: boolean | "plaintext-only" | "inherit" | undefined;
-    contextMenu?: string | undefined;
-    tabIndex?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    accessKey?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     autoCapitalize?: HTMLAutocapitalize | undefined;
-    itemProp?: string | undefined;
-    itemScope?: boolean | undefined;
-    itemType?: string | undefined;
-    itemId?: string | undefined;
-    itemRef?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    contentEditable?: boolean | "plaintext-only" | "inherit" | undefined;
+    /** @deprecated Use lowercase attributes */
+    contextMenu?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     exportParts?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     inputMode?:
       | "none"
       | "text"
@@ -954,6 +956,18 @@ export namespace JSX {
       | "decimal"
       | "search"
       | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemId?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemProp?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemRef?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemScope?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemType?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    tabIndex?: number | string | undefined;
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: any | undefined;
@@ -965,6 +979,8 @@ export namespace JSX {
     rel?: string | undefined;
     target?: string | undefined;
     type?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
   }
   interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
@@ -979,6 +995,8 @@ export namespace JSX {
     rel?: string | undefined;
     shape?: "rect" | "circle" | "poly" | "default" | undefined;
     target?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1002,12 +1020,20 @@ export namespace JSX {
     name?: string | undefined;
     type?: "submit" | "reset" | "button" | undefined;
     value?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     formAction?: string | SerializableAttributeValue | undefined;
+    /** @deprecated Use lowercase attributes */
     formEnctype?: HTMLFormEncType | undefined;
+    /** @deprecated Use lowercase attributes */
     formMethod?: HTMLFormMethod | undefined;
+    /** @deprecated Use lowercase attributes */
     formNoValidate?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
     formTarget?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     popoverTarget?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1055,6 +1081,8 @@ export namespace JSX {
     name?: string | undefined;
     novalidate?: boolean | undefined;
     target?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     noValidate?: boolean | undefined;
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1068,6 +1096,8 @@ export namespace JSX {
     src?: string | undefined;
     srcdoc?: string | undefined;
     width?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1076,20 +1106,26 @@ export namespace JSX {
     decoding?: "sync" | "async" | "auto" | undefined;
     height?: number | string | undefined;
     ismap?: boolean | undefined;
-    isMap?: boolean | undefined;
     loading?: "eager" | "lazy" | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
     sizes?: string | undefined;
     src?: string | undefined;
     srcset?: string | undefined;
-    srcSet?: string | undefined;
     usemap?: string | undefined;
-    useMap?: string | undefined;
     width?: number | string | undefined;
-    crossOrigin?: HTMLCrossorigin | undefined;
     elementtiming?: string | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
+    isMap?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
+    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    /** @deprecated Use lowercase attributes */
+    srcSet?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    useMap?: string | undefined;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1128,18 +1164,31 @@ export namespace JSX {
     type?: string | undefined;
     value?: string | string[] | number | undefined;
     width?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
     formAction?: string | SerializableAttributeValue | undefined;
+    /** @deprecated Use lowercase attributes */
     formEnctype?: HTMLFormEncType | undefined;
+    /** @deprecated Use lowercase attributes */
     formMethod?: HTMLFormMethod | undefined;
+    /** @deprecated Use lowercase attributes */
     formNoValidate?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
     formTarget?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     maxLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     minLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     readOnly?: boolean | undefined;
   }
   interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
+    datetime?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     dateTime?: string | undefined;
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1173,7 +1222,10 @@ export namespace JSX {
     rel?: string | undefined;
     sizes?: string | undefined;
     type?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
   }
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1188,7 +1240,10 @@ export namespace JSX {
     muted?: boolean | undefined;
     preload?: "none" | "metadata" | "auto" | "" | undefined;
     src?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
     mediaGroup?: string | undefined;
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1222,6 +1277,8 @@ export namespace JSX {
     type?: string | undefined;
     usemap?: string | undefined;
     width?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     useMap?: string | undefined;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1263,8 +1320,12 @@ export namespace JSX {
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     src?: string | undefined;
     type?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
     noModule?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1300,10 +1361,14 @@ export namespace JSX {
     colspan?: number | string | undefined;
     headers?: string | undefined;
     rowspan?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     colSpan?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     rowSpan?: number | string | undefined;
   }
   interface TemplateHTMLAttributes<T extends HTMLTemplateElement> extends HTMLAttributes<T> {
+    /** @deprecated */
     content?: DocumentFragment | undefined;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1323,20 +1388,29 @@ export namespace JSX {
     rows?: number | string | undefined;
     value?: string | string[] | number | undefined;
     wrap?: "hard" | "soft" | "off" | undefined;
+
+    /** @deprecated Use lowercase attributes */
     maxLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     minLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     readOnly?: boolean | undefined;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
     colspan?: number | string | undefined;
     headers?: string | undefined;
     rowspan?: number | string | undefined;
-    colSpan?: number | string | undefined;
-    rowSpan?: number | string | undefined;
     scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    colSpan?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
+    rowSpan?: number | string | undefined;
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     dateTime?: string | undefined;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1416,8 +1490,10 @@ export namespace JSX {
   interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     id?: string | undefined;
     lang?: string | undefined;
-    tabIndex?: number | string | undefined;
     tabindex?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    tabIndex?: number | string | undefined;
   }
   interface StylableSVGAttributes {
     class?: string | undefined;
