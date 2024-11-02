@@ -1051,6 +1051,7 @@ export namespace JSX {
     value?: string | string[] | number | undefined;
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
+    name?: string | undefined;
     open?: boolean | undefined;
     onToggle?: EventHandlerUnion<T, Event> | undefined;
     ontoggle?: EventHandlerUnion<T, Event> | undefined;
@@ -1106,6 +1107,7 @@ export namespace JSX {
     decoding?: "sync" | "async" | "auto" | undefined;
     height?: number | string | undefined;
     ismap?: boolean | undefined;
+    indeterminate?: boolean | undefined;
     loading?: "eager" | "lazy" | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     sizes?: string | undefined;
@@ -1208,7 +1210,7 @@ export namespace JSX {
     /** @deprecated Use lowercase attributes */
     readOnly?: boolean | undefined;
   }
-  interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ModHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
     datetime?: string | undefined;
 
@@ -1370,7 +1372,7 @@ export namespace JSX {
     size?: number | string | undefined;
     value?: string | string[] | number | undefined;
   }
-  interface HTMLSlotElementAttributes<T = HTMLSlotElement> extends HTMLAttributes<T> {
+  interface HTMLSlotElementAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1398,7 +1400,12 @@ export namespace JSX {
     /** @deprecated Use lowercase attributes */
     rowSpan?: number | string | undefined;
   }
-  interface TemplateHTMLAttributes<T extends HTMLTemplateElement> extends HTMLAttributes<T> {
+  interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
+    shadowrootmode?: "open" | "closed" | undefined;
+    shadowrootclonable?: boolean | undefined;
+    shadowrootdelegatesfocus?: boolean | undefined;
+    shadowrootserializable?: boolean | undefined;
+
     /** @deprecated */
     content?: DocumentFragment | undefined;
   }
@@ -1428,6 +1435,7 @@ export namespace JSX {
     readOnly?: boolean | undefined;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
+    abbr?: string | undefined;
     colspan?: number | string | undefined;
     headers?: string | undefined;
     rowspan?: number | string | undefined;
@@ -1456,9 +1464,30 @@ export namespace JSX {
     playsinline?: boolean | undefined;
     poster?: string | undefined;
     width?: number | string | undefined;
-    disablepictureinpicture?: boolean;
-    disableremoteplayback?: boolean;
+    disablepictureinpicture?: boolean | undefined;
+    disableremoteplayback?: boolean | undefined;
   }
+
+  interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
+    allowfullscreen?: boolean | undefined;
+    allowpopups?: boolean | undefined;
+    autofocus?: boolean | undefined;
+    autosize?: boolean | undefined;
+    blinkfeatures?: string | undefined;
+    disableblinkfeatures?: string | undefined;
+    disableguestresize?: boolean | undefined;
+    disablewebsecurity?: boolean | undefined;
+    guestinstance?: string | undefined;
+    httpreferrer?: string | undefined;
+    nodeintegration?: boolean | undefined;
+    partition?: string | undefined;
+    plugins?: boolean | undefined;
+    preload?: string | undefined;
+    src?: string | undefined;
+    useragent?: string | undefined;
+    webpreferences?: string | undefined;
+  }
+
   type SVGPreserveAspectRatio =
     | "none"
     | "xMinYMin"
@@ -2325,20 +2354,20 @@ export namespace JSX {
     base: BaseHTMLAttributes<HTMLBaseElement>;
     bdi: HTMLAttributes<HTMLElement>;
     bdo: HTMLAttributes<HTMLElement>;
-    blockquote: BlockquoteHTMLAttributes<HTMLElement>;
+    blockquote: BlockquoteHTMLAttributes<HTMLQuoteElement>;
     body: HTMLAttributes<HTMLBodyElement>;
     br: HTMLAttributes<HTMLBRElement>;
     button: ButtonHTMLAttributes<HTMLButtonElement>;
     canvas: CanvasHTMLAttributes<HTMLCanvasElement>;
-    caption: HTMLAttributes<HTMLElement>;
+    caption: HTMLAttributes<HTMLTableCaptionElement>;
     cite: HTMLAttributes<HTMLElement>;
     code: HTMLAttributes<HTMLElement>;
     col: ColHTMLAttributes<HTMLTableColElement>;
     colgroup: ColgroupHTMLAttributes<HTMLTableColElement>;
-    data: DataHTMLAttributes<HTMLElement>;
+    data: DataHTMLAttributes<HTMLDataElement>;
     datalist: HTMLAttributes<HTMLDataListElement>;
     dd: HTMLAttributes<HTMLElement>;
-    del: HTMLAttributes<HTMLElement>;
+    del: ModHTMLAttributes<HTMLModElement>;
     details: DetailsHtmlAttributes<HTMLDetailsElement>;
     dfn: HTMLAttributes<HTMLElement>;
     dialog: DialogHtmlAttributes<HTMLDialogElement>;
@@ -2367,7 +2396,7 @@ export namespace JSX {
     iframe: IframeHTMLAttributes<HTMLIFrameElement>;
     img: ImgHTMLAttributes<HTMLImageElement>;
     input: InputHTMLAttributes<HTMLInputElement>;
-    ins: InsHTMLAttributes<HTMLModElement>;
+    ins: ModHTMLAttributes<HTMLModElement>;
     kbd: HTMLAttributes<HTMLElement>;
     label: LabelHTMLAttributes<HTMLLabelElement>;
     legend: HTMLAttributes<HTMLLegendElement>;
@@ -2378,16 +2407,16 @@ export namespace JSX {
     mark: HTMLAttributes<HTMLElement>;
     menu: MenuHTMLAttributes<HTMLMenuElement>;
     meta: MetaHTMLAttributes<HTMLMetaElement>;
-    meter: MeterHTMLAttributes<HTMLElement>;
+    meter: MeterHTMLAttributes<HTMLMeterElement>;
     nav: HTMLAttributes<HTMLElement>;
     noscript: HTMLAttributes<HTMLElement>;
     object: ObjectHTMLAttributes<HTMLObjectElement>;
     ol: OlHTMLAttributes<HTMLOListElement>;
     optgroup: OptgroupHTMLAttributes<HTMLOptGroupElement>;
     option: OptionHTMLAttributes<HTMLOptionElement>;
-    output: OutputHTMLAttributes<HTMLElement>;
+    output: OutputHTMLAttributes<HTMLOutputElement>;
     p: HTMLAttributes<HTMLParagraphElement>;
-    picture: HTMLAttributes<HTMLElement>;
+    picture: HTMLAttributes<HTMLPictureElement>;
     pre: HTMLAttributes<HTMLPreElement>;
     progress: ProgressHTMLAttributes<HTMLProgressElement>;
     q: QuoteHTMLAttributes<HTMLQuoteElement>;
@@ -2400,7 +2429,7 @@ export namespace JSX {
     search: HTMLAttributes<HTMLElement>;
     section: HTMLAttributes<HTMLElement>;
     select: SelectHTMLAttributes<HTMLSelectElement>;
-    slot: HTMLSlotElementAttributes;
+    slot: HTMLSlotElementAttributes<HTMLSlotElement>;
     small: HTMLAttributes<HTMLElement>;
     source: SourceHTMLAttributes<HTMLSourceElement>;
     span: HTMLAttributes<HTMLSpanElement>;
@@ -2417,7 +2446,7 @@ export namespace JSX {
     tfoot: HTMLAttributes<HTMLTableSectionElement>;
     th: ThHTMLAttributes<HTMLTableCellElement>;
     thead: HTMLAttributes<HTMLTableSectionElement>;
-    time: TimeHTMLAttributes<HTMLElement>;
+    time: TimeHTMLAttributes<HTMLTimeElement>;
     title: HTMLAttributes<HTMLTitleElement>;
     tr: HTMLAttributes<HTMLTableRowElement>;
     track: TrackHTMLAttributes<HTMLTrackElement>;
@@ -2426,13 +2455,14 @@ export namespace JSX {
     var: HTMLAttributes<HTMLElement>;
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
+    webview: WebViewHTMLAttributes<HTMLElement>;
   }
   /** @type {HTMLElementDeprecatedTagNameMap} */
   interface HTMLElementDeprecatedTags {
     big: HTMLAttributes<HTMLElement>;
-    keygen: KeygenHTMLAttributes<HTMLElement>;
-    menuitem: HTMLAttributes<HTMLElement>;
-    noindex: HTMLAttributes<HTMLElement>;
+    keygen: KeygenHTMLAttributes<HTMLUnknownElement>;
+    menuitem: HTMLAttributes<HTMLUnknownElement>;
+    noindex: HTMLAttributes<HTMLUnknownElement>;
     param: ParamHTMLAttributes<HTMLParamElement>;
   }
   /** @type {SVGElementTagNameMap} */
