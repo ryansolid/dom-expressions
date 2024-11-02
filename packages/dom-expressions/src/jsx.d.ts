@@ -1432,6 +1432,7 @@ export namespace JSX {
     fetchpriority?: "high" | "low" | "auto" | undefined;
     height?: number | string | undefined;
     ismap?: boolean | undefined;
+    indeterminate?: boolean | undefined;
     loading?: "eager" | "lazy" | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     sizes?: string | undefined;
@@ -2099,6 +2100,7 @@ export namespace JSX {
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     disablepictureinpicture?: boolean | undefined;
+    disableremoteplayback?: boolean | undefined;
     height?: number | string | undefined;
     playsinline?: boolean | undefined;
     poster?: string | undefined;
