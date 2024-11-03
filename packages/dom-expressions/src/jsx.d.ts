@@ -194,7 +194,7 @@ export namespace JSX {
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onFocusOut?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onFocusIn?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onEncrypted?: EventHandlerUnion<T, Event> | undefined;
+    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
     // lower case events
     oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
@@ -205,7 +205,7 @@ export namespace JSX {
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onencrypted?: EventHandlerUnion<T, Event> | undefined;
+    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
     // lower case events
     "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
@@ -220,11 +220,11 @@ export namespace JSX {
     "on:focusin"?:
       | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
       | undefined;
-    "on:encrypted"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
     "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
   }
   interface CustomEventHandlersCamelCase<T> {
-    onAbort?: EventHandlerUnion<T, Event> | undefined;
+    onAbort?: EventHandlerUnion<T, UIEvent> | undefined;
     onAnimationEnd?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationIteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent> | undefined;
@@ -248,7 +248,7 @@ export namespace JSX {
     onDurationChange?: EventHandlerUnion<T, Event> | undefined;
     onEmptied?: EventHandlerUnion<T, Event> | undefined;
     onEnded?: EventHandlerUnion<T, Event> | undefined;
-    onError?: EventHandlerUnion<T, Event> | undefined;
+    onError?: EventHandlerUnion<T, ErrorEvent> | undefined;
     onFocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onGotPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     onInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
@@ -306,7 +306,7 @@ export namespace JSX {
   }
   /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
-    onabort?: EventHandlerUnion<T, Event> | undefined;
+    onabort?: EventHandlerUnion<T, UIEvent> | undefined;
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
@@ -330,7 +330,7 @@ export namespace JSX {
     ondurationchange?: EventHandlerUnion<T, Event> | undefined;
     onemptied?: EventHandlerUnion<T, Event> | undefined;
     onended?: EventHandlerUnion<T, Event> | undefined;
-    onerror?: EventHandlerUnion<T, Event> | undefined;
+    onerror?: EventHandlerUnion<T, ErrorEvent> | undefined;
     onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
@@ -387,7 +387,7 @@ export namespace JSX {
     onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
   interface CustomEventHandlersNamespaced<T> {
-    "on:abort"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:abort"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
     "on:animationend"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
@@ -415,7 +415,7 @@ export namespace JSX {
     "on:durationchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:emptied"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:ended"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:error"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:error"?: EventHandlerWithOptionsUnion<T, ErrorEvent> | undefined;
     "on:focus"?:
       | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
       | undefined;
@@ -1054,8 +1054,8 @@ export namespace JSX {
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
     open?: boolean | undefined;
-    onToggle?: EventHandlerUnion<T, Event> | undefined;
-    ontoggle?: EventHandlerUnion<T, Event> | undefined;
+    onToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    ontoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
