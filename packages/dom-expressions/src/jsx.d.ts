@@ -971,7 +971,7 @@ export namespace JSX {
     tabIndex?: number | string | undefined;
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
-    download?: any | undefined;
+    download?: string | undefined;
     href?: string | undefined;
     hreflang?: string | undefined;
     media?: string | undefined;
@@ -988,21 +988,21 @@ export namespace JSX {
   interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
     coords?: string | undefined;
-    download?: any | undefined;
+    download?: string | undefined;
     href?: string | undefined;
     hreflang?: string | undefined;
     ping?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     rel?: string | undefined;
     shape?: "rect" | "circle" | "poly" | "default" | undefined;
-    target?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
 
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
-    target?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
   }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
@@ -1082,7 +1082,7 @@ export namespace JSX {
     method?: HTMLFormMethod | undefined;
     name?: string | undefined;
     novalidate?: boolean | undefined;
-    target?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
 
     /** @deprecated Use lowercase attributes */
     noValidate?: boolean | undefined;
@@ -1135,7 +1135,7 @@ export namespace JSX {
     autocomplete?: string | undefined;
     autocorrect?: "on" | "off" | undefined;
     autofocus?: boolean | undefined;
-    capture?: boolean | string | undefined;
+    capture?: "user" | "environment" | undefined;
     checked?: boolean | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     disabled?: boolean | undefined;
@@ -1454,7 +1454,19 @@ export namespace JSX {
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     default?: boolean | undefined;
-    kind?: "subtitles" | "captions" | "descriptions" | "chapters" | "metadata" | undefined;
+    kind?: // MDN
+    | "alternative"
+      | "descriptions"
+      | "main"
+      | "main-desc"
+      | "translation"
+      | "commentary"
+      // ??
+      | "subtitles"
+      | "captions"
+      | "chapters"
+      | "metadata"
+      | undefined;
     label?: string | undefined;
     src?: string | undefined;
     srclang?: string | undefined;
