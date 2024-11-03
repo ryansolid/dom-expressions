@@ -2314,13 +2314,39 @@ export namespace JSX {
 
   /** MathML typings come mostly from Preact */
 
-  interface MathMLAnnotationElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLAttributes<T> extends HTMLAttributes<T> {
+    displaystyle?: boolean;
+    /**
+     * @deprecated This feature is non-standard. See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/href
+     */
+    href?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/mathbackground
+     */
+    mathbackground?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/mathcolor
+     */
+    mathcolor?: string;
+    /**
+     * @deprecated See
+     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/mathsize
+     */
+    mathsize?: string;
+    nonce?: string;
+    scriptlevel?: string;
+  }
+
+  interface MathMLAnnotationElementAttributes<T> extends MathMLAttributes<T> {
     encoding?: string;
   }
-  interface MathMLAnnotationXmlElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLAnnotationXmlElementAttributes<T> extends MathMLAttributes<T> {
     encoding?: string;
   }
-  interface MathMLMactionElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMactionElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated See
      *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction#actiontype
@@ -2329,18 +2355,18 @@ export namespace JSX {
     /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction#selection */
     selection?: string;
   }
-  interface MathMLMathElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMathElementAttributes<T> extends MathMLAttributes<T> {
     display?: "block" | "inline";
   }
-  interface MathMLMerrorElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMfracElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMerrorElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMfracElementAttributes<T> extends MathMLAttributes<T> {
     /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfrac#denomalign */
     denomalign?: "center" | "left" | "right";
     linethickness?: string;
     /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfrac#numalign */
     numalign?: "center" | "left" | "right";
   }
-  interface MathMLMiElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMiElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * The only value allowed in the current specification is normal (case insensitive) See
      * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mi#mathvariant
@@ -2366,7 +2392,7 @@ export namespace JSX {
       | "stretched";
   }
 
-  interface MathMLMmultiscriptsElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMmultiscriptsElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated See
      *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mmultiscripts#subscriptshift
@@ -2378,8 +2404,8 @@ export namespace JSX {
      */
     superscriptshift?: string;
   }
-  interface MathMLMnElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMoElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * Non-standard attribute See
      * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mo#accent
@@ -2396,21 +2422,21 @@ export namespace JSX {
     stretchy?: boolean;
     symmetric?: boolean;
   }
-  interface MathMLMoverElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
     accent?: boolean;
   }
-  interface MathMLMpaddedElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMpaddedElementAttributes<T> extends MathMLAttributes<T> {
     depth?: string;
     height?: string;
     lspace?: string;
     voffset?: string;
     width?: string;
   }
-  interface MathMLMphantomElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMprescriptsElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMrootElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMrowElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMsElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMphantomElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMprescriptsElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMrootElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMrowElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMsElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated See
      *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/ms#browser_compatibility
@@ -2422,13 +2448,13 @@ export namespace JSX {
      */
     rquote?: string;
   }
-  interface MathMLMspaceElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMspaceElementAttributes<T> extends MathMLAttributes<T> {
     depth?: string;
     height?: string;
     width?: string;
   }
-  interface MathMLMsqrtElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMstyleElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMsqrtElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMstyleElementAttributes<T> extends MathMLAttributes<T> {
     /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#background */
     background?: string;
     /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#color */
@@ -2450,14 +2476,14 @@ export namespace JSX {
      */
     scriptsizemultiplier?: string;
   }
-  interface MathMLMsubElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMsubElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated See
      *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msub#subscriptshift
      */
     subscriptshift?: string;
   }
-  interface MathMLMsubsupElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMsubsupElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated See
      *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msubsup#subscriptshift
@@ -2469,14 +2495,14 @@ export namespace JSX {
      */
     superscriptshift?: string;
   }
-  interface MathMLMsupElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMsupElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated See
      *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msup#superscriptshift
      */
     superscriptshift?: string;
   }
-  interface MathMLMtableElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMtableElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * Non-standard attribute See
      * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#align
@@ -2528,7 +2554,7 @@ export namespace JSX {
      */
     width?: string;
   }
-  interface MathMLMtdElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMtdElementAttributes<T> extends MathMLAttributes<T> {
     columnspan?: number;
     rowspan?: number;
     /**
@@ -2542,8 +2568,8 @@ export namespace JSX {
      */
     rowalign?: "axis" | "baseline" | "bottom" | "center" | "top";
   }
-  interface MathMLMtextElementAttributes<T> extends HTMLAttributes<T> {}
-  interface MathMLMtrElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMtextElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMtrElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * Non-standard attribute See
      * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtr#columnalign
@@ -2555,21 +2581,21 @@ export namespace JSX {
      */
     rowalign?: "axis" | "baseline" | "bottom" | "center" | "top";
   }
-  interface MathMLMunderElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMunderElementAttributes<T> extends MathMLAttributes<T> {
     accentunder?: boolean;
   }
-  interface MathMLMunderoverElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMunderoverElementAttributes<T> extends MathMLAttributes<T> {
     accent?: boolean;
     accentunder?: boolean;
   }
-  interface MathMLSemanticsElementAttributes<T> extends HTMLAttributes<T> {}
+  interface MathMLSemanticsElementAttributes<T> extends MathMLAttributes<T> {}
 
   /* MathMLDeprecatedElements */
 
-  interface MathMLMencloseElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMencloseElementAttributes<T> extends MathMLAttributes<T> {
     notation?: string;
   }
-  interface MathMLMfencedElementAttributes<T> extends HTMLAttributes<T> {
+  interface MathMLMfencedElementAttributes<T> extends MathMLAttributes<T> {
     close?: string;
     open?: string;
     separators?: string;
