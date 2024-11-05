@@ -2354,29 +2354,15 @@ export namespace JSX {
     viewTarget?: string | undefined;
   }
 
-  /** MathML typings come mostly from Preact */
-
   interface MathMLAttributes<T> extends HTMLAttributes<T> {
     displaystyle?: boolean | undefined;
-    /**
-     * @deprecated This feature is non-standard. See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/href
-     */
+    /** @deprecated */
     href?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/mathbackground
-     */
+    /** @deprecated */
     mathbackground?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/mathcolor
-     */
+    /** @deprecated */
     mathcolor?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Global_attributes/mathsize
-     */
+    /** @deprecated */
     mathsize?: string | undefined;
     nonce?: string | undefined;
     scriptlevel?: string | undefined;
@@ -2384,17 +2370,20 @@ export namespace JSX {
 
   interface MathMLAnnotationElementAttributes<T> extends MathMLAttributes<T> {
     encoding?: string | undefined;
+
+    /** @deprecated */
+    src?: string | undefined;
   }
   interface MathMLAnnotationXmlElementAttributes<T> extends MathMLAttributes<T> {
     encoding?: string | undefined;
+
+    /** @deprecated */
+    src?: string | undefined;
   }
   interface MathMLMactionElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction#actiontype
-     */
+    /** @deprecated */
     actiontype?: "statusline" | "toggle" | undefined;
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction#selection */
+    /** @deprecated */
     selection?: string | undefined;
   }
   interface MathMLMathElementAttributes<T> extends MathMLAttributes<T> {
@@ -2402,59 +2391,27 @@ export namespace JSX {
   }
   interface MathMLMerrorElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMfracElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfrac#denomalign */
-    denomalign?: "center" | "left" | "right" | undefined;
     linethickness?: string | undefined;
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfrac#numalign */
+
+    /** @deprecated */
+    denomalign?: "center" | "left" | "right" | undefined;
+    /** @deprecated */
     numalign?: "center" | "left" | "right" | undefined;
   }
   interface MathMLMiElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * The only value allowed in the current specification is normal (case insensitive) See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mi#mathvariant
-     */
-    mathvariant?:
-      | "normal"
-      | "bold"
-      | "italic"
-      | "bold-italic"
-      | "double-struck"
-      | "bold-fraktur"
-      | "script"
-      | "bold-script"
-      | "fraktur"
-      | "sans-serif"
-      | "bold-sans-serif"
-      | "sans-serif-italic"
-      | "sans-serif-bold-italic"
-      | "monospace"
-      | "initial"
-      | "tailed"
-      | "looped"
-      | "stretched"
-      | undefined;
+    mathvariant?: "normal" | undefined;
   }
 
   interface MathMLMmultiscriptsElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mmultiscripts#subscriptshift
-     */
+    /** @deprecated */
     subscriptshift?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mmultiscripts#superscriptshift
-     */
+    /** @deprecated */
     superscriptshift?: string | undefined;
   }
   interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mo#accent
-     */
-    accent?: boolean | undefined;
     fence?: boolean | undefined;
+    form?: "prefix" | "infix" | "postfix" | undefined;
     largeop?: boolean | undefined;
     lspace?: string | undefined;
     maxsize?: string | undefined;
@@ -2464,6 +2421,9 @@ export namespace JSX {
     separator?: boolean | undefined;
     stretchy?: boolean | undefined;
     symmetric?: boolean | undefined;
+
+    /** @non-standard */
+    accent?: boolean | undefined;
   }
   interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
     accent?: boolean | undefined;
@@ -2480,15 +2440,9 @@ export namespace JSX {
   interface MathMLMrootElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMrowElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMsElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/ms#browser_compatibility
-     */
+    /** @deprecated */
     lquote?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/ms#browser_compatibility
-     */
+    /** @deprecated */
     rquote?: string | undefined;
   }
   interface MathMLMspaceElementAttributes<T> extends MathMLAttributes<T> {
@@ -2498,130 +2452,70 @@ export namespace JSX {
   }
   interface MathMLMsqrtElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMstyleElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#background */
+    /** @deprecated */
     background?: string | undefined;
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#color */
+    /** @deprecated */
     color?: string | undefined;
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#fontsize */
+    /** @deprecated */
     fontsize?: string | undefined;
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#fontstyle */
+    /** @deprecated */
     fontstyle?: string | undefined;
-    /** @deprecated See https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#fontweight */
+    /** @deprecated */
     fontweight?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#scriptminsize
-     */
+    /** @deprecated */
     scriptminsize?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle#scriptsizemultiplier
-     */
+    /** @deprecated */
     scriptsizemultiplier?: string | undefined;
   }
   interface MathMLMsubElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msub#subscriptshift
-     */
+    /** @deprecated */
     subscriptshift?: string | undefined;
   }
   interface MathMLMsubsupElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msubsup#subscriptshift
-     */
+    /** @deprecated */
     subscriptshift?: string | undefined;
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msubsup#superscriptshift
-     */
+    /** @deprecated */
     superscriptshift?: string | undefined;
   }
   interface MathMLMsupElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * @deprecated See
-     *   https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msup#superscriptshift
-     */
+    /** @deprecated */
     superscriptshift?: string | undefined;
   }
   interface MathMLMtableElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#align
-     */
+    /** @non-standard */
     align?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#columnalign
-     */
+    /** @non-standard */
     columnalign?: "center" | "left" | "right" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#columnlines
-     */
+    /** @non-standard */
     columnlines?: "dashed" | "none" | "solid" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#columnspacing
-     */
+    /** @non-standard */
     columnspacing?: string | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#frame
-     */
+    /** @non-standard */
     frame?: "dashed" | "none" | "solid" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#framespacing
-     */
+    /** @non-standard */
     framespacing?: string | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#rowalign
-     */
+    /** @non-standard */
     rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#rowlines
-     */
+    /** @non-standard */
     rowlines?: "dashed" | "none" | "solid" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#rowspacing
-     */
+    /** @non-standard */
     rowspacing?: string | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable#width
-     */
+    /** @non-standard */
     width?: string | undefined;
   }
   interface MathMLMtdElementAttributes<T> extends MathMLAttributes<T> {
     columnspan?: number | undefined;
     rowspan?: number | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtd#columnalign
-     */
+    /** @non-standard */
     columnalign?: "center" | "left" | "right" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtd#rowalign
-     */
+    /** @non-standard */
     rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
   }
   interface MathMLMtextElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMtrElementAttributes<T> extends MathMLAttributes<T> {
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtr#columnalign
-     */
+    /** @non-standard */
     columnalign?: "center" | "left" | "right" | undefined;
-    /**
-     * Non-standard attribute See
-     * https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtr#rowalign
-     */
+    /** @non-standard */
     rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
   }
   interface MathMLMunderElementAttributes<T> extends MathMLAttributes<T> {
@@ -2636,6 +2530,7 @@ export namespace JSX {
   /* MathMLDeprecatedElements */
 
   interface MathMLMencloseElementAttributes<T> extends MathMLAttributes<T> {
+    /** @non-standard */
     notation?: string | undefined;
   }
   interface MathMLMfencedElementAttributes<T> extends MathMLAttributes<T> {
