@@ -1109,14 +1109,14 @@ export namespace JSX {
     part?: string | undefined;
     exportparts?: string | undefined;
     inputmode?:
-      | "none"
-      | "text"
-      | "tel"
-      | "url"
-      | "email"
-      | "numeric"
       | "decimal"
+      | "email"
+      | "none"
+      | "numeric"
       | "search"
+      | "tel"
+      | "text"
+      | "url"
       | undefined;
 
     /** @deprecated Use lowercase attributes */
@@ -1214,6 +1214,15 @@ export namespace JSX {
       ElementEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autofocus?: boolean | undefined;
+    command?:
+      | "show-modal"
+      | "close"
+      | "show-popover"
+      | "hide-popover"
+      | "toggle-popover"
+      | (string & {})
+      | undefined;
+    commandfor?: string | undefined;
     disabled?: boolean | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
@@ -1384,6 +1393,13 @@ export namespace JSX {
     srcdoc?: string | undefined;
     width?: number | string | undefined;
 
+    /** @experimental */
+    browsingtopics?: boolean | undefined;
+    /** @experimental */
+    credentialless?: boolean | undefined;
+    /** @experimental */
+    csp?: string | undefined;
+
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
 
@@ -1427,6 +1443,7 @@ export namespace JSX {
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
+    attributionsrc?: string | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     decoding?: "sync" | "async" | "auto" | undefined;
     elementtiming?: string | undefined;
@@ -1473,6 +1490,19 @@ export namespace JSX {
     srcSet?: string | undefined;
     /** @deprecated Use lowercase attributes */
     useMap?: string | undefined;
+
+    /** @deprecated */
+    align?: "top" | "middle" | "bottom" | "left" | "right" | undefined;
+    /** @deprecated */
+    border?: string | undefined;
+    /** @deprecated */
+    hspace?: number | undefined;
+    /** @deprecated */
+    longdesc?: string | undefined;
+    /** @deprecated */
+    name?: string | undefined;
+    /** @deprecated */
+    vspace?: number | undefined;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1679,6 +1709,9 @@ export namespace JSX {
     rel?: string | undefined;
     sizes?: string | undefined;
     type?: string | undefined;
+
+    /** @experimental */
+    blocking?: "render" | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -2069,6 +2102,25 @@ export namespace JSX {
     colSpan?: number | string | undefined;
     /** @deprecated Use lowercase attributes */
     rowSpan?: number | string | undefined;
+
+    /** @deprecated */
+    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    /** @deprecated */
+    axis?: string | undefined;
+    /** @deprecated */
+    bgcolor?: string | undefined;
+    /** @deprecated */
+    char?: string | undefined;
+    /** @deprecated */
+    charoff?: string | undefined;
+    /** @deprecated */
+    height?: string | undefined;
+    /** @deprecated */
+    nowrap?: boolean | undefined;
+    /** @deprecated */
+    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    /** @deprecated */
+    width?: number | string | undefined;
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: string | undefined;
