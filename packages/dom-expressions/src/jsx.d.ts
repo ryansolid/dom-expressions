@@ -1319,6 +1319,8 @@ export namespace JSX {
     popovertargetaction?: "hide" | "show" | "toggle" | undefined;
     readonly?: boolean | undefined;
     required?: boolean | undefined;
+    // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/search#results
+    results?: number | undefined;
     size?: number | string | undefined;
     src?: string | undefined;
     step?: number | string | undefined;
