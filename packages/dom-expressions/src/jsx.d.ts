@@ -2176,7 +2176,7 @@ export namespace JSX {
     nodeintegration?: boolean | undefined;
     nodeintegrationinsubframes?: boolean | undefined;
     partition?: string | undefined;
-    plugins?: boolean | undefined;
+    plugins?: "true" | boolean | undefined;
     preload?: string | undefined;
     src?: string | undefined;
     useragent?: string | undefined;
