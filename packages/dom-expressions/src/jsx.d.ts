@@ -1102,7 +1102,7 @@ export namespace JSX {
     slot?: string | undefined;
     color?: string | undefined;
     itemprop?: string | undefined;
-    itemscope?: boolean | undefined;
+    itemscope?: "true" | boolean | undefined;
     itemtype?: string | undefined;
     itemid?: string | undefined;
     itemref?: string | undefined;
@@ -1186,6 +1186,7 @@ export namespace JSX {
     coords?: string | undefined;
     download?: string | undefined;
     href?: string | undefined;
+    nohref?: "true" | boolean | undefined;
     ping?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     rel?: string | undefined;
@@ -1223,12 +1224,12 @@ export namespace JSX {
       | (string & {})
       | undefined;
     commandfor?: string | undefined;
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
     formenctype?: HTMLFormEncType | undefined;
     formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: boolean | undefined;
+    formnovalidate?: "true" | boolean | undefined;
     formtarget?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
     name?: string | undefined;
     popovertarget?: string | undefined;
@@ -1355,7 +1356,7 @@ export namespace JSX {
     name?: string | undefined;
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     form?: string | undefined;
     name?: string | undefined;
   }
@@ -1367,7 +1368,7 @@ export namespace JSX {
     enctype?: HTMLFormEncType | undefined;
     method?: HTMLFormMethod | undefined;
     name?: string | undefined;
-    novalidate?: boolean | undefined;
+    novalidate?: "true" | boolean | undefined;
     rel?: string | undefined;
     target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
 
@@ -1383,7 +1384,7 @@ export namespace JSX {
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allow?: string | undefined;
-    allowfullscreen?: boolean | undefined;
+    allowfullscreen?: "true" | boolean | undefined;
     height?: number | string | undefined;
     loading?: "eager" | "lazy" | undefined;
     name?: string | undefined;
@@ -1393,12 +1394,14 @@ export namespace JSX {
     srcdoc?: string | undefined;
     width?: number | string | undefined;
 
+    /** @non-standard */
+    browsingtopics?: "true" | boolean | undefined;
     /** @experimental */
-    browsingtopics?: boolean | undefined;
-    /** @experimental */
-    credentialless?: boolean | undefined;
+    credentialless?: "true" | boolean | undefined;
     /** @experimental */
     csp?: string | undefined;
+    /** @experimental */
+    sharedstoragewritable?: "true" | boolean | undefined;
 
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
@@ -1427,7 +1430,7 @@ export namespace JSX {
      */
     allowpaymentrequest?: boolean | undefined;
     /** @deprecated */
-    allowtransparency?: boolean | undefined;
+    allowtransparency?: "true" | boolean | undefined;
     /** @deprecated */
     frameborder?: number | string | undefined;
     /** @deprecated */
@@ -1439,7 +1442,7 @@ export namespace JSX {
     /** @deprecated */
     scrolling?: "yes" | "no" | "auto" | undefined;
     /** @deprecated */
-    seamless?: boolean | undefined;
+    seamless?: "true" | boolean | undefined;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
@@ -1449,7 +1452,7 @@ export namespace JSX {
     elementtiming?: string | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
     height?: number | string | undefined;
-    ismap?: boolean | undefined;
+    ismap?: "true" | boolean | undefined;
     loading?: "eager" | "lazy" | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     sizes?: string | undefined;
@@ -1496,13 +1499,17 @@ export namespace JSX {
     /** @deprecated */
     border?: string | undefined;
     /** @deprecated */
-    hspace?: number | undefined;
+    hspace?: number | string | undefined;
     /** @deprecated */
     longdesc?: string | undefined;
     /** @deprecated */
     name?: string | undefined;
     /** @deprecated */
-    vspace?: number | undefined;
+    vspace?: number | string | undefined;
+    /** @deprecated */
+    intrinsicsize?: string | undefined;
+    /** @deprecated */
+    lowsrc?: string | undefined;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1575,16 +1582,16 @@ export namespace JSX {
     autocorrect?: "on" | "off" | undefined;
     autofocus?: boolean | undefined;
     capture?: "user" | "environment" | undefined;
-    checked?: boolean | undefined;
+    checked?: "true" | boolean | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     dirname?: string | undefined;
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
     formenctype?: HTMLFormEncType | undefined;
     formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: boolean | undefined;
+    formnovalidate?: "true" | boolean | undefined;
     formtarget?: string | undefined;
     height?: number | string | undefined;
     list?: string | undefined;
@@ -1592,14 +1599,14 @@ export namespace JSX {
     maxlength?: number | string | undefined;
     min?: number | string | undefined;
     minlength?: number | string | undefined;
-    multiple?: boolean | undefined;
+    multiple?: "true" | boolean | undefined;
     name?: string | undefined;
     pattern?: string | undefined;
     placeholder?: string | undefined;
     popovertarget?: string | undefined;
     popovertargetaction?: "hide" | "show" | "toggle" | undefined;
-    readonly?: boolean | undefined;
-    required?: boolean | undefined;
+    readonly?: "true" | boolean | undefined;
+    required?: "true" | boolean | undefined;
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/search#results
     results?: number | undefined;
     size?: number | string | undefined;
@@ -1697,7 +1704,7 @@ export namespace JSX {
     as?: HTMLLinkAs | undefined;
     blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
     href?: string | undefined;
     hreflang?: string | undefined;
@@ -1764,7 +1771,7 @@ export namespace JSX {
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    compact?: boolean | undefined;
+    compact?: "true" | boolean | undefined;
     /** @deprecated */
     label?: string | undefined;
     /** @deprecated */
@@ -1837,7 +1844,7 @@ export namespace JSX {
     typemustmatch?: boolean | undefined;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: boolean | undefined;
+    reversed?: "true" | boolean | undefined;
     start?: number | string | undefined;
     type?: "1" | "a" | "A" | "i" | "I" | undefined;
 
@@ -1848,13 +1855,13 @@ export namespace JSX {
     compact?: boolean | undefined;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     label?: string | undefined;
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     label?: string | undefined;
-    selected?: boolean | undefined;
+    selected?: "true" | boolean | undefined;
     value?: string | string[] | number | undefined;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1880,10 +1887,10 @@ export namespace JSX {
     async?: boolean | undefined;
     blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    defer?: boolean | undefined;
+    defer?: "true" | boolean | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
     integrity?: string | undefined;
-    nomodule?: boolean | undefined;
+    nomodule?: "true" | boolean | undefined;
     nonce?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     src?: string | undefined;
@@ -1909,11 +1916,11 @@ export namespace JSX {
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?: string | undefined;
     autofocus?: boolean | undefined;
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     form?: string | undefined;
-    multiple?: boolean | undefined;
+    multiple?: "true" | boolean | undefined;
     name?: string | undefined;
-    required?: boolean | undefined;
+    required?: "true" | boolean | undefined;
     size?: number | string | undefined;
     value?: string | string[] | number | undefined;
   }
@@ -1935,7 +1942,7 @@ export namespace JSX {
     nonce?: string | undefined;
 
     /** @deprecated */
-    scoped?: boolean | undefined;
+    scoped?: "true" | boolean | undefined;
     /** @deprecated */
     type?: string | undefined;
   }
@@ -1964,7 +1971,7 @@ export namespace JSX {
     /** @deprecated */
     height?: number | string | undefined;
     /** @deprecated */
-    nowrap?: boolean | undefined;
+    nowrap?: "true" | boolean | undefined;
     /** @deprecated */
     scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
     /** @deprecated */
@@ -2053,15 +2060,15 @@ export namespace JSX {
     autofocus?: boolean | undefined;
     cols?: number | string | undefined;
     dirname?: string | undefined;
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
     form?: string | undefined;
     maxlength?: number | string | undefined;
     minlength?: number | string | undefined;
     name?: string | undefined;
     placeholder?: string | undefined;
-    readonly?: boolean | undefined;
-    required?: boolean | undefined;
+    readonly?: "true" | boolean | undefined;
+    required?: "true" | boolean | undefined;
     rows?: number | string | undefined;
     value?: string | string[] | number | undefined;
     wrap?: "hard" | "soft" | "off" | undefined;
@@ -2116,7 +2123,7 @@ export namespace JSX {
     /** @deprecated */
     height?: string | undefined;
     /** @deprecated */
-    nowrap?: boolean | undefined;
+    nowrap?: "true" | boolean | undefined;
     /** @deprecated */
     valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
     /** @deprecated */
@@ -2154,7 +2161,7 @@ export namespace JSX {
     disablepictureinpicture?: boolean | undefined;
     disableremoteplayback?: boolean | undefined;
     height?: number | string | undefined;
-    playsinline?: boolean | undefined;
+    playsinline?: "true" | boolean | undefined;
     poster?: string | undefined;
     width?: number | string | undefined;
 
@@ -3064,7 +3071,7 @@ export namespace JSX {
   }
 
   interface MathMLAttributes<T> extends HTMLAttributes<T> {
-    displaystyle?: boolean | undefined;
+    displaystyle?: "true" | boolean | undefined;
     /** @deprecated */
     href?: string | undefined;
     /** @deprecated */
@@ -3137,23 +3144,23 @@ export namespace JSX {
   }
   interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
-    fence?: boolean | undefined;
+    fence?: "true" | boolean | undefined;
     form?: "prefix" | "infix" | "postfix" | undefined;
-    largeop?: boolean | undefined;
+    largeop?: "true" | boolean | undefined;
     lspace?: string | undefined;
     maxsize?: string | undefined;
     minsize?: string | undefined;
-    movablelimits?: boolean | undefined;
+    movablelimits?: "true" | boolean | undefined;
     rspace?: string | undefined;
-    separator?: boolean | undefined;
-    stretchy?: boolean | undefined;
-    symmetric?: boolean | undefined;
+    separator?: "true" | boolean | undefined;
+    stretchy?: "true" | boolean | undefined;
+    symmetric?: "true" | boolean | undefined;
 
     /** @non-standard */
-    accent?: boolean | undefined;
+    accent?: "true" | boolean | undefined;
   }
   interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
-    accent?: boolean | undefined;
+    accent?: "true" | boolean | undefined;
   }
   interface MathMLMpaddedElementAttributes<T> extends MathMLAttributes<T> {
     depth?: string | undefined;
