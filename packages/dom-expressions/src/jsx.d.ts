@@ -1840,23 +1840,31 @@ export namespace JSX {
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
-    allowfullscreen?: boolean | undefined;
-    allowpopups?: boolean | undefined;
-    autofocus?: boolean | undefined;
-    autosize?: boolean | undefined;
-    blinkfeatures?: string | undefined;
+    allowpopups?: "true" | boolean | undefined;
     disableblinkfeatures?: string | undefined;
-    disableguestresize?: boolean | undefined;
-    disablewebsecurity?: boolean | undefined;
-    guestinstance?: string | undefined;
+    disablewebsecurity?: "true" | boolean | undefined;
+    enableblinkfeatures?: string | undefined;
     httpreferrer?: string | undefined;
-    nodeintegration?: boolean | undefined;
+    nodeintegration?: "true" | boolean | undefined;
+    nodeintegrationinsubframes?: "true" | boolean | undefined;
     partition?: string | undefined;
-    plugins?: boolean | undefined;
+    plugins?: "true" | boolean | undefined;
     preload?: string | undefined;
     src?: string | undefined;
     useragent?: string | undefined;
     webpreferences?: string | undefined;
+
+    // does this exists?
+    allowfullscreen?: boolean | undefined;
+    autofocus?: boolean | undefined;
+    autosize?: boolean | undefined;
+
+    /** @deprecated */
+    disableguestresize?: "true" | boolean | undefined;
+    /** @deprecated */
+    guestinstance?: string | undefined;
+    /** @deprecated */
+    blinkfeatures?: string | undefined;
   }
 
   type SVGPreserveAspectRatio =
