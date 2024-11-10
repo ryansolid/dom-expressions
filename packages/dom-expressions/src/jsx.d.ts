@@ -10,7 +10,7 @@ import * as csstype from "csstype";
  * https://github.com/preactjs/preact/blob/07dc9f324e58569ce66634aa03fe8949b4190358/src/jsx.d.ts#L2575
  *
  * Checked against other frameworks via the following table:
- * https://github.com/potahtml/namespace-jsx-project/blob/master/jsx/readme.md
+ * https://potahtml.github.io/namespace-jsx-project/index.html
  *
  * Note: Typings must include attributes and not properties (unless the property is special-cased,
  * such textContent, event handlers, etc).
