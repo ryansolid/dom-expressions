@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from '../../src/client';
-import * as S from "s-js";
+import S from "s-js";
 
 describe("r.insert", () => {
   // <div><!-- insert --></div>
@@ -354,6 +354,57 @@ describe("r.insert with Markers", () => {
     r.insert(parent, '', null, current);
     expect(parent.innerHTML).toBe('hello ');
   });
+
+  it("can move the same node within the same parent", () => {
+    const toggle = S.data(true);
+
+    const el = document.createElement("div");
+    el.append(",");
+
+    const node = document.createElement("span");
+    node.append("x");
+
+    const dispose = root(() => {
+      r.insert(el, () => !toggle() && node, el.firstChild);
+      r.insert(el, () => toggle() && node, null);
+    });
+
+    expect(el.textContent).toBe(",x");
+    toggle(!toggle());
+    expect(el.textContent).toBe("x,");
+
+    dispose();
+  });
+
+  it("can move the same node within different parents", () => {
+    const toggle = S.data(true);
+
+    const a = document.createElement("div");
+    a.append("a");
+
+    const b = document.createElement("div");
+    b.append("b");
+
+    const node = document.createElement("span");
+    node.append("x");
+
+    const dispose = root(() => {
+      r.insert(a, () => !toggle() && node, a.firstChild);
+      r.insert(b, () => toggle() && node, b.firstChild);
+    });
+
+    expect(a.textContent).toBe("a");
+    expect(b.textContent).toBe("xb");
+    toggle(!toggle());
+    expect(a.textContent).toBe("xa");
+    expect(b.textContent).toBe("b");
+
+    dispose();
+  });
+
+  function root(fn) {
+    return S.root(d => (fn(), d));
+  }
 
   function insert(val) {
     const parent = container.cloneNode(true);
