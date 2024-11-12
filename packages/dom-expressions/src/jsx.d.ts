@@ -1470,6 +1470,7 @@ export namespace JSX {
     muted?: "true" | boolean | undefined;
     preload?: "none" | "metadata" | "auto" | "" | undefined;
     src?: string | undefined;
+    disableremoteplayback?: "true" | boolean | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1848,7 +1849,6 @@ export namespace JSX {
     poster?: string | undefined;
     width?: number | string | undefined;
     disablepictureinpicture?: "true" | boolean | undefined;
-    disableremoteplayback?: "true" | boolean | undefined;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
