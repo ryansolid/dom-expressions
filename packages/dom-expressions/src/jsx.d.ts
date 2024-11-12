@@ -1118,6 +1118,26 @@ export namespace JSX {
       | "text"
       | "url"
       | undefined;
+    is?: string | undefined;
+    itemid?: string | undefined;
+    itemprop?: string | undefined;
+    itemref?: string | undefined;
+    itemscope?: "true" | boolean | undefined;
+    itemtype?: string | undefined;
+    lang?: string | undefined;
+    part?: string | undefined;
+    popover?: boolean | "manual" | "auto" | undefined;
+    prefix?: string | undefined;
+    property?: string | undefined;
+    resource?: string | undefined;
+    slot?: string | undefined;
+    spellcheck?: "true" | boolean | undefined;
+    style?: CSSProperties | string | undefined;
+    tabindex?: number | string | undefined;
+    title?: string | undefined;
+    translate?: "yes" | "no" | undefined;
+    typeof?: string | undefined;
+    vocab?: string | undefined;
 
     /** @deprecated Use lowercase attributes */
     accessKey?: string | undefined;
