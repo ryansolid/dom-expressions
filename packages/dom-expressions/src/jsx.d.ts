@@ -1012,7 +1012,6 @@ export namespace JSX {
     coords?: string | undefined;
     download?: string | undefined;
     href?: string | undefined;
-    nohref?: "true" | boolean | undefined;
     ping?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     rel?: string | undefined;
@@ -1021,6 +1020,9 @@ export namespace JSX {
 
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @deprecated */
+    nohref?: "true" | boolean | undefined;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
@@ -1071,6 +1073,9 @@ export namespace JSX {
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
     height?: number | string | undefined;
+
+    /** @deprecated */
+    "moz-opaque"?: "true" | boolean | undefined;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | string | undefined;
