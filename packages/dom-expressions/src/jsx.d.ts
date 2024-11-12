@@ -1459,11 +1459,11 @@ export namespace JSX {
     controls?: "true" | boolean | undefined;
     controlslist?: string | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
+    disableremoteplayback?: "true" | boolean | undefined;
     loop?: "true" | boolean | undefined;
     muted?: "true" | boolean | undefined;
     preload?: "none" | "metadata" | "auto" | "" | undefined;
     src?: string | undefined;
-    disableremoteplayback?: "true" | boolean | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
