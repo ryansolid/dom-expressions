@@ -1032,7 +1032,7 @@ export namespace JSX {
     cite?: string | undefined;
   }
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
     command?:
       | "show-modal"
       | "close"
@@ -1303,7 +1303,7 @@ export namespace JSX {
       | (string & {})
       | undefined;
     autocorrect?: "on" | "off" | undefined;
-    autofocus?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
     capture?: "user" | "environment" | undefined;
     checked?: "true" | boolean | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
@@ -1397,11 +1397,11 @@ export namespace JSX {
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    autofocus?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
     /** @deprecated */
     challenge?: string | undefined;
     /** @deprecated */
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     /** @deprecated */
     form?: string | undefined;
     /** @deprecated */
@@ -1550,7 +1550,7 @@ export namespace JSX {
     /** @deprecated */
     vspace?: number | string | undefined;
     /** @deprecated */
-    typemustmatch?: boolean | undefined;
+    typemustmatch?: "true" | boolean | undefined;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     reversed?: "true" | boolean | undefined;
@@ -1622,7 +1622,7 @@ export namespace JSX {
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?: string | undefined;
-    autofocus?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
     disabled?: "true" | boolean | undefined;
     form?: string | undefined;
     multiple?: "true" | boolean | undefined;
@@ -1763,7 +1763,7 @@ export namespace JSX {
       | (string & {})
       | undefined;
     autocorrect?: "on" | "off" | undefined;
-    autofocus?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
     cols?: number | string | undefined;
     dirname?: string | undefined;
     disabled?: "true" | boolean | undefined;
@@ -1867,9 +1867,9 @@ export namespace JSX {
     webpreferences?: string | undefined;
 
     // does this exists?
-    allowfullscreen?: boolean | undefined;
-    autofocus?: boolean | undefined;
-    autosize?: boolean | undefined;
+    allowfullscreen?: "true" | boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
+    autosize?: "true" | boolean | undefined;
 
     /** @deprecated */
     disableguestresize?: "true" | boolean | undefined;
