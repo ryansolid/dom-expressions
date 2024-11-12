@@ -1186,7 +1186,6 @@ export namespace JSX {
     coords?: string | undefined;
     download?: string | undefined;
     href?: string | undefined;
-    nohref?: "true" | boolean | undefined;
     ping?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     rel?: string | undefined;
