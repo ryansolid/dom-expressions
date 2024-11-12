@@ -1770,7 +1770,6 @@ export namespace JSX {
     muted?: boolean | undefined;
     preload?: "none" | "metadata" | "auto" | "" | undefined;
     src?: string | undefined;
-    disableremoteplayback?: "true" | boolean | undefined;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
