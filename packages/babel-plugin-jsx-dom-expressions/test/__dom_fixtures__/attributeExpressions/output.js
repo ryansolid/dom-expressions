@@ -513,7 +513,7 @@ const template52 = _tmpl$31();
 const template53 = _tmpl$32();
 const template54 = (() => {
   var _el$72 = _tmpl$33();
-  _$effect(() => _$setBoolAttribute(_el$72, "quack", boolTest()));
+  _$effect(boolTest, _v$ => _$setBoolAttribute(_el$72, "quack", _v$));
   return _el$72;
 })();
 const template55 = (() => {
@@ -528,7 +528,10 @@ const template56 = (() => {
 })();
 const template57 = (() => {
   var _el$75 = _tmpl$36();
-  _$effect(() => _$setBoolAttribute(_el$75, "quack", boolTestObjBinding.value));
+  _$effect(
+    () => boolTestObjBinding.value,
+    _v$ => _$setBoolAttribute(_el$75, "quack", _v$)
+  );
   return _el$75;
 })();
 const template58 = (() => {
