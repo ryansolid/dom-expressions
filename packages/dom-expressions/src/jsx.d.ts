@@ -899,41 +899,21 @@ export namespace JSX {
 
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     // [key: ClassKeys]: boolean;
+    about?: string | undefined;
     accesskey?: string | undefined;
+    autocapitalize?: HTMLAutocapitalize | undefined;
     class?: string | undefined;
+    color?: string | undefined;
     contenteditable?: "true" | "false" | boolean | "plaintext-only" | "inherit" | undefined;
     contextmenu?: string | undefined;
+    datatype?: string | undefined;
     dir?: HTMLDir | undefined;
     draggable?: boolean | "false" | "true" | undefined;
+    exportparts?: string | undefined;
     hidden?: boolean | "hidden" | "until-found" | undefined;
     id?: string | undefined;
-    is?: string | undefined;
     inert?: "true" | boolean | undefined;
-    lang?: string | undefined;
-    spellcheck?: "true" | boolean | undefined;
-    style?: CSSProperties | string | undefined;
-    tabindex?: number | string | undefined;
-    title?: string | undefined;
-    translate?: "yes" | "no" | undefined;
-    about?: string | undefined;
-    datatype?: string | undefined;
     inlist?: any | undefined;
-    popover?: boolean | "manual" | "auto" | undefined;
-    prefix?: string | undefined;
-    property?: string | undefined;
-    resource?: string | undefined;
-    typeof?: string | undefined;
-    vocab?: string | undefined;
-    autocapitalize?: HTMLAutocapitalize | undefined;
-    slot?: string | undefined;
-    color?: string | undefined;
-    itemprop?: string | undefined;
-    itemscope?: "true" | boolean | undefined;
-    itemtype?: string | undefined;
-    itemid?: string | undefined;
-    itemref?: string | undefined;
-    part?: string | undefined;
-    exportparts?: string | undefined;
     inputmode?:
       | "decimal"
       | "email"
@@ -944,6 +924,26 @@ export namespace JSX {
       | "text"
       | "url"
       | undefined;
+    is?: string | undefined;
+    itemid?: string | undefined;
+    itemprop?: string | undefined;
+    itemref?: string | undefined;
+    itemscope?: "true" | boolean | undefined;
+    itemtype?: string | undefined;
+    lang?: string | undefined;
+    part?: string | undefined;
+    popover?: boolean | "manual" | "auto" | undefined;
+    prefix?: string | undefined;
+    property?: string | undefined;
+    resource?: string | undefined;
+    slot?: string | undefined;
+    spellcheck?: "true" | boolean | undefined;
+    style?: CSSProperties | string | undefined;
+    tabindex?: number | string | undefined;
+    title?: string | undefined;
+    translate?: "yes" | "no" | undefined;
+    typeof?: string | undefined;
+    vocab?: string | undefined;
 
     /** @deprecated Use lowercase attributes */
     accessKey?: string | undefined;
