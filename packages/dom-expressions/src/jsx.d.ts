@@ -1033,15 +1033,6 @@ export namespace JSX {
   }
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autofocus?: "true" | boolean | undefined;
-    command?:
-      | "show-modal"
-      | "close"
-      | "show-popover"
-      | "hide-popover"
-      | "toggle-popover"
-      | (string & {})
-      | undefined;
-    commandfor?: string | undefined;
     disabled?: "true" | boolean | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
@@ -1054,6 +1045,18 @@ export namespace JSX {
     name?: string | undefined;
     type?: "submit" | "reset" | "button" | "menu" | undefined;
     value?: string | undefined;
+
+    /** @experimental */
+    command?:
+      | "show-modal"
+      | "close"
+      | "show-popover"
+      | "hide-popover"
+      | "toggle-popover"
+      | (string & {})
+      | undefined;
+    /** @experimental */
+    commandfor?: string | undefined;
 
     /** @deprecated Use lowercase attributes */
     formAction?: string | SerializableAttributeValue | undefined;
@@ -1074,7 +1077,10 @@ export namespace JSX {
     width?: number | string | undefined;
     height?: number | string | undefined;
 
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     "moz-opaque"?: "true" | boolean | undefined;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1095,6 +1101,19 @@ export namespace JSX {
   }
   interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | string | undefined;
+
+    /** @deprecated */
+    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    /** @deprecated */
+    bgcolor?: string | undefined;
+    /** @deprecated */
+    char?: string | undefined;
+    /** @deprecated */
+    charoff?: string | undefined;
+    /** @deprecated */
+    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    /** @deprecated */
+    width?: number | string | undefined;
   }
   interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | string[] | number | undefined;
@@ -1157,24 +1176,34 @@ export namespace JSX {
     srcdoc?: string | undefined;
     width?: number | string | undefined;
 
-    /** @non-standard */
+    /** @deprecated Use lowercase attributes */
+    referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @experimental */
+    adauctionheaders?: "true" | boolean | undefined;
+    /**
+     * @non-standard
+     * @experimental
+     */
     browsingtopics?: "true" | boolean | undefined;
     /** @experimental */
     credentialless?: "true" | boolean | undefined;
     /** @experimental */
     csp?: string | undefined;
     /** @experimental */
+    privatetoken?: string | undefined;
+    /** @experimental */
     sharedstoragewritable?: "true" | boolean | undefined;
 
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
-
     /** @deprecated */
+    align?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
     allowpaymentrequest?: "true" | boolean | undefined;
     /** @deprecated */
     allowtransparency?: "true" | boolean | undefined;
-    /** @deprecated */
-    align?: string | undefined;
     /** @deprecated */
     frameborder?: number | string | undefined;
     /** @deprecated */
@@ -1185,13 +1214,11 @@ export namespace JSX {
     marginwidth?: number | string | undefined;
     /** @deprecated */
     scrolling?: "yes" | "no" | "auto" | undefined;
-
     /** @deprecated */
     seamless?: "true" | boolean | undefined;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
-    attributionsrc?: string | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     decoding?: "sync" | "async" | "auto" | undefined;
     height?: number | string | undefined;
@@ -1205,6 +1232,11 @@ export namespace JSX {
     width?: number | string | undefined;
     elementtiming?: string | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
+
+    /** @experimental */
+    attributionsrc?: string | undefined;
+    /** @experimental */
+    sharedstoragewritable?: "true" | boolean | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1224,15 +1256,15 @@ export namespace JSX {
     /** @deprecated */
     hspace?: number | string | undefined;
     /** @deprecated */
+    intrinsicsize?: string | undefined;
+    /** @deprecated */
     longdesc?: string | undefined;
+    /** @deprecated */
+    lowsrc?: string | undefined;
     /** @deprecated */
     name?: string | undefined;
     /** @deprecated */
     vspace?: number | string | undefined;
-    /** @deprecated */
-    intrinsicsize?: string | undefined;
-    /** @deprecated */
-    lowsrc?: string | undefined;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1317,7 +1349,6 @@ export namespace JSX {
     formnovalidate?: "true" | boolean | undefined;
     formtarget?: string | undefined;
     height?: number | string | undefined;
-    incremental?: "true" | boolean | undefined;
     list?: string | undefined;
     max?: number | string | undefined;
     maxlength?: number | string | undefined;
@@ -1363,6 +1394,9 @@ export namespace JSX {
       | undefined;
     value?: string | string[] | number | undefined;
     width?: number | string | undefined;
+
+    /** @non-standard */
+    incremental?: "true" | boolean | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1423,6 +1457,7 @@ export namespace JSX {
   }
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     as?: HTMLLinkAs | undefined;
+    blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     disabled?: "true" | boolean | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
@@ -1436,9 +1471,6 @@ export namespace JSX {
     rel?: string | undefined;
     sizes?: string | undefined;
     type?: string | undefined;
-
-    /** @experimental */
-    blocking?: "render" | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1474,6 +1506,7 @@ export namespace JSX {
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+
     /** @deprecated Use lowercase attributes */
     mediaGroup?: string | undefined;
     /** @deprecated */
@@ -1558,7 +1591,10 @@ export namespace JSX {
     start?: number | string | undefined;
     type?: "1" | "a" | "A" | "i" | "I" | undefined;
 
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     compact?: "true" | boolean | undefined;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1580,9 +1616,9 @@ export namespace JSX {
     /** @deprecated */
     name?: string | undefined;
     /** @deprecated */
-    value?: string | number | undefined;
-    /** @deprecated */
     type?: string | undefined;
+    /** @deprecated */
+    value?: string | number | undefined;
     /** @deprecated */
     valuetype?: "data" | "ref" | "object" | undefined;
   }
@@ -1592,6 +1628,7 @@ export namespace JSX {
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     async?: "true" | boolean | undefined;
+    blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     defer?: "true" | boolean | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
@@ -1604,8 +1641,6 @@ export namespace JSX {
 
     /** @experimental */
     attributionsrc?: string | undefined;
-    /** @experimental */
-    blocking?: string | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1645,11 +1680,10 @@ export namespace JSX {
     height?: number | string | undefined;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
+    blocking?: "render" | undefined;
     media?: string | undefined;
     nonce?: string | undefined;
 
-    /** @experimental */
-    blocking?: string | undefined;
     /** @deprecated */
     scoped?: "true" | boolean | undefined;
     /** @deprecated */
@@ -1692,6 +1726,8 @@ export namespace JSX {
     shadowrootmode?: "open" | "closed" | undefined;
     shadowrootclonable?: "true" | boolean | undefined;
     shadowrootdelegatesfocus?: "true" | boolean | undefined;
+
+    /** @experimental */
     shadowrootserializable?: "true" | boolean | undefined;
 
     /** @deprecated */
@@ -1842,6 +1878,11 @@ export namespace JSX {
     label?: string | undefined;
     src?: string | undefined;
     srclang?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    mediaGroup?: string | undefined;
+    /** @deprecated */
+    mediagroup?: string | undefined;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     height?: number | string | undefined;
@@ -1872,11 +1913,11 @@ export namespace JSX {
     autosize?: "true" | boolean | undefined;
 
     /** @deprecated */
+    blinkfeatures?: string | undefined;
+    /** @deprecated */
     disableguestresize?: "true" | boolean | undefined;
     /** @deprecated */
     guestinstance?: string | undefined;
-    /** @deprecated */
-    blinkfeatures?: string | undefined;
   }
 
   type SVGPreserveAspectRatio =
@@ -2232,6 +2273,10 @@ export namespace JSX {
         | "stroke-opacity"
       > {}
   interface ZoomAndPanSVGAttributes {
+    /**
+     * @deprecated
+     * @non-standard
+     */
     zoomAndPan?: "disable" | "magnify" | undefined;
   }
   interface AnimateSVGAttributes<T>
@@ -2630,16 +2675,19 @@ export namespace JSX {
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
       PresentationSVGAttributes {
-    version?: string | undefined;
-    baseProfile?: string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
-    width?: number | string | undefined;
-    height?: number | string | undefined;
+    "xmlns:xlink"?: string | undefined;
     contentScriptType?: string | undefined;
     contentStyleType?: string | undefined;
+    height?: number | string | undefined;
+    width?: number | string | undefined;
+    x?: number | string | undefined;
     xmlns?: string | undefined;
-    "xmlns:xlink"?: string | undefined;
+    y?: number | string | undefined;
+
+    /** @deprecated */
+    baseProfile?: string | undefined;
+    /** @deprecated */
+    version?: string | undefined;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2760,9 +2808,15 @@ export namespace JSX {
     src?: string | undefined;
   }
   interface MathMLMactionElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     actiontype?: "statusline" | "toggle" | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     selection?: string | undefined;
   }
   interface MathMLMathElementAttributes<T> extends MathMLAttributes<T> {
@@ -2772,9 +2826,15 @@ export namespace JSX {
   interface MathMLMfracElementAttributes<T> extends MathMLAttributes<T> {
     linethickness?: string | undefined;
 
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     denomalign?: "center" | "left" | "right" | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     numalign?: "center" | "left" | "right" | undefined;
   }
   interface MathMLMiElementAttributes<T> extends MathMLAttributes<T> {
@@ -2782,9 +2842,15 @@ export namespace JSX {
   }
 
   interface MathMLMmultiscriptsElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     subscriptshift?: string | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     superscriptshift?: string | undefined;
   }
   interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
@@ -2831,33 +2897,61 @@ export namespace JSX {
   }
   interface MathMLMsqrtElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMstyleElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     background?: string | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     color?: string | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     fontsize?: string | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     fontstyle?: string | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     fontweight?: string | undefined;
+
     /** @deprecated */
     scriptminsize?: string | undefined;
     /** @deprecated */
     scriptsizemultiplier?: string | undefined;
   }
   interface MathMLMsubElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     subscriptshift?: string | undefined;
   }
   interface MathMLMsubsupElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     subscriptshift?: string | undefined;
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     superscriptshift?: string | undefined;
   }
   interface MathMLMsupElementAttributes<T> extends MathMLAttributes<T> {
-    /** @deprecated */
+    /**
+     * @deprecated
+     * @non-standard
+     */
     superscriptshift?: string | undefined;
   }
   interface MathMLMtableElementAttributes<T> extends MathMLAttributes<T> {
@@ -3962,6 +4056,12 @@ export namespace JSX {
      */
     semantics: MathMLSemanticsElementAttributes<MathMLElement>;
     /**
+     * @non-standard
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/menclose
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    menclose: MathMLMencloseElementAttributes<MathMLElement>;
+    /**
      * @deprecated
      * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction
      * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
@@ -3969,12 +4069,7 @@ export namespace JSX {
     maction: MathMLMactionElementAttributes<MathMLElement>;
     /**
      * @deprecated
-     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/menclose
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
-     */
-    menclose: MathMLMencloseElementAttributes<MathMLElement>;
-    /**
-     * @deprecated
+     * @non-standard
      * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfenced
      * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
      */
