@@ -1234,15 +1234,6 @@ export namespace JSX {
       ElementEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autofocus?: "true" | boolean | undefined;
-    command?:
-      | "show-modal"
-      | "close"
-      | "show-popover"
-      | "hide-popover"
-      | "toggle-popover"
-      | (string & {})
-      | undefined;
-    commandfor?: string | undefined;
     disabled?: "true" | boolean | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
@@ -1413,12 +1404,22 @@ export namespace JSX {
     srcdoc?: string | undefined;
     width?: number | string | undefined;
 
-    /** @non-standard */
+    /** @deprecated Use lowercase attributes */
+    referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @experimental */
+    adauctionheaders?: "true" | boolean | undefined;
+    /**
+     * @non-standard
+     * @experimental
+     */
     browsingtopics?: "true" | boolean | undefined;
     /** @experimental */
     credentialless?: "true" | boolean | undefined;
     /** @experimental */
     csp?: string | undefined;
+    /** @experimental */
+    privatetoken?: string | undefined;
     /** @experimental */
     sharedstoragewritable?: "true" | boolean | undefined;
 
@@ -1465,7 +1466,6 @@ export namespace JSX {
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
-    attributionsrc?: string | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     decoding?: "sync" | "async" | "auto" | undefined;
     elementtiming?: string | undefined;
@@ -1502,6 +1502,11 @@ export namespace JSX {
     /** @deprecated */
     vspace?: number | string | undefined;
 
+    /** @experimental */
+    attributionsrc?: string | undefined;
+    /** @experimental */
+    sharedstoragewritable?: "true" | boolean | undefined;
+
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
     /** @deprecated Use lowercase attributes */
@@ -1520,15 +1525,15 @@ export namespace JSX {
     /** @deprecated */
     hspace?: number | string | undefined;
     /** @deprecated */
+    intrinsicsize?: string | undefined;
+    /** @deprecated */
     longdesc?: string | undefined;
+    /** @deprecated */
+    lowsrc?: string | undefined;
     /** @deprecated */
     name?: string | undefined;
     /** @deprecated */
     vspace?: number | string | undefined;
-    /** @deprecated */
-    intrinsicsize?: string | undefined;
-    /** @deprecated */
-    lowsrc?: string | undefined;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1736,9 +1741,6 @@ export namespace JSX {
     sizes?: string | undefined;
     type?: string | undefined;
 
-    /** @experimental */
-    blocking?: "render" | undefined;
-
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
     /** @deprecated Use lowercase attributes */
@@ -1783,6 +1785,7 @@ export namespace JSX {
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+
     /** @deprecated Use lowercase attributes */
     mediaGroup?: string | undefined;
     /** @deprecated */
