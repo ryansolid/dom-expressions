@@ -355,56 +355,53 @@ describe("r.insert with Markers", () => {
     expect(parent.innerHTML).toBe('hello ');
   });
 
-  it("can move the same node within the same parent", () => {
-    const toggle = S.data(true);
+  it("can move a node within a parent with marker", () => {
+    // <div><!--     -->bar<!-- foo --></div>
+    // <div><!-- foo -->bar<!--     --></div>
 
-    const el = document.createElement("div");
-    el.append(",");
+    const parent = document.createElement("div");
+    parent.textContent = "bar";
+    const marker = parent.firstChild;
 
-    const node = document.createElement("span");
-    node.append("x");
+    const node = document.createElement("div");
+    node.textContent = "foo";
 
-    const dispose = root(() => {
-      r.insert(el, () => !toggle() && node, el.firstChild);
-      r.insert(el, () => toggle() && node, null);
-    });
+    let current = r.insert(parent, null, marker);
+    let current2 = r.insert(parent, node, null);
+    expect(parent.outerHTML).toBe("<div>bar<div>foo</div></div>");
 
-    expect(el.textContent).toBe(",x");
-    toggle(!toggle());
-    expect(el.textContent).toBe("x,");
-
-    dispose();
+    current = r.insert(parent, node, marker, current);
+    current2 = r.insert(parent, null, null, current2);
+    expect(parent.outerHTML).toBe("<div><div>foo</div>bar</div>");
   });
 
-  it("can move the same node within different parents", () => {
-    const toggle = S.data(true);
+  it("can move a node within parents with markers", () => {
+    // <div><!--     -->bar</div><div><!-- foo -->baz</div>
+    // <div><!-- foo -->bar</div><div><!--     -->baz</div>
 
-    const a = document.createElement("div");
-    a.append("a");
+    const bar = document.createElement("div");
+    bar.textContent = "bar";
+    const barMarker = bar.firstChild;
 
-    const b = document.createElement("div");
-    b.append("b");
+    const baz = document.createElement("div");
+    baz.textContent = "baz";
+    const bazMarker = baz.firstChild;
 
-    const node = document.createElement("span");
-    node.append("x");
+    const node = document.createElement("div");
+    node.textContent = "foo";
 
-    const dispose = root(() => {
-      r.insert(a, () => !toggle() && node, a.firstChild);
-      r.insert(b, () => toggle() && node, b.firstChild);
-    });
+    let current = r.insert(bar, null, barMarker);
+    let current2 = r.insert(baz, node, bazMarker);
 
-    expect(a.textContent).toBe("a");
-    expect(b.textContent).toBe("xb");
-    toggle(!toggle());
-    expect(a.textContent).toBe("xa");
-    expect(b.textContent).toBe("b");
+    expect(bar.outerHTML).toBe("<div>bar</div>");
+    expect(baz.outerHTML).toBe("<div><div>foo</div>baz</div>");
 
-    dispose();
+    current = r.insert(bar, node, barMarker, current);
+    current2 = r.insert(baz, null, bazMarker, current2);
+
+    expect(bar.outerHTML).toBe("<div><div>foo</div>bar</div>");
+    expect(baz.outerHTML).toBe("<div>baz</div>");
   });
-
-  function root(fn) {
-    return S.root(d => (fn(), d));
-  }
 
   function insert(val) {
     const parent = container.cloneNode(true);
