@@ -569,14 +569,17 @@ function appendNodes(parent, array, marker = null) {
   for (let i = 0, len = array.length; i < len; i++) parent.insertBefore(array[i], marker);
 }
 
-let moved;
+const moved = new Set();
+let scheduled = false;
 
 function cleanChildren(parent, current, marker, replacement) {
-  if (!moved) {
-    moved = new WeakSet();
-    queueMicrotask(() => (moved = null));
+  if (!scheduled && moved.size) {
+    queueMicrotask(() => {
+      moved.clear();
+      scheduled = false;
+    })
+    scheduled = true;
   }
-
   if (marker === undefined) return (parent.textContent = "");
   const node = replacement || document.createTextNode("");
   if (current.length) {
