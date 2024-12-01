@@ -1124,9 +1124,12 @@ export namespace JSX {
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: "true" | boolean | undefined;
-    onClose?: EventHandlerUnion<T, Event> | undefined;
-    onCancel?: EventHandlerUnion<T, Event> | undefined;
     tabindex?: never | undefined;
+
+    onclose?: EventHandlerUnion<T, Event> | undefined;
+    onClose?: EventHandlerUnion<T, Event> | undefined;
+    oncancel?: EventHandlerUnion<T, Event> | undefined;
+    onCancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
