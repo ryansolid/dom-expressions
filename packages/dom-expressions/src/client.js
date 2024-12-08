@@ -475,13 +475,26 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       } else node = document.createTextNode(value);
       current = cleanChildren(parent, current, marker, node);
     } else {
-      if (current !== "" && typeof current === "string") {
-        current = parent.firstChild.data = value;
-      } else current = parent.textContent = value;
+      if (current && Array.isArray(current) && current.length) {
+        for (let i = current.length - 1; i--;) current[i].remove();
+        current = current[0];
+      }
+      if (current && current.nodeType === 3) {
+        current.data !== value && (current.data = value)
+      } else {
+        current && current.remove();
+        current = document.createTextNode(value);
+        parent.appendChild(current);
+      }
     }
   } else if (value == null || t === "boolean") {
     if (hydrating) return current;
-    current = cleanChildren(parent, current, marker);
+    if (multi) {
+      current = cleanChildren(parent, current, marker);
+    } else {
+      current && current.remove()
+      current = value
+    }
   } else if (t === "function") {
     effect(() => {
       let v = value();
@@ -513,8 +526,8 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
         appendNodes(parent, array, marker);
       } else reconcileArrays(parent, current, array);
     } else {
-      current && cleanChildren(parent);
-      appendNodes(parent, array);
+      appendNodes(parent, array, current);
+      current && current.remove();
     }
     current = array;
   } else if (value.nodeType) {
@@ -524,7 +537,7 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       cleanChildren(parent, current, null, value);
     } else if (current == null || current === "" || !parent.firstChild) {
       parent.appendChild(value);
-    } else parent.replaceChild(value, parent.firstChild);
+    } else parent.replaceChild(value, current);
     current = value;
   } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
 
