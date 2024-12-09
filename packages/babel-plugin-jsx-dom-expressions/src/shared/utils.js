@@ -94,7 +94,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return false;
   }
 
-  if (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr))) {
+  if (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr) || t.isTaggedTemplateExpression(expr))) {
     return true;
   }
 

@@ -27,6 +27,9 @@ const singleExpression = <>{inserted}</>;
 
 const singleDynamic = <>{inserted()}</>;
 
+const greeting = (x) => "Hello " + x;
+const singleTemplateLiteral = <>{greeting`world`}</>
+
 const firstStatic = (
   <>
     {inserted}

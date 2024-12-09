@@ -27,6 +27,8 @@ const multiDynamic = [
 ];
 const singleExpression = inserted;
 const singleDynamic = _$memo(inserted);
+const greeting = x => "Hello " + x;
+const singleTemplateLiteral = _$memo(() => greeting`world`);
 const firstStatic = [inserted, _tmpl$3()];
 const firstDynamic = [_$memo(inserted), _tmpl$3()];
 const firstComponent = [_$createComponent(Component, {}), _tmpl$3()];
