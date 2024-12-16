@@ -255,3 +255,6 @@ const template74 = <div ref={refFn} />
 const template75 = <div ref={refConst} />
 
 const template76 = <div ref={refUnknown} />
+
+const template77 = <math display="block"><mrow></mrow></math>
+const template78 = <mrow><mi>x</mi><mo>=</mo></mrow>
