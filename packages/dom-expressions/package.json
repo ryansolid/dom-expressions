@@ -1,7 +1,7 @@
 {
   "name": "dom-expressions",
   "description": "A Fine-Grained Runtime for Performant DOM Rendering",
-  "version": "0.39.4",
+  "version": "0.39.5",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -24,7 +24,7 @@
     "seroval-plugins": "^1.1.0"
   },
   "devDependencies": {
-    "babel-plugin-jsx-dom-expressions": "^0.39.3",
+    "babel-plugin-jsx-dom-expressions": "^0.39.5",
     "csstype": "^3.1",
     "seroval": "^1.1.0",
     "seroval-plugins": "^1.1.0"
