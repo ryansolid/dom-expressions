@@ -42,23 +42,16 @@ What is the reactive core file. It exports an object with the methods required b
 Example:
 
 ```js
-import S, { root, value, sample } from "s-js";
+import { untrack } from "@solidjs/signals";
 
-const currentContext = null;
+export const sharedConfig = {};
 
-function memo(fn, equal) {
-  if (typeof fn !== "function") return fn;
-  if (!equal) return S(fn);
-  const s = value(sample(fn));
-  S(() => s(fn()));
-  return s;
+export function createComponent(Comp, props) {
+  return untrack(() => Comp(props));
 }
 
-function createComponent(Comp, props) {
-  return sample(() => Comp(props));
-}
 
-export { root, S as effect, memo, createComponent, currentContext };
+export { createRoot as root, createRenderEffect as effect, createMemo as memo, getOwner, untrack, merge as mergeProps } from "@solidjs/signals";
 ```
 
 ## Runtime Renderers
