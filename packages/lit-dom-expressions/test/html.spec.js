@@ -1,4 +1,4 @@
-import * as S from "s-js";
+import { createRoot, createSignal, flushSync } from "@solidjs/signals";
 import { createHTML } from "../dist/lit-dom-expressions";
 import * as r from "dom-expressions/src/client";
 
@@ -40,11 +40,11 @@ describe("Test HTML", () => {
   });
 
   test("Attribute Expressions", () => {
-    const selected = S.data(true),
-      welcoming = S.data("hello");
+    const [selected] = createSignal(true),
+      [welcoming] = createSignal("hello");
     let link;
 
-    S.root(() => {
+    createRoot(() => {
       const template = html`
         <div
           id="main"
@@ -98,11 +98,11 @@ describe("Test HTML", () => {
   });
 
   test("Fragments", () => {
-    const inserted = S.data("middle"),
-      after1 = S.data("after1"),
-      after2 = S.data("after2");
+    const [inserted] = createSignal("middle"),
+      [after1] = createSignal("after1"),
+      [after2] = createSignal("after2");
 
-    S.root(() => {
+    createRoot(() => {
       const template = html`
         <div>First</div>
         ${inserted}
@@ -119,7 +119,7 @@ describe("Test HTML", () => {
   test("Components", () => {
     const Comp = props =>
       html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
-    S.root(() => {
+    createRoot(() => {
       const template = html`
         <div id="main" ...${() => ({ title: "hi" })}>
           <${Comp} name=${() => "John"} middle="R."><span>Smith</span><//>
@@ -135,7 +135,7 @@ describe("Test HTML", () => {
   test("Top Level Components", () => {
     const Comp = props =>
       html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
-    S.root(() => {
+    createRoot(() => {
       const template = html` <${Comp} name=${() => "John"} middle="R."><span>Smith</span><//> `;
       const div = document.createElement("div");
       div.appendChild(template);
@@ -145,7 +145,7 @@ describe("Test HTML", () => {
 
   test("Nested Components", () => {
     const Comp = props => html` <div>${() => props.children}</div> `;
-    S.root(() => {
+    createRoot(() => {
       const template = html`<${Comp}><${Comp}>Hi<//><//> `;
       const div = document.createElement("div");
       div.appendChild(template);
@@ -156,7 +156,7 @@ describe("Test HTML", () => {
   test("Nested Components 2", () => {
     const Switch = props => props.children[0].children;
     const Match = props => props;
-    S.root(() => {
+    createRoot(() => {
       const template = html`<div>
         <${Switch}>
           <${Match} when=${1}>
@@ -269,12 +269,13 @@ describe("Test HTML", () => {
   });
 
   test("Test double toggle classList", () => {
-    S.root(() => {
-      const d = S.data("first");
+    createRoot(() => {
+      const [d, setD] = createSignal("first");
       const template = html`<div classList=${() => ({ [d()]: true })} />`;
       const div = document.createElement("div");
       div.appendChild(template);
-      d("second");
+      setD("second");
+      flushSync();
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[9]);
     });
   });

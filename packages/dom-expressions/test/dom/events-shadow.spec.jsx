@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/client";
-import * as S from "s-js";
+import { createRoot } from "@solidjs/signals";
 
 describe("Synthetic event target with shadow DOM web components", () => {
   const Elements = {
@@ -27,7 +27,7 @@ describe("Synthetic event target with shadow DOM web components", () => {
     constructor() {
       super();
       const shadowRoot = this.attachShadow({ mode: 'open' });
-      S.root(() =>
+      createRoot(() =>
         shadowRoot.appendChild(
           <div ref={Elements.innerContainer} onClick={innerOnClick}>
             <button ref={Elements.button} />
@@ -41,7 +41,7 @@ describe("Synthetic event target with shadow DOM web components", () => {
   customElements.define('my-component', MyComponent);
 
   document.body.innerHTML = "";
-  S.root(() =>
+  createRoot(() =>
     document.body.appendChild(
       <div ref={Elements.outerContainer} onClick={outerOnClick}>
         <my-component id="mycomponent" ref={Elements.myComponent}>

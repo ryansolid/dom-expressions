@@ -75,12 +75,9 @@ export function template(html, isImportNode, isSVG) {
     t.innerHTML = html;
     return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
   };
-  // backwards compatible with older builds
-  const fn = isImportNode
+  return isImportNode
     ? () => untrack(() => document.importNode(node || (node = create()), true))
     : () => (node || (node = create())).cloneNode(true);
-  fn.cloneNode = fn;
-  return fn;
 }
 
 export function delegateEvents(eventNames, document = window.document) {
@@ -195,14 +192,17 @@ export function spread(node, props = {}, isSVG, skipChildren) {
     () => typeof props.ref === "function" && use(props.ref, node),
     () => ({})
   );
-  effect(() => {
-    const newProps = {};
-    for (const prop in props) {
-      if (prop === "children" || prop === "ref") continue;
-      newProps[prop] = props[prop];
-    }
-    return newProps;
-  }, props => assign(node, props, isSVG, true, prevProps, true));
+  effect(
+    () => {
+      const newProps = {};
+      for (const prop in props) {
+        if (prop === "children" || prop === "ref") continue;
+        newProps[prop] = props[prop];
+      }
+      return newProps;
+    },
+    props => assign(node, props, isSVG, true, prevProps, true)
+  );
   return prevProps;
 }
 
@@ -279,7 +279,11 @@ export function getNextElement(template) {
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if ("_DX_DEV_" && hydrating) {
       sharedConfig.done = true;
-      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`);
+      throw new Error(
+        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${
+          template ? template().outerHTML : ""
+        }`
+      );
     }
     return template();
   }
@@ -385,12 +389,12 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     (isChildProp = ChildProperties.has(prop)) ||
     (!isSVG &&
       ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
-    (isCE = (node.nodeName.includes("-") || 'is' in props))
+    (isCE = node.nodeName.includes("-") || "is" in props)
   ) {
     if (forceProp) {
       prop = prop.slice(5);
       isProp = true;
-    };
+    }
     if (prop === "class" || prop === "className") className(node, value);
     else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[propAlias || prop] = value;
@@ -423,7 +427,11 @@ function eventHandler(e) {
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
-    node.host && typeof node.host !== "string" && !node.host._$host && node.contains(e.target) && retarget(node.host);
+    node.host &&
+      typeof node.host !== "string" &&
+      !node.host._$host &&
+      node.contains(e.target) &&
+      retarget(node.host);
     return true;
   };
   const walkUpTree = () => {
