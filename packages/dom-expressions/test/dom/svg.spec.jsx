@@ -1,14 +1,14 @@
 /**
  * @jest-environment jsdom
  */
-import * as S from "s-js";
+import { createRoot, createSignal, flushSync } from "@solidjs/signals";
 
 describe("create simple svg", () => {
   it("Ensure dynamic props are set as attributes", () => {
     let rect;
-    const x = S.data(0),
-      y = S.data(0),
-      style = S.data({
+    const [x, setX] = createSignal(0),
+      [y, setY] = createSignal(0),
+      [style] = createSignal({
         fill: "red",
         stroke: "black",
         "stroke-width": 5,
@@ -26,12 +26,13 @@ describe("create simple svg", () => {
       );
     }
 
-    S.root(() => <Component />);
+    createRoot(() => <Component />);
     expect(rect.outerHTML).toBe(
       `<rect width="150" height="150" x="0" y="0" style="fill: red; stroke: black; stroke-width: 5; opacity: 0.5;" class="classy" title="hello"></rect>`
     );
-    x(10);
-    y(50);
+    setX(10);
+    setY(50);
+    flushSync();
     expect(rect.outerHTML).toBe(
       `<rect width="150" height="150" x="10" y="50" style="fill: red; stroke: black; stroke-width: 5; opacity: 0.5;" class="classy" title="hello"></rect>`
     );
