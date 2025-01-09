@@ -60,7 +60,7 @@ const view = ({
     _el$4.$$click = e => select(item, e);
     _$insert(_el$4, () => item.label);
     _el$6.$$click = e => del(item, e);
-    _$effect(() => _$className(_el$, itemId === selected() ? "danger" : ""));
+    _$effect(() => selected(), _v$ => _$className(_el$, itemId === _v$ ? "danger" : ""));
     return _el$;
   })();
 };
