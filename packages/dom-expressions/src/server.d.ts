@@ -75,31 +75,6 @@ export function getRequestEvent(): RequestEvent | undefined;
 export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
-
-// deprecated
-export type LegacyResults = {
-  write: (text: string) => void;
-  startWriting: () => void;
-};
-export function pipeToWritable<T>(
-  fn: () => T,
-  writable: WritableStream,
-  options?: {
-    nonce?: string;
-    onReady?: (res: LegacyResults) => void;
-    onCompleteAll?: () => void;
-  }
-): void;
-export function pipeToNodeWritable<T>(
-  fn: () => T,
-  writable: { write: (v: string) => void },
-  options?: {
-    nonce?: string;
-    onReady?: (res: LegacyResults) => void;
-    onCompleteAll?: () => void;
-  }
-): void;
-
 export function untrack<T>(fn: () => T): T;
 
 // client-only APIs
