@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import * as S from "s-js";
+import { createRoot, createSignal, flushSync, onCleanup } from "@solidjs/signals";
 
 describe("create element with various spreads", () => {
   it("should properly spread ref, click, attribute, and children", () => {
@@ -9,7 +9,7 @@ describe("create element with various spreads", () => {
 
     const Component = props => <span {...props} />;
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <Component class="Hello" ref={span} data-mode="stealth">
         Hi
@@ -28,7 +28,7 @@ describe("create element with various spreads", () => {
 
     const Component = (props) => <span ref={props.ref} {...false} />;
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <Component class="Hello" ref={span} data-mode="stealth">
         Hi
@@ -45,7 +45,7 @@ describe("create element with various spreads", () => {
 
     const Component = props => <span {...props}>Holla</span>;
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <Component ref={span}>Hi</Component>;
     });
@@ -66,7 +66,7 @@ describe("create component with various spreads", () => {
       "data-mode": "stealth"
     };
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <Component {...props}>Hi</Component>;
     });
@@ -86,7 +86,7 @@ describe("create component with various spreads", () => {
 
     const Component = props => <span {...props}>Holla</span>;
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <Component {...props}>Hi</Component>;
     });
@@ -104,12 +104,12 @@ describe("ref scope for cleanup in the spread for elements and components", () =
       span = el;
     };
 
-    const p = S.data({
+    const [p, setP] = createSignal({
       ref,
       className: "class1"
     });
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <span {...p()}>Hi</span>;
     });
@@ -118,9 +118,10 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(span.className).toBe("class1");
     expect(span.textContent).toBe("Hi");
 
-    p({
+    setP({
       className: "class2"
     });
+    flushSync();
     expect(span.className).toBe("class2");
     expect(span).toBeDefined();
     disposer();
@@ -136,13 +137,13 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     const ref = el => {
       ++refCount;
       span = el;
-      S.cleanup(() => {
+      onCleanup(() => {
         ++refCleanupCount;
       });
     };
-    const c = S.data("class1");
+    const [c, setC] = createSignal("class1");
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <Component className={c()} ref={ref}>
         Hi
@@ -155,7 +156,8 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(refCount).toBe(1);
     expect(refCleanupCount).toBe(0);
 
-    c("class2");
+    setC("class2");
+    flushSync();
     expect(span.className).toBe("class2");
     expect(refCount).toBe(1);
     expect(refCleanupCount).toBe(0);
@@ -173,16 +175,16 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     const ref = el => {
       ++refCount;
       span = el;
-      S.cleanup(() => {
+      onCleanup(() => {
         ++refCleanupCount;
       });
     };
-    const p = S.data({
+    const [p, setP] = createSignal({
       ref,
       className: "class1"
     });
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <span {...p()}>Hi</span>;
     });
@@ -193,10 +195,11 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(refCount).toBe(1);
     expect(refCleanupCount).toBe(0);
 
-    p({
+    setP({
       ref,
       className: "class2"
     });
+    flushSync();
     expect(span.className).toBe("class2");
     expect(refCount).toBe(2);
     expect(refCleanupCount).toBe(1);

@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/client";
-import * as S from "s-js";
+import { createRoot } from "@solidjs/signals";
 
 describe("Test Synthetic event bubbling", () => {
   const Elements = {
@@ -21,7 +21,7 @@ describe("Test Synthetic event bubbling", () => {
   }
 
   document.body.innerHTML = "";
-  S.root(() =>
+  createRoot(() =>
     document.body.appendChild(
       <div ref={Elements.el1} onClick={[handleClick, 1]}>
         <div ref={Elements.el2} onClick={[handleClick, 2]}>
@@ -91,7 +91,7 @@ describe("Custom Events", () => {
       count++;
     }
 
-    S.root(() =>
+    createRoot(() =>
       document.body.appendChild(
         <div>
           <div ref={elementRegular} on:click={{ handleEvent: handleClick }} />
