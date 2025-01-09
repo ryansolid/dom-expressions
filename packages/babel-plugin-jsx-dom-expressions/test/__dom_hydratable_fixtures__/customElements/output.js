@@ -4,10 +4,10 @@ import { getNextElement as _$getNextElement } from "r-dom";
 import { getOwner as _$getOwner } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { setProperty as _$setProperty } from "r-dom";
-var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true, false),
-  _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot=head>Title`, true, false),
+var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true, false, false),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot=head>Title`, true, false, false),
   _tmpl$3 = /*#__PURE__*/ _$template(`<slot name=head>`),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<a is=my-element>`, true, false);
+  _tmpl$4 = /*#__PURE__*/ _$template(`<a is=my-element>`, true, false, false);
 const template = (() => {
   var _el$ = _$getNextElement(_tmpl$);
   _$setProperty(_el$, "someAttr", name);
