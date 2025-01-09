@@ -1,12 +1,12 @@
 /**
  * @jest-environment jsdom
  */
-import * as S from "s-js";
+import { createRoot, createSignal, flushSync } from "@solidjs/signals";
 
 describe("create component with dynamic expressions", () => {
   it("should properly create dynamic properties", () => {
     let span, disposer;
-    const favoriteCar = S.data("Porsche 911 Turbo");
+    const [favoriteCar, setFavoriteCar] = createSignal("Porsche 911 Turbo");
 
     const DynamicChild = props => (
       <span ref={props.ref}>
@@ -18,13 +18,14 @@ describe("create component with dynamic expressions", () => {
       <DynamicChild ref={span} name="John" favoriteCar={favoriteCar()} />
     );
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <Component />;
     });
-
     expect(span.textContent).toBe("John loves Porsche 911 Turbo");
-    favoriteCar("Nissan R35 GTR");
+
+    setFavoriteCar("Nissan R35 GTR");
+    flushSync();
     expect(span.textContent).toBe("John loves Nissan R35 GTR");
     disposer();
   });
@@ -44,18 +45,25 @@ describe("create component with class syntax", () => {
     class MyComponent extends Component {
       constructor(props) {
         super(props);
-        this.favoriteCar = S.data(`${props.make} 911 Turbo`);
+        const [favoriteCar, setFavoriteCar] = createSignal(`${props.make} 911 Turbo`);
+        Object.defineProperty(this, "favoriteCar", {
+          get() {
+            return favoriteCar();
+          },
+          set(value) {
+            setFavoriteCar(value);
+          }
+        });
       }
       render() {
-        return <div ref={ref}>John loves {this.favoriteCar()}</div>;
+        return <div ref={ref}>John loves {this.favoriteCar}</div>;
       }
     }
 
-    S.root(dispose => {
+    createRoot(dispose => {
       disposer = dispose;
       <MyComponent make={"Porsche"} />;
     });
-
     expect(ref.textContent).toBe("John loves Porsche 911 Turbo");
     disposer();
   });

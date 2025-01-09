@@ -29,6 +29,9 @@ importers:
       '@rollup/plugin-node-resolve':
         specifier: 15.0.1
         version: 15.0.1(rollup@3.29.5)
+      '@solidjs/signals':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@types/jest':
         specifier: ^29.2.5
         version: 29.2.5
@@ -71,9 +74,6 @@ importers:
       rollup-plugin-cleanup:
         specifier: ^3.2.1
         version: 3.2.1(rollup@3.29.5)
-      s-js:
-        specifier: 0.4.9
-        version: 0.4.9
       typescript:
         specifier: ~5.3.3
         version: 5.3.3
@@ -1388,6 +1388,9 @@ packages:
 
   '@sinonjs/fake-timers@9.1.2':
     resolution: {integrity: sha512-BPS4ynJW/o92PUR4wgriz2Ud5gpST5vz6GQfMixEDK0Z8ZCUv2M7SkBLykH56T++Xs+8ln9zTGbOvNGIe02/jw==}
+
+  '@solidjs/signals@0.0.2':
+    resolution: {integrity: sha512-tXPGNAmstGKqDq4b9XUoSRNPWGIJoRYPbMgVazRgcwAkVBFyezXQ7yjaDN6tNEWClh8WQPRP7vNQwUD0CFuIgw==}
 
   '@tootallnate/once@2.0.0':
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
@@ -3471,7 +3474,6 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
-
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qs@6.5.3:
@@ -3639,9 +3641,6 @@ packages:
 
   rxjs@7.8.0:
     resolution: {integrity: sha512-F2+gxDshqmIub1KdvZkaEfGDwLNpPvk9Fs6LD/MyQxNgMds/WH9OdDDXOmxUZpME+iSK3rQCctkL0DYyytUqMg==}
-
-  s-js@0.4.9:
-    resolution: {integrity: sha512-RtpOm+cM6O0sHg6IA70wH+UC3FZcND+rccBZpBAHzlUgNO2Bm5BN+FnM8+OBxzXdwpKWFwX11JGF0MFRkhSoIQ==}
 
   safe-buffer@5.1.2:
     resolution: {integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==}
@@ -6050,6 +6049,8 @@ snapshots:
   '@sinonjs/fake-timers@9.1.2':
     dependencies:
       '@sinonjs/commons': 1.8.6
+
+  '@solidjs/signals@0.0.2': {}
 
   '@tootallnate/once@2.0.0': {}
 
@@ -8702,8 +8703,6 @@ snapshots:
   rxjs@7.8.0:
     dependencies:
       tslib: 2.4.1
-
-  s-js@0.4.9: {}
 
   safe-buffer@5.1.2: {}
 
