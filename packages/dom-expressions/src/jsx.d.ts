@@ -183,17 +183,27 @@ export namespace JSX {
     onEncrypted?: EventHandlerUnion<T, Event> | undefined;
     onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
     // lower case events
+    /** @deprecated Use camelCase event handlers */
     oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onencrypted?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
-    // lower case events
+    // namespaced events
     "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:paste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
@@ -290,84 +300,163 @@ export namespace JSX {
   }
   /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
+    /** @deprecated Use camelCase event handlers */
     onabort?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onauxclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeinput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforetoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onblur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncanplay?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncanplaythrough?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onchange?: ChangeEventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncontextmenu?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondblclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondrag?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragend?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragenter?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragleave?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragover?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragstart?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondrop?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondurationchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onemptied?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onended?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onerror?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oninvalid?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeydown?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeypress?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeyup?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onload?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadeddata?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadedmetadata?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadstart?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onlostpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmousedown?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseenter?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseleave?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmousemove?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseout?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseover?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseup?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpause?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onplay?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onplaying?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointercancel?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerdown?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerenter?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerleave?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointermove?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerout?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerover?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerup?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onprogress?: EventHandlerUnion<T, ProgressEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onratechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onreset?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onscroll?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onscrollend?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onseeked?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onseeking?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onselect?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onstalled?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsuspend?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontimeupdate?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchcancel?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchend?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchmove?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchstart?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionstart?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionend?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionrun?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitioncancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onvolumechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwaiting?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
   interface CustomEventHandlersNamespaced<T> {
@@ -1008,6 +1097,8 @@ export namespace JSX {
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
     onToggle?: EventHandlerUnion<T, Event> | undefined;
+
+    /** @deprecated Use camelCase event handlers */
     ontoggle?: EventHandlerUnion<T, Event> | undefined;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
