@@ -14,7 +14,8 @@ import {
   createComponent,
   sharedConfig,
   untrack,
-  mergeProps
+  mergeProps,
+  flatten
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
@@ -224,8 +225,10 @@ export function use(fn, element, arg) {
 export function insert(parent, accessor, marker, initial) {
   const multi = marker !== undefined;
   if (multi && !initial) initial = [];
-  if (typeof accessor !== "function")
-    return insertExpression(parent, normalize(accessor, initial, multi), initial, marker);
+  if (typeof accessor !== "function") {
+    accessor = normalize(accessor, initial, multi, true);
+    if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
+  }
   effect(
     prev => normalize(accessor, prev, multi),
     (value, current) => insertExpression(parent, value, current, marker),
@@ -475,10 +478,12 @@ function insertExpression(parent, value, current, marker) {
   if (value === current) return;
   const t = typeof value,
     multi = marker !== undefined;
-  parent = (multi && current[0] && current[0].parentNode) || parent;
+  // is this necessary anymore?
+  // parent = (multi && current[0] && current[0].parentNode) || parent;
 
-  if (t === "string") {
-    if (typeof current === "string") {
+  if (t === "string" || t === "number") {
+    const tc = typeof current;
+    if (tc === "string" || tc === "number") {
       parent.firstChild.data = value;
     } else parent.textContent = value;
   } else if (value === undefined) {
@@ -504,41 +509,21 @@ function insertExpression(parent, value, current, marker) {
   } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
 }
 
-function normalize(value, current, multi) {
-  let t;
-  while ((t = typeof value) === "function") value = value();
-  if (multi && !Array.isArray(value)) value = [value];
-  if (t === "number") value = value.toString();
-  else if (t === "boolean" || value == null || value === "") value = undefined;
-  else if (Array.isArray(value)) {
-    const normalized = [];
-    normalizeIncomingArray(normalized, value, current);
-    return normalized;
-  }
-  return value;
-}
-
-function normalizeIncomingArray(normalized, array, current) {
-  for (let i = 0, len = array.length; i < len; i++) {
-    let item = array[i],
-      prev = current && current[normalized.length],
-      t;
-    if (item == null || item === true || item === false || item === "") {
-      // matches null, undefined, true or false
-      // skip
-    } else if ((t = typeof item) === "object" && item.nodeType) {
-      normalized.push(item);
-    } else if (Array.isArray(item)) {
-      normalizeIncomingArray(normalized, item, current);
-    } else if (t === "function") {
-      while (typeof item === "function") item = item();
-      normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item], current);
-    } else {
-      const value = String(item);
-      if (prev && prev.nodeType === 3 && prev.data === value) normalized.push(prev);
-      else normalized.push(document.createTextNode(value));
+function normalize(value, current, multi, doNotUnwrap) {
+  value = flatten(value, { skipNonRendered: true, doNotUnwrap });
+  if (doNotUnwrap && typeof value === "function") return value;
+  if (multi && value && !Array.isArray(value)) value = [value];
+  if (Array.isArray(value)) {
+    for (let i = 0, len = value.length; i < len; i++) {
+      const item = value[i];
+      const prev = current && current[i];
+      const t = typeof item;
+      if (t === "string" || t === "number") {
+        value[i] = (prev && prev.nodeType === 3 && prev.data === item) ? prev : document.createTextNode(item);
+      }
     }
   }
+  return value;
 }
 
 function appendNodes(parent, array, marker = null) {
