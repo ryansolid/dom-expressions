@@ -515,12 +515,12 @@ function normalize(value, current, multi, doNotUnwrap) {
   if (multi && value && !Array.isArray(value)) value = [value];
   if (Array.isArray(value)) {
     for (let i = 0, len = value.length; i < len; i++) {
-      const item = value[i];
-      const prev = current && current[i];
-      const t = typeof item;
-      if (t === "string" || t === "number") {
-        value[i] = (prev && prev.nodeType === 3 && prev.data === item) ? prev : document.createTextNode(item);
-      }
+      const item = value[i],
+        prev = current && current[i],
+        t = typeof item;
+      if (t === "string" || t === "number")
+        value[i] =
+          prev && prev.nodeType === 3 && prev.data === item ? prev : document.createTextNode(item);
     }
   }
   return value;
