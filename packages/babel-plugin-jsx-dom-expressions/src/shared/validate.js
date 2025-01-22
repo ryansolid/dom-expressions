@@ -79,6 +79,7 @@ export function isInvalidMarkup(html) {
     case "<table></table>":
     case "<table><thead></thead></table>":
     case "<table><tbody></tbody></table>":
+    case "<table><colgroup><col></colgroup></table>":
     case "<table><thead></thead><tbody></tbody></table>": {
       return;
     }
