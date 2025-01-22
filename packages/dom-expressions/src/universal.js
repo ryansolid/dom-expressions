@@ -1,4 +1,4 @@
-import { root, effect, memo, createComponent, untrack, mergeProps } from "rxcore";
+import { root, effect, memo, createComponent, untrack, mergeProps, flatten } from "rxcore";
 
 export function createRenderer({
   createElement,
@@ -15,8 +15,11 @@ export function createRenderer({
   function insert(parent, accessor, marker, initial) {
     const multi = marker !== undefined;
     if (multi && !initial) initial = [];
-    if (typeof accessor !== "function")
-      return insertExpression(parent, normalize(accessor, multi), initial, marker);
+    if (typeof accessor !== "function") {
+      accessor = normalize(accessor, multi, true);
+      if (typeof accessor !== "function")
+        return insertExpression(parent, accessor, initial, marker);
+    }
     effect(
       () => normalize(accessor, multi),
       (value, current) => insertExpression(parent, value, current, marker),
@@ -25,13 +28,13 @@ export function createRenderer({
   }
 
   function insertExpression(parent, value, current, marker) {
-    while (typeof current === "function") current = current();
     if (value === current) return;
     const t = typeof value,
       multi = marker !== undefined;
 
-    if (t === "string") {
-      if (typeof current === "string") {
+    if (t === "string" || t === "number") {
+      const tc = typeof current;
+      if (tc === "string" || tc === "number") {
         replaceText(getFirstChild(parent), value);
       } else {
         cleanChildren(parent, current, marker, createTextNode(value));
@@ -61,36 +64,18 @@ export function createRenderer({
     }
   }
 
-  function normalize(value, multi) {
-    let t;
-    while ((t = typeof value) === "function") value = value();
-    if (multi && !Array.isArray(value)) value = [value];
-    if (t === "number") value = value.toString();
-    else if (t === "boolean" || value == null || value === "") value = undefined;
-    else if (Array.isArray(value)) {
-      const normalized = [];
-      normalizeIncomingArray(normalized, value);
-      return normalized;
+  function normalize(value, multi, doNotUnwrap) {
+    value = flatten(value, { skipNonRendered: true, doNotUnwrap });
+    if (doNotUnwrap && typeof value === "function") return value;
+    if (multi && value && !Array.isArray(value)) value = [value];
+    if (Array.isArray(value)) {
+      for (let i = 0, len = value.length; i < len; i++) {
+        const item = value[i],
+          t = typeof item;
+        if (t === "string" || t === "number") value[i] = document.createTextNode(item);
+      }
     }
     return value;
-  }
-
-  function normalizeIncomingArray(normalized, array) {
-    for (let i = 0, len = array.length; i < len; i++) {
-      let item = array[i],
-        t;
-      if (item == null || item === true || item === false || item === "") {
-        // matches null, undefined, true or false
-        // skip
-      } else if (Array.isArray(item)) {
-        normalizeIncomingArray(normalized, item);
-      } else if ((t = typeof item) === "string" || t === "number") {
-        normalized.push(createTextNode(item));
-      } else if (t === "function") {
-        while (typeof item === "function") item = item();
-        normalizeIncomingArray(normalized, Array.isArray(item) ? item : [item]);
-      } else normalized.push(item);
-    }
   }
 
   function reconcileArrays(parentNode, a, b) {
@@ -224,7 +209,7 @@ export function createRenderer({
         }
         return newProps;
       },
-      (props) => {
+      props => {
         for (const prop in props) {
           const value = props[prop];
           setProperty(node, prop, value, prevProps[prop]);
