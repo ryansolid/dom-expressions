@@ -202,3 +202,5 @@ const template41 = (
     <option value={Color.Blue}>Blue</option>
   </select>
 );
+
+const template42 = <div a a="" a='' a={false} a={0} a={''} a={""} a={undefined} a={null} a={void 0} a/>

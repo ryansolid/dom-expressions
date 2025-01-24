@@ -25,7 +25,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$8 = /*#__PURE__*/ _$template(`<button class="static hi"type=button>Write`),
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
   _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col">`),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly=""><input>`),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly><input>`),
   _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<a>`),
   _tmpl$14 = /*#__PURE__*/ _$template(`<div><!$><!/><a>`),
@@ -36,7 +36,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   ),
   _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
   _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`),
-  _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`);
+  _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
+  _tmpl$21 = /*#__PURE__*/ _$template(`<div a a a a=0 a a a>`);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -444,5 +445,13 @@ const template41 = (() => {
   _$effect(() => _$setProperty(_el$63, "value", Color.Blue));
   _$effect(() => _$setProperty(_el$61, "value", state.color));
   return _el$61;
+})();
+const template42 = (() => {
+  var _el$64 = _$getNextElement(_tmpl$21);
+  _$setAttribute(_el$64, "a", false);
+  _$setAttribute(_el$64, "a", undefined);
+  _$setAttribute(_el$64, "a", null);
+  _$setAttribute(_el$64, "a", void 0);
+  return _el$64;
 })();
 _$delegateEvents(["click", "input"]);

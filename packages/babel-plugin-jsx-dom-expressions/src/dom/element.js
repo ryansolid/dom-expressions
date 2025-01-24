@@ -831,10 +831,8 @@ function transformAttributes(path, results) {
           }
 
           if (!text.length) {
-            needsSpacing = false;
-            results.template += `=""`;
-            // https://github.com/solidjs/solid/issues/2338
-            // results.templateWithClosingTags += `=""`;
+            needsSpacing = true;
+            results.template += ``;
             return;
           }
 

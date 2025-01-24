@@ -240,10 +240,7 @@ function normalizeAttributes(path) {
         const prev = quasis.pop();
         quasis.push(
           t.templateElement({
-            raw:
-              (prev ? prev.value.raw : "") +
-              `${attr.value.value}` +
-              (isLast ? "" : " ")
+            raw: (prev ? prev.value.raw : "") + `${attr.value.value}` + (isLast ? "" : " ")
           })
         );
       } else {
@@ -276,7 +273,9 @@ function transformAttributes(path, results, info) {
     attributes = normalizeAttributes(path);
   let children;
 
-  attributes.forEach(attribute => {
+  attributes.forEach((attribute, i) => {
+    const isLast = attributes.length - 1 === i;
+
     const node = attribute.node;
 
     let value = node.value,
@@ -296,7 +295,11 @@ function transformAttributes(path, results, info) {
       t.isJSXExpressionContainer(value) &&
       (reservedNameSpace ||
         ChildProperties.has(key) ||
-        !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression) || t.isBooleanLiteral(value.expression)))
+        !(
+          t.isStringLiteral(value.expression) ||
+          t.isNumericLiteral(value.expression) ||
+          t.isBooleanLiteral(value.expression)
+        ))
     ) {
       if (
         key === "ref" ||
@@ -395,7 +398,16 @@ function transformAttributes(path, results, info) {
           text = text.replace(/; /g, ";").replace(/: /g, ":");
         }
       }
-      appendToTemplate(results.template, `="${escapeHTML(text, true)}"`);
+
+      appendToTemplate(
+        results.template,
+        // `typeof text === "string"``is needed, `attr=10>` becomes `attr>` without it
+        typeof text === "string" && !text.length
+          ? isLast
+            ? ``
+            : ` `
+          : `="${escapeHTML(text, true)}"`
+      );
     }
   });
   if (!hasChildren && children) {
@@ -592,8 +604,8 @@ function createElement(path, { topLevel, hydratable }) {
               childNodes.length === 1 ? childNodes[0] : t.arrayExpression(childNodes)
             )
           : childNodes.length === 1
-          ? childNodes[0]
-          : t.arrayExpression(childNodes)
+            ? childNodes[0]
+            : t.arrayExpression(childNodes)
         : t.identifier("undefined"),
       t.booleanLiteral(Boolean(topLevel && config.hydratable))
     ])
