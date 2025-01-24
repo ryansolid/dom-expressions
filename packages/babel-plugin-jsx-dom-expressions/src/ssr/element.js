@@ -273,9 +273,7 @@ function transformAttributes(path, results, info) {
     attributes = normalizeAttributes(path);
   let children;
 
-  attributes.forEach((attribute, i) => {
-    const isLast = attributes.length - 1 === i;
-
+  attributes.forEach(attribute => {
     const node = attribute.node;
 
     let value = node.value,
@@ -401,12 +399,8 @@ function transformAttributes(path, results, info) {
 
       appendToTemplate(
         results.template,
-        // `typeof text === "string"``is needed, `attr=10>` becomes `attr>` without it
-        typeof text === "string" && !text.length
-          ? isLast
-            ? ``
-            : ` `
-          : `="${escapeHTML(text, true)}"`
+        // `String(text)` is needed, as text.length will mess up `attr=10>` becomes `attr>` without it
+        String(text) === "" ? `` : `="${escapeHTML(text, true)}"`
       );
     }
   });
