@@ -20,6 +20,7 @@ type DOMElement = Element;
 export namespace JSX {
   type Element = Node | ArrayElement | (string & {}) | number | boolean | null | undefined;
   interface ArrayElement extends Array<Element> {}
+
   interface ElementClass {
     // empty, libs can define requirements downstream
   }
@@ -29,6 +30,7 @@ export namespace JSX {
   interface ElementChildrenAttribute {
     children: {};
   }
+
   interface EventHandler<T, E extends Event> {
     (
       e: E & {
