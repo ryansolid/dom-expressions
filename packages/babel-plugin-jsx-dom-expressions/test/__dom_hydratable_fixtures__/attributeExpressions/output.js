@@ -448,6 +448,7 @@ const template41 = (() => {
 })();
 const template42 = (() => {
   var _el$64 = _$getNextElement(_tmpl$21);
+  _$setAttribute(_el$64, "a", true);
   _$setAttribute(_el$64, "a", false);
   _$setAttribute(_el$64, "a", undefined);
   _$setAttribute(_el$64, "a", null);

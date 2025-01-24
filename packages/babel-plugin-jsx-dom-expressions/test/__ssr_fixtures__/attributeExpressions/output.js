@@ -28,7 +28,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$21 = ["<button", "></button>"],
   _tmpl$22 = '<input value="10">',
   _tmpl$23 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
-  _tmpl$24 = ['<div a a  a  a="false" a="0" a  a ', " a></div>"];
+  _tmpl$24 = ['<div a a  a  checked  a="true" a="false" a="0" a  a ', " a></div>"];
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
