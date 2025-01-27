@@ -1079,6 +1079,7 @@ export namespace JSX {
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoplay?: FunctionMaybe<boolean>;
     controls?: FunctionMaybe<boolean>;
+    controlslist?: FunctionMaybe<string>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin>;
     loop?: FunctionMaybe<boolean>;
     mediagroup?: FunctionMaybe<string>;
@@ -1248,6 +1249,7 @@ export namespace JSX {
     poster?: FunctionMaybe<string>;
     width?: FunctionMaybe<number | string>;
     disablepictureinpicture?: FunctionMaybe<boolean>;
+    disableremoteplayback?: FunctionMaybe<boolean>;
   }
   type SVGPreserveAspectRatio =
     | "none"
