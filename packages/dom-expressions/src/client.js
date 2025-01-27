@@ -538,7 +538,7 @@ function insertExpression(parent, value, current, marker) {
 function normalize(value, current, multi, doNotUnwrap) {
   value = flatten(value, { skipNonRendered: true, doNotUnwrap });
   if (doNotUnwrap && typeof value === "function") return value;
-  if (multi && value && !Array.isArray(value)) value = [value];
+  if (multi && value != null && !Array.isArray(value)) value = [value];
   if (Array.isArray(value)) {
     for (let i = 0, len = value.length; i < len; i++) {
       const item = value[i],
