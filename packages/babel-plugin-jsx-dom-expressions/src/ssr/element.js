@@ -391,7 +391,7 @@ function transformAttributes(path, results, info) {
       if (!value) return;
       let text = isBoolean ? "" : value.value;
       if (key === "style" || key === "class") {
-        text = trimWhitespace(text);
+        text = trimWhitespace(String(text));
         if (key === "style") {
           text = text.replace(/; /g, ";").replace(/: /g, ":");
         }
