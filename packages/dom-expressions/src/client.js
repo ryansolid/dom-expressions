@@ -191,7 +191,7 @@ export function spread(node, props = {}, isSVG, skipChildren) {
   }
   effect(
     () => typeof props.ref === "function" && use(props.ref, node),
-    () => ({})
+    () => {}
   );
   effect(
     () => {
@@ -219,7 +219,7 @@ export function dynamicProperty(props, key) {
 }
 
 export function use(fn, element, arg) {
-  return untrack(() => fn(element, arg));
+  untrack(() => fn(element, arg));
 }
 
 export function insert(parent, accessor, marker, initial) {
