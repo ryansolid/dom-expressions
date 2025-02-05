@@ -91,10 +91,6 @@ function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
 }
 
-function toPropertyName(name: string) {
-  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
-}
-
 function parseDirective(name: string, value: string, tag: string, options: Options) {
   if (name === "use:###" && value === "###") {
     const count = options.counter++;
@@ -215,15 +211,9 @@ export function createHTML(
       options.exprs.push(`r.classList(${tag},${expr},${prev})`);
     } else if (
       namespace !== "attr" &&
-      (isChildProp ||
-        (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) ||
-        isCE ||
-        namespace === "prop")
+      (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) || namespace === "prop")
     ) {
-      if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
-      options.exprs.push(
-        `${tag}.${r.getPropAlias(name, node.name.toUpperCase()) || name} = ${expr}`
-      );
+      options.exprs.push(`${tag}.${r.getPropAlias(name, node.name.toUpperCase()) || name} = ${expr}`);
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);
