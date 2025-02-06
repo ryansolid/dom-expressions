@@ -2,14 +2,23 @@ import { parse, stringify, IDom } from "html-parse-string";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 interface Runtime {
-  effect<T>(fn: (prev?: T) => T, init?: T): any;
+  effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
   untrack<T>(fn: () => T): T;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   spread<T>(node: Element, accessor: (() => T) | T, isSVG?: Boolean, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
-  addEventListener(node: Element, name: string, handler: () => void, delegate: boolean): void;
+  addEventListener(
+    node: Element,
+    name: string,
+    handler: EventListener | EventListenerObject | (EventListenerObject & AddEventListenerOptions),
+    delegate: boolean
+  ): void;
   delegateEvents(eventNames: string[]): void;
-  classList(node: Element, value: { [k: string]: boolean }, prev?: { [k: string]: boolean }): { [k: string]: boolean };
+  classList(
+    node: Element,
+    value: { [k: string]: boolean },
+    prev?: { [k: string]: boolean }
+  ): { [k: string]: boolean };
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
   mergeProps(...sources: unknown[]): unknown;
   dynamicProperty(props: any, key: string): any;
@@ -27,20 +36,21 @@ type TemplateCreate = (tmpl: HTMLTemplateElement[], data: any[], r: Runtime) => 
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
 
 type Options = {
-  path?: string,
-  decl: string[],
-  exprs: string[],
-  delegatedEvents: Set<string>,
-  counter: number,
-  first: boolean,
-  multi: boolean,
-  templateId: number,
-  templateNodes: IDom[][],
-  wrap?: boolean,
-  hasCustomElement?: boolean,
-  parent?: boolean,
-  fragment?: boolean,
-}
+  path?: string;
+  decl: string[];
+  exprs: string[];
+  delegatedEvents: Set<string>;
+  counter: number;
+  first: boolean;
+  multi: boolean;
+  templateId: number;
+  templateNodes: IDom[][];
+  wrap?: boolean;
+  hasCustomElement?: boolean;
+  isImportNode?: boolean;
+  parent?: boolean;
+  fragment?: boolean;
+};
 
 export type HTMLTag = {
   (statics: TemplateStringsArray, ...args: unknown[]): Node | Node[];
@@ -48,10 +58,11 @@ export type HTMLTag = {
 
 const cache = new Map<TemplateStringsArray, HTMLTemplateElement[]>();
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
-const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
+const VOID_ELEMENTS =
+  /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
 const spaces = " \\f\\n\\r\\t";
 const almostEverything = "[^" + spaces + "\\/>\"'=]+";
-const attrName = "[ " + spaces + "]+(?:use:<!--#-->|" + almostEverything + ')';
+const attrName = "[ " + spaces + "]+(?:use:<!--#-->|" + almostEverything + ")";
 const tagName = "<([A-Za-z$#]+[A-Za-z0-9:_-]*)((?:";
 const attrPartials =
   "(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|\\([^)]*?\\)|<[^>]*?>|" + almostEverything + "))?)";
@@ -63,26 +74,25 @@ const findAttributes = new RegExp(
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 const marker = "<!--#-->";
-const reservedNameSpaces = new Set(["class", "on", "oncapture", "style", "use", "prop", "attr"]);
+const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
 }
 
 function replaceAttributes($0: string, $1: string, $2: string) {
-  return $1.replace(/<!--#-->/g, "###") + ($2[0] === '"' || $2[0] === "'" ? $2.replace(/<!--#-->/g, "###") : '"###"');
+  return (
+    $1.replace(/<!--#-->/g, "###") +
+    ($2[0] === '"' || $2[0] === "'" ? $2.replace(/<!--#-->/g, "###") : '"###"')
+  );
 }
 
 function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
 }
 
-function toPropertyName(name: string) {
-  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
-}
-
 function parseDirective(name: string, value: string, tag: string, options: Options) {
-  if (name === 'use:###' && value === '###') {
+  if (name === "use:###" && value === "###") {
     const count = options.counter++;
     options.exprs.push(
       `typeof exprs[${count}] === "function" ? r.use(exprs[${count}], ${tag}, exprs[${options.counter++}]) : (()=>{throw new Error("use:### must be a function")})()`
@@ -92,7 +102,13 @@ function parseDirective(name: string, value: string, tag: string, options: Optio
   }
 }
 
-export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder = (...args) => new Function(...args) }: { delegateEvents?: boolean, functionBuilder?: (...args: string[]) => Function } = {}): HTMLTag {
+export function createHTML(
+  r: Runtime,
+  {
+    delegateEvents = true,
+    functionBuilder = (...args) => new Function(...args)
+  }: { delegateEvents?: boolean; functionBuilder?: (...args: string[]) => Function } = {}
+): HTMLTag {
   let uuid = 1;
   (r as any).wrapProps = (props: any) => {
     const d = Object.getOwnPropertyDescriptors(props);
@@ -101,15 +117,22 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
     }
     return props;
   };
+  (r as any).resolveFn = (fn: any) => (typeof fn === "function" ? fn() : fn);
 
-  function createTemplate(statics: TemplateStringsArray, opt: { funcBuilder: (...args: string[]) => Function }) {
+  function createTemplate(
+    statics: TemplateStringsArray,
+    opt: { funcBuilder: (...args: string[]) => Function }
+  ) {
     let i = 0,
       markup = "";
     for (; i < statics.length - 1; i++) {
       markup = markup + statics[i] + "<!--#-->";
     }
     markup = markup + statics[i];
-    const replaceList: [string | RegExp, string | ((substring: string, ...args: any[]) => string)][] = [
+    const replaceList: [
+      string | RegExp,
+      string | ((substring: string, ...args: any[]) => string)
+    ][] = [
       [selfClosing, fullClosing],
       [/<(<!--#-->)/g, "<###"],
       [/\.\.\.(<!--#-->)/g, "###"],
@@ -157,24 +180,18 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
     name: string,
     value: string,
     isSVG: boolean,
-    isCE: boolean,
     options: Options
   ) {
-    let expr =
-        value === "###"
-          ? `!doNotWrap ? exprs[${options.counter}]() : exprs[${options.counter++}]`
-          : value
-              .split("###")
-              .map((v, i) =>
-                i
-                  ? ` + (typeof exprs[${options.counter}] === "function" ? exprs[${
-                      options.counter
-                    }]() : exprs[${options.counter++}]) + "${v}"`
-                  : `"${v}"`
-              )
-              .join(""),
-      parts,
-      namespace;
+    let expr, parts, namespace;
+    if (value === "###") {
+      expr = `_$v`;
+      options.counter++;
+    }
+    else {
+      const chunks = value.split("###");
+      options.counter = chunks.length - 1 + options.counter;
+      expr = chunks.map((v, i) => (i ? ` + _$v[${i - 1}] + "${v}"` : `"${v}"`)).join("");
+    }
 
     if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
       name = parts[1];
@@ -193,9 +210,8 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       options.exprs.push(`r.classList(${tag},${expr},${prev})`);
     } else if (
       namespace !== "attr" &&
-      (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) || isCE || namespace === "prop")
+      (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) || namespace === "prop")
     ) {
-      if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
       options.exprs.push(`${tag}.${r.getPropAlias(name, node.name.toUpperCase()) || name} = ${expr}`);
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
@@ -210,7 +226,6 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
     name: string,
     value: string,
     isSVG: boolean,
-    isCE: boolean,
     options: Options
   ) {
     if (name.slice(0, 2) === "on") {
@@ -222,11 +237,8 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
         );
         delegate && options.delegatedEvents.add(lc);
       } else {
-        let capture = name.startsWith("oncapture:");
         options.exprs.push(
-          `${tag}.addEventListener("${name.slice(capture ? 10 : 3)}",exprs[${options.counter++}]${
-            capture ? ",true" : ""
-          })`
+          `${tag}.addEventListener("${name.slice(3)}",exprs[${options.counter++}])`
         );
       }
     } else if (name === "ref") {
@@ -234,23 +246,29 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
-      parseKeyValue(node, tag, name, value, isSVG, isCE, childOptions);
-      options.decl.push(
-        `_fn${count} = (${value === "###" ? "doNotWrap" : ""}) => {\n${childOptions.exprs.join(
-          ";\n"
-        )};\n}`
-      );
+      parseKeyValue(node, tag, name, value, isSVG, childOptions);
+      options.decl.push(`_fn${count} = (_$v) => {\n${childOptions.exprs.join(";\n")};\n}`);
       if (value === "###") {
         options.exprs.push(
-          `typeof exprs[${count}] === "function" ? r.effect(_fn${count}) : _fn${count}(true)`
+          `typeof exprs[${count}] === "function" ? r.effect(() => exprs[${count}](), _fn${count}) : _fn${count}(exprs[${count}])`
         );
       } else {
         let check = "";
+        let list = "";
+        let reactiveList = "";
         for (let i = count; i < childOptions.counter; i++) {
-          i !== count && (check += " || ");
+          if (i !== count) {
+            check += " || ";
+            list += ",";
+            reactiveList += ",";
+          }
           check += `typeof exprs[${i}] === "function"`;
+          list += `exprs[${i}]`;
+          reactiveList += `r.resolveFn(exprs[${i}])`;
         }
-        options.exprs.push(check + ` ? r.effect(_fn${count}) : _fn${count}()`);
+        options.exprs.push(
+          check + ` ? r.effect(() => [${reactiveList}], _fn${count}) : _fn${count}([${list}])`
+        );
       }
       options.counter = childOptions.counter;
       options.wrap = false;
@@ -287,12 +305,14 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
         continue;
       }
       parseNode(child, childOptions);
-      if (!childOptions.multi && child.type === "comment" && child.content === "#") node.children.splice(i, 1);
+      if (!childOptions.multi && child.type === "comment" && child.content === "#")
+        node.children.splice(i, 1);
       else i++;
     }
     options.counter = childOptions.counter;
     options.templateId = childOptions.templateId;
     options.hasCustomElement = options.hasCustomElement || childOptions.hasCustomElement;
+    options.isImportNode = options.isImportNode || childOptions.isImportNode;
   }
 
   function processComponentProps(propGroups: (string | string[])[]) {
@@ -313,15 +333,15 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       componentIdentifier = options.counter++;
 
     for (let i = 0; i < keys.length; i++) {
-      const {type, name, value} = node.attrs[i];
-      if (type === 'attr') {
+      const { type, name, value } = node.attrs[i];
+      if (type === "attr") {
         if (name === "###") {
           propGroups.push(`exprs[${options.counter++}]`);
           propGroups.push((props = []));
         } else if (value === "###") {
           props.push(`${name}: exprs[${options.counter++}]`);
         } else props.push(`${name}: "${value}"`);
-      } else if (type === 'directive') {
+      } else if (type === "directive") {
         const tag = `_$el${uuid++}`;
         const topDecl = !options.decl.length;
         options.decl.push(
@@ -414,7 +434,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
           parts.push(`"${child.content!}"`);
         } else if (child.type === "comment") {
           if (child.content === "#") parts.push(`exprs[${options.counter++}]`);
-          else if(child.content) {
+          else if (child.content) {
             for (let i = 0; i < child.content.split("###").length - 1; i++) {
               parts.push(`exprs[${options.counter++}]`);
             }
@@ -430,15 +450,18 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
         topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
       const isSVG = r.SVGElements.has(node.name);
-      const isCE = node.name.includes("-");
-      options.hasCustomElement = isCE;
+      options.hasCustomElement = node.name.includes("-") || node.attrs.some(e => e.name === "is");
+      options.isImportNode =
+        (node.name === "img" || node.name === "iframe") &&
+        node.attrs.some(e => e.name === "loading" && e.value === "lazy");
+
       if (node.attrs.some(e => e.name === "###")) {
         const spreadArgs = [];
         let current = "";
         const newAttrs = [];
         for (let i = 0; i < node.attrs.length; i++) {
-          const {type, name, value} = node.attrs[i];
-          if (type === 'attr') {
+          const { type, name, value } = node.attrs[i];
+          if (type === "attr") {
             if (value.includes("###")) {
               let count = options.counter++;
               current += `${name}: ${
@@ -453,7 +476,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
             } else {
               newAttrs.push(node.attrs[i]);
             }
-          } else if (type === 'directive') {
+          } else if (type === "directive") {
             parseDirective(name, value, tag, options);
           }
         }
@@ -470,8 +493,8 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
         );
       } else {
         for (let i = 0; i < node.attrs.length; i++) {
-          const {type, name, value} = node.attrs[i];
-          if (type === 'directive') {
+          const { type, name, value } = node.attrs[i];
+          if (type === "directive") {
             parseDirective(name, value, tag, options);
             node.attrs.splice(i, 1);
             i--;
@@ -479,7 +502,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
             if (value.includes("###")) {
               node.attrs.splice(i, 1);
               i--;
-              parseAttribute(node, tag, name, value, isSVG, isCE, options);
+              parseAttribute(node, tag, name, value, isSVG, options);
             }
           }
         }
@@ -488,9 +511,10 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
       options.first = false;
       processChildren(node, options);
       if (topDecl) {
-        options.decl[0] = options.hasCustomElement
-          ? `const ${tag} = r.untrack(() => document.importNode(tmpls[${templateId}].content.firstChild, true))`
-          : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
+        options.decl[0] =
+          options.hasCustomElement || options.isImportNode
+            ? `const ${tag} = r.untrack(() => document.importNode(tmpls[${templateId}].content.firstChild, true))`
+            : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
       }
     } else if (node.type === "text") {
       const tag = `_$el${uuid++}`;
@@ -510,7 +534,10 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
     }
   }
 
-  function parseTemplate(nodes: IDom[], funcBuilder: (...args: string[]) => Function): [string[], TemplateCreate] {
+  function parseTemplate(
+    nodes: IDom[],
+    funcBuilder: (...args: string[]) => Function
+  ): [string[], TemplateCreate] {
     const options: Options = {
         path: "",
         decl: [],
@@ -550,7 +577,8 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
   }
 
   function html(statics: TemplateStringsArray, ...args: unknown[]): Node {
-    const templates = cache.get(statics) || createTemplate(statics, { funcBuilder: functionBuilder });
+    const templates =
+      cache.get(statics) || createTemplate(statics, { funcBuilder: functionBuilder });
     return (templates[0] as CreateableTemplate).create(templates, args, r);
   }
 

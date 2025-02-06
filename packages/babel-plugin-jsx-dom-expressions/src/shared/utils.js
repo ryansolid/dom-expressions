@@ -4,14 +4,14 @@ import { addNamed } from "@babel/helper-module-imports";
 export const reservedNameSpaces = new Set([
   "class",
   "on",
-  "oncapture",
   "style",
   "use",
   "prop",
-  "attr"
+  "attr",
+  "bool"
 ]);
 
-export const nonSpreadNameSpaces = new Set(["class", "style", "use", "prop", "attr"]);
+export const nonSpreadNameSpaces = new Set(["class", "style", "use", "prop", "attr", "bool"]);
 
 export function getConfig(path) {
   return path.hub.file.metadata.config;
@@ -93,10 +93,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return false;
   }
 
-  if (
-    checkCallExpressions &&
-    (t.isCallExpression(expr) || t.isOptionalCallExpression(expr))
-  ) {
+  if (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr) || t.isTaggedTemplateExpression(expr))) {
     return true;
   }
 
@@ -111,7 +108,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
           checkMember,
           checkTags,
           checkCallExpressions,
-          native,
+          native
         }))
     ) {
       const binding = path.scope.getBinding(object.name);
@@ -133,7 +130,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return true;
   }
 
-  if (checkTags && (t.isJSXElement(expr) || t.isJSXFragment(expr))) {
+  if (checkTags && (t.isJSXElement(expr) || (t.isJSXFragment(expr) && expr.children.length))) {
     return true;
   }
 
@@ -167,7 +164,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
       checkTags ? (dynamic = true) && p.stop() : p.skip();
     },
     JSXFragment(p) {
-      checkTags ? (dynamic = true) && p.stop() : p.skip();
+      checkTags && p.node.children.length ? (dynamic = true) && p.stop() : p.skip();
     }
   });
   return dynamic;
@@ -223,14 +220,6 @@ export function toEventName(name) {
   return name.slice(2).toLowerCase();
 }
 
-export function toAttributeName(name) {
-  return name.replace(/([A-Z])/g, g => `-${g[0].toLowerCase()}`);
-}
-
-export function toPropertyName(name) {
-  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
-}
-
 export function wrappedByText(list, startIndex) {
   let index = startIndex,
     wrapped;
@@ -276,10 +265,10 @@ export function transformCondition(path, inline, deep) {
         : path.scope.generateUidIdentifier("_c$");
       expr.test = t.callExpression(id, []);
       if (t.isConditionalExpression(expr.consequent) || t.isLogicalExpression(expr.consequent)) {
-        expr.consequent = transformCondition(path.get("consequent"), inline, true);
+        expr.consequent = transformCondition(path.get("consequent"), true, true);
       }
       if (t.isConditionalExpression(expr.alternate) || t.isLogicalExpression(expr.alternate)) {
-        expr.alternate = transformCondition(path.get("alternate"), inline, true);
+        expr.alternate = transformCondition(path.get("alternate"), true, true);
       }
     }
   } else if (t.isLogicalExpression(expr)) {
@@ -326,10 +315,6 @@ export function transformCondition(path, inline, deep) {
       : statements;
   }
   return deep ? expr : t.arrowFunctionExpression([], expr);
-}
-
-export function escapeBackticks(value) {
-  return value.replace(/`/g, "\\`");
 }
 
 export function escapeHTML(s, attr) {
@@ -404,6 +389,15 @@ export function canNativeSpread(key, { checkNameSpaces } = {}) {
   return true;
 }
 
+export function inlineCallExpression(node) {
+  return t.isCallExpression(node) &&
+    !node.arguments.length &&
+    !t.isCallExpression(node.callee) &&
+    !t.isMemberExpression(node.callee)
+    ? node.callee
+    : t.arrowFunctionExpression([], node);
+}
+
 const chars = "etaoinshrdlucwmfygpbTAOISWCBvkxjqzPHFMDRELNGUKVYJQZX_$";
 const base = chars.length;
 
@@ -419,3 +413,21 @@ export function getNumberedId(num) {
 
   return out;
 }
+
+export function escapeStringForTemplate(str) {
+  return str.replace(/[{\\`\n\t\b\f\v\r\u2028\u2029]/g, ch => templateEscapes.get(ch));
+}
+
+const templateEscapes = new Map([
+  ["{", "\\{"],
+  ["`", "\\`"],
+  ["\\", "\\\\"],
+  ["\n", "\\n"],
+  ["\t", "\\t"],
+  ["\b", "\\b"],
+  ["\f", "\\f"],
+  ["\v", "\\v"],
+  ["\r", "\\r"],
+  ["\u2028", "\\u2028"],
+  ["\u2029", "\\u2029"]
+]);

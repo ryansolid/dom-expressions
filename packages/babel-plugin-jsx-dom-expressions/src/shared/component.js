@@ -79,11 +79,11 @@ export default function transformComponent(path) {
               value.expression = value.expression.expression;
             }
             let binding,
-              isFunction =
+              isConstant =
                 t.isIdentifier(value.expression) &&
                 (binding = path.scope.getBinding(value.expression.name)) &&
-                binding.kind === "const";
-            if (!isFunction && t.isLVal(value.expression)) {
+                (binding.kind === "const" || binding.kind === "module");
+            if (!isConstant && t.isLVal(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
               runningObject.push(
                 t.objectMethod(
@@ -108,7 +108,7 @@ export default function transformComponent(path) {
                   ])
                 )
               );
-            } else if (isFunction || t.isFunction(value.expression)) {
+            } else if (isConstant || t.isFunction(value.expression)) {
               runningObject.push(t.objectProperty(t.identifier("ref"), value.expression));
             } else if (t.isCallExpression(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
@@ -161,7 +161,8 @@ export default function transformComponent(path) {
               );
             } else if (
               t.isCallExpression(value.expression) &&
-              t.isArrowFunctionExpression(value.expression.callee)
+              t.isArrowFunctionExpression(value.expression.callee) &&
+              value.expression.callee.params.length === 0
             ) {
               const callee = value.expression.callee;
               const body = t.isBlockStatement(callee.body)

@@ -1,22 +1,25 @@
-import * as S from "s-js";
+import { createRoot, createSignal } from "@solidjs/signals";
 import { createHyperScript } from "../dist/hyper-dom-expressions";
 import * as r from "dom-expressions/src/client";
 
 const h = createHyperScript(r);
 
 const FIXTURES = [
-  '<div id="main"><h1>Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label class="name" for="entry">Edit:</label><input id="entry" type="text" readonly=""></div>',
+  '<div id="main"><h1>Welcome</h1><p>10Symbol($)</p><span style="color: rgb(85, 85, 85);">555</span><label for="entry" class="name">Edit:</label><input id="entry" type="text" readonly=""></div>',
   '<div id="main" refset="true" class="selected"><h1 title="hello" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
   '<div id="main"><button>Click Bound</button><button>Click Delegated</button><button>Click Listener</button></div>',
   "<div>First</div>middle<div>Last</div>",
   '<div id="main"><div>John R.<span>Smith</span></div></div>',
-  '<div id="main"><div name="John"><span>Smith</span></div></div>'
+  '<div id="main"><div name="John"><span>Smith</span></div></div>',
+  '<div id="main"><div class="a b"></div></div>'
 ];
 
 describe("Test HyperScript", () => {
   test("Simple Elements", () => {
+    const dollar = Symbol("$");
     const template = h("#main", [
       h("h1", "Welcome"),
+      h("p", 10n, dollar),
       h("span", { style: "color: #555" }, 555),
       h("label.name", { htmlFor: "entry" }, "Edit:"),
       h("input#entry", { type: "text", readonly: true })
@@ -25,12 +28,12 @@ describe("Test HyperScript", () => {
   });
 
   test("Attribute Expressions", () => {
-    const selected = S.data(true),
-      welcoming = S.data("hello");
+    const [selected] = createSignal(true),
+      [welcoming] = createSignal("hello");
     let link;
 
-    S.root(() => {
-      const template = h(
+    const template = createRoot(() =>
+      h(
         "#main",
         {
           classList: () => ({ selected: selected() }),
@@ -46,9 +49,9 @@ describe("Test HyperScript", () => {
           },
           h("a", { href: "/", ref: r => (link = r) }, "Welcome")
         )
-      )();
-      expect(template.outerHTML).toBe(FIXTURES[1]);
-    });
+      )()
+    );
+    expect(template.outerHTML).toBe(FIXTURES[1]);
   });
 
   test("Event Expressions", () => {
@@ -76,37 +79,49 @@ describe("Test HyperScript", () => {
   });
 
   test("Fragments", () => {
-    const inserted = S.data("middle");
+    const [inserted] = createSignal("middle");
 
-    S.root(() => {
+    const div = createRoot(() => {
       const template = h([h("div", "First"), inserted, h("div", "Last")]);
       const div = document.createElement("div");
       r.insert(div, template);
-      expect(div.innerHTML).toBe(FIXTURES[3]);
+      return div;
     });
+    expect(div.innerHTML).toBe(FIXTURES[3]);
   });
 
   test("Components", () => {
-    const Comp = props => h("div", () => props.name + " " + props.middle, props.children);
-    S.root(() => {
+    const Comp = props =>
+      h("div", () => props.name + " " + props.middle, props.children);
+    const div = createRoot(() => {
       const template = h("#main", [
         h(Comp, { name: () => "John", middle: "R." }, () => h("span", "Smith"))
       ])();
       const div = document.createElement("div");
       div.appendChild(template);
-      expect(div.innerHTML).toBe(FIXTURES[4]);
+      return div;
     });
+    expect(div.innerHTML).toBe(FIXTURES[4]);
   });
 
   test("Component Spread", () => {
     const Comp = props => h("div", props);
-    S.root(() => {
-      const template = h("#main", [
-        h(Comp, { name: () => "John" }, () => h("span", "Smith"))
-      ])();
+    const div = createRoot(() => {
+      const template = h("#main", [h(Comp, { name: () => "John" }, () => h("span", "Smith"))])();
       const div = document.createElement("div");
       div.appendChild(template);
-      expect(div.innerHTML).toBe(FIXTURES[5]);
+      return div;
     });
+    expect(div.innerHTML).toBe(FIXTURES[5]);
+  });
+
+  test("Class Spread", () => {
+    const div = createRoot(() => {
+      const template = h("#main", [h("div.a", { class: "b" })])();
+      const div = document.createElement("div");
+      div.appendChild(template);
+      return div;
+    });
+    expect(div.innerHTML).toBe(FIXTURES[6]);
   });
 });

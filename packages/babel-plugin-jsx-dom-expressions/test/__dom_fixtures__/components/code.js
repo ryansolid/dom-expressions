@@ -1,4 +1,7 @@
-import { Show } from "somewhere"
+import { Show, binding } from "somewhere"
+
+function refFn() {}
+const refConst = null;
 
 const Child = props => {
   const [s, set] = createSignal();
@@ -162,14 +165,22 @@ const template25 = <Component>
   <div />
 </Component>
 
-const template26 = <Component
-  when={(() => {
-    const foo = test();
-    if ("t" in foo) {
-      return foo;
-    }
-  })()}
-/>
+const template26 = <>
+  <Component
+    when={(() => {
+      const foo = test();
+      if ("t" in foo) {
+        return foo;
+      }
+    })()}
+  />
+
+  <Component
+    when={((val = 123) => {
+      return val * 2
+    })()}
+  />
+</>
 
 const template27 = <Component
   when={(() => prop.red ? "red" : "green")()}
@@ -187,3 +198,34 @@ class Template28 {
     />
   }
 }
+
+class Template29 extends ParentComponent {
+  constructor() {
+    super();
+    <this.component method={this.method} />
+  }
+
+  get get() {
+    <this.component method={this.method} />
+  }
+  set set(v) {
+    <this.component method={this.method} />
+  }
+
+  method() {
+    <this.component method={this.method} />
+  }
+  
+  field = <this.component method={this.method} comp={<this.another />} />;
+  fieldArrow = () => <this.component method={this.method} />
+  fieldFunction = function () {
+    <this.component method={this.method} />
+  }
+}
+
+const template30 = <Comp ref={binding} />
+const template31 = <Comp ref={binding.prop} />
+const template32 = <Comp ref={refFn} />
+const template33 = <Comp ref={refConst} />
+
+const template34 = <Comp ref={refUnknown} />

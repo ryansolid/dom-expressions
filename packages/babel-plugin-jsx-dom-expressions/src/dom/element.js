@@ -16,19 +16,18 @@ import {
   registerImportMethod,
   filterChildren,
   toEventName,
-  toPropertyName,
   checkLength,
   getStaticExpression,
   reservedNameSpaces,
   wrappedByText,
   getRendererConfig,
   getConfig,
-  escapeBackticks,
   escapeHTML,
   convertJSXIdentifier,
   canNativeSpread,
   transformCondition,
-  trimWhitespace
+  trimWhitespace,
+  inlineCallExpression
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 import { InlineElements, BlockElements } from "./constants";
@@ -52,6 +51,7 @@ const alwaysClose = [
   "select",
   "iframe",
   "script",
+  "noscript",
   "template",
   "fieldset"
 ];
@@ -61,15 +61,28 @@ export function transformElement(path, info) {
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
-    isCustomElement = tagName.indexOf("-") > -1,
+    isCustomElement =
+      tagName.indexOf("-") > -1 ||
+      path
+        .get("openingElement")
+        .get("attributes")
+        .some(a => a.node?.name?.name === "is" || a.name?.name === "is"),
+    isImportNode =
+      (tagName === "img" || tagName === "iframe") &&
+      path
+        .get("openingElement")
+        .get("attributes")
+        .some(a => a.node.name?.name === "loading"),
     results = {
       template: `<${tagName}`,
+      templateWithClosingTags: `<${tagName}`,
       declarations: [],
       exprs: [],
       dynamics: [],
       postExprs: [],
       isSVG: wrapSVG,
       hasCustomElement: isCustomElement,
+      isImportNode,
       tagName,
       renderer: "dom",
       skipTemplate: false
@@ -95,13 +108,17 @@ export function transformElement(path, info) {
       return results;
     }
   }
-  if (wrapSVG) results.template = "<svg>" + results.template;
+  if (wrapSVG) {
+    results.template = "<svg>" + results.template;
+    results.templateWithClosingTags = "<svg>" + results.templateWithClosingTags;
+  }
   if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
   transformAttributes(path, results);
   if (config.contextToCustomElements && (tagName === "slot" || isCustomElement)) {
     contextToCustomElement(path, results);
   }
   results.template += ">";
+  results.templateWithClosingTags += ">";
   if (!voidTag) {
     // always close tags can still be skipped if they have no closing parents and are the last element
     const toBeClosed =
@@ -112,8 +129,9 @@ export function transformElement(path, info) {
       results.toBeClosed.add(tagName);
       if (InlineElements.includes(tagName)) BlockElements.forEach(i => results.toBeClosed.add(i));
     } else results.toBeClosed = info.toBeClosed;
-    transformChildren(path, results, config);
+    if (tagName !== "noscript") transformChildren(path, results, config);
     if (toBeClosed) results.template += `</${tagName}>`;
+    results.templateWithClosingTags += `</${tagName}>`;
   }
   if (info.topLevel && config.hydratable && results.hasHydratableEvent) {
     let runHydrationEvents = registerImportMethod(
@@ -123,11 +141,14 @@ export function transformElement(path, info) {
     );
     results.postExprs.push(t.expressionStatement(t.callExpression(runHydrationEvents, [])));
   }
-  if (wrapSVG) results.template += "</svg>";
+  if (wrapSVG) {
+    results.template += "</svg>";
+    results.templateWithClosingTags += "</svg>";
+  }
   return results;
 }
 
-export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE, tagName }) {
+export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagName }) {
   // pull out namespace
   const config = getConfig(path);
   let parts, namespace;
@@ -211,18 +232,32 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
 
   if (dynamic && name === "textContent") {
     if (config.hydratable) {
-      return t.callExpression(registerImportMethod(path, "setProperty"), [elem, t.stringLiteral("data"), value]);
+      return t.callExpression(registerImportMethod(path, "setProperty"), [
+        elem,
+        t.stringLiteral("data"),
+        value
+      ]);
     }
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
+  }
+
+  if (namespace === "bool") {
+    return t.callExpression(
+      registerImportMethod(path, "setBoolAttribute", getRendererConfig(path, "dom").moduleName),
+      [elem, t.stringLiteral(name), value]
+    );
   }
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
   const alias = getPropAlias(name, tagName.toUpperCase());
-  if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || isCE || namespace === "prop")) {
-    if (isCE && !isChildProp && !isProp && namespace !== "prop") name = toPropertyName(name);
+  if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || namespace === "prop")) {
     if (config.hydratable && namespace !== "prop") {
-      return t.callExpression(registerImportMethod(path, "setProperty"), [elem, t.stringLiteral(name), value]);
+      return t.callExpression(registerImportMethod(path, "setProperty"), [
+        elem,
+        t.stringLiteral(name),
+        value
+      ]);
     }
     return t.assignmentExpression(
       "=",
@@ -233,7 +268,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
 
   let isNameSpaced = name.indexOf(":") > -1;
   name = Aliases[name] || name;
-  !isSVG && (name = name.toLowerCase());
+  /*!isSVG && (name = name.toLowerCase());*/
   const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
   if (ns) {
     return t.callExpression(
@@ -270,7 +305,6 @@ function transformAttributes(path, results) {
     attributes = path.get("openingElement").get("attributes");
   const tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
-    isCE = tagName.includes("-"),
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
 
@@ -436,7 +470,9 @@ function transformAttributes(path, results) {
           evaluated !== undefined &&
           ((type = typeof evaluated) === "string" || type === "number")
         ) {
-          value = t.stringLiteral(String(evaluated));
+          if (type === "number" && (Properties.has(key) || key.startsWith("prop:"))) {
+            value = t.jsxExpressionContainer(t.numericLiteral(evaluated));
+          } else value = t.stringLiteral(String(evaluated));
         }
       }
       if (
@@ -449,7 +485,11 @@ function transformAttributes(path, results) {
       if (
         t.isJSXExpressionContainer(value) &&
         (reservedNameSpace ||
-          !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
+          !(
+            t.isStringLiteral(value.expression) ||
+            t.isNumericLiteral(value.expression) ||
+            t.isBooleanLiteral(value.expression)
+          ))
       ) {
         if (key === "ref") {
           // Normalize expressions for non-null and type-as
@@ -460,16 +500,14 @@ function transformAttributes(path, results) {
             value.expression = value.expression.expression;
           }
           let binding,
-            isFunction =
+            isConstant =
               t.isIdentifier(value.expression) &&
               (binding = path.scope.getBinding(value.expression.name)) &&
-              binding.kind === "const";
-          if (!isFunction && t.isLVal(value.expression)) {
+              (binding.kind === "const" || binding.kind === "module");
+          if (!isConstant && t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("var", [
-                t.variableDeclarator(refIdentifier, value.expression)
-              ]),
+              t.variableDeclaration("var", [t.variableDeclarator(refIdentifier, value.expression)]),
               t.expressionStatement(
                 t.conditionalExpression(
                   t.binaryExpression(
@@ -485,7 +523,7 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (isFunction || t.isFunction(value.expression)) {
+          } else if (isConstant || t.isFunction(value.expression)) {
             results.exprs.unshift(
               t.expressionStatement(
                 t.callExpression(
@@ -494,12 +532,10 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (t.isCallExpression(value.expression)) {
+          } else {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("var", [
-                t.variableDeclarator(refIdentifier, value.expression)
-              ]),
+              t.variableDeclaration("var", [t.variableDeclarator(refIdentifier, value.expression)]),
               t.expressionStatement(
                 t.logicalExpression(
                   "&&",
@@ -540,15 +576,18 @@ function transformAttributes(path, results) {
           children = value;
         } else if (key.startsWith("on")) {
           const ev = toEventName(key);
-          if (key.startsWith("on:") || key.startsWith("oncapture:")) {
-            const listenerOptions = [t.stringLiteral(key.split(":")[1]), value.expression];
-            results.exprs.push(
+          if (key.startsWith("on:")) {
+            const args = [elem, t.stringLiteral(key.split(":")[1]), value.expression];
+
+            results.exprs.unshift(
               t.expressionStatement(
                 t.callExpression(
-                  t.memberExpression(elem, t.identifier("addEventListener")),
-                  key.startsWith("oncapture:")
-                    ? listenerOptions.concat(t.booleanLiteral(true))
-                    : listenerOptions
+                  registerImportMethod(
+                    path,
+                    "addEventListener",
+                    getRendererConfig(path, "dom").moduleName
+                  ),
+                  args
                 )
               )
             );
@@ -663,15 +702,16 @@ function transformAttributes(path, results) {
           let nextElem = elem;
           if (key === "value" || key === "checked") {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
+            const v = t.identifier("_v$");
             results.postExprs.push(
               t.expressionStatement(
                 t.callExpression(effectWrapperId, [
+                  inlineCallExpression(value.expression),
                   t.arrowFunctionExpression(
-                    [],
-                    setAttr(path, elem, key, value.expression, {
+                    [v],
+                    setAttr(path, elem, key, v, {
                       tagName,
-                      isSVG,
-                      isCE
+                      isSVG
                     })
                   )
                 ])
@@ -692,13 +732,59 @@ function transformAttributes(path, results) {
             key,
             value: value.expression,
             isSVG,
-            isCE,
             tagName
           });
+        } else if (key.slice(0, 5) === "bool:") {
+          // inline it on the template when possible
+          let content = value;
+
+          if (t.isJSXExpressionContainer(content)) content = content.expression;
+
+          function addBoolAttribute() {
+            results.template += `${needsSpacing ? " " : ""}${key.slice(5)}`;
+            needsSpacing = true;
+          }
+
+          switch (content.type) {
+            case "StringLiteral": {
+              if (content.value.length && content.value !== "0") {
+                addBoolAttribute();
+              }
+              return;
+            }
+            case "NullLiteral": {
+              return;
+            }
+            case "BooleanLiteral": {
+              if (content.value) {
+                addBoolAttribute();
+              }
+              return;
+            }
+            case "Identifier": {
+              if (content.name === "undefined") {
+                return;
+              }
+              break;
+            }
+          }
+
+          // when not possible to inline it in the template
+          results.exprs.push(
+            t.expressionStatement(
+              setAttr(
+                attribute,
+                elem,
+                key,
+                t.isJSXExpressionContainer(value) ? value.expression : value,
+                { isSVG, tagName }
+              )
+            )
+          );
         } else {
           results.exprs.push(
             t.expressionStatement(
-              setAttr(attribute, elem, key, value.expression, { isSVG, isCE, tagName })
+              setAttr(attribute, elem, key, value.expression, { isSVG, tagName })
             )
           );
         }
@@ -708,20 +794,36 @@ function transformAttributes(path, results) {
           return;
         }
         if (t.isJSXExpressionContainer(value)) value = value.expression;
+
+        // boolean as `<el attr={true | false}/>`, not as `<el attr={"true" | "false"}/>`
+        // `<el attr={true}/>` becomes `<el attr/>`
+        // `<el attr={false}/>` becomes `<el/>`
+        if (t.isBooleanLiteral(value)) {
+          if (value.value === true) {
+            results.template += `${needsSpacing ? " " : ""}${key}`;
+            needsSpacing = true;
+          }
+          return;
+        }
+
+        // properties
         key = Aliases[key] || key;
         if (value && ChildProperties.has(key)) {
           results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE, tagName }))
+            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, tagName }))
           );
         } else {
-          !isSVG && (key = key.toLowerCase());
-          results.template += `${needsSpacing ? ' ' : ''}${key}`;
+          /*!isSVG && (key = key.toLowerCase());*/
+          results.template += `${needsSpacing ? " " : ""}${key}`;
+          // https://github.com/solidjs/solid/issues/2338
+          // results.templateWithClosingTags += `${needsSpacing ? ' ' : ''}${key}`;
           if (!value) {
             needsSpacing = true;
             return;
           }
 
           let text = value.value;
+          if (typeof text === "number") text = String(text);
           let needsQuoting = false;
 
           if (key === "style" || key === "class") {
@@ -732,8 +834,8 @@ function transformAttributes(path, results) {
           }
 
           if (!text.length) {
-            needsSpacing = false;
-            results.template += `=""`;
+            needsSpacing = true;
+            results.template += ``;
             return;
           }
 
@@ -758,10 +860,14 @@ function transformAttributes(path, results) {
 
           if (needsQuoting) {
             needsSpacing = false;
-            results.template += `="${escapeBackticks(escapeHTML(text, true))}"`;
+            results.template += `="${escapeHTML(text, true)}"`;
+            // https://github.com/solidjs/solid/issues/2338
+            // results.templateWithClosingTags += `="${escapeHTML(text, true)}"`;
           } else {
             needsSpacing = true;
-            results.template += `=${escapeBackticks(escapeHTML(text, true))}`;
+            results.template += `=${escapeHTML(text, true)}`;
+            // https://github.com/solidjs/solid/issues/2338
+            // results.templateWithClosingTags += `=${escapeHTML(text, true)}`;
           }
         }
       }
@@ -796,6 +902,7 @@ function transformChildren(path, results, config) {
   let tempPath = results.id && results.id.name,
     tagName = getTagName(path.node),
     nextPlaceholder,
+    childPostExprs = [],
     i = 0;
   const filteredChildren = filterChildren(path.get("children")),
     lastElement = findLastElement(filteredChildren, config.hydratable),
@@ -814,6 +921,8 @@ function transformChildren(path, results, config) {
       const i = memo.length;
       if (transformed.text && i && memo[i - 1].text) {
         memo[i - 1].template += transformed.template;
+        memo[i - 1].templateWithClosingTags +=
+          transformed.templateWithClosingTags || transformed.template;
       } else memo.push(transformed);
       return memo;
     }, []);
@@ -826,6 +935,9 @@ function transformChildren(path, results, config) {
     }
 
     results.template += child.template;
+    results.templateWithClosingTags += child.templateWithClosingTags || child.template;
+    results.isImportNode = results.isImportNode || child.isImportNode;
+
     if (child.id) {
       if (child.tagName === "head") {
         if (config.hydratable) {
@@ -871,9 +983,10 @@ function transformChildren(path, results, config) {
       results.declarations.push(...child.declarations);
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
-      results.postExprs.push(...child.postExprs);
+      childPostExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
+      results.isImportNode = results.isImportNode || child.isImportNode;
       tempPath = child.id.name;
       nextPlaceholder = null;
       i++;
@@ -919,6 +1032,7 @@ function transformChildren(path, results, config) {
       }
     } else nextPlaceholder = null;
   });
+  results.postExprs.unshift(...childPostExprs);
 }
 
 function createPlaceholder(path, results, tempPath, i, char) {
@@ -926,6 +1040,7 @@ function createPlaceholder(path, results, tempPath, i, char) {
     config = getConfig(path);
   let contentId;
   results.template += `<!${char}>`;
+  results.templateWithClosingTags += `<!${char}>`;
   if (config.hydratable && char === "/") {
     contentId = path.scope.generateUidIdentifier("co$");
     results.declarations.push(
@@ -975,7 +1090,12 @@ function detectExpressions(children, index, config) {
     } else if (t.isJSXElement(child)) {
       const tagName = getTagName(child);
       if (isComponent(tagName)) return true;
-      if (config.contextToCustomElements && (tagName === "slot" || tagName.indexOf("-") > -1))
+      if (
+        config.contextToCustomElements &&
+        (tagName === "slot" ||
+          tagName.indexOf("-") > -1 ||
+          child.openingElement.attributes.some(a => a.name?.name === "is"))
+      )
         return true;
       if (
         child.openingElement.attributes.some(
@@ -1036,12 +1156,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         isDynamic(attribute.get("argument"), {
           checkMember: true
         }) && (dynamicSpread = true)
-          ? t.isCallExpression(node.argument) &&
-            !node.argument.arguments.length &&
-            !t.isCallExpression(node.argument.callee) &&
-            !t.isMemberExpression(node.argument.callee)
-            ? node.argument.callee
-            : t.arrowFunctionExpression([], node.argument)
+          ? inlineCallExpression(node.argument)
           : node.argument
       );
     } else if (

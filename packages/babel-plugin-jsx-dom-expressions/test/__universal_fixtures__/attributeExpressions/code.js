@@ -1,3 +1,8 @@
+import { binding } from "somewhere"
+
+function refFn() {}
+const refConst = null;
+
 const selected = true;
 let link;
 const template = (
@@ -104,3 +109,19 @@ const template18 = (
 const template19 = <div style={{ a: "static", ...rest }} ></div>
 
 const template20 = <div use:something {...somethingElse} use:zero={0} />;
+
+const template21 = <div ref={a().b.c} />
+
+const template22 = <div ref={a().b?.c} />
+
+const template23 = <div ref={a() ? b : c} />
+
+const template24 = <div ref={a() ?? b} />
+
+const template25 = <div ref={binding} />
+const template26 = <div ref={binding.prop} />
+
+const template27 = <div ref={refFn} />
+const template28 = <div ref={refConst} />
+
+const template29 = <div ref={refUnknown} />

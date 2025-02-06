@@ -14,7 +14,8 @@ import {
   createComponent,
   sharedConfig,
   untrack,
-  mergeProps
+  mergeProps,
+  flatten
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 export {
@@ -46,6 +47,11 @@ export {
 };
 
 export function render(code, element, init, options = {}) {
+  if ("_DX_DEV_" && !element) {
+    throw new Error(
+      "The `element` passed to `render(..., element)` doesn't exist. Make sure `element` exists in the document."
+    );
+  }
   let disposer;
   root(dispose => {
     disposer = dispose;
@@ -59,10 +65,10 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, isCE, isSVG) {
+export function template(html, isImportNode, isSVG) {
   let node;
   const create = () => {
-    if ("_DX_DEV_" && sharedConfig.context)
+    if ("_DX_DEV_" && isHydrating())
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
       );
@@ -70,12 +76,9 @@ export function template(html, isCE, isSVG) {
     t.innerHTML = html;
     return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
   };
-  // backwards compatible with older builds
-  const fn = isCE
+  return isImportNode
     ? () => untrack(() => document.importNode(node || (node = create()), true))
     : () => (node || (node = create())).cloneNode(true);
-  fn.cloneNode = fn;
-  return fn;
 }
 
 export function delegateEvents(eventNames, document = window.document) {
@@ -97,23 +100,25 @@ export function clearDelegatedEvents(document = window.document) {
 }
 
 export function setProperty(node, name, value) {
-  !sharedConfig.context && (node[name] = value);
+  node[name] = value;
 }
 
 export function setAttribute(node, name, value) {
-  if (sharedConfig.context) return;
   if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
-  if (sharedConfig.context) return;
   if (value == null) node.removeAttributeNS(namespace, name);
   else node.setAttributeNS(namespace, name, value);
 }
 
+export function setBoolAttribute(node, name, value) {
+  if (isHydrating(node)) return;
+  value ? node.setAttribute(name, "") : node.removeAttribute(name);
+}
+
 export function className(node, value) {
-  if (sharedConfig.context) return;
   if (value == null) node.removeAttribute("class");
   else node.className = value;
 }
@@ -127,7 +132,7 @@ export function addEventListener(node, name, handler, delegate) {
   } else if (Array.isArray(handler)) {
     const handlerFn = handler[0];
     node.addEventListener(name, (handler[0] = e => handlerFn.call(node, handler[1], e)));
-  } else node.addEventListener(name, handler);
+  } else node.addEventListener(name, handler, typeof handler !== "function" && handler);
 }
 
 export function classListToObject(classList) {
@@ -194,13 +199,33 @@ export function style(node, value, prev) {
   return prev;
 }
 
+// TODO: make this better
 export function spread(node, props = {}, isSVG, skipChildren) {
   const prevProps = {};
   if (!skipChildren) {
-    effect(() => (prevProps.children = insertExpression(node, props.children, prevProps.children)));
+    effect(
+      () => normalize(props.children, prevProps.children),
+      value => {
+        insertExpression(node, value, prevProps.children);
+        prevProps.children = value;
+      }
+    );
   }
-  effect(() => props.ref && props.ref(node));
-  effect(() => assign(node, props, isSVG, true, prevProps, true));
+  effect(
+    () => typeof props.ref === "function" && use(props.ref, node),
+    () => {}
+  );
+  effect(
+    () => {
+      const newProps = {};
+      for (const prop in props) {
+        if (prop === "children" || prop === "ref") continue;
+        newProps[prop] = props[prop];
+      }
+      return newProps;
+    },
+    props => assign(node, props, isSVG, true, prevProps, true)
+  );
   return prevProps;
 }
 
@@ -216,13 +241,21 @@ export function dynamicProperty(props, key) {
 }
 
 export function use(fn, element, arg) {
-  return untrack(() => fn(element, arg));
+  untrack(() => fn(element, arg));
 }
 
 export function insert(parent, accessor, marker, initial) {
-  if (marker !== undefined && !initial) initial = [];
-  if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
-  effect(current => insertExpression(parent, accessor(), current, marker), initial);
+  const multi = marker !== undefined;
+  if (multi && !initial) initial = [];
+  if (typeof accessor !== "function") {
+    accessor = normalize(accessor, initial, multi, true);
+    if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
+  }
+  effect(
+    prev => normalize(accessor, prev, multi),
+    (value, current) => insertExpression(parent, value, current, marker),
+    initial
+  );
 }
 
 export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef = false) {
@@ -245,6 +278,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
 
 // Hydrate
 export function hydrate(code, element, options = {}) {
+  if (globalThis._$HY.done) return render(code, element, [...element.childNodes], options);
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = id => globalThis._$HY.r[id];
@@ -255,17 +289,27 @@ export function hydrate(code, element, options = {}) {
     id: options.renderId || "",
     count: 0
   };
-  gatherHydratable(element, options.renderId);
-  const dispose = render(code, element, [...element.childNodes], options);
-  sharedConfig.context = null;
-  return dispose;
+  try {
+    gatherHydratable(element, options.renderId);
+    return render(code, element, [...element.childNodes], options);
+  } finally {
+    sharedConfig.context = null;
+  }
 }
 
 export function getNextElement(template) {
-  let node, key;
-  if (!sharedConfig.context || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
-    if ("_DX_DEV_" && sharedConfig.context)
-      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`);
+  let node,
+    key,
+    hydrating = isHydrating();
+  if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
+    if ("_DX_DEV_" && hydrating) {
+      sharedConfig.done = true;
+      throw new Error(
+        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${
+          template ? template().outerHTML : ""
+        }`
+      );
+    }
     return template();
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
@@ -282,7 +326,7 @@ export function getNextMarker(start) {
   let end = start,
     count = 0,
     current = [];
-  if (sharedConfig.context) {
+  if (isHydrating(start)) {
     while (end) {
       if (end.nodeType === 8) {
         const v = end.nodeValue;
@@ -303,12 +347,17 @@ export function runHydrationEvents() {
   if (sharedConfig.events && !sharedConfig.events.queued) {
     queueMicrotask(() => {
       const { completed, events } = sharedConfig;
+      if (!events) return;
       events.queued = false;
       while (events.length) {
         const [el, e] = events[0];
         if (!completed.has(el)) return;
-        eventHandler(e);
         events.shift();
+        eventHandler(e);
+      }
+      if (sharedConfig.done) {
+        sharedConfig.events = _$HY.events = null;
+        sharedConfig.completed = _$HY.completed = null;
       }
     });
     sharedConfig.events.queued = true;
@@ -316,8 +365,8 @@ export function runHydrationEvents() {
 }
 
 // Internal Functions
-function toPropertyName(name) {
-  return name.toLowerCase().replace(/-([a-z])/g, (_, w) => w.toUpperCase());
+function isHydrating(node) {
+  return !!sharedConfig.context && !sharedConfig.done && (!node || node.isConnected);
 }
 
 function toggleClassKey(node, key, value) {
@@ -327,7 +376,7 @@ function toggleClassKey(node, key, value) {
 }
 
 function assignProp(node, prop, value, prev, isSVG, skipRef) {
-  let isCE, isProp, isChildProp, propAlias, forceProp;
+  let propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
   if (value === prev) return prev;
@@ -335,12 +384,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     if (!skipRef) value(node);
   } else if (prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);
-    prev && node.removeEventListener(e, prev);
-    value && node.addEventListener(e, value);
-  } else if (prop.slice(0, 10) === "oncapture:") {
-    const e = prop.slice(10);
-    prev && node.removeEventListener(e, prev, true);
-    value && node.addEventListener(e, value, true);
+    prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
+    value && node.addEventListener(e, value, typeof value !== "function" && value);
   } else if (prop.slice(0, 2) === "on") {
     const name = prop.slice(2).toLowerCase();
     const delegate = DelegatedEvents.has(name);
@@ -354,19 +399,16 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     }
   } else if (prop.slice(0, 5) === "attr:") {
     setAttribute(node, prop.slice(5), value);
+  } else if (prop.slice(0, 5) === "bool:") {
+    setBoolAttribute(node, prop.slice(5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
-    (isChildProp = ChildProperties.has(prop)) ||
-    (!isSVG &&
-      ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
-    (isCE = node.nodeName.includes("-"))
+    ChildProperties.has(prop) ||
+    (!isSVG && (propAlias = getPropAlias(prop, node.tagName))) ||
+    Properties.has(prop)
   ) {
-    if (forceProp) {
-      prop = prop.slice(5);
-      isProp = true;
-    } else if (sharedConfig.context) return value;
+    if (forceProp) prop = prop.slice(5);
     if (prop === "class" || prop === "className") className(node, value);
-    else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
     else node[propAlias || prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
@@ -377,15 +419,36 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
 }
 
 function eventHandler(e) {
+  if (sharedConfig.registry && sharedConfig.events) {
+    if (sharedConfig.events.find(([el, ev]) => ev === e)) return;
+  }
+
+  let node = e.target;
   const key = `$$${e.type}`;
-  let node = (e.composedPath && e.composedPath()[0]) || e.target;
-  // reverse Shadow DOM retargetting
-  if (e.target !== node) {
+  const oriTarget = e.target;
+  const oriCurrentTarget = e.currentTarget;
+  const retarget = value =>
     Object.defineProperty(e, "target", {
       configurable: true,
-      value: node
+      value
     });
-  }
+  const handleNode = () => {
+    const handler = node[key];
+    if (handler && !node.disabled) {
+      const data = node[`${key}Data`];
+      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
+      if (e.cancelBubble) return;
+    }
+    node.host &&
+      typeof node.host !== "string" &&
+      !node.host._$host &&
+      node.contains(e.target) &&
+      retarget(node.host);
+    return true;
+  };
+  const walkUpTree = () => {
+    while (handleNode() && (node = node._$host || node.parentNode || node.host));
+  };
 
   // simulate currentTarget
   Object.defineProperty(e, "currentTarget", {
@@ -394,136 +457,82 @@ function eventHandler(e) {
       return node || document;
     }
   });
-
-  // cancel html streaming
+  // cancel hydration
   if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
-  while (node) {
-    const handler = node[key];
-    if (handler && !node.disabled) {
-      const data = node[`${key}Data`];
-      data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
-      if (e.cancelBubble) return;
+  if (e.composedPath) {
+    const path = e.composedPath();
+    retarget(path[0]);
+    for (let i = 0; i < path.length - 2; i++) {
+      node = path[i];
+      if (!handleNode()) break;
+      if (node._$host) {
+        node = node._$host;
+        // bubble up from portal mount instead of composedPath
+        walkUpTree();
+        break;
+      }
+      if (node.parentNode === oriCurrentTarget) {
+        break; // don't bubble above root of event delegation
+      }
     }
-    node = node._$host || node.parentNode || node.host;
   }
+  // fallback for browsers that don't support composedPath
+  else walkUpTree();
+  // Mixing portals and shadow dom can lead to a nonstandard target, so reset here.
+  retarget(oriTarget);
 }
 
-function insertExpression(parent, value, current, marker, unwrapArray) {
-  if (sharedConfig.context) {
-    !current && (current = [...parent.childNodes]);
-    let cleaned = [];
-    for (let i = 0; i < current.length; i++) {
-      const node = current[i];
-      if (node.nodeType === 8 && node.data.slice(0, 2) === "!$") node.remove();
-      else cleaned.push(node);
-    }
-    current = cleaned;
-  }
-  while (typeof current === "function") current = current();
-  if (value === current) return current;
+function insertExpression(parent, value, current, marker) {
+  if (value === current) return;
   const t = typeof value,
     multi = marker !== undefined;
-  parent = (multi && current[0] && current[0].parentNode) || parent;
+  // is this necessary anymore?
+  // parent = (multi && current[0] && current[0].parentNode) || parent;
 
   if (t === "string" || t === "number") {
-    if (sharedConfig.context) return current;
-    if (t === "number") value = value.toString();
-    if (multi) {
-      let node = current[0];
-      if (node && node.nodeType === 3) {
-        node.data !== value && (node.data = value);
-      } else node = document.createTextNode(value);
-      current = cleanChildren(parent, current, marker, node);
-    } else {
-      if (current !== "" && typeof current === "string") {
-        current = parent.firstChild.data = value;
-      } else current = parent.textContent = value;
-    }
-  } else if (value == null || t === "boolean") {
-    if (sharedConfig.context) return current;
-    current = cleanChildren(parent, current, marker);
-  } else if (t === "function") {
-    effect(() => {
-      let v = value();
-      while (typeof v === "function") v = v();
-      current = insertExpression(parent, v, current, marker);
-    });
-    return () => current;
-  } else if (Array.isArray(value)) {
-    const array = [];
-    const currentArray = current && Array.isArray(current);
-    if (normalizeIncomingArray(array, value, current, unwrapArray)) {
-      effect(() => (current = insertExpression(parent, array, current, marker, true)));
-      return () => current;
-    }
-    if (sharedConfig.context) {
-      if (!array.length) return current;
-      if (marker === undefined) return [...parent.childNodes];
-      let node = array[0];
-      let nodes = [node];
-      while ((node = node.nextSibling) !== marker) nodes.push(node);
-      return (current = nodes);
-    }
-    if (array.length === 0) {
-      current = cleanChildren(parent, current, marker);
-      if (multi) return current;
-    } else if (currentArray) {
-      if (current.length === 0) {
-        appendNodes(parent, array, marker);
-      } else reconcileArrays(parent, current, array);
-    } else {
-      current && cleanChildren(parent);
-      appendNodes(parent, array);
-    }
-    current = array;
+    const tc = typeof current;
+    if (tc === "string" || tc === "number") {
+      parent.firstChild.data = value;
+    } else parent.textContent = value;
+  } else if (value === undefined) {
+    cleanChildren(parent, current, marker);
   } else if (value.nodeType) {
-    if (sharedConfig.context && value.parentNode) return (current = multi ? [value] : value);
     if (Array.isArray(current)) {
-      if (multi) return (current = cleanChildren(parent, current, marker, value));
-      cleanChildren(parent, current, null, value);
-    } else if (current == null || current === "" || !parent.firstChild) {
+      cleanChildren(parent, current, multi ? marker : null, value);
+    } else if (current === undefined || !parent.firstChild) {
       parent.appendChild(value);
     } else parent.replaceChild(value, parent.firstChild);
-    current = value;
+  } else if (Array.isArray(value)) {
+    const currentArray = current && Array.isArray(current);
+    if (value.length === 0) {
+      cleanChildren(parent, current, marker);
+    } else if (currentArray) {
+      if (current.length === 0) {
+        appendNodes(parent, value, marker);
+      } else reconcileArrays(parent, current, value);
+    } else {
+      current && cleanChildren(parent);
+      appendNodes(parent, value);
+    }
   } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
-
-  return current;
 }
 
-function normalizeIncomingArray(normalized, array, current, unwrap) {
-  let dynamic = false;
-  for (let i = 0, len = array.length; i < len; i++) {
-    let item = array[i],
-      prev = current && current[i],
-      t;
-    if (item == null || item === true || item === false) {
-      // matches null, undefined, true or false
-      // skip
-    } else if ((t = typeof item) === "object" && item.nodeType) {
-      normalized.push(item);
-    } else if (Array.isArray(item)) {
-      dynamic = normalizeIncomingArray(normalized, item, prev) || dynamic;
-    } else if (t === "function") {
-      if (unwrap) {
-        while (typeof item === "function") item = item();
-        dynamic =
-          normalizeIncomingArray(
-            normalized,
-            Array.isArray(item) ? item : [item],
-            Array.isArray(prev) ? prev : [prev]
-          ) || dynamic;
-      } else {
-        normalized.push(item);
-        dynamic = true;
-      }
-    } else {
-      const value = String(item);
-      if (prev && prev.nodeType === 3 && prev.data === value) normalized.push(prev);
-      else normalized.push(document.createTextNode(value));
+function normalize(value, current, multi, doNotUnwrap) {
+  value = flatten(value, { skipNonRendered: true, doNotUnwrap });
+  if (doNotUnwrap && typeof value === "function") return value;
+  if (multi && value != null && !Array.isArray(value)) value = [value];
+  if (Array.isArray(value)) {
+    for (let i = 0, len = value.length; i < len; i++) {
+      const item = value[i],
+        prev = current && current[i],
+        t = typeof item;
+      if (t === "string" || t === "number")
+        value[i] =
+          prev && prev.nodeType === 3 && prev.data === item ? prev : document.createTextNode(item);
     }
   }
-  return dynamic;
+  return value;
 }
 
 function appendNodes(parent, array, marker = null) {
@@ -532,20 +541,20 @@ function appendNodes(parent, array, marker = null) {
 
 function cleanChildren(parent, current, marker, replacement) {
   if (marker === undefined) return (parent.textContent = "");
-  const node = replacement || document.createTextNode("");
   if (current.length) {
     let inserted = false;
     for (let i = current.length - 1; i >= 0; i--) {
       const el = current[i];
-      if (node !== el) {
+      if (replacement !== el) {
         const isParent = el.parentNode === parent;
-        if (!inserted && !i)
-          isParent ? parent.replaceChild(node, el) : parent.insertBefore(node, marker);
+        if (replacement && !inserted && !i)
+          isParent
+            ? parent.replaceChild(replacement, el)
+            : parent.insertBefore(replacement, marker);
         else isParent && el.remove();
       } else inserted = true;
     }
-  } else parent.insertBefore(node, marker);
-  return [node];
+  } else if (replacement) parent.insertBefore(replacement, marker);
 }
 
 function gatherHydratable(element, root) {
@@ -559,8 +568,7 @@ function gatherHydratable(element, root) {
 }
 
 export function getHydrationKey() {
-  const hydrate = sharedConfig.context;
-  return `${hydrate.id}${hydrate.count++}`;
+  return sharedConfig.getNextContextId();
 }
 
 export function NoHydration(props) {
@@ -575,8 +583,3 @@ const voidFn = () => undefined;
 
 // experimental
 export const RequestContext = Symbol();
-
-// deprecated
-export function innerHTML(parent, content) {
-  !sharedConfig.context && (parent.innerHTML = content);
-}

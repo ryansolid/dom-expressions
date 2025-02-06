@@ -1,7 +1,19 @@
-import { Aliases, BooleanAttributes, ChildProperties } from "./constants";
+import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
 import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
-export { createComponent } from "rxcore";
+
+export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
+
+export {
+  Properties,
+  ChildProperties,
+  getPropAlias,
+  Aliases,
+  DOMElements,
+  SVGElements,
+  SVGNamespace,
+  DelegatedEvents
+} from "./constants.js";
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
@@ -17,7 +29,7 @@ export function renderToString(code, options = {}) {
       if (!scripts) {
         scripts = getLocalHeaderScript(renderId);
       }
-      scripts += script;
+      scripts += script + ";";
     },
     onError: options.onError
   });
@@ -97,7 +109,7 @@ export function renderToStream(code, options = {}) {
       // We are no longer writing any resource
       // now we just need to wait for the pending promises
       // to resolve
-      serializer.flush();
+      queue(() => queue(() => serializer.flush())); // double queue because of elsewhere
     }
   };
   const registry = new Map();
@@ -142,10 +154,7 @@ export function renderToStream(code, options = {}) {
       const first = html.indexOf(placeholder);
       if (first === -1) return;
       const last = html.indexOf(`<!--!$/${id}-->`, first + placeholder.length);
-      html = html.replace(
-        html.slice(first, last + placeholder.length + 1),
-        resolveSSRNode(payloadFn())
-      );
+      html = html.slice(0, first) + resolveSSRNode(escape(payloadFn())) + html.slice(last + placeholder.length + 1);
     },
     serialize(id, p, wait) {
       const serverOnly = sharedConfig.context.noHydrate;
@@ -170,33 +179,36 @@ export function renderToStream(code, options = {}) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
         // double queue to ensure that Suspense is last but in same flush
-        registry.set(key, {
-          resolve: v => queue(() => queue(() => resolve(v))),
-          reject: e => queue(() => queue(() => reject(e)))
-        });
+        registry.set(key, err =>
+          queue(() =>
+            queue(() => {
+              err ? reject(err) : resolve(true);
+              queue(flushEnd);
+            })
+          )
+        );
         serializer.write(key, p);
       }
       return (value, error) => {
         if (registry.has(key)) {
-          const { resolve, reject } = registry.get(key);
+          const resolve = registry.get(key);
           registry.delete(key);
           if (waitForFragments(registry, key)) {
-            resolve(true);
+            resolve();
             return;
           }
-          if ((value !== undefined || error) && !completed) {
+          if (!completed) {
             if (!firstFlushed) {
               queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
-              error ? reject(error) : resolve(true);
+              resolve(error);
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
-              error ? reject(error) : resolve(true);
+              resolve(error);
               scriptFlushed = true;
             }
           }
         }
-        if (!registry.size) queue(flushEnd);
         return firstFlushed;
       };
     }
@@ -365,10 +377,20 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
       else continue;
-    } else if (value == undefined || prop === "ref" || prop.slice(0, 2) === "on") {
+    } else if (
+      value == undefined ||
+      prop === "ref" ||
+      prop.slice(0, 2) === "on" ||
+      prop.slice(0, 5) === "prop:"
+    ) {
       continue;
+    } else if (prop.slice(0, 5) === "bool:") {
+      if (!value) continue;
+      result += escape(prop.slice(5));
+    } else if (prop.slice(0, 5) === "attr:") {
+      result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
     } else {
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
+      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -384,7 +406,7 @@ export function ssrAttribute(key, value, isBoolean) {
 
 export function ssrHydrationKey() {
   const hk = getHydrationKey();
-  return hk ? ` data-hk="${hk}"` : "";
+  return hk ? ` data-hk=${hk}` : "";
 }
 
 export function escape(s, attr) {
@@ -484,11 +506,11 @@ export function mergeProps(...sources) {
 
 export function getHydrationKey() {
   const hydrate = sharedConfig.context;
-  return hydrate && !hydrate.noHydrate && `${hydrate.id}${hydrate.count++}`;
+  return hydrate && !hydrate.noHydrate && sharedConfig.getNextContextId();
 }
 
 export function useAssets(fn) {
-  sharedConfig.context.assets.push(() => resolveSSRNode(fn()));
+  sharedConfig.context.assets.push(() => resolveSSRNode(escape(fn())));
 }
 
 export function getAssets() {
@@ -503,7 +525,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
     nonce ? ` nonce="${nonce}"` : ""
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("data-hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '", "'
-  )}"].forEach((o=>document.addEventListener(o,(o=>{let a=o.composedPath&&o.composedPath()[0]||o.target,s=t(a);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
+  )}"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
 }
 
 export function Hydration(props) {
@@ -512,7 +534,7 @@ export function Hydration(props) {
   sharedConfig.context = {
     ...context,
     count: 0,
-    id: `${context.id}${context.count++}-`,
+    id: sharedConfig.getNextContextId(),
     noHydrate: false
   };
   const res = props.children;
@@ -521,7 +543,8 @@ export function Hydration(props) {
 }
 
 export function NoHydration(props) {
-  sharedConfig.context.noHydrate = true;
+  if (sharedConfig.context)
+    sharedConfig.context.noHydrate = true;
   return props.children;
 }
 
@@ -541,7 +564,9 @@ function injectAssets(assets, html) {
   if (!assets || !assets.length) return html;
   let out = "";
   for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
-  return html.replace(`</head>`, out + `</head>`);
+  const index = html.indexOf("</head>");
+  if (index === -1) return html;
+  return html.slice(0, index) + out + html.slice(index);
 }
 
 function injectScripts(html, scripts, nonce) {
@@ -589,85 +614,32 @@ export function Assets(props) {
   useAssets(() => props.children);
 }
 
-/* istanbul ignore next */
-/**
- * @deprecated Replaced by renderToStream
- */
-export function pipeToNodeWritable(code, writable, options = {}) {
-  if (options.onReady) {
-    options.onCompleteShell = ({ write }) => {
-      options.onReady({
-        write,
-        startWriting() {
-          stream.pipe(writable);
-        }
-      });
-    };
-  }
-  const stream = renderToStream(code, options);
-  if (!options.onReady) stream.pipe(writable);
-}
+// client-only APIs
 
-/* istanbul ignore next */
-/**
- * @deprecated Replaced by renderToStream
- */
-export function pipeToWritable(code, writable, options = {}) {
-  if (options.onReady) {
-    options.onCompleteShell = ({ write }) => {
-      options.onReady({
-        write,
-        startWriting() {
-          stream.pipeTo(writable);
-        }
-      });
-    };
-  }
-  const stream = renderToStream(code, options);
-  if (!options.onReady) stream.pipeTo(writable);
-}
+export {
+  notSup as classList,
+  notSup as style,
+  notSup as insert,
+  notSup as spread,
+  notSup as delegateEvents,
+  notSup as dynamicProperty,
+  notSup as setAttribute,
+  notSup as setAttributeNS,
+  notSup as addEventListener,
+  notSup as render,
+  notSup as template,
+  notSup as setProperty,
+  notSup as className,
+  notSup as assign,
+  notSup as hydrate,
+  notSup as getNextElement,
+  notSup as getNextMatch,
+  notSup as getNextMarker,
+  notSup as runHydrationEvents
+};
 
-/* istanbul ignore next */
-/**
- * @deprecated Replaced by ssrElement
- */
-export function ssrSpread(props, isSVG, skipChildren) {
-  let result = "";
-  if (props == null) return result;
-  if (typeof props === "function") props = props();
-  const keys = Object.keys(props);
-  let classResolved;
-  for (let i = 0; i < keys.length; i++) {
-    let prop = keys[i];
-    if (prop === "children") {
-      !skipChildren && console.warn(`SSR currently does not support spread children.`);
-      continue;
-    }
-    const value = props[prop];
-    if (prop === "style") {
-      result += `style="${ssrStyle(value)}"`;
-    } else if (prop === "class" || prop === "className" || prop === "classList") {
-      if (classResolved) continue;
-      let n;
-      result += `class="${(n = props.class) ? n + " " : ""}${
-        (n = props.className) ? n + " " : ""
-      }${ssrClassList(props.classList)}"`;
-      classResolved = true;
-    } else if (BooleanAttributes.has(prop)) {
-      if (value) result += prop;
-      else continue;
-    } else if (
-      value == undefined ||
-      prop === "ref" ||
-      prop.slice(0, 2) === "on" ||
-      prop.slice(0, 5) === "prop:"
-    ) {
-      continue;
-    } else {
-      if (prop.slice(0, 5) === "attr:") prop = prop.slice(5);
-      result += `${Aliases[prop] || prop}="${escape(value, true)}"`;
-    }
-    if (i !== keys.length - 1) result += " ";
-  }
-  return result;
+function notSup() {
+  throw new Error(
+    "Client-only API called on the server side. Run client-only code in onMount, or conditionally run client-only component with <Show>."
+  );
 }

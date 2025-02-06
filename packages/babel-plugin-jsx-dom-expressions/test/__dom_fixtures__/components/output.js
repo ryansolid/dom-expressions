@@ -14,7 +14,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello `),
   _tmpl$7 = /*#__PURE__*/ _$template(`<span>1`),
   _tmpl$8 = /*#__PURE__*/ _$template(`<span>2`),
   _tmpl$9 = /*#__PURE__*/ _$template(`<span>3`);
-import { Show } from "somewhere";
+import { Show, binding } from "somewhere";
+function refFn() {}
+const refConst = null;
 const Child = props => {
   const [s, set] = createSignal();
   return [
@@ -379,14 +381,23 @@ const template25 = _$createComponent(Component, {
     return _tmpl$2();
   }
 });
-const template26 = _$createComponent(Component, {
-  get when() {
-    const foo = test();
-    if ("t" in foo) {
-      return foo;
+const template26 = [
+  _$createComponent(Component, {
+    get when() {
+      const foo = test();
+      if ("t" in foo) {
+        return foo;
+      }
     }
-  }
-});
+  }),
+  _$createComponent(Component, {
+    get when() {
+      return ((val = 123) => {
+        return val * 2;
+      })();
+    }
+  })
+];
 const template27 = _$createComponent(Component, {
   get when() {
     return prop.red ? "red" : "green";
@@ -405,3 +416,89 @@ class Template28 {
     });
   }
 }
+class Template29 extends ParentComponent {
+  constructor() {
+    super();
+    const _self$3 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$3.method;
+      }
+    });
+  }
+  get get() {
+    const _self$4 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$4.method;
+      }
+    });
+  }
+  set set(v) {
+    const _self$5 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$5.method;
+      }
+    });
+  }
+  method() {
+    const _self$6 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$6.method;
+      }
+    });
+  }
+  field = (() => {
+    const _self$7 = this;
+    return _$createComponent(this.component, {
+      get method() {
+        return _self$7.method;
+      },
+      get comp() {
+        return _$createComponent(_self$7.another, {});
+      }
+    });
+  })();
+  fieldArrow = () => {
+    const _self$8 = this;
+    return _$createComponent(this.component, {
+      get method() {
+        return _self$8.method;
+      }
+    });
+  };
+  fieldFunction = function () {
+    const _self$9 = this;
+    _$createComponent(this.component, {
+      get method() {
+        return _self$9.method;
+      }
+    });
+  };
+}
+const template30 = _$createComponent(Comp, {
+  ref: binding
+});
+const template31 = _$createComponent(Comp, {
+  ref(r$) {
+    var _ref$5 = binding.prop;
+    typeof _ref$5 === "function" ? _ref$5(r$) : (binding.prop = r$);
+  }
+});
+const template32 = _$createComponent(Comp, {
+  ref(r$) {
+    var _ref$6 = refFn;
+    typeof _ref$6 === "function" ? _ref$6(r$) : (refFn = r$);
+  }
+});
+const template33 = _$createComponent(Comp, {
+  ref: refConst
+});
+const template34 = _$createComponent(Comp, {
+  ref(r$) {
+    var _ref$7 = refUnknown;
+    typeof _ref$7 === "function" ? _ref$7(r$) : (refUnknown = r$);
+  }
+});

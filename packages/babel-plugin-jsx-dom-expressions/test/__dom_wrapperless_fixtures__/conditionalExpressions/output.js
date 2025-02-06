@@ -1,7 +1,8 @@
 import { template as _$template } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { insert as _$insert } from "r-dom";
-var _tmpl$ = /*#__PURE__*/ _$template(`<div>`);
+var _tmpl$ = /*#__PURE__*/ _$template(`<div>`),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<div>Output`);
 const template1 = (() => {
   var _el$ = _tmpl$();
   _$insert(_el$, simple);
@@ -153,3 +154,33 @@ const template29 = (() => {
   _$insert(_el$18, () => (thing() && thing1()) ?? thing2() ?? thing3());
   return _el$18;
 })();
+const template30 = (() => {
+  var _el$19 = _tmpl$();
+  _$insert(_el$19, () => thing() || thing1() || thing2());
+  return _el$19;
+})();
+const template31 = _$createComponent(Comp, {
+  get value() {
+    return count() ? (count() ? count() : count()) : count();
+  }
+});
+const template32 = (() => {
+  var _el$20 = _tmpl$();
+  _$insert(_el$20, () => something?.());
+  return _el$20;
+})();
+const template33 = _$createComponent(Comp, {
+  get children() {
+    return something?.();
+  }
+});
+const template34 = simple ? good : bad;
+const template35 = () => (simple ? good() : bad);
+const template36 = () => (state.dynamic ? good() : bad);
+const template37 = () => state.dynamic && good();
+const template38 = () => (state.count > 5 ? (state.dynamic ? best : good()) : bad);
+const template39 = () => state.dynamic && state.something && good();
+const template40 = () => (state.dynamic && good()) || bad;
+const template41 = () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback");
+const template42 = () => (state.a ? a() : state.b ? b() : state.c ? "c" : "fallback");
+const template43 = () => (obj1.prop ? (obj2.prop ? _tmpl$2() : []) : []);

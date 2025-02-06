@@ -11,7 +11,7 @@ export function getPropAlias(prop: string, tagName: string): string | undefined;
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
 export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
-export function effect<T>(fn: (prev?: T) => T, init?: T): void;
+export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function untrack<T>(fn: () => T): T;
 export function insert<T>(
@@ -25,19 +25,20 @@ export function delegateEvents(eventNames: string[], d?: Document): void;
 export function clearDelegatedEvents(d?: Document): void;
 export function spread<T>(
   node: Element,
-  accessor: (() => T) | T,
+  accessor: T,
   isSVG?: Boolean,
   skipChildren?: Boolean
 ): void;
 export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
+export function setBoolAttribute(node: Element, name: string, value: any): void;
 export function className(node: Element, value: string): void;
 export function setProperty(node: Element, name: string, value: any): void;
 export function addEventListener(
   node: Element,
   name: string,
-  handler: () => void,
+  handler: EventListener | EventListenerObject | (EventListenerObject & AddEventListenerOptions),
   delegate: boolean
 ): void;
 type ClassList =
@@ -60,7 +61,7 @@ export function dynamicProperty(props: unknown, key: string): unknown;
 export function hydrate(
   fn: () => JSX.Element,
   node: MountableElement,
-  options?: { renderId?: string, owner?: unknown }
+  options?: { renderId?: string; owner?: unknown }
 ): () => void;
 export function getHydrationKey(): string;
 export function getNextElement(template?: HTMLTemplateElement): Element;
@@ -78,3 +79,4 @@ export interface RequestEvent {
 }
 export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;
+export function runHydrationEvents(): void;

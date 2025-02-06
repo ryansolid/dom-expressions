@@ -9,7 +9,8 @@ import {
   getRendererConfig,
   convertJSXIdentifier,
   canNativeSpread,
-  transformCondition
+  transformCondition,
+  escapeStringForTemplate
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 
@@ -92,7 +93,12 @@ function transformAttributes(path, results) {
           ) {
             value.expression = value.expression.expression;
           }
-          if (t.isLVal(value.expression)) {
+          let binding,
+            isConstant =
+              t.isIdentifier(value.expression) &&
+              (binding = path.scope.getBinding(value.expression.name)) &&
+              (binding.kind === "const" || binding.kind === "module");
+          if (!isConstant && t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
               t.variableDeclaration("var", [
@@ -117,7 +123,7 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (t.isFunction(value.expression)) {
+          } else if (isConstant || t.isFunction(value.expression)) {
             results.exprs.unshift(
               t.expressionStatement(
                 t.callExpression(
@@ -130,7 +136,7 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (t.isCallExpression(value.expression)) {
+          } else {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
               t.variableDeclaration("var", [
@@ -216,6 +222,7 @@ function transformChildren(path, results) {
       const i = memo.length;
       if (child.text && i && memo[i - 1].text) {
         memo[i - 1].template += child.template;
+        memo[i - 1].templateWithClosingTags += child.templateWithClosingTags || child.template;
       } else memo.push(child);
       return memo;
     }, []);
@@ -245,13 +252,13 @@ function transformChildren(path, results) {
             t.variableDeclarator(
               child.id,
               t.callExpression(createTextNode, [
-                t.templateLiteral([t.templateElement({ raw: child.template })], [])
+                t.templateLiteral([t.templateElement({ raw: escapeStringForTemplate(child.template) })], [])
               ])
             )
           );
         } else
           insert = t.callExpression(createTextNode, [
-            t.templateLiteral([t.templateElement({ raw: child.template })], [])
+            t.templateLiteral([t.templateElement({ raw: escapeStringForTemplate(child.template) })], [])
           ]);
       }
       appends.push(t.expressionStatement(t.callExpression(insertNode, [results.id, insert])));

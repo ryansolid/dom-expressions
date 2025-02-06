@@ -7,7 +7,9 @@ import { createTextNode as _$createTextNode } from "r-custom";
 import { insertNode as _$insertNode } from "r-custom";
 import { use as _$use } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
-import { Show } from "somewhere";
+import { Show, binding } from "somewhere";
+function refFn() {}
+const refConst = null;
 const Child = props => [
   (() => {
     var _el$ = _$createElement("div"),
@@ -386,5 +388,29 @@ const template22 = _$createComponent(Component, {
     return {
       ...a
     };
+  }
+});
+const template23 = _$createComponent(Component, {
+  ref: binding
+});
+const template24 = _$createComponent(Component, {
+  ref(r$) {
+    var _ref$5 = binding.prop;
+    typeof _ref$5 === "function" ? _ref$5(r$) : (binding.prop = r$);
+  }
+});
+const template25 = _$createComponent(Component, {
+  ref(r$) {
+    var _ref$6 = refFn;
+    typeof _ref$6 === "function" ? _ref$6(r$) : (refFn = r$);
+  }
+});
+const template26 = _$createComponent(Component, {
+  ref: refConst
+});
+const template27 = _$createComponent(Component, {
+  ref(r$) {
+    var _ref$7 = refUnknown;
+    typeof _ref$7 === "function" ? _ref$7(r$) : (refUnknown = r$);
   }
 });

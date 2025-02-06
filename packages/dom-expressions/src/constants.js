@@ -133,6 +133,7 @@ const SVGElements = /*#__PURE__*/ new Set([
   "feDiffuseLighting",
   "feDisplacementMap",
   "feDistantLight",
+  "feDropShadow",
   "feFlood",
   "feFuncA",
   "feFuncB",

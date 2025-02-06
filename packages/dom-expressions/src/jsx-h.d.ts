@@ -40,6 +40,7 @@ export namespace JSX {
       }
     ): void;
   }
+
   interface BoundEventHandler<T, E extends Event> {
     0: (
       data: any,
@@ -51,6 +52,19 @@ export namespace JSX {
     1: any;
   }
   type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+
+  interface EventHandlerWithOptions<T, E extends Event> extends AddEventListenerOptions {
+    handleEvent: (
+      e: E & {
+        currentTarget: T;
+        target: Element;
+      }
+    ) => void;
+  }
+
+  type EventHandlerWithOptionsUnion<T, E extends Event> =
+    | EventHandler<T, E>
+    | EventHandlerWithOptions<T, E>;
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
@@ -75,8 +89,8 @@ export namespace JSX {
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
+  interface ExplicitBoolAttributes {}
   interface CustomEvents {}
-  interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
@@ -102,14 +116,11 @@ export namespace JSX {
   type AttrAttributes = {
     [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key];
   };
-  type OnAttributes<T> = {
-    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>;
+  type BoolAttributes = {
+    [Key in keyof ExplicitBoolAttributes as `bool:${Key}`]?: ExplicitBoolAttributes[Key];
   };
-  type OnCaptureAttributes<T> = {
-    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
-      T,
-      CustomCaptureEvents[Key]
-    >;
+  type OnAttributes<T> = {
+    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandlerWithOptionsUnion<T, CustomEvents[Key]>;
   };
   interface DOMAttributes<T>
     extends CustomAttributes<T>,
@@ -117,10 +128,11 @@ export namespace JSX {
       DirectiveFunctionAttributes<T>,
       PropAttributes,
       AttrAttributes,
+      BoolAttributes,
       OnAttributes<T>,
-      OnCaptureAttributes<T>,
       CustomEventHandlersCamelCase<T>,
-      CustomEventHandlersLowerCase<T> {
+      CustomEventHandlersLowerCase<T>,
+      CustomEventHandlersNamespaced<T> {
     children?: Element;
     innerHTML?: string;
     innerText?: string | number;
@@ -147,6 +159,17 @@ export namespace JSX {
     onfocusin?: EventHandlerUnion<T, FocusEvent>;
     onencrypted?: EventHandlerUnion<T, Event>;
     ondragexit?: EventHandlerUnion<T, DragEvent>;
+    // namespaced events
+    "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent>;
+    "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent>;
+    "on:paste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent>;
+    "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent>;
+    "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent>;
+    "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent>;
+    "on:focusout"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:focusin"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:encrypted"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent>;
   }
   interface CustomEventHandlersCamelCase<T> {
     onAbort?: EventHandlerUnion<T, Event>;
@@ -155,6 +178,7 @@ export namespace JSX {
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent>;
     onAuxClick?: EventHandlerUnion<T, MouseEvent>;
     onBeforeInput?: EventHandlerUnion<T, InputEvent>;
+    onBeforeToggle?: EventHandlerUnion<T, ToggleEvent>;
     onBlur?: EventHandlerUnion<T, FocusEvent>;
     onCanPlay?: EventHandlerUnion<T, Event>;
     onCanPlayThrough?: EventHandlerUnion<T, Event>;
@@ -212,14 +236,10 @@ export namespace JSX {
     onSeeking?: EventHandlerUnion<T, Event>;
     onSelect?: EventHandlerUnion<T, UIEvent>;
     onStalled?: EventHandlerUnion<T, Event>;
-    onSubmit?: EventHandlerUnion<
-      T,
-      Event & {
-        submitter: HTMLElement;
-      }
-    >;
+    onSubmit?: EventHandlerUnion<T, SubmitEvent>;
     onSuspend?: EventHandlerUnion<T, Event>;
     onTimeUpdate?: EventHandlerUnion<T, Event>;
+    onToggle?: EventHandlerUnion<T, ToggleEvent>;
     onTouchCancel?: EventHandlerUnion<T, TouchEvent>;
     onTouchEnd?: EventHandlerUnion<T, TouchEvent>;
     onTouchMove?: EventHandlerUnion<T, TouchEvent>;
@@ -232,9 +252,7 @@ export namespace JSX {
     onWaiting?: EventHandlerUnion<T, Event>;
     onWheel?: EventHandlerUnion<T, WheelEvent>;
   }
-  /**
-   * @type {GlobalEventHandlers}
-   */
+  /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
     onabort?: EventHandlerUnion<T, Event>;
     onanimationend?: EventHandlerUnion<T, AnimationEvent>;
@@ -242,6 +260,7 @@ export namespace JSX {
     onanimationstart?: EventHandlerUnion<T, AnimationEvent>;
     onauxclick?: EventHandlerUnion<T, MouseEvent>;
     onbeforeinput?: EventHandlerUnion<T, InputEvent>;
+    onbeforetoggle?: EventHandlerUnion<T, ToggleEvent>;
     onblur?: EventHandlerUnion<T, FocusEvent>;
     oncanplay?: EventHandlerUnion<T, Event>;
     oncanplaythrough?: EventHandlerUnion<T, Event>;
@@ -299,14 +318,10 @@ export namespace JSX {
     onseeking?: EventHandlerUnion<T, Event>;
     onselect?: EventHandlerUnion<T, UIEvent>;
     onstalled?: EventHandlerUnion<T, Event>;
-    onsubmit?: EventHandlerUnion<
-      T,
-      Event & {
-        submitter: HTMLElement;
-      }
-    >;
+    onsubmit?: EventHandlerUnion<T, SubmitEvent>;
     onsuspend?: EventHandlerUnion<T, Event>;
     ontimeupdate?: EventHandlerUnion<T, Event>;
+    ontoggle?: EventHandlerUnion<T, ToggleEvent>;
     ontouchcancel?: EventHandlerUnion<T, TouchEvent>;
     ontouchend?: EventHandlerUnion<T, TouchEvent>;
     ontouchmove?: EventHandlerUnion<T, TouchEvent>;
@@ -318,6 +333,87 @@ export namespace JSX {
     onvolumechange?: EventHandlerUnion<T, Event>;
     onwaiting?: EventHandlerUnion<T, Event>;
     onwheel?: EventHandlerUnion<T, WheelEvent>;
+  }
+  interface CustomEventHandlersNamespaced<T> {
+    "on:abort"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:animationend"?: EventHandlerWithOptionsUnion<T, AnimationEvent>;
+    "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent>;
+    "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent>;
+    "on:auxclick"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:beforeinput"?: EventHandlerWithOptionsUnion<T, InputEvent>;
+    "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent>;
+    "on:blur"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:canplay"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:change"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:dblclick"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:drag"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragend"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragenter"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragleave"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragover"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:dragstart"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:drop"?: EventHandlerWithOptionsUnion<T, DragEvent>;
+    "on:durationchange"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:emptied"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:ended"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:error"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:focus"?: EventHandlerWithOptionsUnion<T, FocusEvent>;
+    "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:input"?: EventHandlerWithOptionsUnion<T, InputEvent>;
+    "on:invalid"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:keydown"?: EventHandlerWithOptionsUnion<T, KeyboardEvent>;
+    "on:keypress"?: EventHandlerWithOptionsUnion<T, KeyboardEvent>;
+    "on:keyup"?: EventHandlerWithOptionsUnion<T, KeyboardEvent>;
+    "on:load"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:loadeddata"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:loadedmetadata"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:loadstart"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:lostpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:mousedown"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseenter"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseleave"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mousemove"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseout"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseover"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:mouseup"?: EventHandlerWithOptionsUnion<T, MouseEvent>;
+    "on:pause"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:play"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:playing"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:pointercancel"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerdown"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerenter"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerleave"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointermove"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerout"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerover"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:pointerup"?: EventHandlerWithOptionsUnion<T, PointerEvent>;
+    "on:progress"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:ratechange"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:reset"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:scroll"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:scrollend"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:seeked"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:seeking"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:select"?: EventHandlerWithOptionsUnion<T, UIEvent>;
+    "on:stalled"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent>;
+    "on:suspend"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:timeupdate"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:toggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent>;
+    "on:touchcancel"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:touchend"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:touchmove"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:touchstart"?: EventHandlerWithOptionsUnion<T, TouchEvent>;
+    "on:transitionstart"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:transitionend"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:transitionrun"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:transitioncancel"?: EventHandlerWithOptionsUnion<T, TransitionEvent>;
+    "on:volumechange"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:waiting"?: EventHandlerWithOptionsUnion<T, Event>;
+    "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent>;
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
@@ -370,145 +466,203 @@ export namespace JSX {
 
   // All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
   interface AriaAttributes {
-    /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
+    /**
+     * Identifies the currently active element when DOM focus is on a composite widget, textbox,
+     * group, or application.
+     */
     "aria-activedescendant"?: string;
-    /** Indicates whether assistive technologies will present all, or only parts of, the changed region based on the change notifications defined by the aria-relevant attribute. */
+    /**
+     * Indicates whether assistive technologies will present all, or only parts of, the changed
+     * region based on the change notifications defined by the aria-relevant attribute.
+     */
     "aria-atomic"?: boolean | "false" | "true";
     /**
-     * Indicates whether inputting text could trigger display of one or more predictions of the user's intended value for an input and specifies how predictions would be
-     * presented if they are made.
+     * Indicates whether inputting text could trigger display of one or more predictions of the
+     * user's intended value for an input and specifies how predictions would be presented if they
+     * are made.
      */
     "aria-autocomplete"?: "none" | "inline" | "list" | "both";
-    /** Indicates an element is being modified and that assistive technologies MAY want to wait until the modifications are complete before exposing them to the user. */
+    /**
+     * Indicates an element is being modified and that assistive technologies MAY want to wait until
+     * the modifications are complete before exposing them to the user.
+     */
     "aria-busy"?: boolean | "false" | "true";
     /**
      * Indicates the current "checked" state of checkboxes, radio buttons, and other widgets.
+     *
      * @see aria-pressed @see aria-selected.
      */
     "aria-checked"?: boolean | "false" | "mixed" | "true";
     /**
      * Defines the total number of columns in a table, grid, or treegrid.
+     *
      * @see aria-colindex.
      */
     "aria-colcount"?: number | string;
     /**
-     * Defines an element's column index or position with respect to the total number of columns within a table, grid, or treegrid.
+     * Defines an element's column index or position with respect to the total number of columns
+     * within a table, grid, or treegrid.
+     *
      * @see aria-colcount @see aria-colspan.
      */
     "aria-colindex"?: number | string;
     /**
-     * Defines the number of columns spanned by a cell or gridcell within a table, grid, or treegrid.
+     * Defines the number of columns spanned by a cell or gridcell within a table, grid, or
+     * treegrid.
+     *
      * @see aria-colindex @see aria-rowspan.
      */
     "aria-colspan"?: number | string;
     /**
-     * Identifies the element (or elements) whose contents or presence are controlled by the current element.
+     * Identifies the element (or elements) whose contents or presence are controlled by the current
+     * element.
+     *
      * @see aria-owns.
      */
     "aria-controls"?: string;
-    /** Indicates the element that represents the current item within a container or set of related elements. */
+    /**
+     * Indicates the element that represents the current item within a container or set of related
+     * elements.
+     */
     "aria-current"?: boolean | "false" | "true" | "page" | "step" | "location" | "date" | "time";
     /**
      * Identifies the element (or elements) that describes the object.
+     *
      * @see aria-labelledby
      */
     "aria-describedby"?: string;
     /**
      * Identifies the element that provides a detailed, extended description for the object.
+     *
      * @see aria-describedby.
      */
     "aria-details"?: string;
     /**
-     * Indicates that the element is perceivable but disabled, so it is not editable or otherwise operable.
+     * Indicates that the element is perceivable but disabled, so it is not editable or otherwise
+     * operable.
+     *
      * @see aria-hidden @see aria-readonly.
      */
     "aria-disabled"?: boolean | "false" | "true";
     /**
-     * Indicates what functions can be performed when a dragged object is released on the drop target.
-     * @deprecated in ARIA 1.1
+     * Indicates what functions can be performed when a dragged object is released on the drop
+     * target.
+     *
+     * @deprecated In ARIA 1.1
      */
     "aria-dropeffect"?: "none" | "copy" | "execute" | "link" | "move" | "popup";
     /**
      * Identifies the element that provides an error message for the object.
+     *
      * @see aria-invalid @see aria-describedby.
      */
     "aria-errormessage"?: string;
-    /** Indicates whether the element, or another grouping element it controls, is currently expanded or collapsed. */
+    /**
+     * Indicates whether the element, or another grouping element it controls, is currently expanded
+     * or collapsed.
+     */
     "aria-expanded"?: boolean | "false" | "true";
     /**
-     * Identifies the next element (or elements) in an alternate reading order of content which, at the user's discretion,
-     * allows assistive technology to override the general default of reading in document source order.
+     * Identifies the next element (or elements) in an alternate reading order of content which, at
+     * the user's discretion, allows assistive technology to override the general default of reading
+     * in document source order.
      */
     "aria-flowto"?: string;
     /**
      * Indicates an element's "grabbed" state in a drag-and-drop operation.
-     * @deprecated in ARIA 1.1
+     *
+     * @deprecated In ARIA 1.1
      */
     "aria-grabbed"?: boolean | "false" | "true";
-    /** Indicates the availability and type of interactive popup element, such as menu or dialog, that can be triggered by an element. */
+    /**
+     * Indicates the availability and type of interactive popup element, such as menu or dialog,
+     * that can be triggered by an element.
+     */
     "aria-haspopup"?: boolean | "false" | "true" | "menu" | "listbox" | "tree" | "grid" | "dialog";
     /**
      * Indicates whether the element is exposed to an accessibility API.
+     *
      * @see aria-disabled.
      */
     "aria-hidden"?: boolean | "false" | "true";
     /**
      * Indicates the entered value does not conform to the format expected by the application.
+     *
      * @see aria-errormessage.
      */
     "aria-invalid"?: boolean | "false" | "true" | "grammar" | "spelling";
-    /** Indicates keyboard shortcuts that an author has implemented to activate or give focus to an element. */
+    /**
+     * Indicates keyboard shortcuts that an author has implemented to activate or give focus to an
+     * element.
+     */
     "aria-keyshortcuts"?: string;
     /**
      * Defines a string value that labels the current element.
+     *
      * @see aria-labelledby.
      */
     "aria-label"?: string;
     /**
      * Identifies the element (or elements) that labels the current element.
+     *
      * @see aria-describedby.
      */
     "aria-labelledby"?: string;
     /** Defines the hierarchical level of an element within a structure. */
     "aria-level"?: number | string;
-    /** Indicates that an element will be updated, and describes the types of updates the user agents, assistive technologies, and user can expect from the live region. */
+    /**
+     * Indicates that an element will be updated, and describes the types of updates the user
+     * agents, assistive technologies, and user can expect from the live region.
+     */
     "aria-live"?: "off" | "assertive" | "polite";
     /** Indicates whether an element is modal when displayed. */
     "aria-modal"?: boolean | "false" | "true";
     /** Indicates whether a text box accepts multiple lines of input or only a single line. */
     "aria-multiline"?: boolean | "false" | "true";
-    /** Indicates that the user may select more than one item from the current selectable descendants. */
+    /**
+     * Indicates that the user may select more than one item from the current selectable
+     * descendants.
+     */
     "aria-multiselectable"?: boolean | "false" | "true";
     /** Indicates whether the element's orientation is horizontal, vertical, or unknown/ambiguous. */
     "aria-orientation"?: "horizontal" | "vertical";
     /**
-     * Identifies an element (or elements) in order to define a visual, functional, or contextual parent/child relationship
-     * between DOM elements where the DOM hierarchy cannot be used to represent the relationship.
+     * Identifies an element (or elements) in order to define a visual, functional, or contextual
+     * parent/child relationship between DOM elements where the DOM hierarchy cannot be used to
+     * represent the relationship.
+     *
      * @see aria-controls.
      */
     "aria-owns"?: string;
     /**
-     * Defines a short hint (a word or short phrase) intended to aid the user with data entry when the control has no value.
-     * A hint could be a sample value or a brief description of the expected format.
+     * Defines a short hint (a word or short phrase) intended to aid the user with data entry when
+     * the control has no value. A hint could be a sample value or a brief description of the
+     * expected format.
      */
     "aria-placeholder"?: string;
     /**
-     * Defines an element's number or position in the current set of listitems or treeitems. Not required if all elements in the set are present in the DOM.
+     * Defines an element's number or position in the current set of listitems or treeitems. Not
+     * required if all elements in the set are present in the DOM.
+     *
      * @see aria-setsize.
      */
     "aria-posinset"?: number | string;
     /**
      * Indicates the current "pressed" state of toggle buttons.
+     *
      * @see aria-checked @see aria-selected.
      */
     "aria-pressed"?: boolean | "false" | "mixed" | "true";
     /**
      * Indicates that the element is not editable, but is otherwise operable.
+     *
      * @see aria-disabled.
      */
     "aria-readonly"?: boolean | "false" | "true";
     /**
-     * Indicates what notifications the user agent will trigger when the accessibility tree within a live region is modified.
+     * Indicates what notifications the user agent will trigger when the accessibility tree within a
+     * live region is modified.
+     *
      * @see aria-atomic.
      */
     "aria-relevant"?:
@@ -528,26 +682,33 @@ export namespace JSX {
     "aria-roledescription"?: string;
     /**
      * Defines the total number of rows in a table, grid, or treegrid.
+     *
      * @see aria-rowindex.
      */
     "aria-rowcount"?: number | string;
     /**
-     * Defines an element's row index or position with respect to the total number of rows within a table, grid, or treegrid.
+     * Defines an element's row index or position with respect to the total number of rows within a
+     * table, grid, or treegrid.
+     *
      * @see aria-rowcount @see aria-rowspan.
      */
     "aria-rowindex"?: number | string;
     /**
      * Defines the number of rows spanned by a cell or gridcell within a table, grid, or treegrid.
+     *
      * @see aria-rowindex @see aria-colspan.
      */
     "aria-rowspan"?: number | string;
     /**
      * Indicates the current "selected" state of various widgets.
+     *
      * @see aria-checked @see aria-pressed.
      */
     "aria-selected"?: boolean | "false" | "true";
     /**
-     * Defines the number of items in the current set of listitems or treeitems. Not required if all elements in the set are present in the DOM.
+     * Defines the number of items in the current set of listitems or treeitems. Not required if all
+     * elements in the set are present in the DOM.
+     *
      * @see aria-posinset.
      */
     "aria-setsize"?: number | string;
@@ -559,6 +720,7 @@ export namespace JSX {
     "aria-valuemin"?: number | string;
     /**
      * Defines the current value for a range widget.
+     *
      * @see aria-valuetext.
      */
     "aria-valuenow"?: number | string;
@@ -908,6 +1070,7 @@ export namespace JSX {
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoplay?: FunctionMaybe<boolean>;
     controls?: FunctionMaybe<boolean>;
+    controlslist?: FunctionMaybe<string>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin>;
     loop?: FunctionMaybe<boolean>;
     mediagroup?: FunctionMaybe<string>;
@@ -1013,6 +1176,8 @@ export namespace JSX {
     src?: FunctionMaybe<string>;
     srcset?: FunctionMaybe<string>;
     type?: FunctionMaybe<string>;
+    width?: FunctionMaybe<number | string>;
+    height?: FunctionMaybe<number | string>;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     media?: FunctionMaybe<string>;
@@ -1074,6 +1239,8 @@ export namespace JSX {
     playsinline?: FunctionMaybe<boolean>;
     poster?: FunctionMaybe<string>;
     width?: FunctionMaybe<number | string>;
+    disablepictureinpicture?: FunctionMaybe<boolean>;
+    disableremoteplayback?: FunctionMaybe<boolean>;
   }
   type SVGPreserveAspectRatio =
     | "none"
@@ -1820,6 +1987,7 @@ export namespace JSX {
     contentScriptType?: FunctionMaybe<string>;
     contentStyleType?: FunctionMaybe<string>;
     xmlns?: FunctionMaybe<string>;
+    "xmlns:xlink"?: FunctionMaybe<string>;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1890,11 +2058,14 @@ export namespace JSX {
     textLength?: FunctionMaybe<number | string>;
     lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs">;
   }
+  /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
-      ConditionalProcessingSVGAttributes,
-      ExternalResourceSVGAttributes,
+    extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
+      ConditionalProcessingSVGAttributes,
+      GraphicsElementSVGAttributes<T>,
+      PresentationSVGAttributes,
+      ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
     x?: FunctionMaybe<number | string>;
     y?: FunctionMaybe<number | string>;
@@ -1909,9 +2080,7 @@ export namespace JSX {
       ZoomAndPanSVGAttributes {
     viewTarget?: FunctionMaybe<string>;
   }
-  /**
-   * @type {HTMLElementTagNameMap}
-   */
+  /** @type {HTMLElementTagNameMap} */
   interface HTMLElementTags {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
@@ -2026,9 +2195,7 @@ export namespace JSX {
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
   }
-  /**
-   * @type {HTMLElementDeprecatedTagNameMap}
-   */
+  /** @type {HTMLElementDeprecatedTagNameMap} */
   interface HTMLElementDeprecatedTags {
     big: HTMLAttributes<HTMLElement>;
     keygen: KeygenHTMLAttributes<HTMLElement>;
@@ -2036,9 +2203,7 @@ export namespace JSX {
     noindex: HTMLAttributes<HTMLElement>;
     param: ParamHTMLAttributes<HTMLParamElement>;
   }
-  /**
-   * @type {SVGElementTagNameMap}
-   */
+  /** @type {SVGElementTagNameMap} */
   interface SVGElementTags {
     animate: AnimateSVGAttributes<SVGAnimateElement>;
     animateMotion: AnimateMotionSVGAttributes<SVGAnimateMotionElement>;

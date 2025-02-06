@@ -11,13 +11,14 @@ describe("r.hydrate", () => {
     _tmpl$ = r.template(`<span><!--#--><!--/--> John</span>`),
     _tmpl$2 = r.template(`<div>First</div>`),
     _tmpl$3 = r.template(`<div>Last</div>`);
+  document.body.appendChild(container);
   let result, rendered;
 
   it("hydrates simple text", () => {
     rendered = r2.renderToString(() =>
       r2.ssr(["<span", "><!--#-->", "<!--/--> John</span>"], r2.ssrHydrationKey(), r2.escape("Hi"))
     );
-    expect(rendered).toBe(`<span data-hk="0"><!--#-->Hi<!--/--> John</span>`);
+    expect(rendered).toBe(`<span data-hk=0><!--#-->Hi<!--/--> John</span>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,
@@ -50,7 +51,7 @@ describe("r.hydrate", () => {
       "middle",
       r2.ssr(["<div", ">Last</div>"], r2.ssrHydrationKey())
     ]);
-    expect(rendered).toBe(`<div data-hk="0">First</div>middle<div data-hk="1">Last</div>`);
+    expect(rendered).toBe(`<div data-hk=0>First</div>middle<div data-hk=1>Last</div>`);
     // gather refs
     container.innerHTML = rendered;
     const el1 = container.firstChild,

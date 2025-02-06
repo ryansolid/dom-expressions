@@ -2,12 +2,12 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/client";
-import * as S from "s-js";
+import { createSignal } from "@solidjs/signals";
 
 describe("render", () => {
   it("should render JSX", () => {
     let span;
-    const favoriteCar = S.data("Porsche 911 Turbo");
+    const [favoriteCar] = createSignal("Porsche 911 Turbo");
 
     const DynamicChild = props => (
       <span ref={props.ref}>

@@ -136,3 +136,8 @@ const comma = (() => {
   _$insert(_el$21, () => (expression(), "static"));
   return _el$21;
 })();
+const double = (() => {
+  var _el$22 = _$createElement("div");
+  _$insert(_el$22, () => children()());
+  return _el$22;
+})();
