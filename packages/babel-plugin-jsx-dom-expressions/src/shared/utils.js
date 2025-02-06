@@ -4,7 +4,6 @@ import { addNamed } from "@babel/helper-module-imports";
 export const reservedNameSpaces = new Set([
   "class",
   "on",
-  "oncapture",
   "style",
   "use",
   "prop",

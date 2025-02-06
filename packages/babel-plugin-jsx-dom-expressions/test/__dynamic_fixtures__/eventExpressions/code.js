@@ -27,7 +27,7 @@ const template = (
       Click Listener
     </button>
     <button
-      oncapture:camelClick={() => console.log("listener")}
+      on:camelClick={{ handleEvent() { console.log("listener") }, capture: true }}
     >
       Click Capture
     </button>

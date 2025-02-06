@@ -38,7 +38,12 @@ const template = (() => {
   _$addEventListener(_el$6, "hoisted-custom-event1", hoistedCustomEvent1);
   _$addEventListener(_el$6, "CAPS-ev2", () => console.log("custom"));
   _$addEventListener(_el$6, "click", () => console.log("listener"));
-  _el$7.addEventListener("camelClick", () => console.log("listener"), true);
+  _$addEventListener(_el$7, "camelClick", {
+    handleEvent() {
+      console.log("listener");
+    },
+    capture: true
+  });
   _$runHydrationEvents();
   return _el$;
 })();
