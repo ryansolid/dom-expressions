@@ -160,8 +160,6 @@ export namespace JSX {
   interface ExplicitAttributes {}
   interface ExplicitBoolAttributes {}
   interface CustomEvents {}
-  /** @deprecated Replaced by CustomEvents */
-  interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
@@ -192,12 +190,6 @@ export namespace JSX {
   };
   type OnAttributes<T> = {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandlerWithOptionsUnion<T, CustomEvents[Key]>;
-  };
-  type OnCaptureAttributes<T> = {
-    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
-      T,
-      CustomCaptureEvents[Key]
-    >;
   };
 
   // events
@@ -722,7 +714,6 @@ export namespace JSX {
       AttrAttributes,
       BoolAttributes,
       OnAttributes<T>,
-      OnCaptureAttributes<T>,
       CustomEventHandlersCamelCase<T>,
       CustomEventHandlersLowerCase<T>,
       CustomEventHandlersNamespaced<T> {

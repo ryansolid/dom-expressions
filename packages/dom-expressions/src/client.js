@@ -390,10 +390,6 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     const e = prop.slice(3);
     prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
     value && node.addEventListener(e, value, typeof value !== "function" && value);
-  } else if (prop.slice(0, 10) === "oncapture:") {
-    const e = prop.slice(10);
-    prev && node.removeEventListener(e, prev, true);
-    value && node.addEventListener(e, value, true);
   } else if (prop.slice(0, 2) === "on") {
     const name = prop.slice(2).toLowerCase();
     const delegate = DelegatedEvents.has(name);

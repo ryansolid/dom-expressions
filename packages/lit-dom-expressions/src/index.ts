@@ -74,7 +74,7 @@ const findAttributes = new RegExp(
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 const marker = "<!--#-->";
-const reservedNameSpaces = new Set(["class", "on", "oncapture", "style", "use", "prop", "attr"]);
+const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -237,11 +237,8 @@ export function createHTML(
         );
         delegate && options.delegatedEvents.add(lc);
       } else {
-        let capture = name.startsWith("oncapture:");
         options.exprs.push(
-          `${tag}.addEventListener("${name.slice(capture ? 10 : 3)}",exprs[${options.counter++}]${
-            capture ? ",true" : ""
-          })`
+          `${tag}.addEventListener("${name.slice(3)}",exprs[${options.counter++}])`
         );
       }
     } else if (name === "ref") {

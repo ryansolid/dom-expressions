@@ -648,18 +648,6 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (key.startsWith("oncapture:")) {
-            // deprecated see above condition
-            const args = [
-              t.stringLiteral(key.split(":")[1]),
-              value.expression,
-              t.booleanLiteral(true)
-            ];
-            results.exprs.push(
-              t.expressionStatement(
-                t.callExpression(t.memberExpression(elem, t.identifier("addEventListener")), args)
-              )
-            );
           } else if (
             config.delegateEvents &&
             (DelegatedEvents.has(ev) || config.delegatedEvents.indexOf(ev) !== -1)
