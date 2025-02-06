@@ -52,7 +52,12 @@ const template = (() => {
   _$addEventListener(_el$12, "hoisted-custom-event1", hoistedCustomEvent1);
   _$addEventListener(_el$12, "CAPS-ev", () => console.log("custom"));
   _$addEventListener(_el$12, "click", () => console.log("listener"));
-  _el$13.addEventListener("camelClick", () => console.log("listener"), true);
+  _$addEventListener(_el$13, "camelClick", {
+    handleEvent() {
+      console.log("listener");
+    },
+    capture: true
+  });
   return _el$;
 })();
 _$delegateEvents(["click"]);
