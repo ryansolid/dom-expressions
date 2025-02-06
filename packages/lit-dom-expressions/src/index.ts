@@ -180,7 +180,6 @@ export function createHTML(
     name: string,
     value: string,
     isSVG: boolean,
-    isCE: boolean,
     options: Options
   ) {
     let expr, parts, namespace;
@@ -227,7 +226,6 @@ export function createHTML(
     name: string,
     value: string,
     isSVG: boolean,
-    isCE: boolean,
     options: Options
   ) {
     if (name.slice(0, 2) === "on") {
@@ -251,7 +249,7 @@ export function createHTML(
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
-      parseKeyValue(node, tag, name, value, isSVG, isCE, childOptions);
+      parseKeyValue(node, tag, name, value, isSVG, childOptions);
       options.decl.push(`_fn${count} = (_$v) => {\n${childOptions.exprs.join(";\n")};\n}`);
       if (value === "###") {
         options.exprs.push(
@@ -455,8 +453,7 @@ export function createHTML(
         topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
       const isSVG = r.SVGElements.has(node.name);
-      const isCE = node.name.includes("-") || node.attrs.some(e => e.name === "is");
-      options.hasCustomElement = isCE;
+      options.hasCustomElement = node.name.includes("-") || node.attrs.some(e => e.name === "is");
       options.isImportNode =
         (node.name === "img" || node.name === "iframe") &&
         node.attrs.some(e => e.name === "loading" && e.value === "lazy");
@@ -508,7 +505,7 @@ export function createHTML(
             if (value.includes("###")) {
               node.attrs.splice(i, 1);
               i--;
-              parseAttribute(node, tag, name, value, isSVG, isCE, options);
+              parseAttribute(node, tag, name, value, isSVG, options);
             }
           }
         }
