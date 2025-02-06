@@ -48,7 +48,7 @@ export function appendTemplates(path, templates) {
       raw: escapeStringForTemplate(template.template)
     };
 
-    const shouldUseImportNode = template.isCE || template.isImportNode
+    const shouldUseImportNode = template.isCE || template.isImportNode;
 
     return t.variableDeclarator(
       template.id,
@@ -139,7 +139,6 @@ function wrapDynamics(path, dynamics) {
           prevValue ? [newValue, prevValue] : [newValue],
           setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
             isSVG: dynamics[0].isSVG,
-            isCE: dynamics[0].isCE,
             tagName: dynamics[0].tagName,
             dynamic: true,
             prevId: prevValue
@@ -158,7 +157,7 @@ function wrapDynamics(path, dynamics) {
   /** @type {t.Identifier[]} */
   const properties = [];
 
-  dynamics.forEach(({ elem, key, value, isSVG, isCE, tagName }, index) => {
+  dynamics.forEach(({ elem, key, value, isSVG, tagName }, index) => {
     const propIdent = t.identifier(getNumberedId(index));
     const propMember = t.memberExpression(prevId, propIdent);
 
@@ -177,7 +176,6 @@ function wrapDynamics(path, dynamics) {
             propMember,
             setAttr(path, elem, key, propIdent, {
               isSVG,
-              isCE,
               tagName,
               dynamic: true,
               prevId: propMember
@@ -194,7 +192,6 @@ function wrapDynamics(path, dynamics) {
             t.binaryExpression("!==", propIdent, propMember),
             setAttr(path, elem, key, propIdent, {
               isSVG,
-              isCE,
               tagName,
               dynamic: true,
               prevId: prev

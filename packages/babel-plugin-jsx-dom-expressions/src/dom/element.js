@@ -148,7 +148,7 @@ export function transformElement(path, info) {
   return results;
 }
 
-export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE, tagName }) {
+export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagName }) {
   // pull out namespace
   const config = getConfig(path);
   let parts, namespace;
@@ -305,7 +305,6 @@ function transformAttributes(path, results) {
     attributes = path.get("openingElement").get("attributes");
   const tagName = getTagName(path.node),
     isSVG = SVGElements.has(tagName),
-    isCE = tagName.includes("-") || attributes.some(a => a.node.name?.name === "is"),
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
 
@@ -489,8 +488,7 @@ function transformAttributes(path, results) {
           !(
             t.isStringLiteral(value.expression) ||
             t.isNumericLiteral(value.expression) ||
-            // remove `!isCE` when custom elements start defaulting to attributes
-            (t.isBooleanLiteral(value.expression) && !isCE)
+            t.isBooleanLiteral(value.expression)
           ))
       ) {
         if (key === "ref") {
@@ -725,8 +723,7 @@ function transformAttributes(path, results) {
                     [v],
                     setAttr(path, elem, key, v, {
                       tagName,
-                      isSVG,
-                      isCE
+                      isSVG
                     })
                   )
                 ])
@@ -747,7 +744,6 @@ function transformAttributes(path, results) {
             key,
             value: value.expression,
             isSVG,
-            isCE,
             tagName
           });
         } else if (key.slice(0, 5) === "bool:") {
@@ -793,14 +789,14 @@ function transformAttributes(path, results) {
                 elem,
                 key,
                 t.isJSXExpressionContainer(value) ? value.expression : value,
-                { isSVG, isCE, tagName }
+                { isSVG, tagName }
               )
             )
           );
         } else {
           results.exprs.push(
             t.expressionStatement(
-              setAttr(attribute, elem, key, value.expression, { isSVG, isCE, tagName })
+              setAttr(attribute, elem, key, value.expression, { isSVG, tagName })
             )
           );
         }
@@ -826,7 +822,7 @@ function transformAttributes(path, results) {
         key = Aliases[key] || key;
         if (value && ChildProperties.has(key)) {
           results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE, tagName }))
+            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, tagName }))
           );
         } else {
           /*!isSVG && (key = key.toLowerCase());*/
