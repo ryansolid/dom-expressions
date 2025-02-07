@@ -9,7 +9,7 @@ This package is a JSX compiler built for [DOM Expressions](https://github.com/ry
 
 ## Features
 
-This plugin treats all lowercase tags as html elements and mixed cased tags as Custom Functions. This enables breaking up your view into components. This library supports Web Component Custom Elements spec. Support for common camelcase event handlers like React, dom safe attributes like class and for, a simple ref property, and parsing of objects for style, and classList properties.
+This plugin treats all lowercase tags as html elements and mixed cased tags as Custom Functions. This enables breaking up your view into components. This library supports Web Component Custom Elements spec. Support for common camelcase event handlers like React, dom safe attributes like class and for, a simple ref property, and parsing of objects for style, and class properties.
 
 In general JSX Attribute Expressions are treated as attributes by default, with exception custom elements that will to properties and special fields like `class` and `style`. Plain string attributes will be treated as attributes.
 
@@ -219,14 +219,6 @@ To bypass event delegation and use normal Level 3 "addEventListener" events.
 
 ```jsx
 <div on:Weird-Event={e => alert(e.detail)} />
-```
-
-### classList
-
-This takes an object and assigns all the keys as classes which are truthy.
-
-```jsx
-<div classList={{ selected: isSelected(), editing: isEditing() }} />
 ```
 
 ### ... (spreads)

@@ -1,21 +1,24 @@
 import * as styles from "./styles.module.css";
+import { binding } from "somewhere";
+
+function refFn() {}
+const refConst = null;
 
 const selected = true;
 let id = "my-h1";
 let link;
 const template = (
-  <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
+  <div id="main" {...results} class={{ selected: unknown }} style={{ color }}>
     <h1
-      class="base"
       id={id}
       {...results()}
       foo
       disabled
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
-      classList={{ dynamic: dynamic(), selected }}
+      class={["base", { dynamic: dynamic(), selected }]}
     >
-      <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
+      <a href={"/"} ref={link} class={{ "ccc ddd": true }}>
         Welcome
       </a>
     </h1>
@@ -40,7 +43,7 @@ const template3 = (
   />
 );
 
-const template4 = <div class="hi" className={state.class} classList={{ "ccc:ddd": true }} />;
+const template4 = <div className={state.class} class={{ "ccc:ddd": true }} />;
 
 const template5 = <div class="a" className="b"></div>;
 
@@ -53,7 +56,7 @@ const template7 = (
     style:padding-top={props.top}
     class:my-class={props.active}
     class:other-class={undefVar}
-    classList={{ "other-class2": undefVar }}
+    class={{ "other-class2": undefVar }}
   />
 );
 
@@ -76,10 +79,9 @@ const template15 = <div class="`a">`$`</div>;
 
 const template16 = (
   <button
-    class="static"
-    classList={{
+    class={["static",{
       hi: "k"
-    }}
+    }]}
     type="button"
   >
     Write
@@ -88,7 +90,7 @@ const template16 = (
 
 const template17 = (
   <button
-    classList={{
+    class={{
       a: true,
       b: true,
       c: true
@@ -109,7 +111,7 @@ const template18 = (
   />
 );
 
-const template19 = <div classList={{ "bg-red-500": true }} class="flex flex-col" />;
+const template19 = <div class={[{ "bg-red-500": true }, "flex flex-col"]} />;
 
 const template20 = (
   <div>
@@ -202,3 +204,59 @@ const template41 = (
     <option value={Color.Blue}>Blue</option>
   </select>
 );
+
+// bool:
+function boolTest(){return true}
+const boolTestBinding = false
+const boolTestObjBinding = {value:false}
+
+const template42 = <div bool:quack="">empty string</div>;
+const template43 = <div bool:quack={""}>js empty</div>;
+const template44 = <div bool:quack="hola">hola</div>;
+const template45 = <div bool:quack={"hola js"}>"hola js"</div>;
+const template46 = <div bool:quack={true}>true</div>;
+const template47 = <div bool:quack={false}>false</div>;
+const template48 = <div bool:quack={1}>1</div>;
+const template49 = <div bool:quack={0}>0</div>;
+const template50 = <div bool:quack={"1"}>"1"</div>;
+const template51 = <div bool:quack={"0"}>"0"</div>;
+const template52 = <div bool:quack={undefined}>undefined</div>;
+const template53 = <div bool:quack={null}>null</div>;
+const template54 = <div bool:quack={boolTest()}>boolTest()</div>;
+const template55 = <div bool:quack={boolTest}>boolTest</div>;
+const template56 = <div bool:quack={boolTestBinding}>boolTestBinding</div>;
+const template57 = <div bool:quack={boolTestObjBinding.value}>boolTestObjBinding.value</div>;
+const template58 = <div bool:quack={()=>false}>fn</div>;
+
+const template59 = <div before bool:quack="true">should have space before</div>;
+const template60 = <div before bool:quack="true" after>should have space before/after</div>;
+const template61 = <div bool:quack="true" after>should have space before/after</div>;
+// this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
+
+const template63 = <img src="" />;
+const template64 = <div><img src=""/></div>;
+
+const template65 = <img src="" loading="lazy"/>;
+const template66 = <div><img src="" loading="lazy"/></div>;
+
+const template67 = <iframe src=""></iframe>;
+const template68 = <div><iframe src=""></iframe></div>;
+
+const template69 = <iframe src="" loading="lazy"></iframe>;
+const template70 = <div><iframe src="" loading="lazy"></iframe></div>;
+
+const template71 = <div title="<u>data</u>"/>
+
+const template72 = <div ref={binding} />;
+const template73 = <div ref={binding.prop} />;
+const template74 = <div ref={refFn} />
+const template75 = <div ref={refConst} />
+
+const template76 = <div ref={refUnknown} />
+
+const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
+const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
+const template79 = <div prop:true={true} prop:false={false}/>
+const template80 = <div attr:true={true} attr:false={false}/>
+
+const template81 = <div a b="" c='' d={true} e={false} f={0} g={''} h={""} i={undefined} j={null} k={void 0} l/>

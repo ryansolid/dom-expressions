@@ -21,7 +21,7 @@ describe("Test HyperScript", () => {
       h("h1", "Welcome"),
       h("p", 10n, dollar),
       h("span", { style: "color: #555" }, 555),
-      h("label.name", { htmlFor: "entry" }, "Edit:"),
+      h("label.name", { for: "entry" }, "Edit:"),
       h("input#entry", { type: "text", readonly: true })
     ])();
     expect(template.outerHTML).toBe(FIXTURES[0]);
@@ -36,7 +36,7 @@ describe("Test HyperScript", () => {
       h(
         "#main",
         {
-          classList: () => ({ selected: selected() }),
+          class: () => ({ selected: selected() }),
           ref: el => {
             el.setAttribute("refset", "true");
           }

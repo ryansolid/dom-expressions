@@ -5,23 +5,22 @@ import { insert as _$insert } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
-import { className as _$className } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
-import { classList as _$classList } from "r-dom";
+import { className as _$className } from "r-dom";
 import { use as _$use } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-dom";
-var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a href=/>Welcome`),
+var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welcome`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b">`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<button class="static hi"type=button>Write`),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<div class="bg-red-500 flex flex-col">`),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div class=a className=b>`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox checked>`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<button type=button>Write`),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
   _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly><input>`),
   _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<a>`),
@@ -63,10 +62,11 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
   _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
   _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
-  _tmpl$50 = /*#__PURE__*/ _$template(`<div truestr=true truestrjs=true>`),
-  _tmpl$51 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
-  _tmpl$52 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
-  _tmpl$53 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true);
+  _tmpl$50 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
+  _tmpl$51 = /*#__PURE__*/ _$template(`<div false falsestr=false falsestrjs=false>`),
+  _tmpl$52 = /*#__PURE__*/ _$template(`<div a b c d e f=0 g h l>`),
+  _tmpl$53 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
+  _tmpl$54 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -81,7 +81,7 @@ const template = (() => {
   _$spread(
     _el$,
     _$mergeProps(results, {
-      classList: {
+      class: {
         selected: unknown
       },
       style: {
@@ -105,11 +105,14 @@ const template = (() => {
           "margin-right": "40px"
         };
       },
-      get classList() {
-        return {
-          dynamic: dynamic(),
-          selected
-        };
+      get ["class"]() {
+        return [
+          "base",
+          {
+            dynamic: dynamic(),
+            selected
+          }
+        ];
       }
     }),
     false,
@@ -117,7 +120,7 @@ const template = (() => {
   );
   var _ref$ = link;
   typeof _ref$ === "function" ? _$use(_ref$, _el$3) : (link = _el$3);
-  _$classList(_el$3, {
+  _$className(_el$3, {
     "ccc ddd": true
   });
   return _el$;
@@ -157,12 +160,12 @@ const template3 = (() => {
 })();
 const template4 = (() => {
   var _el$10 = _tmpl$4();
-  _$classList(_el$10, {
+  _$className(_el$10, {
     "ccc:ddd": true
   });
   _$effect(
-    () => `hi ${state.class || ""}`,
-    _v$ => _$className(_el$10, _v$)
+    () => state.class,
+    _v$ => _$setAttribute(_el$10, "className", _v$)
   );
   return _el$10;
 })();
@@ -236,23 +239,28 @@ const template12 = (() => {
   _$setAttribute(_el$18, "onclick", "console.log('hi')");
   return _el$18;
 })();
-const template13 = (() => {
-  var _el$19 = _tmpl$6();
-  _el$19.checked = true;
-  return _el$19;
-})();
+const template13 = _tmpl$6();
 const template14 = (() => {
-  var _el$20 = _tmpl$6();
+  var _el$20 = _tmpl$7();
   _$effect(
     () => state.visible,
     _v$ => (_el$20.checked = _v$)
   );
   return _el$20;
 })();
-const template15 = _tmpl$7();
-const template16 = _tmpl$8();
+const template15 = _tmpl$8();
+const template16 = (() => {
+  var _el$22 = _tmpl$9();
+  _$className(_el$22, [
+    "static",
+    {
+      hi: "k"
+    }
+  ]);
+  return _el$22;
+})();
 const template17 = (() => {
-  var _el$23 = _tmpl$9();
+  var _el$23 = _tmpl$10();
   _$addEventListener(_el$23, "click", increment, true);
   return _el$23;
 })();
@@ -270,7 +278,16 @@ const template18 = (() => {
   );
   return _el$24;
 })();
-const template19 = _tmpl$10();
+const template19 = (() => {
+  var _el$25 = _tmpl$4();
+  _$className(_el$25, [
+    {
+      "bg-red-500": true
+    },
+    "flex flex-col"
+  ]);
+  return _el$25;
+})();
 const template20 = (() => {
   var _el$26 = _tmpl$11(),
     _el$27 = _el$26.firstChild,
@@ -410,19 +427,25 @@ const template32 = (() => {
 const template33 = [
   (() => {
     var _el$46 = _tmpl$18();
-    _$className(_el$46, styles.button);
+    _$effect(
+      () => styles.button,
+      (_v$, _$p) => _$className(_el$46, _v$, false, _$p)
+    );
     return _el$46;
   })(),
   (() => {
     var _el$47 = _tmpl$18();
-    _$className(_el$47, styles["foo--bar"]);
+    _$effect(
+      () => styles["foo--bar"],
+      (_v$, _$p) => _$className(_el$47, _v$, false, _$p)
+    );
     return _el$47;
   })(),
   (() => {
     var _el$48 = _tmpl$18();
     _$effect(
       () => styles.foo.bar,
-      _v$ => _$className(_el$48, _v$)
+      (_v$, _$p) => _$className(_el$48, _v$, false, _$p)
     );
     return _el$48;
   })(),
@@ -430,7 +453,7 @@ const template33 = [
     var _el$49 = _tmpl$18();
     _$effect(
       () => styles[foo()],
-      _v$ => _$className(_el$49, _v$)
+      (_v$, _$p) => _$className(_el$49, _v$, false, _$p)
     );
     return _el$49;
   })()
@@ -585,16 +608,8 @@ const template76 = (() => {
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$93) : (refUnknown = _el$93);
   return _el$93;
 })();
-const template77 = (() => {
-  var _el$94 = _tmpl$50();
-  _$setAttribute(_el$94, "true", true);
-  return _el$94;
-})();
-const template78 = (() => {
-  var _el$95 = _tmpl$51();
-  _$setAttribute(_el$95, "false", false);
-  return _el$95;
-})();
+const template77 = _tmpl$50();
+const template78 = _tmpl$51();
 const template79 = (() => {
   var _el$96 = _tmpl$4();
   _el$96.true = true;
@@ -607,6 +622,13 @@ const template80 = (() => {
   _$setAttribute(_el$97, "false", false);
   return _el$97;
 })();
-const template81 = _tmpl$52();
+const template81 = (() => {
+  var _el$98 = _tmpl$52();
+  _$setAttribute(_el$98, "i", undefined);
+  _$setAttribute(_el$98, "j", null);
+  _$setAttribute(_el$98, "k", void 0);
+  return _el$98;
+})();
 const template82 = _tmpl$53();
+const template83 = _tmpl$54();
 _$delegateEvents(["click", "input"]);
