@@ -57,15 +57,17 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$41 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
   _tmpl$42 = /*#__PURE__*/ _$template(`<img src>`),
   _tmpl$43 = /*#__PURE__*/ _$template(`<div><img src>`),
-  _tmpl$44 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false),
-  _tmpl$45 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false),
+  _tmpl$44 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
+  _tmpl$45 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
   _tmpl$46 = /*#__PURE__*/ _$template(`<iframe src>`),
   _tmpl$47 = /*#__PURE__*/ _$template(`<div><iframe src>`),
-  _tmpl$48 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false),
-  _tmpl$49 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false),
+  _tmpl$48 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
+  _tmpl$49 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
   _tmpl$50 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
   _tmpl$51 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
-  _tmpl$52 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`);
+  _tmpl$52 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
+  _tmpl$53 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
+  _tmpl$54 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -560,4 +562,6 @@ const template80 = (() => {
   _$setAttribute(_el$97, "false", false);
   return _el$97;
 })();
+const template81 = _tmpl$53();
+const template82 = _tmpl$54();
 _$delegateEvents(["click", "input"]);

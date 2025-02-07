@@ -64,16 +64,20 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, isImportNode, isSVG) {
+export function template(html, isImportNode, isSVG, isMathML) {
   let node;
   const create = () => {
     if ("_DX_DEV_" && isHydrating())
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
       );
-    const t = document.createElement("template");
+
+    const t = isMathML
+      ? document.createElementNS("http://www.w3.org/1998/Math/MathML", "template")
+      : document.createElement("template");
     t.innerHTML = html;
-    return isSVG ? t.content.firstChild.firstChild : t.content.firstChild;
+
+    return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
   };
   // backwards compatible with older builds
   const fn = isImportNode
@@ -260,7 +264,9 @@ export function getNextElement(template) {
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if ("_DX_DEV_" && hydrating) {
       sharedConfig.done = true;
-      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`);
+      throw new Error(
+        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${template ? template().outerHTML : ""}`
+      );
     }
     return template();
   }
@@ -366,7 +372,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     (isChildProp = ChildProperties.has(prop)) ||
     (!isSVG &&
       ((propAlias = getPropAlias(prop, node.tagName)) || (isProp = Properties.has(prop)))) ||
-    (isCE = (node.nodeName.includes("-") || 'is' in props))
+    (isCE = node.nodeName.includes("-") || "is" in props)
   ) {
     if (forceProp) {
       prop = prop.slice(5);
@@ -404,7 +410,11 @@ function eventHandler(e) {
       data !== undefined ? handler.call(node, data, e) : handler.call(node, e);
       if (e.cancelBubble) return;
     }
-    node.host && typeof node.host !== "string" && !node.host._$host && node.contains(e.target) && retarget(node.host);
+    node.host &&
+      typeof node.host !== "string" &&
+      !node.host._$host &&
+      node.contains(e.target) &&
+      retarget(node.host);
     return true;
   };
   const walkUpTree = () => {
