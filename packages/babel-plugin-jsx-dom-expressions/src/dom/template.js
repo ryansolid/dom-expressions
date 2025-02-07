@@ -124,7 +124,7 @@ function wrapDynamics(path, dynamics) {
   if (dynamics.length === 1) {
     let dynamicStyle;
     const prevValue =
-      dynamics[0].key === "classList" ||
+      dynamics[0].key === "class" ||
       dynamics[0].key === "style" ||
       (dynamicStyle = dynamics[0].key.startsWith("style:"))
         ? t.identifier("_$p")
@@ -176,7 +176,7 @@ function wrapDynamics(path, dynamics) {
     properties.push(propIdent);
     values.push(t.objectProperty(propIdent, value));
 
-    if (key === "classList" || key === "style") {
+    if (key === "class" || key === "style") {
       statements.push(
         t.expressionStatement(
           t.assignmentExpression(

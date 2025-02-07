@@ -2,7 +2,6 @@ import * as t from "@babel/types";
 import { decode } from "html-entities";
 import {
   BooleanAttributes,
-  Aliases,
   ChildProperties,
   SVGElements
 } from "dom-expressions/src/constants";
@@ -89,12 +88,6 @@ export function transformElement(path, info) {
   return results;
 }
 
-function toAttribute(key, isSVG) {
-  key = Aliases[key] || key;
-  /*!isSVG && (key = key.toLowerCase());*/
-  return key;
-}
-
 function setAttr(attribute, results, name, value, isSVG) {
   // strip out namespaces for now, everything at this point is an attribute
   let parts, namespace;
@@ -103,7 +96,6 @@ function setAttr(attribute, results, name, value, isSVG) {
     namespace = parts[0];
   }
 
-  name = toAttribute(name, isSVG);
   const attr = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
     t.stringLiteral(name),
     value,
@@ -221,13 +213,11 @@ function normalizeAttributes(path) {
       a => t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "class"
     );
   if (classNamespaceAttributes.length)
-    transformToObject("classList", attributes, classNamespaceAttributes);
+    transformToObject("class", attributes, classNamespaceAttributes);
   const classAttributes = attributes.filter(
     a =>
       a.node.name &&
-      (a.node.name.name === "class" ||
-        a.node.name.name === "className" ||
-        a.node.name.name === "classList")
+      (a.node.name.name === "class")
   );
   // combine class propertoes
   if (classAttributes.length > 1) {
@@ -246,14 +236,14 @@ function normalizeAttributes(path) {
         );
       } else {
         let expr = attr.value.expression;
-        if (attr.name.name === "classList") {
+        if (attr.name.name === "class") {
           if (t.isObjectExpression(expr) && !expr.properties.some(p => t.isSpreadElement(p))) {
             transformClasslistObject(path, expr, values, quasis);
             if (!isLast) quasis[quasis.length - 1].value.raw += " ";
             i && attributes.splice(attributes.indexOf(classAttributes[i]), 1);
             continue;
           }
-          expr = t.callExpression(registerImportMethod(path, "ssrClassList"), [expr]);
+          expr = t.callExpression(registerImportMethod(path, "ssrClassName"), [expr]);
         }
         values.push(t.logicalExpression("||", expr, t.stringLiteral("")));
         quasis.push(t.templateElement({ raw: isLast ? "" : " " }));
@@ -353,7 +343,7 @@ function transformAttributes(path, results, info) {
           }
           doEscape = false;
         }
-        if (key === "classList") {
+        if (key === "class") {
           if (
             t.isObjectExpression(value.expression) &&
             !value.expression.properties.some(p => t.isSpreadElement(p))
@@ -366,7 +356,7 @@ function transformAttributes(path, results, info) {
               value.expression = values[0];
             } else value.expression = t.templateLiteral(quasis, values);
           } else {
-            value.expression = t.callExpression(registerImportMethod(path, "ssrClassList"), [
+            value.expression = t.callExpression(registerImportMethod(path, "ssrClassName"), [
               value.expression
             ]);
           }
@@ -376,7 +366,6 @@ function transformAttributes(path, results, info) {
         if (doEscape) value.expression = escapeExpression(path, value.expression, true);
 
         if (!doEscape || t.isLiteral(value.expression)) {
-          key = toAttribute(key, isSVG);
           appendToTemplate(results.template, ` ${key}="`);
           results.template.push(`"`);
           results.templateValues.push(value.expression);
@@ -385,7 +374,6 @@ function transformAttributes(path, results, info) {
     } else {
       if (key === "$ServerOnly") return;
       if (t.isJSXExpressionContainer(value)) value = value.expression;
-      key = toAttribute(key, isSVG);
       const isBoolean = BooleanAttributes.has(key);
       if (isBoolean && value && value.value !== "" && !value.value) return;
       appendToTemplate(results.template, ` ${key}`);

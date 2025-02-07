@@ -1,6 +1,5 @@
 import * as t from "@babel/types";
 import {
-  Aliases,
   getPropAlias,
   Properties,
   ChildProperties,
@@ -216,17 +215,10 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
     );
   }
 
-  if (!isSVG && name === "class") {
+  if (name === "class") {
     return t.callExpression(
       registerImportMethod(path, "className", getRendererConfig(path, "dom").moduleName),
-      [elem, value]
-    );
-  }
-
-  if (name === "classList") {
-    return t.callExpression(
-      registerImportMethod(path, "classList", getRendererConfig(path, "dom").moduleName),
-      prevId ? [elem, value, prevId] : [elem, value]
+      prevId ? [elem, value, t.booleanLiteral(isSVG), prevId] : isSVG ? [elem, value, t.booleanLiteral(true)] : [elem, value]
     );
   }
 
@@ -267,8 +259,6 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
   }
 
   let isNameSpaced = name.indexOf(":") > -1;
-  name = Aliases[name] || name;
-  /*!isSVG && (name = name.toLowerCase());*/
   const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
   if (ns) {
     return t.callExpression(
@@ -362,12 +352,12 @@ function transformAttributes(path, results) {
       path.get("openingElement").node.attributes.splice(styleAttribute.key, 1);
   }
 
-  // preprocess classList
+  // preprocess optimal class objects
   attributes = path.get("openingElement").get("attributes");
   const classListAttribute = attributes.find(
     a =>
       a.node.name &&
-      a.node.name.name === "classList" &&
+      a.node.name.name === "class" &&
       t.isJSXExpressionContainer(a.node.value) &&
       t.isObjectExpression(a.node.value.expression) &&
       !a.node.value.expression.properties.some(
@@ -420,7 +410,7 @@ function transformAttributes(path, results) {
   // combine class properties
   attributes = path.get("openingElement").get("attributes");
   const classAttributes = attributes.filter(
-    a => a.node.name && (a.node.name.name === "class" || a.node.name.name === "className")
+    a => a.node.name && (a.node.name.name === "class")
   );
   if (classAttributes.length > 1) {
     const first = classAttributes[0].node,
@@ -696,7 +686,7 @@ function transformAttributes(path, results) {
           (isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
           }) ||
-            ((key === "classList" || key === "style") &&
+            ((key === "class" || key === "style") &&
               !attribute.get("value").get("expression").evaluate().confident))
         ) {
           let nextElem = elem;
@@ -807,14 +797,12 @@ function transformAttributes(path, results) {
         }
 
         // properties
-        key = Aliases[key] || key;
         if (value && ChildProperties.has(key)) {
           results.exprs.push(
             t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, tagName }))
           );
         } else {
-          /*!isSVG && (key = key.toLowerCase());*/
-          results.template += `${needsSpacing ? ' ' : ''}${key}`;
+          results.template += `${needsSpacing ? " " : ""}${key}`;
           // https://github.com/solidjs/solid/issues/2338
           // results.templateWithClosingTags += `${needsSpacing ? ' ' : ''}${key}`;
           if (!value) {

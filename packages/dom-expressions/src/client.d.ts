@@ -1,5 +1,4 @@
 import { JSX } from "./jsx.js";
-export const Aliases: Record<string, string>;
 export const Properties: Set<string>;
 export const ChildProperties: Set<string>;
 export const DelegatedEvents: Set<string>;
@@ -33,7 +32,10 @@ export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
 export function setBoolAttribute(node: Element, name: string, value: any): void;
-export function className(node: Element, value: string): void;
+type ClassList =
+  | Record<string, boolean>
+  | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
+export function className(node: Element, value: string | ClassList, isSvg?: boolean, prev?: string | ClassList): Record<string, boolean> | string | undefined;
 export function setProperty(node: Element, name: string, value: any): void;
 export function addEventListener(
   node: Element,
@@ -41,14 +43,6 @@ export function addEventListener(
   handler: EventListener | EventListenerObject | (EventListenerObject & AddEventListenerOptions),
   delegate: boolean
 ): void;
-type ClassList =
-  | Record<string, boolean>
-  | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
-export function classList(
-  node: Element,
-  value: ClassList,
-  prev?: ClassList
-): { [k: string]: boolean };
 export function style(
   node: Element,
   value: { [k: string]: string },
