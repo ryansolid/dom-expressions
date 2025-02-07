@@ -1,6 +1,9 @@
 import { parse, stringify, IDom } from "html-parse-string";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
+type ClassList =
+| Record<string, boolean>
+| Array<string | number | boolean | null | undefined | Record<string, boolean>>;
 interface Runtime {
   effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
   untrack<T>(fn: () => T): T;
@@ -14,17 +17,12 @@ interface Runtime {
     delegate: boolean
   ): void;
   delegateEvents(eventNames: string[]): void;
-  classList(
-    node: Element,
-    value: { [k: string]: boolean },
-    prev?: { [k: string]: boolean }
-  ): { [k: string]: boolean };
+  className(node: Element, value: string | ClassList, isSVG?: boolean, prev?: string | ClassList): Record<string, boolean> | string | undefined;
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
   mergeProps(...sources: unknown[]): unknown;
   dynamicProperty(props: any, key: string): any;
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
-  Aliases: Record<string, string>;
   getPropAlias(prop: string, tagName: string): string | undefined;
   Properties: Set<string>;
   ChildProperties: Set<string>;
@@ -204,10 +202,10 @@ export function createHTML(
       const prev = `_$v${uuid++}`;
       options.decl.push(`${prev}={}`);
       options.exprs.push(`r.style(${tag},${expr},${prev})`);
-    } else if (name === "classList") {
+    } else if (name === "class") {
       const prev = `_$v${uuid++}`;
       options.decl.push(`${prev}={}`);
-      options.exprs.push(`r.classList(${tag},${expr},${prev})`);
+      options.exprs.push(`r.className(${tag},${expr},${isSVG},${prev})`);
     } else if (
       namespace !== "attr" &&
       (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) ||  namespace === "prop")
@@ -216,7 +214,7 @@ export function createHTML(
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);
-      else options.exprs.push(`r.setAttribute(${tag},"${r.Aliases[name] || name}",${expr})`);
+      else options.exprs.push(`r.setAttribute(${tag},"${name}",${expr})`);
     }
   }
 

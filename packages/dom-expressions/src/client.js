@@ -1,7 +1,6 @@
 import {
   Properties,
   ChildProperties,
-  Aliases,
   getPropAlias,
   SVGNamespace,
   DelegatedEvents
@@ -22,7 +21,6 @@ export {
   Properties,
   ChildProperties,
   getPropAlias,
-  Aliases,
   DOMElements,
   SVGElements,
   SVGNamespace,
@@ -122,9 +120,37 @@ export function setBoolAttribute(node, name, value) {
   value ? node.setAttribute(name, "") : node.removeAttribute(name);
 }
 
-export function className(node, value) {
-  if (value == null) node.removeAttribute("class");
-  else node.className = value;
+export function className(node, value, isSVG, prev) {
+  if (value == null) {
+    prev && node.removeAttribute("class");
+    return;
+  }
+  if (typeof value === "string")
+    return value === prev
+      ? prev
+      : isSVG
+      ? (node.setAttribute("class", value), value)
+      : (node.className = value);
+  if (typeof prev === "string") node.removeAttribute("class");
+  prev = prev || {};
+  value = classListToObject(value);
+  const classKeys = Object.keys(value || {});
+  const prevKeys = Object.keys(prev);
+  let i, len;
+  for (i = 0, len = prevKeys.length; i < len; i++) {
+    const key = prevKeys[i];
+    if (!key || key === "undefined" || value[key]) continue;
+    toggleClassKey(node, key, false);
+    delete prev[key];
+  }
+  for (i = 0, len = classKeys.length; i < len; i++) {
+    const key = classKeys[i],
+      classValue = !!value[key];
+    if (!key || key === "undefined" || prev[key] === classValue || !classValue) continue;
+    toggleClassKey(node, key, true);
+    prev[key] = classValue;
+  }
+  return prev;
 }
 
 export function addEventListener(node, name, handler, delegate) {
@@ -137,48 +163,6 @@ export function addEventListener(node, name, handler, delegate) {
     const handlerFn = handler[0];
     node.addEventListener(name, (handler[0] = e => handlerFn.call(node, handler[1], e)));
   } else node.addEventListener(name, handler, typeof handler !== "function" && handler);
-}
-
-export function classListToObject(classList) {
-  if (Array.isArray(classList)) {
-    const result = {};
-
-    for (let i = 0, len = classList.length; i < len; i++) {
-      const key = classList[i];
-      if (typeof key === "object" && key !== null) Object.assign(result, key);
-      else if (key || key === 0) result[key] = true;
-    }
-
-    return result;
-  }
-
-  return classList;
-}
-
-export function classList(node, value, prev = {}) {
-  prev = classListToObject(prev);
-  value = classListToObject(value);
-
-  const classKeys = Object.keys(value || {});
-  const prevKeys = Object.keys(prev);
-
-  let i, len;
-  for (i = 0, len = prevKeys.length; i < len; i++) {
-    const key = prevKeys[i];
-    if (!key || key === "undefined" || value[key]) continue;
-    toggleClassKey(node, key, false);
-    delete prev[key];
-  }
-
-  for (i = 0, len = classKeys.length; i < len; i++) {
-    const key = classKeys[i],
-      classValue = !!value[key];
-    if (!key || key === "undefined" || prev[key] === classValue || !classValue) continue;
-    toggleClassKey(node, key, true);
-    prev[key] = classValue;
-  }
-
-  return prev;
 }
 
 export function style(node, value, prev) {
@@ -379,10 +363,26 @@ function toggleClassKey(node, key, value) {
     node.classList.toggle(classNames[i], value);
 }
 
+function classListToObject(classList) {
+  if (Array.isArray(classList)) {
+    const result = {};
+
+    for (let i = 0, len = classList.length; i < len; i++) {
+      const key = classList[i];
+      if (typeof key === "object" && key !== null) Object.assign(result, key);
+      else if (key || key === 0) result[key] = true;
+    }
+
+    return result;
+  }
+
+  return classList;
+}
+
 function assignProp(node, prop, value, prev, isSVG, skipRef) {
   let propAlias, forceProp;
   if (prop === "style") return style(node, value, prev);
-  if (prop === "classList") return classList(node, value, prev);
+  if (prop === "class") return className(node, value, isSVG, prev);
   if (value === prev) return prev;
   if (prop === "ref") {
     if (!skipRef) value(node);
@@ -411,15 +411,12 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     (!isSVG && (propAlias = getPropAlias(prop, node.tagName))) ||
     Properties.has(prop)
   ) {
-    if (forceProp) {
-      prop = prop.slice(5);
-    } else if (isHydrating(node)) return value;
-    if (prop === "class" || prop === "className") className(node, value);
+    if (forceProp) prop = prop.slice(5);
     else node[propAlias || prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
     if (ns) setAttributeNS(node, ns, prop, value);
-    else setAttribute(node, Aliases[prop] || prop, value);
+    else setAttribute(node, prop, value);
   }
   return value;
 }

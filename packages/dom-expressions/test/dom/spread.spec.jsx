@@ -173,7 +173,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
 
     const [p, setP] = createSignal({
       ref,
-      className: "class1"
+      class: "class1"
     });
 
     createRoot(dispose => {
@@ -186,7 +186,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(span.textContent).toBe("Hi");
 
     setP({
-      className: "class2"
+      class: "class2"
     });
     flushSync();
     expect(span.className).toBe("class2");
@@ -212,7 +212,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
 
     createRoot(dispose => {
       disposer = dispose;
-      <Component className={c()} ref={ref}>
+      <Component class={c()} ref={ref}>
         Hi
       </Component>;
     });
@@ -248,7 +248,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     };
     const [p, setP] = createSignal({
       ref,
-      className: "class1"
+      class: "class1"
     });
 
     createRoot(dispose => {
@@ -264,7 +264,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
 
     setP({
       ref,
-      className: "class2"
+      class: "class2"
     });
     flushSync();
     expect(span.className).toBe("class2");

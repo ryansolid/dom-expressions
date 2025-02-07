@@ -5,6 +5,7 @@ import { createComponent as _$createComponent } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
+import { className as _$className } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 var _tmpl$ = /*#__PURE__*/ _$template(
@@ -42,7 +43,7 @@ const template2 = (() => {
       i: props.stroke
     }),
     ({ e, t, a, o, i }, _p$) => {
-      e !== _p$.e && _$setAttribute(_el$3, "class", e);
+      _p$.e = _$className(_el$3, e, true, _p$.e);
       t !== _p$.t && _$setAttribute(_el$3, "stroke-width", t);
       a !== _p$.a && _$setAttribute(_el$3, "x", a);
       o !== _p$.o && _$setAttribute(_el$3, "y", o);

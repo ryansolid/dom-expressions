@@ -8,18 +8,17 @@ const selected = true;
 let id = "my-h1";
 let link;
 const template = (
-  <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
+  <div id="main" {...results} class={{ selected: unknown }} style={{ color }}>
     <h1
-      class="base"
       id={id}
       {...results()}
       foo
       disabled
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
-      classList={{ dynamic: dynamic(), selected }}
+      class={["base", { dynamic: dynamic(), selected }]}
     >
-      <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
+      <a href={"/"} ref={link} class={{ "ccc ddd": true }}>
         Welcome
       </a>
     </h1>
@@ -44,7 +43,7 @@ const template3 = (
   />
 );
 
-const template4 = <div class="hi" className={state.class} classList={{ "ccc:ddd": true }} />;
+const template4 = <div className={state.class} class={{ "ccc:ddd": true }} />;
 
 const template5 = <div class="a" className="b"></div>;
 
@@ -57,7 +56,7 @@ const template7 = (
     style:padding-top={props.top}
     class:my-class={props.active}
     class:other-class={undefVar}
-    classList={{ "other-class2": undefVar }}
+    class={{ "other-class2": undefVar }}
   />
 );
 
@@ -80,10 +79,9 @@ const template15 = <div class="`a">`$`</div>;
 
 const template16 = (
   <button
-    class="static"
-    classList={{
+    class={["static",{
       hi: "k"
-    }}
+    }]}
     type="button"
   >
     Write
@@ -92,7 +90,7 @@ const template16 = (
 
 const template17 = (
   <button
-    classList={{
+    class={{
       a: true,
       b: true,
       c: true
@@ -113,7 +111,7 @@ const template18 = (
   />
 );
 
-const template19 = <div classList={{ "bg-red-500": true }} class="flex flex-col" />;
+const template19 = <div class={[{ "bg-red-500": true }, "flex flex-col"]} />;
 
 const template20 = (
   <div>
@@ -260,7 +258,8 @@ const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
 const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
 const template79 = <div prop:true={true} prop:false={false}/>
 const template80 = <div attr:true={true} attr:false={false}/>
+const template81 = <div a b="" c='' d={true} e={false} f={0} g={''} h={""} i={undefined} j={null} k={void 0} l/>
 
-const template81 = <math display="block"><mrow></mrow></math>
-const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
+const template82 = <math display="block"><mrow></mrow></math>
+const template83 = <mrow><mi>x</mi><mo>=</mo></mrow>
 

@@ -154,7 +154,10 @@ export function renderToStream(code, options = {}) {
       const first = html.indexOf(placeholder);
       if (first === -1) return;
       const last = html.indexOf(`<!--!$/${id}-->`, first + placeholder.length);
-      html = html.slice(0, first) + resolveSSRNode(escape(payloadFn())) + html.slice(last + placeholder.length + 1);
+      html =
+        html.slice(0, first) +
+        resolveSSRNode(escape(payloadFn())) +
+        html.slice(last + placeholder.length + 1);
     },
     serialize(id, p, wait) {
       const serverOnly = sharedConfig.context.noHydrate;
@@ -319,7 +322,7 @@ export function ssr(t, ...nodes) {
   return { t };
 }
 
-export function ssrClassList(value) {
+export function ssrClassName(value) {
   if (!value) return "";
   let classKeys = Object.keys(value),
     result = "";
@@ -355,7 +358,6 @@ export function ssrElement(tag, props, children, needsId) {
   const skipChildren = VOID_ELEMENTS.test(tag);
   const keys = Object.keys(props);
   let result = `<${tag}${needsId ? ssrHydrationKey() : ""} `;
-  let classResolved;
   for (let i = 0; i < keys.length; i++) {
     const prop = keys[i];
     if (ChildProperties.has(prop)) {
@@ -366,14 +368,9 @@ export function ssrElement(tag, props, children, needsId) {
     const value = props[prop];
     if (prop === "style") {
       result += `style="${ssrStyle(value)}"`;
-    } else if (prop === "class" || prop === "className" || prop === "classList") {
-      if (classResolved) continue;
+    } else if (prop === "class") {
       let n;
-      result += `class="${
-        escape(((n = props.class) ? n + " " : "") + ((n = props.className) ? n + " " : ""), true) +
-        ssrClassList(props.classList)
-      }"`;
-      classResolved = true;
+      result += `class="${ssrClassName(value)}"`;
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
       else continue;
@@ -543,8 +540,7 @@ export function Hydration(props) {
 }
 
 export function NoHydration(props) {
-  if (sharedConfig.context)
-    sharedConfig.context.noHydrate = true;
+  if (sharedConfig.context) sharedConfig.context.noHydrate = true;
   return props.children;
 }
 
@@ -617,7 +613,6 @@ export function Assets(props) {
 // client-only APIs
 
 export {
-  notSup as classList,
   notSup as style,
   notSup as insert,
   notSup as spread,
