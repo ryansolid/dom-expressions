@@ -1885,6 +1885,7 @@ export namespace JSX {
     poster?: string | undefined;
     width?: number | string | undefined;
     disablepictureinpicture?: "true" | boolean | undefined;
+    disableremoteplayback?: boolean;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {

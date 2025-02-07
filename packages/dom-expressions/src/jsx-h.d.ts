@@ -1896,6 +1896,7 @@ export namespace JSX {
     poster?: FunctionMaybe<string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
     disablepictureinpicture?: FunctionMaybe<"true" | boolean | undefined>;
+    disableremoteplayback?: FunctionMaybe<boolean>;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2039,7 +2040,9 @@ export namespace JSX {
     attributeType?: FunctionMaybe<"CSS" | "XML" | "auto" | undefined>;
   }
   interface PresentationSVGAttributes {
-    "alignment-baseline"?: FunctionMaybe<
+    "alignment
+    
+    baseline"?: FunctionMaybe<
       | "auto"
       | "baseline"
       | "before-edge"

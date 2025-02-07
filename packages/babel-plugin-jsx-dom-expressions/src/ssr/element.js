@@ -240,10 +240,7 @@ function normalizeAttributes(path) {
         const prev = quasis.pop();
         quasis.push(
           t.templateElement({
-            raw:
-              (prev ? prev.value.raw : "") +
-              `${attr.value.value}` +
-              (isLast ? "" : " ")
+            raw: (prev ? prev.value.raw : "") + `${attr.value.value}` + (isLast ? "" : " ")
           })
         );
       } else {
@@ -296,7 +293,11 @@ function transformAttributes(path, results, info) {
       t.isJSXExpressionContainer(value) &&
       (reservedNameSpace ||
         ChildProperties.has(key) ||
-        !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression) || t.isBooleanLiteral(value.expression)))
+        !(
+          t.isStringLiteral(value.expression) ||
+          t.isNumericLiteral(value.expression) ||
+          t.isBooleanLiteral(value.expression)
+        ))
     ) {
       if (
         key === "ref" ||
@@ -390,12 +391,17 @@ function transformAttributes(path, results, info) {
       if (!value) return;
       let text = isBoolean ? "" : value.value;
       if (key === "style" || key === "class") {
-        text = trimWhitespace(text);
+        text = trimWhitespace(String(text));
         if (key === "style") {
           text = text.replace(/; /g, ";").replace(/: /g, ":");
         }
       }
-      appendToTemplate(results.template, `="${escapeHTML(text, true)}"`);
+
+      appendToTemplate(
+        results.template,
+        // `String(text)` is needed, as text.length will mess up `attr=10>` becomes `attr>` without it
+        String(text) === "" ? `` : `="${escapeHTML(text, true)}"`
+      );
     }
   });
   if (!hasChildren && children) {
@@ -592,8 +598,8 @@ function createElement(path, { topLevel, hydratable }) {
               childNodes.length === 1 ? childNodes[0] : t.arrayExpression(childNodes)
             )
           : childNodes.length === 1
-          ? childNodes[0]
-          : t.arrayExpression(childNodes)
+            ? childNodes[0]
+            : t.arrayExpression(childNodes)
         : t.identifier("undefined"),
       t.booleanLiteral(Boolean(topLevel && config.hydratable))
     ])

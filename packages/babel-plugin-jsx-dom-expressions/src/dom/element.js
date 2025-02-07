@@ -487,7 +487,12 @@ function transformAttributes(path, results) {
       if (
         t.isJSXExpressionContainer(value) &&
         (reservedNameSpace ||
-          !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
+          !(
+            t.isStringLiteral(value.expression) ||
+            t.isNumericLiteral(value.expression) ||
+            // remove `!isCE` when custom elements start defaulting to attributes
+            (t.isBooleanLiteral(value.expression) && !isCE)
+          ))
       ) {
         if (key === "ref") {
           // Normalize expressions for non-null and type-as
@@ -804,6 +809,19 @@ function transformAttributes(path, results) {
           return;
         }
         if (t.isJSXExpressionContainer(value)) value = value.expression;
+
+        // boolean as `<el attr={true | false}/>`, not as `<el attr={"true" | "false"}/>`
+        // `<el attr={true}/>` becomes `<el attr/>`
+        // `<el attr={false}/>` becomes `<el/>`
+        if (t.isBooleanLiteral(value)) {
+          if (value.value === true) {
+            results.template += `${needsSpacing ? " " : ""}${key}`;
+            needsSpacing = true;
+          }
+          return;
+        }
+
+        // properties
         key = Aliases[key] || key;
         if (value && ChildProperties.has(key)) {
           results.exprs.push(
@@ -831,10 +849,8 @@ function transformAttributes(path, results) {
           }
 
           if (!text.length) {
-            needsSpacing = false;
-            results.template += `=""`;
-            // https://github.com/solidjs/solid/issues/2338
-            // results.templateWithClosingTags += `=""`;
+            needsSpacing = true;
+            results.template += ``;
             return;
           }
 

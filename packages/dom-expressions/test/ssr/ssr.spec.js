@@ -75,7 +75,7 @@ const Comp2 = () => {
 const Comp3 = () => {
   const greeting = "Hello",
     name = "<div/>";
-  r.useAssets(() => `<link rel="modulepreload" href="chunk.js">`)
+  r.useAssets(() => r.ssr`<link rel="modulepreload" href="chunk.js">`)
   return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)}${r.HydrationScript()}${r.getAssets()}</span>`;
 };
 

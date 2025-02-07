@@ -154,10 +154,7 @@ export function renderToStream(code, options = {}) {
       const first = html.indexOf(placeholder);
       if (first === -1) return;
       const last = html.indexOf(`<!--!$/${id}-->`, first + placeholder.length);
-      html = html.replace(
-        html.slice(first, last + placeholder.length + 1),
-        resolveSSRNode(payloadFn())
-      );
+      html = html.slice(0, first) + resolveSSRNode(escape(payloadFn())) + html.slice(last + placeholder.length + 1);
     },
     serialize(id, p, wait) {
       const serverOnly = sharedConfig.context.noHydrate;
@@ -513,7 +510,7 @@ export function getHydrationKey() {
 }
 
 export function useAssets(fn) {
-  sharedConfig.context.assets.push(() => resolveSSRNode(fn()));
+  sharedConfig.context.assets.push(() => resolveSSRNode(escape(fn())));
 }
 
 export function getAssets() {
@@ -567,7 +564,9 @@ function injectAssets(assets, html) {
   if (!assets || !assets.length) return html;
   let out = "";
   for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
-  return html.replace(`</head>`, out + `</head>`);
+  const index = html.indexOf("</head>");
+  if (index === -1) return html;
+  return html.slice(0, index) + out + html.slice(index);
 }
 
 function injectScripts(html, scripts, nonce) {

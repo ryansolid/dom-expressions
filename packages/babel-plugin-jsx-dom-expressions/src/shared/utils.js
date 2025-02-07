@@ -94,7 +94,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return false;
   }
 
-  if (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr))) {
+  if (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr) || t.isTaggedTemplateExpression(expr))) {
     return true;
   }
 
@@ -274,10 +274,10 @@ export function transformCondition(path, inline, deep) {
         : path.scope.generateUidIdentifier("_c$");
       expr.test = t.callExpression(id, []);
       if (t.isConditionalExpression(expr.consequent) || t.isLogicalExpression(expr.consequent)) {
-        expr.consequent = transformCondition(path.get("consequent"), inline, true);
+        expr.consequent = transformCondition(path.get("consequent"), true, true);
       }
       if (t.isConditionalExpression(expr.alternate) || t.isLogicalExpression(expr.alternate)) {
-        expr.alternate = transformCondition(path.get("alternate"), inline, true);
+        expr.alternate = transformCondition(path.get("alternate"), true, true);
       }
     }
   } else if (t.isLogicalExpression(expr)) {
