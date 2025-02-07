@@ -29,7 +29,6 @@ const booleans = [
 const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
 
 const Properties = /*#__PURE__*/ new Set([
-  "className",
   "value",
   "readOnly",
   "formNoValidate",
@@ -45,12 +44,6 @@ const ChildProperties = /*#__PURE__*/ new Set([
   "innerText",
   "children"
 ]);
-
-// React Compat
-const Aliases = /*#__PURE__*/ Object.assign(Object.create(null), {
-  className: "class",
-  htmlFor: "for"
-});
 
 const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
   class: "className",
@@ -485,7 +478,6 @@ export {
   Properties,
   ChildProperties,
   getPropAlias,
-  Aliases,
   DelegatedEvents,
   SVGElements,
   SVGNamespace,

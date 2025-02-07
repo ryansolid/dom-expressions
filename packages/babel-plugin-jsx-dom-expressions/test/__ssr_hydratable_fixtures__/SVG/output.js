@@ -2,6 +2,7 @@ import { createComponent as _$createComponent } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
+import { ssrClassName as _$ssrClassName } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 var _tmpl$ = [
@@ -10,7 +11,8 @@ var _tmpl$ = [
   ],
   _tmpl$2 = [
     "<svg",
-    ' width="400" height="180"><rect',
+    ' width="400" height="180"><rect class="',
+    '"',
     ' rx="20" ry="20" width="150" height="150" style="',
     '"></rect></svg>'
   ],
@@ -30,8 +32,8 @@ const template = _$ssr(_tmpl$, _$ssrHydrationKey());
 const template2 = _$ssr(
   _tmpl$2,
   _$ssrHydrationKey(),
-  _$ssrAttribute("class", _$escape(state.name, true), false) +
-    _$ssrAttribute("stroke-width", _$escape(state.width, true), false) +
+  _$ssrClassName(state.name),
+  _$ssrAttribute("stroke-width", _$escape(state.width, true), false) +
     _$ssrAttribute("x", _$escape(state.x, true), false) +
     _$ssrAttribute("y", _$escape(state.y, true), false),
   "fill:" +

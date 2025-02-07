@@ -91,7 +91,7 @@ describe("r.insert", () => {
       r.spread(node, {
         href: "/",
         for: "id",
-        classList: { danger: true },
+        class: { danger: true },
         on: { custom: e => e },
         style: { color: "red" },
         notProp: "good"

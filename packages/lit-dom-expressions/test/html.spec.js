@@ -48,7 +48,7 @@ describe("Test HTML", () => {
       const template = html`
         <div
           id="main"
-          classList=${() => ({ "selected also": selected(), not: false })}
+          class=${() => ({ "selected also": selected(), not: false })}
           ref=${el => {
             el.setAttribute("refset", "true");
           }}
@@ -268,10 +268,10 @@ describe("Test HTML", () => {
     expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[8]);
   });
 
-  test("Test double toggle classList", () => {
+  test("Test double toggle class", () => {
     createRoot(() => {
       const [d, setD] = createSignal("first");
-      const template = html`<div classList=${() => ({ [d()]: true })} />`;
+      const template = html`<div class=${() => ({ [d()]: true })} />`;
       const div = document.createElement("div");
       div.appendChild(template);
       setD("second");

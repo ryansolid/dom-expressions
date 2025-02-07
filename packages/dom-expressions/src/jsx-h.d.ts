@@ -77,9 +77,6 @@ export namespace JSX {
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void);
-    classList?: {
-      [k: string]: boolean | undefined;
-    };
     $ServerOnly?: boolean;
   }
   type Accessor<T> = () => T;
