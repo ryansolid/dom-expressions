@@ -260,3 +260,7 @@ const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
 const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
 const template79 = <div prop:true={true} prop:false={false}/>
 const template80 = <div attr:true={true} attr:false={false}/>
+
+const template81 = <math display="block"><mrow></mrow></math>
+const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
+
