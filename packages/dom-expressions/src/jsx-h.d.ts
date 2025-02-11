@@ -2040,7 +2040,7 @@ export namespace JSX {
     attributeType?: FunctionMaybe<"CSS" | "XML" | "auto" | undefined>;
   }
   interface PresentationSVGAttributes {
-    "alignment-baseline"?: FunctionMaybe<
+    "alignment-baseline"?:
       | "auto"
       | "baseline"
       | "before-edge"
@@ -2054,8 +2054,7 @@ export namespace JSX {
       | "hanging"
       | "mathematical"
       | "inherit"
-      | undefined
-    >;
+      | undefined;
     "baseline-shift"?: FunctionMaybe<number | string | undefined>;
     clip?: FunctionMaybe<string | undefined>;
     "clip-path"?: FunctionMaybe<string | undefined>;
