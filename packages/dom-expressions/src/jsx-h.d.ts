@@ -133,6 +133,10 @@ export namespace JSX {
   >;
   // end event handlers
 
+  type ClassList =
+    | Record<string, boolean>
+    | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
+
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
     toString(): string;
@@ -1156,7 +1160,7 @@ export namespace JSX {
     about?: FunctionMaybe<string | undefined>;
     accesskey?: FunctionMaybe<string | undefined>;
     autocapitalize?: FunctionMaybe<HTMLAutocapitalize | undefined>;
-    class?: FunctionMaybe<string | undefined>;
+    class?: FunctionMaybe<string | ClassList | undefined>;
     color?: FunctionMaybe<string | undefined>;
     contenteditable?: FunctionMaybe<
       "true" | "false" | boolean | "plaintext-only" | "inherit" | undefined
@@ -2300,7 +2304,7 @@ export namespace JSX {
     tabIndex?: FunctionMaybe<number | string | undefined>;
   }
   interface StylableSVGAttributes {
-    class?: FunctionMaybe<string | undefined>;
+    class?: FunctionMaybe<string | ClassList | undefined>;
     style?: FunctionMaybe<CSSProperties | string | undefined>;
   }
   interface TransformableSVGAttributes {
