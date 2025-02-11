@@ -17,7 +17,7 @@ interface Runtime {
     delegate: boolean
   ): void;
   delegateEvents(eventNames: string[]): void;
-  className(node: Element, value: string | ClassList, isSVG?: boolean, prev?: string | ClassList): Record<string, boolean> | string | undefined;
+  className(node: Element, value: string | ClassList, isSVG?: boolean, prev?: string | ClassList): void;
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
   mergeProps(...sources: unknown[]): unknown;
   dynamicProperty(props: any, key: string): any;
@@ -199,13 +199,9 @@ export function createHTML(
     const isProp = r.Properties.has(name);
 
     if (name === "style") {
-      const prev = `_$v${uuid++}`;
-      options.decl.push(`${prev}={}`);
-      options.exprs.push(`r.style(${tag},${expr},${prev})`);
+      options.exprs.push(`r.style(${tag},${expr},_$p)`);
     } else if (name === "class") {
-      const prev = `_$v${uuid++}`;
-      options.decl.push(`${prev}={}`);
-      options.exprs.push(`r.className(${tag},${expr},${isSVG},${prev})`);
+      options.exprs.push(`r.className(${tag},${expr},${isSVG},_$p)`);
     } else if (
       namespace !== "attr" &&
       (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) ||  namespace === "prop")
@@ -245,7 +241,7 @@ export function createHTML(
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
       parseKeyValue(node, tag, name, value, isSVG, childOptions);
-      options.decl.push(`_fn${count} = (_$v) => {\n${childOptions.exprs.join(";\n")};\n}`);
+      options.decl.push(`_fn${count} = (_$v, _$p) => {\n${childOptions.exprs.join(";\n")};\n}`);
       if (value === "###") {
         options.exprs.push(
           `typeof exprs[${count}] === "function" ? r.effect(() => exprs[${count}](), _fn${count}) : _fn${count}(exprs[${count}])`

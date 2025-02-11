@@ -125,14 +125,14 @@ export function className(node, value, isSVG, prev) {
     prev && node.removeAttribute("class");
     return;
   }
-  if (typeof value === "string")
-    return value === prev
-      ? prev
-      : isSVG
-      ? (node.setAttribute("class", value), value)
-      : (node.className = value);
-  if (typeof prev === "string") node.removeAttribute("class");
-  prev = prev || {};
+  if (typeof value === "string") {
+    value !== prev && (isSVG ? node.setAttribute("class", value) : (node.className = value));
+    return;
+  }
+  if (typeof prev === "string") {
+    prev = {};
+    node.removeAttribute("class");
+  } else prev = classListToObject(prev || {});
   value = classListToObject(value);
   const classKeys = Object.keys(value || {});
   const prevKeys = Object.keys(prev);
@@ -141,16 +141,13 @@ export function className(node, value, isSVG, prev) {
     const key = prevKeys[i];
     if (!key || key === "undefined" || value[key]) continue;
     toggleClassKey(node, key, false);
-    delete prev[key];
   }
   for (i = 0, len = classKeys.length; i < len; i++) {
     const key = classKeys[i],
       classValue = !!value[key];
     if (!key || key === "undefined" || prev[key] === classValue || !classValue) continue;
     toggleClassKey(node, key, true);
-    prev[key] = classValue;
   }
-  return prev;
 }
 
 export function addEventListener(node, name, handler, delegate) {
@@ -166,25 +163,22 @@ export function addEventListener(node, name, handler, delegate) {
 }
 
 export function style(node, value, prev) {
-  if (!value) return prev ? setAttribute(node, "style") : value;
+  if (!value) {
+    prev ? setAttribute(node, "style") : value;
+    return;
+  }
   const nodeStyle = node.style;
   if (typeof value === "string") return (nodeStyle.cssText = value);
   typeof prev === "string" && (nodeStyle.cssText = prev = undefined);
   prev || (prev = {});
   value || (value = {});
   let v, s;
-  for (s in prev) {
-    value[s] == null && nodeStyle.removeProperty(s);
-    delete prev[s];
-  }
   for (s in value) {
     v = value[s];
-    if (v !== prev[s]) {
-      nodeStyle.setProperty(s, v);
-      prev[s] = v;
-    }
+    if (v !== prev[s]) nodeStyle.setProperty(s, v);
+    delete prev[s];
   }
-  return prev;
+  for (s in prev) value[s] == null && nodeStyle.removeProperty(s);
 }
 
 // TODO: make this better
@@ -369,7 +363,7 @@ function classListToObject(classList) {
 
     for (let i = 0, len = classList.length; i < len; i++) {
       const key = classList[i];
-      if (typeof key === "object" && key !== null) Object.assign(result, key);
+      if (typeof key === "object" && key != null) Object.assign(result, key);
       else if (key || key === 0) result[key] = true;
     }
 
@@ -381,8 +375,8 @@ function classListToObject(classList) {
 
 function assignProp(node, prop, value, prev, isSVG, skipRef) {
   let propAlias, forceProp;
-  if (prop === "style") return style(node, value, prev);
-  if (prop === "class") return className(node, value, isSVG, prev);
+  if (prop === "style") return (style(node, value, prev), value);
+  if (prop === "class") return (className(node, value, isSVG, prev), value);
   if (value === prev) return prev;
   if (prop === "ref") {
     if (!skipRef) value(node);

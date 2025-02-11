@@ -122,16 +122,9 @@ function wrapDynamics(path, dynamics) {
   const effectWrapperId = registerImportMethod(path, config.effectWrapper);
 
   if (dynamics.length === 1) {
-    let dynamicStyle;
     const prevValue =
-      dynamics[0].key === "class" ||
-      dynamics[0].key === "style" ||
-      (dynamicStyle = dynamics[0].key.startsWith("style:"))
-        ? t.identifier("_$p")
-        : undefined;
-    if (dynamicStyle) {
-      dynamics[0].value = t.assignmentExpression("=", prevValue, dynamics[0].value);
-    } else if (
+      dynamics[0].key === "class" || dynamics[0].key === "style" ? t.identifier("_$p") : undefined;
+    if (
       dynamics[0].key.startsWith("class:") &&
       !t.isBooleanLiteral(dynamics[0].value) &&
       !t.isUnaryExpression(dynamics[0].value)
@@ -179,16 +172,12 @@ function wrapDynamics(path, dynamics) {
     if (key === "class" || key === "style") {
       statements.push(
         t.expressionStatement(
-          t.assignmentExpression(
-            "=",
-            propMember,
-            setAttr(path, elem, key, propIdent, {
-              isSVG,
-              tagName,
-              dynamic: true,
-              prevId: propMember
-            })
-          )
+          setAttr(path, elem, key, propIdent, {
+            isSVG,
+            tagName,
+            dynamic: true,
+            prevId: propMember
+          })
         )
       );
     } else {

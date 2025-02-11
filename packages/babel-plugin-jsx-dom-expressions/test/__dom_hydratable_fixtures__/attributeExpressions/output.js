@@ -196,7 +196,7 @@ const template7 = (() => {
       a: !!props.active
     }),
     ({ e, t, a }, _p$) => {
-      _p$.e = _$style(_el$13, e, _p$.e);
+      _$style(_el$13, e, _p$.e);
       t !== _p$.t &&
         (t != null
           ? _el$13.style.setProperty("padding-top", t)
@@ -427,10 +427,10 @@ const template30 = _$getNextElement(_tmpl$17);
 const template31 = (() => {
   var _el$48 = _$getNextElement(_tmpl$4);
   _$effect(
-    () => (_$p = getStore.itemProperties.color),
-    (_v$, _$p) =>
+    () => getStore.itemProperties.color,
+    _v$ =>
       _v$ != null
-        ? _el$48.style.setProperty("background-color", _$p)
+        ? _el$48.style.setProperty("background-color", _v$)
         : _el$48.style.removeProperty("background-color")
   );
   return _el$48;
@@ -509,10 +509,8 @@ const template38 = (() => {
 const template39 = _$getNextElement(_tmpl$19);
 const template40 = (() => {
   var _el$60 = _$getNextElement(_tmpl$4);
-  _$effect(
-    () => (_$p = a()),
-    (_v$, _$p) =>
-      _v$ != null ? _el$60.style.setProperty("color", _$p) : _el$60.style.removeProperty("color")
+  _$effect(a, _v$ =>
+    _v$ != null ? _el$60.style.setProperty("color", _v$) : _el$60.style.removeProperty("color")
   );
   return _el$60;
 })();
