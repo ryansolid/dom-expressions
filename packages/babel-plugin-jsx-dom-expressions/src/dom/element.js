@@ -183,7 +183,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
           t.memberExpression(elem, t.identifier("style")),
           t.identifier("setProperty")
         ),
-        [t.stringLiteral(name), prevId ? prevId : value]
+        [t.stringLiteral(name), value]
       ),
       t.callExpression(
         t.memberExpression(

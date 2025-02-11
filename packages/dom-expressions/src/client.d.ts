@@ -35,7 +35,7 @@ export function setBoolAttribute(node: Element, name: string, value: any): void;
 type ClassList =
   | Record<string, boolean>
   | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
-export function className(node: Element, value: string | ClassList, isSvg?: boolean, prev?: string | ClassList): Record<string, boolean> | string | undefined;
+export function className(node: Element, value: string | ClassList, isSvg?: boolean, prev?: string | ClassList): void;
 export function setProperty(node: Element, name: string, value: any): void;
 export function addEventListener(
   node: Element,

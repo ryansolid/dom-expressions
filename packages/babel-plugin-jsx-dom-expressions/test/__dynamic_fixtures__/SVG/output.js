@@ -40,7 +40,7 @@ const template2 = (() => {
       i: props.stroke
     }),
     ({ e, t, a, o, i }, _p$) => {
-      _p$.e = _$className(_el$3, e, true, _p$.e);
+      _$className(_el$3, e, true, _p$.e);
       t !== _p$.t && _$setAttribute(_el$3, "stroke-width", t);
       a !== _p$.a && _$setAttribute(_el$3, "x", a);
       o !== _p$.o && _$setAttribute(_el$3, "y", o);
