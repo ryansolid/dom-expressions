@@ -5,12 +5,22 @@ import * as csstype from "csstype";
  *
  * https://github.com/adamhaile/surplus/blob/master/index.d.ts
  * https://github.com/infernojs/inferno/blob/master/packages/inferno/src/core/types.ts
+ *
+ * MathML typings coming mostly from Preact
+ * https://github.com/preactjs/preact/blob/07dc9f324e58569ce66634aa03fe8949b4190358/src/jsx.d.ts#L2575
+ *
+ * Checked against other frameworks via the following table:
+ * https://potahtml.github.io/namespace-jsx-project/index.html
+ *
+ * Note: Typings must include attributes and not properties (unless the property is special-cased,
+ * such textContent, event handlers, etc).
  */
 type DOMElement = Element;
 
 export namespace JSX {
   type Element = Node | ArrayElement | (string & {}) | number | boolean | null | undefined;
   interface ArrayElement extends Array<Element> {}
+
   interface ElementClass {
     // empty, libs can define requirements downstream
   }
@@ -20,6 +30,7 @@ export namespace JSX {
   interface ElementChildrenAttribute {
     children: {};
   }
+
   interface EventHandler<T, E extends Event> {
     (
       e: E & {
@@ -30,30 +41,29 @@ export namespace JSX {
   }
 
   interface BoundEventHandler<
-      T,
-      E extends Event,
-      EHandler extends EventHandler<T, any> = EventHandler<T, E>,
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
   > {
-    0: (
-      data: any,
-      ...e: Parameters<EHandler>,
-    ) => void;
+    0: (data: any, ...e: Parameters<EHandler>) => void;
     1: any;
   }
   type EventHandlerUnion<
     T,
     E extends Event,
-    EHandler extends EventHandler<T, any> = EventHandler<T, E>,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
   > = EHandler | BoundEventHandler<T, E, EHandler>;
 
   interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
-      extends AddEventListenerOptions {
+    extends AddEventListenerOptions {
     handleEvent: EHandler;
   }
 
-  type EventHandlerWithOptionsUnion<T, E extends Event, EHandler extends EventHandler<T, any> = EventHandler<T, E>> =
-    | EHandler
-    | EventHandlerWithOptions<T, E, EHandler>;
+  type EventHandlerWithOptionsUnion<
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
+  > = EHandler | EventHandlerWithOptions<T, E, EHandler>;
 
   interface InputEventHandler<T, E extends InputEvent> {
     (
@@ -65,7 +75,11 @@ export namespace JSX {
       }
     ): void;
   }
-  type InputEventHandlerUnion<T, E extends InputEvent> = EventHandlerUnion<T, E, InputEventHandler<T, E>>;
+  type InputEventHandlerUnion<T, E extends InputEvent> = EventHandlerUnion<
+    T,
+    E,
+    InputEventHandler<T, E>
+  >;
 
   interface ChangeEventHandler<T, E extends Event> {
     (
@@ -77,7 +91,11 @@ export namespace JSX {
       }
     ): void;
   }
-  type ChangeEventHandlerUnion<T, E extends Event> = EventHandlerUnion<T, E, ChangeEventHandler<T, E>>;
+  type ChangeEventHandlerUnion<T, E extends Event> = EventHandlerUnion<
+    T,
+    E,
+    ChangeEventHandler<T, E>
+  >;
 
   interface FocusEventHandler<T, E extends FocusEvent> {
     (
@@ -89,7 +107,11 @@ export namespace JSX {
       }
     ): void;
   }
-  type FocusEventHandlerUnion<T, E extends FocusEvent> = EventHandlerUnion<T, E, FocusEventHandler<T, E>>;
+  type FocusEventHandlerUnion<T, E extends FocusEvent> = EventHandlerUnion<
+    T,
+    E,
+    FocusEventHandler<T, E>
+  >;
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
@@ -102,9 +124,11 @@ export namespace JSX {
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void) | undefined;
-    classList?: {
-      [k: string]: boolean | undefined;
-    } | undefined;
+    classList?:
+      | {
+          [k: string]: boolean | undefined;
+        }
+      | undefined;
     $ServerOnly?: boolean | undefined;
   }
   type Accessor<T> = () => T;
@@ -180,7 +204,7 @@ export namespace JSX {
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onFocusOut?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onFocusIn?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onEncrypted?: EventHandlerUnion<T, Event> | undefined;
+    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
     // lower case events
     oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
@@ -191,7 +215,7 @@ export namespace JSX {
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onencrypted?: EventHandlerUnion<T, Event> | undefined;
+    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
     // lower case events
     "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
@@ -201,14 +225,16 @@ export namespace JSX {
     "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:focusout"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
     "on:focusin"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
-    "on:encrypted"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
+    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
     "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
   }
   interface CustomEventHandlersCamelCase<T> {
-    onAbort?: EventHandlerUnion<T, Event> | undefined;
+    onAbort?: EventHandlerUnion<T, UIEvent> | undefined;
     onAnimationEnd?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationIteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent> | undefined;
@@ -232,7 +258,7 @@ export namespace JSX {
     onDurationChange?: EventHandlerUnion<T, Event> | undefined;
     onEmptied?: EventHandlerUnion<T, Event> | undefined;
     onEnded?: EventHandlerUnion<T, Event> | undefined;
-    onError?: EventHandlerUnion<T, Event> | undefined;
+    onError?: EventHandlerUnion<T, ErrorEvent> | undefined;
     onFocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onGotPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     onInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
@@ -290,7 +316,7 @@ export namespace JSX {
   }
   /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
-    onabort?: EventHandlerUnion<T, Event> | undefined;
+    onabort?: EventHandlerUnion<T, UIEvent> | undefined;
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
@@ -314,7 +340,7 @@ export namespace JSX {
     ondurationchange?: EventHandlerUnion<T, Event> | undefined;
     onemptied?: EventHandlerUnion<T, Event> | undefined;
     onended?: EventHandlerUnion<T, Event> | undefined;
-    onerror?: EventHandlerUnion<T, Event> | undefined;
+    onerror?: EventHandlerUnion<T, ErrorEvent> | undefined;
     onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
@@ -371,16 +397,18 @@ export namespace JSX {
     onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
   interface CustomEventHandlersNamespaced<T> {
-    "on:abort"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:abort"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
     "on:animationend"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:auxclick"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
     "on:beforeinput"?:
-      EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
+      | undefined;
     "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
     "on:blur"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
     "on:canplay"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
@@ -397,12 +425,14 @@ export namespace JSX {
     "on:durationchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:emptied"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:ended"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:error"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:error"?: EventHandlerWithOptionsUnion<T, ErrorEvent> | undefined;
     "on:focus"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
     "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:input"?:
-      EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
+      | undefined;
     "on:invalid"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:keydown"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
     "on:keypress"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
@@ -870,61 +900,63 @@ export namespace JSX {
 
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     // [key: ClassKeys]: boolean;
-    accessKey?: string | undefined;
+    about?: string | undefined;
+    accesskey?: string | undefined;
+    autocapitalize?: HTMLAutocapitalize | undefined;
     class?: string | undefined;
-    contenteditable?: boolean | "plaintext-only" | "inherit" | undefined;
+    color?: string | undefined;
+    contenteditable?: "true" | "false" | boolean | "plaintext-only" | "inherit" | undefined;
     contextmenu?: string | undefined;
+    datatype?: string | undefined;
     dir?: HTMLDir | undefined;
     draggable?: boolean | "false" | "true" | undefined;
+    exportparts?: string | undefined;
     hidden?: boolean | "hidden" | "until-found" | undefined;
     id?: string | undefined;
-    is?: string | undefined;
-    inert?: boolean | undefined;
-    lang?: string | undefined;
-    spellcheck?: boolean | undefined;
-    style?: CSSProperties | string | undefined;
-    tabindex?: number | string | undefined;
-    title?: string | undefined;
-    translate?: "yes" | "no" | undefined;
-    about?: string | undefined;
-    datatype?: string | undefined;
+    inert?: "true" | boolean | undefined;
     inlist?: any | undefined;
+    inputmode?:
+      | "decimal"
+      | "email"
+      | "none"
+      | "numeric"
+      | "search"
+      | "tel"
+      | "text"
+      | "url"
+      | undefined;
+    is?: string | undefined;
+    itemid?: string | undefined;
+    itemprop?: string | undefined;
+    itemref?: string | undefined;
+    itemscope?: "true" | boolean | undefined;
+    itemtype?: string | undefined;
+    lang?: string | undefined;
+    part?: string | undefined;
     popover?: boolean | "manual" | "auto" | undefined;
     prefix?: string | undefined;
     property?: string | undefined;
     resource?: string | undefined;
+    slot?: string | undefined;
+    spellcheck?: "true" | boolean | undefined;
+    style?: CSSProperties | string | undefined;
+    tabindex?: number | string | undefined;
+    title?: string | undefined;
+    translate?: "yes" | "no" | undefined;
     typeof?: string | undefined;
     vocab?: string | undefined;
-    autocapitalize?: HTMLAutocapitalize | undefined;
-    slot?: string | undefined;
-    color?: string | undefined;
-    itemprop?: string | undefined;
-    itemscope?: boolean | undefined;
-    itemtype?: string | undefined;
-    itemid?: string | undefined;
-    itemref?: string | undefined;
-    part?: string | undefined;
-    exportparts?: string | undefined;
-    inputmode?:
-      | "none"
-      | "text"
-      | "tel"
-      | "url"
-      | "email"
-      | "numeric"
-      | "decimal"
-      | "search"
-      | undefined;
-    contentEditable?: boolean | "plaintext-only" | "inherit" | undefined;
-    contextMenu?: string | undefined;
-    tabIndex?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    accessKey?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     autoCapitalize?: HTMLAutocapitalize | undefined;
-    itemProp?: string | undefined;
-    itemScope?: boolean | undefined;
-    itemType?: string | undefined;
-    itemId?: string | undefined;
-    itemRef?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    contentEditable?: boolean | "plaintext-only" | "inherit" | undefined;
+    /** @deprecated Use lowercase attributes */
+    contextMenu?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     exportParts?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     inputMode?:
       | "none"
       | "text"
@@ -935,84 +967,169 @@ export namespace JSX {
       | "decimal"
       | "search"
       | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemId?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemProp?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemRef?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemScope?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
+    itemType?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    tabIndex?: number | string | undefined;
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
-    download?: any | undefined;
+    download?: string | undefined;
     href?: string | undefined;
     hreflang?: string | undefined;
-    media?: string | undefined;
     ping?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     rel?: string | undefined;
-    target?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
     type?: string | undefined;
+
+    /** @experimental */
+    attributionsrc?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @deprecated */
+    charset?: string | undefined;
+    /** @deprecated */
+    coords?: string | undefined;
+    /** @deprecated */
+    name?: string | undefined;
+    /** @deprecated */
+    rev?: string | undefined;
+    /** @deprecated */
+    shape?: "rect" | "circle" | "poly" | "default" | undefined;
   }
   interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
   interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
     coords?: string | undefined;
-    download?: any | undefined;
+    download?: string | undefined;
     href?: string | undefined;
-    hreflang?: string | undefined;
     ping?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     rel?: string | undefined;
     shape?: "rect" | "circle" | "poly" | "default" | undefined;
-    target?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
+
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @deprecated */
+    nohref?: "true" | boolean | undefined;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
-    target?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
   }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
   }
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: boolean | undefined;
-    disabled?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
     formenctype?: HTMLFormEncType | undefined;
     formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: boolean | undefined;
-    formtarget?: string | undefined;
+    formnovalidate?: "true" | boolean | undefined;
+    formtarget?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
     popovertarget?: string | undefined;
     popovertargetaction?: "hide" | "show" | "toggle" | undefined;
     name?: string | undefined;
-    type?: "submit" | "reset" | "button" | undefined;
+    type?: "submit" | "reset" | "button" | "menu" | undefined;
     value?: string | undefined;
+
+    /** @experimental */
+    command?:
+      | "show-modal"
+      | "close"
+      | "show-popover"
+      | "hide-popover"
+      | "toggle-popover"
+      | (string & {})
+      | undefined;
+    /** @experimental */
+    commandfor?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     formAction?: string | SerializableAttributeValue | undefined;
+    /** @deprecated Use lowercase attributes */
     formEnctype?: HTMLFormEncType | undefined;
+    /** @deprecated Use lowercase attributes */
     formMethod?: HTMLFormMethod | undefined;
+    /** @deprecated Use lowercase attributes */
     formNoValidate?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
     formTarget?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     popoverTarget?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
     height?: number | string | undefined;
+
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    "moz-opaque"?: "true" | boolean | undefined;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | string | undefined;
+
+    /** @deprecated */
+    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    /** @deprecated */
+    bgcolor?: string | undefined;
+    /** @deprecated */
+    char?: string | undefined;
+    /** @deprecated */
+    charoff?: string | undefined;
+    /** @deprecated */
+    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    /** @deprecated */
     width?: number | string | undefined;
   }
   interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | string | undefined;
+
+    /** @deprecated */
+    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    /** @deprecated */
+    bgcolor?: string | undefined;
+    /** @deprecated */
+    char?: string | undefined;
+    /** @deprecated */
+    charoff?: string | undefined;
+    /** @deprecated */
+    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    /** @deprecated */
+    width?: number | string | undefined;
   }
   interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | string[] | number | undefined;
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: boolean | undefined;
-    onToggle?: EventHandlerUnion<T, Event> | undefined;
-    ontoggle?: EventHandlerUnion<T, Event> | undefined;
+    name?: string | undefined;
+    open?: "true" | boolean | undefined;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: boolean | undefined;
+    open?: "true" | boolean | undefined;
+    tabindex?: never | undefined;
+
+    onclose?: EventHandlerUnion<T, Event> | undefined;
     onClose?: EventHandlerUnion<T, Event> | undefined;
+    oncancel?: EventHandlerUnion<T, Event> | undefined;
     onCancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1020,27 +1137,38 @@ export namespace JSX {
     src?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;
+
+    /** @deprecated */
+    align?: "left" | "right" | "justify" | "center" | undefined;
+    /** @deprecated */
+    name?: string | undefined;
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     form?: string | undefined;
     name?: string | undefined;
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
     "accept-charset"?: string | undefined;
     action?: string | SerializableAttributeValue | undefined;
-    autocomplete?: string | undefined;
+    autocomplete?: "on" | "off" | undefined;
     encoding?: HTMLFormEncType | undefined;
     enctype?: HTMLFormEncType | undefined;
     method?: HTMLFormMethod | undefined;
     name?: string | undefined;
-    novalidate?: boolean | undefined;
-    target?: string | undefined;
+    novalidate?: "true" | boolean | undefined;
+    rel?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
+
+    /** @deprecated Use lowercase attributes */
     noValidate?: boolean | undefined;
+
+    /** @deprecated */
+    accept?: string | undefined;
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allow?: string | undefined;
-    allowfullscreen?: boolean | undefined;
+    allowfullscreen?: "true" | boolean | undefined;
     height?: number | string | undefined;
     loading?: "eager" | "lazy" | undefined;
     name?: string | undefined;
@@ -1049,87 +1177,273 @@ export namespace JSX {
     src?: string | undefined;
     srcdoc?: string | undefined;
     width?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @experimental */
+    adauctionheaders?: "true" | boolean | undefined;
+    /**
+     * @non-standard
+     * @experimental
+     */
+    browsingtopics?: "true" | boolean | undefined;
+    /** @experimental */
+    credentialless?: "true" | boolean | undefined;
+    /** @experimental */
+    csp?: string | undefined;
+    /** @experimental */
+    privatetoken?: string | undefined;
+    /** @experimental */
+    sharedstoragewritable?: "true" | boolean | undefined;
+
+    /** @deprecated */
+    align?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    allowpaymentrequest?: "true" | boolean | undefined;
+    /** @deprecated */
+    allowtransparency?: "true" | boolean | undefined;
+    /** @deprecated */
+    frameborder?: number | string | undefined;
+    /** @deprecated */
+    longdesc?: string | undefined;
+    /** @deprecated */
+    marginheight?: number | string | undefined;
+    /** @deprecated */
+    marginwidth?: number | string | undefined;
+    /** @deprecated */
+    scrolling?: "yes" | "no" | "auto" | undefined;
+    /** @deprecated */
+    seamless?: "true" | boolean | undefined;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     decoding?: "sync" | "async" | "auto" | undefined;
     height?: number | string | undefined;
-    ismap?: boolean | undefined;
-    isMap?: boolean | undefined;
+    ismap?: "true" | boolean | undefined;
     loading?: "eager" | "lazy" | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
     sizes?: string | undefined;
     src?: string | undefined;
     srcset?: string | undefined;
-    srcSet?: string | undefined;
     usemap?: string | undefined;
-    useMap?: string | undefined;
     width?: number | string | undefined;
-    crossOrigin?: HTMLCrossorigin | undefined;
     elementtiming?: string | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
+
+    /** @experimental */
+    attributionsrc?: string | undefined;
+    /** @experimental */
+    sharedstoragewritable?: "true" | boolean | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
+    isMap?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
+    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    /** @deprecated Use lowercase attributes */
+    srcSet?: string | undefined;
+    /** @deprecated Use lowercase attributes */
+    useMap?: string | undefined;
+
+    /** @deprecated */
+    align?: "top" | "middle" | "bottom" | "left" | "right" | undefined;
+    /** @deprecated */
+    border?: string | undefined;
+    /** @deprecated */
+    hspace?: number | string | undefined;
+    /** @deprecated */
+    intrinsicsize?: string | undefined;
+    /** @deprecated */
+    longdesc?: string | undefined;
+    /** @deprecated */
+    lowsrc?: string | undefined;
+    /** @deprecated */
+    name?: string | undefined;
+    /** @deprecated */
+    vspace?: number | string | undefined;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
     alt?: string | undefined;
-    autocomplete?: string | undefined;
+    autocomplete?:
+      | "additional-name"
+      | "address-level1"
+      | "address-level2"
+      | "address-level3"
+      | "address-level4"
+      | "address-line1"
+      | "address-line2"
+      | "address-line3"
+      | "bday"
+      | "bday-day"
+      | "bday-month"
+      | "bday-year"
+      | "billing"
+      | "cc-additional-name"
+      | "cc-csc"
+      | "cc-exp"
+      | "cc-exp-month"
+      | "cc-exp-year"
+      | "cc-family-name"
+      | "cc-given-name"
+      | "cc-name"
+      | "cc-number"
+      | "cc-type"
+      | "country"
+      | "country-name"
+      | "current-password"
+      | "email"
+      | "family-name"
+      | "fax"
+      | "given-name"
+      | "home"
+      | "honorific-prefix"
+      | "honorific-suffix"
+      | "impp"
+      | "language"
+      | "mobile"
+      | "name"
+      | "new-password"
+      | "nickname"
+      | "off"
+      | "on"
+      | "organization"
+      | "organization-title"
+      | "pager"
+      | "photo"
+      | "postal-code"
+      | "sex"
+      | "shipping"
+      | "street-address"
+      | "tel"
+      | "tel-area-code"
+      | "tel-country-code"
+      | "tel-extension"
+      | "tel-local"
+      | "tel-local-prefix"
+      | "tel-local-suffix"
+      | "tel-national"
+      | "transaction-amount"
+      | "transaction-currency"
+      | "url"
+      | "username"
+      | "work"
+      | (string & {})
+      | undefined;
     autocorrect?: "on" | "off" | undefined;
-    autofocus?: boolean | undefined;
-    capture?: boolean | string | undefined;
-    checked?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
+    capture?: "user" | "environment" | undefined;
+    checked?: "true" | boolean | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    disabled?: boolean | undefined;
+    dirname?: string | undefined;
+    disabled?: "true" | boolean | undefined;
     enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
     formenctype?: HTMLFormEncType | undefined;
     formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: boolean | undefined;
+    formnovalidate?: "true" | boolean | undefined;
     formtarget?: string | undefined;
     height?: number | string | undefined;
-    incremental?: boolean | undefined;
     list?: string | undefined;
     max?: number | string | undefined;
     maxlength?: number | string | undefined;
     min?: number | string | undefined;
     minlength?: number | string | undefined;
-    multiple?: boolean | undefined;
+    multiple?: "true" | boolean | undefined;
     name?: string | undefined;
     pattern?: string | undefined;
     placeholder?: string | undefined;
-    readonly?: boolean | undefined;
+    popovertarget?: string | undefined;
+    popovertargetaction?: "hide" | "show" | "toggle" | undefined;
+    readonly?: "true" | boolean | undefined;
+    required?: "true" | boolean | undefined;
+    // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/search#results
     results?: number | undefined;
-    required?: boolean | undefined;
     size?: number | string | undefined;
     src?: string | undefined;
     step?: number | string | undefined;
-    type?: string | undefined;
+    type?:
+      | "button"
+      | "checkbox"
+      | "color"
+      | "date"
+      | "datetime-local"
+      | "email"
+      | "file"
+      | "hidden"
+      | "image"
+      | "month"
+      | "number"
+      | "password"
+      | "radio"
+      | "range"
+      | "reset"
+      | "search"
+      | "submit"
+      | "tel"
+      | "text"
+      | "time"
+      | "url"
+      | "week"
+      | undefined;
     value?: string | string[] | number | undefined;
     width?: number | string | undefined;
+
+    /** @non-standard */
+    incremental?: "true" | boolean | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
     formAction?: string | SerializableAttributeValue | undefined;
+    /** @deprecated Use lowercase attributes */
     formEnctype?: HTMLFormEncType | undefined;
+    /** @deprecated Use lowercase attributes */
     formMethod?: HTMLFormMethod | undefined;
+    /** @deprecated Use lowercase attributes */
     formNoValidate?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
     formTarget?: string | undefined;
+    /** @deprecated Use lowercase attributes */
     maxLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     minLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     readOnly?: boolean | undefined;
+
+    /** @deprecated */
+    align?: string | undefined;
+    /** @deprecated */
+    usemap?: string | undefined;
   }
-  interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ModHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
+    datetime?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     dateTime?: string | undefined;
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: boolean | undefined;
+    /** @deprecated */
+    autofocus?: "true" | boolean | undefined;
+    /** @deprecated */
     challenge?: string | undefined;
-    disabled?: boolean | undefined;
+    /** @deprecated */
+    disabled?: "true" | boolean | undefined;
+    /** @deprecated */
     form?: string | undefined;
-    keytype?: string | undefined;
+    /** @deprecated */
     keyparams?: string | undefined;
+    /** @deprecated */
+    keytype?: string | undefined;
+    /** @deprecated */
     name?: string | undefined;
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1138,11 +1452,15 @@ export namespace JSX {
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: number | string | undefined;
+
+    /** @deprecated */
+    type?: "1" | "a" | "A" | "i" | "I" | undefined;
   }
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     as?: HTMLLinkAs | undefined;
+    blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
     href?: string | undefined;
     hreflang?: string | undefined;
@@ -1154,35 +1472,64 @@ export namespace JSX {
     rel?: string | undefined;
     sizes?: string | undefined;
     type?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @deprecated */
+    charset?: string | undefined;
+    /** @deprecated */
+    rev?: string | undefined;
+    /** @deprecated */
+    target?: string | undefined;
   }
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autoplay?: boolean | undefined;
-    controls?: boolean | undefined;
+    autoplay?: "true" | boolean | undefined;
+    controls?: "true" | boolean | undefined;
     controlslist?: string | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    loop?: boolean | undefined;
-    mediagroup?: string | undefined;
-    muted?: boolean | undefined;
+    disableremoteplayback?: "true" | boolean | undefined;
+    loop?: "true" | boolean | undefined;
+    muted?: "true" | boolean | undefined;
     preload?: "none" | "metadata" | "auto" | "" | undefined;
     src?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+
+    /** @deprecated Use lowercase attributes */
     mediaGroup?: string | undefined;
+    /** @deprecated */
+    mediagroup?: string | undefined;
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
+    /** @deprecated */
+    compact?: "true" | boolean | undefined;
+    /** @deprecated */
     label?: string | undefined;
+    /** @deprecated */
     type?: "context" | "toolbar" | undefined;
   }
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
     charset?: string | undefined;
     content?: string | undefined;
-    "http-equiv"?: string | undefined;
+    "http-equiv"?:
+      | "content-security-policy"
+      | "content-type"
+      | "default-style"
+      | "x-ua-compatible"
+      | "refresh"
+      | undefined;
     name?: string | undefined;
     media?: string | undefined;
+
+    /** @deprecated */
+    scheme?: string | undefined;
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string | undefined;
@@ -1202,23 +1549,57 @@ export namespace JSX {
     height?: number | string | undefined;
     name?: string | undefined;
     type?: string | undefined;
-    usemap?: string | undefined;
     width?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     useMap?: string | undefined;
+
+    /** @deprecated */
+    align?: string | undefined;
+    /** @deprecated */
+    archive?: string | undefined;
+    /** @deprecated */
+    border?: string | undefined;
+    /** @deprecated */
+    classid?: string | undefined;
+    /** @deprecated */
+    code?: string | undefined;
+    /** @deprecated */
+    codebase?: string | undefined;
+    /** @deprecated */
+    codetype?: string | undefined;
+    /** @deprecated */
+    declare?: "true" | boolean | undefined;
+    /** @deprecated */
+    hspace?: number | string | undefined;
+    /** @deprecated */
+    standby?: string | undefined;
+    /** @deprecated */
+    usemap?: string | undefined;
+    /** @deprecated */
+    vspace?: number | string | undefined;
+    /** @deprecated */
+    typemustmatch?: "true" | boolean | undefined;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: boolean | undefined;
+    reversed?: "true" | boolean | undefined;
     start?: number | string | undefined;
     type?: "1" | "a" | "A" | "i" | "I" | undefined;
+
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    compact?: "true" | boolean | undefined;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     label?: string | undefined;
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     label?: string | undefined;
-    selected?: boolean | undefined;
+    selected?: "true" | boolean | undefined;
     value?: string | string[] | number | undefined;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1227,40 +1608,61 @@ export namespace JSX {
     name?: string | undefined;
   }
   interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
+    /** @deprecated */
     name?: string | undefined;
-    value?: string | string[] | number | undefined;
+    /** @deprecated */
+    type?: string | undefined;
+    /** @deprecated */
+    value?: string | number | undefined;
+    /** @deprecated */
+    valuetype?: "data" | "ref" | "object" | undefined;
   }
   interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | string[] | number | undefined;
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: boolean | undefined;
-    charset?: string | undefined;
+    async?: "true" | boolean | undefined;
+    blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    defer?: boolean | undefined;
+    defer?: "true" | boolean | undefined;
+    fetchpriority?: "high" | "low" | "auto" | undefined;
     integrity?: string | undefined;
-    nomodule?: boolean | undefined;
+    nomodule?: "true" | boolean | undefined;
     nonce?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     src?: string | undefined;
-    type?: string | undefined;
+    type?: "importmap" | "module" | "speculationrules" | (string & {}) | undefined;
+
+    /** @experimental */
+    attributionsrc?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
+    /** @deprecated Use lowercase attributes */
     noModule?: boolean | undefined;
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | undefined;
+
+    /** @deprecated */
+    charset?: string | undefined;
+    /** @deprecated */
+    event?: string | undefined;
+    /** @deprecated */
+    language?: string | undefined;
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?: string | undefined;
-    autofocus?: boolean | undefined;
-    disabled?: boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     form?: string | undefined;
-    multiple?: boolean | undefined;
+    multiple?: "true" | boolean | undefined;
     name?: string | undefined;
-    required?: boolean | undefined;
+    required?: "true" | boolean | undefined;
     size?: number | string | undefined;
     value?: string | string[] | number | undefined;
   }
-  interface HTMLSlotElementAttributes<T = HTMLSlotElement> extends HTMLAttributes<T> {
+  interface HTMLSlotElementAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1273,69 +1675,247 @@ export namespace JSX {
     height?: number | string | undefined;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
+    blocking?: "render" | undefined;
     media?: string | undefined;
     nonce?: string | undefined;
-    scoped?: boolean | undefined;
+
+    /** @deprecated */
+    scoped?: "true" | boolean | undefined;
+    /** @deprecated */
     type?: string | undefined;
   }
   interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
     colspan?: number | string | undefined;
     headers?: string | undefined;
     rowspan?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     colSpan?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     rowSpan?: number | string | undefined;
+
+    /** @deprecated */
+    abbr?: string | undefined;
+    /** @deprecated */
+    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    /** @deprecated */
+    axis?: string | undefined;
+    /** @deprecated */
+    bgcolor?: string | undefined;
+    /** @deprecated */
+    char?: string | undefined;
+    /** @deprecated */
+    charoff?: string | undefined;
+    /** @deprecated */
+    height?: number | string | undefined;
+    /** @deprecated */
+    nowrap?: "true" | boolean | undefined;
+    /** @deprecated */
+    scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
+    /** @deprecated */
+    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    /** @deprecated */
+    width?: number | string | undefined;
   }
-  interface TemplateHTMLAttributes<T extends HTMLTemplateElement> extends HTMLAttributes<T> {
+  interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
+    shadowrootmode?: "open" | "closed" | undefined;
+    shadowrootclonable?: "true" | boolean | undefined;
+    shadowrootdelegatesfocus?: "true" | boolean | undefined;
+
+    /** @experimental */
+    shadowrootserializable?: "true" | boolean | undefined;
+
+    /** @deprecated */
     content?: DocumentFragment | undefined;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: string | undefined;
-    autofocus?: boolean | undefined;
+    autocomplete?:
+      | "additional-name"
+      | "address-level1"
+      | "address-level2"
+      | "address-level3"
+      | "address-level4"
+      | "address-line1"
+      | "address-line2"
+      | "address-line3"
+      | "bday"
+      | "bday-day"
+      | "bday-month"
+      | "bday-year"
+      | "billing"
+      | "cc-additional-name"
+      | "cc-csc"
+      | "cc-exp"
+      | "cc-exp-month"
+      | "cc-exp-year"
+      | "cc-family-name"
+      | "cc-given-name"
+      | "cc-name"
+      | "cc-number"
+      | "cc-type"
+      | "country"
+      | "country-name"
+      | "current-password"
+      | "email"
+      | "family-name"
+      | "fax"
+      | "given-name"
+      | "home"
+      | "honorific-prefix"
+      | "honorific-suffix"
+      | "impp"
+      | "language"
+      | "mobile"
+      | "name"
+      | "new-password"
+      | "nickname"
+      | "off"
+      | "on"
+      | "organization"
+      | "organization-title"
+      | "pager"
+      | "photo"
+      | "postal-code"
+      | "sex"
+      | "shipping"
+      | "street-address"
+      | "tel"
+      | "tel-area-code"
+      | "tel-country-code"
+      | "tel-extension"
+      | "tel-local"
+      | "tel-local-prefix"
+      | "tel-local-suffix"
+      | "tel-national"
+      | "transaction-amount"
+      | "transaction-currency"
+      | "url"
+      | "username"
+      | "work"
+      | (string & {})
+      | undefined;
+    autocorrect?: "on" | "off" | undefined;
+    autofocus?: "true" | boolean | undefined;
     cols?: number | string | undefined;
     dirname?: string | undefined;
-    disabled?: boolean | undefined;
+    disabled?: "true" | boolean | undefined;
     enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
     form?: string | undefined;
     maxlength?: number | string | undefined;
     minlength?: number | string | undefined;
     name?: string | undefined;
     placeholder?: string | undefined;
-    readonly?: boolean | undefined;
-    required?: boolean | undefined;
+    readonly?: "true" | boolean | undefined;
+    required?: "true" | boolean | undefined;
     rows?: number | string | undefined;
     value?: string | string[] | number | undefined;
     wrap?: "hard" | "soft" | "off" | undefined;
+
+    /** @deprecated Use lowercase attributes */
     maxLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     minLength?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
     readOnly?: boolean | undefined;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
+    abbr?: string | undefined;
     colspan?: number | string | undefined;
     headers?: string | undefined;
     rowspan?: number | string | undefined;
-    colSpan?: number | string | undefined;
-    rowSpan?: number | string | undefined;
     scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    colSpan?: number | string | undefined;
+    /** @deprecated Use lowercase attributes */
+    rowSpan?: number | string | undefined;
+
+    /** @deprecated */
+    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    /** @deprecated */
+    axis?: string | undefined;
+    /** @deprecated */
+    bgcolor?: string | undefined;
+    /** @deprecated */
+    char?: string | undefined;
+    /** @deprecated */
+    charoff?: string | undefined;
+    /** @deprecated */
+    height?: string | undefined;
+    /** @deprecated */
+    nowrap?: "true" | boolean | undefined;
+    /** @deprecated */
+    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    /** @deprecated */
+    width?: number | string | undefined;
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
     dateTime?: string | undefined;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: boolean | undefined;
-    kind?: "subtitles" | "captions" | "descriptions" | "chapters" | "metadata" | undefined;
+    default?: "true" | boolean | undefined;
+    kind?: // MDN
+    | "alternative"
+      | "descriptions"
+      | "main"
+      | "main-desc"
+      | "translation"
+      | "commentary"
+      // ??
+      | "subtitles"
+      | "captions"
+      | "chapters"
+      | "metadata"
+      | undefined;
     label?: string | undefined;
     src?: string | undefined;
     srclang?: string | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    mediaGroup?: string | undefined;
+    /** @deprecated */
+    mediagroup?: string | undefined;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     height?: number | string | undefined;
-    playsinline?: boolean | undefined;
+    playsinline?: "true" | boolean | undefined;
     poster?: string | undefined;
     width?: number | string | undefined;
-    disablepictureinpicture?: boolean;
+    disablepictureinpicture?: "true" | boolean | undefined;
     disableremoteplayback?: boolean;
   }
+
+  interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
+    allowpopups?: "true" | boolean | undefined;
+    disableblinkfeatures?: string | undefined;
+    disablewebsecurity?: "true" | boolean | undefined;
+    enableblinkfeatures?: string | undefined;
+    httpreferrer?: string | undefined;
+    nodeintegration?: "true" | boolean | undefined;
+    nodeintegrationinsubframes?: "true" | boolean | undefined;
+    partition?: string | undefined;
+    plugins?: "true" | boolean | undefined;
+    preload?: string | undefined;
+    src?: string | undefined;
+    useragent?: string | undefined;
+    webpreferences?: string | undefined;
+
+    // does this exists?
+    allowfullscreen?: "true" | boolean | undefined;
+    autofocus?: "true" | boolean | undefined;
+    autosize?: "true" | boolean | undefined;
+
+    /** @deprecated */
+    blinkfeatures?: string | undefined;
+    /** @deprecated */
+    disableguestresize?: "true" | boolean | undefined;
+    /** @deprecated */
+    guestinstance?: string | undefined;
+  }
+
   type SVGPreserveAspectRatio =
     | "none"
     | "xMinYMin"
@@ -1399,8 +1979,10 @@ export namespace JSX {
   interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     id?: string | undefined;
     lang?: string | undefined;
-    tabIndex?: number | string | undefined;
     tabindex?: number | string | undefined;
+
+    /** @deprecated Use lowercase attributes */
+    tabIndex?: number | string | undefined;
   }
   interface StylableSVGAttributes {
     class?: string | undefined;
@@ -1687,6 +2269,10 @@ export namespace JSX {
         | "stroke-opacity"
       > {}
   interface ZoomAndPanSVGAttributes {
+    /**
+     * @deprecated
+     * @non-standard
+     */
     zoomAndPan?: "disable" | "magnify" | undefined;
   }
   interface AnimateSVGAttributes<T>
@@ -2085,16 +2671,19 @@ export namespace JSX {
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
       PresentationSVGAttributes {
-    version?: string | undefined;
-    baseProfile?: string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
-    width?: number | string | undefined;
-    height?: number | string | undefined;
+    "xmlns:xlink"?: string | undefined;
     contentScriptType?: string | undefined;
     contentStyleType?: string | undefined;
+    height?: number | string | undefined;
+    width?: number | string | undefined;
+    x?: number | string | undefined;
     xmlns?: string | undefined;
-    "xmlns:xlink"?: string | undefined;
+    y?: number | string | undefined;
+
+    /** @deprecated */
+    baseProfile?: string | undefined;
+    /** @deprecated */
+    version?: string | undefined;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2187,190 +2776,1305 @@ export namespace JSX {
       ZoomAndPanSVGAttributes {
     viewTarget?: string | undefined;
   }
+
+  interface MathMLAttributes<T> extends HTMLAttributes<T> {
+    displaystyle?: "true" | boolean | undefined;
+    /** @deprecated */
+    href?: string | undefined;
+    /** @deprecated */
+    mathbackground?: string | undefined;
+    /** @deprecated */
+    mathcolor?: string | undefined;
+    /** @deprecated */
+    mathsize?: string | undefined;
+    nonce?: string | undefined;
+    scriptlevel?: string | undefined;
+  }
+
+  interface MathMLAnnotationElementAttributes<T> extends MathMLAttributes<T> {
+    encoding?: string | undefined;
+
+    /** @deprecated */
+    src?: string | undefined;
+  }
+  interface MathMLAnnotationXmlElementAttributes<T> extends MathMLAttributes<T> {
+    encoding?: string | undefined;
+
+    /** @deprecated */
+    src?: string | undefined;
+  }
+  interface MathMLMactionElementAttributes<T> extends MathMLAttributes<T> {
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    actiontype?: "statusline" | "toggle" | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    selection?: string | undefined;
+  }
+  interface MathMLMathElementAttributes<T> extends MathMLAttributes<T> {
+    display?: "block" | "inline" | undefined;
+  }
+  interface MathMLMerrorElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMfracElementAttributes<T> extends MathMLAttributes<T> {
+    linethickness?: string | undefined;
+
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    denomalign?: "center" | "left" | "right" | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    numalign?: "center" | "left" | "right" | undefined;
+  }
+  interface MathMLMiElementAttributes<T> extends MathMLAttributes<T> {
+    mathvariant?: "normal" | undefined;
+  }
+
+  interface MathMLMmultiscriptsElementAttributes<T> extends MathMLAttributes<T> {
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    subscriptshift?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    superscriptshift?: string | undefined;
+  }
+  interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
+    fence?: "true" | boolean | undefined;
+    form?: "prefix" | "infix" | "postfix" | undefined;
+    largeop?: "true" | boolean | undefined;
+    lspace?: string | undefined;
+    maxsize?: string | undefined;
+    minsize?: string | undefined;
+    movablelimits?: "true" | boolean | undefined;
+    rspace?: string | undefined;
+    separator?: "true" | boolean | undefined;
+    stretchy?: "true" | boolean | undefined;
+    symmetric?: "true" | boolean | undefined;
+
+    /** @non-standard */
+    accent?: "true" | boolean | undefined;
+  }
+  interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
+    accent?: "true" | boolean | undefined;
+  }
+  interface MathMLMpaddedElementAttributes<T> extends MathMLAttributes<T> {
+    depth?: string | undefined;
+    height?: string | undefined;
+    lspace?: string | undefined;
+    voffset?: string | undefined;
+    width?: string | undefined;
+  }
+  interface MathMLMphantomElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMprescriptsElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMrootElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMrowElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMsElementAttributes<T> extends MathMLAttributes<T> {
+    /** @deprecated */
+    lquote?: string | undefined;
+    /** @deprecated */
+    rquote?: string | undefined;
+  }
+  interface MathMLMspaceElementAttributes<T> extends MathMLAttributes<T> {
+    depth?: string | undefined;
+    height?: string | undefined;
+    width?: string | undefined;
+  }
+  interface MathMLMsqrtElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMstyleElementAttributes<T> extends MathMLAttributes<T> {
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    background?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    color?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    fontsize?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    fontstyle?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    fontweight?: string | undefined;
+
+    /** @deprecated */
+    scriptminsize?: string | undefined;
+    /** @deprecated */
+    scriptsizemultiplier?: string | undefined;
+  }
+  interface MathMLMsubElementAttributes<T> extends MathMLAttributes<T> {
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    subscriptshift?: string | undefined;
+  }
+  interface MathMLMsubsupElementAttributes<T> extends MathMLAttributes<T> {
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    subscriptshift?: string | undefined;
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    superscriptshift?: string | undefined;
+  }
+  interface MathMLMsupElementAttributes<T> extends MathMLAttributes<T> {
+    /**
+     * @deprecated
+     * @non-standard
+     */
+    superscriptshift?: string | undefined;
+  }
+  interface MathMLMtableElementAttributes<T> extends MathMLAttributes<T> {
+    /** @non-standard */
+    align?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+    /** @non-standard */
+    columnalign?: "center" | "left" | "right" | undefined;
+    /** @non-standard */
+    columnlines?: "dashed" | "none" | "solid" | undefined;
+    /** @non-standard */
+    columnspacing?: string | undefined;
+    /** @non-standard */
+    frame?: "dashed" | "none" | "solid" | undefined;
+    /** @non-standard */
+    framespacing?: string | undefined;
+    /** @non-standard */
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+    /** @non-standard */
+    rowlines?: "dashed" | "none" | "solid" | undefined;
+    /** @non-standard */
+    rowspacing?: string | undefined;
+    /** @non-standard */
+    width?: string | undefined;
+  }
+  interface MathMLMtdElementAttributes<T> extends MathMLAttributes<T> {
+    columnspan?: number | string | undefined;
+    rowspan?: number | string | undefined;
+    /** @non-standard */
+    columnalign?: "center" | "left" | "right" | undefined;
+    /** @non-standard */
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+  }
+  interface MathMLMtextElementAttributes<T> extends MathMLAttributes<T> {}
+  interface MathMLMtrElementAttributes<T> extends MathMLAttributes<T> {
+    /** @non-standard */
+    columnalign?: "center" | "left" | "right" | undefined;
+    /** @non-standard */
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+  }
+  interface MathMLMunderElementAttributes<T> extends MathMLAttributes<T> {
+    accentunder?: "true" | boolean | undefined;
+  }
+  interface MathMLMunderoverElementAttributes<T> extends MathMLAttributes<T> {
+    accent?: "true" | boolean | undefined;
+    accentunder?: "true" | boolean | undefined;
+  }
+  interface MathMLSemanticsElementAttributes<T> extends MathMLAttributes<T> {}
+
+  /* MathMLDeprecatedElements */
+
+  interface MathMLMencloseElementAttributes<T> extends MathMLAttributes<T> {
+    /** @non-standard */
+    notation?: string | undefined;
+  }
+  interface MathMLMfencedElementAttributes<T> extends MathMLAttributes<T> {
+    close?: string | undefined;
+    open?: string | undefined;
+    separators?: string | undefined;
+  }
+
   /** @type {HTMLElementTagNameMap} */
   interface HTMLElementTags {
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLAnchorElement
+     */
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     abbr: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     address: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLAreaElement
+     */
     area: AreaHTMLAttributes<HTMLAreaElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     article: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     aside: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLAudioElement
+     */
     audio: AudioHTMLAttributes<HTMLAudioElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     b: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBaseElement
+     */
     base: BaseHTMLAttributes<HTMLBaseElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     bdi: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     bdo: HTMLAttributes<HTMLElement>;
-    blockquote: BlockquoteHTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLQuoteElement
+     */
+    blockquote: BlockquoteHTMLAttributes<HTMLQuoteElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBodyElement
+     */
     body: HTMLAttributes<HTMLBodyElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBRElement
+     */
     br: HTMLAttributes<HTMLBRElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLButtonElement
+     */
     button: ButtonHTMLAttributes<HTMLButtonElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement
+     */
     canvas: CanvasHTMLAttributes<HTMLCanvasElement>;
-    caption: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCaptionElement
+     */
+    caption: HTMLAttributes<HTMLTableCaptionElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     cite: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     code: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableColElement
+     */
     col: ColHTMLAttributes<HTMLTableColElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableColElement
+     */
     colgroup: ColgroupHTMLAttributes<HTMLTableColElement>;
-    data: DataHTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement
+     */
+    data: DataHTMLAttributes<HTMLDataElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataListElement
+     */
     datalist: HTMLAttributes<HTMLDataListElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     dd: HTMLAttributes<HTMLElement>;
-    del: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLModElement
+     */
+    del: ModHTMLAttributes<HTMLModElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement
+     */
     details: DetailsHtmlAttributes<HTMLDetailsElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     dfn: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement
+     */
     dialog: DialogHtmlAttributes<HTMLDialogElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDivElement
+     */
     div: HTMLAttributes<HTMLDivElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDListElement
+     */
     dl: HTMLAttributes<HTMLDListElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     dt: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     em: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLEmbedElement
+     */
     embed: EmbedHTMLAttributes<HTMLEmbedElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLFieldSetElement
+     */
     fieldset: FieldsetHTMLAttributes<HTMLFieldSetElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     figcaption: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     figure: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     footer: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement
+     */
     form: FormHTMLAttributes<HTMLFormElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     */
     h1: HTMLAttributes<HTMLHeadingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h2
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     */
     h2: HTMLAttributes<HTMLHeadingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h3
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     */
     h3: HTMLAttributes<HTMLHeadingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h4
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     */
     h4: HTMLAttributes<HTMLHeadingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h5
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     */
     h5: HTMLAttributes<HTMLHeadingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h6
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     */
     h6: HTMLAttributes<HTMLHeadingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadElement
+     */
     head: HTMLAttributes<HTMLHeadElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     header: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     hgroup: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHRElement
+     */
     hr: HTMLAttributes<HTMLHRElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHtmlElement
+     */
     html: HTMLAttributes<HTMLHtmlElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     i: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement
+     */
     iframe: IframeHTMLAttributes<HTMLIFrameElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement
+     */
     img: ImgHTMLAttributes<HTMLImageElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement
+     */
     input: InputHTMLAttributes<HTMLInputElement>;
-    ins: InsHTMLAttributes<HTMLModElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLModElement
+     */
+    ins: ModHTMLAttributes<HTMLModElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     kbd: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement
+     */
     label: LabelHTMLAttributes<HTMLLabelElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/legend
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLegendElement
+     */
     legend: HTMLAttributes<HTMLLegendElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLIElement
+     */
     li: LiHTMLAttributes<HTMLLIElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLinkElement
+     */
     link: LinkHTMLAttributes<HTMLLinkElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     main: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMapElement
+     */
     map: MapHTMLAttributes<HTMLMapElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     mark: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMenuElement
+     */
     menu: MenuHTMLAttributes<HTMLMenuElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMetaElement
+     */
     meta: MetaHTMLAttributes<HTMLMetaElement>;
-    meter: MeterHTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMeterElement
+     */
+    meter: MeterHTMLAttributes<HTMLMeterElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     nav: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/noscript
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     noscript: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLObjectElement
+     */
     object: ObjectHTMLAttributes<HTMLObjectElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOListElement
+     */
     ol: OlHTMLAttributes<HTMLOListElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptGroupElement
+     */
     optgroup: OptgroupHTMLAttributes<HTMLOptGroupElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement
+     */
     option: OptionHTMLAttributes<HTMLOptionElement>;
-    output: OutputHTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOutputElement
+     */
+    output: OutputHTMLAttributes<HTMLOutputElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLParagraphElement
+     */
     p: HTMLAttributes<HTMLParagraphElement>;
-    picture: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLPictureElement
+     */
+    picture: HTMLAttributes<HTMLPictureElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLPreElement
+     */
     pre: HTMLAttributes<HTMLPreElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLProgressElement
+     */
     progress: ProgressHTMLAttributes<HTMLProgressElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLQuoteElement
+     */
     q: QuoteHTMLAttributes<HTMLQuoteElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     rp: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     rt: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     ruby: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     s: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     samp: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement
+     */
     script: ScriptHTMLAttributes<HTMLScriptElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/search
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     search: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     section: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSelectElement
+     */
     select: SelectHTMLAttributes<HTMLSelectElement>;
-    slot: HTMLSlotElementAttributes;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement
+     */
+    slot: HTMLSlotElementAttributes<HTMLSlotElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     small: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSourceElement
+     */
     source: SourceHTMLAttributes<HTMLSourceElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSpanElement
+     */
     span: HTMLAttributes<HTMLSpanElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     strong: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLStyleElement
+     */
     style: StyleHTMLAttributes<HTMLStyleElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     sub: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     summary: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     sup: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableElement
+     */
     table: HTMLAttributes<HTMLTableElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableSectionElement
+     */
     tbody: HTMLAttributes<HTMLTableSectionElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCellElement
+     */
     td: TdHTMLAttributes<HTMLTableCellElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTemplateElement
+     */
     template: TemplateHTMLAttributes<HTMLTemplateElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTextAreaElement
+     */
     textarea: TextareaHTMLAttributes<HTMLTextAreaElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableSectionElement
+     */
     tfoot: HTMLAttributes<HTMLTableSectionElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCellElement
+     */
     th: ThHTMLAttributes<HTMLTableCellElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableSectionElement
+     */
     thead: HTMLAttributes<HTMLTableSectionElement>;
-    time: TimeHTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTimeElement
+     */
+    time: TimeHTMLAttributes<HTMLTimeElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTitleElement
+     */
     title: HTMLAttributes<HTMLTitleElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableRowElement
+     */
     tr: HTMLAttributes<HTMLTableRowElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTrackElement
+     */
     track: TrackHTMLAttributes<HTMLTrackElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     u: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUListElement
+     */
     ul: HTMLAttributes<HTMLUListElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     var: HTMLAttributes<HTMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement
+     */
     video: VideoHTMLAttributes<HTMLVideoElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     wbr: HTMLAttributes<HTMLElement>;
+    /** @url https://www.electronjs.org/docs/latest/api/webview-tag */
+    webview: WebViewHTMLAttributes<HTMLElement>;
   }
   /** @type {HTMLElementDeprecatedTagNameMap} */
   interface HTMLElementDeprecatedTags {
+    /**
+     * @deprecated
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/big
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     */
     big: HTMLAttributes<HTMLElement>;
-    keygen: KeygenHTMLAttributes<HTMLElement>;
-    menuitem: HTMLAttributes<HTMLElement>;
-    noindex: HTMLAttributes<HTMLElement>;
+    /**
+     * @deprecated
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/keygen
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
+     */
+    keygen: KeygenHTMLAttributes<HTMLUnknownElement>;
+    /**
+     * @deprecated
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menuitem
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
+     */
+    menuitem: HTMLAttributes<HTMLUnknownElement>;
+    /**
+     * @deprecated
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/xxxxx
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
+     */
+    noindex: HTMLAttributes<HTMLUnknownElement>;
+    /**
+     * @deprecated
+     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLParamElement
+     */
     param: ParamHTMLAttributes<HTMLParamElement>;
   }
   /** @type {SVGElementTagNameMap} */
   interface SVGElementTags {
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animate
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGAnimateElement
+     */
     animate: AnimateSVGAttributes<SVGAnimateElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateMotion
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGAnimateMotionElement
+     */
     animateMotion: AnimateMotionSVGAttributes<SVGAnimateMotionElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateTransform
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGAnimateTransformElement
+     */
     animateTransform: AnimateTransformSVGAttributes<SVGAnimateTransformElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/circle
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGCircleElement
+     */
     circle: CircleSVGAttributes<SVGCircleElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/clipPath
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGClipPathElement
+     */
     clipPath: ClipPathSVGAttributes<SVGClipPathElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/defs
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGDefsElement
+     */
     defs: DefsSVGAttributes<SVGDefsElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/desc
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGDescElement
+     */
     desc: DescSVGAttributes<SVGDescElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/ellipse
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGEllipseElement
+     */
     ellipse: EllipseSVGAttributes<SVGEllipseElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feBlend
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEBlendElement
+     */
     feBlend: FeBlendSVGAttributes<SVGFEBlendElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feColorMatrix
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEColorMatrixElement
+     */
     feColorMatrix: FeColorMatrixSVGAttributes<SVGFEColorMatrixElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feComponentTransfer
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEComponentTransferElemen
+     */
     feComponentTransfer: FeComponentTransferSVGAttributes<SVGFEComponentTransferElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feComposite
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFECompositeElement
+     */
     feComposite: FeCompositeSVGAttributes<SVGFECompositeElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feConvolveMatrix
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEConvolveMatrixElement
+     */
     feConvolveMatrix: FeConvolveMatrixSVGAttributes<SVGFEConvolveMatrixElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDiffuseLighting
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEDiffuseLightingElement
+     */
     feDiffuseLighting: FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDisplacementMap
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEDisplacementMapElement
+     */
     feDisplacementMap: FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDistantLight
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEDistantLightElement
+     */
     feDistantLight: FeDistantLightSVGAttributes<SVGFEDistantLightElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDropShadow
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEDropShadowElement
+     */
     feDropShadow: FeDropShadowSVGAttributes<SVGFEDropShadowElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFlood
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEFloodElement
+     */
     feFlood: FeFloodSVGAttributes<SVGFEFloodElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncA
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEFuncAElement
+     */
     feFuncA: FeFuncSVGAttributes<SVGFEFuncAElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncB
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEFuncBElement
+     */
     feFuncB: FeFuncSVGAttributes<SVGFEFuncBElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncG
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEFuncGElement
+     */
     feFuncG: FeFuncSVGAttributes<SVGFEFuncGElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncR
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEFuncRElement
+     */
     feFuncR: FeFuncSVGAttributes<SVGFEFuncRElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feGaussianBlur
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEGaussianBlurElement
+     */
     feGaussianBlur: FeGaussianBlurSVGAttributes<SVGFEGaussianBlurElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feImage
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEImageElement
+     */
     feImage: FeImageSVGAttributes<SVGFEImageElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feMerge
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEMergeElement
+     */
     feMerge: FeMergeSVGAttributes<SVGFEMergeElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feMergeNode
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEMergeNodeElement
+     */
     feMergeNode: FeMergeNodeSVGAttributes<SVGFEMergeNodeElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feMorphology
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEMorphologyElement
+     */
     feMorphology: FeMorphologySVGAttributes<SVGFEMorphologyElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feOffset
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEOffsetElement
+     */
     feOffset: FeOffsetSVGAttributes<SVGFEOffsetElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/fePointLight
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFEPointLightElement
+     */
     fePointLight: FePointLightSVGAttributes<SVGFEPointLightElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feSpecularLighting
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFESpecularLightingElement
+     */
     feSpecularLighting: FeSpecularLightingSVGAttributes<SVGFESpecularLightingElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feSpotLight
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFESpotLightElement
+     */
     feSpotLight: FeSpotLightSVGAttributes<SVGFESpotLightElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feTile
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFETileElement
+     */
     feTile: FeTileSVGAttributes<SVGFETileElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feTurbulence
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFETurbulenceElement
+     */
     feTurbulence: FeTurbulanceSVGAttributes<SVGFETurbulenceElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/filter
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGFilterElement
+     */
     filter: FilterSVGAttributes<SVGFilterElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/foreignObject
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGForeignObjectElement
+     */
     foreignObject: ForeignObjectSVGAttributes<SVGForeignObjectElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/g
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGGElement
+     */
     g: GSVGAttributes<SVGGElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/image
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGImageElement
+     */
     image: ImageSVGAttributes<SVGImageElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/line
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGLineElement
+     */
     line: LineSVGAttributes<SVGLineElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/linearGradient
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGLinearGradientElement
+     */
     linearGradient: LinearGradientSVGAttributes<SVGLinearGradientElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGMarkerElement
+     */
     marker: MarkerSVGAttributes<SVGMarkerElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/mask
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGMaskElement
+     */
     mask: MaskSVGAttributes<SVGMaskElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/metadata
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGMetadataElement
+     */
     metadata: MetadataSVGAttributes<SVGMetadataElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/mpath
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGMPathElement
+     */
     mpath: MPathSVGAttributes<SVGMPathElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/path
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGPathElement
+     */
     path: PathSVGAttributes<SVGPathElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/pattern
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGPatternElement
+     */
     pattern: PatternSVGAttributes<SVGPatternElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/polygon
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGPolygonElement
+     */
     polygon: PolygonSVGAttributes<SVGPolygonElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/polyline
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGPolylineElement
+     */
     polyline: PolylineSVGAttributes<SVGPolylineElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/radialGradient
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGRadialGradientElement
+     */
     radialGradient: RadialGradientSVGAttributes<SVGRadialGradientElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/rect
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGRectElement
+     */
     rect: RectSVGAttributes<SVGRectElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/set
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGSetElement
+     */
     set: SetSVGAttributes<SVGSetElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/stop
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGStopElement
+     */
     stop: StopSVGAttributes<SVGStopElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGSVGElement
+     */
     svg: SvgSVGAttributes<SVGSVGElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/switch
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGSwitchElement
+     */
     switch: SwitchSVGAttributes<SVGSwitchElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/symbol
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGSymbolElement
+     */
     symbol: SymbolSVGAttributes<SVGSymbolElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/text
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGTextElement
+     */
     text: TextSVGAttributes<SVGTextElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/textPath
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGTextPathElement
+     */
     textPath: TextPathSVGAttributes<SVGTextPathElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/tspan
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGTSpanElement
+     */
     tspan: TSpanSVGAttributes<SVGTSpanElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGUseElement
+     */
     use: UseSVGAttributes<SVGUseElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/SVG/Element/view
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/SVGViewElement
+     */
     view: ViewSVGAttributes<SVGViewElement>;
   }
-  interface IntrinsicElements extends HTMLElementTags, HTMLElementDeprecatedTags, SVGElementTags {}
+
+  interface MathMLElementTags {
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/annotation
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    annotation: MathMLAnnotationElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/annotation-xml
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    "annotation-xml": MathMLAnnotationXmlElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/math
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    math: MathMLMathElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/merror
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    merror: MathMLMerrorElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfrac
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mfrac: MathMLMfracElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mi
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mi: MathMLMiElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mmultiscripts
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mmultiscripts: MathMLMmultiscriptsElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mn
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mn: MathMLMnElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mo
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mo: MathMLMoElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mover
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mover: MathMLMoverElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mpadded
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mpadded: MathMLMpaddedElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mphantom
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mphantom: MathMLMphantomElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mprescripts
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mprescripts: MathMLMprescriptsElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mroot
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mroot: MathMLMrootElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mrow
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mrow: MathMLMrowElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/ms
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    ms: MathMLMsElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mspace
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mspace: MathMLMspaceElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msqrt
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    msqrt: MathMLMsqrtElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mstyle
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mstyle: MathMLMstyleElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msub
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    msub: MathMLMsubElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msubsup
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    msubsup: MathMLMsubsupElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/msup
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    msup: MathMLMsupElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtable
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mtable: MathMLMtableElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtd
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mtd: MathMLMtdElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtext
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mtext: MathMLMtextElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mtr
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mtr: MathMLMtrElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/munder
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    munder: MathMLMunderElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/munderover
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    munderover: MathMLMunderoverElementAttributes<MathMLElement>;
+    /**
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/semantics
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    semantics: MathMLSemanticsElementAttributes<MathMLElement>;
+    /**
+     * @non-standard
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/menclose
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    menclose: MathMLMencloseElementAttributes<MathMLElement>;
+    /**
+     * @deprecated
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/maction
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    maction: MathMLMactionElementAttributes<MathMLElement>;
+    /**
+     * @deprecated
+     * @non-standard
+     * @url https://developer.mozilla.org/en-US/docs/Web/MathML/Element/mfenced
+     * @url https://developer.mozilla.org/en-US/docs/Web/API/MathMLElement
+     */
+    mfenced: MathMLMfencedElementAttributes<MathMLElement>;
+  }
+
+  interface IntrinsicElements
+    extends HTMLElementTags,
+      HTMLElementDeprecatedTags,
+      SVGElementTags,
+      MathMLElementTags {}
 }
