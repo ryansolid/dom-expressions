@@ -16,7 +16,9 @@ const multiDynamic = [
     var _el$5 = _tmpl$();
     _$effect(
       () => state.first,
-      _v$ => _$setAttribute(_el$5, "id", _v$)
+      _v$ => {
+        _$setAttribute(_el$5, "id", _v$);
+      }
     );
     return _el$5;
   })(),
@@ -25,7 +27,9 @@ const multiDynamic = [
     var _el$6 = _tmpl$2();
     _$effect(
       () => state.last,
-      _v$ => _$setAttribute(_el$6, "id", _v$)
+      _v$ => {
+        _$setAttribute(_el$6, "id", _v$);
+      }
     );
     return _el$6;
   })(),

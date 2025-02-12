@@ -145,7 +145,9 @@ const template19 = (() => {
   var _el$12 = _$getNextElement(_tmpl$);
   _$effect(
     () => (state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})),
-    _v$ => _$setProperty(_el$12, "innerHTML", _v$)
+    _v$ => {
+      _$setProperty(_el$12, "innerHTML", _v$);
+    }
   );
   return _el$12;
 })();
@@ -174,7 +176,9 @@ const template23 = (() => {
   var _el$14 = _$getNextElement(_tmpl$);
   _$effect(
     () => (state?.dynamic ? "a" : "b"),
-    _v$ => _$setProperty(_el$14, "innerHTML", _v$)
+    _v$ => {
+      _$setProperty(_el$14, "innerHTML", _v$);
+    }
   );
   return _el$14;
 })();
@@ -197,7 +201,9 @@ const template27 = (() => {
   var _el$16 = _$getNextElement(_tmpl$);
   _$effect(
     () => state.dynamic ?? _$createComponent(Comp, {}),
-    _v$ => _$setProperty(_el$16, "innerHTML", _v$)
+    _v$ => {
+      _$setProperty(_el$16, "innerHTML", _v$);
+    }
   );
   return _el$16;
 })();

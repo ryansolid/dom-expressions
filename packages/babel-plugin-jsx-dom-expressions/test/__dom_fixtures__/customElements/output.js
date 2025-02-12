@@ -163,7 +163,9 @@ const template53 = (() => {
 const template54 = (() => {
   var _el$18 = _tmpl$17();
   _el$18._$owner = _$getOwner();
-  _$effect(boolTest, _v$ => _$setBoolAttribute(_el$18, "quack", _v$));
+  _$effect(boolTest, _v$ => {
+    _$setBoolAttribute(_el$18, "quack", _v$);
+  });
   return _el$18;
 })();
 const template55 = (() => {
@@ -183,7 +185,9 @@ const template57 = (() => {
   _el$21._$owner = _$getOwner();
   _$effect(
     () => boolTestObjBinding.value,
-    _v$ => _$setBoolAttribute(_el$21, "quack", _v$)
+    _v$ => {
+      _$setBoolAttribute(_el$21, "quack", _v$);
+    }
   );
   return _el$21;
 })();
