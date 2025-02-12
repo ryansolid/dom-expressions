@@ -143,7 +143,9 @@ const template19 = (() => {
   var _el$12 = _tmpl$();
   _$effect(
     () => (state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})),
-    _v$ => (_el$12.innerHTML = _v$)
+    _v$ => {
+      _el$12.innerHTML = _v$;
+    }
   );
   return _el$12;
 })();
@@ -172,7 +174,9 @@ const template23 = (() => {
   var _el$14 = _tmpl$();
   _$effect(
     () => (state?.dynamic ? "a" : "b"),
-    _v$ => (_el$14.innerHTML = _v$)
+    _v$ => {
+      _el$14.innerHTML = _v$;
+    }
   );
   return _el$14;
 })();
@@ -195,7 +199,9 @@ const template27 = (() => {
   var _el$16 = _tmpl$();
   _$effect(
     () => state.dynamic ?? _$createComponent(Comp, {}),
-    _v$ => (_el$16.innerHTML = _v$)
+    _v$ => {
+      _el$16.innerHTML = _v$;
+    }
   );
   return _el$16;
 })();

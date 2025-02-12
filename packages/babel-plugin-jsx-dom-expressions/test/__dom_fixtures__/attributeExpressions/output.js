@@ -141,7 +141,9 @@ const template2 = (() => {
   _el$8.innerHTML = "<div/>";
   _$effect(
     () => row.label,
-    _v$ => (_el$7.data = _v$)
+    _v$ => {
+      _el$7.data = _v$;
+    }
   );
   return _el$4;
 })();
@@ -154,7 +156,9 @@ const template3 = (() => {
   _el$9.textContent = state.content;
   _$effect(
     () => state.name,
-    _v$ => _$setAttribute(_el$9, "name", _v$)
+    _v$ => {
+      _$setAttribute(_el$9, "name", _v$);
+    }
   );
   return _el$9;
 })();
@@ -165,7 +169,9 @@ const template4 = (() => {
   });
   _$effect(
     () => state.class,
-    _v$ => _$setAttribute(_el$10, "className", _v$)
+    _v$ => {
+      _$setAttribute(_el$10, "className", _v$);
+    }
   );
   return _el$10;
 })();
@@ -173,7 +179,9 @@ const template5 = _tmpl$5();
 const template6 = (() => {
   var _el$12 = _tmpl$4();
   _el$12.textContent = "Hi";
-  _$effect(someStyle, (_v$, _$p) => _$style(_el$12, _v$, _$p));
+  _$effect(someStyle, (_v$, _$p) => {
+    _$style(_el$12, _v$, _$p);
+  });
   return _el$12;
 })();
 let undefVar;
@@ -326,7 +334,9 @@ const template21 = (() => {
       a: "static",
       ...rest
     }),
-    (_v$, _$p) => _$style(_el$29, _v$, _$p)
+    (_v$, _$p) => {
+      _$style(_el$29, _v$, _$p);
+    }
   );
   return _el$29;
 })();
@@ -336,7 +346,9 @@ const template23 = (() => {
   _$insert(_el$31, () => "t" in test && "true");
   _$effect(
     () => "t" in test,
-    _v$ => (_el$31.disabled = _v$)
+    _v$ => {
+      _el$31.disabled = _v$;
+    }
   );
   return _el$31;
 })();
@@ -412,10 +424,11 @@ const template31 = (() => {
   var _el$44 = _tmpl$4();
   _$effect(
     () => getStore.itemProperties.color,
-    _v$ =>
+    _v$ => {
       _v$ != null
         ? _el$44.style.setProperty("background-color", _v$)
-        : _el$44.style.removeProperty("background-color")
+        : _el$44.style.removeProperty("background-color");
+    }
   );
   return _el$44;
 })();
@@ -429,7 +442,9 @@ const template33 = [
     var _el$46 = _tmpl$18();
     _$effect(
       () => styles.button,
-      (_v$, _$p) => _$className(_el$46, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$46, _v$, false, _$p);
+      }
     );
     return _el$46;
   })(),
@@ -437,7 +452,9 @@ const template33 = [
     var _el$47 = _tmpl$18();
     _$effect(
       () => styles["foo--bar"],
-      (_v$, _$p) => _$className(_el$47, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$47, _v$, false, _$p);
+      }
     );
     return _el$47;
   })(),
@@ -445,7 +462,9 @@ const template33 = [
     var _el$48 = _tmpl$18();
     _$effect(
       () => styles.foo.bar,
-      (_v$, _$p) => _$className(_el$48, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$48, _v$, false, _$p);
+      }
     );
     return _el$48;
   })(),
@@ -453,7 +472,9 @@ const template33 = [
     var _el$49 = _tmpl$18();
     _$effect(
       () => styles[foo()],
-      (_v$, _$p) => _$className(_el$49, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$49, _v$, false, _$p);
+      }
     );
     return _el$49;
   })()
@@ -492,9 +513,9 @@ const template38 = (() => {
 const template39 = _tmpl$19();
 const template40 = (() => {
   var _el$56 = _tmpl$4();
-  _$effect(a, _v$ =>
-    _v$ != null ? _el$56.style.setProperty("color", _v$) : _el$56.style.removeProperty("color")
-  );
+  _$effect(a, _v$ => {
+    _v$ != null ? _el$56.style.setProperty("color", _v$) : _el$56.style.removeProperty("color");
+  });
   return _el$56;
 })();
 const template41 = (() => {
@@ -538,7 +559,9 @@ const template52 = _tmpl$31();
 const template53 = _tmpl$32();
 const template54 = (() => {
   var _el$72 = _tmpl$33();
-  _$effect(boolTest, _v$ => _$setBoolAttribute(_el$72, "quack", _v$));
+  _$effect(boolTest, _v$ => {
+    _$setBoolAttribute(_el$72, "quack", _v$);
+  });
   return _el$72;
 })();
 const template55 = (() => {
@@ -555,7 +578,9 @@ const template57 = (() => {
   var _el$75 = _tmpl$36();
   _$effect(
     () => boolTestObjBinding.value,
-    _v$ => _$setBoolAttribute(_el$75, "quack", _v$)
+    _v$ => {
+      _$setBoolAttribute(_el$75, "quack", _v$);
+    }
   );
   return _el$75;
 })();
