@@ -138,12 +138,12 @@ function wrapDynamics(path, dynamics) {
         inlineCallExpression(dynamics[0].value),
         t.arrowFunctionExpression(
           prevValue ? [newValue, prevValue] : [newValue],
-          setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
+          t.blockStatement([t.expressionStatement(setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
             isSVG: dynamics[0].isSVG,
             tagName: dynamics[0].tagName,
             dynamic: true,
             prevId: prevValue
-          })
+          }))])
         )
       ])
     );

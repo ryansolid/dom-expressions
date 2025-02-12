@@ -32,11 +32,15 @@ const Child = props => {
             var _el$10 = _tmpl$4();
             _$effect(
               () => (s() ? "red" : "green"),
-              _v$ => _$setAttribute(_el$10, "backgroundColor", _v$)
+              _v$ => {
+                _$setAttribute(_el$10, "backgroundColor", _v$);
+              }
             );
             return _el$10;
           })(),
-        _v$ => _$setAttribute(_el$, "element", _v$)
+        _v$ => {
+          _$setAttribute(_el$, "element", _v$);
+        }
       );
       return _el$;
     })(),
@@ -94,11 +98,15 @@ const Child = props => {
                             var _el$13 = _tmpl$4();
                             _$effect(
                               () => (s() ? "red" : "green"),
-                              _v$ => _$setAttribute(_el$13, "backgroundColor", _v$)
+                              _v$ => {
+                                _$setAttribute(_el$13, "backgroundColor", _v$);
+                              }
                             );
                             return _el$13;
                           })(),
-                        _v$ => _$setAttribute(_el$7, "element", _v$)
+                        _v$ => {
+                          _$setAttribute(_el$7, "element", _v$);
+                        }
                       );
                       return _el$7;
                     })(),

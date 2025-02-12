@@ -144,7 +144,9 @@ const template2 = (() => {
   _$setProperty(_el$8, "innerHTML", "<div/>");
   _$effect(
     () => row.label,
-    _v$ => _$setProperty(_el$7, "data", _v$)
+    _v$ => {
+      _$setProperty(_el$7, "data", _v$);
+    }
   );
   _$runHydrationEvents();
   return _el$4;
@@ -158,7 +160,9 @@ const template3 = (() => {
   _$setProperty(_el$9, "textContent", state.content);
   _$effect(
     () => state.name,
-    _v$ => _$setAttribute(_el$9, "name", _v$)
+    _v$ => {
+      _$setAttribute(_el$9, "name", _v$);
+    }
   );
   return _el$9;
 })();
@@ -169,7 +173,9 @@ const template4 = (() => {
   });
   _$effect(
     () => state.class,
-    _v$ => _$setAttribute(_el$10, "className", _v$)
+    _v$ => {
+      _$setAttribute(_el$10, "className", _v$);
+    }
   );
   return _el$10;
 })();
@@ -177,7 +183,9 @@ const template5 = _$getNextElement(_tmpl$5);
 const template6 = (() => {
   var _el$12 = _$getNextElement(_tmpl$4);
   _$setProperty(_el$12, "textContent", "Hi");
-  _$effect(someStyle, (_v$, _$p) => _$style(_el$12, _v$, _$p));
+  _$effect(someStyle, (_v$, _$p) => {
+    _$style(_el$12, _v$, _$p);
+  });
   return _el$12;
 })();
 let undefVar;
@@ -333,7 +341,9 @@ const template21 = (() => {
       a: "static",
       ...rest
     }),
-    (_v$, _$p) => _$style(_el$29, _v$, _$p)
+    (_v$, _$p) => {
+      _$style(_el$29, _v$, _$p);
+    }
   );
   return _el$29;
 })();
@@ -343,7 +353,9 @@ const template23 = (() => {
   _$insert(_el$31, () => "t" in test && "true");
   _$effect(
     () => "t" in test,
-    _v$ => _$setProperty(_el$31, "disabled", _v$)
+    _v$ => {
+      _$setProperty(_el$31, "disabled", _v$);
+    }
   );
   return _el$31;
 })();
@@ -428,10 +440,11 @@ const template31 = (() => {
   var _el$48 = _$getNextElement(_tmpl$4);
   _$effect(
     () => getStore.itemProperties.color,
-    _v$ =>
+    _v$ => {
       _v$ != null
         ? _el$48.style.setProperty("background-color", _v$)
-        : _el$48.style.removeProperty("background-color")
+        : _el$48.style.removeProperty("background-color");
+    }
   );
   return _el$48;
 })();
@@ -445,7 +458,9 @@ const template33 = [
     var _el$50 = _$getNextElement(_tmpl$18);
     _$effect(
       () => styles.button,
-      (_v$, _$p) => _$className(_el$50, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$50, _v$, false, _$p);
+      }
     );
     return _el$50;
   })(),
@@ -453,7 +468,9 @@ const template33 = [
     var _el$51 = _$getNextElement(_tmpl$18);
     _$effect(
       () => styles["foo--bar"],
-      (_v$, _$p) => _$className(_el$51, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$51, _v$, false, _$p);
+      }
     );
     return _el$51;
   })(),
@@ -461,7 +478,9 @@ const template33 = [
     var _el$52 = _$getNextElement(_tmpl$18);
     _$effect(
       () => styles.foo.bar,
-      (_v$, _$p) => _$className(_el$52, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$52, _v$, false, _$p);
+      }
     );
     return _el$52;
   })(),
@@ -469,7 +488,9 @@ const template33 = [
     var _el$53 = _$getNextElement(_tmpl$18);
     _$effect(
       () => styles[foo()],
-      (_v$, _$p) => _$className(_el$53, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$53, _v$, false, _$p);
+      }
     );
     return _el$53;
   })()
@@ -509,9 +530,9 @@ const template38 = (() => {
 const template39 = _$getNextElement(_tmpl$19);
 const template40 = (() => {
   var _el$60 = _$getNextElement(_tmpl$4);
-  _$effect(a, _v$ =>
-    _v$ != null ? _el$60.style.setProperty("color", _v$) : _el$60.style.removeProperty("color")
-  );
+  _$effect(a, _v$ => {
+    _v$ != null ? _el$60.style.setProperty("color", _v$) : _el$60.style.removeProperty("color");
+  });
   return _el$60;
 })();
 const template41 = (() => {
@@ -555,7 +576,9 @@ const template52 = _$getNextElement(_tmpl$31);
 const template53 = _$getNextElement(_tmpl$32);
 const template54 = (() => {
   var _el$76 = _$getNextElement(_tmpl$33);
-  _$effect(boolTest, _v$ => _$setBoolAttribute(_el$76, "quack", _v$));
+  _$effect(boolTest, _v$ => {
+    _$setBoolAttribute(_el$76, "quack", _v$);
+  });
   return _el$76;
 })();
 const template55 = (() => {
@@ -572,7 +595,9 @@ const template57 = (() => {
   var _el$79 = _$getNextElement(_tmpl$36);
   _$effect(
     () => boolTestObjBinding.value,
-    _v$ => _$setBoolAttribute(_el$79, "quack", _v$)
+    _v$ => {
+      _$setBoolAttribute(_el$79, "quack", _v$);
+    }
   );
   return _el$79;
 })();
