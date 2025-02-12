@@ -1,4 +1,4 @@
-import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
+import { BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig, root } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
@@ -8,7 +8,6 @@ export {
   Properties,
   ChildProperties,
   getPropAlias,
-  Aliases,
   DOMElements,
   SVGElements,
   SVGNamespace,
