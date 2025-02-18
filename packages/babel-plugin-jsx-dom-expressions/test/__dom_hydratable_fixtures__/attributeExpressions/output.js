@@ -256,7 +256,9 @@ const template14 = (() => {
   var _el$20 = _$getNextElement(_tmpl$7);
   _$effect(
     () => state.visible,
-    _v$ => _$setProperty(_el$20, "checked", _v$)
+    _v$ => {
+      _$setProperty(_el$20, "checked", _v$);
+    }
   );
   return _el$20;
 })();
@@ -329,8 +331,12 @@ const template20 = (() => {
       o: undefined
     }
   );
-  _$effect(s, _v$ => _$setProperty(_el$27, "value", _v$));
-  _$effect(s2, _v$ => _$setProperty(_el$28, "checked", _v$));
+  _$effect(s, _v$ => {
+    _$setProperty(_el$27, "value", _v$);
+  });
+  _$effect(s2, _v$ => {
+    _$setProperty(_el$28, "checked", _v$);
+  });
   _$runHydrationEvents();
   return _el$26;
 })();
@@ -541,15 +547,21 @@ const template41 = (() => {
     _el$63 = _el$62.nextSibling;
   _$effect(
     () => Color.Red,
-    _v$ => _$setProperty(_el$62, "value", _v$)
+    _v$ => {
+      _$setProperty(_el$62, "value", _v$);
+    }
   );
   _$effect(
     () => Color.Blue,
-    _v$ => _$setProperty(_el$63, "value", _v$)
+    _v$ => {
+      _$setProperty(_el$63, "value", _v$);
+    }
   );
   _$effect(
     () => state.color,
-    _v$ => _$setProperty(_el$61, "value", _v$)
+    _v$ => {
+      _$setProperty(_el$61, "value", _v$);
+    }
   );
   return _el$61;
 })();
