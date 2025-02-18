@@ -218,7 +218,11 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
   if (name === "class") {
     return t.callExpression(
       registerImportMethod(path, "className", getRendererConfig(path, "dom").moduleName),
-      prevId ? [elem, value, t.booleanLiteral(isSVG), prevId] : isSVG ? [elem, value, t.booleanLiteral(true)] : [elem, value]
+      prevId
+        ? [elem, value, t.booleanLiteral(isSVG), prevId]
+        : isSVG
+        ? [elem, value, t.booleanLiteral(true)]
+        : [elem, value]
     );
   }
 
@@ -409,9 +413,7 @@ function transformAttributes(path, results) {
 
   // combine class properties
   attributes = path.get("openingElement").get("attributes");
-  const classAttributes = attributes.filter(
-    a => a.node.name && (a.node.name.name === "class")
-  );
+  const classAttributes = attributes.filter(a => a.node.name && a.node.name.name === "class");
   if (classAttributes.length > 1) {
     const first = classAttributes[0].node,
       values = [],
@@ -699,10 +701,14 @@ function transformAttributes(path, results) {
                   inlineCallExpression(value.expression),
                   t.arrowFunctionExpression(
                     [v],
-                    setAttr(path, elem, key, v, {
-                      tagName,
-                      isSVG
-                    })
+                    t.blockStatement([
+                      t.expressionStatement(
+                        setAttr(path, elem, key, v, {
+                          tagName,
+                          isSVG
+                        })
+                      )
+                    ])
                   )
                 ])
               )

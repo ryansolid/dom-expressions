@@ -250,7 +250,9 @@ const template14 = (() => {
   var _el$20 = _tmpl$7();
   _$effect(
     () => state.visible,
-    _v$ => (_el$20.checked = _v$)
+    _v$ => {
+      _el$20.checked = _v$;
+    }
   );
   return _el$20;
 })();
@@ -321,8 +323,12 @@ const template20 = (() => {
       o: undefined
     }
   );
-  _$effect(s, _v$ => (_el$27.value = _v$));
-  _$effect(s2, _v$ => (_el$28.checked = _v$));
+  _$effect(s, _v$ => {
+    _el$27.value = _v$;
+  });
+  _$effect(s2, _v$ => {
+    _el$28.checked = _v$;
+  });
   return _el$26;
 })();
 const template21 = (() => {
@@ -522,15 +528,21 @@ const template41 = (() => {
     _el$59 = _el$58.nextSibling;
   _$effect(
     () => Color.Red,
-    _v$ => (_el$58.value = _v$)
+    _v$ => {
+      _el$58.value = _v$;
+    }
   );
   _$effect(
     () => Color.Blue,
-    _v$ => (_el$59.value = _v$)
+    _v$ => {
+      _el$59.value = _v$;
+    }
   );
   _$effect(
     () => state.color,
-    _v$ => (_el$57.value = _v$)
+    _v$ => {
+      _el$57.value = _v$;
+    }
   );
   return _el$57;
 })();
