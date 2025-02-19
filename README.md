@@ -80,3 +80,9 @@ While not as performant as the other options this library provides a mechanism t
 ## Work in Progress
 
 This is still a work in progress. My goal here is to better understand and generalize this approach to provide non Virtual DOM alternatives to developing web applications.
+
+## Cross Site Scripting (XSS)
+
+dom-expressions automatically escapes inserts and attributes in HTML. The exception is when HTML is inserted via the innerHTML property, which bypasses the escaping. Additionally, it's important to note that `<noscript>` are also outside of the purview of the library, since those tags and its contents are evaluated even without JavaScript. It is important to sanitize any strings in attributes, especially when inside `<noscript>` tags.
+
+As a rule-of-thumb it is recommended to avoid injecting HTML into your page as much as possible, make sure the contents of <noscript> are properly sanitized, and add a strict Content Security Policy to your application.
