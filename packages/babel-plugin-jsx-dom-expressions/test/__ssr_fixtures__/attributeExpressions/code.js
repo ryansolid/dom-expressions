@@ -204,3 +204,25 @@ const template41 = (
 );
 
 const template42 = <div a a="" a='' checked={true} checked={false} a={true} a={false} a={0} a={''} a={""} a={undefined} a={null} a={void 0} a/>
+
+const css = () => "&{color:red}";
+const template43 = (
+  <>
+    <style>{css()}</style>
+    <style children={css()} />
+    <style innerHTML={css()} />
+    <style innerText={css()} />
+    <style textContent={css()} />
+  </>
+);
+
+const styleProps = { children: css }
+const template44 = (
+  <>
+    <style {...styleProps()}>{css()}</style>
+    <style {...styleProps()} children={css()} />
+    <style {...styleProps()} innerHTML={css()} />
+    <style {...styleProps()} innerText={css()} />
+    <style {...styleProps()} textContent={css()} />
+  </>
+);

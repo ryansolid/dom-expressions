@@ -28,7 +28,8 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$21 = ["<button", "></button>"],
   _tmpl$22 = '<input value="10">',
   _tmpl$23 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
-  _tmpl$24 = ['<div a a a checked a="true" a="false" a="0" a a', " a></div>"];
+  _tmpl$24 = ['<div a a a checked a="true" a="false" a="0" a a', " a></div>"],
+  _tmpl$25 = ["<style>", "</style>"];
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -239,3 +240,57 @@ const template42 = _$ssr(
     _$ssrAttribute("a", _$escape(null, true), false) +
     _$ssrAttribute("a", void 0, false)
 );
+const css = () => "&{color:red}";
+const template43 = [
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css())
+];
+const styleProps = {
+  children: css
+};
+const template44 = [
+  _$ssrElement("style", styleProps(), css(), false),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get children() {
+        return css();
+      }
+    }),
+    undefined,
+    false
+  ),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get innerHTML() {
+        return css();
+      }
+    }),
+    undefined,
+    false
+  ),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get innerText() {
+        return css();
+      }
+    }),
+    undefined,
+    false
+  ),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get textContent() {
+        return css();
+      }
+    }),
+    undefined,
+    false
+  )
+];
