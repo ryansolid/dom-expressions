@@ -34,12 +34,14 @@ function appendToTemplate(template, value) {
 
 export function transformElement(path, info) {
   const config = getConfig(path);
+  const tagName = getTagName(path.node);
+  if (tagName === "script" || tagName === "style") path.doNotEscape = true;
+
   // contains spread attributes
   if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
     return createElement(path, { ...info, ...config });
 
-  const tagName = getTagName(path.node),
-    voidTag = VoidElements.indexOf(tagName) > -1,
+  const voidTag = VoidElements.indexOf(tagName) > -1,
     results = {
       template: [`<${tagName}`],
       templateValues: [],
@@ -50,7 +52,6 @@ export function transformElement(path, info) {
       wontEscape: path.node.wontEscape,
       renderer: "ssr"
     };
-  if (tagName === "script" || tagName === "style") path.doNotEscape = true;
 
   if (info.topLevel && config.hydratable) {
     if (tagName === "head") {
@@ -493,7 +494,8 @@ function transformChildren(path, results, { hydratable }) {
 function createElement(path, { topLevel, hydratable }) {
   const tagName = getTagName(path.node),
     config = getConfig(path),
-    attributes = normalizeAttributes(path);
+    attributes = normalizeAttributes(path),
+    doNotEscape = path.doNotEscape;
 
   const filteredChildren = filterChildren(path.get("children")),
     multi = checkLength(filteredChildren),
@@ -506,7 +508,7 @@ function createElement(path, { topLevel, hydratable }) {
         const child = transformNode(path);
         if (markers && child.exprs.length && !child.spreadElement)
           memo.push(t.stringLiteral("<!--$-->"));
-        if (child.exprs.length && !child.spreadElement)
+        if (child.exprs.length && !doNotEscape && !child.spreadElement)
           child.exprs[0] = escapeExpression(path, child.exprs[0]);
         memo.push(getCreateTemplate(config, path, child)(path, child, true));
         if (markers && child.exprs.length && !child.spreadElement)

@@ -360,7 +360,10 @@ export function ssrElement(tag, props, children, needsId) {
     const prop = keys[i];
     if (ChildProperties.has(prop)) {
       if (children === undefined && !skipChildren)
-        children = prop === "innerHTML" ? props[prop] : escape(props[prop]);
+        children =
+          tag === "script" || tag === "style" || prop === "innerHTML"
+            ? props[prop]
+            : escape(props[prop]);
       continue;
     }
     const value = props[prop];
