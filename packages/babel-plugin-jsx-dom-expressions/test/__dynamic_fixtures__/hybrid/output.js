@@ -74,11 +74,15 @@ const Child = props => {
                       _$setProp(_el$12, "alpha", 0);
                       _$effect(
                         () => (s() ? "red" : "green"),
-                        (_v$, _$p) => _$setProp(_el$12, "color", _v$, _$p)
+                        (_v$, _$p) => {
+                          _$setProp(_el$12, "color", _v$, _$p);
+                        }
                       );
                       return _el$12;
                     })(),
-                  (_v$, _$p) => _$setProp(_el$5, "material", _v$, _$p)
+                  (_v$, _$p) => {
+                    _$setProp(_el$5, "material", _v$, _$p);
+                  }
                 );
                 return _el$5;
               })(),
@@ -154,11 +158,15 @@ const Component = props => {
                       _$setProp(_el$18, "alpha", 0);
                       _$effect(
                         () => (s() ? "red" : "green"),
-                        (_v$, _$p) => _$setProp(_el$18, "color", _v$, _$p)
+                        (_v$, _$p) => {
+                          _$setProp(_el$18, "color", _v$, _$p);
+                        }
                       );
                       return _el$18;
                     })(),
-                  (_v$, _$p) => _$setProp(_el$15, "material", _v$, _$p)
+                  (_v$, _$p) => {
+                    _$setProp(_el$15, "material", _v$, _$p);
+                  }
                 );
                 return _el$15;
               })()

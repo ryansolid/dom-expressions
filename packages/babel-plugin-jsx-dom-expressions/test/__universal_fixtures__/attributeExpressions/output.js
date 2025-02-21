@@ -75,7 +75,9 @@ const template2 = (() => {
   _$setProp(_el$8, "innerHTML", "<div/>");
   _$effect(
     () => row.label,
-    (_v$, _$p) => _$setProp(_el$7, "textContent", _v$, _$p)
+    (_v$, _$p) => {
+      _$setProp(_el$7, "textContent", _v$, _$p);
+    }
   );
   return _el$5;
 })();
@@ -88,7 +90,9 @@ const template3 = (() => {
   _$setProp(_el$9, "textContent", state.content);
   _$effect(
     () => state.name,
-    (_v$, _$p) => _$setProp(_el$9, "name", _v$, _$p)
+    (_v$, _$p) => {
+      _$setProp(_el$9, "name", _v$, _$p);
+    }
   );
   return _el$9;
 })();
@@ -100,7 +104,9 @@ const template4 = (() => {
   });
   _$effect(
     () => state.class,
-    (_v$, _$p) => _$setProp(_el$10, "className", _v$, _$p)
+    (_v$, _$p) => {
+      _$setProp(_el$10, "className", _v$, _$p);
+    }
   );
   return _el$10;
 })();
@@ -113,7 +119,9 @@ const template5 = (() => {
 const template6 = (() => {
   var _el$12 = _$createElement("div");
   _$setProp(_el$12, "textContent", "Hi");
-  _$effect(someStyle, (_v$, _$p) => _$setProp(_el$12, "style", _v$, _$p));
+  _$effect(someStyle, (_v$, _$p) => {
+    _$setProp(_el$12, "style", _v$, _$p);
+  });
   return _el$12;
 })();
 const template7 = (() => {
@@ -182,7 +190,9 @@ const template14 = (() => {
   _$setProp(_el$20, "type", "checkbox");
   _$effect(
     () => state.visible,
-    (_v$, _$p) => _$setProp(_el$20, "checked", _v$, _$p)
+    (_v$, _$p) => {
+      _$setProp(_el$20, "checked", _v$, _$p);
+    }
   );
   return _el$20;
 })();
@@ -233,7 +243,9 @@ const template19 = (() => {
       a: "static",
       ...rest
     }),
-    (_v$, _$p) => _$setProp(_el$28, "style", _v$, _$p)
+    (_v$, _$p) => {
+      _$setProp(_el$28, "style", _v$, _$p);
+    }
   );
   return _el$28;
 })();

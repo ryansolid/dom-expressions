@@ -37,7 +37,9 @@ const multiDynamic = [
     _$insertNode(_el$9, _$createTextNode(`First`));
     _$effect(
       () => state.first,
-      (_v$, _$p) => _$setProp(_el$9, "id", _v$, _$p)
+      (_v$, _$p) => {
+        _$setProp(_el$9, "id", _v$, _$p);
+      }
     );
     return _el$9;
   })(),
@@ -47,7 +49,9 @@ const multiDynamic = [
     _$insertNode(_el$11, _$createTextNode(`Last`));
     _$effect(
       () => state.last,
-      (_v$, _$p) => _$setProp(_el$11, "id", _v$, _$p)
+      (_v$, _$p) => {
+        _$setProp(_el$11, "id", _v$, _$p);
+      }
     );
     return _el$11;
   })(),
