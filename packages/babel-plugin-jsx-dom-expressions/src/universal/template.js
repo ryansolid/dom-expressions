@@ -1,5 +1,10 @@
 import * as t from "@babel/types";
-import { getConfig, getNumberedId, registerImportMethod, inlineCallExpression } from "../shared/utils";
+import {
+  getConfig,
+  getNumberedId,
+  registerImportMethod,
+  inlineCallExpression
+} from "../shared/utils";
 import { setAttr } from "./element";
 
 export function createTemplate(path, result, wrap) {
@@ -49,10 +54,14 @@ function wrapDynamics(path, dynamics) {
         inlineCallExpression(dynamics[0].value),
         t.arrowFunctionExpression(
           [newValue, prevValue],
-          setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
-            dynamic: true,
-            prevId: prevValue
-          })
+          t.blockStatement([
+            t.expressionStatement(
+              setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
+                dynamic: true,
+                prevId: prevValue
+              })
+            )
+          ])
         )
       ])
     );
