@@ -868,7 +868,7 @@ export namespace JSX {
     ping?: FunctionMaybe<string>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
     rel?: FunctionMaybe<string>;
-    target?: FunctionMaybe<string>;
+    target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {})>;
     type?: FunctionMaybe<string>;
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy>;
   }
@@ -1022,7 +1022,31 @@ export namespace JSX {
     size?: FunctionMaybe<number | string>;
     src?: FunctionMaybe<string>;
     step?: FunctionMaybe<number | string>;
-    type?: FunctionMaybe<string>;
+    type?: FunctionMaybe<
+      | "button"
+      | "checkbox"
+      | "color"
+      | "date"
+      | "datetime-local"
+      | "email"
+      | "file"
+      | "hidden"
+      | "image"
+      | "month"
+      | "number"
+      | "password"
+      | "radio"
+      | "range"
+      | "reset"
+      | "search"
+      | "submit"
+      | "tel"
+      | "text"
+      | "time"
+      | "url"
+      | "week"
+      | (string & {})
+    >;
     value?: FunctionMaybe<string | string[] | number>;
     width?: FunctionMaybe<number | string>;
     crossOrigin?: FunctionMaybe<HTMLCrossorigin>;
@@ -1079,7 +1103,9 @@ export namespace JSX {
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoplay?: FunctionMaybe<boolean>;
     controls?: FunctionMaybe<boolean>;
-    controlslist?: FunctionMaybe<string>;
+    controlslist?: FunctionMaybe<
+      "nodownload" | "nofullscreen" | "noplaybackrate" | "noremoteplayback" | (string & {})
+    >;
     crossorigin?: FunctionMaybe<HTMLCrossorigin>;
     loop?: FunctionMaybe<boolean>;
     mediagroup?: FunctionMaybe<string>;
