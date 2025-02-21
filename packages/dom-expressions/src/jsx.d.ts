@@ -30,30 +30,29 @@ export namespace JSX {
   }
 
   interface BoundEventHandler<
-      T,
-      E extends Event,
-      EHandler extends EventHandler<T, any> = EventHandler<T, E>,
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
   > {
-    0: (
-      data: any,
-      ...e: Parameters<EHandler>,
-    ) => void;
+    0: (data: any, ...e: Parameters<EHandler>) => void;
     1: any;
   }
   type EventHandlerUnion<
     T,
     E extends Event,
-    EHandler extends EventHandler<T, any> = EventHandler<T, E>,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
   > = EHandler | BoundEventHandler<T, E, EHandler>;
 
   interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
-      extends AddEventListenerOptions {
+    extends AddEventListenerOptions {
     handleEvent: EHandler;
   }
 
-  type EventHandlerWithOptionsUnion<T, E extends Event, EHandler extends EventHandler<T, any> = EventHandler<T, E>> =
-    | EHandler
-    | EventHandlerWithOptions<T, E, EHandler>;
+  type EventHandlerWithOptionsUnion<
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
+  > = EHandler | EventHandlerWithOptions<T, E, EHandler>;
 
   interface InputEventHandler<T, E extends InputEvent> {
     (
@@ -65,7 +64,11 @@ export namespace JSX {
       }
     ): void;
   }
-  type InputEventHandlerUnion<T, E extends InputEvent> = EventHandlerUnion<T, E, InputEventHandler<T, E>>;
+  type InputEventHandlerUnion<T, E extends InputEvent> = EventHandlerUnion<
+    T,
+    E,
+    InputEventHandler<T, E>
+  >;
 
   interface ChangeEventHandler<T, E extends Event> {
     (
@@ -77,7 +80,11 @@ export namespace JSX {
       }
     ): void;
   }
-  type ChangeEventHandlerUnion<T, E extends Event> = EventHandlerUnion<T, E, ChangeEventHandler<T, E>>;
+  type ChangeEventHandlerUnion<T, E extends Event> = EventHandlerUnion<
+    T,
+    E,
+    ChangeEventHandler<T, E>
+  >;
 
   interface FocusEventHandler<T, E extends FocusEvent> {
     (
@@ -89,7 +96,11 @@ export namespace JSX {
       }
     ): void;
   }
-  type FocusEventHandlerUnion<T, E extends FocusEvent> = EventHandlerUnion<T, E, FocusEventHandler<T, E>>;
+  type FocusEventHandlerUnion<T, E extends FocusEvent> = EventHandlerUnion<
+    T,
+    E,
+    FocusEventHandler<T, E>
+  >;
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
@@ -102,9 +113,11 @@ export namespace JSX {
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void) | undefined;
-    classList?: {
-      [k: string]: boolean | undefined;
-    } | undefined;
+    classList?:
+      | {
+          [k: string]: boolean | undefined;
+        }
+      | undefined;
     $ServerOnly?: boolean | undefined;
   }
   type Accessor<T> = () => T;
@@ -201,9 +214,11 @@ export namespace JSX {
     "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:focusout"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
     "on:focusin"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
   }
@@ -377,10 +392,12 @@ export namespace JSX {
     "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:auxclick"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
     "on:beforeinput"?:
-      EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
+      | undefined;
     "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
     "on:blur"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
     "on:canplay"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
@@ -399,10 +416,12 @@ export namespace JSX {
     "on:ended"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:error"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:focus"?:
-      EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
     "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:input"?:
-      EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>> | undefined;
+      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
+      | undefined;
     "on:invalid"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:keydown"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
     "on:keypress"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
@@ -944,7 +963,7 @@ export namespace JSX {
     ping?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     rel?: string | undefined;
-    target?: string | undefined;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
     type?: string | undefined;
     referrerPolicy?: HTMLReferrerPolicy | undefined;
   }
@@ -1106,7 +1125,31 @@ export namespace JSX {
     size?: number | string | undefined;
     src?: string | undefined;
     step?: number | string | undefined;
-    type?: string | undefined;
+    type?:
+      | "button"
+      | "checkbox"
+      | "color"
+      | "date"
+      | "datetime-local"
+      | "email"
+      | "file"
+      | "hidden"
+      | "image"
+      | "month"
+      | "number"
+      | "password"
+      | "radio"
+      | "range"
+      | "reset"
+      | "search"
+      | "submit"
+      | "tel"
+      | "text"
+      | "time"
+      | "url"
+      | "week"
+      | (string & {})
+      | undefined;
     value?: string | string[] | number | undefined;
     width?: number | string | undefined;
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1163,7 +1206,13 @@ export namespace JSX {
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoplay?: boolean | undefined;
     controls?: boolean | undefined;
-    controlslist?: string | undefined;
+    controlslist?:
+      | "nodownload"
+      | "nofullscreen"
+      | "noplaybackrate"
+      | "noremoteplayback"
+      | (string & {})
+      | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     loop?: boolean | undefined;
     mediagroup?: string | undefined;
