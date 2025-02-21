@@ -1497,7 +1497,14 @@ export namespace JSX {
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoplay?: FunctionMaybe<"true" | boolean | undefined>;
     controls?: FunctionMaybe<"true" | boolean | undefined>;
-    controlslist?: FunctionMaybe<"nodownload" | "nofullscreen" | "noplaybackrate" | "noremoteplayback" | (string & {}) | undefined>;
+    controlslist?: FunctionMaybe<
+      | "nodownload"
+      | "nofullscreen"
+      | "noplaybackrate"
+      | "noremoteplayback"
+      | (string & {})
+      | undefined
+    >;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
     disableremoteplayback?: FunctionMaybe<"true" | boolean | undefined>;
     loop?: FunctionMaybe<"true" | boolean | undefined>;
@@ -2040,7 +2047,7 @@ export namespace JSX {
     attributeType?: FunctionMaybe<"CSS" | "XML" | "auto" | undefined>;
   }
   interface PresentationSVGAttributes {
-    "alignment-baseline"?:
+    "alignment-baseline"?: FunctionMaybe<
       | "auto"
       | "baseline"
       | "before-edge"
@@ -2054,7 +2061,8 @@ export namespace JSX {
       | "hanging"
       | "mathematical"
       | "inherit"
-      | undefined;
+      | undefined
+    >;
     "baseline-shift"?: FunctionMaybe<number | string | undefined>;
     clip?: FunctionMaybe<string | undefined>;
     "clip-path"?: FunctionMaybe<string | undefined>;
