@@ -360,17 +360,19 @@ function toggleClassKey(node, key, value) {
 function classListToObject(classList) {
   if (Array.isArray(classList)) {
     const result = {};
-
-    for (let i = 0, len = classList.length; i < len; i++) {
-      const key = classList[i];
-      if (typeof key === "object" && key != null) Object.assign(result, key);
-      else if (key || key === 0) result[key] = true;
-    }
-
+    flattenClassList(classList, result);
     return result;
   }
-
   return classList;
+}
+
+function flattenClassList(list, result) {
+  for (let i = 0, len = list.length; i < len; i++) {
+    const item = list[i];
+    if (Array.isArray(item)) flattenClassList(item, result);
+    else if (typeof item === "object" && item != null) Object.assign(result, item);
+    else if (item || item === 0) result[item] = true;
+  }
 }
 
 function assignProp(node, prop, value, prev, isSVG, skipRef) {

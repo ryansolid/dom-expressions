@@ -323,6 +323,8 @@ export function ssr(t, ...nodes) {
 
 export function ssrClassName(value) {
   if (!value) return "";
+  if (typeof value === "string") return escape(value, true);
+  value = classListToObject(value);
   let classKeys = Object.keys(value),
     result = "";
   for (let i = 0, len = classKeys.length; i < len; i++) {
@@ -371,7 +373,6 @@ export function ssrElement(tag, props, children, needsId) {
     if (prop === "style") {
       result += `style="${ssrStyle(value)}"`;
     } else if (prop === "class") {
-      let n;
       result += `class="${ssrClassName(value)}"`;
     } else if (BooleanAttributes.has(prop)) {
       if (value) result += prop;
@@ -389,7 +390,7 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (prop.slice(0, 5) === "attr:") {
       result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
     } else {
-      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
+      result += `${escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -592,6 +593,24 @@ function replacePlaceholder(html, key, value) {
   const last = html.indexOf(close, first + marker.length);
 
   return html.slice(0, first) + value + html.slice(last + close.length);
+}
+
+function classListToObject(classList) {
+  if (Array.isArray(classList)) {
+    const result = {};
+    flattenClassList(classList, result);
+    return result;
+  }
+  return classList;
+}
+
+function flattenClassList(list, result) {
+  for (let i = 0, len = list.length; i < len; i++) {
+    const item = list[i];
+    if (Array.isArray(item)) flattenClassList(item, result);
+    else if (typeof item === "object" && item != null) Object.assign(result, item);
+    else if (item || item === 0) result[item] = true;
+  }
 }
 
 // experimental
