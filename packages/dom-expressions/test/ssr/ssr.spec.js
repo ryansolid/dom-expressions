@@ -2,22 +2,22 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/server";
-import * as S from "s-js";
+import { createSignal } from "@solidjs/signals";
 
 globalThis.TextEncoder = function () {
   return { encode: v => v };
 };
 
-const fixture = `<div data-hk=0 id="main" data-id="12" aria-role="button" class="static selected" checked style="color:red" ><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
-const fixture2 = `<span data-hk=0 class="Hello John" > Hello &lt;div/> </span>`;
+const fixture = `<div data-hk=0 id="main" data-id="12" aria-role="button" class="selected" checked style="color:red" ><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
+const fixture2 = `<span data-hk=0 class="Hello John"> Hello &lt;div/> </span>`;
 const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));[\"click\", \"input\"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs--><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
 const fixture4 = `<span > Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
-  const selected = S.data(true),
+  const [selected] = createSignal(true),
     something = undefined,
-    welcoming = S.data("Hello John"),
-    color = S.data("red"),
+    [welcoming] = createSignal("Hello John"),
+    [color] = createSignal("red"),
     results = {
       "data-id": "12",
       "aria-role": "button",
@@ -36,7 +36,7 @@ const Comp1 = () => {
     {
       id: "main",
       ...results,
-      classList: { selected: selected() },
+      class: { selected: selected() },
       style: { color: color() },
       disabled: !selected()
     },
@@ -49,7 +49,7 @@ const Comp1 = () => {
         style: {
           "background-color": color()
         },
-        classList: {
+        class: {
           selected: selected(),
           [something]: true
         }
@@ -66,7 +66,7 @@ const Comp2 = () => {
     name = "<div/>";
   return r.ssrElement(
     "span",
-    { class: "Hello", classList: { John: true } },
+    { class: ["Hello", { John: true }] },
     ` ${r.escape(greeting)} ${r.escape(name)} `,
     true
   );
@@ -109,7 +109,7 @@ describe("renderToString", () => {
 describe("pipeToNodeWritable", () => {
   it("renders as expected", done => {
     const chunks = [];
-    r.pipeToNodeWritable(Comp2, {
+    r.renderToStream(Comp2).pipe({
       write(v) {
         chunks.push(v);
       },
@@ -124,7 +124,7 @@ describe("pipeToNodeWritable", () => {
 describe("pipeToWritable", () => {
   it("renders as expected", done => {
     const chunks = [];
-    r.pipeToWritable(Comp2, {
+    r.renderToStream(Comp2).pipeTo({
       getWriter() {
         return {
           write(v) {
