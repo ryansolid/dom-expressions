@@ -255,11 +255,22 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
         value
       ]);
     }
-    return t.assignmentExpression(
+    const assignment = t.assignmentExpression(
       "=",
       t.memberExpression(elem, t.identifier(alias || name)),
       value
     );
+    // handle select/options... TODO: consider other ways in the future
+    if (name === "value" && tagName === "select") {
+      return t.logicalExpression(
+        "||",
+        t.callExpression(t.identifier("queueMicrotask"), [
+          t.arrowFunctionExpression([], assignment)
+        ]),
+        assignment
+      );
+    }
+    return assignment;
   }
 
   let isNameSpaced = name.indexOf(":") > -1;

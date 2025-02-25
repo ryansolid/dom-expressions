@@ -377,8 +377,8 @@ function flattenClassList(list, result) {
 
 function assignProp(node, prop, value, prev, isSVG, skipRef) {
   let propAlias, forceProp;
-  if (prop === "style") return (style(node, value, prev), value);
-  if (prop === "class") return (className(node, value, isSVG, prev), value);
+  if (prop === "style") return style(node, value, prev), value;
+  if (prop === "class") return className(node, value, isSVG, prev), value;
   if (value === prev) return prev;
   if (prop === "ref") {
     if (!skipRef) value(node);
@@ -408,6 +408,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     Properties.has(prop)
   ) {
     if (forceProp) prop = prop.slice(5);
+    if (prop === "value" && node.nodeName === "SELECT")
+      queueMicrotask(() => (node.value = value)) || (node.value = value);
     else node[propAlias || prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];

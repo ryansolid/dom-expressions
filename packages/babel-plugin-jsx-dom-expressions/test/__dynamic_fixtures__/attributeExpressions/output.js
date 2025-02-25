@@ -541,7 +541,7 @@ const template41 = (() => {
   _$effect(
     () => state.color,
     _v$ => {
-      _el$57.value = _v$;
+      queueMicrotask(() => (_el$57.value = _v$)) || (_el$57.value = _v$);
     }
   );
   return _el$57;
