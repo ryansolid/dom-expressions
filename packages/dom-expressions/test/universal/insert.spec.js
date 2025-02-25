@@ -217,25 +217,25 @@ describe("r.insert with Markers", () => {
   it("inserts nothing for null", () => {
     const res = insert(null);
     expect(res.innerHTML).toBe("beforeafter");
-    expect(res.childNodes.length).toBe(2);
+    expect(res.childNodes.length).toBe(3);
   });
 
   it("inserts nothing for undefined", () => {
     const res = insert(undefined);
     expect(res.innerHTML).toBe("beforeafter");
-    expect(res.childNodes.length).toBe(2);
+    expect(res.childNodes.length).toBe(3);
   });
 
   it("inserts nothing for false", () => {
     const res = insert(false);
     expect(res.innerHTML).toBe("beforeafter");
-    expect(res.childNodes.length).toBe(2);
+    expect(res.childNodes.length).toBe(3);
   });
 
   it("inserts nothing for true", () => {
     const res = insert(true);
     expect(res.innerHTML).toBe("beforeafter");
-    expect(res.childNodes.length).toBe(2);
+    expect(res.childNodes.length).toBe(3);
   });
 
   it("inserts nothing for null in array", () => {

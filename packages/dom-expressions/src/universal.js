@@ -67,7 +67,7 @@ export function createRenderer({
   function normalize(value, multi, doNotUnwrap) {
     value = flatten(value, { skipNonRendered: true, doNotUnwrap });
     if (doNotUnwrap && typeof value === "function") return value;
-    if (multi && value != null && !Array.isArray(value)) value = [value];
+    if (multi && !Array.isArray(value)) value = [value != null ? value : ""];
     if (Array.isArray(value)) {
       for (let i = 0, len = value.length; i < len; i++) {
         const item = value[i],
