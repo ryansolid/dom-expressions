@@ -32,11 +32,13 @@ const template = _$ssr(_tmpl$, _$ssrHydrationKey());
 const template2 = _$ssr(
   _tmpl$2,
   _$ssrHydrationKey(),
-  _$ssrClassName(state.name),
-  _$ssrAttribute("stroke-width", _$escape(state.width, true), false) +
+  () => _$ssrClassName(state.name),
+  () =>
+    _$ssrAttribute("stroke-width", _$escape(state.width, true), false) +
     _$ssrAttribute("x", _$escape(state.x, true), false) +
     _$ssrAttribute("y", _$escape(state.y, true), false),
-  "fill:" +
+  () =>
+    "fill:" +
     "red" +
     (";stroke:" + "black") +
     (";stroke-width:" + _$escape(props.stroke, true)) +

@@ -19,7 +19,7 @@ const template = _$createComponent(Module, {
 const template2 = _$ssr(_tmpl$2, _$escape(children));
 const template3 = _$ssr(_tmpl$3);
 const template4 = _$ssr(_tmpl$2, _$escape(_$createComponent(Hello, {})));
-const template5 = _$ssr(_tmpl$2, _$escape(dynamic.children));
+const template5 = _$ssr(_tmpl$2, () => _$escape(dynamic.children));
 const template6 = _$createComponent(Module, {
   get children() {
     return dynamic.children;
@@ -27,14 +27,14 @@ const template6 = _$createComponent(Module, {
 });
 const template7 = _$ssrElement("module", dynamic, undefined, false);
 const template8 = _$ssrElement("module", dynamic, "Hello", false);
-const template9 = _$ssrElement("module", dynamic, _$escape(dynamic.children), false);
+const template9 = _$ssrElement("module", dynamic, () => _$escape(dynamic.children), false);
 const template10 = _$createComponent(
   Module,
   _$mergeProps(dynamic, {
     children: "Hello"
   })
 );
-const template11 = _$ssr(_tmpl$2, _$escape(state.children));
+const template11 = _$ssr(_tmpl$2, () => _$escape(state.children));
 const template12 = _$createComponent(Module, {
   children: state.children
 });
@@ -42,7 +42,7 @@ const template13 = _$ssr(_tmpl$2, _$escape(children));
 const template14 = _$createComponent(Module, {
   children: children
 });
-const template15 = _$ssr(_tmpl$2, _$escape(dynamic.children));
+const template15 = _$ssr(_tmpl$2, () => _$escape(dynamic.children));
 const template16 = _$createComponent(Module, {
   get children() {
     return dynamic.children;
@@ -54,31 +54,30 @@ const template19 = _$createComponent(Module, {
     return ["Hi ", children];
   }
 });
-const template20 = _$ssr(_tmpl$2, _$escape(children()));
+const template20 = _$ssr(_tmpl$2, () => _$escape(children()));
 const template21 = _$createComponent(Module, {
   get children() {
     return children();
   }
 });
-const template22 = _$ssr(_tmpl$2, _$escape(state.children()));
+const template22 = _$ssr(_tmpl$2, () => _$escape(state.children()));
 const template23 = _$createComponent(Module, {
   get children() {
     return state.children();
   }
 });
-const template24 = _$ssrElement("module", dynamic, ["Hi", _$escape(dynamic.children)], false);
+const template24 = _$ssrElement("module", dynamic, ["Hi", () => _$escape(dynamic.children)], false);
 const tiles = [];
 tiles.push(_$ssr(_tmpl$5));
 const template25 = _$ssr(_tmpl$6, _$escape(tiles));
-const comma = _$ssr(_tmpl$6, _$escape((expression(), "static")));
-const double = _$ssr(_tmpl$6, _$escape(children()()));
+const comma = _$ssr(_tmpl$6, () => _$escape((expression(), "static")));
+const double = _$ssr(_tmpl$6, () => _$escape(children()()));
 const template26 = _$ssr(_tmpl$6, () => _$escape(children));
 const template27 = _$ssr(_tmpl$6, () => {
   statement;
   return _$escape(children);
 });
-const template28 = _$ssr(
-  _tmpl$6,
+const template28 = _$ssr(_tmpl$6, () =>
   (() => {
     statement;
     return _$escape(children);

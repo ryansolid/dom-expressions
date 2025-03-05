@@ -17,7 +17,10 @@ var _tmpl$ = ["<div>Hello ", "</div>"],
 import { Show } from "somewhere";
 const Child = props => {
   const [s, set] = createSignal();
-  return [_$ssr(_tmpl$, _$escape(props.name)), _$ssr(_tmpl$2, _$escape(props.children))];
+  return [
+    _$ssr(_tmpl$, () => _$escape(props.name)),
+    _$ssr(_tmpl$2, () => _$escape(props.children))
+  ];
 };
 const template = props => {
   let childRef;

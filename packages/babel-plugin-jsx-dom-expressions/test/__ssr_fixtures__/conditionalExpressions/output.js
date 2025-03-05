@@ -4,20 +4,20 @@ import { escape as _$escape } from "r-server";
 var _tmpl$ = ["<div>", "</div>"],
   _tmpl$2 = "<div>Output</div>";
 const template1 = _$ssr(_tmpl$, _$escape(simple));
-const template2 = _$ssr(_tmpl$, _$escape(state.dynamic));
+const template2 = _$ssr(_tmpl$, () => _$escape(state.dynamic));
 const template3 = _$ssr(_tmpl$, simple ? _$escape(good) : _$escape(bad));
-const template4 = _$ssr(_tmpl$, simple ? _$escape(good()) : _$escape(bad));
-const template5 = _$ssr(_tmpl$, state.dynamic ? _$escape(good()) : _$escape(bad));
-const template6 = _$ssr(_tmpl$, state.dynamic && _$escape(good()));
-const template7 = _$ssr(
-  _tmpl$,
+const template4 = _$ssr(_tmpl$, () => (simple ? _$escape(good()) : _$escape(bad)));
+const template5 = _$ssr(_tmpl$, () => (state.dynamic ? _$escape(good()) : _$escape(bad)));
+const template6 = _$ssr(_tmpl$, () => state.dynamic && _$escape(good()));
+const template7 = _$ssr(_tmpl$, () =>
   state.count > 5 ? (state.dynamic ? _$escape(best) : _$escape(good())) : _$escape(bad)
 );
-const template8 = _$ssr(_tmpl$, state.dynamic && state.something && _$escape(good()));
-const template9 = _$ssr(_tmpl$, (state.dynamic && _$escape(good())) || _$escape(bad));
-const template10 = _$ssr(_tmpl$, state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback");
-const template11 = _$ssr(
-  _tmpl$,
+const template8 = _$ssr(_tmpl$, () => state.dynamic && state.something && _$escape(good()));
+const template9 = _$ssr(_tmpl$, () => (state.dynamic && _$escape(good())) || _$escape(bad));
+const template10 = _$ssr(_tmpl$, () =>
+  state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"
+);
+const template11 = _$ssr(_tmpl$, () =>
   state.a ? _$escape(a()) : state.b ? _$escape(b()) : state.c ? "c" : "fallback"
 );
 const template12 = _$createComponent(Comp, {
@@ -59,12 +59,10 @@ const template18 = _$createComponent(Comp, {
     return state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
   }
 });
-const template19 = _$ssr(
-  _tmpl$,
+const template19 = _$ssr(_tmpl$, () =>
   state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})
 );
-const template20 = _$ssr(
-  _tmpl$,
+const template20 = _$ssr(_tmpl$, () =>
   state.dynamic ? _$escape(_$createComponent(Comp, {})) : _$escape(_$createComponent(Comp, {}))
 );
 const template21 = _$createComponent(Comp, {
@@ -77,8 +75,8 @@ const template22 = _$createComponent(Comp, {
     return state?.dynamic ? "a" : "b";
   }
 });
-const template23 = _$ssr(_tmpl$, state?.dynamic ? "a" : "b");
-const template24 = _$ssr(_tmpl$, state?.dynamic ? "a" : "b");
+const template23 = _$ssr(_tmpl$, () => (state?.dynamic ? "a" : "b"));
+const template24 = _$ssr(_tmpl$, () => (state?.dynamic ? "a" : "b"));
 const template25 = _$createComponent(Comp, {
   get render() {
     return state.dynamic ?? _$createComponent(Comp, {});
@@ -89,31 +87,37 @@ const template26 = _$createComponent(Comp, {
     return state.dynamic ?? _$createComponent(Comp, {});
   }
 });
-const template27 = _$ssr(_tmpl$, state.dynamic ?? _$createComponent(Comp, {}));
-const template28 = _$ssr(_tmpl$, _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {})));
+const template27 = _$ssr(_tmpl$, () => state.dynamic ?? _$createComponent(Comp, {}));
+const template28 = _$ssr(
+  _tmpl$,
+  () => _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {}))
+);
 const template29 = _$ssr(
   _tmpl$,
-  (thing() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3())
+  () => (thing() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3())
 );
-const template30 = _$ssr(_tmpl$, _$escape(thing()) || _$escape(thing1()) || _$escape(thing2()));
+const template30 = _$ssr(
+  _tmpl$,
+  () => _$escape(thing()) || _$escape(thing1()) || _$escape(thing2())
+);
 const template31 = _$createComponent(Comp, {
   get value() {
     return count() ? (count() ? count() : count()) : count();
   }
 });
-const template32 = _$ssr(_tmpl$, _$escape(something?.()));
+const template32 = _$ssr(_tmpl$, () => _$escape(something?.()));
 const template33 = _$createComponent(Comp, {
   get children() {
     return something?.();
   }
 });
 const template34 = simple ? good : bad;
-const template35 = simple ? good() : bad;
-const template36 = state.dynamic ? good() : bad;
-const template37 = state.dynamic && good();
-const template38 = state.count > 5 ? (state.dynamic ? best : good()) : bad;
-const template39 = state.dynamic && state.something && good();
-const template40 = (state.dynamic && good()) || bad;
-const template41 = state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback";
-const template42 = state.a ? a() : state.b ? b() : state.c ? "c" : "fallback";
-const template43 = obj1.prop ? (obj2.prop ? _$ssr(_tmpl$2) : []) : [];
+const template35 = () => (simple ? good() : bad);
+const template36 = () => (state.dynamic ? good() : bad);
+const template37 = () => state.dynamic && good();
+const template38 = () => (state.count > 5 ? (state.dynamic ? best : good()) : bad);
+const template39 = () => state.dynamic && state.something && good();
+const template40 = () => (state.dynamic && good()) || bad;
+const template41 = () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback");
+const template42 = () => (state.a ? a() : state.b ? b() : state.c ? "c" : "fallback");
+const template43 = () => (obj1.prop ? (obj2.prop ? _$ssr(_tmpl$2) : []) : []);

@@ -18,17 +18,17 @@ const multiExpression = [
 ];
 const multiDynamic = [
   _$ssr(_tmpl$, _$ssrHydrationKey() + _$ssrAttribute("id", _$escape(state.first, true), false)),
-  state.inserted,
+  () => state.inserted,
   _$ssr(_tmpl$2, _$ssrHydrationKey() + _$ssrAttribute("id", _$escape(state.last, true), false)),
   "After"
 ];
 const singleExpression = inserted;
-const singleDynamic = inserted();
+const singleDynamic = inserted;
 const firstStatic = [inserted, _$ssr(_tmpl$3, _$ssrHydrationKey())];
-const firstDynamic = [inserted(), _$ssr(_tmpl$3, _$ssrHydrationKey())];
+const firstDynamic = [inserted, _$ssr(_tmpl$3, _$ssrHydrationKey())];
 const firstComponent = [_$createComponent(Component, {}), _$ssr(_tmpl$3, _$ssrHydrationKey())];
 const lastStatic = [_$ssr(_tmpl$3, _$ssrHydrationKey()), inserted];
-const lastDynamic = [_$ssr(_tmpl$3, _$ssrHydrationKey()), inserted()];
+const lastDynamic = [_$ssr(_tmpl$3, _$ssrHydrationKey()), inserted];
 const lastComponent = [_$ssr(_tmpl$3, _$ssrHydrationKey()), _$createComponent(Component, {})];
 const spaces = [
   _$ssr(_tmpl$4, _$ssrHydrationKey()),

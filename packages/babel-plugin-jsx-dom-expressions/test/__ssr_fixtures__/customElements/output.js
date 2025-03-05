@@ -13,7 +13,8 @@ const template = _$ssr(
 );
 const template2 = _$ssr(
   _tmpl$,
-  _$ssrAttribute("some-attr", _$escape(state.name, true), false) +
+  () =>
+    _$ssrAttribute("some-attr", _$escape(state.name, true), false) +
     _$ssrAttribute("notProp", _$escape(state.data, true), false) +
     _$ssrAttribute("my-attr", _$escape(state.data, true), false)
 );
