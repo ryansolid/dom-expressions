@@ -17,7 +17,8 @@ import {
   trimWhitespace,
   isDynamic,
   isComponent,
-  convertJSXIdentifier
+  convertJSXIdentifier,
+  inlineCallExpression
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -88,7 +89,7 @@ export function transformElement(path, info) {
   return results;
 }
 
-function setAttr(attribute, results, name, value, isSVG) {
+function setAttr(attribute, results, name, value, isDynamic) {
   // strip out namespaces for now, everything at this point is an attribute
   let parts, namespace;
   if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
@@ -96,17 +97,24 @@ function setAttr(attribute, results, name, value, isSVG) {
     namespace = parts[0];
   }
 
-  const attr = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
+  let attr = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
     t.stringLiteral(name),
     value,
     t.booleanLiteral(false)
   ]);
   if (results.template[results.template.length - 1].length) {
+    if (isDynamic) attr = t.arrowFunctionExpression([], attr);
     results.template.push("");
     results.templateValues.push(attr);
   } else {
     const last = results.templateValues.length - 1;
-    results.templateValues[last] = t.binaryExpression("+", results.templateValues[last], attr);
+    if (t.isArrowFunctionExpression(results.templateValues[last])) {
+      results.templateValues[last].body = t.binaryExpression(
+        "+",
+        results.templateValues[last].body,
+        attr
+      );
+    } else results.templateValues[last] = t.binaryExpression("+", results.templateValues[last], attr);
   }
 }
 
@@ -297,7 +305,11 @@ function transformAttributes(path, results, info) {
         key.startsWith("on")
       )
         return;
-      else if (ChildProperties.has(key)) {
+      const isDynamicValue = isDynamic(attribute.get("value").get("expression"), {
+        checkMember: true,
+        checkTags: true
+      });
+      if (ChildProperties.has(key)) {
         if (info.hydratable && key === "textContent" && value && value.expression) {
           value.expression = t.logicalExpression("||", value.expression, t.stringLiteral(" "));
         }
@@ -308,11 +320,12 @@ function transformAttributes(path, results, info) {
         if (key.startsWith("attr:")) key = key.replace("attr:", "");
         if (BooleanAttributes.has(key)) {
           results.template.push("");
-          const fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
+          let fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
             t.stringLiteral(key),
             value.expression,
             t.booleanLiteral(true)
           ]);
+          if (isDynamicValue) fn = t.arrowFunctionExpression([], fn);
           results.templateValues.push(fn);
           return;
         }
@@ -368,8 +381,8 @@ function transformAttributes(path, results, info) {
         if (!doEscape || t.isLiteral(value.expression)) {
           appendToTemplate(results.template, ` ${key}="`);
           results.template.push(`"`);
-          results.templateValues.push(value.expression);
-        } else setAttr(attribute, results, key, value.expression, isSVG);
+          results.templateValues.push(isDynamicValue ? inlineCallExpression(value.expression) : value.expression);
+        } else setAttr(attribute, results, key, value.expression, isDynamicValue);
       }
     } else {
       if (key === "$ServerOnly") return;
@@ -525,12 +538,7 @@ function createElement(path, { topLevel, hydratable }) {
           isDynamic(attribute.get("argument"), {
             checkMember: true
           }) && (dynamicSpread = true)
-            ? t.isCallExpression(node.argument) &&
-              !node.argument.arguments.length &&
-              !t.isCallExpression(node.argument.callee) &&
-              !t.isMemberExpression(node.argument.callee)
-              ? node.argument.callee
-              : t.arrowFunctionExpression([], node.argument)
+            ? inlineCallExpression(node.argument)
             : node.argument
         );
       } else {
@@ -555,13 +563,12 @@ function createElement(path, { topLevel, hydratable }) {
               checkTags: true
             })
           ) {
-            let expr = t.arrowFunctionExpression([], value.expression);
             runningObject.push(
               t.objectMethod(
                 "get",
                 id,
                 [],
-                t.blockStatement([t.returnStatement(expr.body)]),
+                t.blockStatement([t.returnStatement(value.expression)]),
                 !t.isValidIdentifier(key)
               )
             );

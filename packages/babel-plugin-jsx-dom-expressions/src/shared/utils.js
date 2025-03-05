@@ -76,12 +76,8 @@ export function isComponent(tagName) {
   );
 }
 
-export function isDynamic(path, { checkMember, checkTags, checkCallExpressions = true, native }) {
+export function isDynamic(path, { checkMember, checkTags, checkCallExpressions = true }) {
   const config = getConfig(path);
-  if (config.generate === "ssr" && native) {
-    checkMember = false;
-    checkCallExpressions = false;
-  }
   const expr = path.node;
   if (t.isFunction(expr)) return false;
   if (
@@ -107,8 +103,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
         !isDynamic(path.get("property"), {
           checkMember,
           checkTags,
-          checkCallExpressions,
-          native
+          checkCallExpressions
         }))
     ) {
       const binding = path.scope.getBinding(object.name);
@@ -138,7 +133,7 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
   path.traverse({
     Function(p) {
       if (t.isObjectMethod(p.node) && p.node.computed) {
-        dynamic = isDynamic(p.get("key"), { checkMember, checkTags, checkCallExpressions, native });
+        dynamic = isDynamic(p.get("key"), { checkMember, checkTags, checkCallExpressions });
       }
       p.skip();
     },

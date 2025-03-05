@@ -37,8 +37,8 @@ import { Show } from "somewhere";
 const Child = props => {
   const [s, set] = createSignal();
   return [
-    _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(props.name)),
-    _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(props.children))
+    _$ssr(_tmpl$, _$ssrHydrationKey(), () => _$escape(props.name)),
+    _$ssr(_tmpl$2, _$ssrHydrationKey(), () => _$escape(props.children))
   ];
 };
 const template = props => {

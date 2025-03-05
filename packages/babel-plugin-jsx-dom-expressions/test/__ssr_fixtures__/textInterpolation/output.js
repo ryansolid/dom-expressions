@@ -86,4 +86,4 @@ const escapeCompAttribute = _$createComponent(Div, {
   normal: "Search\u2026",
   title: "Search&hellip;"
 });
-const lastElementExpression = _$ssr(_tmpl$19, _$escape(expr()));
+const lastElementExpression = _$ssr(_tmpl$19, () => _$escape(expr()));

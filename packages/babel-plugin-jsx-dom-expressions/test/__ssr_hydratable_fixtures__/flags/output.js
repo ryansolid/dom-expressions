@@ -14,7 +14,7 @@ const template = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
   _$escape(_$createComponent(Component, {})),
-  _$escape(state.interpolation)
+  () => _$escape(state.interpolation)
 );
 const template2 = _$createComponent(Component, {
   get children() {
