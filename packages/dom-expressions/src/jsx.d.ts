@@ -1027,7 +1027,7 @@ export namespace JSX {
     property?: string | undefined;
     resource?: string | undefined;
     slot?: string | undefined;
-    spellcheck?: "true" | boolean | undefined;
+    spellcheck?: "true" | "false" | boolean | undefined;
     style?: CSSProperties | string | undefined;
     tabindex?: number | string | undefined;
     title?: string | undefined;

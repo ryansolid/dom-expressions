@@ -945,7 +945,7 @@ export namespace JSX {
     property?: FunctionMaybe<string | undefined>;
     resource?: FunctionMaybe<string | undefined>;
     slot?: FunctionMaybe<string | undefined>;
-    spellcheck?: FunctionMaybe<"true" | boolean | undefined>;
+    spellcheck?: FunctionMaybe<"true" | "false" | boolean | undefined>;
     style?: FunctionMaybe<CSSProperties | string | undefined>;
     tabindex?: FunctionMaybe<number | string | undefined>;
     title?: FunctionMaybe<string | undefined>;
