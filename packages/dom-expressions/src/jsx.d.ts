@@ -1209,8 +1209,9 @@ export namespace JSX {
     value?: string | string[] | number | undefined;
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: boolean | undefined;
+    name?: string | undefined;
     onToggle?: EventHandlerUnion<T, Event> | undefined;
+    open?: boolean | undefined;
 
     /** @deprecated Use camelCase event handlers */
     ontoggle?: EventHandlerUnion<T, Event> | undefined;
