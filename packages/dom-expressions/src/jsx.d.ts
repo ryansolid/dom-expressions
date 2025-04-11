@@ -63,8 +63,10 @@ import * as csstype from "csstype";
  *
  * - `(bool)true` adds an empty attribute
  * - `(bool)false` removes the attribute
- * - An attribute may be removed by `undefined | false`
+ * - Attributes are lowercase
+ * - Event handlers are camelCase
  * - Anything else is a `string` and used "as is"
+ * - Additionally, an attribute may be removed by `undefined`
  *
  * ## Using Properties
  *
