@@ -1275,8 +1275,9 @@ export namespace JSX {
     value?: string | string[] | number | RemoveAttribute;
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: BooleanAttribute | RemoveAttribute;
+    name?: string | RemoveAttribute;
     onToggle?: EventHandlerUnion<T, Event> | undefined;
+    open?: BooleanAttribute | RemoveAttribute;
 
     /** @deprecated Use camelCase event handlers */
     ontoggle?: EventHandlerUnion<T, Event> | undefined;
