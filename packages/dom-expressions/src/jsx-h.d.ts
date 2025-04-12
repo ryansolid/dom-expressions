@@ -927,7 +927,7 @@ export namespace JSX {
     exportparts?: FunctionMaybe<string | undefined>;
     hidden?: FunctionMaybe<boolean | "hidden" | "until-found" | undefined>;
     id?: FunctionMaybe<string | undefined>;
-    inert?: FunctionMaybe<"true" | boolean | undefined>;
+    inert?: FunctionMaybe<"" | boolean | undefined>;
     inlist?: FunctionMaybe<any | undefined>;
     inputmode?: FunctionMaybe<
       "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined
@@ -936,7 +936,7 @@ export namespace JSX {
     itemid?: FunctionMaybe<string | undefined>;
     itemprop?: FunctionMaybe<string | undefined>;
     itemref?: FunctionMaybe<string | undefined>;
-    itemscope?: FunctionMaybe<"true" | boolean | undefined>;
+    itemscope?: FunctionMaybe<"" | boolean | undefined>;
     itemtype?: FunctionMaybe<string | undefined>;
     lang?: FunctionMaybe<string | undefined>;
     part?: FunctionMaybe<string | undefined>;
@@ -1023,7 +1023,7 @@ export namespace JSX {
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
 
     /** @deprecated */
-    nohref?: FunctionMaybe<"true" | boolean | undefined>;
+    nohref?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: FunctionMaybe<string | undefined>;
@@ -1033,13 +1033,13 @@ export namespace JSX {
     cite?: FunctionMaybe<string | undefined>;
   }
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: FunctionMaybe<"true" | boolean | undefined>;
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
     formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
     formenctype?: FunctionMaybe<HTMLFormEncType | undefined>;
     formmethod?: FunctionMaybe<HTMLFormMethod | undefined>;
-    formnovalidate?: FunctionMaybe<"true" | boolean | undefined>;
+    formnovalidate?: FunctionMaybe<"" | boolean | undefined>;
     formtarget?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
     popovertarget?: FunctionMaybe<string | undefined>;
     popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle" | undefined>;
@@ -1083,7 +1083,7 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    "moz-opaque"?: FunctionMaybe<"true" | boolean | undefined>;
+    "moz-opaque"?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: FunctionMaybe<number | string | undefined>;
@@ -1122,10 +1122,10 @@ export namespace JSX {
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     name?: FunctionMaybe<string | undefined>;
-    open?: FunctionMaybe<"true" | boolean | undefined>;
+    open?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: FunctionMaybe<"true" | boolean | undefined>;
+    open?: FunctionMaybe<"" | boolean | undefined>;
     tabindex?: FunctionMaybe<never | undefined>;
 
     onclose?: EventHandlerUnion<T, Event> | undefined;
@@ -1145,7 +1145,7 @@ export namespace JSX {
     name?: FunctionMaybe<string | undefined>;
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
     name?: FunctionMaybe<string | undefined>;
   }
@@ -1157,7 +1157,7 @@ export namespace JSX {
     enctype?: FunctionMaybe<HTMLFormEncType | undefined>;
     method?: FunctionMaybe<HTMLFormMethod | undefined>;
     name?: FunctionMaybe<string | undefined>;
-    novalidate?: FunctionMaybe<"true" | boolean | undefined>;
+    novalidate?: FunctionMaybe<"" | boolean | undefined>;
     rel?: FunctionMaybe<string | undefined>;
     target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
 
@@ -1169,7 +1169,7 @@ export namespace JSX {
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allow?: FunctionMaybe<string | undefined>;
-    allowfullscreen?: FunctionMaybe<"true" | boolean | undefined>;
+    allowfullscreen?: FunctionMaybe<"" | boolean | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
     loading?: FunctionMaybe<"eager" | "lazy" | undefined>;
     name?: FunctionMaybe<string | undefined>;
@@ -1183,20 +1183,20 @@ export namespace JSX {
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
 
     /** @experimental */
-    adauctionheaders?: FunctionMaybe<"true" | boolean | undefined>;
+    adauctionheaders?: FunctionMaybe<"" | boolean | undefined>;
     /**
      * @non-standard
      * @experimental
      */
-    browsingtopics?: FunctionMaybe<"true" | boolean | undefined>;
+    browsingtopics?: FunctionMaybe<"" | boolean | undefined>;
     /** @experimental */
-    credentialless?: FunctionMaybe<"true" | boolean | undefined>;
+    credentialless?: FunctionMaybe<"" | boolean | undefined>;
     /** @experimental */
     csp?: FunctionMaybe<string | undefined>;
     /** @experimental */
     privatetoken?: FunctionMaybe<string | undefined>;
     /** @experimental */
-    sharedstoragewritable?: FunctionMaybe<"true" | boolean | undefined>;
+    sharedstoragewritable?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated */
     align?: FunctionMaybe<string | undefined>;
@@ -1204,9 +1204,9 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    allowpaymentrequest?: FunctionMaybe<"true" | boolean | undefined>;
+    allowpaymentrequest?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
-    allowtransparency?: FunctionMaybe<"true" | boolean | undefined>;
+    allowtransparency?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     frameborder?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
@@ -1218,14 +1218,14 @@ export namespace JSX {
     /** @deprecated */
     scrolling?: FunctionMaybe<"yes" | "no" | "auto" | undefined>;
     /** @deprecated */
-    seamless?: FunctionMaybe<"true" | boolean | undefined>;
+    seamless?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: FunctionMaybe<string | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
     decoding?: FunctionMaybe<"sync" | "async" | "auto" | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
-    ismap?: FunctionMaybe<"true" | boolean | undefined>;
+    ismap?: FunctionMaybe<"" | boolean | undefined>;
     loading?: FunctionMaybe<"eager" | "lazy" | undefined>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
     sizes?: FunctionMaybe<string | undefined>;
@@ -1239,7 +1239,7 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | undefined>;
     /** @experimental */
-    sharedstoragewritable?: FunctionMaybe<"true" | boolean | undefined>;
+    sharedstoragewritable?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
@@ -1339,12 +1339,12 @@ export namespace JSX {
       | undefined
     >;
     autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
-    autofocus?: FunctionMaybe<"true" | boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
     capture?: FunctionMaybe<"user" | "environment" | undefined>;
-    checked?: FunctionMaybe<"true" | boolean | undefined>;
+    checked?: FunctionMaybe<"" | boolean | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
     dirname?: FunctionMaybe<string | undefined>;
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     enterkeyhint?: FunctionMaybe<
       "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
     >;
@@ -1352,7 +1352,7 @@ export namespace JSX {
     formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
     formenctype?: FunctionMaybe<HTMLFormEncType | undefined>;
     formmethod?: FunctionMaybe<HTMLFormMethod | undefined>;
-    formnovalidate?: FunctionMaybe<"true" | boolean | undefined>;
+    formnovalidate?: FunctionMaybe<"" | boolean | undefined>;
     formtarget?: FunctionMaybe<string | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
     list?: FunctionMaybe<string | undefined>;
@@ -1360,14 +1360,14 @@ export namespace JSX {
     maxlength?: FunctionMaybe<number | string | undefined>;
     min?: FunctionMaybe<number | string | undefined>;
     minlength?: FunctionMaybe<number | string | undefined>;
-    multiple?: FunctionMaybe<"true" | boolean | undefined>;
+    multiple?: FunctionMaybe<"" | boolean | undefined>;
     name?: FunctionMaybe<string | undefined>;
     pattern?: FunctionMaybe<string | undefined>;
     placeholder?: FunctionMaybe<string | undefined>;
     popovertarget?: FunctionMaybe<string | undefined>;
     popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle" | undefined>;
-    readonly?: FunctionMaybe<"true" | boolean | undefined>;
-    required?: FunctionMaybe<"true" | boolean | undefined>;
+    readonly?: FunctionMaybe<"" | boolean | undefined>;
+    required?: FunctionMaybe<"" | boolean | undefined>;
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/search#results
     results?: FunctionMaybe<number | undefined>;
     size?: FunctionMaybe<number | string | undefined>;
@@ -1403,7 +1403,7 @@ export namespace JSX {
     width?: FunctionMaybe<number | string | undefined>;
 
     /** @non-standard */
-    incremental?: FunctionMaybe<"true" | boolean | undefined>;
+    incremental?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
@@ -1438,11 +1438,11 @@ export namespace JSX {
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    autofocus?: FunctionMaybe<"true" | boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     challenge?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     form?: FunctionMaybe<string | undefined>;
     /** @deprecated */
@@ -1466,7 +1466,7 @@ export namespace JSX {
     as?: FunctionMaybe<HTMLLinkAs | undefined>;
     blocking?: FunctionMaybe<"render" | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
     href?: FunctionMaybe<string | undefined>;
     hreflang?: FunctionMaybe<string | undefined>;
@@ -1495,8 +1495,8 @@ export namespace JSX {
     name?: FunctionMaybe<string | undefined>;
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autoplay?: FunctionMaybe<"true" | boolean | undefined>;
-    controls?: FunctionMaybe<"true" | boolean | undefined>;
+    autoplay?: FunctionMaybe<"" | boolean | undefined>;
+    controls?: FunctionMaybe<"" | boolean | undefined>;
     controlslist?: FunctionMaybe<
       | "nodownload"
       | "nofullscreen"
@@ -1506,9 +1506,9 @@ export namespace JSX {
       | undefined
     >;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
-    disableremoteplayback?: FunctionMaybe<"true" | boolean | undefined>;
-    loop?: FunctionMaybe<"true" | boolean | undefined>;
-    muted?: FunctionMaybe<"true" | boolean | undefined>;
+    disableremoteplayback?: FunctionMaybe<"" | boolean | undefined>;
+    loop?: FunctionMaybe<"" | boolean | undefined>;
+    muted?: FunctionMaybe<"" | boolean | undefined>;
     preload?: FunctionMaybe<"none" | "metadata" | "auto" | "" | undefined>;
     src?: FunctionMaybe<string | undefined>;
 
@@ -1522,7 +1522,7 @@ export namespace JSX {
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    compact?: FunctionMaybe<"true" | boolean | undefined>;
+    compact?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     label?: FunctionMaybe<string | undefined>;
     /** @deprecated */
@@ -1583,7 +1583,7 @@ export namespace JSX {
     /** @deprecated */
     codetype?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    declare?: FunctionMaybe<"true" | boolean | undefined>;
+    declare?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     hspace?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
@@ -1593,10 +1593,10 @@ export namespace JSX {
     /** @deprecated */
     vspace?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
-    typemustmatch?: FunctionMaybe<"true" | boolean | undefined>;
+    typemustmatch?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: FunctionMaybe<"true" | boolean | undefined>;
+    reversed?: FunctionMaybe<"" | boolean | undefined>;
     start?: FunctionMaybe<number | string | undefined>;
     type?: FunctionMaybe<"1" | "a" | "A" | "i" | "I" | undefined>;
 
@@ -1604,16 +1604,16 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    compact?: FunctionMaybe<"true" | boolean | undefined>;
+    compact?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     label?: FunctionMaybe<string | undefined>;
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     label?: FunctionMaybe<string | undefined>;
-    selected?: FunctionMaybe<"true" | boolean | undefined>;
+    selected?: FunctionMaybe<"" | boolean | undefined>;
     value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1636,13 +1636,13 @@ export namespace JSX {
     value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: FunctionMaybe<"true" | boolean | undefined>;
+    async?: FunctionMaybe<"" | boolean | undefined>;
     blocking?: FunctionMaybe<"render" | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
-    defer?: FunctionMaybe<"true" | boolean | undefined>;
+    defer?: FunctionMaybe<"" | boolean | undefined>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
     integrity?: FunctionMaybe<string | undefined>;
-    nomodule?: FunctionMaybe<"true" | boolean | undefined>;
+    nomodule?: FunctionMaybe<"" | boolean | undefined>;
     nonce?: FunctionMaybe<string | undefined>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
     src?: FunctionMaybe<string | undefined>;
@@ -1667,12 +1667,12 @@ export namespace JSX {
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?: FunctionMaybe<string | undefined>;
-    autofocus?: FunctionMaybe<"true" | boolean | undefined>;
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
-    multiple?: FunctionMaybe<"true" | boolean | undefined>;
+    multiple?: FunctionMaybe<"" | boolean | undefined>;
     name?: FunctionMaybe<string | undefined>;
-    required?: FunctionMaybe<"true" | boolean | undefined>;
+    required?: FunctionMaybe<"" | boolean | undefined>;
     size?: FunctionMaybe<number | string | undefined>;
     value?: FunctionMaybe<string | string[] | number | undefined>;
   }
@@ -1694,7 +1694,7 @@ export namespace JSX {
     nonce?: FunctionMaybe<string | undefined>;
 
     /** @deprecated */
-    scoped?: FunctionMaybe<"true" | boolean | undefined>;
+    scoped?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     type?: FunctionMaybe<string | undefined>;
   }
@@ -1723,7 +1723,7 @@ export namespace JSX {
     /** @deprecated */
     height?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
-    nowrap?: FunctionMaybe<"true" | boolean | undefined>;
+    nowrap?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     scope?: FunctionMaybe<"col" | "row" | "rowgroup" | "colgroup" | undefined>;
     /** @deprecated */
@@ -1733,11 +1733,11 @@ export namespace JSX {
   }
   interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
     shadowrootmode?: FunctionMaybe<"open" | "closed" | undefined>;
-    shadowrootclonable?: FunctionMaybe<"true" | boolean | undefined>;
-    shadowrootdelegatesfocus?: FunctionMaybe<"true" | boolean | undefined>;
+    shadowrootclonable?: FunctionMaybe<"" | boolean | undefined>;
+    shadowrootdelegatesfocus?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @experimental */
-    shadowrootserializable?: FunctionMaybe<"true" | boolean | undefined>;
+    shadowrootserializable?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated */
     content?: FunctionMaybe<DocumentFragment | undefined>;
@@ -1810,10 +1810,10 @@ export namespace JSX {
       | undefined
     >;
     autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
-    autofocus?: FunctionMaybe<"true" | boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
     cols?: FunctionMaybe<number | string | undefined>;
     dirname?: FunctionMaybe<string | undefined>;
-    disabled?: FunctionMaybe<"true" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     enterkeyhint?: FunctionMaybe<
       "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
     >;
@@ -1822,8 +1822,8 @@ export namespace JSX {
     minlength?: FunctionMaybe<number | string | undefined>;
     name?: FunctionMaybe<string | undefined>;
     placeholder?: FunctionMaybe<string | undefined>;
-    readonly?: FunctionMaybe<"true" | boolean | undefined>;
-    required?: FunctionMaybe<"true" | boolean | undefined>;
+    readonly?: FunctionMaybe<"" | boolean | undefined>;
+    required?: FunctionMaybe<"" | boolean | undefined>;
     rows?: FunctionMaybe<number | string | undefined>;
     value?: FunctionMaybe<string | string[] | number | undefined>;
     wrap?: FunctionMaybe<"hard" | "soft" | "off" | undefined>;
@@ -1860,7 +1860,7 @@ export namespace JSX {
     /** @deprecated */
     height?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    nowrap?: FunctionMaybe<"true" | boolean | undefined>;
+    nowrap?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     valign?: FunctionMaybe<"baseline" | "bottom" | "middle" | "top" | undefined>;
     /** @deprecated */
@@ -1873,7 +1873,7 @@ export namespace JSX {
     dateTime?: FunctionMaybe<string | undefined>;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: FunctionMaybe<"true" | boolean | undefined>;
+    default?: FunctionMaybe<"" | boolean | undefined>;
     kind?: // MDN
     FunctionMaybe<
       | "alternative"
@@ -1900,36 +1900,36 @@ export namespace JSX {
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     height?: FunctionMaybe<number | string | undefined>;
-    playsinline?: FunctionMaybe<"true" | boolean | undefined>;
+    playsinline?: FunctionMaybe<"" | boolean | undefined>;
     poster?: FunctionMaybe<string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
-    disablepictureinpicture?: FunctionMaybe<"true" | boolean | undefined>;
+    disablepictureinpicture?: FunctionMaybe<"" | boolean | undefined>;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
-    allowpopups?: FunctionMaybe<"true" | boolean | undefined>;
+    allowpopups?: FunctionMaybe<"" | boolean | undefined>;
     disableblinkfeatures?: FunctionMaybe<string | undefined>;
-    disablewebsecurity?: FunctionMaybe<"true" | boolean | undefined>;
+    disablewebsecurity?: FunctionMaybe<"" | boolean | undefined>;
     enableblinkfeatures?: FunctionMaybe<string | undefined>;
     httpreferrer?: FunctionMaybe<string | undefined>;
-    nodeintegration?: FunctionMaybe<"true" | boolean | undefined>;
-    nodeintegrationinsubframes?: FunctionMaybe<"true" | boolean | undefined>;
+    nodeintegration?: FunctionMaybe<"" | boolean | undefined>;
+    nodeintegrationinsubframes?: FunctionMaybe<"" | boolean | undefined>;
     partition?: FunctionMaybe<string | undefined>;
-    plugins?: FunctionMaybe<"true" | boolean | undefined>;
+    plugins?: FunctionMaybe<"" | boolean | undefined>;
     preload?: FunctionMaybe<string | undefined>;
     src?: FunctionMaybe<string | undefined>;
     useragent?: FunctionMaybe<string | undefined>;
     webpreferences?: FunctionMaybe<string | undefined>;
 
     // does this exists?
-    allowfullscreen?: FunctionMaybe<"true" | boolean | undefined>;
-    autofocus?: FunctionMaybe<"true" | boolean | undefined>;
-    autosize?: FunctionMaybe<"true" | boolean | undefined>;
+    allowfullscreen?: FunctionMaybe<"" | boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
+    autosize?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated */
     blinkfeatures?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    disableguestresize?: FunctionMaybe<"true" | boolean | undefined>;
+    disableguestresize?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     guestinstance?: FunctionMaybe<string | undefined>;
   }
@@ -2796,7 +2796,7 @@ export namespace JSX {
   }
 
   interface MathMLAttributes<T> extends HTMLAttributes<T> {
-    displaystyle?: FunctionMaybe<"true" | boolean | undefined>;
+    displaystyle?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     href?: FunctionMaybe<string | undefined>;
     /** @deprecated */
@@ -2869,23 +2869,23 @@ export namespace JSX {
   }
   interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
-    fence?: FunctionMaybe<"true" | boolean | undefined>;
+    fence?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<"prefix" | "infix" | "postfix" | undefined>;
-    largeop?: FunctionMaybe<"true" | boolean | undefined>;
+    largeop?: FunctionMaybe<"" | boolean | undefined>;
     lspace?: FunctionMaybe<string | undefined>;
     maxsize?: FunctionMaybe<string | undefined>;
     minsize?: FunctionMaybe<string | undefined>;
-    movablelimits?: FunctionMaybe<"true" | boolean | undefined>;
+    movablelimits?: FunctionMaybe<"" | boolean | undefined>;
     rspace?: FunctionMaybe<string | undefined>;
-    separator?: FunctionMaybe<"true" | boolean | undefined>;
-    stretchy?: FunctionMaybe<"true" | boolean | undefined>;
-    symmetric?: FunctionMaybe<"true" | boolean | undefined>;
+    separator?: FunctionMaybe<"" | boolean | undefined>;
+    stretchy?: FunctionMaybe<"" | boolean | undefined>;
+    symmetric?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @non-standard */
-    accent?: FunctionMaybe<"true" | boolean | undefined>;
+    accent?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
-    accent?: FunctionMaybe<"true" | boolean | undefined>;
+    accent?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface MathMLMpaddedElementAttributes<T> extends MathMLAttributes<T> {
     depth?: FunctionMaybe<string | undefined>;
@@ -3006,11 +3006,11 @@ export namespace JSX {
     rowalign?: FunctionMaybe<"axis" | "baseline" | "bottom" | "center" | "top" | undefined>;
   }
   interface MathMLMunderElementAttributes<T> extends MathMLAttributes<T> {
-    accentunder?: FunctionMaybe<"true" | boolean | undefined>;
+    accentunder?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface MathMLMunderoverElementAttributes<T> extends MathMLAttributes<T> {
-    accent?: FunctionMaybe<"true" | boolean | undefined>;
-    accentunder?: FunctionMaybe<"true" | boolean | undefined>;
+    accent?: FunctionMaybe<"" | boolean | undefined>;
+    accentunder?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface MathMLSemanticsElementAttributes<T> extends MathMLAttributes<T> {}
 
