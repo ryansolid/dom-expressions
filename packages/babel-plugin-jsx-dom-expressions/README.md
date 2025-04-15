@@ -157,9 +157,23 @@ Checks for properly formed HTML by checking for elements that would not be allow
 ### omitNestedClosingTags
 
 - Type: `boolean`
-- Default: `true`
+- Default: `false`
 
 Removes unnecessary closing tags from the template output. This may not work in all browser-like environments the same. The solution has been tested again Chrome/Edge/Firefox/Safari.
+
+### omitLastClosingTag
+
+- Type: `boolean`
+- Default: `true`
+
+Removes tags from the template output if they have no closing parents and are the last element. This may not work in all browser-like environments the same. The solution has been tested again Chrome/Edge/Firefox/Safari.
+
+### omitQuotes
+
+- Type: `boolean`
+- Default: `true`
+
+Removes quotes for html attributes when possible from the template output. This may not work in all browser-like environments the same. The solution has been tested again Chrome/Edge/Firefox/Safari.
 
 ## Special Binding
 

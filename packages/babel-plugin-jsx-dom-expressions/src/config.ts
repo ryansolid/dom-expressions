@@ -8,6 +8,8 @@ export default {
   requireImportSource: false,
   wrapConditionals: true,
   omitNestedClosingTags: false,
+  omitLastClosingTag: true,
+  omitQuotes: true,
   contextToCustomElements: false,
   staticMarker: "@once",
   effectWrapper: "effect",

@@ -122,7 +122,7 @@ export function transformElement(path, info) {
   if (!voidTag) {
     // always close tags can still be skipped if they have no closing parents and are the last element
     const toBeClosed =
-      !info.lastElement ||
+      (!info.lastElement || !config.omitLastClosingTag) ||
       (info.toBeClosed && (!config.omitNestedClosingTags || info.toBeClosed.has(tagName)));
     if (toBeClosed) {
       results.toBeClosed = new Set(info.toBeClosed || alwaysClose);
@@ -839,7 +839,7 @@ function transformAttributes(path, results) {
 
           let text = value.value;
           if (typeof text === "number") text = String(text);
-          let needsQuoting = false;
+          let needsQuoting = !config.omitQuotes;
 
           if (key === "style" || key === "class") {
             text = trimWhitespace(text);
