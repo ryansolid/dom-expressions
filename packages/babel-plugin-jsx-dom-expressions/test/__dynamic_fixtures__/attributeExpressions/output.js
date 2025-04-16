@@ -13,7 +13,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b">`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<input type=checkbox checked readonly>`),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<input type=checkbox readonly>`),
   _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox>`);
 const selected = true;
 let id = "my-h1";
@@ -163,7 +163,11 @@ const template12 = (() => {
   _el$18.htmlFor = thing;
   return _el$18;
 })();
-const template13 = _tmpl$5();
+const template13 = (() => {
+  var _el$19 = _tmpl$5();
+  _el$19.checked = true;
+  return _el$19;
+})();
 const template14 = (() => {
   var _el$20 = _tmpl$6();
   _el$20.readOnly = value;
