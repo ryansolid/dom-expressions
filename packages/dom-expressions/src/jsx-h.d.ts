@@ -41,30 +41,78 @@ export namespace JSX {
     ): void;
   }
 
-  interface BoundEventHandler<T, E extends Event> {
-    0: (
-      data: any,
-      e: E & {
-        currentTarget: T;
-        target: DOMElement;
-      }
-    ) => void;
+  interface BoundEventHandler<
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
+  > {
+    0: (data: any, ...e: Parameters<EHandler>) => void;
     1: any;
   }
-  type EventHandlerUnion<T, E extends Event> = EventHandler<T, E> | BoundEventHandler<T, E>;
+  type EventHandlerUnion<
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
+  > = EHandler | BoundEventHandler<T, E, EHandler>;
 
-  interface EventHandlerWithOptions<T, E extends Event> extends AddEventListenerOptions {
-    handleEvent: (
-      e: E & {
-        currentTarget: T;
-        target: Element;
-      }
-    ) => void;
+  interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
+    extends AddEventListenerOptions {
+    handleEvent: EHandler;
   }
 
-  type EventHandlerWithOptionsUnion<T, E extends Event> =
-    | EventHandler<T, E>
-    | EventHandlerWithOptions<T, E>;
+  type EventHandlerWithOptionsUnion<
+    T,
+    E extends Event,
+    EHandler extends EventHandler<T, any> = EventHandler<T, E>
+  > = EHandler | EventHandlerWithOptions<T, E, EHandler>;
+
+  interface InputEventHandler<T, E extends InputEvent> {
+    (
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ): void;
+  }
+  type InputEventHandlerUnion<T, E extends InputEvent> = EventHandlerUnion<
+    T,
+    E,
+    InputEventHandler<T, E>
+  >;
+
+  interface ChangeEventHandler<T, E extends Event> {
+    (
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ): void;
+  }
+  type ChangeEventHandlerUnion<T, E extends Event> = EventHandlerUnion<
+    T,
+    E,
+    ChangeEventHandler<T, E>
+  >;
+
+  interface FocusEventHandler<T, E extends FocusEvent> {
+    (
+      e: E & {
+        currentTarget: T;
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          ? T
+          : DOMElement;
+      }
+    ): void;
+  }
+  type FocusEventHandlerUnion<T, E extends FocusEvent> = EventHandlerUnion<
+    T,
+    E,
+    FocusEventHandler<T, E>
+  >;
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
@@ -156,7 +204,7 @@ export namespace JSX {
 
     onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
     onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
-    "on:FullscreenError"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
   }
   interface WindowEventMap<T> {
     onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
@@ -248,7 +296,7 @@ export namespace JSX {
     onDrag?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragEnd?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragEnter?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragEXit?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragLeave?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragOver?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragStart?: EventHandlerUnion<T, DragEvent> | undefined;
@@ -338,8 +386,9 @@ export namespace JSX {
     oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    oncontextmenu?: EventHandlerUnion<T, MouseEvent> | undefined;
+    oncontextmenu?: EventHandlerUnion<T, PointerEvent> | undefined;
     oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    oncuechange?: EventHandlerUnion<T, Event> | undefined;
     oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     ondblclick?: EventHandlerUnion<T, MouseEvent> | undefined;
     ondrag?: EventHandlerUnion<T, DragEvent> | undefined;
@@ -390,11 +439,16 @@ export namespace JSX {
     onprogress?: EventHandlerUnion<T, ProgressEvent> | undefined;
     onratechange?: EventHandlerUnion<T, Event> | undefined;
     onreset?: EventHandlerUnion<T, Event> | undefined;
+    onresize?: EventHandlerUnion<T, UIEvent> | undefined;
     onscroll?: EventHandlerUnion<T, Event> | undefined;
     onscrollend?: EventHandlerUnion<T, Event> | undefined;
+    onsecuritypolicyviolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
     onseeked?: EventHandlerUnion<T, Event> | undefined;
     onseeking?: EventHandlerUnion<T, Event> | undefined;
     onselect?: EventHandlerUnion<T, Event> | undefined;
+    onselectionchange?: EventHandlerUnion<T, Event> | undefined;
+    onselectstart?: EventHandlerUnion<T, Event> | undefined;
+    onslotchange?: EventHandlerUnion<T, Event> | undefined;
     onstalled?: EventHandlerUnion<T, Event> | undefined;
     onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
     onsuspend?: EventHandlerUnion<T, Event> | undefined;
@@ -433,8 +487,9 @@ export namespace JSX {
     "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
-    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:cuechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:dblclick"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
     "on:drag"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
@@ -447,7 +502,6 @@ export namespace JSX {
     "on:drop"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
     "on:durationchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:emptied"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
     "on:ended"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:error"?: EventHandlerWithOptionsUnion<T, ErrorEvent> | undefined;
     "on:focus"?:
@@ -494,11 +548,18 @@ export namespace JSX {
     "on:progress"?: EventHandlerWithOptionsUnion<T, ProgressEvent> | undefined;
     "on:ratechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:reset"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:resize"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
     "on:scroll"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:scrollend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:securitypolicyviolation"?:
+      | EventHandlerWithOptionsUnion<T, SecurityPolicyViolationEvent>
+      | undefined;
     "on:seeked"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:seeking"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:select"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:selectionchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:selectstart"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:slotchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:stalled"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent> | undefined;
     "on:suspend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
