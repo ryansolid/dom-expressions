@@ -2695,7 +2695,8 @@ export namespace JSX {
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     cx?: number | string | RemoveAttribute;
     cy?: number | string | RemoveAttribute;
     r?: number | string | RemoveAttribute;
@@ -2722,7 +2723,8 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     cx?: number | string | RemoveAttribute;
     cy?: number | string | RemoveAttribute;
     rx?: number | string | RemoveAttribute;
@@ -2913,14 +2915,14 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "display" | "visibility"> {}
+      Pick<PresentationSVGAttributes, "clip-path" | "display" | "visibility"> {}
   interface ImageSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "color-profile" | "image-rendering"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "color-profile" | "image-rendering"> {
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
     width?: number | string | RemoveAttribute;
@@ -2935,7 +2937,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     x1?: number | string | RemoveAttribute;
     y1?: number | string | RemoveAttribute;
     x2?: number | string | RemoveAttribute;
@@ -2952,7 +2954,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
     markerUnits?: "strokeWidth" | "userSpaceOnUse" | RemoveAttribute;
     refX?: number | string | RemoveAttribute;
     refY?: number | string | RemoveAttribute;
@@ -2964,7 +2966,8 @@ export namespace JSX {
     extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     maskUnits?: SVGUnits | RemoveAttribute;
     maskContentUnits?: SVGUnits | RemoveAttribute;
     x?: number | string | RemoveAttribute;
@@ -2981,7 +2984,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     d?: string | RemoveAttribute;
     pathLength?: number | string | RemoveAttribute;
   }
@@ -2991,7 +2994,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
     width?: number | string | RemoveAttribute;
@@ -3008,7 +3011,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     points?: string | RemoveAttribute;
   }
   interface PolylineSVGAttributes<T>
@@ -3018,7 +3021,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     points?: string | RemoveAttribute;
   }
   interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
@@ -3034,7 +3037,8 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
     width?: number | string | RemoveAttribute;
@@ -3089,7 +3093,8 @@ export namespace JSX {
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      FitToViewBoxSVGAttributes {
+      FitToViewBoxSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     width?: number | string | RemoveAttribute;
     height?: number | string | RemoveAttribute;
     preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
@@ -3106,7 +3111,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "writing-mode" | "text-rendering"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "writing-mode" | "text-rendering"> {
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
     dx?: number | string | RemoveAttribute;
