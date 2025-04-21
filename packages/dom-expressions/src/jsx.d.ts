@@ -250,9 +250,13 @@ export namespace JSX {
   interface ElementEventMap<T> {
     onFullscreenChange?: EventHandlerUnion<T, Event> | undefined;
     "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
 
     onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
-    "on:FullscreenError"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
   }
   interface WindowEventMap<T> {
     onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
@@ -275,6 +279,47 @@ export namespace JSX {
     onStorage?: EventHandlerUnion<T, StorageEvent> | undefined;
     onUnhandledRejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
     onUnload?: EventHandlerUnion<T, Event> | undefined;
+
+    /** @deprecated Use camelCase event handlers */
+    onafterprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onbeforeprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onbeforeunload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ongamepadconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ongamepaddisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onhashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onlanguagechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onmessage?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onmessageerror?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onoffline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ononline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpagehide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpagereveal?: EventHandlerUnion<T, PageRevealEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpageshow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpageswap?: EventHandlerUnion<T, PageSwapEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onrejectionhandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onstorage?: EventHandlerUnion<T, StorageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onunhandledrejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onunload?: EventHandlerUnion<T, Event> | undefined;
 
     "on:afterprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:beforeprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -398,7 +443,7 @@ export namespace JSX {
   /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
     /** @deprecated Use camelCase event handlers */
-    onabort?: EventHandlerUnion<T, Event> | undefined;
+    onabort?: EventHandlerUnion<T, UIEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
@@ -1297,9 +1342,13 @@ export namespace JSX {
 
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncontextlost?: EventHandlerUnion<T, Event> | undefined;
 
     onContextRestored?: EventHandlerUnion<T, Event> | undefined;
     "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncontextrestored?: EventHandlerUnion<T, Event> | undefined;
 
     /**
      * @deprecated
@@ -1352,9 +1401,13 @@ export namespace JSX {
 
     onClose?: EventHandlerUnion<T, Event> | undefined;
     "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onclose?: EventHandlerUnion<T, Event> | undefined;
 
     onCancel?: EventHandlerUnion<T, Event> | undefined;
     "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | RemoveAttribute;
@@ -1740,9 +1793,13 @@ export namespace JSX {
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
 
     onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
     "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | RemoveAttribute;
@@ -2142,9 +2199,13 @@ export namespace JSX {
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onenterpictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
 
     onLeavePictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:leavepictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onleavepictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
