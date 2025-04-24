@@ -272,9 +272,11 @@ export namespace JSX {
     onOffline?: EventHandlerUnion<T, Event> | undefined;
     onOnline?: EventHandlerUnion<T, Event> | undefined;
     onPageHide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    onPageReveal?: EventHandlerUnion<T, PageRevealEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined on TS
+    onPageReveal?: EventHandlerUnion<T, Event> | undefined;
     onPageShow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    onPageSwap?: EventHandlerUnion<T, PageSwapEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined on TS
+    onPageSwap?: EventHandlerUnion<T, Event> | undefined;
     onPopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
     onRejectionHandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
     onStorage?: EventHandlerUnion<T, StorageEvent> | undefined;
@@ -305,12 +307,14 @@ export namespace JSX {
     ononline?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onpagehide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined in TS
     /** @deprecated Use camelCase event handlers */
-    onpagereveal?: EventHandlerUnion<T, PageRevealEvent> | undefined;
+    onpagereveal?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onpageshow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined in TS
     /** @deprecated Use camelCase event handlers */
-    onpageswap?: EventHandlerUnion<T, PageSwapEvent> | undefined;
+    onpageswap?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onpopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
@@ -334,9 +338,11 @@ export namespace JSX {
     "on:offline"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:online"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:pagehide"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
-    "on:pagereveal"?: EventHandlerWithOptionsUnion<T, PageRevealEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined in TS
+    "on:pagereveal"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:pageshow"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
-    "on:pageswap"?: EventHandlerWithOptionsUnion<T, PageSwapEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined in TS
+    "on:pageswap"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:popstate"?: EventHandlerWithOptionsUnion<T, PopStateEvent> | undefined;
     "on:rejectionhandled"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
     "on:storage"?: EventHandlerWithOptionsUnion<T, StorageEvent> | undefined;
@@ -359,7 +365,8 @@ export namespace JSX {
     onCanPlayThrough?: EventHandlerUnion<T, Event> | undefined;
     onChange?: ChangeEventHandlerUnion<T, Event> | undefined;
     onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onCommand?: EventHandlerUnion<T, CommandEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    onCommand?: EventHandlerUnion<T, Event> | undefined;
     onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
@@ -472,8 +479,9 @@ export namespace JSX {
     onchange?: ChangeEventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
     /** @deprecated Use camelCase event handlers */
-    oncommand?: EventHandlerUnion<T, CommandEvent> | undefined;
+    oncommand?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
@@ -657,7 +665,8 @@ export namespace JSX {
     "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
     "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:command"?: EventHandlerWithOptionsUnion<T, CommandEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    "on:command"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
