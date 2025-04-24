@@ -9,6 +9,7 @@ import * as csstype from "csstype";
 type DOMElement = Element;
 
 export namespace JSX {
+  // START - difference between `jsx.d.ts` and `jsx-h.d.ts`
   type FunctionMaybe<T = unknown> = { (): T } | T;
   type Element =
     | Node
@@ -19,6 +20,8 @@ export namespace JSX {
     | boolean
     | null
     | undefined;
+  // END - difference between `jsx.d.ts` and `jsx-h.d.ts`
+
   interface ArrayElement extends Array<Element> {}
   interface FunctionElement {
     (): Element;
@@ -32,6 +35,9 @@ export namespace JSX {
   interface ElementChildrenAttribute {
     children: {};
   }
+
+  // Event handlers
+
   interface EventHandler<T, E extends Event> {
     (
       e: E & {
@@ -113,6 +119,7 @@ export namespace JSX {
     E,
     FocusEventHandler<T, E>
   >;
+  // end event handlers
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
@@ -121,19 +128,21 @@ export namespace JSX {
   }
 
   interface IntrinsicAttributes {
-    ref?: unknown | ((e: unknown) => void);
+    ref?: unknown | ((e: unknown) => void) | undefined;
   }
   interface CustomAttributes<T> {
-    ref?: T | ((el: T) => void);
-    classList?: {
-      [k: string]: boolean | undefined;
-    };
-    $ServerOnly?: boolean;
+    ref?: T | ((el: T) => void) | undefined;
+    classList?:
+      | {
+          [k: string]: boolean | undefined;
+        }
+      | undefined;
+    $ServerOnly?: boolean | undefined;
   }
   type Accessor<T> = () => T;
   interface Directives {}
   interface DirectiveFunctions {
-    [x: string]: (el: Element, accessor: Accessor<any>) => void;
+    [x: string]: (el: DOMElement, accessor: Accessor<any>) => void;
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
@@ -178,33 +187,17 @@ export namespace JSX {
       CustomCaptureEvents[Key]
     >;
   };
-  interface DOMAttributes<T>
-    extends CustomAttributes<T>,
-      DirectiveAttributes,
-      DirectiveFunctionAttributes<T>,
-      PropAttributes,
-      AttrAttributes,
-      BoolAttributes,
-      OnAttributes<T>,
-      OnCaptureAttributes<T>,
-      CustomEventHandlersCamelCase<T>,
-      CustomEventHandlersLowerCase<T>,
-      CustomEventHandlersNamespaced<T> {
-    children?: Element;
-    innerHTML?: string;
-    innerText?: string | number;
-    textContent?: string | number;
-  }
 
   // events
   interface ElementEventMap<T> {
     onFullscreenChange?: EventHandlerUnion<T, Event> | undefined;
-    onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
-    "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-
     onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
-    onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
+
+    "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+
+    onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
+    onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
   }
   interface WindowEventMap<T> {
     onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
@@ -219,9 +212,11 @@ export namespace JSX {
     onOffline?: EventHandlerUnion<T, Event> | undefined;
     onOnline?: EventHandlerUnion<T, Event> | undefined;
     onPageHide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    onPageReveal?: EventHandlerUnion<T, PageRevealEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined on TS
+    onPageReveal?: EventHandlerUnion<T, Event> | undefined;
     onPageShow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    onPageSwap?: EventHandlerUnion<T, PageSwapEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined on TS
+    onPageSwap?: EventHandlerUnion<T, Event> | undefined;
     onPopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
     onRejectionHandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
     onStorage?: EventHandlerUnion<T, StorageEvent> | undefined;
@@ -240,9 +235,11 @@ export namespace JSX {
     onoffline?: EventHandlerUnion<T, Event> | undefined;
     ononline?: EventHandlerUnion<T, Event> | undefined;
     onpagehide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    onpagereveal?: EventHandlerUnion<T, PageRevealEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined in TS
+    onpagereveal?: EventHandlerUnion<T, Event> | undefined;
     onpageshow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    onpageswap?: EventHandlerUnion<T, PageSwapEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined in TS
+    onpageswap?: EventHandlerUnion<T, Event> | undefined;
     onpopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
     onrejectionhandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
     onstorage?: EventHandlerUnion<T, StorageEvent> | undefined;
@@ -261,9 +258,11 @@ export namespace JSX {
     "on:offline"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:online"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:pagehide"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
-    "on:pagereveal"?: EventHandlerWithOptionsUnion<T, PageRevealEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined in TS
+    "on:pagereveal"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:pageshow"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
-    "on:pageswap"?: EventHandlerWithOptionsUnion<T, PageSwapEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined in TS
+    "on:pageswap"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:popstate"?: EventHandlerWithOptionsUnion<T, PopStateEvent> | undefined;
     "on:rejectionhandled"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
     "on:storage"?: EventHandlerWithOptionsUnion<T, StorageEvent> | undefined;
@@ -281,10 +280,13 @@ export namespace JSX {
     onBeforeInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
     onBeforeToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
     onBlur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onCancel?: EventHandlerUnion<T, Event> | undefined;
     onCanPlay?: EventHandlerUnion<T, Event> | undefined;
     onCanPlayThrough?: EventHandlerUnion<T, Event> | undefined;
     onChange?: ChangeEventHandlerUnion<T, Event> | undefined;
     onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    onCommand?: EventHandlerUnion<T, Event> | undefined;
     onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
@@ -296,7 +298,7 @@ export namespace JSX {
     onDrag?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragEnd?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragEnter?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragEXit?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragLeave?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragOver?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragStart?: EventHandlerUnion<T, DragEvent> | undefined;
@@ -349,7 +351,6 @@ export namespace JSX {
     onSeeking?: EventHandlerUnion<T, Event> | undefined;
     onSelect?: EventHandlerUnion<T, Event> | undefined;
     onSelectionChange?: EventHandlerUnion<T, Event> | undefined;
-    onSelectStart?: EventHandlerUnion<T, Event> | undefined;
     onSlotChange?: EventHandlerUnion<T, Event> | undefined;
     onStalled?: EventHandlerUnion<T, Event> | undefined;
     onSubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
@@ -379,10 +380,13 @@ export namespace JSX {
     onbeforeinput?: InputEventHandlerUnion<T, InputEvent> | undefined;
     onbeforetoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
     onblur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    oncancel?: EventHandlerUnion<T, Event> | undefined;
     oncanplay?: EventHandlerUnion<T, Event> | undefined;
     oncanplaythrough?: EventHandlerUnion<T, Event> | undefined;
     onchange?: ChangeEventHandlerUnion<T, Event> | undefined;
     onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    oncommand?: EventHandlerUnion<T, Event> | undefined;
     oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
@@ -447,7 +451,6 @@ export namespace JSX {
     onseeking?: EventHandlerUnion<T, Event> | undefined;
     onselect?: EventHandlerUnion<T, Event> | undefined;
     onselectionchange?: EventHandlerUnion<T, Event> | undefined;
-    onselectstart?: EventHandlerUnion<T, Event> | undefined;
     onslotchange?: EventHandlerUnion<T, Event> | undefined;
     onstalled?: EventHandlerUnion<T, Event> | undefined;
     onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
@@ -466,6 +469,7 @@ export namespace JSX {
     onwaiting?: EventHandlerUnion<T, Event> | undefined;
     onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
+
   interface CustomEventHandlersNamespaced<T> {
     "on:abort"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
     "on:animationcancel"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
@@ -480,10 +484,13 @@ export namespace JSX {
     "on:blur"?:
       | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
       | undefined;
+    "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplay"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
     "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    "on:command"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
@@ -558,7 +565,6 @@ export namespace JSX {
     "on:seeking"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:select"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:selectionchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:selectstart"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:slotchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:stalled"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent> | undefined;
@@ -576,6 +582,24 @@ export namespace JSX {
     "on:volumechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:waiting"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
+  }
+
+  interface DOMAttributes<T>
+    extends CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      BoolAttributes,
+      OnAttributes<T>,
+      OnCaptureAttributes<T>,
+      CustomEventHandlersCamelCase<T>,
+      CustomEventHandlersLowerCase<T>,
+      CustomEventHandlersNamespaced<T> {
+    children?: Element;
+    innerHTML?: string;
+    innerText?: string | number;
+    textContent?: string | number;
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
@@ -611,7 +635,8 @@ export namespace JSX {
     | "allow-scripts"
     | "allow-storage-access-by-user-activation"
     | "allow-top-navigation"
-    | "allow-top-navigation-by-user-activation";
+    | "allow-top-navigation-by-user-activation"
+    | "allow-top-navigation-to-custom-protocols";
   type HTMLLinkAs =
     | "audio"
     | "document"
@@ -632,162 +657,168 @@ export namespace JSX {
      * Identifies the currently active element when DOM focus is on a composite widget, textbox,
      * group, or application.
      */
-    "aria-activedescendant"?: string;
+    "aria-activedescendant"?: FunctionMaybe<string | undefined>;
     /**
      * Indicates whether assistive technologies will present all, or only parts of, the changed
      * region based on the change notifications defined by the aria-relevant attribute.
      */
-    "aria-atomic"?: boolean | "false" | "true";
+    "aria-atomic"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Indicates whether inputting text could trigger display of one or more predictions of the
      * user's intended value for an input and specifies how predictions would be presented if they
      * are made.
      */
-    "aria-autocomplete"?: "none" | "inline" | "list" | "both";
+    "aria-autocomplete"?: FunctionMaybe<"none" | "inline" | "list" | "both" | undefined>;
     /**
      * Indicates an element is being modified and that assistive technologies MAY want to wait until
      * the modifications are complete before exposing them to the user.
      */
-    "aria-busy"?: boolean | "false" | "true";
+    "aria-busy"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Indicates the current "checked" state of checkboxes, radio buttons, and other widgets.
      *
      * @see aria-pressed @see aria-selected.
      */
-    "aria-checked"?: boolean | "false" | "mixed" | "true";
+    "aria-checked"?: FunctionMaybe<boolean | "false" | "mixed" | "true" | undefined>;
     /**
      * Defines the total number of columns in a table, grid, or treegrid.
      *
      * @see aria-colindex.
      */
-    "aria-colcount"?: number | string;
+    "aria-colcount"?: FunctionMaybe<number | string | undefined>;
     /**
      * Defines an element's column index or position with respect to the total number of columns
      * within a table, grid, or treegrid.
      *
      * @see aria-colcount @see aria-colspan.
      */
-    "aria-colindex"?: number | string;
+    "aria-colindex"?: FunctionMaybe<number | string | undefined>;
     /**
      * Defines the number of columns spanned by a cell or gridcell within a table, grid, or
      * treegrid.
      *
      * @see aria-colindex @see aria-rowspan.
      */
-    "aria-colspan"?: number | string;
+    "aria-colspan"?: FunctionMaybe<number | string | undefined>;
     /**
      * Identifies the element (or elements) whose contents or presence are controlled by the current
      * element.
      *
      * @see aria-owns.
      */
-    "aria-controls"?: string;
+    "aria-controls"?: FunctionMaybe<string | undefined>;
     /**
      * Indicates the element that represents the current item within a container or set of related
      * elements.
      */
-    "aria-current"?: boolean | "false" | "true" | "page" | "step" | "location" | "date" | "time";
+    "aria-current"?: FunctionMaybe<
+      boolean | "false" | "true" | "page" | "step" | "location" | "date" | "time" | undefined
+    >;
     /**
      * Identifies the element (or elements) that describes the object.
      *
      * @see aria-labelledby
      */
-    "aria-describedby"?: string;
+    "aria-describedby"?: FunctionMaybe<string | undefined>;
     /**
      * Identifies the element that provides a detailed, extended description for the object.
      *
      * @see aria-describedby.
      */
-    "aria-details"?: string;
+    "aria-details"?: FunctionMaybe<string | undefined>;
     /**
      * Indicates that the element is perceivable but disabled, so it is not editable or otherwise
      * operable.
      *
      * @see aria-hidden @see aria-readonly.
      */
-    "aria-disabled"?: boolean | "false" | "true";
+    "aria-disabled"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Indicates what functions can be performed when a dragged object is released on the drop
      * target.
      *
      * @deprecated In ARIA 1.1
      */
-    "aria-dropeffect"?: "none" | "copy" | "execute" | "link" | "move" | "popup";
+    "aria-dropeffect"?: FunctionMaybe<
+      "none" | "copy" | "execute" | "link" | "move" | "popup" | undefined
+    >;
     /**
      * Identifies the element that provides an error message for the object.
      *
      * @see aria-invalid @see aria-describedby.
      */
-    "aria-errormessage"?: string;
+    "aria-errormessage"?: FunctionMaybe<string | undefined>;
     /**
      * Indicates whether the element, or another grouping element it controls, is currently expanded
      * or collapsed.
      */
-    "aria-expanded"?: boolean | "false" | "true";
+    "aria-expanded"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Identifies the next element (or elements) in an alternate reading order of content which, at
      * the user's discretion, allows assistive technology to override the general default of reading
      * in document source order.
      */
-    "aria-flowto"?: string;
+    "aria-flowto"?: FunctionMaybe<string | undefined>;
     /**
      * Indicates an element's "grabbed" state in a drag-and-drop operation.
      *
      * @deprecated In ARIA 1.1
      */
-    "aria-grabbed"?: boolean | "false" | "true";
+    "aria-grabbed"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Indicates the availability and type of interactive popup element, such as menu or dialog,
      * that can be triggered by an element.
      */
-    "aria-haspopup"?: boolean | "false" | "true" | "menu" | "listbox" | "tree" | "grid" | "dialog";
+    "aria-haspopup"?: FunctionMaybe<
+      boolean | "false" | "true" | "menu" | "listbox" | "tree" | "grid" | "dialog" | undefined
+    >;
     /**
      * Indicates whether the element is exposed to an accessibility API.
      *
      * @see aria-disabled.
      */
-    "aria-hidden"?: boolean | "false" | "true";
+    "aria-hidden"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Indicates the entered value does not conform to the format expected by the application.
      *
      * @see aria-errormessage.
      */
-    "aria-invalid"?: boolean | "false" | "true" | "grammar" | "spelling";
+    "aria-invalid"?: FunctionMaybe<boolean | "false" | "true" | "grammar" | "spelling" | undefined>;
     /**
      * Indicates keyboard shortcuts that an author has implemented to activate or give focus to an
      * element.
      */
-    "aria-keyshortcuts"?: string;
+    "aria-keyshortcuts"?: FunctionMaybe<string | undefined>;
     /**
      * Defines a string value that labels the current element.
      *
      * @see aria-labelledby.
      */
-    "aria-label"?: string;
+    "aria-label"?: FunctionMaybe<string | undefined>;
     /**
      * Identifies the element (or elements) that labels the current element.
      *
      * @see aria-describedby.
      */
-    "aria-labelledby"?: string;
+    "aria-labelledby"?: FunctionMaybe<string | undefined>;
     /** Defines the hierarchical level of an element within a structure. */
-    "aria-level"?: number | string;
+    "aria-level"?: FunctionMaybe<number | string | undefined>;
     /**
      * Indicates that an element will be updated, and describes the types of updates the user
      * agents, assistive technologies, and user can expect from the live region.
      */
-    "aria-live"?: "off" | "assertive" | "polite";
+    "aria-live"?: FunctionMaybe<"off" | "assertive" | "polite" | undefined>;
     /** Indicates whether an element is modal when displayed. */
-    "aria-modal"?: boolean | "false" | "true";
+    "aria-modal"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /** Indicates whether a text box accepts multiple lines of input or only a single line. */
-    "aria-multiline"?: boolean | "false" | "true";
+    "aria-multiline"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Indicates that the user may select more than one item from the current selectable
      * descendants.
      */
-    "aria-multiselectable"?: boolean | "false" | "true";
+    "aria-multiselectable"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /** Indicates whether the element's orientation is horizontal, vertical, or unknown/ambiguous. */
-    "aria-orientation"?: "horizontal" | "vertical";
+    "aria-orientation"?: FunctionMaybe<"horizontal" | "vertical" | undefined>;
     /**
      * Identifies an element (or elements) in order to define a visual, functional, or contextual
      * parent/child relationship between DOM elements where the DOM hierarchy cannot be used to
@@ -795,39 +826,39 @@ export namespace JSX {
      *
      * @see aria-controls.
      */
-    "aria-owns"?: string;
+    "aria-owns"?: FunctionMaybe<string | undefined>;
     /**
      * Defines a short hint (a word or short phrase) intended to aid the user with data entry when
      * the control has no value. A hint could be a sample value or a brief description of the
      * expected format.
      */
-    "aria-placeholder"?: string;
+    "aria-placeholder"?: FunctionMaybe<string | undefined>;
     /**
      * Defines an element's number or position in the current set of listitems or treeitems. Not
      * required if all elements in the set are present in the DOM.
      *
      * @see aria-setsize.
      */
-    "aria-posinset"?: number | string;
+    "aria-posinset"?: FunctionMaybe<number | string | undefined>;
     /**
      * Indicates the current "pressed" state of toggle buttons.
      *
      * @see aria-checked @see aria-selected.
      */
-    "aria-pressed"?: boolean | "false" | "mixed" | "true";
+    "aria-pressed"?: FunctionMaybe<boolean | "false" | "mixed" | "true" | undefined>;
     /**
      * Indicates that the element is not editable, but is otherwise operable.
      *
      * @see aria-disabled.
      */
-    "aria-readonly"?: boolean | "false" | "true";
+    "aria-readonly"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Indicates what notifications the user agent will trigger when the accessibility tree within a
      * live region is modified.
      *
      * @see aria-atomic.
      */
-    "aria-relevant"?:
+    "aria-relevant"?: FunctionMaybe<
       | "additions"
       | "additions removals"
       | "additions text"
@@ -837,57 +868,59 @@ export namespace JSX {
       | "removals text"
       | "text"
       | "text additions"
-      | "text removals";
+      | "text removals"
+      | undefined
+    >;
     /** Indicates that user input is required on the element before a form may be submitted. */
-    "aria-required"?: boolean | "false" | "true";
+    "aria-required"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /** Defines a human-readable, author-localized description for the role of an element. */
-    "aria-roledescription"?: string;
+    "aria-roledescription"?: FunctionMaybe<string | undefined>;
     /**
      * Defines the total number of rows in a table, grid, or treegrid.
      *
      * @see aria-rowindex.
      */
-    "aria-rowcount"?: number | string;
+    "aria-rowcount"?: FunctionMaybe<number | string | undefined>;
     /**
      * Defines an element's row index or position with respect to the total number of rows within a
      * table, grid, or treegrid.
      *
      * @see aria-rowcount @see aria-rowspan.
      */
-    "aria-rowindex"?: number | string;
+    "aria-rowindex"?: FunctionMaybe<number | string | undefined>;
     /**
      * Defines the number of rows spanned by a cell or gridcell within a table, grid, or treegrid.
      *
      * @see aria-rowindex @see aria-colspan.
      */
-    "aria-rowspan"?: number | string;
+    "aria-rowspan"?: FunctionMaybe<number | string | undefined>;
     /**
      * Indicates the current "selected" state of various widgets.
      *
      * @see aria-checked @see aria-pressed.
      */
-    "aria-selected"?: boolean | "false" | "true";
+    "aria-selected"?: FunctionMaybe<boolean | "false" | "true" | undefined>;
     /**
      * Defines the number of items in the current set of listitems or treeitems. Not required if all
      * elements in the set are present in the DOM.
      *
      * @see aria-posinset.
      */
-    "aria-setsize"?: number | string;
+    "aria-setsize"?: FunctionMaybe<number | string | undefined>;
     /** Indicates if items in a table or grid are sorted in ascending or descending order. */
-    "aria-sort"?: "none" | "ascending" | "descending" | "other";
+    "aria-sort"?: FunctionMaybe<"none" | "ascending" | "descending" | "other" | undefined>;
     /** Defines the maximum allowed value for a range widget. */
-    "aria-valuemax"?: number | string;
+    "aria-valuemax"?: FunctionMaybe<number | string | undefined>;
     /** Defines the minimum allowed value for a range widget. */
-    "aria-valuemin"?: number | string;
+    "aria-valuemin"?: FunctionMaybe<number | string | undefined>;
     /**
      * Defines the current value for a range widget.
      *
      * @see aria-valuetext.
      */
-    "aria-valuenow"?: number | string;
+    "aria-valuenow"?: FunctionMaybe<number | string | undefined>;
     /** Defines the human readable text alternative of aria-valuenow for a range widget. */
-    "aria-valuetext"?: string;
+    "aria-valuetext"?: FunctionMaybe<string | undefined>;
     role?: FunctionMaybe<
       | "alert"
       | "alertdialog"
@@ -959,122 +992,134 @@ export namespace JSX {
       | "tree"
       | "treegrid"
       | "treeitem"
+      | undefined
     >;
   }
 
+  // TODO: Should we allow this?
+  // type ClassKeys = `class:${string}`;
+  // type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
+
+  // type CSSAttributes = {
+  //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
+  // };
+
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    accessKey?: FunctionMaybe<string>;
-    class?: FunctionMaybe<string> | undefined;
-    contenteditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit">;
-    contextmenu?: FunctionMaybe<string>;
-    dir?: FunctionMaybe<HTMLDir>;
-    draggable?: FunctionMaybe<boolean>;
-    hidden?: FunctionMaybe<boolean>;
-    id?: FunctionMaybe<string>;
-    lang?: FunctionMaybe<string>;
-    spellcheck?: FunctionMaybe<boolean>;
-    style?: FunctionMaybe<CSSProperties | string>;
-    tabindex?: FunctionMaybe<number | string>;
-    title?: FunctionMaybe<string>;
-    translate?: FunctionMaybe<"yes" | "no">;
-    about?: FunctionMaybe<string>;
-    datatype?: FunctionMaybe<string>;
-    inlist?: FunctionMaybe<any>;
-    popover?: FunctionMaybe<boolean | "manual" | "auto">;
-    prefix?: FunctionMaybe<string>;
-    property?: FunctionMaybe<string>;
-    resource?: FunctionMaybe<string>;
-    typeof?: FunctionMaybe<string>;
-    vocab?: FunctionMaybe<string>;
-    autocapitalize?: FunctionMaybe<HTMLAutocapitalize>;
-    slot?: FunctionMaybe<string>;
-    color?: FunctionMaybe<string>;
-    itemprop?: FunctionMaybe<string>;
-    itemscope?: FunctionMaybe<boolean>;
-    itemtype?: FunctionMaybe<string>;
-    itemid?: FunctionMaybe<string>;
-    itemref?: FunctionMaybe<string>;
-    part?: FunctionMaybe<string>;
-    exportparts?: FunctionMaybe<string>;
+    // [key: ClassKeys]: boolean;
+    accessKey?: FunctionMaybe<string | undefined>;
+    class?: FunctionMaybe<string | undefined>;
+    contenteditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit" | undefined>;
+    contextmenu?: FunctionMaybe<string | undefined>;
+    dir?: FunctionMaybe<HTMLDir | undefined>;
+    draggable?: FunctionMaybe<boolean | "false" | "true" | undefined>;
+    hidden?: FunctionMaybe<boolean | "hidden" | "until-found" | undefined>;
+    id?: FunctionMaybe<string | undefined>;
+    is?: FunctionMaybe<string | undefined>;
+    inert?: FunctionMaybe<boolean | undefined>;
+    lang?: FunctionMaybe<string | undefined>;
+    spellcheck?: FunctionMaybe<boolean | undefined>;
+    style?: FunctionMaybe<CSSProperties | string | undefined>;
+    tabindex?: FunctionMaybe<number | string | undefined>;
+    title?: FunctionMaybe<string | undefined>;
+    translate?: FunctionMaybe<"yes" | "no" | undefined>;
+    about?: FunctionMaybe<string | undefined>;
+    datatype?: FunctionMaybe<string | undefined>;
+    inlist?: FunctionMaybe<any | undefined>;
+    popover?: FunctionMaybe<boolean | "manual" | "auto" | undefined>;
+    prefix?: FunctionMaybe<string | undefined>;
+    property?: FunctionMaybe<string | undefined>;
+    resource?: FunctionMaybe<string | undefined>;
+    typeof?: FunctionMaybe<string | undefined>;
+    vocab?: FunctionMaybe<string | undefined>;
+    autocapitalize?: FunctionMaybe<HTMLAutocapitalize | undefined>;
+    slot?: FunctionMaybe<string | undefined>;
+    color?: FunctionMaybe<string | undefined>;
+    itemprop?: FunctionMaybe<string | undefined>;
+    itemscope?: FunctionMaybe<boolean | undefined>;
+    itemtype?: FunctionMaybe<string | undefined>;
+    itemid?: FunctionMaybe<string | undefined>;
+    itemref?: FunctionMaybe<string | undefined>;
+    part?: FunctionMaybe<string | undefined>;
+    exportparts?: FunctionMaybe<string | undefined>;
     inputmode?: FunctionMaybe<
-      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search"
+      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search" | undefined
     >;
-    contentEditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit">;
-    contextMenu?: FunctionMaybe<string>;
-    tabIndex?: FunctionMaybe<number | string>;
-    autoCapitalize?: FunctionMaybe<HTMLAutocapitalize>;
-    itemProp?: FunctionMaybe<string>;
-    itemScope?: FunctionMaybe<boolean>;
-    itemType?: FunctionMaybe<string>;
-    itemId?: FunctionMaybe<string>;
-    itemRef?: FunctionMaybe<string>;
-    exportParts?: FunctionMaybe<string>;
+    contentEditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit" | undefined>;
+    contextMenu?: FunctionMaybe<string | undefined>;
+    tabIndex?: FunctionMaybe<number | string | undefined>;
+    autoCapitalize?: FunctionMaybe<HTMLAutocapitalize | undefined>;
+    itemProp?: FunctionMaybe<string | undefined>;
+    itemScope?: FunctionMaybe<boolean | undefined>;
+    itemType?: FunctionMaybe<string | undefined>;
+    itemId?: FunctionMaybe<string | undefined>;
+    itemRef?: FunctionMaybe<string | undefined>;
+    exportParts?: FunctionMaybe<string | undefined>;
     inputMode?: FunctionMaybe<
-      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search"
+      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search" | undefined
     >;
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
-    download?: FunctionMaybe<any>;
-    href?: FunctionMaybe<string>;
-    hreflang?: FunctionMaybe<string>;
-    media?: FunctionMaybe<string>;
-    ping?: FunctionMaybe<string>;
-    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
-    rel?: FunctionMaybe<string>;
-    target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {})>;
-    type?: FunctionMaybe<string>;
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy>;
+    download?: FunctionMaybe<any | undefined>;
+    href?: FunctionMaybe<string | undefined>;
+    hreflang?: FunctionMaybe<string | undefined>;
+    media?: FunctionMaybe<string | undefined>;
+    ping?: FunctionMaybe<string | undefined>;
+    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    rel?: FunctionMaybe<string | undefined>;
+    target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
+    type?: FunctionMaybe<string | undefined>;
+    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
   }
   interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
   interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: FunctionMaybe<string>;
-    coords?: FunctionMaybe<string>;
-    download?: FunctionMaybe<any>;
-    href?: FunctionMaybe<string>;
-    hreflang?: FunctionMaybe<string>;
-    ping?: FunctionMaybe<string>;
-    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
-    rel?: FunctionMaybe<string>;
-    shape?: FunctionMaybe<"rect" | "circle" | "poly" | "default">;
-    target?: FunctionMaybe<string>;
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy>;
+    alt?: FunctionMaybe<string | undefined>;
+    coords?: FunctionMaybe<string | undefined>;
+    download?: FunctionMaybe<any | undefined>;
+    href?: FunctionMaybe<string | undefined>;
+    hreflang?: FunctionMaybe<string | undefined>;
+    ping?: FunctionMaybe<string | undefined>;
+    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    rel?: FunctionMaybe<string | undefined>;
+    shape?: FunctionMaybe<"rect" | "circle" | "poly" | "default" | undefined>;
+    target?: FunctionMaybe<string | undefined>;
+    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
-    href?: FunctionMaybe<string>;
-    target?: FunctionMaybe<string>;
+    href?: FunctionMaybe<string | undefined>;
+    target?: FunctionMaybe<string | undefined>;
   }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: FunctionMaybe<string>;
+    cite?: FunctionMaybe<string | undefined>;
   }
   interface BodyHTMLAttributes<T>
     extends HTMLAttributes<T>,
       WindowEventMap<T>,
       ElementEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: FunctionMaybe<boolean>;
-    disabled?: FunctionMaybe<boolean>;
-    form?: FunctionMaybe<string>;
-    formaction?: FunctionMaybe<string | SerializableAttributeValue>;
-    formenctype?: FunctionMaybe<HTMLFormEncType>;
-    formmethod?: FunctionMaybe<HTMLFormMethod>;
-    formnovalidate?: FunctionMaybe<boolean>;
-    formtarget?: FunctionMaybe<string>;
-    popovertarget?: FunctionMaybe<string>;
-    popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle">;
-    name?: FunctionMaybe<string>;
-    type?: FunctionMaybe<"submit" | "reset" | "button">;
-    value?: FunctionMaybe<string>;
-    formAction?: FunctionMaybe<string | SerializableAttributeValue>;
-    formEnctype?: FunctionMaybe<HTMLFormEncType>;
-    formMethod?: FunctionMaybe<HTMLFormMethod>;
-    formNoValidate?: FunctionMaybe<boolean>;
-    formTarget?: FunctionMaybe<string>;
-    popoverTarget?: FunctionMaybe<string>;
-    popoverTargetAction?: FunctionMaybe<"hide" | "show" | "toggle">;
+    autofocus?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    form?: FunctionMaybe<string | undefined>;
+    formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
+    formenctype?: FunctionMaybe<HTMLFormEncType | undefined>;
+    formmethod?: FunctionMaybe<HTMLFormMethod | undefined>;
+    formnovalidate?: FunctionMaybe<boolean | undefined>;
+    formtarget?: FunctionMaybe<string | undefined>;
+    popovertarget?: FunctionMaybe<string | undefined>;
+    popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle" | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    type?: FunctionMaybe<"submit" | "reset" | "button" | undefined>;
+    value?: FunctionMaybe<string | undefined>;
+    formAction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
+    formEnctype?: FunctionMaybe<HTMLFormEncType | undefined>;
+    formMethod?: FunctionMaybe<HTMLFormMethod | undefined>;
+    formNoValidate?: FunctionMaybe<boolean | undefined>;
+    formTarget?: FunctionMaybe<string | undefined>;
+    popoverTarget?: FunctionMaybe<string | undefined>;
+    popoverTargetAction?: FunctionMaybe<"hide" | "show" | "toggle" | undefined>;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
 
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     oncontextlost?: EventHandlerUnion<T, Event> | undefined;
@@ -1085,20 +1130,20 @@ export namespace JSX {
     "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
+    span?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
   }
   interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: FunctionMaybe<number | string>;
+    span?: FunctionMaybe<number | string | undefined>;
   }
   interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: FunctionMaybe<string | string[] | number>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: FunctionMaybe<boolean>;
+    open?: FunctionMaybe<boolean | undefined>;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: FunctionMaybe<boolean>;
+    open?: FunctionMaybe<boolean | undefined>;
 
     onClose?: EventHandlerUnion<T, Event> | undefined;
     onclose?: EventHandlerUnion<T, Event> | undefined;
@@ -1109,90 +1154,98 @@ export namespace JSX {
     "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: FunctionMaybe<number | string>;
-    src?: FunctionMaybe<string>;
-    type?: FunctionMaybe<string>;
-    width?: FunctionMaybe<number | string>;
+    height?: FunctionMaybe<number | string | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    type?: FunctionMaybe<string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<boolean>;
-    form?: FunctionMaybe<string>;
-    name?: FunctionMaybe<string>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    form?: FunctionMaybe<string | undefined>;
+    name?: FunctionMaybe<string | undefined>;
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
-    "accept-charset"?: FunctionMaybe<string>;
-    action?: FunctionMaybe<string | SerializableAttributeValue>;
-    autocomplete?: FunctionMaybe<string>;
-    encoding?: FunctionMaybe<HTMLFormEncType>;
-    enctype?: FunctionMaybe<HTMLFormEncType>;
-    method?: FunctionMaybe<HTMLFormMethod>;
-    name?: FunctionMaybe<string>;
-    novalidate?: FunctionMaybe<boolean>;
-    target?: FunctionMaybe<string>;
-    noValidate?: FunctionMaybe<boolean>;
+    "accept-charset"?: FunctionMaybe<string | undefined>;
+    action?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
+    autocomplete?: FunctionMaybe<string | undefined>;
+    encoding?: FunctionMaybe<HTMLFormEncType | undefined>;
+    enctype?: FunctionMaybe<HTMLFormEncType | undefined>;
+    method?: FunctionMaybe<HTMLFormMethod | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    novalidate?: FunctionMaybe<boolean | undefined>;
+    target?: FunctionMaybe<string | undefined>;
+    noValidate?: FunctionMaybe<boolean | undefined>;
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
-    allow?: FunctionMaybe<string>;
-    allowfullscreen?: FunctionMaybe<boolean>;
-    height?: FunctionMaybe<number | string>;
-    name?: FunctionMaybe<string>;
-    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
-    sandbox?: HTMLIframeSandbox | string;
-    src?: FunctionMaybe<string>;
-    srcdoc?: FunctionMaybe<string>;
-    width?: FunctionMaybe<number | string>;
-    loading?: FunctionMaybe<"eager" | "lazy">;
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy>;
+    allow?: FunctionMaybe<string | undefined>;
+    allowfullscreen?: FunctionMaybe<boolean | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    loading?: FunctionMaybe<"eager" | "lazy" | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    sandbox?: FunctionMaybe<HTMLIframeSandbox | string | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    srcdoc?: FunctionMaybe<string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: FunctionMaybe<string>;
-    crossorigin?: FunctionMaybe<HTMLCrossorigin>;
-    decoding?: FunctionMaybe<"sync" | "async" | "auto">;
-    height?: FunctionMaybe<number | string>;
-    ismap?: FunctionMaybe<boolean>;
-    isMap?: FunctionMaybe<boolean>;
-    loading?: FunctionMaybe<"eager" | "lazy">;
-    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy>;
-    sizes?: FunctionMaybe<string>;
-    src?: FunctionMaybe<string>;
-    srcset?: FunctionMaybe<string>;
-    srcSet?: FunctionMaybe<string>;
-    usemap?: FunctionMaybe<string>;
-    useMap?: FunctionMaybe<string>;
-    width?: FunctionMaybe<number | string>;
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin>;
+    alt?: FunctionMaybe<string | undefined>;
+    crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    decoding?: FunctionMaybe<"sync" | "async" | "auto" | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    ismap?: FunctionMaybe<boolean | undefined>;
+    isMap?: FunctionMaybe<boolean | undefined>;
+    loading?: FunctionMaybe<"eager" | "lazy" | undefined>;
+    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    sizes?: FunctionMaybe<string | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    srcset?: FunctionMaybe<string | undefined>;
+    srcSet?: FunctionMaybe<string | undefined>;
+    usemap?: FunctionMaybe<string | undefined>;
+    useMap?: FunctionMaybe<string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    elementtiming?: FunctionMaybe<string | undefined>;
+    fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
-    accept?: FunctionMaybe<string>;
-    alt?: FunctionMaybe<string>;
-    autocomplete?: FunctionMaybe<string>;
-    autofocus?: FunctionMaybe<boolean>;
-    capture?: FunctionMaybe<boolean | string>;
-    checked?: FunctionMaybe<boolean>;
-    crossorigin?: FunctionMaybe<HTMLCrossorigin>;
-    disabled?: FunctionMaybe<boolean>;
-    form?: FunctionMaybe<string>;
-    formaction?: FunctionMaybe<string | SerializableAttributeValue>;
-    formenctype?: FunctionMaybe<HTMLFormEncType>;
-    formmethod?: FunctionMaybe<HTMLFormMethod>;
-    formnovalidate?: FunctionMaybe<boolean>;
-    formtarget?: FunctionMaybe<string>;
-    height?: FunctionMaybe<number | string>;
-    list?: FunctionMaybe<string>;
-    max?: FunctionMaybe<number | string>;
-    maxlength?: FunctionMaybe<number | string>;
-    min?: FunctionMaybe<number | string>;
-    minlength?: FunctionMaybe<number | string>;
-    multiple?: FunctionMaybe<boolean>;
-    name?: FunctionMaybe<string>;
-    pattern?: FunctionMaybe<string>;
-    placeholder?: FunctionMaybe<string>;
-    readonly?: FunctionMaybe<boolean>;
-    required?: FunctionMaybe<boolean>;
-    size?: FunctionMaybe<number | string>;
-    src?: FunctionMaybe<string>;
-    step?: FunctionMaybe<number | string>;
+    accept?: FunctionMaybe<string | undefined>;
+    alt?: FunctionMaybe<string | undefined>;
+    autocomplete?: FunctionMaybe<string | undefined>;
+    autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
+    autofocus?: FunctionMaybe<boolean | undefined>;
+    capture?: FunctionMaybe<boolean | string | undefined>;
+    checked?: FunctionMaybe<boolean | undefined>;
+    crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    enterkeyhint?: FunctionMaybe<
+      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
+    >;
+    form?: FunctionMaybe<string | undefined>;
+    formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
+    formenctype?: FunctionMaybe<HTMLFormEncType | undefined>;
+    formmethod?: FunctionMaybe<HTMLFormMethod | undefined>;
+    formnovalidate?: FunctionMaybe<boolean | undefined>;
+    formtarget?: FunctionMaybe<string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    incremental?: FunctionMaybe<boolean | undefined>;
+    list?: FunctionMaybe<string | undefined>;
+    max?: FunctionMaybe<number | string | undefined>;
+    maxlength?: FunctionMaybe<number | string | undefined>;
+    min?: FunctionMaybe<number | string | undefined>;
+    minlength?: FunctionMaybe<number | string | undefined>;
+    multiple?: FunctionMaybe<boolean | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    pattern?: FunctionMaybe<string | undefined>;
+    placeholder?: FunctionMaybe<string | undefined>;
+    readonly?: FunctionMaybe<boolean | undefined>;
+    results?: FunctionMaybe<number | undefined>;
+    required?: FunctionMaybe<boolean | undefined>;
+    size?: FunctionMaybe<number | string | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    step?: FunctionMaybe<number | string | undefined>;
     type?: FunctionMaybe<
       | "button"
       | "checkbox"
@@ -1217,74 +1270,80 @@ export namespace JSX {
       | "url"
       | "week"
       | (string & {})
+      | undefined
     >;
-    value?: FunctionMaybe<string | string[] | number>;
-    width?: FunctionMaybe<number | string>;
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin>;
-    formAction?: FunctionMaybe<string | SerializableAttributeValue>;
-    formEnctype?: FunctionMaybe<HTMLFormEncType>;
-    formMethod?: FunctionMaybe<HTMLFormMethod>;
-    formNoValidate?: FunctionMaybe<boolean>;
-    formTarget?: FunctionMaybe<string>;
-    maxLength?: FunctionMaybe<number | string>;
-    minLength?: FunctionMaybe<number | string>;
-    readOnly?: FunctionMaybe<boolean>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    formAction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
+    formEnctype?: FunctionMaybe<HTMLFormEncType | undefined>;
+    formMethod?: FunctionMaybe<HTMLFormMethod | undefined>;
+    formNoValidate?: FunctionMaybe<boolean | undefined>;
+    formTarget?: FunctionMaybe<string | undefined>;
+    maxLength?: FunctionMaybe<number | string | undefined>;
+    minLength?: FunctionMaybe<number | string | undefined>;
+    readOnly?: FunctionMaybe<boolean | undefined>;
   }
   interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: FunctionMaybe<string>;
-    dateTime?: FunctionMaybe<string>;
+    cite?: FunctionMaybe<string | undefined>;
+    dateTime?: FunctionMaybe<string | undefined>;
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: FunctionMaybe<boolean>;
-    challenge?: FunctionMaybe<string>;
-    disabled?: FunctionMaybe<boolean>;
-    form?: FunctionMaybe<string>;
-    keytype?: FunctionMaybe<string>;
-    keyparams?: FunctionMaybe<string>;
-    name?: FunctionMaybe<string>;
+    autofocus?: FunctionMaybe<boolean | undefined>;
+    challenge?: FunctionMaybe<string | undefined>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    form?: FunctionMaybe<string | undefined>;
+    keytype?: FunctionMaybe<string | undefined>;
+    keyparams?: FunctionMaybe<string | undefined>;
+    name?: FunctionMaybe<string | undefined>;
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
-    for?: FunctionMaybe<string>;
-    form?: FunctionMaybe<string>;
+    for?: FunctionMaybe<string | undefined>;
+    form?: FunctionMaybe<string | undefined>;
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: FunctionMaybe<number | string>;
+    value?: FunctionMaybe<number | string | undefined>;
   }
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
-    as?: FunctionMaybe<HTMLLinkAs>;
-    crossorigin?: FunctionMaybe<HTMLCrossorigin>;
-    disabled?: FunctionMaybe<boolean>;
-    fetchpriority?: FunctionMaybe<"high" | "low" | "auto">;
-    href?: FunctionMaybe<string>;
-    hreflang?: FunctionMaybe<string>;
-    imagesizes?: FunctionMaybe<string>;
-    imagesrcset?: FunctionMaybe<string>;
-    integrity?: FunctionMaybe<string>;
-    media?: FunctionMaybe<string>;
-    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
-    rel?: FunctionMaybe<string>;
-    sizes?: FunctionMaybe<string>;
-    type?: FunctionMaybe<string>;
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin>;
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy>;
+    as?: FunctionMaybe<HTMLLinkAs | undefined>;
+    crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
+    href?: FunctionMaybe<string | undefined>;
+    hreflang?: FunctionMaybe<string | undefined>;
+    imagesizes?: FunctionMaybe<string | undefined>;
+    imagesrcset?: FunctionMaybe<string | undefined>;
+    integrity?: FunctionMaybe<string | undefined>;
+    media?: FunctionMaybe<string | undefined>;
+    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    rel?: FunctionMaybe<string | undefined>;
+    sizes?: FunctionMaybe<string | undefined>;
+    type?: FunctionMaybe<string | undefined>;
+    crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
   }
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
-    name?: FunctionMaybe<string>;
+    name?: FunctionMaybe<string | undefined>;
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T>, ElementEventMap<T> {
-    autoplay?: FunctionMaybe<boolean>;
-    controls?: FunctionMaybe<boolean>;
+    autoplay?: FunctionMaybe<boolean | undefined>;
+    controls?: FunctionMaybe<boolean | undefined>;
     controlslist?: FunctionMaybe<
-      "nodownload" | "nofullscreen" | "noplaybackrate" | "noremoteplayback" | (string & {})
+      | "nodownload"
+      | "nofullscreen"
+      | "noplaybackrate"
+      | "noremoteplayback"
+      | (string & {})
+      | undefined
     >;
-    crossorigin?: FunctionMaybe<HTMLCrossorigin>;
-    loop?: FunctionMaybe<boolean>;
-    mediagroup?: FunctionMaybe<string>;
-    muted?: FunctionMaybe<boolean>;
-    preload?: FunctionMaybe<"none" | "metadata" | "auto" | "">;
-    src?: FunctionMaybe<string>;
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin>;
-    mediaGroup?: FunctionMaybe<string>;
+    crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    loop?: FunctionMaybe<boolean | undefined>;
+    mediagroup?: FunctionMaybe<string | undefined>;
+    muted?: FunctionMaybe<boolean | undefined>;
+    preload?: FunctionMaybe<"none" | "metadata" | "auto" | "" | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    mediaGroup?: FunctionMaybe<string | undefined>;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
@@ -1295,166 +1354,171 @@ export namespace JSX {
     "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
-    label?: FunctionMaybe<string>;
-    type?: FunctionMaybe<"context" | "toolbar">;
+    label?: FunctionMaybe<string | undefined>;
+    type?: FunctionMaybe<"context" | "toolbar" | undefined>;
   }
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
-    charset?: FunctionMaybe<string>;
-    content?: FunctionMaybe<string>;
-    "http-equiv"?: FunctionMaybe<string>;
-    name?: FunctionMaybe<string>;
-    media?: FunctionMaybe<string>;
+    charset?: FunctionMaybe<string | undefined>;
+    content?: FunctionMaybe<string | undefined>;
+    "http-equiv"?: FunctionMaybe<string | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    media?: FunctionMaybe<string | undefined>;
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: FunctionMaybe<string>;
-    high?: FunctionMaybe<number | string>;
-    low?: FunctionMaybe<number | string>;
-    max?: FunctionMaybe<number | string>;
-    min?: FunctionMaybe<number | string>;
-    optimum?: FunctionMaybe<number | string>;
-    value?: FunctionMaybe<string | string[] | number>;
+    form?: FunctionMaybe<string | undefined>;
+    high?: FunctionMaybe<number | string | undefined>;
+    low?: FunctionMaybe<number | string | undefined>;
+    max?: FunctionMaybe<number | string | undefined>;
+    min?: FunctionMaybe<number | string | undefined>;
+    optimum?: FunctionMaybe<number | string | undefined>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: FunctionMaybe<string>;
+    cite?: FunctionMaybe<string | undefined>;
   }
   interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
-    data?: FunctionMaybe<string>;
-    form?: FunctionMaybe<string>;
-    height?: FunctionMaybe<number | string>;
-    name?: FunctionMaybe<string>;
-    type?: FunctionMaybe<string>;
-    usemap?: FunctionMaybe<string>;
-    width?: FunctionMaybe<number | string>;
-    useMap?: FunctionMaybe<string>;
+    data?: FunctionMaybe<string | undefined>;
+    form?: FunctionMaybe<string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    type?: FunctionMaybe<string | undefined>;
+    usemap?: FunctionMaybe<string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    useMap?: FunctionMaybe<string | undefined>;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: FunctionMaybe<boolean>;
-    start?: FunctionMaybe<number | string>;
-    type?: FunctionMaybe<"1" | "a" | "A" | "i" | "I">;
+    reversed?: FunctionMaybe<boolean | undefined>;
+    start?: FunctionMaybe<number | string | undefined>;
+    type?: FunctionMaybe<"1" | "a" | "A" | "i" | "I" | undefined>;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<boolean>;
-    label?: FunctionMaybe<string>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    label?: FunctionMaybe<string | undefined>;
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<boolean>;
-    label?: FunctionMaybe<string>;
-    selected?: FunctionMaybe<boolean>;
-    value?: FunctionMaybe<string | string[] | number>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    label?: FunctionMaybe<string | undefined>;
+    selected?: FunctionMaybe<boolean | undefined>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: FunctionMaybe<string>;
-    for?: FunctionMaybe<string>;
-    name?: FunctionMaybe<string>;
+    form?: FunctionMaybe<string | undefined>;
+    for?: FunctionMaybe<string | undefined>;
+    name?: FunctionMaybe<string | undefined>;
   }
   interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
-    name?: FunctionMaybe<string>;
-    value?: FunctionMaybe<string | string[] | number>;
+    name?: FunctionMaybe<string | undefined>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
-    max?: FunctionMaybe<number | string>;
-    value?: FunctionMaybe<string | string[] | number>;
+    max?: FunctionMaybe<number | string | undefined>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: FunctionMaybe<boolean>;
-    charset?: FunctionMaybe<string>;
-    crossorigin?: FunctionMaybe<HTMLCrossorigin>;
-    defer?: FunctionMaybe<boolean>;
-    integrity?: FunctionMaybe<string>;
-    nomodule?: FunctionMaybe<boolean>;
-    nonce?: FunctionMaybe<string>;
-    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy>;
-    src?: FunctionMaybe<string>;
-    type?: FunctionMaybe<string>;
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin>;
-    noModule?: FunctionMaybe<boolean>;
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy>;
+    async?: FunctionMaybe<boolean | undefined>;
+    charset?: FunctionMaybe<string | undefined>;
+    crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    defer?: FunctionMaybe<boolean | undefined>;
+    integrity?: FunctionMaybe<string | undefined>;
+    nomodule?: FunctionMaybe<boolean | undefined>;
+    nonce?: FunctionMaybe<string | undefined>;
+    referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    type?: FunctionMaybe<string | undefined>;
+    crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    noModule?: FunctionMaybe<boolean | undefined>;
+    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: FunctionMaybe<string>;
-    autofocus?: FunctionMaybe<boolean>;
-    disabled?: FunctionMaybe<boolean>;
-    form?: FunctionMaybe<string>;
-    multiple?: FunctionMaybe<boolean>;
-    name?: FunctionMaybe<string>;
-    required?: FunctionMaybe<boolean>;
-    size?: FunctionMaybe<number | string>;
-    value?: FunctionMaybe<string | string[] | number>;
+    autocomplete?: FunctionMaybe<string | undefined>;
+    autofocus?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    form?: FunctionMaybe<string | undefined>;
+    multiple?: FunctionMaybe<boolean | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    required?: FunctionMaybe<boolean | undefined>;
+    size?: FunctionMaybe<number | string | undefined>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface HTMLSlotElementAttributes<T = HTMLSlotElement> extends HTMLAttributes<T> {
-    name?: FunctionMaybe<string>;
+    name?: FunctionMaybe<string | undefined>;
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
-    media?: FunctionMaybe<string>;
-    sizes?: FunctionMaybe<string>;
-    src?: FunctionMaybe<string>;
-    srcset?: FunctionMaybe<string>;
-    type?: FunctionMaybe<string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
+    media?: FunctionMaybe<string | undefined>;
+    sizes?: FunctionMaybe<string | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    srcset?: FunctionMaybe<string | undefined>;
+    type?: FunctionMaybe<string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
-    media?: FunctionMaybe<string>;
-    nonce?: FunctionMaybe<string>;
-    scoped?: FunctionMaybe<boolean>;
-    type?: FunctionMaybe<string>;
+    media?: FunctionMaybe<string | undefined>;
+    nonce?: FunctionMaybe<string | undefined>;
+    scoped?: FunctionMaybe<boolean | undefined>;
+    type?: FunctionMaybe<string | undefined>;
   }
   interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
-    colspan?: FunctionMaybe<number | string>;
-    headers?: FunctionMaybe<string>;
-    rowspan?: FunctionMaybe<number | string>;
-    colSpan?: FunctionMaybe<number | string>;
-    rowSpan?: FunctionMaybe<number | string>;
+    colspan?: FunctionMaybe<number | string | undefined>;
+    headers?: FunctionMaybe<string | undefined>;
+    rowspan?: FunctionMaybe<number | string | undefined>;
+    colSpan?: FunctionMaybe<number | string | undefined>;
+    rowSpan?: FunctionMaybe<number | string | undefined>;
   }
   interface TemplateHTMLAttributes<T extends HTMLTemplateElement> extends HTMLAttributes<T> {
-    content?: FunctionMaybe<DocumentFragment>;
+    content?: FunctionMaybe<DocumentFragment | undefined>;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: FunctionMaybe<string>;
-    autofocus?: FunctionMaybe<boolean>;
-    cols?: FunctionMaybe<number | string>;
-    dirname?: FunctionMaybe<string>;
-    disabled?: FunctionMaybe<boolean>;
-    form?: FunctionMaybe<string>;
-    maxlength?: FunctionMaybe<number | string>;
-    minlength?: FunctionMaybe<number | string>;
-    name?: FunctionMaybe<string>;
-    placeholder?: FunctionMaybe<string>;
-    readonly?: FunctionMaybe<boolean>;
-    required?: FunctionMaybe<boolean>;
-    rows?: FunctionMaybe<number | string>;
-    value?: FunctionMaybe<string | string[] | number>;
-    wrap?: FunctionMaybe<"hard" | "soft" | "off">;
-    maxLength?: FunctionMaybe<number | string>;
-    minLength?: FunctionMaybe<number | string>;
-    readOnly?: FunctionMaybe<boolean>;
+    autocomplete?: FunctionMaybe<string | undefined>;
+    autofocus?: FunctionMaybe<boolean | undefined>;
+    cols?: FunctionMaybe<number | string | undefined>;
+    dirname?: FunctionMaybe<string | undefined>;
+    disabled?: FunctionMaybe<boolean | undefined>;
+    enterkeyhint?: FunctionMaybe<
+      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
+    >;
+    form?: FunctionMaybe<string | undefined>;
+    maxlength?: FunctionMaybe<number | string | undefined>;
+    minlength?: FunctionMaybe<number | string | undefined>;
+    name?: FunctionMaybe<string | undefined>;
+    placeholder?: FunctionMaybe<string | undefined>;
+    readonly?: FunctionMaybe<boolean | undefined>;
+    required?: FunctionMaybe<boolean | undefined>;
+    rows?: FunctionMaybe<number | string | undefined>;
+    value?: FunctionMaybe<string | string[] | number | undefined>;
+    wrap?: FunctionMaybe<"hard" | "soft" | "off" | undefined>;
+    maxLength?: FunctionMaybe<number | string | undefined>;
+    minLength?: FunctionMaybe<number | string | undefined>;
+    readOnly?: FunctionMaybe<boolean | undefined>;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
-    colspan?: FunctionMaybe<number | string>;
-    headers?: FunctionMaybe<string>;
-    rowspan?: FunctionMaybe<number | string>;
-    colSpan?: FunctionMaybe<number | string>;
-    rowSpan?: FunctionMaybe<number | string>;
-    scope?: FunctionMaybe<"col" | "row" | "rowgroup" | "colgroup">;
+    colspan?: FunctionMaybe<number | string | undefined>;
+    headers?: FunctionMaybe<string | undefined>;
+    rowspan?: FunctionMaybe<number | string | undefined>;
+    colSpan?: FunctionMaybe<number | string | undefined>;
+    rowSpan?: FunctionMaybe<number | string | undefined>;
+    scope?: FunctionMaybe<"col" | "row" | "rowgroup" | "colgroup" | undefined>;
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
-    datetime?: FunctionMaybe<string>;
-    dateTime?: FunctionMaybe<string>;
+    datetime?: FunctionMaybe<string | undefined>;
+    dateTime?: FunctionMaybe<string | undefined>;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: FunctionMaybe<boolean>;
-    kind?: FunctionMaybe<"subtitles" | "captions" | "descriptions" | "chapters" | "metadata">;
-    label?: FunctionMaybe<string>;
-    src?: FunctionMaybe<string>;
-    srclang?: FunctionMaybe<string>;
+    default?: FunctionMaybe<boolean | undefined>;
+    kind?: FunctionMaybe<
+      "subtitles" | "captions" | "descriptions" | "chapters" | "metadata" | undefined
+    >;
+    label?: FunctionMaybe<string | undefined>;
+    src?: FunctionMaybe<string | undefined>;
+    srclang?: FunctionMaybe<string | undefined>;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
-    height?: FunctionMaybe<number | string>;
-    playsinline?: FunctionMaybe<boolean>;
-    poster?: FunctionMaybe<string>;
-    width?: FunctionMaybe<number | string>;
-    disablepictureinpicture?: FunctionMaybe<boolean>;
-    disableremoteplayback?: FunctionMaybe<boolean>;
+    height?: FunctionMaybe<number | string | undefined>;
+    playsinline?: FunctionMaybe<boolean | undefined>;
+    poster?: FunctionMaybe<string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    disablepictureinpicture?: FunctionMaybe<boolean | undefined>;
+    disableremoteplayback?: FunctionMaybe<boolean | undefined>;
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     onenterpictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
@@ -1525,57 +1589,57 @@ export namespace JSX {
     | "defer xMaxYMax slice";
   type SVGUnits = "userSpaceOnUse" | "objectBoundingBox";
   interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    id?: FunctionMaybe<string>;
-    lang?: FunctionMaybe<string>;
-    tabIndex?: FunctionMaybe<number | string>;
-    tabindex?: FunctionMaybe<number | string>;
+    id?: FunctionMaybe<string | undefined>;
+    lang?: FunctionMaybe<string | undefined>;
+    tabIndex?: FunctionMaybe<number | string | undefined>;
+    tabindex?: FunctionMaybe<number | string | undefined>;
   }
   interface StylableSVGAttributes {
-    class?: FunctionMaybe<string> | undefined;
-    style?: FunctionMaybe<CSSProperties | string>;
+    class?: FunctionMaybe<string | undefined>;
+    style?: FunctionMaybe<CSSProperties | string | undefined>;
   }
   interface TransformableSVGAttributes {
-    transform?: FunctionMaybe<string>;
+    transform?: FunctionMaybe<string | undefined>;
   }
   interface ConditionalProcessingSVGAttributes {
-    requiredExtensions?: FunctionMaybe<string>;
-    requiredFeatures?: FunctionMaybe<string>;
-    systemLanguage?: FunctionMaybe<string>;
+    requiredExtensions?: FunctionMaybe<string | undefined>;
+    requiredFeatures?: FunctionMaybe<string | undefined>;
+    systemLanguage?: FunctionMaybe<string | undefined>;
   }
   interface ExternalResourceSVGAttributes {
-    externalResourcesRequired?: FunctionMaybe<"true" | "false">;
+    externalResourcesRequired?: FunctionMaybe<"true" | "false" | undefined>;
   }
   interface AnimationTimingSVGAttributes {
-    begin?: FunctionMaybe<string>;
-    dur?: FunctionMaybe<string>;
-    end?: FunctionMaybe<string>;
-    min?: FunctionMaybe<string>;
-    max?: FunctionMaybe<string>;
-    restart?: FunctionMaybe<"always" | "whenNotActive" | "never">;
-    repeatCount?: FunctionMaybe<number | "indefinite">;
-    repeatDur?: FunctionMaybe<string>;
-    fill?: FunctionMaybe<"freeze" | "remove">;
+    begin?: FunctionMaybe<string | undefined>;
+    dur?: FunctionMaybe<string | undefined>;
+    end?: FunctionMaybe<string | undefined>;
+    min?: FunctionMaybe<string | undefined>;
+    max?: FunctionMaybe<string | undefined>;
+    restart?: FunctionMaybe<"always" | "whenNotActive" | "never" | undefined>;
+    repeatCount?: FunctionMaybe<number | "indefinite" | undefined>;
+    repeatDur?: FunctionMaybe<string | undefined>;
+    fill?: FunctionMaybe<"freeze" | "remove" | undefined>;
   }
   interface AnimationValueSVGAttributes {
-    calcMode?: FunctionMaybe<"discrete" | "linear" | "paced" | "spline">;
-    values?: FunctionMaybe<string>;
-    keyTimes?: FunctionMaybe<string>;
-    keySplines?: FunctionMaybe<string>;
-    from?: FunctionMaybe<number | string>;
-    to?: FunctionMaybe<number | string>;
-    by?: FunctionMaybe<number | string>;
+    calcMode?: FunctionMaybe<"discrete" | "linear" | "paced" | "spline" | undefined>;
+    values?: FunctionMaybe<string | undefined>;
+    keyTimes?: FunctionMaybe<string | undefined>;
+    keySplines?: FunctionMaybe<string | undefined>;
+    from?: FunctionMaybe<number | string | undefined>;
+    to?: FunctionMaybe<number | string | undefined>;
+    by?: FunctionMaybe<number | string | undefined>;
   }
   interface AnimationAdditionSVGAttributes {
-    attributeName?: FunctionMaybe<string>;
-    additive?: FunctionMaybe<"replace" | "sum">;
-    accumulate?: FunctionMaybe<"none" | "sum">;
+    attributeName?: FunctionMaybe<string | undefined>;
+    additive?: FunctionMaybe<"replace" | "sum" | undefined>;
+    accumulate?: FunctionMaybe<"none" | "sum" | undefined>;
   }
   interface AnimationAttributeTargetSVGAttributes {
-    attributeName?: FunctionMaybe<string>;
-    attributeType?: FunctionMaybe<"CSS" | "XML" | "auto">;
+    attributeName?: FunctionMaybe<string | undefined>;
+    attributeType?: FunctionMaybe<"CSS" | "XML" | "auto" | undefined>;
   }
   interface PresentationSVGAttributes {
-    "alignment-baseline"?:
+    "alignment-baseline"?: FunctionMaybe<
       | "auto"
       | "baseline"
       | "before-edge"
@@ -1588,20 +1652,26 @@ export namespace JSX {
       | "alphabetic"
       | "hanging"
       | "mathematical"
-      | "inherit";
-    "baseline-shift"?: FunctionMaybe<number | string>;
-    clip?: FunctionMaybe<string>;
-    "clip-path"?: FunctionMaybe<string>;
-    "clip-rule"?: "nonzero" | "evenodd" | "inherit";
-    color?: FunctionMaybe<string>;
-    "color-interpolation"?: "auto" | "sRGB" | "linearRGB" | "inherit";
-    "color-interpolation-filters"?: "auto" | "sRGB" | "linearRGB" | "inherit";
-    "color-profile"?: FunctionMaybe<string>;
-    "color-rendering"?: "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit";
-    cursor?: FunctionMaybe<string>;
-    direction?: "ltr" | "rtl" | "inherit";
-    display?: FunctionMaybe<string>;
-    "dominant-baseline"?:
+      | "inherit"
+      | undefined
+    >;
+    "baseline-shift"?: FunctionMaybe<number | string | undefined>;
+    clip?: FunctionMaybe<string | undefined>;
+    "clip-path"?: FunctionMaybe<string | undefined>;
+    "clip-rule"?: FunctionMaybe<"nonzero" | "evenodd" | "inherit" | undefined>;
+    color?: FunctionMaybe<string | undefined>;
+    "color-interpolation"?: FunctionMaybe<"auto" | "sRGB" | "linearRGB" | "inherit" | undefined>;
+    "color-interpolation-filters"?: FunctionMaybe<
+      "auto" | "sRGB" | "linearRGB" | "inherit" | undefined
+    >;
+    "color-profile"?: FunctionMaybe<string | undefined>;
+    "color-rendering"?: FunctionMaybe<
+      "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit" | undefined
+    >;
+    cursor?: FunctionMaybe<string | undefined>;
+    direction?: FunctionMaybe<"ltr" | "rtl" | "inherit" | undefined>;
+    display?: FunctionMaybe<string | undefined>;
+    "dominant-baseline"?: FunctionMaybe<
       | "auto"
       | "text-bottom"
       | "alphabetic"
@@ -1611,34 +1681,38 @@ export namespace JSX {
       | "mathematical"
       | "hanging"
       | "text-top"
-      | "inherit";
-    "enable-background"?: FunctionMaybe<string>;
-    fill?: FunctionMaybe<string>;
-    "fill-opacity"?: FunctionMaybe<number | string | "inherit">;
-    "fill-rule"?: FunctionMaybe<"nonzero" | "evenodd" | "inherit">;
-    filter?: FunctionMaybe<string>;
-    "flood-color"?: FunctionMaybe<string>;
-    "flood-opacity"?: FunctionMaybe<number | string | "inherit">;
-    "font-family"?: FunctionMaybe<string>;
-    "font-size"?: FunctionMaybe<string>;
-    "font-size-adjust"?: FunctionMaybe<number | string>;
-    "font-stretch"?: FunctionMaybe<string>;
-    "font-style"?: FunctionMaybe<"normal" | "italic" | "oblique" | "inherit">;
-    "font-variant"?: FunctionMaybe<string>;
-    "font-weight"?: FunctionMaybe<number | string>;
-    "glyph-orientation-horizontal"?: FunctionMaybe<string>;
-    "glyph-orientation-vertical"?: FunctionMaybe<string>;
-    "image-rendering"?: FunctionMaybe<"auto" | "optimizeQuality" | "optimizeSpeed" | "inherit">;
-    kerning?: FunctionMaybe<string>;
-    "letter-spacing"?: FunctionMaybe<number | string>;
-    "lighting-color"?: FunctionMaybe<string>;
-    "marker-end"?: FunctionMaybe<string>;
-    "marker-mid"?: FunctionMaybe<string>;
-    "marker-start"?: FunctionMaybe<string>;
-    mask?: FunctionMaybe<string>;
-    opacity?: FunctionMaybe<number | string | "inherit">;
-    overflow?: FunctionMaybe<"visible" | "hidden" | "scroll" | "auto" | "inherit">;
-    pathLength?: FunctionMaybe<string | number>;
+      | "inherit"
+      | undefined
+    >;
+    "enable-background"?: FunctionMaybe<string | undefined>;
+    fill?: FunctionMaybe<string | undefined>;
+    "fill-opacity"?: FunctionMaybe<number | string | "inherit" | undefined>;
+    "fill-rule"?: FunctionMaybe<"nonzero" | "evenodd" | "inherit" | undefined>;
+    filter?: FunctionMaybe<string | undefined>;
+    "flood-color"?: FunctionMaybe<string | undefined>;
+    "flood-opacity"?: FunctionMaybe<number | string | "inherit" | undefined>;
+    "font-family"?: FunctionMaybe<string | undefined>;
+    "font-size"?: FunctionMaybe<string | undefined>;
+    "font-size-adjust"?: FunctionMaybe<number | string | undefined>;
+    "font-stretch"?: FunctionMaybe<string | undefined>;
+    "font-style"?: FunctionMaybe<"normal" | "italic" | "oblique" | "inherit" | undefined>;
+    "font-variant"?: FunctionMaybe<string | undefined>;
+    "font-weight"?: FunctionMaybe<number | string | undefined>;
+    "glyph-orientation-horizontal"?: FunctionMaybe<string | undefined>;
+    "glyph-orientation-vertical"?: FunctionMaybe<string | undefined>;
+    "image-rendering"?: FunctionMaybe<
+      "auto" | "optimizeQuality" | "optimizeSpeed" | "inherit" | undefined
+    >;
+    kerning?: FunctionMaybe<string | undefined>;
+    "letter-spacing"?: FunctionMaybe<number | string | undefined>;
+    "lighting-color"?: FunctionMaybe<string | undefined>;
+    "marker-end"?: FunctionMaybe<string | undefined>;
+    "marker-mid"?: FunctionMaybe<string | undefined>;
+    "marker-start"?: FunctionMaybe<string | undefined>;
+    mask?: FunctionMaybe<string | undefined>;
+    opacity?: FunctionMaybe<number | string | "inherit" | undefined>;
+    overflow?: FunctionMaybe<"visible" | "hidden" | "scroll" | "auto" | "inherit" | undefined>;
+    pathLength?: FunctionMaybe<string | number | undefined>;
     "pointer-events"?: FunctionMaybe<
       | "bounding-box"
       | "visiblePainted"
@@ -1652,33 +1726,36 @@ export namespace JSX {
       | "all"
       | "none"
       | "inherit"
+      | undefined
     >;
     "shape-rendering"?: FunctionMaybe<
-      "auto" | "optimizeSpeed" | "crispEdges" | "geometricPrecision" | "inherit"
+      "auto" | "optimizeSpeed" | "crispEdges" | "geometricPrecision" | "inherit" | undefined
     >;
-    "stop-color"?: FunctionMaybe<string>;
-    "stop-opacity"?: FunctionMaybe<number | string | "inherit">;
-    stroke?: FunctionMaybe<string>;
-    "stroke-dasharray"?: FunctionMaybe<string>;
-    "stroke-dashoffset"?: FunctionMaybe<number | string>;
-    "stroke-linecap"?: FunctionMaybe<"butt" | "round" | "square" | "inherit">;
+    "stop-color"?: FunctionMaybe<string | undefined>;
+    "stop-opacity"?: FunctionMaybe<number | string | "inherit" | undefined>;
+    stroke?: FunctionMaybe<string | undefined>;
+    "stroke-dasharray"?: FunctionMaybe<string | undefined>;
+    "stroke-dashoffset"?: FunctionMaybe<number | string | undefined>;
+    "stroke-linecap"?: FunctionMaybe<"butt" | "round" | "square" | "inherit" | undefined>;
     "stroke-linejoin"?: FunctionMaybe<
-      "arcs" | "bevel" | "miter" | "miter-clip" | "round" | "inherit"
+      "arcs" | "bevel" | "miter" | "miter-clip" | "round" | "inherit" | undefined
     >;
-    "stroke-miterlimit"?: FunctionMaybe<number | string | "inherit">;
-    "stroke-opacity"?: FunctionMaybe<number | string | "inherit">;
-    "stroke-width"?: FunctionMaybe<number | string>;
-    "text-anchor"?: FunctionMaybe<"start" | "middle" | "end" | "inherit">;
+    "stroke-miterlimit"?: FunctionMaybe<number | string | "inherit" | undefined>;
+    "stroke-opacity"?: FunctionMaybe<number | string | "inherit" | undefined>;
+    "stroke-width"?: FunctionMaybe<number | string | undefined>;
+    "text-anchor"?: FunctionMaybe<"start" | "middle" | "end" | "inherit" | undefined>;
     "text-decoration"?: FunctionMaybe<
-      "none" | "underline" | "overline" | "line-through" | "blink" | "inherit"
+      "none" | "underline" | "overline" | "line-through" | "blink" | "inherit" | undefined
     >;
     "text-rendering"?: FunctionMaybe<
-      "auto" | "optimizeSpeed" | "optimizeLegibility" | "geometricPrecision" | "inherit"
+      "auto" | "optimizeSpeed" | "optimizeLegibility" | "geometricPrecision" | "inherit" | undefined
     >;
-    "unicode-bidi"?: FunctionMaybe<string>;
-    visibility?: FunctionMaybe<"visible" | "hidden" | "collapse" | "inherit">;
-    "word-spacing"?: FunctionMaybe<number | string>;
-    "writing-mode"?: FunctionMaybe<"lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit">;
+    "unicode-bidi"?: FunctionMaybe<string | undefined>;
+    visibility?: FunctionMaybe<"visible" | "hidden" | "collapse" | "inherit" | undefined>;
+    "word-spacing"?: FunctionMaybe<number | string | undefined>;
+    "writing-mode"?: FunctionMaybe<
+      "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit" | undefined
+    >;
   }
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1701,31 +1778,31 @@ export namespace JSX {
   interface FilterPrimitiveElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    result?: FunctionMaybe<string>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    result?: FunctionMaybe<string | undefined>;
   }
   interface SingleInputFilterSVGAttributes {
-    in?: FunctionMaybe<string>;
+    in?: FunctionMaybe<string | undefined>;
   }
   interface DoubleInputFilterSVGAttributes {
-    in?: FunctionMaybe<string>;
-    in2?: FunctionMaybe<string>;
+    in?: FunctionMaybe<string | undefined>;
+    in2?: FunctionMaybe<string | undefined>;
   }
   interface FitToViewBoxSVGAttributes {
-    viewBox?: FunctionMaybe<string>;
-    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio>;
+    viewBox?: FunctionMaybe<string | undefined>;
+    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | undefined>;
   }
   interface GradientElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    gradientUnits?: FunctionMaybe<SVGUnits>;
-    gradientTransform?: FunctionMaybe<string>;
-    spreadMethod?: FunctionMaybe<"pad" | "reflect" | "repeat">;
-    href?: FunctionMaybe<string>;
+    gradientUnits?: FunctionMaybe<SVGUnits | undefined>;
+    gradientTransform?: FunctionMaybe<string | undefined>;
+    spreadMethod?: FunctionMaybe<"pad" | "reflect" | "repeat" | undefined>;
+    href?: FunctionMaybe<string | undefined>;
   }
   interface GraphicsElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1746,7 +1823,7 @@ export namespace JSX {
   interface NewViewportSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, "overflow" | "clip"> {
-    viewBox?: FunctionMaybe<string>;
+    viewBox?: FunctionMaybe<string | undefined>;
   }
   interface ShapeElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1802,7 +1879,7 @@ export namespace JSX {
         | "stroke-opacity"
       > {}
   interface ZoomAndPanSVGAttributes {
-    zoomAndPan?: FunctionMaybe<"disable" | "magnify">;
+    zoomAndPan?: FunctionMaybe<"disable" | "magnify" | undefined>;
   }
   interface AnimateSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -1816,10 +1893,10 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    path?: FunctionMaybe<string>;
-    keyPoints?: FunctionMaybe<string>;
-    rotate?: FunctionMaybe<number | string | "auto" | "auto-reverse">;
-    origin?: FunctionMaybe<"default">;
+    path?: FunctionMaybe<string | undefined>;
+    keyPoints?: FunctionMaybe<string | undefined>;
+    rotate?: FunctionMaybe<number | string | "auto" | "auto-reverse" | undefined>;
+    origin?: FunctionMaybe<"default" | undefined>;
   }
   interface AnimateTransformSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -1827,7 +1904,7 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    type?: FunctionMaybe<"translate" | "scale" | "rotate" | "skewX" | "skewY">;
+    type?: FunctionMaybe<"translate" | "scale" | "rotate" | "skewX" | "skewY" | undefined>;
   }
   interface CircleSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -1835,9 +1912,9 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {
-    cx?: FunctionMaybe<number | string>;
-    cy?: FunctionMaybe<number | string>;
-    r?: FunctionMaybe<number | string>;
+    cx?: FunctionMaybe<number | string | undefined>;
+    cy?: FunctionMaybe<number | string | undefined>;
+    r?: FunctionMaybe<number | string | undefined>;
   }
   interface ClipPathSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1846,7 +1923,7 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    clipPathUnits?: FunctionMaybe<SVGUnits>;
+    clipPathUnits?: FunctionMaybe<SVGUnits | undefined>;
   }
   interface DefsSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1861,24 +1938,25 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
-    cx?: FunctionMaybe<number | string>;
-    cy?: FunctionMaybe<number | string>;
-    rx?: FunctionMaybe<number | string>;
-    ry?: FunctionMaybe<number | string>;
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
+    cx?: FunctionMaybe<number | string | undefined>;
+    cy?: FunctionMaybe<number | string | undefined>;
+    rx?: FunctionMaybe<number | string | undefined>;
+    ry?: FunctionMaybe<number | string | undefined>;
   }
   interface FeBlendSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    mode?: FunctionMaybe<"normal" | "multiply" | "screen" | "darken" | "lighten">;
+    mode?: FunctionMaybe<"normal" | "multiply" | "screen" | "darken" | "lighten" | undefined>;
   }
   interface FeColorMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    type?: FunctionMaybe<"matrix" | "saturate" | "hueRotate" | "luminanceToAlpha">;
-    values?: FunctionMaybe<string>;
+    type?: FunctionMaybe<"matrix" | "saturate" | "hueRotate" | "luminanceToAlpha" | undefined>;
+    values?: FunctionMaybe<string | undefined>;
   }
   interface FeComponentTransferSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -1888,81 +1966,81 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    operator?: FunctionMaybe<"over" | "in" | "out" | "atop" | "xor" | "arithmetic">;
-    k1?: FunctionMaybe<number | string>;
-    k2?: FunctionMaybe<number | string>;
-    k3?: FunctionMaybe<number | string>;
-    k4?: FunctionMaybe<number | string>;
+    operator?: FunctionMaybe<"over" | "in" | "out" | "atop" | "xor" | "arithmetic" | undefined>;
+    k1?: FunctionMaybe<number | string | undefined>;
+    k2?: FunctionMaybe<number | string | undefined>;
+    k3?: FunctionMaybe<number | string | undefined>;
+    k4?: FunctionMaybe<number | string | undefined>;
   }
   interface FeConvolveMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    order?: FunctionMaybe<number | string>;
-    kernelMatrix?: FunctionMaybe<string>;
-    divisor?: FunctionMaybe<number | string>;
-    bias?: FunctionMaybe<number | string>;
-    targetX?: FunctionMaybe<number | string>;
-    targetY?: FunctionMaybe<number | string>;
-    edgeMode?: FunctionMaybe<"duplicate" | "wrap" | "none">;
-    kernelUnitLength?: FunctionMaybe<number | string>;
-    preserveAlpha?: FunctionMaybe<"true" | "false">;
+    order?: FunctionMaybe<number | string | undefined>;
+    kernelMatrix?: FunctionMaybe<string | undefined>;
+    divisor?: FunctionMaybe<number | string | undefined>;
+    bias?: FunctionMaybe<number | string | undefined>;
+    targetX?: FunctionMaybe<number | string | undefined>;
+    targetY?: FunctionMaybe<number | string | undefined>;
+    edgeMode?: FunctionMaybe<"duplicate" | "wrap" | "none" | undefined>;
+    kernelUnitLength?: FunctionMaybe<number | string | undefined>;
+    preserveAlpha?: FunctionMaybe<"true" | "false" | undefined>;
   }
   interface FeDiffuseLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    surfaceScale?: FunctionMaybe<number | string>;
-    diffuseConstant?: FunctionMaybe<number | string>;
-    kernelUnitLength?: FunctionMaybe<number | string>;
+    surfaceScale?: FunctionMaybe<number | string | undefined>;
+    diffuseConstant?: FunctionMaybe<number | string | undefined>;
+    kernelUnitLength?: FunctionMaybe<number | string | undefined>;
   }
   interface FeDisplacementMapSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    scale?: FunctionMaybe<number | string>;
-    xChannelSelector?: FunctionMaybe<"R" | "G" | "B" | "A">;
-    yChannelSelector?: FunctionMaybe<"R" | "G" | "B" | "A">;
+    scale?: FunctionMaybe<number | string | undefined>;
+    xChannelSelector?: FunctionMaybe<"R" | "G" | "B" | "A" | undefined>;
+    yChannelSelector?: FunctionMaybe<"R" | "G" | "B" | "A" | undefined>;
   }
   interface FeDistantLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    azimuth?: FunctionMaybe<number | string>;
-    elevation?: FunctionMaybe<number | string>;
+    azimuth?: FunctionMaybe<number | string | undefined>;
+    elevation?: FunctionMaybe<number | string | undefined>;
   }
   interface FeDropShadowSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {
-    dx?: FunctionMaybe<number | string>;
-    dy?: FunctionMaybe<number | string>;
-    stdDeviation?: FunctionMaybe<number | string>;
+    dx?: FunctionMaybe<number | string | undefined>;
+    dy?: FunctionMaybe<number | string | undefined>;
+    stdDeviation?: FunctionMaybe<number | string | undefined>;
   }
   interface FeFloodSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
   interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
-    type?: "identity" | "table" | "discrete" | "linear" | "gamma";
-    tableValues?: FunctionMaybe<string>;
-    slope?: FunctionMaybe<number | string>;
-    intercept?: FunctionMaybe<number | string>;
-    amplitude?: FunctionMaybe<number | string>;
-    exponent?: FunctionMaybe<number | string>;
-    offset?: FunctionMaybe<number | string>;
+    type?: FunctionMaybe<"identity" | "table" | "discrete" | "linear" | "gamma" | undefined>;
+    tableValues?: FunctionMaybe<string | undefined>;
+    slope?: FunctionMaybe<number | string | undefined>;
+    intercept?: FunctionMaybe<number | string | undefined>;
+    amplitude?: FunctionMaybe<number | string | undefined>;
+    exponent?: FunctionMaybe<number | string | undefined>;
+    offset?: FunctionMaybe<number | string | undefined>;
   }
   interface FeGaussianBlurSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    stdDeviation?: FunctionMaybe<number | string>;
+    stdDeviation?: FunctionMaybe<number | string | undefined>;
   }
   interface FeImageSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio>;
-    href?: FunctionMaybe<string>;
+    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | undefined>;
+    href?: FunctionMaybe<string | undefined>;
   }
   interface FeMergeSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -1974,40 +2052,40 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    operator?: FunctionMaybe<"erode" | "dilate">;
-    radius?: FunctionMaybe<number | string>;
+    operator?: FunctionMaybe<"erode" | "dilate" | undefined>;
+    radius?: FunctionMaybe<number | string | undefined>;
   }
   interface FeOffsetSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    dx?: FunctionMaybe<number | string>;
-    dy?: FunctionMaybe<number | string>;
+    dx?: FunctionMaybe<number | string | undefined>;
+    dy?: FunctionMaybe<number | string | undefined>;
   }
   interface FePointLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    z?: FunctionMaybe<number | string>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    z?: FunctionMaybe<number | string | undefined>;
   }
   interface FeSpecularLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    surfaceScale?: FunctionMaybe<string>;
-    specularConstant?: FunctionMaybe<string>;
-    specularExponent?: FunctionMaybe<string>;
-    kernelUnitLength?: FunctionMaybe<number | string>;
+    surfaceScale?: FunctionMaybe<string | undefined>;
+    specularConstant?: FunctionMaybe<string | undefined>;
+    specularExponent?: FunctionMaybe<string | undefined>;
+    kernelUnitLength?: FunctionMaybe<number | string | undefined>;
   }
   interface FeSpotLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    z?: FunctionMaybe<number | string>;
-    pointsAtX?: FunctionMaybe<number | string>;
-    pointsAtY?: FunctionMaybe<number | string>;
-    pointsAtZ?: FunctionMaybe<number | string>;
-    specularExponent?: FunctionMaybe<number | string>;
-    limitingConeAngle?: FunctionMaybe<number | string>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    z?: FunctionMaybe<number | string | undefined>;
+    pointsAtX?: FunctionMaybe<number | string | undefined>;
+    pointsAtY?: FunctionMaybe<number | string | undefined>;
+    pointsAtZ?: FunctionMaybe<number | string | undefined>;
+    specularExponent?: FunctionMaybe<number | string | undefined>;
+    limitingConeAngle?: FunctionMaybe<number | string | undefined>;
   }
   interface FeTileSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2016,23 +2094,23 @@ export namespace JSX {
   interface FeTurbulanceSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes {
-    baseFrequency?: FunctionMaybe<number | string>;
-    numOctaves?: FunctionMaybe<number | string>;
-    seed?: FunctionMaybe<number | string>;
-    stitchTiles?: FunctionMaybe<"stitch" | "noStitch">;
-    type?: FunctionMaybe<"fractalNoise" | "turbulence">;
+    baseFrequency?: FunctionMaybe<number | string | undefined>;
+    numOctaves?: FunctionMaybe<number | string | undefined>;
+    seed?: FunctionMaybe<number | string | undefined>;
+    stitchTiles?: FunctionMaybe<"stitch" | "noStitch" | undefined>;
+    type?: FunctionMaybe<"fractalNoise" | "turbulence" | undefined>;
   }
   interface FilterSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    filterUnits?: FunctionMaybe<SVGUnits>;
-    primitiveUnits?: FunctionMaybe<SVGUnits>;
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    filterRes?: FunctionMaybe<number | string>;
+    filterUnits?: FunctionMaybe<SVGUnits | undefined>;
+    primitiveUnits?: FunctionMaybe<SVGUnits | undefined>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    filterRes?: FunctionMaybe<number | string | undefined>;
   }
   interface ForeignObjectSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
@@ -2041,10 +2119,10 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "display" | "visibility"> {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
   }
   interface GSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2052,20 +2130,20 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "display" | "visibility"> {}
+      Pick<PresentationSVGAttributes, "clip-path" | "display" | "visibility"> {}
   interface ImageSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "color-profile" | "image-rendering"> {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    preserveAspectRatio?: FunctionMaybe<ImagePreserveAspectRatio>;
-    href?: FunctionMaybe<string>;
+      Pick<PresentationSVGAttributes, "clip-path" | "color-profile" | "image-rendering"> {
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    preserveAspectRatio?: FunctionMaybe<ImagePreserveAspectRatio | undefined>;
+    href?: FunctionMaybe<string | undefined>;
   }
   interface LineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2074,42 +2152,43 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
-    x1?: FunctionMaybe<number | string>;
-    y1?: FunctionMaybe<number | string>;
-    x2?: FunctionMaybe<number | string>;
-    y2?: FunctionMaybe<number | string>;
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
+    x1?: FunctionMaybe<number | string | undefined>;
+    y1?: FunctionMaybe<number | string | undefined>;
+    x2?: FunctionMaybe<number | string | undefined>;
+    y2?: FunctionMaybe<number | string | undefined>;
   }
   interface LinearGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
-    x1?: FunctionMaybe<number | string>;
-    x2?: FunctionMaybe<number | string>;
-    y1?: FunctionMaybe<number | string>;
-    y2?: FunctionMaybe<number | string>;
+    x1?: FunctionMaybe<number | string | undefined>;
+    x2?: FunctionMaybe<number | string | undefined>;
+    y1?: FunctionMaybe<number | string | undefined>;
+    y2?: FunctionMaybe<number | string | undefined>;
   }
   interface MarkerSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
-    markerUnits?: FunctionMaybe<"strokeWidth" | "userSpaceOnUse">;
-    refX?: FunctionMaybe<number | string>;
-    refY?: FunctionMaybe<number | string>;
-    markerWidth?: FunctionMaybe<number | string>;
-    markerHeight?: FunctionMaybe<number | string>;
-    orient?: FunctionMaybe<string>;
+      Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
+    markerUnits?: FunctionMaybe<"strokeWidth" | "userSpaceOnUse" | undefined>;
+    refX?: FunctionMaybe<number | string | undefined>;
+    refY?: FunctionMaybe<number | string | undefined>;
+    markerWidth?: FunctionMaybe<number | string | undefined>;
+    markerHeight?: FunctionMaybe<number | string | undefined>;
+    orient?: FunctionMaybe<string | undefined>;
   }
   interface MaskSVGAttributes<T>
     extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
-    maskUnits?: FunctionMaybe<SVGUnits>;
-    maskContentUnits?: FunctionMaybe<SVGUnits>;
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
+    maskUnits?: FunctionMaybe<SVGUnits | undefined>;
+    maskContentUnits?: FunctionMaybe<SVGUnits | undefined>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
   }
   interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
@@ -2120,9 +2199,9 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
-    d?: FunctionMaybe<string>;
-    pathLength?: FunctionMaybe<number | string>;
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
+    d?: FunctionMaybe<string | undefined>;
+    pathLength?: FunctionMaybe<number | string | undefined>;
   }
   interface PatternSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2130,15 +2209,15 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    patternUnits?: FunctionMaybe<SVGUnits>;
-    patternContentUnits?: FunctionMaybe<SVGUnits>;
-    patternTransform?: FunctionMaybe<string>;
-    href?: string;
+      Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    patternUnits?: FunctionMaybe<SVGUnits | undefined>;
+    patternContentUnits?: FunctionMaybe<SVGUnits | undefined>;
+    patternTransform?: FunctionMaybe<string | undefined>;
+    href?: FunctionMaybe<string | undefined>;
   }
   interface PolygonSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2147,8 +2226,8 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
-    points?: FunctionMaybe<string>;
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
+    points?: FunctionMaybe<string | undefined>;
   }
   interface PolylineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2157,15 +2236,15 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
-    points?: FunctionMaybe<string>;
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
+    points?: FunctionMaybe<string | undefined>;
   }
   interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
-    cx?: FunctionMaybe<number | string>;
-    cy?: FunctionMaybe<number | string>;
-    r?: FunctionMaybe<number | string>;
-    fx?: FunctionMaybe<number | string>;
-    fy?: FunctionMaybe<number | string>;
+    cx?: FunctionMaybe<number | string | undefined>;
+    cy?: FunctionMaybe<number | string | undefined>;
+    r?: FunctionMaybe<number | string | undefined>;
+    fx?: FunctionMaybe<number | string | undefined>;
+    fy?: FunctionMaybe<number | string | undefined>;
   }
   interface RectSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2173,13 +2252,14 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    rx?: FunctionMaybe<number | string>;
-    ry?: FunctionMaybe<number | string>;
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    rx?: FunctionMaybe<number | string | undefined>;
+    ry?: FunctionMaybe<number | string | undefined>;
   }
   interface SetSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2189,7 +2269,7 @@ export namespace JSX {
     extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "stop-color" | "stop-opacity"> {
-    offset?: FunctionMaybe<number | string>;
+    offset?: FunctionMaybe<number | string | undefined>;
   }
   interface SvgSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2202,16 +2282,16 @@ export namespace JSX {
       PresentationSVGAttributes,
       WindowEventMap<T>,
       ElementEventMap<T> {
-    version?: FunctionMaybe<string>;
-    baseProfile?: FunctionMaybe<string>;
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    contentScriptType?: FunctionMaybe<string>;
-    contentStyleType?: FunctionMaybe<string>;
-    xmlns?: FunctionMaybe<string>;
-    "xmlns:xlink"?: FunctionMaybe<string>;
+    version?: FunctionMaybe<string | undefined>;
+    baseProfile?: FunctionMaybe<string | undefined>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    contentScriptType?: FunctionMaybe<string | undefined>;
+    contentStyleType?: FunctionMaybe<string | undefined>;
+    xmlns?: FunctionMaybe<string | undefined>;
+    "xmlns:xlink"?: FunctionMaybe<string | undefined>;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2225,15 +2305,16 @@ export namespace JSX {
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      FitToViewBoxSVGAttributes {
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio>;
-    refX?: FunctionMaybe<number | string>;
-    refY?: FunctionMaybe<number | string>;
-    viewBox?: FunctionMaybe<string>;
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
+      FitToViewBoxSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | undefined>;
+    refX?: FunctionMaybe<number | string | undefined>;
+    refY?: FunctionMaybe<number | string | undefined>;
+    viewBox?: FunctionMaybe<string | undefined>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
   }
   interface TextSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -2242,14 +2323,14 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "writing-mode" | "text-rendering"> {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    dx?: FunctionMaybe<number | string>;
-    dy?: FunctionMaybe<number | string>;
-    rotate?: FunctionMaybe<number | string>;
-    textLength?: FunctionMaybe<number | string>;
-    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs">;
+      Pick<PresentationSVGAttributes, "clip-path" | "writing-mode" | "text-rendering"> {
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    dx?: FunctionMaybe<number | string | undefined>;
+    dy?: FunctionMaybe<number | string | undefined>;
+    rotate?: FunctionMaybe<number | string | undefined>;
+    textLength?: FunctionMaybe<number | string | undefined>;
+    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs" | undefined>;
   }
   interface TextPathSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -2260,10 +2341,10 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    startOffset?: FunctionMaybe<number | string>;
-    method?: FunctionMaybe<"align" | "stretch">;
-    spacing?: FunctionMaybe<"auto" | "exact">;
-    href?: FunctionMaybe<string>;
+    startOffset?: FunctionMaybe<number | string | undefined>;
+    method?: FunctionMaybe<"align" | "stretch" | undefined>;
+    spacing?: FunctionMaybe<"auto" | "exact" | undefined>;
+    href?: FunctionMaybe<string | undefined>;
   }
   interface TSpanSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -2274,13 +2355,13 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    dx?: FunctionMaybe<number | string>;
-    dy?: FunctionMaybe<number | string>;
-    rotate?: FunctionMaybe<number | string>;
-    textLength?: FunctionMaybe<number | string>;
-    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs">;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    dx?: FunctionMaybe<number | string | undefined>;
+    dy?: FunctionMaybe<number | string | undefined>;
+    rotate?: FunctionMaybe<number | string | undefined>;
+    textLength?: FunctionMaybe<number | string | undefined>;
+    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs" | undefined>;
   }
   /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
@@ -2291,18 +2372,18 @@ export namespace JSX {
       PresentationSVGAttributes,
       ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
-    x?: FunctionMaybe<number | string>;
-    y?: FunctionMaybe<number | string>;
-    width?: FunctionMaybe<number | string>;
-    height?: FunctionMaybe<number | string>;
-    href?: FunctionMaybe<string>;
+    x?: FunctionMaybe<number | string | undefined>;
+    y?: FunctionMaybe<number | string | undefined>;
+    width?: FunctionMaybe<number | string | undefined>;
+    height?: FunctionMaybe<number | string | undefined>;
+    href?: FunctionMaybe<string | undefined>;
   }
   interface ViewSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes {
-    viewTarget?: FunctionMaybe<string>;
+    viewTarget?: FunctionMaybe<string | undefined>;
   }
   /** @type {HTMLElementTagNameMap} */
   interface HTMLElementTags {
@@ -2368,7 +2449,7 @@ export namespace JSX {
     main: HTMLAttributes<HTMLElement>;
     map: MapHTMLAttributes<HTMLMapElement>;
     mark: HTMLAttributes<HTMLElement>;
-    menu: MenuHTMLAttributes<HTMLElement>;
+    menu: MenuHTMLAttributes<HTMLMenuElement>;
     meta: MetaHTMLAttributes<HTMLMetaElement>;
     meter: MeterHTMLAttributes<HTMLElement>;
     nav: HTMLAttributes<HTMLElement>;
