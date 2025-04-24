@@ -711,11 +711,6 @@ export namespace JSX {
     "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
   }
 
-  interface CSSProperties extends csstype.PropertiesHyphen {
-    // Override
-    [key: `-${string}`]: string | number | undefined;
-  }
-
   interface DOMAttributes<T>
     extends CustomAttributes<T>,
       DirectiveAttributes,
@@ -732,6 +727,11 @@ export namespace JSX {
     innerHTML?: string | undefined;
     innerText?: string | number | undefined;
     textContent?: string | number | undefined;
+  }
+
+  interface CSSProperties extends csstype.PropertiesHyphen {
+    // Override
+    [key: `-${string}`]: string | number | undefined;
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
