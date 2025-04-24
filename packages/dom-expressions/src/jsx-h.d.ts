@@ -106,6 +106,8 @@ export namespace JSX {
     children: {};
   }
 
+  // Event handlers
+
   interface EventHandler<T, E extends Event> {
     (
       e: E & {
@@ -187,6 +189,7 @@ export namespace JSX {
     E,
     FocusEventHandler<T, E>
   >;
+  // end event handlers
 
   type ClassList =
     | Record<string, boolean>
@@ -760,11 +763,6 @@ export namespace JSX {
     "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
   }
 
-  interface CSSProperties extends csstype.PropertiesHyphen {
-    // Override
-    [key: `-${string}`]: string | number | undefined;
-  }
-
   interface DOMAttributes<T>
     extends CustomAttributes<T>,
       DirectiveAttributes,
@@ -780,6 +778,11 @@ export namespace JSX {
     innerHTML?: FunctionMaybe<string | undefined>;
     innerText?: FunctionMaybe<string | number | undefined>;
     textContent?: FunctionMaybe<string | number | undefined>;
+  }
+
+  interface CSSProperties extends csstype.PropertiesHyphen {
+    // Override
+    [key: `-${string}`]: string | number | undefined;
   }
 
   /**
