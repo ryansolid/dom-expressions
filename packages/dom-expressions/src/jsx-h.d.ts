@@ -18,19 +18,12 @@ import * as csstype from "csstype";
 type DOMElement = Element;
 
 export namespace JSX {
-  // START - difference with `jsx.d.ts`
+  // START - difference between `jsx.d.ts` and `jsx-h.d.ts`
+
   type FunctionMaybe<T = unknown> = { (): T } | T;
   interface FunctionElement {
     (): Element;
   }
-  // END - difference with `jsx.d.ts`
-
-  /**
-   * The rest of differences between `jsx-h.d.ts` and `jsx.d.ts` are:
-   *
-   * - The use of `FunctionMaybe` on attributes
-   * - `interface DialogHtmlAttributes` declares event handlers that shouldnt use `FunctionMaybe`
-   */
 
   type Element =
     | Node
@@ -41,6 +34,7 @@ export namespace JSX {
     | boolean
     | null
     | undefined;
+  // END - difference between `jsx.d.ts` and `jsx-h.d.ts`
 
   interface ArrayElement extends Array<Element> {}
 
@@ -53,6 +47,9 @@ export namespace JSX {
   interface ElementChildrenAttribute {
     children: {};
   }
+
+  // Event handlers
+
   interface EventHandler<T, E extends Event> {
     (
       e: E & {
@@ -134,6 +131,7 @@ export namespace JSX {
     E,
     FocusEventHandler<T, E>
   >;
+  // end event handlers
 
   const SERIALIZABLE: unique symbol;
   interface SerializableAttributeValue {
@@ -201,78 +199,140 @@ export namespace JSX {
       CustomCaptureEvents[Key]
     >;
   };
-  interface DOMAttributes<T>
-    extends CustomAttributes<T>,
-      DirectiveAttributes,
-      DirectiveFunctionAttributes<T>,
-      PropAttributes,
-      AttrAttributes,
-      BoolAttributes,
-      OnAttributes<T>,
-      OnCaptureAttributes<T>,
-      CustomEventHandlersCamelCase<T>,
-      CustomEventHandlersLowerCase<T>,
-      CustomEventHandlersNamespaced<T> {
-    children?: FunctionMaybe<Element | undefined>;
-    innerHTML?: FunctionMaybe<string | undefined>;
-    innerText?: FunctionMaybe<string | number | undefined>;
-    textContent?: FunctionMaybe<string | number | undefined>;
-    // camel case events
-    onCopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    onCut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    onPaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    onFocusOut?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onFocusIn?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-    onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
-    // lower case events
-    oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    onpaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-    ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
-    // lower case events
-    "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
-    "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
-    "on:paste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
-    "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
-    "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
-    "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
-    "on:focusout"?:
-      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
-      | undefined;
-    "on:focusin"?:
-      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
-      | undefined;
-    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
-    "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+
+  // events
+  interface ElementEventMap<T> {
+    onFullscreenChange?: EventHandlerUnion<T, Event> | undefined;
+    onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
+
+    "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+
+    /** @deprecated Use camelCase event handlers */
+    onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
   }
+  interface WindowEventMap<T> {
+    onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
+    onBeforePrint?: EventHandlerUnion<T, Event> | undefined;
+    onBeforeUnload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
+    onGamepadConnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    onGamepadDisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    onHashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
+    onLanguageChange?: EventHandlerUnion<T, Event> | undefined;
+    onMessage?: EventHandlerUnion<T, MessageEvent> | undefined;
+    onMessageError?: EventHandlerUnion<T, MessageEvent> | undefined;
+    onOffline?: EventHandlerUnion<T, Event> | undefined;
+    onOnline?: EventHandlerUnion<T, Event> | undefined;
+    onPageHide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined on TS
+    onPageReveal?: EventHandlerUnion<T, Event> | undefined;
+    onPageShow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined on TS
+    onPageSwap?: EventHandlerUnion<T, Event> | undefined;
+    onPopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
+    onRejectionHandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    onStorage?: EventHandlerUnion<T, StorageEvent> | undefined;
+    onUnhandledRejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    onUnload?: EventHandlerUnion<T, Event> | undefined;
+
+    /** @deprecated Use camelCase event handlers */
+    onafterprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onbeforeprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onbeforeunload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ongamepadconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ongamepaddisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onhashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onlanguagechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onmessage?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onmessageerror?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onoffline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ononline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpagehide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
+    onpagereveal?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpageshow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
+    onpageswap?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onrejectionhandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onstorage?: EventHandlerUnion<T, StorageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onunhandledrejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onunload?: EventHandlerUnion<T, Event> | undefined;
+
+    "on:afterprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:beforeprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:beforeunload"?: EventHandlerWithOptionsUnion<T, BeforeUnloadEvent> | undefined;
+    "on:gamepadconnected"?: EventHandlerWithOptionsUnion<T, GamepadEvent> | undefined;
+    "on:gamepaddisconnected"?: EventHandlerWithOptionsUnion<T, GamepadEvent> | undefined;
+    "on:hashchange"?: EventHandlerWithOptionsUnion<T, HashChangeEvent> | undefined;
+    "on:languagechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:message"?: EventHandlerWithOptionsUnion<T, MessageEvent> | undefined;
+    "on:messageerror"?: EventHandlerWithOptionsUnion<T, MessageEvent> | undefined;
+    "on:offline"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:online"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:pagehide"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined in TS
+    "on:pagereveal"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:pageshow"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined in TS
+    "on:pageswap"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:popstate"?: EventHandlerWithOptionsUnion<T, PopStateEvent> | undefined;
+    "on:rejectionhandled"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
+    "on:storage"?: EventHandlerWithOptionsUnion<T, StorageEvent> | undefined;
+    "on:unhandledrejection"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
+    "on:unload"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+  }
+
   interface CustomEventHandlersCamelCase<T> {
     onAbort?: EventHandlerUnion<T, UIEvent> | undefined;
+    onAnimationCancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationEnd?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationIteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    onAuxClick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onAuxClick?: EventHandlerUnion<T, PointerEvent> | undefined;
     onBeforeInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
     onBeforeToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
     onBlur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onCancel?: EventHandlerUnion<T, Event> | undefined;
     onCanPlay?: EventHandlerUnion<T, Event> | undefined;
     onCanPlayThrough?: EventHandlerUnion<T, Event> | undefined;
     onChange?: ChangeEventHandlerUnion<T, Event> | undefined;
     onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onContextMenu?: EventHandlerUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    onCommand?: EventHandlerUnion<T, Event> | undefined;
+    onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onContextMenu?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onCopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onCueChange?: EventHandlerUnion<T, Event> | undefined;
+    onCut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     onDblClick?: EventHandlerUnion<T, MouseEvent> | undefined;
     onDrag?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragEnd?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragEnter?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragLeave?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragOver?: EventHandlerUnion<T, DragEvent> | undefined;
     onDragStart?: EventHandlerUnion<T, DragEvent> | undefined;
@@ -282,6 +342,8 @@ export namespace JSX {
     onEnded?: EventHandlerUnion<T, Event> | undefined;
     onError?: EventHandlerUnion<T, ErrorEvent> | undefined;
     onFocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onFocusIn?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onFocusOut?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onGotPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     onInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
     onInvalid?: EventHandlerUnion<T, Event> | undefined;
@@ -300,6 +362,7 @@ export namespace JSX {
     onMouseOut?: EventHandlerUnion<T, MouseEvent> | undefined;
     onMouseOver?: EventHandlerUnion<T, MouseEvent> | undefined;
     onMouseUp?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onPaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     onPause?: EventHandlerUnion<T, Event> | undefined;
     onPlay?: EventHandlerUnion<T, Event> | undefined;
     onPlaying?: EventHandlerUnion<T, Event> | undefined;
@@ -314,11 +377,15 @@ export namespace JSX {
     onProgress?: EventHandlerUnion<T, ProgressEvent> | undefined;
     onRateChange?: EventHandlerUnion<T, Event> | undefined;
     onReset?: EventHandlerUnion<T, Event> | undefined;
+    onResize?: EventHandlerUnion<T, UIEvent> | undefined;
     onScroll?: EventHandlerUnion<T, Event> | undefined;
     onScrollEnd?: EventHandlerUnion<T, Event> | undefined;
+    onSecurityPolicyViolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
     onSeeked?: EventHandlerUnion<T, Event> | undefined;
     onSeeking?: EventHandlerUnion<T, Event> | undefined;
     onSelect?: EventHandlerUnion<T, Event> | undefined;
+    onSelectionChange?: EventHandlerUnion<T, Event> | undefined;
+    onSlotChange?: EventHandlerUnion<T, Event> | undefined;
     onStalled?: EventHandlerUnion<T, Event> | undefined;
     onSubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
     onSuspend?: EventHandlerUnion<T, Event> | undefined;
@@ -328,102 +395,218 @@ export namespace JSX {
     onTouchEnd?: EventHandlerUnion<T, TouchEvent> | undefined;
     onTouchMove?: EventHandlerUnion<T, TouchEvent> | undefined;
     onTouchStart?: EventHandlerUnion<T, TouchEvent> | undefined;
-    onTransitionStart?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    onTransitionCancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
     onTransitionEnd?: EventHandlerUnion<T, TransitionEvent> | undefined;
     onTransitionRun?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    onTransitionCancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    onTransitionStart?: EventHandlerUnion<T, TransitionEvent> | undefined;
     onVolumeChange?: EventHandlerUnion<T, Event> | undefined;
     onWaiting?: EventHandlerUnion<T, Event> | undefined;
     onWheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
   /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
+    /** @deprecated Use camelCase event handlers */
     onabort?: EventHandlerUnion<T, UIEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onanimationcancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    onauxclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onauxclick?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeinput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforetoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onblur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncancel?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncanplay?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncanplaythrough?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onchange?: ChangeEventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
-    oncontextmenu?: EventHandlerUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
+    oncommand?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncontextmenu?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncuechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondblclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondrag?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragend?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragenter?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragleave?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragover?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragstart?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondrop?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondurationchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onemptied?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onended?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onerror?: EventHandlerUnion<T, ErrorEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oninvalid?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeydown?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeypress?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeyup?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onload?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadeddata?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadedmetadata?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadstart?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onlostpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmousedown?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseenter?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseleave?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmousemove?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseout?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseover?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseup?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onpaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpause?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onplay?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onplaying?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointercancel?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerdown?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerenter?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerleave?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointermove?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerout?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerover?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerup?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onprogress?: EventHandlerUnion<T, ProgressEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onratechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onreset?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onresize?: EventHandlerUnion<T, UIEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onscroll?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onscrollend?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onsecuritypolicyviolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onseeked?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onseeking?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onselect?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onselectionchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onslotchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onstalled?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsuspend?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontimeupdate?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchcancel?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchend?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchmove?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchstart?: EventHandlerUnion<T, TouchEvent> | undefined;
-    ontransitionstart?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    ontransitionend?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    ontransitionrun?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitioncancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ontransitionend?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ontransitionrun?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    ontransitionstart?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onvolumechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwaiting?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
+
   interface CustomEventHandlersNamespaced<T> {
     "on:abort"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
+    "on:animationcancel"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationend"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
-    "on:auxclick"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:auxclick"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:beforeinput"?:
       | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
       | undefined;
@@ -431,15 +614,25 @@ export namespace JSX {
     "on:blur"?:
       | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
       | undefined;
+    "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplay"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
     "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    "on:command"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:cuechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:dblclick"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
     "on:drag"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
     "on:dragend"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
     "on:dragenter"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
     "on:dragleave"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
     "on:dragover"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
     "on:dragstart"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
@@ -449,6 +642,12 @@ export namespace JSX {
     "on:ended"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:error"?: EventHandlerWithOptionsUnion<T, ErrorEvent> | undefined;
     "on:focus"?:
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
+    "on:focusin"?:
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
+    "on:focusout"?:
       | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
       | undefined;
     "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
@@ -471,6 +670,7 @@ export namespace JSX {
     "on:mouseout"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
     "on:mouseover"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
     "on:mouseup"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:paste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:pause"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:play"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:playing"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -485,11 +685,17 @@ export namespace JSX {
     "on:progress"?: EventHandlerWithOptionsUnion<T, ProgressEvent> | undefined;
     "on:ratechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:reset"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:resize"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
     "on:scroll"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:scrollend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:securitypolicyviolation"?:
+      | EventHandlerWithOptionsUnion<T, SecurityPolicyViolationEvent>
+      | undefined;
     "on:seeked"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:seeking"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:select"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:selectionchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:slotchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:stalled"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent> | undefined;
     "on:suspend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -499,10 +705,10 @@ export namespace JSX {
     "on:touchend"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
     "on:touchmove"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
     "on:touchstart"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
-    "on:transitionstart"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
+    "on:transitioncancel"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
     "on:transitionend"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
     "on:transitionrun"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
-    "on:transitioncancel"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
+    "on:transitionstart"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
     "on:volumechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:waiting"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
@@ -511,6 +717,24 @@ export namespace JSX {
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
     [key: `-${string}`]: string | number | undefined;
+  }
+
+  interface DOMAttributes<T>
+    extends CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      BoolAttributes,
+      OnAttributes<T>,
+      OnCaptureAttributes<T>,
+      CustomEventHandlersCamelCase<T>,
+      CustomEventHandlersLowerCase<T>,
+      CustomEventHandlersNamespaced<T> {
+    children?: FunctionMaybe<Element | undefined>;
+    innerHTML?: FunctionMaybe<string | undefined>;
+    innerText?: FunctionMaybe<string | number | undefined>;
+    textContent?: FunctionMaybe<string | number | undefined>;
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
@@ -1032,6 +1256,10 @@ export namespace JSX {
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: FunctionMaybe<string | undefined>;
   }
+  interface BodyHTMLAttributes<T>
+    extends HTMLAttributes<T>,
+      WindowEventMap<T>,
+      ElementEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autofocus?: FunctionMaybe<"" | boolean | undefined>;
     disabled?: FunctionMaybe<"" | boolean | undefined>;
@@ -1078,6 +1306,16 @@ export namespace JSX {
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: FunctionMaybe<number | string | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
+
+    onContextLost?: EventHandlerUnion<T, Event> | undefined;
+    "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncontextlost?: EventHandlerUnion<T, Event> | undefined;
+
+    onContextRestored?: EventHandlerUnion<T, Event> | undefined;
+    "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncontextrestored?: EventHandlerUnion<T, Event> | undefined;
 
     /**
      * @deprecated
@@ -1128,10 +1366,15 @@ export namespace JSX {
     open?: FunctionMaybe<"" | boolean | undefined>;
     tabindex?: FunctionMaybe<never | undefined>;
 
-    onclose?: EventHandlerUnion<T, Event> | undefined;
     onClose?: EventHandlerUnion<T, Event> | undefined;
-    oncancel?: EventHandlerUnion<T, Event> | undefined;
+    "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onclose?: EventHandlerUnion<T, Event> | undefined;
+
     onCancel?: EventHandlerUnion<T, Event> | undefined;
+    "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    oncancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | undefined>;
@@ -1160,6 +1403,11 @@ export namespace JSX {
     novalidate?: FunctionMaybe<"" | boolean | undefined>;
     rel?: FunctionMaybe<string | undefined>;
     target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
+
+    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
+    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
     /** @deprecated Use lowercase attributes */
     noValidate?: FunctionMaybe<boolean | undefined>;
@@ -1494,7 +1742,7 @@ export namespace JSX {
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: FunctionMaybe<string | undefined>;
   }
-  interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface MediaHTMLAttributes<T> extends HTMLAttributes<T>, ElementEventMap<T> {
     autoplay?: FunctionMaybe<"" | boolean | undefined>;
     controls?: FunctionMaybe<"" | boolean | undefined>;
     controlslist?: FunctionMaybe<
@@ -1511,6 +1759,16 @@ export namespace JSX {
     muted?: FunctionMaybe<"" | boolean | undefined>;
     preload?: FunctionMaybe<"none" | "metadata" | "auto" | "" | undefined>;
     src?: FunctionMaybe<string | undefined>;
+
+    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
+    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
+
+    onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
+    "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
@@ -1874,15 +2132,13 @@ export namespace JSX {
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     default?: FunctionMaybe<"" | boolean | undefined>;
-    kind?: // MDN
-    FunctionMaybe<
+    kind?: FunctionMaybe<
       | "alternative"
       | "descriptions"
       | "main"
       | "main-desc"
       | "translation"
       | "commentary"
-      // ??
       | "subtitles"
       | "captions"
       | "chapters"
@@ -1904,6 +2160,17 @@ export namespace JSX {
     poster?: FunctionMaybe<string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
     disablepictureinpicture?: FunctionMaybe<"" | boolean | undefined>;
+    disableremoteplayback?: FunctionMaybe<"" | boolean | undefined>;
+
+    onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
+    "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onenterpictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
+
+    onLeavePictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
+    "on:leavepictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onleavepictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2323,7 +2590,8 @@ export namespace JSX {
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     cx?: FunctionMaybe<number | string | undefined>;
     cy?: FunctionMaybe<number | string | undefined>;
     r?: FunctionMaybe<number | string | undefined>;
@@ -2350,7 +2618,8 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     cx?: FunctionMaybe<number | string | undefined>;
     cy?: FunctionMaybe<number | string | undefined>;
     rx?: FunctionMaybe<number | string | undefined>;
@@ -2541,14 +2810,14 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "display" | "visibility"> {}
+      Pick<PresentationSVGAttributes, "clip-path" | "display" | "visibility"> {}
   interface ImageSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "color-profile" | "image-rendering"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "color-profile" | "image-rendering"> {
     x?: FunctionMaybe<number | string | undefined>;
     y?: FunctionMaybe<number | string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
@@ -2563,7 +2832,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     x1?: FunctionMaybe<number | string | undefined>;
     y1?: FunctionMaybe<number | string | undefined>;
     x2?: FunctionMaybe<number | string | undefined>;
@@ -2580,7 +2849,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
     markerUnits?: FunctionMaybe<"strokeWidth" | "userSpaceOnUse" | undefined>;
     refX?: FunctionMaybe<number | string | undefined>;
     refY?: FunctionMaybe<number | string | undefined>;
@@ -2592,7 +2861,8 @@ export namespace JSX {
     extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     maskUnits?: FunctionMaybe<SVGUnits | undefined>;
     maskContentUnits?: FunctionMaybe<SVGUnits | undefined>;
     x?: FunctionMaybe<number | string | undefined>;
@@ -2609,7 +2879,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     d?: FunctionMaybe<string | undefined>;
     pathLength?: FunctionMaybe<number | string | undefined>;
   }
@@ -2619,7 +2889,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
     x?: FunctionMaybe<number | string | undefined>;
     y?: FunctionMaybe<number | string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
@@ -2636,7 +2906,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     points?: FunctionMaybe<string | undefined>;
   }
   interface PolylineSVGAttributes<T>
@@ -2646,7 +2916,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "marker-start" | "marker-mid" | "marker-end"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     points?: FunctionMaybe<string | undefined>;
   }
   interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
@@ -2662,7 +2932,8 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      TransformableSVGAttributes {
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     x?: FunctionMaybe<number | string | undefined>;
     y?: FunctionMaybe<number | string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
@@ -2688,7 +2959,9 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
-      PresentationSVGAttributes {
+      PresentationSVGAttributes,
+      WindowEventMap<T>,
+      ElementEventMap<T> {
     "xmlns:xlink"?: FunctionMaybe<string | undefined>;
     contentScriptType?: FunctionMaybe<string | undefined>;
     contentStyleType?: FunctionMaybe<string | undefined>;
@@ -2715,7 +2988,8 @@ export namespace JSX {
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      FitToViewBoxSVGAttributes {
+      FitToViewBoxSVGAttributes,
+      Pick<PresentationSVGAttributes, "clip-path"> {
     width?: FunctionMaybe<number | string | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
     preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | undefined>;
@@ -2732,7 +3006,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<PresentationSVGAttributes, "writing-mode" | "text-rendering"> {
+      Pick<PresentationSVGAttributes, "clip-path" | "writing-mode" | "text-rendering"> {
     x?: FunctionMaybe<number | string | undefined>;
     y?: FunctionMaybe<number | string | undefined>;
     dx?: FunctionMaybe<number | string | undefined>;
@@ -3092,7 +3366,7 @@ export namespace JSX {
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBodyElement
      */
-    body: HTMLAttributes<HTMLBodyElement>;
+    body: BodyHTMLAttributes<HTMLBodyElement>;
     /**
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBRElement
