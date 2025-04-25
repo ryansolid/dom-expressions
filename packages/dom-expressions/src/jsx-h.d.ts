@@ -1351,6 +1351,9 @@ export namespace JSX {
       "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute
     >;
 
+    /** @experimental */
+    attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
+
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
 
@@ -1381,9 +1384,9 @@ export namespace JSX {
     formtarget?: FunctionMaybe<
       "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute
     >;
+    name?: FunctionMaybe<string | RemoveAttribute>;
     popovertarget?: FunctionMaybe<string | RemoveAttribute>;
     popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle" | RemoveAttribute>;
-    name?: FunctionMaybe<string | RemoveAttribute>;
     type?: FunctionMaybe<"submit" | "reset" | "button" | "menu" | RemoveAttribute>;
     value?: FunctionMaybe<string | RemoveAttribute>;
 
@@ -1416,8 +1419,8 @@ export namespace JSX {
     popoverTargetAction?: FunctionMaybe<"hide" | "show" | "toggle" | RemoveAttribute>;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
 
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -1434,6 +1437,10 @@ export namespace JSX {
      * @non-standard
      */
     "moz-opaque"?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+  }
+  interface CaptionHTMLAttributes<T> extends HTMLAttributes<T> {
+    /** @deprecated */
+    align?: FunctionMaybe<"left" | "center" | "right" | RemoveAttribute>;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -1476,7 +1483,14 @@ export namespace JSX {
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    tabindex?: FunctionMaybe<never>;
+    /**
+     * Do not add the tabindex property to the <dialog> element as it is not interactive and does
+     * not receive focus. The dialog's contents, including the close button contained in the dialog,
+     * can receive focus and be interactive.
+     *
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#usage_notes
+     */
+    tabindex?: never;
 
     onClose?: EventHandlerUnion<T, Event> | undefined;
     "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -1586,6 +1600,8 @@ export namespace JSX {
     alt?: FunctionMaybe<string | RemoveAttribute>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
     decoding?: FunctionMaybe<"sync" | "async" | "auto" | RemoveAttribute>;
+    elementtiming?: FunctionMaybe<string | RemoveAttribute>;
+    fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     ismap?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     loading?: FunctionMaybe<"eager" | "lazy" | RemoveAttribute>;
@@ -1595,8 +1611,6 @@ export namespace JSX {
     srcset?: FunctionMaybe<string | RemoveAttribute>;
     usemap?: FunctionMaybe<string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
-    elementtiming?: FunctionMaybe<string | RemoveAttribute>;
-    fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | RemoveAttribute>;
 
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
@@ -1871,6 +1885,7 @@ export namespace JSX {
     disableremoteplayback?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     loop?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     muted?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    playbackRate?: FunctionMaybe<number | string | RemoveAttribute>;
     preload?: FunctionMaybe<
       "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute
     >;
@@ -1903,8 +1918,6 @@ export namespace JSX {
     type?: FunctionMaybe<"context" | "toolbar" | RemoveAttribute>;
   }
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
-    charset?: FunctionMaybe<string | RemoveAttribute>;
-    content?: FunctionMaybe<string | RemoveAttribute>;
     "http-equiv"?: FunctionMaybe<
       | "content-security-policy"
       | "content-type"
@@ -1913,8 +1926,10 @@ export namespace JSX {
       | "refresh"
       | RemoveAttribute
     >;
-    name?: FunctionMaybe<string | RemoveAttribute>;
+    charset?: FunctionMaybe<string | RemoveAttribute>;
+    content?: FunctionMaybe<string | RemoveAttribute>;
     media?: FunctionMaybe<string | RemoveAttribute>;
+    name?: FunctionMaybe<string | RemoveAttribute>;
 
     /** @deprecated */
     scheme?: FunctionMaybe<string | RemoveAttribute>;
@@ -1991,8 +2006,8 @@ export namespace JSX {
     value?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: FunctionMaybe<string | RemoveAttribute>;
     for?: FunctionMaybe<string | RemoveAttribute>;
+    form?: FunctionMaybe<string | RemoveAttribute>;
     name?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2056,13 +2071,13 @@ export namespace JSX {
     name?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
+    height?: FunctionMaybe<number | string | RemoveAttribute>;
     media?: FunctionMaybe<string | RemoveAttribute>;
     sizes?: FunctionMaybe<string | RemoveAttribute>;
     src?: FunctionMaybe<string | RemoveAttribute>;
     srcset?: FunctionMaybe<string | RemoveAttribute>;
     type?: FunctionMaybe<string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
-    height?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     blocking?: FunctionMaybe<"render" | RemoveAttribute>;
@@ -2108,9 +2123,9 @@ export namespace JSX {
     width?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
-    shadowrootmode?: FunctionMaybe<"open" | "closed" | RemoveAttribute>;
     shadowrootclonable?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     shadowrootdelegatesfocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    shadowrootmode?: FunctionMaybe<"open" | "closed" | RemoveAttribute>;
 
     /** @experimental */
     shadowrootserializable?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
@@ -2273,12 +2288,11 @@ export namespace JSX {
     mediagroup?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
+    disablepictureinpicture?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     playsinline?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     poster?: FunctionMaybe<string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
-    disablepictureinpicture?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    disableremoteplayback?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
@@ -2408,26 +2422,26 @@ export namespace JSX {
     begin?: FunctionMaybe<string | RemoveAttribute>;
     dur?: FunctionMaybe<string | RemoveAttribute>;
     end?: FunctionMaybe<string | RemoveAttribute>;
-    min?: FunctionMaybe<string | RemoveAttribute>;
+    fill?: FunctionMaybe<"freeze" | "remove" | RemoveAttribute>;
     max?: FunctionMaybe<string | RemoveAttribute>;
-    restart?: FunctionMaybe<"always" | "whenNotActive" | "never" | RemoveAttribute>;
+    min?: FunctionMaybe<string | RemoveAttribute>;
     repeatCount?: FunctionMaybe<number | "indefinite" | RemoveAttribute>;
     repeatDur?: FunctionMaybe<string | RemoveAttribute>;
-    fill?: FunctionMaybe<"freeze" | "remove" | RemoveAttribute>;
+    restart?: FunctionMaybe<"always" | "whenNotActive" | "never" | RemoveAttribute>;
   }
   interface AnimationValueSVGAttributes {
-    calcMode?: FunctionMaybe<"discrete" | "linear" | "paced" | "spline" | RemoveAttribute>;
-    values?: FunctionMaybe<string | RemoveAttribute>;
-    keyTimes?: FunctionMaybe<string | RemoveAttribute>;
-    keySplines?: FunctionMaybe<string | RemoveAttribute>;
-    from?: FunctionMaybe<number | string | RemoveAttribute>;
-    to?: FunctionMaybe<number | string | RemoveAttribute>;
     by?: FunctionMaybe<number | string | RemoveAttribute>;
+    calcMode?: FunctionMaybe<"discrete" | "linear" | "paced" | "spline" | RemoveAttribute>;
+    from?: FunctionMaybe<number | string | RemoveAttribute>;
+    keySplines?: FunctionMaybe<string | RemoveAttribute>;
+    keyTimes?: FunctionMaybe<string | RemoveAttribute>;
+    to?: FunctionMaybe<number | string | RemoveAttribute>;
+    values?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface AnimationAdditionSVGAttributes {
-    attributeName?: FunctionMaybe<string | RemoveAttribute>;
-    additive?: FunctionMaybe<"replace" | "sum" | RemoveAttribute>;
     accumulate?: FunctionMaybe<"none" | "sum" | RemoveAttribute>;
+    additive?: FunctionMaybe<"replace" | "sum" | RemoveAttribute>;
+    attributeName?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface AnimationAttributeTargetSVGAttributes {
     attributeName?: FunctionMaybe<string | RemoveAttribute>;
@@ -2451,10 +2465,8 @@ export namespace JSX {
       | RemoveAttribute
     >;
     "baseline-shift"?: FunctionMaybe<number | string | RemoveAttribute>;
-    clip?: FunctionMaybe<string | RemoveAttribute>;
     "clip-path"?: FunctionMaybe<string | RemoveAttribute>;
     "clip-rule"?: FunctionMaybe<"nonzero" | "evenodd" | "inherit" | RemoveAttribute>;
-    color?: FunctionMaybe<string | RemoveAttribute>;
     "color-interpolation"?: FunctionMaybe<
       "auto" | "sRGB" | "linearRGB" | "inherit" | RemoveAttribute
     >;
@@ -2465,9 +2477,6 @@ export namespace JSX {
     "color-rendering"?: FunctionMaybe<
       "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit" | RemoveAttribute
     >;
-    cursor?: FunctionMaybe<string | RemoveAttribute>;
-    direction?: FunctionMaybe<"ltr" | "rtl" | "inherit" | RemoveAttribute>;
-    display?: FunctionMaybe<string | RemoveAttribute>;
     "dominant-baseline"?: FunctionMaybe<
       | "auto"
       | "text-bottom"
@@ -2482,10 +2491,8 @@ export namespace JSX {
       | RemoveAttribute
     >;
     "enable-background"?: FunctionMaybe<string | RemoveAttribute>;
-    fill?: FunctionMaybe<string | RemoveAttribute>;
     "fill-opacity"?: FunctionMaybe<number | string | "inherit" | RemoveAttribute>;
     "fill-rule"?: FunctionMaybe<"nonzero" | "evenodd" | "inherit" | RemoveAttribute>;
-    filter?: FunctionMaybe<string | RemoveAttribute>;
     "flood-color"?: FunctionMaybe<string | RemoveAttribute>;
     "flood-opacity"?: FunctionMaybe<number | string | "inherit" | RemoveAttribute>;
     "font-family"?: FunctionMaybe<string | RemoveAttribute>;
@@ -2500,18 +2507,11 @@ export namespace JSX {
     "image-rendering"?: FunctionMaybe<
       "auto" | "optimizeQuality" | "optimizeSpeed" | "inherit" | RemoveAttribute
     >;
-    kerning?: FunctionMaybe<string | RemoveAttribute>;
     "letter-spacing"?: FunctionMaybe<number | string | RemoveAttribute>;
     "lighting-color"?: FunctionMaybe<string | RemoveAttribute>;
     "marker-end"?: FunctionMaybe<string | RemoveAttribute>;
     "marker-mid"?: FunctionMaybe<string | RemoveAttribute>;
     "marker-start"?: FunctionMaybe<string | RemoveAttribute>;
-    mask?: FunctionMaybe<string | RemoveAttribute>;
-    opacity?: FunctionMaybe<number | string | "inherit" | RemoveAttribute>;
-    overflow?: FunctionMaybe<
-      "visible" | "hidden" | "scroll" | "auto" | "inherit" | RemoveAttribute
-    >;
-    pathLength?: FunctionMaybe<string | number | RemoveAttribute>;
     "pointer-events"?: FunctionMaybe<
       | "bounding-box"
       | "visiblePainted"
@@ -2532,7 +2532,6 @@ export namespace JSX {
     >;
     "stop-color"?: FunctionMaybe<string | RemoveAttribute>;
     "stop-opacity"?: FunctionMaybe<number | string | "inherit" | RemoveAttribute>;
-    stroke?: FunctionMaybe<string | RemoveAttribute>;
     "stroke-dasharray"?: FunctionMaybe<string | RemoveAttribute>;
     "stroke-dashoffset"?: FunctionMaybe<number | string | RemoveAttribute>;
     "stroke-linecap"?: FunctionMaybe<"butt" | "round" | "square" | "inherit" | RemoveAttribute>;
@@ -2555,11 +2554,26 @@ export namespace JSX {
       | RemoveAttribute
     >;
     "unicode-bidi"?: FunctionMaybe<string | RemoveAttribute>;
-    visibility?: FunctionMaybe<"visible" | "hidden" | "collapse" | "inherit" | RemoveAttribute>;
     "word-spacing"?: FunctionMaybe<number | string | RemoveAttribute>;
     "writing-mode"?: FunctionMaybe<
       "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit" | RemoveAttribute
     >;
+    clip?: FunctionMaybe<string | RemoveAttribute>;
+    color?: FunctionMaybe<string | RemoveAttribute>;
+    cursor?: FunctionMaybe<string | RemoveAttribute>;
+    direction?: FunctionMaybe<"ltr" | "rtl" | "inherit" | RemoveAttribute>;
+    display?: FunctionMaybe<string | RemoveAttribute>;
+    fill?: FunctionMaybe<string | RemoveAttribute>;
+    filter?: FunctionMaybe<string | RemoveAttribute>;
+    kerning?: FunctionMaybe<string | RemoveAttribute>;
+    mask?: FunctionMaybe<string | RemoveAttribute>;
+    opacity?: FunctionMaybe<number | string | "inherit" | RemoveAttribute>;
+    overflow?: FunctionMaybe<
+      "visible" | "hidden" | "scroll" | "auto" | "inherit" | RemoveAttribute
+    >;
+    pathLength?: FunctionMaybe<string | number | RemoveAttribute>;
+    stroke?: FunctionMaybe<string | RemoveAttribute>;
+    visibility?: FunctionMaybe<"visible" | "hidden" | "collapse" | "inherit" | RemoveAttribute>;
   }
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2582,11 +2596,11 @@ export namespace JSX {
   interface FilterPrimitiveElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
-    x?: FunctionMaybe<number | string | RemoveAttribute>;
-    y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     result?: FunctionMaybe<string | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
+    x?: FunctionMaybe<number | string | RemoveAttribute>;
+    y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface SingleInputFilterSVGAttributes {
     in?: FunctionMaybe<string | RemoveAttribute>;
@@ -2596,17 +2610,17 @@ export namespace JSX {
     in2?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface FitToViewBoxSVGAttributes {
-    viewBox?: FunctionMaybe<string | RemoveAttribute>;
     preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | RemoveAttribute>;
+    viewBox?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface GradientElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    gradientUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
     gradientTransform?: FunctionMaybe<string | RemoveAttribute>;
-    spreadMethod?: FunctionMaybe<"pad" | "reflect" | "repeat" | RemoveAttribute>;
+    gradientUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
     href?: FunctionMaybe<string | RemoveAttribute>;
+    spreadMethod?: FunctionMaybe<"pad" | "reflect" | "repeat" | RemoveAttribute>;
   }
   interface GraphicsElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2701,10 +2715,10 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    path?: FunctionMaybe<string | RemoveAttribute>;
     keyPoints?: FunctionMaybe<string | RemoveAttribute>;
-    rotate?: FunctionMaybe<number | string | "auto" | "auto-reverse" | RemoveAttribute>;
     origin?: FunctionMaybe<"default" | RemoveAttribute>;
+    path?: FunctionMaybe<string | RemoveAttribute>;
+    rotate?: FunctionMaybe<number | string | "auto" | "auto-reverse" | RemoveAttribute>;
   }
   interface AnimateTransformSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -2777,36 +2791,36 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    operator?: FunctionMaybe<
-      "over" | "in" | "out" | "atop" | "xor" | "arithmetic" | RemoveAttribute
-    >;
     k1?: FunctionMaybe<number | string | RemoveAttribute>;
     k2?: FunctionMaybe<number | string | RemoveAttribute>;
     k3?: FunctionMaybe<number | string | RemoveAttribute>;
     k4?: FunctionMaybe<number | string | RemoveAttribute>;
+    operator?: FunctionMaybe<
+      "over" | "in" | "out" | "atop" | "xor" | "arithmetic" | RemoveAttribute
+    >;
   }
   interface FeConvolveMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    order?: FunctionMaybe<number | string | RemoveAttribute>;
-    kernelMatrix?: FunctionMaybe<string | RemoveAttribute>;
-    divisor?: FunctionMaybe<number | string | RemoveAttribute>;
     bias?: FunctionMaybe<number | string | RemoveAttribute>;
+    divisor?: FunctionMaybe<number | string | RemoveAttribute>;
+    edgeMode?: FunctionMaybe<"duplicate" | "wrap" | "none" | RemoveAttribute>;
+    kernelMatrix?: FunctionMaybe<string | RemoveAttribute>;
+    kernelUnitLength?: FunctionMaybe<number | string | RemoveAttribute>;
+    order?: FunctionMaybe<number | string | RemoveAttribute>;
+    preserveAlpha?: FunctionMaybe<EnumeratedPseudoBoolean | RemoveAttribute>;
     targetX?: FunctionMaybe<number | string | RemoveAttribute>;
     targetY?: FunctionMaybe<number | string | RemoveAttribute>;
-    edgeMode?: FunctionMaybe<"duplicate" | "wrap" | "none" | RemoveAttribute>;
-    kernelUnitLength?: FunctionMaybe<number | string | RemoveAttribute>;
-    preserveAlpha?: FunctionMaybe<EnumeratedPseudoBoolean | RemoveAttribute>;
   }
   interface FeDiffuseLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    surfaceScale?: FunctionMaybe<number | string | RemoveAttribute>;
     diffuseConstant?: FunctionMaybe<number | string | RemoveAttribute>;
     kernelUnitLength?: FunctionMaybe<number | string | RemoveAttribute>;
+    surfaceScale?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeDisplacementMapSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2834,13 +2848,13 @@ export namespace JSX {
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
   interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
-    type?: FunctionMaybe<"identity" | "table" | "discrete" | "linear" | "gamma" | RemoveAttribute>;
-    tableValues?: FunctionMaybe<string | RemoveAttribute>;
-    slope?: FunctionMaybe<number | string | RemoveAttribute>;
-    intercept?: FunctionMaybe<number | string | RemoveAttribute>;
     amplitude?: FunctionMaybe<number | string | RemoveAttribute>;
     exponent?: FunctionMaybe<number | string | RemoveAttribute>;
+    intercept?: FunctionMaybe<number | string | RemoveAttribute>;
     offset?: FunctionMaybe<number | string | RemoveAttribute>;
+    slope?: FunctionMaybe<number | string | RemoveAttribute>;
+    tableValues?: FunctionMaybe<string | RemoveAttribute>;
+    type?: FunctionMaybe<"identity" | "table" | "discrete" | "linear" | "gamma" | RemoveAttribute>;
   }
   interface FeGaussianBlurSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2852,8 +2866,8 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | RemoveAttribute>;
     href?: FunctionMaybe<string | RemoveAttribute>;
+    preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | RemoveAttribute>;
   }
   interface FeMergeSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2885,20 +2899,20 @@ export namespace JSX {
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    surfaceScale?: FunctionMaybe<string | RemoveAttribute>;
+    kernelUnitLength?: FunctionMaybe<number | string | RemoveAttribute>;
     specularConstant?: FunctionMaybe<string | RemoveAttribute>;
     specularExponent?: FunctionMaybe<string | RemoveAttribute>;
-    kernelUnitLength?: FunctionMaybe<number | string | RemoveAttribute>;
+    surfaceScale?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface FeSpotLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    x?: FunctionMaybe<number | string | RemoveAttribute>;
-    y?: FunctionMaybe<number | string | RemoveAttribute>;
-    z?: FunctionMaybe<number | string | RemoveAttribute>;
+    limitingConeAngle?: FunctionMaybe<number | string | RemoveAttribute>;
     pointsAtX?: FunctionMaybe<number | string | RemoveAttribute>;
     pointsAtY?: FunctionMaybe<number | string | RemoveAttribute>;
     pointsAtZ?: FunctionMaybe<number | string | RemoveAttribute>;
     specularExponent?: FunctionMaybe<number | string | RemoveAttribute>;
-    limitingConeAngle?: FunctionMaybe<number | string | RemoveAttribute>;
+    x?: FunctionMaybe<number | string | RemoveAttribute>;
+    y?: FunctionMaybe<number | string | RemoveAttribute>;
+    z?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeTileSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2917,13 +2931,13 @@ export namespace JSX {
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
+    filterRes?: FunctionMaybe<number | string | RemoveAttribute>;
     filterUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
+    height?: FunctionMaybe<number | string | RemoveAttribute>;
     primitiveUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
     x?: FunctionMaybe<number | string | RemoveAttribute>;
     y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
-    height?: FunctionMaybe<number | string | RemoveAttribute>;
-    filterRes?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface ForeignObjectSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
@@ -2932,10 +2946,10 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "display" | "visibility"> {
+    height?: FunctionMaybe<number | string | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
     x?: FunctionMaybe<number | string | RemoveAttribute>;
     y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
-    height?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface GSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2951,12 +2965,12 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "color-profile" | "image-rendering"> {
+    height?: FunctionMaybe<number | string | RemoveAttribute>;
+    href?: FunctionMaybe<string | RemoveAttribute>;
+    preserveAspectRatio?: FunctionMaybe<ImagePreserveAspectRatio | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
     x?: FunctionMaybe<number | string | RemoveAttribute>;
     y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
-    height?: FunctionMaybe<number | string | RemoveAttribute>;
-    preserveAspectRatio?: FunctionMaybe<ImagePreserveAspectRatio | RemoveAttribute>;
-    href?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface LineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2967,8 +2981,8 @@ export namespace JSX {
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     x1?: FunctionMaybe<number | string | RemoveAttribute>;
-    y1?: FunctionMaybe<number | string | RemoveAttribute>;
     x2?: FunctionMaybe<number | string | RemoveAttribute>;
+    y1?: FunctionMaybe<number | string | RemoveAttribute>;
     y2?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface LinearGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
@@ -2983,12 +2997,12 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
+    markerHeight?: FunctionMaybe<number | string | RemoveAttribute>;
     markerUnits?: FunctionMaybe<"strokeWidth" | "userSpaceOnUse" | RemoveAttribute>;
+    markerWidth?: FunctionMaybe<number | string | RemoveAttribute>;
+    orient?: FunctionMaybe<string | RemoveAttribute>;
     refX?: FunctionMaybe<number | string | RemoveAttribute>;
     refY?: FunctionMaybe<number | string | RemoveAttribute>;
-    markerWidth?: FunctionMaybe<number | string | RemoveAttribute>;
-    markerHeight?: FunctionMaybe<number | string | RemoveAttribute>;
-    orient?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface MaskSVGAttributes<T>
     extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
@@ -2996,12 +3010,12 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    maskUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
+    height?: FunctionMaybe<number | string | RemoveAttribute>;
     maskContentUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
+    maskUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
     x?: FunctionMaybe<number | string | RemoveAttribute>;
     y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
-    height?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
@@ -3023,14 +3037,14 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
-    x?: FunctionMaybe<number | string | RemoveAttribute>;
-    y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
-    patternUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
+    href?: FunctionMaybe<string | RemoveAttribute>;
     patternContentUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
     patternTransform?: FunctionMaybe<string | RemoveAttribute>;
-    href?: FunctionMaybe<string | RemoveAttribute>;
+    patternUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
+    x?: FunctionMaybe<number | string | RemoveAttribute>;
+    y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface PolygonSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -3055,9 +3069,9 @@ export namespace JSX {
   interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
     cx?: FunctionMaybe<number | string | RemoveAttribute>;
     cy?: FunctionMaybe<number | string | RemoveAttribute>;
-    r?: FunctionMaybe<number | string | RemoveAttribute>;
     fx?: FunctionMaybe<number | string | RemoveAttribute>;
     fy?: FunctionMaybe<number | string | RemoveAttribute>;
+    r?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface RectSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -3067,12 +3081,12 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    x?: FunctionMaybe<number | string | RemoveAttribute>;
-    y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     rx?: FunctionMaybe<number | string | RemoveAttribute>;
     ry?: FunctionMaybe<number | string | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
+    x?: FunctionMaybe<number | string | RemoveAttribute>;
+    y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface SetSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -3123,12 +3137,12 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | RemoveAttribute>;
     refX?: FunctionMaybe<number | string | RemoveAttribute>;
     refY?: FunctionMaybe<number | string | RemoveAttribute>;
     viewBox?: FunctionMaybe<string | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
     x?: FunctionMaybe<number | string | RemoveAttribute>;
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
@@ -3140,13 +3154,13 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "writing-mode" | "text-rendering"> {
-    x?: FunctionMaybe<number | string | RemoveAttribute>;
-    y?: FunctionMaybe<number | string | RemoveAttribute>;
     dx?: FunctionMaybe<number | string | RemoveAttribute>;
     dy?: FunctionMaybe<number | string | RemoveAttribute>;
+    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs" | RemoveAttribute>;
     rotate?: FunctionMaybe<number | string | RemoveAttribute>;
     textLength?: FunctionMaybe<number | string | RemoveAttribute>;
-    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs" | RemoveAttribute>;
+    x?: FunctionMaybe<number | string | RemoveAttribute>;
+    y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface TextPathSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -3157,10 +3171,10 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    startOffset?: FunctionMaybe<number | string | RemoveAttribute>;
+    href?: FunctionMaybe<string | RemoveAttribute>;
     method?: FunctionMaybe<"align" | "stretch" | RemoveAttribute>;
     spacing?: FunctionMaybe<"auto" | "exact" | RemoveAttribute>;
-    href?: FunctionMaybe<string | RemoveAttribute>;
+    startOffset?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface TSpanSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -3171,13 +3185,13 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    x?: FunctionMaybe<number | string | RemoveAttribute>;
-    y?: FunctionMaybe<number | string | RemoveAttribute>;
     dx?: FunctionMaybe<number | string | RemoveAttribute>;
     dy?: FunctionMaybe<number | string | RemoveAttribute>;
+    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs" | RemoveAttribute>;
     rotate?: FunctionMaybe<number | string | RemoveAttribute>;
     textLength?: FunctionMaybe<number | string | RemoveAttribute>;
-    lengthAdjust?: FunctionMaybe<"spacing" | "spacingAndGlyphs" | RemoveAttribute>;
+    x?: FunctionMaybe<number | string | RemoveAttribute>;
+    y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
@@ -3188,11 +3202,11 @@ export namespace JSX {
       PresentationSVGAttributes,
       ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
-    x?: FunctionMaybe<number | string | RemoveAttribute>;
-    y?: FunctionMaybe<number | string | RemoveAttribute>;
-    width?: FunctionMaybe<number | string | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     href?: FunctionMaybe<string | RemoveAttribute>;
+    width?: FunctionMaybe<number | string | RemoveAttribute>;
+    x?: FunctionMaybe<number | string | RemoveAttribute>;
+    y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface ViewSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -3521,7 +3535,7 @@ export namespace JSX {
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCaptionElement
      */
-    caption: HTMLAttributes<HTMLTableCaptionElement>;
+    caption: CaptionHTMLAttributes<HTMLTableCaptionElement>;
     /**
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
