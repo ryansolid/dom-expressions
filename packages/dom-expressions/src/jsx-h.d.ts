@@ -727,9 +727,9 @@ export namespace JSX {
       CustomEventHandlersLowerCase<T>,
       CustomEventHandlersNamespaced<T> {
     children?: FunctionMaybe<Element | undefined>;
-    innerHTML?: FunctionMaybe<string | undefined>;
-    innerText?: FunctionMaybe<string | number | undefined>;
-    textContent?: FunctionMaybe<string | number | undefined>;
+    innerHTML?: FunctionMaybe<string>;
+    innerText?: FunctionMaybe<string | number>;
+    textContent?: FunctionMaybe<string | number>;
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
