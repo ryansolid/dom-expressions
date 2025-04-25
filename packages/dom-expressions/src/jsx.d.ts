@@ -772,9 +772,9 @@ export namespace JSX {
       CustomEventHandlersLowerCase<T>,
       CustomEventHandlersNamespaced<T> {
     children?: Element | undefined;
-    innerHTML?: string | undefined;
-    innerText?: string | number | undefined;
-    textContent?: string | number | undefined;
+    innerHTML?: string;
+    innerText?: string | number;
+    textContent?: string | number;
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
@@ -1359,6 +1359,9 @@ export namespace JSX {
     shape?: "rect" | "circle" | "poly" | "default" | RemoveAttribute;
     target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
 
+    /** @experimental */
+    attributionsrc?: string | RemoveAttribute;
+
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
 
@@ -1385,9 +1388,9 @@ export namespace JSX {
     formmethod?: HTMLFormMethod | RemoveAttribute;
     formnovalidate?: BooleanAttribute | RemoveAttribute;
     formtarget?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
+    name?: string | RemoveAttribute;
     popovertarget?: string | RemoveAttribute;
     popovertargetaction?: "hide" | "show" | "toggle" | RemoveAttribute;
-    name?: string | RemoveAttribute;
     type?: "submit" | "reset" | "button" | "menu" | RemoveAttribute;
     value?: string | RemoveAttribute;
 
@@ -1419,8 +1422,8 @@ export namespace JSX {
     popoverTargetAction?: "hide" | "show" | "toggle" | RemoveAttribute;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    width?: number | string | RemoveAttribute;
     height?: number | string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -1437,6 +1440,10 @@ export namespace JSX {
      * @non-standard
      */
     "moz-opaque"?: BooleanAttribute | RemoveAttribute;
+  }
+  interface CaptionHTMLAttributes<T> extends HTMLAttributes<T> {
+    /** @deprecated */
+    align?: "left" | "center" | "right" | RemoveAttribute;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | string | RemoveAttribute;
@@ -1479,6 +1486,13 @@ export namespace JSX {
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: BooleanAttribute | RemoveAttribute;
+    /**
+     * Do not add the tabindex property to the <dialog> element as it is not interactive and does
+     * not receive focus. The dialog's contents, including the close button contained in the dialog,
+     * can receive focus and be interactive.
+     *
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#usage_notes
+     */
     tabindex?: never;
 
     onClose?: EventHandlerUnion<T, Event> | undefined;
@@ -1587,6 +1601,8 @@ export namespace JSX {
     alt?: string | RemoveAttribute;
     crossorigin?: HTMLCrossorigin | RemoveAttribute;
     decoding?: "sync" | "async" | "auto" | RemoveAttribute;
+    elementtiming?: string | RemoveAttribute;
+    fetchpriority?: "high" | "low" | "auto" | RemoveAttribute;
     height?: number | string | RemoveAttribute;
     ismap?: BooleanAttribute | RemoveAttribute;
     loading?: "eager" | "lazy" | RemoveAttribute;
@@ -1596,8 +1612,6 @@ export namespace JSX {
     srcset?: string | RemoveAttribute;
     usemap?: string | RemoveAttribute;
     width?: number | string | RemoveAttribute;
-    elementtiming?: string | RemoveAttribute;
-    fetchpriority?: "high" | "low" | "auto" | RemoveAttribute;
 
     /** @experimental */
     attributionsrc?: string | RemoveAttribute;
@@ -1905,8 +1919,6 @@ export namespace JSX {
     type?: "context" | "toolbar" | RemoveAttribute;
   }
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
-    charset?: string | RemoveAttribute;
-    content?: string | RemoveAttribute;
     "http-equiv"?:
       | "content-security-policy"
       | "content-type"
@@ -1914,8 +1926,10 @@ export namespace JSX {
       | "x-ua-compatible"
       | "refresh"
       | RemoveAttribute;
-    name?: string | RemoveAttribute;
+    charset?: string | RemoveAttribute;
+    content?: string | RemoveAttribute;
     media?: string | RemoveAttribute;
+    name?: string | RemoveAttribute;
 
     /** @deprecated */
     scheme?: string | RemoveAttribute;
@@ -1992,8 +2006,8 @@ export namespace JSX {
     value?: string | string[] | number | RemoveAttribute;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: string | RemoveAttribute;
     for?: string | RemoveAttribute;
+    form?: string | RemoveAttribute;
     name?: string | RemoveAttribute;
   }
   interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2055,13 +2069,13 @@ export namespace JSX {
     name?: string | RemoveAttribute;
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
+    height?: number | string | RemoveAttribute;
     media?: string | RemoveAttribute;
     sizes?: string | RemoveAttribute;
     src?: string | RemoveAttribute;
     srcset?: string | RemoveAttribute;
     type?: string | RemoveAttribute;
     width?: number | string | RemoveAttribute;
-    height?: number | string | RemoveAttribute;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     blocking?: "render" | RemoveAttribute;
@@ -2107,9 +2121,9 @@ export namespace JSX {
     width?: number | string | RemoveAttribute;
   }
   interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
-    shadowrootmode?: "open" | "closed" | RemoveAttribute;
     shadowrootclonable?: BooleanAttribute | RemoveAttribute;
     shadowrootdelegatesfocus?: BooleanAttribute | RemoveAttribute;
+    shadowrootmode?: "open" | "closed" | RemoveAttribute;
 
     /** @experimental */
     shadowrootserializable?: BooleanAttribute | RemoveAttribute;
@@ -2276,12 +2290,11 @@ export namespace JSX {
     mediagroup?: string | RemoveAttribute;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
+    disablepictureinpicture?: BooleanAttribute | RemoveAttribute;
     height?: number | string | RemoveAttribute;
     playsinline?: BooleanAttribute | RemoveAttribute;
     poster?: string | RemoveAttribute;
     width?: number | string | RemoveAttribute;
-    disablepictureinpicture?: BooleanAttribute | RemoveAttribute;
-    disableremoteplayback?: BooleanAttribute | RemoveAttribute;
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
@@ -2411,26 +2424,26 @@ export namespace JSX {
     begin?: string | RemoveAttribute;
     dur?: string | RemoveAttribute;
     end?: string | RemoveAttribute;
-    min?: string | RemoveAttribute;
+    fill?: "freeze" | "remove" | RemoveAttribute;
     max?: string | RemoveAttribute;
-    restart?: "always" | "whenNotActive" | "never" | RemoveAttribute;
+    min?: string | RemoveAttribute;
     repeatCount?: number | "indefinite" | RemoveAttribute;
     repeatDur?: string | RemoveAttribute;
-    fill?: "freeze" | "remove" | RemoveAttribute;
+    restart?: "always" | "whenNotActive" | "never" | RemoveAttribute;
   }
   interface AnimationValueSVGAttributes {
-    calcMode?: "discrete" | "linear" | "paced" | "spline" | RemoveAttribute;
-    values?: string | RemoveAttribute;
-    keyTimes?: string | RemoveAttribute;
-    keySplines?: string | RemoveAttribute;
-    from?: number | string | RemoveAttribute;
-    to?: number | string | RemoveAttribute;
     by?: number | string | RemoveAttribute;
+    calcMode?: "discrete" | "linear" | "paced" | "spline" | RemoveAttribute;
+    from?: number | string | RemoveAttribute;
+    keySplines?: string | RemoveAttribute;
+    keyTimes?: string | RemoveAttribute;
+    to?: number | string | RemoveAttribute;
+    values?: string | RemoveAttribute;
   }
   interface AnimationAdditionSVGAttributes {
-    attributeName?: string | RemoveAttribute;
-    additive?: "replace" | "sum" | RemoveAttribute;
     accumulate?: "none" | "sum" | RemoveAttribute;
+    additive?: "replace" | "sum" | RemoveAttribute;
+    attributeName?: string | RemoveAttribute;
   }
   interface AnimationAttributeTargetSVGAttributes {
     attributeName?: string | RemoveAttribute;
@@ -2453,17 +2466,12 @@ export namespace JSX {
       | "inherit"
       | RemoveAttribute;
     "baseline-shift"?: number | string | RemoveAttribute;
-    clip?: string | RemoveAttribute;
     "clip-path"?: string | RemoveAttribute;
     "clip-rule"?: "nonzero" | "evenodd" | "inherit" | RemoveAttribute;
-    color?: string | RemoveAttribute;
     "color-interpolation"?: "auto" | "sRGB" | "linearRGB" | "inherit" | RemoveAttribute;
     "color-interpolation-filters"?: "auto" | "sRGB" | "linearRGB" | "inherit" | RemoveAttribute;
     "color-profile"?: string | RemoveAttribute;
     "color-rendering"?: "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit" | RemoveAttribute;
-    cursor?: string | RemoveAttribute;
-    direction?: "ltr" | "rtl" | "inherit" | RemoveAttribute;
-    display?: string | RemoveAttribute;
     "dominant-baseline"?:
       | "auto"
       | "text-bottom"
@@ -2477,10 +2485,8 @@ export namespace JSX {
       | "inherit"
       | RemoveAttribute;
     "enable-background"?: string | RemoveAttribute;
-    fill?: string | RemoveAttribute;
     "fill-opacity"?: number | string | "inherit" | RemoveAttribute;
     "fill-rule"?: "nonzero" | "evenodd" | "inherit" | RemoveAttribute;
-    filter?: string | RemoveAttribute;
     "flood-color"?: string | RemoveAttribute;
     "flood-opacity"?: number | string | "inherit" | RemoveAttribute;
     "font-family"?: string | RemoveAttribute;
@@ -2493,16 +2499,11 @@ export namespace JSX {
     "glyph-orientation-horizontal"?: string | RemoveAttribute;
     "glyph-orientation-vertical"?: string | RemoveAttribute;
     "image-rendering"?: "auto" | "optimizeQuality" | "optimizeSpeed" | "inherit" | RemoveAttribute;
-    kerning?: string | RemoveAttribute;
     "letter-spacing"?: number | string | RemoveAttribute;
     "lighting-color"?: string | RemoveAttribute;
     "marker-end"?: string | RemoveAttribute;
     "marker-mid"?: string | RemoveAttribute;
     "marker-start"?: string | RemoveAttribute;
-    mask?: string | RemoveAttribute;
-    opacity?: number | string | "inherit" | RemoveAttribute;
-    overflow?: "visible" | "hidden" | "scroll" | "auto" | "inherit" | RemoveAttribute;
-    pathLength?: string | number | RemoveAttribute;
     "pointer-events"?:
       | "bounding-box"
       | "visiblePainted"
@@ -2526,7 +2527,6 @@ export namespace JSX {
       | RemoveAttribute;
     "stop-color"?: string | RemoveAttribute;
     "stop-opacity"?: number | string | "inherit" | RemoveAttribute;
-    stroke?: string | RemoveAttribute;
     "stroke-dasharray"?: string | RemoveAttribute;
     "stroke-dashoffset"?: number | string | RemoveAttribute;
     "stroke-linecap"?: "butt" | "round" | "square" | "inherit" | RemoveAttribute;
@@ -2558,9 +2558,22 @@ export namespace JSX {
       | "inherit"
       | RemoveAttribute;
     "unicode-bidi"?: string | RemoveAttribute;
-    visibility?: "visible" | "hidden" | "collapse" | "inherit" | RemoveAttribute;
     "word-spacing"?: number | string | RemoveAttribute;
     "writing-mode"?: "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit" | RemoveAttribute;
+    clip?: string | RemoveAttribute;
+    color?: string | RemoveAttribute;
+    cursor?: string | RemoveAttribute;
+    direction?: "ltr" | "rtl" | "inherit" | RemoveAttribute;
+    display?: string | RemoveAttribute;
+    fill?: string | RemoveAttribute;
+    filter?: string | RemoveAttribute;
+    kerning?: string | RemoveAttribute;
+    mask?: string | RemoveAttribute;
+    opacity?: number | string | "inherit" | RemoveAttribute;
+    overflow?: "visible" | "hidden" | "scroll" | "auto" | "inherit" | RemoveAttribute;
+    pathLength?: string | number | RemoveAttribute;
+    stroke?: string | RemoveAttribute;
+    visibility?: "visible" | "hidden" | "collapse" | "inherit" | RemoveAttribute;
   }
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2583,11 +2596,11 @@ export namespace JSX {
   interface FilterPrimitiveElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
-    x?: number | string | RemoveAttribute;
-    y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
     height?: number | string | RemoveAttribute;
     result?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface SingleInputFilterSVGAttributes {
     in?: string | RemoveAttribute;
@@ -2597,17 +2610,17 @@ export namespace JSX {
     in2?: string | RemoveAttribute;
   }
   interface FitToViewBoxSVGAttributes {
-    viewBox?: string | RemoveAttribute;
     preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
+    viewBox?: string | RemoveAttribute;
   }
   interface GradientElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    gradientUnits?: SVGUnits | RemoveAttribute;
     gradientTransform?: string | RemoveAttribute;
-    spreadMethod?: "pad" | "reflect" | "repeat" | RemoveAttribute;
+    gradientUnits?: SVGUnits | RemoveAttribute;
     href?: string | RemoveAttribute;
+    spreadMethod?: "pad" | "reflect" | "repeat" | RemoveAttribute;
   }
   interface GraphicsElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2702,10 +2715,10 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    path?: string | RemoveAttribute;
     keyPoints?: string | RemoveAttribute;
-    rotate?: number | string | "auto" | "auto-reverse" | RemoveAttribute;
     origin?: "default" | RemoveAttribute;
+    path?: string | RemoveAttribute;
+    rotate?: number | string | "auto" | "auto-reverse" | RemoveAttribute;
   }
   interface AnimateTransformSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -2776,34 +2789,34 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    operator?: "over" | "in" | "out" | "atop" | "xor" | "arithmetic" | RemoveAttribute;
     k1?: number | string | RemoveAttribute;
     k2?: number | string | RemoveAttribute;
     k3?: number | string | RemoveAttribute;
     k4?: number | string | RemoveAttribute;
+    operator?: "over" | "in" | "out" | "atop" | "xor" | "arithmetic" | RemoveAttribute;
   }
   interface FeConvolveMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    order?: number | string | RemoveAttribute;
-    kernelMatrix?: string | RemoveAttribute;
-    divisor?: number | string | RemoveAttribute;
     bias?: number | string | RemoveAttribute;
+    divisor?: number | string | RemoveAttribute;
+    edgeMode?: "duplicate" | "wrap" | "none" | RemoveAttribute;
+    kernelMatrix?: string | RemoveAttribute;
+    kernelUnitLength?: number | string | RemoveAttribute;
+    order?: number | string | RemoveAttribute;
+    preserveAlpha?: EnumeratedPseudoBoolean | RemoveAttribute;
     targetX?: number | string | RemoveAttribute;
     targetY?: number | string | RemoveAttribute;
-    edgeMode?: "duplicate" | "wrap" | "none" | RemoveAttribute;
-    kernelUnitLength?: number | string | RemoveAttribute;
-    preserveAlpha?: EnumeratedPseudoBoolean | RemoveAttribute;
   }
   interface FeDiffuseLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    surfaceScale?: number | string | RemoveAttribute;
     diffuseConstant?: number | string | RemoveAttribute;
     kernelUnitLength?: number | string | RemoveAttribute;
+    surfaceScale?: number | string | RemoveAttribute;
   }
   interface FeDisplacementMapSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2831,13 +2844,13 @@ export namespace JSX {
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
   interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
-    type?: "identity" | "table" | "discrete" | "linear" | "gamma" | RemoveAttribute;
-    tableValues?: string | RemoveAttribute;
-    slope?: number | string | RemoveAttribute;
-    intercept?: number | string | RemoveAttribute;
     amplitude?: number | string | RemoveAttribute;
     exponent?: number | string | RemoveAttribute;
+    intercept?: number | string | RemoveAttribute;
     offset?: number | string | RemoveAttribute;
+    slope?: number | string | RemoveAttribute;
+    tableValues?: string | RemoveAttribute;
+    type?: "identity" | "table" | "discrete" | "linear" | "gamma" | RemoveAttribute;
   }
   interface FeGaussianBlurSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2849,8 +2862,8 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
     href?: string | RemoveAttribute;
+    preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
   }
   interface FeMergeSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2882,20 +2895,20 @@ export namespace JSX {
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    surfaceScale?: string | RemoveAttribute;
+    kernelUnitLength?: number | string | RemoveAttribute;
     specularConstant?: string | RemoveAttribute;
     specularExponent?: string | RemoveAttribute;
-    kernelUnitLength?: number | string | RemoveAttribute;
+    surfaceScale?: string | RemoveAttribute;
   }
   interface FeSpotLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    x?: number | string | RemoveAttribute;
-    y?: number | string | RemoveAttribute;
-    z?: number | string | RemoveAttribute;
+    limitingConeAngle?: number | string | RemoveAttribute;
     pointsAtX?: number | string | RemoveAttribute;
     pointsAtY?: number | string | RemoveAttribute;
     pointsAtZ?: number | string | RemoveAttribute;
     specularExponent?: number | string | RemoveAttribute;
-    limitingConeAngle?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
+    z?: number | string | RemoveAttribute;
   }
   interface FeTileSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2914,13 +2927,13 @@ export namespace JSX {
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
+    filterRes?: number | string | RemoveAttribute;
     filterUnits?: SVGUnits | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
     primitiveUnits?: SVGUnits | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
-    height?: number | string | RemoveAttribute;
-    filterRes?: number | string | RemoveAttribute;
   }
   interface ForeignObjectSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
@@ -2929,10 +2942,10 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "display" | "visibility"> {
+    height?: number | string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
-    height?: number | string | RemoveAttribute;
   }
   interface GSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2948,12 +2961,12 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "color-profile" | "image-rendering"> {
+    height?: number | string | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    preserveAspectRatio?: ImagePreserveAspectRatio | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
-    height?: number | string | RemoveAttribute;
-    preserveAspectRatio?: ImagePreserveAspectRatio | RemoveAttribute;
-    href?: string | RemoveAttribute;
   }
   interface LineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2964,8 +2977,8 @@ export namespace JSX {
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
     x1?: number | string | RemoveAttribute;
-    y1?: number | string | RemoveAttribute;
     x2?: number | string | RemoveAttribute;
+    y1?: number | string | RemoveAttribute;
     y2?: number | string | RemoveAttribute;
   }
   interface LinearGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
@@ -2980,12 +2993,12 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
+    markerHeight?: number | string | RemoveAttribute;
     markerUnits?: "strokeWidth" | "userSpaceOnUse" | RemoveAttribute;
+    markerWidth?: number | string | RemoveAttribute;
+    orient?: string | RemoveAttribute;
     refX?: number | string | RemoveAttribute;
     refY?: number | string | RemoveAttribute;
-    markerWidth?: number | string | RemoveAttribute;
-    markerHeight?: number | string | RemoveAttribute;
-    orient?: string | RemoveAttribute;
   }
   interface MaskSVGAttributes<T>
     extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
@@ -2993,12 +3006,12 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    maskUnits?: SVGUnits | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
     maskContentUnits?: SVGUnits | RemoveAttribute;
+    maskUnits?: SVGUnits | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
-    height?: number | string | RemoveAttribute;
   }
   interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
@@ -3020,14 +3033,14 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
-    x?: number | string | RemoveAttribute;
-    y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
     height?: number | string | RemoveAttribute;
-    patternUnits?: SVGUnits | RemoveAttribute;
+    href?: string | RemoveAttribute;
     patternContentUnits?: SVGUnits | RemoveAttribute;
     patternTransform?: string | RemoveAttribute;
-    href?: string | RemoveAttribute;
+    patternUnits?: SVGUnits | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface PolygonSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -3052,9 +3065,9 @@ export namespace JSX {
   interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
     cx?: number | string | RemoveAttribute;
     cy?: number | string | RemoveAttribute;
-    r?: number | string | RemoveAttribute;
     fx?: number | string | RemoveAttribute;
     fy?: number | string | RemoveAttribute;
+    r?: number | string | RemoveAttribute;
   }
   interface RectSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -3064,12 +3077,12 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    x?: number | string | RemoveAttribute;
-    y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
     height?: number | string | RemoveAttribute;
     rx?: number | string | RemoveAttribute;
     ry?: number | string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface SetSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -3120,12 +3133,12 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    width?: number | string | RemoveAttribute;
     height?: number | string | RemoveAttribute;
     preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
     refX?: number | string | RemoveAttribute;
     refY?: number | string | RemoveAttribute;
     viewBox?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
     x?: number | string | RemoveAttribute;
     y?: number | string | RemoveAttribute;
   }
@@ -3137,13 +3150,13 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "writing-mode" | "text-rendering"> {
-    x?: number | string | RemoveAttribute;
-    y?: number | string | RemoveAttribute;
     dx?: number | string | RemoveAttribute;
     dy?: number | string | RemoveAttribute;
+    lengthAdjust?: "spacing" | "spacingAndGlyphs" | RemoveAttribute;
     rotate?: number | string | RemoveAttribute;
     textLength?: number | string | RemoveAttribute;
-    lengthAdjust?: "spacing" | "spacingAndGlyphs" | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface TextPathSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -3154,10 +3167,10 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    startOffset?: number | string | RemoveAttribute;
+    href?: string | RemoveAttribute;
     method?: "align" | "stretch" | RemoveAttribute;
     spacing?: "auto" | "exact" | RemoveAttribute;
-    href?: string | RemoveAttribute;
+    startOffset?: number | string | RemoveAttribute;
   }
   interface TSpanSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -3168,13 +3181,13 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    x?: number | string | RemoveAttribute;
-    y?: number | string | RemoveAttribute;
     dx?: number | string | RemoveAttribute;
     dy?: number | string | RemoveAttribute;
+    lengthAdjust?: "spacing" | "spacingAndGlyphs" | RemoveAttribute;
     rotate?: number | string | RemoveAttribute;
     textLength?: number | string | RemoveAttribute;
-    lengthAdjust?: "spacing" | "spacingAndGlyphs" | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
@@ -3185,11 +3198,11 @@ export namespace JSX {
       PresentationSVGAttributes,
       ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
-    x?: number | string | RemoveAttribute;
-    y?: number | string | RemoveAttribute;
-    width?: number | string | RemoveAttribute;
     height?: number | string | RemoveAttribute;
     href?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface ViewSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -3518,7 +3531,7 @@ export namespace JSX {
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCaptionElement
      */
-    caption: HTMLAttributes<HTMLTableCaptionElement>;
+    caption: CaptionHTMLAttributes<HTMLTableCaptionElement>;
     /**
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
