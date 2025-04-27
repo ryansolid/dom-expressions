@@ -80,7 +80,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(
     false,
     true
   ),
-  _tmpl$53 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=</mo></mrow>`, false, false, true);
+  _tmpl$53 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=</mo></mrow>`, false, false, true),
+  _tmpl$54 = /*#__PURE__*/ _$template(`<video></video>`),
+  _tmpl$55 = /*#__PURE__*/ _$template(`<div><video></video></div>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -589,4 +591,15 @@ const template80 = (() => {
 })();
 const template81 = _tmpl$52();
 const template82 = _tmpl$53();
+const template83 = (() => {
+  var _el$100 = _tmpl$54();
+  _$setAttribute(_el$100, "poster", "1.jpg");
+  return _el$100;
+})();
+const template84 = (() => {
+  var _el$101 = _tmpl$55(),
+    _el$102 = _el$101.firstChild;
+  _$setAttribute(_el$102, "poster", "1.jpg");
+  return _el$101;
+})();
 _$delegateEvents(["click", "input"]);

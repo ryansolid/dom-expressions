@@ -112,7 +112,9 @@ export function transformElement(path, info) {
     results.template = "<svg>" + results.template;
     results.templateWithClosingTags = "<svg>" + results.templateWithClosingTags;
   }
-  if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
+  if (!info.skipId) {
+    results.id = path.scope.generateUidIdentifier("el$");
+  }
   transformAttributes(path, results);
   if (config.contextToCustomElements && (tagName === "slot" || isCustomElement)) {
     contextToCustomElement(path, results);
@@ -1102,7 +1104,11 @@ function detectExpressions(children, index, config) {
           attr =>
             t.isJSXSpreadAttribute(attr) ||
             ["textContent", "innerHTML", "innerText"].includes(attr.name.name) ||
-            (attr.name.namespace && attr.name.namespace.name === "use") ||
+            (attr.name.namespace &&
+              (attr.name.namespace.name === "use" ||
+                attr.name.namespace.name === "bool" ||
+                attr.name.namespace.name === "attr" ||
+                attr.name.namespace.name === "prop")) ||
             (t.isJSXExpressionContainer(attr.value) &&
               !(
                 t.isStringLiteral(attr.value.expression) ||
