@@ -1106,7 +1106,6 @@ function detectExpressions(children, index, config) {
             ["textContent", "innerHTML", "innerText"].includes(attr.name.name) ||
             (attr.name.namespace &&
               (attr.name.namespace.name === "use" ||
-                attr.name.namespace.name === "bool" ||
                 attr.name.namespace.name === "attr" ||
                 attr.name.namespace.name === "prop")) ||
             (t.isJSXExpressionContainer(attr.value) &&
