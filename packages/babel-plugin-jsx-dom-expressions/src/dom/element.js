@@ -457,6 +457,64 @@ function transformAttributes(path, results) {
 
   let needsSpacing = true;
 
+  // scoped because of `needsSpacing`
+  function inlineAttributeOnTemplate(isSVG, key, results, value, customAttribute) {
+    !isSVG && (key = key.toLowerCase());
+    results.template += `${needsSpacing ? " " : ""}${key}`;
+
+    if (!value) {
+      needsSpacing = true;
+      return;
+    }
+
+    let text = value.value;
+    if (typeof text === "number") text = String(text);
+    let needsQuoting = !config.omitQuotes;
+
+    // `attr:style=";;strange::code;"` shouldn't be changed, as it's custom
+    if (!customAttribute) {
+      if (key === "style" || key === "class") {
+        text = trimWhitespace(text);
+        if (key === "style") {
+          text = text.replace(/; /g, ";").replace(/: /g, ":");
+        }
+      }
+    }
+
+    if (!text.length) {
+      needsSpacing = true;
+      results.template += ``;
+      return;
+    }
+
+    for (let i = 0, len = text.length; i < len; i++) {
+      let char = text[i];
+
+      if (
+        char === "'" ||
+        char === '"' ||
+        char === " " ||
+        char === "\t" ||
+        char === "\n" ||
+        char === "\r" ||
+        char === "`" ||
+        char === "=" ||
+        char === "<" ||
+        char === ">"
+      ) {
+        needsQuoting = true;
+      }
+    }
+
+    if (needsQuoting) {
+      needsSpacing = false;
+      results.template += `="${escapeHTML(text, true)}"`;
+    } else {
+      needsSpacing = true;
+      results.template += `=${escapeHTML(text, true)}`;
+    }
+  }
+
   path
     .get("openingElement")
     .get("attributes")
@@ -747,6 +805,24 @@ function transformAttributes(path, results) {
             isCE,
             tagName
           });
+        } else if (key.slice(0, 5) === "attr:") {
+          if (t.isJSXExpressionContainer(value)) value = value.expression;
+
+          /**
+           * TODO: Unfortunately, `attr:onclick` changes too many tests, as we are working in
+           * `minor/next` it will mess up merging. This condition `key !== "onclick" &&` to be
+           * removed once we reach Solid 2.0, which will change a lot of tests.
+           */
+
+          if (key !== "attr:onclick" && (t.isStringLiteral(value) || t.isNumericLiteral(value))) {
+            // inlined  "attr:"
+            inlineAttributeOnTemplate(isSVG, key.slice(5), results, value, true);
+          } else {
+            // dynamic "attr:"
+            results.exprs.push(
+              t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE, tagName }))
+            );
+          }
         } else if (key.slice(0, 5) === "bool:") {
           // inline it on the template when possible
           let content = value;
@@ -815,62 +891,7 @@ function transformAttributes(path, results) {
             t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, isCE, tagName }))
           );
         } else {
-          !isSVG && (key = key.toLowerCase());
-          results.template += `${needsSpacing ? " " : ""}${key}`;
-          // https://github.com/solidjs/solid/issues/2338
-          // results.templateWithClosingTags += `${needsSpacing ? ' ' : ''}${key}`;
-          if (!value) {
-            needsSpacing = true;
-            return;
-          }
-
-          let text = value.value;
-          if (typeof text === "number") text = String(text);
-          let needsQuoting = !config.omitQuotes;
-
-          if (key === "style" || key === "class") {
-            text = trimWhitespace(text);
-            if (key === "style") {
-              text = text.replace(/; /g, ";").replace(/: /g, ":");
-            }
-          }
-
-          if (!text.length) {
-            needsSpacing = true;
-            results.template += ``;
-            return;
-          }
-
-          for (let i = 0, len = text.length; i < len; i++) {
-            let char = text[i];
-
-            if (
-              char === "'" ||
-              char === '"' ||
-              char === " " ||
-              char === "\t" ||
-              char === "\n" ||
-              char === "\r" ||
-              char === "`" ||
-              char === "=" ||
-              char === "<" ||
-              char === ">"
-            ) {
-              needsQuoting = true;
-            }
-          }
-
-          if (needsQuoting) {
-            needsSpacing = false;
-            results.template += `="${escapeHTML(text, true)}"`;
-            // https://github.com/solidjs/solid/issues/2338
-            // results.templateWithClosingTags += `="${escapeHTML(text, true)}"`;
-          } else {
-            needsSpacing = true;
-            results.template += `=${escapeHTML(text, true)}`;
-            // https://github.com/solidjs/solid/issues/2338
-            // results.templateWithClosingTags += `=${escapeHTML(text, true)}`;
-          }
+          inlineAttributeOnTemplate(isSVG, key, results, value);
         }
       }
     });
@@ -1105,9 +1126,7 @@ function detectExpressions(children, index, config) {
             t.isJSXSpreadAttribute(attr) ||
             ["textContent", "innerHTML", "innerText"].includes(attr.name.name) ||
             (attr.name.namespace &&
-              (attr.name.namespace.name === "use" ||
-                attr.name.namespace.name === "attr" ||
-                attr.name.namespace.name === "prop")) ||
+              (attr.name.namespace.name === "use" || attr.name.namespace.name === "prop")) ||
             (t.isJSXExpressionContainer(attr.value) &&
               !(
                 t.isStringLiteral(attr.value.expression) ||
