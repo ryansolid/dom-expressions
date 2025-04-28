@@ -458,7 +458,7 @@ function transformAttributes(path, results) {
   let needsSpacing = true;
 
   // scoped because of `needsSpacing`
-  function inlineAttributeOnTemplate(isSVG, key, results, value, customAttribute) {
+  function inlineAttributeOnTemplate(isSVG, key, results, value) {
     !isSVG && (key = key.toLowerCase());
     results.template += `${needsSpacing ? " " : ""}${key}`;
 
@@ -471,13 +471,10 @@ function transformAttributes(path, results) {
     if (typeof text === "number") text = String(text);
     let needsQuoting = !config.omitQuotes;
 
-    // `attr:style=";;strange::code;"` shouldn't be changed, as it's custom
-    if (!customAttribute) {
-      if (key === "style" || key === "class") {
-        text = trimWhitespace(text);
-        if (key === "style") {
-          text = text.replace(/; /g, ";").replace(/: /g, ":");
-        }
+    if (key === "style" || key === "class") {
+      text = trimWhitespace(text);
+      if (key === "style") {
+        text = text.replace(/; /g, ";").replace(/: /g, ":");
       }
     }
 
@@ -816,7 +813,7 @@ function transformAttributes(path, results) {
 
           if (key !== "attr:onclick" && (t.isStringLiteral(value) || t.isNumericLiteral(value))) {
             // inlined  "attr:"
-            inlineAttributeOnTemplate(isSVG, key.slice(5), results, value, true);
+            inlineAttributeOnTemplate(isSVG, key.slice(5), results, value);
           } else {
             // dynamic "attr:"
             results.exprs.push(
