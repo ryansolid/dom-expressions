@@ -54,9 +54,9 @@ export function render(code, element, init, options = {}) {
   root(dispose => {
     disposer = dispose;
     element === document
-      ? code()
+      ? flatten(code)
       : insert(element, code(), element.firstChild ? null : undefined, init);
-  }, options.owner);
+  }, { id: options.renderId });
   return () => {
     disposer();
     element.textContent = "";
@@ -102,15 +102,18 @@ export function clearDelegatedEvents(document = window.document) {
 }
 
 export function setProperty(node, name, value) {
+  if (isHydrating(node)) return;
   node[name] = value;
 }
 
 export function setAttribute(node, name, value) {
+  if (isHydrating(node)) return;
   if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
+  if (isHydrating(node)) return;
   if (value == null) node.removeAttributeNS(namespace, name);
   else node.setAttributeNS(namespace, name, value);
 }
@@ -121,6 +124,7 @@ export function setBoolAttribute(node, name, value) {
 }
 
 export function className(node, value, isSVG, prev) {
+  if (isHydrating(node)) return;
   if (value == null) {
     prev && node.removeAttribute("class");
     return;
@@ -261,6 +265,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
 // Hydrate
 export function hydrate(code, element, options = {}) {
   if (globalThis._$HY.done) return render(code, element, [...element.childNodes], options);
+  options.renderId ||= "$";
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = id => globalThis._$HY.r[id];
@@ -268,7 +273,7 @@ export function hydrate(code, element, options = {}) {
   sharedConfig.gather = root => gatherHydratable(element, root);
   sharedConfig.registry = new Map();
   sharedConfig.context = {
-    id: options.renderId || "",
+    id: options.renderId,
     count: 0
   };
   try {
@@ -408,6 +413,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
     Properties.has(prop)
   ) {
     if (forceProp) prop = prop.slice(5);
+    else if (isHydrating(node)) return value;
     if (prop === "value" && node.nodeName === "SELECT")
       queueMicrotask(() => (node.value = value)) || (node.value = value);
     else node[propAlias || prop] = value;
@@ -485,6 +491,7 @@ function eventHandler(e) {
 }
 
 function insertExpression(parent, value, current, marker) {
+  if (isHydrating(parent)) return;
   if (value === current) return;
   const t = typeof value,
     multi = marker !== undefined;

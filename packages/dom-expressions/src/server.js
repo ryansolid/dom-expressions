@@ -1,5 +1,5 @@
 import { BooleanAttributes, ChildProperties } from "./constants";
-import { sharedConfig, root } from "rxcore";
+import { sharedConfig, root, ssrHandleError } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
 export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
@@ -20,11 +20,12 @@ const VOID_ELEMENTS =
 const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}`;
 
 export function renderToString(code, options = {}) {
-  const { renderId } = options;
+  const { renderId = "$", nonce, noScripts } = options;
   let scripts = "";
   const serializer = createSerializer({
     scopeId: renderId,
     onData(script) {
+      if (noScripts) return;
       if (!scripts) {
         scripts = getLocalHeaderScript(renderId);
       }
@@ -33,24 +34,20 @@ export function renderToString(code, options = {}) {
     onError: options.onError
   });
   sharedConfig.context = {
-    id: renderId || "",
+    id: renderId,
     count: 0,
-    suspense: {},
-    lazy: {},
+    resources: {},
     assets: [],
-    nonce: options.nonce,
+    nonce,
+    resolve(value) { return resolveSSRNode(escape(value)); },
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
     },
-    roots: 0,
-    nextRoot() {
-      return this.renderId + "i-" + this.roots++;
-    }
   };
   let html = root(d => {
     setTimeout(d);
     return resolveSSRNode(escape(code()));
-  });
+  }, { id: renderId });
   sharedConfig.context.noHydrate = true;
   serializer.close();
   html = injectAssets(sharedConfig.context.assets, html);
@@ -58,20 +55,8 @@ export function renderToString(code, options = {}) {
   return html;
 }
 
-export function renderToStringAsync(code, options = {}) {
-  const { timeoutMs = 30000 } = options;
-  let timeoutHandle;
-  const timeout = new Promise((_, reject) => {
-    timeoutHandle = setTimeout(() => reject("renderToString timed out"), timeoutMs);
-  });
-  return Promise.race([renderToStream(code, options), timeout]).then(html => {
-    clearTimeout(timeoutHandle);
-    return html;
-  });
-}
-
 export function renderToStream(code, options = {}) {
-  let { nonce, onCompleteShell, onCompleteAll, renderId, noScripts } = options;
+  let { nonce, onCompleteShell, onCompleteAll, renderId = "$", noScripts } = options;
   let dispose;
   const blockingPromises = [];
   const pushTask = task => {
@@ -136,12 +121,10 @@ export function renderToStream(code, options = {}) {
     }
   };
   sharedConfig.context = context = {
-    id: renderId || "",
+    id: renderId,
     count: 0,
     async: true,
     resources: {},
-    lazy: {},
-    suspense: {},
     assets: [],
     nonce,
     block(p) {
@@ -172,10 +155,7 @@ export function renderToStream(code, options = {}) {
             });
       } else if (!serverOnly) serializer.write(id, p);
     },
-    roots: 0,
-    nextRoot() {
-      return this.renderId + "i-" + this.roots++;
-    },
+    resolve(value) { return resolveSSRNode(escape(value)); },
     registerFragment(key) {
       if (!registry.has(key)) {
         let resolve, reject;
@@ -219,7 +199,7 @@ export function renderToStream(code, options = {}) {
   let html = root(d => {
     dispose = d;
     return resolveSSRNode(escape(code()));
-  });
+  }, { id: renderId });
   function doShell() {
     if (shellCompleted) return;
     sharedConfig.context = context;
@@ -476,7 +456,13 @@ export function resolveSSRNode(node, top) {
     return mapped;
   }
   if (t === "object") return node.t;
-  if (t === "function") return resolveSSRNode(node());
+  if (t === "function") {
+    try {
+      return resolveSSRNode(node())
+    } catch (err) {
+      if (!ssrHandleError(err)) throw err;
+    }
+  };
   return String(node);
 }
 
@@ -543,8 +529,11 @@ export function Hydration(props) {
 }
 
 export function NoHydration(props) {
-  if (sharedConfig.context) sharedConfig.context.noHydrate = true;
-  return props.children;
+  let context = sharedConfig.context;
+  if (context) sharedConfig.context = { ...context, noHydrate: true };
+  const res = props.children;
+  if (context) sharedConfig.context = context;
+  return res;
 }
 
 function queue(fn) {
@@ -626,9 +615,9 @@ export function getRequestEvent() {
     : undefined;
 }
 
-// consider deprecating
-export function Assets(props) {
-  useAssets(() => props.children);
+/** @deprecated use renderToStream which also returns a promise */
+export function renderToStringAsync(code, options = {}) {
+  return renderToStream(code, options).then(html => html);
 }
 
 // client-only APIs
