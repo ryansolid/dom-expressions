@@ -11,6 +11,9 @@ import * as csstype from "csstype";
  *
  * Checked against other frameworks via the following table:
  * https://potahtml.github.io/namespace-jsx-project/index.html
+ *
+ * Note: Typings must include attributes and not properties (unless the property is special-cased,
+ * such textContent, event handlers, etc).
  */
 type DOMElement = Element;
 
@@ -205,7 +208,9 @@ export namespace JSX {
     "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
 
+    /** @deprecated Use camelCase event handlers */
     onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
   }
   interface WindowEventMap<T> {
@@ -232,27 +237,47 @@ export namespace JSX {
     onUnhandledRejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
     onUnload?: EventHandlerUnion<T, Event> | undefined;
 
+    /** @deprecated Use camelCase event handlers */
     onafterprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeunload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongamepadconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongamepaddisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onhashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onlanguagechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmessage?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmessageerror?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onoffline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ononline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpagehide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
     // TODO `PageRevealEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
     onpagereveal?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpageshow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
     // TODO `PageSwapEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
     onpageswap?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onrejectionhandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onstorage?: EventHandlerUnion<T, StorageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onunhandledrejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onunload?: EventHandlerUnion<T, Event> | undefined;
 
     "on:afterprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -380,102 +405,198 @@ export namespace JSX {
   }
   /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
+    /** @deprecated Use camelCase event handlers */
     onabort?: EventHandlerUnion<T, UIEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationcancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onauxclick?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeinput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforetoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onblur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncancel?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncanplay?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncanplaythrough?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onchange?: ChangeEventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
     // TODO `CommandEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
     oncommand?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncontextmenu?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncuechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondblclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondrag?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragend?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragenter?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragleave?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragover?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragstart?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondrop?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondurationchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onemptied?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onended?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onerror?: EventHandlerUnion<T, ErrorEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oninvalid?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeydown?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeypress?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onkeyup?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onload?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadeddata?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadedmetadata?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onloadstart?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onlostpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmousedown?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseenter?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseleave?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmousemove?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseout?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseover?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmouseup?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpause?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onplay?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onplaying?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointercancel?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerdown?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerenter?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerleave?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointermove?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerout?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerover?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpointerup?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onprogress?: EventHandlerUnion<T, ProgressEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onratechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onreset?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onresize?: EventHandlerUnion<T, UIEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onscroll?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onscrollend?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsecuritypolicyviolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onseeked?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onseeking?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onselect?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onselectionchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onslotchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onstalled?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsuspend?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontimeupdate?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchcancel?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchend?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchmove?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontouchstart?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitioncancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionend?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionrun?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionstart?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onvolumechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwaiting?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
   }
 
@@ -1061,7 +1182,7 @@ export namespace JSX {
     exportparts?: FunctionMaybe<string | undefined>;
     hidden?: FunctionMaybe<boolean | "hidden" | "until-found" | undefined>;
     id?: FunctionMaybe<string | undefined>;
-    inert?: FunctionMaybe<boolean | undefined>;
+    inert?: FunctionMaybe<"" | boolean | undefined>;
     inlist?: FunctionMaybe<any | undefined>;
     inputmode?: FunctionMaybe<
       "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined
@@ -1070,7 +1191,7 @@ export namespace JSX {
     itemid?: FunctionMaybe<string | undefined>;
     itemprop?: FunctionMaybe<string | undefined>;
     itemref?: FunctionMaybe<string | undefined>;
-    itemscope?: FunctionMaybe<boolean | undefined>;
+    itemscope?: FunctionMaybe<"" | boolean | undefined>;
     itemtype?: FunctionMaybe<string | undefined>;
     lang?: FunctionMaybe<string | undefined>;
     part?: FunctionMaybe<string | undefined>;
@@ -1087,19 +1208,31 @@ export namespace JSX {
     typeof?: FunctionMaybe<string | undefined>;
     vocab?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     accessKey?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     autoCapitalize?: FunctionMaybe<HTMLAutocapitalize | undefined>;
+    /** @deprecated Use lowercase attributes */
     contentEditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit" | undefined>;
+    /** @deprecated Use lowercase attributes */
     contextMenu?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     exportParts?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     inputMode?: FunctionMaybe<
       "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search" | undefined
     >;
+    /** @deprecated Use lowercase attributes */
     itemId?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     itemProp?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     itemRef?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     itemScope?: FunctionMaybe<boolean | undefined>;
+    /** @deprecated Use lowercase attributes */
     itemType?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     tabIndex?: FunctionMaybe<number | string | undefined>;
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1115,6 +1248,7 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
 
     /** @deprecated */
@@ -1143,10 +1277,11 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
 
     /** @deprecated */
-    nohref?: FunctionMaybe<boolean | undefined>;
+    nohref?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: FunctionMaybe<string | undefined>;
@@ -1160,13 +1295,13 @@ export namespace JSX {
       WindowEventMap<T>,
       ElementEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: FunctionMaybe<boolean | undefined>;
-    disabled?: FunctionMaybe<boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
     formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
     formenctype?: FunctionMaybe<HTMLFormEncType | undefined>;
     formmethod?: FunctionMaybe<HTMLFormMethod | undefined>;
-    formnovalidate?: FunctionMaybe<boolean | undefined>;
+    formnovalidate?: FunctionMaybe<"" | boolean | undefined>;
     formtarget?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
     name?: FunctionMaybe<string | undefined>;
     popovertarget?: FunctionMaybe<string | undefined>;
@@ -1187,12 +1322,19 @@ export namespace JSX {
     /** @experimental */
     commandfor?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     formAction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
+    /** @deprecated Use lowercase attributes */
     formEnctype?: FunctionMaybe<HTMLFormEncType | undefined>;
+    /** @deprecated Use lowercase attributes */
     formMethod?: FunctionMaybe<HTMLFormMethod | undefined>;
+    /** @deprecated Use lowercase attributes */
     formNoValidate?: FunctionMaybe<boolean | undefined>;
+    /** @deprecated Use lowercase attributes */
     formTarget?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     popoverTarget?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     popoverTargetAction?: FunctionMaybe<"hide" | "show" | "toggle" | undefined>;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1201,17 +1343,19 @@ export namespace JSX {
 
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncontextlost?: EventHandlerUnion<T, Event> | undefined;
 
     onContextRestored?: EventHandlerUnion<T, Event> | undefined;
     "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncontextrestored?: EventHandlerUnion<T, Event> | undefined;
 
     /**
      * @deprecated
      * @non-standard
      */
-    "moz-opaque"?: FunctionMaybe<boolean | undefined>;
+    "moz-opaque"?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface CaptionHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
@@ -1254,10 +1398,10 @@ export namespace JSX {
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     name?: FunctionMaybe<string | undefined>;
-    open?: FunctionMaybe<boolean | undefined>;
+    open?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: FunctionMaybe<boolean | undefined>;
+    open?: FunctionMaybe<"" | boolean | undefined>;
     /**
      * Do not add the tabindex property to the <dialog> element as it is not interactive and does
      * not receive focus. The dialog's contents, including the close button contained in the dialog,
@@ -1269,10 +1413,12 @@ export namespace JSX {
 
     onClose?: EventHandlerUnion<T, Event> | undefined;
     "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onclose?: EventHandlerUnion<T, Event> | undefined;
 
     onCancel?: EventHandlerUnion<T, Event> | undefined;
     "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1287,7 +1433,7 @@ export namespace JSX {
     name?: FunctionMaybe<string | undefined>;
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
     name?: FunctionMaybe<string | undefined>;
   }
@@ -1299,14 +1445,16 @@ export namespace JSX {
     enctype?: FunctionMaybe<HTMLFormEncType | undefined>;
     method?: FunctionMaybe<HTMLFormMethod | undefined>;
     name?: FunctionMaybe<string | undefined>;
-    novalidate?: FunctionMaybe<boolean | undefined>;
+    novalidate?: FunctionMaybe<"" | boolean | undefined>;
     rel?: FunctionMaybe<string | undefined>;
     target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
 
     onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
     "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
+    /** @deprecated Use lowercase attributes */
     noValidate?: FunctionMaybe<boolean | undefined>;
 
     /** @deprecated */
@@ -1314,7 +1462,7 @@ export namespace JSX {
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allow?: FunctionMaybe<string | undefined>;
-    allowfullscreen?: FunctionMaybe<boolean | undefined>;
+    allowfullscreen?: FunctionMaybe<"" | boolean | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
     loading?: FunctionMaybe<"eager" | "lazy" | undefined>;
     name?: FunctionMaybe<string | undefined>;
@@ -1324,23 +1472,24 @@ export namespace JSX {
     srcdoc?: FunctionMaybe<string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
 
     /** @experimental */
-    adauctionheaders?: FunctionMaybe<boolean | undefined>;
+    adauctionheaders?: FunctionMaybe<"" | boolean | undefined>;
     /**
      * @non-standard
      * @experimental
      */
-    browsingtopics?: FunctionMaybe<boolean | undefined>;
+    browsingtopics?: FunctionMaybe<"" | boolean | undefined>;
     /** @experimental */
-    credentialless?: FunctionMaybe<boolean | undefined>;
+    credentialless?: FunctionMaybe<"" | boolean | undefined>;
     /** @experimental */
     csp?: FunctionMaybe<string | undefined>;
     /** @experimental */
     privatetoken?: FunctionMaybe<string | undefined>;
     /** @experimental */
-    sharedstoragewritable?: FunctionMaybe<boolean | undefined>;
+    sharedstoragewritable?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated */
     align?: FunctionMaybe<string | undefined>;
@@ -1348,9 +1497,9 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    allowpaymentrequest?: FunctionMaybe<boolean | undefined>;
+    allowpaymentrequest?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
-    allowtransparency?: FunctionMaybe<boolean | undefined>;
+    allowtransparency?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     frameborder?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
@@ -1362,7 +1511,7 @@ export namespace JSX {
     /** @deprecated */
     scrolling?: FunctionMaybe<"yes" | "no" | "auto" | undefined>;
     /** @deprecated */
-    seamless?: FunctionMaybe<boolean | undefined>;
+    seamless?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: FunctionMaybe<string | undefined>;
@@ -1371,7 +1520,7 @@ export namespace JSX {
     elementtiming?: FunctionMaybe<string | undefined>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
-    ismap?: FunctionMaybe<boolean | undefined>;
+    ismap?: FunctionMaybe<"" | boolean | undefined>;
     loading?: FunctionMaybe<"eager" | "lazy" | undefined>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
     sizes?: FunctionMaybe<string | undefined>;
@@ -1383,12 +1532,17 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | undefined>;
     /** @experimental */
-    sharedstoragewritable?: FunctionMaybe<boolean | undefined>;
+    sharedstoragewritable?: FunctionMaybe<"" | boolean | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    /** @deprecated Use lowercase attributes */
     isMap?: FunctionMaybe<boolean | undefined>;
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
+    /** @deprecated Use lowercase attributes */
     srcSet?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     useMap?: FunctionMaybe<string | undefined>;
 
     /** @deprecated */
@@ -1478,12 +1632,12 @@ export namespace JSX {
       | undefined
     >;
     autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
     capture?: FunctionMaybe<"user" | "environment" | undefined>;
-    checked?: FunctionMaybe<boolean | undefined>;
+    checked?: FunctionMaybe<"" | boolean | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
     dirname?: FunctionMaybe<string | undefined>;
-    disabled?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     enterkeyhint?: FunctionMaybe<
       "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
     >;
@@ -1491,7 +1645,7 @@ export namespace JSX {
     formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
     formenctype?: FunctionMaybe<HTMLFormEncType | undefined>;
     formmethod?: FunctionMaybe<HTMLFormMethod | undefined>;
-    formnovalidate?: FunctionMaybe<boolean | undefined>;
+    formnovalidate?: FunctionMaybe<"" | boolean | undefined>;
     formtarget?: FunctionMaybe<string | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
     list?: FunctionMaybe<string | undefined>;
@@ -1499,14 +1653,14 @@ export namespace JSX {
     maxlength?: FunctionMaybe<number | string | undefined>;
     min?: FunctionMaybe<number | string | undefined>;
     minlength?: FunctionMaybe<number | string | undefined>;
-    multiple?: FunctionMaybe<boolean | undefined>;
+    multiple?: FunctionMaybe<"" | boolean | undefined>;
     name?: FunctionMaybe<string | undefined>;
     pattern?: FunctionMaybe<string | undefined>;
     placeholder?: FunctionMaybe<string | undefined>;
     popovertarget?: FunctionMaybe<string | undefined>;
     popovertargetaction?: FunctionMaybe<"hide" | "show" | "toggle" | undefined>;
-    readonly?: FunctionMaybe<boolean | undefined>;
-    required?: FunctionMaybe<boolean | undefined>;
+    readonly?: FunctionMaybe<"" | boolean | undefined>;
+    required?: FunctionMaybe<"" | boolean | undefined>;
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/search#results
     results?: FunctionMaybe<number | undefined>;
     size?: FunctionMaybe<number | string | undefined>;
@@ -1542,16 +1696,25 @@ export namespace JSX {
     width?: FunctionMaybe<number | string | undefined>;
 
     /** @non-standard */
-    incremental?: FunctionMaybe<boolean | undefined>;
+    incremental?: FunctionMaybe<"" | boolean | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    /** @deprecated Use lowercase attributes */
     formAction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
+    /** @deprecated Use lowercase attributes */
     formEnctype?: FunctionMaybe<HTMLFormEncType | undefined>;
+    /** @deprecated Use lowercase attributes */
     formMethod?: FunctionMaybe<HTMLFormMethod | undefined>;
+    /** @deprecated Use lowercase attributes */
     formNoValidate?: FunctionMaybe<boolean | undefined>;
+    /** @deprecated Use lowercase attributes */
     formTarget?: FunctionMaybe<string | undefined>;
+    /** @deprecated Use lowercase attributes */
     maxLength?: FunctionMaybe<number | string | undefined>;
+    /** @deprecated Use lowercase attributes */
     minLength?: FunctionMaybe<number | string | undefined>;
+    /** @deprecated Use lowercase attributes */
     readOnly?: FunctionMaybe<boolean | undefined>;
 
     /** @deprecated */
@@ -1563,15 +1726,16 @@ export namespace JSX {
     cite?: FunctionMaybe<string | undefined>;
     datetime?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     dateTime?: FunctionMaybe<string | undefined>;
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    autofocus?: FunctionMaybe<boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     challenge?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    disabled?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     form?: FunctionMaybe<string | undefined>;
     /** @deprecated */
@@ -1595,7 +1759,7 @@ export namespace JSX {
     as?: FunctionMaybe<HTMLLinkAs | undefined>;
     blocking?: FunctionMaybe<"render" | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
-    disabled?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
     href?: FunctionMaybe<string | undefined>;
     hreflang?: FunctionMaybe<string | undefined>;
@@ -1608,7 +1772,9 @@ export namespace JSX {
     sizes?: FunctionMaybe<string | undefined>;
     type?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
 
     /** @deprecated */
@@ -1622,8 +1788,8 @@ export namespace JSX {
     name?: FunctionMaybe<string | undefined>;
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T>, ElementEventMap<T> {
-    autoplay?: FunctionMaybe<boolean | undefined>;
-    controls?: FunctionMaybe<boolean | undefined>;
+    autoplay?: FunctionMaybe<"" | boolean | undefined>;
+    controls?: FunctionMaybe<"" | boolean | undefined>;
     controlslist?: FunctionMaybe<
       | "nodownload"
       | "nofullscreen"
@@ -1633,29 +1799,33 @@ export namespace JSX {
       | undefined
     >;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
-    disableremoteplayback?: FunctionMaybe<boolean | undefined>;
-    loop?: FunctionMaybe<boolean | undefined>;
-    muted?: FunctionMaybe<boolean | undefined>;
+    disableremoteplayback?: FunctionMaybe<"" | boolean | undefined>;
+    loop?: FunctionMaybe<"" | boolean | undefined>;
+    muted?: FunctionMaybe<"" | boolean | undefined>;
     preload?: FunctionMaybe<"none" | "metadata" | "auto" | "" | undefined>;
     src?: FunctionMaybe<string | undefined>;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
 
     onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
     "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     mediaGroup?: FunctionMaybe<string | undefined>;
     /** @deprecated */
     mediagroup?: FunctionMaybe<string | undefined>;
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    compact?: FunctionMaybe<boolean | undefined>;
+    compact?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     label?: FunctionMaybe<string | undefined>;
     /** @deprecated */
@@ -1698,6 +1868,7 @@ export namespace JSX {
     type?: FunctionMaybe<string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     useMap?: FunctionMaybe<string | undefined>;
 
     /** @deprecated */
@@ -1715,7 +1886,7 @@ export namespace JSX {
     /** @deprecated */
     codetype?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    declare?: FunctionMaybe<boolean | undefined>;
+    declare?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     hspace?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
@@ -1725,10 +1896,10 @@ export namespace JSX {
     /** @deprecated */
     vspace?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
-    typemustmatch?: FunctionMaybe<boolean | undefined>;
+    typemustmatch?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: FunctionMaybe<boolean | undefined>;
+    reversed?: FunctionMaybe<"" | boolean | undefined>;
     start?: FunctionMaybe<number | string | undefined>;
     type?: FunctionMaybe<"1" | "a" | "A" | "i" | "I" | undefined>;
 
@@ -1736,16 +1907,16 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    compact?: FunctionMaybe<boolean | undefined>;
+    compact?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     label?: FunctionMaybe<string | undefined>;
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     label?: FunctionMaybe<string | undefined>;
-    selected?: FunctionMaybe<boolean | undefined>;
+    selected?: FunctionMaybe<"" | boolean | undefined>;
     value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1768,13 +1939,13 @@ export namespace JSX {
     value?: FunctionMaybe<string | string[] | number | undefined>;
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: FunctionMaybe<boolean | undefined>;
+    async?: FunctionMaybe<"" | boolean | undefined>;
     blocking?: FunctionMaybe<"render" | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
-    defer?: FunctionMaybe<boolean | undefined>;
+    defer?: FunctionMaybe<"" | boolean | undefined>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
     integrity?: FunctionMaybe<string | undefined>;
-    nomodule?: FunctionMaybe<boolean | undefined>;
+    nomodule?: FunctionMaybe<"" | boolean | undefined>;
     nonce?: FunctionMaybe<string | undefined>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
     src?: FunctionMaybe<string | undefined>;
@@ -1783,8 +1954,11 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    /** @deprecated Use lowercase attributes */
     noModule?: FunctionMaybe<boolean | undefined>;
+    /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
 
     /** @deprecated */
@@ -1796,12 +1970,12 @@ export namespace JSX {
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?: FunctionMaybe<string | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
-    disabled?: FunctionMaybe<boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
-    multiple?: FunctionMaybe<boolean | undefined>;
+    multiple?: FunctionMaybe<"" | boolean | undefined>;
     name?: FunctionMaybe<string | undefined>;
-    required?: FunctionMaybe<boolean | undefined>;
+    required?: FunctionMaybe<"" | boolean | undefined>;
     size?: FunctionMaybe<number | string | undefined>;
     value?: FunctionMaybe<string | string[] | number | undefined>;
   }
@@ -1823,7 +1997,7 @@ export namespace JSX {
     nonce?: FunctionMaybe<string | undefined>;
 
     /** @deprecated */
-    scoped?: FunctionMaybe<boolean | undefined>;
+    scoped?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     type?: FunctionMaybe<string | undefined>;
   }
@@ -1832,7 +2006,9 @@ export namespace JSX {
     headers?: FunctionMaybe<string | undefined>;
     rowspan?: FunctionMaybe<number | string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     colSpan?: FunctionMaybe<number | string | undefined>;
+    /** @deprecated Use lowercase attributes */
     rowSpan?: FunctionMaybe<number | string | undefined>;
 
     /** @deprecated */
@@ -1850,7 +2026,7 @@ export namespace JSX {
     /** @deprecated */
     height?: FunctionMaybe<number | string | undefined>;
     /** @deprecated */
-    nowrap?: FunctionMaybe<boolean | undefined>;
+    nowrap?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     scope?: FunctionMaybe<"col" | "row" | "rowgroup" | "colgroup" | undefined>;
     /** @deprecated */
@@ -1859,12 +2035,12 @@ export namespace JSX {
     width?: FunctionMaybe<number | string | undefined>;
   }
   interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
-    shadowrootclonable?: FunctionMaybe<boolean | undefined>;
-    shadowrootdelegatesfocus?: FunctionMaybe<boolean | undefined>;
+    shadowrootclonable?: FunctionMaybe<"" | boolean | undefined>;
+    shadowrootdelegatesfocus?: FunctionMaybe<"" | boolean | undefined>;
     shadowrootmode?: FunctionMaybe<"open" | "closed" | undefined>;
 
     /** @experimental */
-    shadowrootserializable?: FunctionMaybe<boolean | undefined>;
+    shadowrootserializable?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated */
     content?: FunctionMaybe<DocumentFragment | undefined>;
@@ -1937,10 +2113,10 @@ export namespace JSX {
       | undefined
     >;
     autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
     cols?: FunctionMaybe<number | string | undefined>;
     dirname?: FunctionMaybe<string | undefined>;
-    disabled?: FunctionMaybe<boolean | undefined>;
+    disabled?: FunctionMaybe<"" | boolean | undefined>;
     enterkeyhint?: FunctionMaybe<
       "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
     >;
@@ -1949,14 +2125,17 @@ export namespace JSX {
     minlength?: FunctionMaybe<number | string | undefined>;
     name?: FunctionMaybe<string | undefined>;
     placeholder?: FunctionMaybe<string | undefined>;
-    readonly?: FunctionMaybe<boolean | undefined>;
-    required?: FunctionMaybe<boolean | undefined>;
+    readonly?: FunctionMaybe<"" | boolean | undefined>;
+    required?: FunctionMaybe<"" | boolean | undefined>;
     rows?: FunctionMaybe<number | string | undefined>;
     value?: FunctionMaybe<string | string[] | number | undefined>;
     wrap?: FunctionMaybe<"hard" | "soft" | "off" | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     maxLength?: FunctionMaybe<number | string | undefined>;
+    /** @deprecated Use lowercase attributes */
     minLength?: FunctionMaybe<number | string | undefined>;
+    /** @deprecated Use lowercase attributes */
     readOnly?: FunctionMaybe<boolean | undefined>;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1966,7 +2145,9 @@ export namespace JSX {
     rowspan?: FunctionMaybe<number | string | undefined>;
     scope?: FunctionMaybe<"col" | "row" | "rowgroup" | "colgroup" | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     colSpan?: FunctionMaybe<number | string | undefined>;
+    /** @deprecated Use lowercase attributes */
     rowSpan?: FunctionMaybe<number | string | undefined>;
 
     /** @deprecated */
@@ -1982,7 +2163,7 @@ export namespace JSX {
     /** @deprecated */
     height?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    nowrap?: FunctionMaybe<boolean | undefined>;
+    nowrap?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     valign?: FunctionMaybe<"baseline" | "bottom" | "middle" | "top" | undefined>;
     /** @deprecated */
@@ -1991,10 +2172,11 @@ export namespace JSX {
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     dateTime?: FunctionMaybe<string | undefined>;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: FunctionMaybe<boolean | undefined>;
+    default?: FunctionMaybe<"" | boolean | undefined>;
     kind?: FunctionMaybe<
       | "alternative"
       | "descriptions"
@@ -2012,50 +2194,53 @@ export namespace JSX {
     src?: FunctionMaybe<string | undefined>;
     srclang?: FunctionMaybe<string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     mediaGroup?: FunctionMaybe<string | undefined>;
     /** @deprecated */
     mediagroup?: FunctionMaybe<string | undefined>;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
-    disablepictureinpicture?: FunctionMaybe<boolean | undefined>;
+    disablepictureinpicture?: FunctionMaybe<"" | boolean | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
-    playsinline?: FunctionMaybe<boolean | undefined>;
+    playsinline?: FunctionMaybe<"" | boolean | undefined>;
     poster?: FunctionMaybe<string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onenterpictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
 
     onLeavePictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:leavepictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onleavepictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
-    allowpopups?: FunctionMaybe<boolean | undefined>;
+    allowpopups?: FunctionMaybe<"" | boolean | undefined>;
     disableblinkfeatures?: FunctionMaybe<string | undefined>;
-    disablewebsecurity?: FunctionMaybe<boolean | undefined>;
+    disablewebsecurity?: FunctionMaybe<"" | boolean | undefined>;
     enableblinkfeatures?: FunctionMaybe<string | undefined>;
     httpreferrer?: FunctionMaybe<string | undefined>;
-    nodeintegration?: FunctionMaybe<boolean | undefined>;
-    nodeintegrationinsubframes?: FunctionMaybe<boolean | undefined>;
+    nodeintegration?: FunctionMaybe<"" | boolean | undefined>;
+    nodeintegrationinsubframes?: FunctionMaybe<"" | boolean | undefined>;
     partition?: FunctionMaybe<string | undefined>;
-    plugins?: FunctionMaybe<boolean | undefined>;
+    plugins?: FunctionMaybe<"" | boolean | undefined>;
     preload?: FunctionMaybe<string | undefined>;
     src?: FunctionMaybe<string | undefined>;
     useragent?: FunctionMaybe<string | undefined>;
     webpreferences?: FunctionMaybe<string | undefined>;
 
     // does this exists?
-    allowfullscreen?: FunctionMaybe<boolean | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
-    autosize?: FunctionMaybe<boolean | undefined>;
+    allowfullscreen?: FunctionMaybe<"" | boolean | undefined>;
+    autofocus?: FunctionMaybe<"" | boolean | undefined>;
+    autosize?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @deprecated */
     blinkfeatures?: FunctionMaybe<string | undefined>;
     /** @deprecated */
-    disableguestresize?: FunctionMaybe<boolean | undefined>;
+    disableguestresize?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     guestinstance?: FunctionMaybe<string | undefined>;
   }
@@ -2125,6 +2310,7 @@ export namespace JSX {
     lang?: FunctionMaybe<string | undefined>;
     tabindex?: FunctionMaybe<number | string | undefined>;
 
+    /** @deprecated Use lowercase attributes */
     tabIndex?: FunctionMaybe<number | string | undefined>;
   }
   interface StylableSVGAttributes {
@@ -2928,7 +3114,7 @@ export namespace JSX {
   }
 
   interface MathMLAttributes<T> extends HTMLAttributes<T> {
-    displaystyle?: FunctionMaybe<boolean | undefined>;
+    displaystyle?: FunctionMaybe<"" | boolean | undefined>;
     /** @deprecated */
     href?: FunctionMaybe<string | undefined>;
     /** @deprecated */
@@ -3001,23 +3187,23 @@ export namespace JSX {
   }
   interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
-    fence?: FunctionMaybe<boolean | undefined>;
+    fence?: FunctionMaybe<"" | boolean | undefined>;
     form?: FunctionMaybe<"prefix" | "infix" | "postfix" | undefined>;
-    largeop?: FunctionMaybe<boolean | undefined>;
+    largeop?: FunctionMaybe<"" | boolean | undefined>;
     lspace?: FunctionMaybe<string | undefined>;
     maxsize?: FunctionMaybe<string | undefined>;
     minsize?: FunctionMaybe<string | undefined>;
-    movablelimits?: FunctionMaybe<boolean | undefined>;
+    movablelimits?: FunctionMaybe<"" | boolean | undefined>;
     rspace?: FunctionMaybe<string | undefined>;
-    separator?: FunctionMaybe<boolean | undefined>;
-    stretchy?: FunctionMaybe<boolean | undefined>;
-    symmetric?: FunctionMaybe<boolean | undefined>;
+    separator?: FunctionMaybe<"" | boolean | undefined>;
+    stretchy?: FunctionMaybe<"" | boolean | undefined>;
+    symmetric?: FunctionMaybe<"" | boolean | undefined>;
 
     /** @non-standard */
-    accent?: FunctionMaybe<boolean | undefined>;
+    accent?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
-    accent?: FunctionMaybe<boolean | undefined>;
+    accent?: FunctionMaybe<"" | boolean | undefined>;
   }
   interface MathMLMpaddedElementAttributes<T> extends MathMLAttributes<T> {
     depth?: FunctionMaybe<string | undefined>;
