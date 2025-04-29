@@ -6,25 +6,83 @@
 import * as csstype from "csstype";
 
 /**
- * Based on JSX types for Surplus and Inferno and adapted for `dom-expressions`.
+ * Originally based on JSX types for Surplus and Inferno and adapted for `dom-expressions`.
  *
- * https://github.com/adamhaile/surplus/blob/master/index.d.ts
- * https://github.com/infernojs/inferno/blob/master/packages/inferno/src/core/types.ts
+ * - https://github.com/adamhaile/surplus/blob/master/index.d.ts
+ * - https://github.com/infernojs/inferno/blob/master/packages/inferno/src/core/types.ts
  *
  * MathML typings coming mostly from Preact
- * https://github.com/preactjs/preact/blob/07dc9f324e58569ce66634aa03fe8949b4190358/src/jsx.d.ts#L2575
+ *
+ * - https://github.com/preactjs/preact/blob/07dc9f324e58569ce66634aa03fe8949b4190358/src/jsx.d.ts#L2575
  *
  * Checked against other frameworks via the following table:
- * https://potahtml.github.io/namespace-jsx-project/index.html
  *
- * Note: Typings must include attributes and not properties (unless the property is special-cased,
- * such textContent, event handlers, etc).
+ * - https://potahtml.github.io/namespace-jsx-project/index.html
+ *
+ * # Typings on elements
+ *
+ * ## Attributes
+ *
+ * - Typings include attributes and not properties (unless the property Is special-cased, such
+ *   textContent, event handlers, etc).
+ * - Attributes are lowercase to avoid confusion with properties.
+ * - Attributes are used "as is" and won't be transformed in any way (such to `lowercase` or from
+ *   `dashed-case` to `camelCase`).
+ *
+ * ## Event Handlers
+ *
+ * - Event handlers use `camelCase` such `onClick` and will be delegated when possible, bubbling
+ *   through the component tree, not the dom tree.
+ * - Native event handlers use the namespace `on:` such `on:click`, and wont be delegated. bubbling
+ *   the dom tree.
+ *
+ * ## Boolean Attributes (property setter that accepts `true | false`):
+ *
+ * - `(bool)true` adds the attribute `<video autoplay={true}/>` or in JSX as `<video autoplay/>`
+ * - `(bool)false` removes the attribute from the DOM `<video autoplay={false}/>`
+ * - `=""` may be accepted for the sake of parity with html `<video autoplay=""/>`
+ * - `"true" | "false"` are NOT allowed, these are strings that evaluate to `(bool)true`
+ *
+ * ## Enumerated Attributes (attribute accepts 1 string value out of many)
+ *
+ * - Accepts any of the enumerated values, such: `"perhaps" | "maybe"`
+ * - When one of the possible values is empty(in html that's for the attribute to be present), then it
+ *   will also accept `(bool)true` to make it consistent with boolean attributes.
+ *
+ * Such `popover` attribute provides `"" | "manual" | "auto" | "hint"`.
+ *
+ * By NOT allowing `(bool)true` we will have to write `<div popover="" />`. Therefore, To make it
+ * consistent with Boolean Attributes we accept `true | "" | "manual" | "auto" | "hint"`, such as:
+ * `<div popover={true} />` or in JSX `<div popover />` is allowed and equivalent to `<div
+ * popover="" />`
+ *
+ * ## Pseudo-Boolean Attributes (enumerated attributes that happen to accept the strings `"true" | "false"`)
+ *
+ * - Such `<div draggable="true"/>` or `<div draggable="false"/>`. The value of the attribute is a
+ *   string not a boolean.
+ * - `<div draggable={true}/>` is not valid because `(bool)true` is NOT transformed to the string
+ *   `"true"`. Likewise `<div draggable={false}/>` removes the attribute from the element.
+ * - MDN documentation https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/draggable
+ *
+ * ## All Of The Above In a nutshell
+ *
+ * - `(bool)true` adds an empty attribute
+ * - `(bool)false` removes the attribute
+ * - Attributes are lowercase
+ * - Event handlers are camelCase
+ * - Anything else is a `string` and used "as is"
+ * - Additionally, an attribute may be removed by `undefined`
+ *
+ * ## Using Properties
+ *
+ * - The namespace `prop:` could be used to directly set properties in native elements and
+ *   custom-elements. `<custom-element prop:myProp={true}/>` equivalent to `el.myProp = true`
  */
+
 type DOMElement = Element;
 
 export namespace JSX {
   // START - difference between `jsx.d.ts` and `jsx-h.d.ts`
-
   type FunctionMaybe<T = unknown> = { (): T } | T;
   interface FunctionElement {
     (): Element;
@@ -724,11 +782,27 @@ export namespace JSX {
     [key: `-${string}`]: string | number | undefined;
   }
 
+  /**
+   * Boolean and Pseudo-Boolean Attributes Helpers.
+   *
+   * Please use the helpers to describe boolean and pseudo boolean attributes to make this file and
+   * also the typings easier to understand and explain.
+   */
+
+  type BooleanAttribute = true | false | "";
+
+  type EnumeratedPseudoBoolean = "false" | "true";
+
+  type EnumeratedAcceptsEmpty = "" | true;
+
+  type RemoveAttribute = undefined | false;
+
+  /** Enumerated Attributes */
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
   type HTMLDir = "ltr" | "rtl" | "auto";
   type HTMLFormEncType = "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
   type HTMLFormMethod = "post" | "get" | "dialog";
-  type HTMLCrossorigin = "anonymous" | "use-credentials" | "";
+  type HTMLCrossorigin = "anonymous" | "use-credentials" | EnumeratedAcceptsEmpty;
   type HTMLReferrerPolicy =
     | "no-referrer"
     | "no-referrer-when-downgrade"
@@ -774,12 +848,33 @@ export namespace JSX {
      * Identifies the currently active element when DOM focus is on a composite widget, textbox,
      * group, or application.
      */
-    "aria-activedescendant"?: string | undefined;
+    "aria-activedescendant"?: string | RemoveAttribute;
     /**
      * Indicates whether assistive technologies will present all, or only parts of, the changed
      * region based on the change notifications defined by the aria-relevant attribute.
      */
-    "aria-atomic"?: boolean | "false" | "true" | undefined;
+    "aria-atomic"?: EnumeratedPseudoBoolean | RemoveAttribute;
+    /**
+     * Similar to the global aria-label. Defines a string value that labels the current element,
+     * which is intended to be converted into Braille.
+     *
+     * @see aria-label.
+     */
+    "aria-braillelabel"?: string | RemoveAttribute;
+    /**
+     * Defines a human-readable, author-localized abbreviated description for the role of an element
+     * intended to be converted into Braille. Braille is not a one-to-one transliteration of letters
+     * and numbers, but rather it includes various abbreviations, contractions, and characters that
+     * represent words (known as logograms).
+     *
+     * Instead of converting long role descriptions to Braille, the aria-brailleroledescription
+     * attribute allows for providing an abbreviated version of the aria-roledescription value,
+     * which is a human-readable, author-localized description for the role of an element, for
+     * improved user experience with braille interfaces.
+     *
+     * @see aria-roledescription.
+     */
+    "aria-brailleroledescription"?: string | RemoveAttribute;
     /**
      * Similar to the global aria-label. Defines a string value that labels the current element,
      * which is intended to be converted into Braille.
@@ -806,184 +901,173 @@ export namespace JSX {
      * user's intended value for an input and specifies how predictions would be presented if they
      * are made.
      */
-    "aria-autocomplete"?: "none" | "inline" | "list" | "both" | undefined;
+    "aria-autocomplete"?: "none" | "inline" | "list" | "both" | RemoveAttribute;
     /**
      * Indicates an element is being modified and that assistive technologies MAY want to wait until
      * the modifications are complete before exposing them to the user.
      */
-    "aria-busy"?: boolean | "false" | "true" | undefined;
+    "aria-busy"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Indicates the current "checked" state of checkboxes, radio buttons, and other widgets.
      *
      * @see aria-pressed @see aria-selected.
      */
-    "aria-checked"?: boolean | "false" | "mixed" | "true" | undefined;
+    "aria-checked"?: EnumeratedPseudoBoolean | "mixed" | RemoveAttribute;
     /**
      * Defines the total number of columns in a table, grid, or treegrid.
      *
      * @see aria-colindex.
      */
-    "aria-colcount"?: number | string | undefined;
+    "aria-colcount"?: number | string | RemoveAttribute;
     /**
      * Defines an element's column index or position with respect to the total number of columns
      * within a table, grid, or treegrid.
      *
      * @see aria-colcount @see aria-colspan.
      */
-    "aria-colindex"?: number | string | undefined;
+    "aria-colindex"?: number | string | RemoveAttribute;
     /** Defines a human-readable text alternative of the numeric aria-colindex. */
-    "aria-colindextext"?: number | string | undefined;
+    "aria-colindextext"?: number | string | RemoveAttribute;
     /**
      * Defines the number of columns spanned by a cell or gridcell within a table, grid, or
      * treegrid.
      *
      * @see aria-colindex @see aria-rowspan.
      */
-    "aria-colspan"?: number | string | undefined;
+    "aria-colspan"?: number | string | RemoveAttribute;
     /**
      * Identifies the element (or elements) whose contents or presence are controlled by the current
      * element.
      *
      * @see aria-owns.
      */
-    "aria-controls"?: string | undefined;
+    "aria-controls"?: string | RemoveAttribute;
     /**
      * Indicates the element that represents the current item within a container or set of related
      * elements.
      */
     "aria-current"?:
-      | boolean
-      | "false"
-      | "true"
+      | EnumeratedPseudoBoolean
       | "page"
       | "step"
       | "location"
       | "date"
       | "time"
-      | undefined;
+      | RemoveAttribute;
     /**
      * Identifies the element (or elements) that describes the object.
      *
      * @see aria-labelledby
      */
-    "aria-describedby"?: string | undefined;
-
+    "aria-describedby"?: string | RemoveAttribute;
     /**
      * Defines a string value that describes or annotates the current element.
      *
      * @see aria-describedby
      */
-    "aria-description"?: string | undefined;
-    /**
-     * Defines a string value that describes or annotates the current element.
-     *
-     * @see aria-describedby
-     */
-    "aria-description"?: string | undefined;
+    "aria-description"?: string | RemoveAttribute;
     /**
      * Identifies the element that provides a detailed, extended description for the object.
      *
      * @see aria-describedby.
      */
-    "aria-details"?: string | undefined;
+    "aria-details"?: string | RemoveAttribute;
     /**
      * Indicates that the element is perceivable but disabled, so it is not editable or otherwise
      * operable.
      *
      * @see aria-hidden @see aria-readonly.
      */
-    "aria-disabled"?: boolean | "false" | "true" | undefined;
+    "aria-disabled"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Indicates what functions can be performed when a dragged object is released on the drop
      * target.
      *
      * @deprecated In ARIA 1.1
      */
-    "aria-dropeffect"?: "none" | "copy" | "execute" | "link" | "move" | "popup" | undefined;
+    "aria-dropeffect"?: "none" | "copy" | "execute" | "link" | "move" | "popup" | RemoveAttribute;
     /**
      * Identifies the element that provides an error message for the object.
      *
      * @see aria-invalid @see aria-describedby.
      */
-    "aria-errormessage"?: string | undefined;
+    "aria-errormessage"?: string | RemoveAttribute;
     /**
      * Indicates whether the element, or another grouping element it controls, is currently expanded
      * or collapsed.
      */
-    "aria-expanded"?: boolean | "false" | "true" | undefined;
+    "aria-expanded"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Identifies the next element (or elements) in an alternate reading order of content which, at
      * the user's discretion, allows assistive technology to override the general default of reading
      * in document source order.
      */
-    "aria-flowto"?: string | undefined;
+    "aria-flowto"?: string | RemoveAttribute;
     /**
      * Indicates an element's "grabbed" state in a drag-and-drop operation.
      *
      * @deprecated In ARIA 1.1
      */
-    "aria-grabbed"?: boolean | "false" | "true" | undefined;
+    "aria-grabbed"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Indicates the availability and type of interactive popup element, such as menu or dialog,
      * that can be triggered by an element.
      */
     "aria-haspopup"?:
-      | boolean
-      | "false"
-      | "true"
+      | EnumeratedPseudoBoolean
       | "menu"
       | "listbox"
       | "tree"
       | "grid"
       | "dialog"
-      | undefined;
+      | RemoveAttribute;
     /**
      * Indicates whether the element is exposed to an accessibility API.
      *
      * @see aria-disabled.
      */
-    "aria-hidden"?: boolean | "false" | "true" | undefined;
+    "aria-hidden"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Indicates the entered value does not conform to the format expected by the application.
      *
      * @see aria-errormessage.
      */
-    "aria-invalid"?: boolean | "false" | "true" | "grammar" | "spelling" | undefined;
+    "aria-invalid"?: EnumeratedPseudoBoolean | "grammar" | "spelling" | RemoveAttribute;
     /**
      * Indicates keyboard shortcuts that an author has implemented to activate or give focus to an
      * element.
      */
-    "aria-keyshortcuts"?: string | undefined;
+    "aria-keyshortcuts"?: string | RemoveAttribute;
     /**
      * Defines a string value that labels the current element.
      *
      * @see aria-labelledby.
      */
-    "aria-label"?: string | undefined;
+    "aria-label"?: string | RemoveAttribute;
     /**
      * Identifies the element (or elements) that labels the current element.
      *
      * @see aria-describedby.
      */
-    "aria-labelledby"?: string | undefined;
+    "aria-labelledby"?: string | RemoveAttribute;
     /** Defines the hierarchical level of an element within a structure. */
-    "aria-level"?: number | string | undefined;
+    "aria-level"?: number | string | RemoveAttribute;
     /**
      * Indicates that an element will be updated, and describes the types of updates the user
      * agents, assistive technologies, and user can expect from the live region.
      */
-    "aria-live"?: "off" | "assertive" | "polite" | undefined;
+    "aria-live"?: "off" | "assertive" | "polite" | RemoveAttribute;
     /** Indicates whether an element is modal when displayed. */
-    "aria-modal"?: boolean | "false" | "true" | undefined;
+    "aria-modal"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /** Indicates whether a text box accepts multiple lines of input or only a single line. */
-    "aria-multiline"?: boolean | "false" | "true" | undefined;
+    "aria-multiline"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Indicates that the user may select more than one item from the current selectable
      * descendants.
      */
-    "aria-multiselectable"?: boolean | "false" | "true" | undefined;
+    "aria-multiselectable"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /** Indicates whether the element's orientation is horizontal, vertical, or unknown/ambiguous. */
-    "aria-orientation"?: "horizontal" | "vertical" | undefined;
+    "aria-orientation"?: "horizontal" | "vertical" | RemoveAttribute;
     /**
      * Identifies an element (or elements) in order to define a visual, functional, or contextual
      * parent/child relationship between DOM elements where the DOM hierarchy cannot be used to
@@ -991,32 +1075,32 @@ export namespace JSX {
      *
      * @see aria-controls.
      */
-    "aria-owns"?: string | undefined;
+    "aria-owns"?: string | RemoveAttribute;
     /**
      * Defines a short hint (a word or short phrase) intended to aid the user with data entry when
      * the control has no value. A hint could be a sample value or a brief description of the
      * expected format.
      */
-    "aria-placeholder"?: string | undefined;
+    "aria-placeholder"?: string | RemoveAttribute;
     /**
      * Defines an element's number or position in the current set of listitems or treeitems. Not
      * required if all elements in the set are present in the DOM.
      *
      * @see aria-setsize.
      */
-    "aria-posinset"?: number | string | undefined;
+    "aria-posinset"?: number | string | RemoveAttribute;
     /**
      * Indicates the current "pressed" state of toggle buttons.
      *
      * @see aria-checked @see aria-selected.
      */
-    "aria-pressed"?: boolean | "false" | "mixed" | "true" | undefined;
+    "aria-pressed"?: EnumeratedPseudoBoolean | "mixed" | RemoveAttribute;
     /**
      * Indicates that the element is not editable, but is otherwise operable.
      *
      * @see aria-disabled.
      */
-    "aria-readonly"?: boolean | "false" | "true" | undefined;
+    "aria-readonly"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Indicates what notifications the user agent will trigger when the accessibility tree within a
      * live region is modified.
@@ -1034,59 +1118,60 @@ export namespace JSX {
       | "text"
       | "text additions"
       | "text removals"
-      | undefined;
+      | RemoveAttribute;
     /** Indicates that user input is required on the element before a form may be submitted. */
-    "aria-required"?: boolean | "false" | "true" | undefined;
+    "aria-required"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /** Defines a human-readable, author-localized description for the role of an element. */
-    "aria-roledescription"?: string | undefined;
+    "aria-roledescription"?: string | RemoveAttribute;
     /**
      * Defines the total number of rows in a table, grid, or treegrid.
      *
      * @see aria-rowindex.
      */
-    "aria-rowcount"?: number | string | undefined;
+    "aria-rowcount"?: number | string | RemoveAttribute;
     /**
      * Defines an element's row index or position with respect to the total number of rows within a
      * table, grid, or treegrid.
      *
      * @see aria-rowcount @see aria-rowspan.
      */
-    "aria-rowindex"?: number | string | undefined;
+    "aria-rowindex"?: number | string | RemoveAttribute;
     /** Defines a human-readable text alternative of aria-rowindex. */
-    "aria-rowindextext"?: number | string | undefined;
+    "aria-rowindextext"?: number | string | RemoveAttribute;
+
     /**
      * Defines the number of rows spanned by a cell or gridcell within a table, grid, or treegrid.
      *
      * @see aria-rowindex @see aria-colspan.
      */
-    "aria-rowspan"?: number | string | undefined;
+    "aria-rowspan"?: number | string | RemoveAttribute;
     /**
      * Indicates the current "selected" state of various widgets.
      *
      * @see aria-checked @see aria-pressed.
      */
-    "aria-selected"?: boolean | "false" | "true" | undefined;
+    "aria-selected"?: EnumeratedPseudoBoolean | RemoveAttribute;
     /**
      * Defines the number of items in the current set of listitems or treeitems. Not required if all
      * elements in the set are present in the DOM.
      *
      * @see aria-posinset.
      */
-    "aria-setsize"?: number | string | undefined;
+    "aria-setsize"?: number | string | RemoveAttribute;
     /** Indicates if items in a table or grid are sorted in ascending or descending order. */
-    "aria-sort"?: "none" | "ascending" | "descending" | "other" | undefined;
+    "aria-sort"?: "none" | "ascending" | "descending" | "other" | RemoveAttribute;
     /** Defines the maximum allowed value for a range widget. */
-    "aria-valuemax"?: number | string | undefined;
+    "aria-valuemax"?: number | string | RemoveAttribute;
     /** Defines the minimum allowed value for a range widget. */
-    "aria-valuemin"?: number | string | undefined;
+    "aria-valuemin"?: number | string | RemoveAttribute;
     /**
      * Defines the current value for a range widget.
      *
      * @see aria-valuetext.
      */
-    "aria-valuenow"?: number | string | undefined;
+    "aria-valuenow"?: number | string | RemoveAttribute;
     /** Defines the human readable text alternative of aria-valuenow for a range widget. */
-    "aria-valuetext"?: string | undefined;
+    "aria-valuetext"?: string | RemoveAttribute;
     role?:
       | "alert"
       | "alertdialog"
@@ -1158,7 +1243,7 @@ export namespace JSX {
       | "tree"
       | "treegrid"
       | "treeitem"
-      | undefined;
+      | RemoveAttribute;
   }
 
   // TODO: Should we allow this?
@@ -1171,21 +1256,26 @@ export namespace JSX {
 
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     // [key: ClassKeys]: boolean;
-    about?: string | undefined;
-    accesskey?: string | undefined;
-    autocapitalize?: HTMLAutocapitalize | undefined;
-    class?: string | ClassList | undefined;
-    color?: string | undefined;
-    contenteditable?: "true" | "false" | boolean | "plaintext-only" | "inherit" | undefined;
-    contextmenu?: string | undefined;
-    datatype?: string | undefined;
-    dir?: HTMLDir | undefined;
-    draggable?: boolean | "false" | "true" | undefined;
-    exportparts?: string | undefined;
-    hidden?: boolean | "hidden" | "until-found" | undefined;
-    id?: string | undefined;
-    inert?: "" | boolean | undefined;
-    inlist?: any | undefined;
+    about?: string | RemoveAttribute;
+    accesskey?: string | RemoveAttribute;
+    autocapitalize?: HTMLAutocapitalize | RemoveAttribute;
+    class?: string | ClassList | RemoveAttribute;
+    color?: string | RemoveAttribute;
+    contenteditable?:
+      | EnumeratedPseudoBoolean
+      | EnumeratedAcceptsEmpty
+      | "plaintext-only"
+      | "inherit"
+      | RemoveAttribute;
+    contextmenu?: string | RemoveAttribute;
+    datatype?: string | RemoveAttribute;
+    dir?: HTMLDir | RemoveAttribute;
+    draggable?: EnumeratedPseudoBoolean | RemoveAttribute;
+    exportparts?: string | RemoveAttribute;
+    hidden?: EnumeratedAcceptsEmpty | "hidden" | "until-found" | RemoveAttribute;
+    id?: string | RemoveAttribute;
+    inert?: BooleanAttribute | RemoveAttribute;
+    inlist?: any | RemoveAttribute;
     inputmode?:
       | "decimal"
       | "email"
@@ -1195,38 +1285,38 @@ export namespace JSX {
       | "tel"
       | "text"
       | "url"
-      | undefined;
-    is?: string | undefined;
-    itemid?: string | undefined;
-    itemprop?: string | undefined;
-    itemref?: string | undefined;
-    itemscope?: "" | boolean | undefined;
-    itemtype?: string | undefined;
-    lang?: string | undefined;
-    part?: string | undefined;
-    popover?: boolean | "manual" | "auto" | undefined;
-    prefix?: string | undefined;
-    property?: string | undefined;
-    resource?: string | undefined;
-    slot?: string | undefined;
-    spellcheck?: "true" | "false" | boolean | undefined;
-    style?: CSSProperties | string | undefined;
-    tabindex?: number | string | undefined;
-    title?: string | undefined;
-    translate?: "yes" | "no" | undefined;
-    typeof?: string | undefined;
-    vocab?: string | undefined;
+      | RemoveAttribute;
+    is?: string | RemoveAttribute;
+    itemid?: string | RemoveAttribute;
+    itemprop?: string | RemoveAttribute;
+    itemref?: string | RemoveAttribute;
+    itemscope?: BooleanAttribute | RemoveAttribute;
+    itemtype?: string | RemoveAttribute;
+    lang?: string | RemoveAttribute;
+    part?: string | RemoveAttribute;
+    popover?: EnumeratedAcceptsEmpty | "manual" | "auto" | RemoveAttribute;
+    prefix?: string | RemoveAttribute;
+    property?: string | RemoveAttribute;
+    resource?: string | RemoveAttribute;
+    slot?: string | RemoveAttribute;
+    spellcheck?: EnumeratedPseudoBoolean | EnumeratedAcceptsEmpty | RemoveAttribute;
+    style?: CSSProperties | string | RemoveAttribute;
+    tabindex?: number | string | RemoveAttribute;
+    title?: string | RemoveAttribute;
+    translate?: "yes" | "no" | RemoveAttribute;
+    typeof?: string | RemoveAttribute;
+    vocab?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    accessKey?: string | undefined;
+    accessKey?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    autoCapitalize?: HTMLAutocapitalize | undefined;
+    autoCapitalize?: HTMLAutocapitalize | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    contentEditable?: boolean | "plaintext-only" | "inherit" | undefined;
+    contentEditable?: EnumeratedPseudoBoolean | "plaintext-only" | "inherit" | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    contextMenu?: string | undefined;
+    contextMenu?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    exportParts?: string | undefined;
+    exportParts?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
     inputMode?:
       | "none"
@@ -1237,93 +1327,96 @@ export namespace JSX {
       | "numeric"
       | "decimal"
       | "search"
-      | undefined;
+      | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    itemId?: string | undefined;
+    itemId?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    itemProp?: string | undefined;
+    itemProp?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    itemRef?: string | undefined;
+    itemRef?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    itemScope?: boolean | undefined;
+    itemScope?: BooleanAttribute | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    itemType?: string | undefined;
+    itemType?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    tabIndex?: number | string | undefined;
+    tabIndex?: number | string | RemoveAttribute;
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
-    download?: string | undefined;
-    href?: string | undefined;
-    hreflang?: string | undefined;
-    ping?: string | undefined;
-    referrerpolicy?: HTMLReferrerPolicy | undefined;
-    rel?: string | undefined;
-    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
-    type?: string | undefined;
+    download?: string | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    hreflang?: string | RemoveAttribute;
+    ping?: string | RemoveAttribute;
+    referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
+    rel?: string | RemoveAttribute;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
+    type?: string | RemoveAttribute;
 
     /** @experimental */
-    attributionsrc?: string | undefined;
+    attributionsrc?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
 
     /** @deprecated */
-    charset?: string | undefined;
+    charset?: string | RemoveAttribute;
     /** @deprecated */
-    coords?: string | undefined;
+    coords?: string | RemoveAttribute;
     /** @deprecated */
-    name?: string | undefined;
+    name?: string | RemoveAttribute;
     /** @deprecated */
-    rev?: string | undefined;
+    rev?: string | RemoveAttribute;
     /** @deprecated */
-    shape?: "rect" | "circle" | "poly" | "default" | undefined;
+    shape?: "rect" | "circle" | "poly" | "default" | RemoveAttribute;
   }
   interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
   interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: string | undefined;
-    coords?: string | undefined;
-    download?: string | undefined;
-    href?: string | undefined;
-    ping?: string | undefined;
-    referrerpolicy?: HTMLReferrerPolicy | undefined;
-    rel?: string | undefined;
-    shape?: "rect" | "circle" | "poly" | "default" | undefined;
-    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
+    alt?: string | RemoveAttribute;
+    coords?: string | RemoveAttribute;
+    download?: string | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    ping?: string | RemoveAttribute;
+    referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
+    rel?: string | RemoveAttribute;
+    shape?: "rect" | "circle" | "poly" | "default" | RemoveAttribute;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
+
+    /** @experimental */
+    attributionsrc?: string | RemoveAttribute;
 
     /** @experimental */
     attributionsrc?: string | undefined;
 
     /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
 
     /** @deprecated */
-    nohref?: "" | boolean | undefined;
+    nohref?: BooleanAttribute | RemoveAttribute;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
-    href?: string | undefined;
-    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
+    href?: string | RemoveAttribute;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
   }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: string | undefined;
+    cite?: string | RemoveAttribute;
   }
   interface BodyHTMLAttributes<T>
     extends HTMLAttributes<T>,
       WindowEventMap<T>,
       ElementEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: "" | boolean | undefined;
-    disabled?: "" | boolean | undefined;
-    form?: string | undefined;
-    formaction?: string | SerializableAttributeValue | undefined;
-    formenctype?: HTMLFormEncType | undefined;
-    formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: "" | boolean | undefined;
-    formtarget?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
-    name?: string | undefined;
-    popovertarget?: string | undefined;
-    popovertargetaction?: "hide" | "show" | "toggle" | undefined;
-    type?: "submit" | "reset" | "button" | "menu" | undefined;
-    value?: string | undefined;
+    autofocus?: BooleanAttribute | RemoveAttribute;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    form?: string | RemoveAttribute;
+    formaction?: string | SerializableAttributeValue | RemoveAttribute;
+    formenctype?: HTMLFormEncType | RemoveAttribute;
+    formmethod?: HTMLFormMethod | RemoveAttribute;
+    formnovalidate?: BooleanAttribute | RemoveAttribute;
+    formtarget?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
+    name?: string | RemoveAttribute;
+    popovertarget?: string | RemoveAttribute;
+    popovertargetaction?: "hide" | "show" | "toggle" | RemoveAttribute;
+    type?: "submit" | "reset" | "button" | "menu" | RemoveAttribute;
+    value?: string | RemoveAttribute;
 
     /** @experimental */
     command?:
@@ -1333,28 +1426,28 @@ export namespace JSX {
       | "hide-popover"
       | "toggle-popover"
       | (string & {})
-      | undefined;
+      | RemoveAttribute;
     /** @experimental */
-    commandfor?: string | undefined;
+    commandfor?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    formAction?: string | SerializableAttributeValue | undefined;
+    formAction?: string | SerializableAttributeValue | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formEnctype?: HTMLFormEncType | undefined;
+    formEnctype?: HTMLFormEncType | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formMethod?: HTMLFormMethod | undefined;
+    formMethod?: HTMLFormMethod | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formNoValidate?: boolean | undefined;
+    formNoValidate?: boolean | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formTarget?: string | undefined;
+    formTarget?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    popoverTarget?: string | undefined;
+    popoverTarget?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    popoverTargetAction?: "hide" | "show" | "toggle" | undefined;
+    popoverTargetAction?: "hide" | "show" | "toggle" | RemoveAttribute;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: number | string | undefined;
-    width?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -1370,53 +1463,53 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    "moz-opaque"?: "" | boolean | undefined;
+    "moz-opaque"?: BooleanAttribute | RemoveAttribute;
   }
   interface CaptionHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    align?: "left" | "center" | "right" | undefined;
+    align?: "left" | "center" | "right" | RemoveAttribute;
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: number | string | undefined;
+    span?: number | string | RemoveAttribute;
 
     /** @deprecated */
-    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    align?: "left" | "center" | "right" | "justify" | "char" | RemoveAttribute;
     /** @deprecated */
-    bgcolor?: string | undefined;
+    bgcolor?: string | RemoveAttribute;
     /** @deprecated */
-    char?: string | undefined;
+    char?: string | RemoveAttribute;
     /** @deprecated */
-    charoff?: string | undefined;
+    charoff?: string | RemoveAttribute;
     /** @deprecated */
-    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    valign?: "baseline" | "bottom" | "middle" | "top" | RemoveAttribute;
     /** @deprecated */
-    width?: number | string | undefined;
+    width?: number | string | RemoveAttribute;
   }
   interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: number | string | undefined;
+    span?: number | string | RemoveAttribute;
 
     /** @deprecated */
-    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    align?: "left" | "center" | "right" | "justify" | "char" | RemoveAttribute;
     /** @deprecated */
-    bgcolor?: string | undefined;
+    bgcolor?: string | RemoveAttribute;
     /** @deprecated */
-    char?: string | undefined;
+    char?: string | RemoveAttribute;
     /** @deprecated */
-    charoff?: string | undefined;
+    charoff?: string | RemoveAttribute;
     /** @deprecated */
-    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    valign?: "baseline" | "bottom" | "middle" | "top" | RemoveAttribute;
     /** @deprecated */
-    width?: number | string | undefined;
+    width?: number | string | RemoveAttribute;
   }
   interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: string | string[] | number | undefined;
+    value?: string | string[] | number | RemoveAttribute;
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
-    name?: string | undefined;
-    open?: "" | boolean | undefined;
+    name?: string | RemoveAttribute;
+    open?: BooleanAttribute | RemoveAttribute;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: "" | boolean | undefined;
+    open?: BooleanAttribute | RemoveAttribute;
     /**
      * Do not add the tabindex property to the <dialog> element as it is not interactive and does
      * not receive focus. The dialog's contents, including the close button contained in the dialog,
@@ -1437,32 +1530,37 @@ export namespace JSX {
     oncancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: number | string | undefined;
-    src?: string | undefined;
-    type?: string | undefined;
-    width?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    type?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     /** @deprecated */
-    align?: "left" | "right" | "justify" | "center" | undefined;
+    align?: "left" | "right" | "justify" | "center" | RemoveAttribute;
     /** @deprecated */
-    name?: string | undefined;
+    name?: string | RemoveAttribute;
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: "" | boolean | undefined;
-    form?: string | undefined;
-    name?: string | undefined;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    form?: string | RemoveAttribute;
+    name?: string | RemoveAttribute;
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
-    "accept-charset"?: string | undefined;
-    action?: string | SerializableAttributeValue | undefined;
-    autocomplete?: "on" | "off" | undefined;
-    encoding?: HTMLFormEncType | undefined;
-    enctype?: HTMLFormEncType | undefined;
-    method?: HTMLFormMethod | undefined;
-    name?: string | undefined;
-    novalidate?: "" | boolean | undefined;
-    rel?: string | undefined;
-    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
+    "accept-charset"?: string | RemoveAttribute;
+    action?: string | SerializableAttributeValue | RemoveAttribute;
+    autocomplete?: "on" | "off" | RemoveAttribute;
+    encoding?: HTMLFormEncType | RemoveAttribute;
+    enctype?: HTMLFormEncType | RemoveAttribute;
+    method?: HTMLFormMethod | RemoveAttribute;
+    name?: string | RemoveAttribute;
+    novalidate?: BooleanAttribute | RemoveAttribute;
+    rel?: string | RemoveAttribute;
+    target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
+
+    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
+    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
     onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
     "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
@@ -1470,116 +1568,116 @@ export namespace JSX {
     onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
     /** @deprecated Use lowercase attributes */
-    noValidate?: boolean | undefined;
+    noValidate?: boolean | RemoveAttribute;
 
     /** @deprecated */
-    accept?: string | undefined;
+    accept?: string | RemoveAttribute;
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
-    allow?: string | undefined;
-    allowfullscreen?: "" | boolean | undefined;
-    height?: number | string | undefined;
-    loading?: "eager" | "lazy" | undefined;
-    name?: string | undefined;
-    referrerpolicy?: HTMLReferrerPolicy | undefined;
-    sandbox?: HTMLIframeSandbox | string | undefined;
-    src?: string | undefined;
-    srcdoc?: string | undefined;
-    width?: number | string | undefined;
+    allow?: string | RemoveAttribute;
+    allowfullscreen?: BooleanAttribute | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
+    loading?: "eager" | "lazy" | RemoveAttribute;
+    name?: string | RemoveAttribute;
+    referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
+    sandbox?: HTMLIframeSandbox | string | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    srcdoc?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
 
     /** @experimental */
-    adauctionheaders?: "" | boolean | undefined;
+    adauctionheaders?: BooleanAttribute | RemoveAttribute;
     /**
      * @non-standard
      * @experimental
      */
-    browsingtopics?: "" | boolean | undefined;
+    browsingtopics?: BooleanAttribute | RemoveAttribute;
     /** @experimental */
-    credentialless?: "" | boolean | undefined;
+    credentialless?: BooleanAttribute | RemoveAttribute;
     /** @experimental */
-    csp?: string | undefined;
+    csp?: string | RemoveAttribute;
     /** @experimental */
-    privatetoken?: string | undefined;
+    privatetoken?: string | RemoveAttribute;
     /** @experimental */
-    sharedstoragewritable?: "" | boolean | undefined;
+    sharedstoragewritable?: BooleanAttribute | RemoveAttribute;
 
     /** @deprecated */
-    align?: string | undefined;
+    align?: string | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    allowpaymentrequest?: "" | boolean | undefined;
+    allowpaymentrequest?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    allowtransparency?: "" | boolean | undefined;
+    allowtransparency?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    frameborder?: number | string | undefined;
+    frameborder?: number | string | RemoveAttribute;
     /** @deprecated */
-    longdesc?: string | undefined;
+    longdesc?: string | RemoveAttribute;
     /** @deprecated */
-    marginheight?: number | string | undefined;
+    marginheight?: number | string | RemoveAttribute;
     /** @deprecated */
-    marginwidth?: number | string | undefined;
+    marginwidth?: number | string | RemoveAttribute;
     /** @deprecated */
-    scrolling?: "yes" | "no" | "auto" | undefined;
+    scrolling?: "yes" | "no" | "auto" | RemoveAttribute;
     /** @deprecated */
-    seamless?: "" | boolean | undefined;
+    seamless?: BooleanAttribute | RemoveAttribute;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: string | undefined;
-    crossorigin?: HTMLCrossorigin | undefined;
-    decoding?: "sync" | "async" | "auto" | undefined;
-    elementtiming?: string | undefined;
-    fetchpriority?: "high" | "low" | "auto" | undefined;
-    height?: number | string | undefined;
-    ismap?: "" | boolean | undefined;
-    loading?: "eager" | "lazy" | undefined;
-    referrerpolicy?: HTMLReferrerPolicy | undefined;
-    sizes?: string | undefined;
-    src?: string | undefined;
-    srcset?: string | undefined;
-    usemap?: string | undefined;
-    width?: number | string | undefined;
+    alt?: string | RemoveAttribute;
+    crossorigin?: HTMLCrossorigin | RemoveAttribute;
+    decoding?: "sync" | "async" | "auto" | RemoveAttribute;
+    elementtiming?: string | RemoveAttribute;
+    fetchpriority?: "high" | "low" | "auto" | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
+    ismap?: BooleanAttribute | RemoveAttribute;
+    loading?: "eager" | "lazy" | RemoveAttribute;
+    referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
+    sizes?: string | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    srcset?: string | RemoveAttribute;
+    usemap?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     /** @experimental */
-    attributionsrc?: string | undefined;
+    attributionsrc?: string | RemoveAttribute;
     /** @experimental */
-    sharedstoragewritable?: "" | boolean | undefined;
+    sharedstoragewritable?: BooleanAttribute | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    crossOrigin?: HTMLCrossorigin | undefined;
+    crossOrigin?: HTMLCrossorigin | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    isMap?: boolean | undefined;
+    isMap?: boolean | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    srcSet?: string | undefined;
+    srcSet?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    useMap?: string | undefined;
+    useMap?: string | RemoveAttribute;
 
     /** @deprecated */
-    align?: "top" | "middle" | "bottom" | "left" | "right" | undefined;
+    align?: "top" | "middle" | "bottom" | "left" | "right" | RemoveAttribute;
     /** @deprecated */
-    border?: string | undefined;
+    border?: string | RemoveAttribute;
     /** @deprecated */
-    hspace?: number | string | undefined;
+    hspace?: number | string | RemoveAttribute;
     /** @deprecated */
-    intrinsicsize?: string | undefined;
+    intrinsicsize?: string | RemoveAttribute;
     /** @deprecated */
-    longdesc?: string | undefined;
+    longdesc?: string | RemoveAttribute;
     /** @deprecated */
-    lowsrc?: string | undefined;
+    lowsrc?: string | RemoveAttribute;
     /** @deprecated */
-    name?: string | undefined;
+    name?: string | RemoveAttribute;
     /** @deprecated */
-    vspace?: number | string | undefined;
+    vspace?: number | string | RemoveAttribute;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
-    accept?: string | undefined;
-    alt?: string | undefined;
+    accept?: string | RemoveAttribute;
+    alt?: string | RemoveAttribute;
     autocomplete?:
       | "additional-name"
       | "address-level1"
@@ -1644,40 +1742,48 @@ export namespace JSX {
       | "username"
       | "work"
       | (string & {})
-      | undefined;
-    autocorrect?: "on" | "off" | undefined;
-    autofocus?: "" | boolean | undefined;
-    capture?: "user" | "environment" | undefined;
-    checked?: "" | boolean | undefined;
-    crossorigin?: HTMLCrossorigin | undefined;
-    dirname?: string | undefined;
-    disabled?: "" | boolean | undefined;
-    enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
-    form?: string | undefined;
-    formaction?: string | SerializableAttributeValue | undefined;
-    formenctype?: HTMLFormEncType | undefined;
-    formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: "" | boolean | undefined;
-    formtarget?: string | undefined;
-    height?: number | string | undefined;
-    list?: string | undefined;
-    max?: number | string | undefined;
-    maxlength?: number | string | undefined;
-    min?: number | string | undefined;
-    minlength?: number | string | undefined;
-    multiple?: "" | boolean | undefined;
-    name?: string | undefined;
-    pattern?: string | undefined;
-    placeholder?: string | undefined;
-    popovertarget?: string | undefined;
-    popovertargetaction?: "hide" | "show" | "toggle" | undefined;
-    readonly?: "" | boolean | undefined;
-    required?: "" | boolean | undefined;
+      | RemoveAttribute;
+    autocorrect?: "on" | "off" | RemoveAttribute;
+    autofocus?: BooleanAttribute | RemoveAttribute;
+    capture?: "user" | "environment" | RemoveAttribute;
+    checked?: BooleanAttribute | RemoveAttribute;
+    crossorigin?: HTMLCrossorigin | RemoveAttribute;
+    dirname?: string | RemoveAttribute;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    enterkeyhint?:
+      | "enter"
+      | "done"
+      | "go"
+      | "next"
+      | "previous"
+      | "search"
+      | "send"
+      | RemoveAttribute;
+    form?: string | RemoveAttribute;
+    formaction?: string | SerializableAttributeValue | RemoveAttribute;
+    formenctype?: HTMLFormEncType | RemoveAttribute;
+    formmethod?: HTMLFormMethod | RemoveAttribute;
+    formnovalidate?: BooleanAttribute | RemoveAttribute;
+    formtarget?: string | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
+    list?: string | RemoveAttribute;
+    max?: number | string | RemoveAttribute;
+    maxlength?: number | string | RemoveAttribute;
+    min?: number | string | RemoveAttribute;
+    minlength?: number | string | RemoveAttribute;
+    multiple?: BooleanAttribute | RemoveAttribute;
+    name?: string | RemoveAttribute;
+    pattern?: string | RemoveAttribute;
+    placeholder?: string | RemoveAttribute;
+    popovertarget?: string | RemoveAttribute;
+    popovertargetaction?: "hide" | "show" | "toggle" | RemoveAttribute;
+    readonly?: BooleanAttribute | RemoveAttribute;
+    required?: BooleanAttribute | RemoveAttribute;
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/search#results
-    results?: number | undefined;
-    size?: number | string | undefined;
-    src?: string | undefined;
-    step?: number | string | undefined;
+    results?: number | RemoveAttribute;
+    size?: number | string | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    step?: number | string | RemoveAttribute;
     type?:
       | "button"
       | "checkbox"
@@ -1702,118 +1808,128 @@ export namespace JSX {
       | "url"
       | "week"
       | (string & {})
-      | undefined;
-    value?: string | string[] | number | undefined;
-    width?: number | string | undefined;
+      | RemoveAttribute;
+    value?: string | string[] | number | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     /** @non-standard */
-    incremental?: "" | boolean | undefined;
+    incremental?: BooleanAttribute | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    crossOrigin?: HTMLCrossorigin | undefined;
+    crossOrigin?: HTMLCrossorigin | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formAction?: string | SerializableAttributeValue | undefined;
+    formAction?: string | SerializableAttributeValue | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formEnctype?: HTMLFormEncType | undefined;
+    formEnctype?: HTMLFormEncType | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formMethod?: HTMLFormMethod | undefined;
+    formMethod?: HTMLFormMethod | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formNoValidate?: boolean | undefined;
+    formNoValidate?: boolean | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    formTarget?: string | undefined;
+    formTarget?: string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    maxLength?: number | string | undefined;
+    maxLength?: number | string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    minLength?: number | string | undefined;
+    minLength?: number | string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    readOnly?: boolean | undefined;
+    readOnly?: boolean | RemoveAttribute;
 
     /** @deprecated */
-    align?: string | undefined;
+    align?: string | RemoveAttribute;
     /** @deprecated */
-    usemap?: string | undefined;
+    usemap?: string | RemoveAttribute;
   }
   interface ModHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: string | undefined;
-    datetime?: string | undefined;
+    cite?: string | RemoveAttribute;
+    datetime?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    dateTime?: string | undefined;
+    dateTime?: string | RemoveAttribute;
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    autofocus?: "" | boolean | undefined;
+    autofocus?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    challenge?: string | undefined;
+    challenge?: string | RemoveAttribute;
     /** @deprecated */
-    disabled?: "" | boolean | undefined;
+    disabled?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    form?: string | undefined;
+    form?: string | RemoveAttribute;
     /** @deprecated */
-    keyparams?: string | undefined;
+    keyparams?: string | RemoveAttribute;
     /** @deprecated */
-    keytype?: string | undefined;
+    keytype?: string | RemoveAttribute;
     /** @deprecated */
-    name?: string | undefined;
+    name?: string | RemoveAttribute;
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
-    for?: string | undefined;
-    form?: string | undefined;
+    for?: string | RemoveAttribute;
+    form?: string | RemoveAttribute;
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: number | string | undefined;
+    value?: number | string | RemoveAttribute;
 
     /** @deprecated */
-    type?: "1" | "a" | "A" | "i" | "I" | undefined;
+    type?: "1" | "a" | "A" | "i" | "I" | RemoveAttribute;
   }
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
-    as?: HTMLLinkAs | undefined;
-    blocking?: "render" | undefined;
-    crossorigin?: HTMLCrossorigin | undefined;
-    disabled?: "" | boolean | undefined;
-    fetchpriority?: "high" | "low" | "auto" | undefined;
-    href?: string | undefined;
-    hreflang?: string | undefined;
-    imagesizes?: string | undefined;
-    imagesrcset?: string | undefined;
-    integrity?: string | undefined;
-    media?: string | undefined;
-    referrerpolicy?: HTMLReferrerPolicy | undefined;
-    rel?: string | undefined;
-    sizes?: string | undefined;
-    type?: string | undefined;
+    as?: HTMLLinkAs | RemoveAttribute;
+    blocking?: "render" | RemoveAttribute;
+    crossorigin?: HTMLCrossorigin | RemoveAttribute;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    fetchpriority?: "high" | "low" | "auto" | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    hreflang?: string | RemoveAttribute;
+    imagesizes?: string | RemoveAttribute;
+    imagesrcset?: string | RemoveAttribute;
+    integrity?: string | RemoveAttribute;
+    media?: string | RemoveAttribute;
+    referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
+    rel?: string | RemoveAttribute;
+    sizes?: string | RemoveAttribute;
+    type?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    crossOrigin?: HTMLCrossorigin | undefined;
+    crossOrigin?: HTMLCrossorigin | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
 
     /** @deprecated */
-    charset?: string | undefined;
+    charset?: string | RemoveAttribute;
     /** @deprecated */
-    rev?: string | undefined;
+    rev?: string | RemoveAttribute;
     /** @deprecated */
-    target?: string | undefined;
+    target?: string | RemoveAttribute;
   }
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
-    name?: string | undefined;
+    name?: string | RemoveAttribute;
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T>, ElementEventMap<T> {
-    autoplay?: "" | boolean | undefined;
-    controls?: "" | boolean | undefined;
+    autoplay?: BooleanAttribute | RemoveAttribute;
+    controls?: BooleanAttribute | RemoveAttribute;
     controlslist?:
       | "nodownload"
       | "nofullscreen"
       | "noplaybackrate"
       | "noremoteplayback"
       | (string & {})
-      | undefined;
-    crossorigin?: HTMLCrossorigin | undefined;
-    disableremoteplayback?: "" | boolean | undefined;
-    loop?: "" | boolean | undefined;
-    muted?: "" | boolean | undefined;
-    preload?: "none" | "metadata" | "auto" | "" | undefined;
-    src?: string | undefined;
+      | RemoveAttribute;
+    crossorigin?: HTMLCrossorigin | RemoveAttribute;
+    disableremoteplayback?: BooleanAttribute | RemoveAttribute;
+    loop?: BooleanAttribute | RemoveAttribute;
+    muted?: BooleanAttribute | RemoveAttribute;
+    preload?: "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute;
+    src?: string | RemoveAttribute;
+
+    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
+    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
+
+    onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
+    "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
+    onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
@@ -1826,20 +1942,20 @@ export namespace JSX {
     onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
     /** @deprecated Use lowercase attributes */
-    crossOrigin?: HTMLCrossorigin | undefined;
+    crossOrigin?: HTMLCrossorigin | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    mediaGroup?: string | undefined;
+    mediaGroup?: string | RemoveAttribute;
     /** @deprecated */
-    mediagroup?: string | undefined;
+    mediagroup?: string | RemoveAttribute;
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    compact?: "" | boolean | undefined;
+    compact?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    label?: string | undefined;
+    label?: string | RemoveAttribute;
     /** @deprecated */
-    type?: "context" | "toolbar" | undefined;
+    type?: "context" | "toolbar" | RemoveAttribute;
   }
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
     "http-equiv"?:
@@ -1848,211 +1964,211 @@ export namespace JSX {
       | "default-style"
       | "x-ua-compatible"
       | "refresh"
-      | undefined;
-    charset?: string | undefined;
-    content?: string | undefined;
-    media?: string | undefined;
-    name?: string | undefined;
+      | RemoveAttribute;
+    charset?: string | RemoveAttribute;
+    content?: string | RemoveAttribute;
+    media?: string | RemoveAttribute;
+    name?: string | RemoveAttribute;
 
     /** @deprecated */
-    scheme?: string | undefined;
+    scheme?: string | RemoveAttribute;
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: string | undefined;
-    high?: number | string | undefined;
-    low?: number | string | undefined;
-    max?: number | string | undefined;
-    min?: number | string | undefined;
-    optimum?: number | string | undefined;
-    value?: string | string[] | number | undefined;
+    form?: string | RemoveAttribute;
+    high?: number | string | RemoveAttribute;
+    low?: number | string | RemoveAttribute;
+    max?: number | string | RemoveAttribute;
+    min?: number | string | RemoveAttribute;
+    optimum?: number | string | RemoveAttribute;
+    value?: string | string[] | number | RemoveAttribute;
   }
   interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: string | undefined;
+    cite?: string | RemoveAttribute;
   }
   interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
-    data?: string | undefined;
-    form?: string | undefined;
-    height?: number | string | undefined;
-    name?: string | undefined;
-    type?: string | undefined;
-    width?: number | string | undefined;
+    data?: string | RemoveAttribute;
+    form?: string | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
+    name?: string | RemoveAttribute;
+    type?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    useMap?: string | undefined;
+    useMap?: string | RemoveAttribute;
 
     /** @deprecated */
-    align?: string | undefined;
+    align?: string | RemoveAttribute;
     /** @deprecated */
-    archive?: string | undefined;
+    archive?: string | RemoveAttribute;
     /** @deprecated */
-    border?: string | undefined;
+    border?: string | RemoveAttribute;
     /** @deprecated */
-    classid?: string | undefined;
+    classid?: string | RemoveAttribute;
     /** @deprecated */
-    code?: string | undefined;
+    code?: string | RemoveAttribute;
     /** @deprecated */
-    codebase?: string | undefined;
+    codebase?: string | RemoveAttribute;
     /** @deprecated */
-    codetype?: string | undefined;
+    codetype?: string | RemoveAttribute;
     /** @deprecated */
-    declare?: "" | boolean | undefined;
+    declare?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    hspace?: number | string | undefined;
+    hspace?: number | string | RemoveAttribute;
     /** @deprecated */
-    standby?: string | undefined;
+    standby?: string | RemoveAttribute;
     /** @deprecated */
-    usemap?: string | undefined;
+    usemap?: string | RemoveAttribute;
     /** @deprecated */
-    vspace?: number | string | undefined;
+    vspace?: number | string | RemoveAttribute;
     /** @deprecated */
-    typemustmatch?: "" | boolean | undefined;
+    typemustmatch?: BooleanAttribute | RemoveAttribute;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: "" | boolean | undefined;
-    start?: number | string | undefined;
-    type?: "1" | "a" | "A" | "i" | "I" | undefined;
+    reversed?: BooleanAttribute | RemoveAttribute;
+    start?: number | string | RemoveAttribute;
+    type?: "1" | "a" | "A" | "i" | "I" | RemoveAttribute;
 
     /**
      * @deprecated
      * @non-standard
      */
-    compact?: "" | boolean | undefined;
+    compact?: BooleanAttribute | RemoveAttribute;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: "" | boolean | undefined;
-    label?: string | undefined;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    label?: string | RemoveAttribute;
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: "" | boolean | undefined;
-    label?: string | undefined;
-    selected?: "" | boolean | undefined;
-    value?: string | string[] | number | undefined;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    label?: string | RemoveAttribute;
+    selected?: BooleanAttribute | RemoveAttribute;
+    value?: string | string[] | number | RemoveAttribute;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
-    for?: string | undefined;
-    form?: string | undefined;
-    name?: string | undefined;
+    for?: string | RemoveAttribute;
+    form?: string | RemoveAttribute;
+    name?: string | RemoveAttribute;
   }
   interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    name?: string | undefined;
+    name?: string | RemoveAttribute;
     /** @deprecated */
-    type?: string | undefined;
+    type?: string | RemoveAttribute;
     /** @deprecated */
-    value?: string | number | undefined;
+    value?: string | number | RemoveAttribute;
     /** @deprecated */
-    valuetype?: "data" | "ref" | "object" | undefined;
+    valuetype?: "data" | "ref" | "object" | RemoveAttribute;
   }
   interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
-    max?: number | string | undefined;
-    value?: string | string[] | number | undefined;
+    max?: number | string | RemoveAttribute;
+    value?: string | string[] | number | RemoveAttribute;
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: "" | boolean | undefined;
-    blocking?: "render" | undefined;
-    crossorigin?: HTMLCrossorigin | undefined;
-    defer?: "" | boolean | undefined;
-    fetchpriority?: "high" | "low" | "auto" | undefined;
-    integrity?: string | undefined;
-    nomodule?: "" | boolean | undefined;
-    nonce?: string | undefined;
-    referrerpolicy?: HTMLReferrerPolicy | undefined;
-    src?: string | undefined;
-    type?: "importmap" | "module" | "speculationrules" | (string & {}) | undefined;
+    async?: BooleanAttribute | RemoveAttribute;
+    blocking?: "render" | RemoveAttribute;
+    crossorigin?: HTMLCrossorigin | RemoveAttribute;
+    defer?: BooleanAttribute | RemoveAttribute;
+    fetchpriority?: "high" | "low" | "auto" | RemoveAttribute;
+    integrity?: string | RemoveAttribute;
+    nomodule?: BooleanAttribute | RemoveAttribute;
+    nonce?: string | RemoveAttribute;
+    referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    type?: "importmap" | "module" | "speculationrules" | (string & {}) | RemoveAttribute;
 
     /** @experimental */
-    attributionsrc?: string | undefined;
+    attributionsrc?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    crossOrigin?: HTMLCrossorigin | undefined;
+    crossOrigin?: HTMLCrossorigin | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    noModule?: boolean | undefined;
+    noModule?: boolean | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
+    referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
 
     /** @deprecated */
-    charset?: string | undefined;
+    charset?: string | RemoveAttribute;
     /** @deprecated */
-    event?: string | undefined;
+    event?: string | RemoveAttribute;
     /** @deprecated */
-    language?: string | undefined;
+    language?: string | RemoveAttribute;
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: string | undefined;
-    autofocus?: "" | boolean | undefined;
-    disabled?: "" | boolean | undefined;
-    form?: string | undefined;
-    multiple?: "" | boolean | undefined;
-    name?: string | undefined;
-    required?: "" | boolean | undefined;
-    size?: number | string | undefined;
-    value?: string | string[] | number | undefined;
+    autocomplete?: string | RemoveAttribute;
+    autofocus?: BooleanAttribute | RemoveAttribute;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    form?: string | RemoveAttribute;
+    multiple?: BooleanAttribute | RemoveAttribute;
+    name?: string | RemoveAttribute;
+    required?: BooleanAttribute | RemoveAttribute;
+    size?: number | string | RemoveAttribute;
+    value?: string | string[] | number | RemoveAttribute;
   }
   interface HTMLSlotElementAttributes<T> extends HTMLAttributes<T> {
-    name?: string | undefined;
+    name?: string | RemoveAttribute;
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: number | string | undefined;
-    media?: string | undefined;
-    sizes?: string | undefined;
-    src?: string | undefined;
-    srcset?: string | undefined;
-    type?: string | undefined;
-    width?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    media?: string | RemoveAttribute;
+    sizes?: string | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    srcset?: string | RemoveAttribute;
+    type?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
-    blocking?: "render" | undefined;
-    media?: string | undefined;
-    nonce?: string | undefined;
+    blocking?: "render" | RemoveAttribute;
+    media?: string | RemoveAttribute;
+    nonce?: string | RemoveAttribute;
 
     /** @deprecated */
-    scoped?: "" | boolean | undefined;
+    scoped?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    type?: string | undefined;
+    type?: string | RemoveAttribute;
   }
   interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
-    colspan?: number | string | undefined;
-    headers?: string | undefined;
-    rowspan?: number | string | undefined;
+    colspan?: number | string | RemoveAttribute;
+    headers?: string | RemoveAttribute;
+    rowspan?: number | string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    colSpan?: number | string | undefined;
+    colSpan?: number | string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    rowSpan?: number | string | undefined;
+    rowSpan?: number | string | RemoveAttribute;
 
     /** @deprecated */
-    abbr?: string | undefined;
+    abbr?: string | RemoveAttribute;
     /** @deprecated */
-    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    align?: "left" | "center" | "right" | "justify" | "char" | RemoveAttribute;
     /** @deprecated */
-    axis?: string | undefined;
+    axis?: string | RemoveAttribute;
     /** @deprecated */
-    bgcolor?: string | undefined;
+    bgcolor?: string | RemoveAttribute;
     /** @deprecated */
-    char?: string | undefined;
+    char?: string | RemoveAttribute;
     /** @deprecated */
-    charoff?: string | undefined;
+    charoff?: string | RemoveAttribute;
     /** @deprecated */
-    height?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
     /** @deprecated */
-    nowrap?: "" | boolean | undefined;
+    nowrap?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
+    scope?: "col" | "row" | "rowgroup" | "colgroup" | RemoveAttribute;
     /** @deprecated */
-    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    valign?: "baseline" | "bottom" | "middle" | "top" | RemoveAttribute;
     /** @deprecated */
-    width?: number | string | undefined;
+    width?: number | string | RemoveAttribute;
   }
   interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
-    shadowrootclonable?: "" | boolean | undefined;
-    shadowrootdelegatesfocus?: "" | boolean | undefined;
-    shadowrootmode?: "open" | "closed" | undefined;
+    shadowrootclonable?: BooleanAttribute | RemoveAttribute;
+    shadowrootdelegatesfocus?: BooleanAttribute | RemoveAttribute;
+    shadowrootmode?: "open" | "closed" | RemoveAttribute;
 
     /** @experimental */
-    shadowrootserializable?: "" | boolean | undefined;
+    shadowrootserializable?: BooleanAttribute | RemoveAttribute;
 
     /** @deprecated */
-    content?: DocumentFragment | undefined;
+    content?: DocumentFragment | RemoveAttribute;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?:
@@ -2119,70 +2235,78 @@ export namespace JSX {
       | "username"
       | "work"
       | (string & {})
-      | undefined;
-    autocorrect?: "on" | "off" | undefined;
-    autofocus?: "" | boolean | undefined;
-    cols?: number | string | undefined;
-    dirname?: string | undefined;
-    disabled?: "" | boolean | undefined;
-    enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
-    form?: string | undefined;
-    maxlength?: number | string | undefined;
-    minlength?: number | string | undefined;
-    name?: string | undefined;
-    placeholder?: string | undefined;
-    readonly?: "" | boolean | undefined;
-    required?: "" | boolean | undefined;
-    rows?: number | string | undefined;
-    value?: string | string[] | number | undefined;
-    wrap?: "hard" | "soft" | "off" | undefined;
+      | RemoveAttribute;
+    autocorrect?: "on" | "off" | RemoveAttribute;
+    autofocus?: BooleanAttribute | RemoveAttribute;
+    cols?: number | string | RemoveAttribute;
+    dirname?: string | RemoveAttribute;
+    disabled?: BooleanAttribute | RemoveAttribute;
+    enterkeyhint?:
+      | "enter"
+      | "done"
+      | "go"
+      | "next"
+      | "previous"
+      | "search"
+      | "send"
+      | RemoveAttribute;
+    form?: string | RemoveAttribute;
+    maxlength?: number | string | RemoveAttribute;
+    minlength?: number | string | RemoveAttribute;
+    name?: string | RemoveAttribute;
+    placeholder?: string | RemoveAttribute;
+    readonly?: BooleanAttribute | RemoveAttribute;
+    required?: BooleanAttribute | RemoveAttribute;
+    rows?: number | string | RemoveAttribute;
+    value?: string | string[] | number | RemoveAttribute;
+    wrap?: "hard" | "soft" | "off" | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    maxLength?: number | string | undefined;
+    maxLength?: number | string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    minLength?: number | string | undefined;
+    minLength?: number | string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    readOnly?: boolean | undefined;
+    readOnly?: boolean | RemoveAttribute;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
-    abbr?: string | undefined;
-    colspan?: number | string | undefined;
-    headers?: string | undefined;
-    rowspan?: number | string | undefined;
-    scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
+    abbr?: string | RemoveAttribute;
+    colspan?: number | string | RemoveAttribute;
+    headers?: string | RemoveAttribute;
+    rowspan?: number | string | RemoveAttribute;
+    scope?: "col" | "row" | "rowgroup" | "colgroup" | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    colSpan?: number | string | undefined;
+    colSpan?: number | string | RemoveAttribute;
     /** @deprecated Use lowercase attributes */
-    rowSpan?: number | string | undefined;
+    rowSpan?: number | string | RemoveAttribute;
 
     /** @deprecated */
-    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
+    align?: "left" | "center" | "right" | "justify" | "char" | RemoveAttribute;
     /** @deprecated */
-    axis?: string | undefined;
+    axis?: string | RemoveAttribute;
     /** @deprecated */
-    bgcolor?: string | undefined;
+    bgcolor?: string | RemoveAttribute;
     /** @deprecated */
-    char?: string | undefined;
+    char?: string | RemoveAttribute;
     /** @deprecated */
-    charoff?: string | undefined;
+    charoff?: string | RemoveAttribute;
     /** @deprecated */
-    height?: string | undefined;
+    height?: string | RemoveAttribute;
     /** @deprecated */
-    nowrap?: "" | boolean | undefined;
+    nowrap?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
+    valign?: "baseline" | "bottom" | "middle" | "top" | RemoveAttribute;
     /** @deprecated */
-    width?: number | string | undefined;
+    width?: number | string | RemoveAttribute;
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
-    datetime?: string | undefined;
+    datetime?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    dateTime?: string | undefined;
+    dateTime?: string | RemoveAttribute;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: "" | boolean | undefined;
+    default?: BooleanAttribute | RemoveAttribute;
     kind?:
       | "alternative"
       | "descriptions"
@@ -2194,22 +2318,22 @@ export namespace JSX {
       | "captions"
       | "chapters"
       | "metadata"
-      | undefined;
-    label?: string | undefined;
-    src?: string | undefined;
-    srclang?: string | undefined;
+      | RemoveAttribute;
+    label?: string | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    srclang?: string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    mediaGroup?: string | undefined;
+    mediaGroup?: string | RemoveAttribute;
     /** @deprecated */
-    mediagroup?: string | undefined;
+    mediagroup?: string | RemoveAttribute;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
-    disablepictureinpicture?: "" | boolean | undefined;
-    height?: number | string | undefined;
-    playsinline?: "" | boolean | undefined;
-    poster?: string | undefined;
-    width?: number | string | undefined;
+    disablepictureinpicture?: BooleanAttribute | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
+    playsinline?: BooleanAttribute | RemoveAttribute;
+    poster?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
@@ -2223,33 +2347,34 @@ export namespace JSX {
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
-    allowpopups?: "" | boolean | undefined;
-    disableblinkfeatures?: string | undefined;
-    disablewebsecurity?: "" | boolean | undefined;
-    enableblinkfeatures?: string | undefined;
-    httpreferrer?: string | undefined;
-    nodeintegration?: "" | boolean | undefined;
-    nodeintegrationinsubframes?: "" | boolean | undefined;
-    partition?: string | undefined;
-    plugins?: "" | boolean | undefined;
-    preload?: string | undefined;
-    src?: string | undefined;
-    useragent?: string | undefined;
-    webpreferences?: string | undefined;
+    allowpopups?: BooleanAttribute | RemoveAttribute;
+    disableblinkfeatures?: string | RemoveAttribute;
+    disablewebsecurity?: BooleanAttribute | RemoveAttribute;
+    enableblinkfeatures?: string | RemoveAttribute;
+    httpreferrer?: string | RemoveAttribute;
+    nodeintegration?: BooleanAttribute | RemoveAttribute;
+    nodeintegrationinsubframes?: BooleanAttribute | RemoveAttribute;
+    partition?: string | RemoveAttribute;
+    plugins?: BooleanAttribute | RemoveAttribute;
+    preload?: string | RemoveAttribute;
+    src?: string | RemoveAttribute;
+    useragent?: string | RemoveAttribute;
+    webpreferences?: string | RemoveAttribute;
 
     // does this exists?
-    allowfullscreen?: "" | boolean | undefined;
-    autofocus?: "" | boolean | undefined;
-    autosize?: "" | boolean | undefined;
+    allowfullscreen?: BooleanAttribute | RemoveAttribute;
+    autofocus?: BooleanAttribute | RemoveAttribute;
+    autosize?: BooleanAttribute | RemoveAttribute;
 
     /** @deprecated */
-    blinkfeatures?: string | undefined;
+    blinkfeatures?: string | RemoveAttribute;
     /** @deprecated */
-    disableguestresize?: "" | boolean | undefined;
+    disableguestresize?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    guestinstance?: string | undefined;
+    guestinstance?: string | RemoveAttribute;
   }
 
+  /** SVG Enumerated Attributes */
   type SVGPreserveAspectRatio =
     | "none"
     | "xMinYMin"
@@ -2310,57 +2435,58 @@ export namespace JSX {
     | "defer xMidYMax slice"
     | "defer xMaxYMax slice";
   type SVGUnits = "userSpaceOnUse" | "objectBoundingBox";
+
   interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    id?: string | undefined;
-    lang?: string | undefined;
-    tabindex?: number | string | undefined;
+    id?: string | RemoveAttribute;
+    lang?: string | RemoveAttribute;
+    tabindex?: number | string | RemoveAttribute;
 
     /** @deprecated Use lowercase attributes */
-    tabIndex?: number | string | undefined;
+    tabIndex?: number | string | RemoveAttribute;
   }
   interface StylableSVGAttributes {
-    class?: string | ClassList | undefined;
-    style?: CSSProperties | string | undefined;
+    class?: string | ClassList | RemoveAttribute;
+    style?: CSSProperties | string | RemoveAttribute;
   }
   interface TransformableSVGAttributes {
-    transform?: string | undefined;
+    transform?: string | RemoveAttribute;
   }
   interface ConditionalProcessingSVGAttributes {
-    requiredExtensions?: string | undefined;
-    requiredFeatures?: string | undefined;
-    systemLanguage?: string | undefined;
+    requiredExtensions?: string | RemoveAttribute;
+    requiredFeatures?: string | RemoveAttribute;
+    systemLanguage?: string | RemoveAttribute;
   }
   interface ExternalResourceSVGAttributes {
-    externalResourcesRequired?: "true" | "false" | undefined;
+    externalResourcesRequired?: EnumeratedPseudoBoolean | RemoveAttribute;
   }
   interface AnimationTimingSVGAttributes {
-    begin?: string | undefined;
-    dur?: string | undefined;
-    end?: string | undefined;
-    fill?: "freeze" | "remove" | undefined;
-    max?: string | undefined;
-    min?: string | undefined;
-    repeatCount?: number | "indefinite" | undefined;
-    repeatDur?: string | undefined;
-    restart?: "always" | "whenNotActive" | "never" | undefined;
+    begin?: string | RemoveAttribute;
+    dur?: string | RemoveAttribute;
+    end?: string | RemoveAttribute;
+    fill?: "freeze" | "remove" | RemoveAttribute;
+    max?: string | RemoveAttribute;
+    min?: string | RemoveAttribute;
+    repeatCount?: number | "indefinite" | RemoveAttribute;
+    repeatDur?: string | RemoveAttribute;
+    restart?: "always" | "whenNotActive" | "never" | RemoveAttribute;
   }
   interface AnimationValueSVGAttributes {
-    by?: number | string | undefined;
-    calcMode?: "discrete" | "linear" | "paced" | "spline" | undefined;
-    from?: number | string | undefined;
-    keySplines?: string | undefined;
-    keyTimes?: string | undefined;
-    to?: number | string | undefined;
-    values?: string | undefined;
+    by?: number | string | RemoveAttribute;
+    calcMode?: "discrete" | "linear" | "paced" | "spline" | RemoveAttribute;
+    from?: number | string | RemoveAttribute;
+    keySplines?: string | RemoveAttribute;
+    keyTimes?: string | RemoveAttribute;
+    to?: number | string | RemoveAttribute;
+    values?: string | RemoveAttribute;
   }
   interface AnimationAdditionSVGAttributes {
-    accumulate?: "none" | "sum" | undefined;
-    additive?: "replace" | "sum" | undefined;
-    attributeName?: string | undefined;
+    accumulate?: "none" | "sum" | RemoveAttribute;
+    additive?: "replace" | "sum" | RemoveAttribute;
+    attributeName?: string | RemoveAttribute;
   }
   interface AnimationAttributeTargetSVGAttributes {
-    attributeName?: string | undefined;
-    attributeType?: "CSS" | "XML" | "auto" | undefined;
+    attributeName?: string | RemoveAttribute;
+    attributeType?: "CSS" | "XML" | "auto" | RemoveAttribute;
   }
   interface PresentationSVGAttributes {
     "alignment-baseline"?:
@@ -2377,14 +2503,14 @@ export namespace JSX {
       | "hanging"
       | "mathematical"
       | "inherit"
-      | undefined;
-    "baseline-shift"?: number | string | undefined;
-    "clip-path"?: string | undefined;
-    "clip-rule"?: "nonzero" | "evenodd" | "inherit" | undefined;
-    "color-interpolation"?: "auto" | "sRGB" | "linearRGB" | "inherit" | undefined;
-    "color-interpolation-filters"?: "auto" | "sRGB" | "linearRGB" | "inherit" | undefined;
-    "color-profile"?: string | undefined;
-    "color-rendering"?: "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit" | undefined;
+      | RemoveAttribute;
+    "baseline-shift"?: number | string | RemoveAttribute;
+    "clip-path"?: string | RemoveAttribute;
+    "clip-rule"?: "nonzero" | "evenodd" | "inherit" | RemoveAttribute;
+    "color-interpolation"?: "auto" | "sRGB" | "linearRGB" | "inherit" | RemoveAttribute;
+    "color-interpolation-filters"?: "auto" | "sRGB" | "linearRGB" | "inherit" | RemoveAttribute;
+    "color-profile"?: string | RemoveAttribute;
+    "color-rendering"?: "auto" | "optimizeSpeed" | "optimizeQuality" | "inherit" | RemoveAttribute;
     "dominant-baseline"?:
       | "auto"
       | "text-bottom"
@@ -2396,27 +2522,27 @@ export namespace JSX {
       | "hanging"
       | "text-top"
       | "inherit"
-      | undefined;
-    "enable-background"?: string | undefined;
-    "fill-opacity"?: number | string | "inherit" | undefined;
-    "fill-rule"?: "nonzero" | "evenodd" | "inherit" | undefined;
-    "flood-color"?: string | undefined;
-    "flood-opacity"?: number | string | "inherit" | undefined;
-    "font-family"?: string | undefined;
-    "font-size"?: string | undefined;
-    "font-size-adjust"?: number | string | undefined;
-    "font-stretch"?: string | undefined;
-    "font-style"?: "normal" | "italic" | "oblique" | "inherit" | undefined;
-    "font-variant"?: string | undefined;
-    "font-weight"?: number | string | undefined;
-    "glyph-orientation-horizontal"?: string | undefined;
-    "glyph-orientation-vertical"?: string | undefined;
-    "image-rendering"?: "auto" | "optimizeQuality" | "optimizeSpeed" | "inherit" | undefined;
-    "letter-spacing"?: number | string | undefined;
-    "lighting-color"?: string | undefined;
-    "marker-end"?: string | undefined;
-    "marker-mid"?: string | undefined;
-    "marker-start"?: string | undefined;
+      | RemoveAttribute;
+    "enable-background"?: string | RemoveAttribute;
+    "fill-opacity"?: number | string | "inherit" | RemoveAttribute;
+    "fill-rule"?: "nonzero" | "evenodd" | "inherit" | RemoveAttribute;
+    "flood-color"?: string | RemoveAttribute;
+    "flood-opacity"?: number | string | "inherit" | RemoveAttribute;
+    "font-family"?: string | RemoveAttribute;
+    "font-size"?: string | RemoveAttribute;
+    "font-size-adjust"?: number | string | RemoveAttribute;
+    "font-stretch"?: string | RemoveAttribute;
+    "font-style"?: "normal" | "italic" | "oblique" | "inherit" | RemoveAttribute;
+    "font-variant"?: string | RemoveAttribute;
+    "font-weight"?: number | string | RemoveAttribute;
+    "glyph-orientation-horizontal"?: string | RemoveAttribute;
+    "glyph-orientation-vertical"?: string | RemoveAttribute;
+    "image-rendering"?: "auto" | "optimizeQuality" | "optimizeSpeed" | "inherit" | RemoveAttribute;
+    "letter-spacing"?: number | string | RemoveAttribute;
+    "lighting-color"?: string | RemoveAttribute;
+    "marker-end"?: string | RemoveAttribute;
+    "marker-mid"?: string | RemoveAttribute;
+    "marker-start"?: string | RemoveAttribute;
     "pointer-events"?:
       | "bounding-box"
       | "visiblePainted"
@@ -2430,24 +2556,31 @@ export namespace JSX {
       | "all"
       | "none"
       | "inherit"
-      | undefined;
+      | RemoveAttribute;
     "shape-rendering"?:
       | "auto"
       | "optimizeSpeed"
       | "crispEdges"
       | "geometricPrecision"
       | "inherit"
-      | undefined;
-    "stop-color"?: string | undefined;
-    "stop-opacity"?: number | string | "inherit" | undefined;
-    "stroke-dasharray"?: string | undefined;
-    "stroke-dashoffset"?: number | string | undefined;
-    "stroke-linecap"?: "butt" | "round" | "square" | "inherit" | undefined;
-    "stroke-linejoin"?: "arcs" | "bevel" | "miter" | "miter-clip" | "round" | "inherit" | undefined;
-    "stroke-miterlimit"?: number | string | "inherit" | undefined;
-    "stroke-opacity"?: number | string | "inherit" | undefined;
-    "stroke-width"?: number | string | undefined;
-    "text-anchor"?: "start" | "middle" | "end" | "inherit" | undefined;
+      | RemoveAttribute;
+    "stop-color"?: string | RemoveAttribute;
+    "stop-opacity"?: number | string | "inherit" | RemoveAttribute;
+    "stroke-dasharray"?: string | RemoveAttribute;
+    "stroke-dashoffset"?: number | string | RemoveAttribute;
+    "stroke-linecap"?: "butt" | "round" | "square" | "inherit" | RemoveAttribute;
+    "stroke-linejoin"?:
+      | "arcs"
+      | "bevel"
+      | "miter"
+      | "miter-clip"
+      | "round"
+      | "inherit"
+      | RemoveAttribute;
+    "stroke-miterlimit"?: number | string | "inherit" | RemoveAttribute;
+    "stroke-opacity"?: number | string | "inherit" | RemoveAttribute;
+    "stroke-width"?: number | string | RemoveAttribute;
+    "text-anchor"?: "start" | "middle" | "end" | "inherit" | RemoveAttribute;
     "text-decoration"?:
       | "none"
       | "underline"
@@ -2455,31 +2588,31 @@ export namespace JSX {
       | "line-through"
       | "blink"
       | "inherit"
-      | undefined;
+      | RemoveAttribute;
     "text-rendering"?:
       | "auto"
       | "optimizeSpeed"
       | "optimizeLegibility"
       | "geometricPrecision"
       | "inherit"
-      | undefined;
-    "unicode-bidi"?: string | undefined;
-    "word-spacing"?: number | string | undefined;
-    "writing-mode"?: "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit" | undefined;
-    clip?: string | undefined;
-    color?: string | undefined;
-    cursor?: string | undefined;
-    direction?: "ltr" | "rtl" | "inherit" | undefined;
-    display?: string | undefined;
-    fill?: string | undefined;
-    filter?: string | undefined;
-    kerning?: string | undefined;
-    mask?: string | undefined;
-    opacity?: number | string | "inherit" | undefined;
-    overflow?: "visible" | "hidden" | "scroll" | "auto" | "inherit" | undefined;
-    pathLength?: string | number | undefined;
-    stroke?: string | undefined;
-    visibility?: "visible" | "hidden" | "collapse" | "inherit" | undefined;
+      | RemoveAttribute;
+    "unicode-bidi"?: string | RemoveAttribute;
+    "word-spacing"?: number | string | RemoveAttribute;
+    "writing-mode"?: "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb" | "inherit" | RemoveAttribute;
+    clip?: string | RemoveAttribute;
+    color?: string | RemoveAttribute;
+    cursor?: string | RemoveAttribute;
+    direction?: "ltr" | "rtl" | "inherit" | RemoveAttribute;
+    display?: string | RemoveAttribute;
+    fill?: string | RemoveAttribute;
+    filter?: string | RemoveAttribute;
+    kerning?: string | RemoveAttribute;
+    mask?: string | RemoveAttribute;
+    opacity?: number | string | "inherit" | RemoveAttribute;
+    overflow?: "visible" | "hidden" | "scroll" | "auto" | "inherit" | RemoveAttribute;
+    pathLength?: string | number | RemoveAttribute;
+    stroke?: string | RemoveAttribute;
+    visibility?: "visible" | "hidden" | "collapse" | "inherit" | RemoveAttribute;
   }
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2502,31 +2635,31 @@ export namespace JSX {
   interface FilterPrimitiveElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
-    height?: number | string | undefined;
-    result?: string | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    result?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface SingleInputFilterSVGAttributes {
-    in?: string | undefined;
+    in?: string | RemoveAttribute;
   }
   interface DoubleInputFilterSVGAttributes {
-    in?: string | undefined;
-    in2?: string | undefined;
+    in?: string | RemoveAttribute;
+    in2?: string | RemoveAttribute;
   }
   interface FitToViewBoxSVGAttributes {
-    preserveAspectRatio?: SVGPreserveAspectRatio | undefined;
-    viewBox?: string | undefined;
+    preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
+    viewBox?: string | RemoveAttribute;
   }
   interface GradientElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    gradientTransform?: string | undefined;
-    gradientUnits?: SVGUnits | undefined;
-    href?: string | undefined;
-    spreadMethod?: "pad" | "reflect" | "repeat" | undefined;
+    gradientTransform?: string | RemoveAttribute;
+    gradientUnits?: SVGUnits | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    spreadMethod?: "pad" | "reflect" | "repeat" | RemoveAttribute;
   }
   interface GraphicsElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2547,7 +2680,7 @@ export namespace JSX {
   interface NewViewportSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, "overflow" | "clip"> {
-    viewBox?: string | undefined;
+    viewBox?: string | RemoveAttribute;
   }
   interface ShapeElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2607,7 +2740,7 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    zoomAndPan?: "disable" | "magnify" | undefined;
+    zoomAndPan?: "disable" | "magnify" | RemoveAttribute;
   }
   interface AnimateSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -2621,10 +2754,10 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    keyPoints?: string | undefined;
-    origin?: "default" | undefined;
-    path?: string | undefined;
-    rotate?: number | string | "auto" | "auto-reverse" | undefined;
+    keyPoints?: string | RemoveAttribute;
+    origin?: "default" | RemoveAttribute;
+    path?: string | RemoveAttribute;
+    rotate?: number | string | "auto" | "auto-reverse" | RemoveAttribute;
   }
   interface AnimateTransformSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -2632,7 +2765,7 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    type?: "translate" | "scale" | "rotate" | "skewX" | "skewY" | undefined;
+    type?: "translate" | "scale" | "rotate" | "skewX" | "skewY" | RemoveAttribute;
   }
   interface CircleSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2641,9 +2774,9 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    cx?: number | string | undefined;
-    cy?: number | string | undefined;
-    r?: number | string | undefined;
+    cx?: number | string | RemoveAttribute;
+    cy?: number | string | RemoveAttribute;
+    r?: number | string | RemoveAttribute;
   }
   interface ClipPathSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2652,7 +2785,7 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    clipPathUnits?: SVGUnits | undefined;
+    clipPathUnits?: SVGUnits | RemoveAttribute;
   }
   interface DefsSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2669,23 +2802,23 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    cx?: number | string | undefined;
-    cy?: number | string | undefined;
-    rx?: number | string | undefined;
-    ry?: number | string | undefined;
+    cx?: number | string | RemoveAttribute;
+    cy?: number | string | RemoveAttribute;
+    rx?: number | string | RemoveAttribute;
+    ry?: number | string | RemoveAttribute;
   }
   interface FeBlendSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    mode?: "normal" | "multiply" | "screen" | "darken" | "lighten" | undefined;
+    mode?: "normal" | "multiply" | "screen" | "darken" | "lighten" | RemoveAttribute;
   }
   interface FeColorMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    type?: "matrix" | "saturate" | "hueRotate" | "luminanceToAlpha" | undefined;
-    values?: string | undefined;
+    type?: "matrix" | "saturate" | "hueRotate" | "luminanceToAlpha" | RemoveAttribute;
+    values?: string | RemoveAttribute;
   }
   interface FeComponentTransferSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2695,81 +2828,81 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    k1?: number | string | undefined;
-    k2?: number | string | undefined;
-    k3?: number | string | undefined;
-    k4?: number | string | undefined;
-    operator?: "over" | "in" | "out" | "atop" | "xor" | "arithmetic" | undefined;
+    k1?: number | string | RemoveAttribute;
+    k2?: number | string | RemoveAttribute;
+    k3?: number | string | RemoveAttribute;
+    k4?: number | string | RemoveAttribute;
+    operator?: "over" | "in" | "out" | "atop" | "xor" | "arithmetic" | RemoveAttribute;
   }
   interface FeConvolveMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    bias?: number | string | undefined;
-    divisor?: number | string | undefined;
-    edgeMode?: "duplicate" | "wrap" | "none" | undefined;
-    kernelMatrix?: string | undefined;
-    kernelUnitLength?: number | string | undefined;
-    order?: number | string | undefined;
-    preserveAlpha?: "true" | "false" | undefined;
-    targetX?: number | string | undefined;
-    targetY?: number | string | undefined;
+    bias?: number | string | RemoveAttribute;
+    divisor?: number | string | RemoveAttribute;
+    edgeMode?: "duplicate" | "wrap" | "none" | RemoveAttribute;
+    kernelMatrix?: string | RemoveAttribute;
+    kernelUnitLength?: number | string | RemoveAttribute;
+    order?: number | string | RemoveAttribute;
+    preserveAlpha?: EnumeratedPseudoBoolean | RemoveAttribute;
+    targetX?: number | string | RemoveAttribute;
+    targetY?: number | string | RemoveAttribute;
   }
   interface FeDiffuseLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    diffuseConstant?: number | string | undefined;
-    kernelUnitLength?: number | string | undefined;
-    surfaceScale?: number | string | undefined;
+    diffuseConstant?: number | string | RemoveAttribute;
+    kernelUnitLength?: number | string | RemoveAttribute;
+    surfaceScale?: number | string | RemoveAttribute;
   }
   interface FeDisplacementMapSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    scale?: number | string | undefined;
-    xChannelSelector?: "R" | "G" | "B" | "A" | undefined;
-    yChannelSelector?: "R" | "G" | "B" | "A" | undefined;
+    scale?: number | string | RemoveAttribute;
+    xChannelSelector?: "R" | "G" | "B" | "A" | RemoveAttribute;
+    yChannelSelector?: "R" | "G" | "B" | "A" | RemoveAttribute;
   }
   interface FeDistantLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    azimuth?: number | string | undefined;
-    elevation?: number | string | undefined;
+    azimuth?: number | string | RemoveAttribute;
+    elevation?: number | string | RemoveAttribute;
   }
   interface FeDropShadowSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {
-    dx?: number | string | undefined;
-    dy?: number | string | undefined;
-    stdDeviation?: number | string | undefined;
+    dx?: number | string | RemoveAttribute;
+    dy?: number | string | RemoveAttribute;
+    stdDeviation?: number | string | RemoveAttribute;
   }
   interface FeFloodSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
   interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
-    amplitude?: number | string | undefined;
-    exponent?: number | string | undefined;
-    intercept?: number | string | undefined;
-    offset?: number | string | undefined;
-    slope?: number | string | undefined;
-    tableValues?: string | undefined;
-    type?: "identity" | "table" | "discrete" | "linear" | "gamma" | undefined;
+    amplitude?: number | string | RemoveAttribute;
+    exponent?: number | string | RemoveAttribute;
+    intercept?: number | string | RemoveAttribute;
+    offset?: number | string | RemoveAttribute;
+    slope?: number | string | RemoveAttribute;
+    tableValues?: string | RemoveAttribute;
+    type?: "identity" | "table" | "discrete" | "linear" | "gamma" | RemoveAttribute;
   }
   interface FeGaussianBlurSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    stdDeviation?: number | string | undefined;
+    stdDeviation?: number | string | RemoveAttribute;
   }
   interface FeImageSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    href?: string | undefined;
-    preserveAspectRatio?: SVGPreserveAspectRatio | undefined;
+    href?: string | RemoveAttribute;
+    preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
   }
   interface FeMergeSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2781,40 +2914,40 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    operator?: "erode" | "dilate" | undefined;
-    radius?: number | string | undefined;
+    operator?: "erode" | "dilate" | RemoveAttribute;
+    radius?: number | string | RemoveAttribute;
   }
   interface FeOffsetSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    dx?: number | string | undefined;
-    dy?: number | string | undefined;
+    dx?: number | string | RemoveAttribute;
+    dy?: number | string | RemoveAttribute;
   }
   interface FePointLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    x?: number | string | undefined;
-    y?: number | string | undefined;
-    z?: number | string | undefined;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
+    z?: number | string | RemoveAttribute;
   }
   interface FeSpecularLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
-    kernelUnitLength?: number | string | undefined;
-    specularConstant?: string | undefined;
-    specularExponent?: string | undefined;
-    surfaceScale?: string | undefined;
+    kernelUnitLength?: number | string | RemoveAttribute;
+    specularConstant?: string | RemoveAttribute;
+    specularExponent?: string | RemoveAttribute;
+    surfaceScale?: string | RemoveAttribute;
   }
   interface FeSpotLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
-    limitingConeAngle?: number | string | undefined;
-    pointsAtX?: number | string | undefined;
-    pointsAtY?: number | string | undefined;
-    pointsAtZ?: number | string | undefined;
-    specularExponent?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
-    z?: number | string | undefined;
+    limitingConeAngle?: number | string | RemoveAttribute;
+    pointsAtX?: number | string | RemoveAttribute;
+    pointsAtY?: number | string | RemoveAttribute;
+    pointsAtZ?: number | string | RemoveAttribute;
+    specularExponent?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
+    z?: number | string | RemoveAttribute;
   }
   interface FeTileSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -2823,23 +2956,23 @@ export namespace JSX {
   interface FeTurbulanceSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes {
-    baseFrequency?: number | string | undefined;
-    numOctaves?: number | string | undefined;
-    seed?: number | string | undefined;
-    stitchTiles?: "stitch" | "noStitch" | undefined;
-    type?: "fractalNoise" | "turbulence" | undefined;
+    baseFrequency?: number | string | RemoveAttribute;
+    numOctaves?: number | string | RemoveAttribute;
+    seed?: number | string | RemoveAttribute;
+    stitchTiles?: "stitch" | "noStitch" | RemoveAttribute;
+    type?: "fractalNoise" | "turbulence" | RemoveAttribute;
   }
   interface FilterSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    filterRes?: number | string | undefined;
-    filterUnits?: SVGUnits | undefined;
-    height?: number | string | undefined;
-    primitiveUnits?: SVGUnits | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    filterRes?: number | string | RemoveAttribute;
+    filterUnits?: SVGUnits | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
+    primitiveUnits?: SVGUnits | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface ForeignObjectSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
@@ -2848,10 +2981,10 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "display" | "visibility"> {
-    height?: number | string | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface GSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2867,12 +3000,12 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "color-profile" | "image-rendering"> {
-    height?: number | string | undefined;
-    href?: string | undefined;
-    preserveAspectRatio?: ImagePreserveAspectRatio | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    preserveAspectRatio?: ImagePreserveAspectRatio | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface LineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2882,16 +3015,16 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
-    x1?: number | string | undefined;
-    x2?: number | string | undefined;
-    y1?: number | string | undefined;
-    y2?: number | string | undefined;
+    x1?: number | string | RemoveAttribute;
+    x2?: number | string | RemoveAttribute;
+    y1?: number | string | RemoveAttribute;
+    y2?: number | string | RemoveAttribute;
   }
   interface LinearGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
-    x1?: number | string | undefined;
-    x2?: number | string | undefined;
-    y1?: number | string | undefined;
-    y2?: number | string | undefined;
+    x1?: number | string | RemoveAttribute;
+    x2?: number | string | RemoveAttribute;
+    y1?: number | string | RemoveAttribute;
+    y2?: number | string | RemoveAttribute;
   }
   interface MarkerSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2899,12 +3032,12 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
-    markerHeight?: number | string | undefined;
-    markerUnits?: "strokeWidth" | "userSpaceOnUse" | undefined;
-    markerWidth?: number | string | undefined;
-    orient?: string | undefined;
-    refX?: number | string | undefined;
-    refY?: number | string | undefined;
+    markerHeight?: number | string | RemoveAttribute;
+    markerUnits?: "strokeWidth" | "userSpaceOnUse" | RemoveAttribute;
+    markerWidth?: number | string | RemoveAttribute;
+    orient?: string | RemoveAttribute;
+    refX?: number | string | RemoveAttribute;
+    refY?: number | string | RemoveAttribute;
   }
   interface MaskSVGAttributes<T>
     extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
@@ -2912,12 +3045,12 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    height?: number | string | undefined;
-    maskContentUnits?: SVGUnits | undefined;
-    maskUnits?: SVGUnits | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    maskContentUnits?: SVGUnits | RemoveAttribute;
+    maskUnits?: SVGUnits | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
@@ -2929,8 +3062,8 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
-    d?: string | undefined;
-    pathLength?: number | string | undefined;
+    d?: string | RemoveAttribute;
+    pathLength?: number | string | RemoveAttribute;
   }
   interface PatternSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -2939,14 +3072,14 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "overflow" | "clip"> {
-    height?: number | string | undefined;
-    href?: string | undefined;
-    patternContentUnits?: SVGUnits | undefined;
-    patternTransform?: string | undefined;
-    patternUnits?: SVGUnits | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    patternContentUnits?: SVGUnits | RemoveAttribute;
+    patternTransform?: string | RemoveAttribute;
+    patternUnits?: SVGUnits | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface PolygonSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2956,7 +3089,7 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
-    points?: string | undefined;
+    points?: string | RemoveAttribute;
   }
   interface PolylineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2966,14 +3099,14 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "marker-start" | "marker-mid" | "marker-end"> {
-    points?: string | undefined;
+    points?: string | RemoveAttribute;
   }
   interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
-    cx?: number | string | undefined;
-    cy?: number | string | undefined;
-    fx?: number | string | undefined;
-    fy?: number | string | undefined;
-    r?: number | string | undefined;
+    cx?: number | string | RemoveAttribute;
+    cy?: number | string | RemoveAttribute;
+    fx?: number | string | RemoveAttribute;
+    fy?: number | string | RemoveAttribute;
+    r?: number | string | RemoveAttribute;
   }
   interface RectSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -2983,12 +3116,12 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    height?: number | string | undefined;
-    rx?: number | string | undefined;
-    ry?: number | string | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    rx?: number | string | RemoveAttribute;
+    ry?: number | string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface SetSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -2998,7 +3131,7 @@ export namespace JSX {
     extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "stop-color" | "stop-opacity"> {
-    offset?: number | string | undefined;
+    offset?: number | string | RemoveAttribute;
   }
   interface SvgSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -3011,19 +3144,19 @@ export namespace JSX {
       PresentationSVGAttributes,
       WindowEventMap<T>,
       ElementEventMap<T> {
-    "xmlns:xlink"?: string | undefined;
-    contentScriptType?: string | undefined;
-    contentStyleType?: string | undefined;
-    height?: number | string | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    xmlns?: string | undefined;
-    y?: number | string | undefined;
+    "xmlns:xlink"?: string | RemoveAttribute;
+    contentScriptType?: string | RemoveAttribute;
+    contentStyleType?: string | RemoveAttribute;
+    height?: number | string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    xmlns?: string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
 
     /** @deprecated */
-    baseProfile?: string | undefined;
+    baseProfile?: string | RemoveAttribute;
     /** @deprecated */
-    version?: string | undefined;
+    version?: string | RemoveAttribute;
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -3039,14 +3172,14 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path"> {
-    height?: number | string | undefined;
-    preserveAspectRatio?: SVGPreserveAspectRatio | undefined;
-    refX?: number | string | undefined;
-    refY?: number | string | undefined;
-    viewBox?: string | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    preserveAspectRatio?: SVGPreserveAspectRatio | RemoveAttribute;
+    refX?: number | string | RemoveAttribute;
+    refY?: number | string | RemoveAttribute;
+    viewBox?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface TextSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -3056,13 +3189,13 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "writing-mode" | "text-rendering"> {
-    dx?: number | string | undefined;
-    dy?: number | string | undefined;
-    lengthAdjust?: "spacing" | "spacingAndGlyphs" | undefined;
-    rotate?: number | string | undefined;
-    textLength?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    dx?: number | string | RemoveAttribute;
+    dy?: number | string | RemoveAttribute;
+    lengthAdjust?: "spacing" | "spacingAndGlyphs" | RemoveAttribute;
+    rotate?: number | string | RemoveAttribute;
+    textLength?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface TextPathSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -3073,10 +3206,10 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    href?: string | undefined;
-    method?: "align" | "stretch" | undefined;
-    spacing?: "auto" | "exact" | undefined;
-    startOffset?: number | string | undefined;
+    href?: string | RemoveAttribute;
+    method?: "align" | "stretch" | RemoveAttribute;
+    spacing?: "auto" | "exact" | RemoveAttribute;
+    startOffset?: number | string | RemoveAttribute;
   }
   interface TSpanSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -3087,13 +3220,13 @@ export namespace JSX {
         PresentationSVGAttributes,
         "alignment-baseline" | "baseline-shift" | "display" | "visibility"
       > {
-    dx?: number | string | undefined;
-    dy?: number | string | undefined;
-    lengthAdjust?: "spacing" | "spacingAndGlyphs" | undefined;
-    rotate?: number | string | undefined;
-    textLength?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    dx?: number | string | RemoveAttribute;
+    dy?: number | string | RemoveAttribute;
+    lengthAdjust?: "spacing" | "spacingAndGlyphs" | RemoveAttribute;
+    rotate?: number | string | RemoveAttribute;
+    textLength?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
@@ -3104,78 +3237,80 @@ export namespace JSX {
       PresentationSVGAttributes,
       ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
-    height?: number | string | undefined;
-    href?: string | undefined;
-    width?: number | string | undefined;
-    x?: number | string | undefined;
-    y?: number | string | undefined;
+    height?: number | string | RemoveAttribute;
+    href?: string | RemoveAttribute;
+    width?: number | string | RemoveAttribute;
+    x?: number | string | RemoveAttribute;
+    y?: number | string | RemoveAttribute;
   }
   interface ViewSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes {
-    viewTarget?: string | undefined;
+    viewTarget?: string | RemoveAttribute;
   }
 
   interface MathMLAttributes<T> extends HTMLAttributes<T> {
-    displaystyle?: "" | boolean | undefined;
+    xmlns?: string | RemoveAttribute;
+
+    displaystyle?: BooleanAttribute | RemoveAttribute;
     /** @deprecated */
-    href?: string | undefined;
+    href?: string | RemoveAttribute;
     /** @deprecated */
-    mathbackground?: string | undefined;
+    mathbackground?: string | RemoveAttribute;
     /** @deprecated */
-    mathcolor?: string | undefined;
+    mathcolor?: string | RemoveAttribute;
     /** @deprecated */
-    mathsize?: string | undefined;
-    nonce?: string | undefined;
-    scriptlevel?: string | undefined;
+    mathsize?: string | RemoveAttribute;
+    nonce?: string | RemoveAttribute;
+    scriptlevel?: string | RemoveAttribute;
   }
 
   interface MathMLAnnotationElementAttributes<T> extends MathMLAttributes<T> {
-    encoding?: string | undefined;
+    encoding?: string | RemoveAttribute;
 
     /** @deprecated */
-    src?: string | undefined;
+    src?: string | RemoveAttribute;
   }
   interface MathMLAnnotationXmlElementAttributes<T> extends MathMLAttributes<T> {
-    encoding?: string | undefined;
+    encoding?: string | RemoveAttribute;
 
     /** @deprecated */
-    src?: string | undefined;
+    src?: string | RemoveAttribute;
   }
   interface MathMLMactionElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated
      * @non-standard
      */
-    actiontype?: "statusline" | "toggle" | undefined;
+    actiontype?: "statusline" | "toggle" | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    selection?: string | undefined;
+    selection?: string | RemoveAttribute;
   }
   interface MathMLMathElementAttributes<T> extends MathMLAttributes<T> {
-    display?: "block" | "inline" | undefined;
+    display?: "block" | "inline" | RemoveAttribute;
   }
   interface MathMLMerrorElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMfracElementAttributes<T> extends MathMLAttributes<T> {
-    linethickness?: string | undefined;
+    linethickness?: string | RemoveAttribute;
 
     /**
      * @deprecated
      * @non-standard
      */
-    denomalign?: "center" | "left" | "right" | undefined;
+    denomalign?: "center" | "left" | "right" | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    numalign?: "center" | "left" | "right" | undefined;
+    numalign?: "center" | "left" | "right" | RemoveAttribute;
   }
   interface MathMLMiElementAttributes<T> extends MathMLAttributes<T> {
-    mathvariant?: "normal" | undefined;
+    mathvariant?: "normal" | RemoveAttribute;
   }
 
   interface MathMLMmultiscriptsElementAttributes<T> extends MathMLAttributes<T> {
@@ -3183,39 +3318,39 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    subscriptshift?: string | undefined;
+    subscriptshift?: string | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    superscriptshift?: string | undefined;
+    superscriptshift?: string | RemoveAttribute;
   }
   interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
-    fence?: "" | boolean | undefined;
-    form?: "prefix" | "infix" | "postfix" | undefined;
-    largeop?: "" | boolean | undefined;
-    lspace?: string | undefined;
-    maxsize?: string | undefined;
-    minsize?: string | undefined;
-    movablelimits?: "" | boolean | undefined;
-    rspace?: string | undefined;
-    separator?: "" | boolean | undefined;
-    stretchy?: "" | boolean | undefined;
-    symmetric?: "" | boolean | undefined;
+    fence?: BooleanAttribute | RemoveAttribute;
+    form?: "prefix" | "infix" | "postfix" | RemoveAttribute;
+    largeop?: BooleanAttribute | RemoveAttribute;
+    lspace?: string | RemoveAttribute;
+    maxsize?: string | RemoveAttribute;
+    minsize?: string | RemoveAttribute;
+    movablelimits?: BooleanAttribute | RemoveAttribute;
+    rspace?: string | RemoveAttribute;
+    separator?: BooleanAttribute | RemoveAttribute;
+    stretchy?: BooleanAttribute | RemoveAttribute;
+    symmetric?: BooleanAttribute | RemoveAttribute;
 
     /** @non-standard */
-    accent?: "" | boolean | undefined;
+    accent?: BooleanAttribute | RemoveAttribute;
   }
   interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
-    accent?: "" | boolean | undefined;
+    accent?: BooleanAttribute | RemoveAttribute;
   }
   interface MathMLMpaddedElementAttributes<T> extends MathMLAttributes<T> {
-    depth?: string | undefined;
-    height?: string | undefined;
-    lspace?: string | undefined;
-    voffset?: string | undefined;
-    width?: string | undefined;
+    depth?: string | RemoveAttribute;
+    height?: string | RemoveAttribute;
+    lspace?: string | RemoveAttribute;
+    voffset?: string | RemoveAttribute;
+    width?: string | RemoveAttribute;
   }
   interface MathMLMphantomElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMprescriptsElementAttributes<T> extends MathMLAttributes<T> {}
@@ -3223,14 +3358,14 @@ export namespace JSX {
   interface MathMLMrowElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMsElementAttributes<T> extends MathMLAttributes<T> {
     /** @deprecated */
-    lquote?: string | undefined;
+    lquote?: string | RemoveAttribute;
     /** @deprecated */
-    rquote?: string | undefined;
+    rquote?: string | RemoveAttribute;
   }
   interface MathMLMspaceElementAttributes<T> extends MathMLAttributes<T> {
-    depth?: string | undefined;
-    height?: string | undefined;
-    width?: string | undefined;
+    depth?: string | RemoveAttribute;
+    height?: string | RemoveAttribute;
+    width?: string | RemoveAttribute;
   }
   interface MathMLMsqrtElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMstyleElementAttributes<T> extends MathMLAttributes<T> {
@@ -3238,102 +3373,102 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    background?: string | undefined;
+    background?: string | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    color?: string | undefined;
+    color?: string | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    fontsize?: string | undefined;
+    fontsize?: string | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    fontstyle?: string | undefined;
+    fontstyle?: string | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    fontweight?: string | undefined;
+    fontweight?: string | RemoveAttribute;
 
     /** @deprecated */
-    scriptminsize?: string | undefined;
+    scriptminsize?: string | RemoveAttribute;
     /** @deprecated */
-    scriptsizemultiplier?: string | undefined;
+    scriptsizemultiplier?: string | RemoveAttribute;
   }
   interface MathMLMsubElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated
      * @non-standard
      */
-    subscriptshift?: string | undefined;
+    subscriptshift?: string | RemoveAttribute;
   }
   interface MathMLMsubsupElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated
      * @non-standard
      */
-    subscriptshift?: string | undefined;
+    subscriptshift?: string | RemoveAttribute;
     /**
      * @deprecated
      * @non-standard
      */
-    superscriptshift?: string | undefined;
+    superscriptshift?: string | RemoveAttribute;
   }
   interface MathMLMsupElementAttributes<T> extends MathMLAttributes<T> {
     /**
      * @deprecated
      * @non-standard
      */
-    superscriptshift?: string | undefined;
+    superscriptshift?: string | RemoveAttribute;
   }
   interface MathMLMtableElementAttributes<T> extends MathMLAttributes<T> {
     /** @non-standard */
-    align?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+    align?: "axis" | "baseline" | "bottom" | "center" | "top" | RemoveAttribute;
     /** @non-standard */
-    columnalign?: "center" | "left" | "right" | undefined;
+    columnalign?: "center" | "left" | "right" | RemoveAttribute;
     /** @non-standard */
-    columnlines?: "dashed" | "none" | "solid" | undefined;
+    columnlines?: "dashed" | "none" | "solid" | RemoveAttribute;
     /** @non-standard */
-    columnspacing?: string | undefined;
+    columnspacing?: string | RemoveAttribute;
     /** @non-standard */
-    frame?: "dashed" | "none" | "solid" | undefined;
+    frame?: "dashed" | "none" | "solid" | RemoveAttribute;
     /** @non-standard */
-    framespacing?: string | undefined;
+    framespacing?: string | RemoveAttribute;
     /** @non-standard */
-    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | RemoveAttribute;
     /** @non-standard */
-    rowlines?: "dashed" | "none" | "solid" | undefined;
+    rowlines?: "dashed" | "none" | "solid" | RemoveAttribute;
     /** @non-standard */
-    rowspacing?: string | undefined;
+    rowspacing?: string | RemoveAttribute;
     /** @non-standard */
-    width?: string | undefined;
+    width?: string | RemoveAttribute;
   }
   interface MathMLMtdElementAttributes<T> extends MathMLAttributes<T> {
-    columnspan?: number | string | undefined;
-    rowspan?: number | string | undefined;
+    columnspan?: number | string | RemoveAttribute;
+    rowspan?: number | string | RemoveAttribute;
     /** @non-standard */
-    columnalign?: "center" | "left" | "right" | undefined;
+    columnalign?: "center" | "left" | "right" | RemoveAttribute;
     /** @non-standard */
-    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | RemoveAttribute;
   }
   interface MathMLMtextElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMtrElementAttributes<T> extends MathMLAttributes<T> {
     /** @non-standard */
-    columnalign?: "center" | "left" | "right" | undefined;
+    columnalign?: "center" | "left" | "right" | RemoveAttribute;
     /** @non-standard */
-    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | undefined;
+    rowalign?: "axis" | "baseline" | "bottom" | "center" | "top" | RemoveAttribute;
   }
   interface MathMLMunderElementAttributes<T> extends MathMLAttributes<T> {
-    accentunder?: "" | boolean | undefined;
+    accentunder?: BooleanAttribute | RemoveAttribute;
   }
   interface MathMLMunderoverElementAttributes<T> extends MathMLAttributes<T> {
-    accent?: "" | boolean | undefined;
-    accentunder?: "" | boolean | undefined;
+    accent?: BooleanAttribute | RemoveAttribute;
+    accentunder?: BooleanAttribute | RemoveAttribute;
   }
   interface MathMLSemanticsElementAttributes<T> extends MathMLAttributes<T> {}
 
@@ -3341,12 +3476,12 @@ export namespace JSX {
 
   interface MathMLMencloseElementAttributes<T> extends MathMLAttributes<T> {
     /** @non-standard */
-    notation?: string | undefined;
+    notation?: string | RemoveAttribute;
   }
   interface MathMLMfencedElementAttributes<T> extends MathMLAttributes<T> {
-    close?: string | undefined;
-    open?: string | undefined;
-    separators?: string | undefined;
+    close?: string | RemoveAttribute;
+    open?: string | RemoveAttribute;
+    separators?: string | RemoveAttribute;
   }
 
   /** @type {HTMLElementTagNameMap} */
@@ -3936,7 +4071,6 @@ export namespace JSX {
     menuitem: HTMLAttributes<HTMLUnknownElement>;
     /**
      * @deprecated
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/xxxxx
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
      */
     noindex: HTMLAttributes<HTMLUnknownElement>;
