@@ -159,7 +159,9 @@ const template2 = (() => {
   _el$8.innerHTML = "<div/>";
   _$effect(
     () => row.label,
-    _v$ => (_el$7.data = _v$)
+    _v$ => {
+      _el$7.data = _v$;
+    }
   );
   return _el$4;
 })();
@@ -172,7 +174,9 @@ const template3 = (() => {
   _el$9.textContent = state.content;
   _$effect(
     () => state.name,
-    _v$ => _$setAttribute(_el$9, "name", _v$)
+    _v$ => {
+      _$setAttribute(_el$9, "name", _v$);
+    }
   );
   return _el$9;
 })();
@@ -183,7 +187,9 @@ const template4 = (() => {
   });
   _$effect(
     () => state.class,
-    _v$ => _$setAttribute(_el$10, "className", _v$)
+    _v$ => {
+      _$setAttribute(_el$10, "className", _v$);
+    }
   );
   return _el$10;
 })();
@@ -191,7 +197,9 @@ const template5 = _tmpl$5();
 const template6 = (() => {
   var _el$12 = _tmpl$6();
   _el$12.textContent = "Hi";
-  _$effect(someStyle, (_v$, _$p) => _$style(_el$12, _v$, _$p));
+  _$effect(someStyle, (_v$, _$p) => {
+    _$style(_el$12, _v$, _$p);
+  });
   return _el$12;
 })();
 let undefVar;
@@ -212,7 +220,7 @@ const template7 = (() => {
       a: !!props.active
     }),
     ({ e, t, a }, _p$) => {
-      _p$.e = _$style(_el$13, e, _p$.e);
+      _$style(_el$13, e, _p$.e);
       t !== _p$.t &&
         (t != null
           ? _el$13.style.setProperty("padding-top", t)
@@ -264,7 +272,9 @@ const template14 = (() => {
   var _el$20 = _tmpl$8();
   _$effect(
     () => state.visible,
-    _v$ => (_el$20.checked = _v$)
+    _v$ => {
+      _el$20.checked = _v$;
+    }
   );
   return _el$20;
 })();
@@ -334,8 +344,12 @@ const template20 = (() => {
       o: undefined
     }
   );
-  _$effect(s, _v$ => (_el$27.value = _v$));
-  _$effect(s2, _v$ => (_el$28.checked = _v$));
+  _$effect(s, _v$ => {
+    _el$27.value = _v$;
+  });
+  _$effect(s2, _v$ => {
+    _el$28.checked = _v$;
+  });
   return _el$26;
 })();
 const template21 = (() => {
@@ -345,7 +359,9 @@ const template21 = (() => {
       a: "static",
       ...rest
     }),
-    (_v$, _$p) => _$style(_el$29, _v$, _$p)
+    (_v$, _$p) => {
+      _$style(_el$29, _v$, _$p);
+    }
   );
   return _el$29;
 })();
@@ -355,7 +371,9 @@ const template23 = (() => {
   _$insert(_el$31, () => "t" in test && "true");
   _$effect(
     () => "t" in test,
-    _v$ => (_el$31.disabled = _v$)
+    _v$ => {
+      _el$31.disabled = _v$;
+    }
   );
   return _el$31;
 })();
@@ -430,11 +448,12 @@ const template30 = _tmpl$19();
 const template31 = (() => {
   var _el$44 = _tmpl$6();
   _$effect(
-    () => (_$p = getStore.itemProperties.color),
-    (_v$, _$p) =>
+    () => getStore.itemProperties.color,
+    _v$ => {
       _v$ != null
-        ? _el$44.style.setProperty("background-color", _$p)
-        : _el$44.style.removeProperty("background-color")
+        ? _el$44.style.setProperty("background-color", _v$)
+        : _el$44.style.removeProperty("background-color");
+    }
   );
   return _el$44;
 })();
@@ -448,7 +467,9 @@ const template33 = [
     var _el$46 = _tmpl$20();
     _$effect(
       () => styles.button,
-      (_v$, _$p) => _$className(_el$46, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$46, _v$, false, _$p);
+      }
     );
     return _el$46;
   })(),
@@ -456,7 +477,9 @@ const template33 = [
     var _el$47 = _tmpl$20();
     _$effect(
       () => styles["foo--bar"],
-      (_v$, _$p) => _$className(_el$47, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$47, _v$, false, _$p);
+      }
     );
     return _el$47;
   })(),
@@ -464,7 +487,9 @@ const template33 = [
     var _el$48 = _tmpl$20();
     _$effect(
       () => styles.foo.bar,
-      (_v$, _$p) => _$className(_el$48, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$48, _v$, false, _$p);
+      }
     );
     return _el$48;
   })(),
@@ -472,7 +497,9 @@ const template33 = [
     var _el$49 = _tmpl$20();
     _$effect(
       () => styles[foo()],
-      (_v$, _$p) => _$className(_el$49, _v$, false, _$p)
+      (_v$, _$p) => {
+        _$className(_el$49, _v$, false, _$p);
+      }
     );
     return _el$49;
   })()
@@ -511,11 +538,9 @@ const template38 = (() => {
 const template39 = _tmpl$21();
 const template40 = (() => {
   var _el$56 = _tmpl$6();
-  _$effect(
-    () => (_$p = a()),
-    (_v$, _$p) =>
-      _v$ != null ? _el$56.style.setProperty("color", _$p) : _el$56.style.removeProperty("color")
-  );
+  _$effect(a, _v$ => {
+    _v$ != null ? _el$56.style.setProperty("color", _v$) : _el$56.style.removeProperty("color");
+  });
   return _el$56;
 })();
 const template41 = (() => {
@@ -524,15 +549,21 @@ const template41 = (() => {
     _el$59 = _el$58.nextSibling;
   _$effect(
     () => Color.Red,
-    _v$ => (_el$58.value = _v$)
+    _v$ => {
+      _el$58.value = _v$;
+    }
   );
   _$effect(
     () => Color.Blue,
-    _v$ => (_el$59.value = _v$)
+    _v$ => {
+      _el$59.value = _v$;
+    }
   );
   _$effect(
     () => state.color,
-    _v$ => (_el$57.value = _v$)
+    _v$ => {
+      queueMicrotask(() => (_el$57.value = _v$)) || (_el$57.value = _v$);
+    }
   );
   return _el$57;
 })();
@@ -559,7 +590,9 @@ const template52 = _tmpl$33();
 const template53 = _tmpl$34();
 const template54 = (() => {
   var _el$72 = _tmpl$35();
-  _$effect(boolTest, _v$ => _$setBoolAttribute(_el$72, "quack", _v$));
+  _$effect(boolTest, _v$ => {
+    _$setBoolAttribute(_el$72, "quack", _v$);
+  });
   return _el$72;
 })();
 const template55 = (() => {
@@ -576,7 +609,9 @@ const template57 = (() => {
   var _el$75 = _tmpl$38();
   _$effect(
     () => boolTestObjBinding.value,
-    _v$ => _$setBoolAttribute(_el$75, "quack", _v$)
+    _v$ => {
+      _$setBoolAttribute(_el$75, "quack", _v$);
+    }
   );
   return _el$75;
 })();
