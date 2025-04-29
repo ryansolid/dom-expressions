@@ -16,6 +16,9 @@ import * as csstype from "csstype";
  *
  * Checked against other frameworks via the following table:
  * https://potahtml.github.io/namespace-jsx-project/index.html
+ *
+ * Note: Typings must include attributes and not properties (unless the property is special-cased,
+ * such textContent, event handlers, etc).
  */
 type DOMElement = Element;
 
@@ -202,7 +205,9 @@ export namespace JSX {
     "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
 
+    /** @deprecated Use camelCase event handlers */
     onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
   }
   interface WindowEventMap<T> {
@@ -229,27 +234,47 @@ export namespace JSX {
     onUnhandledRejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
     onUnload?: EventHandlerUnion<T, Event> | undefined;
 
+    /** @deprecated Use camelCase event handlers */
     onafterprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeprint?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeunload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongamepadconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongamepaddisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onhashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onlanguagechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmessage?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onmessageerror?: EventHandlerUnion<T, MessageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onoffline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ononline?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpagehide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
     // TODO `PageRevealEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
     onpagereveal?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpageshow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
     // TODO `PageSwapEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
     onpageswap?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onrejectionhandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onstorage?: EventHandlerUnion<T, StorageEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onunhandledrejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onunload?: EventHandlerUnion<T, Event> | undefined;
 
     "on:afterprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -377,20 +402,27 @@ export namespace JSX {
   }
   /** @type {GlobalEventHandlers} */
   interface CustomEventHandlersLowerCase<T> {
+    /** @deprecated Use camelCase event handlers */
     onabort?: EventHandlerUnion<T, UIEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationcancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onauxclick?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onbeforeinput?: InputEventHandlerUnion<T, InputEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     onbeforetoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     onblur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncancel?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncanplay?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     oncanplaythrough?: EventHandlerUnion<T, Event> | undefined;
@@ -399,14 +431,23 @@ export namespace JSX {
     /** @deprecated Use camelCase event handlers */
     onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
     // TODO `CommandEvent` is currently undefined in TS
+    /** @deprecated Use camelCase event handlers */
     oncommand?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncontextmenu?: EventHandlerUnion<T, PointerEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncuechange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondblclick?: EventHandlerUnion<T, MouseEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     ondrag?: EventHandlerUnion<T, DragEvent> | undefined;
@@ -414,7 +455,9 @@ export namespace JSX {
     ondragend?: EventHandlerUnion<T, DragEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     ondragenter?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ondragleave?: EventHandlerUnion<T, DragEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     ondragover?: EventHandlerUnion<T, DragEvent> | undefined;
@@ -432,8 +475,11 @@ export namespace JSX {
     onerror?: EventHandlerUnion<T, ErrorEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
@@ -469,7 +515,9 @@ export namespace JSX {
     onmouseover?: EventHandlerUnion<T, MouseEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     onmouseup?: EventHandlerUnion<T, MouseEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onpause?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onplay?: EventHandlerUnion<T, Event> | undefined;
@@ -497,18 +545,25 @@ export namespace JSX {
     onratechange?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onreset?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onresize?: EventHandlerUnion<T, UIEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onscroll?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onscrollend?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onsecuritypolicyviolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onseeked?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onseeking?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onselect?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onselectionchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onslotchange?: EventHandlerUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onstalled?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
@@ -526,11 +581,15 @@ export namespace JSX {
     ontouchmove?: EventHandlerUnion<T, TouchEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     ontouchstart?: EventHandlerUnion<T, TouchEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitioncancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionend?: EventHandlerUnion<T, TransitionEvent> | undefined;
     /** @deprecated Use camelCase event handlers */
     ontransitionrun?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     ontransitionstart?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onvolumechange?: EventHandlerUnion<T, Event> | undefined;
     /** @deprecated Use camelCase event handlers */
     onwaiting?: EventHandlerUnion<T, Event> | undefined;
@@ -818,6 +877,13 @@ export namespace JSX {
      * @see aria-labelledby
      */
     "aria-describedby"?: string | undefined;
+
+    /**
+     * Defines a string value that describes or annotates the current element.
+     *
+     * @see aria-describedby
+     */
+    "aria-description"?: string | undefined;
     /**
      * Defines a string value that describes or annotates the current element.
      *
@@ -1128,7 +1194,7 @@ export namespace JSX {
     exportparts?: string | undefined;
     hidden?: boolean | "hidden" | "until-found" | undefined;
     id?: string | undefined;
-    inert?: boolean | undefined;
+    inert?: "" | boolean | undefined;
     inlist?: any | undefined;
     inputmode?:
       | "decimal"
@@ -1144,7 +1210,7 @@ export namespace JSX {
     itemid?: string | undefined;
     itemprop?: string | undefined;
     itemref?: string | undefined;
-    itemscope?: boolean | undefined;
+    itemscope?: "" | boolean | undefined;
     itemtype?: string | undefined;
     lang?: string | undefined;
     part?: string | undefined;
@@ -1154,45 +1220,6 @@ export namespace JSX {
     resource?: string | undefined;
     slot?: string | undefined;
     spellcheck?: "true" | "false" | boolean | undefined;
-    style?: CSSProperties | string | undefined;
-    tabindex?: number | string | undefined;
-    title?: string | undefined;
-    translate?: "yes" | "no" | undefined;
-    typeof?: string | undefined;
-    vocab?: string | undefined;
-    slot?: string | undefined;
-    color?: string | undefined;
-    itemprop?: string | undefined;
-    itemscope?: "true" | boolean | undefined;
-    itemtype?: string | undefined;
-    itemid?: string | undefined;
-    itemref?: string | undefined;
-    part?: string | undefined;
-    exportparts?: string | undefined;
-    inputmode?:
-      | "decimal"
-      | "email"
-      | "none"
-      | "numeric"
-      | "search"
-      | "tel"
-      | "text"
-      | "url"
-      | undefined;
-    is?: string | undefined;
-    itemid?: string | undefined;
-    itemprop?: string | undefined;
-    itemref?: string | undefined;
-    itemscope?: "true" | boolean | undefined;
-    itemtype?: string | undefined;
-    lang?: string | undefined;
-    part?: string | undefined;
-    popover?: boolean | "manual" | "auto" | undefined;
-    prefix?: string | undefined;
-    property?: string | undefined;
-    resource?: string | undefined;
-    slot?: string | undefined;
-    spellcheck?: "true" | boolean | undefined;
     style?: CSSProperties | string | undefined;
     tabindex?: number | string | undefined;
     title?: string | undefined;
@@ -1280,7 +1307,7 @@ export namespace JSX {
     referrerPolicy?: HTMLReferrerPolicy | undefined;
 
     /** @deprecated */
-    nohref?: boolean | undefined;
+    nohref?: "" | boolean | undefined;
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
@@ -1294,13 +1321,13 @@ export namespace JSX {
       WindowEventMap<T>,
       ElementEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: "true" | boolean | undefined;
-    disabled?: "true" | boolean | undefined;
+    autofocus?: "" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
     formenctype?: HTMLFormEncType | undefined;
     formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: "true" | boolean | undefined;
+    formnovalidate?: "" | boolean | undefined;
     formtarget?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
     name?: string | undefined;
     popovertarget?: string | undefined;
@@ -1341,17 +1368,19 @@ export namespace JSX {
 
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncontextlost?: EventHandlerUnion<T, Event> | undefined;
 
     onContextRestored?: EventHandlerUnion<T, Event> | undefined;
     "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncontextrestored?: EventHandlerUnion<T, Event> | undefined;
 
     /**
      * @deprecated
      * @non-standard
      */
-    "moz-opaque"?: boolean | undefined;
+    "moz-opaque"?: "" | boolean | undefined;
   }
   interface CaptionHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
@@ -1394,10 +1423,10 @@ export namespace JSX {
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
-    open?: boolean | undefined;
+    open?: "" | boolean | undefined;
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: boolean | undefined;
+    open?: "" | boolean | undefined;
     /**
      * Do not add the tabindex property to the <dialog> element as it is not interactive and does
      * not receive focus. The dialog's contents, including the close button contained in the dialog,
@@ -1409,10 +1438,12 @@ export namespace JSX {
 
     onClose?: EventHandlerUnion<T, Event> | undefined;
     "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onclose?: EventHandlerUnion<T, Event> | undefined;
 
     onCancel?: EventHandlerUnion<T, Event> | undefined;
     "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     oncancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1427,7 +1458,7 @@ export namespace JSX {
     name?: string | undefined;
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: "true" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     form?: string | undefined;
     name?: string | undefined;
   }
@@ -1439,12 +1470,13 @@ export namespace JSX {
     enctype?: HTMLFormEncType | undefined;
     method?: HTMLFormMethod | undefined;
     name?: string | undefined;
-    novalidate?: "true" | boolean | undefined;
+    novalidate?: "" | boolean | undefined;
     rel?: string | undefined;
     target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined;
 
     onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
     "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
     /** @deprecated Use lowercase attributes */
@@ -1455,7 +1487,7 @@ export namespace JSX {
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allow?: string | undefined;
-    allowfullscreen?: "true" | boolean | undefined;
+    allowfullscreen?: "" | boolean | undefined;
     height?: number | string | undefined;
     loading?: "eager" | "lazy" | undefined;
     name?: string | undefined;
@@ -1469,39 +1501,20 @@ export namespace JSX {
     referrerPolicy?: HTMLReferrerPolicy | undefined;
 
     /** @experimental */
-    adauctionheaders?: "true" | boolean | undefined;
+    adauctionheaders?: "" | boolean | undefined;
     /**
      * @non-standard
      * @experimental
      */
-    browsingtopics?: "true" | boolean | undefined;
+    browsingtopics?: "" | boolean | undefined;
     /** @experimental */
-    credentialless?: "true" | boolean | undefined;
+    credentialless?: "" | boolean | undefined;
     /** @experimental */
     csp?: string | undefined;
     /** @experimental */
     privatetoken?: string | undefined;
     /** @experimental */
-    sharedstoragewritable?: "true" | boolean | undefined;
-
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: HTMLReferrerPolicy | undefined;
-
-    /** @experimental */
-    adauctionheaders?: boolean | undefined;
-    /**
-     * @non-standard
-     * @experimental
-     */
-    browsingtopics?: boolean | undefined;
-    /** @experimental */
-    credentialless?: boolean | undefined;
-    /** @experimental */
-    csp?: string | undefined;
-    /** @experimental */
-    privatetoken?: string | undefined;
-    /** @experimental */
-    sharedstoragewritable?: boolean | undefined;
+    sharedstoragewritable?: "" | boolean | undefined;
 
     /** @deprecated */
     align?: string | undefined;
@@ -1509,9 +1522,9 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    allowpaymentrequest?: boolean | undefined;
+    allowpaymentrequest?: "" | boolean | undefined;
     /** @deprecated */
-    allowtransparency?: "true" | boolean | undefined;
+    allowtransparency?: "" | boolean | undefined;
     /** @deprecated */
     frameborder?: number | string | undefined;
     /** @deprecated */
@@ -1523,7 +1536,7 @@ export namespace JSX {
     /** @deprecated */
     scrolling?: "yes" | "no" | "auto" | undefined;
     /** @deprecated */
-    seamless?: "true" | boolean | undefined;
+    seamless?: "" | boolean | undefined;
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
@@ -1532,7 +1545,7 @@ export namespace JSX {
     elementtiming?: string | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
     height?: number | string | undefined;
-    ismap?: "true" | boolean | undefined;
+    ismap?: "" | boolean | undefined;
     loading?: "eager" | "lazy" | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     sizes?: string | undefined;
@@ -1544,29 +1557,7 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: string | undefined;
     /** @experimental */
-    sharedstoragewritable?: boolean | undefined;
-
-    /** @deprecated */
-    align?: "top" | "middle" | "bottom" | "left" | "right" | undefined;
-    /** @deprecated */
-    border?: string | undefined;
-    /** @deprecated */
-    hspace?: number | string | undefined;
-    /** @deprecated */
-    intrinsicsize?: string | undefined;
-    /** @deprecated */
-    longdesc?: string | undefined;
-    /** @deprecated */
-    lowsrc?: string | undefined;
-    /** @deprecated */
-    name?: string | undefined;
-    /** @deprecated */
-    vspace?: number | string | undefined;
-
-    /** @experimental */
-    attributionsrc?: string | undefined;
-    /** @experimental */
-    sharedstoragewritable?: "true" | boolean | undefined;
+    sharedstoragewritable?: "" | boolean | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1665,18 +1656,18 @@ export namespace JSX {
       | (string & {})
       | undefined;
     autocorrect?: "on" | "off" | undefined;
-    autofocus?: "true" | boolean | undefined;
+    autofocus?: "" | boolean | undefined;
     capture?: "user" | "environment" | undefined;
-    checked?: "true" | boolean | undefined;
+    checked?: "" | boolean | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
     dirname?: string | undefined;
-    disabled?: "true" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
     form?: string | undefined;
     formaction?: string | SerializableAttributeValue | undefined;
     formenctype?: HTMLFormEncType | undefined;
     formmethod?: HTMLFormMethod | undefined;
-    formnovalidate?: "true" | boolean | undefined;
+    formnovalidate?: "" | boolean | undefined;
     formtarget?: string | undefined;
     height?: number | string | undefined;
     list?: string | undefined;
@@ -1684,14 +1675,14 @@ export namespace JSX {
     maxlength?: number | string | undefined;
     min?: number | string | undefined;
     minlength?: number | string | undefined;
-    multiple?: "true" | boolean | undefined;
+    multiple?: "" | boolean | undefined;
     name?: string | undefined;
     pattern?: string | undefined;
     placeholder?: string | undefined;
     popovertarget?: string | undefined;
     popovertargetaction?: "hide" | "show" | "toggle" | undefined;
-    readonly?: "true" | boolean | undefined;
-    required?: "true" | boolean | undefined;
+    readonly?: "" | boolean | undefined;
+    required?: "" | boolean | undefined;
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/search#results
     results?: number | undefined;
     size?: number | string | undefined;
@@ -1726,7 +1717,7 @@ export namespace JSX {
     width?: number | string | undefined;
 
     /** @non-standard */
-    incremental?: boolean | undefined;
+    incremental?: "" | boolean | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1761,11 +1752,11 @@ export namespace JSX {
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    autofocus?: "true" | boolean | undefined;
+    autofocus?: "" | boolean | undefined;
     /** @deprecated */
     challenge?: string | undefined;
     /** @deprecated */
-    disabled?: "true" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     /** @deprecated */
     form?: string | undefined;
     /** @deprecated */
@@ -1789,7 +1780,7 @@ export namespace JSX {
     as?: HTMLLinkAs | undefined;
     blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    disabled?: "true" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
     href?: string | undefined;
     hreflang?: string | undefined;
@@ -1818,8 +1809,8 @@ export namespace JSX {
     name?: string | undefined;
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T>, ElementEventMap<T> {
-    autoplay?: boolean | undefined;
-    controls?: boolean | undefined;
+    autoplay?: "" | boolean | undefined;
+    controls?: "" | boolean | undefined;
     controlslist?:
       | "nodownload"
       | "nofullscreen"
@@ -1828,21 +1819,21 @@ export namespace JSX {
       | (string & {})
       | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    disableremoteplayback?: boolean | undefined;
-    loop?: boolean | undefined;
-    muted?: boolean | undefined;
+    disableremoteplayback?: "" | boolean | undefined;
+    loop?: "" | boolean | undefined;
+    muted?: "" | boolean | undefined;
     preload?: "none" | "metadata" | "auto" | "" | undefined;
     src?: string | undefined;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
 
     onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
     "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
-
-    crossOrigin?: HTMLCrossorigin | undefined;
 
     /** @deprecated Use lowercase attributes */
     crossOrigin?: HTMLCrossorigin | undefined;
@@ -1854,7 +1845,7 @@ export namespace JSX {
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    compact?: "true" | boolean | undefined;
+    compact?: "" | boolean | undefined;
     /** @deprecated */
     label?: string | undefined;
     /** @deprecated */
@@ -1914,7 +1905,7 @@ export namespace JSX {
     /** @deprecated */
     codetype?: string | undefined;
     /** @deprecated */
-    declare?: boolean | undefined;
+    declare?: "" | boolean | undefined;
     /** @deprecated */
     hspace?: number | string | undefined;
     /** @deprecated */
@@ -1924,10 +1915,10 @@ export namespace JSX {
     /** @deprecated */
     vspace?: number | string | undefined;
     /** @deprecated */
-    typemustmatch?: "true" | boolean | undefined;
+    typemustmatch?: "" | boolean | undefined;
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: "true" | boolean | undefined;
+    reversed?: "" | boolean | undefined;
     start?: number | string | undefined;
     type?: "1" | "a" | "A" | "i" | "I" | undefined;
 
@@ -1935,16 +1926,16 @@ export namespace JSX {
      * @deprecated
      * @non-standard
      */
-    compact?: boolean | undefined;
+    compact?: "" | boolean | undefined;
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: "true" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     label?: string | undefined;
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: "true" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     label?: string | undefined;
-    selected?: "true" | boolean | undefined;
+    selected?: "" | boolean | undefined;
     value?: string | string[] | number | undefined;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1967,13 +1958,13 @@ export namespace JSX {
     value?: string | string[] | number | undefined;
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: boolean | undefined;
+    async?: "" | boolean | undefined;
     blocking?: "render" | undefined;
     crossorigin?: HTMLCrossorigin | undefined;
-    defer?: "true" | boolean | undefined;
+    defer?: "" | boolean | undefined;
     fetchpriority?: "high" | "low" | "auto" | undefined;
     integrity?: string | undefined;
-    nomodule?: "true" | boolean | undefined;
+    nomodule?: "" | boolean | undefined;
     nonce?: string | undefined;
     referrerpolicy?: HTMLReferrerPolicy | undefined;
     src?: string | undefined;
@@ -1998,12 +1989,12 @@ export namespace JSX {
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?: string | undefined;
-    autofocus?: "true" | boolean | undefined;
-    disabled?: "true" | boolean | undefined;
+    autofocus?: "" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     form?: string | undefined;
-    multiple?: "true" | boolean | undefined;
+    multiple?: "" | boolean | undefined;
     name?: string | undefined;
-    required?: "true" | boolean | undefined;
+    required?: "" | boolean | undefined;
     size?: number | string | undefined;
     value?: string | string[] | number | undefined;
   }
@@ -2025,7 +2016,7 @@ export namespace JSX {
     nonce?: string | undefined;
 
     /** @deprecated */
-    scoped?: "true" | boolean | undefined;
+    scoped?: "" | boolean | undefined;
     /** @deprecated */
     type?: string | undefined;
   }
@@ -2054,7 +2045,7 @@ export namespace JSX {
     /** @deprecated */
     height?: number | string | undefined;
     /** @deprecated */
-    nowrap?: "true" | boolean | undefined;
+    nowrap?: "" | boolean | undefined;
     /** @deprecated */
     scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
     /** @deprecated */
@@ -2063,12 +2054,12 @@ export namespace JSX {
     width?: number | string | undefined;
   }
   interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
-    shadowrootclonable?: boolean | undefined;
-    shadowrootdelegatesfocus?: boolean | undefined;
+    shadowrootclonable?: "" | boolean | undefined;
+    shadowrootdelegatesfocus?: "" | boolean | undefined;
     shadowrootmode?: "open" | "closed" | undefined;
 
     /** @experimental */
-    shadowrootserializable?: boolean | undefined;
+    shadowrootserializable?: "" | boolean | undefined;
 
     /** @deprecated */
     content?: DocumentFragment | undefined;
@@ -2140,18 +2131,18 @@ export namespace JSX {
       | (string & {})
       | undefined;
     autocorrect?: "on" | "off" | undefined;
-    autofocus?: "true" | boolean | undefined;
+    autofocus?: "" | boolean | undefined;
     cols?: number | string | undefined;
     dirname?: string | undefined;
-    disabled?: "true" | boolean | undefined;
+    disabled?: "" | boolean | undefined;
     enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined;
     form?: string | undefined;
     maxlength?: number | string | undefined;
     minlength?: number | string | undefined;
     name?: string | undefined;
     placeholder?: string | undefined;
-    readonly?: "true" | boolean | undefined;
-    required?: "true" | boolean | undefined;
+    readonly?: "" | boolean | undefined;
+    required?: "" | boolean | undefined;
     rows?: number | string | undefined;
     value?: string | string[] | number | undefined;
     wrap?: "hard" | "soft" | "off" | undefined;
@@ -2170,24 +2161,6 @@ export namespace JSX {
     rowspan?: number | string | undefined;
     scope?: "col" | "row" | "rowgroup" | "colgroup" | undefined;
 
-    /** @deprecated */
-    align?: "left" | "center" | "right" | "justify" | "char" | undefined;
-    /** @deprecated */
-    axis?: string | undefined;
-    /** @deprecated */
-    bgcolor?: string | undefined;
-    /** @deprecated */
-    char?: string | undefined;
-    /** @deprecated */
-    charoff?: string | undefined;
-    /** @deprecated */
-    height?: string | undefined;
-    /** @deprecated */
-    nowrap?: boolean | undefined;
-    /** @deprecated */
-    valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
-    /** @deprecated */
-    width?: number | string | undefined;
     /** @deprecated Use lowercase attributes */
     colSpan?: number | string | undefined;
     /** @deprecated Use lowercase attributes */
@@ -2206,7 +2179,7 @@ export namespace JSX {
     /** @deprecated */
     height?: string | undefined;
     /** @deprecated */
-    nowrap?: "true" | boolean | undefined;
+    nowrap?: "" | boolean | undefined;
     /** @deprecated */
     valign?: "baseline" | "bottom" | "middle" | "top" | undefined;
     /** @deprecated */
@@ -2219,7 +2192,7 @@ export namespace JSX {
     dateTime?: string | undefined;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: boolean | undefined;
+    default?: "" | boolean | undefined;
     kind?:
       | "alternative"
       | "descriptions"
@@ -2236,51 +2209,53 @@ export namespace JSX {
     src?: string | undefined;
     srclang?: string | undefined;
 
+    /** @deprecated Use lowercase attributes */
     mediaGroup?: string | undefined;
     /** @deprecated */
     mediagroup?: string | undefined;
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
-    disablepictureinpicture?: boolean | undefined;
-    disableremoteplayback?: boolean | undefined;
+    disablepictureinpicture?: "" | boolean | undefined;
     height?: number | string | undefined;
-    playsinline?: "true" | boolean | undefined;
+    playsinline?: "" | boolean | undefined;
     poster?: string | undefined;
     width?: number | string | undefined;
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onenterpictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
 
     onLeavePictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:leavepictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
+    /** @deprecated Use camelCase event handlers */
     onleavepictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
-    allowpopups?: boolean | undefined;
+    allowpopups?: "" | boolean | undefined;
     disableblinkfeatures?: string | undefined;
-    disablewebsecurity?: boolean | undefined;
+    disablewebsecurity?: "" | boolean | undefined;
     enableblinkfeatures?: string | undefined;
     httpreferrer?: string | undefined;
-    nodeintegration?: boolean | undefined;
-    nodeintegrationinsubframes?: boolean | undefined;
+    nodeintegration?: "" | boolean | undefined;
+    nodeintegrationinsubframes?: "" | boolean | undefined;
     partition?: string | undefined;
-    plugins?: "true" | boolean | undefined;
+    plugins?: "" | boolean | undefined;
     preload?: string | undefined;
     src?: string | undefined;
     useragent?: string | undefined;
     webpreferences?: string | undefined;
 
     // does this exists?
-    allowfullscreen?: "true" | boolean | undefined;
-    autofocus?: "true" | boolean | undefined;
-    autosize?: "true" | boolean | undefined;
+    allowfullscreen?: "" | boolean | undefined;
+    autofocus?: "" | boolean | undefined;
+    autosize?: "" | boolean | undefined;
 
     /** @deprecated */
     blinkfeatures?: string | undefined;
     /** @deprecated */
-    disableguestresize?: boolean | undefined;
+    disableguestresize?: "" | boolean | undefined;
     /** @deprecated */
     guestinstance?: string | undefined;
   }
@@ -3154,7 +3129,7 @@ export namespace JSX {
   }
 
   interface MathMLAttributes<T> extends HTMLAttributes<T> {
-    displaystyle?: "true" | boolean | undefined;
+    displaystyle?: "" | boolean | undefined;
     /** @deprecated */
     href?: string | undefined;
     /** @deprecated */
@@ -3227,23 +3202,23 @@ export namespace JSX {
   }
   interface MathMLMnElementAttributes<T> extends MathMLAttributes<T> {}
   interface MathMLMoElementAttributes<T> extends MathMLAttributes<T> {
-    fence?: "true" | boolean | undefined;
+    fence?: "" | boolean | undefined;
     form?: "prefix" | "infix" | "postfix" | undefined;
-    largeop?: "true" | boolean | undefined;
+    largeop?: "" | boolean | undefined;
     lspace?: string | undefined;
     maxsize?: string | undefined;
     minsize?: string | undefined;
-    movablelimits?: "true" | boolean | undefined;
+    movablelimits?: "" | boolean | undefined;
     rspace?: string | undefined;
-    separator?: "true" | boolean | undefined;
-    stretchy?: "true" | boolean | undefined;
-    symmetric?: "true" | boolean | undefined;
+    separator?: "" | boolean | undefined;
+    stretchy?: "" | boolean | undefined;
+    symmetric?: "" | boolean | undefined;
 
     /** @non-standard */
-    accent?: "true" | boolean | undefined;
+    accent?: "" | boolean | undefined;
   }
   interface MathMLMoverElementAttributes<T> extends MathMLAttributes<T> {
-    accent?: "true" | boolean | undefined;
+    accent?: "" | boolean | undefined;
   }
   interface MathMLMpaddedElementAttributes<T> extends MathMLAttributes<T> {
     depth?: string | undefined;
