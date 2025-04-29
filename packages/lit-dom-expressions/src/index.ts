@@ -321,8 +321,8 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
           propGroups.push(`exprs[${options.counter++}]`);
           propGroups.push((props = []));
         } else if (value === "###") {
-          props.push(`${name}: exprs[${options.counter++}]`);
-        } else props.push(`${name}: "${value}"`);
+          props.push(`"${name}": exprs[${options.counter++}]`);
+        } else props.push(`"${name}": "${value}"`);
       } else if (type === 'directive') {
         const tag = `_$el${uuid++}`;
         const topDecl = !options.decl.length;
