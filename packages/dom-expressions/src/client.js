@@ -566,10 +566,10 @@ function cleanChildren(parent, current, marker, replacement) {
 }
 
 function gatherHydratable(element, root) {
-  const templates = element.querySelectorAll(`*[data-hk]`);
+  const templates = element.querySelectorAll(`*[_hk]`);
   for (let i = 0; i < templates.length; i++) {
     const node = templates[i];
-    const key = node.getAttribute("data-hk");
+    const key = node.getAttribute("_hk");
     if ((!root || key.startsWith(root)) && !sharedConfig.registry.has(key))
       sharedConfig.registry.set(key, node);
   }

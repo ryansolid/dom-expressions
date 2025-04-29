@@ -3,7 +3,7 @@ window._$HY || ((h) => {
   let lookup = el =>
     el &&
     el.hasAttribute &&
-    (el.hasAttribute("data-hk") ? el :
+    (el.hasAttribute("_hk") ? el :
       lookup(el.host && el.host.nodeType ? el.host : el.parentNode));
   ["${eventNames.join('", "')}"].forEach(name =>
     document.addEventListener(name, e => {
