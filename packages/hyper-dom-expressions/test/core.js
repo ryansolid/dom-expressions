@@ -1,10 +1,6 @@
 import { untrack } from "@solidjs/signals";
 
-export const sharedConfig = {
-  getNextContextId() {
-    return this.context.id + this.context.count++;
-  }
-};
+export const sharedConfig = {};
 
 export function createComponent(Comp, props) {
   if (Comp.prototype && Comp.prototype.isClassComponent) {

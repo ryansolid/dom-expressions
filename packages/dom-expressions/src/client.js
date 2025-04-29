@@ -265,22 +265,19 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
 // Hydrate
 export function hydrate(code, element, options = {}) {
   if (globalThis._$HY.done) return render(code, element, [...element.childNodes], options);
-  options.renderId ||= "$";
+  options.renderId ||= "";
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = id => globalThis._$HY.r[id];
   sharedConfig.has = id => id in globalThis._$HY.r;
   sharedConfig.gather = root => gatherHydratable(element, root);
   sharedConfig.registry = new Map();
-  sharedConfig.context = {
-    id: options.renderId,
-    count: 0
-  };
+  sharedConfig.hydrating = true;
   try {
     gatherHydratable(element, options.renderId);
     return render(code, element, [...element.childNodes], options);
   } finally {
-    sharedConfig.context = null;
+    sharedConfig.hydrating = false;
   }
 }
 
@@ -353,7 +350,7 @@ export function runHydrationEvents() {
 
 // Internal Functions
 function isHydrating(node) {
-  return !!sharedConfig.context && !sharedConfig.done && (!node || node.isConnected);
+  return sharedConfig.hydrating && !sharedConfig.done && (!node || node.isConnected);
 }
 
 function toggleClassKey(node, key, value) {
@@ -580,7 +577,7 @@ export function getHydrationKey() {
 }
 
 export function NoHydration(props) {
-  return sharedConfig.context ? undefined : props.children;
+  return sharedConfig.hydrating ? undefined : props.children;
 }
 
 export function Hydration(props) {

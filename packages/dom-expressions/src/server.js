@@ -20,7 +20,7 @@ const VOID_ELEMENTS =
 const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}`;
 
 export function renderToString(code, options = {}) {
-  const { renderId = "$", nonce, noScripts } = options;
+  const { renderId = "", nonce, noScripts } = options;
   let scripts = "";
   const serializer = createSerializer({
     scopeId: renderId,
@@ -35,7 +35,6 @@ export function renderToString(code, options = {}) {
   });
   sharedConfig.context = {
     id: renderId,
-    count: 0,
     resources: {},
     assets: [],
     nonce,
@@ -56,7 +55,7 @@ export function renderToString(code, options = {}) {
 }
 
 export function renderToStream(code, options = {}) {
-  let { nonce, onCompleteShell, onCompleteAll, renderId = "$", noScripts } = options;
+  let { nonce, onCompleteShell, onCompleteAll, renderId = "", noScripts } = options;
   let dispose;
   const blockingPromises = [];
   const pushTask = task => {
@@ -122,7 +121,6 @@ export function renderToStream(code, options = {}) {
   };
   sharedConfig.context = context = {
     id: renderId,
-    count: 0,
     async: true,
     resources: {},
     assets: [],

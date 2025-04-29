@@ -1,10 +1,6 @@
 import { untrack } from "@solidjs/signals";
 
-export const sharedConfig = {
-  getNextContextId() {
-    return this.context.id + this.context.count++;
-  }
-};
+export const sharedConfig = {};
 
 export function createComponent(Comp, props) {
   if (Comp.prototype && Comp.prototype.isClassComponent) {
@@ -16,5 +12,12 @@ export function createComponent(Comp, props) {
   return untrack(() => Comp(props));
 }
 
-
-export { createRoot as root, createRenderEffect as effect, createMemo as memo, getOwner, untrack, merge as mergeProps, flatten } from "@solidjs/signals";
+export {
+  createRoot as root,
+  createRenderEffect as effect,
+  createMemo as memo,
+  getOwner,
+  untrack,
+  merge as mergeProps,
+  flatten
+} from "@solidjs/signals";

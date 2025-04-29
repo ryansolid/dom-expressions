@@ -196,7 +196,7 @@ export function createRenderer({
     }
     effect(
       () => props.ref && props.ref(node),
-      () => ({})
+      () => {}
     );
     effect(
       () => {

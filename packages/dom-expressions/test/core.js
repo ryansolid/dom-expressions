@@ -1,8 +1,8 @@
-import { untrack } from "@solidjs/signals";
+import { untrack, getOwner } from "@solidjs/signals";
 
 export const sharedConfig = {
   getNextContextId() {
-    return this.context.id + this.context.count++;
+    return getOwner()?.getNextChildId();
   }
 };
 

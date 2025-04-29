@@ -31,7 +31,7 @@
     "@rollup/plugin-commonjs": "24.0.0",
     "@rollup/plugin-json": "6.0.0",
     "@rollup/plugin-node-resolve": "15.0.1",
-    "@solidjs/signals": "^0.0.5",
+    "@solidjs/signals": "^0.3.2",
     "@types/jest": "^29.2.5",
     "babel-jest": "^29.3.1",
     "babel-plugin-tester": "^10.1.0",
