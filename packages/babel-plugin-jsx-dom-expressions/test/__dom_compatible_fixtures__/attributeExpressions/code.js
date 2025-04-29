@@ -263,4 +263,10 @@ const template80 = <div attr:true={true} attr:false={false}/>
 
 const template81 = <math display="block"><mrow></mrow></math>
 const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
+const template83 = <video attr:poster="1.jpg"/>
+const template84 = <div><video attr:poster="1.jpg"/></div>
+const template85 = <video prop:poster="1.jpg"/>
+const template86 = <div><video prop:poster="1.jpg"/></div>
+const template87 = <video bool:poster="1.jpg"/>
+const template88 = <div><video bool:poster="1.jpg"/></div>
 

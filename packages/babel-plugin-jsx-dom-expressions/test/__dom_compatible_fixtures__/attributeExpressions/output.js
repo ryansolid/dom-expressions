@@ -80,7 +80,13 @@ var _tmpl$ = /*#__PURE__*/ _$template(
     false,
     true
   ),
-  _tmpl$53 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=</mo></mrow>`, false, false, true);
+  _tmpl$53 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=</mo></mrow>`, false, false, true),
+  _tmpl$54 = /*#__PURE__*/ _$template(`<video poster="1.jpg"></video>`),
+  _tmpl$55 = /*#__PURE__*/ _$template(`<div><video poster="1.jpg"></video></div>`),
+  _tmpl$56 = /*#__PURE__*/ _$template(`<video></video>`),
+  _tmpl$57 = /*#__PURE__*/ _$template(`<div><video></video></div>`),
+  _tmpl$58 = /*#__PURE__*/ _$template(`<video poster></video>`),
+  _tmpl$59 = /*#__PURE__*/ _$template(`<div><video poster></video></div>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -589,4 +595,19 @@ const template80 = (() => {
 })();
 const template81 = _tmpl$52();
 const template82 = _tmpl$53();
+const template83 = _tmpl$54();
+const template84 = _tmpl$55();
+const template85 = (() => {
+  var _el$102 = _tmpl$56();
+  _el$102.poster = "1.jpg";
+  return _el$102;
+})();
+const template86 = (() => {
+  var _el$103 = _tmpl$57(),
+    _el$104 = _el$103.firstChild;
+  _el$104.poster = "1.jpg";
+  return _el$103;
+})();
+const template87 = _tmpl$58();
+const template88 = _tmpl$59();
 _$delegateEvents(["click", "input"]);
