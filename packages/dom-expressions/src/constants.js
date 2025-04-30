@@ -32,6 +32,7 @@ const Properties = /*#__PURE__*/ new Set([
   "className",
   "value",
   "readOnly",
+  "noValidate",
   "formNoValidate",
   "isMap",
   "noModule",
@@ -54,6 +55,10 @@ const Aliases = /*#__PURE__*/ Object.assign(Object.create(null), {
 
 const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
   class: "className",
+  novalidate: {
+    $: "noValidate",
+    FORM: 1
+  },
   formnovalidate: {
     $: "formNoValidate",
     BUTTON: 1,
