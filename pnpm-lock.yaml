@@ -131,14 +131,14 @@ importers:
   packages/hyper-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.39.8
-        version: 0.39.8(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0)
+        specifier: ^0.39.9
+        version: 0.39.9(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0)
 
   packages/lit-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.39.8
-        version: 0.39.8(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0)
+        specifier: ^0.39.9
+        version: 0.39.9(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0)
       html-parse-string:
         specifier: ^0.0.9
         version: 0.0.9
@@ -2040,8 +2040,8 @@ packages:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
 
-  dom-expressions@0.39.8:
-    resolution: {integrity: sha512-QMXF20x9klIGvu54q8VitLhvHpO3qlz6ZwPpAoT4c6K/84p+0jG93yS9kn+pUbd1gvoiXz+qf9F9NdXzWNI5SA==}
+  dom-expressions@0.39.9:
+    resolution: {integrity: sha512-moHYEMfYHfdC18IMqM6qe0rAC6NFw8a6dK5Km4S60grd4hKxqNka73inOdpr2qdeKnBTrdq/D1XxNrxBBFdWFQ==}
     peerDependencies:
       csstype: ^3.0
       seroval: ^1.1.0
@@ -6761,7 +6761,7 @@ snapshots:
     dependencies:
       path-type: 4.0.0
 
-  dom-expressions@0.39.8(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0):
+  dom-expressions@0.39.9(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0):
     dependencies:
       babel-plugin-transform-rename-import: 2.3.0
       csstype: 3.1.1
