@@ -879,27 +879,6 @@ export namespace JSX {
      */
     "aria-brailleroledescription"?: FunctionMaybe<string | RemoveAttribute>;
     /**
-     * Similar to the global aria-label. Defines a string value that labels the current element,
-     * which is intended to be converted into Braille.
-     *
-     * @see aria-label.
-     */
-    "aria-braillelabel"?: FunctionMaybe<string | undefined>;
-    /**
-     * Defines a human-readable, author-localized abbreviated description for the role of an element
-     * intended to be converted into Braille. Braille is not a one-to-one transliteration of letters
-     * and numbers, but rather it includes various abbreviations, contractions, and characters that
-     * represent words (known as logograms).
-     *
-     * Instead of converting long role descriptions to Braille, the aria-brailleroledescription
-     * attribute allows for providing an abbreviated version of the aria-roledescription value,
-     * which is a human-readable, author-localized description for the role of an element, for
-     * improved user experience with braille interfaces.
-     *
-     * @see aria-roledescription.
-     */
-    "aria-brailleroledescription"?: FunctionMaybe<string | undefined>;
-    /**
      * Indicates whether inputting text could trigger display of one or more predictions of the
      * user's intended value for an input and specifies how predictions would be presented if they
      * are made.
@@ -1380,9 +1359,6 @@ export namespace JSX {
 
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
-
-    /** @experimental */
-    attributionsrc?: FunctionMaybe<string | undefined>;
 
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
