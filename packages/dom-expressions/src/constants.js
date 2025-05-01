@@ -31,6 +31,7 @@ const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
 const Properties = /*#__PURE__*/ new Set([
   "value",
   "readOnly",
+  "noValidate",
   "formNoValidate",
   "isMap",
   "noModule",
@@ -47,6 +48,10 @@ const ChildProperties = /*#__PURE__*/ new Set([
 
 const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
   class: "className",
+  novalidate: {
+    $: "noValidate",
+    FORM: 1
+  },
   formnovalidate: {
     $: "formNoValidate",
     BUTTON: 1,
