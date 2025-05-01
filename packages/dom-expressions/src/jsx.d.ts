@@ -1562,11 +1562,6 @@ export namespace JSX {
     /** @deprecated Use camelCase event handlers */
     onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
-    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
-    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
-
     /** @deprecated Use lowercase attributes */
     noValidate?: boolean | RemoveAttribute;
 
@@ -1920,16 +1915,6 @@ export namespace JSX {
     muted?: BooleanAttribute | RemoveAttribute;
     preload?: "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute;
     src?: string | RemoveAttribute;
-
-    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-
-    onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
-    "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
