@@ -876,27 +876,6 @@ export namespace JSX {
      */
     "aria-brailleroledescription"?: string | RemoveAttribute;
     /**
-     * Similar to the global aria-label. Defines a string value that labels the current element,
-     * which is intended to be converted into Braille.
-     *
-     * @see aria-label.
-     */
-    "aria-braillelabel"?: string | undefined;
-    /**
-     * Defines a human-readable, author-localized abbreviated description for the role of an element
-     * intended to be converted into Braille. Braille is not a one-to-one transliteration of letters
-     * and numbers, but rather it includes various abbreviations, contractions, and characters that
-     * represent words (known as logograms).
-     *
-     * Instead of converting long role descriptions to Braille, the aria-brailleroledescription
-     * attribute allows for providing an abbreviated version of the aria-roledescription value,
-     * which is a human-readable, author-localized description for the role of an element, for
-     * improved user experience with braille interfaces.
-     *
-     * @see aria-roledescription.
-     */
-    "aria-brailleroledescription"?: string | undefined;
-    /**
      * Indicates whether inputting text could trigger display of one or more predictions of the
      * user's intended value for an input and specifies how predictions would be presented if they
      * are made.
@@ -1383,9 +1362,6 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: string | RemoveAttribute;
 
-    /** @experimental */
-    attributionsrc?: string | undefined;
-
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: HTMLReferrerPolicy | RemoveAttribute;
 
@@ -1556,11 +1532,6 @@ export namespace JSX {
     novalidate?: BooleanAttribute | RemoveAttribute;
     rel?: string | RemoveAttribute;
     target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
-
-    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
-    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
     onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
     "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
@@ -1920,16 +1891,6 @@ export namespace JSX {
     muted?: BooleanAttribute | RemoveAttribute;
     preload?: "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute;
     src?: string | RemoveAttribute;
-
-    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-
-    onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
-    "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;

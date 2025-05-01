@@ -879,27 +879,6 @@ export namespace JSX {
      */
     "aria-brailleroledescription"?: FunctionMaybe<string | RemoveAttribute>;
     /**
-     * Similar to the global aria-label. Defines a string value that labels the current element,
-     * which is intended to be converted into Braille.
-     *
-     * @see aria-label.
-     */
-    "aria-braillelabel"?: FunctionMaybe<string | undefined>;
-    /**
-     * Defines a human-readable, author-localized abbreviated description for the role of an element
-     * intended to be converted into Braille. Braille is not a one-to-one transliteration of letters
-     * and numbers, but rather it includes various abbreviations, contractions, and characters that
-     * represent words (known as logograms).
-     *
-     * Instead of converting long role descriptions to Braille, the aria-brailleroledescription
-     * attribute allows for providing an abbreviated version of the aria-roledescription value,
-     * which is a human-readable, author-localized description for the role of an element, for
-     * improved user experience with braille interfaces.
-     *
-     * @see aria-roledescription.
-     */
-    "aria-brailleroledescription"?: FunctionMaybe<string | undefined>;
-    /**
      * Indicates whether inputting text could trigger display of one or more predictions of the
      * user's intended value for an input and specifies how predictions would be presented if they
      * are made.
@@ -964,12 +943,6 @@ export namespace JSX {
      * @see aria-describedby
      */
     "aria-description"?: FunctionMaybe<string | RemoveAttribute>;
-    /**
-     * Defines a string value that describes or annotates the current element.
-     *
-     * @see aria-describedby
-     */
-    "aria-description"?: FunctionMaybe<string | undefined>;
     /**
      * Identifies the element that provides a detailed, extended description for the object.
      *
@@ -1381,9 +1354,6 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
 
-    /** @experimental */
-    attributionsrc?: FunctionMaybe<string | undefined>;
-
     /** @deprecated Use lowercase attributes */
     referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
 
@@ -1561,11 +1531,6 @@ export namespace JSX {
     target?: FunctionMaybe<
       "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute
     >;
-
-    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
-    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
     onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
     "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
@@ -1924,16 +1889,6 @@ export namespace JSX {
       "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute
     >;
     src?: FunctionMaybe<string | RemoveAttribute>;
-
-    onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-    "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
-
-    onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
-    "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
