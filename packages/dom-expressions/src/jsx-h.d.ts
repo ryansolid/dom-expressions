@@ -1583,7 +1583,6 @@ export namespace JSX {
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
     for?: FunctionMaybe<string | undefined>;
-    form?: FunctionMaybe<string | undefined>;
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: FunctionMaybe<number | string | undefined>;
@@ -1865,9 +1864,6 @@ export namespace JSX {
 
     /** @experimental */
     shadowrootserializable?: FunctionMaybe<boolean | undefined>;
-
-    /** @deprecated */
-    content?: FunctionMaybe<DocumentFragment | undefined>;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?: FunctionMaybe<

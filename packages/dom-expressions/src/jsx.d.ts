@@ -1597,7 +1597,6 @@ export namespace JSX {
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
     for?: string | undefined;
-    form?: string | undefined;
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: number | string | undefined;
@@ -1877,9 +1876,6 @@ export namespace JSX {
 
     /** @experimental */
     shadowrootserializable?: boolean | undefined;
-
-    /** @deprecated */
-    content?: DocumentFragment | undefined;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
     autocomplete?:
