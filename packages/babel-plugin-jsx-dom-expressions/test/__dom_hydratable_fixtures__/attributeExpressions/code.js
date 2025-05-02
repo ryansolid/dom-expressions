@@ -204,3 +204,10 @@ const template41 = (
 );
 
 const template42 = <div a a="" a='' a={true} a={false} a={0} a={''} a={""} a={undefined} a={null} a={void 0} a/>
+
+const template43 = <video playsinline={value}/>
+const template44 = <video playsinline={true}/>
+const template45 = <video playsinline={false}/>
+const template46 = <video playsInline={value}/>
+const template47 = <video playsInline={true}/>
+const template48 = <video playsInline={false}/>

@@ -610,4 +610,34 @@ const template86 = (() => {
 })();
 const template87 = _tmpl$58();
 const template88 = _tmpl$59();
+const template89 = (() => {
+  var _el$107 = _tmpl$56();
+  _el$107.playsInline = value;
+  return _el$107;
+})();
+const template90 = (() => {
+  var _el$108 = _tmpl$56();
+  _el$108.playsInline = true;
+  return _el$108;
+})();
+const template91 = (() => {
+  var _el$109 = _tmpl$56();
+  _el$109.playsInline = false;
+  return _el$109;
+})();
+const template92 = (() => {
+  var _el$110 = _tmpl$56();
+  _el$110.playsInline = value;
+  return _el$110;
+})();
+const template93 = (() => {
+  var _el$111 = _tmpl$56();
+  _el$111.playsInline = true;
+  return _el$111;
+})();
+const template94 = (() => {
+  var _el$112 = _tmpl$56();
+  _el$112.playsInline = false;
+  return _el$112;
+})();
 _$delegateEvents(["click", "input"]);
