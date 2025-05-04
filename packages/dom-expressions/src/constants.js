@@ -2,6 +2,7 @@
 const booleans = [
   "allowfullscreen",
   "async",
+  "alpha", // HTMLInputElement
   "autofocus", // HTMLElement prop
   "autoplay",
   "checked",
