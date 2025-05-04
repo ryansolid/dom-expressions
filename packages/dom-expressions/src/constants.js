@@ -10,7 +10,7 @@ const booleans = [
   "default",
   "disabled",
   "formnovalidate",
-  "hidden", // HTMLElement prop
+  // "hidden", // HTMLElement prop not a boolean
   "indeterminate",
   "inert", // HTMLElement prop
   "ismap",
