@@ -38,6 +38,7 @@ const booleans = [
   "disableremoteplayback",
   "preservespitch", // appears as camelCase property only (not attribute)
   "shadowrootclonable",
+  "shadowrootcustomelementregistry", // HTMLTemplateElement doesnt seem to have a prop yet
   "shadowrootdelegatesfocus",
   "shadowrootserializable", // experimental
   "sharedstoragewritable" // experimental
