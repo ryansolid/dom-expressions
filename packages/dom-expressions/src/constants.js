@@ -10,7 +10,7 @@ const booleans = [
   "default",
   "disabled",
   "formnovalidate",
-  // "hidden", // HTMLElement prop not a boolean
+  // "hidden", // HTMLElement prop - not a boolean
   "indeterminate",
   "inert", // HTMLElement prop
   "ismap",
@@ -24,7 +24,7 @@ const booleans = [
   "readonly",
   "required",
   "reversed",
-  "seamless", // HTMLIframeElement non-standard
+  "seamless", // HTMLIframeElement - non-standard
   "selected",
 
   "adauctionheaders", // experimental
@@ -36,9 +36,9 @@ const booleans = [
   "defer",
   "disablepictureinpicture",
   "disableremoteplayback",
-  "preservespitch", // appears as camelCase property only (not attribute)
+  "preservespitch", // appears as camelCase property only (not as attribute)
   "shadowrootclonable",
-  "shadowrootcustomelementregistry", // HTMLTemplateElement doesnt seem to have a prop yet
+  "shadowrootcustomelementregistry", // experimental - doesnt seem to have a prop yet
   "shadowrootdelegatesfocus",
   "shadowrootserializable", // experimental
   "sharedstoragewritable" // experimental
@@ -69,6 +69,7 @@ const Properties = /*#__PURE__*/ new Set([
   "disableRemotePlayback",
   "preservesPitch",
   "shadowRootClonable",
+  "shadowRootCustomElementRegistry", // experimental
   "shadowRootDelegatesFocus",
   "shadowRootSerializable", // experimental
   "sharedStorageWritable", // experimental
