@@ -505,19 +505,11 @@ function transformChildren(path, results, { hydratable }) {
       if (markers && !child.spreadElement) {
         appendToTemplate(results.template, `<!--$-->`);
         results.template.push("");
-        results.templateValues.push(
-          t.isFunction(child.exprs[0])
-            ? hoistExpression(path, results, child.exprs[0])
-            : child.exprs[0]
-        );
+        results.templateValues.push(hoistExpression(path, results, child.exprs[0]));
         appendToTemplate(results.template, `<!--/-->`);
       } else {
         results.template.push("");
-        results.templateValues.push(
-          t.isFunction(child.exprs[0])
-            ? hoistExpression(path, results, child.exprs[0])
-            : child.exprs[0]
-        );
+        results.templateValues.push(hoistExpression(path, results, child.exprs[0]));
       }
     }
   });
