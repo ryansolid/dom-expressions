@@ -35,7 +35,7 @@ function hoistExpression(path, results, expr, { group, post, skipWrap } = {}) {
     return t.memberExpression(results.groupId, t.numericLiteral(results.dynamics.length - 1), true);
   }
   const variable = path.scope.generateUidIdentifier("v$");
-  !skipWrap && (expr = t.callExpression(registerImportMethod(path, "ssrRunInScope"), [expr]));
+  !skipWrap && t.isFunction(expr) && (expr = t.callExpression(registerImportMethod(path, "ssrRunInScope"), [expr]));
   post
     ? results.postDeclarations.push(t.variableDeclarator(variable, expr))
     : results.declarations.push(t.variableDeclarator(variable, expr));

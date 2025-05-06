@@ -132,7 +132,7 @@ const template2 = _$ssrElement(
   getProps("test"),
   () => [
     (() => {
-      var _v$ = _$ssrRunInScope(_$escape(rowId) || " ");
+      var _v$ = _$escape(rowId) || " ";
       return _$ssr(_tmpl$2, _v$);
     })(),
     (() => {
@@ -145,7 +145,7 @@ const template2 = _$ssrElement(
 );
 const template3 = (() => {
   var _v$3 = _$ssrHydrationKey(),
-    _v$5 = _$ssrRunInScope(_$escape(state.content) || " "),
+    _v$5 = _$escape(state.content) || " ",
     _v$4 = _$ssrRunInScope([() => _$ssrAttribute("name", _$escape(state.name, true), false)]);
   return _$ssr(
     _tmpl$4,
@@ -317,15 +317,13 @@ const template24 = _$ssrElement(
 const template25 = (() => {
   var _v$35 = _$ssrHydrationKey(),
     _v$36 = _$ssrRunInScope(() => _$escape(props.children)),
-    _v$37 = _$ssrRunInScope(
-      _$ssrElement(
-        "a",
-        _$mergeProps(props, {
-          something: true
-        }),
-        undefined,
-        false
-      )
+    _v$37 = _$ssrElement(
+      "a",
+      _$mergeProps(props, {
+        something: true
+      }),
+      undefined,
+      false
     );
   return _$ssr(_tmpl$20, _v$35, _v$36, _v$37);
 })();
@@ -373,7 +371,7 @@ const template28 = _$ssrElement(
 );
 const template29 = (() => {
   var _v$38 = _$ssrHydrationKey(),
-    _v$39 = _$ssrRunInScope(!!someValue);
+    _v$39 = !!someValue;
   return _$ssr(_tmpl$21, _v$38, _$ssrAttribute("attribute", !!someValue, false), _v$39);
 })();
 const template30 = (() => {
