@@ -33,7 +33,7 @@ export function createTemplate(path, result) {
     templates.push({
       id,
       template,
-      templateWithClosingTags: template,
+      templateWithClosingTags:template,
       renderer: "ssr"
     });
   } else id = found.id;
@@ -58,35 +58,11 @@ export function createTemplate(path, result) {
       );
     }
   }
-
-  if (!result.declarations.length) {
-    return t.callExpression(
-      registerImportMethod(path, "ssr"),
-      Array.isArray(result.template) && result.template.length > 1
-        ? [id, ...result.templateValues]
-        : [id]
-    );
-  }
   return t.callExpression(
-    t.arrowFunctionExpression(
-      [],
-      t.blockStatement([
-        t.variableDeclaration("var", [
-          ...result.declarations,
-          wrapDynamics(path, result.groupId, result.dynamics),
-          ...result.postDeclarations
-        ].filter(Boolean)),
-        t.returnStatement(
-          t.callExpression(
-            registerImportMethod(path, "ssr"),
-            Array.isArray(result.template) && result.template.length > 1
-              ? [id, ...result.templateValues]
-              : [id]
-          )
-        )
-      ])
-    ),
-    []
+    registerImportMethod(path, "ssr"),
+    Array.isArray(result.template) && result.template.length > 1
+      ? [id, ...result.templateValues]
+      : [id]
   );
 }
 
@@ -95,10 +71,4 @@ export function appendTemplates(path, templates) {
     return t.variableDeclarator(template.id, template.template);
   });
   path.node.body.unshift(t.variableDeclaration("var", declarators));
-}
-
-function wrapDynamics(path, groupId, dynamics) {
-  if (!dynamics || !dynamics.length) return null;
-  const run = registerImportMethod(path, "ssrRunInScope")
-  return t.variableDeclarator(groupId, t.callExpression(run, [t.arrayExpression(dynamics)]));
 }

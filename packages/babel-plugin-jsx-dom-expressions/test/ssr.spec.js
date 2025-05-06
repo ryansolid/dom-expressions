@@ -8,6 +8,7 @@ pluginTester({
     moduleName: 'r-server',
     builtIns: ['For', 'Show'],
     generate: "ssr",
+    hydratable: true,
     contextToCustomElements: true,
     staticMarker: "@once"
   },

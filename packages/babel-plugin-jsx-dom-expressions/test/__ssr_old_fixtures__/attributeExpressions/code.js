@@ -260,3 +260,24 @@ const template79 = <div prop:true={true} prop:false={false}/>
 const template80 = <div attr:true={true} attr:false={false}/>
 
 const template81 = <div a b="" c='' d={true} e={false} f={0} g={''} h={""} i={undefined} j={null} k={void 0} l/>
+const css = () => "&{color:red}";
+const template82 = (
+  <>
+    <style>{css()}</style>
+    <style children={css()} />
+    <style innerHTML={css()} />
+    <style innerText={css()} />
+    <style textContent={css()} />
+  </>
+);
+
+const styleProps = { children: css }
+const template83 = (
+  <>
+    <style {...styleProps()}>{css()}</style>
+    <style {...styleProps()} children={css()} />
+    <style {...styleProps()} innerHTML={css()} />
+    <style {...styleProps()} innerText={css()} />
+    <style {...styleProps()} textContent={css()} />
+  </>
+);
