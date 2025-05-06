@@ -1,5 +1,6 @@
 import { Feature, Serializer, getCrossReferenceHeader } from "seroval";
 import {
+  AbortSignalPlugin,
   CustomEventPlugin,
   DOMExceptionPlugin,
   EventPlugin,
@@ -8,8 +9,8 @@ import {
   ReadableStreamPlugin,
   RequestPlugin,
   ResponsePlugin,
-  URLSearchParamsPlugin,
   URLPlugin,
+  URLSearchParamsPlugin,
 } from 'seroval-plugins/web';
 
 const ES2017FLAG =
@@ -22,6 +23,7 @@ export function createSerializer({ onData, onDone, scopeId, onError }) {
   return new Serializer({
     scopeId,
     plugins: [
+      AbortSignalPlugin,
       // BlobPlugin,
       CustomEventPlugin,
       DOMExceptionPlugin,
