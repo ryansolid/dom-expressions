@@ -2,7 +2,7 @@ import { BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
-export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
+export { getOwner, createComponent, effect, memo, untrack, ssrRunInScope } from "rxcore";
 
 export {
   Properties,
