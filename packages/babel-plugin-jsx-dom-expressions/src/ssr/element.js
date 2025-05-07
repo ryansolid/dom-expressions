@@ -120,12 +120,14 @@ function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
   ]);
   if (isDynamic) {
     attr = t.arrowFunctionExpression([], attr);
+    const post = name === "value" || name === "checked";
     results.templateValues.push(
       hoistExpression(attribute, results, attr, {
         group: true,
-        post: name === "value" || name === "checked"
+        post
       })
     );
+    if (post) results.template.push("");
   } else {
     results.templateValues.push(attr);
     results.template.push("");
