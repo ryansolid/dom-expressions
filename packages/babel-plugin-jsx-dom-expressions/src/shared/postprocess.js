@@ -40,4 +40,19 @@ export default path => {
     domTemplates.length > 0 && appendTemplatesDOM(path, domTemplates);
     ssrTemplates.length > 0 && appendTemplatesSSR(path, ssrTemplates);
   }
+  if (
+    path.hub.file.metadata.config.generate === "ssr" &&
+    path.node.body.find(node => t.isExportDefaultDeclaration(node))
+  ) {
+    path.node.body.push(
+      t.exportNamedDeclaration(
+        t.variableDeclaration("const", [
+          t.variableDeclarator(
+            t.identifier("__url"),
+            t.memberExpression(t.identifier("import.meta"), t.identifier("url"))
+          )
+        ])
+      )
+    );
+  }
 };
