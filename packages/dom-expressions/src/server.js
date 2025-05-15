@@ -123,7 +123,6 @@ export function renderToStream(code, options = {}) {
     }
   };
   sharedConfig.context = context = {
-
     async: true,
     assets: [],
     nonce,
@@ -163,32 +162,44 @@ export function renderToStream(code, options = {}) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
         // double queue to ensure that Suspense is last but in same flush
-        registry.set(key, err =>
-          queue(() =>
-            queue(() => {
-              err ? reject(err) : resolve(true);
-              queue(flushEnd);
-            })
-          )
-        );
+        registry.set(key, {
+          resolve: err =>
+            queue(() =>
+              queue(() => {
+                err ? reject(err) : resolve(true);
+                queue(flushEnd);
+              })
+            )
+        });
         serializer.write(key, p);
       }
       return (value, error) => {
         if (registry.has(key)) {
-          const resolve = registry.get(key);
+          const item = registry.get(key);
           registry.delete(key);
-          if (waitForFragments(registry, key)) {
-            resolve();
+
+          if (item.children) {
+            for (const k in item.children) {
+              value = replacePlaceholder(value, k, item.children[k]);
+            }
+          }
+
+          const parentKey = waitForFragments(registry, key);
+          if (parentKey) {
+            const parent = registry.get(parentKey);
+            parent.children ||= {};
+            parent.children[key] = value !== undefined ? value : "";
+            item.resolve();
             return;
           }
           if (!completed) {
             if (!firstFlushed) {
               queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
-              resolve(error);
+              item.resolve(error);
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
-              resolve(error);
+              item.resolve(error);
               scriptFlushed = true;
             }
           }
@@ -537,7 +548,7 @@ function injectScripts(html, scripts, nonce) {
 
 function waitForFragments(registry, key) {
   for (const k of [...registry.keys()].reverse()) {
-    if (key.startsWith(k)) return true;
+    if (key.startsWith(k)) return k;
   }
   return false;
 }
