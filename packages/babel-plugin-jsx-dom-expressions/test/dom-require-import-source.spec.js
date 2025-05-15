@@ -2,7 +2,6 @@ const path = require("path");
 const pluginTester = require("babel-plugin-tester").default;
 const t = require("@babel/types");
 const plugin = require("../index");
-const assert = require("assert");
 
 pluginTester({
   plugin,
