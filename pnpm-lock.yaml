@@ -122,23 +122,23 @@ importers:
         specifier: ^3.1
         version: 3.1.1
       seroval:
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^1.3.0
+        version: 1.3.0
       seroval-plugins:
-        specifier: ^1.1.0
-        version: 1.1.0(seroval@1.1.0)
+        specifier: ^1.3.0
+        version: 1.3.0(seroval@1.3.0)
 
   packages/hyper-dom-expressions:
     devDependencies:
       dom-expressions:
         specifier: ^0.39.9
-        version: 0.39.9(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0)
+        version: 0.39.9(csstype@3.1.1)(seroval-plugins@1.3.0(seroval@1.3.0))(seroval@1.3.0)
 
   packages/lit-dom-expressions:
     devDependencies:
       dom-expressions:
         specifier: ^0.39.9
-        version: 0.39.9(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0)
+        version: 0.39.9(csstype@3.1.1)(seroval-plugins@1.3.0(seroval@1.3.0))(seroval@1.3.0)
       html-parse-string:
         specifier: ^0.0.9
         version: 0.0.9
@@ -3674,14 +3674,14 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  seroval-plugins@1.1.0:
-    resolution: {integrity: sha512-KtcJg590L3X3dd7ixs6am4UGVcV69TyjYhHtanIdQJq4dy2OceWXmmvWrYx7oFDNe+LNdxdWd0I5BQXuV5fBhA==}
+  seroval-plugins@1.3.0:
+    resolution: {integrity: sha512-FFu/UE3uA8L1vj0CXXZo2Nlh10MtYoOs0G//ptwlQMjfPFSeIVYUNy0zewfV8iM0CrOebAfHEG6J3xA9c+lsaQ==}
     engines: {node: '>=10'}
     peerDependencies:
       seroval: ^1.0
 
-  seroval@1.1.0:
-    resolution: {integrity: sha512-74Wpe+hhPx4V8NFe00I2Fu9gTJopKoH5vE7nCqFzVgKOXV8AnN23T58K79QLYQotzGpH93UZ+UN2Y11j9huZJg==}
+  seroval@1.3.0:
+    resolution: {integrity: sha512-4tYQDy3HVM0JjJ1CfDK3K8FhBKIDDri27oc2AyabuuHfQw6/yTDPp2Abt1h2cNtf1R0T+7AQYAzPhUgqXztaXw==}
     engines: {node: '>=10'}
 
   set-blocking@2.0.0:
@@ -6761,12 +6761,12 @@ snapshots:
     dependencies:
       path-type: 4.0.0
 
-  dom-expressions@0.39.9(csstype@3.1.1)(seroval-plugins@1.1.0(seroval@1.1.0))(seroval@1.1.0):
+  dom-expressions@0.39.9(csstype@3.1.1)(seroval-plugins@1.3.0(seroval@1.3.0))(seroval@1.3.0):
     dependencies:
       babel-plugin-transform-rename-import: 2.3.0
       csstype: 3.1.1
-      seroval: 1.1.0
-      seroval-plugins: 1.1.0(seroval@1.1.0)
+      seroval: 1.3.0
+      seroval-plugins: 1.3.0(seroval@1.3.0)
 
   domexception@4.0.0:
     dependencies:
@@ -8727,11 +8727,11 @@ snapshots:
     dependencies:
       lru-cache: 6.0.0
 
-  seroval-plugins@1.1.0(seroval@1.1.0):
+  seroval-plugins@1.3.0(seroval@1.3.0):
     dependencies:
-      seroval: 1.1.0
+      seroval: 1.3.0
 
-  seroval@1.1.0: {}
+  seroval@1.3.0: {}
 
   set-blocking@2.0.0: {}
 
