@@ -1,6 +1,8 @@
 import * as t from "@babel/types";
 import config from "../config";
 import { isComponent } from "./utils";
+import skipSymbol from "./skipSymbol.js";
+
 const { isValidHTMLNesting } = require("validate-html-nesting");
 
 // From https://github.com/MananTank/babel-plugin-validate-jsx-nesting/blob/main/src/index.js
@@ -25,7 +27,9 @@ const JSXValidator = {
   }
 };
 
-export default (path, { opts }) => {
+export default (path, state) => {
+  const { opts } = state;
+
   const merged = (path.hub.file.metadata.config = Object.assign({}, config, opts));
   const lib = merged.requireImportSource;
   if (lib) {
@@ -40,7 +44,7 @@ export default (path, { opts }) => {
       }
     }
     if (!process) {
-      path.skip();
+      state[skipSymbol] = true;
       return;
     }
   }
