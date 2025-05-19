@@ -29,7 +29,10 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$22 = '<input value="10">',
   _tmpl$23 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
   _tmpl$24 = ['<div a a a checked a="true" a="false" a="0" a a', " a></div>"],
-  _tmpl$25 = ["<style>", "</style>"];
+  _tmpl$25 = ["<style>", "</style>"],
+  _tmpl$26 = ["<video", "></video>"],
+  _tmpl$27 = "<video playsinline></video>",
+  _tmpl$28 = "<video></video>";
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -294,3 +297,9 @@ const template44 = [
     false
   )
 ];
+const template45 = _$ssr(_tmpl$26, _$ssrAttribute("playsinline", value, true));
+const template46 = _$ssr(_tmpl$27);
+const template47 = _$ssr(_tmpl$28);
+const template48 = _$ssr(_tmpl$26, _$ssrAttribute("playsinline", _$escape(value, true), false));
+const template49 = _$ssr(_tmpl$27);
+const template50 = _$ssr(_tmpl$28);

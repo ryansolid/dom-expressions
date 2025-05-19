@@ -270,3 +270,9 @@ const template86 = <div><video prop:poster="1.jpg"/></div>
 const template87 = <video bool:poster="1.jpg"/>
 const template88 = <div><video bool:poster="1.jpg"/></div>
 
+const template89 = <video playsinline={value}/>
+const template90 = <video playsinline={true}/>
+const template91 = <video playsinline={false}/>
+const template92 = <video playsInline={value}/>
+const template93 = <video playsInline={true}/>
+const template94 = <video playsInline={false}/>
