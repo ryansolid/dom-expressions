@@ -30,6 +30,8 @@ import * as csstype from "csstype";
  *   through the component tree, not the dom tree.
  * - Native event handlers use the namespace `on:` such `on:click`, and wont be delegated. bubbling
  *   the dom tree.
+ * - A global event handler can be added by extending `CustomEventHandlers<T>` interface
+ * - A native `on:` event handler can be added by extending `CustomEvents<T>` interface
  *
  * ## Boolean Attributes (property setter that accepts `true | false`):
  *
@@ -72,6 +74,37 @@ import * as csstype from "csstype";
  *
  * - The namespace `prop:` could be used to directly set properties in native elements and
  *   custom-elements. `<custom-element prop:myProp={true}/>` equivalent to `el.myProp = true`
+ *
+ * ## Interfaces
+ *
+ * Browser Hierarchy
+ *
+ * - $Element (ex HTMLDivElement <div>) -> ... -> HTMLElement -> Element -> Node
+ * - $Element (all math elements are MathMLElement) MathMLElement -> Element -> Node
+ * - $Element`(ex SVGMaskElement <mask>) -> ... -> SVGElement -> Element -> Node
+ *
+ * Events
+ *
+ * 1. An event handler goes in `ElementEventHandlers` when:
+ *
+ *    - `event` is global, that's to be defined in `HTMLElement` AND `SVGElement` AND `MathMLElement`
+ *    - `event` is defined in `Element` (as `HTMLElement/MathMLElement/SVGElement` -> `Element`)
+ * 2. `<body>`, `<svg>`, `<framesete>` are special as these include `window` events
+ * 3. Any other event is special for its own tag.
+ *
+ * Attributes
+ *
+ *      <div> -> ... -> HTMLAttributes -> ElementAttributes
+ *      <svg> -> ... -> SVGAttributes -> ElementAttributes
+ *      <math> -> ... -> MathMLAttributes -> ElementAttributes
+ *
+ *      ElementAttributes = `Element` attributes (aka global attributes)
+ *
+ *      HTMLAttributes = `HTMLElement` attributes (aka HTML global attributes)
+ *      SVGAttributes = `SVGElement` attributes (aka SVG global attributes)
+ *      MathMLAttributes = `MathMLElement` attributes (aka MATH global attributes)
+ *
+ *      CustomAttributes = Framework attributes
  */
 
 type DOMElement = Element;
@@ -206,6 +239,7 @@ export namespace JSX {
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void) | undefined;
+    children?: FunctionMaybe<Element | undefined>;
     $ServerOnly?: boolean | undefined;
   }
   type Accessor<T> = () => T;
@@ -217,6 +251,7 @@ export namespace JSX {
   interface ExplicitAttributes {}
   interface ExplicitBoolAttributes {}
   interface CustomEvents {}
+  interface CustomEventHandlers<T> {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
@@ -249,541 +284,22 @@ export namespace JSX {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandlerWithOptionsUnion<T, CustomEvents[Key]>;
   };
 
-  // events
-  interface ElementEventMap<T> {
-    onFullscreenChange?: EventHandlerUnion<T, Event> | undefined;
-    onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
-
-    "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-
-    /** @deprecated Use camelCase event handlers */
-    onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
-  }
-  interface WindowEventMap<T> {
-    onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
-    onBeforePrint?: EventHandlerUnion<T, Event> | undefined;
-    onBeforeUnload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
-    onGamepadConnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
-    onGamepadDisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
-    onHashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
-    onLanguageChange?: EventHandlerUnion<T, Event> | undefined;
-    onMessage?: EventHandlerUnion<T, MessageEvent> | undefined;
-    onMessageError?: EventHandlerUnion<T, MessageEvent> | undefined;
-    onOffline?: EventHandlerUnion<T, Event> | undefined;
-    onOnline?: EventHandlerUnion<T, Event> | undefined;
-    onPageHide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    // TODO `PageRevealEvent` is currently undefined on TS
-    onPageReveal?: EventHandlerUnion<T, Event> | undefined;
-    onPageShow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    // TODO `PageSwapEvent` is currently undefined on TS
-    onPageSwap?: EventHandlerUnion<T, Event> | undefined;
-    onPopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
-    onRejectionHandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
-    onStorage?: EventHandlerUnion<T, StorageEvent> | undefined;
-    onUnhandledRejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
-    onUnload?: EventHandlerUnion<T, Event> | undefined;
-
-    /** @deprecated Use camelCase event handlers */
-    onafterprint?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onbeforeprint?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onbeforeunload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ongamepadconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ongamepaddisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onhashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onlanguagechange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmessage?: EventHandlerUnion<T, MessageEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmessageerror?: EventHandlerUnion<T, MessageEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onoffline?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ononline?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpagehide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    // TODO `PageRevealEvent` is currently undefined in TS
-    /** @deprecated Use camelCase event handlers */
-    onpagereveal?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpageshow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
-    // TODO `PageSwapEvent` is currently undefined in TS
-    /** @deprecated Use camelCase event handlers */
-    onpageswap?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onrejectionhandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onstorage?: EventHandlerUnion<T, StorageEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onunhandledrejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onunload?: EventHandlerUnion<T, Event> | undefined;
-
-    "on:afterprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:beforeprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:beforeunload"?: EventHandlerWithOptionsUnion<T, BeforeUnloadEvent> | undefined;
-    "on:gamepadconnected"?: EventHandlerWithOptionsUnion<T, GamepadEvent> | undefined;
-    "on:gamepaddisconnected"?: EventHandlerWithOptionsUnion<T, GamepadEvent> | undefined;
-    "on:hashchange"?: EventHandlerWithOptionsUnion<T, HashChangeEvent> | undefined;
-    "on:languagechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:message"?: EventHandlerWithOptionsUnion<T, MessageEvent> | undefined;
-    "on:messageerror"?: EventHandlerWithOptionsUnion<T, MessageEvent> | undefined;
-    "on:offline"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:online"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:pagehide"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
-    // TODO `PageRevealEvent` is currently undefined in TS
-    "on:pagereveal"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:pageshow"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
-    // TODO `PageSwapEvent` is currently undefined in TS
-    "on:pageswap"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:popstate"?: EventHandlerWithOptionsUnion<T, PopStateEvent> | undefined;
-    "on:rejectionhandled"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
-    "on:storage"?: EventHandlerWithOptionsUnion<T, StorageEvent> | undefined;
-    "on:unhandledrejection"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
-    "on:unload"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-  }
-
-  interface CustomEventHandlersCamelCase<T> {
-    onAbort?: EventHandlerUnion<T, UIEvent> | undefined;
-    onAnimationCancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    onAnimationEnd?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    onAnimationIteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    onAnimationStart?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    onAuxClick?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onBeforeInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
-    onBeforeToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
-    onBlur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onCancel?: EventHandlerUnion<T, Event> | undefined;
-    onCanPlay?: EventHandlerUnion<T, Event> | undefined;
-    onCanPlayThrough?: EventHandlerUnion<T, Event> | undefined;
-    onChange?: ChangeEventHandlerUnion<T, Event> | undefined;
-    onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
-    // TODO `CommandEvent` is currently undefined in TS
-    onCommand?: EventHandlerUnion<T, Event> | undefined;
-    onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    onContextMenu?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onCopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    onCueChange?: EventHandlerUnion<T, Event> | undefined;
-    onCut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    onDblClick?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onDrag?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragEnd?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragEnter?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragLeave?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragOver?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDragStart?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDrop?: EventHandlerUnion<T, DragEvent> | undefined;
-    onDurationChange?: EventHandlerUnion<T, Event> | undefined;
-    onEmptied?: EventHandlerUnion<T, Event> | undefined;
-    onEnded?: EventHandlerUnion<T, Event> | undefined;
-    onError?: EventHandlerUnion<T, ErrorEvent> | undefined;
-    onFocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onFocusIn?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onFocusOut?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    onGotPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
-    onInvalid?: EventHandlerUnion<T, Event> | undefined;
-    onKeyDown?: EventHandlerUnion<T, KeyboardEvent> | undefined;
-    onKeyPress?: EventHandlerUnion<T, KeyboardEvent> | undefined;
-    onKeyUp?: EventHandlerUnion<T, KeyboardEvent> | undefined;
-    onLoad?: EventHandlerUnion<T, Event> | undefined;
-    onLoadedData?: EventHandlerUnion<T, Event> | undefined;
-    onLoadedMetadata?: EventHandlerUnion<T, Event> | undefined;
-    onLoadStart?: EventHandlerUnion<T, Event> | undefined;
-    onLostPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onMouseDown?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onMouseEnter?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onMouseLeave?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onMouseMove?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onMouseOut?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onMouseOver?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onMouseUp?: EventHandlerUnion<T, MouseEvent> | undefined;
-    onPaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    onPause?: EventHandlerUnion<T, Event> | undefined;
-    onPlay?: EventHandlerUnion<T, Event> | undefined;
-    onPlaying?: EventHandlerUnion<T, Event> | undefined;
-    onPointerCancel?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onPointerDown?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onPointerEnter?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onPointerLeave?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onPointerMove?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onPointerOut?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onPointerOver?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onPointerUp?: EventHandlerUnion<T, PointerEvent> | undefined;
-    onProgress?: EventHandlerUnion<T, ProgressEvent> | undefined;
-    onRateChange?: EventHandlerUnion<T, Event> | undefined;
-    onReset?: EventHandlerUnion<T, Event> | undefined;
-    onResize?: EventHandlerUnion<T, UIEvent> | undefined;
-    onScroll?: EventHandlerUnion<T, Event> | undefined;
-    onScrollEnd?: EventHandlerUnion<T, Event> | undefined;
-    onSecurityPolicyViolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
-    onSeeked?: EventHandlerUnion<T, Event> | undefined;
-    onSeeking?: EventHandlerUnion<T, Event> | undefined;
-    onSelect?: EventHandlerUnion<T, Event> | undefined;
-    onSelectionChange?: EventHandlerUnion<T, Event> | undefined;
-    onSlotChange?: EventHandlerUnion<T, Event> | undefined;
-    onStalled?: EventHandlerUnion<T, Event> | undefined;
-    onSubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
-    onSuspend?: EventHandlerUnion<T, Event> | undefined;
-    onTimeUpdate?: EventHandlerUnion<T, Event> | undefined;
-    onToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
-    onTouchCancel?: EventHandlerUnion<T, TouchEvent> | undefined;
-    onTouchEnd?: EventHandlerUnion<T, TouchEvent> | undefined;
-    onTouchMove?: EventHandlerUnion<T, TouchEvent> | undefined;
-    onTouchStart?: EventHandlerUnion<T, TouchEvent> | undefined;
-    onTransitionCancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    onTransitionEnd?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    onTransitionRun?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    onTransitionStart?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    onVolumeChange?: EventHandlerUnion<T, Event> | undefined;
-    onWaiting?: EventHandlerUnion<T, Event> | undefined;
-    onWheel?: EventHandlerUnion<T, WheelEvent> | undefined;
-  }
-  /** @type {GlobalEventHandlers} */
-  interface CustomEventHandlersLowerCase<T> {
-    /** @deprecated Use camelCase event handlers */
-    onabort?: EventHandlerUnion<T, UIEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onanimationcancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onanimationend?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onauxclick?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onbeforeinput?: InputEventHandlerUnion<T, InputEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onbeforetoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onblur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncancel?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncanplay?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncanplaythrough?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onchange?: ChangeEventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
-    // TODO `CommandEvent` is currently undefined in TS
-    /** @deprecated Use camelCase event handlers */
-    oncommand?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncontextmenu?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncuechange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondblclick?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondrag?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondragend?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondragenter?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondragexit?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondragleave?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondragover?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondragstart?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondrop?: EventHandlerUnion<T, DragEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ondurationchange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onemptied?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onended?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onerror?: EventHandlerUnion<T, ErrorEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oninvalid?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onkeydown?: EventHandlerUnion<T, KeyboardEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onkeypress?: EventHandlerUnion<T, KeyboardEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onkeyup?: EventHandlerUnion<T, KeyboardEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onload?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onloadeddata?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onloadedmetadata?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onloadstart?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onlostpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmousedown?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmouseenter?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmouseleave?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmousemove?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmouseout?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmouseover?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onmouseup?: EventHandlerUnion<T, MouseEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpause?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onplay?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onplaying?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointercancel?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointerdown?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointerenter?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointerleave?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointermove?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointerout?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointerover?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onpointerup?: EventHandlerUnion<T, PointerEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onprogress?: EventHandlerUnion<T, ProgressEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onratechange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onreset?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onresize?: EventHandlerUnion<T, UIEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onscroll?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onscrollend?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onsecuritypolicyviolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onseeked?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onseeking?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onselect?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onselectionchange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onslotchange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onstalled?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onsuspend?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontimeupdate?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontouchcancel?: EventHandlerUnion<T, TouchEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontouchend?: EventHandlerUnion<T, TouchEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontouchmove?: EventHandlerUnion<T, TouchEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontouchstart?: EventHandlerUnion<T, TouchEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontransitioncancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontransitionend?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontransitionrun?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    ontransitionstart?: EventHandlerUnion<T, TransitionEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onvolumechange?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onwaiting?: EventHandlerUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onwheel?: EventHandlerUnion<T, WheelEvent> | undefined;
-  }
-
-  interface CustomEventHandlersNamespaced<T> {
-    "on:abort"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
-    "on:animationcancel"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
-    "on:animationend"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
-    "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
-    "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
-    "on:auxclick"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:beforeinput"?:
-      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
-      | undefined;
-    "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
-    "on:blur"?:
-      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
-      | undefined;
-    "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:canplay"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
-    "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    // TODO `CommandEvent` is currently undefined in TS
-    "on:command"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
-    "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
-    "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
-    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
-    "on:cuechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
-    "on:dblclick"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:drag"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:dragend"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:dragenter"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:dragleave"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:dragover"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:dragstart"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:drop"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
-    "on:durationchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:emptied"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:ended"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:error"?: EventHandlerWithOptionsUnion<T, ErrorEvent> | undefined;
-    "on:focus"?:
-      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
-      | undefined;
-    "on:focusin"?:
-      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
-      | undefined;
-    "on:focusout"?:
-      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
-      | undefined;
-    "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:input"?:
-      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
-      | undefined;
-    "on:invalid"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:keydown"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
-    "on:keypress"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
-    "on:keyup"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
-    "on:load"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:loadeddata"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:loadedmetadata"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:loadstart"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:lostpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:mousedown"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:mouseenter"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:mouseleave"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:mousemove"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:mouseout"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:mouseover"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:mouseup"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
-    "on:paste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
-    "on:pause"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:play"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:playing"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:pointercancel"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:pointerdown"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:pointerenter"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:pointerleave"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:pointermove"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:pointerout"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:pointerover"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:pointerup"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
-    "on:progress"?: EventHandlerWithOptionsUnion<T, ProgressEvent> | undefined;
-    "on:ratechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:reset"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:resize"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
-    "on:scroll"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:scrollend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:securitypolicyviolation"?:
-      | EventHandlerWithOptionsUnion<T, SecurityPolicyViolationEvent>
-      | undefined;
-    "on:seeked"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:seeking"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:select"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:selectionchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:slotchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:stalled"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent> | undefined;
-    "on:suspend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:timeupdate"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:toggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
-    "on:touchcancel"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
-    "on:touchend"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
-    "on:touchmove"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
-    "on:touchstart"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
-    "on:transitioncancel"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
-    "on:transitionend"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
-    "on:transitionrun"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
-    "on:transitionstart"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
-    "on:volumechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:waiting"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
-  }
-
-  interface DOMAttributes<T>
-    extends CustomAttributes<T>,
-      DirectiveAttributes,
-      DirectiveFunctionAttributes<T>,
-      PropAttributes,
-      AttrAttributes,
-      BoolAttributes,
-      OnAttributes<T>,
-      CustomEventHandlersCamelCase<T>,
-      CustomEventHandlersLowerCase<T>,
-      CustomEventHandlersNamespaced<T> {
-    children?: FunctionMaybe<Element | undefined>;
-    innerHTML?: FunctionMaybe<string>;
-    innerText?: FunctionMaybe<string | number>;
-    textContent?: FunctionMaybe<string | number>;
-  }
+  // CSS
 
   interface CSSProperties extends csstype.PropertiesHyphen {
     // Override
     [key: `-${string}`]: string | number | undefined;
   }
+
+  // TODO: Should we allow this?
+  // type ClassKeys = `class:${string}`;
+  // type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
+
+  // type CSSAttributes = {
+  //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
+  // };
+
+  // BOOLEAN
 
   /**
    * Boolean and Pseudo-Boolean Attributes Helpers.
@@ -800,50 +316,7 @@ export namespace JSX {
 
   type RemoveAttribute = undefined | false;
 
-  /** Enumerated Attributes */
-  type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
-  type HTMLDir = "ltr" | "rtl" | "auto";
-  type HTMLFormEncType = "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
-  type HTMLFormMethod = "post" | "get" | "dialog";
-  type HTMLCrossorigin = "anonymous" | "use-credentials" | EnumeratedAcceptsEmpty;
-  type HTMLReferrerPolicy =
-    | "no-referrer"
-    | "no-referrer-when-downgrade"
-    | "origin"
-    | "origin-when-cross-origin"
-    | "same-origin"
-    | "strict-origin"
-    | "strict-origin-when-cross-origin"
-    | "unsafe-url";
-  type HTMLIframeSandbox =
-    | "allow-downloads-without-user-activation"
-    | "allow-downloads"
-    | "allow-forms"
-    | "allow-modals"
-    | "allow-orientation-lock"
-    | "allow-pointer-lock"
-    | "allow-popups"
-    | "allow-popups-to-escape-sandbox"
-    | "allow-presentation"
-    | "allow-same-origin"
-    | "allow-scripts"
-    | "allow-storage-access-by-user-activation"
-    | "allow-top-navigation"
-    | "allow-top-navigation-by-user-activation"
-    | "allow-top-navigation-to-custom-protocols";
-  type HTMLLinkAs =
-    | "audio"
-    | "document"
-    | "embed"
-    | "fetch"
-    | "font"
-    | "image"
-    | "object"
-    | "script"
-    | "style"
-    | "track"
-    | "video"
-    | "worker";
+  // ARIA
 
   // All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
   interface AriaAttributes {
@@ -1224,21 +697,389 @@ export namespace JSX {
     >;
   }
 
-  // TODO: Should we allow this?
-  // type ClassKeys = `class:${string}`;
-  // type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
+  // EVENTS
 
-  // type CSSAttributes = {
-  //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
-  // };
+  /**
+   * `Window` events, defined for `<body>`, `<svg>`, `<frameset>` tags.
+   *
+   * Excluding `ElementEventHandlers` events already defined as globals that all tags share, such as
+   * `onblur`.
+   */
+  interface WindowEventHandlers<T> {
+    onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
+    onBeforePrint?: EventHandlerUnion<T, Event> | undefined;
+    onBeforeUnload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
+    onGamepadConnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    onGamepadDisconnected?: EventHandlerUnion<T, GamepadEvent> | undefined;
+    onHashchange?: EventHandlerUnion<T, HashChangeEvent> | undefined;
+    onLanguageChange?: EventHandlerUnion<T, Event> | undefined;
+    onMessage?: EventHandlerUnion<T, MessageEvent> | undefined;
+    onMessageError?: EventHandlerUnion<T, MessageEvent> | undefined;
+    onOffline?: EventHandlerUnion<T, Event> | undefined;
+    onOnline?: EventHandlerUnion<T, Event> | undefined;
+    onPageHide?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined on TS
+    onPageReveal?: EventHandlerUnion<T, Event> | undefined;
+    onPageShow?: EventHandlerUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined on TS
+    onPageSwap?: EventHandlerUnion<T, Event> | undefined;
+    onPopstate?: EventHandlerUnion<T, PopStateEvent> | undefined;
+    onRejectionHandled?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    onStorage?: EventHandlerUnion<T, StorageEvent> | undefined;
+    onUnhandledRejection?: EventHandlerUnion<T, PromiseRejectionEvent> | undefined;
+    onUnload?: EventHandlerUnion<T, Event> | undefined;
 
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    "on:afterprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:beforeprint"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:beforeunload"?: EventHandlerWithOptionsUnion<T, BeforeUnloadEvent> | undefined;
+    "on:gamepadconnected"?: EventHandlerWithOptionsUnion<T, GamepadEvent> | undefined;
+    "on:gamepaddisconnected"?: EventHandlerWithOptionsUnion<T, GamepadEvent> | undefined;
+    "on:hashchange"?: EventHandlerWithOptionsUnion<T, HashChangeEvent> | undefined;
+    "on:languagechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:message"?: EventHandlerWithOptionsUnion<T, MessageEvent> | undefined;
+    "on:messageerror"?: EventHandlerWithOptionsUnion<T, MessageEvent> | undefined;
+    "on:offline"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:online"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:pagehide"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageRevealEvent` is currently undefined in TS
+    "on:pagereveal"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:pageshow"?: EventHandlerWithOptionsUnion<T, PageTransitionEvent> | undefined;
+    // TODO `PageSwapEvent` is currently undefined in TS
+    "on:pageswap"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:popstate"?: EventHandlerWithOptionsUnion<T, PopStateEvent> | undefined;
+    "on:rejectionhandled"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
+    "on:storage"?: EventHandlerWithOptionsUnion<T, StorageEvent> | undefined;
+    "on:unhandledrejection"?: EventHandlerWithOptionsUnion<T, PromiseRejectionEvent> | undefined;
+    "on:unload"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+  }
+
+  /**
+   * Global `ElementEventHandlers`, defined for all tags.
+   *
+   * That's events defined and shared BY ALL of the `HTMLElement/SVGElement/MathMLElement`
+   * interfaces.
+   *
+   * Includes events defined for the `Element` interface.
+   */
+  interface ElementEventHandlers<T> {
+    onAbort?: EventHandlerUnion<T, UIEvent> | undefined;
+    onAnimationCancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    onAnimationEnd?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    onAnimationIteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    onAnimationStart?: EventHandlerUnion<T, AnimationEvent> | undefined;
+    onAuxClick?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onBeforeCopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onBeforeCut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onBeforeInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    onBeforeMatch?: EventHandlerUnion<T, Event> | undefined;
+    onBeforePaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onBeforeToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    onBeforeXRSelect?: EventHandlerUnion<T, Event> | undefined;
+    onBlur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onCancel?: EventHandlerUnion<T, Event> | undefined;
+    onCanPlay?: EventHandlerUnion<T, Event> | undefined;
+    onCanPlayThrough?: EventHandlerUnion<T, Event> | undefined;
+    onChange?: ChangeEventHandlerUnion<T, Event> | undefined;
+    onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onClose?: EventHandlerUnion<T, Event> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    onCommand?: EventHandlerUnion<T, Event> | undefined;
+    onContentVisibilityAutoStateChange?:
+      | EventHandlerUnion<T, ContentVisibilityAutoStateChangeEvent>
+      | undefined;
+    onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onContextLost?: EventHandlerUnion<T, Event> | undefined;
+    onContextMenu?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onContextRestored?: EventHandlerUnion<T, Event> | undefined;
+    onCopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onCueChange?: EventHandlerUnion<T, Event> | undefined;
+    onCut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onDblClick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onDrag?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragEnd?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragEnter?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragExit?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragLeave?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragOver?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDragStart?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDrop?: EventHandlerUnion<T, DragEvent> | undefined;
+    onDurationChange?: EventHandlerUnion<T, Event> | undefined;
+    onEmptied?: EventHandlerUnion<T, Event> | undefined;
+    onEnded?: EventHandlerUnion<T, Event> | undefined;
+    onError?: EventHandlerUnion<T, ErrorEvent> | undefined;
+    onFocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onFocusIn?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onFocusOut?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
+    onFullscreenChange?: EventHandlerUnion<T, Event> | undefined;
+    onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
+    onGotPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    onInvalid?: EventHandlerUnion<T, Event> | undefined;
+    onKeyDown?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    onKeyPress?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    onKeyUp?: EventHandlerUnion<T, KeyboardEvent> | undefined;
+    onLoad?: EventHandlerUnion<T, Event> | undefined;
+    onLoadedData?: EventHandlerUnion<T, Event> | undefined;
+    onLoadedMetadata?: EventHandlerUnion<T, Event> | undefined;
+    onLoadStart?: EventHandlerUnion<T, Event> | undefined;
+    onLostPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onMouseDown?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onMouseEnter?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onMouseLeave?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onMouseMove?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onMouseOut?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onMouseOver?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onMouseUp?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onPaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onPause?: EventHandlerUnion<T, Event> | undefined;
+    onPlay?: EventHandlerUnion<T, Event> | undefined;
+    onPlaying?: EventHandlerUnion<T, Event> | undefined;
+    onPointerCancel?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerDown?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerEnter?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerLeave?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerMove?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerOut?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerOver?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerRawUpdate?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerUp?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onProgress?: EventHandlerUnion<T, ProgressEvent> | undefined;
+    onRateChange?: EventHandlerUnion<T, Event> | undefined;
+    onReset?: EventHandlerUnion<T, Event> | undefined;
+    onResize?: EventHandlerUnion<T, UIEvent> | undefined;
+    onScroll?: EventHandlerUnion<T, Event> | undefined;
+    onScrollEnd?: EventHandlerUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    onScrollSnapChange?: EventHandlerUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    onScrollSnapChanging?: EventHandlerUnion<T, Event> | undefined;
+    onSecurityPolicyViolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
+    onSeeked?: EventHandlerUnion<T, Event> | undefined;
+    onSeeking?: EventHandlerUnion<T, Event> | undefined;
+    onSelect?: EventHandlerUnion<T, Event> | undefined;
+    onSelectionChange?: EventHandlerUnion<T, Event> | undefined;
+    onSelectStart?: EventHandlerUnion<T, Event> | undefined;
+    onSlotChange?: EventHandlerUnion<T, Event> | undefined;
+    onStalled?: EventHandlerUnion<T, Event> | undefined;
+    onSubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
+    onSuspend?: EventHandlerUnion<T, Event> | undefined;
+    onTimeUpdate?: EventHandlerUnion<T, Event> | undefined;
+    onToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    onTouchCancel?: EventHandlerUnion<T, TouchEvent> | undefined;
+    onTouchEnd?: EventHandlerUnion<T, TouchEvent> | undefined;
+    onTouchMove?: EventHandlerUnion<T, TouchEvent> | undefined;
+    onTouchStart?: EventHandlerUnion<T, TouchEvent> | undefined;
+    onTransitionCancel?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    onTransitionEnd?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    onTransitionRun?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    onTransitionStart?: EventHandlerUnion<T, TransitionEvent> | undefined;
+    onVolumeChange?: EventHandlerUnion<T, Event> | undefined;
+    onWaiting?: EventHandlerUnion<T, Event> | undefined;
+    onWheel?: EventHandlerUnion<T, WheelEvent> | undefined;
+
+    "on:abort"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
+    "on:animationcancel"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
+    "on:animationend"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
+    "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
+    "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
+    "on:auxclick"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:beforecopy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:beforecut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:beforematch"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:beforepaste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:beforeinput"?:
+      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
+      | undefined;
+    "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
+    "on:beforexrselect"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:blur"?:
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
+    "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:canplay"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
+    "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    // TODO `CommandEvent` is currently undefined in TS
+    "on:command"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:contentvisibilityautostatechange"?:
+      | EventHandlerWithOptionsUnion<T, ContentVisibilityAutoStateChangeEvent>
+      | undefined;
+    "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:contextmenu"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:cuechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:dblclick"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:drag"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:dragend"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:dragenter"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:dragexit"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:dragleave"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:dragover"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:dragstart"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:drop"?: EventHandlerWithOptionsUnion<T, DragEvent> | undefined;
+    "on:durationchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:emptied"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:ended"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:error"?: EventHandlerWithOptionsUnion<T, ErrorEvent> | undefined;
+    "on:focus"?:
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
+    "on:focusin"?:
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
+    "on:focusout"?:
+      | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
+      | undefined;
+    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
+    "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:input"?:
+      | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
+      | undefined;
+    "on:invalid"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:keydown"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
+    "on:keypress"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
+    "on:keyup"?: EventHandlerWithOptionsUnion<T, KeyboardEvent> | undefined;
+    "on:load"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:loadeddata"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:loadedmetadata"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:loadstart"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:lostpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:mousedown"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:mouseenter"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:mouseleave"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:mousemove"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:mouseout"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:mouseover"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:mouseup"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:paste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:pause"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:play"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:playing"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:pointercancel"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerdown"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerenter"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerleave"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointermove"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerout"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerover"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerrawupdate"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerup"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:progress"?: EventHandlerWithOptionsUnion<T, ProgressEvent> | undefined;
+    "on:ratechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:reset"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:resize"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
+    "on:scroll"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:scrollend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    "on:scrollsnapchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    "on:scrollsnapchanging"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:securitypolicyviolation"?:
+      | EventHandlerWithOptionsUnion<T, SecurityPolicyViolationEvent>
+      | undefined;
+    "on:seeked"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:seeking"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:select"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:selectionchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:selectstart"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:slotchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:stalled"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent> | undefined;
+    "on:suspend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:timeupdate"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:toggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
+    "on:touchcancel"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
+    "on:touchend"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
+    "on:touchmove"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
+    "on:touchstart"?: EventHandlerWithOptionsUnion<T, TouchEvent> | undefined;
+    "on:transitioncancel"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
+    "on:transitionend"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
+    "on:transitionrun"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
+    "on:transitionstart"?: EventHandlerWithOptionsUnion<T, TransitionEvent> | undefined;
+    "on:volumechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:waiting"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
+  }
+
+  // GLOBAL ATTRIBUTES
+
+  /**
+   * Global `Element` interface keys, shared by all tags regardless of their namespace:
+   *
+   * 1. That's `keys` that are defined BY ALL `HTMLElement/SVGElement/MathMLElement` interfaces.
+   * 2. Includes `keys` defined by `Element` and `Node` interfaces.
+   */
+  interface ElementAttributes<T>
+    extends CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      BoolAttributes,
+      OnAttributes<T>,
+      ElementEventHandlers<T>,
+      CustomEventHandlers<T>,
+      AriaAttributes {
     // [key: ClassKeys]: boolean;
-    about?: FunctionMaybe<string | RemoveAttribute>;
+
+    // properties
+    innerHTML?: FunctionMaybe<string>;
+    textContent?: FunctionMaybe<string | number>;
+
+    // attributes
+    autofocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    class?: FunctionMaybe<string | ClassList | RemoveAttribute>;
+    elementtiming?: FunctionMaybe<string | RemoveAttribute>;
+    id?: FunctionMaybe<string | RemoveAttribute>;
+    nonce?: FunctionMaybe<string | RemoveAttribute>;
+    slot?: FunctionMaybe<string | RemoveAttribute>;
+    style?: FunctionMaybe<CSSProperties | string | RemoveAttribute>;
+    tabindex?: FunctionMaybe<number | string | RemoveAttribute>;
+  }
+  /** Global `SVGElement` interface keys only. */
+  interface SVGAttributes<T> extends ElementAttributes<T> {
+    id?: FunctionMaybe<string | RemoveAttribute>;
+    lang?: FunctionMaybe<string | RemoveAttribute>;
+    tabindex?: FunctionMaybe<number | string | RemoveAttribute>;
+    xmlns?: FunctionMaybe<string | RemoveAttribute>;
+  }
+  /** Global `MathMLElement` interface keys only. */
+  interface MathMLAttributes<T> extends ElementAttributes<T> {
+    dir?: FunctionMaybe<HTMLDir | RemoveAttribute>;
+    displaystyle?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    scriptlevel?: FunctionMaybe<string | RemoveAttribute>;
+    xmlns?: FunctionMaybe<string | RemoveAttribute>;
+
+    /** @deprecated */
+    href?: FunctionMaybe<string | RemoveAttribute>;
+    /** @deprecated */
+    mathbackground?: FunctionMaybe<string | RemoveAttribute>;
+    /** @deprecated */
+    mathcolor?: FunctionMaybe<string | RemoveAttribute>;
+    /** @deprecated */
+    mathsize?: FunctionMaybe<string | RemoveAttribute>;
+  }
+  /** Global `HTMLElement` interface keys only. */
+  interface HTMLAttributes<T> extends ElementAttributes<T> {
+    // properties
+    innerText?: FunctionMaybe<string | number>;
+
+    // attributes
     accesskey?: FunctionMaybe<string | RemoveAttribute>;
     autocapitalize?: FunctionMaybe<HTMLAutocapitalize | RemoveAttribute>;
-    class?: FunctionMaybe<string | ClassList | RemoveAttribute>;
-    color?: FunctionMaybe<string | RemoveAttribute>;
+    autocorrect?: FunctionMaybe<"on" | "off" | RemoveAttribute>;
     contenteditable?: FunctionMaybe<
       | EnumeratedPseudoBoolean
       | EnumeratedAcceptsEmpty
@@ -1246,68 +1087,156 @@ export namespace JSX {
       | "inherit"
       | RemoveAttribute
     >;
-    contextmenu?: FunctionMaybe<string | RemoveAttribute>;
-    datatype?: FunctionMaybe<string | RemoveAttribute>;
     dir?: FunctionMaybe<HTMLDir | RemoveAttribute>;
     draggable?: FunctionMaybe<EnumeratedPseudoBoolean | RemoveAttribute>;
+    enterkeyhint?: FunctionMaybe<
+      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | RemoveAttribute
+    >;
     exportparts?: FunctionMaybe<string | RemoveAttribute>;
     hidden?: FunctionMaybe<EnumeratedAcceptsEmpty | "hidden" | "until-found" | RemoveAttribute>;
-    id?: FunctionMaybe<string | RemoveAttribute>;
     inert?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    inlist?: FunctionMaybe<any | RemoveAttribute>;
     inputmode?: FunctionMaybe<
       "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | RemoveAttribute
     >;
     is?: FunctionMaybe<string | RemoveAttribute>;
+    lang?: FunctionMaybe<string | RemoveAttribute>;
+    part?: FunctionMaybe<string | RemoveAttribute>;
+    popover?: FunctionMaybe<EnumeratedAcceptsEmpty | "manual" | "auto" | RemoveAttribute>;
+    spellcheck?: FunctionMaybe<EnumeratedPseudoBoolean | EnumeratedAcceptsEmpty | RemoveAttribute>;
+    title?: FunctionMaybe<string | RemoveAttribute>;
+    translate?: FunctionMaybe<"yes" | "no" | RemoveAttribute>;
+
+    // Microdata
     itemid?: FunctionMaybe<string | RemoveAttribute>;
     itemprop?: FunctionMaybe<string | RemoveAttribute>;
     itemref?: FunctionMaybe<string | RemoveAttribute>;
     itemscope?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     itemtype?: FunctionMaybe<string | RemoveAttribute>;
-    lang?: FunctionMaybe<string | RemoveAttribute>;
-    part?: FunctionMaybe<string | RemoveAttribute>;
-    popover?: FunctionMaybe<EnumeratedAcceptsEmpty | "manual" | "auto" | RemoveAttribute>;
+
+    // RDFa Attributes
+    about?: FunctionMaybe<string | RemoveAttribute>;
+    datatype?: FunctionMaybe<string | RemoveAttribute>;
+    inlist?: FunctionMaybe<any | RemoveAttribute>;
     prefix?: FunctionMaybe<string | RemoveAttribute>;
     property?: FunctionMaybe<string | RemoveAttribute>;
     resource?: FunctionMaybe<string | RemoveAttribute>;
-    slot?: FunctionMaybe<string | RemoveAttribute>;
-    spellcheck?: FunctionMaybe<EnumeratedPseudoBoolean | EnumeratedAcceptsEmpty | RemoveAttribute>;
-    style?: FunctionMaybe<CSSProperties | string | RemoveAttribute>;
-    tabindex?: FunctionMaybe<number | string | RemoveAttribute>;
-    title?: FunctionMaybe<string | RemoveAttribute>;
-    translate?: FunctionMaybe<"yes" | "no" | RemoveAttribute>;
     typeof?: FunctionMaybe<string | RemoveAttribute>;
     vocab?: FunctionMaybe<string | RemoveAttribute>;
 
-    /** @deprecated Use lowercase attributes */
-    accessKey?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    autoCapitalize?: FunctionMaybe<HTMLAutocapitalize | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    contentEditable?: FunctionMaybe<
-      EnumeratedPseudoBoolean | "plaintext-only" | "inherit" | RemoveAttribute
-    >;
-    /** @deprecated Use lowercase attributes */
-    contextMenu?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    exportParts?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    inputMode?: FunctionMaybe<
-      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search" | RemoveAttribute
-    >;
-    /** @deprecated Use lowercase attributes */
-    itemId?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    itemProp?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    itemRef?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    itemScope?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    itemType?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    tabIndex?: FunctionMaybe<number | string | RemoveAttribute>;
+    /** @deprecated */
+    contextmenu?: FunctionMaybe<string | RemoveAttribute>;
   }
+
+  // HTML
+
+  type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
+  type HTMLAutocomplete =
+    | "additional-name"
+    | "address-level1"
+    | "address-level2"
+    | "address-level3"
+    | "address-level4"
+    | "address-line1"
+    | "address-line2"
+    | "address-line3"
+    | "bday"
+    | "bday-day"
+    | "bday-month"
+    | "bday-year"
+    | "billing"
+    | "cc-additional-name"
+    | "cc-csc"
+    | "cc-exp"
+    | "cc-exp-month"
+    | "cc-exp-year"
+    | "cc-family-name"
+    | "cc-given-name"
+    | "cc-name"
+    | "cc-number"
+    | "cc-type"
+    | "country"
+    | "country-name"
+    | "current-password"
+    | "email"
+    | "family-name"
+    | "fax"
+    | "given-name"
+    | "home"
+    | "honorific-prefix"
+    | "honorific-suffix"
+    | "impp"
+    | "language"
+    | "mobile"
+    | "name"
+    | "new-password"
+    | "nickname"
+    | "off"
+    | "on"
+    | "organization"
+    | "organization-title"
+    | "pager"
+    | "photo"
+    | "postal-code"
+    | "sex"
+    | "shipping"
+    | "street-address"
+    | "tel"
+    | "tel-area-code"
+    | "tel-country-code"
+    | "tel-extension"
+    | "tel-local"
+    | "tel-local-prefix"
+    | "tel-local-suffix"
+    | "tel-national"
+    | "transaction-amount"
+    | "transaction-currency"
+    | "url"
+    | "username"
+    | "work"
+    | (string & {});
+  type HTMLDir = "ltr" | "rtl" | "auto";
+  type HTMLFormEncType = "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
+  type HTMLFormMethod = "post" | "get" | "dialog";
+  type HTMLCrossorigin = "anonymous" | "use-credentials" | EnumeratedAcceptsEmpty;
+  type HTMLReferrerPolicy =
+    | "no-referrer"
+    | "no-referrer-when-downgrade"
+    | "origin"
+    | "origin-when-cross-origin"
+    | "same-origin"
+    | "strict-origin"
+    | "strict-origin-when-cross-origin"
+    | "unsafe-url";
+  type HTMLIframeSandbox =
+    | "allow-downloads-without-user-activation"
+    | "allow-downloads"
+    | "allow-forms"
+    | "allow-modals"
+    | "allow-orientation-lock"
+    | "allow-pointer-lock"
+    | "allow-popups"
+    | "allow-popups-to-escape-sandbox"
+    | "allow-presentation"
+    | "allow-same-origin"
+    | "allow-scripts"
+    | "allow-storage-access-by-user-activation"
+    | "allow-top-navigation"
+    | "allow-top-navigation-by-user-activation"
+    | "allow-top-navigation-to-custom-protocols";
+  type HTMLLinkAs =
+    | "audio"
+    | "document"
+    | "embed"
+    | "fetch"
+    | "font"
+    | "image"
+    | "object"
+    | "script"
+    | "style"
+    | "track"
+    | "video"
+    | "worker";
+
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: FunctionMaybe<string | RemoveAttribute>;
     href?: FunctionMaybe<string | RemoveAttribute>;
@@ -1322,9 +1251,6 @@ export namespace JSX {
 
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
 
     /** @deprecated */
     charset?: FunctionMaybe<string | RemoveAttribute>;
@@ -1354,9 +1280,6 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
 
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
-
     /** @deprecated */
     nohref?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
   }
@@ -1366,15 +1289,14 @@ export namespace JSX {
       "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute
     >;
   }
+  interface BdoHTMLAttributes<T> extends HTMLAttributes<T> {
+    dir?: FunctionMaybe<"ltr" | "rtl" | RemoveAttribute>;
+  }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: FunctionMaybe<string | RemoveAttribute>;
   }
-  interface BodyHTMLAttributes<T>
-    extends HTMLAttributes<T>,
-      WindowEventMap<T>,
-      ElementEventMap<T> {}
+  interface BodyHTMLAttributes<T> extends HTMLAttributes<T>, WindowEventHandlers<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     form?: FunctionMaybe<string | RemoveAttribute>;
     formaction?: FunctionMaybe<string | SerializableAttributeValue | RemoveAttribute>;
@@ -1402,35 +1324,10 @@ export namespace JSX {
     >;
     /** @experimental */
     commandfor?: FunctionMaybe<string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    formAction?: FunctionMaybe<string | SerializableAttributeValue | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formEnctype?: FunctionMaybe<HTMLFormEncType | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formMethod?: FunctionMaybe<HTMLFormMethod | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formNoValidate?: FunctionMaybe<boolean | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formTarget?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    popoverTarget?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    popoverTargetAction?: FunctionMaybe<"hide" | "show" | "toggle" | RemoveAttribute>;
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
-
-    onContextLost?: EventHandlerUnion<T, Event> | undefined;
-    "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncontextlost?: EventHandlerUnion<T, Event> | undefined;
-
-    onContextRestored?: EventHandlerUnion<T, Event> | undefined;
-    "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncontextrestored?: EventHandlerUnion<T, Event> | undefined;
 
     /**
      * @deprecated
@@ -1484,23 +1381,13 @@ export namespace JSX {
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     /**
-     * Do not add the tabindex property to the <dialog> element as it is not interactive and does
-     * not receive focus. The dialog's contents, including the close button contained in the dialog,
-     * can receive focus and be interactive.
+     * Do not add the `tabindex` property to the `<dialog>` element as it is not interactive and
+     * does not receive focus. The dialog's contents, including the close button contained in the
+     * dialog, can receive focus and be interactive.
      *
      * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#usage_notes
      */
     tabindex?: never;
-
-    onClose?: EventHandlerUnion<T, Event> | undefined;
-    "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onclose?: EventHandlerUnion<T, Event> | undefined;
-
-    onCancel?: EventHandlerUnion<T, Event> | undefined;
-    "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    oncancel?: EventHandlerUnion<T, Event> | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -1532,14 +1419,6 @@ export namespace JSX {
       "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute
     >;
 
-    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
-    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
-
-    /** @deprecated Use lowercase attributes */
-    noValidate?: FunctionMaybe<boolean | RemoveAttribute>;
-
     /** @deprecated */
     accept?: FunctionMaybe<string | RemoveAttribute>;
   }
@@ -1554,9 +1433,6 @@ export namespace JSX {
     src?: FunctionMaybe<string | RemoveAttribute>;
     srcdoc?: FunctionMaybe<string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
 
     /** @experimental */
     adauctionheaders?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
@@ -1600,7 +1476,6 @@ export namespace JSX {
     alt?: FunctionMaybe<string | RemoveAttribute>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
     decoding?: FunctionMaybe<"sync" | "async" | "auto" | RemoveAttribute>;
-    elementtiming?: FunctionMaybe<string | RemoveAttribute>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     ismap?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
@@ -1616,17 +1491,6 @@ export namespace JSX {
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
     /** @experimental */
     sharedstoragewritable?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    isMap?: FunctionMaybe<boolean | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    srcSet?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    useMap?: FunctionMaybe<string | RemoveAttribute>;
 
     /** @deprecated */
     align?: FunctionMaybe<"top" | "middle" | "bottom" | "left" | "right" | RemoveAttribute>;
@@ -1647,83 +1511,14 @@ export namespace JSX {
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: FunctionMaybe<string | RemoveAttribute>;
+    alpha?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     alt?: FunctionMaybe<string | RemoveAttribute>;
-    autocomplete?: FunctionMaybe<
-      | "additional-name"
-      | "address-level1"
-      | "address-level2"
-      | "address-level3"
-      | "address-level4"
-      | "address-line1"
-      | "address-line2"
-      | "address-line3"
-      | "bday"
-      | "bday-day"
-      | "bday-month"
-      | "bday-year"
-      | "billing"
-      | "cc-additional-name"
-      | "cc-csc"
-      | "cc-exp"
-      | "cc-exp-month"
-      | "cc-exp-year"
-      | "cc-family-name"
-      | "cc-given-name"
-      | "cc-name"
-      | "cc-number"
-      | "cc-type"
-      | "country"
-      | "country-name"
-      | "current-password"
-      | "email"
-      | "family-name"
-      | "fax"
-      | "given-name"
-      | "home"
-      | "honorific-prefix"
-      | "honorific-suffix"
-      | "impp"
-      | "language"
-      | "mobile"
-      | "name"
-      | "new-password"
-      | "nickname"
-      | "off"
-      | "on"
-      | "organization"
-      | "organization-title"
-      | "pager"
-      | "photo"
-      | "postal-code"
-      | "sex"
-      | "shipping"
-      | "street-address"
-      | "tel"
-      | "tel-area-code"
-      | "tel-country-code"
-      | "tel-extension"
-      | "tel-local"
-      | "tel-local-prefix"
-      | "tel-local-suffix"
-      | "tel-national"
-      | "transaction-amount"
-      | "transaction-currency"
-      | "url"
-      | "username"
-      | "work"
-      | (string & {})
-      | RemoveAttribute
-    >;
-    autocorrect?: FunctionMaybe<"on" | "off" | RemoveAttribute>;
-    autofocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    autocomplete?: FunctionMaybe<HTMLAutocomplete | RemoveAttribute>;
     capture?: FunctionMaybe<"user" | "environment" | RemoveAttribute>;
     checked?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    crossorigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
+    colorspace?: FunctionMaybe<string | RemoveAttribute>;
     dirname?: FunctionMaybe<string | RemoveAttribute>;
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    enterkeyhint?: FunctionMaybe<
-      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | RemoveAttribute
-    >;
     form?: FunctionMaybe<string | RemoveAttribute>;
     formaction?: FunctionMaybe<string | SerializableAttributeValue | RemoveAttribute>;
     formenctype?: FunctionMaybe<HTMLFormEncType | RemoveAttribute>;
@@ -1781,25 +1576,6 @@ export namespace JSX {
     /** @non-standard */
     incremental?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
 
-    /** @deprecated Use lowercase attributes */
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formAction?: FunctionMaybe<string | SerializableAttributeValue | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formEnctype?: FunctionMaybe<HTMLFormEncType | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formMethod?: FunctionMaybe<HTMLFormMethod | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formNoValidate?: FunctionMaybe<boolean | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    formTarget?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    maxLength?: FunctionMaybe<number | string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    minLength?: FunctionMaybe<number | string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    readOnly?: FunctionMaybe<boolean | RemoveAttribute>;
-
     /** @deprecated */
     align?: FunctionMaybe<string | RemoveAttribute>;
     /** @deprecated */
@@ -1808,13 +1584,8 @@ export namespace JSX {
   interface ModHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: FunctionMaybe<string | RemoveAttribute>;
     datetime?: FunctionMaybe<string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    dateTime?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
-    /** @deprecated */
-    autofocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     /** @deprecated */
     challenge?: FunctionMaybe<string | RemoveAttribute>;
     /** @deprecated */
@@ -1830,7 +1601,6 @@ export namespace JSX {
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
     for?: FunctionMaybe<string | RemoveAttribute>;
-    form?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -1841,6 +1611,7 @@ export namespace JSX {
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     as?: FunctionMaybe<HTMLLinkAs | RemoveAttribute>;
     blocking?: FunctionMaybe<"render" | RemoveAttribute>;
+    color?: FunctionMaybe<string | RemoveAttribute>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | RemoveAttribute>;
@@ -1855,11 +1626,6 @@ export namespace JSX {
     sizes?: FunctionMaybe<string | RemoveAttribute>;
     type?: FunctionMaybe<string | RemoveAttribute>;
 
-    /** @deprecated Use lowercase attributes */
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
-
     /** @deprecated */
     charset?: FunctionMaybe<string | RemoveAttribute>;
     /** @deprecated */
@@ -1870,7 +1636,7 @@ export namespace JSX {
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: FunctionMaybe<string | RemoveAttribute>;
   }
-  interface MediaHTMLAttributes<T> extends HTMLAttributes<T>, ElementEventMap<T> {
+  interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoplay?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     controls?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     controlslist?: FunctionMaybe<
@@ -1892,19 +1658,10 @@ export namespace JSX {
 
     onEncrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
     "on:encrypted"?: EventHandlerWithOptionsUnion<T, MediaEncryptedEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onencrypted?: EventHandlerUnion<T, MediaEncryptedEvent> | undefined;
 
     onWaitingForKey?: EventHandlerUnion<T, Event> | undefined;
     "on:waitingforkey"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onwaitingforkey?: EventHandlerUnion<T, Event> | undefined;
 
-    /** @deprecated Use lowercase attributes */
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    mediaGroup?: FunctionMaybe<string | RemoveAttribute>;
     /** @deprecated */
     mediagroup?: FunctionMaybe<string | RemoveAttribute>;
   }
@@ -1952,9 +1709,6 @@ export namespace JSX {
     name?: FunctionMaybe<string | RemoveAttribute>;
     type?: FunctionMaybe<string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    useMap?: FunctionMaybe<string | RemoveAttribute>;
 
     /** @deprecated */
     align?: FunctionMaybe<string | RemoveAttribute>;
@@ -2031,7 +1785,6 @@ export namespace JSX {
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | RemoveAttribute>;
     integrity?: FunctionMaybe<string | RemoveAttribute>;
     nomodule?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    nonce?: FunctionMaybe<string | RemoveAttribute>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
     src?: FunctionMaybe<string | RemoveAttribute>;
     type?: FunctionMaybe<
@@ -2041,13 +1794,6 @@ export namespace JSX {
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
 
-    /** @deprecated Use lowercase attributes */
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    noModule?: FunctionMaybe<boolean | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    referrerPolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
-
     /** @deprecated */
     charset?: FunctionMaybe<string | RemoveAttribute>;
     /** @deprecated */
@@ -2056,8 +1802,7 @@ export namespace JSX {
     language?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: FunctionMaybe<string | RemoveAttribute>;
-    autofocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    autocomplete?: FunctionMaybe<HTMLAutocomplete | RemoveAttribute>;
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     form?: FunctionMaybe<string | RemoveAttribute>;
     multiple?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
@@ -2081,7 +1826,6 @@ export namespace JSX {
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     blocking?: FunctionMaybe<"render" | RemoveAttribute>;
     media?: FunctionMaybe<string | RemoveAttribute>;
-    nonce?: FunctionMaybe<string | RemoveAttribute>;
 
     /** @deprecated */
     scoped?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
@@ -2092,11 +1836,6 @@ export namespace JSX {
     colspan?: FunctionMaybe<number | string | RemoveAttribute>;
     headers?: FunctionMaybe<string | RemoveAttribute>;
     rowspan?: FunctionMaybe<number | string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    colSpan?: FunctionMaybe<number | string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    rowSpan?: FunctionMaybe<number | string | RemoveAttribute>;
 
     /** @deprecated */
     abbr?: FunctionMaybe<string | RemoveAttribute>;
@@ -2125,88 +1864,17 @@ export namespace JSX {
     shadowrootclonable?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     shadowrootdelegatesfocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     shadowrootmode?: FunctionMaybe<"open" | "closed" | RemoveAttribute>;
+    shadowrootcustomelementregistry?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
 
     /** @experimental */
     shadowrootserializable?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-
-    /** @deprecated */
-    content?: FunctionMaybe<DocumentFragment | RemoveAttribute>;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: FunctionMaybe<
-      | "additional-name"
-      | "address-level1"
-      | "address-level2"
-      | "address-level3"
-      | "address-level4"
-      | "address-line1"
-      | "address-line2"
-      | "address-line3"
-      | "bday"
-      | "bday-day"
-      | "bday-month"
-      | "bday-year"
-      | "billing"
-      | "cc-additional-name"
-      | "cc-csc"
-      | "cc-exp"
-      | "cc-exp-month"
-      | "cc-exp-year"
-      | "cc-family-name"
-      | "cc-given-name"
-      | "cc-name"
-      | "cc-number"
-      | "cc-type"
-      | "country"
-      | "country-name"
-      | "current-password"
-      | "email"
-      | "family-name"
-      | "fax"
-      | "given-name"
-      | "home"
-      | "honorific-prefix"
-      | "honorific-suffix"
-      | "impp"
-      | "language"
-      | "mobile"
-      | "name"
-      | "new-password"
-      | "nickname"
-      | "off"
-      | "on"
-      | "organization"
-      | "organization-title"
-      | "pager"
-      | "photo"
-      | "postal-code"
-      | "sex"
-      | "shipping"
-      | "street-address"
-      | "tel"
-      | "tel-area-code"
-      | "tel-country-code"
-      | "tel-extension"
-      | "tel-local"
-      | "tel-local-prefix"
-      | "tel-local-suffix"
-      | "tel-national"
-      | "transaction-amount"
-      | "transaction-currency"
-      | "url"
-      | "username"
-      | "work"
-      | (string & {})
-      | RemoveAttribute
-    >;
-    autocorrect?: FunctionMaybe<"on" | "off" | RemoveAttribute>;
-    autofocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    autocomplete?: FunctionMaybe<HTMLAutocomplete | RemoveAttribute>;
     cols?: FunctionMaybe<number | string | RemoveAttribute>;
     dirname?: FunctionMaybe<string | RemoveAttribute>;
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    enterkeyhint?: FunctionMaybe<
-      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | RemoveAttribute
-    >;
+
     form?: FunctionMaybe<string | RemoveAttribute>;
     maxlength?: FunctionMaybe<number | string | RemoveAttribute>;
     minlength?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2217,13 +1885,6 @@ export namespace JSX {
     rows?: FunctionMaybe<number | string | RemoveAttribute>;
     value?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
     wrap?: FunctionMaybe<"hard" | "soft" | "off" | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    maxLength?: FunctionMaybe<number | string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    minLength?: FunctionMaybe<number | string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    readOnly?: FunctionMaybe<boolean | RemoveAttribute>;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
     abbr?: FunctionMaybe<string | RemoveAttribute>;
@@ -2231,11 +1892,6 @@ export namespace JSX {
     headers?: FunctionMaybe<string | RemoveAttribute>;
     rowspan?: FunctionMaybe<number | string | RemoveAttribute>;
     scope?: FunctionMaybe<"col" | "row" | "rowgroup" | "colgroup" | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    colSpan?: FunctionMaybe<number | string | RemoveAttribute>;
-    /** @deprecated Use lowercase attributes */
-    rowSpan?: FunctionMaybe<number | string | RemoveAttribute>;
 
     /** @deprecated */
     align?: FunctionMaybe<"left" | "center" | "right" | "justify" | "char" | RemoveAttribute>;
@@ -2258,9 +1914,6 @@ export namespace JSX {
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     datetime?: FunctionMaybe<string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    dateTime?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     default?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
@@ -2281,8 +1934,6 @@ export namespace JSX {
     src?: FunctionMaybe<string | RemoveAttribute>;
     srclang?: FunctionMaybe<string | RemoveAttribute>;
 
-    /** @deprecated Use lowercase attributes */
-    mediaGroup?: FunctionMaybe<string | RemoveAttribute>;
     /** @deprecated */
     mediagroup?: FunctionMaybe<string | RemoveAttribute>;
   }
@@ -2295,13 +1946,9 @@ export namespace JSX {
 
     onEnterPictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:enterpictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onenterpictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
 
     onLeavePictureInPicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
     "on:leavepictureinpicture"?: EventHandlerWithOptionsUnion<T, PictureInPictureEvent> | undefined;
-    /** @deprecated Use camelCase event handlers */
-    onleavepictureinpicture?: EventHandlerUnion<T, PictureInPictureEvent> | undefined;
   }
 
   interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2321,7 +1968,6 @@ export namespace JSX {
 
     // does this exists?
     allowfullscreen?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    autofocus?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     autosize?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
 
     /** @deprecated */
@@ -2332,7 +1978,8 @@ export namespace JSX {
     guestinstance?: FunctionMaybe<string | RemoveAttribute>;
   }
 
-  /** SVG Enumerated Attributes */
+  // SVG
+
   type SVGPreserveAspectRatio =
     | "none"
     | "xMinYMin"
@@ -2394,14 +2041,6 @@ export namespace JSX {
     | "defer xMaxYMax slice";
   type SVGUnits = "userSpaceOnUse" | "objectBoundingBox";
 
-  interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    id?: FunctionMaybe<string | RemoveAttribute>;
-    lang?: FunctionMaybe<string | RemoveAttribute>;
-    tabindex?: FunctionMaybe<number | string | RemoveAttribute>;
-
-    /** @deprecated Use lowercase attributes */
-    tabIndex?: FunctionMaybe<number | string | RemoveAttribute>;
-  }
   interface StylableSVGAttributes {
     class?: FunctionMaybe<string | ClassList | RemoveAttribute>;
     style?: FunctionMaybe<CSSProperties | string | RemoveAttribute>;
@@ -2575,11 +2214,23 @@ export namespace JSX {
     visibility?: FunctionMaybe<"visible" | "hidden" | "collapse" | "inherit" | RemoveAttribute>;
   }
   interface AnimationElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       ExternalResourceSVGAttributes,
-      ConditionalProcessingSVGAttributes {}
+      ConditionalProcessingSVGAttributes {
+    // TODO TimeEvent is currently undefined on TS
+    onBegin?: EventHandlerUnion<T, Event> | undefined;
+    "on:begin"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+
+    // TODO TimeEvent is currently undefined on TS
+    onEnd?: EventHandlerUnion<T, Event> | undefined;
+    "on:end"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+
+    // TODO TimeEvent is currently undefined on TS
+    onRepeat?: EventHandlerUnion<T, Event> | undefined;
+    "on:repeat"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+  }
   interface ContainerElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
@@ -2593,7 +2244,7 @@ export namespace JSX {
         | "color-rendering"
       > {}
   interface FilterPrimitiveElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     result?: FunctionMaybe<string | RemoveAttribute>;
@@ -2613,7 +2264,7 @@ export namespace JSX {
     viewBox?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface GradientElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
     gradientTransform?: FunctionMaybe<string | RemoveAttribute>;
@@ -2622,7 +2273,7 @@ export namespace JSX {
     spreadMethod?: FunctionMaybe<"pad" | "reflect" | "repeat" | RemoveAttribute>;
   }
   interface GraphicsElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "clip-rule"
@@ -2636,14 +2287,14 @@ export namespace JSX {
         | "color-interpolation"
         | "color-rendering"
       > {}
-  interface LightSourceElementSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface LightSourceElementSVGAttributes<T> extends SVGAttributes<T> {}
   interface NewViewportSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       Pick<PresentationSVGAttributes, "overflow" | "clip"> {
     viewBox?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface ShapeElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "color"
@@ -2662,7 +2313,7 @@ export namespace JSX {
         | "pathLength"
       > {}
   interface TextContentElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "font-family"
@@ -2739,7 +2390,7 @@ export namespace JSX {
     r?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface ClipPathSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2753,7 +2404,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {}
-  interface DescSVGAttributes<T> extends CoreSVGAttributes<T>, StylableSVGAttributes {}
+  interface DescSVGAttributes<T> extends SVGAttributes<T>, StylableSVGAttributes {}
   interface EllipseSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
@@ -2834,7 +2485,7 @@ export namespace JSX {
     elevation?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeDropShadowSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {
@@ -2846,7 +2497,7 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
-  interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
+  interface FeFuncSVGAttributes<T> extends SVGAttributes<T> {
     amplitude?: FunctionMaybe<number | string | RemoveAttribute>;
     exponent?: FunctionMaybe<number | string | RemoveAttribute>;
     intercept?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2871,9 +2522,7 @@ export namespace JSX {
   interface FeMergeSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes {}
-  interface FeMergeNodeSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      SingleInputFilterSVGAttributes {}
+  interface FeMergeNodeSVGAttributes<T> extends SVGAttributes<T>, SingleInputFilterSVGAttributes {}
   interface FeMorphologySVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
@@ -2927,7 +2576,7 @@ export namespace JSX {
     type?: FunctionMaybe<"fractalNoise" | "turbulence" | RemoveAttribute>;
   }
   interface FilterSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
     filterRes?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -3016,8 +2665,8 @@ export namespace JSX {
     x?: FunctionMaybe<number | string | RemoveAttribute>;
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
-  interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
-  interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface MetadataSVGAttributes<T> extends SVGAttributes<T> {}
+  interface MPathSVGAttributes<T> extends SVGAttributes<T> {}
   interface PathSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
@@ -3088,11 +2737,11 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface SetSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends AnimationElementSVGAttributes<T>,
       StylableSVGAttributes,
       AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "stop-color" | "stop-opacity"> {
     offset?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -3106,15 +2755,13 @@ export namespace JSX {
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
       PresentationSVGAttributes,
-      WindowEventMap<T>,
-      ElementEventMap<T> {
+      WindowEventHandlers<T> {
     "xmlns:xlink"?: FunctionMaybe<string | RemoveAttribute>;
     contentScriptType?: FunctionMaybe<string | RemoveAttribute>;
     contentStyleType?: FunctionMaybe<string | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
     x?: FunctionMaybe<number | string | RemoveAttribute>;
-    xmlns?: FunctionMaybe<string | RemoveAttribute>;
     y?: FunctionMaybe<number | string | RemoveAttribute>;
 
     /** @deprecated */
@@ -3194,7 +2841,7 @@ export namespace JSX {
   }
   /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       StylableSVGAttributes,
       ConditionalProcessingSVGAttributes,
       GraphicsElementSVGAttributes<T>,
@@ -3208,28 +2855,14 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface ViewSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends SVGAttributes<T>,
       ExternalResourceSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes {
     viewTarget?: FunctionMaybe<string | RemoveAttribute>;
   }
 
-  interface MathMLAttributes<T> extends HTMLAttributes<T> {
-    xmlns?: FunctionMaybe<string | RemoveAttribute>;
-
-    displaystyle?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
-    /** @deprecated */
-    href?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated */
-    mathbackground?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated */
-    mathcolor?: FunctionMaybe<string | RemoveAttribute>;
-    /** @deprecated */
-    mathsize?: FunctionMaybe<string | RemoveAttribute>;
-    nonce?: FunctionMaybe<string | RemoveAttribute>;
-    scriptlevel?: FunctionMaybe<string | RemoveAttribute>;
-  }
+  // MATH
 
   interface MathMLAnnotationElementAttributes<T> extends MathMLAttributes<T> {
     encoding?: FunctionMaybe<string | RemoveAttribute>;
@@ -3436,8 +3069,6 @@ export namespace JSX {
   }
   interface MathMLSemanticsElementAttributes<T> extends MathMLAttributes<T> {}
 
-  /* MathMLDeprecatedElements */
-
   interface MathMLMencloseElementAttributes<T> extends MathMLAttributes<T> {
     /** @non-standard */
     notation?: FunctionMaybe<string | RemoveAttribute>;
@@ -3447,6 +3078,8 @@ export namespace JSX {
     open?: FunctionMaybe<string | RemoveAttribute>;
     separators?: FunctionMaybe<string | RemoveAttribute>;
   }
+
+  // TAGS
 
   /** @type {HTMLElementTagNameMap} */
   interface HTMLElementTags {
@@ -3504,7 +3137,7 @@ export namespace JSX {
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
      */
-    bdo: HTMLAttributes<HTMLElement>;
+    bdo: BdoHTMLAttributes<HTMLElement>;
     /**
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLQuoteElement
@@ -4033,11 +3666,6 @@ export namespace JSX {
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
      */
     menuitem: HTMLAttributes<HTMLUnknownElement>;
-    /**
-     * @deprecated
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
-     */
-    noindex: HTMLAttributes<HTMLUnknownElement>;
     /**
      * @deprecated
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
