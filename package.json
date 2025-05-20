@@ -21,7 +21,8 @@
     "publish:release": "lerna run build && lerna publish",
     "report:coverage": "lerna run report:coverage --parallel",
     "bootstrap": "lerna bootstrap",
-    "init": "pnpm install && pnpm run bootstrap"
+    "init": "pnpm install && pnpm run bootstrap",
+    "jsx-sync-types": "node packages/dom-expressions/src/jsx-update.mjs"
   },
   "devDependencies": {
     "@babel/core": "^7.20.12",
