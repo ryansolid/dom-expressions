@@ -2,7 +2,7 @@ import { BooleanAttributes, ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
-export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
+export { getOwner, createComponent, effect, memo, untrack, ssrRunInScope } from "rxcore";
 
 export {
   Properties,
@@ -34,19 +34,22 @@ export function renderToString(code, options = {}) {
     onError: options.onError
   });
   sharedConfig.context = {
-    id: renderId,
-    resources: {},
     assets: [],
     nonce,
-    resolve(value) { return resolveSSRNode(escape(value)); },
+    escape: escape,
+    resolve: resolveSSRNode,
+    ssr: ssr,
     serialize(id, p) {
       !sharedConfig.context.noHydrate && serializer.write(id, p);
-    },
+    }
   };
-  let html = root(d => {
-    setTimeout(d);
-    return resolveSSRNode(escape(code()));
-  }, { id: renderId });
+  let html = root(
+    d => {
+      setTimeout(d);
+      return resolveSSRSync(escape(code()));
+    },
+    { id: renderId }
+  );
   sharedConfig.context.noHydrate = true;
   serializer.close();
   html = injectAssets(sharedConfig.context.assets, html);
@@ -120,9 +123,7 @@ export function renderToStream(code, options = {}) {
     }
   };
   sharedConfig.context = context = {
-    id: renderId,
     async: true,
-    resources: {},
     assets: [],
     nonce,
     block(p) {
@@ -136,7 +137,7 @@ export function renderToStream(code, options = {}) {
       const last = html.indexOf(`<!--!$/${id}-->`, first + placeholder.length);
       html =
         html.slice(0, first) +
-        resolveSSRNode(escape(payloadFn())) +
+        resolveSSRSync(escape(payloadFn())) +
         html.slice(last + placeholder.length + 1);
     },
     serialize(id, p, wait) {
@@ -153,38 +154,52 @@ export function renderToStream(code, options = {}) {
             });
       } else if (!serverOnly) serializer.write(id, p);
     },
-    resolve(value) { return resolveSSRNode(escape(value)); },
+    escape: escape,
+    resolve: resolveSSRNode,
+    ssr: ssr,
     registerFragment(key) {
       if (!registry.has(key)) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
         // double queue to ensure that Suspense is last but in same flush
-        registry.set(key, err =>
-          queue(() =>
-            queue(() => {
-              err ? reject(err) : resolve(true);
-              queue(flushEnd);
-            })
-          )
-        );
+        registry.set(key, {
+          resolve: err =>
+            queue(() =>
+              queue(() => {
+                err ? reject(err) : resolve(true);
+                queue(flushEnd);
+              })
+            )
+        });
         serializer.write(key, p);
       }
       return (value, error) => {
         if (registry.has(key)) {
-          const resolve = registry.get(key);
+          const item = registry.get(key);
           registry.delete(key);
-          if (waitForFragments(registry, key)) {
-            resolve();
+
+          if (item.children) {
+            for (const k in item.children) {
+              value = replacePlaceholder(value, k, item.children[k]);
+            }
+          }
+
+          const parentKey = waitForFragments(registry, key);
+          if (parentKey) {
+            const parent = registry.get(parentKey);
+            parent.children ||= {};
+            parent.children[key] = value !== undefined ? value : "";
+            item.resolve();
             return;
           }
           if (!completed) {
             if (!firstFlushed) {
               queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
-              resolve(error);
+              item.resolve(error);
             } else {
               buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
-              resolve(error);
+              item.resolve(error);
               scriptFlushed = true;
             }
           }
@@ -194,14 +209,17 @@ export function renderToStream(code, options = {}) {
     }
   };
 
-  let html = root(d => {
-    dispose = d;
-    return resolveSSRNode(escape(code()));
-  }, { id: renderId });
+  let html = root(
+    d => {
+      dispose = d;
+      return resolveSSRSync(escape(code()));
+    },
+    { id: renderId }
+  );
   function doShell() {
     if (shellCompleted) return;
     sharedConfig.context = context;
-    context.noHydrate = true;
+    // context.noHydrate = true;
     html = injectAssets(context.assets, html);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
@@ -284,18 +302,7 @@ export function HydrationScript(props) {
 
 // rendering
 export function ssr(t, ...nodes) {
-  if (nodes.length) {
-    let result = "";
-
-    for (let i = 0; i < nodes.length; i++) {
-      result += t[i];
-      const node = nodes[i];
-      if (node !== undefined) result += resolveSSRNode(node);
-    }
-
-    t = result + t[nodes.length];
-  }
-
+  if (nodes.length) return resolveSSR(t, nodes);
   return { t };
 }
 
@@ -331,6 +338,7 @@ export function ssrStyle(value) {
   return result;
 }
 
+// review with new ssr
 export function ssrElement(tag, props, children, needsId) {
   if (props == null) props = {};
   else if (typeof props === "function") props = props();
@@ -375,7 +383,7 @@ export function ssrElement(tag, props, children, needsId) {
 
   if (skipChildren) return { t: result + "/>" };
   if (typeof children === "function") children = children();
-  return { t: result + `>${resolveSSRNode(children, true)}</${tag}>` };
+  return ssr([result + ">", `</${tag}>`], resolveSSRNode(children, undefined, true));
 }
 
 export function ssrAttribute(key, value, isBoolean) {
@@ -390,7 +398,7 @@ export function ssrHydrationKey() {
 export function escape(s, attr) {
   const t = typeof s;
   if (t !== "string") {
-    if (!attr && t === "function") return escape(s());
+    // if (!attr && t === "function") return escape(s());
     if (!attr && Array.isArray(s)) {
       for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
       return s;
@@ -440,30 +448,6 @@ export function escape(s, attr) {
   return left < s.length ? out + s.substring(left) : out;
 }
 
-export function resolveSSRNode(node, top) {
-  const t = typeof node;
-  if (t === "string") return node;
-  if (node == null || t === "boolean") return "";
-  if (Array.isArray(node)) {
-    let prev = {};
-    let mapped = "";
-    for (let i = 0, len = node.length; i < len; i++) {
-      if (!top && typeof prev !== "object" && typeof node[i] !== "object") mapped += `<!--!$-->`;
-      mapped += resolveSSRNode((prev = node[i]));
-    }
-    return mapped;
-  }
-  if (t === "object") return node.t;
-  if (t === "function") {
-    try {
-      return resolveSSRNode(node())
-    } catch (err) {
-      if (!ssrHandleError(err)) throw err;
-    }
-  };
-  return String(node);
-}
-
 export function mergeProps(...sources) {
   const target = {};
   for (let i = 0; i < sources.length; i++) {
@@ -494,7 +478,7 @@ export function getHydrationKey() {
 }
 
 export function useAssets(fn) {
-  sharedConfig.context.assets.push(() => resolveSSRNode(escape(fn())));
+  sharedConfig.context.assets.push(() => resolveSSRSync(escape(fn())));
 }
 
 export function getAssets() {
@@ -517,8 +501,6 @@ export function Hydration(props) {
   const context = sharedConfig.context;
   sharedConfig.context = {
     ...context,
-    count: 0,
-    id: sharedConfig.getNextContextId(),
     noHydrate: false
   };
   const res = props.children;
@@ -566,7 +548,7 @@ function injectScripts(html, scripts, nonce) {
 
 function waitForFragments(registry, key) {
   for (const k of [...registry.keys()].reverse()) {
-    if (key.startsWith(k)) return true;
+    if (key.startsWith(k)) return k;
   }
   return false;
 }
@@ -598,6 +580,77 @@ function flattenClassList(list, result) {
     else if (typeof item === "object" && item != null) Object.assign(result, item);
     else if (item || item === 0) result[item] = true;
   }
+}
+
+function resolveSSR(
+  template,
+  holes,
+  result = {
+    t: [""],
+    h: [],
+    p: []
+  }
+) {
+  for (let i = 0; i < holes.length; i++) {
+    const hole = holes[i];
+    result.t[result.t.length - 1] += template[i];
+    if (hole == null || hole === true || hole === false) continue;
+    resolveSSRNode(hole, result);
+  }
+  result.t[result.t.length - 1] += template[template.length - 1];
+  return result;
+}
+
+function resolveSSRNode(
+  node,
+  result = {
+    t: [""],
+    h: [],
+    p: []
+  },
+  top
+) {
+  const t = typeof node;
+  if (t === "string" || t === "number") {
+    result.t[result.t.length - 1] += node;
+  } else if (node == null || t === "boolean") {
+  } else if (Array.isArray(node)) {
+    let prev = {};
+    for (let i = 0, len = node.length; i < len; i++) {
+      if (!top && typeof prev !== "object" && typeof node[i] !== "object")
+        result.t[result.t.length - 1] += `<!--!$-->`;
+      resolveSSRNode((prev = node[i]), result);
+    }
+  } else if (t === "object") {
+    if (node.h) {
+      result.t[result.t.length - 1] += node.t[0];
+      if (node.t.length > 1) {
+        result.t.push(...node.t.slice(1));
+        result.h.push(...node.h);
+        result.p.push(...node.p);
+      }
+    } else result.t[result.t.length - 1] += node.t;
+  } else if (t === "function") {
+    try {
+      resolveSSRNode(node(), result);
+    } catch (err) {
+      const p = ssrHandleError(err);
+      if (p) {
+        result.h.push(node);
+        result.p.push(p);
+        result.t.push("");
+      }
+    }
+  }
+  return result;
+}
+
+function resolveSSRSync(node) {
+  const res = resolveSSRNode(node);
+  if (!res.h.length) return res.t[0];
+  throw new Error(
+    "This value cannot be rendered synchronously. Are you missing a Suspsense boundary?"
+  );
 }
 
 // experimental

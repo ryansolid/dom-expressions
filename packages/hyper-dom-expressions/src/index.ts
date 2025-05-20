@@ -8,16 +8,14 @@ interface Runtime {
   SVGElements: Set<string>;
 }
 
-const $ELEMENT = Symbol("hyper-element");
-
 type ExpandableNode = Node & { [key: string]: any };
 type Props = { [key: string]: any };
 
 export type HyperScript = {
-  (...args: any[]): () => ExpandableNode | ExpandableNode[];
+  (...args: any[]): ExpandableNode | ExpandableNode[];
   Fragment: (props: {
-    children: (() => ExpandableNode) | (() => ExpandableNode)[];
-  }) => ExpandableNode[];
+    children: ExpandableNode | ExpandableNode[];
+  }) => ExpandableNode | ExpandableNode[];
 };
 
 // Inspired by https://github.com/hyperhype/hyperscript
@@ -25,19 +23,8 @@ export function createHyperScript(r: Runtime): HyperScript {
   function h() {
     let args: any = [].slice.call(arguments),
       e: ExpandableNode | undefined,
-      classes:string[] = [],
+      classes: string[] = [],
       multiExpression = false;
-
-    while (Array.isArray(args[0])) args = args[0];
-    if (args[0][$ELEMENT]) args.unshift(h.Fragment);
-    typeof args[0] === "string" && detectMultiExpression(args);
-    const ret: (() => ExpandableNode) & { [$ELEMENT]?: boolean } = () => {
-      while (args.length) item(args.shift());
-      if (e instanceof Element && classes.length) e.classList.add(...classes)
-      return e as ExpandableNode;
-    };
-    ret[$ELEMENT] = true;
-    return ret;
 
     function item(l: any) {
       const type = typeof l;
@@ -63,12 +50,12 @@ export function createHyperScript(r: Runtime): HyperScript {
         const d = Object.getOwnPropertyDescriptors(l);
         for (const k in d) {
           if (k === "class" && classes.length !== 0) {
-            const fixedClasses = classes.join(" "),
-              value = typeof d["class"].value === "function" ?
-                ()=>fixedClasses + " " + d["class"].value() :
-                fixedClasses + " " + l["class"]
-            Object.defineProperty(l,"class",{...d[k],value})
-            classes = []
+            const value =
+              typeof d["class"].value === "function"
+                ? () => [...classes, d["class"].value()]
+                : [...classes, l["class"]];
+            Object.defineProperty(l, "class", { ...d[k], value });
+            classes = [];
           }
           if (k !== "ref" && k.slice(0, 2) !== "on" && typeof d[k].value === "function") {
             r.dynamicProperty(l, k);
@@ -93,26 +80,22 @@ export function createHyperScript(r: Runtime): HyperScript {
           }
           const d = Object.getOwnPropertyDescriptors(props);
           for (const k in d) {
-            if (Array.isArray(d[k].value)) {
-              const list = d[k].value;
-              props[k] = () => {
-                for (let i = 0; i < list.length; i++) {
-                  while (list[i][$ELEMENT]) list[i] = list[i]();
-                }
-                return list;
-              };
-              r.dynamicProperty(props, k);
-            } else if (typeof d[k].value === "function" && !d[k].value.length)
-              r.dynamicProperty(props, k);
+            if (typeof d[k].value === "function" && !d[k].value.length) r.dynamicProperty(props, k);
           }
           e = r.createComponent(l, props);
           args = [];
         } else {
-          while ((l as any)[$ELEMENT]) l = ((l as unknown) as () => ExpandableNode)();
           r.insert(e as Element, l, multiExpression ? null : undefined);
         }
       }
     }
+
+    if (args.length === 1 && Array.isArray(args[0])) return args[0];
+    typeof args[0] === "string" && detectMultiExpression(args);
+    while (args.length) item(args.shift());
+    if (e instanceof Element && classes.length) e.classList.add(...classes);
+    return e as ExpandableNode;
+
     function parseClass(string: string) {
       // Our minimal parser doesn’t understand escaping CSS special
       // characters like `#`. Don’t use them. More reading:

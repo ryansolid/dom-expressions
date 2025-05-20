@@ -23,7 +23,7 @@ describe("Test HyperScript", () => {
       h("span", { style: "color: #555" }, 555),
       h("label.name", { for: "entry" }, "Edit:"),
       h("input#entry", { type: "text", readonly: true })
-    ])();
+    ]);
     expect(template.outerHTML).toBe(FIXTURES[0]);
   });
 
@@ -49,7 +49,7 @@ describe("Test HyperScript", () => {
           },
           h("a", { href: "/", ref: r => (link = r) }, "Welcome")
         )
-      )()
+      )
     );
     expect(template.outerHTML).toBe(FIXTURES[1]);
   });
@@ -61,7 +61,7 @@ describe("Test HyperScript", () => {
       h("button", { onclick: () => (exec.bound = true) }, "Click Bound"),
       h("button", { onClick: () => (exec.delegated = true) }, "Click Delegated"),
       h("button", { "on:click": () => (exec.listener = true) }, "Click Listener")
-    ])();
+    ]);
     expect(template.outerHTML).toBe(FIXTURES[2]);
     document.body.appendChild(template);
     var event = new MouseEvent("click", { bubbles: true });
@@ -82,7 +82,7 @@ describe("Test HyperScript", () => {
     const [inserted] = createSignal("middle");
 
     const div = createRoot(() => {
-      const template = h([h("div", "First"), inserted, h("div", "Last")]);
+      const template = [h("div", "First"), inserted, h("div", "Last")];
       const div = document.createElement("div");
       r.insert(div, template);
       return div;
@@ -96,7 +96,7 @@ describe("Test HyperScript", () => {
     const div = createRoot(() => {
       const template = h("#main", [
         h(Comp, { name: () => "John", middle: "R." }, () => h("span", "Smith"))
-      ])();
+      ]);
       const div = document.createElement("div");
       div.appendChild(template);
       return div;
@@ -107,7 +107,7 @@ describe("Test HyperScript", () => {
   test("Component Spread", () => {
     const Comp = props => h("div", props);
     const div = createRoot(() => {
-      const template = h("#main", [h(Comp, { name: () => "John" }, () => h("span", "Smith"))])();
+      const template = h("#main", [h(Comp, { name: () => "John" }, () => h("span", "Smith"))]);
       const div = document.createElement("div");
       div.appendChild(template);
       return div;
@@ -117,7 +117,7 @@ describe("Test HyperScript", () => {
 
   test("Class Spread", () => {
     const div = createRoot(() => {
-      const template = h("#main", [h("div.a", { class: "b" })])();
+      const template = h("#main", [h("div.a", { class: "b" })]);
       const div = document.createElement("div");
       div.appendChild(template);
       return div;

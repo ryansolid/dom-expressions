@@ -1,6 +1,10 @@
 import * as t from "@babel/types";
 import { decode } from "html-entities";
-import { BooleanAttributes, ChildProperties } from "dom-expressions/src/constants";
+import {
+  BooleanAttributes,
+  ChildProperties,
+  SVGElements
+} from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
   getTagName,
@@ -28,20 +32,6 @@ function appendToTemplate(template, value) {
   if (array && array.length) template.push.apply(template, array);
 }
 
-function hoistExpression(path, results, expr, { group, post, skipWrap } = {}) {
-  if (group && !post) {
-    results.groupId ||= path.scope.generateUidIdentifier("v$");
-    results.dynamics.push(expr);
-    return t.memberExpression(results.groupId, t.numericLiteral(results.dynamics.length - 1), true);
-  }
-  const variable = path.scope.generateUidIdentifier("v$");
-  !skipWrap && t.isFunction(expr) && (expr = t.callExpression(registerImportMethod(path, "ssrRunInScope"), [expr]));
-  post
-    ? results.postDeclarations.push(t.variableDeclarator(variable, expr))
-    : results.declarations.push(t.variableDeclarator(variable, expr));
-  return variable;
-}
-
 export function transformElement(path, info) {
   const config = getConfig(path);
   const tagName = getTagName(path.node);
@@ -56,13 +46,11 @@ export function transformElement(path, info) {
       template: [`<${tagName}`],
       templateValues: [],
       declarations: [],
-      postDeclarations: [],
       exprs: [],
-      dynamics: info.parentResults?.dynamics || [],
+      dynamics: [],
       tagName,
       wontEscape: path.node.wontEscape,
-      renderer: "ssr",
-      groupId: info.parentResults?.groupId
+      renderer: "ssr"
     };
 
   if (info.topLevel && config.hydratable) {
@@ -89,12 +77,7 @@ export function transformElement(path, info) {
     }
     results.template.push("");
     results.templateValues.push(
-      hoistExpression(
-        path,
-        results,
-        t.callExpression(registerImportMethod(path, "ssrHydrationKey"), []),
-        { skipWrap: true }
-      )
+      t.callExpression(registerImportMethod(path, "ssrHydrationKey"), [])
     );
   }
   transformAttributes(path, results, { ...config, ...info });
@@ -106,31 +89,32 @@ export function transformElement(path, info) {
   return results;
 }
 
-function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
+function setAttr(attribute, results, name, value, isDynamic) {
   // strip out namespaces for now, everything at this point is an attribute
-  let parts;
+  let parts, namespace;
   if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
     name = parts[1];
+    namespace = parts[0];
   }
 
   let attr = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
     t.stringLiteral(name),
     value,
-    t.booleanLiteral(isBoolean)
+    t.booleanLiteral(false)
   ]);
-  if (isDynamic) {
-    attr = t.arrowFunctionExpression([], attr);
-    const post = name === "value" || name === "checked";
-    results.templateValues.push(
-      hoistExpression(attribute, results, attr, {
-        group: true,
-        post
-      })
-    );
-    if (post) results.template.push("");
-  } else {
-    results.templateValues.push(attr);
+  if (results.template[results.template.length - 1].length) {
+    if (isDynamic) attr = t.arrowFunctionExpression([], attr);
     results.template.push("");
+    results.templateValues.push(attr);
+  } else {
+    const last = results.templateValues.length - 1;
+    if (t.isArrowFunctionExpression(results.templateValues[last])) {
+      results.templateValues[last].body = t.binaryExpression(
+        "+",
+        results.templateValues[last].body,
+        attr
+      );
+    } else results.templateValues[last] = t.binaryExpression("+", results.templateValues[last], attr);
   }
 }
 
@@ -238,7 +222,11 @@ function normalizeAttributes(path) {
     );
   if (classNamespaceAttributes.length)
     transformToObject("class", attributes, classNamespaceAttributes);
-  const classAttributes = attributes.filter(a => a.node.name && a.node.name.name === "class");
+  const classAttributes = attributes.filter(
+    a =>
+      a.node.name &&
+      (a.node.name.name === "class")
+  );
   // combine class propertoes
   if (classAttributes.length > 1) {
     const first = classAttributes[0].node,
@@ -278,7 +266,9 @@ function normalizeAttributes(path) {
 }
 
 function transformAttributes(path, results, info) {
-  const hasChildren = path.node.children.length > 0,
+  const tagName = getTagName(path.node),
+    isSVG = SVGElements.has(tagName),
+    hasChildren = path.node.children.length > 0,
     attributes = normalizeAttributes(path);
   let children;
 
@@ -315,27 +305,29 @@ function transformAttributes(path, results, info) {
         key.startsWith("on")
       )
         return;
+      const isDynamicValue = isDynamic(attribute.get("value").get("expression"), {
+        checkMember: true,
+        checkTags: true
+      });
       if (ChildProperties.has(key)) {
         if (info.hydratable && key === "textContent" && value && value.expression) {
-          const comments = value.expression.leadingComments;
           value.expression = t.logicalExpression("||", value.expression, t.stringLiteral(" "));
-          comments && (value.expression.leadingComments = comments);
         }
         if (key === "innerHTML") path.doNotEscape = true;
         children = value;
       } else {
-        const isDynamicValue = isDynamic(attribute.get("value").get("expression"), {
-          checkMember: true,
-          checkTags: true
-        });
         let doEscape = true;
-        let isBoolean = false;
         if (key.startsWith("attr:")) key = key.replace("attr:", "");
-        if ((isBoolean = BooleanAttributes.has(key))) doEscape = false;
-        if (key.startsWith("bool:")) {
-          key = key.replace("bool:", "");
-          isBoolean = true;
-          doEscape = false;
+        if (BooleanAttributes.has(key)) {
+          results.template.push("");
+          let fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
+            t.stringLiteral(key),
+            value.expression,
+            t.booleanLiteral(true)
+          ]);
+          if (isDynamicValue) fn = t.arrowFunctionExpression([], fn);
+          results.templateValues.push(fn);
+          return;
         }
         if (key === "style") {
           if (
@@ -386,22 +378,11 @@ function transformAttributes(path, results, info) {
         }
         if (doEscape) value.expression = escapeExpression(path, value.expression, true);
 
-        if (
-          !(doEscape || isBoolean || key === "value" || key === "checked") ||
-          t.isLiteral(value.expression)
-        ) {
-          if (isBoolean) {
-            value.expression.value === true && appendToTemplate(results.template, ` ${key}`);
-            return;
-          }
+        if (!doEscape || t.isLiteral(value.expression)) {
           appendToTemplate(results.template, ` ${key}="`);
           results.template.push(`"`);
-          if (isDynamicValue) {
-            results.templateValues.push(
-              hoistExpression(path, results, inlineCallExpression(value.expression), { group: true })
-            );
-          } else results.templateValues.push(value.expression);
-        } else setAttr(attribute, results, key, value.expression, isDynamicValue, isBoolean);
+          results.templateValues.push(isDynamicValue ? inlineCallExpression(value.expression) : value.expression);
+        } else setAttr(attribute, results, key, value.expression, isDynamicValue);
       }
     } else {
       if (key === "$ServerOnly") return;
@@ -470,7 +451,7 @@ function transformChildren(path, results, { hydratable }) {
     markers = hydratable && multi;
   filteredChildren.forEach(node => {
     if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
-      const child = transformNode(node, { doNotEscape, hydratable: false, parentResults: results });
+      const child = transformNode(node, { doNotEscape, hydratable: false });
       registerImportMethod(path, "NoHydration");
       registerImportMethod(path, "createComponent");
       results.template.push("");
@@ -487,18 +468,12 @@ function transformChildren(path, results, { hydratable }) {
           ])
         ])
       );
-      results.declarations.push(...child.declarations);
-      results.postDeclarations.push(...child.postDeclarations);
-      results.groupId ||= child.groupId;
       return;
     }
-    const child = transformNode(node, { doNotEscape, parentResults: results });
+    const child = transformNode(node, { doNotEscape });
     if (!child) return;
     appendToTemplate(results.template, child.template);
     results.templateValues.push.apply(results.templateValues, child.templateValues || []);
-    child.declarations && results.declarations.push(...child.declarations);
-    child.postDeclarations && results.postDeclarations.push(...child.postDeclarations);
-    results.groupId ||= child.groupId;
     if (child.exprs.length) {
       if (!doNotEscape && !child.spreadElement)
         child.exprs[0] = escapeExpression(path, child.exprs[0]);
@@ -507,11 +482,11 @@ function transformChildren(path, results, { hydratable }) {
       if (markers && !child.spreadElement) {
         appendToTemplate(results.template, `<!--$-->`);
         results.template.push("");
-        results.templateValues.push(hoistExpression(path, results, child.exprs[0]));
+        results.templateValues.push(child.exprs[0]);
         appendToTemplate(results.template, `<!--/-->`);
       } else {
         results.template.push("");
-        results.templateValues.push(hoistExpression(path, results, child.exprs[0]));
+        results.templateValues.push(child.exprs[0]);
       }
     }
   });
@@ -620,11 +595,11 @@ function createElement(path, { topLevel, hydratable }) {
               childNodes.length === 1 ? childNodes[0] : t.arrayExpression(childNodes)
             )
           : childNodes.length === 1
-          ? childNodes[0]
-          : t.arrayExpression(childNodes)
+            ? childNodes[0]
+            : t.arrayExpression(childNodes)
         : t.identifier("undefined"),
       t.booleanLiteral(Boolean(topLevel && config.hydratable))
     ])
   ];
-  return { exprs, template: "", declarations: [], spreadElement: true };
+  return { exprs, template: "", spreadElement: true };
 }
