@@ -64,10 +64,10 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$52 = ["<iframe", ' src loading="lazy"></iframe>'],
   _tmpl$53 = ["<div", '><iframe src loading="lazy"></iframe></div>'],
   _tmpl$54 = ["<div", ' title="<u>data</u>"></div>'],
-  _tmpl$55 = ["<div", ' true="true" truestr="true" truestrjs="true"></div>'],
-  _tmpl$56 = ["<div", ' false="false" falsestr="false" falsestrjs="false"></div>'],
-  _tmpl$57 = ["<div", "", "", "></div>"],
-  _tmpl$58 = ["<div", ' a b c d="true" e="false" f="0" g h', "", "", " l></div>"];
+  _tmpl$55 = ["<div", ' true truestr="true" truestrjs="true"></div>'],
+  _tmpl$56 = ["<div", ' falsestr="false" falsestrjs="false"></div>'],
+  _tmpl$57 = ["<div", " true></div>"],
+  _tmpl$58 = ["<div", ' a b c d f="0" g h', "", "", " l></div>"];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -146,11 +146,11 @@ const template2 = _$ssrElement(
 const template3 = (() => {
   var _v$3 = _$ssrHydrationKey(),
     _v$5 = _$escape(state.content) || " ",
-    _v$4 = _$ssrRunInScope([() => _$ssrAttribute("name", _$escape(state.name, true), false)]);
+    _v$4 = _$ssrRunInScope([() => _$ssrAttribute("name", _$escape(state.name, true))]);
   return _$ssr(
     _tmpl$4,
     _v$3,
-    _$ssrAttribute("id", _$escape(state.id, true), false),
+    _$ssrAttribute("id", _$escape(state.id, true)),
     "background-color:" + _$escape(state.color, true),
     _v$4[0],
     _v$5
@@ -158,7 +158,7 @@ const template3 = (() => {
 })();
 const template4 = (() => {
   var _v$6 = _$ssrHydrationKey(),
-    _v$7 = _$ssrRunInScope([() => _$ssrAttribute("className", _$escape(state.class, true), false)]);
+    _v$7 = _$ssrRunInScope([() => _$ssrAttribute("className", _$escape(state.class, true))]);
   return _$ssr(_tmpl$5, _v$6, _v$7[0], "ccc:ddd");
 })();
 const template5 = (() => {
@@ -182,12 +182,7 @@ const template7 = (() => {
           "padding-top": props.top
         })
     ]);
-  return _$ssr(
-    _tmpl$8,
-    _v$11,
-    _v$12[0],
-    _$ssrAttribute("other-class", _$escape(undefVar, true), false)
-  );
+  return _$ssr(_tmpl$8, _v$11, _v$12[0], _$ssrAttribute("other-class", _$escape(undefVar, true)));
 })();
 let refTarget;
 const template8 = (() => {
@@ -216,7 +211,7 @@ const template13 = (() => {
 })();
 const template14 = (() => {
   var _v$19 = _$ssrHydrationKey(),
-    _v$20 = _$ssrRunInScope(() => _$ssrAttribute("checked", state.visible, true));
+    _v$20 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(state.visible, true)));
   return _$ssr(_tmpl$12, _v$19, _v$20);
 })();
 const template15 = (() => {
@@ -266,13 +261,13 @@ const template19 = (() => {
 const template20 = (() => {
   var _v$25 = _$ssrHydrationKey(),
     _v$27 = _$ssrRunInScope([
-      () => _$ssrAttribute("min", _$escape(min(), true), false),
-      () => _$ssrAttribute("max", _$escape(max(), true), false),
-      () => _$ssrAttribute("min", _$escape(min(), true), false),
-      () => _$ssrAttribute("max", _$escape(max(), true), false)
+      () => _$ssrAttribute("min", _$escape(min(), true)),
+      () => _$ssrAttribute("max", _$escape(max(), true)),
+      () => _$ssrAttribute("min", _$escape(min(), true)),
+      () => _$ssrAttribute("max", _$escape(max(), true))
     ]),
-    _v$26 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true), false)),
-    _v$28 = _$ssrRunInScope(() => _$ssrAttribute("checked", s2(), true));
+    _v$26 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
+    _v$28 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(s2(), true)));
   return _$ssr(
     _tmpl$16,
     _v$25,
@@ -282,7 +277,7 @@ const template20 = (() => {
     _v$28,
     _v$27[2],
     _v$27[3],
-    _$ssrAttribute("readonly", value, true)
+    _$ssrAttribute("readonly", _$escape(value, true))
   );
 })();
 const template21 = (() => {
@@ -303,7 +298,7 @@ const template22 = (() => {
 const template23 = (() => {
   var _v$32 = _$ssrHydrationKey(),
     _v$34 = _$ssrRunInScope(() => "t" in test && "true"),
-    _v$33 = _$ssrRunInScope([() => _$ssrAttribute("disabled", "t" in test, true)]);
+    _v$33 = _$ssrRunInScope([() => _$ssrAttribute("disabled", "t" in _$escape(test, true))]);
   return _$ssr(_tmpl$19, _v$32, _v$33[0], _v$34);
 })();
 const template24 = _$ssrElement(
@@ -372,7 +367,7 @@ const template28 = _$ssrElement(
 const template29 = (() => {
   var _v$38 = _$ssrHydrationKey(),
     _v$39 = !!someValue;
-  return _$ssr(_tmpl$21, _v$38, _$ssrAttribute("attribute", !!someValue, false), _v$39);
+  return _$ssr(_tmpl$21, _v$38, _$ssrAttribute("attribute", !!someValue), _v$39);
 })();
 const template30 = (() => {
   var _v$40 = _$ssrHydrationKey();
@@ -437,9 +432,9 @@ const template40 = (() => {
 })();
 const template41 = (() => {
   var _v$57 = _$ssrHydrationKey(),
-    _v$58 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(state.color, true), false)),
-    _v$59 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Red, true), false)),
-    _v$60 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Blue, true), false));
+    _v$58 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(state.color, true))),
+    _v$59 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Red, true))),
+    _v$60 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Blue, true)));
   return _$ssr(_tmpl$25, _v$57, _v$58, _v$59, _v$60);
 })();
 
@@ -493,7 +488,7 @@ const template51 = (() => {
 })();
 const template52 = (() => {
   var _v$71 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$36, _v$71, _$ssrAttribute("quack", undefined, true));
+  return _$ssr(_tmpl$36, _v$71, _$ssrAttribute("quack", undefined));
 })();
 const template53 = (() => {
   var _v$72 = _$ssrHydrationKey();
@@ -501,20 +496,20 @@ const template53 = (() => {
 })();
 const template54 = (() => {
   var _v$73 = _$ssrHydrationKey(),
-    _v$74 = _$ssrRunInScope([() => _$ssrAttribute("quack", boolTest(), true)]);
+    _v$74 = _$ssrRunInScope([() => _$ssrAttribute("quack", boolTest())]);
   return _$ssr(_tmpl$38, _v$73, _v$74[0]);
 })();
 const template55 = (() => {
   var _v$75 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$39, _v$75, _$ssrAttribute("quack", boolTest, true));
+  return _$ssr(_tmpl$39, _v$75, _$ssrAttribute("quack", boolTest));
 })();
 const template56 = (() => {
   var _v$76 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$40, _v$76, _$ssrAttribute("quack", boolTestBinding, true));
+  return _$ssr(_tmpl$40, _v$76, _$ssrAttribute("quack", boolTestBinding));
 })();
 const template57 = (() => {
   var _v$77 = _$ssrHydrationKey(),
-    _v$78 = _$ssrRunInScope([() => _$ssrAttribute("quack", boolTestObjBinding.value, true)]);
+    _v$78 = _$ssrRunInScope([() => _$ssrAttribute("quack", boolTestObjBinding.value)]);
   return _$ssr(_tmpl$41, _v$77, _v$78[0]);
 })();
 const template58 = (() => {
@@ -522,7 +517,7 @@ const template58 = (() => {
   return _$ssr(
     _tmpl$42,
     _v$79,
-    _$ssrAttribute("quack", () => false, true)
+    _$ssrAttribute("quack", () => false)
   );
 })();
 const template59 = (() => {
@@ -609,20 +604,15 @@ const template79 = (() => {
 })();
 const template80 = (() => {
   var _v$100 = _$ssrHydrationKey();
-  return _$ssr(
-    _tmpl$57,
-    _v$100,
-    _$ssrAttribute("true", _$escape(true, true), false),
-    _$ssrAttribute("false", _$escape(false, true), false)
-  );
+  return _$ssr(_tmpl$57, _v$100);
 })();
 const template81 = (() => {
   var _v$101 = _$ssrHydrationKey();
   return _$ssr(
     _tmpl$58,
     _v$101,
-    _$ssrAttribute("i", _$escape(undefined, true), false),
-    _$ssrAttribute("j", _$escape(null, true), false),
-    _$ssrAttribute("k", void 0, false)
+    _$ssrAttribute("i", _$escape(undefined, true)),
+    _$ssrAttribute("j", _$escape(null, true)),
+    _$ssrAttribute("k", void 0)
   );
 })();

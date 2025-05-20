@@ -23,7 +23,6 @@ interface Runtime {
   dynamicProperty(props: any, key: string): any;
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
-  getPropAlias(prop: string, tagName: string): string | undefined;
   Properties: Set<string>;
   ChildProperties: Set<string>;
   DelegatedEvents: Set<string>;
@@ -204,9 +203,9 @@ export function createHTML(
       options.exprs.push(`r.className(${tag},${expr},${isSVG},_$p)`);
     } else if (
       namespace !== "attr" &&
-      (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) ||  namespace === "prop")
+      (isChildProp || (!isSVG && isProp) || namespace === "prop")
     ) {
-      options.exprs.push(`${tag}.${r.getPropAlias(name, node.name.toUpperCase()) || name} = ${expr}`);
+      options.exprs.push(`${tag}.${name} = ${expr}`);
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);

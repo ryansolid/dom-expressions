@@ -116,7 +116,7 @@ const template = (() => {
     _el$2,
     _$mergeProps(results, {
       foo: "",
-      disabled: true,
+      disabled: "",
       get title() {
         return welcoming();
       },
@@ -273,7 +273,7 @@ const template14 = (() => {
   _$effect(
     () => state.visible,
     _v$ => {
-      _el$20.checked = _v$;
+      _$setAttribute(_el$20, "checked", _v$);
     }
   );
   return _el$20;
@@ -323,7 +323,7 @@ const template20 = (() => {
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
   _$addEventListener(_el$28, "input", doSomethingElse, true);
-  _el$28.readOnly = value;
+  _$setAttribute(_el$28, "readonly", value);
   _$effect(
     () => ({
       e: min(),
@@ -348,7 +348,7 @@ const template20 = (() => {
     _el$27.value = _v$;
   });
   _$effect(s2, _v$ => {
-    _el$28.checked = _v$;
+    _$setAttribute(_el$28, "checked", _v$);
   });
   return _el$26;
 })();
@@ -372,7 +372,7 @@ const template23 = (() => {
   _$effect(
     () => "t" in test,
     _v$ => {
-      _el$31.disabled = _v$;
+      _$setAttribute(_el$31, "disabled", _v$);
     }
   );
   return _el$31;

@@ -1,6 +1,5 @@
 import * as t from "@babel/types";
 import {
-  getPropAlias,
   Properties,
   ChildProperties,
   SVGNamespace,
@@ -249,7 +248,6 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  const alias = getPropAlias(name, tagName.toUpperCase());
   if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || namespace === "prop")) {
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
@@ -260,7 +258,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
     }
     const assignment = t.assignmentExpression(
       "=",
-      t.memberExpression(elem, t.identifier(alias || name)),
+      t.memberExpression(elem, t.identifier(name)),
       value
     );
     // handle select/options... TODO: consider other ways in the future
@@ -1216,9 +1214,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         runningObject.push(
           t.objectProperty(
             t.stringLiteral(key),
-            isContainer
-              ? node.value.expression
-              : node.value || (Properties.has(key) ? t.booleanLiteral(true) : t.stringLiteral(""))
+            isContainer ? node.value.expression : node.value || t.stringLiteral("")
           )
         );
       }
