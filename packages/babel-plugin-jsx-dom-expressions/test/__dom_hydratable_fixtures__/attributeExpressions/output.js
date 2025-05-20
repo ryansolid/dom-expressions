@@ -67,8 +67,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
   _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
   _tmpl$50 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
-  _tmpl$51 = /*#__PURE__*/ _$template(`<div false falsestr=false falsestrjs=false>`),
-  _tmpl$52 = /*#__PURE__*/ _$template(`<div a b c d e f=0 g h l>`);
+  _tmpl$51 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
+  _tmpl$52 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}

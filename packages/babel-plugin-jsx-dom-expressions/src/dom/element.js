@@ -224,8 +224,8 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
       prevId
         ? [elem, value, t.booleanLiteral(isSVG), prevId]
         : isSVG
-        ? [elem, value, t.booleanLiteral(true)]
-        : [elem, value]
+          ? [elem, value, t.booleanLiteral(true)]
+          : [elem, value]
     );
   }
 
@@ -876,6 +876,17 @@ function transformAttributes(path, results) {
           return;
         }
         if (t.isJSXExpressionContainer(value)) value = value.expression;
+
+        // boolean as `<el attr={true | false}/>`, not as `<el attr={"true" | "false"}/>`
+        // `<el attr={true}/>` becomes `<el attr/>`
+        // `<el attr={false}/>` becomes `<el/>`
+        if (t.isBooleanLiteral(value)) {
+          if (value.value === true) {
+            results.template += `${needsSpacing ? " " : ""}${key}`;
+            needsSpacing = true;
+          }
+          return;
+        }
 
         // properties
         if (value && ChildProperties.has(key)) {

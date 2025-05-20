@@ -74,7 +74,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(
   ),
   _tmpl$51 = /*#__PURE__*/ _$template(`<div title="<u>data</u>"></div>`),
   _tmpl$52 = /*#__PURE__*/ _$template(`<div true truestr="true"truestrjs="true"></div>`),
-  _tmpl$53 = /*#__PURE__*/ _$template(`<div false falsestr="false"falsestrjs="false"></div>`),
+  _tmpl$53 = /*#__PURE__*/ _$template(`<div falsestr="false"falsestrjs="false"></div>`),
   _tmpl$54 = /*#__PURE__*/ _$template(
     `<math display="block"><mrow></mrow></math>`,
     false,
