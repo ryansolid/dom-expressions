@@ -35,7 +35,7 @@ import * as csstype from "csstype";
  *   through the component tree, not the dom tree.
  * - Native event handlers use the namespace `on:` such `on:click`, and wont be delegated. bubbling
  *   the dom tree.
- * - A global event handler can be added by extending `CustomEventHandlers<T>` interface
+ * - A global case-insensitive event handler can be added by extending `ElementEventHandlers<T>`
  * - A native `on:` event handler can be added by extending `CustomEvents<T>` interface
  *
  * ## Boolean Attributes (property setter that accepts `true | false`):
@@ -82,12 +82,6 @@ import * as csstype from "csstype";
  *
  * ## Interfaces
  *
- * Browser Hierarchy
- *
- * - $Element (ex HTMLDivElement <div>) -> ... -> HTMLElement -> Element -> Node
- * - $Element (all math elements are MathMLElement) MathMLElement -> Element -> Node
- * - $Element`(ex SVGMaskElement <mask>) -> ... -> SVGElement -> Element -> Node
- *
  * Events
  *
  * 1. An event handler goes in `ElementEventHandlers` when:
@@ -97,13 +91,19 @@ import * as csstype from "csstype";
  * 2. `<body>`, `<svg>`, `<framesete>` are special as these include `window` events
  * 3. Any other event is special for its own tag.
  *
+ * Browser Hierarchy
+ *
+ * - $Element (ex HTMLDivElement <div>) -> ... -> HTMLElement -> Element -> Node
+ * - $Element (all math elements are MathMLElement) MathMLElement -> Element -> Node
+ * - $Element`(ex SVGMaskElement <mask>) -> ... -> SVGElement -> Element -> Node
+ *
  * Attributes
  *
  *      <div> -> ... -> HTMLAttributes -> ElementAttributes
  *      <svg> -> ... -> SVGAttributes -> ElementAttributes
  *      <math> -> ... -> MathMLAttributes -> ElementAttributes
  *
- *      ElementAttributes = `Element` attributes (aka global attributes)
+ *      ElementAttributes = `Element` + `Node` attributes (aka global attributes)
  *
  *      HTMLAttributes = `HTMLElement` attributes (aka HTML global attributes)
  *      SVGAttributes = `SVGElement` attributes (aka SVG global attributes)
@@ -248,7 +248,6 @@ export namespace JSX {
   interface ExplicitAttributes {}
   interface ExplicitBoolAttributes {}
   interface CustomEvents {}
-  interface CustomEventHandlers<T> {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
   };
@@ -1017,7 +1016,7 @@ export namespace JSX {
   // GLOBAL ATTRIBUTES
 
   /**
-   * Global `Element` interface keys, shared by all tags regardless of their namespace:
+   * Global `Element` + `Node` interface keys, shared by all tags regardless of their namespace:
    *
    * 1. That's `keys` that are defined BY ALL `HTMLElement/SVGElement/MathMLElement` interfaces.
    * 2. Includes `keys` defined by `Element` and `Node` interfaces.
@@ -1031,7 +1030,6 @@ export namespace JSX {
       BoolAttributes,
       OnAttributes<T>,
       ElementEventHandlers<T>,
-      CustomEventHandlers<T>,
       AriaAttributes {
     // [key: ClassKeys]: boolean;
 
