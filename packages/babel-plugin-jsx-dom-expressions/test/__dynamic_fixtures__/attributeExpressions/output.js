@@ -63,8 +63,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
   _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
   _tmpl$50 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
-  _tmpl$51 = /*#__PURE__*/ _$template(`<div false falsestr=false falsestrjs=false>`),
-  _tmpl$52 = /*#__PURE__*/ _$template(`<div a b c d e f=0 g h l>`);
+  _tmpl$51 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
+  _tmpl$52 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -93,7 +93,7 @@ const template = (() => {
     _el$2,
     _$mergeProps(results, {
       foo: "",
-      disabled: true,
+      disabled: "",
       get title() {
         return welcoming();
       },
@@ -251,7 +251,7 @@ const template14 = (() => {
   _$effect(
     () => state.visible,
     _v$ => {
-      _el$20.checked = _v$;
+      _$setAttribute(_el$20, "checked", _v$);
     }
   );
   return _el$20;
@@ -302,7 +302,7 @@ const template20 = (() => {
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
   _$addEventListener(_el$28, "input", doSomethingElse, true);
-  _el$28.readOnly = value;
+  _$setAttribute(_el$28, "readonly", value);
   _$effect(
     () => ({
       e: min(),
@@ -327,7 +327,7 @@ const template20 = (() => {
     _el$27.value = _v$;
   });
   _$effect(s2, _v$ => {
-    _el$28.checked = _v$;
+    _$setAttribute(_el$28, "checked", _v$);
   });
   return _el$26;
 })();
@@ -351,7 +351,7 @@ const template23 = (() => {
   _$effect(
     () => "t" in test,
     _v$ => {
-      _el$31.disabled = _v$;
+      _$setAttribute(_el$31, "disabled", _v$);
     }
   );
   return _el$31;

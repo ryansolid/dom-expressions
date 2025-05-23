@@ -1,42 +1,5 @@
-const booleans = [
-  "allowfullscreen",
-  "async",
-  "autofocus",
-  "autoplay",
-  "checked",
-  "controls",
-  "default",
-  "disabled",
-  "formnovalidate",
-  "hidden",
-  "indeterminate",
-  "inert",
-  "ismap",
-  "loop",
-  "multiple",
-  "muted",
-  "nomodule",
-  "novalidate",
-  "open",
-  "playsinline",
-  "readonly",
-  "required",
-  "reversed",
-  "seamless",
-  "selected"
-];
-
-const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
-
 const Properties = /*#__PURE__*/ new Set([
   "value",
-  "readOnly",
-  "noValidate",
-  "formNoValidate",
-  "isMap",
-  "noModule",
-  "playsInline",
-  ...booleans
 ]);
 
 const ChildProperties = /*#__PURE__*/ new Set([
@@ -45,41 +8,6 @@ const ChildProperties = /*#__PURE__*/ new Set([
   "innerText",
   "children"
 ]);
-
-const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
-  class: "className",
-  novalidate: {
-    $: "noValidate",
-    FORM: 1
-  },
-  formnovalidate: {
-    $: "formNoValidate",
-    BUTTON: 1,
-    INPUT: 1
-  },
-  ismap: {
-    $: "isMap",
-    IMG: 1
-  },
-  nomodule: {
-    $: "noModule",
-    SCRIPT: 1
-  },
-  playsinline: {
-    $: "playsInline",
-    VIDEO: 1
-  },
-  readonly: {
-    $: "readOnly",
-    INPUT: 1,
-    TEXTAREA: 1
-  }
-});
-
-function getPropAlias(prop, tagName) {
-  const a = PropAliases[prop];
-  return typeof a === "object" ? (a[tagName] ? a["$"] : undefined) : a;
-}
 
 // list of Element events that will be delegated
 const DelegatedEvents = /*#__PURE__*/ new Set([
@@ -479,10 +407,8 @@ const DOMElements = /*#__PURE__*/ new Set([
 ]);
 
 export {
-  BooleanAttributes,
   Properties,
   ChildProperties,
-  getPropAlias,
   DelegatedEvents,
   SVGElements,
   SVGNamespace,

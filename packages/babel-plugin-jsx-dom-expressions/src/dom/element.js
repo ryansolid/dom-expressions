@@ -1,6 +1,5 @@
 import * as t from "@babel/types";
 import {
-  getPropAlias,
   Properties,
   ChildProperties,
   SVGNamespace,
@@ -224,8 +223,8 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
       prevId
         ? [elem, value, t.booleanLiteral(isSVG), prevId]
         : isSVG
-        ? [elem, value, t.booleanLiteral(true)]
-        : [elem, value]
+          ? [elem, value, t.booleanLiteral(true)]
+          : [elem, value]
     );
   }
 
@@ -249,7 +248,6 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  const alias = getPropAlias(name, tagName.toUpperCase());
   if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || namespace === "prop")) {
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
@@ -260,7 +258,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
     }
     const assignment = t.assignmentExpression(
       "=",
-      t.memberExpression(elem, t.identifier(alias || name)),
+      t.memberExpression(elem, t.identifier(name)),
       value
     );
     // handle select/options... TODO: consider other ways in the future
@@ -877,6 +875,17 @@ function transformAttributes(path, results) {
         }
         if (t.isJSXExpressionContainer(value)) value = value.expression;
 
+        // boolean as `<el attr={true | false}/>`, not as `<el attr={"true" | "false"}/>`
+        // `<el attr={true}/>` becomes `<el attr/>`
+        // `<el attr={false}/>` becomes `<el/>`
+        if (t.isBooleanLiteral(value)) {
+          if (value.value === true) {
+            results.template += `${needsSpacing ? " " : ""}${key}`;
+            needsSpacing = true;
+          }
+          return;
+        }
+
         // properties
         if (value && ChildProperties.has(key)) {
           results.exprs.push(
@@ -1205,9 +1214,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         runningObject.push(
           t.objectProperty(
             t.stringLiteral(key),
-            isContainer
-              ? node.value.expression
-              : node.value || (Properties.has(key) ? t.booleanLiteral(true) : t.stringLiteral(""))
+            isContainer ? node.value.expression : node.value || t.stringLiteral("")
           )
         );
       }
