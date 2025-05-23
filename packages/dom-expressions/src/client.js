@@ -121,7 +121,7 @@ export function setBoolAttribute(node, name, value) {
 
 export function className(node, value, isSVG, prev) {
   if (isHydrating(node)) return;
-  if (value == null) {
+  if (value == null || value === false) {
     prev && node.removeAttribute("class");
     return;
   }
