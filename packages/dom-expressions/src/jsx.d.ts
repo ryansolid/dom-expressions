@@ -1043,6 +1043,7 @@ export namespace JSX {
     elementtiming?: string | RemoveAttribute;
     id?: string | RemoveAttribute;
     nonce?: string | RemoveAttribute;
+    part?: string | RemoveAttribute;
     slot?: string | RemoveAttribute;
     style?: CSSProperties | string | RemoveAttribute;
     tabindex?: number | string | RemoveAttribute;
@@ -1111,11 +1112,15 @@ export namespace JSX {
       | RemoveAttribute;
     is?: string | RemoveAttribute;
     lang?: string | RemoveAttribute;
-    part?: string | RemoveAttribute;
     popover?: EnumeratedAcceptsEmpty | "manual" | "auto" | RemoveAttribute;
     spellcheck?: EnumeratedPseudoBoolean | EnumeratedAcceptsEmpty | RemoveAttribute;
     title?: string | RemoveAttribute;
     translate?: "yes" | "no" | RemoveAttribute;
+
+    /** @experimental */
+    virtualkeyboardpolicy?: EnumeratedAcceptsEmpty | "auto" | "manual" | RemoveAttribute;
+    /** @experimental */
+    writingsuggestions?: EnumeratedPseudoBoolean | RemoveAttribute;
 
     // Microdata
     itemid?: string | RemoveAttribute;
@@ -1390,6 +1395,9 @@ export namespace JSX {
      * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#usage_notes
      */
     tabindex?: never;
+
+    /** @experimental */
+    closedby: "any" | "closerequest" | "none" | RemoveAttribute;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | RemoveAttribute;
@@ -1474,6 +1482,7 @@ export namespace JSX {
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | RemoveAttribute;
+    browsingtopics?: string | RemoveAttribute;
     crossorigin?: HTMLCrossorigin | RemoveAttribute;
     decoding?: "sync" | "async" | "auto" | RemoveAttribute;
     fetchpriority?: "high" | "low" | "auto" | RemoveAttribute;
@@ -1704,6 +1713,7 @@ export namespace JSX {
     name?: string | RemoveAttribute;
     type?: string | RemoveAttribute;
     width?: number | string | RemoveAttribute;
+    wmode?: string | RemoveAttribute;
 
     /** @deprecated */
     align?: string | RemoveAttribute;
@@ -1778,6 +1788,7 @@ export namespace JSX {
     crossorigin?: HTMLCrossorigin | RemoveAttribute;
     defer?: BooleanAttribute | RemoveAttribute;
     fetchpriority?: "high" | "low" | "auto" | RemoveAttribute;
+    for?: string | RemoveAttribute;
     integrity?: string | RemoveAttribute;
     nomodule?: BooleanAttribute | RemoveAttribute;
     referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
@@ -1876,7 +1887,6 @@ export namespace JSX {
     readonly?: BooleanAttribute | RemoveAttribute;
     required?: BooleanAttribute | RemoveAttribute;
     rows?: number | string | RemoveAttribute;
-    value?: string | string[] | number | RemoveAttribute;
     wrap?: "hard" | "soft" | "off" | RemoveAttribute;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {

@@ -1042,6 +1042,7 @@ export namespace JSX {
     elementtiming?: FunctionMaybe<string | RemoveAttribute>;
     id?: FunctionMaybe<string | RemoveAttribute>;
     nonce?: FunctionMaybe<string | RemoveAttribute>;
+    part?: FunctionMaybe<string | RemoveAttribute>;
     slot?: FunctionMaybe<string | RemoveAttribute>;
     style?: FunctionMaybe<CSSProperties | string | RemoveAttribute>;
     tabindex?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -1098,11 +1099,17 @@ export namespace JSX {
     >;
     is?: FunctionMaybe<string | RemoveAttribute>;
     lang?: FunctionMaybe<string | RemoveAttribute>;
-    part?: FunctionMaybe<string | RemoveAttribute>;
     popover?: FunctionMaybe<EnumeratedAcceptsEmpty | "manual" | "auto" | RemoveAttribute>;
     spellcheck?: FunctionMaybe<EnumeratedPseudoBoolean | EnumeratedAcceptsEmpty | RemoveAttribute>;
     title?: FunctionMaybe<string | RemoveAttribute>;
     translate?: FunctionMaybe<"yes" | "no" | RemoveAttribute>;
+
+    /** @experimental */
+    virtualkeyboardpolicy?: FunctionMaybe<
+      EnumeratedAcceptsEmpty | "auto" | "manual" | RemoveAttribute
+    >;
+    /** @experimental */
+    writingsuggestions?: FunctionMaybe<EnumeratedPseudoBoolean | RemoveAttribute>;
 
     // Microdata
     itemid?: FunctionMaybe<string | RemoveAttribute>;
@@ -1386,6 +1393,9 @@ export namespace JSX {
      * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#usage_notes
      */
     tabindex?: never;
+
+    /** @experimental */
+    closedby: FunctionMaybe<"any" | "closerequest" | "none" | RemoveAttribute>;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -1472,6 +1482,7 @@ export namespace JSX {
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: FunctionMaybe<string | RemoveAttribute>;
+    browsingtopics?: FunctionMaybe<string | RemoveAttribute>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
     decoding?: FunctionMaybe<"sync" | "async" | "auto" | RemoveAttribute>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | RemoveAttribute>;
@@ -1707,6 +1718,7 @@ export namespace JSX {
     name?: FunctionMaybe<string | RemoveAttribute>;
     type?: FunctionMaybe<string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
+    wmode?: FunctionMaybe<string | RemoveAttribute>;
 
     /** @deprecated */
     align?: FunctionMaybe<string | RemoveAttribute>;
@@ -1781,6 +1793,7 @@ export namespace JSX {
     crossorigin?: FunctionMaybe<HTMLCrossorigin | RemoveAttribute>;
     defer?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | RemoveAttribute>;
+    for?: FunctionMaybe<string | RemoveAttribute>;
     integrity?: FunctionMaybe<string | RemoveAttribute>;
     nomodule?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
@@ -1881,7 +1894,6 @@ export namespace JSX {
     readonly?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     required?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     rows?: FunctionMaybe<number | string | RemoveAttribute>;
-    value?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
     wrap?: FunctionMaybe<"hard" | "soft" | "off" | RemoveAttribute>;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
