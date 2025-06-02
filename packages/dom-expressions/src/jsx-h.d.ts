@@ -1894,6 +1894,7 @@ export namespace JSX {
     readonly?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     required?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     rows?: FunctionMaybe<number | string | RemoveAttribute>;
+    value?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
     wrap?: FunctionMaybe<"hard" | "soft" | "off" | RemoveAttribute>;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
