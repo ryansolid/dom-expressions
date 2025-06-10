@@ -165,7 +165,8 @@ export namespace JSX {
   > = EHandler | BoundEventHandler<T, E, EHandler>;
 
   interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
-    extends AddEventListenerOptions {
+    extends AddEventListenerOptions,
+      EventListenerOptions {
     handleEvent: EHandler;
   }
 
