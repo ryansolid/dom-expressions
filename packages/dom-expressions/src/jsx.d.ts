@@ -1435,6 +1435,9 @@ export namespace JSX {
      * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#usage_notes
      */
     tabindex?: never;
+
+    /** @experimental */
+    closedby: "any" | "closerequest" | "none" | undefined;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
