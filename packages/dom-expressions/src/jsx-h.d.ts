@@ -784,12 +784,12 @@ export namespace JSX {
     onClose?: EventHandlerUnion<T, Event> | undefined;
     // TODO `CommandEvent` is currently undefined in TS
     onCommand?: EventHandlerUnion<T, Event> | undefined;
-    onContentVisibilityAutoStateChange?:
-      | EventHandlerUnion<T, ContentVisibilityAutoStateChangeEvent>
-      | undefined;
     onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onContentVisibilityAutoStateChange?:
+      | EventHandlerUnion<T, ContentVisibilityAutoStateChangeEvent>
+      | undefined;
     onContextLost?: EventHandlerUnion<T, Event> | undefined;
     onContextMenu?: EventHandlerUnion<T, PointerEvent> | undefined;
     onContextRestored?: EventHandlerUnion<T, Event> | undefined;
@@ -888,11 +888,11 @@ export namespace JSX {
     "on:auxclick"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:beforecopy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:beforecut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
-    "on:beforematch"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:beforepaste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:beforeinput"?:
       | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
       | undefined;
+    "on:beforematch"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:beforepaste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
     "on:beforexrselect"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:blur"?:
@@ -901,17 +901,17 @@ export namespace JSX {
     "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplay"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
     "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     // TODO `CommandEvent` is currently undefined in TS
     "on:command"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:contentvisibilityautostatechange"?:
-      | EventHandlerWithOptionsUnion<T, ContentVisibilityAutoStateChangeEvent>
-      | undefined;
     "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:contentvisibilityautostatechange"?:
+      | EventHandlerWithOptionsUnion<T, ContentVisibilityAutoStateChangeEvent>
+      | undefined;
     "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:contextmenu"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
