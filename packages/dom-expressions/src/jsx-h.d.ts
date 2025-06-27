@@ -30,7 +30,7 @@ import * as csstype from "csstype";
  *   through the component tree, not the dom tree.
  * - Native event handlers use the namespace `on:` such `on:click`, and wont be delegated. bubbling
  *   the dom tree.
- * - A global case-insensitive event handler can be added by extending `ElementEventHandlers<T>`
+ * - A global case-insensitive event handler can be added by extending `EventHandlersElement<T>`
  * - A native `on:` event handler can be added by extending `CustomEvents<T>` interface
  *
  * ## Boolean Attributes (property setter that accepts `true | false`):
@@ -79,7 +79,7 @@ import * as csstype from "csstype";
  *
  * Events
  *
- * 1. An event handler goes in `ElementEventHandlers` when:
+ * 1. An event handler goes in `EventHandlersElement` when:
  *
  *    - `event` is global, that's to be defined in `HTMLElement` AND `SVGElement` AND `MathMLElement`
  *    - `event` is defined in `Element` (as `HTMLElement/MathMLElement/SVGElement` -> `Element`)
@@ -702,10 +702,10 @@ export namespace JSX {
   /**
    * `Window` events, defined for `<body>`, `<svg>`, `<frameset>` tags.
    *
-   * Excluding `ElementEventHandlers` events already defined as globals that all tags share, such as
+   * Excluding `EventHandlersElement` events already defined as globals that all tags share, such as
    * `onblur`.
    */
-  interface WindowEventHandlers<T> {
+  interface EventHandlersWindow<T> {
     onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
     onBeforePrint?: EventHandlerUnion<T, Event> | undefined;
     onBeforeUnload?: EventHandlerUnion<T, BeforeUnloadEvent> | undefined;
@@ -754,14 +754,14 @@ export namespace JSX {
   }
 
   /**
-   * Global `ElementEventHandlers`, defined for all tags.
+   * Global `EventHandlersElement`, defined for all tags.
    *
    * That's events defined and shared BY ALL of the `HTMLElement/SVGElement/MathMLElement`
    * interfaces.
    *
    * Includes events defined for the `Element` interface.
    */
-  interface ElementEventHandlers<T> {
+  interface EventHandlersElement<T> {
     onAbort?: EventHandlerUnion<T, UIEvent> | undefined;
     onAnimationCancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationEnd?: EventHandlerUnion<T, AnimationEvent> | undefined;
@@ -1029,7 +1029,7 @@ export namespace JSX {
       AttrAttributes,
       BoolAttributes,
       OnAttributes<T>,
-      ElementEventHandlers<T>,
+      EventHandlersElement<T>,
       AriaAttributes {
     // [key: ClassKeys]: boolean;
 
@@ -1301,7 +1301,7 @@ export namespace JSX {
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: FunctionMaybe<string | RemoveAttribute>;
   }
-  interface BodyHTMLAttributes<T> extends HTMLAttributes<T>, WindowEventHandlers<T> {}
+  interface BodyHTMLAttributes<T> extends HTMLAttributes<T>, EventHandlersWindow<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     form?: FunctionMaybe<string | RemoveAttribute>;
@@ -2767,7 +2767,7 @@ export namespace JSX {
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
       PresentationSVGAttributes,
-      WindowEventHandlers<T> {
+      EventHandlersWindow<T> {
     "xmlns:xlink"?: FunctionMaybe<string | RemoveAttribute>;
     contentScriptType?: FunctionMaybe<string | RemoveAttribute>;
     contentStyleType?: FunctionMaybe<string | RemoveAttribute>;
