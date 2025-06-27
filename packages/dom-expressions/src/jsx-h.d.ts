@@ -1013,6 +1013,23 @@ export namespace JSX {
     "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
   }
 
+  type EventType =
+    | (keyof EventHandlersWindow<any> extends infer K
+        ? K extends `on:${infer T}`
+          ? T
+          : K extends `on${infer T}`
+            ? Lowercase<T>
+            : never
+        : never)
+    | (keyof EventHandlersElement<any> extends infer K
+        ? K extends `on:${infer T}`
+          ? T
+          : K extends `on${infer T}`
+            ? Lowercase<T>
+            : never
+        : never)
+    | (string & {});
+
   // GLOBAL ATTRIBUTES
 
   /**
