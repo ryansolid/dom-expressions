@@ -226,3 +226,15 @@ const template44 = (
     <style {...styleProps()} textContent={css()} />
   </>
 );
+
+const nope = () => undefined;
+
+const template45 = (
+  <div
+    class="bg-(--bg)"
+    style={{
+      "--bg": nope(),
+    }}
+  />
+);
+
