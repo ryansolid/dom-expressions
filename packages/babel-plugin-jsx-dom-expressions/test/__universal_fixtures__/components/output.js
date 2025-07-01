@@ -155,136 +155,136 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 const template10 = (() => {
-  var _el$13 = _$createElement("div"),
+  var _el$11 = _$createElement("div"),
+    _el$12 = _$createTextNode(` | `),
+    _el$13 = _$createTextNode(` | `),
     _el$14 = _$createTextNode(` | `),
     _el$15 = _$createTextNode(` | `),
-    _el$16 = _$createTextNode(` | `),
-    _el$17 = _$createTextNode(` | `),
-    _el$18 = _$createTextNode(` | `);
-  _$insertNode(_el$13, _el$14);
-  _$insertNode(_el$13, _el$15);
-  _$insertNode(_el$13, _el$16);
-  _$insertNode(_el$13, _el$17);
-  _$insertNode(_el$13, _el$18);
+    _el$16 = _$createTextNode(` | `);
+  _$insertNode(_el$11, _el$12);
+  _$insertNode(_el$11, _el$13);
+  _$insertNode(_el$11, _el$14);
+  _$insertNode(_el$11, _el$15);
+  _$insertNode(_el$11, _el$16);
   _$insert(
-    _el$13,
+    _el$11,
     _$createComponent(Link, {
       children: "new"
+    }),
+    _el$12
+  );
+  _$insert(
+    _el$11,
+    _$createComponent(Link, {
+      children: "comments"
+    }),
+    _el$13
+  );
+  _$insert(
+    _el$11,
+    _$createComponent(Link, {
+      children: "show"
     }),
     _el$14
   );
   _$insert(
-    _el$13,
+    _el$11,
     _$createComponent(Link, {
-      children: "comments"
+      children: "ask"
     }),
     _el$15
   );
   _$insert(
-    _el$13,
+    _el$11,
     _$createComponent(Link, {
-      children: "show"
+      children: "jobs"
     }),
     _el$16
   );
   _$insert(
-    _el$13,
+    _el$11,
     _$createComponent(Link, {
-      children: "ask"
+      children: "submit"
     }),
-    _el$17
+    null
   );
+  return _el$11;
+})();
+const template11 = (() => {
+  var _el$17 = _$createElement("div"),
+    _el$18 = _$createTextNode(` | `),
+    _el$19 = _$createTextNode(` | `),
+    _el$20 = _$createTextNode(` | `);
+  _$insertNode(_el$17, _el$18);
+  _$insertNode(_el$17, _el$19);
+  _$insertNode(_el$17, _el$20);
   _$insert(
-    _el$13,
+    _el$17,
     _$createComponent(Link, {
-      children: "jobs"
+      children: "new"
     }),
     _el$18
   );
   _$insert(
-    _el$13,
+    _el$17,
     _$createComponent(Link, {
-      children: "submit"
+      children: "comments"
     }),
-    null
+    _el$19
   );
-  return _el$13;
-})();
-const template11 = (() => {
-  var _el$19 = _$createElement("div"),
-    _el$20 = _$createTextNode(` | `),
-    _el$21 = _$createTextNode(` | `),
-    _el$22 = _$createTextNode(` | `);
-  _$insertNode(_el$19, _el$20);
-  _$insertNode(_el$19, _el$21);
-  _$insertNode(_el$19, _el$22);
   _$insert(
-    _el$19,
+    _el$17,
     _$createComponent(Link, {
-      children: "new"
+      children: "show"
+    }),
+    _el$19
+  );
+  _$insert(
+    _el$17,
+    _$createComponent(Link, {
+      children: "ask"
     }),
     _el$20
   );
   _$insert(
-    _el$19,
-    _$createComponent(Link, {
-      children: "comments"
-    }),
-    _el$21
-  );
-  _$insert(
-    _el$19,
-    _$createComponent(Link, {
-      children: "show"
-    }),
-    _el$21
-  );
-  _$insert(
-    _el$19,
-    _$createComponent(Link, {
-      children: "ask"
-    }),
-    _el$22
-  );
-  _$insert(
-    _el$19,
+    _el$17,
     _$createComponent(Link, {
       children: "jobs"
     }),
-    _el$22
+    _el$20
   );
   _$insert(
-    _el$19,
+    _el$17,
     _$createComponent(Link, {
       children: "submit"
     }),
     null
   );
-  return _el$19;
+  return _el$17;
 })();
 const template12 = (() => {
-  var _el$23 = _$createElement("div"),
-    _el$24 = _$createTextNode(` | `),
-    _el$25 = _$createTextNode(` |  |  | `),
-    _el$28 = _$createTextNode(` | `);
-  _$insertNode(_el$23, _el$24);
-  _$insertNode(_el$23, _el$25);
-  _$insertNode(_el$23, _el$28);
+  var _el$21 = _$createElement("div"),
+    _el$22 = _$createTextNode(` | `),
+    _el$23 = _$createTextNode(` |  |  | `),
+    _el$26 = _$createTextNode(` | `);
+  _$insertNode(_el$21, _el$22);
+  _$insertNode(_el$21, _el$23);
+  _$insertNode(_el$21, _el$26);
   _$insert(
-    _el$23,
+    _el$21,
     _$createComponent(Link, {
       children: "comments"
     }),
-    _el$25
+    _el$23
   );
   _$insert(
-    _el$23,
+    _el$21,
     _$createComponent(Link, {
       children: "show"
     }),
-    _el$28
+    _el$26
   );
-  return _el$23;
+  return _el$21;
 })();
 class Template13 {
   render() {
@@ -326,21 +326,21 @@ const Template17 = _$createComponent(Pre, {
   get children() {
     return [
       (() => {
+        var _el$27 = _$createElement("span");
+        _$insertNode(_el$27, _$createTextNode(`1`));
+        return _el$27;
+      })(),
+      " ",
+      (() => {
         var _el$29 = _$createElement("span");
-        _$insertNode(_el$29, _$createTextNode(`1`));
+        _$insertNode(_el$29, _$createTextNode(`2`));
         return _el$29;
       })(),
       " ",
       (() => {
         var _el$31 = _$createElement("span");
-        _$insertNode(_el$31, _$createTextNode(`2`));
+        _$insertNode(_el$31, _$createTextNode(`3`));
         return _el$31;
-      })(),
-      " ",
-      (() => {
-        var _el$33 = _$createElement("span");
-        _$insertNode(_el$33, _$createTextNode(`3`));
-        return _el$33;
       })()
     ];
   }
@@ -349,19 +349,19 @@ const Template18 = _$createComponent(Pre, {
   get children() {
     return [
       (() => {
+        var _el$33 = _$createElement("span");
+        _$insertNode(_el$33, _$createTextNode(`1`));
+        return _el$33;
+      })(),
+      (() => {
         var _el$35 = _$createElement("span");
-        _$insertNode(_el$35, _$createTextNode(`1`));
+        _$insertNode(_el$35, _$createTextNode(`2`));
         return _el$35;
       })(),
       (() => {
         var _el$37 = _$createElement("span");
-        _$insertNode(_el$37, _$createTextNode(`2`));
+        _$insertNode(_el$37, _$createTextNode(`3`));
         return _el$37;
-      })(),
-      (() => {
-        var _el$39 = _$createElement("span");
-        _$insertNode(_el$39, _$createTextNode(`3`));
-        return _el$39;
       })()
     ];
   }

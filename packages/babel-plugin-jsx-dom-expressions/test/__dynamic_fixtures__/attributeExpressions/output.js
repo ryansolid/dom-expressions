@@ -93,22 +93,22 @@ const template3 = (() => {
   return _el$9;
 })();
 const template4 = (() => {
-  var _el$10 = _tmpl$3();
-  _$classList(_el$10, {
+  var _el$0 = _tmpl$3();
+  _$classList(_el$0, {
     "ccc:ddd": true
   });
-  _$effect(() => _$className(_el$10, `hi ${state.class || ""}`));
-  return _el$10;
+  _$effect(() => _$className(_el$0, `hi ${state.class || ""}`));
+  return _el$0;
 })();
 const template5 = _tmpl$4();
 const template6 = (() => {
-  var _el$12 = _tmpl$3();
-  _el$12.textContent = "Hi";
-  _$effect(_$p => _$style(_el$12, someStyle(), _$p));
-  return _el$12;
+  var _el$10 = _tmpl$3();
+  _el$10.textContent = "Hi";
+  _$effect(_$p => _$style(_el$10, someStyle(), _$p));
+  return _el$10;
 })();
 const template7 = (() => {
-  var _el$13 = _tmpl$3();
+  var _el$11 = _tmpl$3();
   _$effect(
     _p$ => {
       var _v$ = {
@@ -118,12 +118,12 @@ const template7 = (() => {
         },
         _v$2 = props.top,
         _v$3 = !!props.active;
-      _p$.e = _$style(_el$13, _v$, _p$.e);
+      _p$.e = _$style(_el$11, _v$, _p$.e);
       _v$2 !== _p$.t &&
         ((_p$.t = _v$2) != null
-          ? _el$13.style.setProperty("padding-top", _v$2)
-          : _el$13.style.removeProperty("padding-top"));
-      _v$3 !== _p$.a && _el$13.classList.toggle("my-class", (_p$.a = _v$3));
+          ? _el$11.style.setProperty("padding-top", _v$2)
+          : _el$11.style.removeProperty("padding-top"));
+      _v$3 !== _p$.a && _el$11.classList.toggle("my-class", (_p$.a = _v$3));
       return _p$;
     },
     {
@@ -132,91 +132,91 @@ const template7 = (() => {
       a: undefined
     }
   );
-  return _el$13;
+  return _el$11;
 })();
 let refTarget;
 const template8 = (() => {
-  var _el$14 = _tmpl$3();
+  var _el$12 = _tmpl$3();
   var _ref$2 = refTarget;
-  typeof _ref$2 === "function" ? _$use(_ref$2, _el$14) : (refTarget = _el$14);
-  return _el$14;
+  typeof _ref$2 === "function" ? _$use(_ref$2, _el$12) : (refTarget = _el$12);
+  return _el$12;
 })();
 const template9 = (() => {
-  var _el$15 = _tmpl$3();
-  _$use(e => console.log(e), _el$15);
-  return _el$15;
+  var _el$13 = _tmpl$3();
+  _$use(e => console.log(e), _el$13);
+  return _el$13;
 })();
 const template10 = (() => {
-  var _el$16 = _tmpl$3();
+  var _el$14 = _tmpl$3();
   var _ref$3 = refFactory();
-  typeof _ref$3 === "function" && _$use(_ref$3, _el$16);
-  return _el$16;
+  typeof _ref$3 === "function" && _$use(_ref$3, _el$14);
+  return _el$14;
 })();
 const template11 = (() => {
-  var _el$17 = _tmpl$3();
-  _$use(another, _el$17, () => thing);
-  _$use(something, _el$17, () => true);
-  return _el$17;
+  var _el$15 = _tmpl$3();
+  _$use(another, _el$15, () => thing);
+  _$use(something, _el$15, () => true);
+  return _el$15;
 })();
 const template12 = (() => {
-  var _el$18 = _tmpl$3();
-  _el$18.htmlFor = thing;
-  return _el$18;
+  var _el$16 = _tmpl$3();
+  _el$16.htmlFor = thing;
+  return _el$16;
 })();
 const template13 = (() => {
-  var _el$19 = _tmpl$5();
-  _el$19.checked = true;
-  return _el$19;
+  var _el$17 = _tmpl$5();
+  _el$17.checked = true;
+  return _el$17;
 })();
 const template14 = (() => {
-  var _el$20 = _tmpl$6();
-  _el$20.readOnly = value;
-  _$effect(() => (_el$20.checked = state.visible));
-  return _el$20;
+  var _el$18 = _tmpl$6();
+  _el$18.readOnly = value;
+  _$effect(() => (_el$18.checked = state.visible));
+  return _el$18;
 })();
 const template15 = (() => {
-  var _el$21 = _$createElement("mesh");
-  _$setProp(_el$21, "scale", [1, 1, 1]);
-  _$setProp(_el$21, "rotateX", 0);
-  return _el$21;
+  var _el$19 = _$createElement("mesh");
+  _$setProp(_el$19, "scale", [1, 1, 1]);
+  _$setProp(_el$19, "rotateX", 0);
+  return _el$19;
 })();
 const template16 = (() => {
-  var _el$22 = _tmpl$3();
-  _$use(zero, _el$22, () => 0);
-  _$use(something, _el$22, () => true);
-  _$spread(_el$22, somethingElse, false, false);
-  return _el$22;
+  var _el$20 = _tmpl$3();
+  _$use(zero, _el$20, () => 0);
+  _$use(something, _el$20, () => true);
+  _$spread(_el$20, somethingElse, false, false);
+  return _el$20;
 })();
 const template17 = (() => {
-  var _el$23 = _tmpl$3();
+  var _el$21 = _tmpl$3();
   var _ref$4 = a().b.c;
-  typeof _ref$4 === "function" ? _$use(_ref$4, _el$23) : (a().b.c = _el$23);
-  return _el$23;
+  typeof _ref$4 === "function" ? _$use(_ref$4, _el$21) : (a().b.c = _el$21);
+  return _el$21;
 })();
 const template18 = (() => {
-  var _el$24 = _tmpl$3();
+  var _el$22 = _tmpl$3();
   var _ref$5 = a().b?.c;
-  typeof _ref$5 === "function" && _$use(_ref$5, _el$24);
-  return _el$24;
+  typeof _ref$5 === "function" && _$use(_ref$5, _el$22);
+  return _el$22;
 })();
 const template19 = (() => {
-  var _el$25 = _tmpl$3();
+  var _el$23 = _tmpl$3();
   var _ref$6 = a() ? b : c;
-  typeof _ref$6 === "function" && _$use(_ref$6, _el$25);
-  return _el$25;
+  typeof _ref$6 === "function" && _$use(_ref$6, _el$23);
+  return _el$23;
 })();
 const template20 = (() => {
-  var _el$26 = _tmpl$3();
+  var _el$24 = _tmpl$3();
   var _ref$7 = a() ?? b;
-  typeof _ref$7 === "function" && _$use(_ref$7, _el$26);
-  return _el$26;
+  typeof _ref$7 === "function" && _$use(_ref$7, _el$24);
+  return _el$24;
 })();
 const template21 = (() => {
-  var _el$27 = _tmpl$3();
+  var _el$25 = _tmpl$3();
   _$effect(_$p =>
     (_$p = a()) != null
-      ? _el$27.style.setProperty("color", _$p)
-      : _el$27.style.removeProperty("color")
+      ? _el$25.style.setProperty("color", _$p)
+      : _el$25.style.removeProperty("color")
   );
-  return _el$27;
+  return _el$25;
 })();

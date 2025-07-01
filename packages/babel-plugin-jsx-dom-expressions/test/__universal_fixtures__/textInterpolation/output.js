@@ -30,74 +30,74 @@ const trailingExpr = (() => {
 })();
 const leadingExpr = (() => {
   var _el$9 = _$createElement("span"),
-    _el$10 = _$createTextNode(` John`);
-  _$insertNode(_el$9, _el$10);
-  _$insert(_el$9, greeting, _el$10);
+    _el$0 = _$createTextNode(` John`);
+  _$insertNode(_el$9, _el$0);
+  _$insert(_el$9, greeting, _el$0);
   return _el$9;
 })();
 
 /* prettier-ignore */
 const multiExpr = (() => {
-  var _el$11 = _$createElement("span"),
-    _el$12 = _$createTextNode(` `);
-  _$insertNode(_el$11, _el$12);
-  _$insert(_el$11, greeting, _el$12);
-  _$insert(_el$11, name, null);
-  return _el$11;
+  var _el$1 = _$createElement("span"),
+    _el$10 = _$createTextNode(` `);
+  _$insertNode(_el$1, _el$10);
+  _$insert(_el$1, greeting, _el$10);
+  _$insert(_el$1, name, null);
+  return _el$1;
 })();
 
 /* prettier-ignore */
 const multiExprSpaced = (() => {
-  var _el$13 = _$createElement("span"),
-    _el$14 = _$createTextNode(` `),
-    _el$15 = _$createTextNode(` `),
-    _el$16 = _$createTextNode(` `);
-  _$insertNode(_el$13, _el$14);
-  _$insertNode(_el$13, _el$15);
-  _$insertNode(_el$13, _el$16);
-  _$insert(_el$13, greeting, _el$15);
-  _$insert(_el$13, name, _el$16);
-  return _el$13;
+  var _el$11 = _$createElement("span"),
+    _el$12 = _$createTextNode(` `),
+    _el$13 = _$createTextNode(` `),
+    _el$14 = _$createTextNode(` `);
+  _$insertNode(_el$11, _el$12);
+  _$insertNode(_el$11, _el$13);
+  _$insertNode(_el$11, _el$14);
+  _$insert(_el$11, greeting, _el$13);
+  _$insert(_el$11, name, _el$14);
+  return _el$11;
 })();
 
 /* prettier-ignore */
 const multiExprTogether = (() => {
-  var _el$17 = _$createElement("span"),
-    _el$18 = _$createTextNode(` `),
-    _el$19 = _$createTextNode(` `);
-  _$insertNode(_el$17, _el$18);
-  _$insertNode(_el$17, _el$19);
-  _$insert(_el$17, greeting, _el$19);
-  _$insert(_el$17, name, _el$19);
-  return _el$17;
+  var _el$15 = _$createElement("span"),
+    _el$16 = _$createTextNode(` `),
+    _el$17 = _$createTextNode(` `);
+  _$insertNode(_el$15, _el$16);
+  _$insertNode(_el$15, _el$17);
+  _$insert(_el$15, greeting, _el$17);
+  _$insert(_el$15, name, _el$17);
+  return _el$15;
 })();
 
 /* prettier-ignore */
 const multiLine = (() => {
-  var _el$20 = _$createElement("span");
-  _$insertNode(_el$20, _$createTextNode(`Hello`));
-  return _el$20;
+  var _el$18 = _$createElement("span");
+  _$insertNode(_el$18, _$createTextNode(`Hello`));
+  return _el$18;
 })();
 
 /* prettier-ignore */
 const multiLineTrailingSpace = (() => {
+  var _el$20 = _$createElement("span");
+  _$insertNode(_el$20, _$createTextNode(`Hello John`));
+  return _el$20;
+})();
+
+/* prettier-ignore */
+const multiLineNoTrailingSpace = (() => {
   var _el$22 = _$createElement("span");
   _$insertNode(_el$22, _$createTextNode(`Hello John`));
   return _el$22;
 })();
 
 /* prettier-ignore */
-const multiLineNoTrailingSpace = (() => {
-  var _el$24 = _$createElement("span");
-  _$insertNode(_el$24, _$createTextNode(`Hello John`));
-  return _el$24;
-})();
-
-/* prettier-ignore */
 const escape = (() => {
-  var _el$26 = _$createElement("span");
-  _$insertNode(_el$26, _$createTextNode(`&nbsp;&lt;Hi&gt;&nbsp;`));
-  return _el$26;
+  var _el$24 = _$createElement("span");
+  _$insertNode(_el$24, _$createTextNode(`&nbsp;&lt;Hi&gt;&nbsp;`));
+  return _el$24;
 })();
 
 /* prettier-ignore */
@@ -108,47 +108,47 @@ const escape2 = _$createComponent(Comp, {
 /* prettier-ignore */
 const escape3 = "\xA0<Hi>\xA0";
 const injection = (() => {
-  var _el$28 = _$createElement("span"),
-    _el$29 = _$createTextNode(`Hi&lt;script>alert();&lt;/script>`);
-  _$insertNode(_el$28, _el$29);
-  return _el$28;
+  var _el$26 = _$createElement("span"),
+    _el$27 = _$createTextNode(`Hi&lt;script>alert();&lt;/script>`);
+  _$insertNode(_el$26, _el$27);
+  return _el$26;
 })();
 let value = "World";
 const evaluated = (() => {
-  var _el$31 = _$createElement("span"),
-    _el$32 = _$createTextNode(`Hello World!`);
-  _$insertNode(_el$31, _el$32);
-  return _el$31;
+  var _el$29 = _$createElement("span"),
+    _el$30 = _$createTextNode(`Hello World!`);
+  _$insertNode(_el$29, _el$30);
+  return _el$29;
 })();
 let number = 4 + 5;
 const evaluatedNonString = (() => {
-  var _el$34 = _$createElement("span"),
-    _el$35 = _$createTextNode(`4 + 5 = 9`);
-  _$insertNode(_el$34, _el$35);
-  return _el$34;
+  var _el$32 = _$createElement("span"),
+    _el$33 = _$createTextNode(`4 + 5 = 9`);
+  _$insertNode(_el$32, _el$33);
+  return _el$32;
 })();
 const newLineLiteral = (() => {
-  var _el$37 = _$createElement("div"),
-    _el$38 = _$createTextNode(`\nd`);
-  _$insertNode(_el$37, _el$38);
-  _$insert(_el$37, s, _el$38);
-  return _el$37;
+  var _el$35 = _$createElement("div"),
+    _el$36 = _$createTextNode(`\nd`);
+  _$insertNode(_el$35, _el$36);
+  _$insert(_el$35, s, _el$36);
+  return _el$35;
 })();
 const trailingSpace = (() => {
-  var _el$40 = _$createElement("div");
-  _$insert(_el$40, expr);
-  return _el$40;
+  var _el$38 = _$createElement("div");
+  _$insert(_el$38, expr);
+  return _el$38;
 })();
 const trailingSpaceComp = _$createComponent(Comp, {
   children: expr
 });
 const trailingSpaceFrag = expr;
 const leadingSpaceElement = (() => {
-  var _el$41 = _$createElement("span"),
-    _el$42 = _$createTextNode(` `);
-  _$insertNode(_el$41, _el$42);
-  _$insert(_el$41, expr, null);
-  return _el$41;
+  var _el$39 = _$createElement("span"),
+    _el$40 = _$createTextNode(` `);
+  _$insertNode(_el$39, _el$40);
+  _$insert(_el$39, expr, null);
+  return _el$39;
 })();
 const leadingSpaceComponent = _$createComponent(Div, {
   get children() {
@@ -157,11 +157,11 @@ const leadingSpaceComponent = _$createComponent(Div, {
 });
 const leadingSpaceFragment = [" ", expr];
 const trailingSpaceElement = (() => {
-  var _el$43 = _$createElement("span"),
-    _el$44 = _$createTextNode(` `);
-  _$insertNode(_el$43, _el$44);
-  _$insert(_el$43, expr, _el$44);
-  return _el$43;
+  var _el$41 = _$createElement("span"),
+    _el$42 = _$createTextNode(` `);
+  _$insertNode(_el$41, _el$42);
+  _$insert(_el$41, expr, _el$42);
+  return _el$41;
 })();
 const trailingSpaceComponent = _$createComponent(Div, {
   get children() {
@@ -170,10 +170,10 @@ const trailingSpaceComponent = _$createComponent(Div, {
 });
 const trailingSpaceFragment = [expr, " "];
 const escapeAttribute = (() => {
-  var _el$45 = _$createElement("div");
-  _$setProp(_el$45, "normal", "Search&hellip;");
-  _$setProp(_el$45, "title", "Search&hellip;");
-  return _el$45;
+  var _el$43 = _$createElement("div");
+  _$setProp(_el$43, "normal", "Search&hellip;");
+  _$setProp(_el$43, "title", "Search&hellip;");
+  return _el$43;
 })();
 const escapeCompAttribute = _$createComponent(Div, {
   normal: "Search\u2026",

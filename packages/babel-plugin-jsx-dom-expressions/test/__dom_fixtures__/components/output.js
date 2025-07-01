@@ -165,133 +165,133 @@ const template9 = _$createComponent(_garbage, {
   children: "Hi"
 });
 const template10 = (() => {
-  var _el$12 = _tmpl$4(),
-    _el$13 = _el$12.firstChild,
+  var _el$10 = _tmpl$4(),
+    _el$11 = _el$10.firstChild,
+    _el$16 = _el$11.nextSibling,
+    _el$12 = _el$16.nextSibling,
+    _el$17 = _el$12.nextSibling,
+    _el$13 = _el$17.nextSibling,
     _el$18 = _el$13.nextSibling,
     _el$14 = _el$18.nextSibling,
     _el$19 = _el$14.nextSibling,
-    _el$15 = _el$19.nextSibling,
-    _el$20 = _el$15.nextSibling,
-    _el$16 = _el$20.nextSibling,
-    _el$21 = _el$16.nextSibling,
-    _el$17 = _el$21.nextSibling;
+    _el$15 = _el$19.nextSibling;
   _$insert(
-    _el$12,
+    _el$10,
     _$createComponent(Link, {
       children: "new"
     }),
-    _el$13
+    _el$11
   );
   _$insert(
-    _el$12,
+    _el$10,
     _$createComponent(Link, {
       children: "comments"
+    }),
+    _el$16
+  );
+  _$insert(
+    _el$10,
+    _$createComponent(Link, {
+      children: "show"
+    }),
+    _el$17
+  );
+  _$insert(
+    _el$10,
+    _$createComponent(Link, {
+      children: "ask"
     }),
     _el$18
   );
   _$insert(
-    _el$12,
+    _el$10,
     _$createComponent(Link, {
-      children: "show"
+      children: "jobs"
     }),
     _el$19
   );
   _$insert(
-    _el$12,
+    _el$10,
     _$createComponent(Link, {
-      children: "ask"
+      children: "submit"
     }),
-    _el$20
+    null
   );
+  return _el$10;
+})();
+const template11 = (() => {
+  var _el$20 = _tmpl$5(),
+    _el$21 = _el$20.firstChild,
+    _el$24 = _el$21.nextSibling,
+    _el$22 = _el$24.nextSibling,
+    _el$25 = _el$22.nextSibling,
+    _el$23 = _el$25.nextSibling;
   _$insert(
-    _el$12,
+    _el$20,
     _$createComponent(Link, {
-      children: "jobs"
+      children: "new"
     }),
     _el$21
   );
   _$insert(
-    _el$12,
-    _$createComponent(Link, {
-      children: "submit"
-    }),
-    null
-  );
-  return _el$12;
-})();
-const template11 = (() => {
-  var _el$22 = _tmpl$5(),
-    _el$23 = _el$22.firstChild,
-    _el$26 = _el$23.nextSibling,
-    _el$24 = _el$26.nextSibling,
-    _el$27 = _el$24.nextSibling,
-    _el$25 = _el$27.nextSibling;
-  _$insert(
-    _el$22,
-    _$createComponent(Link, {
-      children: "new"
-    }),
-    _el$23
-  );
-  _$insert(
-    _el$22,
+    _el$20,
     _$createComponent(Link, {
       children: "comments"
     }),
-    _el$26
+    _el$24
   );
   _$insert(
-    _el$22,
+    _el$20,
     _$createComponent(Link, {
       children: "show"
     }),
-    _el$26
+    _el$24
   );
   _$insert(
-    _el$22,
+    _el$20,
     _$createComponent(Link, {
       children: "ask"
     }),
-    _el$27
+    _el$25
   );
   _$insert(
-    _el$22,
+    _el$20,
     _$createComponent(Link, {
       children: "jobs"
     }),
-    _el$27
+    _el$25
   );
   _$insert(
-    _el$22,
+    _el$20,
     _$createComponent(Link, {
       children: "submit"
     }),
     null
   );
-  return _el$22;
+  return _el$20;
 })();
 const template12 = (() => {
-  var _el$28 = _tmpl$6(),
-    _el$29 = _el$28.firstChild,
-    _el$34 = _el$29.nextSibling,
-    _el$30 = _el$34.nextSibling,
-    _el$35 = _el$30.nextSibling,
-    _el$33 = _el$35.nextSibling;
+  var _el$26 = _tmpl$6(),
+    _el$27 = _el$26.firstChild,
+    _el$32 = _el$27.nextSibling,
+    _el$28 = _el$32.nextSibling,
+    _el$33 = _el$28.nextSibling,
+    _el$31 = _el$33.nextSibling;
   _$insert(
-    _el$28,
+    _el$26,
     _$createComponent(Link, {
       children: "comments"
     }),
-    _el$34
+    _el$32
   );
   _$insert(
-    _el$28,
+    _el$26,
     _$createComponent(Link, {
       children: "show"
     }),
-    _el$35
+    _el$33
   );
-  return _el$28;
+  return _el$26;
 })();
 class Template13 {
   render() {

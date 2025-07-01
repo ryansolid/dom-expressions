@@ -40,10 +40,10 @@ const multiDynamic = [
   })(),
   _$memo(() => state.inserted),
   (() => {
-    var _el$11 = _$createElement("div");
-    _$insertNode(_el$11, _$createTextNode(`Last`));
-    _$effect(_$p => _$setProp(_el$11, "id", state.last, _$p));
-    return _el$11;
+    var _el$1 = _$createElement("div");
+    _$insertNode(_el$1, _$createTextNode(`Last`));
+    _$effect(_$p => _$setProp(_el$1, "id", state.last, _$p));
+    return _el$1;
   })(),
   "After"
 ];
@@ -57,37 +57,37 @@ const lastDynamic = [_$createElement("div"), _$memo(inserted)];
 const lastComponent = [_$createElement("div"), _$createComponent(Component, {})];
 const spaces = [
   (() => {
+    var _el$17 = _$createElement("span");
+    _$insertNode(_el$17, _$createTextNode(`1`));
+    return _el$17;
+  })(),
+  " ",
+  (() => {
     var _el$19 = _$createElement("span");
-    _$insertNode(_el$19, _$createTextNode(`1`));
+    _$insertNode(_el$19, _$createTextNode(`2`));
     return _el$19;
   })(),
   " ",
   (() => {
     var _el$21 = _$createElement("span");
-    _$insertNode(_el$21, _$createTextNode(`2`));
+    _$insertNode(_el$21, _$createTextNode(`3`));
     return _el$21;
-  })(),
-  " ",
-  (() => {
-    var _el$23 = _$createElement("span");
-    _$insertNode(_el$23, _$createTextNode(`3`));
-    return _el$23;
   })()
 ];
 const multiLineTrailing = [
   (() => {
+    var _el$23 = _$createElement("span");
+    _$insertNode(_el$23, _$createTextNode(`1`));
+    return _el$23;
+  })(),
+  (() => {
     var _el$25 = _$createElement("span");
-    _$insertNode(_el$25, _$createTextNode(`1`));
+    _$insertNode(_el$25, _$createTextNode(`2`));
     return _el$25;
   })(),
   (() => {
     var _el$27 = _$createElement("span");
-    _$insertNode(_el$27, _$createTextNode(`2`));
+    _$insertNode(_el$27, _$createTextNode(`3`));
     return _el$27;
-  })(),
-  (() => {
-    var _el$29 = _$createElement("span");
-    _$insertNode(_el$29, _$createTextNode(`3`));
-    return _el$29;
   })()
 ];
