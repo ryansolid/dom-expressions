@@ -1,7 +1,6 @@
 import * as t from "@babel/types";
 import config from "../config";
 import { isComponent } from "./utils";
-import skipSymbol from "./skipSymbol.js";
 
 const { isValidHTMLNesting } = require("validate-html-nesting");
 
@@ -28,9 +27,7 @@ const JSXValidator = {
 };
 
 export default (path, state) => {
-  const { opts } = state;
-
-  const merged = (path.hub.file.metadata.config = Object.assign({}, config, opts));
+  const merged = (path.hub.file.metadata.config = Object.assign({}, config, state.opts));
   const lib = merged.requireImportSource;
   if (lib) {
     const comments = path.hub.file.ast.comments;
@@ -44,7 +41,7 @@ export default (path, state) => {
       }
     }
     if (!process) {
-      state[skipSymbol] = true;
+      state.skip = true;
       return;
     }
   }

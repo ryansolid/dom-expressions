@@ -17,10 +17,9 @@ import {
 } from "./utils";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
-import skipSymbol from "./skipSymbol.js";
 
 export function transformJSX(path, state) {
-  if (state[skipSymbol]) return;
+  if (state.skip) return;
 
   const config = getConfig(path);
   const replace = transformThis(path);

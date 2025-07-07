@@ -3,11 +3,10 @@ import { getRendererConfig, registerImportMethod } from "./utils";
 import { appendTemplates as appendTemplatesDOM } from "../dom/template";
 import { appendTemplates as appendTemplatesSSR } from "../ssr/template";
 import { isInvalidMarkup } from "./validate.js";
-import skipSymbol from "./skipSymbol.js";
 
 // add to the top/bottom of the module.
 export default (path, state) => {
-  if (state[skipSymbol]) return;
+  if (state.skip) return;
 
   if (path.scope.data.events) {
     path.node.body.push(
