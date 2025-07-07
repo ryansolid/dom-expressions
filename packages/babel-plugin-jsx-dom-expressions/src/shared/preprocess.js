@@ -1,7 +1,6 @@
 import * as t from "@babel/types";
 import config from "../config";
 import { isComponent } from "./utils";
-
 const { isValidHTMLNesting } = require("validate-html-nesting");
 
 // From https://github.com/MananTank/babel-plugin-validate-jsx-nesting/blob/main/src/index.js
