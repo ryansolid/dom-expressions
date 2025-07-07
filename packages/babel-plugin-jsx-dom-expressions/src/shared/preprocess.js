@@ -34,8 +34,8 @@ export default (path, state) => {
     let process = false;
     for (let i = 0; i < comments.length; i++) {
       const comment = comments[i];
-      const index = comment.value.indexOf("@jsxImportSource");
-      if (index > -1 && comment.value.slice(index).includes(lib)) {
+      const pieces = comment.value.split("@jsxImportSource");
+      if (pieces.length === 2 && pieces[1].trim() === lib) {
         process = true;
         break;
       }
