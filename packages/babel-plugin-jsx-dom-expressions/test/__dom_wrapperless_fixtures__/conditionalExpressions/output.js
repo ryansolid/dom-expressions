@@ -49,14 +49,14 @@ const template9 = (() => {
   return _el$9;
 })();
 const template10 = (() => {
-  var _el$10 = _tmpl$();
-  _$insert(_el$10, () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"));
-  return _el$10;
+  var _el$0 = _tmpl$();
+  _$insert(_el$0, () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"));
+  return _el$0;
 })();
 const template11 = (() => {
-  var _el$11 = _tmpl$();
-  _$insert(_el$11, () => (state.a ? a() : state.b ? b() : state.c ? "c" : "fallback"));
-  return _el$11;
+  var _el$1 = _tmpl$();
+  _$insert(_el$1, () => (state.a ? a() : state.b ? b() : state.c ? "c" : "fallback"));
+  return _el$1;
 })();
 const template12 = _$createComponent(Comp, {
   get render() {
@@ -98,16 +98,16 @@ const template18 = _$createComponent(Comp, {
   }
 });
 const template19 = (() => {
-  var _el$12 = _tmpl$();
-  _el$12.innerHTML = state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
-  return _el$12;
+  var _el$10 = _tmpl$();
+  _el$10.innerHTML = state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+  return _el$10;
 })();
 const template20 = (() => {
-  var _el$13 = _tmpl$();
-  _$insert(_el$13, () =>
+  var _el$11 = _tmpl$();
+  _$insert(_el$11, () =>
     state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {})
   );
-  return _el$13;
+  return _el$11;
 })();
 const template21 = _$createComponent(Comp, {
   get render() {
@@ -120,14 +120,14 @@ const template22 = _$createComponent(Comp, {
   }
 });
 const template23 = (() => {
-  var _el$14 = _tmpl$();
-  _el$14.innerHTML = state?.dynamic ? "a" : "b";
-  return _el$14;
+  var _el$12 = _tmpl$();
+  _el$12.innerHTML = state?.dynamic ? "a" : "b";
+  return _el$12;
 })();
 const template24 = (() => {
-  var _el$15 = _tmpl$();
-  _$insert(_el$15, () => (state?.dynamic ? "a" : "b"));
-  return _el$15;
+  var _el$13 = _tmpl$();
+  _$insert(_el$13, () => (state?.dynamic ? "a" : "b"));
+  return _el$13;
 })();
 const template25 = _$createComponent(Comp, {
   get render() {
@@ -140,24 +140,24 @@ const template26 = _$createComponent(Comp, {
   }
 });
 const template27 = (() => {
-  var _el$16 = _tmpl$();
-  _el$16.innerHTML = state.dynamic ?? _$createComponent(Comp, {});
-  return _el$16;
+  var _el$14 = _tmpl$();
+  _el$14.innerHTML = state.dynamic ?? _$createComponent(Comp, {});
+  return _el$14;
 })();
 const template28 = (() => {
-  var _el$17 = _tmpl$();
-  _$insert(_el$17, () => state.dynamic ?? _$createComponent(Comp, {}));
-  return _el$17;
+  var _el$15 = _tmpl$();
+  _$insert(_el$15, () => state.dynamic ?? _$createComponent(Comp, {}));
+  return _el$15;
 })();
 const template29 = (() => {
-  var _el$18 = _tmpl$();
-  _$insert(_el$18, () => (thing() && thing1()) ?? thing2() ?? thing3());
-  return _el$18;
+  var _el$16 = _tmpl$();
+  _$insert(_el$16, () => (thing() && thing1()) ?? thing2() ?? thing3());
+  return _el$16;
 })();
 const template30 = (() => {
-  var _el$19 = _tmpl$();
-  _$insert(_el$19, () => thing() || thing1() || thing2());
-  return _el$19;
+  var _el$17 = _tmpl$();
+  _$insert(_el$17, () => thing() || thing1() || thing2());
+  return _el$17;
 })();
 const template31 = _$createComponent(Comp, {
   get value() {
@@ -165,9 +165,9 @@ const template31 = _$createComponent(Comp, {
   }
 });
 const template32 = (() => {
-  var _el$20 = _tmpl$();
-  _$insert(_el$20, () => something?.());
-  return _el$20;
+  var _el$18 = _tmpl$();
+  _$insert(_el$18, () => something?.());
+  return _el$18;
 })();
 const template33 = _$createComponent(Comp, {
   get children() {
