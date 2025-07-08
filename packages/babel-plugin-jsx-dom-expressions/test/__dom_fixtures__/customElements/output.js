@@ -12,31 +12,31 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true, false, false),
   _tmpl$7 = /*#__PURE__*/ _$template(`<my-el quack>hola`, true, false, false),
   _tmpl$8 = /*#__PURE__*/ _$template(`<my-el quack>"hola js"`, true, false, false),
   _tmpl$9 = /*#__PURE__*/ _$template(`<my-el quack>true`, true, false, false),
-  _tmpl$0 = /*#__PURE__*/ _$template(`<my-el>false`, true, false, false),
-  _tmpl$1 = /*#__PURE__*/ _$template(`<my-el quack>1`, true, false, false),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<my-el>0`, true, false, false),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<my-el quack>"1"`, true, false, false),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<my-el>"0"`, true, false, false),
-  _tmpl$13 = /*#__PURE__*/ _$template(`<my-el>undefined`, true, false, false),
-  _tmpl$14 = /*#__PURE__*/ _$template(`<my-el>null`, true, false, false),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<my-el>boolTest()`, true, false, false),
-  _tmpl$16 = /*#__PURE__*/ _$template(`<my-el>boolTest`, true, false, false),
-  _tmpl$17 = /*#__PURE__*/ _$template(`<my-el>boolTestBinding`, true, false, false),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<my-el>boolTestObjBinding.value`, true, false, false),
-  _tmpl$19 = /*#__PURE__*/ _$template(`<my-el>fn`, true, false, false),
-  _tmpl$20 = /*#__PURE__*/ _$template(
+  _tmpl$10 = /*#__PURE__*/ _$template(`<my-el>false`, true, false, false),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<my-el quack>1`, true, false, false),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<my-el>0`, true, false, false),
+  _tmpl$13 = /*#__PURE__*/ _$template(`<my-el quack>"1"`, true, false, false),
+  _tmpl$14 = /*#__PURE__*/ _$template(`<my-el>"0"`, true, false, false),
+  _tmpl$15 = /*#__PURE__*/ _$template(`<my-el>undefined`, true, false, false),
+  _tmpl$16 = /*#__PURE__*/ _$template(`<my-el>null`, true, false, false),
+  _tmpl$17 = /*#__PURE__*/ _$template(`<my-el>boolTest()`, true, false, false),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<my-el>boolTest`, true, false, false),
+  _tmpl$19 = /*#__PURE__*/ _$template(`<my-el>boolTestBinding`, true, false, false),
+  _tmpl$20 = /*#__PURE__*/ _$template(`<my-el>boolTestObjBinding.value`, true, false, false),
+  _tmpl$21 = /*#__PURE__*/ _$template(`<my-el>fn`, true, false, false),
+  _tmpl$22 = /*#__PURE__*/ _$template(
     `<my-el before quack>should have space before`,
     true,
     false,
     false
   ),
-  _tmpl$21 = /*#__PURE__*/ _$template(
+  _tmpl$23 = /*#__PURE__*/ _$template(
     `<my-el before quack after>should have space before/after`,
     true,
     false,
     false
   ),
-  _tmpl$22 = /*#__PURE__*/ _$template(
+  _tmpl$24 = /*#__PURE__*/ _$template(
     `<my-el quack after>should have space before/after`,
     true,
     false,
@@ -120,88 +120,88 @@ const template45 = (() => {
   return _el$9;
 })();
 const template46 = (() => {
-  var _el$0 = _tmpl$9();
-  _el$0._$owner = _$getOwner();
-  return _el$0;
-})();
-const template47 = (() => {
-  var _el$1 = _tmpl$0();
-  _el$1._$owner = _$getOwner();
-  return _el$1;
-})();
-const template48 = (() => {
-  var _el$10 = _tmpl$1();
+  var _el$10 = _tmpl$9();
   _el$10._$owner = _$getOwner();
   return _el$10;
 })();
-const template49 = (() => {
+const template47 = (() => {
   var _el$11 = _tmpl$10();
   _el$11._$owner = _$getOwner();
   return _el$11;
 })();
-const template50 = (() => {
+const template48 = (() => {
   var _el$12 = _tmpl$11();
   _el$12._$owner = _$getOwner();
   return _el$12;
 })();
-const template51 = (() => {
+const template49 = (() => {
   var _el$13 = _tmpl$12();
   _el$13._$owner = _$getOwner();
   return _el$13;
 })();
-const template52 = (() => {
+const template50 = (() => {
   var _el$14 = _tmpl$13();
   _el$14._$owner = _$getOwner();
   return _el$14;
 })();
-const template53 = (() => {
+const template51 = (() => {
   var _el$15 = _tmpl$14();
   _el$15._$owner = _$getOwner();
   return _el$15;
 })();
-const template54 = (() => {
+const template52 = (() => {
   var _el$16 = _tmpl$15();
   _el$16._$owner = _$getOwner();
-  _$effect(() => _$setBoolAttribute(_el$16, "quack", boolTest()));
   return _el$16;
 })();
-const template55 = (() => {
+const template53 = (() => {
   var _el$17 = _tmpl$16();
-  _$setBoolAttribute(_el$17, "quack", boolTest);
   _el$17._$owner = _$getOwner();
   return _el$17;
 })();
-const template56 = (() => {
+const template54 = (() => {
   var _el$18 = _tmpl$17();
-  _$setBoolAttribute(_el$18, "quack", boolTestBinding);
   _el$18._$owner = _$getOwner();
+  _$effect(() => _$setBoolAttribute(_el$18, "quack", boolTest()));
   return _el$18;
 })();
-const template57 = (() => {
+const template55 = (() => {
   var _el$19 = _tmpl$18();
+  _$setBoolAttribute(_el$19, "quack", boolTest);
   _el$19._$owner = _$getOwner();
-  _$effect(() => _$setBoolAttribute(_el$19, "quack", boolTestObjBinding.value));
   return _el$19;
 })();
-const template58 = (() => {
+const template56 = (() => {
   var _el$20 = _tmpl$19();
-  _$setBoolAttribute(_el$20, "quack", () => false);
+  _$setBoolAttribute(_el$20, "quack", boolTestBinding);
   _el$20._$owner = _$getOwner();
   return _el$20;
 })();
-const template59 = (() => {
+const template57 = (() => {
   var _el$21 = _tmpl$20();
   _el$21._$owner = _$getOwner();
+  _$effect(() => _$setBoolAttribute(_el$21, "quack", boolTestObjBinding.value));
   return _el$21;
 })();
-const template60 = (() => {
+const template58 = (() => {
   var _el$22 = _tmpl$21();
+  _$setBoolAttribute(_el$22, "quack", () => false);
   _el$22._$owner = _$getOwner();
   return _el$22;
 })();
-const template61 = (() => {
+const template59 = (() => {
   var _el$23 = _tmpl$22();
   _el$23._$owner = _$getOwner();
   return _el$23;
+})();
+const template60 = (() => {
+  var _el$24 = _tmpl$23();
+  _el$24._$owner = _$getOwner();
+  return _el$24;
+})();
+const template61 = (() => {
+  var _el$25 = _tmpl$24();
+  _el$25._$owner = _$getOwner();
+  return _el$25;
 })();
 // this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;

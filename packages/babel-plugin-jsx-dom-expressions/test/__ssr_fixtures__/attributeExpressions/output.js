@@ -13,23 +13,23 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$7 = ['<div style="', '"', "></div>"],
   _tmpl$8 = "<div></div>",
   _tmpl$9 = ['<div onclick="', '"></div>'],
-  _tmpl$0 = '<input type="checkbox" checked>',
-  _tmpl$1 = ['<input type="checkbox"', ">"],
-  _tmpl$10 = '<div class="`a">`$`</div>',
-  _tmpl$11 = ['<button class="', '" type="button">Write</button>'],
-  _tmpl$12 = ['<button class="', '">Hi</button>'],
-  _tmpl$13 = ["<div><input", " readonly><input", "", "></div>"],
-  _tmpl$14 = ['<div style="', '"></div>'],
-  _tmpl$15 = '<div data="&quot;hi&quot;" data2="&quot;"></div>',
-  _tmpl$16 = ["<div", ">", "</div>"],
-  _tmpl$17 = ["<div>", "", "</div>"],
-  _tmpl$18 =
+  _tmpl$10 = '<input type="checkbox" checked>',
+  _tmpl$11 = ['<input type="checkbox"', ">"],
+  _tmpl$12 = '<div class="`a">`$`</div>',
+  _tmpl$13 = ['<button class="', '" type="button">Write</button>'],
+  _tmpl$14 = ['<button class="', '">Hi</button>'],
+  _tmpl$15 = ["<div><input", " readonly><input", "", "></div>"],
+  _tmpl$16 = ['<div style="', '"></div>'],
+  _tmpl$17 = '<div data="&quot;hi&quot;" data2="&quot;"></div>',
+  _tmpl$18 = ["<div", ">", "</div>"],
+  _tmpl$19 = ["<div>", "", "</div>"],
+  _tmpl$20 =
     '<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>',
-  _tmpl$19 = ["<button", "></button>"],
-  _tmpl$20 = '<input value="10">',
-  _tmpl$21 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
-  _tmpl$22 = ['<div a a a checked a="true" a="false" a="0" a a', " a></div>"],
-  _tmpl$23 = ["<style>", "</style>"];
+  _tmpl$21 = ["<button", "></button>"],
+  _tmpl$22 = '<input value="10">',
+  _tmpl$23 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
+  _tmpl$24 = ['<div a a a checked a="true" a="false" a="0" a a', " a></div>"],
+  _tmpl$25 = ["<style>", "</style>"];
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -112,11 +112,11 @@ const template9 = _$ssr(_tmpl$8);
 const template10 = _$ssr(_tmpl$8);
 const template11 = _$ssr(_tmpl$8);
 const template12 = _$ssr(_tmpl$9, "console.log('hi')");
-const template13 = _$ssr(_tmpl$0);
-const template14 = _$ssr(_tmpl$1, _$ssrAttribute("checked", state.visible, true));
-const template15 = _$ssr(_tmpl$10);
-const template16 = _$ssr(_tmpl$11, `static ${"k" ? "hi" : ""}`);
-const template17 = _$ssr(_tmpl$12, "a  b  c");
+const template13 = _$ssr(_tmpl$10);
+const template14 = _$ssr(_tmpl$11, _$ssrAttribute("checked", state.visible, true));
+const template15 = _$ssr(_tmpl$12);
+const template16 = _$ssr(_tmpl$13, `static ${"k" ? "hi" : ""}`);
+const template17 = _$ssr(_tmpl$14, "a  b  c");
 const template18 = _$ssrElement(
   "div",
   {
@@ -129,7 +129,7 @@ const template18 = _$ssrElement(
 );
 const template19 = _$ssr(_tmpl$5, `bg-red-500 flex flex-col`);
 const template20 = _$ssr(
-  _tmpl$13,
+  _tmpl$15,
   _$ssrAttribute("value", _$escape(s(), true), false) +
     _$ssrAttribute("min", _$escape(min(), true), false) +
     _$ssrAttribute("max", _$escape(max(), true), false),
@@ -139,15 +139,15 @@ const template20 = _$ssr(
   _$ssrAttribute("readonly", value, true)
 );
 const template21 = _$ssr(
-  _tmpl$14,
+  _tmpl$16,
   _$ssrStyle({
     a: "static",
     ...rest
   })
 );
-const template22 = _$ssr(_tmpl$15);
+const template22 = _$ssr(_tmpl$17);
 const template23 = _$ssr(
-  _tmpl$16,
+  _tmpl$18,
   _$ssrAttribute("disabled", "t" in test, true),
   "t" in test && "true"
 );
@@ -160,7 +160,7 @@ const template24 = _$ssrElement(
   false
 );
 const template25 = _$ssr(
-  _tmpl$17,
+  _tmpl$19,
   _$escape(props.children),
   _$ssrElement(
     "a",
@@ -208,45 +208,45 @@ const template28 = _$ssrElement(
   ],
   false
 );
-const template29 = _$ssr(_tmpl$16, _$ssrAttribute("attribute", !!someValue, false), !!someValue);
-const template30 = _$ssr(_tmpl$18);
+const template29 = _$ssr(_tmpl$18, _$ssrAttribute("attribute", !!someValue, false), !!someValue);
+const template30 = _$ssr(_tmpl$20);
 const template31 = _$ssr(
-  _tmpl$14,
+  _tmpl$16,
   "background-color:" + _$escape(getStore.itemProperties.color, true)
 );
-const template32 = _$ssr(_tmpl$14, "background-color:" + _$escape(undefined, true));
+const template32 = _$ssr(_tmpl$16, "background-color:" + _$escape(undefined, true));
 const template33 = [
-  _$ssr(_tmpl$19, _$ssrAttribute("class", _$escape(styles.button, true), false)),
-  _$ssr(_tmpl$19, _$ssrAttribute("class", _$escape(styles["foo--bar"], true), false)),
-  _$ssr(_tmpl$19, _$ssrAttribute("class", _$escape(styles.foo.bar, true), false)),
-  _$ssr(_tmpl$19, _$ssrAttribute("class", _$escape(styles[foo()], true), false))
+  _$ssr(_tmpl$21, _$ssrAttribute("class", _$escape(styles.button, true), false)),
+  _$ssr(_tmpl$21, _$ssrAttribute("class", _$escape(styles["foo--bar"], true), false)),
+  _$ssr(_tmpl$21, _$ssrAttribute("class", _$escape(styles.foo.bar, true), false)),
+  _$ssr(_tmpl$21, _$ssrAttribute("class", _$escape(styles[foo()], true), false))
 ];
 const template34 = _$ssrElement("div", somethingElse, undefined, false);
 const template35 = _$ssr(_tmpl$8);
 const template36 = _$ssr(_tmpl$8);
 const template37 = _$ssr(_tmpl$8);
 const template38 = _$ssr(_tmpl$8);
-const template39 = _$ssr(_tmpl$20);
-const template40 = _$ssr(_tmpl$14, "color:" + _$escape(a(), true));
+const template39 = _$ssr(_tmpl$22);
+const template40 = _$ssr(_tmpl$16, "color:" + _$escape(a(), true));
 const template41 = _$ssr(
-  _tmpl$21,
+  _tmpl$23,
   _$ssrAttribute("value", _$escape(state.color, true), false),
   _$ssrAttribute("value", _$escape(Color.Red, true), false),
   _$ssrAttribute("value", _$escape(Color.Blue, true), false)
 );
 const template42 = _$ssr(
-  _tmpl$22,
+  _tmpl$24,
   _$ssrAttribute("a", _$escape(undefined, true), false) +
     _$ssrAttribute("a", _$escape(null, true), false) +
     _$ssrAttribute("a", void 0, false)
 );
 const css = () => "&{color:red}";
 const template43 = [
-  _$ssr(_tmpl$23, css()),
-  _$ssr(_tmpl$23, css()),
-  _$ssr(_tmpl$23, css()),
-  _$ssr(_tmpl$23, css()),
-  _$ssr(_tmpl$23, css())
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css()),
+  _$ssr(_tmpl$25, css())
 ];
 const styleProps = {
   children: css

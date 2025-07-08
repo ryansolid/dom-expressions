@@ -11,16 +11,16 @@ var _tmpl$ = ["<span", ">Hello </span>"],
   _tmpl$7 = ["<span", "> <!--$-->", "<!--/--> <!--$-->", "<!--/--> </span>"],
   _tmpl$8 = ["<span", "> <!--$-->", "<!--/--><!--$-->", "<!--/--> </span>"],
   _tmpl$9 = ["<span", ">Hello</span>"],
-  _tmpl$0 = ["<span", ">&nbsp;&lt;Hi&gt;&nbsp;</span>"],
-  _tmpl$1 = ["<span", ">Hi&lt;script>alert();&lt;/script></span>"],
-  _tmpl$10 = ["<span", ">Hello World!</span>"],
-  _tmpl$11 = ["<span", ">4 + 5 = 9</span>"],
-  _tmpl$12 = ["<div", "><!--$-->", "<!--/-->\nd</div>"],
-  _tmpl$13 = ["<div", ">", "</div>"],
-  _tmpl$14 = ["<span", "> <!--$-->", "<!--/--></span>"],
-  _tmpl$15 = ["<span", "><!--$-->", "<!--/--> </span>"],
-  _tmpl$16 = ["<div", ' normal="Search\u2026" title="Search&amp;hellip;"></div>'],
-  _tmpl$17 = ["<div", "><div></div><!--$-->", "<!--/--></div>"];
+  _tmpl$10 = ["<span", ">&nbsp;&lt;Hi&gt;&nbsp;</span>"],
+  _tmpl$11 = ["<span", ">Hi&lt;script>alert();&lt;/script></span>"],
+  _tmpl$12 = ["<span", ">Hello World!</span>"],
+  _tmpl$13 = ["<span", ">4 + 5 = 9</span>"],
+  _tmpl$14 = ["<div", "><!--$-->", "<!--/-->\nd</div>"],
+  _tmpl$15 = ["<div", ">", "</div>"],
+  _tmpl$16 = ["<span", "> <!--$-->", "<!--/--></span>"],
+  _tmpl$17 = ["<span", "><!--$-->", "<!--/--> </span>"],
+  _tmpl$18 = ["<div", ' normal="Search\u2026" title="Search&amp;hellip;"></div>'],
+  _tmpl$19 = ["<div", "><div></div><!--$-->", "<!--/--></div>"];
 const trailing = _$ssr(_tmpl$, _$ssrHydrationKey());
 const leading = _$ssr(_tmpl$2, _$ssrHydrationKey());
 
@@ -48,7 +48,7 @@ const multiLineTrailingSpace = _$ssr(_tmpl$3, _$ssrHydrationKey());
 const multiLineNoTrailingSpace = _$ssr(_tmpl$3, _$ssrHydrationKey());
 
 /* prettier-ignore */
-const escape = _$ssr(_tmpl$0, _$ssrHydrationKey());
+const escape = _$ssr(_tmpl$10, _$ssrHydrationKey());
 
 /* prettier-ignore */
 const escape2 = _$createComponent(Comp, {
@@ -57,34 +57,34 @@ const escape2 = _$createComponent(Comp, {
 
 /* prettier-ignore */
 const escape3 = "\xA0<Hi>\xA0";
-const injection = _$ssr(_tmpl$1, _$ssrHydrationKey());
+const injection = _$ssr(_tmpl$11, _$ssrHydrationKey());
 let value = "World";
-const evaluated = _$ssr(_tmpl$10, _$ssrHydrationKey());
+const evaluated = _$ssr(_tmpl$12, _$ssrHydrationKey());
 let number = 4 + 5;
-const evaluatedNonString = _$ssr(_tmpl$11, _$ssrHydrationKey());
-const newLineLiteral = _$ssr(_tmpl$12, _$ssrHydrationKey(), _$escape(s));
-const trailingSpace = _$ssr(_tmpl$13, _$ssrHydrationKey(), _$escape(expr));
+const evaluatedNonString = _$ssr(_tmpl$13, _$ssrHydrationKey());
+const newLineLiteral = _$ssr(_tmpl$14, _$ssrHydrationKey(), _$escape(s));
+const trailingSpace = _$ssr(_tmpl$15, _$ssrHydrationKey(), _$escape(expr));
 const trailingSpaceComp = _$createComponent(Comp, {
   children: expr
 });
 const trailingSpaceFrag = expr;
-const leadingSpaceElement = _$ssr(_tmpl$14, _$ssrHydrationKey(), _$escape(expr));
+const leadingSpaceElement = _$ssr(_tmpl$16, _$ssrHydrationKey(), _$escape(expr));
 const leadingSpaceComponent = _$createComponent(Div, {
   get children() {
     return [" ", expr];
   }
 });
 const leadingSpaceFragment = [" ", expr];
-const trailingSpaceElement = _$ssr(_tmpl$15, _$ssrHydrationKey(), _$escape(expr));
+const trailingSpaceElement = _$ssr(_tmpl$17, _$ssrHydrationKey(), _$escape(expr));
 const trailingSpaceComponent = _$createComponent(Div, {
   get children() {
     return [expr, " "];
   }
 });
 const trailingSpaceFragment = [expr, " "];
-const escapeAttribute = _$ssr(_tmpl$16, _$ssrHydrationKey());
+const escapeAttribute = _$ssr(_tmpl$18, _$ssrHydrationKey());
 const escapeCompAttribute = _$createComponent(Div, {
   normal: "Search\u2026",
   title: "Search&hellip;"
 });
-const lastElementExpression = _$ssr(_tmpl$17, _$ssrHydrationKey(), _$escape(expr()));
+const lastElementExpression = _$ssr(_tmpl$19, _$ssrHydrationKey(), _$escape(expr()));

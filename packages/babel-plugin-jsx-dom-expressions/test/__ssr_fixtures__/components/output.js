@@ -12,8 +12,8 @@ var _tmpl$ = ["<div>Hello ", "</div>"],
   _tmpl$7 = ["<div>", " | ", "", " | ", "", " | ", "</div>"],
   _tmpl$8 = ["<div> | ", " |  |  | ", " | </div>"],
   _tmpl$9 = "<span>1</span>",
-  _tmpl$0 = "<span>2</span>",
-  _tmpl$1 = "<span>3</span>";
+  _tmpl$10 = "<span>2</span>",
+  _tmpl$11 = "<span>3</span>";
 import { Show } from "somewhere";
 const Child = props => {
   const [s, set] = createSignal();
@@ -241,12 +241,12 @@ const Template16 = _$createComponent(
 );
 const Template17 = _$createComponent(Pre, {
   get children() {
-    return [_$ssr(_tmpl$9), " ", _$ssr(_tmpl$0), " ", _$ssr(_tmpl$1)];
+    return [_$ssr(_tmpl$9), " ", _$ssr(_tmpl$10), " ", _$ssr(_tmpl$11)];
   }
 });
 const Template18 = _$createComponent(Pre, {
   get children() {
-    return [_$ssr(_tmpl$9), _$ssr(_tmpl$0), _$ssr(_tmpl$1)];
+    return [_$ssr(_tmpl$9), _$ssr(_tmpl$10), _$ssr(_tmpl$11)];
   }
 });
 const Template19 = _$createComponent(

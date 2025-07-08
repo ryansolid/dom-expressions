@@ -72,13 +72,13 @@ const template6 = _$createComponent(Component, {
 });
 const template7 = (() => {
   var _el$9 = _tmpl$5(),
-    _el$0 = _el$9.firstChild;
-  _$setAttributeNS(_el$0, "http://www.w3.org/1999/xlink", "xlink:href", url);
+    _el$10 = _el$9.firstChild;
+  _$setAttributeNS(_el$10, "http://www.w3.org/1999/xlink", "xlink:href", url);
   return _el$9;
 })();
 const template8 = (() => {
-  var _el$1 = _tmpl$6(),
-    _el$10 = _el$1.firstChild;
-  _el$10.textContent = text;
-  return _el$1;
+  var _el$11 = _tmpl$6(),
+    _el$12 = _el$11.firstChild;
+  _el$12.textContent = text;
+  return _el$11;
 })();

@@ -18,10 +18,10 @@ const template = (() => {
     _el$7 = _el$6.nextSibling,
     _el$8 = _el$7.nextSibling,
     _el$9 = _el$8.nextSibling,
-    _el$0 = _el$9.nextSibling,
-    _el$1 = _el$0.nextSibling,
-    _el$10 = _el$1.nextSibling,
-    _el$11 = _el$10.nextSibling;
+    _el$10 = _el$9.nextSibling,
+    _el$11 = _el$10.nextSibling,
+    _el$12 = _el$11.nextSibling,
+    _el$13 = _el$12.nextSibling;
   _el$2.addEventListener("change", () => console.log("bound"));
   _el$3.addEventListener("change", e => (id => console.log("bound", id))(id, e));
   _$addEventListener(_el$4, "change", handler);
@@ -31,24 +31,24 @@ const template = (() => {
   _el$8.$$click = id => console.log("delegated", id);
   _el$8.$$clickData = rowId;
   _$addEventListener(_el$9, "click", handler, true);
-  _el$0.$$click = handler;
-  _el$1.$$click = hoisted2;
-  _$addEventListener(_el$10, "inlined-to-hoisted2", {
+  _el$10.$$click = handler;
+  _el$11.$$click = hoisted2;
+  _$addEventListener(_el$12, "inlined-to-hoisted2", {
     handleEvent: hoistedcustomevent2
   });
-  _$addEventListener(_el$10, "inlined-to-hoisted1", {
+  _$addEventListener(_el$12, "inlined-to-hoisted1", {
     handleEvent: hoistedCustomEvent1
   });
-  _$addEventListener(_el$10, "inlined-with-options", {
+  _$addEventListener(_el$12, "inlined-with-options", {
     handleEvent: () => console.log("listener"),
     once: false
   });
-  _$addEventListener(_el$10, "inlined", () => console.log("listener"));
-  _$addEventListener(_el$10, "hoisted-custom-event2", hoistedCustomEvent2);
-  _$addEventListener(_el$10, "hoisted-custom-event1", hoistedCustomEvent1);
-  _$addEventListener(_el$10, "CAPS-ev3", () => console.log("custom"));
-  _$addEventListener(_el$10, "click", () => console.log("listener"));
-  _el$11.addEventListener("camelClick", () => console.log("listener"), true);
+  _$addEventListener(_el$12, "inlined", () => console.log("listener"));
+  _$addEventListener(_el$12, "hoisted-custom-event2", hoistedCustomEvent2);
+  _$addEventListener(_el$12, "hoisted-custom-event1", hoistedCustomEvent1);
+  _$addEventListener(_el$12, "CAPS-ev3", () => console.log("custom"));
+  _$addEventListener(_el$12, "click", () => console.log("listener"));
+  _el$13.addEventListener("camelClick", () => console.log("listener"), true);
   return _el$;
 })();
 _$delegateEvents(["click"]);
