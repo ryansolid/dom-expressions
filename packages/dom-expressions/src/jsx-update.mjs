@@ -12,6 +12,8 @@
 import fs from "fs";
 import { execSync as $ } from "child_process";
 
+process.chdir("packages/dom-expressions/src");
+
 // ensures source is always pretty printed at commit and free of errors
 
 $(`prettier "./jsx-h.d.ts" --write`);
