@@ -259,7 +259,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
-        t.stringLiteral(name),
+        t.stringLiteral(alias || name),
         value
       ]);
     }

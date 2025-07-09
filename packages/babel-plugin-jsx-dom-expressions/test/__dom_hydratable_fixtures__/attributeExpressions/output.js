@@ -37,7 +37,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
   _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`),
   _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
-  _tmpl$21 = /*#__PURE__*/ _$template(`<div a a a a=0 a a a>`);
+  _tmpl$21 = /*#__PURE__*/ _$template(`<div a a a a=0 a a a>`),
+  _tmpl$22 = /*#__PURE__*/ _$template(`<video>`);
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -236,7 +237,7 @@ const template20 = (() => {
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
   _$addEventListener(_el$28, "input", doSomethingElse, true);
-  _$setProperty(_el$28, "readonly", value);
+  _$setProperty(_el$28, "readOnly", value);
   _$effect(
     _p$ => {
       var _v$4 = min(),
@@ -454,5 +455,35 @@ const template42 = (() => {
   _$setAttribute(_el$64, "a", null);
   _$setAttribute(_el$64, "a", void 0);
   return _el$64;
+})();
+const template43 = (() => {
+  var _el$65 = _$getNextElement(_tmpl$22);
+  _$setProperty(_el$65, "playsInline", value);
+  return _el$65;
+})();
+const template44 = (() => {
+  var _el$66 = _$getNextElement(_tmpl$22);
+  _$setProperty(_el$66, "playsInline", true);
+  return _el$66;
+})();
+const template45 = (() => {
+  var _el$67 = _$getNextElement(_tmpl$22);
+  _$setProperty(_el$67, "playsInline", false);
+  return _el$67;
+})();
+const template46 = (() => {
+  var _el$68 = _$getNextElement(_tmpl$22);
+  _$setProperty(_el$68, "playsInline", value);
+  return _el$68;
+})();
+const template47 = (() => {
+  var _el$69 = _$getNextElement(_tmpl$22);
+  _$setProperty(_el$69, "playsInline", true);
+  return _el$69;
+})();
+const template48 = (() => {
+  var _el$70 = _$getNextElement(_tmpl$22);
+  _$setProperty(_el$70, "playsInline", false);
+  return _el$70;
 })();
 _$delegateEvents(["click", "input"]);
