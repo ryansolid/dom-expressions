@@ -18,7 +18,9 @@ import {
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
 
-export function transformJSX(path) {
+export function transformJSX(path, state) {
+  if (state.skip) return;
+
   const config = getConfig(path);
   const replace = transformThis(path);
   const result = transformNode(

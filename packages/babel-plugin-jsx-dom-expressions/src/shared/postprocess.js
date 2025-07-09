@@ -5,7 +5,9 @@ import { appendTemplates as appendTemplatesSSR } from "../ssr/template";
 import { isInvalidMarkup } from "./validate.js";
 
 // add to the top/bottom of the module.
-export default path => {
+export default (path, state) => {
+  if (state.skip) return;
+
   if (path.scope.data.events) {
     path.node.body.push(
       t.expressionStatement(
