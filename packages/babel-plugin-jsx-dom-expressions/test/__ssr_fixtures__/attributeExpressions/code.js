@@ -227,9 +227,16 @@ const template44 = (
   </>
 );
 
+const template45 = <video playsinline={value}/>
+const template46 = <video playsinline={true}/>
+const template47 = <video playsinline={false}/>
+const template48 = <video playsInline={value}/>
+const template49 = <video playsInline={true}/>
+const template50 = <video playsInline={false}/>
+
 const nope = () => undefined;
 
-const template45 = (
+const template51 = (
   <div
     class="bg-(--bg)"
     style={{

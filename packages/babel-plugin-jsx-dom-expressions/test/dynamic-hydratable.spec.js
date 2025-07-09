@@ -50,6 +50,7 @@ pluginTester({
           "script",
           "noscript",
           "select",
+          "video",
           "option"
         ],
         moduleName: "r-dom"
