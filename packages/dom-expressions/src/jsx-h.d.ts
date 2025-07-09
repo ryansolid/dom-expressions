@@ -71,7 +71,8 @@ export namespace JSX {
   > = EHandler | BoundEventHandler<T, E, EHandler>;
 
   interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
-    extends AddEventListenerOptions {
+    extends AddEventListenerOptions,
+      EventListenerOptions {
     handleEvent: EHandler;
   }
 
@@ -141,6 +142,7 @@ export namespace JSX {
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void) | undefined;
+    children?: FunctionMaybe<Element | undefined>;
     classList?:
       | {
           [k: string]: boolean | undefined;
@@ -198,16 +200,12 @@ export namespace JSX {
   };
 
   // events
-  interface ElementEventMap<T> {
-    onFullscreenChange?: EventHandlerUnion<T, Event> | undefined;
-    onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
 
-    "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-
-    onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
-    onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
-  }
+  /**
+   * `Window` events, defined for `<body>`, `<svg>`, `<frameset>` tags.
+   *
+   * Excluding `Elements events` already defined as globals that all tags share, such as `onblur`.
+   */
   interface WindowEventMap<T> {
     onAfterPrint?: EventHandlerUnion<T, Event> | undefined;
     onBeforePrint?: EventHandlerUnion<T, Event> | undefined;
@@ -279,6 +277,14 @@ export namespace JSX {
     "on:unload"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
   }
 
+  /**
+   * Global `Elements events`, defined for all tags.
+   *
+   * That's events defined and shared by all of the `HTMLElement/SVGElement/MathMLElement`
+   * interfaces.
+   *
+   * Includes events defined for the `Element` interface.
+   */
   interface CustomEventHandlersCamelCase<T> {
     onAbort?: EventHandlerUnion<T, UIEvent> | undefined;
     onAnimationCancel?: EventHandlerUnion<T, AnimationEvent> | undefined;
@@ -286,20 +292,31 @@ export namespace JSX {
     onAnimationIteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAnimationStart?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onAuxClick?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onBeforeCopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onBeforeCut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     onBeforeInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    onBeforeMatch?: EventHandlerUnion<T, Event> | undefined;
+    onBeforePaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     onBeforeToggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    onBeforeXRSelect?: EventHandlerUnion<T, Event> | undefined;
     onBlur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onCancel?: EventHandlerUnion<T, Event> | undefined;
     onCanPlay?: EventHandlerUnion<T, Event> | undefined;
     onCanPlayThrough?: EventHandlerUnion<T, Event> | undefined;
     onChange?: ChangeEventHandlerUnion<T, Event> | undefined;
     onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onClose?: EventHandlerUnion<T, Event> | undefined;
     // TODO `CommandEvent` is currently undefined in TS
     onCommand?: EventHandlerUnion<T, Event> | undefined;
     onCompositionEnd?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionStart?: EventHandlerUnion<T, CompositionEvent> | undefined;
     onCompositionUpdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    onContentVisibilityAutoStateChange?:
+      | EventHandlerUnion<T, ContentVisibilityAutoStateChangeEvent>
+      | undefined;
+    onContextLost?: EventHandlerUnion<T, Event> | undefined;
     onContextMenu?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onContextRestored?: EventHandlerUnion<T, Event> | undefined;
     onCopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     onCueChange?: EventHandlerUnion<T, Event> | undefined;
     onCut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
@@ -319,6 +336,9 @@ export namespace JSX {
     onFocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onFocusIn?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onFocusOut?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
+    onFullscreenChange?: EventHandlerUnion<T, Event> | undefined;
+    onFullscreenError?: EventHandlerUnion<T, Event> | undefined;
     onGotPointerCapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     onInput?: InputEventHandlerUnion<T, InputEvent> | undefined;
     onInvalid?: EventHandlerUnion<T, Event> | undefined;
@@ -348,6 +368,7 @@ export namespace JSX {
     onPointerMove?: EventHandlerUnion<T, PointerEvent> | undefined;
     onPointerOut?: EventHandlerUnion<T, PointerEvent> | undefined;
     onPointerOver?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onPointerRawUpdate?: EventHandlerUnion<T, PointerEvent> | undefined;
     onPointerUp?: EventHandlerUnion<T, PointerEvent> | undefined;
     onProgress?: EventHandlerUnion<T, ProgressEvent> | undefined;
     onRateChange?: EventHandlerUnion<T, Event> | undefined;
@@ -355,11 +376,16 @@ export namespace JSX {
     onResize?: EventHandlerUnion<T, UIEvent> | undefined;
     onScroll?: EventHandlerUnion<T, Event> | undefined;
     onScrollEnd?: EventHandlerUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    onScrollSnapChange?: EventHandlerUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    onScrollSnapChanging?: EventHandlerUnion<T, Event> | undefined;
     onSecurityPolicyViolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
     onSeeked?: EventHandlerUnion<T, Event> | undefined;
     onSeeking?: EventHandlerUnion<T, Event> | undefined;
     onSelect?: EventHandlerUnion<T, Event> | undefined;
     onSelectionChange?: EventHandlerUnion<T, Event> | undefined;
+    onSelectStart?: EventHandlerUnion<T, Event> | undefined;
     onSlotChange?: EventHandlerUnion<T, Event> | undefined;
     onStalled?: EventHandlerUnion<T, Event> | undefined;
     onSubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
@@ -386,20 +412,31 @@ export namespace JSX {
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onanimationstart?: EventHandlerUnion<T, AnimationEvent> | undefined;
     onauxclick?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onbeforecopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
+    onbeforecut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     onbeforeinput?: InputEventHandlerUnion<T, InputEvent> | undefined;
+    onbeforematch?: EventHandlerUnion<T, Event> | undefined;
+    onbeforepaste?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     onbeforetoggle?: EventHandlerUnion<T, ToggleEvent> | undefined;
+    onbeforexrselect?: EventHandlerUnion<T, Event> | undefined;
     onblur?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     oncancel?: EventHandlerUnion<T, Event> | undefined;
     oncanplay?: EventHandlerUnion<T, Event> | undefined;
     oncanplaythrough?: EventHandlerUnion<T, Event> | undefined;
     onchange?: ChangeEventHandlerUnion<T, Event> | undefined;
     onclick?: EventHandlerUnion<T, MouseEvent> | undefined;
+    onclose?: EventHandlerUnion<T, Event> | undefined;
     // TODO `CommandEvent` is currently undefined in TS
     oncommand?: EventHandlerUnion<T, Event> | undefined;
     oncompositionend?: EventHandlerUnion<T, CompositionEvent> | undefined;
     oncompositionstart?: EventHandlerUnion<T, CompositionEvent> | undefined;
     oncompositionupdate?: EventHandlerUnion<T, CompositionEvent> | undefined;
+    oncontentvisibilityautostatechange?:
+      | EventHandlerUnion<T, ContentVisibilityAutoStateChangeEvent>
+      | undefined;
+    oncontextlost?: EventHandlerUnion<T, Event> | undefined;
     oncontextmenu?: EventHandlerUnion<T, PointerEvent> | undefined;
+    oncontextrestored?: EventHandlerUnion<T, Event> | undefined;
     oncopy?: EventHandlerUnion<T, ClipboardEvent> | undefined;
     oncuechange?: EventHandlerUnion<T, Event> | undefined;
     oncut?: EventHandlerUnion<T, ClipboardEvent> | undefined;
@@ -419,6 +456,9 @@ export namespace JSX {
     onfocus?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onfocusin?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
     onfocusout?: FocusEventHandlerUnion<T, FocusEvent> | undefined;
+    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
+    onfullscreenchange?: EventHandlerUnion<T, Event> | undefined;
+    onfullscreenerror?: EventHandlerUnion<T, Event> | undefined;
     ongotpointercapture?: EventHandlerUnion<T, PointerEvent> | undefined;
     oninput?: InputEventHandlerUnion<T, InputEvent> | undefined;
     oninvalid?: EventHandlerUnion<T, Event> | undefined;
@@ -448,6 +488,7 @@ export namespace JSX {
     onpointermove?: EventHandlerUnion<T, PointerEvent> | undefined;
     onpointerout?: EventHandlerUnion<T, PointerEvent> | undefined;
     onpointerover?: EventHandlerUnion<T, PointerEvent> | undefined;
+    onpointerrawupdate?: EventHandlerUnion<T, PointerEvent> | undefined;
     onpointerup?: EventHandlerUnion<T, PointerEvent> | undefined;
     onprogress?: EventHandlerUnion<T, ProgressEvent> | undefined;
     onratechange?: EventHandlerUnion<T, Event> | undefined;
@@ -455,11 +496,16 @@ export namespace JSX {
     onresize?: EventHandlerUnion<T, UIEvent> | undefined;
     onscroll?: EventHandlerUnion<T, Event> | undefined;
     onscrollend?: EventHandlerUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    onscrollsnapchange?: EventHandlerUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    onscrollsnapchanging?: EventHandlerUnion<T, Event> | undefined;
     onsecuritypolicyviolation?: EventHandlerUnion<T, SecurityPolicyViolationEvent> | undefined;
     onseeked?: EventHandlerUnion<T, Event> | undefined;
     onseeking?: EventHandlerUnion<T, Event> | undefined;
     onselect?: EventHandlerUnion<T, Event> | undefined;
     onselectionchange?: EventHandlerUnion<T, Event> | undefined;
+    onselectstart?: EventHandlerUnion<T, Event> | undefined;
     onslotchange?: EventHandlerUnion<T, Event> | undefined;
     onstalled?: EventHandlerUnion<T, Event> | undefined;
     onsubmit?: EventHandlerUnion<T, SubmitEvent> | undefined;
@@ -486,10 +532,15 @@ export namespace JSX {
     "on:animationiteration"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:animationstart"?: EventHandlerWithOptionsUnion<T, AnimationEvent> | undefined;
     "on:auxclick"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:beforecopy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
+    "on:beforecut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:beforeinput"?:
       | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
       | undefined;
+    "on:beforematch"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:beforepaste"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:beforetoggle"?: EventHandlerWithOptionsUnion<T, ToggleEvent> | undefined;
+    "on:beforexrselect"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:blur"?:
       | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
       | undefined;
@@ -498,12 +549,18 @@ export namespace JSX {
     "on:canplaythrough"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:change"?: EventHandlerWithOptionsUnion<T, Event, ChangeEventHandler<T, Event>> | undefined;
     "on:click"?: EventHandlerWithOptionsUnion<T, MouseEvent> | undefined;
+    "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     // TODO `CommandEvent` is currently undefined in TS
     "on:command"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:compositionend"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionstart"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
     "on:compositionupdate"?: EventHandlerWithOptionsUnion<T, CompositionEvent> | undefined;
+    "on:contentvisibilityautostatechange"?:
+      | EventHandlerWithOptionsUnion<T, ContentVisibilityAutoStateChangeEvent>
+      | undefined;
+    "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:contextmenu"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:copy"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
     "on:cuechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:cut"?: EventHandlerWithOptionsUnion<T, ClipboardEvent> | undefined;
@@ -529,6 +586,9 @@ export namespace JSX {
     "on:focusout"?:
       | EventHandlerWithOptionsUnion<T, FocusEvent, FocusEventHandler<T, FocusEvent>>
       | undefined;
+    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
+    "on:fullscreenchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:fullscreenerror"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:gotpointercapture"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:input"?:
       | EventHandlerWithOptionsUnion<T, InputEvent, InputEventHandler<T, InputEvent>>
@@ -560,6 +620,7 @@ export namespace JSX {
     "on:pointermove"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:pointerout"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:pointerover"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
+    "on:pointerrawupdate"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:pointerup"?: EventHandlerWithOptionsUnion<T, PointerEvent> | undefined;
     "on:progress"?: EventHandlerWithOptionsUnion<T, ProgressEvent> | undefined;
     "on:ratechange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -567,6 +628,10 @@ export namespace JSX {
     "on:resize"?: EventHandlerWithOptionsUnion<T, UIEvent> | undefined;
     "on:scroll"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:scrollend"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    "on:scrollsnapchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    // todo `SnapEvent` is currently undefined in TS
+    "on:scrollsnapchanging"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:securitypolicyviolation"?:
       | EventHandlerWithOptionsUnion<T, SecurityPolicyViolationEvent>
       | undefined;
@@ -574,6 +639,7 @@ export namespace JSX {
     "on:seeking"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:select"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:selectionchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+    "on:selectstart"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:slotchange"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:stalled"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
     "on:submit"?: EventHandlerWithOptionsUnion<T, SubmitEvent> | undefined;
@@ -593,6 +659,13 @@ export namespace JSX {
     "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
   }
 
+  /**
+   * Global `Element` keys, defined for all tags regardless of their namespace.
+   *
+   * That's `keys` that are defined BY ALL `HTMLElement/SVGElement/MathMLElement` interfaces.
+   *
+   * Includes `keys` defined for the `Element` and `Node` interfaces.
+   */
   interface DOMAttributes<T>
     extends CustomAttributes<T>,
       DirectiveAttributes,
@@ -604,11 +677,25 @@ export namespace JSX {
       OnCaptureAttributes<T>,
       CustomEventHandlersCamelCase<T>,
       CustomEventHandlersLowerCase<T>,
-      CustomEventHandlersNamespaced<T> {
-    children?: FunctionMaybe<Element | undefined>;
+      CustomEventHandlersNamespaced<T>,
+      AriaAttributes {
+    // [key: ClassKeys]: boolean;
+
+    // properties
     innerHTML?: FunctionMaybe<string>;
-    innerText?: FunctionMaybe<string | number>;
     textContent?: FunctionMaybe<string | number>;
+
+    // attributes
+    autofocus?: FunctionMaybe<boolean | undefined>;
+    class?: FunctionMaybe<string | undefined>;
+    elementtiming?: FunctionMaybe<string | undefined>;
+    id?: FunctionMaybe<string | undefined>;
+    nonce?: FunctionMaybe<string | undefined>;
+    slot?: FunctionMaybe<string | undefined>;
+    style?: FunctionMaybe<CSSProperties | string | undefined>;
+    tabindex?: FunctionMaybe<number | string | undefined>;
+
+    tabIndex?: FunctionMaybe<number | string | undefined>;
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
@@ -617,6 +704,70 @@ export namespace JSX {
   }
 
   type HTMLAutocapitalize = "off" | "none" | "on" | "sentences" | "words" | "characters";
+  type HTMLAutocomplete =
+    | "additional-name"
+    | "address-level1"
+    | "address-level2"
+    | "address-level3"
+    | "address-level4"
+    | "address-line1"
+    | "address-line2"
+    | "address-line3"
+    | "bday"
+    | "bday-day"
+    | "bday-month"
+    | "bday-year"
+    | "billing"
+    | "cc-additional-name"
+    | "cc-csc"
+    | "cc-exp"
+    | "cc-exp-month"
+    | "cc-exp-year"
+    | "cc-family-name"
+    | "cc-given-name"
+    | "cc-name"
+    | "cc-number"
+    | "cc-type"
+    | "country"
+    | "country-name"
+    | "current-password"
+    | "email"
+    | "family-name"
+    | "fax"
+    | "given-name"
+    | "home"
+    | "honorific-prefix"
+    | "honorific-suffix"
+    | "impp"
+    | "language"
+    | "mobile"
+    | "name"
+    | "new-password"
+    | "nickname"
+    | "off"
+    | "on"
+    | "organization"
+    | "organization-title"
+    | "pager"
+    | "photo"
+    | "postal-code"
+    | "sex"
+    | "shipping"
+    | "street-address"
+    | "tel"
+    | "tel-area-code"
+    | "tel-country-code"
+    | "tel-extension"
+    | "tel-local"
+    | "tel-local-prefix"
+    | "tel-local-suffix"
+    | "tel-national"
+    | "transaction-amount"
+    | "transaction-currency"
+    | "url"
+    | "username"
+    | "work"
+    | (string & {});
   type HTMLDir = "ltr" | "rtl" | "auto";
   type HTMLFormEncType = "application/x-www-form-urlencoded" | "multipart/form-data" | "text/plain";
   type HTMLFormMethod = "post" | "get" | "dialog";
@@ -1044,64 +1195,74 @@ export namespace JSX {
   //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
   // };
 
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    // [key: ClassKeys]: boolean;
-    about?: FunctionMaybe<string | undefined>;
+  /** `HTMLElement` interface keys only. (ex not svg/math) */
+  interface HTMLAttributes<T> extends DOMAttributes<T> {
+    innerText?: FunctionMaybe<string | number>;
+
     accesskey?: FunctionMaybe<string | undefined>;
     autocapitalize?: FunctionMaybe<HTMLAutocapitalize | undefined>;
-    class?: FunctionMaybe<string | undefined>;
-    color?: FunctionMaybe<string | undefined>;
+    autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
     contenteditable?: FunctionMaybe<
       "true" | "false" | boolean | "plaintext-only" | "inherit" | undefined
     >;
-    contextmenu?: FunctionMaybe<string | undefined>;
-    datatype?: FunctionMaybe<string | undefined>;
     dir?: FunctionMaybe<HTMLDir | undefined>;
     draggable?: FunctionMaybe<boolean | "false" | "true" | undefined>;
+    enterkeyhint?: FunctionMaybe<
+      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
+    >;
     exportparts?: FunctionMaybe<string | undefined>;
     hidden?: FunctionMaybe<boolean | "hidden" | "until-found" | undefined>;
-    id?: FunctionMaybe<string | undefined>;
     inert?: FunctionMaybe<boolean | undefined>;
-    inlist?: FunctionMaybe<any | undefined>;
     inputmode?: FunctionMaybe<
       "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url" | undefined
     >;
     is?: FunctionMaybe<string | undefined>;
+    lang?: FunctionMaybe<string | undefined>;
+    part?: FunctionMaybe<string | undefined>;
+    popover?: FunctionMaybe<boolean | "manual" | "auto" | undefined>;
+    spellcheck?: FunctionMaybe<"true" | "false" | boolean | undefined>;
+    title?: FunctionMaybe<string | undefined>;
+    translate?: FunctionMaybe<"yes" | "no" | undefined>;
+
+    accessKey?: FunctionMaybe<string | undefined>;
+    autoCapitalize?: FunctionMaybe<HTMLAutocapitalize | undefined>;
+    contentEditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit" | undefined>;
+    exportParts?: FunctionMaybe<string | undefined>;
+    inputMode?: FunctionMaybe<
+      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search" | undefined
+    >;
+
+    // Microdata
     itemid?: FunctionMaybe<string | undefined>;
     itemprop?: FunctionMaybe<string | undefined>;
     itemref?: FunctionMaybe<string | undefined>;
     itemscope?: FunctionMaybe<boolean | undefined>;
     itemtype?: FunctionMaybe<string | undefined>;
-    lang?: FunctionMaybe<string | undefined>;
-    part?: FunctionMaybe<string | undefined>;
-    popover?: FunctionMaybe<boolean | "manual" | "auto" | undefined>;
-    prefix?: FunctionMaybe<string | undefined>;
-    property?: FunctionMaybe<string | undefined>;
-    resource?: FunctionMaybe<string | undefined>;
-    slot?: FunctionMaybe<string | undefined>;
-    spellcheck?: FunctionMaybe<"true" | "false" | boolean | undefined>;
-    style?: FunctionMaybe<CSSProperties | string | undefined>;
-    tabindex?: FunctionMaybe<number | string | undefined>;
-    title?: FunctionMaybe<string | undefined>;
-    translate?: FunctionMaybe<"yes" | "no" | undefined>;
-    typeof?: FunctionMaybe<string | undefined>;
-    vocab?: FunctionMaybe<string | undefined>;
 
-    accessKey?: FunctionMaybe<string | undefined>;
-    autoCapitalize?: FunctionMaybe<HTMLAutocapitalize | undefined>;
-    contentEditable?: FunctionMaybe<boolean | "plaintext-only" | "inherit" | undefined>;
-    contextMenu?: FunctionMaybe<string | undefined>;
-    exportParts?: FunctionMaybe<string | undefined>;
-    inputMode?: FunctionMaybe<
-      "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search" | undefined
-    >;
     itemId?: FunctionMaybe<string | undefined>;
     itemProp?: FunctionMaybe<string | undefined>;
     itemRef?: FunctionMaybe<string | undefined>;
     itemScope?: FunctionMaybe<boolean | undefined>;
     itemType?: FunctionMaybe<string | undefined>;
-    tabIndex?: FunctionMaybe<number | string | undefined>;
+
+    // RDFa Attributes
+    about?: FunctionMaybe<string | undefined>;
+    datatype?: FunctionMaybe<string | undefined>;
+    inlist?: FunctionMaybe<any | undefined>;
+    prefix?: FunctionMaybe<string | undefined>;
+    property?: FunctionMaybe<string | undefined>;
+    resource?: FunctionMaybe<string | undefined>;
+    typeof?: FunctionMaybe<string | undefined>;
+    vocab?: FunctionMaybe<string | undefined>;
+
+    /** @deprecated */
+    contextmenu?: FunctionMaybe<string | undefined>;
+    /** @deprecated */
+    contextMenu?: FunctionMaybe<string | undefined>;
   }
+
+  // html elements
+
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: FunctionMaybe<string | undefined>;
     href?: FunctionMaybe<string | undefined>;
@@ -1152,15 +1313,14 @@ export namespace JSX {
     href?: FunctionMaybe<string | undefined>;
     target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
   }
+  interface BdoHTMLAttributes<T> extends HTMLAttributes<T> {
+    dir?: FunctionMaybe<"ltr" | "rtl" | undefined>;
+  }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: FunctionMaybe<string | undefined>;
   }
-  interface BodyHTMLAttributes<T>
-    extends HTMLAttributes<T>,
-      WindowEventMap<T>,
-      ElementEventMap<T> {}
+  interface BodyHTMLAttributes<T> extends HTMLAttributes<T>, WindowEventMap<T> {}
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: FunctionMaybe<boolean | undefined>;
     disabled?: FunctionMaybe<boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
     formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
@@ -1198,14 +1358,6 @@ export namespace JSX {
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | undefined>;
     width?: FunctionMaybe<number | string | undefined>;
-
-    onContextLost?: EventHandlerUnion<T, Event> | undefined;
-    "on:contextlost"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    oncontextlost?: EventHandlerUnion<T, Event> | undefined;
-
-    onContextRestored?: EventHandlerUnion<T, Event> | undefined;
-    "on:contextrestored"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    oncontextrestored?: EventHandlerUnion<T, Event> | undefined;
 
     /**
      * @deprecated
@@ -1267,13 +1419,8 @@ export namespace JSX {
      */
     tabindex?: never;
 
-    onClose?: EventHandlerUnion<T, Event> | undefined;
-    "on:close"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    onclose?: EventHandlerUnion<T, Event> | undefined;
-
-    onCancel?: EventHandlerUnion<T, Event> | undefined;
-    "on:cancel"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
-    oncancel?: EventHandlerUnion<T, Event> | undefined;
+    /** @experimental */
+    closedby: FunctionMaybe<"any" | "closerequest" | "none" | undefined>;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | undefined>;
@@ -1302,10 +1449,6 @@ export namespace JSX {
     novalidate?: FunctionMaybe<boolean | undefined>;
     rel?: FunctionMaybe<string | undefined>;
     target?: FunctionMaybe<"_self" | "_blank" | "_parent" | "_top" | (string & {}) | undefined>;
-
-    onFormData?: EventHandlerUnion<T, FormDataEvent> | undefined;
-    "on:formdata"?: EventHandlerWithOptionsUnion<T, FormDataEvent> | undefined;
-    onformdata?: EventHandlerUnion<T, FormDataEvent> | undefined;
 
     noValidate?: FunctionMaybe<boolean | undefined>;
 
@@ -1368,7 +1511,6 @@ export namespace JSX {
     alt?: FunctionMaybe<string | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
     decoding?: FunctionMaybe<"sync" | "async" | "auto" | undefined>;
-    elementtiming?: FunctionMaybe<string | undefined>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
     height?: FunctionMaybe<number | string | undefined>;
     ismap?: FunctionMaybe<boolean | undefined>;
@@ -1410,83 +1552,14 @@ export namespace JSX {
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: FunctionMaybe<string | undefined>;
+    alpha?: FunctionMaybe<boolean | undefined>;
     alt?: FunctionMaybe<string | undefined>;
-    autocomplete?: FunctionMaybe<
-      | "additional-name"
-      | "address-level1"
-      | "address-level2"
-      | "address-level3"
-      | "address-level4"
-      | "address-line1"
-      | "address-line2"
-      | "address-line3"
-      | "bday"
-      | "bday-day"
-      | "bday-month"
-      | "bday-year"
-      | "billing"
-      | "cc-additional-name"
-      | "cc-csc"
-      | "cc-exp"
-      | "cc-exp-month"
-      | "cc-exp-year"
-      | "cc-family-name"
-      | "cc-given-name"
-      | "cc-name"
-      | "cc-number"
-      | "cc-type"
-      | "country"
-      | "country-name"
-      | "current-password"
-      | "email"
-      | "family-name"
-      | "fax"
-      | "given-name"
-      | "home"
-      | "honorific-prefix"
-      | "honorific-suffix"
-      | "impp"
-      | "language"
-      | "mobile"
-      | "name"
-      | "new-password"
-      | "nickname"
-      | "off"
-      | "on"
-      | "organization"
-      | "organization-title"
-      | "pager"
-      | "photo"
-      | "postal-code"
-      | "sex"
-      | "shipping"
-      | "street-address"
-      | "tel"
-      | "tel-area-code"
-      | "tel-country-code"
-      | "tel-extension"
-      | "tel-local"
-      | "tel-local-prefix"
-      | "tel-local-suffix"
-      | "tel-national"
-      | "transaction-amount"
-      | "transaction-currency"
-      | "url"
-      | "username"
-      | "work"
-      | (string & {})
-      | undefined
-    >;
-    autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
+    autocomplete?: FunctionMaybe<HTMLAutocomplete | undefined>;
     capture?: FunctionMaybe<"user" | "environment" | undefined>;
     checked?: FunctionMaybe<boolean | undefined>;
-    crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
+    colorspace?: FunctionMaybe<string | undefined>;
     dirname?: FunctionMaybe<string | undefined>;
     disabled?: FunctionMaybe<boolean | undefined>;
-    enterkeyhint?: FunctionMaybe<
-      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
-    >;
     form?: FunctionMaybe<string | undefined>;
     formaction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
     formenctype?: FunctionMaybe<HTMLFormEncType | undefined>;
@@ -1544,7 +1617,6 @@ export namespace JSX {
     /** @non-standard */
     incremental?: FunctionMaybe<boolean | undefined>;
 
-    crossOrigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
     formAction?: FunctionMaybe<string | SerializableAttributeValue | undefined>;
     formEnctype?: FunctionMaybe<HTMLFormEncType | undefined>;
     formMethod?: FunctionMaybe<HTMLFormMethod | undefined>;
@@ -1567,8 +1639,6 @@ export namespace JSX {
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     /** @deprecated */
-    autofocus?: FunctionMaybe<boolean | undefined>;
-    /** @deprecated */
     challenge?: FunctionMaybe<string | undefined>;
     /** @deprecated */
     disabled?: FunctionMaybe<boolean | undefined>;
@@ -1583,7 +1653,6 @@ export namespace JSX {
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
     for?: FunctionMaybe<string | undefined>;
-    form?: FunctionMaybe<string | undefined>;
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: FunctionMaybe<number | string | undefined>;
@@ -1594,6 +1663,7 @@ export namespace JSX {
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     as?: FunctionMaybe<HTMLLinkAs | undefined>;
     blocking?: FunctionMaybe<"render" | undefined>;
+    color?: FunctionMaybe<string | undefined>;
     crossorigin?: FunctionMaybe<HTMLCrossorigin | undefined>;
     disabled?: FunctionMaybe<boolean | undefined>;
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
@@ -1621,7 +1691,7 @@ export namespace JSX {
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: FunctionMaybe<string | undefined>;
   }
-  interface MediaHTMLAttributes<T> extends HTMLAttributes<T>, ElementEventMap<T> {
+  interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoplay?: FunctionMaybe<boolean | undefined>;
     controls?: FunctionMaybe<boolean | undefined>;
     controlslist?: FunctionMaybe<
@@ -1775,7 +1845,6 @@ export namespace JSX {
     fetchpriority?: FunctionMaybe<"high" | "low" | "auto" | undefined>;
     integrity?: FunctionMaybe<string | undefined>;
     nomodule?: FunctionMaybe<boolean | undefined>;
-    nonce?: FunctionMaybe<string | undefined>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | undefined>;
     src?: FunctionMaybe<string | undefined>;
     type?: FunctionMaybe<"importmap" | "module" | "speculationrules" | (string & {}) | undefined>;
@@ -1795,8 +1864,7 @@ export namespace JSX {
     language?: FunctionMaybe<string | undefined>;
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: FunctionMaybe<string | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
+    autocomplete?: FunctionMaybe<HTMLAutocomplete | undefined>;
     disabled?: FunctionMaybe<boolean | undefined>;
     form?: FunctionMaybe<string | undefined>;
     multiple?: FunctionMaybe<boolean | undefined>;
@@ -1820,7 +1888,6 @@ export namespace JSX {
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     blocking?: FunctionMaybe<"render" | undefined>;
     media?: FunctionMaybe<string | undefined>;
-    nonce?: FunctionMaybe<string | undefined>;
 
     /** @deprecated */
     scoped?: FunctionMaybe<boolean | undefined>;
@@ -1860,90 +1927,18 @@ export namespace JSX {
   }
   interface TemplateHTMLAttributes<T> extends HTMLAttributes<T> {
     shadowrootclonable?: FunctionMaybe<boolean | undefined>;
+    shadowrootcustomelementregistry?: FunctionMaybe<boolean | undefined>;
     shadowrootdelegatesfocus?: FunctionMaybe<boolean | undefined>;
     shadowrootmode?: FunctionMaybe<"open" | "closed" | undefined>;
 
     /** @experimental */
     shadowrootserializable?: FunctionMaybe<boolean | undefined>;
-
-    /** @deprecated */
-    content?: FunctionMaybe<DocumentFragment | undefined>;
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: FunctionMaybe<
-      | "additional-name"
-      | "address-level1"
-      | "address-level2"
-      | "address-level3"
-      | "address-level4"
-      | "address-line1"
-      | "address-line2"
-      | "address-line3"
-      | "bday"
-      | "bday-day"
-      | "bday-month"
-      | "bday-year"
-      | "billing"
-      | "cc-additional-name"
-      | "cc-csc"
-      | "cc-exp"
-      | "cc-exp-month"
-      | "cc-exp-year"
-      | "cc-family-name"
-      | "cc-given-name"
-      | "cc-name"
-      | "cc-number"
-      | "cc-type"
-      | "country"
-      | "country-name"
-      | "current-password"
-      | "email"
-      | "family-name"
-      | "fax"
-      | "given-name"
-      | "home"
-      | "honorific-prefix"
-      | "honorific-suffix"
-      | "impp"
-      | "language"
-      | "mobile"
-      | "name"
-      | "new-password"
-      | "nickname"
-      | "off"
-      | "on"
-      | "organization"
-      | "organization-title"
-      | "pager"
-      | "photo"
-      | "postal-code"
-      | "sex"
-      | "shipping"
-      | "street-address"
-      | "tel"
-      | "tel-area-code"
-      | "tel-country-code"
-      | "tel-extension"
-      | "tel-local"
-      | "tel-local-prefix"
-      | "tel-local-suffix"
-      | "tel-national"
-      | "transaction-amount"
-      | "transaction-currency"
-      | "url"
-      | "username"
-      | "work"
-      | (string & {})
-      | undefined
-    >;
-    autocorrect?: FunctionMaybe<"on" | "off" | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
+    autocomplete?: FunctionMaybe<HTMLAutocomplete | undefined>;
     cols?: FunctionMaybe<number | string | undefined>;
     dirname?: FunctionMaybe<string | undefined>;
     disabled?: FunctionMaybe<boolean | undefined>;
-    enterkeyhint?: FunctionMaybe<
-      "enter" | "done" | "go" | "next" | "previous" | "search" | "send" | undefined
-    >;
     form?: FunctionMaybe<string | undefined>;
     maxlength?: FunctionMaybe<number | string | undefined>;
     minlength?: FunctionMaybe<number | string | undefined>;
@@ -2049,7 +2044,6 @@ export namespace JSX {
 
     // does this exists?
     allowfullscreen?: FunctionMaybe<boolean | undefined>;
-    autofocus?: FunctionMaybe<boolean | undefined>;
     autosize?: FunctionMaybe<boolean | undefined>;
 
     /** @deprecated */
@@ -2060,6 +2054,7 @@ export namespace JSX {
     guestinstance?: FunctionMaybe<string | undefined>;
   }
 
+  // svg elements
   type SVGPreserveAspectRatio =
     | "none"
     | "xMinYMin"
@@ -2120,13 +2115,16 @@ export namespace JSX {
     | "defer xMidYMax slice"
     | "defer xMaxYMax slice";
   type SVGUnits = "userSpaceOnUse" | "objectBoundingBox";
-  interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    id?: FunctionMaybe<string | undefined>;
+
+  /** Global `SVGElement` interface keys only. (ex not html/math) */
+  interface CoreSVGAttributes<T> extends DOMAttributes<T> {
     lang?: FunctionMaybe<string | undefined>;
     tabindex?: FunctionMaybe<number | string | undefined>;
+    xmlns?: FunctionMaybe<string | undefined>;
 
     tabIndex?: FunctionMaybe<number | string | undefined>;
   }
+
   interface StylableSVGAttributes {
     class?: FunctionMaybe<string | undefined>;
     style?: FunctionMaybe<CSSProperties | string | undefined>;
@@ -2293,7 +2291,23 @@ export namespace JSX {
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
-      ConditionalProcessingSVGAttributes {}
+      ConditionalProcessingSVGAttributes {
+    // TODO TimeEvent is currently undefined on TS
+    onBegin?: EventHandlerUnion<T, Event> | undefined;
+    onbegin?: EventHandlerUnion<T, Event> | undefined;
+    "on:begin"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+
+    // TODO TimeEvent is currently undefined on TS
+    onEnd?: EventHandlerUnion<T, Event> | undefined;
+    onend?: EventHandlerUnion<T, Event> | undefined;
+    "on:end"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+
+    // TODO TimeEvent is currently undefined on TS
+    onRepeat?: EventHandlerUnion<T, Event> | undefined;
+    onrepeat?: EventHandlerUnion<T, Event> | undefined;
+    "on:repeat"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
+  }
+
   interface ContainerElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
@@ -2800,7 +2814,7 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | undefined>;
   }
   interface SetSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends AnimationElementSVGAttributes<T>,
       StylableSVGAttributes,
       AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
@@ -2818,8 +2832,7 @@ export namespace JSX {
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
       PresentationSVGAttributes,
-      WindowEventMap<T>,
-      ElementEventMap<T> {
+      WindowEventMap<T> {
     "xmlns:xlink"?: FunctionMaybe<string | undefined>;
     contentScriptType?: FunctionMaybe<string | undefined>;
     contentStyleType?: FunctionMaybe<string | undefined>;
@@ -2927,8 +2940,15 @@ export namespace JSX {
     viewTarget?: FunctionMaybe<string | undefined>;
   }
 
-  interface MathMLAttributes<T> extends HTMLAttributes<T> {
+  // math elements
+
+  /** Global `MathMLElement` interface keys only. (ex not html/svg) */
+  interface MathMLAttributes<T> extends DOMAttributes<T> {
+    dir?: FunctionMaybe<HTMLDir | undefined>;
     displaystyle?: FunctionMaybe<boolean | undefined>;
+    scriptlevel?: FunctionMaybe<string | undefined>;
+    xmlns?: FunctionMaybe<string | undefined>;
+
     /** @deprecated */
     href?: FunctionMaybe<string | undefined>;
     /** @deprecated */
@@ -2937,8 +2957,6 @@ export namespace JSX {
     mathcolor?: FunctionMaybe<string | undefined>;
     /** @deprecated */
     mathsize?: FunctionMaybe<string | undefined>;
-    nonce?: FunctionMaybe<string | undefined>;
-    scriptlevel?: FunctionMaybe<string | undefined>;
   }
 
   interface MathMLAnnotationElementAttributes<T> extends MathMLAttributes<T> {
@@ -3214,7 +3232,7 @@ export namespace JSX {
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
      */
-    bdo: HTMLAttributes<HTMLElement>;
+    bdo: BdoHTMLAttributes<HTMLElement>;
     /**
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLQuoteElement
@@ -3743,12 +3761,6 @@ export namespace JSX {
      * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
      */
     menuitem: HTMLAttributes<HTMLUnknownElement>;
-    /**
-     * @deprecated
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/xxxxx
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUnknownElement
-     */
-    noindex: HTMLAttributes<HTMLUnknownElement>;
     /**
      * @deprecated
      * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
