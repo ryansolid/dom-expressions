@@ -220,3 +220,147 @@ const template21 = (() => {
   );
   return _el$27;
 })();
+
+// ONCE TESTS
+
+const template22 = (() => {
+  var _el$28 = _tmpl$3();
+  props.width != null
+    ? _el$28.style.setProperty("width", props.width)
+    : _el$28.style.removeProperty("width");
+  props.height != null
+    ? _el$28.style.setProperty("height", props.height)
+    : _el$28.style.removeProperty("height");
+  return _el$28;
+})();
+const template23 = (() => {
+  var _el$29 = _tmpl$3();
+  props.width != null
+    ? _el$29.style.setProperty("width", props.width)
+    : _el$29.style.removeProperty("width");
+  props.height != null
+    ? _el$29.style.setProperty("height", props.height)
+    : _el$29.style.removeProperty("height");
+  _$effect(() => _$setAttribute(_el$29, "something", color()));
+  return _el$29;
+})();
+const template24 = (() => {
+  var _el$30 = _tmpl$3();
+  props.height != null
+    ? _el$30.style.setProperty("height", props.height)
+    : _el$30.style.removeProperty("height");
+  _$setAttribute(_el$30, "something", color());
+  _$effect(_$p =>
+    (_$p = props.width) != null
+      ? _el$30.style.setProperty("width", _$p)
+      : _el$30.style.removeProperty("width")
+  );
+  return _el$30;
+})();
+
+// ONCE TESTS SPREADS
+
+const propsSpread = {
+  something: color(),
+  style: {
+    "background-color": color(),
+    color: /* @once*/ color(),
+    "margin-right": /* @once */ props.right
+  }
+};
+const template25 = (() => {
+  var _el$31 = _tmpl$3();
+  _$spread(_el$31, propsSpread, false, false);
+  return _el$31;
+})();
+const template26 = (() => {
+  var _el$32 = _tmpl$3();
+  _$spread(
+    _el$32,
+    {
+      ...propsSpread
+    },
+    false,
+    false
+  );
+  return _el$32;
+})();
+const template27 = (() => {
+  var _el$33 = _tmpl$3();
+  _$spread(
+    _el$33,
+    _$mergeProps(propsSpread, {
+      get ["data-dynamic"]() {
+        return color();
+      },
+      "data-static": color()
+    }),
+    false,
+    false
+  );
+  return _el$33;
+})();
+const template28 = (() => {
+  var _el$34 = _tmpl$3();
+  _$spread(
+    _el$34,
+    _$mergeProps(
+      {
+        ...propsSpread
+      },
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
+    false,
+    false
+  );
+  return _el$34;
+})();
+const template29 = (() => {
+  var _el$35 = _tmpl$3();
+  _$spread(
+    _el$35,
+    _$mergeProps(
+      {
+        ...propsSpread1
+      },
+      propsSpread2,
+      {
+        ...propsSpread3
+      },
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
+    false,
+    false
+  );
+  return _el$35;
+})();
+
+// ONCE PROPERTY OF OBJECT ACCESS
+
+// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
+const styleProp = {
+  style: {
+    width: props.width,
+    height: props.height
+  }
+};
+const template30 = (() => {
+  var _el$36 = _tmpl$3();
+  _$style(_el$36, styleProp.style);
+  return _el$36;
+})();
+const template31 = (() => {
+  var _el$37 = _tmpl$3();
+  _$effect(_$p => _$style(_el$37, styleProp.style, _$p));
+  return _el$37;
+})();

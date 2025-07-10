@@ -90,7 +90,7 @@ const template2 = _$ssrElement(
 );
 const template3 = _$ssr(
   _tmpl$4,
-  _$ssrAttribute("id", _$escape(/*@once*/ state.id, true), false),
+  _$ssrAttribute("id", _$escape(state.id, true), false),
   "background-color:" + _$escape(state.color, true),
   _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content)
