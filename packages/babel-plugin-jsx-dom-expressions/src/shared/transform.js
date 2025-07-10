@@ -20,31 +20,7 @@ import transformFragmentChildren from "./fragment";
 
 export function transformJSX(path) {
   const config = getConfig(path);
-  /*
-   this POC (+ imports) should just work
 
-   path.traverse({
-    enter(path) {
-      if (
-        path.node.leadingComments &&
-        path.node.leadingComments[0] &&
-        path.node.leadingComments[0].value.trim() === config.staticMarker
-      ) {
-        const node = path.node;
-
-        // untrack(() => unwrap(node))
-        const wrappedNode = t.callExpression(t.identifier("untrack"), [
-          t.arrowFunctionExpression([], t.callExpression(t.identifier("unwrap"), [node]))
-        ]);
-
-        path.node.leadingComments[0] = null;
-
-        path.replaceWith(wrappedNode);
-      }
-    }
-  });
-
-    */
   const replace = transformThis(path);
   const result = transformNode(
     path,
