@@ -78,3 +78,22 @@ const template19 = <div ref={a() ? b : c} />
 const template20 = <div ref={a() ?? b} />
 
 const template21 = <div style={{ color: a() }} />
+
+const template22 = (
+  <div
+    style={/*@once*/ { "background-color": color(), "margin-right": props.right }}
+  />
+);
+
+const template23 = (
+  <div
+    style={/*@once*/ { "background-color": color(), "margin-right": props.right }}
+    something={color()}
+  />
+);
+const template24 = (
+  <div
+    style={{ "background-color": color(), "margin-right": /*@once*/ props.right }}
+    something={color()}
+  />
+);

@@ -220,3 +220,47 @@ const template21 = (() => {
   );
   return _el$27;
 })();
+const template22 = (() => {
+  var _el$28 = _tmpl$3();
+  color() != null
+    ? _el$28.style.setProperty("background-color", color())
+    : _el$28.style.removeProperty("background-color");
+  props.right != null
+    ? _el$28.style.setProperty("margin-right", props.right)
+    : _el$28.style.removeProperty("margin-right");
+  return _el$28;
+})();
+const template23 = (() => {
+  var _el$29 = _tmpl$3();
+  color() != null
+    ? _el$29.style.setProperty("background-color", color())
+    : _el$29.style.removeProperty("background-color");
+  props.right != null
+    ? _el$29.style.setProperty("margin-right", props.right)
+    : _el$29.style.removeProperty("margin-right");
+  _$effect(() => _$setAttribute(_el$29, "something", color()));
+  return _el$29;
+})();
+const template24 = (() => {
+  var _el$30 = _tmpl$3();
+  props.right != null
+    ? _el$30.style.setProperty("margin-right", props.right)
+    : _el$30.style.removeProperty("margin-right");
+  _$effect(
+    _p$ => {
+      var _v$4 = color(),
+        _v$5 = color();
+      _v$4 !== _p$.e &&
+        ((_p$.e = _v$4) != null
+          ? _el$30.style.setProperty("background-color", _v$4)
+          : _el$30.style.removeProperty("background-color"));
+      _v$5 !== _p$.t && _$setAttribute(_el$30, "something", (_p$.t = _v$5));
+      return _p$;
+    },
+    {
+      e: undefined,
+      t: undefined
+    }
+  );
+  return _el$30;
+})();
