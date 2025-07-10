@@ -6,6 +6,7 @@ import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
+import { setStyleProperty as _$setStyleProperty } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 var _tmpl$ = /*#__PURE__*/ _$template(
     `<svg width=400 height=180><rect stroke-width=2 x=50 y=20 rx=20 ry=20 width=150 height=150 style=fill:red;stroke:black;stroke-width:5;opacity:0.5></rect><linearGradient gradientTransform=rotate(25)><stop offset=0%>`
@@ -30,9 +31,9 @@ const template = _$getNextElement(_tmpl$);
 const template2 = (() => {
   var _el$2 = _$getNextElement(_tmpl$2),
     _el$3 = _el$2.firstChild;
-  _el$3.style.setProperty("fill", "red");
-  _el$3.style.setProperty("stroke", "black");
-  _el$3.style.setProperty("opacity", "0.5");
+  _$setStyleProperty(_el$3, "fill", "red");
+  _$setStyleProperty(_el$3, "stroke", "black");
+  _$setStyleProperty(_el$3, "opacity", "0.5");
   _$effect(
     _p$ => {
       var _v$ = state.name,
@@ -44,10 +45,7 @@ const template2 = (() => {
       _v$2 !== _p$.t && _$setAttribute(_el$3, "stroke-width", (_p$.t = _v$2));
       _v$3 !== _p$.a && _$setAttribute(_el$3, "x", (_p$.a = _v$3));
       _v$4 !== _p$.o && _$setAttribute(_el$3, "y", (_p$.o = _v$4));
-      _v$5 !== _p$.i &&
-        ((_p$.i = _v$5) != null
-          ? _el$3.style.setProperty("stroke-width", _v$5)
-          : _el$3.style.removeProperty("stroke-width"));
+      _v$5 !== _p$.i && _$setStyleProperty(_el$3, "stroke-width", (_p$.i = _v$5));
       return _p$;
     },
     {
