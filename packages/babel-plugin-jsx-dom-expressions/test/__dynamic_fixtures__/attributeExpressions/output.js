@@ -309,6 +309,8 @@ const template28 = (() => {
   return _el$34;
 })();
 
+// ONCE PROPERTY OF OBJECT ACCESS
+
 // https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
 const styleProp = {
   style: {
