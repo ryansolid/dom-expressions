@@ -116,9 +116,23 @@ const template28 = (
   <div {/* @once */ ...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
 );
 
+const template29 = (
+  <div
+    {
+      /* @once */ ...propsSpread1
+    }
+    {...propsSpread2}
+    {
+      /* @once */ ...propsSpread3
+    }
+    data-dynamic={color()}
+    data-static={/* @once */ color()}
+  />
+);
+
 // ONCE PROPERTY OF OBJECT ACCESS
 
 // https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
 const styleProp = { style: { width: props.width, height: props.height } };
-const template29 = <div style={/* @once */ styleProp.style} />;
-const template30 = <div style={styleProp.style} />;
+const template30 = <div style={/* @once */ styleProp.style} />;
+const template31 = <div style={styleProp.style} />;

@@ -320,6 +320,30 @@ const template28 = (() => {
   );
   return _el$34;
 })();
+const template29 = (() => {
+  var _el$35 = _tmpl$3();
+  _$spread(
+    _el$35,
+    _$mergeProps(
+      {
+        ...propsSpread1
+      },
+      propsSpread2,
+      {
+        ...propsSpread3
+      },
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
+    false,
+    false
+  );
+  return _el$35;
+})();
 
 // ONCE PROPERTY OF OBJECT ACCESS
 
@@ -330,13 +354,13 @@ const styleProp = {
     height: props.height
   }
 };
-const template29 = (() => {
-  var _el$35 = _tmpl$3();
-  _$style(_el$35, styleProp.style);
-  return _el$35;
-})();
 const template30 = (() => {
   var _el$36 = _tmpl$3();
-  _$effect(_$p => _$style(_el$36, styleProp.style, _$p));
+  _$style(_el$36, styleProp.style);
   return _el$36;
+})();
+const template31 = (() => {
+  var _el$37 = _tmpl$3();
+  _$effect(_$p => _$style(_el$37, styleProp.style, _$p));
+  return _el$37;
 })();
