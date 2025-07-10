@@ -761,12 +761,22 @@ function transformAttributes(path, results) {
           }
         } else if (
           config.effectWrapper &&
-          (isDynamic(attribute.get("value").get("expression"), {
+          isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
-          }) ||
-            ((key === "classList" || key === "style") &&
-              !attribute.get("value").get("expression").evaluate().confident))
+          })
         ) {
+          /*
+            Following code doesn't repect static marker `@once`.
+            https://github.com/ryansolid/dom-expressions/pull/438
+
+           ||
+            (
+                (
+                    key === "classList" || key === "style") &&
+                    !attribute.get("value").get("expression").evaluate().confident
+                )
+            )
+           */
           let nextElem = elem;
           if (key === "value" || key === "checked") {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
