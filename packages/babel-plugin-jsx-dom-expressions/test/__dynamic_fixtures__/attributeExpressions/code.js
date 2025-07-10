@@ -69,31 +69,56 @@ const template15 = <mesh scale={[1, 1, 1]} rotateX={0} />;
 
 const template16 = <div use:something {...somethingElse} use:zero={0} />;
 
-const template17 = <div ref={a().b.c} />
+const template17 = <div ref={a().b.c} />;
 
-const template18 = <div ref={a().b?.c} />
+const template18 = <div ref={a().b?.c} />;
 
-const template19 = <div ref={a() ? b : c} />
+const template19 = <div ref={a() ? b : c} />;
 
-const template20 = <div ref={a() ?? b} />
+const template20 = <div ref={a() ?? b} />;
 
-const template21 = <div style={{ color: a() }} />
+const template21 = <div style={{ color: a() }} />;
 
-const template22 = (
-  <div
-    style={/*@once*/ { "background-color": color(), "margin-right": props.right }}
-  />
-);
+// ONCE TESTS
+
+const template22 = <div style={/*@once*/ { width: props.width, height: props.height }} />;
 
 const template23 = (
-  <div
-    style={/*@once*/ { "background-color": color(), "margin-right": props.right }}
-    something={color()}
-  />
+  <div style={/*@once*/ { width: props.width, height: props.height }} something={color()} />
 );
+
 const template24 = (
   <div
-    style={{ "background-color": color(), "margin-right": /*@once*/ props.right }}
-    something={color()}
+    style={{ width: props.width, height: /* @once */ props.height }}
+    something={/*@once*/ color()}
   />
 );
+
+// ONCE TESTS SPREADS
+
+const propsSpread = {
+  something: color(),
+  style: {
+    "background-color": color(),
+    color: /* @once*/ color(),
+    "margin-right": /* @once */ props.right
+  }
+};
+
+const template25 = <div {...propsSpread} />;
+const template26 = <div {/* @once */ ...propsSpread} />;
+
+const template27 = (
+  <div {...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
+);
+
+const template28 = (
+  <div {/* @once */ ...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
+);
+
+// ONCE PROPERTY OF OBJECT ACCESS
+
+// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
+const styleProp = { style: { width: props.width, height: props.height } };
+const template29 = <div style={/* @once */ styleProp.style} />;
+const template30 = <div style={styleProp.style} />;

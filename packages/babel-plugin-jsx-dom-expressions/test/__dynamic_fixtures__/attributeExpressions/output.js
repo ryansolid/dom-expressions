@@ -220,47 +220,109 @@ const template21 = (() => {
   );
   return _el$27;
 })();
+
+// ONCE TESTS
+
 const template22 = (() => {
   var _el$28 = _tmpl$3();
-  color() != null
-    ? _el$28.style.setProperty("background-color", color())
-    : _el$28.style.removeProperty("background-color");
-  props.right != null
-    ? _el$28.style.setProperty("margin-right", props.right)
-    : _el$28.style.removeProperty("margin-right");
+  props.width != null
+    ? _el$28.style.setProperty("width", props.width)
+    : _el$28.style.removeProperty("width");
+  props.height != null
+    ? _el$28.style.setProperty("height", props.height)
+    : _el$28.style.removeProperty("height");
   return _el$28;
 })();
 const template23 = (() => {
   var _el$29 = _tmpl$3();
-  color() != null
-    ? _el$29.style.setProperty("background-color", color())
-    : _el$29.style.removeProperty("background-color");
-  props.right != null
-    ? _el$29.style.setProperty("margin-right", props.right)
-    : _el$29.style.removeProperty("margin-right");
+  props.width != null
+    ? _el$29.style.setProperty("width", props.width)
+    : _el$29.style.removeProperty("width");
+  props.height != null
+    ? _el$29.style.setProperty("height", props.height)
+    : _el$29.style.removeProperty("height");
   _$effect(() => _$setAttribute(_el$29, "something", color()));
   return _el$29;
 })();
 const template24 = (() => {
   var _el$30 = _tmpl$3();
-  props.right != null
-    ? _el$30.style.setProperty("margin-right", props.right)
-    : _el$30.style.removeProperty("margin-right");
-  _$effect(
-    _p$ => {
-      var _v$4 = color(),
-        _v$5 = color();
-      _v$4 !== _p$.e &&
-        ((_p$.e = _v$4) != null
-          ? _el$30.style.setProperty("background-color", _v$4)
-          : _el$30.style.removeProperty("background-color"));
-      _v$5 !== _p$.t && _$setAttribute(_el$30, "something", (_p$.t = _v$5));
-      return _p$;
-    },
-    {
-      e: undefined,
-      t: undefined
-    }
+  props.height != null
+    ? _el$30.style.setProperty("height", props.height)
+    : _el$30.style.removeProperty("height");
+  _$setAttribute(_el$30, "something", color());
+  _$effect(_$p =>
+    (_$p = props.width) != null
+      ? _el$30.style.setProperty("width", _$p)
+      : _el$30.style.removeProperty("width")
   );
   return _el$30;
+})();
+
+// ONCE TESTS SPREADS
+
+const propsSpread = {
+  something: color(),
+  style: {
+    "background-color": color(),
+    color: /* @once*/ color(),
+    "margin-right": /* @once */ props.right
+  }
+};
+const template25 = (() => {
+  var _el$31 = _tmpl$3();
+  _$spread(_el$31, propsSpread, false, false);
+  return _el$31;
+})();
+const template26 = (() => {
+  var _el$32 = _tmpl$3();
+  _$spread(_el$32, propsSpread, false, false);
+  return _el$32;
+})();
+const template27 = (() => {
+  var _el$33 = _tmpl$3();
+  _$spread(
+    _el$33,
+    _$mergeProps(propsSpread, {
+      get ["data-dynamic"]() {
+        return color();
+      },
+      "data-static": color()
+    }),
+    false,
+    false
+  );
+  return _el$33;
+})();
+const template28 = (() => {
+  var _el$34 = _tmpl$3();
+  _$spread(
+    _el$34,
+    _$mergeProps(propsSpread, {
+      get ["data-dynamic"]() {
+        return color();
+      },
+      "data-static": color()
+    }),
+    false,
+    false
+  );
+  return _el$34;
+})();
+
+// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
+const styleProp = {
+  style: {
+    width: props.width,
+    height: props.height
+  }
+};
+const template29 = (() => {
+  var _el$35 = _tmpl$3();
+  _$style(_el$35, styleProp.style);
+  return _el$35;
+})();
+const template30 = (() => {
+  var _el$36 = _tmpl$3();
+  _$effect(_$p => _$style(_el$36, styleProp.style, _$p));
+  return _el$36;
 })();
