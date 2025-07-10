@@ -43,7 +43,7 @@ export function transformJSX(path) {
         path.node.leadingComments[0] &&
         path.node.leadingComments[0].value.trim() === config.staticMarker
       ) {
-        path.node.leadingComments = null;
+        path.node.leadingComments.shift();
       }
     }
   });
