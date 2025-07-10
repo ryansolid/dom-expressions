@@ -275,7 +275,14 @@ const template25 = (() => {
 })();
 const template26 = (() => {
   var _el$32 = _tmpl$3();
-  _$spread(_el$32, propsSpread, false, false);
+  _$spread(
+    _el$32,
+    {
+      ...propsSpread
+    },
+    false,
+    false
+  );
   return _el$32;
 })();
 const template27 = (() => {
@@ -297,12 +304,17 @@ const template28 = (() => {
   var _el$34 = _tmpl$3();
   _$spread(
     _el$34,
-    _$mergeProps(propsSpread, {
-      get ["data-dynamic"]() {
-        return color();
+    _$mergeProps(
+      {
+        ...propsSpread
       },
-      "data-static": color()
-    }),
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
     false,
     false
   );
