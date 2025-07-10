@@ -209,6 +209,6 @@ const template20 = (() => {
 })();
 const template21 = (() => {
   var _el$27 = _tmpl$3();
-  _$effect(_$p => _$setStyleProperty(_el$27, "color", (_$p = a())));
+  _$effect(_$p => _$setStyleProperty(_el$27, "color", a()));
   return _el$27;
 })();

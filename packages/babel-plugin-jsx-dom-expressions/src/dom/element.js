@@ -160,7 +160,6 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
     namespace = parts[0];
   }
 
-  // TODO: consider moving to a helper
   if (namespace === "style") {
     const setStyleProperty = registerImportMethod(
       path,
@@ -168,7 +167,11 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
       getRendererConfig(path, "dom").moduleName
     );
 
-    return t.callExpression(setStyleProperty, [elem, t.stringLiteral(name), value]);
+    return t.callExpression(setStyleProperty, [
+      elem,
+      t.stringLiteral(name),
+      t.isAssignmentExpression(value) && t.isIdentifier(value.left) ? value.right : value
+    ]);
   }
 
   if (namespace === "class") {

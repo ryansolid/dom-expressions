@@ -375,9 +375,7 @@ const template29 = (() => {
 const template30 = _tmpl$17();
 const template31 = (() => {
   var _el$44 = _tmpl$4();
-  _$effect(_$p =>
-    _$setStyleProperty(_el$44, "background-color", (_$p = getStore.itemProperties.color))
-  );
+  _$effect(_$p => _$setStyleProperty(_el$44, "background-color", getStore.itemProperties.color));
   return _el$44;
 })();
 const template32 = (() => {
@@ -441,7 +439,7 @@ const template38 = (() => {
 const template39 = _tmpl$19();
 const template40 = (() => {
   var _el$56 = _tmpl$4();
-  _$effect(_$p => _$setStyleProperty(_el$56, "color", (_$p = a())));
+  _$effect(_$p => _$setStyleProperty(_el$56, "color", a()));
   return _el$56;
 })();
 const template41 = (() => {
