@@ -329,6 +329,68 @@ function transformAttributes(path, results) {
     hasHydratableEvent = true;
   }
 
+  /**
+   *  inline styles
+   *
+   * 1. when string
+   * 2. when is an object, the key is a string, and value is string/numeric
+   * 3. remove properties from object when value is undefined/null
+   **/
+
+  attributes = path.get("openingElement").get("attributes");
+
+  const styleAttributes = attributes.filter(a => a.node.name && a.node.name.name === "style");
+  if (styleAttributes.length > 0) {
+    let inlinedStyle = "";
+
+    for (let i = 0; i < styleAttributes.length; i++) {
+      const attr = styleAttributes[i];
+
+      let value = attr.node.value;
+      if (t.isJSXExpressionContainer(value)) {
+        value = value.expression;
+      }
+
+      if (t.isStringLiteral(value)) {
+        inlinedStyle += `${value.value.replace(/;$/, "")};`;
+        attr.remove();
+      } else if (t.isObjectExpression(value)) {
+        const properties = value.properties;
+        const toRemoveProperty = [];
+        for (const property of properties) {
+          if (t.isObjectProperty(property)) {
+            if (
+              t.isStringLiteral(property.key) &&
+              (t.isStringLiteral(property.value) || t.isNumericLiteral(property.value))
+            ) {
+              inlinedStyle += `${property.key.value}:${property.value.value};`;
+              toRemoveProperty.push(property);
+            } else if (
+              (t.isIdentifier(property.value) && property.value.name === "undefined") ||
+              t.isNullLiteral(property.value)
+            ) {
+              toRemoveProperty.push(property);
+            }
+          }
+        }
+        for (const remove of toRemoveProperty) {
+          value.properties.splice(value.properties.indexOf(remove), 1);
+        }
+        if (value.properties.length === 0) {
+          attr.remove();
+        }
+      }
+    }
+
+    if (inlinedStyle !== "") {
+      const styleAttribute = t.jsxAttribute(
+        t.jsxIdentifier("style"),
+        t.stringLiteral(inlinedStyle.replace(/;$/, ""))
+      );
+      path.get("openingElement").node.attributes.push(styleAttribute);
+    }
+  }
+
   // preprocess styles
   const styleAttribute = path
     .get("openingElement")

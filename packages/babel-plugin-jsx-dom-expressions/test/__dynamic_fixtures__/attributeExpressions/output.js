@@ -13,8 +13,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b">`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<input type=checkbox readonly>`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox>`);
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div style=margin-right:40px>`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox readonly>`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`);
 const selected = true;
 let id = "my-h1";
 let link;
@@ -108,12 +109,11 @@ const template6 = (() => {
   return _el$12;
 })();
 const template7 = (() => {
-  var _el$13 = _tmpl$3();
+  var _el$13 = _tmpl$5();
   _$effect(
     _p$ => {
       var _v$ = {
           "background-color": color(),
-          "margin-right": "40px",
           ...props.style
         },
         _v$2 = props.top,
@@ -164,12 +164,12 @@ const template12 = (() => {
   return _el$18;
 })();
 const template13 = (() => {
-  var _el$19 = _tmpl$5();
+  var _el$19 = _tmpl$6();
   _el$19.checked = true;
   return _el$19;
 })();
 const template14 = (() => {
-  var _el$20 = _tmpl$6();
+  var _el$20 = _tmpl$7();
   _el$20.readOnly = value;
   _$effect(() => (_el$20.checked = state.visible));
   return _el$20;
