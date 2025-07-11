@@ -16,7 +16,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$7 = ["<div", ' style="', '">Hi</div>'],
   _tmpl$8 = ["<div", ' style="', '"', "></div>"],
   _tmpl$9 = ["<div", "></div>"],
-  _tmpl$10 = ["<div", ' onclick="', '"></div>'],
+  _tmpl$10 = ["<div", " onclick=\"console.log('hi')\"></div>"],
   _tmpl$11 = ["<input", ' type="checkbox" checked>'],
   _tmpl$12 = ["<input", ' type="checkbox"', ">"],
   _tmpl$13 = ["<div", ' class="`a">`$`</div>'],
@@ -66,7 +66,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$54 = ["<div", ' title="<u>data</u>"></div>'],
   _tmpl$55 = ["<div", ' true truestr="true" truestrjs="true"></div>'],
   _tmpl$56 = ["<div", ' falsestr="false" falsestrjs="false"></div>'],
-  _tmpl$57 = ["<div", " true></div>"],
+  _tmpl$57 = ["<div", ' true="true" false="false"></div>'],
   _tmpl$58 = ["<div", ' a b c d f="0" g h', "", "", " l></div>"];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
@@ -203,7 +203,7 @@ const template11 = (() => {
 })();
 const template12 = (() => {
   var _v$17 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$10, _v$17, "console.log('hi')");
+  return _$ssr(_tmpl$10, _v$17);
 })();
 const template13 = (() => {
   var _v$18 = _$ssrHydrationKey();

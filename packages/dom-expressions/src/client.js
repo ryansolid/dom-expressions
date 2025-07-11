@@ -395,8 +395,6 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
       addEventListener(node, name, value, delegate);
       delegate && delegateEvents([name]);
     }
-  } else if (prop.slice(0, 5) === "attr:") {
-    setAttribute(node, prop.slice(5), value);
   } else if (prop.slice(0, 5) === "bool:") {
     setBoolAttribute(node, prop.slice(5), value);
   } else if (

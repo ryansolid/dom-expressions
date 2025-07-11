@@ -70,7 +70,7 @@ const template10 = <div ref={refFactory()} />;
 
 const template11 = <div use:something use:another={thing} use:zero={0} />;
 
-const template12 = <div prop:htmlFor={thing} prop:number={123} attr:onclick="console.log('hi')" />;
+const template12 = <div prop:htmlFor={thing} prop:number={123} onclick="console.log('hi')" />;
 
 const template13 = <input type="checkbox" checked={true} />;
 
@@ -259,12 +259,12 @@ const template76 = <div ref={refUnknown} />
 const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
 const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
 const template79 = <div prop:true={true} prop:false={false}/>
-const template80 = <div attr:true={true} attr:false={false}/>
+const template80 = <div true={"true"} false={"false"}/>
 
 const template81 = <math display="block"><mrow></mrow></math>
 const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
-const template83 = <video attr:poster="1.jpg"/>
-const template84 = <div><video attr:poster="1.jpg"/></div>
+const template83 = <video poster="1.jpg"/>
+const template84 = <div><video poster="1.jpg"/></div>
 const template85 = <video prop:poster="1.jpg"/>
 const template86 = <div><video prop:poster="1.jpg"/></div>
 const template87 = <video bool:poster="1.jpg"/>

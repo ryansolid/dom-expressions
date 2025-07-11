@@ -20,55 +20,57 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div class=a className=b>`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox checked>`),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<button type=button>Write`),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly><input>`),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
-  _tmpl$13 = /*#__PURE__*/ _$template(`<a>`),
-  _tmpl$14 = /*#__PURE__*/ _$template(`<div><!$><!/><a>`),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
-  _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
-  _tmpl$17 = /*#__PURE__*/ _$template(
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div onclick="console.log('hi')">`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox checked>`),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<button type=button>Write`),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<div><input readonly><input>`),
+  _tmpl$13 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
+  _tmpl$14 = /*#__PURE__*/ _$template(`<a>`),
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div><!$><!/><a>`),
+  _tmpl$16 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
+  _tmpl$17 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
+  _tmpl$18 = /*#__PURE__*/ _$template(
     `<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2\n    random3 random4">`
   ),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
-  _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`),
-  _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
-  _tmpl$21 = /*#__PURE__*/ _$template(`<div>empty string`),
-  _tmpl$22 = /*#__PURE__*/ _$template(`<div>js empty`),
-  _tmpl$23 = /*#__PURE__*/ _$template(`<div quack>hola`),
-  _tmpl$24 = /*#__PURE__*/ _$template(`<div quack>"hola js"`),
-  _tmpl$25 = /*#__PURE__*/ _$template(`<div quack>true`),
-  _tmpl$26 = /*#__PURE__*/ _$template(`<div>false`),
-  _tmpl$27 = /*#__PURE__*/ _$template(`<div quack>1`),
-  _tmpl$28 = /*#__PURE__*/ _$template(`<div>0`),
-  _tmpl$29 = /*#__PURE__*/ _$template(`<div quack>"1"`),
-  _tmpl$30 = /*#__PURE__*/ _$template(`<div>"0"`),
-  _tmpl$31 = /*#__PURE__*/ _$template(`<div>undefined`),
-  _tmpl$32 = /*#__PURE__*/ _$template(`<div>null`),
-  _tmpl$33 = /*#__PURE__*/ _$template(`<div>boolTest()`),
-  _tmpl$34 = /*#__PURE__*/ _$template(`<div>boolTest`),
-  _tmpl$35 = /*#__PURE__*/ _$template(`<div>boolTestBinding`),
-  _tmpl$36 = /*#__PURE__*/ _$template(`<div>boolTestObjBinding.value`),
-  _tmpl$37 = /*#__PURE__*/ _$template(`<div>fn`),
-  _tmpl$38 = /*#__PURE__*/ _$template(`<div before quack>should have space before`),
-  _tmpl$39 = /*#__PURE__*/ _$template(`<div before quack after>should have space before/after`),
-  _tmpl$40 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
-  _tmpl$41 = /*#__PURE__*/ _$template(`<img src>`),
-  _tmpl$42 = /*#__PURE__*/ _$template(`<div><img src>`),
-  _tmpl$43 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
-  _tmpl$44 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
-  _tmpl$45 = /*#__PURE__*/ _$template(`<iframe src>`),
-  _tmpl$46 = /*#__PURE__*/ _$template(`<div><iframe src>`),
-  _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
-  _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
-  _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
-  _tmpl$50 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
-  _tmpl$51 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
-  _tmpl$52 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`);
+  _tmpl$19 = /*#__PURE__*/ _$template(`<button>`),
+  _tmpl$20 = /*#__PURE__*/ _$template(`<input value=10>`),
+  _tmpl$21 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
+  _tmpl$22 = /*#__PURE__*/ _$template(`<div>empty string`),
+  _tmpl$23 = /*#__PURE__*/ _$template(`<div>js empty`),
+  _tmpl$24 = /*#__PURE__*/ _$template(`<div quack>hola`),
+  _tmpl$25 = /*#__PURE__*/ _$template(`<div quack>"hola js"`),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<div quack>true`),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<div>false`),
+  _tmpl$28 = /*#__PURE__*/ _$template(`<div quack>1`),
+  _tmpl$29 = /*#__PURE__*/ _$template(`<div>0`),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<div quack>"1"`),
+  _tmpl$31 = /*#__PURE__*/ _$template(`<div>"0"`),
+  _tmpl$32 = /*#__PURE__*/ _$template(`<div>undefined`),
+  _tmpl$33 = /*#__PURE__*/ _$template(`<div>null`),
+  _tmpl$34 = /*#__PURE__*/ _$template(`<div>boolTest()`),
+  _tmpl$35 = /*#__PURE__*/ _$template(`<div>boolTest`),
+  _tmpl$36 = /*#__PURE__*/ _$template(`<div>boolTestBinding`),
+  _tmpl$37 = /*#__PURE__*/ _$template(`<div>boolTestObjBinding.value`),
+  _tmpl$38 = /*#__PURE__*/ _$template(`<div>fn`),
+  _tmpl$39 = /*#__PURE__*/ _$template(`<div before quack>should have space before`),
+  _tmpl$40 = /*#__PURE__*/ _$template(`<div before quack after>should have space before/after`),
+  _tmpl$41 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
+  _tmpl$42 = /*#__PURE__*/ _$template(`<img src>`),
+  _tmpl$43 = /*#__PURE__*/ _$template(`<div><img src>`),
+  _tmpl$44 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
+  _tmpl$45 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
+  _tmpl$46 = /*#__PURE__*/ _$template(`<iframe src>`),
+  _tmpl$47 = /*#__PURE__*/ _$template(`<div><iframe src>`),
+  _tmpl$48 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
+  _tmpl$49 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
+  _tmpl$50 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
+  _tmpl$51 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
+  _tmpl$52 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
+  _tmpl$53 = /*#__PURE__*/ _$template(`<div true=true false=false>`),
+  _tmpl$54 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -245,15 +247,14 @@ const template11 = (() => {
   return _el$17;
 })();
 const template12 = (() => {
-  var _el$18 = _$getNextElement(_tmpl$4);
+  var _el$18 = _$getNextElement(_tmpl$6);
   _el$18.htmlFor = thing;
   _el$18.number = 123;
-  _$setAttribute(_el$18, "onclick", "console.log('hi')");
   return _el$18;
 })();
-const template13 = _$getNextElement(_tmpl$6);
+const template13 = _$getNextElement(_tmpl$7);
 const template14 = (() => {
-  var _el$20 = _$getNextElement(_tmpl$7);
+  var _el$20 = _$getNextElement(_tmpl$8);
   _$effect(
     () => state.visible,
     _v$ => {
@@ -262,9 +263,9 @@ const template14 = (() => {
   );
   return _el$20;
 })();
-const template15 = _$getNextElement(_tmpl$8);
+const template15 = _$getNextElement(_tmpl$9);
 const template16 = (() => {
-  var _el$22 = _$getNextElement(_tmpl$9);
+  var _el$22 = _$getNextElement(_tmpl$10);
   _$className(_el$22, [
     "static",
     {
@@ -274,7 +275,7 @@ const template16 = (() => {
   return _el$22;
 })();
 const template17 = (() => {
-  var _el$23 = _$getNextElement(_tmpl$10);
+  var _el$23 = _$getNextElement(_tmpl$11);
   _$addEventListener(_el$23, "click", increment, true);
   _$runHydrationEvents();
   return _el$23;
@@ -305,7 +306,7 @@ const template19 = (() => {
   return _el$25;
 })();
 const template20 = (() => {
-  var _el$26 = _$getNextElement(_tmpl$11),
+  var _el$26 = _$getNextElement(_tmpl$12),
     _el$27 = _el$26.firstChild,
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
@@ -353,7 +354,7 @@ const template21 = (() => {
   );
   return _el$29;
 })();
-const template22 = _$getNextElement(_tmpl$12);
+const template22 = _$getNextElement(_tmpl$13);
 const template23 = (() => {
   var _el$31 = _$getNextElement(_tmpl$4);
   _$insert(_el$31, () => "t" in test && "true");
@@ -366,7 +367,7 @@ const template23 = (() => {
   return _el$31;
 })();
 const template24 = (() => {
-  var _el$32 = _$getNextElement(_tmpl$13);
+  var _el$32 = _$getNextElement(_tmpl$14);
   _$spread(
     _el$32,
     _$mergeProps(props, {
@@ -379,7 +380,7 @@ const template24 = (() => {
   return _el$32;
 })();
 const template25 = (() => {
-  var _el$33 = _$getNextElement(_tmpl$14),
+  var _el$33 = _$getNextElement(_tmpl$15),
     _el$35 = _el$33.firstChild,
     [_el$36, _co$] = _$getNextMarker(_el$35.nextSibling),
     _el$34 = _el$36.nextSibling;
@@ -396,14 +397,14 @@ const template25 = (() => {
   return _el$33;
 })();
 const template26 = (() => {
-  var _el$37 = _$getNextElement(_tmpl$15);
+  var _el$37 = _$getNextElement(_tmpl$16);
   _$setAttribute(_el$37, "middle", middle);
   _$spread(_el$37, spread, false, true);
   _$runHydrationEvents();
   return _el$37;
 })();
 const template27 = (() => {
-  var _el$38 = _$getNextElement(_tmpl$15);
+  var _el$38 = _$getNextElement(_tmpl$16);
   _$spread(
     _el$38,
     _$mergeProps(
@@ -420,7 +421,7 @@ const template27 = (() => {
   return _el$38;
 })();
 const template28 = (() => {
-  var _el$39 = _$getNextElement(_tmpl$16),
+  var _el$39 = _$getNextElement(_tmpl$17),
     _el$40 = _el$39.firstChild,
     _el$41 = _el$40.firstChild,
     _el$42 = _el$41.nextSibling,
@@ -441,7 +442,7 @@ const template29 = (() => {
   _$insert(_el$46, !!someValue);
   return _el$46;
 })();
-const template30 = _$getNextElement(_tmpl$17);
+const template30 = _$getNextElement(_tmpl$18);
 const template31 = (() => {
   var _el$48 = _$getNextElement(_tmpl$4);
   _$effect(
@@ -461,7 +462,7 @@ const template32 = (() => {
 })();
 const template33 = [
   (() => {
-    var _el$50 = _$getNextElement(_tmpl$18);
+    var _el$50 = _$getNextElement(_tmpl$19);
     _$effect(
       () => styles.button,
       (_v$, _$p) => {
@@ -471,7 +472,7 @@ const template33 = [
     return _el$50;
   })(),
   (() => {
-    var _el$51 = _$getNextElement(_tmpl$18);
+    var _el$51 = _$getNextElement(_tmpl$19);
     _$effect(
       () => styles["foo--bar"],
       (_v$, _$p) => {
@@ -481,7 +482,7 @@ const template33 = [
     return _el$51;
   })(),
   (() => {
-    var _el$52 = _$getNextElement(_tmpl$18);
+    var _el$52 = _$getNextElement(_tmpl$19);
     _$effect(
       () => styles.foo.bar,
       (_v$, _$p) => {
@@ -491,7 +492,7 @@ const template33 = [
     return _el$52;
   })(),
   (() => {
-    var _el$53 = _$getNextElement(_tmpl$18);
+    var _el$53 = _$getNextElement(_tmpl$19);
     _$effect(
       () => styles[foo()],
       (_v$, _$p) => {
@@ -533,7 +534,7 @@ const template38 = (() => {
   typeof _ref$7 === "function" && _$use(_ref$7, _el$58);
   return _el$58;
 })();
-const template39 = _$getNextElement(_tmpl$19);
+const template39 = _$getNextElement(_tmpl$20);
 const template40 = (() => {
   var _el$60 = _$getNextElement(_tmpl$4);
   _$effect(a, _v$ => {
@@ -542,7 +543,7 @@ const template40 = (() => {
   return _el$60;
 })();
 const template41 = (() => {
-  var _el$61 = _$getNextElement(_tmpl$20),
+  var _el$61 = _$getNextElement(_tmpl$21),
     _el$62 = _el$61.firstChild,
     _el$63 = _el$62.nextSibling;
   _$effect(
@@ -574,37 +575,37 @@ const boolTestBinding = false;
 const boolTestObjBinding = {
   value: false
 };
-const template42 = _$getNextElement(_tmpl$21);
-const template43 = _$getNextElement(_tmpl$22);
-const template44 = _$getNextElement(_tmpl$23);
-const template45 = _$getNextElement(_tmpl$24);
-const template46 = _$getNextElement(_tmpl$25);
-const template47 = _$getNextElement(_tmpl$26);
-const template48 = _$getNextElement(_tmpl$27);
-const template49 = _$getNextElement(_tmpl$28);
-const template50 = _$getNextElement(_tmpl$29);
-const template51 = _$getNextElement(_tmpl$30);
-const template52 = _$getNextElement(_tmpl$31);
-const template53 = _$getNextElement(_tmpl$32);
+const template42 = _$getNextElement(_tmpl$22);
+const template43 = _$getNextElement(_tmpl$23);
+const template44 = _$getNextElement(_tmpl$24);
+const template45 = _$getNextElement(_tmpl$25);
+const template46 = _$getNextElement(_tmpl$26);
+const template47 = _$getNextElement(_tmpl$27);
+const template48 = _$getNextElement(_tmpl$28);
+const template49 = _$getNextElement(_tmpl$29);
+const template50 = _$getNextElement(_tmpl$30);
+const template51 = _$getNextElement(_tmpl$31);
+const template52 = _$getNextElement(_tmpl$32);
+const template53 = _$getNextElement(_tmpl$33);
 const template54 = (() => {
-  var _el$76 = _$getNextElement(_tmpl$33);
+  var _el$76 = _$getNextElement(_tmpl$34);
   _$effect(boolTest, _v$ => {
     _$setBoolAttribute(_el$76, "quack", _v$);
   });
   return _el$76;
 })();
 const template55 = (() => {
-  var _el$77 = _$getNextElement(_tmpl$34);
+  var _el$77 = _$getNextElement(_tmpl$35);
   _$setBoolAttribute(_el$77, "quack", boolTest);
   return _el$77;
 })();
 const template56 = (() => {
-  var _el$78 = _$getNextElement(_tmpl$35);
+  var _el$78 = _$getNextElement(_tmpl$36);
   _$setBoolAttribute(_el$78, "quack", boolTestBinding);
   return _el$78;
 })();
 const template57 = (() => {
-  var _el$79 = _$getNextElement(_tmpl$36);
+  var _el$79 = _$getNextElement(_tmpl$37);
   _$effect(
     () => boolTestObjBinding.value,
     _v$ => {
@@ -614,24 +615,24 @@ const template57 = (() => {
   return _el$79;
 })();
 const template58 = (() => {
-  var _el$80 = _$getNextElement(_tmpl$37);
+  var _el$80 = _$getNextElement(_tmpl$38);
   _$setBoolAttribute(_el$80, "quack", () => false);
   return _el$80;
 })();
-const template59 = _$getNextElement(_tmpl$38);
-const template60 = _$getNextElement(_tmpl$39);
-const template61 = _$getNextElement(_tmpl$40);
+const template59 = _$getNextElement(_tmpl$39);
+const template60 = _$getNextElement(_tmpl$40);
+const template61 = _$getNextElement(_tmpl$41);
 // this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
 
-const template63 = _$getNextElement(_tmpl$41);
-const template64 = _$getNextElement(_tmpl$42);
-const template65 = _$getNextElement(_tmpl$43);
-const template66 = _$getNextElement(_tmpl$44);
-const template67 = _$getNextElement(_tmpl$45);
-const template68 = _$getNextElement(_tmpl$46);
-const template69 = _$getNextElement(_tmpl$47);
-const template70 = _$getNextElement(_tmpl$48);
-const template71 = _$getNextElement(_tmpl$49);
+const template63 = _$getNextElement(_tmpl$42);
+const template64 = _$getNextElement(_tmpl$43);
+const template65 = _$getNextElement(_tmpl$44);
+const template66 = _$getNextElement(_tmpl$45);
+const template67 = _$getNextElement(_tmpl$46);
+const template68 = _$getNextElement(_tmpl$47);
+const template69 = _$getNextElement(_tmpl$48);
+const template70 = _$getNextElement(_tmpl$49);
+const template71 = _$getNextElement(_tmpl$50);
 const template72 = (() => {
   var _el$93 = _$getNextElement(_tmpl$4);
   _$use(binding, _el$93);
@@ -660,22 +661,17 @@ const template76 = (() => {
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$97) : (refUnknown = _el$97);
   return _el$97;
 })();
-const template77 = _$getNextElement(_tmpl$50);
-const template78 = _$getNextElement(_tmpl$51);
+const template77 = _$getNextElement(_tmpl$51);
+const template78 = _$getNextElement(_tmpl$52);
 const template79 = (() => {
   var _el$100 = _$getNextElement(_tmpl$4);
   _el$100.true = true;
   _el$100.false = false;
   return _el$100;
 })();
-const template80 = (() => {
-  var _el$101 = _$getNextElement(_tmpl$4);
-  _$setAttribute(_el$101, "true", true);
-  _$setAttribute(_el$101, "false", false);
-  return _el$101;
-})();
+const template80 = _$getNextElement(_tmpl$53);
 const template81 = (() => {
-  var _el$102 = _$getNextElement(_tmpl$52);
+  var _el$102 = _$getNextElement(_tmpl$54);
   _$setAttribute(_el$102, "i", undefined);
   _$setAttribute(_el$102, "j", null);
   _$setAttribute(_el$102, "k", void 0);

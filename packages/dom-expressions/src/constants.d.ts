@@ -1,5 +1,3 @@
-export const BooleanAttributes: Set<string>;
-
 export const Properties: Set<string>;
 
 export const ChildProperties: Set<string>;

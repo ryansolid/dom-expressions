@@ -1,4 +1,4 @@
-import { BooleanAttributes, ChildProperties } from "./constants";
+import { ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
@@ -369,13 +369,11 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (prop.slice(0, 5) === "bool:") {
       if (!value) continue;
       result += escape(prop.slice(5));
-    } else if (prop.slice(0, 5) === "attr:") {
-      result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
-    } else if(typeof value === 'boolean'){
+    } else if (typeof value === "boolean") {
       if (!value) continue;
       result += escape(prop);
     } else {
-      result += value === '' ? escape(prop) : `${escape(prop)}="${escape(value, true)}"`;
+      result += value === "" ? escape(prop) : `${escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -386,13 +384,8 @@ export function ssrElement(tag, props, children, needsId) {
 }
 
 export function ssrAttribute(key, value) {
-  return value == null || value === false
-    ? ""
-    : value === true
-      ? ` ${key}`
-      : ` ${key}="${value}"`;
+  return value == null || value === false ? "" : value === true ? ` ${key}` : ` ${key}="${value}"`;
 }
-
 
 export function ssrHydrationKey() {
   const hk = getHydrationKey();

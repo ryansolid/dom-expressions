@@ -329,7 +329,6 @@ function transformAttributes(path, results, info) {
         });
         let doEscape = true;
         let isBoolean = t.isBooleanLiteral(value) || (t.isJSXExpressionContainer(value) && t.isBooleanLiteral(value.expression));
-        if (key.startsWith("attr:")) key = key.replace("attr:", "");
         if (isBoolean) doEscape = false;
         if (key.startsWith("bool:")) {
           key = key.replace("bool:", "");

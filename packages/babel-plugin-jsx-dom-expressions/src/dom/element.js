@@ -796,24 +796,6 @@ function transformAttributes(path, results) {
             isSVG,
             tagName
           });
-        } else if (key.slice(0, 5) === "attr:") {
-          if (t.isJSXExpressionContainer(value)) value = value.expression;
-
-          /**
-           * TODO: Unfortunately, `attr:onclick` changes too many tests, as we are working in
-           * `minor/next` it will mess up merging. This condition `key !== "onclick" &&` to be
-           * removed once we reach Solid 2.0, which will change a lot of tests.
-           */
-
-          if (key !== "attr:onclick" && (t.isStringLiteral(value) || t.isNumericLiteral(value))) {
-            // inlined  "attr:"
-            inlineAttributeOnTemplate(isSVG, key.slice(5), results, value);
-          } else {
-            // dynamic "attr:"
-            results.exprs.push(
-              t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, tagName }))
-            );
-          }
         } else if (key.slice(0, 5) === "bool:") {
           // inline it on the template when possible
           let content = value;
