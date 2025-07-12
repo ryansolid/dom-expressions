@@ -260,7 +260,7 @@ function transformObjectToGettersRecursively(object) {
         t.isStringLiteral(value) ||
         t.isNumericLiteral(value) ||
         t.isBooleanLiteral(value) ||
-        t.isNullLiteral(value) ||
+        t.isNullLiteral(value) || // do not remove null/undefined from the object, people may use it for something
         t.isIdentifier(value)
       ) {
         return prop;
