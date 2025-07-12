@@ -634,4 +634,32 @@ const template85 = _$createComponent(Comp, {
     };
   }
 });
+const template86 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack]: "meaw",
+      get title() {
+        return title();
+      },
+      get name() {
+        return name();
+      },
+      quack: "best cat",
+      get store() {
+        return store.access;
+      },
+      static_: {
+        get store() {
+          return store.access;
+        },
+        quack: "best cat",
+        get team() {
+          return uy();
+        },
+        store
+      },
+      ...store
+    };
+  }
+});
 _$delegateEvents(["click", "input"]);

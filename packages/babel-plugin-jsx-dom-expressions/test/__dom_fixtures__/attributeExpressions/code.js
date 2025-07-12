@@ -301,3 +301,22 @@ const template85 = <Comp inputProps={
 } />
 
 
+
+const template86 = <Comp inputProps={
+    {
+        [quack]:'meaw',
+        title: title(),
+        name: name(),
+        quack:"best cat",
+        store:store.access,
+        static_: {
+          store:store.access,
+          quack: "best cat",
+          team:uy(),
+          store
+        },
+        ...store
+    }
+} />
+
+

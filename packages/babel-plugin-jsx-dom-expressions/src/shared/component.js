@@ -188,7 +188,8 @@ export default function transformComponent(path) {
                   runningObject.push(
                     t.objectProperty(
                       t.identifier(id.name),
-                      transformObjectToGettersRecursively(value.expression)
+                      transformObjectToGettersRecursively(value.expression),
+                      !t.isValidIdentifier(key)
                     )
                   );
                 }
@@ -196,10 +197,10 @@ export default function transformComponent(path) {
                 runningObject.push(
                   t.objectMethod(
                     "get",
-                  id,
-                  [],
-                  t.blockStatement([t.returnStatement(value.expression)]),
-                  !t.isValidIdentifier(key)
+                    id,
+                    [],
+                    t.blockStatement([t.returnStatement(value.expression)]),
+                    !t.isValidIdentifier(key)
                   )
                 );
               }
@@ -270,14 +271,14 @@ function transformObjectToGettersRecursively(object) {
             key,
             [],
             t.blockStatement([t.returnStatement(transformObjectToGettersRecursively(value))]),
-            !t.isValidIdentifier(key.name || key.value)
+            !t.isValidIdentifier(key.name)
           );
         }
 
         return t.objectProperty(
           key,
           transformObjectToGettersRecursively(value),
-          !t.isValidIdentifier(key.name || key.value)
+          !t.isValidIdentifier(key.name)
         );
       }
 
@@ -286,7 +287,7 @@ function transformObjectToGettersRecursively(object) {
         key,
         [],
         t.blockStatement([t.returnStatement(value)]),
-        !t.isValidIdentifier(key.name || key.value)
+        !t.isValidIdentifier(key.name)
       );
     }
 
