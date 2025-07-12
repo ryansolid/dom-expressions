@@ -342,7 +342,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
   if (prop === "style") return style(node, value, prev);
   if (prop === "classList") return classList(node, value, prev);
   if (value === prev) return prev;
-  if (prop === "ref") {
+  if (prop === "ref" || prop.slice(0, 4) === "ref:") {
     if (!skipRef) value(node);
   } else if (prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);

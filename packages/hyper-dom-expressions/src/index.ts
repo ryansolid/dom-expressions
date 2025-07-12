@@ -70,7 +70,7 @@ export function createHyperScript(r: Runtime): HyperScript {
             Object.defineProperty(l,"class",{...d[k],value})
             classes = []
           }
-          if (k !== "ref" && k.slice(0, 2) !== "on" && typeof d[k].value === "function") {
+          if (k !== "ref" && k.slice(0, 4) !== 'ref:' && k.slice(0, 2) !== "on" && typeof d[k].value === "function") {
             r.dynamicProperty(l, k);
             dynamic = true;
           } else if (d[k].get) dynamic = true;

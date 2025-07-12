@@ -85,7 +85,7 @@ function transformAttributes(path, results) {
         node.value = value = t.jsxExpressionContainer(value || t.jsxEmptyExpression());
       }
       if (t.isJSXExpressionContainer(value)) {
-        if (key === "ref") {
+        if (key === "ref" || key.slice(0, 4) === "ref:") {
           // Normalize expressions for non-null and type-as
           while (
             t.isTSNonNullExpression(value.expression) ||

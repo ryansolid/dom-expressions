@@ -139,6 +139,7 @@ export namespace JSX {
 
   interface IntrinsicAttributes {
     ref?: unknown | ((e: unknown) => void) | undefined;
+    [attr: `ref:${string}`]: unknown | ((e: unknown) => void) | undefined;
   }
   interface CustomAttributes<T> {
     ref?: T | ((el: T) => void) | undefined;

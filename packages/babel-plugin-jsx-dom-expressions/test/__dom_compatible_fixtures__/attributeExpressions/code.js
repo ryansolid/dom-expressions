@@ -276,3 +276,13 @@ const template91 = <video playsinline={false}/>
 const template92 = <video playsInline={value}/>
 const template93 = <video playsInline={true}/>
 const template94 = <video playsInline={false}/>
+
+const template95 = <video ref:bla={(el1)=>console.log(el1)} ref:view={(el2)=>console.log(el2)}/>
+const template96 = <video ref={(el1)=>console.log(el1)} ref={(el2)=>console.log(el2)}/>
+
+let ref1
+let ref2
+const template97 = <video ref:bla={ref1} ref:view={ref2}/>
+let ref3
+let ref4
+const template98 = <video ref={ref3} ref={ref4}/>

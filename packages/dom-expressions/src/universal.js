@@ -220,7 +220,7 @@ export function createRenderer({
     effect(() => props.ref && props.ref(node));
     effect(() => {
       for (const prop in props) {
-        if (prop === "children" || prop === "ref") continue;
+        if (prop === "children" || prop === "ref" || prop.slice(0, 4) === "ref:") continue;
         const value = props[prop];
         if (value === prevProps[prop]) continue;
         setProperty(node, prop, value, prevProps[prop]);

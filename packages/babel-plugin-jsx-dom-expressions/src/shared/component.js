@@ -68,7 +68,7 @@ export default function transformComponent(path) {
           key = id.name;
         if (hasChildren && key === "children") return;
         if (t.isJSXExpressionContainer(value))
-          if (key === "ref") {
+          if (key === "ref" || (key && key.slice(0, 4) === 'ref:')) {
             if (config.generate === "ssr") return;
             // Normalize expressions for non-null and type-as
             while (
