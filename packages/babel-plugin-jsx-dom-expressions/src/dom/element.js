@@ -547,7 +547,7 @@ function transformAttributes(path, results) {
         (reservedNameSpace ||
           !(t.isStringLiteral(value.expression) || t.isNumericLiteral(value.expression)))
       ) {
-        if (key === "ref") {
+        if (key === "ref" || key.slice(0, 4) === "ref:") {
           // Normalize expressions for non-null and type-as
           while (
             t.isTSNonNullExpression(value.expression) ||

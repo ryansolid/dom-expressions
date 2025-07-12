@@ -640,4 +640,36 @@ const template94 = (() => {
   _el$112.playsInline = false;
   return _el$112;
 })();
+const template95 = (() => {
+  var _el$113 = _tmpl$56();
+  _$use(el2 => console.log(el2), _el$113);
+  _$use(el1 => console.log(el1), _el$113);
+  return _el$113;
+})();
+const template96 = (() => {
+  var _el$114 = _tmpl$56();
+  _$use(el2 => console.log(el2), _el$114);
+  _$use(el1 => console.log(el1), _el$114);
+  return _el$114;
+})();
+let ref1;
+let ref2;
+const template97 = (() => {
+  var _el$115 = _tmpl$56();
+  var _ref$12 = ref2;
+  typeof _ref$12 === "function" ? _$use(_ref$12, _el$115) : (ref2 = _el$115);
+  var _ref$11 = ref1;
+  typeof _ref$11 === "function" ? _$use(_ref$11, _el$115) : (ref1 = _el$115);
+  return _el$115;
+})();
+let ref3;
+let ref4;
+const template98 = (() => {
+  var _el$116 = _tmpl$56();
+  var _ref$14 = ref4;
+  typeof _ref$14 === "function" ? _$use(_ref$14, _el$116) : (ref4 = _el$116);
+  var _ref$13 = ref3;
+  typeof _ref$13 === "function" ? _$use(_ref$13, _el$116) : (ref3 = _el$116);
+  return _el$116;
+})();
 _$delegateEvents(["click", "input"]);
