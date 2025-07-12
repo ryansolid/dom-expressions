@@ -366,9 +366,6 @@ export function ssrElement(tag, props, children, needsId) {
       prop.slice(0, 5) === "prop:"
     ) {
       continue;
-    } else if (prop.slice(0, 5) === "bool:") {
-      if (!value) continue;
-      result += escape(prop.slice(5));
     } else if (typeof value === "boolean") {
       if (!value) continue;
       result += escape(prop);

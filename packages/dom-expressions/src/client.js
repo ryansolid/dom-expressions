@@ -114,11 +114,6 @@ export function setAttributeNS(node, namespace, name, value) {
   else node.setAttributeNS(namespace, name, value);
 }
 
-export function setBoolAttribute(node, name, value) {
-  if (isHydrating(node)) return;
-  value ? node.setAttribute(name, "") : node.removeAttribute(name);
-}
-
 export function className(node, value, isSVG, prev) {
   if (isHydrating(node)) return;
   if (value == null || value === false) {
@@ -395,8 +390,6 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
       addEventListener(node, name, value, delegate);
       delegate && delegateEvents([name]);
     }
-  } else if (prop.slice(0, 5) === "bool:") {
-    setBoolAttribute(node, prop.slice(5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||

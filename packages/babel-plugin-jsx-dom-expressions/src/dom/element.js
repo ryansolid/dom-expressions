@@ -239,13 +239,6 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
-  if (namespace === "bool") {
-    return t.callExpression(
-      registerImportMethod(path, "setBoolAttribute", getRendererConfig(path, "dom").moduleName),
-      [elem, t.stringLiteral(name), value]
-    );
-  }
-
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
   if (isChildProp || (!isSVG && isProp) || namespace === "prop") {
@@ -796,53 +789,6 @@ function transformAttributes(path, results) {
             isSVG,
             tagName
           });
-        } else if (key.slice(0, 5) === "bool:") {
-          // inline it on the template when possible
-          let content = value;
-
-          if (t.isJSXExpressionContainer(content)) content = content.expression;
-
-          function addBoolAttribute() {
-            results.template += `${needsSpacing ? " " : ""}${key.slice(5)}`;
-            needsSpacing = true;
-          }
-
-          switch (content.type) {
-            case "StringLiteral": {
-              if (content.value.length && content.value !== "0") {
-                addBoolAttribute();
-              }
-              return;
-            }
-            case "NullLiteral": {
-              return;
-            }
-            case "BooleanLiteral": {
-              if (content.value) {
-                addBoolAttribute();
-              }
-              return;
-            }
-            case "Identifier": {
-              if (content.name === "undefined") {
-                return;
-              }
-              break;
-            }
-          }
-
-          // when not possible to inline it in the template
-          results.exprs.push(
-            t.expressionStatement(
-              setAttr(
-                attribute,
-                elem,
-                key,
-                t.isJSXExpressionContainer(value) ? value.expression : value,
-                { isSVG, tagName }
-              )
-            )
-          );
         } else {
           results.exprs.push(
             t.expressionStatement(

@@ -239,9 +239,6 @@ export namespace JSX {
   type PropAttributes = {
     [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key];
   };
-  type BoolAttributes = {
-    [Key in keyof ExplicitBoolAttributes as `bool:${Key}`]?: ExplicitBoolAttributes[Key];
-  };
   type OnAttributes<T> = {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandlerWithOptionsUnion<T, CustomEvents[Key]>;
   };

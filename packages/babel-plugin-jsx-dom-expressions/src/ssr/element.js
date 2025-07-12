@@ -328,13 +328,10 @@ function transformAttributes(path, results, info) {
           checkTags: true
         });
         let doEscape = true;
-        let isBoolean = t.isBooleanLiteral(value) || (t.isJSXExpressionContainer(value) && t.isBooleanLiteral(value.expression));
+        let isBoolean =
+          t.isBooleanLiteral(value) ||
+          (t.isJSXExpressionContainer(value) && t.isBooleanLiteral(value.expression));
         if (isBoolean) doEscape = false;
-        if (key.startsWith("bool:")) {
-          key = key.replace("bool:", "");
-          isBoolean = true;
-          doEscape = false;
-        }
         if (key === "style") {
           if (
             t.isJSXExpressionContainer(value) &&
@@ -618,8 +615,8 @@ function createElement(path, { topLevel, hydratable }) {
               childNodes.length === 1 ? childNodes[0] : t.arrayExpression(childNodes)
             )
           : childNodes.length === 1
-          ? childNodes[0]
-          : t.arrayExpression(childNodes)
+            ? childNodes[0]
+            : t.arrayExpression(childNodes)
         : t.identifier("undefined"),
       t.booleanLiteral(Boolean(topLevel && config.hydratable))
     ])
