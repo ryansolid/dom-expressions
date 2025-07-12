@@ -417,6 +417,7 @@ export function escape(s, attr) {
   if (t !== "string") {
     if (!attr && t === "function") return escape(s());
     if (!attr && Array.isArray(s)) {
+      s = s.slice(); // avoids double escaping - https://github.com/ryansolid/dom-expressions/issues/393
       for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
       return s;
     }
