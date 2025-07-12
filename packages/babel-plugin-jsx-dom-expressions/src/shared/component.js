@@ -172,7 +172,9 @@ export default function transformComponent(path) {
               runningObject.push(t.objectMethod("get", id, [], body, !t.isValidIdentifier(key)));
             } else {
               if (t.isObjectExpression(value.expression)) {
-                if (value.expression.properties.some(prop => t.isSpreadElement(prop))) {
+                if (
+                  value.expression.properties.some(prop => t.isSpreadElement(prop) || prop.computed)
+                ) {
                   runningObject.push(
                     t.objectMethod(
                       "get",
@@ -265,7 +267,7 @@ function transformObjectToGettersRecursively(object) {
       }
 
       if (t.isObjectExpression(value)) {
-        if (value.properties.some(prop => t.isSpreadElement(prop))) {
+        if (value.properties.some(prop => t.isSpreadElement(prop) || prop.computed)) {
           return t.objectMethod(
             "get",
             key,

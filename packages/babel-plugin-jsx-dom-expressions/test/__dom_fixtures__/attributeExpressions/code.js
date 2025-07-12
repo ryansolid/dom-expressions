@@ -319,4 +319,11 @@ const template86 = <Comp inputProps={
     }
 } />
 
+const template87 = <Comp inputProps={
+    {
+        [quack]:'meaw',
+        [store.key]: 'ha'
+    }
+} />
+
 

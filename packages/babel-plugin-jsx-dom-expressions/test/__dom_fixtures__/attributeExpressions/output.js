@@ -662,4 +662,12 @@ const template86 = _$createComponent(Comp, {
     };
   }
 });
+const template87 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack]: "meaw",
+      [store.key]: "ha"
+    };
+  }
+});
 _$delegateEvents(["click", "input"]);
