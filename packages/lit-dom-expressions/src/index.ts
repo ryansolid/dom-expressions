@@ -71,7 +71,7 @@ const findAttributes = new RegExp(
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 const marker = "<!--#-->";
-const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
+const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop"]);
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -202,7 +202,6 @@ export function createHTML(
     } else if (name === "class") {
       options.exprs.push(`r.className(${tag},${expr},${isSVG},_$p)`);
     } else if (
-      namespace !== "attr" &&
       (isChildProp || (!isSVG && isProp) || namespace === "prop")
     ) {
       options.exprs.push(`${tag}.${name} = ${expr}`);

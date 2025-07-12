@@ -248,7 +248,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || namespace === "prop")) {
+  if (isChildProp || (!isSVG && isProp) || namespace === "prop") {
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
