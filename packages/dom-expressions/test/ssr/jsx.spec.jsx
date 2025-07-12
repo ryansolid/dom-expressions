@@ -10,7 +10,7 @@ import * as r from "../../src/server";
   const div = <div>{[a, a]}</div>;
 
   it("avoids double escape 1", async () => {
-    expect(r.renderToString(() => div).replace(/<![^>]+>/g, "")).toBe("<div>&lt;&lt;</div>");
+    expect(r.renderToString(() => div)).toBe("<div>&lt;&lt;</div>");
   });
 }
 
