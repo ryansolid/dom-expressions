@@ -264,3 +264,40 @@ const template80 = <div attr:true={true} attr:false={false}/>
 const template81 = <math display="block"><mrow></mrow></math>
 const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
 
+const template84 = <Comp inputProps={
+    {
+        quack,
+        title: title(),
+        name: name(),
+        quack:"best cat",
+        store:store.access,
+        static_: {
+          store:store.access,
+          quack: "best cat",
+          team:uy(),
+          store
+        },
+        spread: {
+          ...store
+        }
+    }
+} />
+
+const template85 = <Comp inputProps={
+    {
+        quack,
+        title: title(),
+        name: name(),
+        quack:"best cat",
+        store:store.access,
+        static_: {
+          store:store.access,
+          quack: "best cat",
+          team:uy(),
+          store
+        },
+        ...store
+    }
+} />
+
+

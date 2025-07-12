@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
+import { createComponent as _$createComponent } from "r-dom";
 import { setBoolAttribute as _$setBoolAttribute } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { memo as _$memo } from "r-dom";
@@ -575,4 +576,62 @@ const template80 = (() => {
 })();
 const template81 = _tmpl$52();
 const template82 = _tmpl$53();
+const template84 = _$createComponent(Comp, {
+  inputProps: {
+    quack,
+    get title() {
+      return title();
+    },
+    get name() {
+      return name();
+    },
+    quack: "best cat",
+    get store() {
+      return store.access;
+    },
+    static_: {
+      get store() {
+        return store.access;
+      },
+      quack: "best cat",
+      get team() {
+        return uy();
+      },
+      store
+    },
+    get spread() {
+      return {
+        ...store
+      };
+    }
+  }
+});
+const template85 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      quack,
+      get title() {
+        return title();
+      },
+      get name() {
+        return name();
+      },
+      quack: "best cat",
+      get store() {
+        return store.access;
+      },
+      static_: {
+        get store() {
+          return store.access;
+        },
+        quack: "best cat",
+        get team() {
+          return uy();
+        },
+        store
+      },
+      ...store
+    };
+  }
+});
 _$delegateEvents(["click", "input"]);
