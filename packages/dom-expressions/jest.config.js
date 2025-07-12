@@ -13,7 +13,7 @@ module.exports = {
       displayName: "server",
       testMatch: ["<rootDir>/test/ssr/*.spec.js(x)?"],
       transform: {
-        "^.+\\.[t|j]sx?$": require.resolve("./test/transform-dom")
+        "^.+\\.[t|j]sx?$": require.resolve("./test/transform-server")
       }
     },
     {
