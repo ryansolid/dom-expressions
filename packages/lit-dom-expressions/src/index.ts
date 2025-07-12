@@ -23,7 +23,6 @@ interface Runtime {
   dynamicProperty(props: any, key: string): any;
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
-  getPropAlias(prop: string, tagName: string): string | undefined;
   Properties: Set<string>;
   ChildProperties: Set<string>;
   DelegatedEvents: Set<string>;
@@ -72,7 +71,7 @@ const findAttributes = new RegExp(
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 const marker = "<!--#-->";
-const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop", "attr"]);
+const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop"]);
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -203,10 +202,9 @@ export function createHTML(
     } else if (name === "class") {
       options.exprs.push(`r.className(${tag},${expr},${isSVG},_$p)`);
     } else if (
-      namespace !== "attr" &&
-      (isChildProp || (!isSVG && (r.getPropAlias(name, node.name.toUpperCase()) || isProp)) ||  namespace === "prop")
+      (isChildProp || (!isSVG && isProp) || namespace === "prop")
     ) {
-      options.exprs.push(`${tag}.${r.getPropAlias(name, node.name.toUpperCase()) || name} = ${expr}`);
+      options.exprs.push(`${tag}.${name} = ${expr}`);
     } else {
       const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);

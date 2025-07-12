@@ -99,8 +99,7 @@ function setAttr(attribute, results, name, value, isDynamic) {
 
   let attr = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
     t.stringLiteral(name),
-    value,
-    t.booleanLiteral(false)
+    value
   ]);
   if (results.template[results.template.length - 1].length) {
     if (isDynamic) attr = t.arrowFunctionExpression([], attr);
@@ -322,8 +321,7 @@ function transformAttributes(path, results, info) {
           results.template.push("");
           let fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
             t.stringLiteral(key),
-            value.expression,
-            t.booleanLiteral(true)
+            value.expression
           ]);
           if (isDynamicValue) fn = t.arrowFunctionExpression([], fn);
           results.templateValues.push(fn);

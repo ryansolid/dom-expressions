@@ -5,7 +5,6 @@ export const DelegatedEvents: Set<string>;
 export const DOMElements: Set<string>;
 export const SVGElements: Set<string>;
 export const SVGNamespace: Record<string, string>;
-export function getPropAlias(prop: string, tagName: string): string | undefined;
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
@@ -31,7 +30,6 @@ export function spread<T>(
 export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
-export function setBoolAttribute(node: Element, name: string, value: any): void;
 type ClassList =
   | Record<string, boolean>
   | Array<string | number | boolean | null | undefined | Record<string, boolean>>;

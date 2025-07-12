@@ -70,7 +70,7 @@ const template10 = <div ref={refFactory()} />;
 
 const template11 = <div use:something use:another={thing} use:zero={0} />;
 
-const template12 = <div prop:htmlFor={thing} prop:number={123} attr:onclick="console.log('hi')" />;
+const template12 = <div prop:htmlFor={thing} prop:number={123} onclick="console.log('hi')" />;
 
 const template13 = <input type="checkbox" checked={true} />;
 
@@ -207,34 +207,6 @@ const template41 = (
   </select>
 );
 
-// bool:
-function boolTest(){return true}
-const boolTestBinding = false
-const boolTestObjBinding = {value:false}
-
-const template42 = <div bool:quack="">empty string</div>;
-const template43 = <div bool:quack={""}>js empty</div>;
-const template44 = <div bool:quack="hola">hola</div>;
-const template45 = <div bool:quack={"hola js"}>"hola js"</div>;
-const template46 = <div bool:quack={true}>true</div>;
-const template47 = <div bool:quack={false}>false</div>;
-const template48 = <div bool:quack={1}>1</div>;
-const template49 = <div bool:quack={0}>0</div>;
-const template50 = <div bool:quack={"1"}>"1"</div>;
-const template51 = <div bool:quack={"0"}>"0"</div>;
-const template52 = <div bool:quack={undefined}>undefined</div>;
-const template53 = <div bool:quack={null}>null</div>;
-const template54 = <div bool:quack={boolTest()}>boolTest()</div>;
-const template55 = <div bool:quack={boolTest}>boolTest</div>;
-const template56 = <div bool:quack={boolTestBinding}>boolTestBinding</div>;
-const template57 = <div bool:quack={boolTestObjBinding.value}>boolTestObjBinding.value</div>;
-const template58 = <div bool:quack={()=>false}>fn</div>;
-
-const template59 = <div before bool:quack="true">should have space before</div>;
-const template60 = <div before bool:quack="true" after>should have space before/after</div>;
-const template61 = <div bool:quack="true" after>should have space before/after</div>;
-// this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
-
 const template63 = <img src="" />;
 const template64 = <div><img src=""/></div>;
 
@@ -259,14 +231,11 @@ const template76 = <div ref={refUnknown} />
 const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
 const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
 const template79 = <div prop:true={true} prop:false={false}/>
-const template80 = <div attr:true={true} attr:false={false}/>
+const template80 = <div true={"true"} false={"false"}/>
 
 const template81 = <math display="block"><mrow></mrow></math>
 const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
-const template83 = <video attr:poster="1.jpg"/>
-const template84 = <div><video attr:poster="1.jpg"/></div>
+const template83 = <video poster="1.jpg"/>
+const template84 = <div><video poster="1.jpg"/></div>
 const template85 = <video prop:poster="1.jpg"/>
 const template86 = <div><video prop:poster="1.jpg"/></div>
-const template87 = <video bool:poster="1.jpg"/>
-const template88 = <div><video bool:poster="1.jpg"/></div>
-
