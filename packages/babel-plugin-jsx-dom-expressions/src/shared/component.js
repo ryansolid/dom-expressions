@@ -171,15 +171,41 @@ export default function transformComponent(path) {
 
               runningObject.push(t.objectMethod("get", id, [], body, !t.isValidIdentifier(key)));
             } else {
-              runningObject.push(
-                t.objectMethod(
-                  "get",
-                  id,
-                  [],
-                  t.blockStatement([t.returnStatement(value.expression)]),
-                  !t.isValidIdentifier(key)
-                )
-              );
+              if (t.isObjectExpression(value.expression)) {
+                if (
+                  value.expression.properties.some(prop => t.isSpreadElement(prop) || prop.computed)
+                ) {
+                  runningObject.push(
+                    t.objectMethod(
+                      "get",
+                      id,
+                      [],
+                      t.blockStatement([
+                        t.returnStatement(transformObjectToGettersRecursively(value.expression))
+                      ]),
+                      !t.isValidIdentifier(key)
+                    )
+                  );
+                } else {
+                  runningObject.push(
+                    t.objectProperty(
+                      t.identifier(id.name),
+                      transformObjectToGettersRecursively(value.expression),
+                      !t.isValidIdentifier(key)
+                    )
+                  );
+                }
+              } else {
+                runningObject.push(
+                  t.objectMethod(
+                    "get",
+                    id,
+                    [],
+                    t.blockStatement([t.returnStatement(value.expression)]),
+                    !t.isValidIdentifier(key)
+                  )
+                );
+              }
             }
           } else runningObject.push(t.objectProperty(id, value.expression));
         else runningObject.push(t.objectProperty(id, value));
@@ -222,6 +248,55 @@ export default function transformComponent(path) {
     ];
   }
   return { exprs, template: "", component: true };
+}
+
+function transformObjectToGettersRecursively(object) {
+  const newProperties = object.properties.map(prop => {
+    const key = prop.key;
+    const value = prop.value;
+
+    if (t.isObjectProperty(prop)) {
+      if (
+        t.isStringLiteral(value) ||
+        t.isNumericLiteral(value) ||
+        t.isBooleanLiteral(value) ||
+        t.isNullLiteral(value) || // do not remove null/undefined from the object, people may use it for something
+        t.isIdentifier(value)
+      ) {
+        return prop;
+      }
+
+      if (t.isObjectExpression(value)) {
+        if (value.properties.some(prop => t.isSpreadElement(prop) || prop.computed)) {
+          return t.objectMethod(
+            "get",
+            key,
+            [],
+            t.blockStatement([t.returnStatement(transformObjectToGettersRecursively(value))]),
+            !t.isValidIdentifier(key.name)
+          );
+        }
+
+        return t.objectProperty(
+          key,
+          transformObjectToGettersRecursively(value),
+          !t.isValidIdentifier(key.name)
+        );
+      }
+
+      return t.objectMethod(
+        "get",
+        key,
+        [],
+        t.blockStatement([t.returnStatement(value)]),
+        !t.isValidIdentifier(key.name)
+      );
+    }
+
+    return prop;
+  });
+
+  return t.objectExpression(newProperties);
 }
 
 function transformComponentChildren(children, config) {
