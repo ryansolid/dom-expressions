@@ -82,7 +82,13 @@ const template9 = (() => {
 })();
 const template10 = (() => {
   var _el$10 = _tmpl$();
-  _$insert(_el$10, () => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"));
+  _$insert(
+    _el$10,
+    (() => {
+      var _c$6 = _$memo(() => !!state.a);
+      return () => (_c$6() ? "a" : _$memo(() => !!state.b)() ? "b" : state.c ? "c" : "fallback");
+    })()
+  );
   return _el$10;
 })();
 const template11 = (() => {
@@ -90,8 +96,8 @@ const template11 = (() => {
   _$insert(
     _el$11,
     (() => {
-      var _c$6 = _$memo(() => !!state.a);
-      return () => (_c$6() ? a() : _$memo(() => !!state.b)() ? b() : state.c ? "c" : "fallback");
+      var _c$7 = _$memo(() => !!state.a);
+      return () => (_c$7() ? a() : _$memo(() => !!state.b)() ? b() : state.c ? "c" : "fallback");
     })()
   );
   return _el$11;
@@ -152,8 +158,8 @@ const template20 = (() => {
   _$insert(
     _el$13,
     (() => {
-      var _c$7 = _$memo(() => !!state.dynamic);
-      return () => (_c$7() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
+      var _c$8 = _$memo(() => !!state.dynamic);
+      return () => (_c$8() ? _$createComponent(Comp, {}) : _$createComponent(Comp, {}));
     })()
   );
   return _el$13;
@@ -203,8 +209,8 @@ const template29 = (() => {
   _$insert(
     _el$18,
     (() => {
-      var _c$8 = _$memo(() => !!thing());
-      return () => (_c$8() && thing1()) ?? thing2() ?? thing3();
+      var _c$9 = _$memo(() => !!thing());
+      return () => (_c$9() && thing1()) ?? thing2() ?? thing3();
     })()
   );
   return _el$18;
@@ -238,7 +244,9 @@ const template38 = _$memo(() =>
 );
 const template39 = _$memo(() => _$memo(() => !!(state.dynamic && state.something))() && good());
 const template40 = _$memo(() => (_$memo(() => !!state.dynamic)() && good()) || bad);
-const template41 = _$memo(() => (state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"));
+const template41 = _$memo(() =>
+  _$memo(() => !!state.a)() ? "a" : _$memo(() => !!state.b)() ? "b" : state.c ? "c" : "fallback"
+);
 const template42 = _$memo(() =>
   _$memo(() => !!state.a)() ? a() : _$memo(() => !!state.b)() ? b() : state.c ? "c" : "fallback"
 );
