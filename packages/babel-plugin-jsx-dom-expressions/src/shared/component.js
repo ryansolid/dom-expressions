@@ -7,7 +7,8 @@ import {
   filterChildren,
   trimWhitespace,
   transformCondition,
-  convertJSXIdentifier
+  convertJSXIdentifier,
+  hasStaticMarker
 } from "./utils";
 import { transformNode, getCreateTemplate } from "./transform";
 
@@ -173,7 +174,14 @@ export default function transformComponent(path) {
             } else {
               if (t.isObjectExpression(value.expression)) {
                 if (
-                  value.expression.properties.some(prop => t.isSpreadElement(prop) || prop.computed)
+                  !hasStaticMarker(value, path) &&
+                  value.expression.properties.some(
+                    prop =>
+                      (t.isSpreadElement(prop) || prop.computed) &&
+                      !hasStaticMarker(prop, path) &&
+                      !hasStaticMarker(prop.key, path) &&
+                      !hasStaticMarker(prop.value, path)
+                  )
                 ) {
                   runningObject.push(
                     t.objectMethod(
@@ -181,7 +189,9 @@ export default function transformComponent(path) {
                       id,
                       [],
                       t.blockStatement([
-                        t.returnStatement(transformObjectToGettersRecursively(value.expression))
+                        t.returnStatement(
+                          transformObjectToGettersRecursively(value.expression, path)
+                        )
                       ]),
                       !t.isValidIdentifier(key)
                     )
@@ -190,7 +200,7 @@ export default function transformComponent(path) {
                   runningObject.push(
                     t.objectProperty(
                       t.identifier(id.name),
-                      transformObjectToGettersRecursively(value.expression),
+                      transformObjectToGettersRecursively(value.expression, path),
                       !t.isValidIdentifier(key)
                     )
                   );
@@ -250,7 +260,7 @@ export default function transformComponent(path) {
   return { exprs, template: "", component: true };
 }
 
-function transformObjectToGettersRecursively(object) {
+function transformObjectToGettersRecursively(object, path) {
   const newProperties = object.properties.map(prop => {
     const key = prop.key;
     const value = prop.value;
@@ -267,21 +277,34 @@ function transformObjectToGettersRecursively(object) {
       }
 
       if (t.isObjectExpression(value)) {
-        if (value.properties.some(prop => t.isSpreadElement(prop) || prop.computed)) {
+        if (
+          !hasStaticMarker(value, path) &&
+          value.properties.some(
+            prop =>
+              (t.isSpreadElement(prop) || prop.computed) &&
+              !hasStaticMarker(prop, path) &&
+              !hasStaticMarker(prop.key, path) &&
+              !hasStaticMarker(prop.value, path)
+          )
+        ) {
           return t.objectMethod(
             "get",
             key,
             [],
-            t.blockStatement([t.returnStatement(transformObjectToGettersRecursively(value))]),
+            t.blockStatement([t.returnStatement(transformObjectToGettersRecursively(value, path))]),
             !t.isValidIdentifier(key.name)
           );
         }
 
         return t.objectProperty(
           key,
-          transformObjectToGettersRecursively(value),
+          transformObjectToGettersRecursively(value, path),
           !t.isValidIdentifier(key.name)
         );
+      }
+
+      if (hasStaticMarker(value, path) || hasStaticMarker(key, path)) {
+        return t.objectProperty(key, value, !t.isValidIdentifier(key.name));
       }
 
       return t.objectMethod(

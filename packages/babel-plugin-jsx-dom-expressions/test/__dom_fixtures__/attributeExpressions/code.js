@@ -326,4 +326,56 @@ const template87 = <Comp inputProps={
     }
 } />
 
+const template88 = <Comp inputProps={
+   {
+       [quack]: /* @once */'meaw',
+        title: title(),
+        name:  /* @once */name(),
+        quack:"best cat",
+        store:store.access,
+        static_:  /* @once */ {
+            store:/* @once */store.access,
+            quack: "best cat",
+            team: /* @once */uy(),
+            /* @once */ store
+        },
+        /* @once */ ...store
+    }
+} />
 
+const template89 = <Comp inputProps={
+   {
+       [quack]: /* @once */'meaw',
+        title: title(),
+        name:  /* @once */name(),
+        quack:"best cat",
+        store:store.access,
+        static_:  /* @once */ {
+            store:/* @once */store.access,
+            quack: "best cat",
+            team: /* @once */uy(),
+            /* @once */ store
+        },
+        /* @once */ ...store,
+       ...store
+    }
+} />
+
+const template90 = <Comp inputProps={
+   {
+       [quack]: /* @once */'meaw',
+        title: title(),
+        name:  /* @once */name(),
+        quack:"best cat",
+        store:store.access,
+        static_:  /* @once */ {
+            store:/* @once */store.access,
+            quack: "best cat",
+            team: /* @once */uy(),
+            /* @once */ store,
+            ...store,
+        },
+        /* @once */ ...store,
+       ...store
+    }
+} />
