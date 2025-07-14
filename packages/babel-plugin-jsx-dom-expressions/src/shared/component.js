@@ -7,7 +7,8 @@ import {
   filterChildren,
   trimWhitespace,
   transformCondition,
-  convertJSXIdentifier
+  convertJSXIdentifier,
+  hasStaticMarker
 } from "./utils";
 import { transformNode, getCreateTemplate } from "./transform";
 
@@ -172,13 +173,7 @@ export default function transformComponent(path) {
               runningObject.push(t.objectMethod("get", id, [], body, !t.isValidIdentifier(key)));
             } else {
               runningObject.push(
-                t.objectMethod(
-                  "get",
-                  id,
-                  [],
-                  t.blockStatement([t.returnStatement(value.expression)]),
-                  !t.isValidIdentifier(key)
-                )
+                transformObjectGetter(id, !t.isValidIdentifier(key), value.expression, path)
               );
             }
           } else runningObject.push(t.objectProperty(id, value.expression));
@@ -278,4 +273,63 @@ function transformComponentChildren(children, config) {
     dynamic = true;
   }
   return [transformedChildren, dynamic];
+}
+
+function transformObjectGetter(key, isComputed, value, path) {
+  if (t.isObjectExpression(value)) {
+    // is object recurse
+
+    if (
+      !hasStaticMarker(value, path) &&
+      value.properties.some(
+        prop =>
+          (t.isSpreadElement(prop) || (prop.computed && t.isMemberExpression(prop.key))) &&
+          !hasStaticMarker(prop, path) &&
+          !hasStaticMarker(prop.value, path)
+      )
+    ) {
+      return t.objectMethod(
+        "get",
+        key,
+        [],
+        t.blockStatement([t.returnStatement(transformObjectGetterRecurse(value, path))]),
+        isComputed
+      );
+    }
+
+    return t.objectProperty(key, transformObjectGetterRecurse(value, path), isComputed);
+  }
+
+  // is not object, do not recurse
+
+  if (hasStaticMarker(value, path)) {
+    return t.objectProperty(key, value, isComputed);
+  }
+
+  return t.objectMethod("get", key, [], t.blockStatement([t.returnStatement(value)]), isComputed);
+}
+
+function transformObjectGetterRecurse(object, path) {
+  const properties = object.properties.map(prop => {
+    const key = prop.key;
+    const value = prop.value;
+
+    if (!t.isObjectProperty(prop)) {
+      return prop;
+    }
+
+    if (
+      t.isStringLiteral(value) ||
+      t.isNumericLiteral(value) ||
+      t.isBooleanLiteral(value) ||
+      t.isNullLiteral(value) ||
+      t.isIdentifier(value)
+    ) {
+      return prop;
+    }
+
+    return transformObjectGetter(key, !t.isValidIdentifier(key.name), value, path);
+  });
+
+  return t.objectExpression(properties);
 }

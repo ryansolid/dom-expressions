@@ -77,6 +77,17 @@ export function isComponent(tagName) {
   );
 }
 
+export function hasStaticMarker(object, path) {
+  if (!object) return false;
+  if (
+    object.leadingComments &&
+    object.leadingComments[0] &&
+    object.leadingComments[0].value.trim() === getConfig(path).staticMarker
+  )
+    return true;
+  if (object.expression) return hasStaticMarker(object.expression, path);
+}
+
 export function isDynamic(path, { checkMember, checkTags, checkCallExpressions = true, native }) {
   const config = getConfig(path);
   if (config.generate === "ssr" && native) {
