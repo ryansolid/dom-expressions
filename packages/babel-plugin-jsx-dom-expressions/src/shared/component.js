@@ -172,51 +172,9 @@ export default function transformComponent(path) {
 
               runningObject.push(t.objectMethod("get", id, [], body, !t.isValidIdentifier(key)));
             } else {
-              if (t.isObjectExpression(value.expression)) {
-                if (
-                  !hasStaticMarker(value, path) &&
-                  value.expression.properties.some(
-                    prop =>
-                      (t.isSpreadElement(prop) ||
-                        (prop.computed && t.isMemberExpression(prop.key))) &&
-                      !hasStaticMarker(prop, path) &&
-                      !hasStaticMarker(prop.key, path) &&
-                      !hasStaticMarker(prop.value, path)
-                  )
-                ) {
-                  runningObject.push(
-                    t.objectMethod(
-                      "get",
-                      id,
-                      [],
-                      t.blockStatement([
-                        t.returnStatement(
-                          transformObjectToGettersRecursively(value.expression, path)
-                        )
-                      ]),
-                      !t.isValidIdentifier(key)
-                    )
-                  );
-                } else {
-                  runningObject.push(
-                    t.objectProperty(
-                      t.identifier(id.name),
-                      transformObjectToGettersRecursively(value.expression, path),
-                      !t.isValidIdentifier(key)
-                    )
-                  );
-                }
-              } else {
-                runningObject.push(
-                  t.objectMethod(
-                    "get",
-                    id,
-                    [],
-                    t.blockStatement([t.returnStatement(value.expression)]),
-                    !t.isValidIdentifier(key)
-                  )
-                );
-              }
+              runningObject.push(
+                transformObjectGetter(id, !t.isValidIdentifier(key), value.expression, path)
+              );
             }
           } else runningObject.push(t.objectProperty(id, value.expression));
         else runningObject.push(t.objectProperty(id, value));
@@ -259,68 +217,6 @@ export default function transformComponent(path) {
     ];
   }
   return { exprs, template: "", component: true };
-}
-
-function transformObjectToGettersRecursively(object, path) {
-  const newProperties = object.properties.map(prop => {
-    const key = prop.key;
-    const value = prop.value;
-
-    if (t.isObjectProperty(prop)) {
-      if (
-        t.isStringLiteral(value) ||
-        t.isNumericLiteral(value) ||
-        t.isBooleanLiteral(value) ||
-        t.isNullLiteral(value) || // do not remove null/undefined from the object, people may use it for something
-        t.isIdentifier(value)
-      ) {
-        return prop;
-      }
-
-      if (t.isObjectExpression(value)) {
-        if (
-          !hasStaticMarker(value, path) &&
-          value.properties.some(
-            prop =>
-              (t.isSpreadElement(prop) || (prop.computed && t.isMemberExpression(prop.key))) &&
-              !hasStaticMarker(prop, path) &&
-              !hasStaticMarker(prop.key, path) &&
-              !hasStaticMarker(prop.value, path)
-          )
-        ) {
-          return t.objectMethod(
-            "get",
-            key,
-            [],
-            t.blockStatement([t.returnStatement(transformObjectToGettersRecursively(value, path))]),
-            !t.isValidIdentifier(key.name)
-          );
-        }
-
-        return t.objectProperty(
-          key,
-          transformObjectToGettersRecursively(value, path),
-          !t.isValidIdentifier(key.name)
-        );
-      }
-
-      if (hasStaticMarker(value, path) || hasStaticMarker(key, path)) {
-        return t.objectProperty(key, value, !t.isValidIdentifier(key.name));
-      }
-
-      return t.objectMethod(
-        "get",
-        key,
-        [],
-        t.blockStatement([t.returnStatement(value)]),
-        !t.isValidIdentifier(key.name)
-      );
-    }
-
-    return prop;
-  });
-
-  return t.objectExpression(newProperties);
 }
 
 function transformComponentChildren(children, config) {
@@ -377,4 +273,63 @@ function transformComponentChildren(children, config) {
     dynamic = true;
   }
   return [transformedChildren, dynamic];
+}
+
+function transformObjectGetter(key, isComputed, value, path) {
+  if (t.isObjectExpression(value)) {
+    // is object recurse
+
+    if (
+      !hasStaticMarker(value, path) &&
+      value.properties.some(
+        prop =>
+          (t.isSpreadElement(prop) || (prop.computed && t.isMemberExpression(prop.key))) &&
+          !hasStaticMarker(prop, path) &&
+          !hasStaticMarker(prop.value, path)
+      )
+    ) {
+      return t.objectMethod(
+        "get",
+        key,
+        [],
+        t.blockStatement([t.returnStatement(transformObjectGetterRecurse(value, path))]),
+        isComputed
+      );
+    }
+
+    return t.objectProperty(key, transformObjectGetterRecurse(value, path), isComputed);
+  }
+
+  // is not object, do not recurse
+
+  if (hasStaticMarker(value, path)) {
+    return t.objectProperty(key, value, isComputed);
+  }
+
+  return t.objectMethod("get", key, [], t.blockStatement([t.returnStatement(value)]), isComputed);
+}
+
+function transformObjectGetterRecurse(object, path) {
+  const properties = object.properties.map(prop => {
+    const key = prop.key;
+    const value = prop.value;
+
+    if (!t.isObjectProperty(prop)) {
+      return prop;
+    }
+
+    if (
+      t.isStringLiteral(value) ||
+      t.isNumericLiteral(value) ||
+      t.isBooleanLiteral(value) ||
+      t.isNullLiteral(value) ||
+      t.isIdentifier(value)
+    ) {
+      return prop;
+    }
+
+    return transformObjectGetter(key, !t.isValidIdentifier(key.name), value, path);
+  });
+
+  return t.objectExpression(properties);
 }
