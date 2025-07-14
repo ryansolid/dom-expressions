@@ -670,6 +670,20 @@ const template87 = _$createComponent(Comp, {
     };
   }
 });
+const template87a1 = _$createComponent(Comp, {
+  inputProps: {
+    [quack]: "meaw",
+    [store]: "ha"
+  }
+});
+const template87a2 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack.key]: "meaw",
+      [store.key]: "ha"
+    };
+  }
+});
 const template88 = _$createComponent(Comp, {
   inputProps: {
     [quack]: /* @once */ "meaw",

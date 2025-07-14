@@ -177,7 +177,8 @@ export default function transformComponent(path) {
                   !hasStaticMarker(value, path) &&
                   value.expression.properties.some(
                     prop =>
-                      (t.isSpreadElement(prop) || prop.computed) &&
+                      (t.isSpreadElement(prop) ||
+                        (prop.computed && t.isMemberExpression(prop.key))) &&
                       !hasStaticMarker(prop, path) &&
                       !hasStaticMarker(prop.key, path) &&
                       !hasStaticMarker(prop.value, path)
@@ -281,7 +282,7 @@ function transformObjectToGettersRecursively(object, path) {
           !hasStaticMarker(value, path) &&
           value.properties.some(
             prop =>
-              (t.isSpreadElement(prop) || prop.computed) &&
+              (t.isSpreadElement(prop) || (prop.computed && t.isMemberExpression(prop.key))) &&
               !hasStaticMarker(prop, path) &&
               !hasStaticMarker(prop.key, path) &&
               !hasStaticMarker(prop.value, path)

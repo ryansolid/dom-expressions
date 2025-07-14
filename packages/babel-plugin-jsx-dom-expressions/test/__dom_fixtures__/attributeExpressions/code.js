@@ -325,6 +325,18 @@ const template87 = <Comp inputProps={
         [store.key]: 'ha'
     }
 } />
+const template87a1 = <Comp inputProps={
+    {
+        [quack]:'meaw',
+        [store]: 'ha'
+    }
+} />
+const template87a2 = <Comp inputProps={
+    {
+        [quack.key]:'meaw',
+        [store.key]: 'ha'
+    }
+} />
 
 const template88 = <Comp inputProps={
    {
