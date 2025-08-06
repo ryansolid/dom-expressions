@@ -20,7 +20,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b">`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div onclick="console.log('hi')">`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div style=margin-right:40px onclick="console.log('hi')">`),
   _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
   _tmpl$8 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="static hi"type=button>Write`),
@@ -138,14 +138,13 @@ const template6 = (() => {
 })();
 let undefVar;
 const template7 = (() => {
-  var _el$13 = _$getNextElement(_tmpl$4);
+  var _el$13 = _$getNextElement(_tmpl$6);
   _el$13.classList.toggle("other-class", !!undefVar);
   _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
     _p$ => {
       var _v$ = {
           "background-color": color(),
-          "margin-right": "40px",
           ...props.style
         },
         _v$2 = props.top,
@@ -369,11 +368,7 @@ const template31 = (() => {
   );
   return _el$48;
 })();
-const template32 = (() => {
-  var _el$49 = _$getNextElement(_tmpl$4);
-  _el$49.style.removeProperty("background-color");
-  return _el$49;
-})();
+const template32 = _$getNextElement(_tmpl$4);
 const template33 = [
   (() => {
     var _el$50 = _$getNextElement(_tmpl$19);

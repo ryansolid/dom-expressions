@@ -19,7 +19,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo></div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div></div>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b"></div>`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div onclick="console.log('hi')"></div>`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div style="margin-right:40px" onclick="console.log('hi')"></div>`),
   _tmpl$7 = /*#__PURE__*/ _$template(`<input type="checkbox">`),
   _tmpl$8 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`),
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="static hi"type="button">Write</button>`),
@@ -187,14 +187,13 @@ const template6 = (() => {
 })();
 let undefVar;
 const template7 = (() => {
-  var _el$13 = _tmpl$4();
+  var _el$13 = _tmpl$6();
   _el$13.classList.toggle("other-class", !!undefVar);
   _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
     _p$ => {
       var _v$ = {
           "background-color": color(),
-          "margin-right": "40px",
           ...props.style
         },
         _v$2 = props.top,
@@ -406,11 +405,7 @@ const template31 = (() => {
   );
   return _el$44;
 })();
-const template32 = (() => {
-  var _el$45 = _tmpl$4();
-  _el$45.style.removeProperty("background-color");
-  return _el$45;
-})();
+const template32 = _tmpl$4();
 const template33 = [
   (() => {
     var _el$46 = _tmpl$19();

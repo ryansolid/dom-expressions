@@ -17,7 +17,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b">`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div onclick="console.log('hi')">`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div style=margin-right:40px onclick="console.log('hi')">`),
   _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
   _tmpl$8 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="static hi"type=button>Write`),
@@ -67,7 +67,13 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$51 = /*#__PURE__*/ _$template(`<div truestr=true truestrjs=true>`),
   _tmpl$52 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
   _tmpl$53 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
-  _tmpl$54 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true);
+  _tmpl$54 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true),
+  _tmpl$55 = /*#__PURE__*/ _$template(`<div style=background:red>`),
+  _tmpl$56 = /*#__PURE__*/ _$template(
+    `<div style=background:red;color:green;margin:3;padding:0.4>`
+  ),
+  _tmpl$57 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`);
+
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -167,14 +173,13 @@ const template6 = (() => {
 })();
 let undefVar;
 const template7 = (() => {
-  var _el$13 = _tmpl$4();
+  var _el$13 = _tmpl$6();
   _el$13.classList.toggle("other-class", !!undefVar);
   _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
     _p$ => {
       var _v$ = {
           "background-color": color(),
-          "margin-right": "40px",
           ...props.style
         },
         _v$2 = props.top,
@@ -386,11 +391,7 @@ const template31 = (() => {
   );
   return _el$44;
 })();
-const template32 = (() => {
-  var _el$45 = _tmpl$4();
-  _el$45.style.removeProperty("background-color");
-  return _el$45;
-})();
+const template32 = _tmpl$4();
 const template33 = [
   (() => {
     var _el$46 = _tmpl$19();
@@ -575,4 +576,33 @@ const template80 = (() => {
 })();
 const template81 = _tmpl$53();
 const template82 = _tmpl$54();
+const template83 = _tmpl$55();
+const template84 = _tmpl$56();
+const template85 = _tmpl$57();
+const template86 = (() => {
+  var _el$103 = _tmpl$57();
+  _$effect(_$p =>
+    (_$p = signal()) != null
+      ? _el$103.style.setProperty("border", _$p)
+      : _el$103.style.removeProperty("border")
+  );
+  return _el$103;
+})();
+const template87 = (() => {
+  var _el$104 = _tmpl$57();
+  somevalue != null
+    ? _el$104.style.setProperty("border", somevalue)
+    : _el$104.style.removeProperty("border");
+  return _el$104;
+})();
+const template88 = (() => {
+  var _el$105 = _tmpl$57();
+  _$effect(_$p =>
+    (_$p = some.access) != null
+      ? _el$105.style.setProperty("border", _$p)
+      : _el$105.style.removeProperty("border")
+  );
+  return _el$105;
+})();
+const template89 = _tmpl$57();
 _$delegateEvents(["click", "input"]);

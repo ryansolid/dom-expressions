@@ -1,16 +1,18 @@
+// list of lowercase booleans
 const booleans = [
   "allowfullscreen",
   "async",
-  "autofocus",
+  "alpha", // HTMLInputElement
+  "autofocus", // HTMLElement prop
   "autoplay",
   "checked",
   "controls",
   "default",
   "disabled",
   "formnovalidate",
-  "hidden",
+  "hidden", // HTMLElement prop - not a boolean
   "indeterminate",
-  "inert",
+  "inert", // HTMLElement prop
   "ismap",
   "loop",
   "multiple",
@@ -22,21 +24,56 @@ const booleans = [
   "readonly",
   "required",
   "reversed",
-  "seamless",
-  "selected"
+  "seamless", // HTMLIframeElement - non-standard
+  "selected",
+
+  "adauctionheaders", // experimental
+  "browsingtopics", // experimental
+  "credentialless", // experimental
+  "defaultchecked",
+  "defaultmuted",
+  "defaultselected",
+  "defer",
+  "disablepictureinpicture",
+  "disableremoteplayback",
+  "preservespitch", // appears as camelCase property only (not as attribute)
+  "shadowrootclonable",
+  "shadowrootcustomelementregistry", // experimental - doesnt seem to have a prop yet
+  "shadowrootdelegatesfocus",
+  "shadowrootserializable", // experimental
+  "sharedstoragewritable" // experimental
 ];
 
 const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
 
 const Properties = /*#__PURE__*/ new Set([
+  // locked to properties
   "className",
   "value",
+
+  // booleans with camelCase
   "readOnly",
   "noValidate",
   "formNoValidate",
   "isMap",
   "noModule",
   "playsInline",
+
+  "adAuctionHeaders", // experimental
+  "allowFullscreen",
+  "browsingTopics", // experimental
+  "defaultChecked",
+  "defaultMuted",
+  "defaultSelected",
+  "disablePictureInPicture",
+  "disableRemotePlayback",
+  "preservesPitch",
+  "shadowRootClonable",
+  "shadowRootCustomElementRegistry", // experimental
+  "shadowRootDelegatesFocus",
+  "shadowRootSerializable", // experimental
+  "sharedStorageWritable", // experimental
+
   ...booleans
 ]);
 
@@ -54,7 +91,10 @@ const Aliases = /*#__PURE__*/ Object.assign(Object.create(null), {
 });
 
 const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
+  // locked to properties
   class: "className",
+
+  // booleans map
   novalidate: {
     $: "noValidate",
     FORM: 1
@@ -80,6 +120,63 @@ const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
     $: "readOnly",
     INPUT: 1,
     TEXTAREA: 1
+  },
+
+  adauctionheaders: {
+    $: "adAuctionHeaders",
+    IFRAME: 1
+  },
+  allowfullscreen: {
+    $: "allowFullscreen",
+    IFRAME: 1
+  },
+  browsingtopics: {
+    $: "browsingTopics",
+    IMG: 1
+  },
+  defaultchecked: {
+    $: "defaultChecked",
+    INPUT: 1
+  },
+  defaultmuted: {
+    $: "defaultMuted",
+    AUDIO: 1,
+    VIDEO: 1
+  },
+  defaultselected: {
+    $: "defaultSelected",
+    OPTION: 1
+  },
+  disablepictureinpicture: {
+    $: "disablePictureInPicture",
+    VIDEO: 1
+  },
+  disableremoteplayback: {
+    $: "disableRemotePlayback",
+    AUDIO: 1,
+    VIDEO: 1
+  },
+  preservespitch: {
+    $: "preservesPitch",
+    AUDIO: 1,
+    VIDEO: 1
+  },
+  shadowrootclonable: {
+    $: "shadowRootClonable",
+    TEMPLATE: 1
+  },
+  shadowrootdelegatesfocus: {
+    $: "shadowRootDelegatesFocus",
+    TEMPLATE: 1
+  },
+  shadowrootserializable: {
+    $: "shadowRootSerializable",
+    TEMPLATE: 1
+  },
+  sharedstoragewritable: {
+    $: "sharedStorageWritable",
+    IFRAME: 1,
+    IMG: 1
   }
 });
 
@@ -482,7 +579,18 @@ const DOMElements = /*#__PURE__*/ new Set([
   "h3",
   "h4",
   "h5",
-  "h6"
+  "h6",
+
+  // special
+  "webview",
+
+  // deprecated
+  "isindex",
+  "listing",
+  "multicol",
+  "nextid",
+  "noindex",
+  "search"
 ]);
 
 export {
