@@ -761,12 +761,22 @@ function transformAttributes(path, results) {
           }
         } else if (
           config.effectWrapper &&
-          (isDynamic(attribute.get("value").get("expression"), {
+          isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
-          }) ||
-            ((key === "classList" || key === "style") &&
-              !attribute.get("value").get("expression").evaluate().confident))
+          })
         ) {
+          /*
+            Following code doesn't repect static marker `@once`.
+            https://github.com/ryansolid/dom-expressions/pull/438
+
+           ||
+            (
+                (
+                    key === "classList" || key === "style") &&
+                    !attribute.get("value").get("expression").evaluate().confident
+                )
+            )
+           */
           let nextElem = elem;
           if (key === "value" || key === "checked") {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
@@ -1154,6 +1164,7 @@ function contextToCustomElement(path, results) {
 }
 
 function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapConditionals }) {
+  const config = getConfig(path);
   // TODO: skip but collect the names of any properties after the last spread to not overwrite them
   const filteredAttributes = [];
   const spreadArgs = [];
@@ -1168,12 +1179,18 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         ? `${node.name.namespace.name}:${node.name.name.name}`
         : node.name.name);
     if (t.isJSXSpreadAttribute(node)) {
+      const isStatic =
+        node.innerComments &&
+        node.innerComments[0] &&
+        node.innerComments[0].value.trim() === config.staticMarker;
+
       firstSpread = true;
       if (runningObject.length) {
         spreadArgs.push(t.objectExpression(runningObject));
         runningObject = [];
       }
-      spreadArgs.push(
+
+      const s =
         isDynamic(attribute.get("argument"), {
           checkMember: true
         }) && (dynamicSpread = true)
@@ -1183,8 +1200,9 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
             !t.isMemberExpression(node.argument.callee)
             ? node.argument.callee
             : t.arrowFunctionExpression([], node.argument)
-          : node.argument
-      );
+          : node.argument;
+
+      spreadArgs.push(isStatic ? t.objectExpression([t.spreadElement(s)]) : s);
     } else if (
       (firstSpread ||
         (t.isJSXExpressionContainer(node.value) &&

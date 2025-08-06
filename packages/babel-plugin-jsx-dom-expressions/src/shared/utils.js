@@ -90,7 +90,6 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     expr.leadingComments[0] &&
     expr.leadingComments[0].value.trim() === config.staticMarker
   ) {
-    expr.leadingComments.shift();
     return false;
   }
 

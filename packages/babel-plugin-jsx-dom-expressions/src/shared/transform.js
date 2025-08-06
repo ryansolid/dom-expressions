@@ -22,6 +22,7 @@ export function transformJSX(path, state) {
   if (state.skip) return;
 
   const config = getConfig(path);
+
   const replace = transformThis(path);
   const result = transformNode(
     path,
@@ -36,6 +37,18 @@ export function transformJSX(path, state) {
   const template = getCreateTemplate(config, path, result);
 
   path.replaceWith(replace(template(path, result, false)));
+
+  path.traverse({
+    enter(path) {
+      if (
+        path.node.leadingComments &&
+        path.node.leadingComments[0] &&
+        path.node.leadingComments[0].value.trim() === config.staticMarker
+      ) {
+        path.node.leadingComments.shift();
+      }
+    }
+  });
 }
 
 function getTargetFunctionParent(path, parent) {
@@ -149,13 +162,13 @@ export function transformNode(path, info = {}) {
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))
         ? transformCondition(path.get("expression"), info.componentChild || info.fragmentChild)
         : !info.componentChild &&
-          (config.generate !== "ssr" || info.fragmentChild) &&
-          t.isCallExpression(node.expression) &&
-          !t.isCallExpression(node.expression.callee) &&
-          !t.isMemberExpression(node.expression.callee) &&
-          node.expression.arguments.length === 0
-        ? node.expression.callee
-        : t.arrowFunctionExpression([], node.expression);
+            (config.generate !== "ssr" || info.fragmentChild) &&
+            t.isCallExpression(node.expression) &&
+            !t.isCallExpression(node.expression.callee) &&
+            !t.isMemberExpression(node.expression.callee) &&
+            node.expression.arguments.length === 0
+          ? node.expression.callee
+          : t.arrowFunctionExpression([], node.expression);
     return {
       exprs:
         expr.length > 1
