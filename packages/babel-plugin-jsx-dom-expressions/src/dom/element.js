@@ -160,43 +160,18 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, isCE,
     namespace = parts[0];
   }
 
-  // TODO: consider moving to a helper
   if (namespace === "style") {
-    if (t.isStringLiteral(value)) {
-      return t.callExpression(
-        t.memberExpression(
-          t.memberExpression(elem, t.identifier("style")),
-          t.identifier("setProperty")
-        ),
-        [t.stringLiteral(name), value]
-      );
-    }
-    if (t.isNullLiteral(value) || t.isIdentifier(value, { name: "undefined" })) {
-      return t.callExpression(
-        t.memberExpression(
-          t.memberExpression(elem, t.identifier("style")),
-          t.identifier("removeProperty")
-        ),
-        [t.stringLiteral(name)]
-      );
-    }
-    return t.conditionalExpression(
-      t.binaryExpression("!=", value, t.nullLiteral()),
-      t.callExpression(
-        t.memberExpression(
-          t.memberExpression(elem, t.identifier("style")),
-          t.identifier("setProperty")
-        ),
-        [t.stringLiteral(name), prevId ? prevId : value]
-      ),
-      t.callExpression(
-        t.memberExpression(
-          t.memberExpression(elem, t.identifier("style")),
-          t.identifier("removeProperty")
-        ),
-        [t.stringLiteral(name)]
-      )
+    const setStyleProperty = registerImportMethod(
+      path,
+      "setStyleProperty",
+      getRendererConfig(path, "dom").moduleName
     );
+
+    return t.callExpression(setStyleProperty, [
+      elem,
+      t.stringLiteral(name),
+      t.isAssignmentExpression(value) && t.isIdentifier(value.left) ? value.right : value
+    ]);
   }
 
   if (namespace === "class") {

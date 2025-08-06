@@ -187,6 +187,10 @@ export function style(node, value, prev) {
   return prev;
 }
 
+export function setStyleProperty(node, name, value) {
+  value != null ? node.style.setProperty(name, value) : node.style.removeProperty(name);
+}
+
 export function spread(node, props = {}, isSVG, skipChildren) {
   const prevProps = {};
   if (!skipChildren) {

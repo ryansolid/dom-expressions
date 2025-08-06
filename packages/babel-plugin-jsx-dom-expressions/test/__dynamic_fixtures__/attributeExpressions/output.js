@@ -3,6 +3,7 @@ import { setProp as _$setProp } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
 import { style as _$style } from "r-dom";
 import { className as _$className } from "r-dom";
+import { setStyleProperty as _$setStyleProperty } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-custom";
 import { classList as _$classList } from "r-dom";
@@ -86,9 +87,7 @@ const template2 = (() => {
 const template3 = (() => {
   var _el$9 = _tmpl$3();
   _$setAttribute(_el$9, "id", state.id);
-  state.color != null
-    ? _el$9.style.setProperty("background-color", state.color)
-    : _el$9.style.removeProperty("background-color");
+  _$setStyleProperty(_el$9, "background-color", state.color);
   _el$9.textContent = state.content;
   _$effect(() => _$setAttribute(_el$9, "name", state.name));
   return _el$9;
@@ -119,10 +118,7 @@ const template7 = (() => {
         _v$2 = props.top,
         _v$3 = !!props.active;
       _p$.e = _$style(_el$13, _v$, _p$.e);
-      _v$2 !== _p$.t &&
-        ((_p$.t = _v$2) != null
-          ? _el$13.style.setProperty("padding-top", _v$2)
-          : _el$13.style.removeProperty("padding-top"));
+      _v$2 !== _p$.t && _$setStyleProperty(_el$13, "padding-top", (_p$.t = _v$2));
       _v$3 !== _p$.a && _el$13.classList.toggle("my-class", (_p$.a = _v$3));
       return _p$;
     },
@@ -213,11 +209,7 @@ const template20 = (() => {
 })();
 const template21 = (() => {
   var _el$27 = _tmpl$3();
-  _$effect(_$p =>
-    (_$p = a()) != null
-      ? _el$27.style.setProperty("color", _$p)
-      : _el$27.style.removeProperty("color")
-  );
+  _$effect(_$p => _$setStyleProperty(_el$27, "color", a()));
   return _el$27;
 })();
 
