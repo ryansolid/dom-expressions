@@ -569,27 +569,17 @@ const template84 = _tmpl$57();
 const template85 = _tmpl$58();
 const template86 = (() => {
   var _el$103 = _tmpl$58();
-  _$effect(_$p =>
-    (_$p = signal()) != null
-      ? _el$103.style.setProperty("border", _$p)
-      : _el$103.style.removeProperty("border")
-  );
+  _$effect(_$p => _$setStyleProperty(_el$103, "border", signal()));
   return _el$103;
 })();
 const template87 = (() => {
   var _el$104 = _tmpl$58();
-  somevalue != null
-    ? _el$104.style.setProperty("border", somevalue)
-    : _el$104.style.removeProperty("border");
+  _$setStyleProperty(_el$104, "border", somevalue);
   return _el$104;
 })();
 const template88 = (() => {
   var _el$105 = _tmpl$58();
-  _$effect(_$p =>
-    (_$p = some.access) != null
-      ? _el$105.style.setProperty("border", _$p)
-      : _el$105.style.removeProperty("border")
-  );
+  _$effect(_$p => _$setStyleProperty(_el$105, "border", some.access));
   return _el$105;
 })();
 const template89 = _tmpl$58();

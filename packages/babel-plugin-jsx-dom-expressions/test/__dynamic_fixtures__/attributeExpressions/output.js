@@ -217,36 +217,22 @@ const template21 = (() => {
 
 const template22 = (() => {
   var _el$28 = _tmpl$3();
-  props.width != null
-    ? _el$28.style.setProperty("width", props.width)
-    : _el$28.style.removeProperty("width");
-  props.height != null
-    ? _el$28.style.setProperty("height", props.height)
-    : _el$28.style.removeProperty("height");
+  _$setStyleProperty(_el$28, "width", props.width);
+  _$setStyleProperty(_el$28, "height", props.height);
   return _el$28;
 })();
 const template23 = (() => {
   var _el$29 = _tmpl$3();
-  props.width != null
-    ? _el$29.style.setProperty("width", props.width)
-    : _el$29.style.removeProperty("width");
-  props.height != null
-    ? _el$29.style.setProperty("height", props.height)
-    : _el$29.style.removeProperty("height");
+  _$setStyleProperty(_el$29, "width", props.width);
+  _$setStyleProperty(_el$29, "height", props.height);
   _$effect(() => _$setAttribute(_el$29, "something", color()));
   return _el$29;
 })();
 const template24 = (() => {
   var _el$30 = _tmpl$3();
-  props.height != null
-    ? _el$30.style.setProperty("height", props.height)
-    : _el$30.style.removeProperty("height");
+  _$setStyleProperty(_el$30, "height", props.height);
   _$setAttribute(_el$30, "something", color());
-  _$effect(_$p =>
-    (_$p = props.width) != null
-      ? _el$30.style.setProperty("width", _$p)
-      : _el$30.style.removeProperty("width")
-  );
+  _$effect(_$p => _$setStyleProperty(_el$30, "width", props.width));
   return _el$30;
 })();
 
