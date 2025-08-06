@@ -14,8 +14,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b">`),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<input type=checkbox readonly>`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox>`);
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div style=margin-right:40px>`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox readonly>`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`);
 const selected = true;
 let id = "my-h1";
 let link;
@@ -107,12 +108,11 @@ const template6 = (() => {
   return _el$12;
 })();
 const template7 = (() => {
-  var _el$13 = _tmpl$3();
+  var _el$13 = _tmpl$5();
   _$effect(
     _p$ => {
       var _v$ = {
           "background-color": color(),
-          "margin-right": "40px",
           ...props.style
         },
         _v$2 = props.top,
@@ -160,12 +160,12 @@ const template12 = (() => {
   return _el$18;
 })();
 const template13 = (() => {
-  var _el$19 = _tmpl$5();
+  var _el$19 = _tmpl$6();
   _el$19.checked = true;
   return _el$19;
 })();
 const template14 = (() => {
-  var _el$20 = _tmpl$6();
+  var _el$20 = _tmpl$7();
   _el$20.readOnly = value;
   _$effect(() => (_el$20.checked = state.visible));
   return _el$20;
@@ -211,4 +211,148 @@ const template21 = (() => {
   var _el$27 = _tmpl$3();
   _$effect(_$p => _$setStyleProperty(_el$27, "color", a()));
   return _el$27;
+})();
+
+// ONCE TESTS
+
+const template22 = (() => {
+  var _el$28 = _tmpl$3();
+  props.width != null
+    ? _el$28.style.setProperty("width", props.width)
+    : _el$28.style.removeProperty("width");
+  props.height != null
+    ? _el$28.style.setProperty("height", props.height)
+    : _el$28.style.removeProperty("height");
+  return _el$28;
+})();
+const template23 = (() => {
+  var _el$29 = _tmpl$3();
+  props.width != null
+    ? _el$29.style.setProperty("width", props.width)
+    : _el$29.style.removeProperty("width");
+  props.height != null
+    ? _el$29.style.setProperty("height", props.height)
+    : _el$29.style.removeProperty("height");
+  _$effect(() => _$setAttribute(_el$29, "something", color()));
+  return _el$29;
+})();
+const template24 = (() => {
+  var _el$30 = _tmpl$3();
+  props.height != null
+    ? _el$30.style.setProperty("height", props.height)
+    : _el$30.style.removeProperty("height");
+  _$setAttribute(_el$30, "something", color());
+  _$effect(_$p =>
+    (_$p = props.width) != null
+      ? _el$30.style.setProperty("width", _$p)
+      : _el$30.style.removeProperty("width")
+  );
+  return _el$30;
+})();
+
+// ONCE TESTS SPREADS
+
+const propsSpread = {
+  something: color(),
+  style: {
+    "background-color": color(),
+    color: /* @once*/ color(),
+    "margin-right": /* @once */ props.right
+  }
+};
+const template25 = (() => {
+  var _el$31 = _tmpl$3();
+  _$spread(_el$31, propsSpread, false, false);
+  return _el$31;
+})();
+const template26 = (() => {
+  var _el$32 = _tmpl$3();
+  _$spread(
+    _el$32,
+    {
+      ...propsSpread
+    },
+    false,
+    false
+  );
+  return _el$32;
+})();
+const template27 = (() => {
+  var _el$33 = _tmpl$3();
+  _$spread(
+    _el$33,
+    _$mergeProps(propsSpread, {
+      get ["data-dynamic"]() {
+        return color();
+      },
+      "data-static": color()
+    }),
+    false,
+    false
+  );
+  return _el$33;
+})();
+const template28 = (() => {
+  var _el$34 = _tmpl$3();
+  _$spread(
+    _el$34,
+    _$mergeProps(
+      {
+        ...propsSpread
+      },
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
+    false,
+    false
+  );
+  return _el$34;
+})();
+const template29 = (() => {
+  var _el$35 = _tmpl$3();
+  _$spread(
+    _el$35,
+    _$mergeProps(
+      {
+        ...propsSpread1
+      },
+      propsSpread2,
+      {
+        ...propsSpread3
+      },
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
+    false,
+    false
+  );
+  return _el$35;
+})();
+
+// ONCE PROPERTY OF OBJECT ACCESS
+
+// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
+const styleProp = {
+  style: {
+    width: props.width,
+    height: props.height
+  }
+};
+const template30 = (() => {
+  var _el$36 = _tmpl$3();
+  _$style(_el$36, styleProp.style);
+  return _el$36;
+})();
+const template31 = (() => {
+  var _el$37 = _tmpl$3();
+  _$effect(_$p => _$style(_el$37, styleProp.style, _$p));
+  return _el$37;
 })();

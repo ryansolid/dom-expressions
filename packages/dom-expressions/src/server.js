@@ -154,7 +154,10 @@ export function renderToStream(code, options = {}) {
       const first = html.indexOf(placeholder);
       if (first === -1) return;
       const last = html.indexOf(`<!--!$/${id}-->`, first + placeholder.length);
-      html = html.slice(0, first) + resolveSSRNode(escape(payloadFn())) + html.slice(last + placeholder.length + 1);
+      html =
+        html.slice(0, first) +
+        resolveSSRNode(escape(payloadFn())) +
+        html.slice(last + placeholder.length + 1);
     },
     serialize(id, p, wait) {
       const serverOnly = sharedConfig.context.noHydrate;
@@ -336,6 +339,7 @@ export function ssrClassList(value) {
 export function ssrStyle(value) {
   if (!value) return "";
   if (typeof value === "string") return escape(value, true);
+
   let result = "";
   const k = Object.keys(value);
   for (let i = 0; i < k.length; i++) {
@@ -343,12 +347,17 @@ export function ssrStyle(value) {
     const v = value[s];
     if (v != undefined) {
       if (i) result += ";";
-      result += `${s}:${escape(v, true)}`;
+      const r = escape(v, true);
+      if (r != undefined && r !== "undefined") {
+        result += `${s}:${r}`;
+      }
     }
   }
   return result;
 }
-
+export function ssrStyleProperty(name, value) {
+  return value != null ? name + value : "";
+}
 export function ssrElement(tag, props, children, needsId) {
   if (props == null) props = {};
   else if (typeof props === "function") props = props();
@@ -417,6 +426,7 @@ export function escape(s, attr) {
   if (t !== "string") {
     if (!attr && t === "function") return escape(s());
     if (!attr && Array.isArray(s)) {
+      s = s.slice(); // avoids double escaping - https://github.com/ryansolid/dom-expressions/issues/393
       for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
       return s;
     }
@@ -546,8 +556,7 @@ export function Hydration(props) {
 }
 
 export function NoHydration(props) {
-  if (sharedConfig.context)
-    sharedConfig.context.noHydrate = true;
+  if (sharedConfig.context) sharedConfig.context.noHydrate = true;
   return props.children;
 }
 
