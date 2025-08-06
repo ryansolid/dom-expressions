@@ -90,7 +90,6 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     expr.leadingComments[0] &&
     expr.leadingComments[0].value.trim() === config.staticMarker
   ) {
-    expr.leadingComments.shift();
     return false;
   }
 
@@ -260,9 +259,10 @@ export function transformCondition(path, inline, deep) {
   if (
     t.isConditionalExpression(expr) &&
     (isDynamic(path.get("consequent"), {
-      checkTags: true
+      checkTags: true,
+      checkMember: true
     }) ||
-      isDynamic(path.get("alternate"), { checkTags: true }))
+      isDynamic(path.get("alternate"), { checkTags: true, checkMember: true }))
   ) {
     dTest = isDynamic(path.get("test"), { checkMember: true });
     if (dTest) {
@@ -287,7 +287,7 @@ export function transformCondition(path, inline, deep) {
       nextPath = nextPath.get("left");
     }
     nextPath.node.operator === "&&" &&
-      isDynamic(nextPath.get("right"), { checkTags: true }) &&
+      isDynamic(nextPath.get("right"), { checkTags: true, checkMember: true }) &&
       (dTest = isDynamic(nextPath.get("left"), {
         checkMember: true
       }));

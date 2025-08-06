@@ -96,10 +96,10 @@ const template2 = _$ssrElement(
 const template3 = _$ssr(
   _tmpl$4,
   _$ssrHydrationKey(),
-  _$ssrAttribute("id", _$escape(/*@once*/ state.id, true), false),
+  _$ssrAttribute("id", _$escape(state.id, true), false),
   _$ssrStyleTuple("background-color:", _$escape(state.color, true)),
   _$ssrAttribute("name", _$escape(state.name, true), false),
-  _$escape(/*@once*/ state.content) || " "
+  _$escape(state.content) || " "
 );
 const template4 = _$ssr(
   _tmpl$5,

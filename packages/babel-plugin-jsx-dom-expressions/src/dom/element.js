@@ -329,6 +329,68 @@ function transformAttributes(path, results) {
     hasHydratableEvent = true;
   }
 
+  /**
+   *  inline styles
+   *
+   * 1. when string
+   * 2. when is an object, the key is a string, and value is string/numeric
+   * 3. remove properties from object when value is undefined/null
+   **/
+
+  attributes = path.get("openingElement").get("attributes");
+
+  const styleAttributes = attributes.filter(a => a.node.name && a.node.name.name === "style");
+  if (styleAttributes.length > 0) {
+    let inlinedStyle = "";
+
+    for (let i = 0; i < styleAttributes.length; i++) {
+      const attr = styleAttributes[i];
+
+      let value = attr.node.value;
+      if (t.isJSXExpressionContainer(value)) {
+        value = value.expression;
+      }
+
+      if (t.isStringLiteral(value)) {
+        inlinedStyle += `${value.value.replace(/;$/, "")};`;
+        attr.remove();
+      } else if (t.isObjectExpression(value)) {
+        const properties = value.properties;
+        const toRemoveProperty = [];
+        for (const property of properties) {
+          if (t.isObjectProperty(property)) {
+            if (
+              t.isStringLiteral(property.key) &&
+              (t.isStringLiteral(property.value) || t.isNumericLiteral(property.value))
+            ) {
+              inlinedStyle += `${property.key.value}:${property.value.value};`;
+              toRemoveProperty.push(property);
+            } else if (
+              (t.isIdentifier(property.value) && property.value.name === "undefined") ||
+              t.isNullLiteral(property.value)
+            ) {
+              toRemoveProperty.push(property);
+            }
+          }
+        }
+        for (const remove of toRemoveProperty) {
+          value.properties.splice(value.properties.indexOf(remove), 1);
+        }
+        if (value.properties.length === 0) {
+          attr.remove();
+        }
+      }
+    }
+
+    if (inlinedStyle !== "") {
+      const styleAttribute = t.jsxAttribute(
+        t.jsxIdentifier("style"),
+        t.stringLiteral(inlinedStyle.replace(/;$/, ""))
+      );
+      path.get("openingElement").node.attributes.push(styleAttribute);
+    }
+  }
+
   // preprocess styles
   const styleAttribute = path
     .get("openingElement")
@@ -761,12 +823,22 @@ function transformAttributes(path, results) {
           }
         } else if (
           config.effectWrapper &&
-          (isDynamic(attribute.get("value").get("expression"), {
+          isDynamic(attribute.get("value").get("expression"), {
             checkMember: true
-          }) ||
-            ((key === "classList" || key === "style") &&
-              !attribute.get("value").get("expression").evaluate().confident))
+          })
         ) {
+          /*
+            Following code doesn't repect static marker `@once`.
+            https://github.com/ryansolid/dom-expressions/pull/438
+
+           ||
+            (
+                (
+                    key === "classList" || key === "style") &&
+                    !attribute.get("value").get("expression").evaluate().confident
+                )
+            )
+           */
           let nextElem = elem;
           if (key === "value" || key === "checked") {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
@@ -805,13 +877,7 @@ function transformAttributes(path, results) {
         } else if (key.slice(0, 5) === "attr:") {
           if (t.isJSXExpressionContainer(value)) value = value.expression;
 
-          /**
-           * TODO: Unfortunately, `attr:onclick` changes too many tests, as we are working in
-           * `minor/next` it will mess up merging. This condition `key !== "onclick" &&` to be
-           * removed once we reach Solid 2.0, which will change a lot of tests.
-           */
-
-          if (key !== "attr:onclick" && (t.isStringLiteral(value) || t.isNumericLiteral(value))) {
+          if (t.isStringLiteral(value) || t.isNumericLiteral(value)) {
             // inlined  "attr:"
             inlineAttributeOnTemplate(isSVG, key.slice(5), results, value);
           } else {
@@ -1154,6 +1220,7 @@ function contextToCustomElement(path, results) {
 }
 
 function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapConditionals }) {
+  const config = getConfig(path);
   // TODO: skip but collect the names of any properties after the last spread to not overwrite them
   const filteredAttributes = [];
   const spreadArgs = [];
@@ -1168,12 +1235,18 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         ? `${node.name.namespace.name}:${node.name.name.name}`
         : node.name.name);
     if (t.isJSXSpreadAttribute(node)) {
+      const isStatic =
+        node.innerComments &&
+        node.innerComments[0] &&
+        node.innerComments[0].value.trim() === config.staticMarker;
+
       firstSpread = true;
       if (runningObject.length) {
         spreadArgs.push(t.objectExpression(runningObject));
         runningObject = [];
       }
-      spreadArgs.push(
+
+      const s =
         isDynamic(attribute.get("argument"), {
           checkMember: true
         }) && (dynamicSpread = true)
@@ -1183,8 +1256,9 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
             !t.isMemberExpression(node.argument.callee)
             ? node.argument.callee
             : t.arrowFunctionExpression([], node.argument)
-          : node.argument
-      );
+          : node.argument;
+
+      spreadArgs.push(isStatic ? t.objectExpression([t.spreadElement(s)]) : s);
     } else if (
       (firstSpread ||
         (t.isJSXExpressionContainer(node.value) &&
