@@ -1,5 +1,5 @@
 import { ssrStyle as _$ssrStyle } from "r-server";
-import { ssrStyleTuple as _$ssrStyleTuple } from "r-server";
+import { ssrStyleProperty as _$ssrStyleProperty } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
@@ -93,7 +93,7 @@ const template2 = _$ssrElement(
 const template3 = _$ssr(
   _tmpl$4,
   _$ssrAttribute("id", _$escape(state.id, true), false),
-  _$ssrStyleTuple("background-color:", _$escape(state.color, true)),
+  _$ssrStyleProperty("background-color:", _$escape(state.color, true)),
   _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content)
 );
@@ -217,9 +217,12 @@ const template29 = _$ssr(_tmpl$18, _$ssrAttribute("attribute", !!someValue, fals
 const template30 = _$ssr(_tmpl$20);
 const template31 = _$ssr(
   _tmpl$16,
-  _$ssrStyleTuple("background-color:", _$escape(getStore.itemProperties.color, true))
+  _$ssrStyleProperty("background-color:", _$escape(getStore.itemProperties.color, true))
 );
-const template32 = _$ssr(_tmpl$16, _$ssrStyleTuple("background-color:", _$escape(undefined, true)));
+const template32 = _$ssr(
+  _tmpl$16,
+  _$ssrStyleProperty("background-color:", _$escape(undefined, true))
+);
 const template33 = [
   _$ssr(_tmpl$21, _$ssrAttribute("class", _$escape(styles.button, true), false)),
   _$ssr(_tmpl$21, _$ssrAttribute("class", _$escape(styles["foo--bar"], true), false)),
@@ -232,7 +235,7 @@ const template36 = _$ssr(_tmpl$8);
 const template37 = _$ssr(_tmpl$8);
 const template38 = _$ssr(_tmpl$8);
 const template39 = _$ssr(_tmpl$22);
-const template40 = _$ssr(_tmpl$16, _$ssrStyleTuple("color:", _$escape(a(), true)));
+const template40 = _$ssr(_tmpl$16, _$ssrStyleProperty("color:", _$escape(a(), true)));
 const template41 = _$ssr(
   _tmpl$23,
   _$ssrAttribute("value", _$escape(state.color, true), false),
@@ -306,4 +309,4 @@ const template48 = _$ssr(_tmpl$26, _$ssrAttribute("playsinline", _$escape(value,
 const template49 = _$ssr(_tmpl$27);
 const template50 = _$ssr(_tmpl$28);
 const nope = () => undefined;
-const template51 = _$ssr(_tmpl$29, _$ssrStyleTuple("--bg:", _$escape(nope(), true)));
+const template51 = _$ssr(_tmpl$29, _$ssrStyleProperty("--bg:", _$escape(nope(), true)));

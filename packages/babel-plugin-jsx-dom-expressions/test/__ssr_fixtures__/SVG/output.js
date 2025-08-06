@@ -1,6 +1,6 @@
 import { createComponent as _$createComponent } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
-import { ssrStyleTuple as _$ssrStyleTuple } from "r-server";
+import { ssrStyleProperty as _$ssrStyleProperty } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
@@ -28,10 +28,10 @@ const template2 = _$ssr(
     _$ssrAttribute("stroke-width", _$escape(state.width, true), false) +
     _$ssrAttribute("x", _$escape(state.x, true), false) +
     _$ssrAttribute("y", _$escape(state.y, true), false),
-  _$ssrStyleTuple("fill:", "red") +
-    _$ssrStyleTuple(";stroke:", "black") +
-    _$ssrStyleTuple(";stroke-width:", _$escape(props.stroke, true)) +
-    _$ssrStyleTuple(";opacity:", 0.5)
+  _$ssrStyleProperty("fill:", "red") +
+    _$ssrStyleProperty(";stroke:", "black") +
+    _$ssrStyleProperty(";stroke-width:", _$escape(props.stroke, true)) +
+    _$ssrStyleProperty(";opacity:", 0.5)
 );
 const template3 = _$ssr(_tmpl$3, _$ssrElement("rect", props, undefined, false));
 const template4 = _$ssr(_tmpl$4);

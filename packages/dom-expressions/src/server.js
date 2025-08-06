@@ -355,7 +355,7 @@ export function ssrStyle(value) {
   }
   return result;
 }
-export function ssrStyleTuple(name, value) {
+export function ssrStyleProperty(name, value) {
   return value != null ? name + value : "";
 }
 export function ssrElement(tag, props, children, needsId) {

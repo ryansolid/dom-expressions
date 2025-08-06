@@ -333,7 +333,7 @@ function transformAttributes(path, results, info) {
             !value.expression.properties.some(p => t.isSpreadElement(p))
           ) {
             const props = value.expression.properties.map((p, i) =>
-              t.callExpression(registerImportMethod(path, "ssrStyleTuple"), [
+              t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
                 t.stringLiteral(
                   (i ? ";" : "") + (t.isIdentifier(p.key) ? p.key.name : p.key.value) + ":"
                 ),

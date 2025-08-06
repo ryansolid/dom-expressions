@@ -1,5 +1,5 @@
 import { ssrStyle as _$ssrStyle } from "r-server";
-import { ssrStyleTuple as _$ssrStyleTuple } from "r-server";
+import { ssrStyleProperty as _$ssrStyleProperty } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 import { escape as _$escape } from "r-server";
@@ -97,7 +97,7 @@ const template3 = _$ssr(
   _tmpl$4,
   _$ssrHydrationKey(),
   _$ssrAttribute("id", _$escape(state.id, true), false),
-  _$ssrStyleTuple("background-color:", _$escape(state.color, true)),
+  _$ssrStyleProperty("background-color:", _$escape(state.color, true)),
   _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content) || " "
 );
@@ -244,12 +244,12 @@ const template30 = _$ssr(_tmpl$21, _$ssrHydrationKey());
 const template31 = _$ssr(
   _tmpl$16,
   _$ssrHydrationKey(),
-  _$ssrStyleTuple("background-color:", _$escape(getStore.itemProperties.color, true))
+  _$ssrStyleProperty("background-color:", _$escape(getStore.itemProperties.color, true))
 );
 const template32 = _$ssr(
   _tmpl$16,
   _$ssrHydrationKey(),
-  _$ssrStyleTuple("background-color:", _$escape(undefined, true))
+  _$ssrStyleProperty("background-color:", _$escape(undefined, true))
 );
 const template33 = [
   _$ssr(
@@ -278,7 +278,7 @@ const template39 = _$ssr(_tmpl$23, _$ssrHydrationKey());
 const template40 = _$ssr(
   _tmpl$16,
   _$ssrHydrationKey(),
-  _$ssrStyleTuple("color:", _$escape(a(), true))
+  _$ssrStyleProperty("color:", _$escape(a(), true))
 );
 const template41 = _$ssr(
   _tmpl$24,
