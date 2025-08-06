@@ -264,3 +264,130 @@ const template80 = <div attr:true={true} attr:false={false}/>
 const template81 = <math display="block"><mrow></mrow></math>
 const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
 
+const template84 = <Comp inputProps={
+    {
+        quack,
+        title: title(),
+        name: name(),
+        quack:"best cat",
+        store:store.access,
+        static_: {
+          store:store.access,
+          quack: "best cat",
+          team:uy(),
+          store
+        },
+        spread: {
+          ...store
+        }
+    }
+} />
+
+const template85 = <Comp inputProps={
+    {
+        quack,
+        title: title(),
+        name: name(),
+        quack:"best cat",
+        store:store.access,
+        static_: {
+          store:store.access,
+          quack: "best cat",
+          team:uy(),
+          store
+        },
+        ...store
+    }
+} />
+
+
+
+const template86 = <Comp inputProps={
+    {
+        [quack]:'meaw',
+        title: title(),
+        name: name(),
+        quack:"best cat",
+        store:store.access,
+        static_: {
+          store:store.access,
+          quack: "best cat",
+          team:uy(),
+          store
+        },
+        ...store
+    }
+} />
+
+const template87 = <Comp inputProps={
+    {
+        [quack]:'meaw',
+        [store.key]: 'ha'
+    }
+} />
+const template87a1 = <Comp inputProps={
+    {
+        [quack]:'meaw',
+        [store]: 'ha'
+    }
+} />
+const template87a2 = <Comp inputProps={
+    {
+        [quack.key]:'meaw',
+        [store.key]: 'ha'
+    }
+} />
+
+const template88 = <Comp inputProps={
+   {
+       [quack]: /* @once */'meaw',
+        title: title(),
+        name:  /* @once */name(),
+        quack:"best cat",
+        store:store.access,
+        static_:  /* @once */ {
+            store:/* @once */store.access,
+            quack: "best cat",
+            team: /* @once */uy(),
+            /* @once */ store
+        },
+        /* @once */ ...store
+    }
+} />
+
+const template89 = <Comp inputProps={
+   {
+       [quack]: /* @once */'meaw',
+        title: title(),
+        name:  /* @once */name(),
+        quack:"best cat",
+        store:store.access,
+        static_:  /* @once */ {
+            store:/* @once */store.access,
+            quack: "best cat",
+            team: /* @once */uy(),
+            /* @once */ store
+        },
+        /* @once */ ...store,
+       ...store
+    }
+} />
+
+const template90 = <Comp inputProps={
+   {
+       [quack]: /* @once */'meaw',
+        title: title(),
+        name:  /* @once */name(),
+        quack:"best cat",
+        store:store.access,
+        static_:  /* @once */ {
+            store:/* @once */store.access,
+            quack: "best cat",
+            team: /* @once */uy(),
+            /* @once */ store,
+            ...store,
+        },
+        /* @once */ ...store,
+       ...store
+    }
+} />

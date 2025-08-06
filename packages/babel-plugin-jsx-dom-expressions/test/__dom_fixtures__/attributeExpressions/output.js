@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
+import { createComponent as _$createComponent } from "r-dom";
 import { setBoolAttribute as _$setBoolAttribute } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { memo as _$memo } from "r-dom";
@@ -575,4 +576,179 @@ const template80 = (() => {
 })();
 const template81 = _tmpl$52();
 const template82 = _tmpl$53();
+const template84 = _$createComponent(Comp, {
+  inputProps: {
+    quack,
+    get title() {
+      return title();
+    },
+    get name() {
+      return name();
+    },
+    quack: "best cat",
+    get store() {
+      return store.access;
+    },
+    static_: {
+      get store() {
+        return store.access;
+      },
+      quack: "best cat",
+      get team() {
+        return uy();
+      },
+      store
+    },
+    get spread() {
+      return {
+        ...store
+      };
+    }
+  }
+});
+const template85 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      quack,
+      get title() {
+        return title();
+      },
+      get name() {
+        return name();
+      },
+      quack: "best cat",
+      get store() {
+        return store.access;
+      },
+      static_: {
+        get store() {
+          return store.access;
+        },
+        quack: "best cat",
+        get team() {
+          return uy();
+        },
+        store
+      },
+      ...store
+    };
+  }
+});
+const template86 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack]: "meaw",
+      get title() {
+        return title();
+      },
+      get name() {
+        return name();
+      },
+      quack: "best cat",
+      get store() {
+        return store.access;
+      },
+      static_: {
+        get store() {
+          return store.access;
+        },
+        quack: "best cat",
+        get team() {
+          return uy();
+        },
+        store
+      },
+      ...store
+    };
+  }
+});
+const template87 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack]: "meaw",
+      [store.key]: "ha"
+    };
+  }
+});
+const template87a1 = _$createComponent(Comp, {
+  inputProps: {
+    [quack]: "meaw",
+    [store]: "ha"
+  }
+});
+const template87a2 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack.key]: "meaw",
+      [store.key]: "ha"
+    };
+  }
+});
+const template88 = _$createComponent(Comp, {
+  inputProps: {
+    [quack]: /* @once */ "meaw",
+    get title() {
+      return title();
+    },
+    name: /* @once */ name(),
+    quack: "best cat",
+    get store() {
+      return store.access;
+    },
+    static_: {
+      store: /* @once */ store.access,
+      quack: "best cat",
+      team: /* @once */ uy(),
+      /* @once */ store
+    },
+    /* @once */ ...store
+  }
+});
+const template89 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack]: /* @once */ "meaw",
+      get title() {
+        return title();
+      },
+      name: /* @once */ name(),
+      quack: "best cat",
+      get store() {
+        return store.access;
+      },
+      static_: {
+        store: /* @once */ store.access,
+        quack: "best cat",
+        team: /* @once */ uy(),
+        /* @once */ store
+      },
+      /* @once */ ...store,
+      ...store
+    };
+  }
+});
+const template90 = _$createComponent(Comp, {
+  get inputProps() {
+    return {
+      [quack]: /* @once */ "meaw",
+      get title() {
+        return title();
+      },
+      name: /* @once */ name(),
+      quack: "best cat",
+      get store() {
+        return store.access;
+      },
+      static_: {
+        store: /* @once */ store.access,
+        quack: "best cat",
+        team: /* @once */ uy(),
+        /* @once */ store,
+        ...store
+      },
+      /* @once */ ...store,
+      ...store
+    };
+  }
+});
 _$delegateEvents(["click", "input"]);
