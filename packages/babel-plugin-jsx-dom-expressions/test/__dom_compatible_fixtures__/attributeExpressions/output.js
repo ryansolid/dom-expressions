@@ -19,7 +19,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo></div>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div></div>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div class="a b"></div>`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div style="margin-right:40px"></div>`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div style="margin-right:40px" onclick="console.log('hi')"></div>`),
   _tmpl$7 = /*#__PURE__*/ _$template(`<input type="checkbox">`),
   _tmpl$8 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\`</div>`),
   _tmpl$9 = /*#__PURE__*/ _$template(`<button class="static hi"type="button">Write</button>`),
@@ -32,7 +32,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$16 = /*#__PURE__*/ _$template(`<div start="Hi">Hi</div>`),
   _tmpl$17 = /*#__PURE__*/ _$template(`<label><span>Input is </span><input><div></div></label>`),
   _tmpl$18 = /*#__PURE__*/ _$template(
-    `<div class="class1 class2 class3 class4 class5 class6"random="random1 random2\n    random3 random4"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px"></div>`
+    `<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2\n    random3 random4"></div>`
   ),
   _tmpl$19 = /*#__PURE__*/ _$template(`<button></button>`),
   _tmpl$20 = /*#__PURE__*/ _$template(`<input value="10">`),
@@ -240,10 +240,9 @@ const template11 = (() => {
   return _el$17;
 })();
 const template12 = (() => {
-  var _el$18 = _tmpl$4();
+  var _el$18 = _tmpl$6();
   _el$18.htmlFor = thing;
   _el$18.number = 123;
-  _$setAttribute(_el$18, "onclick", "console.log('hi')");
   return _el$18;
 })();
 const template13 = (() => {
