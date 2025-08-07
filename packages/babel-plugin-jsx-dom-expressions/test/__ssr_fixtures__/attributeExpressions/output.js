@@ -17,7 +17,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$7 = ["<div", ' style="', '">Hi</div>'],
   _tmpl$8 = ["<div", ' style="', '"', "></div>"],
   _tmpl$9 = ["<div", "></div>"],
-  _tmpl$10 = ["<div", ' onclick="', '"></div>'],
+  _tmpl$10 = ["<div", " onclick=\"console.log('hi')\"></div>"],
   _tmpl$11 = ["<input", ' type="checkbox" checked>'],
   _tmpl$12 = ["<input", ' type="checkbox"', ">"],
   _tmpl$13 = ["<div", ' class="`a">`$`</div>'],
@@ -36,46 +36,28 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$23 = ["<button", ' class="', '"></button>'],
   _tmpl$24 = ["<input", ' value="10">'],
   _tmpl$25 = ["<select", "", "><option", ">Red</option><option", ">Blue</option></select>"],
-  _tmpl$26 = ["<div", ">empty string</div>"],
-  _tmpl$27 = ["<div", ">js empty</div>"],
-  _tmpl$28 = ["<div", ">hola</div>"],
-  _tmpl$29 = ["<div", '>"hola js"</div>'],
-  _tmpl$30 = ["<div", " quack>true</div>"],
-  _tmpl$31 = ["<div", ">false</div>"],
-  _tmpl$32 = ["<div", ">1</div>"],
-  _tmpl$33 = ["<div", ">0</div>"],
-  _tmpl$34 = ["<div", '>"1"</div>'],
-  _tmpl$35 = ["<div", '>"0"</div>'],
-  _tmpl$36 = ["<div", "", ">undefined</div>"],
-  _tmpl$37 = ["<div", ">null</div>"],
-  _tmpl$38 = ["<div", ">boolTest()</div>"],
-  _tmpl$39 = ["<div", "", ">boolTest</div>"],
-  _tmpl$40 = ["<div", "", ">boolTestBinding</div>"],
-  _tmpl$41 = ["<div", ">boolTestObjBinding.value</div>"],
-  _tmpl$42 = ["<div", "", ">fn</div>"],
-  _tmpl$43 = ["<div", " before>should have space before</div>"],
-  _tmpl$44 = ["<div", " before after>should have space before/after</div>"],
-  _tmpl$45 = ["<div", " after>should have space before/after</div>"],
-  _tmpl$46 = ["<img", " src>"],
-  _tmpl$47 = ["<div", "><img src></div>"],
-  _tmpl$48 = ["<img", ' src loading="lazy">'],
-  _tmpl$49 = ["<div", '><img src loading="lazy"></div>'],
-  _tmpl$50 = ["<iframe", " src></iframe>"],
-  _tmpl$51 = ["<div", "><iframe src></iframe></div>"],
-  _tmpl$52 = ["<iframe", ' src loading="lazy"></iframe>'],
-  _tmpl$53 = ["<div", '><iframe src loading="lazy"></iframe></div>'],
-  _tmpl$54 = ["<div", ' title="<u>data</u>"></div>'],
-  _tmpl$55 = ["<div", ' true="true" truestr="true" truestrjs="true"></div>'],
-  _tmpl$56 = ["<div", ' false="false" falsestr="false" falsestrjs="false"></div>'],
-  _tmpl$57 = ["<div", "", "", "></div>"],
-  _tmpl$58 = ["<div", ' a b c d="true" e="false" f="0" g h', "", "", " l></div>"],
-  _tmpl$59 = ["<math", ' display="block"><mrow></mrow></math>'],
-  _tmpl$60 = ["<mrow", "><mi>x</mi><mo>=</mo></mrow>"],
-  _tmpl$61 = ["<video", "", "></video>"],
-  _tmpl$62 = ["<video", " playsinline></video>"],
-  _tmpl$63 = ["<video", "></video>"],
-  _tmpl$64 = ["<video", ' playsInline="true"></video>'],
-  _tmpl$65 = ["<video", ' playsInline="false"></video>'];
+  _tmpl$26 = ["<img", " src>"],
+  _tmpl$27 = ["<div", "><img src></div>"],
+  _tmpl$28 = ["<img", ' src loading="lazy">'],
+  _tmpl$29 = ["<div", '><img src loading="lazy"></div>'],
+  _tmpl$30 = ["<iframe", " src></iframe>"],
+  _tmpl$31 = ["<div", "><iframe src></iframe></div>"],
+  _tmpl$32 = ["<iframe", ' src loading="lazy"></iframe>'],
+  _tmpl$33 = ["<div", '><iframe src loading="lazy"></iframe></div>'],
+  _tmpl$34 = ["<div", ' title="<u>data</u>"></div>'],
+  _tmpl$35 = ["<div", ' true truestr="true" truestrjs="true"></div>'],
+  _tmpl$36 = ["<div", ' falsestr="false" falsestrjs="false"></div>'],
+  _tmpl$37 = ["<div", " true></div>"],
+  _tmpl$38 = ["<div", ' a b c d f="0" g h', "", "", " l></div>"],
+  _tmpl$39 = ["<math", ' display="block"><mrow></mrow></math>'],
+  _tmpl$40 = ["<mrow", "><mi>x</mi><mo>=</mo></mrow>"],
+  _tmpl$41 = ["<video", "", "></video>"],
+  _tmpl$42 = ["<video", " playsinline></video>"],
+  _tmpl$43 = ["<video", "></video>"],
+  _tmpl$44 = ["<video", ' poster="1.jpg"></video>'],
+  _tmpl$45 = ["<div", '><video poster="1.jpg"></video></div>'],
+  _tmpl$46 = ["<div", "><video></video></div>"],
+  _tmpl$47 = ["<button", ' type="button" style="', '" class="', '">', "</button>"];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -154,11 +136,11 @@ const template2 = _$ssrElement(
 const template3 = (() => {
   var _v$3 = _$ssrHydrationKey(),
     _v$5 = _$escape(state.content) || " ",
-    _v$4 = _$ssrRunInScope([() => _$ssrAttribute("name", _$escape(state.name, true), false)]);
+    _v$4 = _$ssrRunInScope([() => _$ssrAttribute("name", _$escape(state.name, true))]);
   return _$ssr(
     _tmpl$4,
     _v$3,
-    _$ssrAttribute("id", _$escape(state.id, true), false),
+    _$ssrAttribute("id", _$escape(state.id, true)),
     _$ssrStyleProperty("background-color:", _$escape(state.color, true)),
     _v$4[0],
     _v$5
@@ -166,7 +148,7 @@ const template3 = (() => {
 })();
 const template4 = (() => {
   var _v$6 = _$ssrHydrationKey(),
-    _v$7 = _$ssrRunInScope([() => _$ssrAttribute("className", _$escape(state.class, true), false)]);
+    _v$7 = _$ssrRunInScope([() => _$ssrAttribute("className", _$escape(state.class, true))]);
   return _$ssr(_tmpl$5, _v$6, _v$7[0], "ccc:ddd");
 })();
 const template5 = (() => {
@@ -190,12 +172,7 @@ const template7 = (() => {
           "padding-top": props.top
         })
     ]);
-  return _$ssr(
-    _tmpl$8,
-    _v$11,
-    _v$12[0],
-    _$ssrAttribute("other-class", _$escape(undefVar, true), false)
-  );
+  return _$ssr(_tmpl$8, _v$11, _v$12[0], _$ssrAttribute("other-class", _$escape(undefVar, true)));
 })();
 let refTarget;
 const template8 = (() => {
@@ -216,7 +193,7 @@ const template11 = (() => {
 })();
 const template12 = (() => {
   var _v$17 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$10, _v$17, "console.log('hi')");
+  return _$ssr(_tmpl$10, _v$17);
 })();
 const template13 = (() => {
   var _v$18 = _$ssrHydrationKey();
@@ -224,7 +201,7 @@ const template13 = (() => {
 })();
 const template14 = (() => {
   var _v$19 = _$ssrHydrationKey(),
-    _v$20 = _$ssrRunInScope(() => _$ssrAttribute("checked", state.visible, true));
+    _v$20 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(state.visible, true)));
   return _$ssr(_tmpl$12, _v$19, _v$20);
 })();
 const template15 = (() => {
@@ -274,13 +251,13 @@ const template19 = (() => {
 const template20 = (() => {
   var _v$25 = _$ssrHydrationKey(),
     _v$27 = _$ssrRunInScope([
-      () => _$ssrAttribute("min", _$escape(min(), true), false),
-      () => _$ssrAttribute("max", _$escape(max(), true), false),
-      () => _$ssrAttribute("min", _$escape(min(), true), false),
-      () => _$ssrAttribute("max", _$escape(max(), true), false)
+      () => _$ssrAttribute("min", _$escape(min(), true)),
+      () => _$ssrAttribute("max", _$escape(max(), true)),
+      () => _$ssrAttribute("min", _$escape(min(), true)),
+      () => _$ssrAttribute("max", _$escape(max(), true))
     ]),
-    _v$26 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true), false)),
-    _v$28 = _$ssrRunInScope(() => _$ssrAttribute("checked", s2(), true));
+    _v$26 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
+    _v$28 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(s2(), true)));
   return _$ssr(
     _tmpl$16,
     _v$25,
@@ -290,7 +267,7 @@ const template20 = (() => {
     _v$28,
     _v$27[2],
     _v$27[3],
-    _$ssrAttribute("readonly", value, true)
+    _$ssrAttribute("readonly", _$escape(value, true))
   );
 })();
 const template21 = (() => {
@@ -311,7 +288,7 @@ const template22 = (() => {
 const template23 = (() => {
   var _v$32 = _$ssrHydrationKey(),
     _v$34 = _$ssrRunInScope(() => "t" in test && "true"),
-    _v$33 = _$ssrRunInScope([() => _$ssrAttribute("disabled", "t" in test, true)]);
+    _v$33 = _$ssrRunInScope([() => _$ssrAttribute("disabled", "t" in _$escape(test, true))]);
   return _$ssr(_tmpl$19, _v$32, _v$33[0], _v$34);
 })();
 const template24 = _$ssrElement(
@@ -380,7 +357,7 @@ const template28 = _$ssrElement(
 const template29 = (() => {
   var _v$38 = _$ssrHydrationKey(),
     _v$39 = !!someValue;
-  return _$ssr(_tmpl$21, _v$38, _$ssrAttribute("attribute", !!someValue, false), _v$39);
+  return _$ssr(_tmpl$21, _v$38, _$ssrAttribute("attribute", !!someValue), _v$39);
 })();
 const template30 = (() => {
   var _v$40 = _$ssrHydrationKey();
@@ -445,20 +422,11 @@ const template40 = (() => {
 })();
 const template41 = (() => {
   var _v$57 = _$ssrHydrationKey(),
-    _v$58 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(state.color, true), false)),
-    _v$59 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Red, true), false)),
-    _v$60 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Blue, true), false));
+    _v$58 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(state.color, true))),
+    _v$59 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Red, true))),
+    _v$60 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Blue, true)));
   return _$ssr(_tmpl$25, _v$57, _v$58, _v$59, _v$60);
 })();
-
-// bool:
-function boolTest() {
-  return true;
-}
-const boolTestBinding = false;
-const boolTestObjBinding = {
-  value: false
-};
 const template42 = (() => {
   var _v$61 = _$ssrHydrationKey();
   return _$ssr(_tmpl$26, _v$61);
@@ -497,276 +465,182 @@ const template50 = (() => {
 })();
 const template51 = (() => {
   var _v$70 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$35, _v$70);
+  return _$ssr(_tmpl$9, _v$70);
 })();
 const template52 = (() => {
   var _v$71 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$36, _v$71, _$ssrAttribute("quack", undefined, true));
+  return _$ssr(_tmpl$9, _v$71);
 })();
 const template53 = (() => {
   var _v$72 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$37, _v$72);
+  return _$ssr(_tmpl$9, _v$72);
 })();
 const template54 = (() => {
-  var _v$73 = _$ssrHydrationKey(),
-    _v$74 = _$ssrRunInScope([() => _$ssrAttribute("quack", boolTest(), true)]);
-  return _$ssr(_tmpl$38, _v$73, _v$74[0]);
+  var _v$73 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$9, _v$73);
 })();
 const template55 = (() => {
-  var _v$75 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$39, _v$75, _$ssrAttribute("quack", boolTest, true));
+  var _v$74 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$9, _v$74);
 })();
 const template56 = (() => {
-  var _v$76 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$40, _v$76, _$ssrAttribute("quack", boolTestBinding, true));
+  var _v$75 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$35, _v$75);
 })();
 const template57 = (() => {
-  var _v$77 = _$ssrHydrationKey(),
-    _v$78 = _$ssrRunInScope([() => _$ssrAttribute("quack", boolTestObjBinding.value, true)]);
-  return _$ssr(_tmpl$41, _v$77, _v$78[0]);
+  var _v$76 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$36, _v$76);
 })();
 const template58 = (() => {
-  var _v$79 = _$ssrHydrationKey();
-  return _$ssr(
-    _tmpl$42,
-    _v$79,
-    _$ssrAttribute("quack", () => false, true)
-  );
+  var _v$77 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$9, _v$77);
 })();
 const template59 = (() => {
-  var _v$80 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$43, _v$80);
+  var _v$78 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$37, _v$78);
 })();
 const template60 = (() => {
-  var _v$81 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$44, _v$81);
+  var _v$79 = _$ssrHydrationKey();
+  return _$ssr(
+    _tmpl$38,
+    _v$79,
+    _$ssrAttribute("i", _$escape(undefined, true)),
+    _$ssrAttribute("j", _$escape(null, true)),
+    _$ssrAttribute("k", void 0)
+  );
 })();
 const template61 = (() => {
-  var _v$82 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$45, _v$82);
+  var _v$80 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$39, _v$80);
 })();
-// this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
-
+const template62 = (() => {
+  var _v$81 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$40, _v$81);
+})();
 const template63 = (() => {
-  var _v$83 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$46, _v$83);
+  var _v$82 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$17, _v$82, _$ssrStyleProperty("background:", "red"));
 })();
 const template64 = (() => {
-  var _v$84 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$47, _v$84);
-})();
-const template65 = (() => {
-  var _v$85 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$48, _v$85);
-})();
-const template66 = (() => {
-  var _v$86 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$49, _v$86);
-})();
-const template67 = (() => {
-  var _v$87 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$50, _v$87);
-})();
-const template68 = (() => {
-  var _v$88 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$51, _v$88);
-})();
-const template69 = (() => {
-  var _v$89 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$52, _v$89);
-})();
-const template70 = (() => {
-  var _v$90 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$53, _v$90);
-})();
-const template71 = (() => {
-  var _v$91 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$54, _v$91);
-})();
-const template72 = (() => {
-  var _v$92 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$9, _v$92);
-})();
-const template73 = (() => {
-  var _v$93 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$9, _v$93);
-})();
-const template74 = (() => {
-  var _v$94 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$9, _v$94);
-})();
-const template75 = (() => {
-  var _v$95 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$9, _v$95);
-})();
-const template76 = (() => {
-  var _v$96 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$9, _v$96);
-})();
-const template77 = (() => {
-  var _v$97 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$55, _v$97);
-})();
-const template78 = (() => {
-  var _v$98 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$56, _v$98);
-})();
-const template79 = (() => {
-  var _v$99 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$9, _v$99);
-})();
-const template80 = (() => {
-  var _v$100 = _$ssrHydrationKey();
-  return _$ssr(
-    _tmpl$57,
-    _v$100,
-    _$ssrAttribute("true", _$escape(true, true), false),
-    _$ssrAttribute("false", _$escape(false, true), false)
-  );
-})();
-const template81 = (() => {
-  var _v$101 = _$ssrHydrationKey();
-  return _$ssr(
-    _tmpl$58,
-    _v$101,
-    _$ssrAttribute("i", _$escape(undefined, true), false),
-    _$ssrAttribute("j", _$escape(null, true), false),
-    _$ssrAttribute("k", void 0, false)
-  );
-})();
-const template82 = (() => {
-  var _v$102 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$59, _v$102);
-})();
-const template83 = (() => {
-  var _v$103 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$60, _v$103);
-})();
-const template84 = (() => {
-  var _v$104 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$17, _v$104, _$ssrStyleProperty("background:", "red"));
-})();
-const template85 = (() => {
-  var _v$105 = _$ssrHydrationKey();
+  var _v$83 = _$ssrHydrationKey();
   return _$ssr(
     _tmpl$17,
-    _v$105,
+    _v$83,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
       _$ssrStyleProperty(";margin:", 3) +
       _$ssrStyleProperty(";padding:", 0.4)
   );
 })();
-const template86 = (() => {
-  var _v$106 = _$ssrHydrationKey();
+const template65 = (() => {
+  var _v$84 = _$ssrHydrationKey();
   return _$ssr(
     _tmpl$17,
-    _v$106,
+    _v$84,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
       _$ssrStyleProperty(";border:", _$escape(undefined, true))
   );
 })();
-const template87 = (() => {
-  var _v$107 = _$ssrHydrationKey(),
-    _v$108 = _$ssrRunInScope([
+const template66 = (() => {
+  var _v$85 = _$ssrHydrationKey(),
+    _v$86 = _$ssrRunInScope([
       () =>
         _$ssrStyleProperty("background:", "red") +
         _$ssrStyleProperty(";color:", "green") +
         _$ssrStyleProperty(";border:", _$escape(signal(), true))
     ]);
-  return _$ssr(_tmpl$17, _v$107, _v$108[0]);
+  return _$ssr(_tmpl$17, _v$85, _v$86[0]);
 })();
-const template88 = (() => {
-  var _v$109 = _$ssrHydrationKey();
+const template67 = (() => {
+  var _v$87 = _$ssrHydrationKey();
   return _$ssr(
     _tmpl$17,
-    _v$109,
+    _v$87,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
       _$ssrStyleProperty(";border:", _$escape(somevalue, true))
   );
 })();
-const template89 = (() => {
-  var _v$110 = _$ssrHydrationKey(),
-    _v$111 = _$ssrRunInScope([
+const template68 = (() => {
+  var _v$88 = _$ssrHydrationKey(),
+    _v$89 = _$ssrRunInScope([
       () =>
         _$ssrStyleProperty("background:", "red") +
         _$ssrStyleProperty(";color:", "green") +
         _$ssrStyleProperty(";border:", _$escape(some.access, true))
     ]);
-  return _$ssr(_tmpl$17, _v$110, _v$111[0]);
+  return _$ssr(_tmpl$17, _v$88, _v$89[0]);
 })();
-const template90 = (() => {
-  var _v$112 = _$ssrHydrationKey();
+const template69 = (() => {
+  var _v$90 = _$ssrHydrationKey();
   return _$ssr(
     _tmpl$17,
-    _v$112,
+    _v$90,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
       _$ssrStyleProperty(";border:", _$escape(null, true))
   );
 })();
-const template91 = (() => {
-  var _v$113 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$61, _v$113, _$ssrAttribute("playsinline", value, true));
+const template70 = (() => {
+  var _v$91 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$41, _v$91, _$ssrAttribute("playsinline", _$escape(value, true)));
 })();
-const template92 = (() => {
-  var _v$114 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$62, _v$114);
+const template71 = (() => {
+  var _v$92 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$42, _v$92);
 })();
-const template93 = (() => {
-  var _v$115 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$63, _v$115);
+const template72 = (() => {
+  var _v$93 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$43, _v$93);
 })();
-const template94 = (() => {
-  var _v$116 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$61, _v$116, _$ssrAttribute("playsInline", _$escape(value, true), false));
+const template73 = (() => {
+  var _v$94 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$44, _v$94);
 })();
-const template95 = (() => {
-  var _v$117 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$64, _v$117);
+const template74 = (() => {
+  var _v$95 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$45, _v$95);
 })();
-const template96 = (() => {
-  var _v$118 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$65, _v$118);
+const template75 = (() => {
+  var _v$96 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$43, _v$96);
+})();
+const template76 = (() => {
+  var _v$97 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$46, _v$97);
 })();
 
 // ONCE TESTS
 
-const template97 = (() => {
-  var _v$119 = _$ssrHydrationKey();
+const template77 = (() => {
+  var _v$98 = _$ssrHydrationKey();
   return _$ssr(
     _tmpl$17,
-    _v$119,
+    _v$98,
     _$ssrStyleProperty("width:", _$escape(props.width, true)) +
       _$ssrStyleProperty(";height:", _$escape(props.height, true))
   );
 })();
-const template98 = (() => {
-  var _v$120 = _$ssrHydrationKey(),
-    _v$121 = _$ssrRunInScope([() => _$ssrAttribute("something", _$escape(color(), true), false)]);
+const template78 = (() => {
+  var _v$99 = _$ssrHydrationKey(),
+    _v$100 = _$ssrRunInScope([() => _$ssrAttribute("something", _$escape(color(), true))]);
   return _$ssr(
     _tmpl$17,
-    _v$120,
+    _v$99,
     _$ssrStyleProperty("width:", _$escape(props.width, true)) +
       _$ssrStyleProperty(";height:", _$escape(props.height, true)),
-    _v$121[0]
+    _v$100[0]
   );
 })();
-const template99 = (() => {
-  var _v$122 = _$ssrHydrationKey(),
-    _v$123 = _$ssrRunInScope([
+const template79 = (() => {
+  var _v$101 = _$ssrHydrationKey(),
+    _v$102 = _$ssrRunInScope([
       () =>
         _$ssrStyleProperty("width:", _$escape(props.width, true)) +
         _$ssrStyleProperty(";height:", _$escape(props.height, true))
     ]);
-  return _$ssr(
-    _tmpl$8,
-    _v$122,
-    _v$123[0],
-    _$ssrAttribute("something", _$escape(color(), true), false)
-  );
+  return _$ssr(_tmpl$8, _v$101, _v$102[0], _$ssrAttribute("something", _$escape(color(), true)));
 })();
 
 // ONCE TESTS SPREADS
@@ -779,9 +653,9 @@ const propsSpread = {
     "margin-right": /* @once */ props.right
   }
 };
-const template100 = _$ssrElement("div", propsSpread, undefined, true);
-const template101 = _$ssrElement("div", propsSpread, undefined, true);
-const template102 = _$ssrElement(
+const template80 = _$ssrElement("div", propsSpread, undefined, true);
+const template81 = _$ssrElement("div", propsSpread, undefined, true);
+const template82 = _$ssrElement(
   "div",
   _$mergeProps(propsSpread, {
     get ["data-dynamic"]() {
@@ -792,7 +666,7 @@ const template102 = _$ssrElement(
   undefined,
   true
 );
-const template103 = _$ssrElement(
+const template83 = _$ssrElement(
   "div",
   _$mergeProps(propsSpread, {
     get ["data-dynamic"]() {
@@ -803,7 +677,7 @@ const template103 = _$ssrElement(
   undefined,
   true
 );
-const template104 = _$ssrElement(
+const template84 = _$ssrElement(
   "div",
   _$mergeProps(propsSpread1, propsSpread2, propsSpread3, {
     get ["data-dynamic"]() {
@@ -824,12 +698,28 @@ const styleProp = {
     height: props.height
   }
 };
-const template105 = (() => {
-  var _v$124 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$17, _v$124, _$ssrStyle(styleProp.style));
+const template85 = (() => {
+  var _v$103 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$17, _v$103, _$ssrStyle(styleProp.style));
 })();
-const template106 = (() => {
-  var _v$125 = _$ssrHydrationKey(),
-    _v$126 = _$ssrRunInScope([() => _$ssrStyle(styleProp.style)]);
-  return _$ssr(_tmpl$17, _v$125, _v$126[0]);
+const template86 = (() => {
+  var _v$104 = _$ssrHydrationKey(),
+    _v$105 = _$ssrRunInScope([() => _$ssrStyle(styleProp.style)]);
+  return _$ssr(_tmpl$17, _v$104, _v$105[0]);
+})();
+const style = {
+  background: "red",
+  border: "solid black " + count() + "px"
+};
+const template87 = (() => {
+  var _v$106 = _$ssrHydrationKey(),
+    _v$108 = _$ssrRunInScope(() => _$escape(count())),
+    _v$107 = _$ssrRunInScope([() => _$ssrAttribute("aria-label", _$escape(count(), true))]);
+  return _$ssr(_tmpl$47, _v$106, _v$107[0], _$ssrStyle(style), _$ssrClassName(style), _v$108);
+})();
+const template88 = (() => {
+  var _v$109 = _$ssrHydrationKey(),
+    _v$111 = _$ssrRunInScope(() => _$escape(count())),
+    _v$110 = _$ssrRunInScope([() => _$ssrAttribute("aria-label", _$escape(count(), true))]);
+  return _$ssr(_tmpl$47, _v$109, _v$110[0], _$ssrStyle(style), _$ssrClassName(style), _v$111);
 })();

@@ -69,7 +69,7 @@ const template10 = <div ref={refFactory()} />;
 
 const template11 = <div use:something use:another={thing} use:zero={0} />;
 
-const template12 = <div prop:htmlFor={thing} prop:number={123} attr:onclick="console.log('hi')" />;
+const template12 = <div prop:htmlFor={thing} prop:number={123} onclick="console.log('hi')" />;
 
 const template13 = <input type="checkbox" checked={true} />;
 
@@ -205,87 +205,61 @@ const template41 = (
   </select>
 );
 
-// bool:
-function boolTest(){return true}
-const boolTestBinding = false
-const boolTestObjBinding = {value:false}
+const template42 = <img src="" />;
+const template43 = <div><img src=""/></div>;
 
-const template42 = <div bool:quack="">empty string</div>;
-const template43 = <div bool:quack={""}>js empty</div>;
-const template44 = <div bool:quack="hola">hola</div>;
-const template45 = <div bool:quack={"hola js"}>"hola js"</div>;
-const template46 = <div bool:quack={true}>true</div>;
-const template47 = <div bool:quack={false}>false</div>;
-const template48 = <div bool:quack={1}>1</div>;
-const template49 = <div bool:quack={0}>0</div>;
-const template50 = <div bool:quack={"1"}>"1"</div>;
-const template51 = <div bool:quack={"0"}>"0"</div>;
-const template52 = <div bool:quack={undefined}>undefined</div>;
-const template53 = <div bool:quack={null}>null</div>;
-const template54 = <div bool:quack={boolTest()}>boolTest()</div>;
-const template55 = <div bool:quack={boolTest}>boolTest</div>;
-const template56 = <div bool:quack={boolTestBinding}>boolTestBinding</div>;
-const template57 = <div bool:quack={boolTestObjBinding.value}>boolTestObjBinding.value</div>;
-const template58 = <div bool:quack={()=>false}>fn</div>;
+const template44 = <img src="" loading="lazy"/>;
+const template45 = <div><img src="" loading="lazy"/></div>;
 
-const template59 = <div before bool:quack="true">should have space before</div>;
-const template60 = <div before bool:quack="true" after>should have space before/after</div>;
-const template61 = <div bool:quack="true" after>should have space before/after</div>;
-// this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
+const template46 = <iframe src=""></iframe>;
+const template47 = <div><iframe src=""></iframe></div>;
 
-const template63 = <img src="" />;
-const template64 = <div><img src=""/></div>;
+const template48 = <iframe src="" loading="lazy"></iframe>;
+const template49 = <div><iframe src="" loading="lazy"></iframe></div>;
 
-const template65 = <img src="" loading="lazy"/>;
-const template66 = <div><img src="" loading="lazy"/></div>;
+const template50 = <div title="<u>data</u>"/>
 
-const template67 = <iframe src=""></iframe>;
-const template68 = <div><iframe src=""></iframe></div>;
+const template51 = <div ref={binding} />;
+const template52 = <div ref={binding.prop} />;
+const template53 = <div ref={refFn} />
+const template54 = <div ref={refConst} />
 
-const template69 = <iframe src="" loading="lazy"></iframe>;
-const template70 = <div><iframe src="" loading="lazy"></iframe></div>;
+const template55 = <div ref={refUnknown} />
 
-const template71 = <div title="<u>data</u>"/>
+const template56 = <div true={true} truestr="true" truestrjs={"true"}/>
+const template57 = <div false={false} falsestr="false" falsestrjs={"false"} />
+const template58 = <div prop:true={true} prop:false={false}/>
 
-const template72 = <div ref={binding} />;
-const template73 = <div ref={binding.prop} />;
-const template74 = <div ref={refFn} />
-const template75 = <div ref={refConst} />
+const template59 = <div true={true} false={false}/>
+const template60 = <div a b="" c='' d={true} e={false} f={0} g={''} h={""} i={undefined} j={null} k={void 0} l/>
 
-const template76 = <div ref={refUnknown} />
+const template61 = <math display="block"><mrow></mrow></math>
+const template62 = <mrow><mi>x</mi><mo>=</mo></mrow>
 
-const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
-const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
-const template79 = <div prop:true={true} prop:false={false}/>
-const template80 = <div attr:true={true} attr:false={false}/>
-const template81 = <div a b="" c='' d={true} e={false} f={0} g={''} h={""} i={undefined} j={null} k={void 0} l/>
-
-const template82 = <math display="block"><mrow></mrow></math>
-const template83 = <mrow><mi>x</mi><mo>=</mo></mrow>
-
-const template84 = <div style={{"background":"red"}}/>
-const template85 = <div style={{"background":"red", "color":"green", "margin":3, "padding":0.4}}/>
-const template86 = <div style={{"background":"red", "color":"green", "border":undefined}}/>
-const template87 = <div style={{"background":"red", "color":"green", "border":signal()}}/>
-const template88 = <div style={{"background":"red", "color":"green", "border":somevalue}}/>
-const template89 = <div style={{"background":"red", "color":"green", "border":some.access}}/>
-const template90 = <div style={{"background":"red", "color":"green", "border":null}}/>
-const template91 = <video playsinline={value}/>
-const template92 = <video playsinline={true}/>
-const template93 = <video playsinline={false}/>
-const template94 = <video playsInline={value}/>
-const template95 = <video playsInline={true}/>
-const template96 = <video playsInline={false}/>
+const template63 = <div style={{"background":"red"}}/>
+const template64 = <div style={{"background":"red", "color":"green", "margin":3, "padding":0.4}}/>
+const template65 = <div style={{"background":"red", "color":"green", "border":undefined}}/>
+const template66 = <div style={{"background":"red", "color":"green", "border":signal()}}/>
+const template67 = <div style={{"background":"red", "color":"green", "border":somevalue}}/>
+const template68 = <div style={{"background":"red", "color":"green", "border":some.access}}/>
+const template69 = <div style={{"background":"red", "color":"green", "border":null}}/>
+const template70 = <video playsinline={value}/>
+const template71 = <video playsinline={true}/>
+const template72 = <video playsinline={false}/>
+const template73 = <video poster="1.jpg"/>
+const template74 = <div><video poster="1.jpg"/></div>
+const template75 = <video prop:poster="1.jpg"/>
+const template76 = <div><video prop:poster="1.jpg"/></div>
 
 // ONCE TESTS
 
-const template97 = <div style={/*@once*/ { width: props.width, height: props.height }} />;
+const template77 = <div style={/*@once*/ { width: props.width, height: props.height }} />;
 
-const template98 = (
+const template78 = (
   <div style={/*@once*/ { width: props.width, height: props.height }} something={color()} />
 );
 
-const template99 = (
+const template79 = (
   <div
     style={{ width: props.width, height: /* @once */ props.height }}
     something={/*@once*/ color()}
@@ -303,18 +277,18 @@ const propsSpread = {
   }
 };
 
-const template100 = <div {...propsSpread} />;
-const template101 = <div {/* @once */ ...propsSpread} />;
+const template80 = <div {...propsSpread} />;
+const template81 = <div {/* @once */ ...propsSpread} />;
 
-const template102 = (
+const template82 = (
   <div {...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
 );
 
-const template103 = (
+const template83 = (
   <div {/* @once */ ...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
 );
 
-const template104 = (
+const template84 = (
   <div
     {
       /* @once */ ...propsSpread1
@@ -332,5 +306,22 @@ const template104 = (
 
 // https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
 const styleProp = { style: { width: props.width, height: props.height } };
-const template105 = <div style={/* @once */ styleProp.style} />;
-const template106 = <div style={styleProp.style} />;
+const template85 = <div style={/* @once */ styleProp.style} />;
+const template86 = <div style={styleProp.style} />;
+
+const style = {
+  background: "red",
+  border: "solid black " + count() + "px"
+};
+
+const template87 = (
+  <button type="button" aria-label={count()} style={style} class={style}>
+    {count()}
+  </button>
+);
+
+const template88 = (
+  <button type="button" aria-label={count()} style={/* @once*/ style} class={/* @once*/ style}>
+    {count()}
+  </button>
+);

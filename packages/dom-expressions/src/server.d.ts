@@ -5,7 +5,6 @@ export const DelegatedEvents: Set<string>;
 export const DOMElements: Set<string>;
 export const SVGElements: Set<string>;
 export const SVGNamespace: Record<string, string>;
-export function getPropAlias(prop: string, tagName: string): string | undefined;
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 

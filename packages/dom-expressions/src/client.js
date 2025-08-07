@@ -1,10 +1,4 @@
-import {
-  Properties,
-  ChildProperties,
-  getPropAlias,
-  SVGNamespace,
-  DelegatedEvents
-} from "./constants";
+import { Properties, ChildProperties, SVGNamespace, DelegatedEvents } from "./constants";
 import {
   root,
   effect,
@@ -20,7 +14,6 @@ import reconcileArrays from "./reconcile";
 export {
   Properties,
   ChildProperties,
-  getPropAlias,
   DOMElements,
   SVGElements,
   SVGNamespace,
@@ -51,12 +44,15 @@ export function render(code, element, init, options = {}) {
     );
   }
   let disposer;
-  root(dispose => {
-    disposer = dispose;
-    element === document
-      ? flatten(code)
-      : insert(element, code(), element.firstChild ? null : undefined, init);
-  }, { id: options.renderId });
+  root(
+    dispose => {
+      disposer = dispose;
+      element === document
+        ? flatten(code)
+        : insert(element, code(), element.firstChild ? null : undefined, init);
+    },
+    { id: options.renderId }
+  );
   return () => {
     disposer();
     element.textContent = "";
@@ -108,8 +104,8 @@ export function setProperty(node, name, value) {
 
 export function setAttribute(node, name, value) {
   if (isHydrating(node)) return;
-  if (value == null) node.removeAttribute(name);
-  else node.setAttribute(name, value);
+  if (value == null || value === false) node.removeAttribute(name);
+  else node.setAttribute(name, value === true ? "" : value);
 }
 
 export function setAttributeNS(node, namespace, name, value) {
@@ -118,14 +114,9 @@ export function setAttributeNS(node, namespace, name, value) {
   else node.setAttributeNS(namespace, name, value);
 }
 
-export function setBoolAttribute(node, name, value) {
-  if (isHydrating(node)) return;
-  value ? node.setAttribute(name, "") : node.removeAttribute(name);
-}
-
 export function className(node, value, isSVG, prev) {
   if (isHydrating(node)) return;
-  if (value == null) {
+  if (value == null || value === false) {
     prev && node.removeAttribute("class");
     return;
   }
@@ -382,7 +373,7 @@ function flattenClassList(list, result) {
 }
 
 function assignProp(node, prop, value, prev, isSVG, skipRef) {
-  let propAlias, forceProp;
+  let forceProp;
   if (prop === "style") return style(node, value, prev), value;
   if (prop === "class") return className(node, value, isSVG, prev), value;
   if (value === prev) return prev;
@@ -403,21 +394,16 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
       addEventListener(node, name, value, delegate);
       delegate && delegateEvents([name]);
     }
-  } else if (prop.slice(0, 5) === "attr:") {
-    setAttribute(node, prop.slice(5), value);
-  } else if (prop.slice(0, 5) === "bool:") {
-    setBoolAttribute(node, prop.slice(5), value);
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||
-    (!isSVG && (propAlias = getPropAlias(prop, node.tagName))) ||
-    Properties.has(prop)
+    (!isSVG && Properties.has(prop))
   ) {
     if (forceProp) prop = prop.slice(5);
     else if (isHydrating(node)) return value;
     if (prop === "value" && node.nodeName === "SELECT")
       queueMicrotask(() => (node.value = value)) || (node.value = value);
-    else node[propAlias || prop] = value;
+    else node[prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
     if (ns) setAttributeNS(node, ns, prop, value);

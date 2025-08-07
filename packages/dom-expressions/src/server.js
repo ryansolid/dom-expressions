@@ -1,4 +1,4 @@
-import { BooleanAttributes, ChildProperties } from "./constants";
+import { ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError } from "rxcore";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
@@ -7,7 +7,6 @@ export { getOwner, createComponent, effect, memo, untrack, ssrRunInScope } from 
 export {
   Properties,
   ChildProperties,
-  getPropAlias,
   DOMElements,
   SVGElements,
   SVGNamespace,
@@ -368,9 +367,6 @@ export function ssrElement(tag, props, children, needsId) {
       result += `style="${ssrStyle(value)}"`;
     } else if (prop === "class") {
       result += `class="${ssrClassName(value)}"`;
-    } else if (BooleanAttributes.has(prop)) {
-      if (value) result += prop;
-      else continue;
     } else if (
       value == undefined ||
       prop === "ref" ||
@@ -378,13 +374,11 @@ export function ssrElement(tag, props, children, needsId) {
       prop.slice(0, 5) === "prop:"
     ) {
       continue;
-    } else if (prop.slice(0, 5) === "bool:") {
+    } else if (typeof value === "boolean") {
       if (!value) continue;
-      result += escape(prop.slice(5));
-    } else if (prop.slice(0, 5) === "attr:") {
-      result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
+      result += escape(prop);
     } else {
-      result += `${escape(prop)}="${escape(value, true)}"`;
+      result += value === "" ? escape(prop) : `${escape(prop)}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -394,8 +388,8 @@ export function ssrElement(tag, props, children, needsId) {
   return ssr([result + ">", `</${tag}>`], resolveSSRNode(children, undefined, true));
 }
 
-export function ssrAttribute(key, value, isBoolean) {
-  return isBoolean ? (value ? " " + key : "") : value != null ? ` ${key}="${value}"` : "";
+export function ssrAttribute(key, value) {
+  return value == null || value === false ? "" : value === true ? ` ${key}` : ` ${key}="${value}"`;
 }
 
 export function ssrHydrationKey() {
@@ -412,7 +406,7 @@ export function escape(s, attr) {
       for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
       return s;
     }
-    if (attr && t === "boolean") return String(s);
+    if (attr && t === "boolean") return s;
     return s;
   }
   const delim = attr ? '"' : "<";
