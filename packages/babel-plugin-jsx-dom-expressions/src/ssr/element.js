@@ -302,6 +302,7 @@ function transformAttributes(path, results, info) {
     ) {
       if (
         key === "ref" ||
+        key.startsWith("ref:") ||
         key.startsWith("use:") ||
         key.startsWith("prop:") ||
         key.startsWith("on")
@@ -555,6 +556,7 @@ function createElement(path, { topLevel, hydratable }) {
         if (hasChildren && key === "children") return;
         if (
           key === "ref" ||
+          key.startsWith("ref:") ||
           key.startsWith("use:") ||
           key.startsWith("prop:") ||
           key.startsWith("on")
