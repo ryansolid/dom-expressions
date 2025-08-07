@@ -334,3 +334,20 @@ const template104 = (
 const styleProp = { style: { width: props.width, height: props.height } };
 const template105 = <div style={/* @once */ styleProp.style} />;
 const template106 = <div style={styleProp.style} />;
+
+const style = {
+  background: "red",
+  border: "solid black " + count() + "px"
+};
+
+const template107 = (
+  <button type="button" aria-label={count()} style={style} class={style}>
+    {count()}
+  </button>
+);
+
+const template108 = (
+  <button type="button" aria-label={count()} style={/* @once*/ style} class={/* @once*/ style}>
+    {count()}
+  </button>
+);

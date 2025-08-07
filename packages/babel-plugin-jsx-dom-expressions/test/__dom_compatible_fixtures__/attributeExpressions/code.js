@@ -8,18 +8,17 @@ const selected = true;
 let id = "my-h1";
 let link;
 const template = (
-  <div id="main" {...results} classList={{ selected: unknown }} style={{ color }}>
+  <div id="main" {...results} class={{ selected: unknown }} style={{ color }}>
     <h1
-      class="base"
       id={id}
       {...results()}
       foo
       disabled
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
-      classList={{ dynamic: dynamic(), selected }}
+      class={["base", { dynamic: dynamic(), selected }]}
     >
-      <a href={"/"} ref={link} classList={{ "ccc ddd": true }}>
+      <a href={"/"} ref={link} class={{ "ccc ddd": true }}>
         Welcome
       </a>
     </h1>
@@ -44,7 +43,7 @@ const template3 = (
   />
 );
 
-const template4 = <div class="hi" className={state.class} classList={{ "ccc:ddd": true }} />;
+const template4 = <div className={state.class} class={{ "ccc:ddd": true }} />;
 
 const template5 = <div class="a" className="b"></div>;
 
@@ -57,7 +56,7 @@ const template7 = (
     style:padding-top={props.top}
     class:my-class={props.active}
     class:other-class={undefVar}
-    classList={{ "other-class2": undefVar }}
+    class={{ "other-class2": undefVar }}
   />
 );
 
@@ -80,10 +79,9 @@ const template15 = <div class="`a">`$`</div>;
 
 const template16 = (
   <button
-    class="static"
-    classList={{
+    class={["static",{
       hi: "k"
-    }}
+    }]}
     type="button"
   >
     Write
@@ -92,7 +90,7 @@ const template16 = (
 
 const template17 = (
   <button
-    classList={{
+    class={{
       a: true,
       b: true,
       c: true
@@ -113,7 +111,7 @@ const template18 = (
   />
 );
 
-const template19 = <div classList={{ "bg-red-500": true }} class="flex flex-col" />;
+const template19 = <div class={[{ "bg-red-500": true }, "flex flex-col"]} />;
 
 const template20 = (
   <div>
@@ -260,19 +258,96 @@ const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
 const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
 const template79 = <div prop:true={true} prop:false={false}/>
 const template80 = <div attr:true={true} attr:false={false}/>
+const template81 = <div a b="" c='' d={true} e={false} f={0} g={''} h={""} i={undefined} j={null} k={void 0} l/>
 
-const template81 = <math display="block"><mrow></mrow></math>
-const template82 = <mrow><mi>x</mi><mo>=</mo></mrow>
-const template83 = <video attr:poster="1.jpg"/>
-const template84 = <div><video attr:poster="1.jpg"/></div>
-const template85 = <video prop:poster="1.jpg"/>
-const template86 = <div><video prop:poster="1.jpg"/></div>
-const template87 = <video bool:poster="1.jpg"/>
-const template88 = <div><video bool:poster="1.jpg"/></div>
+const template82 = <math display="block"><mrow></mrow></math>
+const template83 = <mrow><mi>x</mi><mo>=</mo></mrow>
 
-const template89 = <video playsinline={value}/>
-const template90 = <video playsinline={true}/>
-const template91 = <video playsinline={false}/>
-const template92 = <video playsInline={value}/>
-const template93 = <video playsInline={true}/>
-const template94 = <video playsInline={false}/>
+const template84 = <div style={{"background":"red"}}/>
+const template85 = <div style={{"background":"red", "color":"green", "margin":3, "padding":0.4}}/>
+const template86 = <div style={{"background":"red", "color":"green", "border":undefined}}/>
+const template87 = <div style={{"background":"red", "color":"green", "border":signal()}}/>
+const template88 = <div style={{"background":"red", "color":"green", "border":somevalue}}/>
+const template89 = <div style={{"background":"red", "color":"green", "border":some.access}}/>
+const template90 = <div style={{"background":"red", "color":"green", "border":null}}/>
+const template91 = <video playsinline={value}/>
+const template92 = <video playsinline={true}/>
+const template93 = <video playsinline={false}/>
+const template94 = <video playsInline={value}/>
+const template95 = <video playsInline={true}/>
+const template96 = <video playsInline={false}/>
+
+// ONCE TESTS
+
+const template97 = <div style={/*@once*/ { width: props.width, height: props.height }} />;
+
+const template98 = (
+  <div style={/*@once*/ { width: props.width, height: props.height }} something={color()} />
+);
+
+const template99 = (
+  <div
+    style={{ width: props.width, height: /* @once */ props.height }}
+    something={/*@once*/ color()}
+  />
+);
+
+// ONCE TESTS SPREADS
+
+const propsSpread = {
+  something: color(),
+  style: {
+    "background-color": color(),
+    color: /* @once*/ color(),
+    "margin-right": /* @once */ props.right
+  }
+};
+
+const template100 = <div {...propsSpread} />;
+const template101 = <div {/* @once */ ...propsSpread} />;
+
+const template102 = (
+  <div {...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
+);
+
+const template103 = (
+  <div {/* @once */ ...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
+);
+
+const template104 = (
+  <div
+    {
+      /* @once */ ...propsSpread1
+    }
+    {...propsSpread2}
+    {
+      /* @once */ ...propsSpread3
+    }
+    data-dynamic={color()}
+    data-static={/* @once */ color()}
+  />
+);
+
+// ONCE PROPERTY OF OBJECT ACCESS
+
+// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
+const styleProp = { style: { width: props.width, height: props.height } };
+const template105 = <div style={/* @once */ styleProp.style} />;
+const template106 = <div style={styleProp.style} />;
+
+const style = {
+  background: "red",
+  border: "solid black " + count() + "px"
+};
+
+const template107 = (
+  <button type="button" aria-label={count()} style={style} class={style}>
+    {count()}
+  </button>
+);
+
+const template108 = (
+  <button type="button" aria-label={count()} style={/* @once*/ style} class={/* @once*/ style}>
+    {count()}
+  </button>
+);

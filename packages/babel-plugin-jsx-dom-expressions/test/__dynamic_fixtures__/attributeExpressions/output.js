@@ -76,7 +76,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$56 = /*#__PURE__*/ _$template(
     `<div style=background:red;color:green;margin:3;padding:0.4>`
   ),
-  _tmpl$57 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`);
+  _tmpl$57 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`),
+  _tmpl$58 = /*#__PURE__*/ _$template(`<button type=button>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -443,12 +444,22 @@ const template32 = _tmpl$4();
 const template33 = [
   (() => {
     var _el$46 = _tmpl$20();
-    _$className(_el$46, styles.button);
+    _$effect(
+      () => styles.button,
+      (_v$, _$p) => {
+        _$className(_el$46, _v$, false, _$p);
+      }
+    );
     return _el$46;
   })(),
   (() => {
     var _el$47 = _tmpl$20();
-    _$className(_el$47, styles["foo--bar"]);
+    _$effect(
+      () => styles["foo--bar"],
+      (_v$, _$p) => {
+        _$className(_el$47, _v$, false, _$p);
+      }
+    );
     return _el$47;
   })(),
   (() => {
@@ -865,5 +876,41 @@ const template106 = (() => {
     }
   );
   return _el$128;
+})();
+const style = {
+  background: "red",
+  border: "solid black " + count() + "px"
+};
+const template107 = (() => {
+  var _el$129 = _tmpl$58();
+  _$insert(_el$129, count);
+  _$effect(
+    () => ({
+      e: count(),
+      t: style,
+      a: style
+    }),
+    ({ e, t, a }, _p$) => {
+      e !== _p$.e && _$setAttribute(_el$129, "aria-label", e);
+      _$style(_el$129, t, _p$.t);
+      _$className(_el$129, a, false, _p$.a);
+    },
+    {
+      e: undefined,
+      t: undefined,
+      a: undefined
+    }
+  );
+  return _el$129;
+})();
+const template108 = (() => {
+  var _el$130 = _tmpl$58();
+  _$style(_el$130, style);
+  _$className(_el$130, style);
+  _$insert(_el$130, count);
+  _$effect(count, _v$ => {
+    _$setAttribute(_el$130, "aria-label", _v$);
+  });
+  return _el$130;
 })();
 _$delegateEvents(["click", "input"]);

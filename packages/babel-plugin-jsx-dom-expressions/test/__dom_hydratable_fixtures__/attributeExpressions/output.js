@@ -81,7 +81,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$59 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`),
   _tmpl$60 = /*#__PURE__*/ _$template(`<video>`),
   _tmpl$61 = /*#__PURE__*/ _$template(`<video playsinline>`),
-  _tmpl$62 = /*#__PURE__*/ _$template(`<video playsInline>`);
+  _tmpl$62 = /*#__PURE__*/ _$template(`<video playsInline>`),
+  _tmpl$63 = /*#__PURE__*/ _$template(`<button type=button>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -462,12 +463,22 @@ const template32 = _$getNextElement(_tmpl$4);
 const template33 = [
   (() => {
     var _el$50 = _$getNextElement(_tmpl$20);
-    _$className(_el$50, styles.button);
+    _$effect(
+      () => styles.button,
+      (_v$, _$p) => {
+        _$className(_el$50, _v$, false, _$p);
+      }
+    );
     return _el$50;
   })(),
   (() => {
     var _el$51 = _$getNextElement(_tmpl$20);
-    _$className(_el$51, styles["foo--bar"]);
+    _$effect(
+      () => styles["foo--bar"],
+      (_v$, _$p) => {
+        _$className(_el$51, _v$, false, _$p);
+      }
+    );
     return _el$51;
   })(),
   (() => {
@@ -859,5 +870,41 @@ const template106 = (() => {
     }
   );
   return _el$127;
+})();
+const style = {
+  background: "red",
+  border: "solid black " + count() + "px"
+};
+const template107 = (() => {
+  var _el$128 = _$getNextElement(_tmpl$63);
+  _$insert(_el$128, count);
+  _$effect(
+    () => ({
+      e: count(),
+      t: style,
+      a: style
+    }),
+    ({ e, t, a }, _p$) => {
+      e !== _p$.e && _$setAttribute(_el$128, "aria-label", e);
+      _$style(_el$128, t, _p$.t);
+      _$className(_el$128, a, false, _p$.a);
+    },
+    {
+      e: undefined,
+      t: undefined,
+      a: undefined
+    }
+  );
+  return _el$128;
+})();
+const template108 = (() => {
+  var _el$129 = _$getNextElement(_tmpl$63);
+  _$style(_el$129, style);
+  _$className(_el$129, style);
+  _$insert(_el$129, count);
+  _$effect(count, _v$ => {
+    _$setAttribute(_el$129, "aria-label", _v$);
+  });
+  return _el$129;
 })();
 _$delegateEvents(["click", "input"]);
