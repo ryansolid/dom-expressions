@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createRoot, createSignal, flushSync } from "@solidjs/signals";
+import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("Test class binding", () => {
   test("Single binding", () => {
@@ -11,7 +11,7 @@ describe("Test class binding", () => {
     expect(div.className).toBe("color");
 
     setDanger(true);
-    flushSync();
+    flush();
     expect(div.className).toBe("color danger");
   });
 
@@ -25,7 +25,7 @@ describe("Test class binding", () => {
     expect(div.className).toBe("color");
 
     setDanger(true);
-    flushSync();
+    flush();
     expect(div.className).toBe("color danger");
   });
 
@@ -35,11 +35,11 @@ describe("Test class binding", () => {
     expect(div.className).toBe("active");
 
     setClassName("danger");
-    flushSync();
+    flush();
     expect(div.className).toBe("danger");
 
     setClassName(undefined);
-    flushSync();
+    flush();
     expect(div.className).toBe("");
   });
 

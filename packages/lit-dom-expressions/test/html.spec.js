@@ -1,4 +1,4 @@
-import { createRoot, createSignal, flushSync } from "@solidjs/signals";
+import { createRoot, createSignal, flush } from "@solidjs/signals";
 import { createHTML } from "../dist/lit-dom-expressions";
 import * as r from "dom-expressions/src/client";
 
@@ -275,7 +275,7 @@ describe("Test HTML", () => {
       const div = document.createElement("div");
       div.appendChild(template);
       setD("second");
-      flushSync();
+      flush();
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[9]);
     });
   });

@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createRoot, createSignal, flushSync } from "@solidjs/signals";
+import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("create simple svg", () => {
   it("Ensure dynamic props are set as attributes", () => {
@@ -32,7 +32,7 @@ describe("create simple svg", () => {
     );
     setX(10);
     setY(50);
-    flushSync();
+    flush();
     expect(rect.outerHTML).toBe(
       `<rect width="150" height="150" x="10" y="50" style="fill: red; stroke: black; stroke-width: 5; opacity: 0.5;" class="classy" title="hello"></rect>`
     );

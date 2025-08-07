@@ -30,8 +30,8 @@ importers:
         specifier: 15.0.1
         version: 15.0.1(rollup@3.29.5)
       '@solidjs/signals':
-        specifier: ^0.3.2
-        version: 0.3.2
+        specifier: ^0.4.0
+        version: 0.4.0
       '@types/jest':
         specifier: ^29.2.5
         version: 29.2.5
@@ -1389,8 +1389,8 @@ packages:
   '@sinonjs/fake-timers@9.1.2':
     resolution: {integrity: sha512-BPS4ynJW/o92PUR4wgriz2Ud5gpST5vz6GQfMixEDK0Z8ZCUv2M7SkBLykH56T++Xs+8ln9zTGbOvNGIe02/jw==}
 
-  '@solidjs/signals@0.3.2':
-    resolution: {integrity: sha512-Y8oh0xtB4DBluydxjphMQXjBULvoMxouDN/MgrXqN+F3B5UN4QTYEigFdT7KxVzunbNXkyOhOIit1QcgmJ27SQ==}
+  '@solidjs/signals@0.4.0':
+    resolution: {integrity: sha512-RA5mZxfhNGwBbXkmmy20tzR1Wpj/64Fgs5vrXlTVkbDtnF+HZA3MEdpdvZudrPEmzpdho00wEjSgjQHk3FBpUQ==}
 
   '@tootallnate/once@2.0.0':
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
@@ -6050,7 +6050,7 @@ snapshots:
     dependencies:
       '@sinonjs/commons': 1.8.6
 
-  '@solidjs/signals@0.3.2': {}
+  '@solidjs/signals@0.4.0': {}
 
   '@tootallnate/once@2.0.0': {}
 

@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createRoot, createSignal, flushSync } from "@solidjs/signals";
+import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("create component with dynamic expressions", () => {
   it("should properly create dynamic properties", () => {
@@ -25,7 +25,7 @@ describe("create component with dynamic expressions", () => {
     expect(span.textContent).toBe("John loves Porsche 911 Turbo");
 
     setFavoriteCar("Nissan R35 GTR");
-    flushSync();
+    flush();
     expect(span.textContent).toBe("John loves Nissan R35 GTR");
     disposer();
   });

@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createRoot, createSignal, flushSync } from "@solidjs/signals";
+import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("Test conditional operators", () => {
   test("ternary expression triggered", () => {
@@ -10,7 +10,7 @@ describe("Test conditional operators", () => {
     expect(div.innerHTML).toBe("Small");
 
     setS(7);
-    flushSync();
+    flush();
     expect(div.innerHTML).toBe("Large");
   });
 
@@ -20,7 +20,7 @@ describe("Test conditional operators", () => {
     expect(div.innerHTML).toBe("");
 
     setS(7);
-    flushSync();
+    flush();
     expect(div.innerHTML).toBe("Large");
   });
 
@@ -32,7 +32,7 @@ describe("Test conditional operators", () => {
     div2 = div1;
 
     setS(7);
-    flushSync();
+    flush();
     expect(div1).toBe(div2);
   });
 
@@ -43,7 +43,7 @@ describe("Test conditional operators", () => {
     div2 = div1;
 
     setS(7);
-    flushSync();
+    flush();
     expect(div1).toBe(div2);
   });
 
@@ -58,7 +58,7 @@ describe("Test conditional operators", () => {
     expect(div.innerHTML).toBe("Small");
 
     setS(7);
-    flushSync();
+    flush();
     expect(div.innerHTML).toBe("Large");
   });
 
@@ -73,7 +73,7 @@ describe("Test conditional operators", () => {
     expect(div.innerHTML).toBe("");
 
     setS(7);
-    flushSync();
+    flush();
     expect(div.innerHTML).toBe("Large");
   });
 });

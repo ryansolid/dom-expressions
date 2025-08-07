@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createRoot, createSignal, flushSync, onCleanup } from "@solidjs/signals";
+import { createRoot, createSignal, flush, onCleanup } from "@solidjs/signals";
 
 describe("create element with various spreads", () => {
   it("should properly spread ref, click, attribute, and children", () => {
@@ -80,7 +80,7 @@ describe("create element with various spreads", () => {
       },
       "data-mode": "visible"
     });
-    flushSync();
+    flush();
     expect(span).toBeDefined();
     expect(span.className).toBe("Other");
     expect(span.textContent).toBe("Holla");
@@ -188,7 +188,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     setP({
       class: "class2"
     });
-    flushSync();
+    flush();
     expect(span.className).toBe("class2");
     expect(span).toBeDefined();
     disposer();
@@ -224,7 +224,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(refCleanupCount).toBe(0);
 
     setC("class2");
-    flushSync();
+    flush();
     expect(span.className).toBe("class2");
     expect(refCount).toBe(1);
     expect(refCleanupCount).toBe(0);
@@ -266,7 +266,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
       ref,
       class: "class2"
     });
-    flushSync();
+    flush();
     expect(span.className).toBe("class2");
     expect(refCount).toBe(2);
     expect(refCleanupCount).toBe(1);
