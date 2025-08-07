@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { insert as _$insert } from "r-dom";
 import { setProp as _$setProp } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
 import { style as _$style } from "r-dom";
@@ -16,7 +17,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   _tmpl$4 = /*#__PURE__*/ _$template(`<div class="a b">`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div style=margin-right:40px>`),
   _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox readonly>`),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`);
+  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<button type=button>`);
 const selected = true;
 let id = "my-h1";
 let link;
@@ -341,4 +343,37 @@ const template31 = (() => {
   var _el$37 = _tmpl$3();
   _$effect(_$p => _$style(_el$37, styleProp.style, _$p));
   return _el$37;
+})();
+const style = {
+  background: "red",
+  border: "solid black " + count() + "px"
+};
+const template32 = (() => {
+  var _el$38 = _tmpl$8();
+  _$insert(_el$38, count);
+  _$effect(
+    _p$ => {
+      var _v$4 = count(),
+        _v$5 = style,
+        _v$6 = style;
+      _v$4 !== _p$.e && _$setAttribute(_el$38, "aria-label", (_p$.e = _v$4));
+      _p$.t = _$style(_el$38, _v$5, _p$.t);
+      _p$.a = _$classList(_el$38, _v$6, _p$.a);
+      return _p$;
+    },
+    {
+      e: undefined,
+      t: undefined,
+      a: undefined
+    }
+  );
+  return _el$38;
+})();
+const template33 = (() => {
+  var _el$39 = _tmpl$8();
+  _$style(_el$39, style);
+  _$classList(_el$39, style);
+  _$insert(_el$39, count);
+  _$effect(() => _$setAttribute(_el$39, "aria-label", count()));
+  return _el$39;
 })();
