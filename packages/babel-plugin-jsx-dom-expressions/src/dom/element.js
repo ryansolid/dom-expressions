@@ -1,6 +1,5 @@
 import * as t from "@babel/types";
 import {
-  getPropAlias,
   Properties,
   ChildProperties,
   SVGNamespace,
@@ -200,8 +199,8 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
       prevId
         ? [elem, value, t.booleanLiteral(isSVG), prevId]
         : isSVG
-        ? [elem, value, t.booleanLiteral(true)]
-        : [elem, value]
+          ? [elem, value, t.booleanLiteral(true)]
+          : [elem, value]
     );
   }
 
@@ -216,27 +215,19 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
     return t.assignmentExpression("=", t.memberExpression(elem, t.identifier("data")), value);
   }
 
-  if (namespace === "bool") {
-    return t.callExpression(
-      registerImportMethod(path, "setBoolAttribute", getRendererConfig(path, "dom").moduleName),
-      [elem, t.stringLiteral(name), value]
-    );
-  }
-
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  const alias = getPropAlias(name, tagName.toUpperCase());
-  if (namespace !== "attr" && (isChildProp || (!isSVG && isProp) || namespace === "prop")) {
+  if (isChildProp || (!isSVG && isProp) || namespace === "prop") {
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
-        t.stringLiteral(alias || name),
+        t.stringLiteral(name),
         value
       ]);
     }
     const assignment = t.assignmentExpression(
       "=",
-      t.memberExpression(elem, t.identifier(alias || name)),
+      t.memberExpression(elem, t.identifier(name)),
       value
     );
     // handle select/options... TODO: consider other ways in the future
@@ -849,65 +840,6 @@ function transformAttributes(path, results) {
             isSVG,
             tagName
           });
-        } else if (key.slice(0, 5) === "attr:") {
-          if (t.isJSXExpressionContainer(value)) value = value.expression;
-
-          if (t.isStringLiteral(value) || t.isNumericLiteral(value)) {
-            // inlined  "attr:"
-            inlineAttributeOnTemplate(isSVG, key.slice(5), results, value);
-          } else {
-            // dynamic "attr:"
-            results.exprs.push(
-              t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, tagName }))
-            );
-          }
-        } else if (key.slice(0, 5) === "bool:") {
-          // inline it on the template when possible
-          let content = value;
-
-          if (t.isJSXExpressionContainer(content)) content = content.expression;
-
-          function addBoolAttribute() {
-            results.template += `${needsSpacing ? " " : ""}${key.slice(5)}`;
-            needsSpacing = true;
-          }
-
-          switch (content.type) {
-            case "StringLiteral": {
-              if (content.value.length && content.value !== "0") {
-                addBoolAttribute();
-              }
-              return;
-            }
-            case "NullLiteral": {
-              return;
-            }
-            case "BooleanLiteral": {
-              if (content.value) {
-                addBoolAttribute();
-              }
-              return;
-            }
-            case "Identifier": {
-              if (content.name === "undefined") {
-                return;
-              }
-              break;
-            }
-          }
-
-          // when not possible to inline it in the template
-          results.exprs.push(
-            t.expressionStatement(
-              setAttr(
-                attribute,
-                elem,
-                key,
-                t.isJSXExpressionContainer(value) ? value.expression : value,
-                { isSVG, tagName }
-              )
-            )
-          );
         } else {
           results.exprs.push(
             t.expressionStatement(
@@ -921,6 +853,17 @@ function transformAttributes(path, results) {
           return;
         }
         if (t.isJSXExpressionContainer(value)) value = value.expression;
+
+        // boolean as `<el attr={true | false}/>`, not as `<el attr={"true" | "false"}/>`
+        // `<el attr={true}/>` becomes `<el attr/>`
+        // `<el attr={false}/>` becomes `<el/>`
+        if (t.isBooleanLiteral(value)) {
+          if (value.value === true) {
+            results.template += `${needsSpacing ? " " : ""}${key}`;
+            needsSpacing = true;
+          }
+          return;
+        }
 
         // properties
         if (value && ChildProperties.has(key)) {
@@ -1258,9 +1201,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         runningObject.push(
           t.objectProperty(
             t.stringLiteral(key),
-            isContainer
-              ? node.value.expression
-              : node.value || (Properties.has(key) ? t.booleanLiteral(true) : t.stringLiteral(""))
+            isContainer ? node.value.expression : node.value || t.stringLiteral("")
           )
         );
       }

@@ -1,79 +1,6 @@
-// list of lowercase booleans
-const booleans = [
-  "allowfullscreen",
-  "async",
-  "alpha", // HTMLInputElement
-  "autofocus", // HTMLElement prop
-  "autoplay",
-  "checked",
-  "controls",
-  "default",
-  "disabled",
-  "formnovalidate",
-  "hidden", // HTMLElement prop - not a boolean
-  "indeterminate",
-  "inert", // HTMLElement prop
-  "ismap",
-  "loop",
-  "multiple",
-  "muted",
-  "nomodule",
-  "novalidate",
-  "open",
-  "playsinline",
-  "readonly",
-  "required",
-  "reversed",
-  "seamless", // HTMLIframeElement - non-standard
-  "selected",
-
-  "adauctionheaders", // experimental
-  "browsingtopics", // experimental
-  "credentialless", // experimental
-  "defaultchecked",
-  "defaultmuted",
-  "defaultselected",
-  "defer",
-  "disablepictureinpicture",
-  "disableremoteplayback",
-  "preservespitch", // appears as camelCase property only (not as attribute)
-  "shadowrootclonable",
-  "shadowrootcustomelementregistry", // experimental - doesnt seem to have a prop yet
-  "shadowrootdelegatesfocus",
-  "shadowrootserializable", // experimental
-  "sharedstoragewritable" // experimental
-];
-
-const BooleanAttributes = /*#__PURE__*/ new Set(booleans);
-
 const Properties = /*#__PURE__*/ new Set([
   // locked to properties
   "value",
-
-  // booleans with camelCase
-  "readOnly",
-  "noValidate",
-  "formNoValidate",
-  "isMap",
-  "noModule",
-  "playsInline",
-
-  "adAuctionHeaders", // experimental
-  "allowFullscreen",
-  "browsingTopics", // experimental
-  "defaultChecked",
-  "defaultMuted",
-  "defaultSelected",
-  "disablePictureInPicture",
-  "disableRemotePlayback",
-  "preservesPitch",
-  "shadowRootClonable",
-  "shadowRootCustomElementRegistry", // experimental
-  "shadowRootDelegatesFocus",
-  "shadowRootSerializable", // experimental
-  "sharedStorageWritable", // experimental
-
-  ...booleans
 ]);
 
 const ChildProperties = /*#__PURE__*/ new Set([
@@ -82,101 +9,6 @@ const ChildProperties = /*#__PURE__*/ new Set([
   "innerText",
   "children"
 ]);
-
-const PropAliases = /*#__PURE__*/ Object.assign(Object.create(null), {
-  // locked to properties
-  class: "className",
-
-  // booleans map
-  novalidate: {
-    $: "noValidate",
-    FORM: 1
-  },
-  formnovalidate: {
-    $: "formNoValidate",
-    BUTTON: 1,
-    INPUT: 1
-  },
-  ismap: {
-    $: "isMap",
-    IMG: 1
-  },
-  nomodule: {
-    $: "noModule",
-    SCRIPT: 1
-  },
-  playsinline: {
-    $: "playsInline",
-    VIDEO: 1
-  },
-  readonly: {
-    $: "readOnly",
-    INPUT: 1,
-    TEXTAREA: 1
-  },
-
-  adauctionheaders: {
-    $: "adAuctionHeaders",
-    IFRAME: 1
-  },
-  allowfullscreen: {
-    $: "allowFullscreen",
-    IFRAME: 1
-  },
-  browsingtopics: {
-    $: "browsingTopics",
-    IMG: 1
-  },
-  defaultchecked: {
-    $: "defaultChecked",
-    INPUT: 1
-  },
-  defaultmuted: {
-    $: "defaultMuted",
-    AUDIO: 1,
-    VIDEO: 1
-  },
-  defaultselected: {
-    $: "defaultSelected",
-    OPTION: 1
-  },
-  disablepictureinpicture: {
-    $: "disablePictureInPicture",
-    VIDEO: 1
-  },
-  disableremoteplayback: {
-    $: "disableRemotePlayback",
-    AUDIO: 1,
-    VIDEO: 1
-  },
-  preservespitch: {
-    $: "preservesPitch",
-    AUDIO: 1,
-    VIDEO: 1
-  },
-  shadowrootclonable: {
-    $: "shadowRootClonable",
-    TEMPLATE: 1
-  },
-  shadowrootdelegatesfocus: {
-    $: "shadowRootDelegatesFocus",
-    TEMPLATE: 1
-  },
-  shadowrootserializable: {
-    $: "shadowRootSerializable",
-    TEMPLATE: 1
-  },
-  sharedstoragewritable: {
-    $: "sharedStorageWritable",
-    IFRAME: 1,
-    IMG: 1
-  }
-});
-
-function getPropAlias(prop, tagName) {
-  const a = PropAliases[prop];
-  return typeof a === "object" ? (a[tagName] ? a["$"] : undefined) : a;
-}
 
 // list of Element events that will be delegated
 const DelegatedEvents = /*#__PURE__*/ new Set([
@@ -587,10 +419,8 @@ const DOMElements = /*#__PURE__*/ new Set([
 ]);
 
 export {
-  BooleanAttributes,
   Properties,
   ChildProperties,
-  getPropAlias,
   DelegatedEvents,
   SVGElements,
   SVGNamespace,

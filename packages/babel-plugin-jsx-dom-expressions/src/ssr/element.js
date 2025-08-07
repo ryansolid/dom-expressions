@@ -1,6 +1,6 @@
 import * as t from "@babel/types";
 import { decode } from "html-entities";
-import { BooleanAttributes, ChildProperties } from "dom-expressions/src/constants";
+import { ChildProperties } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
   getTagName,
@@ -115,8 +115,7 @@ function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
 
   let attr = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
     t.stringLiteral(name),
-    value,
-    t.booleanLiteral(isBoolean)
+    value
   ]);
   if (isDynamic) {
     attr = t.arrowFunctionExpression([], attr);
@@ -329,14 +328,10 @@ function transformAttributes(path, results, info) {
           checkTags: true
         });
         let doEscape = true;
-        let isBoolean = false;
-        if (key.startsWith("attr:")) key = key.replace("attr:", "");
-        if ((isBoolean = BooleanAttributes.has(key))) doEscape = false;
-        if (key.startsWith("bool:")) {
-          key = key.replace("bool:", "");
-          isBoolean = true;
-          doEscape = false;
-        }
+        let isBoolean =
+          t.isBooleanLiteral(value) ||
+          (t.isJSXExpressionContainer(value) && t.isBooleanLiteral(value.expression));
+        if (isBoolean) doEscape = false;
         if (key === "style") {
           if (
             t.isJSXExpressionContainer(value) &&
@@ -406,7 +401,7 @@ function transformAttributes(path, results, info) {
     } else {
       if (key === "$ServerOnly") return;
       if (t.isJSXExpressionContainer(value)) value = value.expression;
-      const isBoolean = BooleanAttributes.has(key);
+      const isBoolean = t.isBooleanLiteral(value)
       if (isBoolean && value && value.value !== "" && !value.value) return;
       appendToTemplate(results.template, ` ${key}`);
       if (!value) return;
@@ -620,8 +615,8 @@ function createElement(path, { topLevel, hydratable }) {
               childNodes.length === 1 ? childNodes[0] : t.arrayExpression(childNodes)
             )
           : childNodes.length === 1
-          ? childNodes[0]
-          : t.arrayExpression(childNodes)
+            ? childNodes[0]
+            : t.arrayExpression(childNodes)
         : t.identifier("undefined"),
       t.booleanLiteral(Boolean(topLevel && config.hydratable))
     ])

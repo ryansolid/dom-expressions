@@ -56,6 +56,7 @@ pluginTester({
           "noscript",
           "select",
           "option",
+          "video",
           "math",
           "merror",
           "mfrac",
