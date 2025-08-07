@@ -87,7 +87,7 @@ export function isInvalidMarkup(html) {
   /** Parse HTML. `browser` is a string with the supposed resulting html of a real `innerHTML` call */
   const browser = innerHTML(html);
 
-  if (html !== browser) {
+  if (html.toLowerCase() !== browser.toLowerCase()) {
     return {
       html,
       browser

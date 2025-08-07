@@ -45,6 +45,7 @@ pluginTester({
           "noscript",
           "select",
           "option",
+          "video",
           // mathml
           "math",
           "annotation",

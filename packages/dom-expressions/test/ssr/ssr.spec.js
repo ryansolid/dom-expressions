@@ -18,6 +18,8 @@ const Comp1 = () => {
     something = undefined,
     [welcoming] = createSignal("Hello John"),
     [color] = createSignal("red"),
+    colorUndefinedFn = () => undefined,
+    colorUndefined = undefined,
     results = {
       "data-id": "12",
       "aria-role": "button",
@@ -47,7 +49,9 @@ const Comp1 = () => {
         disabled: selected(),
         title: welcoming(),
         style: {
-          "background-color": color()
+          "background-color": color(),
+          "border-color": colorUndefined,
+          "color": colorUndefinedFn(),
         },
         class: {
           selected: selected(),

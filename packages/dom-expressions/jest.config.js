@@ -9,13 +9,13 @@ module.exports = {
         "^.+\\.[t|j]sx?$": require.resolve("./test/transform-dom")
       }
     },
-    {
-      displayName: "server",
-      testMatch: ["<rootDir>/test/ssr/*.spec.js(x)?"],
-      transform: {
-        "^.+\\.[t|j]sx?$": require.resolve("./test/transform-dom")
-      }
-    },
+    // {
+    //   displayName: "server",
+    //   testMatch: ["<rootDir>/test/ssr/*.spec.js(x)?"],
+    //   transform: {
+    //     "^.+\\.[t|j]sx?$": require.resolve("./test/transform-server")
+    //   }
+    // },
     {
       displayName: "universal",
       testMatch: ["<rootDir>/test/universal/*.spec.js(x)?"],

@@ -325,6 +325,7 @@ export function ssrClassName(value) {
 export function ssrStyle(value) {
   if (!value) return "";
   if (typeof value === "string") return escape(value, true);
+
   let result = "";
   const k = Object.keys(value);
   for (let i = 0; i < k.length; i++) {
@@ -332,10 +333,17 @@ export function ssrStyle(value) {
     const v = value[s];
     if (v != undefined) {
       if (i) result += ";";
-      result += `${s}:${escape(v, true)}`;
+      const r = escape(v, true);
+      if (r != undefined && r !== "undefined") {
+        result += `${s}:${r}`;
+      }
     }
   }
   return result;
+}
+
+export function ssrStyleProperty(name, value) {
+  return value != null ? name + value : "";
 }
 
 // review with new ssr
@@ -400,6 +408,7 @@ export function escape(s, attr) {
   if (t !== "string") {
     // if (!attr && t === "function") return escape(s());
     if (!attr && Array.isArray(s)) {
+      s = s.slice(); // avoids double escaping - https://github.com/ryansolid/dom-expressions/issues/393
       for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
       return s;
     }

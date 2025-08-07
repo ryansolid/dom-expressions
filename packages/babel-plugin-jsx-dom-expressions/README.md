@@ -175,6 +175,28 @@ Removes tags from the template output if they have no closing parents and are th
 
 Removes quotes for html attributes when possible from the template output. This may not work in all browser-like environments the same. The solution has been tested again Chrome/Edge/Firefox/Safari.
 
+
+### requireImportSource
+
+- Type: `string | false`
+- Default: `false`
+
+When set to a string value, this option restricts JSX transformation to only files that contain a specific JSX import source pragma comment. The plugin will only transform JSX in files that include a comment with `@jsxImportSource` followed by the specified value. If the comment is missing or specifies a different import source, the transformation is skipped for that file.
+Example usage:
+```jsx
+// In babel configuration:
+{
+  plugins: [
+    ["jsx-dom-expressions", {
+      requireImportSource: "r-dom"
+    }]
+  ]
+}
+// In your component file:
+/** @jsxImportSource r-dom */
+const template = <div>Hello</div>;
+```
+
 ## Special Binding
 
 ### ref

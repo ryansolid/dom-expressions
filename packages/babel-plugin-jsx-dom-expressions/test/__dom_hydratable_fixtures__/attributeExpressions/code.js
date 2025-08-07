@@ -258,5 +258,79 @@ const template77 = <div true={true} truestr="true" truestrjs={"true"}/>
 const template78 = <div false={false} falsestr="false" falsestrjs={"false"} />
 const template79 = <div prop:true={true} prop:false={false}/>
 const template80 = <div attr:true={true} attr:false={false}/>
-
 const template81 = <div a b="" c='' d={true} e={false} f={0} g={''} h={""} i={undefined} j={null} k={void 0} l/>
+
+const template82 = <math display="block"><mrow></mrow></math>
+const template83 = <mrow><mi>x</mi><mo>=</mo></mrow>
+
+const template84 = <div style={{"background":"red"}}/>
+const template85 = <div style={{"background":"red", "color":"green", "margin":3, "padding":0.4}}/>
+const template86 = <div style={{"background":"red", "color":"green", "border":undefined}}/>
+const template87 = <div style={{"background":"red", "color":"green", "border":signal()}}/>
+const template88 = <div style={{"background":"red", "color":"green", "border":somevalue}}/>
+const template89 = <div style={{"background":"red", "color":"green", "border":some.access}}/>
+const template90 = <div style={{"background":"red", "color":"green", "border":null}}/>
+const template91 = <video playsinline={value}/>
+const template92 = <video playsinline={true}/>
+const template93 = <video playsinline={false}/>
+const template94 = <video playsInline={value}/>
+const template95 = <video playsInline={true}/>
+const template96 = <video playsInline={false}/>
+
+// ONCE TESTS
+
+const template97 = <div style={/*@once*/ { width: props.width, height: props.height }} />;
+
+const template98 = (
+  <div style={/*@once*/ { width: props.width, height: props.height }} something={color()} />
+);
+
+const template99 = (
+  <div
+    style={{ width: props.width, height: /* @once */ props.height }}
+    something={/*@once*/ color()}
+  />
+);
+
+// ONCE TESTS SPREADS
+
+const propsSpread = {
+  something: color(),
+  style: {
+    "background-color": color(),
+    color: /* @once*/ color(),
+    "margin-right": /* @once */ props.right
+  }
+};
+
+const template100 = <div {...propsSpread} />;
+const template101 = <div {/* @once */ ...propsSpread} />;
+
+const template102 = (
+  <div {...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
+);
+
+const template103 = (
+  <div {/* @once */ ...propsSpread} data-dynamic={color()} data-static={/* @once */ color()} />
+);
+
+const template104 = (
+  <div
+    {
+      /* @once */ ...propsSpread1
+    }
+    {...propsSpread2}
+    {
+      /* @once */ ...propsSpread3
+    }
+    data-dynamic={color()}
+    data-static={/* @once */ color()}
+  />
+);
+
+// ONCE PROPERTY OF OBJECT ACCESS
+
+// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
+const styleProp = { style: { width: props.width, height: props.height } };
+const template105 = <div style={/* @once */ styleProp.style} />;
+const template106 = <div style={styleProp.style} />;

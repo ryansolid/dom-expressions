@@ -6,6 +6,7 @@ import { insert as _$insert } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { addEventListener as _$addEventListener } from "r-dom";
 import { style as _$style } from "r-dom";
+import { setStyleProperty as _$setStyleProperty } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { setProperty as _$setProperty } from "r-dom";
@@ -20,55 +21,67 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<div class=a className=b>`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<input type=checkbox checked>`),
-  _tmpl$7 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
-  _tmpl$8 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
-  _tmpl$9 = /*#__PURE__*/ _$template(`<button type=button>Write`),
-  _tmpl$10 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
-  _tmpl$11 = /*#__PURE__*/ _$template(`<div><input readonly><input>`),
-  _tmpl$12 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
-  _tmpl$13 = /*#__PURE__*/ _$template(`<a>`),
-  _tmpl$14 = /*#__PURE__*/ _$template(`<div><!$><!/><a>`),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
-  _tmpl$16 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
-  _tmpl$17 = /*#__PURE__*/ _$template(
-    `<div class="class1 class2 class3 class4 class5 class6"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;"random="random1 random2\n    random3 random4">`
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div style=margin-right:40px>`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<div onclick="console.log('hi')">`),
+  _tmpl$8 = /*#__PURE__*/ _$template(`<input type=checkbox checked>`),
+  _tmpl$9 = /*#__PURE__*/ _$template(`<input type=checkbox>`),
+  _tmpl$10 = /*#__PURE__*/ _$template(`<div class="\`a">\`$\``),
+  _tmpl$11 = /*#__PURE__*/ _$template(`<button type=button>Write`),
+  _tmpl$12 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
+  _tmpl$13 = /*#__PURE__*/ _$template(`<div><input readonly><input>`),
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
+  _tmpl$15 = /*#__PURE__*/ _$template(`<a>`),
+  _tmpl$16 = /*#__PURE__*/ _$template(`<div><!$><!/><a>`),
+  _tmpl$17 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
+  _tmpl$19 = /*#__PURE__*/ _$template(
+    `<div class="class1 class2 class3 class4 class5 class6"random="random1 random2\n    random3 random4"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px">`
   ),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<button>`),
-  _tmpl$19 = /*#__PURE__*/ _$template(`<input value=10>`),
-  _tmpl$20 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
-  _tmpl$21 = /*#__PURE__*/ _$template(`<div>empty string`),
-  _tmpl$22 = /*#__PURE__*/ _$template(`<div>js empty`),
-  _tmpl$23 = /*#__PURE__*/ _$template(`<div quack>hola`),
-  _tmpl$24 = /*#__PURE__*/ _$template(`<div quack>"hola js"`),
-  _tmpl$25 = /*#__PURE__*/ _$template(`<div quack>true`),
-  _tmpl$26 = /*#__PURE__*/ _$template(`<div>false`),
-  _tmpl$27 = /*#__PURE__*/ _$template(`<div quack>1`),
-  _tmpl$28 = /*#__PURE__*/ _$template(`<div>0`),
-  _tmpl$29 = /*#__PURE__*/ _$template(`<div quack>"1"`),
-  _tmpl$30 = /*#__PURE__*/ _$template(`<div>"0"`),
-  _tmpl$31 = /*#__PURE__*/ _$template(`<div>undefined`),
-  _tmpl$32 = /*#__PURE__*/ _$template(`<div>null`),
-  _tmpl$33 = /*#__PURE__*/ _$template(`<div>boolTest()`),
-  _tmpl$34 = /*#__PURE__*/ _$template(`<div>boolTest`),
-  _tmpl$35 = /*#__PURE__*/ _$template(`<div>boolTestBinding`),
-  _tmpl$36 = /*#__PURE__*/ _$template(`<div>boolTestObjBinding.value`),
-  _tmpl$37 = /*#__PURE__*/ _$template(`<div>fn`),
-  _tmpl$38 = /*#__PURE__*/ _$template(`<div before quack>should have space before`),
-  _tmpl$39 = /*#__PURE__*/ _$template(`<div before quack after>should have space before/after`),
-  _tmpl$40 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
-  _tmpl$41 = /*#__PURE__*/ _$template(`<img src>`),
-  _tmpl$42 = /*#__PURE__*/ _$template(`<div><img src>`),
-  _tmpl$43 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
-  _tmpl$44 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
-  _tmpl$45 = /*#__PURE__*/ _$template(`<iframe src>`),
-  _tmpl$46 = /*#__PURE__*/ _$template(`<div><iframe src>`),
-  _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
-  _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
-  _tmpl$49 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
-  _tmpl$50 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
-  _tmpl$51 = /*#__PURE__*/ _$template(`<div false falsestr=false falsestrjs=false>`),
-  _tmpl$52 = /*#__PURE__*/ _$template(`<div a b c d e f=0 g h l>`);
+  _tmpl$20 = /*#__PURE__*/ _$template(`<button>`),
+  _tmpl$21 = /*#__PURE__*/ _$template(`<input value=10>`),
+  _tmpl$22 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
+  _tmpl$23 = /*#__PURE__*/ _$template(`<div>empty string`),
+  _tmpl$24 = /*#__PURE__*/ _$template(`<div>js empty`),
+  _tmpl$25 = /*#__PURE__*/ _$template(`<div quack>hola`),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<div quack>"hola js"`),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<div quack>true`),
+  _tmpl$28 = /*#__PURE__*/ _$template(`<div>false`),
+  _tmpl$29 = /*#__PURE__*/ _$template(`<div quack>1`),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<div>0`),
+  _tmpl$31 = /*#__PURE__*/ _$template(`<div quack>"1"`),
+  _tmpl$32 = /*#__PURE__*/ _$template(`<div>"0"`),
+  _tmpl$33 = /*#__PURE__*/ _$template(`<div>undefined`),
+  _tmpl$34 = /*#__PURE__*/ _$template(`<div>null`),
+  _tmpl$35 = /*#__PURE__*/ _$template(`<div>boolTest()`),
+  _tmpl$36 = /*#__PURE__*/ _$template(`<div>boolTest`),
+  _tmpl$37 = /*#__PURE__*/ _$template(`<div>boolTestBinding`),
+  _tmpl$38 = /*#__PURE__*/ _$template(`<div>boolTestObjBinding.value`),
+  _tmpl$39 = /*#__PURE__*/ _$template(`<div>fn`),
+  _tmpl$40 = /*#__PURE__*/ _$template(`<div before quack>should have space before`),
+  _tmpl$41 = /*#__PURE__*/ _$template(`<div before quack after>should have space before/after`),
+  _tmpl$42 = /*#__PURE__*/ _$template(`<div quack after>should have space before/after`),
+  _tmpl$43 = /*#__PURE__*/ _$template(`<img src>`),
+  _tmpl$44 = /*#__PURE__*/ _$template(`<div><img src>`),
+  _tmpl$45 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
+  _tmpl$46 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
+  _tmpl$47 = /*#__PURE__*/ _$template(`<iframe src>`),
+  _tmpl$48 = /*#__PURE__*/ _$template(`<div><iframe src>`),
+  _tmpl$49 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
+  _tmpl$50 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
+  _tmpl$51 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
+  _tmpl$52 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
+  _tmpl$53 = /*#__PURE__*/ _$template(`<div false falsestr=false falsestrjs=false>`),
+  _tmpl$54 = /*#__PURE__*/ _$template(`<div a b c d e f=0 g h l>`),
+  _tmpl$55 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
+  _tmpl$56 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true),
+  _tmpl$57 = /*#__PURE__*/ _$template(`<div style=background:red>`),
+  _tmpl$58 = /*#__PURE__*/ _$template(
+    `<div style=background:red;color:green;margin:3;padding:0.4>`
+  ),
+  _tmpl$59 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`),
+  _tmpl$60 = /*#__PURE__*/ _$template(`<video>`),
+  _tmpl$61 = /*#__PURE__*/ _$template(`<video playsinline>`),
+  _tmpl$62 = /*#__PURE__*/ _$template(`<video playsInline>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -154,9 +167,7 @@ const template2 = (() => {
 const template3 = (() => {
   var _el$9 = _$getNextElement(_tmpl$3);
   _$setAttribute(_el$9, "id", state.id);
-  state.color != null
-    ? _el$9.style.setProperty("background-color", state.color)
-    : _el$9.style.removeProperty("background-color");
+  _$setStyleProperty(_el$9, "background-color", state.color);
   _$setProperty(_el$9, "textContent", state.content);
   _$effect(
     () => state.name,
@@ -190,14 +201,13 @@ const template6 = (() => {
 })();
 let undefVar;
 const template7 = (() => {
-  var _el$13 = _$getNextElement(_tmpl$4);
+  var _el$13 = _$getNextElement(_tmpl$6);
   _el$13.classList.toggle("other-class", !!undefVar);
   _el$13.classList.toggle("other-class2", !!undefVar);
   _$effect(
     () => ({
       e: {
         "background-color": color(),
-        "margin-right": "40px",
         ...props.style
       },
       t: props.top,
@@ -205,10 +215,7 @@ const template7 = (() => {
     }),
     ({ e, t, a }, _p$) => {
       _$style(_el$13, e, _p$.e);
-      t !== _p$.t &&
-        (t != null
-          ? _el$13.style.setProperty("padding-top", t)
-          : _el$13.style.removeProperty("padding-top"));
+      t !== _p$.t && _$setStyleProperty(_el$13, "padding-top", t);
       a !== _p$.a && _el$13.classList.toggle("my-class", a);
     },
     {
@@ -245,15 +252,14 @@ const template11 = (() => {
   return _el$17;
 })();
 const template12 = (() => {
-  var _el$18 = _$getNextElement(_tmpl$4);
+  var _el$18 = _$getNextElement(_tmpl$7);
   _el$18.htmlFor = thing;
   _el$18.number = 123;
-  _$setAttribute(_el$18, "onclick", "console.log('hi')");
   return _el$18;
 })();
-const template13 = _$getNextElement(_tmpl$6);
+const template13 = _$getNextElement(_tmpl$8);
 const template14 = (() => {
-  var _el$20 = _$getNextElement(_tmpl$7);
+  var _el$20 = _$getNextElement(_tmpl$9);
   _$effect(
     () => state.visible,
     _v$ => {
@@ -262,9 +268,9 @@ const template14 = (() => {
   );
   return _el$20;
 })();
-const template15 = _$getNextElement(_tmpl$8);
+const template15 = _$getNextElement(_tmpl$10);
 const template16 = (() => {
-  var _el$22 = _$getNextElement(_tmpl$9);
+  var _el$22 = _$getNextElement(_tmpl$11);
   _$className(_el$22, [
     "static",
     {
@@ -274,7 +280,7 @@ const template16 = (() => {
   return _el$22;
 })();
 const template17 = (() => {
-  var _el$23 = _$getNextElement(_tmpl$10);
+  var _el$23 = _$getNextElement(_tmpl$12);
   _$addEventListener(_el$23, "click", increment, true);
   _$runHydrationEvents();
   return _el$23;
@@ -305,12 +311,12 @@ const template19 = (() => {
   return _el$25;
 })();
 const template20 = (() => {
-  var _el$26 = _$getNextElement(_tmpl$11),
+  var _el$26 = _$getNextElement(_tmpl$13),
     _el$27 = _el$26.firstChild,
     _el$28 = _el$27.nextSibling;
   _$addEventListener(_el$27, "input", doSomething, true);
   _$addEventListener(_el$28, "input", doSomethingElse, true);
-  _$setProperty(_el$28, "readonly", value);
+  _$setProperty(_el$28, "readOnly", value);
   _$effect(
     () => ({
       e: min(),
@@ -353,7 +359,7 @@ const template21 = (() => {
   );
   return _el$29;
 })();
-const template22 = _$getNextElement(_tmpl$12);
+const template22 = _$getNextElement(_tmpl$14);
 const template23 = (() => {
   var _el$31 = _$getNextElement(_tmpl$4);
   _$insert(_el$31, () => "t" in test && "true");
@@ -366,7 +372,7 @@ const template23 = (() => {
   return _el$31;
 })();
 const template24 = (() => {
-  var _el$32 = _$getNextElement(_tmpl$13);
+  var _el$32 = _$getNextElement(_tmpl$15);
   _$spread(
     _el$32,
     _$mergeProps(props, {
@@ -379,7 +385,7 @@ const template24 = (() => {
   return _el$32;
 })();
 const template25 = (() => {
-  var _el$33 = _$getNextElement(_tmpl$14),
+  var _el$33 = _$getNextElement(_tmpl$16),
     _el$35 = _el$33.firstChild,
     [_el$36, _co$] = _$getNextMarker(_el$35.nextSibling),
     _el$34 = _el$36.nextSibling;
@@ -396,14 +402,14 @@ const template25 = (() => {
   return _el$33;
 })();
 const template26 = (() => {
-  var _el$37 = _$getNextElement(_tmpl$15);
+  var _el$37 = _$getNextElement(_tmpl$17);
   _$setAttribute(_el$37, "middle", middle);
   _$spread(_el$37, spread, false, true);
   _$runHydrationEvents();
   return _el$37;
 })();
 const template27 = (() => {
-  var _el$38 = _$getNextElement(_tmpl$15);
+  var _el$38 = _$getNextElement(_tmpl$17);
   _$spread(
     _el$38,
     _$mergeProps(
@@ -420,7 +426,7 @@ const template27 = (() => {
   return _el$38;
 })();
 const template28 = (() => {
-  var _el$39 = _$getNextElement(_tmpl$16),
+  var _el$39 = _$getNextElement(_tmpl$18),
     _el$40 = _el$39.firstChild,
     _el$41 = _el$40.firstChild,
     _el$42 = _el$41.nextSibling,
@@ -441,47 +447,31 @@ const template29 = (() => {
   _$insert(_el$46, !!someValue);
   return _el$46;
 })();
-const template30 = _$getNextElement(_tmpl$17);
+const template30 = _$getNextElement(_tmpl$19);
 const template31 = (() => {
   var _el$48 = _$getNextElement(_tmpl$4);
   _$effect(
     () => getStore.itemProperties.color,
     _v$ => {
-      _v$ != null
-        ? _el$48.style.setProperty("background-color", _v$)
-        : _el$48.style.removeProperty("background-color");
+      _$setStyleProperty(_el$48, "background-color", _v$);
     }
   );
   return _el$48;
 })();
-const template32 = (() => {
-  var _el$49 = _$getNextElement(_tmpl$4);
-  _el$49.style.removeProperty("background-color");
-  return _el$49;
-})();
+const template32 = _$getNextElement(_tmpl$4);
 const template33 = [
   (() => {
-    var _el$50 = _$getNextElement(_tmpl$18);
-    _$effect(
-      () => styles.button,
-      (_v$, _$p) => {
-        _$className(_el$50, _v$, false, _$p);
-      }
-    );
+    var _el$50 = _$getNextElement(_tmpl$20);
+    _$className(_el$50, styles.button);
     return _el$50;
   })(),
   (() => {
-    var _el$51 = _$getNextElement(_tmpl$18);
-    _$effect(
-      () => styles["foo--bar"],
-      (_v$, _$p) => {
-        _$className(_el$51, _v$, false, _$p);
-      }
-    );
+    var _el$51 = _$getNextElement(_tmpl$20);
+    _$className(_el$51, styles["foo--bar"]);
     return _el$51;
   })(),
   (() => {
-    var _el$52 = _$getNextElement(_tmpl$18);
+    var _el$52 = _$getNextElement(_tmpl$20);
     _$effect(
       () => styles.foo.bar,
       (_v$, _$p) => {
@@ -491,7 +481,7 @@ const template33 = [
     return _el$52;
   })(),
   (() => {
-    var _el$53 = _$getNextElement(_tmpl$18);
+    var _el$53 = _$getNextElement(_tmpl$20);
     _$effect(
       () => styles[foo()],
       (_v$, _$p) => {
@@ -533,16 +523,16 @@ const template38 = (() => {
   typeof _ref$7 === "function" && _$use(_ref$7, _el$58);
   return _el$58;
 })();
-const template39 = _$getNextElement(_tmpl$19);
+const template39 = _$getNextElement(_tmpl$21);
 const template40 = (() => {
   var _el$60 = _$getNextElement(_tmpl$4);
   _$effect(a, _v$ => {
-    _v$ != null ? _el$60.style.setProperty("color", _v$) : _el$60.style.removeProperty("color");
+    _$setStyleProperty(_el$60, "color", _v$);
   });
   return _el$60;
 })();
 const template41 = (() => {
-  var _el$61 = _$getNextElement(_tmpl$20),
+  var _el$61 = _$getNextElement(_tmpl$22),
     _el$62 = _el$61.firstChild,
     _el$63 = _el$62.nextSibling;
   _$effect(
@@ -574,37 +564,37 @@ const boolTestBinding = false;
 const boolTestObjBinding = {
   value: false
 };
-const template42 = _$getNextElement(_tmpl$21);
-const template43 = _$getNextElement(_tmpl$22);
-const template44 = _$getNextElement(_tmpl$23);
-const template45 = _$getNextElement(_tmpl$24);
-const template46 = _$getNextElement(_tmpl$25);
-const template47 = _$getNextElement(_tmpl$26);
-const template48 = _$getNextElement(_tmpl$27);
-const template49 = _$getNextElement(_tmpl$28);
-const template50 = _$getNextElement(_tmpl$29);
-const template51 = _$getNextElement(_tmpl$30);
-const template52 = _$getNextElement(_tmpl$31);
-const template53 = _$getNextElement(_tmpl$32);
+const template42 = _$getNextElement(_tmpl$23);
+const template43 = _$getNextElement(_tmpl$24);
+const template44 = _$getNextElement(_tmpl$25);
+const template45 = _$getNextElement(_tmpl$26);
+const template46 = _$getNextElement(_tmpl$27);
+const template47 = _$getNextElement(_tmpl$28);
+const template48 = _$getNextElement(_tmpl$29);
+const template49 = _$getNextElement(_tmpl$30);
+const template50 = _$getNextElement(_tmpl$31);
+const template51 = _$getNextElement(_tmpl$32);
+const template52 = _$getNextElement(_tmpl$33);
+const template53 = _$getNextElement(_tmpl$34);
 const template54 = (() => {
-  var _el$76 = _$getNextElement(_tmpl$33);
+  var _el$76 = _$getNextElement(_tmpl$35);
   _$effect(boolTest, _v$ => {
     _$setBoolAttribute(_el$76, "quack", _v$);
   });
   return _el$76;
 })();
 const template55 = (() => {
-  var _el$77 = _$getNextElement(_tmpl$34);
+  var _el$77 = _$getNextElement(_tmpl$36);
   _$setBoolAttribute(_el$77, "quack", boolTest);
   return _el$77;
 })();
 const template56 = (() => {
-  var _el$78 = _$getNextElement(_tmpl$35);
+  var _el$78 = _$getNextElement(_tmpl$37);
   _$setBoolAttribute(_el$78, "quack", boolTestBinding);
   return _el$78;
 })();
 const template57 = (() => {
-  var _el$79 = _$getNextElement(_tmpl$36);
+  var _el$79 = _$getNextElement(_tmpl$38);
   _$effect(
     () => boolTestObjBinding.value,
     _v$ => {
@@ -614,24 +604,24 @@ const template57 = (() => {
   return _el$79;
 })();
 const template58 = (() => {
-  var _el$80 = _$getNextElement(_tmpl$37);
+  var _el$80 = _$getNextElement(_tmpl$39);
   _$setBoolAttribute(_el$80, "quack", () => false);
   return _el$80;
 })();
-const template59 = _$getNextElement(_tmpl$38);
-const template60 = _$getNextElement(_tmpl$39);
-const template61 = _$getNextElement(_tmpl$40);
+const template59 = _$getNextElement(_tmpl$40);
+const template60 = _$getNextElement(_tmpl$41);
+const template61 = _$getNextElement(_tmpl$42);
 // this crash it for some reason- */ const template62 = <div bool:quack>really empty</div>;
 
-const template63 = _$getNextElement(_tmpl$41);
-const template64 = _$getNextElement(_tmpl$42);
-const template65 = _$getNextElement(_tmpl$43);
-const template66 = _$getNextElement(_tmpl$44);
-const template67 = _$getNextElement(_tmpl$45);
-const template68 = _$getNextElement(_tmpl$46);
-const template69 = _$getNextElement(_tmpl$47);
-const template70 = _$getNextElement(_tmpl$48);
-const template71 = _$getNextElement(_tmpl$49);
+const template63 = _$getNextElement(_tmpl$43);
+const template64 = _$getNextElement(_tmpl$44);
+const template65 = _$getNextElement(_tmpl$45);
+const template66 = _$getNextElement(_tmpl$46);
+const template67 = _$getNextElement(_tmpl$47);
+const template68 = _$getNextElement(_tmpl$48);
+const template69 = _$getNextElement(_tmpl$49);
+const template70 = _$getNextElement(_tmpl$50);
+const template71 = _$getNextElement(_tmpl$51);
 const template72 = (() => {
   var _el$93 = _$getNextElement(_tmpl$4);
   _$use(binding, _el$93);
@@ -660,8 +650,8 @@ const template76 = (() => {
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$97) : (refUnknown = _el$97);
   return _el$97;
 })();
-const template77 = _$getNextElement(_tmpl$50);
-const template78 = _$getNextElement(_tmpl$51);
+const template77 = _$getNextElement(_tmpl$52);
+const template78 = _$getNextElement(_tmpl$53);
 const template79 = (() => {
   var _el$100 = _$getNextElement(_tmpl$4);
   _el$100.true = true;
@@ -675,10 +665,199 @@ const template80 = (() => {
   return _el$101;
 })();
 const template81 = (() => {
-  var _el$102 = _$getNextElement(_tmpl$52);
+  var _el$102 = _$getNextElement(_tmpl$54);
   _$setAttribute(_el$102, "i", undefined);
   _$setAttribute(_el$102, "j", null);
   _$setAttribute(_el$102, "k", void 0);
   return _el$102;
+})();
+const template82 = _$getNextElement(_tmpl$55);
+const template83 = _$getNextElement(_tmpl$56);
+const template84 = _$getNextElement(_tmpl$57);
+const template85 = _$getNextElement(_tmpl$58);
+const template86 = _$getNextElement(_tmpl$59);
+const template87 = (() => {
+  var _el$108 = _$getNextElement(_tmpl$59);
+  _$effect(signal, _v$ => {
+    _$setStyleProperty(_el$108, "border", _v$);
+  });
+  return _el$108;
+})();
+const template88 = (() => {
+  var _el$109 = _$getNextElement(_tmpl$59);
+  _$setStyleProperty(_el$109, "border", somevalue);
+  return _el$109;
+})();
+const template89 = (() => {
+  var _el$110 = _$getNextElement(_tmpl$59);
+  _$effect(
+    () => some.access,
+    _v$ => {
+      _$setStyleProperty(_el$110, "border", _v$);
+    }
+  );
+  return _el$110;
+})();
+const template90 = _$getNextElement(_tmpl$59);
+const template91 = (() => {
+  var _el$112 = _$getNextElement(_tmpl$60);
+  _$setProperty(_el$112, "playsInline", value);
+  return _el$112;
+})();
+const template92 = _$getNextElement(_tmpl$61);
+const template93 = _$getNextElement(_tmpl$61);
+const template94 = (() => {
+  var _el$115 = _$getNextElement(_tmpl$60);
+  _$setProperty(_el$115, "playsInline", value);
+  return _el$115;
+})();
+const template95 = _$getNextElement(_tmpl$62);
+const template96 = _$getNextElement(_tmpl$62);
+
+// ONCE TESTS
+
+const template97 = (() => {
+  var _el$118 = _$getNextElement(_tmpl$4);
+  _$setStyleProperty(_el$118, "width", props.width);
+  _$setStyleProperty(_el$118, "height", props.height);
+  return _el$118;
+})();
+const template98 = (() => {
+  var _el$119 = _$getNextElement(_tmpl$4);
+  _$setStyleProperty(_el$119, "width", props.width);
+  _$setStyleProperty(_el$119, "height", props.height);
+  _$effect(color, _v$ => {
+    _$setAttribute(_el$119, "something", _v$);
+  });
+  return _el$119;
+})();
+const template99 = (() => {
+  var _el$120 = _$getNextElement(_tmpl$4);
+  _$setStyleProperty(_el$120, "height", props.height);
+  _$setAttribute(_el$120, "something", color());
+  _$effect(
+    () => props.width,
+    _v$ => {
+      _$setStyleProperty(_el$120, "width", _v$);
+    }
+  );
+  return _el$120;
+})();
+
+// ONCE TESTS SPREADS
+
+const propsSpread = {
+  something: color(),
+  style: {
+    "background-color": color(),
+    color: /* @once*/ color(),
+    "margin-right": /* @once */ props.right
+  }
+};
+const template100 = (() => {
+  var _el$121 = _$getNextElement(_tmpl$4);
+  _$spread(_el$121, propsSpread, false, false);
+  _$runHydrationEvents();
+  return _el$121;
+})();
+const template101 = (() => {
+  var _el$122 = _$getNextElement(_tmpl$4);
+  _$spread(
+    _el$122,
+    {
+      ...propsSpread
+    },
+    false,
+    false
+  );
+  _$runHydrationEvents();
+  return _el$122;
+})();
+const template102 = (() => {
+  var _el$123 = _$getNextElement(_tmpl$4);
+  _$spread(
+    _el$123,
+    _$mergeProps(propsSpread, {
+      get ["data-dynamic"]() {
+        return color();
+      },
+      "data-static": color()
+    }),
+    false,
+    false
+  );
+  _$runHydrationEvents();
+  return _el$123;
+})();
+const template103 = (() => {
+  var _el$124 = _$getNextElement(_tmpl$4);
+  _$spread(
+    _el$124,
+    _$mergeProps(
+      {
+        ...propsSpread
+      },
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
+    false,
+    false
+  );
+  _$runHydrationEvents();
+  return _el$124;
+})();
+const template104 = (() => {
+  var _el$125 = _$getNextElement(_tmpl$4);
+  _$spread(
+    _el$125,
+    _$mergeProps(
+      {
+        ...propsSpread1
+      },
+      propsSpread2,
+      {
+        ...propsSpread3
+      },
+      {
+        get ["data-dynamic"]() {
+          return color();
+        },
+        "data-static": color()
+      }
+    ),
+    false,
+    false
+  );
+  _$runHydrationEvents();
+  return _el$125;
+})();
+
+// ONCE PROPERTY OF OBJECT ACCESS
+
+// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
+const styleProp = {
+  style: {
+    width: props.width,
+    height: props.height
+  }
+};
+const template105 = (() => {
+  var _el$126 = _$getNextElement(_tmpl$4);
+  _$style(_el$126, styleProp.style);
+  return _el$126;
+})();
+const template106 = (() => {
+  var _el$127 = _$getNextElement(_tmpl$4);
+  _$effect(
+    () => styleProp.style,
+    (_v$, _$p) => {
+      _$style(_el$127, _v$, _$p);
+    }
+  );
+  return _el$127;
 })();
 _$delegateEvents(["click", "input"]);
