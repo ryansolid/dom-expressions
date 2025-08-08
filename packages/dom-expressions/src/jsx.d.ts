@@ -246,8 +246,6 @@ export namespace JSX {
     [x: string]: (el: DOMElement, accessor: Accessor<any>) => void;
   }
   interface ExplicitProperties {}
-  interface ExplicitAttributes {}
-  interface ExplicitBoolAttributes {}
   interface CustomEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
@@ -1013,15 +1011,15 @@ export namespace JSX {
         ? K extends `on:${infer T}`
           ? T
           : K extends `on${infer T}`
-            ? Lowercase<T>
-            : never
+          ? Lowercase<T>
+          : never
         : never)
     | (keyof EventHandlersElement<any> extends infer K
         ? K extends `on:${infer T}`
           ? T
           : K extends `on${infer T}`
-            ? Lowercase<T>
-            : never
+          ? Lowercase<T>
+          : never
         : never)
     | (string & {});
 
@@ -1038,8 +1036,6 @@ export namespace JSX {
       DirectiveAttributes,
       DirectiveFunctionAttributes<T>,
       PropAttributes,
-      AttrAttributes,
-      BoolAttributes,
       OnAttributes<T>,
       EventHandlersElement<T>,
       AriaAttributes {
