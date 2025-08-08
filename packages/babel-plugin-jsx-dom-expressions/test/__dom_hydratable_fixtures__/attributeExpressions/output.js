@@ -246,7 +246,7 @@ const template14 = (() => {
   _$effect(
     () => state.visible,
     _v$ => {
-      _$setAttribute(_el$20, "checked", _v$);
+      _$setProperty(_el$20, "checked", _v$);
     }
   );
   return _el$20;
@@ -324,7 +324,7 @@ const template20 = (() => {
     _$setProperty(_el$27, "value", _v$);
   });
   _$effect(s2, _v$ => {
-    _$setAttribute(_el$28, "checked", _v$);
+    _$setProperty(_el$28, "checked", _v$);
   });
   _$runHydrationEvents();
   return _el$26;

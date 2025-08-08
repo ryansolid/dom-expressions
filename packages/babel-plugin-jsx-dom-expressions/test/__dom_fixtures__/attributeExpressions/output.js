@@ -240,7 +240,7 @@ const template14 = (() => {
   _$effect(
     () => state.visible,
     _v$ => {
-      _$setAttribute(_el$20, "checked", _v$);
+      _el$20.checked = _v$;
     }
   );
   return _el$20;
@@ -316,7 +316,7 @@ const template20 = (() => {
     _el$27.value = _v$;
   });
   _$effect(s2, _v$ => {
-    _$setAttribute(_el$28, "checked", _v$);
+    _el$28.checked = _v$;
   });
   return _el$26;
 })();
