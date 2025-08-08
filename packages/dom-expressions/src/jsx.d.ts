@@ -1409,7 +1409,7 @@ export namespace JSX {
     tabindex?: never;
 
     /** @experimental */
-    closedby: "any" | "closerequest" | "none" | RemoveAttribute;
+    closedby?: "any" | "closerequest" | "none" | RemoveAttribute;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | RemoveAttribute;

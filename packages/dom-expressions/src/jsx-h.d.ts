@@ -1407,7 +1407,7 @@ export namespace JSX {
     tabindex?: never;
 
     /** @experimental */
-    closedby: FunctionMaybe<"any" | "closerequest" | "none" | RemoveAttribute>;
+    closedby?: FunctionMaybe<"any" | "closerequest" | "none" | RemoveAttribute>;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | RemoveAttribute>;
