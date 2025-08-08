@@ -1,6 +1,9 @@
 const Properties = /*#__PURE__*/ new Set([
   // locked to properties
   "value",
+  "checked",
+  "selected",
+  "muted"
 ]);
 
 const ChildProperties = /*#__PURE__*/ new Set([
