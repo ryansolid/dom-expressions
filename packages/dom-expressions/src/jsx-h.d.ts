@@ -1012,15 +1012,15 @@ export namespace JSX {
         ? K extends `on:${infer T}`
           ? T
           : K extends `on${infer T}`
-            ? Lowercase<T>
-            : never
+          ? Lowercase<T>
+          : never
         : never)
     | (keyof EventHandlersElement<any> extends infer K
         ? K extends `on:${infer T}`
           ? T
           : K extends `on${infer T}`
-            ? Lowercase<T>
-            : never
+          ? Lowercase<T>
+          : never
         : never)
     | (string & {});
 
@@ -1407,7 +1407,7 @@ export namespace JSX {
     tabindex?: never;
 
     /** @experimental */
-    closedby: FunctionMaybe<"any" | "closerequest" | "none" | RemoveAttribute>;
+    closedby?: FunctionMaybe<"any" | "closerequest" | "none" | RemoveAttribute>;
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: FunctionMaybe<number | string | RemoveAttribute>;
