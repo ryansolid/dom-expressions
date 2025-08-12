@@ -1,7 +1,7 @@
 {
   "name": "hyper-dom-expressions",
   "description": "A Fine-Grained Rendering Runtime API using HyperScript",
-  "version": "0.40.0-next.9",
+  "version": "0.41.0-next.0",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -19,6 +19,6 @@
     "prepare": "pnpm run build"
   },
   "devDependencies": {
-    "dom-expressions": "^0.40.0-next.9"
+    "dom-expressions": "^0.41.0-next.0"
   }
 }
