@@ -1,0 +1,18 @@
+{
+  "name": "quack-dom-expressions",
+  "description": "A Fine-Grained Rendering Runtime API using Tagged Template Literals",
+  "version": "0.39.10",
+  "author": "Ryan Carniato, Tito Bouzout",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryansolid/dom-expressions/blob/main/packages/quack-dom-expressions"
+  },
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "types/index.d.ts",
+  "sideEffects": false,
+  "devDependencies": {
+    "dom-expressions": "^0.39.10"
+  }
+}
