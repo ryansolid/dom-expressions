@@ -230,7 +230,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
           })`
         );
       }
-    } else if (name === "ref") {
+    } else if (name === "ref" || name.slice(0, 4) === "ref:") {
       options.exprs.push(`exprs[${options.counter++}](${tag})`);
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
@@ -446,7 +446,7 @@ export function createHTML(r: Runtime, { delegateEvents = true, functionBuilder 
             if (value.includes("###")) {
               let count = options.counter++;
               current += `${name}: ${
-                name !== "ref" ? `typeof exprs[${count}] === "function" ? exprs[${count}]() : ` : ""
+                name !== "ref" && name.slice(0, 4) !== "ref:" ? `typeof exprs[${count}] === "function" ? exprs[${count}]() : ` : ""
               }exprs[${count}],`;
             } else if (name === "###") {
               if (current.length) {
