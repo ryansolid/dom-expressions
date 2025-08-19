@@ -1,5 +1,6 @@
 import { Aliases, BooleanAttributes, ChildProperties, Properties } from "./constants";
 import { sharedConfig, root } from "rxcore";
+import { SSRNode, resolveSSRNode } from "./ssr-node";
 import { createSerializer, getLocalHeaderScript } from "./serializer";
 
 export { getOwner, createComponent, effect, memo, untrack } from "rxcore";
@@ -319,7 +320,7 @@ export function ssr(t, ...nodes) {
     t = result + t[nodes.length];
   }
 
-  return { t };
+  return new SSRNode(t);
 }
 
 export function ssrClassList(value) {
@@ -407,9 +408,9 @@ export function ssrElement(tag, props, children, needsId) {
     if (i !== keys.length - 1) result += " ";
   }
 
-  if (skipChildren) return { t: result + "/>" };
+  if (skipChildren) return new SSRNode(result + "/>");
   if (typeof children === "function") children = children();
-  return { t: result + `>${resolveSSRNode(children, true)}</${tag}>` };
+  return new SSRNode(result + `>${resolveSSRNode(children, true)}</${tag}>`)
 }
 
 export function ssrAttribute(key, value, isBoolean) {
@@ -475,23 +476,9 @@ export function escape(s, attr) {
   return left < s.length ? out + s.substring(left) : out;
 }
 
-export function resolveSSRNode(node, top) {
-  const t = typeof node;
-  if (t === "string") return node;
-  if (node == null || t === "boolean") return "";
-  if (Array.isArray(node)) {
-    let prev = {};
-    let mapped = "";
-    for (let i = 0, len = node.length; i < len; i++) {
-      if (!top && typeof prev !== "object" && typeof node[i] !== "object") mapped += `<!--!$-->`;
-      mapped += resolveSSRNode((prev = node[i]));
-    }
-    return mapped;
-  }
-  if (t === "object") return node.t;
-  if (t === "function") return resolveSSRNode(node());
-  return String(node);
-}
+export {
+  resolveSSRNode,
+};
 
 export function mergeProps(...sources) {
   const target = {};
