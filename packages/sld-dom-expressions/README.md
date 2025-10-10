@@ -1,90 +1,95 @@
-# Lit DOM Expressions
+# sld
 
-[![Build Status](https://github.com/ryansolid/dom-expressions/workflows/DOMExpressions%20CI/badge.svg)](https://github.com/ryansolid/dom-expressions/actions/workflows/main-ci.yml)
-[![NPM Version](https://img.shields.io/npm/v/lit-dom-expressions.svg?style=flat)](https://www.npmjs.com/package/lit-dom-expressions)
-![](https://img.shields.io/bundlephobia/minzip/lit-dom-expressions.svg?style=flat)
-![](https://img.shields.io/npm/dt/lit-dom-expressions.svg?style=flat)
+sld is a no-build, no-JSX tagged-template library for SolidJS and designed to work with template tooling (editor syntax highlighting, formatters, etc.).
 
-This package is a Runtime API built for [DOM Expressions](https://github.com/ryansolid/dom-expressions) to provide Tagged Template Literals DSL to DOM transformation for reactive libraries that do fine grained change detection. While the JSX plugin [Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/dom-expressions/blob/main/packages/babel-plugin-jsx-dom-expressions) is more optimized with precompilation and cleaner syntax, this Tagged Template solution has minimal overhead over it.
+## Quick overview
 
-Upon first instantiation templates are compiled into DOM templates and generated code. Each instantiation there after the template is cloned and the optimized code is ran.
+- `sld` - default tagged template instance with the built-in component registry.
+  - `sld.define({CompA})` - creates a new instance from the existing instance and combines registered componenets
+  - `sld.sld` - self reference so all tags can start with `sld` for potential tooling
+- `SLD({CompA})` - factory function which includes built-in components
+- `createSLD({CompA})` - factory function which doesn't includes built-in components
+- `run(CompA)(props)` helper function for createComponent to get better ts. Must manually do getters on props.
 
-## Compatible Libraries
 
-- [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
-- [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
-- [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
 
-## Getting Started
+## Basic usage
 
-Install alongside the DOM Expressions and the fine grained library of your choice. For example with S.js:
+Use the default `sld` tag for templates and the `SLD` factory to create a local instance.
 
-```sh
-> pnpm install s-js dom-expressions lit-dom-expressions
+```ts
+import { sld } from "solid-html";
+
+// default instance:
+function Counter() {
+  const [count, setCount] = createSignal(0);
+  return sld`<button onClick=${() => setCount((v) => v + 1)}>
+    ${() => count()}
+  </button>`;
+}
 ```
 
-Create your configuration and run dom-expressions command to generate runtime.js. More info [here](https://github.com/ryansolid/dom-expressions).
+## Reactivity and props
 
-Use it to initialize the html function:
+- Props that are functions with zero arguments and not `on` events or `ref` are treated as reactive accessors and are auto-wrapped (so you can pass `() => value` and the runtime will call it for updates).
+- For properties that accept a function that are not `on` events. You may need to add ()=> to ensure the function doesn't get wrapped.
 
-```js
-import { createHTML } from "lit-dom-expressions";
-import * as r from "./runtime";
+```ts
+import { sld, once } from "solid-html";
 
-const html = createHTML(r);
+const [count, setCount] = createSignal(0);
+
+sld`<button count=${() => count()}  />`;
+//or just
+sld`<button count=${count} />`;
+
+//Add ()=> to avoid Counter possibly getting auto-wrapped
+sld`<Route component=${()=>Counter} />
+
 ```
 
-Profit:
 
-```js
-const view = html`
-  <table class="table table-hover table-striped test-data">
-    <tbody>
-      <${For} each=${() => state.data}
-        >${row => html`
-          <tr>
-            <td class="col-md-1" textContent=${row.id} />
-            <td class="col-md-4">
-              <a onClick=${[select, row.id]}>${() => row.label}</a>
-            </td>
-            <td class="col-md-1">
-              <a onClick=${[remove, row.id]}
-                ><span class="glyphicon glyphicon-remove"
-              /></a>
-            </td>
-            <td class="col-md-6" />
-          </tr>
-        `}<//
-      >
-    </tbody>
-  </table>
-`;
+## Template rules and syntax
+
+- Templates are static: tag names and attribute names must be literal (not dynamic expressions). Use spread and the Dyanmic component if necessary.
+- Tags can be self closing (like JSX)
+- Attribute binding syntax (Same as solid):
+  - `<input value="Hello World" />` - static string property
+  - `<input disabled />` - static boolean property
+  - `<input value=${val} />` - dynamic property
+  - `<input value="Hello ${val}" />` - mixed dynamic string property
+  - `onEvent=${}` or `on:event` — event listeners (Not Reactive)
+  - `ref=${}` — ref (Not Reactive)
+  - `prop:value=${}` — DOM property
+  - `attr:class=${}` — string attribute
+  - `bool:class=${}` — boolean attribute
+  - `...${}` — spread properties
+  - `${}` in content — child value
+- Components must be registered to be used as tags in templates.
+- `children` attribute is used only if the element has no child nodes (JSX-like behavior).
+- Component/attribute names are case-sensitive when registered via `sld.define` or `SLD`.
+
+## Built-In Components
+
+- For
+- Index
+- Show
+- Match
+- Switch
+- Suspense
+- ErrorBoundary
+
+
+## Advanced: Creating custom SLD instances
+
+`SLD(components)` returns a tagged template bound to the provided component registry. This is useful for scoping or providing non-global components to templates. `SLD` includes the built-in components. use `createSLD` if you do not want to include the built-in components.
+
+```ts
+const My = SLD({ Counter, Router: HashRouter });
+My`<Counter />`;
+
+//This can also be inline with self refercing sld property
+SLD({ Counter, Router: HashRouter }).sld`<Counter />
+
+
 ```
-
-Libraries may expose access to html in different ways. For example, Solid has its own entry point 'solid-js/html'.
-
-## Differences from JSX
-
-Currently there is no support for spreads. You have to wrap dynamic expressions yourself in functions. Fragments aren't explicit and the markup can just return multiple children.
-
-```js
-const view = html`
-  <div>
-    <${ChildComponent} someProp=${() => state.data} />
-  </div>
-`;
-```
-
-And with children:
-
-```js
-const view = html`
-  <${MyComponent} someProp=${value}>Child Content<//>
-`;
-```
-
-Synthetic events more or less work the same as the JSX version.
-
-## Status
-
-I'm still working out API details and improving performance.
