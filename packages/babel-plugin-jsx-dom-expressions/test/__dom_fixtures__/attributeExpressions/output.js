@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
+import { createComponent as _$createComponent } from "r-dom";
 import { setBoolAttribute as _$setBoolAttribute } from "r-dom";
 import { insert as _$insert } from "r-dom";
 import { memo as _$memo } from "r-dom";
@@ -583,4 +584,24 @@ const template88 = (() => {
   return _el$105;
 })();
 const template89 = _tmpl$58();
+{
+  const o = {
+    ref: null
+  };
+  const Div = _ => [];
+  const valid = _$createComponent(Div, {
+    ref(r$) {
+      var _ref$11 = o.ref;
+      typeof _ref$11 === "function" ? _ref$11(r$) : (o.ref = r$);
+    }
+  });
+  const invalid = _$createComponent(Div, {
+    ref(r$) {
+      var _ref$12 = o?.ref;
+      {
+        typeof _ref$12 === "function" ? _ref$12(r$) : !!o && (o.ref = r$);
+      }
+    }
+  });
+}
 _$delegateEvents(["click", "input"]);
