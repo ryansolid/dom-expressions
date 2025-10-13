@@ -598,9 +598,7 @@ const template89 = _tmpl$58();
   const invalid = _$createComponent(Div, {
     ref(r$) {
       var _ref$12 = o?.ref;
-      {
-        typeof _ref$12 === "function" ? _ref$12(r$) : !!o && (o.ref = r$);
-      }
+      typeof _ref$12 === "function" ? _ref$12(r$) : !!o && (o.ref = r$);
     }
   });
 }

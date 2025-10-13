@@ -122,33 +122,31 @@ export default function transformComponent(path) {
                       t.variableDeclarator(refIdentifier, value.expression)
                     ]),
 
-                    t.blockStatement([
-                      t.expressionStatement(
-                        t.conditionalExpression(
-                          t.binaryExpression(
-                            "===",
-                            t.unaryExpression("typeof", refIdentifier),
-                            t.stringLiteral("function")
+                    t.expressionStatement(
+                      t.conditionalExpression(
+                        t.binaryExpression(
+                          "===",
+                          t.unaryExpression("typeof", refIdentifier),
+                          t.stringLiteral("function")
+                        ),
+                        t.callExpression(refIdentifier, [t.identifier("r$")]),
+                        t.logicalExpression(
+                          "&&",
+                          t.unaryExpression(
+                            "!",
+                            t.unaryExpression("!", t.identifier(value.expression.object.name))
                           ),
-                          t.callExpression(refIdentifier, [t.identifier("r$")]),
-                          t.logicalExpression(
-                            "&&",
-                            t.unaryExpression(
-                              "!",
-                              t.unaryExpression("!", t.identifier(value.expression.object.name))
+                          t.assignmentExpression(
+                            "=",
+                            t.memberExpression(
+                              t.identifier(value.expression.object.name),
+                              t.identifier(value.expression.property.name)
                             ),
-                            t.assignmentExpression(
-                              "=",
-                              t.memberExpression(
-                                t.identifier(value.expression.object.name),
-                                t.identifier(value.expression.property.name)
-                              ),
-                              t.identifier("r$")
-                            )
+                            t.identifier("r$")
                           )
                         )
                       )
-                    ])
+                    )
                   ])
                 )
               );
