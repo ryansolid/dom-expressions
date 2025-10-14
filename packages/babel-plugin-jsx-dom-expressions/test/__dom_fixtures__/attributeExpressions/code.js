@@ -293,3 +293,13 @@ const template89 = <div style={{"background":"red", "color":"green", "border":nu
   />
 }
 
+
+
+{
+  const o = { ref: null };
+  const Div = (_ ) => <></>;
+  const valid = <Div ref={o.ref} />
+  const invalid = <Div ref={o?.ref} />
+}
+
+const template90 = <div data-hk="should warn data-hk is present on template"/>
