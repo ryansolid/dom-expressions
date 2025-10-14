@@ -88,6 +88,28 @@ export function transformElement(path, info) {
       renderer: "dom",
       skipTemplate: false
     };
+
+  path
+    .get("openingElement")
+    .get("attributes")
+    .some(a => {
+      if (a.node.name?.name === "data-hk") {
+        a.remove();
+        let filename = "";
+        try {
+          filename = path.scope.getProgramParent().path.hub.file.opts.filename;
+        } catch (e) {}
+
+        console.log(
+          "\n" +
+            path
+              .buildCodeFrameError(
+                `"data-hk" attribute found in template, which could potentially cause hydration miss-matches. Usually happens when copying and pasting Solid SSRed code into JSX. Please remove the attribute from the JSX. \n\n${filename}\n`
+              )
+              .toString()
+        );
+      }
+    });
   if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body")) {
     results.skipTemplate = true;
     if (tagName === "head" && info.topLevel) {
