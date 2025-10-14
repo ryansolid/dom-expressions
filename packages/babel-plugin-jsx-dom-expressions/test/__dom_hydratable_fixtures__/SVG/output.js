@@ -4,15 +4,15 @@ import { setAttributeNS as _$setAttributeNS } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { spread as _$spread } from "r-dom";
+import { setStyleProperty as _$setStyleProperty } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-dom";
-import { setStyleProperty as _$setStyleProperty } from "r-dom";
 import { getNextElement as _$getNextElement } from "r-dom";
 var _tmpl$ = /*#__PURE__*/ _$template(
     `<svg width=400 height=180><rect stroke-width=2 x=50 y=20 rx=20 ry=20 width=150 height=150 style=fill:red;stroke:black;stroke-width:5;opacity:0.5></rect><linearGradient gradientTransform=rotate(25)><stop offset=0%>`
   ),
   _tmpl$2 = /*#__PURE__*/ _$template(
-    `<svg width=400 height=180><rect rx=20 ry=20 width=150 height=150>`
+    `<svg width=400 height=180><rect rx=20 ry=20 width=150 height=150 style=fill:red;stroke:black;opacity:0.5>`
   ),
   _tmpl$3 = /*#__PURE__*/ _$template(`<svg width=400 height=180><rect>`),
   _tmpl$4 = /*#__PURE__*/ _$template(
@@ -31,9 +31,6 @@ const template = _$getNextElement(_tmpl$);
 const template2 = (() => {
   var _el$2 = _$getNextElement(_tmpl$2),
     _el$3 = _el$2.firstChild;
-  _$setStyleProperty(_el$3, "fill", "red");
-  _$setStyleProperty(_el$3, "stroke", "black");
-  _$setStyleProperty(_el$3, "opacity", "0.5");
   _$effect(
     _p$ => {
       var _v$ = state.name,

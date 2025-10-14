@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+
 import {
   Aliases,
   getPropAlias,
@@ -306,12 +307,15 @@ function transformAttributes(path, results) {
   }
 
   /**
-   *  inline styles
+   * Inline styles
    *
-   * 1. when string
-   * 2. when is an object, the key is a string, and value is string/numeric
-   * 3. remove properties from object when value is undefined/null
-   **/
+   * 1. When string
+   * 2. When is an object, the key is a string, and value is string/numeric
+   * 3. Remove properties from object when value is undefined/null
+   * 4. When `value.evaluate().confident`
+   *
+   * Also, when `key` is computed value is also `value.evaluate().confident`
+   */
 
   attributes = path.get("openingElement").get("attributes");
 
@@ -323,6 +327,7 @@ function transformAttributes(path, results) {
       const attr = styleAttributes[i];
 
       let value = attr.node.value;
+      const node = attr.get("value");
       if (t.isJSXExpressionContainer(value)) {
         value = value.expression;
       }
@@ -332,20 +337,37 @@ function transformAttributes(path, results) {
         attr.remove();
       } else if (t.isObjectExpression(value)) {
         const properties = value.properties;
+        const propertiesNode = node.get("expression").get("properties");
         const toRemoveProperty = [];
-        for (const property of properties) {
+        for (let i = 0; i < properties.length; i++) {
+          const property = properties[i];
+
+          if (property.computed) {
+            /* { [computed]: `${1+1}px` } => { [computed]: `2px` } */
+            const r = propertiesNode[i].get("value").evaluate();
+            if (r.confident && (typeof r.value === "string" || typeof r.value === "number")) {
+              property.value = t.inherits(t.stringLiteral(`${r.value}`), property.value);
+            }
+            // computed cannot be inlined - maybe can be evaluated but this is pretty rare
+            continue;
+          }
+
           if (t.isObjectProperty(property)) {
-            if (
-              t.isStringLiteral(property.key) &&
-              (t.isStringLiteral(property.value) || t.isNumericLiteral(property.value))
-            ) {
-              inlinedStyle += `${property.key.value}:${property.value.value};`;
+            const key = t.isIdentifier(property.key) ? property.key.name : property.key.value;
+            if (t.isStringLiteral(property.value) || t.isNumericLiteral(property.value)) {
+              inlinedStyle += `${key}:${property.value.value};`;
               toRemoveProperty.push(property);
             } else if (
               (t.isIdentifier(property.value) && property.value.name === "undefined") ||
               t.isNullLiteral(property.value)
             ) {
               toRemoveProperty.push(property);
+            } else {
+              const r = propertiesNode[i].get("value").evaluate();
+              if (r.confident && (typeof r.value === "string" || typeof r.value === "number")) {
+                inlinedStyle += `${key}:${r.value};`;
+                toRemoveProperty.push(property);
+              }
             }
           }
         }

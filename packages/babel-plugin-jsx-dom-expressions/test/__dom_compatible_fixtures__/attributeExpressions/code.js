@@ -122,7 +122,7 @@ const template20 = (
   </div>
 );
 
-const template21 = <div style={{ a: "static", ...rest }}></div>;
+const template21 = <div style={{ o: "static", ...rest }}></div>;
 
 const template22 = <div data='"hi"' data2={'"'} />;
 
