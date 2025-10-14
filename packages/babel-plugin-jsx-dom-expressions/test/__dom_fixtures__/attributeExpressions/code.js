@@ -271,4 +271,13 @@ const template86 = <div style={{"background":"red", "color":"green", "border":si
 const template87 = <div style={{"background":"red", "color":"green", "border":somevalue}}/>
 const template88 = <div style={{"background":"red", "color":"green", "border":some.access}}/>
 const template89 = <div style={{"background":"red", "color":"green", "border":null}}/>
+
+
+{
+  const o = { ref: null };
+  const Div = (_ ) => <></>;
+  const valid = <Div ref={o.ref} />
+  const invalid = <Div ref={o?.ref} />
+}
+
 const template90 = <div data-hk="should warn data-hk is present on template"/>
