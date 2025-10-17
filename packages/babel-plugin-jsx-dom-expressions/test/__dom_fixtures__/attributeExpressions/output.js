@@ -78,7 +78,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 class=base id=my-h1><a h
   ),
   _tmpl$59 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`),
   _tmpl$60 = /*#__PURE__*/ _$template(`<div style="padding-left:clamp(2px, 2px, 2px)">`),
-  _tmpl$61 = /*#__PURE__*/ _$template(`<div style="a:clamp(2px, 2px, 2px)">`);
+  _tmpl$61 = /*#__PURE__*/ _$template(`<div style="a:clamp(2px, 2px, 2px)">`),
+  _tmpl$62 = /*#__PURE__*/ _$template(`<div style=border:2px>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -607,8 +608,6 @@ const template89 = _tmpl$59();
     return _el$109;
   })();
 }
-_$delegateEvents(["click", "input"]);
-const template89 = _tmpl$58();
 {
   const o = {
     ref: null
@@ -628,4 +627,60 @@ const template89 = _tmpl$58();
   });
 }
 const template90 = _tmpl$4();
+const template91 = _tmpl$4();
+const template92 = _tmpl$4();
+const template93 = _tmpl$62();
+const template94 = (() => {
+  var _el$114 = _tmpl$4();
+  _$setStyleProperty(_el$114, "border", "2px");
+  return _el$114;
+})();
+const template95 = (() => {
+  var _el$115 = _tmpl$4();
+  _$spread(
+    _el$115,
+    {
+      "style:border": undefined
+    },
+    false,
+    false
+  );
+  return _el$115;
+})();
+const template96 = (() => {
+  var _el$116 = _tmpl$4();
+  _$spread(
+    _el$116,
+    {
+      "style:border": null
+    },
+    false,
+    false
+  );
+  return _el$116;
+})();
+const template97 = (() => {
+  var _el$117 = _tmpl$4();
+  _$spread(
+    _el$117,
+    {
+      "style:border": "2px"
+    },
+    false,
+    false
+  );
+  return _el$117;
+})();
+const template98 = (() => {
+  var _el$118 = _tmpl$4();
+  _$spread(
+    _el$118,
+    {
+      "style:border": `${1 + 1}px`
+    },
+    false,
+    false
+  );
+  return _el$118;
+})();
 _$delegateEvents(["click", "input"]);

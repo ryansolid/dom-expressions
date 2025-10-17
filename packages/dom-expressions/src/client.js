@@ -352,6 +352,8 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     const e = prop.slice(3);
     prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
     value && node.addEventListener(e, value, typeof value !== "function" && value);
+  } else if (prop.slice(0, 6) === "style:") {
+    setStyleProperty(node, prop.slice(0, 6), value);
   } else if (prop.slice(0, 10) === "oncapture:") {
     const e = prop.slice(10);
     prev && node.removeEventListener(e, prev, true);

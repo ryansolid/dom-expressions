@@ -341,7 +341,12 @@ function transformAttributes(path, results) {
 
   attributes = path.get("openingElement").get("attributes");
 
-  const styleAttributes = attributes.filter(a => a.node.name && a.node.name.name === "style");
+  const styleAttributes = attributes.filter(
+    a =>
+      a.node.name &&
+      (a.node.name.name === "style" ||
+        (t.isJSXNamespacedName(a.node.name) && a.node.name.namespace.name === "style"))
+  );
   if (styleAttributes.length > 0) {
     let inlinedStyle = "";
 
@@ -354,7 +359,24 @@ function transformAttributes(path, results) {
         value = value.expression;
       }
 
-      if (t.isStringLiteral(value)) {
+      if (t.isJSXNamespacedName(attr.node.name)) {
+        const localName = attr.node.name.name.name;
+        if (t.isStringLiteral(value) || t.isNumericLiteral(value)) {
+          inlinedStyle += `${localName}:${value.value};`;
+          attr.remove();
+        } else if (
+          (t.isIdentifier(value) && value.name === "undefined") ||
+          t.isNullLiteral(value)
+        ) {
+          attr.remove();
+        } else {
+          const r = node.evaluate();
+          if (r.confident && (typeof r.value === "string" || typeof r.value === "number")) {
+            inlinedStyle += `${localName}:${r.value};`;
+            attr.remove();
+          }
+        }
+      } else if (t.isStringLiteral(value)) {
         inlinedStyle += `${value.value.replace(/;$/, "")};`;
         attr.remove();
       } else if (t.isObjectExpression(value)) {

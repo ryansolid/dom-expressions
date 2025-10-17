@@ -303,3 +303,13 @@ const template89 = <div style={{"background":"red", "color":"green", "border":nu
 }
 
 const template90 = <div data-hk="should warn data-hk is present on template"/>
+
+const template91 = <div style:border={undefined}/>
+const template92 = <div style:border={null}/>
+const template93 = <div style:border={"2px"}/>
+const template94 = <div style:border={`${1+1}px`}/>
+
+const template95 = <div {...{"style:border":undefined}}/>
+const template96 = <div {...{"style:border":null}}/>
+const template97 = <div {...{"style:border":"2px"}}/>
+const template98 = <div {...{"style:border":`${1+1}px`}}/>
