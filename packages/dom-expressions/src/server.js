@@ -25,6 +25,7 @@ export function renderToString(code, options = {}) {
   let scripts = "";
   const serializer = createSerializer({
     scopeId: renderId,
+    plugins: options.plugins,
     onData(script) {
       if (!scripts) {
         scripts = getLocalHeaderScript(renderId);
@@ -100,6 +101,7 @@ export function renderToStream(code, options = {}) {
   };
   const serializer = createSerializer({
     scopeId: options.renderId,
+    plugins: options.plugins,
     onData: pushTask,
     onDone,
     onError: options.onError
