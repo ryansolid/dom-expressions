@@ -607,8 +607,6 @@ const template89 = _tmpl$59();
     return _el$109;
   })();
 }
-_$delegateEvents(["click", "input"]);
-const template89 = _tmpl$58();
 {
   const o = {
     ref: null
