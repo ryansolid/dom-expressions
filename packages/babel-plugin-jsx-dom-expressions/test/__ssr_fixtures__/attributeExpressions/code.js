@@ -245,3 +245,13 @@ const template51 = (
   />
 );
 
+function Progress(props) {
+  return (
+    <div
+      class="progress-fill"
+      style={{
+        [props.orientation === 'y' ? 'height' : 'width']: `${props.value * 100}%`,
+      }}
+    />
+  );
+}
