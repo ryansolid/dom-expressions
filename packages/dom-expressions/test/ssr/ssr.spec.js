@@ -3,6 +3,8 @@
  */
 import * as r from "../../src/server";
 import * as S from "s-js";
+import { createPlugin } from "seroval";
+import { sharedConfig } from "rxcore";
 
 globalThis.TextEncoder = function () {
   return { encode: v => v };
@@ -143,4 +145,63 @@ describe("pipeToWritable", () => {
       }
     });
   });
+});
+
+describe("custom serialization plugins", () => {
+  class Point {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+    }
+  }
+
+  const PointPlugin = createPlugin({
+    tag: 'Point',
+    test(value) {
+      return value instanceof Point;
+    },
+    parse: {
+      sync(value, ctx) {
+        return { x: ctx.parse(value.x), y: ctx.parse(value.y) };
+      },
+      async async(value, ctx) {
+        return { x: ctx.parse(value.x), y: ctx.parse(value.y) };
+      },
+      stream(value, ctx) {
+        return { x: ctx.parse(value.x), y: ctx.parse(value.y) };
+      },
+    },
+    serialize(node, ctx) {
+      return `new Point(${ctx.serialize(node.x)},${ctx.serialize(node.y)})`;
+    },
+    deserialize(node, ctx) {
+      return new Point(ctx.deserialize(node.x), ctx.deserialize(node.y));
+    },
+  });
+
+  it("renderToString accepts plugins option", () => {
+    const Comp = () => {
+      const pt = new Point(5, 10);
+      sharedConfig.context.serialize("pt", pt);
+      return r.ssr`<div>test</div>`;
+    };
+
+    const html = r.renderToString(Comp, { plugins: [PointPlugin] });
+    expect(html).toContain("new Point(5,10)");
+    expect(html).toContain("<div>test</div>");
+  });
+
+  it.failing("renderToString fail if missing plugins", () => {
+    
+    const Comp = () => {
+      const pt = new Point(5, 10);
+      sharedConfig.context.serialize("pt", pt);
+      return r.ssr`<div>test</div>`;
+    };
+
+    const html = r.renderToString(Comp, { });
+    expect(html).toContain("new Point(5,10)");
+    expect(html).toContain("<div>test</div>");
+  });
+  
 });
