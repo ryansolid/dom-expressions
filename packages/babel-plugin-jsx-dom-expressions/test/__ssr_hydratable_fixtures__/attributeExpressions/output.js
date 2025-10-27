@@ -161,7 +161,7 @@ const template21 = _$ssr(
   _tmpl$16,
   _$ssrHydrationKey(),
   _$ssrStyle({
-    a: "static",
+    e: "static",
     ...rest
   })
 );

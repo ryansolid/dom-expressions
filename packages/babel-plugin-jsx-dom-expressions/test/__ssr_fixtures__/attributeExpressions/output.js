@@ -146,7 +146,7 @@ const template20 = _$ssr(
 const template21 = _$ssr(
   _tmpl$16,
   _$ssrStyle({
-    a: "static",
+    d: "static",
     ...rest
   })
 );

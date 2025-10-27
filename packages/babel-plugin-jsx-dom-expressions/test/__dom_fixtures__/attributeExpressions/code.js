@@ -122,7 +122,7 @@ const template20 = (
   </div>
 );
 
-const template21 = <div style={{ a: "static", ...rest }}></div>;
+const template21 = <div style={{ b: "static", ...rest }}></div>;
 
 const template22 = <div data='"hi"' data2={'"'} />;
 
@@ -271,6 +271,28 @@ const template86 = <div style={{"background":"red", "color":"green", "border":si
 const template87 = <div style={{"background":"red", "color":"green", "border":somevalue}}/>
 const template88 = <div style={{"background":"red", "color":"green", "border":some.access}}/>
 const template89 = <div style={{"background":"red", "color":"green", "border":null}}/>
+{
+  <div
+    style={{
+      "padding-left": `clamp(${1+1}px, ${1+1}px, ${1+1}px)`,
+    }}
+  />
+}
+{
+  <div
+    style={{
+     a: `clamp(${1+1}px, ${1+1}px, ${1+1}px)`,
+    }}
+  />
+}
+{
+  <div
+    style={{
+     [computedkey]: `clamp(${1+1}px, ${1+1}px, ${1+1}px)`,
+    }}
+  />
+}
+
 
 
 {
