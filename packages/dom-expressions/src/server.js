@@ -418,7 +418,7 @@ export function ssrAttribute(key, value, isBoolean) {
 
 export function ssrHydrationKey() {
   const hk = getHydrationKey();
-  return hk ? ` data-hk=${hk}` : "";
+  return hk ? ` data-hk="${hk}"` : "";
 }
 
 export function escape(s, attr) {
