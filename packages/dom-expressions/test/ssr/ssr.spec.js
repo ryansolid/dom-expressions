@@ -191,6 +191,18 @@ describe("custom serialization plugins", () => {
     expect(html).toContain("<div>test</div>");
   });
 
+  it("renderToStringAsync accepts plugins option", async () => {
+    const Comp = () => {
+      const pt = new Point(15, 25);
+      sharedConfig.context.serialize("pt", pt);
+      return r.ssr`<div>async</div>`;
+    };
+
+    const html = await r.renderToStringAsync(Comp, { plugins: [PointPlugin] });
+    expect(html).toContain("new Point(15,25)");
+    expect(html).toContain("<div>async</div>");
+  });
+
   it("renderToStream accepts plugins option", done => {
     const Comp = () => {
       const pt = new Point(8, 12);
