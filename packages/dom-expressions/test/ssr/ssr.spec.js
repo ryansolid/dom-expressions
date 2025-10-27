@@ -191,17 +191,25 @@ describe("custom serialization plugins", () => {
     expect(html).toContain("<div>test</div>");
   });
 
-  it.failing("renderToString fail if missing plugins", () => {
-    
+  it("renderToStream accepts plugins option", done => {
     const Comp = () => {
-      const pt = new Point(5, 10);
+      const pt = new Point(8, 12);
       sharedConfig.context.serialize("pt", pt);
-      return r.ssr`<div>test</div>`;
+      return r.ssr`<span>stream</span>`;
     };
 
-    const html = r.renderToString(Comp, { });
-    expect(html).toContain("new Point(5,10)");
-    expect(html).toContain("<div>test</div>");
+    const chunks = [];
+    const stream = r.renderToStream(Comp, { plugins: [PointPlugin] });
+    stream.pipe({
+      write(v) {
+        chunks.push(v);
+      },
+      end() {
+        const html = chunks.join("");
+        expect(html).toContain("new Point(8,12)");
+        expect(html).toContain("<span>stream</span>");
+        done();
+      }
+    });
   });
-  
 });
