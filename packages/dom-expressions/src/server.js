@@ -394,6 +394,7 @@ export function ssrElement(tag, props, children, needsId) {
     } else if (
       value == undefined ||
       prop === "ref" ||
+      prop.slice(0, 4) === "ref:" ||
       prop.slice(0, 2) === "on" ||
       prop.slice(0, 5) === "prop:"
     ) {
@@ -692,6 +693,7 @@ export function ssrSpread(props, isSVG, skipChildren) {
     } else if (
       value == undefined ||
       prop === "ref" ||
+      prop.slice(0, 4) === "ref:" ||
       prop.slice(0, 2) === "on" ||
       prop.slice(0, 5) === "prop:"
     ) {
