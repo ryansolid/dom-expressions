@@ -620,4 +620,13 @@ const template94 = (() => {
   _el$112.playsInline = false;
   return _el$112;
 })();
+const template95 = (() => {
+  var _el$113 = _tmpl$59();
+  _$setAttribute(_el$113, "something", {
+    value: {
+      value: 2
+    }
+  });
+  return _el$113;
+})();
 _$delegateEvents(["click", "input"]);
