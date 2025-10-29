@@ -11,6 +11,7 @@ import {
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
+  evaluateAndInline,
   getTagName,
   isDynamic,
   isComponent,
@@ -59,6 +60,13 @@ const alwaysClose = [
 ];
 
 export function transformElement(path, info) {
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
+
   let tagName = getTagName(path.node),
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),

@@ -8,6 +8,7 @@ import {
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
+  evaluateAndInline,
   getTagName,
   registerImportMethod,
   filterChildren,
@@ -33,6 +34,13 @@ function appendToTemplate(template, value) {
 }
 
 export function transformElement(path, info) {
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
+
   const config = getConfig(path);
   const tagName = getTagName(path.node);
   if (tagName === "script" || tagName === "style") path.doNotEscape = true;

@@ -45,7 +45,7 @@ const template = (() => {
       get classList() {
         return {
           dynamic: dynamic(),
-          selected
+          selected: true
         };
       }
     }),

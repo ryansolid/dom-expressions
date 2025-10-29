@@ -60,9 +60,9 @@ const template = _$ssrElement(
     _$mergeProps(
       {
         get ["class"]() {
-          return `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`;
+          return `base ${dynamic() ? "dynamic" : ""}  selected`;
         },
-        id: id
+        id: "my-h1"
       },
       results,
       {

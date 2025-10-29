@@ -276,3 +276,5 @@ const template91 = <video playsinline={false}/>
 const template92 = <video playsInline={value}/>
 const template93 = <video playsInline={true}/>
 const template94 = <video playsInline={false}/>
+
+const template95 = <video something={{value:{value:1+1}}}/>
