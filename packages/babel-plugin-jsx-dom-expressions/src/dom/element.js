@@ -60,6 +60,13 @@ const alwaysClose = [
 ];
 
 export function transformElement(path, info) {
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
+
   let tagName = getTagName(path.node),
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
@@ -90,13 +97,6 @@ export function transformElement(path, info) {
       renderer: "dom",
       skipTemplate: false
     };
-
-  path
-    .get("openingElement")
-    .get("attributes")
-    .forEach(attr => {
-      evaluateAndInline(attr.node.value, attr.get("value"));
-    });
 
   path
     .get("openingElement")

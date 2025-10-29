@@ -16,6 +16,13 @@ import {
 import { transformNode } from "../shared/transform";
 
 export function transformElement(path, info) {
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
+
   let tagName = getTagName(path.node),
     results = {
       id: path.scope.generateUidIdentifier("el$"),
@@ -48,13 +55,6 @@ export function transformElement(path, info) {
 }
 
 function transformAttributes(path, results) {
-  path
-    .get("openingElement")
-    .get("attributes")
-    .forEach(attr => {
-      evaluateAndInline(attr.node.value, attr.get("value"));
-    });
-
   let children, spreadExpr;
   let attributes = path.get("openingElement").get("attributes");
   const elem = results.id,
