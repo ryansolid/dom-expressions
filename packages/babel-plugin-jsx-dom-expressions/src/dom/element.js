@@ -11,6 +11,7 @@ import {
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
+  evaluateAndInline,
   getTagName,
   isDynamic,
   isComponent,
@@ -89,6 +90,13 @@ export function transformElement(path, info) {
       renderer: "dom",
       skipTemplate: false
     };
+
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
 
   path
     .get("openingElement")

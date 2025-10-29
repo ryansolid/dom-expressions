@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 import {
+  evaluateAndInline,
   getTagName,
   isDynamic,
   registerImportMethod,
@@ -47,6 +48,13 @@ export function transformElement(path, info) {
 }
 
 function transformAttributes(path, results) {
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
+
   let children, spreadExpr;
   let attributes = path.get("openingElement").get("attributes");
   const elem = results.id,
@@ -101,9 +109,7 @@ function transformAttributes(path, results) {
           if (!isConstant && t.isLVal(value.expression)) {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("var", [
-                t.variableDeclarator(refIdentifier, value.expression)
-              ]),
+              t.variableDeclaration("var", [t.variableDeclarator(refIdentifier, value.expression)]),
               t.expressionStatement(
                 t.conditionalExpression(
                   t.binaryExpression(
@@ -139,9 +145,7 @@ function transformAttributes(path, results) {
           } else {
             const refIdentifier = path.scope.generateUidIdentifier("_ref$");
             results.exprs.unshift(
-              t.variableDeclaration("var", [
-                t.variableDeclarator(refIdentifier, value.expression)
-              ]),
+              t.variableDeclaration("var", [t.variableDeclarator(refIdentifier, value.expression)]),
               t.expressionStatement(
                 t.logicalExpression(
                   "&&",
@@ -252,13 +256,19 @@ function transformChildren(path, results) {
             t.variableDeclarator(
               child.id,
               t.callExpression(createTextNode, [
-                t.templateLiteral([t.templateElement({ raw: escapeStringForTemplate(child.template) })], [])
+                t.templateLiteral(
+                  [t.templateElement({ raw: escapeStringForTemplate(child.template) })],
+                  []
+                )
               ])
             )
           );
         } else
           insert = t.callExpression(createTextNode, [
-            t.templateLiteral([t.templateElement({ raw: escapeStringForTemplate(child.template) })], [])
+            t.templateLiteral(
+              [t.templateElement({ raw: escapeStringForTemplate(child.template) })],
+              []
+            )
           ]);
       }
       appends.push(t.expressionStatement(t.callExpression(insertNode, [results.id, insert])));
