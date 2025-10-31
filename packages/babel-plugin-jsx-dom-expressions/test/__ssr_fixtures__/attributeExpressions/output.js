@@ -310,3 +310,4 @@ const template49 = _$ssr(_tmpl$27);
 const template50 = _$ssr(_tmpl$28);
 const nope = () => undefined;
 const template51 = _$ssr(_tmpl$29, _$ssrStyleProperty("--bg:", _$escape(nope(), true)));
+const template52 = _$ssr(_tmpl$8);

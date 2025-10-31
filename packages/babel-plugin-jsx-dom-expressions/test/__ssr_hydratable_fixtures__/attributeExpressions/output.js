@@ -286,3 +286,4 @@ const template41 = _$ssr(
   _$ssrAttribute("value", _$escape(Color.Red, true), false),
   _$ssrAttribute("value", _$escape(Color.Blue, true), false)
 );
+const template42 = _$ssr(_tmpl$8, _$ssrHydrationKey());
