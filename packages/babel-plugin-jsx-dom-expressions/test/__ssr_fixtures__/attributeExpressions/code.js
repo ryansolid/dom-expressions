@@ -245,3 +245,8 @@ const template51 = (
   />
 );
 
+const template52 = (
+  <div
+    style={{}}
+  />
+);
