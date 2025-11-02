@@ -1171,12 +1171,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
           : node.argument;
 
       spreadArgs.push(isStatic ? t.objectExpression([t.spreadElement(s)]) : s);
-    } else if (
-      (firstSpread ||
-        (t.isJSXExpressionContainer(node.value) &&
-          isDynamic(attribute.get("value").get("expression"), { checkMember: true }))) &&
-      canNativeSpread(key, { checkNameSpaces: true })
-    ) {
+    } else if (key && !key.startsWith("use:") && key !== "ref") {
       const isContainer = t.isJSXExpressionContainer(node.value);
       const dynamic =
         isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });
