@@ -100,8 +100,8 @@ const template = (() => {
   _$spread(
     _el$2,
     _$mergeProps(results, {
-      foo: "",
-      disabled: "",
+      foo: true,
+      disabled: true,
       get title() {
         return welcoming();
       },
@@ -362,7 +362,7 @@ const template24 = (() => {
   _$spread(
     _el$32,
     _$mergeProps(props, {
-      something: ""
+      something: true
     }),
     false,
     false
@@ -376,7 +376,7 @@ const template25 = (() => {
   _$spread(
     _el$34,
     _$mergeProps(props, {
-      something: ""
+      something: true
     }),
     false,
     false

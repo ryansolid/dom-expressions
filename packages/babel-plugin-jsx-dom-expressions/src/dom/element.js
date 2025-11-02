@@ -1201,7 +1201,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         runningObject.push(
           t.objectProperty(
             t.stringLiteral(key),
-            isContainer ? node.value.expression : node.value || t.stringLiteral("")
+            isContainer ? node.value.expression : node.value || t.booleanLiteral(true)
           )
         );
       }
