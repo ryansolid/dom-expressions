@@ -70,7 +70,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$43 = /*#__PURE__*/ _$template(`<video poster="1.jpg"></video>`),
   _tmpl$44 = /*#__PURE__*/ _$template(`<div><video poster="1.jpg"></video></div>`),
   _tmpl$45 = /*#__PURE__*/ _$template(`<div><video></video></div>`),
-  _tmpl$46 = /*#__PURE__*/ _$template(`<button type="button"></button>`);
+  _tmpl$46 = /*#__PURE__*/ _$template(`<button type="button"></button>`),
+  _tmpl$47 = /*#__PURE__*/ _$template(`<div style="duplicate2"></div>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -843,4 +844,5 @@ const template88 = (() => {
   });
   return _el$107;
 })();
+const template89 = _tmpl$47();
 _$delegateEvents(["click", "input"]);

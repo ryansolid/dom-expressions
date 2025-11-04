@@ -297,6 +297,31 @@ function transformAttributes(path, results) {
     );
     //NOTE: can't be checked at compile time so add to compiled output
     hasHydratableEvent = true;
+  } else {
+    /**
+     * Spreads already de-duplicate attributes.
+     *
+     * This handles the case when attributes are duplicated without the presence of a spread. Such:
+     * `<div style="duplicate1" style="duplicate2" />;`
+     */
+    const seenAttributes = {};
+    const duplicates = [];
+    path
+      .get("openingElement")
+      .get("attributes")
+      .forEach(attr => {
+        const key = t.isJSXNamespacedName(attr.node.name)
+          ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
+          : attr.node.name.name;
+
+        if (!key.startsWith("use:") && key !== "ref" && seenAttributes[key]) {
+          duplicates.push(seenAttributes[key]);
+        }
+        seenAttributes[key] = attr;
+      });
+    for (const duplicate of duplicates) {
+      duplicate.remove();
+    }
   }
 
   /**
