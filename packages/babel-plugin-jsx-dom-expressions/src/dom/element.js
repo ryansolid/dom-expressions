@@ -297,6 +297,31 @@ function transformAttributes(path, results) {
     );
     //NOTE: can't be checked at compile time so add to compiled output
     hasHydratableEvent = true;
+  } else {
+    /**
+     * Spreads already de-duplicate attributes.
+     *
+     * This handles the case when attributes are duplicated without the presence of a spread. Such:
+     * `<div style="duplicate1" style="duplicate2" />;`
+     */
+    const seenAttributes = {};
+    const duplicates = [];
+    path
+      .get("openingElement")
+      .get("attributes")
+      .forEach(attr => {
+        const key = t.isJSXNamespacedName(attr.node.name)
+          ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
+          : attr.node.name.name;
+
+        if (!key.startsWith("use:") && key !== "ref" && seenAttributes[key]) {
+          duplicates.push(seenAttributes[key]);
+        }
+        seenAttributes[key] = attr;
+      });
+    for (const duplicate of duplicates) {
+      duplicate.remove();
+    }
   }
 
   /**
@@ -1171,12 +1196,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
           : node.argument;
 
       spreadArgs.push(isStatic ? t.objectExpression([t.spreadElement(s)]) : s);
-    } else if (
-      (firstSpread ||
-        (t.isJSXExpressionContainer(node.value) &&
-          isDynamic(attribute.get("value").get("expression"), { checkMember: true }))) &&
-      canNativeSpread(key, { checkNameSpaces: true })
-    ) {
+    } else if (key && !key.startsWith("use:") && key !== "ref") {
       const isContainer = t.isJSXExpressionContainer(node.value);
       const dynamic =
         isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });

@@ -325,3 +325,5 @@ const template88 = (
     {count()}
   </button>
 );
+
+const template89 = <div style="duplicate1" style="duplicate2"/>
