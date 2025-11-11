@@ -243,7 +243,11 @@ export function createRenderer({
     memo,
     createComponent,
     use(fn, element, arg) {
-      return untrack(() => fn(element, arg));
+      return untrack(() =>
+        Array.isArray(fn)
+          ? fn.flat(Infinity).forEach(fn => fn && fn(element, arg))
+          : fn(element, arg)
+      );
     }
   };
 }

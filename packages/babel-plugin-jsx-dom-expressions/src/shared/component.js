@@ -108,7 +108,11 @@ export default function transformComponent(path) {
                   ])
                 )
               );
-            } else if (isConstant || t.isFunction(value.expression)) {
+            } else if (
+              isConstant ||
+              t.isFunction(value.expression) ||
+              t.isArrayExpression(value.expression)
+            ) {
               runningObject.push(t.objectProperty(t.identifier("ref"), value.expression));
             } else if (t.isCallExpression(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");

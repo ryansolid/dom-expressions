@@ -222,7 +222,9 @@ export function dynamicProperty(props, key) {
 }
 
 export function use(fn, element, arg) {
-  untrack(() => fn(element, arg));
+  untrack(() =>
+    Array.isArray(fn) ? fn.flat(Infinity).forEach(fn => fn && fn(element, arg)) : fn(element, arg)
+  );
 }
 
 export function insert(parent, accessor, marker, initial) {
