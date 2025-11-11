@@ -820,4 +820,10 @@ const template88 = (() => {
   });
   return _el$107;
 })();
+const template89 = (() => {
+  var _el$108 = _tmpl$46();
+  _$use([props.ref, myref], _el$108);
+  _$insert(_el$108, count);
+  return _el$108;
+})();
 _$delegateEvents(["click", "input"]);

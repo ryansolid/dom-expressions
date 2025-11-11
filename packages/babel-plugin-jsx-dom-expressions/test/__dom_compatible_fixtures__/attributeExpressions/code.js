@@ -325,3 +325,9 @@ const template88 = (
     {count()}
   </button>
 );
+
+const template89 = (
+  <button type="button" ref={[props.ref, myref]}>
+    {count()}
+  </button>
+);

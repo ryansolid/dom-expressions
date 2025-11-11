@@ -308,3 +308,8 @@ const template29 = (() => {
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$38) : (refUnknown = _el$38);
   return _el$38;
 })();
+const template30 = (() => {
+  var _el$39 = _$createElement("div");
+  _$use([refFn, refUnknown], _el$39);
+  return _el$39;
+})();

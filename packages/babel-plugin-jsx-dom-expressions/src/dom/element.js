@@ -612,7 +612,11 @@ function transformAttributes(path, results) {
                 )
               )
             );
-          } else if (isConstant || t.isFunction(value.expression)) {
+          } else if (
+            isConstant ||
+            t.isFunction(value.expression) ||
+            t.isArrayExpression(value.expression)
+          ) {
             results.exprs.unshift(
               t.expressionStatement(
                 t.callExpression(

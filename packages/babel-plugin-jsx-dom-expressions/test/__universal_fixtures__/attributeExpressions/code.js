@@ -125,3 +125,4 @@ const template27 = <div ref={refFn} />
 const template28 = <div ref={refConst} />
 
 const template29 = <div ref={refUnknown} />
+const template30 = <div ref={[refFn, refUnknown]} />
