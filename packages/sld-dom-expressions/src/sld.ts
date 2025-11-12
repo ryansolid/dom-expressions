@@ -108,10 +108,13 @@ export function createSLDRuntime(r: Runtime) {
     const clone = template.content.cloneNode(true);
     walker.currentNode = clone;
     walkNodes(node.children);
+    
 
     function walkNodes(nodes: ChildNode[]) {
       for (const node of nodes) {
         const domNode = walker.nextNode()!;
+
+        
         if (node.type === ELEMENT_NODE) {
           if (node.props.length) {
             //Assigning props to element via assign prop w/effect may be better for performance.
@@ -121,6 +124,8 @@ export function createSLDRuntime(r: Runtime) {
 
           walkNodes(node.children);
         } else if (node.type === INSERT_NODE || node.type === COMPONENT_NODE) {
+          const parent = domNode.parentNode;
+          if (!parent) console.log(domNode,node);
           r.insert(domNode.parentNode!, renderNode(node, values, components), domNode);
           walker.currentNode = domNode;
         }
@@ -135,6 +140,8 @@ export function createSLDRuntime(r: Runtime) {
     components: ComponentRegistry,
     props: Record<string, any> = {}
   ) {
+    const spreads = []
+
     for (const prop of node.props) {
       switch (prop.type) {
         case BOOLEAN_PROPERTY:
@@ -151,9 +158,7 @@ export function createSLDRuntime(r: Runtime) {
           applyGetter(props, prop.name, value);
           break;
         case SPREAD_PROPERTY:
-          const spread = values[prop.value];
-          if (!isObject(spread)) throw new Error("Can only spread objects");
-          props = r.mergeProps(props, spread);
+          spreads.push(values[prop.value]);
           break;
         case ANONYMOUS_PROPERTY:
           props.ref = values[prop.value];
@@ -166,8 +171,13 @@ export function createSLDRuntime(r: Runtime) {
       Object.defineProperty(props, "children", {
         get() {
           return renderChildren(node, values, components);
-        }
+        },
+        enumerable: true
       });
+    }
+
+    if (spreads.length) {
+      return r.mergeProps(props,...spreads);
     }
     return props;
   }

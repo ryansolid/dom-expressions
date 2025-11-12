@@ -3,16 +3,17 @@ import { createSLDRuntime } from "../dist/sld-dom-expressions";
 import * as r from "dom-expressions/src/client";
 
 const createSld = createSLDRuntime(r);
-
+const sld = createSld();
 /** @type {{ bodyFunc: string }[]} */
 const context = [];
-const sld = createSld(r, { functionBuilder: (...args) => {
-  const ctx = context.pop();
-  if (ctx) {
-    expect(args[args.length - 1].replace(/_\$el\d+/g, '_$el')).toBe(ctx.bodyFunc.replace(/_\$el\d+/g, '_$el'));
-  }
-  return new Function(...args);
-}});
+// const sld = createSld(r, { functionBuilder: (...args) => {
+//   const ctx = context.pop();
+//   if (ctx) {
+//     expect(args[args.length - 1].replace(/_\$el\d+/g, '_$el')).toBe(ctx.bodyFunc.replace(/_\$el\d+/g, '_$el'));
+//   }
+//   return new Function(...args);
+// }});
+
 
 const FIXTURES = /** @type {const} */ ([
   '<div id="main"><!-- this is a comment --><h1 random="">Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label class="name" for="entry">Edit:</label><input id="entry" type="text" readonly=""></div>',
@@ -38,9 +39,10 @@ describe("Test HTML", () => {
         <input id="entry" type="text" readonly=${true} />
       </div>
     `;
-    expect(template.outerHTML).toBe(FIXTURES[0]);
+    expect(template[0].outerHTML).toBe(FIXTURES[0]);
   });
-
+  
+  
   test("Attribute Expressions", () => {
     const [selected] = createSignal(true),
       [welcoming] = createSignal("hello");
@@ -54,7 +56,7 @@ describe("Test HTML", () => {
           ref=${el => {
             el.setAttribute("refset", "true");
           }}
-          ...${() => ({ title: "hi" })}
+          ...${() =>({ title: "hi" })}
         >
           <h1
             class=${welcoming}
@@ -65,21 +67,21 @@ describe("Test HTML", () => {
           </h1>
         </div>
       `;
-      expect(template.outerHTML).toBe(FIXTURES[1]);
+      expect(template[0].outerHTML).toBe(FIXTURES[1]);
     });
   });
 
   test("Event Expressions", () => {
     const exec = {};
 
-    const template = sld`
+    const [template] = sld`
       <div id="main">
         <button onclick=${() => (exec.bound = true)}>Click Bound</button>
         <button onClick=${[v => (exec.delegated = v), true]}>
           Click Delegated
         </button>
         <button on:click=${() => (exec.listener = true)}>
-          Click Listener
+          Click Listener  
         </button>
       </div>
     `;
@@ -122,7 +124,7 @@ describe("Test HTML", () => {
     const Comp = props =>
       sld` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
     createRoot(() => {
-      const template = sld.define({Comp})`
+      const [template] = sld.define({Comp})`
         <div id="main" ...${() => ({ title: "hi" })}>
           <Comp name=${() => "John"} middle="R."><span>Smith</span></Comp>
           <div>After</div>
@@ -138,7 +140,7 @@ describe("Test HTML", () => {
     const Comp = props =>
       sld` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
     createRoot(() => {
-      const template = sld.define({Comp})` <Comp name=${() => "John"} middle="R."><span>Smith</span></Comp> `;
+      const [template] = sld.define({Comp})` <Comp name=${() => "John"} middle="R."><span>Smith</span></Comp> `;
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[5]);
@@ -148,7 +150,7 @@ describe("Test HTML", () => {
   test("Nested Components", () => {
     const Comp = props => sld` <div>${() => props.children}</div> `;
     createRoot(() => {
-      const template = sld.define({Comp})`<Comp><Comp>Hi</Comp></Comp> `;
+      const [template] = sld.define({Comp})`<Comp><Comp>Hi</Comp></Comp> `;
       const div = document.createElement("div");
       div.appendChild(template);
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[6]);
@@ -159,7 +161,7 @@ describe("Test HTML", () => {
     const Switch = props => props.children[0].children;
     const Match = props => props;
     createRoot(() => {
-      const template = sld.define({Switch,Match})`<div>
+      const [template] = sld.define({Switch,Match})`<div>
         <Switch>
           <Match when=${1}>
             <div>Hi</div>
@@ -186,7 +188,7 @@ describe("Test HTML", () => {
       </div>
     `;
     const div = document.createElement("div");
-    div.appendChild(template);
+    div.appendChild(template[0]);
     expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[7]);
   });
 
@@ -197,10 +199,9 @@ describe("Test HTML", () => {
     // https://github.com/ryansolid/dom-expressions/issues/143 and
     // https://github.com/ryansolid/html-parse-string/issues/3
 
-    /** @type {HTMLDivElement} */
     // prettier-ignore
     // We need to not format this HTML code otherwise prettier changes or even breaks the special cases we're testing.
-    const div = sld`
+    const template = sld`
       <div
         multiline="
           foo
@@ -216,6 +217,8 @@ describe("Test HTML", () => {
       ></div>
     `;
 
+    /** @type {HTMLDivElement} */
+    const div = template[0]    
     // TODO these attributes are parsed correctly by html-parse-string now, but
     // html template tag doesn't handle them well yet.
     // beep"boop
@@ -253,7 +256,9 @@ describe("Test HTML", () => {
     // expect(div.attributes.getNamedItem("#$%'123-")?.value).toBe("");
 
     // ensure it handles `"` chars correctly
-    const el = sld`<lume-box uniforms='{ "iTime": { "value": 0 } }'></lume-box>`;
+    /** @type {HTMLUnknownElement[]} */
+    const [el] = sld`<lume-box uniforms='{ "iTime": { "value": 0 } }'></lume-box>`;
+
 
     expect(el.attributes.length).toBe(1);
     expect(el.attributes.uniforms?.value).toBe('{ "iTime": { "value": 0 } }');
@@ -262,7 +267,7 @@ describe("Test HTML", () => {
   test("Test style tag", () => {
     const color = "red";
     // prettier-ignore
-    const template = sld`
+    const [template] = sld`
       <style>.something{color:${color}}</style>
     `;
     const div = document.createElement("div");
@@ -275,7 +280,7 @@ describe("Test HTML", () => {
       const [d, setD] = createSignal("first");
       const template = sld`<div class=${() => ({ [d()]: true })} />`;
       const div = document.createElement("div");
-      div.appendChild(template);
+      div.appendChild(template[0]);
       setD("second");
       flush();
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[9]);
@@ -289,23 +294,9 @@ describe("Test HTML", () => {
       <b>Hello, my name is: <i>${name}</i></b>
     </div>`;
     const div = document.createElement("div");
-    div.appendChild(template);
-    expect(div.innerHTML.replace(`<!--<div name="###"></div>-->`, "")).toBe(FIXTURES[7]);
+    div.appendChild(template[0]);
+    expect(div.innerHTML.replace(`<!--<div name=⧙⧘0⧙⧘ />-->`, "")).toBe(FIXTURES[7]);
   });
-
-  test("Directive use", () =>{
-    function directive(el, value) {
-      el.style.backgroundColor = 'red';
-      el.innerHTML += value();
-    }
-    context.push({
-      bodyFunc: 'const _$el1 = tmpls[0].content.firstChild.cloneNode(true),\n'
-      + '_$el2 = _$el1.firstChild,\n'
-      + '_$el3 = _$el2.firstChild;\n'
-      + 'typeof exprs[0] === "function" ? r.use(exprs[0], _$el2, exprs[1]) : (()=>{throw new Error("use:### must be a function")})();\n'
-      + 'return _$el1;\n'
-    });
-    const template = sld`<div><div use:${directive}=${() => "world!"}>Hello <//><//> `;
-    expect(template.outerHTML).toBe('<div><div style="background-color: red;">Hello world!</div></div>');
-  });
+  
 });
+

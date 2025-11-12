@@ -80,6 +80,7 @@ export type StringProperty = {
     type: typeof STRING_PROPERTY
     name: string,
     value: string
+    quote: '"' | "'"
 }
 
 // <input value=${}> <input value="${}""> <input value='${}'>
@@ -116,10 +117,10 @@ export type AnonymousProperty = {
 export type ValueParts = string | boolean | number | Array<string | number>;
 
 //Needs to be unique character that would never be in the template literal
-const marker = "⧙⧘";
+export const marker = "⧙⧘";
 
 //Captures index of hole
-const match = new RegExp(`${marker}(\\d+)${marker}`, "g");
+export const match = new RegExp(`${marker}(\\d+)${marker}`, "g");
 
 /**
  * 
@@ -159,6 +160,10 @@ function parseNode(
                         value: Number(value)
                     }
                 }
+                if (!value.trim()){
+                    return []
+                }
+
                 //We want to trim when only content in textnode is the hole or if textnode is empty
                 if (!value || (array.length === 3 && !value.trim())) {
                     return []
@@ -166,7 +171,7 @@ function parseNode(
 
                 return {
                     type: TEXT_NODE,
-                    value,
+                    value: trimTextNode(value),
                 }
             });
     }
@@ -175,9 +180,11 @@ function parseNode(
     if (node.name[0] === "!" || node.name === "") {
         return {
             type: COMMENT_NODE,
-            value: (node.body as IText[]).join(""),
+            value: (node.body as IText[]).map(v=>v.value).join(""),
         } as CommentNode;
     }
+
+
 
     const props = node.attributes.flatMap((v) => {
         const nameParts = getParts(v.name.value);
@@ -211,20 +218,21 @@ function parseNode(
                     return {
                         type: DYNAMIC_PROPERTY,
                         name,
-                        value
+                        value,
                     }
                 } else {
                     return {
                         type: STRING_PROPERTY,
                         name,
-                        value
+                        value,
+                        quote: v.value!.quote
                     }
                 }
             } else {
                 return {
                     type: MIXED_PROPERTY,
                     name,
-                    value: valueParts
+                    value: valueParts,
                 }
             }
         }
@@ -257,4 +265,35 @@ function getParts(value: string = ""): Array<string | number> {
         .split(match)
         .map((v, i) => (i % 2 === 1 ? parseInt(v) : v))
         .filter((v) => isNumber(v) || v !== "");
+}
+
+function trimTextNode(value: string) {
+	const lines = value.split(/\r\n|\n|\r/)
+	let lastNonEmptyLine = 0
+	for (let i = 0; i < lines.length; i++) {
+		if (/[^ \t]/.exec(lines[i])) {
+			lastNonEmptyLine = i
+		}
+	}
+	let str = ''
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i]
+		const isFirstLine = i === 0
+		const isLastLine = i === lines.length - 1
+		const isLastNonEmptyLine = i === lastNonEmptyLine
+		let trimmedLine = line.replace(/\t/g, ' ')
+		if (!isFirstLine) {
+			trimmedLine = trimmedLine.replace(/^ +/, '')
+		}
+		if (!isLastLine) {
+			trimmedLine = trimmedLine.replace(/ +$/, '')
+		}
+		if (trimmedLine) {
+			if (!isLastNonEmptyLine) {
+				trimmedLine += ' '
+			}
+			str += trimmedLine
+		}
+	}
+	return str
 }
