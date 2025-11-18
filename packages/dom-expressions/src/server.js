@@ -279,13 +279,13 @@ export function renderToStream(code, options = {}) {
           writable = {
             end() {
               writer.releaseLock();
-              w.close();
+              w.close().catch(() => {});
               resolve();
             }
           };
           buffer = {
             write(payload) {
-              writer.write(encoder.encode(payload));
+              writer.write(encoder.encode(payload)).catch(() => {});
             }
           };
           buffer.write(tmp);
