@@ -113,10 +113,8 @@ export type AnonymousProperty = {
     value: number
 }
 
-//string or boolean means static, number means hole and is index, array means mix of string and holes
-export type ValueParts = string | boolean | number | Array<string | number>;
 
-//Needs to be unique character that would never be in the template literal
+//Needs to be unique string that would never be in the template literal
 export const marker = "⧙⧘";
 
 //Captures index of hole
@@ -267,6 +265,7 @@ function getParts(value: string = ""): Array<string | number> {
         .filter((v) => isNumber(v) || v !== "");
 }
 
+//From Pota. How JSX trims text nodes
 function trimTextNode(value: string) {
 	const lines = value.split(/\r\n|\n|\r/)
 	let lastNonEmptyLine = 0

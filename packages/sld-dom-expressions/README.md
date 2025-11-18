@@ -1,6 +1,6 @@
 # sld
 
-sld is a no-build, no-JSX tagged-template library for SolidJS and designed to work with template tooling (editor syntax highlighting, formatters, etc.).
+sld is a no-build, no-JSX tagged-template library for SolidJS and designed to work with template tooling (editor syntax highlighting, formatters, etc.) and mimic JSX as much as possible.
 
 ## Quick overview
 
@@ -9,7 +9,6 @@ sld is a no-build, no-JSX tagged-template library for SolidJS and designed to wo
   - `sld.sld` - self reference so all tags can start with `sld` for potential tooling
 - `SLD({CompA})` - factory function which includes built-in components
 - `createSLD({CompA})` - factory function which doesn't includes built-in components
-- `run(CompA)(props)` helper function for createComponent to get better ts. Must manually do getters on props.
 
 
 

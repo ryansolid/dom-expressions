@@ -13,13 +13,12 @@ import {
   marker
 } from "./parse";
 
-//build template element with same exact shape as tree so they can be walked through in sync
+//build template element with same exact shape as tree so they can be walked through in sync on cloned node
 export function buildTemplate(node: RootNode | ChildNode): void {
   if (node.type === ROOT_NODE || node.type === COMPONENT_NODE) {
-    //Criteria for using template is component or root has at least 1 element. May be be a more optimal condition.
+    //Criteria for using template is component or root has at least 1 element.
     if (node.children.some(v => v.type === ELEMENT_NODE)) {
       const template = document.createElement("template");
-      // buildNodes(node.children, template.content);
       template.innerHTML = node.children.map(buildHTML).join("");
       node.template = template;
 
@@ -60,6 +59,7 @@ function buildHTML(node: ChildNode): string {
     case COMPONENT_NODE:
       return marker;
     case ELEMENT_NODE:
+      //We can prebuild static attributes. Strings and booleans only
       let attributeHTML = "";
       node.props = node.props.filter(prop => {
         if (prop.type === STRING_PROPERTY) {
