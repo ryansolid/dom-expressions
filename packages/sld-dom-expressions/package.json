@@ -1,0 +1,25 @@
+{
+  "name": "sld-dom-expressions",
+  "description": "A Fine-Grained Rendering Runtime API using Tagged Template Literals",
+  "version": "0.41.0-next.0",
+  "author": "Daniel Kling",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryansolid/dom-expressions/blob/main/packages/sld-dom-expressions"
+  },
+  "main": "lib/sld-dom-expressions.js",
+  "module": "dist/sld-dom-expressions.js",
+  "types": "types/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c --bundleConfigAsCjs && tsc",
+    "test": "pnpm run build && jest",
+    "test:coverage": "pnpm run build && jest --coverage",
+    "prepare": "pnpm run build"
+  },
+  "devDependencies": {
+    "dom-expressions": "^0.41.0-next.0",
+    "html5parser": "^2.0.2"
+  }
+}
