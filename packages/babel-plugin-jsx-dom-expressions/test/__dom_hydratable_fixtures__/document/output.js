@@ -1,4 +1,8 @@
-import { createComponent as _$createComponent, insert as _$insert, getNextMarker as _$getNextMarker, getNextMatch as _$getNextMatch, getNextElement as _$getNextElement } from "r-dom";
+import { getNextElement as _$getNextElement } from "r-dom";
+import { getNextMatch as _$getNextMatch } from "r-dom";
+import { getNextMarker as _$getNextMarker } from "r-dom";
+import { insert as _$insert } from "r-dom";
+import { createComponent as _$createComponent } from "r-dom";
 const template = (() => {
   var _el$ = _$getNextElement(),
     _el$2 = _$getNextMatch(_el$.firstChild, "head"),
