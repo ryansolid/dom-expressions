@@ -54,27 +54,6 @@ export function transformElement(path, info) {
     };
 
   if (info.topLevel && config.hydratable) {
-    if (tagName === "head") {
-      registerImportMethod(path, "NoHydration");
-      registerImportMethod(path, "createComponent");
-      const child = transformElement(path, { ...info, topLevel: false });
-      results.template = "";
-      results.templateWithClosingTags = "";
-      results.exprs.push(
-        t.callExpression(t.identifier("_$createComponent"), [
-          t.identifier("_$NoHydration"),
-          t.objectExpression([
-            t.objectMethod(
-              "get",
-              t.identifier("children"),
-              [],
-              t.blockStatement([t.returnStatement(createTemplate(path, child))])
-            )
-          ])
-        ])
-      );
-      return results;
-    }
     results.template.push("");
     results.templateValues.push(
       t.callExpression(registerImportMethod(path, "ssrHydrationKey"), [])
@@ -449,26 +428,6 @@ function transformChildren(path, results, { hydratable }) {
   const multi = checkLength(filteredChildren),
     markers = hydratable && multi;
   filteredChildren.forEach(node => {
-    if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
-      const child = transformNode(node, { doNotEscape, hydratable: false });
-      registerImportMethod(path, "NoHydration");
-      registerImportMethod(path, "createComponent");
-      results.template.push("");
-      results.templateValues.push(
-        t.callExpression(t.identifier("_$createComponent"), [
-          t.identifier("_$NoHydration"),
-          t.objectExpression([
-            t.objectMethod(
-              "get",
-              t.identifier("children"),
-              [],
-              t.blockStatement([t.returnStatement(createTemplate(path, child))])
-            )
-          ])
-        ])
-      );
-      return;
-    }
     const child = transformNode(node, { doNotEscape });
     if (!child) return;
     appendToTemplate(results.template, child.template);

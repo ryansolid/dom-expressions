@@ -113,24 +113,6 @@ export function transformElement(path, info) {
     });
   if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body")) {
     results.skipTemplate = true;
-    if (tagName === "head" && info.topLevel) {
-      const createComponent = registerImportMethod(
-        path,
-        "createComponent",
-        getRendererConfig(path, "dom").moduleName
-      );
-      const NoHydration = registerImportMethod(
-        path,
-        "NoHydration",
-        getRendererConfig(path, "dom").moduleName
-      );
-      results.exprs.push(
-        t.expressionStatement(
-          t.callExpression(createComponent, [NoHydration, t.objectExpression([])])
-        )
-      );
-      return results;
-    }
   }
   if (wrapSVG) {
     results.template = "<svg>" + results.template;
@@ -1048,27 +1030,6 @@ function transformChildren(path, results, config) {
     results.isImportNode = results.isImportNode || child.isImportNode;
 
     if (child.id) {
-      if (child.tagName === "head") {
-        if (config.hydratable) {
-          const createComponent = registerImportMethod(
-            path,
-            "createComponent",
-            getRendererConfig(path, "dom").moduleName
-          );
-          const NoHydration = registerImportMethod(
-            path,
-            "NoHydration",
-            getRendererConfig(path, "dom").moduleName
-          );
-          results.exprs.push(
-            t.expressionStatement(
-              t.callExpression(createComponent, [NoHydration, t.objectExpression([])])
-            )
-          );
-        }
-        return;
-      }
-
       let getNextMatch;
       if (config.hydratable && tagName === "html") {
         getNextMatch = registerImportMethod(
