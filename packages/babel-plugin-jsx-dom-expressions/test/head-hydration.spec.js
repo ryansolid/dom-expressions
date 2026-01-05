@@ -50,4 +50,21 @@ describe("head hydration", () => {
 
     expect(output).not.toMatch(/NoHydration/);
   });
+
+  it("keeps head hydratable in dynamic output", () => {
+    const output = transform({
+      ...baseOptions,
+      moduleName: "r-dom",
+      generate: "dynamic",
+      renderers: [
+        {
+          name: "dom",
+          elements: ["html", "head", "body"],
+          moduleName: "r-dom"
+        }
+      ]
+    });
+
+    expect(output).not.toMatch(/NoHydration/);
+  });
 });
