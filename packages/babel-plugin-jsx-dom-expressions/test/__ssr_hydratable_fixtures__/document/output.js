@@ -2,11 +2,36 @@ import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
-var _tmpl$ = ["<html", "><head><title>\uD83D\uDD25 Blazing \uD83D\uDD25</title><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"stylesheet\" href=\"/styles.css\"><script>", "</script><!--$-->", "<!--/--></head><body><header><h1>Welcome to the Jungle</h1></header><!--$-->", "<!--/--><footer>The Bottom</footer></body></html>"],
-  _tmpl$2 = ["<head", "><title>\uD83D\uDD25 Blazing \uD83D\uDD25</title><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"stylesheet\" href=\"/styles.css\"><!--$-->", "<!--/--></head>"],
-  _tmpl$3 = ["<body", "><header><h1>Welcome to the Jungle</h1></header><!--$-->", "<!--/--><footer>The Bottom</footer></body>"],
+var _tmpl$ = [
+    "<html",
+    '><head><title>\uD83D\uDD25 Blazing \uD83D\uDD25</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="/styles.css"><script>',
+    "</script><!--$-->",
+    "<!--/--></head><body><header><h1>Welcome to the Jungle</h1></header><!--$-->",
+    "<!--/--><footer>The Bottom</footer></body></html>"
+  ],
+  _tmpl$2 = [
+    "<head",
+    '><title>\uD83D\uDD25 Blazing \uD83D\uDD25</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="/styles.css"><!--$-->',
+    "<!--/--></head>"
+  ],
+  _tmpl$3 = [
+    "<body",
+    "><header><h1>Welcome to the Jungle</h1></header><!--$-->",
+    "<!--/--><footer>The Bottom</footer></body>"
+  ],
   _tmpl$4 = ["<html", "><!--$-->", "<!--/--><!--$-->", "<!--/--></html>"];
-const template = _$ssr(_tmpl$, _$ssrHydrationKey(), `var data = [${d}]`, _$escape(_$createComponent(Assets, {})), _$escape(_$createComponent(App, {})));
+const template = _$ssr(
+  _tmpl$,
+  _$ssrHydrationKey(),
+  `var data = [${d}]`,
+  _$escape(_$createComponent(Assets, {})),
+  _$escape(_$createComponent(App, {}))
+);
 const templateHead = _$ssr(_tmpl$2, _$ssrHydrationKey(), _$escape(_$createComponent(Assets, {})));
 const templateBody = _$ssr(_tmpl$3, _$ssrHydrationKey(), _$escape(_$createComponent(App, {})));
-const templateEmptied = _$ssr(_tmpl$4, _$ssrHydrationKey(), _$escape(_$createComponent(Head, {})), _$escape(_$createComponent(Body, {})));
+const templateEmptied = _$ssr(
+  _tmpl$4,
+  _$ssrHydrationKey(),
+  _$escape(_$createComponent(Head, {})),
+  _$escape(_$createComponent(Body, {}))
+);
