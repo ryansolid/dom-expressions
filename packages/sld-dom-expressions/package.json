@@ -4,6 +4,7 @@
   "version": "0.41.0-next.0",
   "author": "Daniel Kling",
   "license": "MIT",
+  "author": "Daniel Kling danielrkling@gmail.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/ryansolid/dom-expressions/blob/main/packages/sld-dom-expressions"
