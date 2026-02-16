@@ -1,298 +1,265 @@
-// WE use html5parser because it preservers case of tags and attributes
 import {
-    SyntaxKind,
-    parse as html5parse,
-    type INode,
-    type IText
-} from "html5parser";
+  AttributeToken,
+  CLOSE_TAG_TOKEN,
+  EQUALS_TOKEN,
+  EXPRESSION_TOKEN,
+  ExpressionToken,
+  IDENTIFIER_TOKEN,
+  OPEN_TAG_TOKEN,
+  QUOTE_CHAR_TOKEN,
+  SLASH_TOKEN,
+  SPREAD_TOKEN,
+  TEXT_TOKEN,
+  Token,
+} from "./tokenize";
+import { isComponentNode } from "./util";
 
-import { isNumber, isString } from "./util";
+// Node type constants
+export const ROOT_NODE = 0;
+export const ELEMENT_NODE = 1;
+export const COMPONENT_NODE = 2;
+export const TEXT_NODE = 3;
+export const EXPRESSION_NODE = 4;
 
+// Prop type constants
+export const BOOLEAN_PROP = 0;
+export const STATIC_PROP = 1;
+export const EXPRESSION_PROP = 2;
+export const SPREAD_PROP = 3;
+export const MIXED_PROP = 4;
 
-//AST Node types
+export type NodeType =
+  | typeof ROOT_NODE
+  | typeof ELEMENT_NODE
+  | typeof COMPONENT_NODE
+  | typeof TEXT_NODE
+  | typeof EXPRESSION_NODE;
+export type PropType =
+  | typeof BOOLEAN_PROP
+  | typeof STATIC_PROP
+  | typeof EXPRESSION_PROP
+  | typeof SPREAD_PROP
+  | typeof MIXED_PROP;
 
-//Non reactive text
-export const TEXT_NODE = 1;
-export type TextNode = {
-    type: typeof TEXT_NODE;
-    value: string;
-};
+export type ChildNode = ElementNode | TextNode | ExpressionNode | ComponentNode;
 
-//Non reactive Comment Node <!--value-->
-export const COMMENT_NODE = 2;
-export type CommentNode = {
-    type: typeof COMMENT_NODE;
-    value: string;
-};
-
-//Reactive Hole
-export const INSERT_NODE = 3;
-export type InsertNode = {
-    type: typeof INSERT_NODE;
-    value: number; //index of hole
-};
-
-//tag with lowercase first letter <div />
-export const ELEMENT_NODE = 4;
-export type ElementNode = {
-    type: typeof ELEMENT_NODE;
-    name: string;
-    props: Property[];
-    children: ChildNode[];
-};
-
-//Tag with capital first letter <Div />
-export const COMPONENT_NODE = 5;
-export type ComponentNode = {
-    type: typeof COMPONENT_NODE;
-    name: string;
-    props: Property[];
-    children: ChildNode[];
-    template?: HTMLTemplateElement
-};
-
-export const ROOT_NODE = 6;
-export type RootNode = {
-    type: typeof ROOT_NODE;
-    children: ChildNode[];
-    template?: HTMLTemplateElement
-};
-
-export type ChildNode =
-    | TextNode
-    | ComponentNode
-    | ElementNode
-    | InsertNode
-    | CommentNode;
-
-export type Property = BooleanProperty | StringProperty | DynamicProperty | MixedProperty | SpreadProperty | AnonymousProperty
-
-// <input disabled>
-export const BOOLEAN_PROPERTY = 1
-export type BooleanProperty = {
-    type: typeof BOOLEAN_PROPERTY
-    name: string,
+export interface RootNode {
+  type: typeof ROOT_NODE;
+  children: ChildNode[];
+  template?: HTMLTemplateElement;
 }
 
-// <input value="myString"> <input value='myString'> <input value=""> <input value=''>
-export const STRING_PROPERTY = 2
-export type StringProperty = {
-    type: typeof STRING_PROPERTY
-    name: string,
-    value: string
-    quote: '"' | "'"
+export interface ElementNode {
+  type: typeof ELEMENT_NODE;
+  name: string;
+  props: PropNode[];
+  children: ChildNode[];
 }
 
-// <input value=${}> <input value="${}""> <input value='${}'>
-export const DYNAMIC_PROPERTY = 3
-export type DynamicProperty = {
-    type: typeof DYNAMIC_PROPERTY
-    name: string,
-    value: number
+export interface ComponentNode {
+  type: typeof COMPONENT_NODE;
+  name: string;
+  props: PropNode[];
+  children: ChildNode[];
+  template?: HTMLTemplateElement;
 }
 
-// <input value=" ${}"> <input value="input-${}"> <input value='${"value1"} ${"value2"}'>
-export const MIXED_PROPERTY = 4
-export type MixedProperty = {
-    type: typeof MIXED_PROPERTY
-    name: string,
-    value: Array<string | number>
+export interface TextNode {
+  type: typeof TEXT_NODE;
+  value: string;
 }
 
-// <input ...${} />
-export const SPREAD_PROPERTY = 5
-export type SpreadProperty = {
-    type: typeof SPREAD_PROPERTY
-    value: number
+export interface ExpressionNode {
+  type: typeof EXPRESSION_NODE;
+  value: number;
 }
 
-// <input ${} />
-export const ANONYMOUS_PROPERTY = 6
-export type AnonymousProperty = {
-    type: typeof ANONYMOUS_PROPERTY
-    value: number
+export interface BooleanProp {
+  name: string;
+  type: typeof BOOLEAN_PROP;
+  value: boolean;
 }
 
-
-//Needs to be unique string that would never be in the template literal
-export const marker = "⧙⧘";
-
-//Captures index of hole
-export const match = new RegExp(`${marker}(\\d+)${marker}`, "g");
-
-/**
- * 
- * @param input jsx like string to parse
- * @returns RootNode of an AST
- */
-export function parse(input: TemplateStringsArray): RootNode {
-    const ast = html5parse(
-        input
-            .slice(1)
-            .reduce(
-                (prev, current, index) => prev + marker + index + marker + current,
-                input[0],
-            ),
-    );
-    return {
-        type: ROOT_NODE,
-        children: parseNodes(ast)
-    }
+export interface StaticProp {
+  name: string;
+  type: typeof STATIC_PROP;
+  value: string;
+  quote?: "'" | '"';
 }
 
-function parseNodes(nodes: INode[]) {
-    return nodes.flatMap(parseNode)
+export interface ExpressionProp {
+  name: string;
+  type: typeof EXPRESSION_PROP;
+  value: number;
+  quote?: "'" | '"';
 }
 
-//Parse html5parser result for what we care about
-function parseNode(
-    node: INode,
-): ChildNode | ChildNode[] {
-    //Text nodes are either static text or holes to insert in
-    if (node.type === SyntaxKind.Text) {
-        return node.value
-            .split(match).flatMap((value, index, array) => {
-                if (index % 2 === 1) {
-                    return {
-                        type: INSERT_NODE,
-                        value: Number(value)
-                    }
-                }
-                if (!value.trim()){
-                    return []
-                }
+export interface SpreadProp {
+  type: typeof SPREAD_PROP;
+  value: number;
+}
 
-                //We want to trim when only content in textnode is the hole or if textnode is empty
-                if (!value || (array.length === 3 && !value.trim())) {
-                    return []
-                }
+export interface MixedProp {
+  name: string;
+  type: typeof MIXED_PROP;
+  value: Array<string | number>;
+  quote?: "'" | '"';
+}
 
-                return {
-                    type: TEXT_NODE,
-                    value: trimTextNode(value),
-                }
-            });
-    }
+export type PropNode = BooleanProp | StaticProp | ExpressionProp | SpreadProp | MixedProp;
 
-    //html5parser represents comments as type tag with name "!" or ""
-    if (node.name[0] === "!" || node.name === "") {
-        return {
-            type: COMMENT_NODE,
-            value: (node.body as IText[]).map(v=>v.value).join(""),
-        } as CommentNode;
-    }
+export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
+  const root: RootNode = { type: ROOT_NODE, children: [] };
+  const stack: (RootNode | ElementNode | ComponentNode)[] = [root];
+  let pos = 0;
+  const len = tokens.length;
 
+  while (pos < len) {
+    const token = tokens[pos];
+    const parent = stack[stack.length - 1];
 
+    switch (token.type) {
+      case TEXT_TOKEN: {
+        // --- TEXT ---
+        const value = token.value;
+        if (value.trim() === "") {
+          const prevType = tokens[pos - 1]?.type;
+          const nextType = tokens[pos + 1]?.type;
+          // Filter out empty text nodes between tags
+          if (prevType === CLOSE_TAG_TOKEN || nextType === OPEN_TAG_TOKEN) {
+            pos++;
+            continue;
+          }
+        }
+        parent.children.push({ type: TEXT_NODE, value });
+        pos++;
+        continue;
+      }
 
-    const props = node.attributes.flatMap((v) => {
-        const nameParts = getParts(v.name.value);
+      case EXPRESSION_TOKEN: {
+        // --- EXPRESSION ---
+        parent.children.push({ type: EXPRESSION_NODE, value: token.value });
+        pos++;
+        continue;
+      }
 
-        if (nameParts.length === 1) {
-            const name = nameParts[0];
-            if (v.value === undefined) {
-                return {
-                    name,
-                    type: BOOLEAN_PROPERTY
-                }
+      case OPEN_TAG_TOKEN: {
+        // --- TAG ---
+        pos++; // Consume '<'
+        const nextToken = tokens[pos];
+
+        // Handle Closing Tag: </name>
+        if (nextToken.type === SLASH_TOKEN) {
+          pos++; // Consume '/'
+          const nameToken = tokens[pos];
+          if (
+            stack.length > 1 &&
+            nameToken?.type === IDENTIFIER_TOKEN &&
+            (stack[stack.length - 1] as ElementNode).name === nameToken.value
+          ) {
+            const node = stack.pop();
+            if (node?.type === ELEMENT_NODE && voidElements.has(node.name)) {
+              node.children = [];
+            }
+            pos += 2; // Consume 'name' and '>'
+            continue;
+          }
+          throw new Error("Mismatched closing tag.");
+        }
+
+        // Handle Opening Tag: <name ...>
+        if (nextToken.type === IDENTIFIER_TOKEN) {
+          const tagName = nextToken.value;
+          const node: ElementNode | ComponentNode = {
+            type: isComponentNode(tagName) ? COMPONENT_NODE : ELEMENT_NODE,
+            name: tagName,
+            props: [],
+            children: [],
+          };
+          parent.children.push(node);
+          pos++; // Consume tag name
+
+          // --- Attribute Parsing Loop ---
+          while (pos < len) {
+            const attrToken = tokens[pos];
+            if (attrToken.type === CLOSE_TAG_TOKEN || attrToken.type === SLASH_TOKEN) {
+              break; // End of attributes
             }
 
-            if (isNumber(name)) {
-                return {
-                    type: ANONYMOUS_PROPERTY,
-                    value: nameParts[1]
-                }
-            }
+            if (attrToken.type === SPREAD_TOKEN) {
+              const expr = tokens[pos + 1];
+              if (expr?.type === EXPRESSION_TOKEN) {
+                node.props.push({ type: SPREAD_PROP, value: expr.value });
+                pos += 2; // Consume '...' and expression
+              } else {
+                throw new Error("Spread operator must be followed by an expression.");
+              }
+            } else if (attrToken.type === IDENTIFIER_TOKEN) {
+              const name = attrToken.value;
+              const next = tokens[pos + 1];
 
-            const valueParts = getParts(v.value?.value);
+              if (next?.type === EQUALS_TOKEN) {
+                pos += 2; // Consume name and '='
+                const valToken = tokens[pos];
+                if (valToken.type === EXPRESSION_TOKEN) {
+                  node.props.push({ name, type: EXPRESSION_PROP, value: valToken.value });
+                  pos++;
+                } else if (valToken.type === QUOTE_CHAR_TOKEN) {
+                  const quote = valToken.value;
+                  pos++; // Consume opening quote
+                  const parts: (string | number)[] = [];
+                  while (pos < len && tokens[pos].type !== QUOTE_CHAR_TOKEN) {
+                    const part = tokens[pos++] as ExpressionToken | AttributeToken;
+                    if (part.value !== "") parts.push(part.value);
+                  }
+                  pos++; // Consume closing quote
 
-            if (valueParts.length === 0) {
-                return {
-                    name,
-                    type: BOOLEAN_PROPERTY
+                  if (parts.length === 0) {
+                    node.props.push({ name, type: STATIC_PROP, value: "", quote });
+                  } else if (parts.length === 1) {
+                    const v = parts[0];
+                    node.props.push({
+                      name,
+                      type: typeof v === "string" ? STATIC_PROP : EXPRESSION_PROP,
+                      value: v as any,
+                      quote,
+                    });
+                  } else {
+                    node.props.push({ name, type: MIXED_PROP, value: parts, quote });
+                  }
                 }
-            } else if (valueParts.length === 1) {
-                const value = valueParts[0]
-                if (isNumber(value)) {
-                    return {
-                        type: DYNAMIC_PROPERTY,
-                        name,
-                        value,
-                    }
-                } else {
-                    return {
-                        type: STRING_PROPERTY,
-                        name,
-                        value,
-                        quote: v.value!.quote
-                    }
-                }
+              } else {
+                // Boolean prop
+                node.props.push({ type: BOOLEAN_PROP, name, value: true });
+                pos++;
+              }
             } else {
-                return {
-                    type: MIXED_PROPERTY,
-                    name,
-                    value: valueParts,
-                }
+              throw new Error("Invalid attribute.");
             }
+          }
+
+          // --- Tag Closing Logic ---
+          const endToken = tokens[pos];
+          if (endToken.type === SLASH_TOKEN) {
+            // Self-closing: <div/>
+            pos += 2; // Consume '/' and '>'
+          } else if (endToken.type === CLOSE_TAG_TOKEN) {
+            // Opening: <div>
+            pos++; // Consume '>'
+            stack.push(node);
+          }
+          continue;
         }
+      }
 
-        //name is mixed static and dynamic. We only look for ...${}
-        if (nameParts[0] === "...") {
-            return {
-                type: SPREAD_PROPERTY,
-                value: nameParts[1]
-            }
-        }
+      default:
+        throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+    }
+  }
 
-        return []
-    }) as Property[];
+  if (stack.length > 1) {
+    throw new Error("Unclosed tag found.");
+  }
 
-    const children = node.body?.flatMap(parseNode) ?? [];
-    const name = node.rawName as string;
-
-    return {
-        type: /^[A-Z]/.test(name) ? COMPONENT_NODE : ELEMENT_NODE,
-        name,
-        props,
-        children,
-    };
-}
-
-// Splits a string into static parts and hole indexes
-function getParts(value: string = ""): Array<string | number> {
-    return value
-        .split(match)
-        .map((v, i) => (i % 2 === 1 ? parseInt(v) : v))
-        .filter((v) => isNumber(v) || v !== "");
-}
-
-//From Pota. How JSX trims text nodes
-function trimTextNode(value: string) {
-	const lines = value.split(/\r\n|\n|\r/)
-	let lastNonEmptyLine = 0
-	for (let i = 0; i < lines.length; i++) {
-		if (/[^ \t]/.exec(lines[i])) {
-			lastNonEmptyLine = i
-		}
-	}
-	let str = ''
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i]
-		const isFirstLine = i === 0
-		const isLastLine = i === lines.length - 1
-		const isLastNonEmptyLine = i === lastNonEmptyLine
-		let trimmedLine = line.replace(/\t/g, ' ')
-		if (!isFirstLine) {
-			trimmedLine = trimmedLine.replace(/^ +/, '')
-		}
-		if (!isLastLine) {
-			trimmedLine = trimmedLine.replace(/ +$/, '')
-		}
-		if (trimmedLine) {
-			if (!isLastNonEmptyLine) {
-				trimmedLine += ' '
-			}
-			str += trimmedLine
-		}
-	}
-	return str
-}
+  return root;
+};

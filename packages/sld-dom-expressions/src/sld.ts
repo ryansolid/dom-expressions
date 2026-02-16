@@ -1,189 +1,233 @@
 import {
-  ANONYMOUS_PROPERTY,
-  BOOLEAN_PROPERTY,
-  COMMENT_NODE,
+  BOOLEAN_PROP,
   COMPONENT_NODE,
   ChildNode,
   ComponentNode,
-  DYNAMIC_PROPERTY,
   ELEMENT_NODE,
+  EXPRESSION_NODE,
+  EXPRESSION_PROP,
   ElementNode,
-  INSERT_NODE,
-  MIXED_PROPERTY,
+  MIXED_PROP,
   ROOT_NODE,
   RootNode,
-  SPREAD_PROPERTY,
-  STRING_PROPERTY,
+  SPREAD_PROP,
+  STATIC_PROP,
   TEXT_NODE,
   parse
 } from "./parse";
-import { buildTemplate } from "./template";
-import { ComponentRegistry, Runtime, SLDInstance } from "./types";
-import {
-  flat,
-  getValue,
-  isFunction,
-  isNumber,
-  isObject,
-  toArray
-} from "./util";
+import { tokenize } from "./tokenize";
+import { ComponentRegistry, SLDInstance, Runtime } from "./types";
+import { flat, getValue } from "./util";
+import { type JSX } from "../../dom-expressions/src/jsx";
 
 export function createSLDRuntime(r: Runtime) {
   const cache = new WeakMap<TemplateStringsArray, RootNode>();
 
   //Walk over text, comment, and element nodes
-  const walker = document.createTreeWalker(document, 133);
+  const walker = document.createTreeWalker(document, 129);
 
+  const createElement = (name: string) => {
+    return r.SVGElements.has(name)
+      ? document.createElementNS("http://www.w3.org/2000/svg", name)
+      : r.mathmlElements.has(name)
+      ? document.createElementNS("http://www.w3.org/1998/Math/MathML", name)
+      : document.createElement(name);
+  };
 
-  const createComment = (data: string) => document.createComment(data);
-
-  function createElement(tag: string) {
-    return r.SVGElements.has(tag)
-      ? document.createElementNS("http://www.w3.org/2000/svg", tag)
-      : document.createElement(tag);
-  }
-
-  return createSLD;
-
-  function createSLD<T extends ComponentRegistry>(components: T): SLDInstance<T> {
-    function sld(strings: TemplateStringsArray, ...values: any[]) {
+  //Factory function to create new SLD instances.
+  const createSLD = <T extends ComponentRegistry>(components: T): SLDInstance<T> => {
+    const sld = (strings: TemplateStringsArray, ...values: any[]) => {
       const root = getCachedRoot(strings);
 
       return renderChildren(root, values, components);
-    }
+    };
     sld.components = components;
     sld.sld = sld;
-    sld.define = function define<TNew extends ComponentRegistry>(newComponents: TNew) {
+    sld.define = <TNew extends ComponentRegistry>(newComponents: TNew) => {
       return createSLD({ ...components, ...newComponents });
     };
 
     return sld as SLDInstance<T>;
-  }
+  };
 
-  function getCachedRoot(strings: TemplateStringsArray): RootNode {
+  const getCachedRoot = (strings: TemplateStringsArray): RootNode => {
     let root = cache.get(strings);
     if (!root) {
-      root = parse(strings);
+      root = parse(tokenize(strings, r.rawTextElements), r.voidElements);
       buildTemplate(root);
       cache.set(strings, root);
-      // console.log(root)
     }
     return root;
-  }
+  };
 
-  function renderNode(node: ChildNode, values: any[], components: ComponentRegistry): any {
+  //build template element with same exact shape as tree so they can be walked through in sync
+  const buildTemplate = (node: RootNode | ChildNode): void => {
+    if (node.type === ROOT_NODE || node.type === COMPONENT_NODE) {
+      //Criteria for using template is component or root has at least 1 element. May be be a more optimal condition.
+      if (node.children.some(v => v.type === ELEMENT_NODE)) {
+        const template = document.createElement("template");
+        template.content.append(...node.children.map(buildNodes));
+        // buildNodes(node.children, template.content);
+        // template.innerHTML = node.children.map(buildHTML).join("");
+        node.template = template;
+      }
+      node.children.forEach(buildTemplate);
+    } else if (node.type === ELEMENT_NODE) {
+      node.children.forEach(buildTemplate);
+    }
+  };
+
+  const textTemplate = document.createElement("template");
+
+  const buildNodes = (node: ChildNode): Node => {
+    switch (node.type) {
+      case TEXT_NODE:
+        textTemplate.innerHTML = node.value;
+        return document.createTextNode(textTemplate.content.textContent ?? "");
+      case EXPRESSION_NODE:
+        return document.createComment("+");
+      case COMPONENT_NODE:
+        return document.createComment(node.name);
+      case ELEMENT_NODE:
+        let hasSpread = false;
+
+        const elem = createElement(node.name);
+        //props located after spread need to be applied after spread for possible overrides
+        node.props = node.props.filter(prop => {
+          if (prop.type === STATIC_PROP) {
+            if (prop.name.startsWith("prop:")) return true;
+            const name = prop.name.startsWith("attr:") ? prop.name.slice(5) : prop.name;
+            elem.setAttribute(name, prop.value);
+            return hasSpread;
+          } else if (prop.type === BOOLEAN_PROP) {
+            // attributeHTML += ` ${prop.name}`;
+            elem.setAttribute(prop.name, "");
+            return hasSpread;
+          } else if (prop.type === SPREAD_PROP) {
+            hasSpread = true;
+            return hasSpread;
+          }
+          return true;
+        });
+        elem.append(...node.children.map(buildNodes));
+
+        return elem;
+    }
+  };
+
+  const renderNode = (node: ChildNode, values: any[], components: ComponentRegistry): any => {
     switch (node.type) {
       case TEXT_NODE:
         return node.value;
-      case INSERT_NODE:
+      case EXPRESSION_NODE:
         return values[node.value];
-      case COMMENT_NODE:
-        return createComment(node.value);
-      case ELEMENT_NODE:
-        const element = createElement(node.name);
-        r.spread(
-          element,
-          gatherProps(node, values, components),
-          r.SVGElements.has(node.name),
-          true
-        );
-        return element;
       case COMPONENT_NODE:
         const component = components[node.name];
-        if (!component) throw new Error(`${node.name} is not defined`);
-        return r.createComponent(component, gatherProps(node, values, components));
-    }
-  }
+        if (component) {
+          return r.createComponent(component, gatherProps(node, values, components));
+        } else {
+          throw new Error(`Component "${node.name}" not found in registry`);
+        }
+      case ELEMENT_NODE:
+        let name = node.name;
 
-  function renderChildren(
-    node: ComponentNode | RootNode | ElementNode,
+        const isSvg = r.SVGElements.has(name);
+        // 3. Standard HTML Element (node.name is guaranteed string here)
+        const element = createElement(name);
+        const props = gatherProps(node, values, components);
+
+        r.spread(element, props, isSvg, true);
+
+        return element;
+    }
+  };
+
+  const renderChildren = (
+    node: RootNode | ComponentNode,
     values: any[],
     components: ComponentRegistry
-  ): Node[] | Node | string | number | boolean | null | undefined {
-    const template = (node.type === ROOT_NODE || node.type === COMPONENT_NODE) && node.template;
-    if (!template) {
+  ): JSX.Element => {
+    if (!node.template) {
       return flat(node.children.map(n => renderNode(n, values, components)));
     }
 
-    const clone = template.content.cloneNode(true);
+    const clone = node.template.content.cloneNode(true);
     walker.currentNode = clone;
-    walkNodes(node.children);
-    
 
-    function walkNodes(nodes: ChildNode[]) {
+    const walkNodes = (nodes: ChildNode[]) => {
       for (const node of nodes) {
-        const domNode = walker.nextNode()!;
-
-        
-        if (node.type === ELEMENT_NODE) {
-          if (node.props.length) {
-            //Assigning props to element via assign prop w/effect may be better for performance.
-            const props = gatherProps(node, values, components);
-            r.spread(domNode as Element, props, r.SVGElements.has(node.name), true);
+        if (
+          node.type === ELEMENT_NODE ||
+          node.type === EXPRESSION_NODE ||
+          node.type === COMPONENT_NODE
+        ) {
+          const domNode = walker.nextNode()!;
+          if (node.type === EXPRESSION_NODE || node.type === COMPONENT_NODE) {
+            r.insert(domNode.parentNode!, renderNode(node, values, components), domNode);
+            walker.currentNode = domNode;
+          } else {
+            // Standard Element path...
+            if (node.props.length) {
+              const props = gatherProps(node, values, components);
+              r.spread(domNode as Element, props, r.SVGElements.has(node.name as string), true);
+            }
+            walkNodes(node.children);
           }
-
-          walkNodes(node.children);
-        } else if (node.type === INSERT_NODE || node.type === COMPONENT_NODE) {
-          const parent = domNode.parentNode;
-          if (!parent) console.log(domNode,node);
-          r.insert(domNode.parentNode!, renderNode(node, values, components), domNode);
-          walker.currentNode = domNode;
         }
       }
-    }
-    return toArray(clone.childNodes);
-  }
+    };
+    walkNodes(node.children);
+    return Array.from(clone.childNodes);
+  };
 
-  function gatherProps(
+  const gatherProps = (
     node: ElementNode | ComponentNode,
     values: any[],
     components: ComponentRegistry,
     props: Record<string, any> = {}
-  ) {
-    const spreads = []
-
+  ) => {
     for (const prop of node.props) {
       switch (prop.type) {
-        case BOOLEAN_PROPERTY:
+        case BOOLEAN_PROP:
           props[prop.name] = true;
           break;
-        case STRING_PROPERTY:
+        case STATIC_PROP:
           props[prop.name] = prop.value;
           break;
-        case DYNAMIC_PROPERTY:
+        case EXPRESSION_PROP:
           applyGetter(props, prop.name, values[prop.value]);
           break;
-        case MIXED_PROPERTY:
-          const value = () => prop.value.map(v => (isNumber(v) ? getValue(values[v]) : v)).join("");
+        case MIXED_PROP:
+          const value = () =>
+            prop.value.map(v => (typeof v === "number" ? getValue(values[v]) : v)).join("");
           applyGetter(props, prop.name, value);
           break;
-        case SPREAD_PROPERTY:
-          spreads.push(values[prop.value]);
-          break;
-        case ANONYMOUS_PROPERTY:
-          props.ref = values[prop.value];
+        case SPREAD_PROP:
+          const spread = values[prop.value];
+          if (!spread || typeof spread !== "object") throw new Error("Can only spread objects");
+          props = r.mergeProps(props, spread);
           break;
       }
     }
 
     // children - childNodes overwrites any props.children
-    if (node.children.length) {
+    if (node.type === COMPONENT_NODE && node.children.length) {
       Object.defineProperty(props, "children", {
         get() {
           return renderChildren(node, values, components);
-        },
-        enumerable: true
+        }
       });
     }
-
-    if (spreads.length) {
-      return r.mergeProps(props,...spreads);
-    }
     return props;
-  }
+  };
 
-  function applyGetter(props: Record<string, any>, name: string, value: any) {
-    if (isFunction(value) && value.length === 0 && name !== "ref" && !name.startsWith("on")) {
+  const applyGetter = (props: Record<string, any>, name: string, value: any) => {
+    if (
+      typeof value === "function" &&
+      value.length === 0 &&
+      name !== "ref" &&
+      !name.startsWith("on")
+    ) {
       Object.defineProperty(props, name, {
         get() {
           return value();
@@ -193,5 +237,7 @@ export function createSLDRuntime(r: Runtime) {
     } else {
       props[name] = value;
     }
-  }
+  };
+
+  return createSLD;
 }

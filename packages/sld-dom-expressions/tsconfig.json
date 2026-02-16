@@ -1,13 +1,16 @@
 {
   "compilerOptions": {
-    "outDir": "types",
-    "emitDeclarationOnly": true,
-    "declaration": true,
     "target": "esnext",
-    "moduleResolution": "node",
-    "strict": true,
+    "module": "esnext",
+    "declaration": true,
+    "outDir": "dist",
+    "moduleResolution": "Node",
     "esModuleInterop": true,
-    "lib": ["es2019", "DOM"],
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "baseUrl": ".",
   },
-  "include": ["src"]
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"]
 }

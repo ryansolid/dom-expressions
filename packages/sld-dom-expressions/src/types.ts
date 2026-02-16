@@ -1,5 +1,14 @@
+import {type JSX} from "../../dom-expressions/src/jsx"
 
-export type FunctionComponent = (...args: any[]) => any
+export type MaybeFunction<T> = T | (() => T);
+export type MaybeFunctionProps<T> = {
+  [K in keyof T]: K extends `on${string}` | "ref" ? T[K] : MaybeFunction<T[K]>;
+};
+export type IntrinsicElementsMaybeFunction = {
+  [K in keyof JSX.IntrinsicElements]: MaybeFunctionProps<JSX.IntrinsicElements[K]>;
+};
+
+export type FunctionComponent = (...args: any[]) => JSX.Element;
 /**
  * Component registry type
  * @example
@@ -23,7 +32,7 @@ export type SLDInstance<T extends ComponentRegistry> = {
    * const myTemplate = sld`<div>Hello World</div>`
    * ```
    */
-  (strings: TemplateStringsArray, ...values: any[]): Node[];
+  (strings: TemplateStringsArray, ...values: any[]): JSX.Element;
 
   /**
    * Self reference to SLD instance for tooling
@@ -53,6 +62,10 @@ export type SLDInstance<T extends ComponentRegistry> = {
    */
   components: T;
 
+  /**
+   * For types for tools only. Not used at runtime.
+   */
+  // elements: JSX.IntrinsicElements;
 };
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
@@ -65,4 +78,7 @@ export interface Runtime {
   createComponent(Comp: (props: any) => any, props: any): any;
   mergeProps(...sources: unknown[]): Record<string, any>;
   SVGElements: Set<string>;
+  voidElements: Set<string>;
+  rawTextElements: Set<string>;
+  mathmlElements:Set<string>
 }

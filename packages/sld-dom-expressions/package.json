@@ -4,23 +4,30 @@
   "version": "0.41.0-next.0",
   "author": "Daniel Kling",
   "license": "MIT",
-  "author": "Daniel Kling danielrkling@gmail.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/ryansolid/dom-expressions/blob/main/packages/sld-dom-expressions"
   },
-  "main": "lib/sld-dom-expressions.js",
-  "module": "dist/sld-dom-expressions.js",
-  "types": "types/index.d.ts",
-  "sideEffects": false,
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "typings": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
   "scripts": {
-    "build": "rollup -c --bundleConfigAsCjs && tsc",
-    "test": "pnpm run build && jest",
-    "test:coverage": "pnpm run build && jest --coverage",
-    "prepare": "pnpm run build"
+    "build": "tsdown src/index.ts --format esm --minify",
+    "test": "vitest",
+    "prepare": "npm run build"
   },
   "devDependencies": {
-    "dom-expressions": "^0.41.0-next.0",
-    "html5parser": "^2.0.2"
+    "@vitest/browser-playwright": "^4.0.18",
+    "@vitest/browser-preview": "^4.0.18",
+    "tsdown": "^0.14.1",
+    "vitest": "^4.0.18",
+    "dom-expressions": "^0.41.0-next.0"
   }
 }
