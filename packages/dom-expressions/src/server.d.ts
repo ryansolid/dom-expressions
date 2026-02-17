@@ -78,13 +78,6 @@ export function untrack<T>(fn: () => T): T;
 // client-only APIs
 
 /** @deprecated not supported on the server side */
-export function classList(
-  node: Element,
-  value: { [k: string]: boolean },
-  prev?: { [k: string]: boolean }
-): { [k: string]: boolean };
-
-/** @deprecated not supported on the server side */
 export function style(
   node: Element,
   value: { [k: string]: string },

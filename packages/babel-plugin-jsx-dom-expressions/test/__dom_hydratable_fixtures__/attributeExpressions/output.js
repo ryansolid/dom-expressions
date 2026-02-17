@@ -28,43 +28,44 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$11 = /*#__PURE__*/ _$template(`<button type=button>Write`),
   _tmpl$12 = /*#__PURE__*/ _$template(`<button class="a b c">Hi`),
   _tmpl$13 = /*#__PURE__*/ _$template(`<div><input readonly><input>`),
-  _tmpl$14 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
-  _tmpl$15 = /*#__PURE__*/ _$template(`<a>`),
-  _tmpl$16 = /*#__PURE__*/ _$template(`<div><!$><!/><a>`),
-  _tmpl$17 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
-  _tmpl$19 = /*#__PURE__*/ _$template(
+  _tmpl$14 = /*#__PURE__*/ _$template(`<div style=c:static>`),
+  _tmpl$15 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
+  _tmpl$16 = /*#__PURE__*/ _$template(`<a>`),
+  _tmpl$17 = /*#__PURE__*/ _$template(`<div><!$><!/><a>`),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
+  _tmpl$19 = /*#__PURE__*/ _$template(`<label><span>Input is <!$><!/></span><input><div>`),
+  _tmpl$20 = /*#__PURE__*/ _$template(
     `<div class="class1 class2 class3 class4 class5 class6"random="random1 random2\n    random3 random4"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px">`
   ),
-  _tmpl$20 = /*#__PURE__*/ _$template(`<button>`),
-  _tmpl$21 = /*#__PURE__*/ _$template(`<input value=10>`),
-  _tmpl$22 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
-  _tmpl$23 = /*#__PURE__*/ _$template(`<img src>`),
-  _tmpl$24 = /*#__PURE__*/ _$template(`<div><img src>`),
-  _tmpl$25 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
-  _tmpl$26 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
-  _tmpl$27 = /*#__PURE__*/ _$template(`<iframe src>`),
-  _tmpl$28 = /*#__PURE__*/ _$template(`<div><iframe src>`),
-  _tmpl$29 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
-  _tmpl$30 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
-  _tmpl$31 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
-  _tmpl$32 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
-  _tmpl$33 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
-  _tmpl$34 = /*#__PURE__*/ _$template(`<div true>`),
-  _tmpl$35 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`),
-  _tmpl$36 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
-  _tmpl$37 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true),
-  _tmpl$38 = /*#__PURE__*/ _$template(`<div style=background:red>`),
-  _tmpl$39 = /*#__PURE__*/ _$template(
+  _tmpl$21 = /*#__PURE__*/ _$template(`<button>`),
+  _tmpl$22 = /*#__PURE__*/ _$template(`<input value=10>`),
+  _tmpl$23 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
+  _tmpl$24 = /*#__PURE__*/ _$template(`<img src>`),
+  _tmpl$25 = /*#__PURE__*/ _$template(`<div><img src>`),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
+  _tmpl$28 = /*#__PURE__*/ _$template(`<iframe src>`),
+  _tmpl$29 = /*#__PURE__*/ _$template(`<div><iframe src>`),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
+  _tmpl$31 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
+  _tmpl$32 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
+  _tmpl$33 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
+  _tmpl$34 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
+  _tmpl$35 = /*#__PURE__*/ _$template(`<div true>`),
+  _tmpl$36 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`),
+  _tmpl$37 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
+  _tmpl$38 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true),
+  _tmpl$39 = /*#__PURE__*/ _$template(`<div style=background:red>`),
+  _tmpl$40 = /*#__PURE__*/ _$template(
     `<div style=background:red;color:green;margin:3;padding:0.4>`
   ),
-  _tmpl$40 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`),
-  _tmpl$41 = /*#__PURE__*/ _$template(`<video>`),
-  _tmpl$42 = /*#__PURE__*/ _$template(`<video playsinline>`),
-  _tmpl$43 = /*#__PURE__*/ _$template(`<video poster=1.jpg>`),
-  _tmpl$44 = /*#__PURE__*/ _$template(`<div><video poster=1.jpg>`),
-  _tmpl$45 = /*#__PURE__*/ _$template(`<div><video>`),
-  _tmpl$46 = /*#__PURE__*/ _$template(`<button type=button>`);
+  _tmpl$41 = /*#__PURE__*/ _$template(`<div style=background:red;color:green>`),
+  _tmpl$42 = /*#__PURE__*/ _$template(`<video>`),
+  _tmpl$43 = /*#__PURE__*/ _$template(`<video playsinline>`),
+  _tmpl$44 = /*#__PURE__*/ _$template(`<video poster=1.jpg>`),
+  _tmpl$45 = /*#__PURE__*/ _$template(`<div><video poster=1.jpg>`),
+  _tmpl$46 = /*#__PURE__*/ _$template(`<div><video>`),
+  _tmpl$47 = /*#__PURE__*/ _$template(`<button type=button>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -330,10 +331,9 @@ const template20 = (() => {
   return _el$26;
 })();
 const template21 = (() => {
-  var _el$29 = _$getNextElement(_tmpl$4);
+  var _el$29 = _$getNextElement(_tmpl$14);
   _$effect(
     () => ({
-      a: "static",
       ...rest
     }),
     (_v$, _$p) => {
@@ -342,7 +342,7 @@ const template21 = (() => {
   );
   return _el$29;
 })();
-const template22 = _$getNextElement(_tmpl$14);
+const template22 = _$getNextElement(_tmpl$15);
 const template23 = (() => {
   var _el$31 = _$getNextElement(_tmpl$4);
   _$insert(_el$31, () => "t" in test && "true");
@@ -355,7 +355,7 @@ const template23 = (() => {
   return _el$31;
 })();
 const template24 = (() => {
-  var _el$32 = _$getNextElement(_tmpl$15);
+  var _el$32 = _$getNextElement(_tmpl$16);
   _$spread(
     _el$32,
     _$mergeProps(props, {
@@ -368,7 +368,7 @@ const template24 = (() => {
   return _el$32;
 })();
 const template25 = (() => {
-  var _el$33 = _$getNextElement(_tmpl$16),
+  var _el$33 = _$getNextElement(_tmpl$17),
     _el$35 = _el$33.firstChild,
     [_el$36, _co$] = _$getNextMarker(_el$35.nextSibling),
     _el$34 = _el$36.nextSibling;
@@ -385,14 +385,14 @@ const template25 = (() => {
   return _el$33;
 })();
 const template26 = (() => {
-  var _el$37 = _$getNextElement(_tmpl$17);
+  var _el$37 = _$getNextElement(_tmpl$18);
   _$setAttribute(_el$37, "middle", middle);
   _$spread(_el$37, spread, false, true);
   _$runHydrationEvents();
   return _el$37;
 })();
 const template27 = (() => {
-  var _el$38 = _$getNextElement(_tmpl$17);
+  var _el$38 = _$getNextElement(_tmpl$18);
   _$spread(
     _el$38,
     _$mergeProps(
@@ -409,7 +409,7 @@ const template27 = (() => {
   return _el$38;
 })();
 const template28 = (() => {
-  var _el$39 = _$getNextElement(_tmpl$18),
+  var _el$39 = _$getNextElement(_tmpl$19),
     _el$40 = _el$39.firstChild,
     _el$41 = _el$40.firstChild,
     _el$42 = _el$41.nextSibling,
@@ -430,7 +430,7 @@ const template29 = (() => {
   _$insert(_el$46, !!someValue);
   return _el$46;
 })();
-const template30 = _$getNextElement(_tmpl$19);
+const template30 = _$getNextElement(_tmpl$20);
 const template31 = (() => {
   var _el$48 = _$getNextElement(_tmpl$4);
   _$effect(
@@ -444,7 +444,7 @@ const template31 = (() => {
 const template32 = _$getNextElement(_tmpl$4);
 const template33 = [
   (() => {
-    var _el$50 = _$getNextElement(_tmpl$20);
+    var _el$50 = _$getNextElement(_tmpl$21);
     _$effect(
       () => styles.button,
       (_v$, _$p) => {
@@ -454,7 +454,7 @@ const template33 = [
     return _el$50;
   })(),
   (() => {
-    var _el$51 = _$getNextElement(_tmpl$20);
+    var _el$51 = _$getNextElement(_tmpl$21);
     _$effect(
       () => styles["foo--bar"],
       (_v$, _$p) => {
@@ -464,7 +464,7 @@ const template33 = [
     return _el$51;
   })(),
   (() => {
-    var _el$52 = _$getNextElement(_tmpl$20);
+    var _el$52 = _$getNextElement(_tmpl$21);
     _$effect(
       () => styles.foo.bar,
       (_v$, _$p) => {
@@ -474,7 +474,7 @@ const template33 = [
     return _el$52;
   })(),
   (() => {
-    var _el$53 = _$getNextElement(_tmpl$20);
+    var _el$53 = _$getNextElement(_tmpl$21);
     _$effect(
       () => styles[foo()],
       (_v$, _$p) => {
@@ -516,7 +516,7 @@ const template38 = (() => {
   typeof _ref$7 === "function" && _$use(_ref$7, _el$58);
   return _el$58;
 })();
-const template39 = _$getNextElement(_tmpl$21);
+const template39 = _$getNextElement(_tmpl$22);
 const template40 = (() => {
   var _el$60 = _$getNextElement(_tmpl$4);
   _$effect(a, _v$ => {
@@ -525,7 +525,7 @@ const template40 = (() => {
   return _el$60;
 })();
 const template41 = (() => {
-  var _el$61 = _$getNextElement(_tmpl$22),
+  var _el$61 = _$getNextElement(_tmpl$23),
     _el$62 = _el$61.firstChild,
     _el$63 = _el$62.nextSibling;
   _$effect(
@@ -548,15 +548,15 @@ const template41 = (() => {
   );
   return _el$61;
 })();
-const template42 = _$getNextElement(_tmpl$23);
-const template43 = _$getNextElement(_tmpl$24);
-const template44 = _$getNextElement(_tmpl$25);
-const template45 = _$getNextElement(_tmpl$26);
-const template46 = _$getNextElement(_tmpl$27);
-const template47 = _$getNextElement(_tmpl$28);
-const template48 = _$getNextElement(_tmpl$29);
-const template49 = _$getNextElement(_tmpl$30);
-const template50 = _$getNextElement(_tmpl$31);
+const template42 = _$getNextElement(_tmpl$24);
+const template43 = _$getNextElement(_tmpl$25);
+const template44 = _$getNextElement(_tmpl$26);
+const template45 = _$getNextElement(_tmpl$27);
+const template46 = _$getNextElement(_tmpl$28);
+const template47 = _$getNextElement(_tmpl$29);
+const template48 = _$getNextElement(_tmpl$30);
+const template49 = _$getNextElement(_tmpl$31);
+const template50 = _$getNextElement(_tmpl$32);
 const template51 = (() => {
   var _el$73 = _$getNextElement(_tmpl$4);
   _$use(binding, _el$73);
@@ -585,41 +585,41 @@ const template55 = (() => {
   typeof _ref$10 === "function" ? _$use(_ref$10, _el$77) : (refUnknown = _el$77);
   return _el$77;
 })();
-const template56 = _$getNextElement(_tmpl$32);
-const template57 = _$getNextElement(_tmpl$33);
+const template56 = _$getNextElement(_tmpl$33);
+const template57 = _$getNextElement(_tmpl$34);
 const template58 = (() => {
   var _el$80 = _$getNextElement(_tmpl$4);
   _el$80.true = true;
   _el$80.false = false;
   return _el$80;
 })();
-const template59 = _$getNextElement(_tmpl$34);
+const template59 = _$getNextElement(_tmpl$35);
 const template60 = (() => {
-  var _el$82 = _$getNextElement(_tmpl$35);
+  var _el$82 = _$getNextElement(_tmpl$36);
   _$setAttribute(_el$82, "i", undefined);
   _$setAttribute(_el$82, "j", null);
   _$setAttribute(_el$82, "k", void 0);
   return _el$82;
 })();
-const template61 = _$getNextElement(_tmpl$36);
-const template62 = _$getNextElement(_tmpl$37);
-const template63 = _$getNextElement(_tmpl$38);
-const template64 = _$getNextElement(_tmpl$39);
-const template65 = _$getNextElement(_tmpl$40);
+const template61 = _$getNextElement(_tmpl$37);
+const template62 = _$getNextElement(_tmpl$38);
+const template63 = _$getNextElement(_tmpl$39);
+const template64 = _$getNextElement(_tmpl$40);
+const template65 = _$getNextElement(_tmpl$41);
 const template66 = (() => {
-  var _el$88 = _$getNextElement(_tmpl$40);
+  var _el$88 = _$getNextElement(_tmpl$41);
   _$effect(signal, _v$ => {
     _$setStyleProperty(_el$88, "border", _v$);
   });
   return _el$88;
 })();
 const template67 = (() => {
-  var _el$89 = _$getNextElement(_tmpl$40);
+  var _el$89 = _$getNextElement(_tmpl$41);
   _$setStyleProperty(_el$89, "border", somevalue);
   return _el$89;
 })();
 const template68 = (() => {
-  var _el$90 = _$getNextElement(_tmpl$40);
+  var _el$90 = _$getNextElement(_tmpl$41);
   _$effect(
     () => some.access,
     _v$ => {
@@ -628,23 +628,23 @@ const template68 = (() => {
   );
   return _el$90;
 })();
-const template69 = _$getNextElement(_tmpl$40);
+const template69 = _$getNextElement(_tmpl$41);
 const template70 = (() => {
-  var _el$92 = _$getNextElement(_tmpl$41);
+  var _el$92 = _$getNextElement(_tmpl$42);
   _$setAttribute(_el$92, "playsinline", value);
   return _el$92;
 })();
-const template71 = _$getNextElement(_tmpl$42);
-const template72 = _$getNextElement(_tmpl$41);
-const template73 = _$getNextElement(_tmpl$43);
-const template74 = _$getNextElement(_tmpl$44);
+const template71 = _$getNextElement(_tmpl$43);
+const template72 = _$getNextElement(_tmpl$42);
+const template73 = _$getNextElement(_tmpl$44);
+const template74 = _$getNextElement(_tmpl$45);
 const template75 = (() => {
-  var _el$97 = _$getNextElement(_tmpl$41);
+  var _el$97 = _$getNextElement(_tmpl$42);
   _el$97.poster = "1.jpg";
   return _el$97;
 })();
 const template76 = (() => {
-  var _el$98 = _$getNextElement(_tmpl$45),
+  var _el$98 = _$getNextElement(_tmpl$46),
     _el$99 = _el$98.firstChild;
   _el$99.poster = "1.jpg";
   return _el$98;
@@ -801,7 +801,7 @@ const style = {
   border: "solid black " + count() + "px"
 };
 const template87 = (() => {
-  var _el$110 = _$getNextElement(_tmpl$46);
+  var _el$110 = _$getNextElement(_tmpl$47);
   _$insert(_el$110, count);
   _$effect(
     () => ({
@@ -823,7 +823,7 @@ const template87 = (() => {
   return _el$110;
 })();
 const template88 = (() => {
-  var _el$111 = _$getNextElement(_tmpl$46);
+  var _el$111 = _$getNextElement(_tmpl$47);
   _$style(_el$111, style);
   _$className(_el$111, style);
   _$insert(_el$111, count);

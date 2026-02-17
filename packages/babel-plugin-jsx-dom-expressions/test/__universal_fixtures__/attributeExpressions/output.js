@@ -42,11 +42,14 @@ const template = (() => {
           "margin-right": "40px"
         };
       },
-      get classList() {
-        return {
-          dynamic: dynamic(),
-          selected: true
-        };
+      get ["class"]() {
+        return [
+          "base",
+          {
+            dynamic: dynamic(),
+            selected
+          }
+        ];
       }
     }),
     true
@@ -98,8 +101,7 @@ const template3 = (() => {
 })();
 const template4 = (() => {
   var _el$10 = _$createElement("div");
-  _$setProp(_el$10, "class", "hi");
-  _$setProp(_el$10, "classList", {
+  _$setProp(_el$10, "class", {
     "ccc:ddd": true
   });
   _$effect(
@@ -205,17 +207,19 @@ const template15 = (() => {
 const template16 = (() => {
   var _el$23 = _$createElement("button");
   _$insertNode(_el$23, _$createTextNode(`Write`));
-  _$setProp(_el$23, "class", "static");
-  _$setProp(_el$23, "classList", {
-    hi: "k"
-  });
+  _$setProp(_el$23, "class", [
+    "static",
+    {
+      hi: "k"
+    }
+  ]);
   _$setProp(_el$23, "type", "button");
   return _el$23;
 })();
 const template17 = (() => {
   var _el$25 = _$createElement("button");
   _$insertNode(_el$25, _$createTextNode(`Hi`));
-  _$setProp(_el$25, "classList", {
+  _$setProp(_el$25, "class", {
     a: true,
     b: true,
     c: true

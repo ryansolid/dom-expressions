@@ -325,3 +325,39 @@ const template88 = (
     {count()}
   </button>
 );
+
+// Style edge cases from main
+{
+  <div
+    style={{
+      "padding-left": `clamp(${1+1}px, ${1+1}px, ${1+1}px)`,
+    }}
+  />
+}
+{
+  <div
+    style={{
+     a: `clamp(${1+1}px, ${1+1}px, ${1+1}px)`,
+    }}
+  />
+}
+{
+  <div
+    style={{
+     [computedkey]: `clamp(${1+1}px, ${1+1}px, ${1+1}px)`,
+    }}
+  />
+}
+
+{
+  const o = { ref: null };
+  const Div = (_ ) => <></>;
+  const valid = <Div ref={o.ref} />
+  const invalid = <Div ref={o?.ref} />
+}
+
+const template89 = <div _hk="should warn _hk is present on template"/>
+
+const template90 = <div style={{}}/>
+
+const template91 = <video something={{value:{value:1+1}}}/>

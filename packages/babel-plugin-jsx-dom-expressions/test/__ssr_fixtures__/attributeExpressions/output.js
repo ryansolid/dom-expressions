@@ -57,7 +57,10 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$44 = ["<video", ' poster="1.jpg"></video>'],
   _tmpl$45 = ["<div", '><video poster="1.jpg"></video></div>'],
   _tmpl$46 = ["<div", "><video></video></div>"],
-  _tmpl$47 = ["<button", ' type="button" style="', '" class="', '">', "</button>"];
+  _tmpl$47 = ["<button", ' type="button" style="', '" class="', '">', "</button>"],
+  _tmpl$48 = ["<style", ">", "</style>"],
+  _tmpl$49 = ["<div", ' class="bg-(--bg)" style="', '"></div>'],
+  _tmpl$50 = ["<div", ' class="progress-fill" style="', '"></div>'];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -86,7 +89,7 @@ const template = _$ssrElement(
       "h1",
       _$mergeProps(
         {
-          id: id
+          id: "my-h1"
         },
         results,
         {
@@ -723,3 +726,100 @@ const template88 = (() => {
     _v$110 = _$ssrRunInScope([() => _$ssrAttribute("aria-label", _$escape(count(), true))]);
   return _$ssr(_tmpl$47, _v$109, _v$110[0], _$ssrStyle(style), _$ssrClassName(style), _v$111);
 })();
+const css = () => "&{color:red}";
+const template89 = [
+  (() => {
+    var _v$112 = _$ssrHydrationKey(),
+      _v$113 = _$ssrRunInScope(() => css());
+    return _$ssr(_tmpl$48, _v$112, _v$113);
+  })(),
+  (() => {
+    var _v$114 = _$ssrHydrationKey(),
+      _v$115 = _$ssrRunInScope(() => css());
+    return _$ssr(_tmpl$48, _v$114, _v$115);
+  })(),
+  (() => {
+    var _v$116 = _$ssrHydrationKey(),
+      _v$117 = _$ssrRunInScope(() => css());
+    return _$ssr(_tmpl$48, _v$116, _v$117);
+  })(),
+  (() => {
+    var _v$118 = _$ssrHydrationKey(),
+      _v$119 = _$ssrRunInScope(() => css());
+    return _$ssr(_tmpl$48, _v$118, _v$119);
+  })(),
+  (() => {
+    var _v$120 = _$ssrHydrationKey(),
+      _v$121 = _$ssrRunInScope(() => css() || " ");
+    return _$ssr(_tmpl$48, _v$120, _v$121);
+  })()
+];
+const styleProps = {
+  children: css
+};
+const template90 = [
+  _$ssrElement("style", styleProps(), () => () => css(), true),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get children() {
+        return css();
+      }
+    }),
+    undefined,
+    true
+  ),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get innerHTML() {
+        return css();
+      }
+    }),
+    undefined,
+    true
+  ),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get innerText() {
+        return css();
+      }
+    }),
+    undefined,
+    true
+  ),
+  _$ssrElement(
+    "style",
+    _$mergeProps(styleProps, {
+      get textContent() {
+        return css();
+      }
+    }),
+    undefined,
+    true
+  )
+];
+const nope = () => undefined;
+const template91 = (() => {
+  var _v$122 = _$ssrHydrationKey(),
+    _v$123 = _$ssrRunInScope([() => _$ssrStyleProperty("--bg:", _$escape(nope(), true))]);
+  return _$ssr(_tmpl$49, _v$122, _v$123[0]);
+})();
+const template92 = (() => {
+  var _v$124 = _$ssrHydrationKey();
+  return _$ssr(_tmpl$9, _v$124);
+})();
+function Progress(props) {
+  return (() => {
+    var _v$125 = _$ssrHydrationKey(),
+      _v$126 = _$ssrRunInScope([
+        () =>
+          _$ssrStyleProperty(
+            (props.orientation === "y" ? "height" : "width") + ":",
+            `${_$escape(props.value, true) * 100}%`
+          )
+      ]);
+    return _$ssr(_tmpl$50, _v$125, _v$126[0]);
+  })();
+}

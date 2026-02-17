@@ -121,7 +121,7 @@ export function transformElement(path, info) {
     .get("openingElement")
     .get("attributes")
     .some(a => {
-      if (a.node.name?.name === "data-hk") {
+      if (a.node.name?.name === "_hk") {
         a.remove();
         let filename = "";
         try {
@@ -132,7 +132,7 @@ export function transformElement(path, info) {
           "\n" +
             path
               .buildCodeFrameError(
-                `"data-hk" attribute found in template, which could potentially cause hydration miss-matches. Usually happens when copying and pasting Solid SSRed code into JSX. Please remove the attribute from the JSX. \n\n${filename}\n`
+                `"_hk" attribute found in template, which could potentially cause hydration miss-matches. Usually happens when copying and pasting Solid SSRed code into JSX. Please remove the attribute from the JSX. \n\n${filename}\n`
               )
               .toString()
         );
@@ -862,18 +862,6 @@ function transformAttributes(path, results) {
               !attribute.get("value").get("expression").evaluate().confident &&
               !hasStaticMarker(value, path)))
         ) {
-          /*
-            Following code doesn't repect static marker `@once`.
-            https://github.com/ryansolid/dom-expressions/pull/438
-
-           ||
-            (
-                (
-                    key === "classList" || key === "style") &&
-                    !attribute.get("value").get("expression").evaluate().confident
-                )
-            )
-           */
           let nextElem = elem;
           if (key === "value" || key === "checked") {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);

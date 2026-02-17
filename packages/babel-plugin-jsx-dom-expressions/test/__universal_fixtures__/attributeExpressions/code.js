@@ -14,7 +14,7 @@ const template = (
       readonly=""
       title={welcoming()}
       style={{ "background-color": color(), "margin-right": "40px" }}
-      classList={{ dynamic: dynamic(), selected }}
+      class={["base", { dynamic: dynamic(), selected }]}
     >
       <a href={"/"} ref={link} readonly={value}>
         Welcome
@@ -40,7 +40,7 @@ const template3 = (
   />
 );
 
-const template4 = <div class="hi" className={state.class} classList={{ "ccc:ddd": true }} />;
+const template4 = <div className={state.class} class={{ "ccc:ddd": true }} />;
 
 const template5 = <div class="a" className="b"></div>;
 
@@ -73,10 +73,9 @@ const template15 = <div class="`a">`$`</div>;
 
 const template16 = (
   <button
-    class="static"
-    classList={{
+    class={["static", {
       hi: "k"
-    }}
+    }]}
     type="button"
   >
     Write
@@ -85,7 +84,7 @@ const template16 = (
 
 const template17 = (
   <button
-    classList={{
+    class={{
       a: true,
       b: true,
       c: true

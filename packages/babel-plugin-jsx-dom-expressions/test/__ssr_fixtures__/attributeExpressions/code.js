@@ -325,3 +325,53 @@ const template88 = (
     {count()}
   </button>
 );
+
+const css = () => "&{color:red}";
+const template89 = (
+  <>
+    <style>{css()}</style>
+    <style children={css()} />
+    <style innerHTML={css()} />
+    <style innerText={css()} />
+    <style textContent={css()} />
+  </>
+);
+
+const styleProps = { children: css }
+const template90 = (
+  <>
+    <style {...styleProps()}>{css()}</style>
+    <style {...styleProps()} children={css()} />
+    <style {...styleProps()} innerHTML={css()} />
+    <style {...styleProps()} innerText={css()} />
+    <style {...styleProps()} textContent={css()} />
+  </>
+);
+
+const nope = () => undefined;
+
+const template91 = (
+  <div
+    class="bg-(--bg)"
+    style={{
+      "--bg": nope(),
+    }}
+  />
+);
+
+const template92 = (
+  <div
+    style={{}}
+  />
+);
+
+function Progress(props) {
+  return (
+    <div
+      class="progress-fill"
+      style={{
+        [props.orientation === 'y' ? 'height' : 'width']: `${props.value * 100}%`,
+      }}
+    />
+  );
+}
