@@ -202,3 +202,5 @@ const template41 = (
     <option value={Color.Blue}>Blue</option>
   </select>
 );
+
+const template42 = <div style={{ }} />;

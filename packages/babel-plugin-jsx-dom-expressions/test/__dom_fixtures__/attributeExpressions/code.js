@@ -303,3 +303,5 @@ const template89 = <div style={{"background":"red", "color":"green", "border":nu
 }
 
 const template90 = <div data-hk="should warn data-hk is present on template"/>
+
+const template91 = <div style={{}}/>
