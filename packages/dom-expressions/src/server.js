@@ -60,7 +60,7 @@ export function renderToString(code, options = {}) {
 export function renderToStream(code, options = {}) {
   let { nonce, onCompleteShell, onCompleteAll, renderId = "", noScripts } = options;
   let dispose;
-  const blockingPromises = [];
+  const blockingPromises = new Set();
   const pushTask = task => {
     if (noScripts) return;
     if (!tasks && !firstFlushed) {
@@ -128,7 +128,10 @@ export function renderToStream(code, options = {}) {
     assets: [],
     nonce,
     block(p) {
-      if (!firstFlushed) blockingPromises.push(p);
+      if (!firstFlushed) blockingPromises.add(p);
+    },
+    unblock(p) {
+      blockingPromises.delete(p);
     },
     replace(id, payloadFn) {
       if (firstFlushed) return;
@@ -141,19 +144,11 @@ export function renderToStream(code, options = {}) {
         resolveSSRSync(escape(payloadFn())) +
         html.slice(last + placeholder.length + 1);
     },
-    serialize(id, p, wait) {
-      const serverOnly = sharedConfig.context.noHydrate;
-      if (!firstFlushed && wait && typeof p === "object" && "then" in p) {
-        blockingPromises.push(p);
-        !serverOnly &&
-          p
-            .then(d => {
-              serializer.write(id, d);
-            })
-            .catch(e => {
-              serializer.write(id, e);
-            });
-      } else if (!serverOnly) serializer.write(id, p);
+    serialize(id, p, deferStream) {
+      if (sharedConfig.context.noHydrate) return;
+      if (!firstFlushed && deferStream && typeof p === "object" && "then" in p) {
+        p.then(d => serializer.write(id, d)).catch(e => serializer.write(id, e));
+      } else serializer.write(id, p);
     },
     escape: escape,
     resolve: resolveSSRNode,
@@ -526,9 +521,9 @@ function queue(fn) {
 }
 
 function allSettled(promises) {
-  let length = promises.length;
+  let size = promises.size;
   return Promise.allSettled(promises).then(() => {
-    if (promises.length !== length) return allSettled(promises);
+    if (promises.size !== size) return allSettled(promises);
     return;
   });
 }
