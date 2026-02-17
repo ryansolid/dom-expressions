@@ -245,13 +245,12 @@ const template51 = (
   />
 );
 
-<<<<<<< handle-empty-style-object
 const template52 = (
   <div
     style={{}}
   />
 );
-=======
+
 function Progress(props) {
   return (
     <div
@@ -262,4 +261,3 @@ function Progress(props) {
     />
   );
 }
->>>>>>> main

@@ -311,9 +311,7 @@ const template49 = _$ssr(_tmpl$27);
 const template50 = _$ssr(_tmpl$28);
 const nope = () => undefined;
 const template51 = _$ssr(_tmpl$29, _$ssrStyleProperty("--bg:", _$escape(nope(), true)));
-<<<<<<< handle-empty-style-object
 const template52 = _$ssr(_tmpl$8);
-=======
 function Progress(props) {
   return _$ssr(
     _tmpl$30,
@@ -323,4 +321,3 @@ function Progress(props) {
     )
   );
 }
->>>>>>> main

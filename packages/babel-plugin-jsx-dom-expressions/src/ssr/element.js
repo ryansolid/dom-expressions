@@ -340,13 +340,9 @@ function transformAttributes(path, results, info) {
             t.isObjectExpression(value.expression) &&
             !value.expression.properties.some(p => t.isSpreadElement(p))
           ) {
-<<<<<<< handle-empty-style-object
             if (value.expression.properties.length === 0) {
               return;
             }
-            const props = value.expression.properties.map((p, i) =>
-              t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
-=======
             const props = value.expression.properties.map((p, i) => {
               if (p.computed) {
                 return t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
@@ -355,7 +351,6 @@ function transformAttributes(path, results, info) {
                 ]);
               }
               return t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
->>>>>>> main
                 t.stringLiteral(
                   (i ? ";" : "") + (t.isIdentifier(p.key) ? p.key.name : p.key.value) + ":"
                 ),
