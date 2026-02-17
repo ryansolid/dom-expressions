@@ -198,6 +198,13 @@ Example usage:
 const template = <div>Hello</div>;
 ```
 
+### inlineStyles
+
+- Type: `boolean`
+- Default: `true`
+
+Style attributes in templates are inlined when possible: value is a string, `Record<string, string>`, etc. Inlining styles may not be desired when using strong CSP configurations. Disabling `inlineStyles` will cause all of the style definitions to be set at runtime.
+
 ## Special Binding
 
 ### ref

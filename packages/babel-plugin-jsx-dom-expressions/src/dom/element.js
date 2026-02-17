@@ -98,6 +98,27 @@ export function transformElement(path, info) {
       skipTemplate: false
     };
 
+  if (!config.inlineStyles) {
+    path
+      .get("openingElement")
+      .get("attributes")
+      .forEach(a => {
+        if (a.node.name?.name === "style") {
+          let value = a.node.value.expression ? a.node.value.expression : a.node.value;
+          if (t.isStringLiteral(value)) {
+            // jsx attribute value is a sting that may takes more than one line
+            value = t.templateLiteral(
+              [t.templateElement({ raw: value.value, cooked: value.value })],
+              []
+            );
+          }
+          a.get("value").replaceWith(
+            t.jSXExpressionContainer(t.callExpression(t.arrowFunctionExpression([], value), []))
+          );
+        }
+      });
+  }
+
   path
     .get("openingElement")
     .get("attributes")
