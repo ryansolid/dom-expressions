@@ -118,6 +118,8 @@ export function renderToStream(code, options = {}) {
   let shellCompleted = false;
   let scriptFlushed = false;
   let timer = null;
+  let rootHoles = null;
+  let nextHoleId = 0;
   let buffer = {
     write(payload) {
       tmp += payload;
@@ -208,12 +210,29 @@ export function renderToStream(code, options = {}) {
   let html = root(
     d => {
       dispose = d;
-      return resolveSSRSync(escape(code()));
+      const res = resolveSSRNode(escape(code()));
+      if (!res.h.length) return res.t[0];
+      rootHoles = [];
+      let out = res.t[0];
+      for (let i = 0; i < res.h.length; i++) {
+        const id = nextHoleId++;
+        rootHoles.push({ id, fn: res.h[i] });
+        out += `<!--rh${id}-->` + res.t[i + 1];
+      }
+      return out;
     },
     { id: renderId }
   );
   function doShell() {
     if (shellCompleted) return;
+    if (rootHoles) {
+      for (const { id, fn } of rootHoles) {
+        const marker = `<!--rh${id}-->`;
+        const res = resolveSSRNode(fn);
+        html = html.replace(marker, !res.h.length ? res.t[0] : "");
+      }
+      rootHoles = null;
+    }
     sharedConfig.context = context;
     // context.noHydrate = true;
     html = injectAssets(context.assets, html);
