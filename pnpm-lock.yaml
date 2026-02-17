@@ -113,8 +113,8 @@ importers:
         version: 2.3.0
     devDependencies:
       babel-plugin-jsx-dom-expressions:
-        specifier: ^0.40.3
-        version: 0.40.3(@babel/core@7.28.6)
+        specifier: ^0.40.5
+        version: 0.40.5(@babel/core@7.28.6)
       csstype:
         specifier: ^3.1
         version: 3.1.1
@@ -128,14 +128,14 @@ importers:
   packages/hyper-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.40.4
-        version: 0.40.4(csstype@3.1.1)(seroval-plugins@1.5.0(seroval@1.5.0))(seroval@1.5.0)
+        specifier: ^0.40.5
+        version: 0.40.5(csstype@3.1.1)(seroval-plugins@1.5.0(seroval@1.5.0))(seroval@1.5.0)
 
   packages/lit-dom-expressions:
     devDependencies:
       dom-expressions:
-        specifier: ^0.40.4
-        version: 0.40.4(csstype@3.1.1)(seroval-plugins@1.5.0(seroval@1.5.0))(seroval@1.5.0)
+        specifier: ^0.40.5
+        version: 0.40.5(csstype@3.1.1)(seroval-plugins@1.5.0(seroval@1.5.0))(seroval@1.5.0)
       html-parse-string:
         specifier: ^0.0.9
         version: 0.0.9
@@ -1698,8 +1698,8 @@ packages:
     resolution: {integrity: sha512-TnspP2WNiR3GLfCsUNHqeXw0RoQ2f9U5hQ5L3XFpwuO8htQmSrhh8qsB6vi5Yi8+kuynN1yjDjQsPfkebmB6ZA==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
 
-  babel-plugin-jsx-dom-expressions@0.40.3:
-    resolution: {integrity: sha512-5HOwwt0BYiv/zxl7j8Pf2bGL6rDXfV6nUhLs8ygBX+EFJXzBPHM/euj9j/6deMZ6wa52Wb2PBaAV5U/jKwIY1w==}
+  babel-plugin-jsx-dom-expressions@0.40.5:
+    resolution: {integrity: sha512-8TFKemVLDYezqqv4mWz+PhRrkryTzivTGu0twyLrOkVZ0P63COx2Y04eVsUjFlwSOXui1z3P3Pn209dokWnirg==}
     peerDependencies:
       '@babel/core': ^7.20.12
 
@@ -2141,8 +2141,8 @@ packages:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
 
-  dom-expressions@0.40.4:
-    resolution: {integrity: sha512-Nbt6mTBxpPEiBEXtUjXcQ9Q4PezDjvpcL5+Qpw4PdcP7glJgg15u81+AZb8FyrbVBTRy+jdticF6dqU1ujeWKQ==}
+  dom-expressions@0.40.5:
+    resolution: {integrity: sha512-tWqG3bfKljLg5/a4yGOVQHrtJCDe5crvlr+oCU7Bi7Bezai7poKUBYWpZ6rAai8D6kYuDOgmTRIl4+80hl5f+A==}
     peerDependencies:
       csstype: ^3.0
       seroval: ~1.5.0
@@ -4479,7 +4479,7 @@ snapshots:
 
   '@babel/helper-explode-assignable-expression@7.18.6':
     dependencies:
-      '@babel/types': 7.23.0
+      '@babel/types': 7.28.6
 
   '@babel/helper-function-name@7.19.0':
     dependencies:
@@ -4503,7 +4503,7 @@ snapshots:
 
   '@babel/helper-member-expression-to-functions@7.20.7':
     dependencies:
-      '@babel/types': 7.23.0
+      '@babel/types': 7.28.6
 
   '@babel/helper-module-imports@7.18.6':
     dependencies:
@@ -4602,7 +4602,7 @@ snapshots:
       '@babel/helper-function-name': 7.19.0
       '@babel/template': 7.20.7
       '@babel/traverse': 7.23.2
-      '@babel/types': 7.23.0
+      '@babel/types': 7.28.6
     transitivePeerDependencies:
       - supports-color
 
@@ -5187,7 +5187,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.22.13
       '@babel/parser': 7.23.0
-      '@babel/types': 7.23.0
+      '@babel/types': 7.28.6
 
   '@babel/template@7.28.6':
     dependencies:
@@ -6541,12 +6541,12 @@ snapshots:
       '@types/babel__core': 7.20.5
       '@types/babel__traverse': 7.18.3
 
-  babel-plugin-jsx-dom-expressions@0.40.3(@babel/core@7.28.6):
+  babel-plugin-jsx-dom-expressions@0.40.5(@babel/core@7.28.6):
     dependencies:
       '@babel/core': 7.28.6
       '@babel/helper-module-imports': 7.18.6
       '@babel/plugin-syntax-jsx': 7.18.6(@babel/core@7.28.6)
-      '@babel/types': 7.23.0
+      '@babel/types': 7.28.6
       html-entities: 2.3.3
       parse5: 7.1.2
 
@@ -7028,7 +7028,7 @@ snapshots:
     dependencies:
       path-type: 4.0.0
 
-  dom-expressions@0.40.4(csstype@3.1.1)(seroval-plugins@1.5.0(seroval@1.5.0))(seroval@1.5.0):
+  dom-expressions@0.40.5(csstype@3.1.1)(seroval-plugins@1.5.0(seroval@1.5.0))(seroval@1.5.0):
     dependencies:
       babel-plugin-transform-rename-import: 2.3.0
       csstype: 3.1.1
