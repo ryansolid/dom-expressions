@@ -132,9 +132,6 @@ export function renderToStream(code, options = {}) {
     block(p) {
       if (!firstFlushed) blockingPromises.add(p);
     },
-    unblock(p) {
-      blockingPromises.delete(p);
-    },
     replace(id, payloadFn) {
       if (firstFlushed) return;
       const placeholder = `<!--!$${id}-->`;
@@ -149,6 +146,7 @@ export function renderToStream(code, options = {}) {
     serialize(id, p, deferStream) {
       if (sharedConfig.context.noHydrate) return;
       if (!firstFlushed && deferStream && typeof p === "object" && "then" in p) {
+        blockingPromises.add(p);
         p.then(d => serializer.write(id, d)).catch(e => serializer.write(id, e));
       } else serializer.write(id, p);
     },
@@ -219,6 +217,7 @@ export function renderToStream(code, options = {}) {
         rootHoles.push({ id, fn: res.h[i] });
         out += `<!--rh${id}-->` + res.t[i + 1];
       }
+      for (const p of res.p) blockingPromises.add(p);
       return out;
     },
     { id: renderId }
