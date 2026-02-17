@@ -173,7 +173,6 @@ const template55 = (() => {
 })();
 const template56 = (() => {
   var _el$20 = _tmpl$19();
-  _$setBoolAttribute(_el$20, "quack", boolTestBinding);
   _el$20._$owner = _$getOwner();
   return _el$20;
 })();
