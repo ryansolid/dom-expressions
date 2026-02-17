@@ -157,7 +157,7 @@ export function renderToStream(code, options = {}) {
       if (!registry.has(key)) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
-        // double queue to ensure that Suspense is last but in same flush
+        // double queue to ensure that the fragment is last but in same flush
         registry.set(key, {
           resolve: err =>
             queue(() =>
@@ -667,7 +667,7 @@ function resolveSSRSync(node) {
   const res = resolveSSRNode(node);
   if (!res.h.length) return res.t[0];
   throw new Error(
-    "This value cannot be rendered synchronously. Are you missing a Suspsense boundary?"
+    "This value cannot be rendered synchronously. Are you missing a boundary?"
   );
 }
 
