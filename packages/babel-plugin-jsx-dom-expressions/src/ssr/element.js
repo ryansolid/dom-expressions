@@ -3,6 +3,7 @@ import { decode } from "html-entities";
 import { ChildProperties } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
+  evaluateAndInline,
   getTagName,
   registerImportMethod,
   filterChildren,
@@ -43,6 +44,13 @@ function hoistExpression(path, results, expr, { group, post, skipWrap } = {}) {
 }
 
 export function transformElement(path, info) {
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
+
   const config = getConfig(path);
   const tagName = getTagName(path.node);
   if (tagName === "script" || tagName === "style") path.doNotEscape = true;
@@ -338,14 +346,23 @@ function transformAttributes(path, results, info) {
             t.isObjectExpression(value.expression) &&
             !value.expression.properties.some(p => t.isSpreadElement(p))
           ) {
-            const props = value.expression.properties.map((p, i) =>
-              t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
+            if (value.expression.properties.length === 0) {
+              return;
+            }
+            const props = value.expression.properties.map((p, i) => {
+              if (p.computed) {
+                return t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
+                  t.binaryExpression("+", p.key, t.stringLiteral(":")),
+                  escapeExpression(path, p.value, true, true)
+                ]);
+              }
+              return t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
                 t.stringLiteral(
                   (i ? ";" : "") + (t.isIdentifier(p.key) ? p.key.name : p.key.value) + ":"
                 ),
                 escapeExpression(path, p.value, true, true)
-              ])
-            );
+              ]);
+            });
 
             let res = props[0];
             for (let i = 1; i < props.length; i++) {

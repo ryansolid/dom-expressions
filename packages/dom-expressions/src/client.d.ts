@@ -7,7 +7,12 @@ export const SVGElements: Set<string>;
 export const SVGNamespace: Record<string, string>;
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
-export function render(code: () => JSX.Element, element: MountableElement): () => void;
+export function render(
+  code: () => JSX.Element,
+  element: MountableElement,
+  init?: JSX.Element,
+  options?: { owner?: unknown }
+): () => void;
 export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
 export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
@@ -27,7 +32,14 @@ export function spread<T>(
   isSVG?: Boolean,
   skipChildren?: Boolean
 ): void;
-export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
+export function assign(
+  node: Element,
+  props: any,
+  isSVG?: Boolean,
+  skipChildren?: Boolean,
+  prevProps?: any,
+  skipRef?: Boolean
+): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
 type ClassList =
@@ -35,6 +47,7 @@ type ClassList =
   | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
 export function className(node: Element, value: string | ClassList, isSvg?: boolean, prev?: string | ClassList): void;
 export function setProperty(node: Element, name: string, value: any): void;
+export function setStyleProperty(node: Element, name: string, value: any): void;
 export function addEventListener(
   node: Element,
   name: string,
@@ -49,6 +62,7 @@ export function style(
 export function getOwner(): unknown;
 export function mergeProps(...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
+export function use<Arg, Ret>(fn: (node: Element, arg: Arg) => Ret, node: Element, arg?: Arg): Ret
 
 export function hydrate(
   fn: () => JSX.Element,
@@ -56,7 +70,7 @@ export function hydrate(
   options?: { renderId?: string; owner?: unknown }
 ): () => void;
 export function getHydrationKey(): string;
-export function getNextElement(template?: HTMLTemplateElement): Element;
+export function getNextElement(template?: () => Element): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 export function getNextMarker(start: Node): [Node, Array<Node>];
 export function useAssets(fn: () => JSX.Element): void;

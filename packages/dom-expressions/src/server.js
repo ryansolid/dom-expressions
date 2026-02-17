@@ -23,6 +23,7 @@ export function renderToString(code, options = {}) {
   let scripts = "";
   const serializer = createSerializer({
     scopeId: renderId,
+    plugins: options.plugins,
     onData(script) {
       if (noScripts) return;
       if (!scripts) {
@@ -85,6 +86,7 @@ export function renderToStream(code, options = {}) {
   };
   const serializer = createSerializer({
     scopeId: options.renderId,
+    plugins: options.plugins,
     onData: pushTask,
     onDone,
     onError: options.onError
@@ -271,13 +273,13 @@ export function renderToStream(code, options = {}) {
           writable = {
             end() {
               writer.releaseLock();
-              w.close();
+              w.close().catch(() => {});
               resolve();
             }
           };
           buffer = {
             write(payload) {
-              writer.write(encoder.encode(payload));
+              writer.write(encoder.encode(payload)).catch(() => {});
             }
           };
           buffer.write(tmp);

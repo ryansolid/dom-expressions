@@ -97,7 +97,12 @@ export function isDynamic(path, { checkMember, checkTags, checkCallExpressions =
     return false;
   }
 
-  if (checkCallExpressions && (t.isCallExpression(expr) || t.isOptionalCallExpression(expr) || t.isTaggedTemplateExpression(expr))) {
+  if (
+    checkCallExpressions &&
+    (t.isCallExpression(expr) ||
+      t.isOptionalCallExpression(expr) ||
+      t.isTaggedTemplateExpression(expr))
+  ) {
     return true;
   }
 
@@ -435,3 +440,35 @@ const templateEscapes = new Map([
   ["\u2028", "\\u2028"],
   ["\u2029", "\\u2029"]
 ]);
+
+export function evaluateAndInline(value, valueNode) {
+  if (t.isJSXExpressionContainer(value)) {
+    evaluateAndInline(value.expression, valueNode.get("expression"));
+  } else if (t.isObjectProperty(value)) {
+    evaluateAndInline(value.value, valueNode.get("value"));
+  } else if (
+    t.isStringLiteral(value) ||
+    t.isNumericLiteral(value) ||
+    t.isBooleanLiteral(value) ||
+    t.isNullLiteral(value)
+  ) {
+    // already native literal
+  } else if (t.isObjectExpression(value)) {
+    const properties = value.properties;
+    const propertiesNode = valueNode.get("properties");
+    for (let i = 0; i < properties.length; i++) {
+      evaluateAndInline(properties[i], propertiesNode[i]);
+    }
+  } else {
+    const r = valueNode.evaluate();
+    if (r.confident) {
+      if (typeof r.value === "string") {
+        valueNode.replaceWith(t.stringLiteral(r.value));
+      } else if (typeof r.value === "number") {
+        valueNode.replaceWith(t.numericLiteral(r.value));
+      } else if (typeof r.value === "boolean") {
+        valueNode.replaceWith(t.booleanLiteral(r.value));
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+
 import {
   Properties,
   ChildProperties,
@@ -8,6 +9,7 @@ import {
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
+  evaluateAndInline,
   getTagName,
   isDynamic,
   isComponent,
@@ -56,6 +58,13 @@ const alwaysClose = [
 ];
 
 export function transformElement(path, info) {
+  path
+    .get("openingElement")
+    .get("attributes")
+    .forEach(attr => {
+      evaluateAndInline(attr.node.value, attr.get("value"));
+    });
+
   let tagName = getTagName(path.node),
     config = getConfig(path),
     wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
@@ -86,6 +95,49 @@ export function transformElement(path, info) {
       renderer: "dom",
       skipTemplate: false
     };
+
+  if (!config.inlineStyles) {
+    path
+      .get("openingElement")
+      .get("attributes")
+      .forEach(a => {
+        if (a.node.name?.name === "style") {
+          let value = a.node.value.expression ? a.node.value.expression : a.node.value;
+          if (t.isStringLiteral(value)) {
+            // jsx attribute value is a sting that may takes more than one line
+            value = t.templateLiteral(
+              [t.templateElement({ raw: value.value, cooked: value.value })],
+              []
+            );
+          }
+          a.get("value").replaceWith(
+            t.jSXExpressionContainer(t.callExpression(t.arrowFunctionExpression([], value), []))
+          );
+        }
+      });
+  }
+
+  path
+    .get("openingElement")
+    .get("attributes")
+    .some(a => {
+      if (a.node.name?.name === "data-hk") {
+        a.remove();
+        let filename = "";
+        try {
+          filename = path.scope.getProgramParent().path.hub.file.opts.filename;
+        } catch (e) {}
+
+        console.log(
+          "\n" +
+            path
+              .buildCodeFrameError(
+                `"data-hk" attribute found in template, which could potentially cause hydration miss-matches. Usually happens when copying and pasting Solid SSRed code into JSX. Please remove the attribute from the JSX. \n\n${filename}\n`
+              )
+              .toString()
+        );
+      }
+    });
   if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body")) {
     results.skipTemplate = true;
     if (tagName === "head" && info.topLevel) {
@@ -300,12 +352,15 @@ function transformAttributes(path, results) {
   }
 
   /**
-   *  inline styles
+   * Inline styles
    *
-   * 1. when string
-   * 2. when is an object, the key is a string, and value is string/numeric
-   * 3. remove properties from object when value is undefined/null
-   **/
+   * 1. When string
+   * 2. When is an object, the key is a string, and value is string/numeric
+   * 3. Remove properties from object when value is undefined/null
+   * 4. When `value.evaluate().confident`
+   *
+   * Also, when `key` is computed value is also `value.evaluate().confident`
+   */
 
   attributes = path.get("openingElement").get("attributes");
 
@@ -317,6 +372,7 @@ function transformAttributes(path, results) {
       const attr = styleAttributes[i];
 
       let value = attr.node.value;
+      const node = attr.get("value");
       if (t.isJSXExpressionContainer(value)) {
         value = value.expression;
       }
@@ -326,20 +382,37 @@ function transformAttributes(path, results) {
         attr.remove();
       } else if (t.isObjectExpression(value)) {
         const properties = value.properties;
+        const propertiesNode = node.get("expression").get("properties");
         const toRemoveProperty = [];
-        for (const property of properties) {
+        for (let i = 0; i < properties.length; i++) {
+          const property = properties[i];
+
+          if (property.computed) {
+            /* { [computed]: `${1+1}px` } => { [computed]: `2px` } */
+            const r = propertiesNode[i].get("value").evaluate();
+            if (r.confident && (typeof r.value === "string" || typeof r.value === "number")) {
+              property.value = t.inherits(t.stringLiteral(`${r.value}`), property.value);
+            }
+            // computed cannot be inlined - maybe can be evaluated but this is pretty rare
+            continue;
+          }
+
           if (t.isObjectProperty(property)) {
-            if (
-              t.isStringLiteral(property.key) &&
-              (t.isStringLiteral(property.value) || t.isNumericLiteral(property.value))
-            ) {
-              inlinedStyle += `${property.key.value}:${property.value.value};`;
+            const key = t.isIdentifier(property.key) ? property.key.name : property.key.value;
+            if (t.isStringLiteral(property.value) || t.isNumericLiteral(property.value)) {
+              inlinedStyle += `${key}:${property.value.value};`;
               toRemoveProperty.push(property);
             } else if (
               (t.isIdentifier(property.value) && property.value.name === "undefined") ||
               t.isNullLiteral(property.value)
             ) {
               toRemoveProperty.push(property);
+            } else {
+              const r = propertiesNode[i].get("value").evaluate();
+              if (r.confident && (typeof r.value === "string" || typeof r.value === "number")) {
+                inlinedStyle += `${key}:${r.value};`;
+                toRemoveProperty.push(property);
+              }
             }
           }
         }

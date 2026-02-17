@@ -13,7 +13,7 @@ import { transformNode, getCreateTemplate } from "./transform";
 
 function convertComponentIdentifier(node) {
   if (t.isJSXIdentifier(node)) {
-    if (node.name === 'this') return t.thisExpression();
+    if (node.name === "this") return t.thisExpression();
     if (t.isValidIdentifier(node.name)) node.type = "Identifier";
     else return t.stringLiteral(node.name);
   } else if (t.isJSXMemberExpression(node)) {
@@ -63,7 +63,9 @@ export default function transformComponent(path) {
         );
       } else {
         // handle weird babel bug around HTML entities
-        const value = (t.isStringLiteral(node.value) ? t.stringLiteral(node.value.value): node.value) || t.booleanLiteral(true),
+        const value =
+            (t.isStringLiteral(node.value) ? t.stringLiteral(node.value.value) : node.value) ||
+            t.booleanLiteral(true),
           id = convertJSXIdentifier(node.name),
           key = id.name;
         if (hasChildren && key === "children") return;
@@ -103,6 +105,46 @@ export default function transformComponent(path) {
                         ),
                         t.callExpression(refIdentifier, [t.identifier("r$")]),
                         t.assignmentExpression("=", value.expression, t.identifier("r$"))
+                      )
+                    )
+                  ])
+                )
+              );
+            } else if (!isConstant && t.isOptionalMemberExpression(value.expression)) {
+              const refIdentifier = path.scope.generateUidIdentifier("_ref$");
+              runningObject.push(
+                t.objectMethod(
+                  "method",
+                  t.identifier("ref"),
+                  [t.identifier("r$")],
+                  t.blockStatement([
+                    t.variableDeclaration("var", [
+                      t.variableDeclarator(refIdentifier, value.expression)
+                    ]),
+
+                    t.expressionStatement(
+                      t.conditionalExpression(
+                        t.binaryExpression(
+                          "===",
+                          t.unaryExpression("typeof", refIdentifier),
+                          t.stringLiteral("function")
+                        ),
+                        t.callExpression(refIdentifier, [t.identifier("r$")]),
+                        t.logicalExpression(
+                          "&&",
+                          t.unaryExpression(
+                            "!",
+                            t.unaryExpression("!", t.identifier(value.expression.object.name))
+                          ),
+                          t.assignmentExpression(
+                            "=",
+                            t.memberExpression(
+                              t.identifier(value.expression.object.name),
+                              t.identifier(value.expression.property.name)
+                            ),
+                            t.identifier("r$")
+                          )
+                        )
                       )
                     )
                   ])
@@ -192,7 +234,9 @@ export default function transformComponent(path) {
       const body =
         t.isCallExpression(childResult[0]) && t.isFunction(childResult[0].arguments[0])
           ? childResult[0].arguments[0].body
-          : childResult[0].body ? childResult[0].body : childResult[0];
+          : childResult[0].body
+            ? childResult[0].body
+            : childResult[0];
       runningObject.push(
         t.objectMethod(
           "get",
