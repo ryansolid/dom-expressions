@@ -120,7 +120,7 @@ const template = (() => {
       get classList() {
         return {
           dynamic: dynamic(),
-          selected
+          selected: true
         };
       }
     }),
@@ -486,11 +486,7 @@ const template55 = (() => {
   _$setBoolAttribute(_el$73, "quack", boolTest);
   return _el$73;
 })();
-const template56 = (() => {
-  var _el$74 = _tmpl$38();
-  _$setBoolAttribute(_el$74, "quack", boolTestBinding);
-  return _el$74;
-})();
+const template56 = _tmpl$38();
 const template57 = (() => {
   var _el$75 = _tmpl$39();
   _$effect(() => _$setBoolAttribute(_el$75, "quack", boolTestObjBinding.value));

@@ -34,7 +34,8 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$26 = ["<video", "></video>"],
   _tmpl$27 = "<video playsinline></video>",
   _tmpl$28 = "<video></video>",
-  _tmpl$29 = ['<div class="bg-(--bg)" style="', '"></div>'];
+  _tmpl$29 = ['<div class="bg-(--bg)" style="', '"></div>'],
+  _tmpl$30 = ['<div class="progress-fill" style="', '"></div>'];
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -60,9 +61,9 @@ const template = _$ssrElement(
     _$mergeProps(
       {
         get ["class"]() {
-          return `base ${dynamic() ? "dynamic" : ""} ${selected ? "selected" : ""}`;
+          return `base ${dynamic() ? "dynamic" : ""}  selected`;
         },
-        id: id
+        id: "my-h1"
       },
       results,
       {
@@ -310,4 +311,16 @@ const template49 = _$ssr(_tmpl$27);
 const template50 = _$ssr(_tmpl$28);
 const nope = () => undefined;
 const template51 = _$ssr(_tmpl$29, _$ssrStyleProperty("--bg:", _$escape(nope(), true)));
+<<<<<<< handle-empty-style-object
 const template52 = _$ssr(_tmpl$8);
+=======
+function Progress(props) {
+  return _$ssr(
+    _tmpl$30,
+    _$ssrStyleProperty(
+      (props.orientation === "y" ? "height" : "width") + ":",
+      `${_$escape(props.value, true) * 100}%`
+    )
+  );
+}
+>>>>>>> main

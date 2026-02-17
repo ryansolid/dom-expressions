@@ -132,7 +132,7 @@ const template = (() => {
       get classList() {
         return {
           dynamic: dynamic(),
-          selected
+          selected: true
         };
       }
     }),
@@ -498,11 +498,7 @@ const template55 = (() => {
   _$setBoolAttribute(_el$73, "quack", boolTest);
   return _el$73;
 })();
-const template56 = (() => {
-  var _el$74 = _tmpl$38();
-  _$setBoolAttribute(_el$74, "quack", boolTestBinding);
-  return _el$74;
-})();
+const template56 = _tmpl$38();
 const template57 = (() => {
   var _el$75 = _tmpl$39();
   _$effect(() => _$setBoolAttribute(_el$75, "quack", boolTestObjBinding.value));
@@ -623,5 +619,14 @@ const template94 = (() => {
   var _el$112 = _tmpl$59();
   _el$112.playsInline = false;
   return _el$112;
+})();
+const template95 = (() => {
+  var _el$113 = _tmpl$59();
+  _$setAttribute(_el$113, "something", {
+    value: {
+      value: 2
+    }
+  });
+  return _el$113;
 })();
 _$delegateEvents(["click", "input"]);
