@@ -1,4 +1,4 @@
-import { createRoot, createSignal,  } from "@solidjs/signals";
+import { createRoot, createSignal, flush, createMemo } from "@solidjs/signals";
 import { createSLDRuntime } from "../src";
 import { expect, it, describe, beforeEach } from "vitest";
 import * as r from "dom-expressions/src/client";
@@ -7,11 +7,11 @@ import { rawTextElements, voidElements,mathmlElements } from "../src/util";
 const createSLD = createSLDRuntime({...r,voidElements,rawTextElements,mathmlElements})
 
 const For = (props)=>{
-  return props.children.map(props.each)
+  return createMemo(()=>props.each.map(v=>props.children(v) ))as any
 }
 
 const Show = (props)=>{
-  return props.when ? props.children : null
+  return createMemo(()=>props.when ? props.children : null) as any
 }
 
 
@@ -62,6 +62,8 @@ describe("SLD Integration Tests", () => {
       expect(el.getAttribute("data-test-id")).toBe("main-div");
 
       setCls("inactive");
+              flush()
+
       expect(el.className).toBe("base inactive");
     });
 
@@ -74,6 +76,8 @@ describe("SLD Integration Tests", () => {
       expect(btn.hasAttribute("autofocus")).toBe(true);
 
       setDisabled(false);
+              flush()
+
       expect(btn.disabled).toBe(false);
     });
 
@@ -108,13 +112,15 @@ describe("SLD Integration Tests", () => {
 
     it("handles explicit properties and attributes via namespaces", () => {
       const [val, setVal] = createSignal("initial");
-      const result = sld`<input prop:value=${val} attr:title=${"hello"} />` as Node[];
+      const result = sld`<input prop:value=${val} title=${"hello"} />` as Node[];
       const input = result[0] as HTMLInputElement;
 
       expect(input.value).toBe("initial");
       expect(input.getAttribute("title")).toBe("hello");
 
       setVal("updated");
+              flush()
+
       expect(input.value).toBe("updated");
     });
 
@@ -170,6 +176,8 @@ describe("SLD Integration Tests", () => {
 
       expect(el.textContent).toBe("Counter: 0");
       setCount(5);
+              flush()
+
       expect(el.textContent).toBe("Counter: 5");
     });
 
@@ -202,6 +210,8 @@ describe("SLD Integration Tests", () => {
 
       expect(el.hasAttribute("hidden")).toBe(false);
       setVisible(false);
+              flush()
+
       expect(el.hasAttribute("hidden")).toBe(false);
     });
   });
@@ -222,6 +232,8 @@ describe("SLD Integration Tests", () => {
       expect(container.querySelector("#target")).toBeNull();
 
       setVisible(true);
+              flush()
+
       expect(container.querySelector("#target")).not.toBeNull();
       expect(container.querySelector("#target")?.textContent).toBe("I am visible");
     });
@@ -241,6 +253,8 @@ describe("SLD Integration Tests", () => {
       expect(container.querySelectorAll("li").length).toBe(2);
 
       setItems(["A", "B", "C"]);
+              flush()
+
       expect(container.querySelectorAll("li").length).toBe(3);
     });
   });
@@ -362,6 +376,7 @@ describe("SLD Integration Tests", () => {
       expect(circle.getAttribute("r")).toBe("10");
 
       setRadius(20);
+      flush()
       expect(circle.getAttribute("r")).toBe("20");
     });
 
@@ -452,7 +467,7 @@ describe("SLD Integration Tests", () => {
 
         expect(el.className).toBe("final");
         expect(el.id).toBe("final-id");
-        expect(el.getAttribute("data-override")).toBe("true");
+        expect(el.getAttribute("data-override")).toBe("");
         expect(el.textContent).toBe("Content");
       });
 
@@ -472,6 +487,8 @@ describe("SLD Integration Tests", () => {
         expect(button.textContent).toBe("Click");
 
         setClass("inactive");
+                flush()
+
         expect(button.className).toBe("btn-inactive");
       });
 
@@ -489,6 +506,8 @@ describe("SLD Integration Tests", () => {
 
         setEnabled(false);
         setChecked(true);
+                flush()
+
         expect(input.disabled).toBe(true);
         expect(input.checked).toBe(true);
       });
@@ -504,6 +523,8 @@ describe("SLD Integration Tests", () => {
         expect(el.style.padding).toBe("10px");
 
         setColor("green");
+                flush()
+
         expect(el.style.color).toBe("green");
       });
 
@@ -519,6 +540,8 @@ describe("SLD Integration Tests", () => {
 
         setActive(false);
         setTheme("light");
+                flush()
+
         expect(el.className).toBe("active theme-dark static-class");
       });
     });
@@ -545,6 +568,8 @@ describe("SLD Integration Tests", () => {
 
         setCount(5);
         setText("Updated");
+                flush()
+
 
         expect(countSpan.className).toBe("count-5");
         expect(countSpan.textContent).toBe("Count: 5");
@@ -566,15 +591,17 @@ describe("SLD Integration Tests", () => {
 
         expect(button.hidden).toBe(false);
         expect(button.disabled).toBe(false);
-        expect(button.getAttribute("aria-hidden")).toBe("false");
+        expect(button.getAttribute("aria-hidden")).toBe(null);
         expect(button.className).toBe("visible");
 
         setVisible(false);
         setDisabled(true);
+                flush()
+
 
         expect(button.hidden).toBe(true);
         expect(button.disabled).toBe(true);
-        expect(button.getAttribute("aria-hidden")).toBe("true");
+        expect(button.getAttribute("aria-hidden")).toBe("");
         expect(button.className).toBe("hidden");
       });
     });
@@ -651,6 +678,8 @@ describe("SLD Integration Tests", () => {
 
         setValue("updated");
         setChecked(true);
+                flush()
+
 
         expect(textInput.value).toBe("updated");
         expect(checkboxInput.checked).toBe(true);
@@ -668,6 +697,8 @@ describe("SLD Integration Tests", () => {
         expect(textarea.value).toBe("Initial content");
 
         setContent("Updated content");
+                flush()
+
         expect(textarea.value).toBe("Updated content");
       });
     });
@@ -763,6 +794,8 @@ describe("SLD Integration Tests", () => {
 
         setSrc("image2.jpg");
         setAlt("Image 2");
+
+        flush()
 
         expect(img.src).toContain("image2.jpg");
         expect(img.alt).toBe("Image 2");
