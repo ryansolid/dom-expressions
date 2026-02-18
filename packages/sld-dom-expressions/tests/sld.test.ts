@@ -2,9 +2,9 @@ import { createRoot, createSignal, flush, createMemo } from "@solidjs/signals";
 import { createSLDRuntime } from "../src";
 import { expect, it, describe, beforeEach } from "vitest";
 import * as r from "dom-expressions/src/client";
-import { rawTextElements, voidElements,mathmlElements } from "../src/util";
+import {  VoidElements,RawTextElements,MathMLElements} from "dom-expressions/src/constants";
 
-const createSLD = createSLDRuntime({...r,voidElements,rawTextElements,mathmlElements})
+const createSLD = createSLDRuntime({...r,VoidElements,RawTextElements,MathMLElements})
 
 const For = (props)=>{
   return createMemo(()=>props.each.map(v=>props.children(v) ))as any

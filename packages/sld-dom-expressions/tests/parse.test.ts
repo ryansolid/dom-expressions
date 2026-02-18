@@ -11,11 +11,11 @@ import {
   SPREAD_PROP,
   parse,
 } from "../src/parse";
-import { rawTextElements, voidElements } from "../src/util";
+import {  VoidElements,RawTextElements,MathMLElements} from "dom-expressions/src/constants";
 import { tokenize } from "../src/tokenize";
 
 function jsx(strings: TemplateStringsArray, ...values: any[]) {
-  return parse(tokenize(strings, rawTextElements), voidElements);
+  return parse(tokenize(strings, RawTextElements), VoidElements);
 }
 
 describe("Simple AST", () => {

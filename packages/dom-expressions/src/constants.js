@@ -421,11 +421,69 @@ const DOMElements = /*#__PURE__*/ new Set([
   "search"
 ]);
 
+const VoidElements = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+]);
+
+const RawTextElements = new Set(["script", "style", "textarea", "title"]);
+
+const MathMLElements = new Set([
+  "math",
+  "annotation",
+  "annotation-xml",
+  "maction",
+  "merror",
+  "mfrac",
+  "mi",
+  "mmultiscripts",
+  "mn",
+  "mo",
+  "mover",
+  "mpadded",
+  "mphantom",
+  "mprescripts",
+  "mroot",
+  "mrow",
+  "ms",
+  "mspace",
+  "msqrt",
+  "mstyle",
+  "msub",
+  "msubsup",
+  "msup",
+  "mtable",
+  "mtd",
+  "mtext",
+  "mtr",
+  "munder",
+  "munderover",
+  "semantics",
+  "menclose",
+  "mfenced",
+]);
+
+
 export {
   Properties,
   ChildProperties,
   DelegatedEvents,
   SVGElements,
   SVGNamespace,
-  DOMElements
+  DOMElements,
+  VoidElements,
+  MathMLElements,
+  RawTextElements
 };

@@ -12,10 +12,10 @@ import {
   QUOTE_CHAR_TOKEN,
   IdentifierToken,
 } from "../src/tokenize";
-import { rawTextElements } from "../src/util";
+import { RawTextElements } from "dom-expressions/src/constants";
 
 function tokenizeTemplate(strings: TemplateStringsArray, ...values: any[]) {
-  return tokenize(strings, rawTextElements);
+  return tokenize(strings, RawTextElements);
 }
 
 describe("basic tags", () => {

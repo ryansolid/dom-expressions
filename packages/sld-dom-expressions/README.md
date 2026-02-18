@@ -1,6 +1,6 @@
 # sld
 
-sld is a no-build, no-JSX tagged-template library for SolidJS and designed to work with template tooling (editor syntax highlighting, formatters, etc.).
+sld is a no-build, no-JSX tagged-template library for SolidJS
 
 ## Quick overview
 
@@ -119,3 +119,4 @@ sld`<div>
 | **Comments**         | `{/* JSX Comment */}`                             | `<!-- -->` (Stripped by parser)                            |
 | **Raw Text Tags**    | Escaping or `innerHTML` required                  | **Automatic**: `<style>`/`<script>` treat children as text |
 | **Whitespace**       | JSX-style stripping                               | Contextual: Trims between tags, preserves inside text      |
+| **Reactivity**       | Signals are auto-wrapped in JSX                   | Reactive Holes must be wrapped in `()=> `     |

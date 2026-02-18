@@ -17,8 +17,18 @@ import {
 } from "./parse";
 import { tokenize } from "./tokenize";
 import { ComponentRegistry, SLDInstance, Runtime } from "./types";
-import { flat, getValue } from "./util";
 import { type JSX } from "../../dom-expressions/src/jsx";
+
+const flat = (arr: any[]) => {
+  return arr.length === 1 ? arr[0] : arr;
+};
+
+const getValue = (value: any) => {
+  while (typeof value === "function") value = value();
+  return value;
+};
+
+
 
 export function createSLDRuntime(r: Runtime) {
   const cache = new WeakMap<TemplateStringsArray, RootNode>();
@@ -29,7 +39,7 @@ export function createSLDRuntime(r: Runtime) {
   const createElement = (name: string) => {
     return r.SVGElements.has(name)
       ? document.createElementNS("http://www.w3.org/2000/svg", name)
-      : r.mathmlElements.has(name)
+      : r.MathMLElements.has(name)
       ? document.createElementNS("http://www.w3.org/1998/Math/MathML", name)
       : document.createElement(name);
   };
@@ -53,7 +63,7 @@ export function createSLDRuntime(r: Runtime) {
   const getCachedRoot = (strings: TemplateStringsArray): RootNode => {
     let root = cache.get(strings);
     if (!root) {
-      root = parse(tokenize(strings, r.rawTextElements), r.voidElements);
+      root = parse(tokenize(strings, r.RawTextElements), r.VoidElements);
       buildTemplate(root);
       cache.set(strings, root);
     }

@@ -12,7 +12,13 @@ import {
   TEXT_TOKEN,
   Token,
 } from "./tokenize";
-import { isComponentNode } from "./util";
+
+const isComponentNode = (name: string): boolean => {
+  const char = name.charCodeAt(0);
+  return (
+    char >= 65 && char <= 90 // Uppercase A-Z
+  );
+};
 
 // Node type constants
 export const ROOT_NODE = 0;
