@@ -13,7 +13,7 @@ export function render(
   init?: JSX.Element,
   options?: { owner?: unknown }
 ): () => void;
-export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
+export function template(html: string, isImportNode?: boolean, isSVG?: boolean, isMathML?: boolean): () => Element;
 export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function untrack<T>(fn: () => T): T;
@@ -69,19 +69,20 @@ export function hydrate(
   node: MountableElement,
   options?: { renderId?: string; owner?: unknown }
 ): () => void;
-export function getHydrationKey(): string;
+export function getHydrationKey(): string | undefined;
 export function getNextElement(template?: () => Element): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 export function getNextMarker(start: Node): [Node, Array<Node>];
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
-export function HydrationScript(): JSX.Element;
-export function generateHydrationScript(): string;
+export function HydrationScript(props?: { nonce?: string; eventNames?: string[] }): JSX.Element;
+export function generateHydrationScript(options?: { nonce?: string; eventNames?: string[] }): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function Hydration(props: { children?: JSX.Element }): JSX.Element;
 export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export interface RequestEvent {
   request: Request;
+  locals: Record<string | number | symbol, any>;
 }
 export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;

@@ -13,9 +13,12 @@ export function renderToString<T>(
   options?: {
     nonce?: string;
     renderId?: string;
+    noScripts?: boolean;
+    plugins?: any[];
     onError?: (err: any) => void;
   }
 ): string;
+/** @deprecated use renderToStream which also returns a promise */
 export function renderToStringAsync<T>(
   fn: () => T,
   options?: {
@@ -23,6 +26,7 @@ export function renderToStringAsync<T>(
     nonce?: string;
     renderId?: string;
     noScripts?: boolean;
+    plugins?: any[];
     onError?: (err: any) => void;
   }
 ): Promise<string>;
@@ -31,12 +35,15 @@ export function renderToStream<T>(
   options?: {
     nonce?: string;
     renderId?: string;
+    noScripts?: boolean;
+    plugins?: any[];
     onCompleteShell?: (info: { write: (v: string) => void }) => void;
     onCompleteAll?: (info: { write: (v: string) => void }) => void;
     onError?: (err: any) => void;
   }
 ): {
-  pipe: (writable: { write: (v: string) => void }) => void;
+  then: (fn: (html: string) => void) => void;
+  pipe: (writable: { write: (v: string) => void; end: () => void }) => void;
   pipeTo: (writable: WritableStream) => Promise<void>;
 };
 
@@ -48,21 +55,23 @@ export function ssrElement(
   children: any,
   needsId: boolean
 ): { t: string };
-export function ssrClassList(value: { [k: string]: boolean }): string;
-export function ssrStyle(value: { [k: string]: string }): string;
-export function ssrAttribute(key: string, value: any, isBoolean: boolean): string;
+export function ssrClassName(value: string | { [k: string]: boolean } | Array<any>): string;
+export function ssrStyle(value: string | { [k: string]: string }): string;
+export function ssrStyleProperty(name: string, value: any): string;
+export function ssrAttribute(key: string, value: any): string;
 export function ssrHydrationKey(): string;
-export function resolveSSRNode(node: any): string;
-export function escape(html: string): string;
+export function resolveSSRNode(node: any, result?: any, top?: boolean): any;
+export function escape(s: any, attr?: boolean): any;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
-export function getHydrationKey(): string;
-export function effect<T>(fn: (prev?: T) => T, init?: T): void;
+export function getHydrationKey(): string | undefined;
+export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
-export function generateHydrationScript(options: { nonce?: string; eventNames?: string[] }): string;
+export function ssrRunInScope(fn: () => void, owner: unknown): void;
+export function generateHydrationScript(options?: { nonce?: string; eventNames?: string[] }): string;
 export declare const RequestContext: unique symbol;
 export interface RequestEvent {
   request: Request;
@@ -120,7 +129,7 @@ export function addEventListener(
 /** @deprecated not supported on the server side */
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
 /** @deprecated not supported on the server side */
-export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
+export function template(html: string, isImportNode?: boolean, isSVG?: boolean, isMathML?: boolean): () => Element;
 /** @deprecated not supported on the server side */
 export function setProperty(node: Element, name: string, value: any): void;
 /** @deprecated not supported on the server side */
@@ -136,8 +145,10 @@ export function hydrate(
 ): () => void;
 
 /** @deprecated not supported on the server side */
-export function getNextElement(template?: HTMLTemplateElement): Element;
+export function getNextElement(template?: () => Element): Element;
 /** @deprecated not supported on the server side */
 export function getNextMatch(start: Node, elementName: string): Element;
 /** @deprecated not supported on the server side */
 export function getNextMarker(start: Node): [Node, Array<Node>];
+/** @deprecated not supported on the server side */
+export function runHydrationEvents(): void;
