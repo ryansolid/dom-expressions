@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from '../../src/client';
-import * as S from "s-js";
+import S from "s-js";
 
 describe("r.insert", () => {
   // <div><!-- insert --></div>
@@ -353,6 +353,54 @@ describe("r.insert with Markers", () => {
     expect(parent.childNodes.length).toBe(2);
     r.insert(parent, '', null, current);
     expect(parent.innerHTML).toBe('hello ');
+  });
+
+  it("can move a node within a parent with marker", () => {
+    // <div><!--     -->bar<!-- foo --></div>
+    // <div><!-- foo -->bar<!--     --></div>
+
+    const parent = document.createElement("div");
+    parent.textContent = "bar";
+    const marker = parent.firstChild;
+
+    const node = document.createElement("div");
+    node.textContent = "foo";
+
+    let current = r.insert(parent, null, marker);
+    let current2 = r.insert(parent, node, null);
+    expect(parent.outerHTML).toBe("<div>bar<div>foo</div></div>");
+
+    current = r.insert(parent, node, marker, current);
+    current2 = r.insert(parent, null, null, current2);
+    expect(parent.outerHTML).toBe("<div><div>foo</div>bar</div>");
+  });
+
+  it("can move a node within parents with markers", () => {
+    // <div><!--     -->bar</div><div><!-- foo -->baz</div>
+    // <div><!-- foo -->bar</div><div><!--     -->baz</div>
+
+    const bar = document.createElement("div");
+    bar.textContent = "bar";
+    const barMarker = bar.firstChild;
+
+    const baz = document.createElement("div");
+    baz.textContent = "baz";
+    const bazMarker = baz.firstChild;
+
+    const node = document.createElement("div");
+    node.textContent = "foo";
+
+    let current = r.insert(bar, null, barMarker);
+    let current2 = r.insert(baz, node, bazMarker);
+
+    expect(bar.outerHTML).toBe("<div>bar</div>");
+    expect(baz.outerHTML).toBe("<div><div>foo</div>baz</div>");
+
+    current = r.insert(bar, node, barMarker, current);
+    current2 = r.insert(baz, null, bazMarker, current2);
+
+    expect(bar.outerHTML).toBe("<div><div>foo</div>bar</div>");
+    expect(baz.outerHTML).toBe("<div>baz</div>");
   });
 
   function insert(val) {

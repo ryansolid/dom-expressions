@@ -474,7 +474,6 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
   if (value === current) return current;
   const t = typeof value,
     multi = marker !== undefined;
-  parent = (multi && current[0] && current[0].parentNode) || parent;
 
   if (t === "string" || t === "number") {
     if (hydrating) return current;
@@ -584,7 +583,17 @@ function appendNodes(parent, array, marker = null) {
   for (let i = 0, len = array.length; i < len; i++) parent.insertBefore(array[i], marker);
 }
 
+const moved = new Set();
+let scheduled = false;
+
 function cleanChildren(parent, current, marker, replacement) {
+  if (!scheduled && moved.size) {
+    queueMicrotask(() => {
+      moved.clear();
+      scheduled = false;
+    })
+    scheduled = true;
+  }
   if (marker === undefined) return (parent.textContent = "");
   const node = replacement || document.createTextNode("");
   if (current.length) {
@@ -593,9 +602,12 @@ function cleanChildren(parent, current, marker, replacement) {
       const el = current[i];
       if (node !== el) {
         const isParent = el.parentNode === parent;
-        if (!inserted && !i)
-          isParent ? parent.replaceChild(node, el) : parent.insertBefore(node, marker);
-        else isParent && el.remove();
+        if (!inserted && !i) {
+          node.parentNode && moved.add(node);
+          isParent && !moved.has(el)
+            ? parent.replaceChild(node, el)
+            : parent.insertBefore(node, marker);
+        } else isParent && el.remove();
       } else inserted = true;
     }
   } else parent.insertBefore(node, marker);
