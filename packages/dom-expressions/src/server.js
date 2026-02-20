@@ -13,10 +13,50 @@ export {
   DelegatedEvents
 } from "./constants.js";
 
+function createAssetTracking() {
+  const boundaryModules = new Map();
+  const boundaryStyles = new Map();
+  const emittedAssets = new Set();
+  let currentBoundaryId = null;
+  return {
+    boundaryModules,
+    boundaryStyles,
+    emittedAssets,
+    get currentBoundaryId() { return currentBoundaryId; },
+    set currentBoundaryId(v) { currentBoundaryId = v; },
+    registerModule(moduleUrl, entryUrl) {
+      if (!currentBoundaryId) return;
+      let map = boundaryModules.get(currentBoundaryId);
+      if (!map) {
+        map = {};
+        boundaryModules.set(currentBoundaryId, map);
+      }
+      map[moduleUrl] = entryUrl;
+    },
+    getBoundaryModules(id) {
+      return boundaryModules.get(id) || null;
+    },
+    getBoundaryStyles(id) {
+      return boundaryStyles.get(id) || null;
+    }
+  };
+}
+
+function applyAssetTracking(context, tracking) {
+  Object.defineProperty(context, "_currentBoundaryId", {
+    get() { return tracking.currentBoundaryId; },
+    set(v) { tracking.currentBoundaryId = v; },
+    configurable: true,
+    enumerable: true
+  });
+  context.registerModule = tracking.registerModule;
+  context.getBoundaryModules = tracking.getBoundaryModules;
+}
+
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
   /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
-const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}`;
+const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}function $dfs(e,c){(_$HY.sc=_$HY.sc||{})[e]=c}function $dfc(e){if(--_$HY.sc[e]<=0)delete _$HY.sc[e],$df(e)}`;
 
 export function renderToString(code, options = {}) {
   const { renderId = "", nonce, noScripts } = options;
@@ -33,6 +73,7 @@ export function renderToString(code, options = {}) {
     },
     onError: options.onError
   });
+  const tracking = createAssetTracking();
   sharedConfig.context = {
     assets: [],
     nonce,
@@ -40,9 +81,21 @@ export function renderToString(code, options = {}) {
     resolve: resolveSSRNode,
     ssr: ssr,
     serialize(id, p) {
-      !sharedConfig.context.noHydrate && serializer.write(id, p);
+      if (sharedConfig.context.noHydrate) return;
+      if (p != null && typeof p === "object" && (typeof p.then === "function" || typeof p[Symbol.asyncIterator] === "function")) {
+        throw new Error(
+          "Cannot serialize async value in renderToString (id: " + id + "). " +
+          "Use renderToStream for async data."
+        );
+      }
+      serializer.write(id, p);
+    },
+    registerAsset(type, url) {
+      if (!tracking.currentBoundaryId) return;
+      tracking.emittedAssets.add(url);
     }
   };
+  applyAssetTracking(sharedConfig.context, tracking);
   let html = root(
     d => {
       setTimeout(d);
@@ -53,6 +106,7 @@ export function renderToString(code, options = {}) {
   sharedConfig.context.noHydrate = true;
   serializer.close();
   html = injectAssets(sharedConfig.context.assets, html);
+  html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
   if (scripts.length) html = injectScripts(html, scripts, options.nonce);
   return html;
 }
@@ -117,6 +171,7 @@ export function renderToStream(code, options = {}) {
   let completed = false;
   let shellCompleted = false;
   let scriptFlushed = false;
+  let headStyles;
   let timer = null;
   let rootHoles = null;
   let nextHoleId = 0;
@@ -125,10 +180,29 @@ export function renderToStream(code, options = {}) {
       tmp += payload;
     }
   };
+  const tracking = createAssetTracking();
+
   sharedConfig.context = context = {
     async: true,
     assets: [],
     nonce,
+    registerAsset(type, url) {
+      if (!tracking.currentBoundaryId) return;
+      if (type === "style") {
+        let styles = tracking.boundaryStyles.get(tracking.currentBoundaryId);
+        if (!styles) {
+          styles = new Set();
+          tracking.boundaryStyles.set(tracking.currentBoundaryId, styles);
+        }
+        styles.add(url);
+      }
+      if (!tracking.emittedAssets.has(url)) {
+        tracking.emittedAssets.add(url);
+        if (firstFlushed && type === "module") {
+          buffer.write(`<link rel="modulepreload" href="${url}">`);
+        }
+      }
+    },
     block(p) {
       if (!firstFlushed) blockingPromises.add(p);
     },
@@ -185,18 +259,33 @@ export function renderToStream(code, options = {}) {
             const parent = registry.get(parentKey);
             parent.children ||= {};
             parent.children[key] = value !== undefined ? value : "";
+            serializeFragmentAssets(key, tracking.boundaryModules, context);
+            propagateBoundaryStyles(key, parentKey, tracking);
             item.resolve();
             return;
           }
           if (!completed) {
             if (!firstFlushed) {
               queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
+              serializeFragmentAssets(key, tracking.boundaryModules, context);
               item.resolve(error);
             } else {
-              buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
-              pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
+              serializeFragmentAssets(key, tracking.boundaryModules, context);
+              const styles = collectStreamStyles(key, tracking, headStyles);
+              if (styles.length) {
+                pushTask(`$dfs("${key}",${styles.length})${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
+                scriptFlushed = true;
+                writeTasks();
+                for (const url of styles) {
+                  buffer.write(`<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`);
+                }
+                buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
+              } else {
+                buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
+                pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
+                scriptFlushed = true;
+              }
               item.resolve(error);
-              scriptFlushed = true;
             }
           }
         }
@@ -204,6 +293,7 @@ export function renderToStream(code, options = {}) {
       };
     }
   };
+  applyAssetTracking(context, tracking);
 
   let html = root(
     d => {
@@ -233,8 +323,12 @@ export function renderToStream(code, options = {}) {
       rootHoles = null;
     }
     sharedConfig.context = context;
-    // context.noHydrate = true;
     html = injectAssets(context.assets, html);
+    headStyles = new Set();
+    for (const url of tracking.emittedAssets) {
+      if (url.endsWith(".css")) headStyles.add(url);
+    }
+    html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
     tasks = "";
@@ -553,6 +647,52 @@ function injectAssets(assets, html) {
   const index = html.indexOf("</head>");
   if (index === -1) return html;
   return html.slice(0, index) + out + html.slice(index);
+}
+
+function injectPreloadLinks(emittedAssets, html, nonce) {
+  if (!emittedAssets.size) return html;
+  let links = "";
+  for (const url of emittedAssets) {
+    if (url.endsWith(".css")) {
+      links += `<link rel="stylesheet" href="${url}">`;
+    } else {
+      links += `<link rel="modulepreload" href="${url}">`;
+    }
+  }
+  const index = html.indexOf("</head>");
+  if (index === -1) return html;
+  return html.slice(0, index) + links + html.slice(index);
+}
+
+function serializeFragmentAssets(key, boundaryModules, context) {
+  const map = boundaryModules.get(key);
+  if (!map || !Object.keys(map).length) return;
+  context.serialize(key + "_assets", map);
+}
+
+function propagateBoundaryStyles(childKey, parentKey, tracking) {
+  const childStyles = tracking.getBoundaryStyles(childKey);
+  if (!childStyles) return;
+  let parentStyles = tracking.boundaryStyles.get(parentKey);
+  if (!parentStyles) {
+    parentStyles = new Set();
+    tracking.boundaryStyles.set(parentKey, parentStyles);
+  }
+  for (const url of childStyles) {
+    parentStyles.add(url);
+  }
+}
+
+function collectStreamStyles(key, tracking, headStyles) {
+  const styles = tracking.getBoundaryStyles(key);
+  if (!styles) return [];
+  const result = [];
+  for (const url of styles) {
+    if (!headStyles || !headStyles.has(url)) {
+      result.push(url);
+    }
+  }
+  return result;
 }
 
 function injectScripts(html, scripts, nonce) {

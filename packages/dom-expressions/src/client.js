@@ -261,6 +261,8 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
 export function hydrate(code, element, options = {}) {
   if (globalThis._$HY.done) return render(code, element, [...element.childNodes], options);
   options.renderId ||= "";
+  if (!globalThis._$HY.modules) globalThis._$HY.modules = {};
+  if (!globalThis._$HY.loading) globalThis._$HY.loading = {};
   sharedConfig.completed = globalThis._$HY.completed;
   sharedConfig.events = globalThis._$HY.events;
   sharedConfig.load = id => globalThis._$HY.r[id];
