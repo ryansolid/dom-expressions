@@ -13,6 +13,45 @@ export {
   DelegatedEvents
 } from "./constants.js";
 
+// ---- Asset Manifest ----
+
+function resolveAssets(moduleUrl, manifest) {
+  if (!manifest) return null;
+  const entry = manifest[moduleUrl];
+  if (!entry) return null;
+  const css = [];
+  const js = [];
+  const visited = new Set();
+  const walk = (key) => {
+    if (visited.has(key)) return;
+    visited.add(key);
+    const e = manifest[key];
+    if (!e) return;
+    js.push(e.file);
+    if (e.css) for (let i = 0; i < e.css.length; i++) css.push(e.css[i]);
+    if (e.imports) for (let i = 0; i < e.imports.length; i++) walk(e.imports[i]);
+  };
+  walk(moduleUrl);
+  return { js, css };
+}
+
+function registerEntryAssets(manifest) {
+  if (!manifest) return;
+  const ctx = sharedConfig.context;
+  if (!ctx?.registerAsset) return;
+  for (const key in manifest) {
+    if (manifest[key].isEntry) {
+      const assets = resolveAssets(key, manifest);
+      if (assets) {
+        for (let i = 0; i < assets.css.length; i++) ctx.registerAsset("style", assets.css[i]);
+      }
+      return;
+    }
+  }
+}
+
+// ---- Asset Tracking ----
+
 function createAssetTracking() {
   const boundaryModules = new Map();
   const boundaryStyles = new Map();
@@ -42,7 +81,7 @@ function createAssetTracking() {
   };
 }
 
-function applyAssetTracking(context, tracking) {
+function applyAssetTracking(context, tracking, manifest) {
   Object.defineProperty(context, "_currentBoundaryId", {
     get() { return tracking.currentBoundaryId; },
     set(v) { tracking.currentBoundaryId = v; },
@@ -51,6 +90,7 @@ function applyAssetTracking(context, tracking) {
   });
   context.registerModule = tracking.registerModule;
   context.getBoundaryModules = tracking.getBoundaryModules;
+  if (manifest) context.resolveAssets = (moduleUrl) => resolveAssets(moduleUrl, manifest);
 }
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
@@ -59,7 +99,7 @@ const VOID_ELEMENTS =
 const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}function $dfs(e,c){(_$HY.sc=_$HY.sc||{})[e]=c}function $dfc(e){if(--_$HY.sc[e]<=0)delete _$HY.sc[e],$df(e)}`;
 
 export function renderToString(code, options = {}) {
-  const { renderId = "", nonce, noScripts } = options;
+  const { renderId = "", nonce, noScripts, manifest } = options;
   let scripts = "";
   const serializer = createSerializer({
     scopeId: renderId,
@@ -91,11 +131,19 @@ export function renderToString(code, options = {}) {
       serializer.write(id, p);
     },
     registerAsset(type, url) {
-      if (!tracking.currentBoundaryId) return;
+      if (tracking.currentBoundaryId && type === "style") {
+        let styles = tracking.boundaryStyles.get(tracking.currentBoundaryId);
+        if (!styles) {
+          styles = new Set();
+          tracking.boundaryStyles.set(tracking.currentBoundaryId, styles);
+        }
+        styles.add(url);
+      }
       tracking.emittedAssets.add(url);
     }
   };
-  applyAssetTracking(sharedConfig.context, tracking);
+  applyAssetTracking(sharedConfig.context, tracking, manifest);
+  registerEntryAssets(manifest);
   let html = root(
     d => {
       setTimeout(d);
@@ -112,7 +160,7 @@ export function renderToString(code, options = {}) {
 }
 
 export function renderToStream(code, options = {}) {
-  let { nonce, onCompleteShell, onCompleteAll, renderId = "", noScripts } = options;
+  let { nonce, onCompleteShell, onCompleteAll, renderId = "", noScripts, manifest } = options;
   let dispose;
   const blockingPromises = new Set();
   const pushTask = task => {
@@ -187,8 +235,7 @@ export function renderToStream(code, options = {}) {
     assets: [],
     nonce,
     registerAsset(type, url) {
-      if (!tracking.currentBoundaryId) return;
-      if (type === "style") {
+      if (tracking.currentBoundaryId && type === "style") {
         let styles = tracking.boundaryStyles.get(tracking.currentBoundaryId);
         if (!styles) {
           styles = new Set();
@@ -293,7 +340,8 @@ export function renderToStream(code, options = {}) {
       };
     }
   };
-  applyAssetTracking(context, tracking);
+  applyAssetTracking(context, tracking, manifest);
+  registerEntryAssets(manifest);
 
   let html = root(
     d => {
