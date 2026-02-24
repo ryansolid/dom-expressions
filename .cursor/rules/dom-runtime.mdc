@@ -1,0 +1,45 @@
+---
+description: DOM runtime internals — client rendering, SSR, hydration, and universal renderer
+globs: packages/dom-expressions/src/**
+alwaysApply: false
+---
+
+# DOM Runtime
+
+## Source Files
+
+Source is plain JavaScript (no build step). Files are consumed directly by downstream bundlers, enabling tree-shaking.
+
+- `client.js` — Client-side DOM rendering, hydration, event delegation
+- `server.js` — SSR streaming, asset tracking, serialization
+- `universal.js` — `createRenderer()` factory for non-DOM platforms
+- `reconcile.js` — Array reconciliation algorithm (based on udomdiff)
+- `constants.js` — DOM/SVG element sets, delegated events, property mappings
+- `serializer.js` — `seroval`-based serializer for SSR data hydration
+
+## `rxcore` Imports
+
+All modules import reactive primitives from `"rxcore"`. This is rewritten at consume time — never add a real `rxcore` dependency. Client imports: `root`, `effect`, `memo`, `getOwner`, `createComponent`, `sharedConfig`, `untrack`, `mergeProps`, `flatten`. Server adds: `ssrHandleError`, `ssrRunInScope`.
+
+## Client Patterns
+
+- `template(html, count)` — creates a `<template>` element, caches it, returns clones. `count` indicates expected child count for normalization.
+- `insert(parent, accessor, marker, initial)` — core insertion. Wraps reactive accessors in `effect()`. Handles strings, numbers, nodes, arrays, and functions.
+- `spread(node, props, skipChildren)` — applies a dynamic props object to a DOM element. Handles style objects, classList, event listeners, refs, and attributes.
+- `delegateEvents(eventNames)` — attaches a single listener per event type to `document`. Events are dispatched via `_$DX_DELEGATE` property on nodes.
+- `render(code, element)` — entry point. Creates a reactive root and inserts into the target element.
+
+## Hydration
+
+Key-based hydration via `sharedConfig.registry`. `getNextElement()` walks the DOM to find matching elements by `data-hk` attribute. `runHydrationEvents()` replays events captured during SSR.
+
+## SSR Patterns
+
+- `renderToString()` / `renderToStream()` — entry points with `RequestContext` for shared state
+- `ssr()` — tagged template helper that concatenates SSR output
+- Asset tracking via `createAssetTracking()` — manages boundary-scoped CSS/JS assets
+- Fragment boundaries use comment markers (`<!--!$-->`, `<!--/-->`)
+
+## Style / Class Handling
+
+`style(node, value, prev)` and `className(node, value)` handle both string and object forms. Style objects diff property-by-property. CSS custom properties use `setProperty()`; standard properties use direct assignment.

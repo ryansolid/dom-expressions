@@ -228,6 +228,14 @@ export function use(fn, element, arg) {
 export function insert(parent, accessor, marker, initial) {
   const multi = marker !== undefined;
   if (multi && !initial) initial = [];
+  if (isHydrating(parent) && Array.isArray(initial)) {
+    let j = 0;
+    for (let i = 0; i < initial.length; i++) {
+      if (initial[i].nodeType === 8 && initial[i].nodeValue === "!$") initial[i].remove();
+      else initial[j++] = initial[i];
+    }
+    initial.length = j;
+  }
   if (typeof accessor !== "function") {
     accessor = normalize(accessor, initial, multi, true);
     if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
@@ -268,6 +276,22 @@ export function hydrate(code, element, options = {}) {
   sharedConfig.load = id => globalThis._$HY.r[id];
   sharedConfig.has = id => id in globalThis._$HY.r;
   sharedConfig.gather = root => gatherHydratable(element, root);
+  sharedConfig.cleanupFragment = id => {
+    const tpl = document.getElementById("pl-" + id);
+    if (tpl) {
+      let node = tpl.nextSibling;
+      while (node) {
+        const next = node.nextSibling;
+        if (node.nodeType === 8 && node.nodeValue === "pl-" + id) {
+          node.remove();
+          break;
+        }
+        node.remove();
+        node = next;
+      }
+      tpl.remove();
+    }
+  };
   sharedConfig.registry = new Map();
   sharedConfig.hydrating = true;
   try {
@@ -284,7 +308,6 @@ export function getNextElement(template) {
     hydrating = isHydrating();
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if ("_DX_DEV_" && hydrating) {
-      sharedConfig.done = true;
       throw new Error(
         `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${
           template ? template().outerHTML : ""
@@ -347,7 +370,7 @@ export function runHydrationEvents() {
 
 // Internal Functions
 function isHydrating(node) {
-  return sharedConfig.hydrating && !sharedConfig.done && (!node || node.isConnected);
+  return sharedConfig.hydrating && (!node || node.isConnected);
 }
 
 function toggleClassKey(node, key, value) {
@@ -453,9 +476,6 @@ function eventHandler(e) {
       return node || document;
     }
   });
-  // cancel hydration
-  if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
-
   if (e.composedPath) {
     const path = e.composedPath();
     retarget(path[0]);

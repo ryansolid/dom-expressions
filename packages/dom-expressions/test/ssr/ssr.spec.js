@@ -134,6 +134,7 @@ describe("pipeToWritable", () => {
         return {
           write(v) {
             chunks.push(v);
+            return Promise.resolve();
           },
           releaseLock() {}
         };
@@ -141,6 +142,7 @@ describe("pipeToWritable", () => {
       close() {
         expect(chunks.join("")).toBe(fixture2);
         done();
+        return Promise.resolve();
       }
     });
   });

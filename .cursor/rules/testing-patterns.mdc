@@ -1,0 +1,40 @@
+---
+description: Test conventions and patterns for dom-expressions
+globs: packages/*/test/**
+alwaysApply: false
+---
+
+# Testing Patterns
+
+## Setup
+
+Jest with jsdom environment (set per-file via `/** @jest-environment jsdom */` directive). Three test suites: `dom`, `universal`, and `ssr`.
+
+Import runtime directly from source:
+
+```javascript
+import * as r from "../../src/client";
+import { createSignal } from "@solidjs/signals";
+```
+
+## Test Projects
+
+- `test/dom/` — Client-side DOM tests (element rendering, events, styles, classes, SVG, spreads, conditionals)
+- `test/universal/` — Universal renderer tests
+- `test/ssr/` — Server-side rendering and hydration tests
+
+Each project has its own Jest transform configuration (`test/transform-dom.js`, `test/transform-universal.js`, etc.) that configures the babel plugin for the appropriate output mode.
+
+## Conventions
+
+- Tests use JSX — transforms are applied via the test-specific babel configs
+- Runtime functions are imported as `r` namespace: `r.render()`, `r.insert()`, `r.template()`, `r.delegateEvents()`
+- Reactive primitives come from `@solidjs/signals` directly
+- DOM assertions use `innerHTML`, `textContent`, `querySelector`
+- Spy/mock tracking via `jest.fn()`
+
+## Commands
+
+- `pnpm test` (from package dir) — `jest --no-cache`
+- `pnpm test:coverage` — `jest --coverage --no-cache`
+- `pnpm test` (from root) — runs all package tests via Lerna

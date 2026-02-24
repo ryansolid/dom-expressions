@@ -874,7 +874,7 @@ export function getRequestEvent() {
 
 /** @deprecated use renderToStream which also returns a promise */
 export function renderToStringAsync(code, options = {}) {
-  return renderToStream(code, options).then(html => html);
+  return new Promise(resolve => renderToStream(code, options).then(resolve));
 }
 
 // client-only APIs

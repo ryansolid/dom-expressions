@@ -3,6 +3,7 @@
  */
 import * as r from "../../src/client";
 import * as r2 from "../../src/server";
+import { createSignal, flush } from "@solidjs/signals";
 
 globalThis._$HY = { events: [], completed: new WeakSet() };
 
@@ -81,6 +82,50 @@ describe("r.hydrate", () => {
     expect(container.firstChild).toBe(el1);
     expect(el1.nextSibling).toEqual(el2);
     expect(el1.nextSibling.nextSibling).toBe(el3);
+  });
+
+  it("hydrates fragment with adjacent text items", () => {
+    rendered = r2.renderToString(() => ["prefix", "hello"]);
+    expect(rendered).toBe("prefix<!--!$-->hello");
+
+    container.innerHTML = rendered;
+    expect(container.childNodes.length).toBe(3);
+    const prefixNode = container.firstChild;
+    const helloNode = container.lastChild;
+
+    r.hydrate(() => {
+      r.insert(container, ["prefix", "hello"], undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+    }, container);
+
+    expect(container.innerHTML).toBe("prefixhello");
+    expect(container.childNodes.length).toBe(2);
+    expect(container.firstChild).toBe(prefixNode);
+    expect(container.lastChild).toBe(helloNode);
+  });
+
+  it("updates reactively after hydrating fragment with adjacent text", () => {
+    rendered = r2.renderToString(() => ["prefix", "hello"]);
+    container.innerHTML = rendered;
+
+    const prefixNode = container.firstChild;
+    const helloNode = container.lastChild;
+
+    let setter;
+    r.hydrate(() => {
+      const [s, set] = createSignal("hello");
+      setter = set;
+      r.insert(container, ["prefix", r.memo(() => s())], undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+    }, container);
+
+    expect(container.innerHTML).toBe("prefixhello");
+    expect(container.firstChild).toBe(prefixNode);
+    expect(container.lastChild).toBe(helloNode);
+
+    setter("world");
+    flush();
+    expect(container.innerHTML).toBe("prefixworld");
   });
 
   it("skips hydrating simple text", () => {

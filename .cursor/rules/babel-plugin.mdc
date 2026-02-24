@@ -1,0 +1,49 @@
+---
+description: Babel plugin for compiling JSX to DOM expressions
+globs: packages/babel-plugin-jsx-dom-expressions/**
+alwaysApply: false
+---
+
+# Babel Plugin (`babel-plugin-jsx-dom-expressions`)
+
+## Overview
+
+Compiles JSX into optimized DOM creation code. Supports three output modes: `dom` (client), `ssr` (server), and `universal` (custom renderers). Built with Rollup.
+
+## Entry Point
+
+`src/index.ts` — exports a Babel plugin that inherits `@babel/plugin-syntax-jsx` and visits `JSXElement`, `JSXFragment`, and `Program` nodes.
+
+## Source Structure
+
+- `src/shared/` — mode-agnostic logic
+  - `transform.js` — main JSX transformation entry
+  - `preprocess.js` — `Program:enter` setup
+  - `postprocess.js` — `Program:exit` cleanup (template insertion)
+  - `component.js` — component element handling
+  - `fragment.js` — fragment handling
+  - `utils.js` — AST utilities and helpers
+  - `validate.js` — JSX validation
+- `src/dom/` — DOM-mode code generation
+  - `element.js` — native element transformation
+  - `template.js` — template creation and cloning
+  - `constants.js` — DOM-specific constants
+- `src/ssr/` — SSR-mode code generation
+  - `element.js`, `template.js`
+- `src/universal/` — universal-mode code generation
+  - `element.js`, `template.js`
+- `src/config.ts` — plugin configuration and defaults
+- `src/VoidElements.ts` — self-closing HTML element set
+
+## Key Concepts
+
+- **Templates**: Static HTML is extracted into `template()` calls that create `<template>` elements once and clone them. Dynamic parts are patched via `effect()` wrappers.
+- **Component calls**: `<Comp prop={val}>` compiles to `createComponent(Comp, { prop: val })`.
+- **Delegated events**: Events in `DelegatedEvents` set are compiled to use event delegation (`$$click`) instead of `addEventListener`.
+- **Spreads**: Dynamic props use `spread()` runtime call.
+
+## Build
+
+- `pnpm build` — Rollup build (`rollup -c --bundleConfigAsCjs`)
+- `pnpm test` — builds first, then runs Jest
+- Output: `index.js` (CJS)
