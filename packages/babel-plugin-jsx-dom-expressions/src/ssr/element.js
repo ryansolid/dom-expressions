@@ -74,27 +74,6 @@ export function transformElement(path, info) {
     };
 
   if (info.topLevel && config.hydratable) {
-    if (tagName === "head") {
-      registerImportMethod(path, "NoHydration");
-      registerImportMethod(path, "createComponent");
-      const child = transformElement(path, { ...info, topLevel: false });
-      results.template = "";
-      results.templateWithClosingTags = "";
-      results.exprs.push(
-        t.callExpression(t.identifier("_$createComponent"), [
-          t.identifier("_$NoHydration"),
-          t.objectExpression([
-            t.objectMethod(
-              "get",
-              t.identifier("children"),
-              [],
-              t.blockStatement([t.returnStatement(createTemplate(path, child))])
-            )
-          ])
-        ])
-      );
-      return results;
-    }
     results.template.push("");
     results.templateValues.push(
       hoistExpression(
@@ -481,29 +460,6 @@ function transformChildren(path, results, { hydratable }) {
   const multi = checkLength(filteredChildren),
     markers = hydratable && multi;
   filteredChildren.forEach(node => {
-    if (t.isJSXElement(node.node) && getTagName(node.node) === "head") {
-      const child = transformNode(node, { doNotEscape, hydratable: false, parentResults: results });
-      registerImportMethod(path, "NoHydration");
-      registerImportMethod(path, "createComponent");
-      results.template.push("");
-      results.templateValues.push(
-        t.callExpression(t.identifier("_$createComponent"), [
-          t.identifier("_$NoHydration"),
-          t.objectExpression([
-            t.objectMethod(
-              "get",
-              t.identifier("children"),
-              [],
-              t.blockStatement([t.returnStatement(createTemplate(path, child))])
-            )
-          ])
-        ])
-      );
-      results.declarations.push(...child.declarations);
-      results.postDeclarations.push(...child.postDeclarations);
-      results.groupId ||= child.groupId;
-      return;
-    }
     const child = transformNode(node, { doNotEscape, parentResults: results });
     if (!child) return;
     appendToTemplate(results.template, child.template);

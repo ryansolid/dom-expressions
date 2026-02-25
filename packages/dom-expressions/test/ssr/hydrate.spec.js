@@ -128,6 +128,170 @@ describe("r.hydrate", () => {
     expect(container.innerHTML).toBe("prefixworld");
   });
 
+  it("hydrates standalone head with static children", () => {
+    rendered = r2.renderToString(() =>
+      r2.ssr(
+        ["<head", '><title>Test</title><meta charset="UTF-8"><link rel="stylesheet" href="/styles.css"></head>'],
+        r2.ssrHydrationKey()
+      )
+    );
+    expect(rendered).toBe('<head _hk=0><title>Test</title><meta charset="UTF-8"><link rel="stylesheet" href="/styles.css"></head>');
+
+    const head = document.createElement("head");
+    head.setAttribute("_hk", "0");
+    const title = document.createElement("title");
+    title.textContent = "Test";
+    const meta = document.createElement("meta");
+    meta.setAttribute("charset", "UTF-8");
+    const link = document.createElement("link");
+    link.setAttribute("rel", "stylesheet");
+    link.setAttribute("href", "/styles.css");
+    head.appendChild(title);
+    head.appendChild(meta);
+    head.appendChild(link);
+
+    container.innerHTML = "";
+    container.appendChild(head);
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement();
+      const _el$2 = _el$.firstChild;
+      const _el$3 = _el$2.nextSibling;
+      const _el$4 = _el$3.nextSibling;
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+      return _el$;
+    }, container);
+
+    expect(container.firstChild).toBe(head);
+    expect(head.firstChild).toBe(title);
+    expect(title.nextSibling).toBe(meta);
+    expect(meta.nextSibling).toBe(link);
+  });
+
+  it("hydrates head with dynamic expression", () => {
+    const head = document.createElement("head");
+    head.setAttribute("_hk", "0");
+    const title = document.createElement("title");
+    title.textContent = "Test";
+    const startMarker = document.createComment("$");
+    const dynamicLink = document.createElement("link");
+    dynamicLink.setAttribute("rel", "stylesheet");
+    dynamicLink.setAttribute("href", "/dynamic.css");
+    const endMarker = document.createComment("/");
+    head.appendChild(title);
+    head.appendChild(startMarker);
+    head.appendChild(dynamicLink);
+    head.appendChild(endMarker);
+
+    container.innerHTML = "";
+    container.appendChild(head);
+
+    let setter;
+    r.hydrate(() => {
+      const _el$ = r.getNextElement();
+      const _el$2 = _el$.firstChild;
+      const [_el$3, _co$] = r.getNextMarker(_el$2.nextSibling);
+      const [s, set] = createSignal("dynamic.css");
+      setter = set;
+      r.insert(
+        _el$,
+        r.memo(() => {
+          const href = s();
+          const l = document.createElement("link");
+          l.setAttribute("rel", "stylesheet");
+          l.setAttribute("href", "/" + href);
+          return l;
+        }),
+        _el$3,
+        _co$
+      );
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+      return _el$;
+    }, container);
+
+    expect(container.firstChild).toBe(head);
+    expect(head.firstChild).toBe(title);
+
+    setter("updated.css");
+    flush();
+    const updatedLink = head.querySelector('link[href="/updated.css"]');
+    expect(updatedLink).toBeTruthy();
+  });
+
+  it("hydrates head as child of html using getNextMatch", () => {
+    const html = document.createElement("html");
+    html.setAttribute("_hk", "0");
+    const head = document.createElement("head");
+    const title = document.createElement("title");
+    title.textContent = "Test";
+    head.appendChild(title);
+    const body = document.createElement("body");
+    const div = document.createElement("div");
+    div.textContent = "Hello";
+    body.appendChild(div);
+    html.appendChild(head);
+    html.appendChild(body);
+
+    container.innerHTML = "";
+    container.appendChild(html);
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement();
+      const _el$2 = r.getNextMatch(_el$.firstChild, "head");
+      const _el$3 = _el$2.firstChild;
+      const _el$4 = r.getNextMatch(_el$2.nextSibling, "body");
+      const _el$5 = _el$4.firstChild;
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+      return _el$;
+    }, container);
+
+    expect(container.firstChild).toBe(html);
+    expect(r.getNextMatch(html.firstChild, "head")).toBe(head);
+    expect(head.firstChild).toBe(title);
+    expect(r.getNextMatch(head.nextSibling, "body")).toBe(body);
+    expect(body.firstChild).toBe(div);
+  });
+
+  it("hydrates head ignoring trailing extension-injected nodes", () => {
+    const head = document.createElement("head");
+    head.setAttribute("_hk", "0");
+    const title = document.createElement("title");
+    title.textContent = "Test";
+    const meta = document.createElement("meta");
+    meta.setAttribute("charset", "UTF-8");
+    head.appendChild(title);
+    head.appendChild(meta);
+
+    const extScript = document.createElement("script");
+    extScript.setAttribute("src", "chrome-extension://abc/inject.js");
+    const extStyle = document.createElement("style");
+    extStyle.textContent = ".ext-injected { display: none; }";
+    head.appendChild(extScript);
+    head.appendChild(extStyle);
+
+    container.innerHTML = "";
+    container.appendChild(head);
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement();
+      const _el$2 = _el$.firstChild;
+      const _el$3 = _el$2.nextSibling;
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+      return _el$;
+    }, container);
+
+    expect(container.firstChild).toBe(head);
+    expect(head.firstChild).toBe(title);
+    expect(title.nextSibling).toBe(meta);
+    expect(meta.nextSibling).toBe(extScript);
+    expect(extScript.nextSibling).toBe(extStyle);
+    expect(head.childNodes.length).toBe(4);
+  });
+
   it("skips hydrating simple text", () => {
     rendered = r2.renderToString(() =>
       r2.createComponent(r2.NoHydration, {
