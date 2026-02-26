@@ -8,9 +8,10 @@ pluginTester({
     moduleName: 'r-server',
     builtIns: ['For', 'Show'],
     generate: "ssr",
-    hydratable: true,
+    wrapConditionals: true,
     contextToCustomElements: true,
-    staticMarker: "@once"
+    staticMarker: "@once",
+    requireImportSource: false,
   },
   title: 'Convert JSX',
   fixtures: path.join(__dirname, '__ssr_fixtures__'),

@@ -324,6 +324,7 @@ function transformComponentChildren(children, config) {
       dynamic = dynamic || child.dynamic;
       if (
         config.generate === "ssr" &&
+        !config.memoWrapper &&
         filteredChildren.length > 1 &&
         child.dynamic &&
         t.isFunction(child.exprs[0])
