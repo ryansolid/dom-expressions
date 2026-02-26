@@ -24,7 +24,6 @@ import {
   getConfig,
   escapeHTML,
   convertJSXIdentifier,
-  canNativeSpread,
   transformCondition,
   trimWhitespace,
   inlineCallExpression,
@@ -331,6 +330,25 @@ function transformAttributes(path, results) {
     );
     //NOTE: can't be checked at compile time so add to compiled output
     hasHydratableEvent = true;
+  } else {
+    const seenAttributes = {};
+    const duplicates = [];
+    path
+      .get("openingElement")
+      .get("attributes")
+      .forEach(attr => {
+        const key = t.isJSXNamespacedName(attr.node.name)
+          ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
+          : attr.node.name.name;
+
+        if (key !== "ref" && seenAttributes[key]) {
+          duplicates.push(seenAttributes[key]);
+        }
+        seenAttributes[key] = attr;
+      });
+    for (const duplicate of duplicates) {
+      duplicate.remove();
+    }
   }
 
   /**
@@ -1161,7 +1179,6 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
   const spreadArgs = [];
   let runningObject = [];
   let dynamicSpread = false;
-  let firstSpread = false;
   attributes.forEach(attribute => {
     const node = attribute.node;
     const key =
@@ -1175,7 +1192,6 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
         node.innerComments[0] &&
         node.innerComments[0].value.trim() === config.staticMarker;
 
-      firstSpread = true;
       if (runningObject.length) {
         spreadArgs.push(t.objectExpression(runningObject));
         runningObject = [];
@@ -1189,12 +1205,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
           : node.argument;
 
       spreadArgs.push(isStatic ? t.objectExpression([t.spreadElement(s)]) : s);
-    } else if (
-      (firstSpread ||
-        (t.isJSXExpressionContainer(node.value) &&
-          isDynamic(attribute.get("value").get("expression"), { checkMember: true }))) &&
-      canNativeSpread(key, { checkNameSpaces: true })
-    ) {
+    } else if (key && key !== "ref") {
       const isContainer = t.isJSXExpressionContainer(node.value);
       const dynamic =
         isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });

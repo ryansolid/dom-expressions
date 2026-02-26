@@ -359,3 +359,5 @@ const template89 = <div _hk="should warn _hk is present on template"/>
 const template90 = <div style={{}}/>
 
 const template91 = <video something={{value:{value:1+1}}}/>
+
+const template92 = <div style="duplicate1" style="duplicate2"/>

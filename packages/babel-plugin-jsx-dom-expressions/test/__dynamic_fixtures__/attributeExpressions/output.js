@@ -15,7 +15,7 @@ import { className as _$className } from "r-dom";
 import { ref as _$ref } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-custom";
-var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welcome`),
+var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href=/>Welcome`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<div><div></div><div> </div><div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div foo>`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<div>`),
@@ -32,7 +32,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div id=main><h1 id=my-h1><a href=/>Welco
   _tmpl$15 = /*#__PURE__*/ _$template(`<div data="&quot;hi&quot;"data2="&quot;">`),
   _tmpl$16 = /*#__PURE__*/ _$template(`<a>`),
   _tmpl$17 = /*#__PURE__*/ _$template(`<div><a>`),
-  _tmpl$18 = /*#__PURE__*/ _$template(`<div start=Hi>Hi`),
+  _tmpl$18 = /*#__PURE__*/ _$template(`<div>Hi`),
   _tmpl$19 = /*#__PURE__*/ _$template(`<label><span>Input is </span><input><div>`),
   _tmpl$20 = /*#__PURE__*/ _$template(
     `<div class="class1 class2 class3 class4 class5 class6"random="random1 random2\n    random3 random4"style="color:red;background-color:blue !important;border:1px solid black;font-size:12px">`
@@ -77,41 +77,53 @@ const template = (() => {
     _el$3 = _el$2.firstChild;
   _$spread(
     _el$,
-    _$mergeProps(results, {
-      class: {
-        selected: unknown
+    _$mergeProps(
+      {
+        id: "main"
       },
-      style: {
-        color
+      results,
+      {
+        class: {
+          selected: unknown
+        },
+        style: {
+          color
+        }
       }
-    }),
+    ),
     false,
     true
   );
   _$spread(
     _el$2,
-    _$mergeProps(results, {
-      foo: true,
-      disabled: true,
-      get title() {
-        return welcoming();
+    _$mergeProps(
+      {
+        id: "my-h1"
       },
-      get style() {
-        return {
-          "background-color": color(),
-          "margin-right": "40px"
-        };
-      },
-      get ["class"]() {
-        return [
-          "base",
-          {
-            dynamic: dynamic(),
-            selected
-          }
-        ];
+      results,
+      {
+        foo: true,
+        disabled: true,
+        get title() {
+          return welcoming();
+        },
+        get style() {
+          return {
+            "background-color": color(),
+            "margin-right": "40px"
+          };
+        },
+        get ["class"]() {
+          return [
+            "base",
+            {
+              dynamic: dynamic(),
+              selected
+            }
+          ];
+        }
       }
-    }),
+    ),
     false,
     true
   );
@@ -370,8 +382,18 @@ const template25 = (() => {
 })();
 const template26 = (() => {
   var _el$34 = _tmpl$18();
-  _$setAttribute(_el$34, "middle", middle);
-  _$spread(_el$34, spread, false, true);
+  _$spread(
+    _el$34,
+    _$mergeProps(
+      {
+        start: "Hi",
+        middle: middle
+      },
+      spread
+    ),
+    false,
+    true
+  );
   return _el$34;
 })();
 const template27 = (() => {
@@ -379,6 +401,9 @@ const template27 = (() => {
   _$spread(
     _el$35,
     _$mergeProps(
+      {
+        start: "Hi"
+      },
       first,
       {
         middle: middle
