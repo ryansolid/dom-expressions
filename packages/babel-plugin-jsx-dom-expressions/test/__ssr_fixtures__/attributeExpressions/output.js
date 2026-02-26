@@ -1,3 +1,4 @@
+import { memo as _$memo } from "r-server";
 import { ssrClassName as _$ssrClassName } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
 import { ssrStyleProperty as _$ssrStyleProperty } from "r-server";
@@ -352,7 +353,7 @@ const template28 = _$ssrElement(
     _$ssrElement(
       "span",
       api(),
-      () => ["Input is ", "<!--$-->", () => (api() ? "checked" : "unchecked"), "<!--/-->"],
+      () => ["Input is ", "<!--$-->", _$memo(() => (api() ? "checked" : "unchecked")), "<!--/-->"],
       false
     ),
     _$ssrElement("input", api(), undefined, false),
@@ -769,7 +770,7 @@ const styleProps = {
   children: css
 };
 const template90 = [
-  _$ssrElement("style", styleProps(), () => () => css(), true),
+  _$ssrElement("style", styleProps(), () => _$memo(() => css()), true),
   _$ssrElement(
     "style",
     _$mergeProps(styleProps, {

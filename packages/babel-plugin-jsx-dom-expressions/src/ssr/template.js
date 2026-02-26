@@ -1,8 +1,11 @@
 import * as t from "@babel/types";
-import { registerImportMethod } from "../shared/utils";
+import { getConfig, registerImportMethod } from "../shared/utils";
 
-export function createTemplate(path, result) {
+export function createTemplate(path, result, wrap) {
   if (!result.template) {
+    if (wrap && result.dynamic && getConfig(path).memoWrapper) {
+      return t.callExpression(registerImportMethod(path, getConfig(path).memoWrapper), [result.exprs[0]]);
+    }
     return result.exprs[0];
   }
 
