@@ -59,7 +59,7 @@ const VOID_ELEMENTS =
   /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
 const spaces = " \\f\\n\\r\\t";
 const almostEverything = "[^" + spaces + "\\/>\"'=]+";
-const attrName = "[ " + spaces + "]+(?:use:<!--#-->|" + almostEverything + ")";
+const attrName = "[ " + spaces + "]+" + almostEverything;
 const tagName = "<([A-Za-z$#]+[A-Za-z0-9:_-]*)((?:";
 const attrPartials =
   "(?:\\s*=\\s*(?:'[^']*?'|\"[^\"]*?\"|\\([^)]*?\\)|<[^>]*?>|" + almostEverything + "))?)";
@@ -71,7 +71,7 @@ const findAttributes = new RegExp(
 );
 const selfClosing = new RegExp(tagName + attrName + attrPartials + "*)([ " + spaces + "]*/>)", "g");
 const marker = "<!--#-->";
-const reservedNameSpaces = new Set(["class", "on", "style", "use", "prop"]);
+const reservedNameSpaces = new Set(["class", "on", "style", "prop"]);
 
 function attrReplacer($0: string, $1: string, $2: string, $3: string) {
   return "<" + $1 + $2.replace(findAttributes, replaceAttributes) + $3;
@@ -88,16 +88,6 @@ function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
 }
 
-function parseDirective(name: string, value: string, tag: string, options: Options) {
-  if (name === "use:###" && value === "###") {
-    const count = options.counter++;
-    options.exprs.push(
-      `typeof exprs[${count}] === "function" ? r.use(exprs[${count}], ${tag}, exprs[${options.counter++}]) : (()=>{throw new Error("use:### must be a function")})()`
-    );
-  } else {
-    throw new Error(`Not support syntax ${name} must be use:{function}`);
-  }
-}
 
 export function createHTML(
   r: Runtime,
@@ -234,7 +224,7 @@ export function createHTML(
         );
       }
     } else if (name === "ref") {
-      options.exprs.push(`exprs[${options.counter++}](${tag})`);
+      options.exprs.push(`r.ref(() => exprs[${options.counter++}], ${tag})`);
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
@@ -333,13 +323,6 @@ export function createHTML(
         } else if (value === "###") {
           props.push(`"${name}": exprs[${options.counter++}]`);
         } else props.push(`"${name}": "${value}"`);
-      } else if (type === 'directive') {
-        const tag = `_$el${uuid++}`;
-        const topDecl = !options.decl.length;
-        options.decl.push(
-          topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
-        );
-        parseDirective(name, value, tag, options);
       }
     }
     if (
@@ -468,8 +451,6 @@ export function createHTML(
             } else {
               newAttrs.push(node.attrs[i]);
             }
-          } else if (type === "directive") {
-            parseDirective(name, value, tag, options);
           }
         }
         node.attrs = newAttrs;
@@ -486,11 +467,7 @@ export function createHTML(
       } else {
         for (let i = 0; i < node.attrs.length; i++) {
           const { type, name, value } = node.attrs[i];
-          if (type === "directive") {
-            parseDirective(name, value, tag, options);
-            node.attrs.splice(i, 1);
-            i--;
-          } else if (type === "attr") {
+          if (type === "attr") {
             if (value.includes("###")) {
               node.attrs.splice(i, 1);
               i--;

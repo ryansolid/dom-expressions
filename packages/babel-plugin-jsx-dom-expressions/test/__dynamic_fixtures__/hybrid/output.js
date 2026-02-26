@@ -10,7 +10,7 @@ import { createElement as _$createElement } from "r-custom";
 import { setAttribute as _$setAttribute } from "r-dom";
 import { effect as _$effect } from "r-custom";
 import { insert as _$insert } from "r-dom";
-import { use as _$use } from "r-dom";
+import { ref as _$ref } from "r-dom";
 var _tmpl$ = /*#__PURE__*/ _$template(`<div>Hello `),
   _tmpl$2 = /*#__PURE__*/ _$template(`<button>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<div><div>`),
@@ -24,7 +24,9 @@ const Child = props => {
       var _el$ = _tmpl$(),
         _el$2 = _el$.firstChild;
       var _ref$ = props.ref;
-      typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
+      typeof _ref$ === "function" || Array.isArray(_ref$)
+        ? _$ref(() => _ref$, _el$)
+        : (props.ref = _el$);
       _$insert(_el$, () => props.name, null);
       _$effect(
         () =>
@@ -47,7 +49,7 @@ const Child = props => {
     (() => {
       var _el$3 = _tmpl$3(),
         _el$4 = _el$3.firstChild;
-      _$use(set, _el$4);
+      _$ref(() => set, _el$4);
       _$insert(_el$4, () => props.children);
       _$insert(
         _el$3,
@@ -94,7 +96,9 @@ const Child = props => {
                       var _el$7 = _tmpl$(),
                         _el$8 = _el$7.firstChild;
                       var _ref$2 = props.ref;
-                      typeof _ref$2 === "function" ? _$use(_ref$2, _el$7) : (props.ref = _el$7);
+                      typeof _ref$2 === "function" || Array.isArray(_ref$2)
+                        ? _$ref(() => _ref$2, _el$7)
+                        : (props.ref = _el$7);
                       _$insert(_el$7, () => props.name, null);
                       _$effect(
                         () =>

@@ -61,7 +61,6 @@ const template9 = <div ref={e => console.log(e)} />;
 
 const template10 = <div ref={refFactory()} />;
 
-const template11 = <div use:something use:another={thing} use:zero={0} />;
 
 const template12 = <div prop:htmlFor={thing} />;
 
@@ -107,7 +106,6 @@ const template18 = (
 
 const template19 = <div style={{ a: "static", ...rest }} ></div>
 
-const template20 = <div use:something {...somethingElse} use:zero={0} />;
 
 const template21 = <div ref={a().b.c} />
 

@@ -291,19 +291,4 @@ describe("Test HTML", () => {
     expect(div.innerHTML.replace(`<!--<div name="###"></div>-->`, "")).toBe(FIXTURES[7]);
   });
 
-  test("Directive use", () =>{
-    function directive(el, value) {
-      el.style.backgroundColor = 'red';
-      el.innerHTML += value();
-    }
-    context.push({
-      bodyFunc: 'const _$el1 = tmpls[0].content.firstChild.cloneNode(true),\n'
-      + '_$el2 = _$el1.firstChild,\n'
-      + '_$el3 = _$el2.firstChild;\n'
-      + 'typeof exprs[0] === "function" ? r.use(exprs[0], _$el2, exprs[1]) : (()=>{throw new Error("use:### must be a function")})();\n'
-      + 'return _$el1;\n'
-    });
-    const template = html`<div><div use:${directive}=${() => "world!"}>Hello <//><//> `;
-    expect(template.outerHTML).toBe('<div><div style="background-color: red;">Hello world!</div></div>');
-  });
 });

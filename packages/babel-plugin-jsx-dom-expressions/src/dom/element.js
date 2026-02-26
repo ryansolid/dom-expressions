@@ -607,7 +607,7 @@ function transformAttributes(path, results) {
           : node.name.name,
         reservedNameSpace =
           t.isJSXNamespacedName(node.name) && reservedNameSpaces.has(node.name.namespace.name);
-      if (t.isJSXExpressionContainer(value) && !key.startsWith("use:")) {
+      if (t.isJSXExpressionContainer(value)) {
         const evaluated = attribute.get("value").get("expression").evaluate().value;
         let type;
         if (
@@ -654,25 +654,35 @@ function transformAttributes(path, results) {
               t.variableDeclaration("var", [t.variableDeclarator(refIdentifier, value.expression)]),
               t.expressionStatement(
                 t.conditionalExpression(
-                  t.binaryExpression(
-                    "===",
-                    t.unaryExpression("typeof", refIdentifier),
-                    t.stringLiteral("function")
+                  t.logicalExpression(
+                    "||",
+                    t.binaryExpression(
+                      "===",
+                      t.unaryExpression("typeof", refIdentifier),
+                      t.stringLiteral("function")
+                    ),
+                    t.callExpression(t.memberExpression(t.identifier("Array"), t.identifier("isArray")), [
+                      refIdentifier
+                    ])
                   ),
                   t.callExpression(
-                    registerImportMethod(path, "use", getRendererConfig(path, "dom").moduleName),
-                    [refIdentifier, elem]
+                    registerImportMethod(path, "ref", getRendererConfig(path, "dom").moduleName),
+                    [t.arrowFunctionExpression([], refIdentifier), elem]
                   ),
                   t.assignmentExpression("=", value.expression, elem)
                 )
               )
             );
-          } else if (isConstant || t.isFunction(value.expression)) {
+          } else if (
+            isConstant ||
+            t.isFunction(value.expression) ||
+            t.isArrayExpression(value.expression)
+          ) {
             results.exprs.unshift(
               t.expressionStatement(
                 t.callExpression(
-                  registerImportMethod(path, "use", getRendererConfig(path, "dom").moduleName),
-                  [value.expression, elem]
+                  registerImportMethod(path, "ref", getRendererConfig(path, "dom").moduleName),
+                  [t.arrowFunctionExpression([], value.expression), elem]
                 )
               )
             );
@@ -683,39 +693,26 @@ function transformAttributes(path, results) {
               t.expressionStatement(
                 t.logicalExpression(
                   "&&",
-                  t.binaryExpression(
-                    "===",
-                    t.unaryExpression("typeof", refIdentifier),
-                    t.stringLiteral("function")
+                  t.logicalExpression(
+                    "||",
+                    t.binaryExpression(
+                      "===",
+                      t.unaryExpression("typeof", refIdentifier),
+                      t.stringLiteral("function")
+                    ),
+                    t.callExpression(
+                      t.memberExpression(t.identifier("Array"), t.identifier("isArray")),
+                      [refIdentifier]
+                    )
                   ),
                   t.callExpression(
-                    registerImportMethod(path, "use", getRendererConfig(path, "dom").moduleName),
-                    [refIdentifier, elem]
+                    registerImportMethod(path, "ref", getRendererConfig(path, "dom").moduleName),
+                    [t.arrowFunctionExpression([], refIdentifier), elem]
                   )
                 )
               )
             );
           }
-        } else if (key.startsWith("use:")) {
-          // Some trick to treat JSXIdentifier as Identifier
-          node.name.name.type = "Identifier";
-          results.exprs.unshift(
-            t.expressionStatement(
-              t.callExpression(
-                registerImportMethod(path, "use", getRendererConfig(path, "dom").moduleName),
-                [
-                  node.name.name,
-                  elem,
-                  t.arrowFunctionExpression(
-                    [],
-                    t.isJSXEmptyExpression(value.expression)
-                      ? t.booleanLiteral(true)
-                      : value.expression
-                  )
-                ]
-              )
-            )
-          );
         } else if (key === "children") {
           children = value;
         } else if (key.startsWith("on")) {
@@ -1127,8 +1124,7 @@ function detectExpressions(children, index, config) {
           attr =>
             t.isJSXSpreadAttribute(attr) ||
             ["textContent", "innerHTML", "innerText"].includes(attr.name.name) ||
-            (attr.name.namespace &&
-              (attr.name.namespace.name === "use" || attr.name.namespace.name === "prop")) ||
+            (attr.name.namespace && attr.name.namespace.name === "prop") ||
             (t.isJSXExpressionContainer(attr.value) &&
               !(
                 t.isStringLiteral(attr.value.expression) ||

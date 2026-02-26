@@ -67,7 +67,6 @@ const template9 = <div ref={e => console.log(e)} />;
 
 const template10 = <div ref={refFactory()} />;
 
-const template11 = <div use:something use:another={thing} use:zero={0} />;
 
 const template12 = <div prop:htmlFor={thing} prop:number={123} onclick="console.log('hi')" />;
 
@@ -184,7 +183,6 @@ const template33 = (
   </>
 );
 
-const template34 = <div use:something {...somethingElse} use:zero={0} />;
 
 const template35 = <div ref={a().b.c} />;
 

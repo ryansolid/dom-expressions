@@ -71,7 +71,6 @@ export default function transformComponent(path) {
         if (hasChildren && key === "children") return;
         if (t.isJSXExpressionContainer(value))
           if (key === "ref") {
-            if (config.generate === "ssr") return;
             // Normalize expressions for non-null and type-as
             while (
               t.isTSNonNullExpression(value.expression) ||
@@ -98,12 +97,22 @@ export default function transformComponent(path) {
                     ]),
                     t.expressionStatement(
                       t.conditionalExpression(
-                        t.binaryExpression(
-                          "===",
-                          t.unaryExpression("typeof", refIdentifier),
-                          t.stringLiteral("function")
+                        t.logicalExpression(
+                          "||",
+                          t.binaryExpression(
+                            "===",
+                            t.unaryExpression("typeof", refIdentifier),
+                            t.stringLiteral("function")
+                          ),
+                          t.callExpression(
+                            t.memberExpression(t.identifier("Array"), t.identifier("isArray")),
+                            [refIdentifier]
+                          )
                         ),
-                        t.callExpression(refIdentifier, [t.identifier("r$")]),
+                        t.callExpression(registerImportMethod(path, "applyRef"), [
+                          refIdentifier,
+                          t.identifier("r$")
+                        ]),
                         t.assignmentExpression("=", value.expression, t.identifier("r$"))
                       )
                     )
@@ -121,15 +130,24 @@ export default function transformComponent(path) {
                     t.variableDeclaration("var", [
                       t.variableDeclarator(refIdentifier, value.expression)
                     ]),
-
                     t.expressionStatement(
                       t.conditionalExpression(
-                        t.binaryExpression(
-                          "===",
-                          t.unaryExpression("typeof", refIdentifier),
-                          t.stringLiteral("function")
+                        t.logicalExpression(
+                          "||",
+                          t.binaryExpression(
+                            "===",
+                            t.unaryExpression("typeof", refIdentifier),
+                            t.stringLiteral("function")
+                          ),
+                          t.callExpression(
+                            t.memberExpression(t.identifier("Array"), t.identifier("isArray")),
+                            [refIdentifier]
+                          )
                         ),
-                        t.callExpression(refIdentifier, [t.identifier("r$")]),
+                        t.callExpression(registerImportMethod(path, "applyRef"), [
+                          refIdentifier,
+                          t.identifier("r$")
+                        ]),
                         t.logicalExpression(
                           "&&",
                           t.unaryExpression(
@@ -150,28 +168,44 @@ export default function transformComponent(path) {
                   ])
                 )
               );
-            } else if (isConstant || t.isFunction(value.expression)) {
+            } else if (
+              isConstant ||
+              t.isFunction(value.expression) ||
+              t.isArrayExpression(value.expression)
+            ) {
               runningObject.push(t.objectProperty(t.identifier("ref"), value.expression));
             } else if (t.isCallExpression(value.expression)) {
               const refIdentifier = path.scope.generateUidIdentifier("_ref$");
+              exprs.push(
+                t.variableDeclaration("var", [
+                  t.variableDeclarator(refIdentifier, value.expression)
+                ])
+              );
               runningObject.push(
                 t.objectMethod(
                   "method",
                   t.identifier("ref"),
                   [t.identifier("r$")],
                   t.blockStatement([
-                    t.variableDeclaration("var", [
-                      t.variableDeclarator(refIdentifier, value.expression)
-                    ]),
                     t.expressionStatement(
                       t.logicalExpression(
                         "&&",
-                        t.binaryExpression(
-                          "===",
-                          t.unaryExpression("typeof", refIdentifier),
-                          t.stringLiteral("function")
+                        t.logicalExpression(
+                          "||",
+                          t.binaryExpression(
+                            "===",
+                            t.unaryExpression("typeof", refIdentifier),
+                            t.stringLiteral("function")
+                          ),
+                          t.callExpression(
+                            t.memberExpression(t.identifier("Array"), t.identifier("isArray")),
+                            [refIdentifier]
+                          )
                         ),
-                        t.callExpression(refIdentifier, [t.identifier("r$")])
+                        t.callExpression(registerImportMethod(path, "applyRef"), [
+                          refIdentifier,
+                          t.identifier("r$")
+                        ])
                       )
                     )
                   ])

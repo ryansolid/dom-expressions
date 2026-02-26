@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createRoot, createSignal, flush, onCleanup } from "@solidjs/signals";
+import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("create element with various spreads", () => {
   it("should properly spread ref, click, attribute, and children", () => {
@@ -130,16 +130,12 @@ describe("ref scope for cleanup in the spread for elements and components", () =
   it("should call ref outside of the non-function spread effect (no ref cleanup)", () => {
     let span,
       disposer,
-      refCount = 0,
-      refCleanupCount = 0;
+      refCount = 0;
 
     const Component = props => <span {...props} />;
     const ref = el => {
       ++refCount;
       span = el;
-      onCleanup(() => {
-        ++refCleanupCount;
-      });
     };
     const [c, setC] = createSignal("class1");
 
@@ -154,30 +150,23 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(span.className).toBe("class1");
     expect(span.textContent).toBe("Hi");
     expect(refCount).toBe(1);
-    expect(refCleanupCount).toBe(0);
 
     setC("class2");
     flush();
     expect(span.className).toBe("class2");
     expect(refCount).toBe(1);
-    expect(refCleanupCount).toBe(0);
 
     disposer();
-    expect(refCleanupCount).toBe(1);
   });
 
-  it("should call ref again after cleanup when used in a function spread", () => {
+  it("should call ref again when used in a function spread", () => {
     let span,
       disposer,
-      refCount = 0,
-      refCleanupCount = 0;
+      refCount = 0;
 
     const ref = el => {
       ++refCount;
       span = el;
-      onCleanup(() => {
-        ++refCleanupCount;
-      });
     };
     const [p, setP] = createSignal({
       ref,
@@ -193,7 +182,6 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(span.className).toBe("class1");
     expect(span.textContent).toBe("Hi");
     expect(refCount).toBe(1);
-    expect(refCleanupCount).toBe(0);
 
     setP({
       ref,
@@ -202,9 +190,7 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     flush();
     expect(span.className).toBe("class2");
     expect(refCount).toBe(2);
-    expect(refCleanupCount).toBe(1);
 
     disposer();
-    expect(refCleanupCount).toBe(2);
   });
 });

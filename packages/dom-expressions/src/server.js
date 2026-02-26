@@ -637,6 +637,10 @@ export function getHydrationKey() {
   return hydrate && !hydrate.noHydrate && sharedConfig.getNextContextId();
 }
 
+export function applyRef(r, element) {
+  Array.isArray(r) ? r.flat(Infinity).forEach(f => f && f(element)) : r(element);
+}
+
 export function useAssets(fn) {
   sharedConfig.context.assets.push(() => resolveSSRSync(escape(fn())));
 }
@@ -866,7 +870,7 @@ export function getRequestEvent() {
   return globalThis[RequestContext]
     ? globalThis[RequestContext].getStore() ||
         (sharedConfig.context && sharedConfig.context.event) ||
-        console.log(
+        console.warn(
           "RequestEvent is missing. This is most likely due to accessing `getRequestEvent` non-managed async scope in a partially polyfilled environment. Try moving it above all `await` calls."
         )
     : undefined;

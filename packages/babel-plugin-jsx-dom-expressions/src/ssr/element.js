@@ -294,9 +294,16 @@ function transformAttributes(path, results, info) {
           t.isBooleanLiteral(value.expression)
         ))
     ) {
+      if (key === "ref") {
+        results.declarations.push(
+          t.variableDeclarator(
+            path.scope.generateUidIdentifier("_ref$"),
+            value.expression
+          )
+        );
+        return;
+      }
       if (
-        key === "ref" ||
-        key.startsWith("use:") ||
         key.startsWith("prop:") ||
         key.startsWith("on")
       )
@@ -542,9 +549,17 @@ function createElement(path, { topLevel, hydratable }) {
             : node.name.name;
 
         if (hasChildren && key === "children") return;
+        if (key === "ref") {
+          if (t.isJSXExpressionContainer(value))
+            results.declarations.push(
+              t.variableDeclarator(
+                path.scope.generateUidIdentifier("_ref$"),
+                value.expression
+              )
+            );
+          return;
+        }
         if (
-          key === "ref" ||
-          key.startsWith("use:") ||
           key.startsWith("prop:") ||
           key.startsWith("on")
         )

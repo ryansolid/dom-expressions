@@ -17,7 +17,8 @@ export const {
   spread,
   setProp,
   mergeProps,
-  use
+  applyRef,
+  ref
 } = createRenderer({
   createElement(string) {
     return document.createElement(string);

@@ -62,7 +62,8 @@ export function style(
 export function getOwner(): unknown;
 export function mergeProps(...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
-export function use<Arg, Ret>(fn: (node: Element, arg: Arg) => Ret, node: Element, arg?: Arg): Ret
+export function applyRef(r: ((element: Element) => void) | ((element: Element) => void)[], element: Element): void;
+export function ref(fn: () => ((element: Element) => void) | ((element: Element) => void)[], element: Element): void;
 
 export function hydrate(
   fn: () => JSX.Element,

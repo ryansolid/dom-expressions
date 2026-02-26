@@ -62,6 +62,7 @@ export function ssrAttribute(key: string, value: any): string;
 export function ssrHydrationKey(): string;
 export function resolveSSRNode(node: any, result?: any, top?: boolean): any;
 export function escape(s: any, attr?: boolean): any;
+export function applyRef(r: ((element: any) => void) | ((element: any) => void)[], element: any): void;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function getHydrationKey(): string | undefined;

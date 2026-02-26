@@ -1,4 +1,4 @@
-import { root, effect, memo, createComponent, untrack, mergeProps, flatten } from "rxcore";
+import { root, effect, memo, createComponent, untrack, runWithOwner, mergeProps, flatten } from "rxcore";
 
 export function createRenderer({
   createElement,
@@ -72,7 +72,7 @@ export function createRenderer({
       for (let i = 0, len = value.length; i < len; i++) {
         const item = value[i],
           t = typeof item;
-        if (t === "string" || t === "number") value[i] = document.createTextNode(item);
+        if (t === "string" || t === "number") value[i] = createTextNode(item);
       }
     }
     return value;
@@ -195,7 +195,10 @@ export function createRenderer({
       );
     }
     effect(
-      () => props.ref && props.ref(node),
+      () => {
+        const r = props.ref;
+        (typeof r === "function" || Array.isArray(r)) && ref(() => r, node);
+      },
       () => {}
     );
     effect(
@@ -220,6 +223,15 @@ export function createRenderer({
     return prevProps;
   }
 
+  function applyRef(r, element) {
+    Array.isArray(r) ? r.flat(Infinity).forEach(f => f && f(element)) : r(element);
+  }
+
+  function ref(fn, element) {
+    const resolved = untrack(fn);
+    runWithOwner(null, () => applyRef(resolved, element));
+  }
+
   return {
     render(code, element) {
       let disposer;
@@ -242,8 +254,7 @@ export function createRenderer({
     effect,
     memo,
     createComponent,
-    use(fn, element, arg) {
-      return untrack(() => fn(element, arg));
-    }
+    applyRef,
+    ref
   };
 }

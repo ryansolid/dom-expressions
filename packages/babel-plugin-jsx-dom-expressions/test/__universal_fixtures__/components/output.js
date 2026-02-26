@@ -2,10 +2,11 @@ import { memo as _$memo } from "r-custom";
 import { For as _$For } from "r-custom";
 import { createComponent as _$createComponent } from "r-custom";
 import { mergeProps as _$mergeProps } from "r-custom";
+import { applyRef as _$applyRef } from "r-custom";
 import { insert as _$insert } from "r-custom";
 import { createTextNode as _$createTextNode } from "r-custom";
 import { insertNode as _$insertNode } from "r-custom";
-import { use as _$use } from "r-custom";
+import { ref as _$ref } from "r-custom";
 import { createElement as _$createElement } from "r-custom";
 import { Show, binding } from "somewhere";
 function refFn() {}
@@ -16,7 +17,9 @@ const Child = props => [
       _el$2 = _$createTextNode(`Hello `);
     _$insertNode(_el$, _el$2);
     var _ref$ = props.ref;
-    typeof _ref$ === "function" ? _$use(_ref$, _el$) : (props.ref = _el$);
+    typeof _ref$ === "function" || Array.isArray(_ref$)
+      ? _$ref(() => _ref$, _el$)
+      : (props.ref = _el$);
     _$insert(_el$, () => props.name, null);
     return _el$;
   })(),
@@ -43,7 +46,9 @@ const template = props => {
           {
             ref(r$) {
               var _ref$2 = childRef;
-              typeof _ref$2 === "function" ? _ref$2(r$) : (childRef = r$);
+              typeof _ref$2 === "function" || Array.isArray(_ref$2)
+                ? _$applyRef(_ref$2, r$)
+                : (childRef = r$);
             },
             booleanProperty: true,
             get children() {
@@ -68,7 +73,9 @@ const template = props => {
           {
             ref(r$) {
               var _ref$3 = props.ref;
-              typeof _ref$3 === "function" ? _ref$3(r$) : (props.ref = r$);
+              typeof _ref$3 === "function" || Array.isArray(_ref$3)
+                ? _$applyRef(_ref$3, r$)
+                : (props.ref = r$);
             },
             get children() {
               var _el$7 = _$createElement("div");
@@ -82,13 +89,15 @@ const template = props => {
     );
     _$insert(
       _el$4,
-      _$createComponent(Context.Consumer, {
-        ref(r$) {
-          var _ref$4 = props.consumerRef();
-          typeof _ref$4 === "function" && _ref$4(r$);
-        },
-        children: context => context
-      }),
+      (() => {
+        var _ref$4 = props.consumerRef();
+        return _$createComponent(Context.Consumer, {
+          ref(r$) {
+            (typeof _ref$4 === "function" || Array.isArray(_ref$4)) && _$applyRef(_ref$4, r$);
+          },
+          children: context => context
+        });
+      })(),
       null
     );
     return _el$4;
@@ -396,13 +405,15 @@ const template23 = _$createComponent(Component, {
 const template24 = _$createComponent(Component, {
   ref(r$) {
     var _ref$5 = binding.prop;
-    typeof _ref$5 === "function" ? _ref$5(r$) : (binding.prop = r$);
+    typeof _ref$5 === "function" || Array.isArray(_ref$5)
+      ? _$applyRef(_ref$5, r$)
+      : (binding.prop = r$);
   }
 });
 const template25 = _$createComponent(Component, {
   ref(r$) {
     var _ref$6 = refFn;
-    typeof _ref$6 === "function" ? _ref$6(r$) : (refFn = r$);
+    typeof _ref$6 === "function" || Array.isArray(_ref$6) ? _$applyRef(_ref$6, r$) : (refFn = r$);
   }
 });
 const template26 = _$createComponent(Component, {
@@ -411,6 +422,8 @@ const template26 = _$createComponent(Component, {
 const template27 = _$createComponent(Component, {
   ref(r$) {
     var _ref$7 = refUnknown;
-    typeof _ref$7 === "function" ? _ref$7(r$) : (refUnknown = r$);
+    typeof _ref$7 === "function" || Array.isArray(_ref$7)
+      ? _$applyRef(_ref$7, r$)
+      : (refUnknown = r$);
   }
 });

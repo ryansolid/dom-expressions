@@ -7,6 +7,7 @@ import {
   createComponent,
   sharedConfig,
   untrack,
+  runWithOwner,
   mergeProps,
   flatten
 } from "rxcore";
@@ -159,7 +160,7 @@ export function addEventListener(node, name, handler, delegate) {
 
 export function style(node, value, prev) {
   if (!value) {
-    prev ? setAttribute(node, "style") : value;
+    if (prev) setAttribute(node, "style");
     return;
   }
   const nodeStyle = node.style;
@@ -193,7 +194,10 @@ export function spread(node, props = {}, isSVG, skipChildren) {
     );
   }
   effect(
-    () => typeof props.ref === "function" && use(props.ref, node),
+    () => {
+      const r = props.ref;
+      (typeof r === "function" || Array.isArray(r)) && ref(() => r, node);
+    },
     () => {}
   );
   effect(
@@ -221,8 +225,13 @@ export function dynamicProperty(props, key) {
   return props;
 }
 
-export function use(fn, element, arg) {
-  untrack(() => fn(element, arg));
+export function applyRef(r, element) {
+  Array.isArray(r) ? r.flat(Infinity).forEach(f => f && f(element)) : r(element);
+}
+
+export function ref(fn, element) {
+  const resolved = untrack(fn);
+  runWithOwner(null, () => applyRef(resolved, element));
 }
 
 export function insert(parent, accessor, marker, initial) {
@@ -403,7 +412,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   if (prop === "class") return className(node, value, isSVG, prev), value;
   if (value === prev) return prev;
   if (prop === "ref") {
-    if (!skipRef) value(node);
+    if (!skipRef && value) ref(() => value, node);
   } else if (prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);
     prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
