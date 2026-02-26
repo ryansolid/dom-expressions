@@ -11,8 +11,8 @@ import { ssr as _$ssr } from "r-server";
 var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$2 = ["<div>", "</div>"],
   _tmpl$3 = "<div><div/></div>",
-  _tmpl$4 = ["<div foo", ' style="', '">', "</div>"],
-  _tmpl$5 = ['<div class="', '"></div>'],
+  _tmpl$4 = ["<div foo", ' style="', '"', ">", "</div>"],
+  _tmpl$5 = ["<div", ' class="', '"></div>'],
   _tmpl$6 = '<div class="a" className="b"></div>',
   _tmpl$7 = ['<div style="', '">Hi</div>'],
   _tmpl$8 = ['<div style="', '"', "></div>"],
@@ -23,41 +23,42 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$13 = '<div class="`a">`$`</div>',
   _tmpl$14 = ['<button class="', '" type="button">Write</button>'],
   _tmpl$15 = ['<button class="', '">Hi</button>'],
-  _tmpl$16 = ["<div><input", " readonly><input", "", "></div>"],
-  _tmpl$17 = ['<div style="', '"></div>'],
-  _tmpl$18 = '<div data="&quot;hi&quot;" data2="&quot;"></div>',
-  _tmpl$19 = ["<div>", "", "</div>"],
+  _tmpl$16 = ['<div class="', '"></div>'],
+  _tmpl$17 = ["<div><input", "", "", " readonly><input", "", "", "", "></div>"],
+  _tmpl$18 = ['<div style="', '"></div>'],
+  _tmpl$19 = '<div data="&quot;hi&quot;" data2="&quot;"></div>',
   _tmpl$20 = ["<div", ">", "</div>"],
-  _tmpl$21 =
+  _tmpl$21 = ["<div>", "", "</div>"],
+  _tmpl$22 =
     '<div class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>',
-  _tmpl$22 = ['<button class="', '"></button>'],
-  _tmpl$23 = '<input value="10">',
-  _tmpl$24 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
-  _tmpl$25 = "<img src>",
-  _tmpl$26 = "<div><img src></div>",
-  _tmpl$27 = '<img src loading="lazy">',
-  _tmpl$28 = '<div><img src loading="lazy"></div>',
-  _tmpl$29 = "<iframe src></iframe>",
-  _tmpl$30 = "<div><iframe src></iframe></div>",
-  _tmpl$31 = '<iframe src loading="lazy"></iframe>',
-  _tmpl$32 = '<div><iframe src loading="lazy"></iframe></div>',
-  _tmpl$33 = '<div title="<u>data</u>"></div>',
-  _tmpl$34 = '<div true truestr="true" truestrjs="true"></div>',
-  _tmpl$35 = '<div falsestr="false" falsestrjs="false"></div>',
-  _tmpl$36 = "<div true></div>",
-  _tmpl$37 = ['<div a b c d f="0" g h', "", "", " l></div>"],
-  _tmpl$38 = '<math display="block"><mrow></mrow></math>',
-  _tmpl$39 = "<mrow><mi>x</mi><mo>=</mo></mrow>",
-  _tmpl$40 = ["<video", "></video>"],
-  _tmpl$41 = "<video playsinline></video>",
-  _tmpl$42 = "<video></video>",
-  _tmpl$43 = '<video poster="1.jpg"></video>',
-  _tmpl$44 = '<div><video poster="1.jpg"></video></div>',
-  _tmpl$45 = "<div><video></video></div>",
-  _tmpl$46 = ['<button type="button" style="', '" class="', '">', "</button>"],
-  _tmpl$47 = ["<style>", "</style>"],
-  _tmpl$48 = ['<div class="bg-(--bg)" style="', '"></div>'],
-  _tmpl$49 = ['<div class="progress-fill" style="', '"></div>'];
+  _tmpl$23 = ['<button class="', '"></button>'],
+  _tmpl$24 = '<input value="10">',
+  _tmpl$25 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
+  _tmpl$26 = "<img src>",
+  _tmpl$27 = "<div><img src></div>",
+  _tmpl$28 = '<img src loading="lazy">',
+  _tmpl$29 = '<div><img src loading="lazy"></div>',
+  _tmpl$30 = "<iframe src></iframe>",
+  _tmpl$31 = "<div><iframe src></iframe></div>",
+  _tmpl$32 = '<iframe src loading="lazy"></iframe>',
+  _tmpl$33 = '<div><iframe src loading="lazy"></iframe></div>',
+  _tmpl$34 = '<div title="<u>data</u>"></div>',
+  _tmpl$35 = '<div true truestr="true" truestrjs="true"></div>',
+  _tmpl$36 = '<div falsestr="false" falsestrjs="false"></div>',
+  _tmpl$37 = "<div true></div>",
+  _tmpl$38 = ['<div a b c d f="0" g h', "", "", " l></div>"],
+  _tmpl$39 = '<math display="block"><mrow></mrow></math>',
+  _tmpl$40 = "<mrow><mi>x</mi><mo>=</mo></mrow>",
+  _tmpl$41 = ["<video", "></video>"],
+  _tmpl$42 = "<video playsinline></video>",
+  _tmpl$43 = "<video></video>",
+  _tmpl$44 = '<video poster="1.jpg"></video>',
+  _tmpl$45 = '<div><video poster="1.jpg"></video></div>',
+  _tmpl$46 = "<div><video></video></div>",
+  _tmpl$47 = ['<button type="button"', ' style="', '" class="', '">', "</button>"],
+  _tmpl$48 = ["<style>", "</style>"],
+  _tmpl$49 = ['<div class="bg-(--bg)" style="', '"></div>'],
+  _tmpl$50 = ['<div class="progress-fill" style="', '"></div>'];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -146,11 +147,28 @@ const template3 = (() => {
     _v$4
   );
 })();
-const template4 = _$ssr(_tmpl$5, _v$5[0], "ccc:ddd");
+const template4 = (() => {
+  var _v$5 = _$ssrRunInScope([() => _$ssrAttribute("className", _$escape(state.class, true))]);
+  return _$ssr(_tmpl$5, _v$5[0], "ccc:ddd");
+})();
 const template5 = _$ssr(_tmpl$6);
-const template6 = _$ssr(_tmpl$7, _v$6[0]);
+const template6 = (() => {
+  var _v$6 = _$ssrRunInScope([() => _$ssrStyle(someStyle())]);
+  return _$ssr(_tmpl$7, _v$6[0]);
+})();
 let undefVar;
-const template7 = _$ssr(_tmpl$8, _v$7[0], _$ssrAttribute("other-class", _$escape(undefVar, true)));
+const template7 = (() => {
+  var _v$7 = _$ssrRunInScope([
+    () =>
+      _$ssrStyle({
+        "background-color": color(),
+        "margin-right": "40px",
+        ...props.style,
+        "padding-top": props.top
+      })
+  ]);
+  return _$ssr(_tmpl$8, _v$7[0], _$ssrAttribute("other-class", _$escape(undefVar, true)));
+})();
 let refTarget;
 const template8 = (() => {
   var _ref$2 = refTarget;
@@ -166,7 +184,10 @@ const template10 = (() => {
 })();
 const template12 = _$ssr(_tmpl$10);
 const template13 = _$ssr(_tmpl$11);
-const template14 = _$ssr(_tmpl$12, _v$8);
+const template14 = (() => {
+  var _v$8 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(state.visible, true)));
+  return _$ssr(_tmpl$12, _v$8);
+})();
 const template15 = _$ssr(_tmpl$13);
 const template16 = _$ssr(
   _tmpl$14,
@@ -189,7 +210,7 @@ const template18 = _$ssrElement(
   false
 );
 const template19 = _$ssr(
-  _tmpl$5,
+  _tmpl$16,
   _$ssrClassName([
     {
       "bg-red-500": true
@@ -197,22 +218,41 @@ const template19 = _$ssr(
     "flex flex-col"
   ])
 );
-const template20 = _$ssr(
-  _tmpl$16,
-  _v$9,
-  _v$10[0],
-  _v$10[1],
-  _v$11,
-  _v$10[2],
-  _v$10[3],
-  _$ssrAttribute("readonly", _$escape(value, true))
-);
-const template21 = _$ssr(_tmpl$17, _v$12[0]);
-const template22 = _$ssr(_tmpl$18);
+const template20 = (() => {
+  var _v$10 = _$ssrRunInScope([
+      () => _$ssrAttribute("min", _$escape(min(), true)),
+      () => _$ssrAttribute("max", _$escape(max(), true)),
+      () => _$ssrAttribute("min", _$escape(min(), true)),
+      () => _$ssrAttribute("max", _$escape(max(), true))
+    ]),
+    _v$9 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
+    _v$11 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(s2(), true)));
+  return _$ssr(
+    _tmpl$17,
+    _v$9,
+    _v$10[0],
+    _v$10[1],
+    _v$11,
+    _v$10[2],
+    _v$10[3],
+    _$ssrAttribute("readonly", _$escape(value, true))
+  );
+})();
+const template21 = (() => {
+  var _v$12 = _$ssrRunInScope([
+    () =>
+      _$ssrStyle({
+        a: "static",
+        ...rest
+      })
+  ]);
+  return _$ssr(_tmpl$18, _v$12[0]);
+})();
+const template22 = _$ssr(_tmpl$19);
 const template23 = (() => {
   var _v$14 = _$ssrRunInScope(() => "t" in test && "true"),
     _v$13 = _$ssrRunInScope([() => _$ssrAttribute("disabled", "t" in _$escape(test, true))]);
-  return _$ssr(_tmpl$2, _v$13[0], _v$14);
+  return _$ssr(_tmpl$20, _v$13[0], _v$14);
 })();
 const template24 = _$ssrElement(
   "a",
@@ -232,7 +272,7 @@ const template25 = (() => {
       undefined,
       false
     );
-  return _$ssr(_tmpl$19, _v$15, _v$16);
+  return _$ssr(_tmpl$21, _v$15, _v$16);
 })();
 const template26 = _$ssrElement(
   "div",
@@ -280,17 +320,28 @@ const template29 = (() => {
   var _v$17 = !!someValue;
   return _$ssr(_tmpl$20, _$ssrAttribute("attribute", !!someValue), _v$17);
 })();
-const template30 = _$ssr(_tmpl$21);
-const template31 = _$ssr(_tmpl$17, _v$18[0]);
+const template30 = _$ssr(_tmpl$22);
+const template31 = (() => {
+  var _v$18 = _$ssrRunInScope([
+    () => _$ssrStyleProperty("background-color:", _$escape(getStore.itemProperties.color, true))
+  ]);
+  return _$ssr(_tmpl$18, _v$18[0]);
+})();
 const template32 = _$ssr(
-  _tmpl$17,
+  _tmpl$18,
   _$ssrStyleProperty("background-color:", _$escape(undefined, true))
 );
 const template33 = [
-  _$ssr(_tmpl$22, _$ssrClassName(styles.button)),
-  _$ssr(_tmpl$22, _$ssrClassName(styles["foo--bar"])),
-  _$ssr(_tmpl$22, _v$19[0]),
-  _$ssr(_tmpl$22, _v$20[0])
+  _$ssr(_tmpl$23, _$ssrClassName(styles.button)),
+  _$ssr(_tmpl$23, _$ssrClassName(styles["foo--bar"])),
+  (() => {
+    var _v$19 = _$ssrRunInScope([() => _$ssrClassName(styles.foo.bar)]);
+    return _$ssr(_tmpl$23, _v$19[0]);
+  })(),
+  (() => {
+    var _v$20 = _$ssrRunInScope([() => _$ssrClassName(styles[foo()])]);
+    return _$ssr(_tmpl$23, _v$20[0]);
+  })()
 ];
 const template35 = (() => {
   var _ref$5 = a().b.c;
@@ -308,18 +359,26 @@ const template38 = (() => {
   var _ref$8 = a() ?? b;
   return _$ssr(_tmpl$9);
 })();
-const template39 = _$ssr(_tmpl$23);
-const template40 = _$ssr(_tmpl$17, _v$21[0]);
-const template41 = _$ssr(_tmpl$24, _v$22, _v$23, _v$24);
-const template42 = _$ssr(_tmpl$25);
-const template43 = _$ssr(_tmpl$26);
-const template44 = _$ssr(_tmpl$27);
-const template45 = _$ssr(_tmpl$28);
-const template46 = _$ssr(_tmpl$29);
-const template47 = _$ssr(_tmpl$30);
-const template48 = _$ssr(_tmpl$31);
-const template49 = _$ssr(_tmpl$32);
-const template50 = _$ssr(_tmpl$33);
+const template39 = _$ssr(_tmpl$24);
+const template40 = (() => {
+  var _v$21 = _$ssrRunInScope([() => _$ssrStyleProperty("color:", _$escape(a(), true))]);
+  return _$ssr(_tmpl$18, _v$21[0]);
+})();
+const template41 = (() => {
+  var _v$22 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(state.color, true))),
+    _v$23 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Red, true))),
+    _v$24 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Blue, true)));
+  return _$ssr(_tmpl$25, _v$22, _v$23, _v$24);
+})();
+const template42 = _$ssr(_tmpl$26);
+const template43 = _$ssr(_tmpl$27);
+const template44 = _$ssr(_tmpl$28);
+const template45 = _$ssr(_tmpl$29);
+const template46 = _$ssr(_tmpl$30);
+const template47 = _$ssr(_tmpl$31);
+const template48 = _$ssr(_tmpl$32);
+const template49 = _$ssr(_tmpl$33);
+const template50 = _$ssr(_tmpl$34);
 const template51 = (() => {
   var _ref$9 = binding;
   return _$ssr(_tmpl$9);
@@ -340,68 +399,94 @@ const template55 = (() => {
   var _ref$13 = refUnknown;
   return _$ssr(_tmpl$9);
 })();
-const template56 = _$ssr(_tmpl$34);
-const template57 = _$ssr(_tmpl$35);
+const template56 = _$ssr(_tmpl$35);
+const template57 = _$ssr(_tmpl$36);
 const template58 = _$ssr(_tmpl$9);
-const template59 = _$ssr(_tmpl$36);
+const template59 = _$ssr(_tmpl$37);
 const template60 = _$ssr(
-  _tmpl$37,
+  _tmpl$38,
   _$ssrAttribute("i", _$escape(undefined, true)),
   _$ssrAttribute("j", _$escape(null, true)),
   _$ssrAttribute("k", void 0)
 );
-const template61 = _$ssr(_tmpl$38);
-const template62 = _$ssr(_tmpl$39);
-const template63 = _$ssr(_tmpl$17, _$ssrStyleProperty("background:", "red"));
+const template61 = _$ssr(_tmpl$39);
+const template62 = _$ssr(_tmpl$40);
+const template63 = _$ssr(_tmpl$18, _$ssrStyleProperty("background:", "red"));
 const template64 = _$ssr(
-  _tmpl$17,
+  _tmpl$18,
   _$ssrStyleProperty("background:", "red") +
     _$ssrStyleProperty(";color:", "green") +
     _$ssrStyleProperty(";margin:", 3) +
     _$ssrStyleProperty(";padding:", 0.4)
 );
 const template65 = _$ssr(
-  _tmpl$17,
+  _tmpl$18,
   _$ssrStyleProperty("background:", "red") +
     _$ssrStyleProperty(";color:", "green") +
     _$ssrStyleProperty(";border:", _$escape(undefined, true))
 );
-const template66 = _$ssr(_tmpl$17, _v$25[0]);
+const template66 = (() => {
+  var _v$25 = _$ssrRunInScope([
+    () =>
+      _$ssrStyleProperty("background:", "red") +
+      _$ssrStyleProperty(";color:", "green") +
+      _$ssrStyleProperty(";border:", _$escape(signal(), true))
+  ]);
+  return _$ssr(_tmpl$18, _v$25[0]);
+})();
 const template67 = _$ssr(
-  _tmpl$17,
+  _tmpl$18,
   _$ssrStyleProperty("background:", "red") +
     _$ssrStyleProperty(";color:", "green") +
     _$ssrStyleProperty(";border:", _$escape(somevalue, true))
 );
-const template68 = _$ssr(_tmpl$17, _v$26[0]);
+const template68 = (() => {
+  var _v$26 = _$ssrRunInScope([
+    () =>
+      _$ssrStyleProperty("background:", "red") +
+      _$ssrStyleProperty(";color:", "green") +
+      _$ssrStyleProperty(";border:", _$escape(some.access, true))
+  ]);
+  return _$ssr(_tmpl$18, _v$26[0]);
+})();
 const template69 = _$ssr(
-  _tmpl$17,
+  _tmpl$18,
   _$ssrStyleProperty("background:", "red") +
     _$ssrStyleProperty(";color:", "green") +
     _$ssrStyleProperty(";border:", _$escape(null, true))
 );
-const template70 = _$ssr(_tmpl$40, _$ssrAttribute("playsinline", _$escape(value, true)));
-const template71 = _$ssr(_tmpl$41);
-const template72 = _$ssr(_tmpl$42);
-const template73 = _$ssr(_tmpl$43);
-const template74 = _$ssr(_tmpl$44);
-const template75 = _$ssr(_tmpl$42);
-const template76 = _$ssr(_tmpl$45);
+const template70 = _$ssr(_tmpl$41, _$ssrAttribute("playsinline", _$escape(value, true)));
+const template71 = _$ssr(_tmpl$42);
+const template72 = _$ssr(_tmpl$43);
+const template73 = _$ssr(_tmpl$44);
+const template74 = _$ssr(_tmpl$45);
+const template75 = _$ssr(_tmpl$43);
+const template76 = _$ssr(_tmpl$46);
 
 // ONCE TESTS
 
 const template77 = _$ssr(
-  _tmpl$17,
+  _tmpl$18,
   _$ssrStyleProperty("width:", _$escape(props.width, true)) +
     _$ssrStyleProperty(";height:", _$escape(props.height, true))
 );
-const template78 = _$ssr(
-  _tmpl$17,
-  _$ssrStyleProperty("width:", _$escape(props.width, true)) +
-    _$ssrStyleProperty(";height:", _$escape(props.height, true)),
-  _v$27[0]
-);
-const template79 = _$ssr(_tmpl$8, _v$28[0], _$ssrAttribute("something", _$escape(color(), true)));
+const template78 = (() => {
+  var _v$27 = _$ssrRunInScope([() => _$ssrAttribute("something", _$escape(color(), true))]);
+  return _$ssr(
+    _tmpl$8,
+    _$ssrStyleProperty("width:", _$escape(props.width, true)) +
+      _$ssrStyleProperty(";height:", _$escape(props.height, true)),
+    _v$27[0]
+  );
+})();
+const template79 = (() => {
+  var _v$28 = _$ssrRunInScope([
+    () =>
+      _$ssrStyleProperty("width:", _$escape(props.width, true)) +
+      _$ssrStyleProperty(";height:", _$escape(props.height, true))
+  ]);
+  return _$ssr(_tmpl$8, _v$28[0], _$ssrAttribute("something", _$escape(color(), true)));
+})();
 
 // ONCE TESTS SPREADS
 
@@ -458,8 +543,11 @@ const styleProp = {
     height: props.height
   }
 };
-const template85 = _$ssr(_tmpl$17, _$ssrStyle(styleProp.style));
-const template86 = _$ssr(_tmpl$17, _v$29[0]);
+const template85 = _$ssr(_tmpl$18, _$ssrStyle(styleProp.style));
+const template86 = (() => {
+  var _v$29 = _$ssrRunInScope([() => _$ssrStyle(styleProp.style)]);
+  return _$ssr(_tmpl$18, _v$29[0]);
+})();
 const style = {
   background: "red",
   border: "solid black " + count() + "px"
@@ -467,34 +555,34 @@ const style = {
 const template87 = (() => {
   var _v$31 = _$ssrRunInScope(() => _$escape(count())),
     _v$30 = _$ssrRunInScope([() => _$ssrAttribute("aria-label", _$escape(count(), true))]);
-  return _$ssr(_tmpl$46, _v$30[0], _$ssrStyle(style), _$ssrClassName(style), _v$31);
+  return _$ssr(_tmpl$47, _v$30[0], _$ssrStyle(style), _$ssrClassName(style), _v$31);
 })();
 const template88 = (() => {
   var _v$33 = _$ssrRunInScope(() => _$escape(count())),
     _v$32 = _$ssrRunInScope([() => _$ssrAttribute("aria-label", _$escape(count(), true))]);
-  return _$ssr(_tmpl$46, _v$32[0], _$ssrStyle(style), _$ssrClassName(style), _v$33);
+  return _$ssr(_tmpl$47, _v$32[0], _$ssrStyle(style), _$ssrClassName(style), _v$33);
 })();
 const css = () => "&{color:red}";
 const template89 = [
   (() => {
     var _v$34 = _$ssrRunInScope(() => css());
-    return _$ssr(_tmpl$47, _v$34);
+    return _$ssr(_tmpl$48, _v$34);
   })(),
   (() => {
     var _v$35 = _$ssrRunInScope(() => css());
-    return _$ssr(_tmpl$47, _v$35);
+    return _$ssr(_tmpl$48, _v$35);
   })(),
   (() => {
     var _v$36 = _$ssrRunInScope(() => css());
-    return _$ssr(_tmpl$47, _v$36);
+    return _$ssr(_tmpl$48, _v$36);
   })(),
   (() => {
     var _v$37 = _$ssrRunInScope(() => css());
-    return _$ssr(_tmpl$47, _v$37);
+    return _$ssr(_tmpl$48, _v$37);
   })(),
   (() => {
     var _v$38 = _$ssrRunInScope(() => css());
-    return _$ssr(_tmpl$47, _v$38);
+    return _$ssr(_tmpl$48, _v$38);
   })()
 ];
 const styleProps = {
@@ -549,8 +637,20 @@ const template90 = [
   )
 ];
 const nope = () => undefined;
-const template91 = _$ssr(_tmpl$48, _v$39[0]);
+const template91 = (() => {
+  var _v$39 = _$ssrRunInScope([() => _$ssrStyleProperty("--bg:", _$escape(nope(), true))]);
+  return _$ssr(_tmpl$49, _v$39[0]);
+})();
 const template92 = _$ssr(_tmpl$9);
 function Progress(props) {
-  return _$ssr(_tmpl$49, _v$40[0]);
+  return (() => {
+    var _v$40 = _$ssrRunInScope([
+      () =>
+        _$ssrStyleProperty(
+          (props.orientation === "y" ? "height" : "width") + ":",
+          `${_$escape(props.value, true) * 100}%`
+        )
+    ]);
+    return _$ssr(_tmpl$50, _v$40[0]);
+  })();
 }

@@ -14,7 +14,10 @@ var _tmpl$ = [
   _tmpl$2 = [
     "<svg",
     ' width="400" height="180"><rect class="',
-    '" rx="20" ry="20" width="150" height="150" style="',
+    '"',
+    "",
+    "",
+    ' rx="20" ry="20" width="150" height="150" style="',
     '"></rect></svg>'
   ],
   _tmpl$3 = ["<svg", ' width="400" height="180">', "</svg>"],

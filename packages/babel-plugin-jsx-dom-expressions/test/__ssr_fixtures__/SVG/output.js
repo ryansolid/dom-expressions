@@ -1,5 +1,6 @@
 import { createComponent as _$createComponent } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
+import { ssrRunInScope as _$ssrRunInScope } from "r-server";
 import { ssrStyleProperty as _$ssrStyleProperty } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { escape as _$escape } from "r-server";
@@ -9,7 +10,10 @@ var _tmpl$ =
     '<svg width="400" height="180"><rect stroke-width="2" x="50" y="20" rx="20" ry="20" width="150" height="150" style="fill:red;stroke:black;stroke-width:5;opacity:0.5"></rect><linearGradient gradientTransform="rotate(25)"><stop offset="0%"></stop></linearGradient></svg>',
   _tmpl$2 = [
     '<svg width="400" height="180"><rect class="',
-    '" rx="20" ry="20" width="150" height="150" style="',
+    '"',
+    "",
+    "",
+    ' rx="20" ry="20" width="150" height="150" style="',
     '"></rect></svg>'
   ],
   _tmpl$3 = ['<svg width="400" height="180">', "</svg>"],
@@ -23,7 +27,20 @@ var _tmpl$ =
     "</text></svg>"
   ];
 const template = _$ssr(_tmpl$);
-const template2 = _$ssr(_tmpl$2, _v$[0], _v$[1], _v$[2], _v$[3], _v$[4]);
+const template2 = (() => {
+  var _v$ = _$ssrRunInScope([
+    () => _$ssrClassName(state.name),
+    () => _$ssrAttribute("stroke-width", _$escape(state.width, true)),
+    () => _$ssrAttribute("x", _$escape(state.x, true)),
+    () => _$ssrAttribute("y", _$escape(state.y, true)),
+    () =>
+      _$ssrStyleProperty("fill:", "red") +
+      _$ssrStyleProperty(";stroke:", "black") +
+      _$ssrStyleProperty(";stroke-width:", _$escape(props.stroke, true)) +
+      _$ssrStyleProperty(";opacity:", 0.5)
+  ]);
+  return _$ssr(_tmpl$2, _v$[0], _v$[1], _v$[2], _v$[3], _v$[4]);
+})();
 const template3 = (() => {
   var _v$2 = _$ssrElement("rect", props, undefined, false);
   return _$ssr(_tmpl$3, _v$2);

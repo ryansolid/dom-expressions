@@ -113,7 +113,7 @@ function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
         post
       })
     );
-    if (post) results.template.push("");
+    results.template.push("");
   } else {
     results.templateValues.push(attr);
     results.template.push("");

@@ -62,7 +62,8 @@ export function createTemplate(path, result, wrap) {
     }
   }
 
-  if (!result.declarations.length) {
+  const dynamicDecl = wrapDynamics(path, result.groupId, result.dynamics);
+  if (!result.declarations.length && !dynamicDecl && !result.postDeclarations.length) {
     return t.callExpression(
       registerImportMethod(path, "ssr"),
       Array.isArray(result.template) && result.template.length > 1
@@ -76,7 +77,7 @@ export function createTemplate(path, result, wrap) {
       t.blockStatement([
         t.variableDeclaration("var", [
           ...result.declarations,
-          wrapDynamics(path, result.groupId, result.dynamics),
+          dynamicDecl,
           ...result.postDeclarations
         ].filter(Boolean)),
         t.returnStatement(

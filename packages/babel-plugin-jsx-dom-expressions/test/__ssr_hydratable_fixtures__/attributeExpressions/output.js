@@ -12,8 +12,8 @@ import { ssr as _$ssr } from "r-server";
 var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$2 = ["<div>", "</div>"],
   _tmpl$3 = "<div><div/></div>",
-  _tmpl$4 = ["<div", " foo", ' style="', '">', "</div>"],
-  _tmpl$5 = ["<div", ' class="', '"></div>'],
+  _tmpl$4 = ["<div", " foo", ' style="', '"', ">", "</div>"],
+  _tmpl$5 = ["<div", "", ' class="', '"></div>'],
   _tmpl$6 = ["<div", ' class="a" className="b"></div>'],
   _tmpl$7 = ["<div", ' style="', '">Hi</div>'],
   _tmpl$8 = ["<div", ' style="', '"', "></div>"],
@@ -24,12 +24,12 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$13 = ["<div", ' class="`a">`$`</div>'],
   _tmpl$14 = ["<button", ' class="', '" type="button">Write</button>'],
   _tmpl$15 = ["<button", ' class="', '">Hi</button>'],
-  _tmpl$16 = ["<div", "><input", " readonly><input", "", "></div>"],
-  _tmpl$17 = ["<div", ' style="', '"></div>'],
-  _tmpl$18 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
-  _tmpl$19 = ["<div", ">", "</div>"],
-  _tmpl$20 = ["<div", "><!--$-->", "<!--/-->", "</div>"],
-  _tmpl$21 = ["<div", "", ">", "</div>"],
+  _tmpl$16 = ["<div", ' class="', '"></div>'],
+  _tmpl$17 = ["<div", "><input", "", "", " readonly><input", "", "", "", "></div>"],
+  _tmpl$18 = ["<div", ' style="', '"></div>'],
+  _tmpl$19 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
+  _tmpl$20 = ["<div", "", ">", "</div>"],
+  _tmpl$21 = ["<div", "><!--$-->", "<!--/-->", "</div>"],
   _tmpl$22 = [
     "<div",
     ' class="class1 class2 class3 class4 class5 class6" style="color:red;background-color:blue !important;border:1px solid black;font-size:12px;" random="random1 random2\n    random3 random4"></div>'
@@ -58,7 +58,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$44 = ["<video", ' poster="1.jpg"></video>'],
   _tmpl$45 = ["<div", '><video poster="1.jpg"></video></div>'],
   _tmpl$46 = ["<div", "><video></video></div>"],
-  _tmpl$47 = ["<button", ' type="button" style="', '" class="', '">', "</button>"];
+  _tmpl$47 = ["<button", ' type="button"', ' style="', '" class="', '">', "</button>"];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -242,7 +242,7 @@ const template18 = _$ssrElement(
 const template19 = (() => {
   var _v$23 = _$ssrHydrationKey();
   return _$ssr(
-    _tmpl$5,
+    _tmpl$16,
     _v$23,
     _$ssrClassName([
       {
@@ -263,7 +263,7 @@ const template20 = (() => {
     _v$25 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
     _v$27 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(s2(), true)));
   return _$ssr(
-    _tmpl$16,
+    _tmpl$17,
     _v$24,
     _v$25,
     _v$26[0],
@@ -283,17 +283,17 @@ const template21 = (() => {
           ...rest
         })
     ]);
-  return _$ssr(_tmpl$17, _v$28, _v$29[0]);
+  return _$ssr(_tmpl$18, _v$28, _v$29[0]);
 })();
 const template22 = (() => {
   var _v$30 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$18, _v$30);
+  return _$ssr(_tmpl$19, _v$30);
 })();
 const template23 = (() => {
   var _v$31 = _$ssrHydrationKey(),
     _v$33 = _$ssrRunInScope(() => "t" in test && "true"),
     _v$32 = _$ssrRunInScope([() => _$ssrAttribute("disabled", "t" in _$escape(test, true))]);
-  return _$ssr(_tmpl$19, _v$31, _v$32[0], _v$33);
+  return _$ssr(_tmpl$20, _v$31, _v$32[0], _v$33);
 })();
 const template24 = _$ssrElement(
   "a",
@@ -314,7 +314,7 @@ const template25 = (() => {
       undefined,
       false
     );
-  return _$ssr(_tmpl$20, _v$34, _v$35, _v$36);
+  return _$ssr(_tmpl$21, _v$34, _v$35, _v$36);
 })();
 const template26 = _$ssrElement(
   "div",
@@ -361,7 +361,7 @@ const template28 = _$ssrElement(
 const template29 = (() => {
   var _v$37 = _$ssrHydrationKey(),
     _v$38 = !!someValue;
-  return _$ssr(_tmpl$21, _v$37, _$ssrAttribute("attribute", !!someValue), _v$38);
+  return _$ssr(_tmpl$20, _v$37, _$ssrAttribute("attribute", !!someValue), _v$38);
 })();
 const template30 = (() => {
   var _v$39 = _$ssrHydrationKey();
@@ -372,11 +372,11 @@ const template31 = (() => {
     _v$41 = _$ssrRunInScope([
       () => _$ssrStyleProperty("background-color:", _$escape(getStore.itemProperties.color, true))
     ]);
-  return _$ssr(_tmpl$17, _v$40, _v$41[0]);
+  return _$ssr(_tmpl$18, _v$40, _v$41[0]);
 })();
 const template32 = (() => {
   var _v$42 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$17, _v$42, _$ssrStyleProperty("background-color:", _$escape(undefined, true)));
+  return _$ssr(_tmpl$18, _v$42, _$ssrStyleProperty("background-color:", _$escape(undefined, true)));
 })();
 const template33 = [
   (() => {
@@ -425,7 +425,7 @@ const template39 = (() => {
 const template40 = (() => {
   var _v$54 = _$ssrHydrationKey(),
     _v$55 = _$ssrRunInScope([() => _$ssrStyleProperty("color:", _$escape(a(), true))]);
-  return _$ssr(_tmpl$17, _v$54, _v$55[0]);
+  return _$ssr(_tmpl$18, _v$54, _v$55[0]);
 })();
 const template41 = (() => {
   var _v$56 = _$ssrHydrationKey(),
@@ -531,12 +531,12 @@ const template62 = (() => {
 })();
 const template63 = (() => {
   var _v$81 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$17, _v$81, _$ssrStyleProperty("background:", "red"));
+  return _$ssr(_tmpl$18, _v$81, _$ssrStyleProperty("background:", "red"));
 })();
 const template64 = (() => {
   var _v$82 = _$ssrHydrationKey();
   return _$ssr(
-    _tmpl$17,
+    _tmpl$18,
     _v$82,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
@@ -547,7 +547,7 @@ const template64 = (() => {
 const template65 = (() => {
   var _v$83 = _$ssrHydrationKey();
   return _$ssr(
-    _tmpl$17,
+    _tmpl$18,
     _v$83,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
@@ -562,12 +562,12 @@ const template66 = (() => {
         _$ssrStyleProperty(";color:", "green") +
         _$ssrStyleProperty(";border:", _$escape(signal(), true))
     ]);
-  return _$ssr(_tmpl$17, _v$84, _v$85[0]);
+  return _$ssr(_tmpl$18, _v$84, _v$85[0]);
 })();
 const template67 = (() => {
   var _v$86 = _$ssrHydrationKey();
   return _$ssr(
-    _tmpl$17,
+    _tmpl$18,
     _v$86,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
@@ -582,12 +582,12 @@ const template68 = (() => {
         _$ssrStyleProperty(";color:", "green") +
         _$ssrStyleProperty(";border:", _$escape(some.access, true))
     ]);
-  return _$ssr(_tmpl$17, _v$87, _v$88[0]);
+  return _$ssr(_tmpl$18, _v$87, _v$88[0]);
 })();
 const template69 = (() => {
   var _v$89 = _$ssrHydrationKey();
   return _$ssr(
-    _tmpl$17,
+    _tmpl$18,
     _v$89,
     _$ssrStyleProperty("background:", "red") +
       _$ssrStyleProperty(";color:", "green") +
@@ -628,7 +628,7 @@ const template76 = (() => {
 const template77 = (() => {
   var _v$97 = _$ssrHydrationKey();
   return _$ssr(
-    _tmpl$17,
+    _tmpl$18,
     _v$97,
     _$ssrStyleProperty("width:", _$escape(props.width, true)) +
       _$ssrStyleProperty(";height:", _$escape(props.height, true))
@@ -638,7 +638,7 @@ const template78 = (() => {
   var _v$98 = _$ssrHydrationKey(),
     _v$99 = _$ssrRunInScope([() => _$ssrAttribute("something", _$escape(color(), true))]);
   return _$ssr(
-    _tmpl$17,
+    _tmpl$8,
     _v$98,
     _$ssrStyleProperty("width:", _$escape(props.width, true)) +
       _$ssrStyleProperty(";height:", _$escape(props.height, true)),
@@ -712,12 +712,12 @@ const styleProp = {
 };
 const template85 = (() => {
   var _v$102 = _$ssrHydrationKey();
-  return _$ssr(_tmpl$17, _v$102, _$ssrStyle(styleProp.style));
+  return _$ssr(_tmpl$18, _v$102, _$ssrStyle(styleProp.style));
 })();
 const template86 = (() => {
   var _v$103 = _$ssrHydrationKey(),
     _v$104 = _$ssrRunInScope([() => _$ssrStyle(styleProp.style)]);
-  return _$ssr(_tmpl$17, _v$103, _v$104[0]);
+  return _$ssr(_tmpl$18, _v$103, _v$104[0]);
 })();
 const style = {
   background: "red",
