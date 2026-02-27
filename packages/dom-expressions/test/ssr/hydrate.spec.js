@@ -4,6 +4,7 @@
 import * as r from "../../src/client";
 import * as r2 from "../../src/server";
 import { createSignal, flush } from "@solidjs/signals";
+import { sharedConfig } from "../core";
 
 globalThis._$HY = { events: [], completed: new WeakSet() };
 
@@ -305,5 +306,257 @@ describe("r.hydrate", () => {
       })
     );
     expect(rendered).toBe(`<span><!--#-->Hi<!--/--> John</span>`);
+  });
+});
+
+describe("Phase 1: Hydration error diagnostics", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  beforeEach(() => {
+    globalThis._$HY = { events: [], completed: new WeakSet() };
+    container.innerHTML = "";
+  });
+
+  it("template guard fires on direct template call during hydration", () => {
+    container.innerHTML = '<div _hk="0">Server</div>';
+    const freshTmpl = r.template("<div>Created</div>");
+    expect(() => {
+      r.hydrate(() => {
+        freshTmpl();
+      }, container);
+    }).toThrow("Failed attempt to create new DOM elements during hydration");
+  });
+
+  it("getNextElement falls through to template(true) when key not found", () => {
+    const _tmpl$ = r.template("<div>Fallback</div>");
+    container.innerHTML = '<div _hk="0">Server</div>';
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      expect(_el$.textContent).toBe("Server");
+
+      const _el$2 = r.getNextElement(_tmpl$);
+      expect(_el$2.textContent).toBe("Fallback");
+
+      r.insert(container, [_el$, _el$2], undefined, [...container.childNodes]);
+    }, container);
+  });
+
+  it("getNextElement throws when key not found and no template", () => {
+    container.innerHTML = '<div _hk="0">Server</div>';
+    expect(() => {
+      r.hydrate(() => {
+        r.getNextElement();
+        r.getNextElement();
+      }, container);
+    }).toThrow("Hydration Mismatch. Unable to find DOM nodes for hydration key");
+  });
+
+  it("getNextElement warns on tag mismatch between claimed node and template", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<span>Expected span</span>");
+    container.innerHTML = '<div _hk="0">Actually a div</div>';
+    const claimedNode = container.firstChild;
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      expect(_el$.localName).toBe("div");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("expected <span> but found"),
+      claimedNode
+    );
+    warn.mockRestore();
+  });
+
+  it("getNextElement does not warn when tags match", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<div>Correct</div>");
+    container.innerHTML = '<div _hk="0">Correct</div>';
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      expect(_el$.localName).toBe("div");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("verifyHydration warns about unclaimed registry entries", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<div>Content</div>");
+    container.innerHTML = '<div _hk="0">First</div><span _hk="1">Orphan</span>';
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    sharedConfig.verifyHydration();
+    expect(warn).toHaveBeenCalledTimes(1);
+    const message = warn.mock.calls[0][0];
+    expect(message).toBe(
+      `Hydration completed with 1 unclaimed server-rendered node(s):\n` +
+      `  <span _hk="1">Orphan</span>`
+    );
+    warn.mockRestore();
+  });
+
+  it("verifyHydration produces no warning when all nodes are claimed", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<div>Content</div>");
+    container.innerHTML = '<div _hk="0">Only</div>';
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    sharedConfig.verifyHydration();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+describe("Phase 2: Walk validation helpers", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  let dispose;
+
+  beforeEach(() => {
+    if (dispose) dispose();
+    globalThis._$HY = { events: [], completed: new WeakSet() };
+    container.innerHTML = "";
+  });
+
+  afterEach(() => {
+    if (dispose) { dispose(); dispose = null; }
+  });
+
+  it("getFirstChild warns on tag mismatch with parent-wrapped visualization", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<table><tr><td>Cell</td></tr></table>");
+    container.innerHTML = '<table _hk="0"><tbody><tr><td>Cell</td></tr></tbody></table>';
+    const table = container.firstChild;
+
+    dispose = r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      const _el$2 = r.getFirstChild(_el$, "tr");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain("expected <tr> as first child of");
+    expect(warn.mock.calls[0][1]).toBe(table);
+    const viz = warn.mock.calls[0][2];
+    expect(viz).toContain("<table>");
+    expect(viz).toContain("\u2190 expected tr");
+    expect(viz).toContain("</table>");
+    warn.mockRestore();
+  });
+
+  it("getNextSibling warns on tag mismatch with parent-wrapped visualization", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<div><span></span><p></p></div>");
+    container.innerHTML = '<div _hk="0"><span></span><div></div></div>';
+    const span = container.firstChild.firstChild;
+    const parent = container.firstChild;
+
+    dispose = r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      const _el$2 = r.getFirstChild(_el$, "span");
+      const _el$3 = r.getNextSibling(_el$2, "p");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain("expected <p> after");
+    expect(warn.mock.calls[0][1]).toBe(span);
+    expect(warn.mock.calls[0][3]).toBe(parent);
+    const viz = warn.mock.calls[0][4];
+    expect(viz).toContain("<div>");
+    expect(viz).toContain("\u2190 expected p");
+    expect(viz).toContain("</div>");
+    warn.mockRestore();
+  });
+
+  it("getFirstChild shows missing format when child is absent", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<ul><li></li></ul>");
+    container.innerHTML = '<ul _hk="0"></ul>';
+
+    dispose = r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      const _el$2 = r.getFirstChild(_el$, "li");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const viz = warn.mock.calls[0][2];
+    expect(viz).toContain("<ul><li \u2190 missing></ul>");
+    warn.mockRestore();
+  });
+
+  it("getFirstChild does not warn when tag matches", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<div><span></span></div>");
+    container.innerHTML = '<div _hk="0"><span></span></div>';
+
+    dispose = r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      const _el$2 = r.getFirstChild(_el$, "span");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("getNextSibling does not warn when tag matches", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<div><span></span><p></p></div>");
+    container.innerHTML = '<div _hk="0"><span></span><p></p></div>';
+
+    dispose = r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      const _el$2 = r.getFirstChild(_el$, "span");
+      const _el$3 = r.getNextSibling(_el$2, "p");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("describeSiblings windows output for parents with many children", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template(
+      "<ul><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ul>"
+    );
+    container.innerHTML =
+      '<ul _hk="0"><li></li><li></li><li></li><li></li><div></div><li></li><li></li><li></li></ul>';
+
+    dispose = r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      const _el$2 = r.getFirstChild(_el$, "li");
+      const _el$3 = r.getNextSibling(_el$2, "li");
+      const _el$4 = r.getNextSibling(_el$3, "li");
+      const _el$5 = r.getNextSibling(_el$4, "li");
+      const _el$6 = r.getNextSibling(_el$5, "li");
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const viz = warn.mock.calls[0][4];
+    expect(viz).toContain("...");
+    expect(viz).toContain("\u2190 expected li");
+    expect(viz).toContain("<ul>");
+    expect(viz).toContain("</ul>");
+    warn.mockRestore();
   });
 });

@@ -62,8 +62,8 @@ export function render(code, element, init, options = {}) {
 
 export function template(html, isImportNode, isSVG, isMathML) {
   let node;
-  const create = () => {
-    if ("_DX_DEV_" && isHydrating())
+  const create = (bypassGuard) => {
+    if ("_DX_DEV_" && isHydrating() && !bypassGuard)
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
       );
@@ -75,9 +75,11 @@ export function template(html, isImportNode, isSVG, isMathML) {
 
     return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
   };
-  return isImportNode
-    ? () => untrack(() => document.importNode(node || (node = create()), true))
-    : () => (node || (node = create())).cloneNode(true);
+  const fn = isImportNode
+    ? (bypassGuard) => untrack(() => document.importNode(node || (node = create(bypassGuard)), true))
+    : (bypassGuard) => (node || (node = create(bypassGuard))).cloneNode(true);
+  if ("_DX_DEV_") fn._html = html;
+  return fn;
 }
 
 export function delegateEvents(eventNames, document = window.document) {
@@ -303,6 +305,19 @@ export function hydrate(code, element, options = {}) {
   };
   sharedConfig.registry = new Map();
   sharedConfig.hydrating = true;
+  if ("_DX_DEV_") {
+    sharedConfig.verifyHydration = () => {
+      if (sharedConfig.registry && sharedConfig.registry.size) {
+        const orphaned = [...sharedConfig.registry.values()];
+        console.warn(
+          `Hydration completed with ${orphaned.length} unclaimed server-rendered node(s):\n` +
+            orphaned
+              .map(node => `  ${node.outerHTML.slice(0, 100)}`)
+              .join("\n")
+        );
+      }
+    };
+  }
   try {
     gatherHydratable(element, options.renderId);
     return render(code, element, [...element.childNodes], options);
@@ -316,14 +331,21 @@ export function getNextElement(template) {
     key,
     hydrating = isHydrating();
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
-    if ("_DX_DEV_" && hydrating) {
+    if (!template) {
       throw new Error(
-        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}\n${
-          template ? template().outerHTML : ""
-        }`
+        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`
       );
     }
-    return template();
+    return template(true);
+  }
+  if ("_DX_DEV_" && template && template._html) {
+    const expected = template._html.match(/^<(\w+)/)?.[1];
+    if (expected && node.localName !== expected) {
+      console.warn(
+        `Hydration tag mismatch for key "${key}": expected <${expected}> but found`,
+        node
+      );
+    }
   }
   if (sharedConfig.completed) sharedConfig.completed.add(node);
   sharedConfig.registry.delete(key);
@@ -354,6 +376,69 @@ export function getNextMarker(start) {
     }
   }
   return [end, current];
+}
+
+export function getFirstChild(node, expectedTag) {
+  const child = node.firstChild;
+  if ("_DX_DEV_" && isHydrating() && expectedTag && child?.localName !== expectedTag) {
+    const isMissing = !child || child.nodeType !== 1;
+    console.warn(
+      "Hydration structure mismatch: expected <" + expectedTag + "> as first child of",
+      node,
+      "\n  " + describeSiblings(node, child, expectedTag, isMissing)
+    );
+  }
+  return child;
+}
+
+export function getNextSibling(node, expectedTag) {
+  const sibling = node.nextSibling;
+  if ("_DX_DEV_" && isHydrating() && expectedTag && sibling?.localName !== expectedTag) {
+    const parent = node.parentElement;
+    const isMissing = !sibling || sibling.nodeType !== 1;
+    console.warn(
+      "Hydration structure mismatch: expected <" + expectedTag + "> after",
+      node,
+      "in",
+      parent,
+      "\n  " + describeSiblings(parent, sibling, expectedTag, isMissing)
+    );
+  }
+  return sibling;
+}
+
+function describeSiblings(parent, mismatchChild, expectedTag, isMissing) {
+  const children = [];
+  let child = parent.firstChild;
+  while (child) {
+    if (child.nodeType === 1) children.push(child);
+    child = child.nextSibling;
+  }
+  const pTag = parent.localName;
+  if (isMissing) {
+    const tags = children.map(c => `<${c.localName}>`).join("");
+    return `<${pTag}>${tags}<${expectedTag} \u2190 missing></${pTag}>`;
+  }
+  const idx = children.indexOf(mismatchChild);
+  let start = 0,
+    end = children.length;
+  let prefix = "",
+    suffix = "";
+  if (children.length > 6) {
+    start = Math.max(0, idx - 2);
+    end = Math.min(children.length, idx + 3);
+    if (start > 0) prefix = "...";
+    if (end < children.length) suffix = "...";
+  }
+  const tags = children
+    .slice(start, end)
+    .map(c =>
+      c === mismatchChild
+        ? `<${c.localName} \u2190 expected ${expectedTag}>`
+        : `<${c.localName}>`
+    )
+    .join("");
+  return `<${pTag}>${prefix}${tags}${suffix}</${pTag}>`;
 }
 
 export function runHydrationEvents() {

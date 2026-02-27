@@ -1000,25 +1000,37 @@ function transformChildren(path, results, config) {
     results.isImportNode = results.isImportNode || child.isImportNode;
 
     if (child.id) {
-      let getNextMatch;
+      let walkExpr;
       if (config.hydratable && tagName === "html") {
-        getNextMatch = registerImportMethod(
+        const getNextMatch = registerImportMethod(
           path,
           "getNextMatch",
           getRendererConfig(path, "dom").moduleName
         );
+        const walk = t.memberExpression(
+          t.identifier(tempPath),
+          t.identifier(i === 0 ? "firstChild" : "nextSibling")
+        );
+        walkExpr = t.callExpression(getNextMatch, [walk, t.stringLiteral(child.tagName)]);
+      } else if (config.dev && config.hydratable && child.tagName) {
+        const helperName = i === 0 ? "getFirstChild" : "getNextSibling";
+        const helper = registerImportMethod(
+          path,
+          helperName,
+          getRendererConfig(path, "dom").moduleName
+        );
+        walkExpr = t.callExpression(helper, [
+          t.identifier(tempPath),
+          t.stringLiteral(child.tagName)
+        ]);
+      } else {
+        walkExpr = t.memberExpression(
+          t.identifier(tempPath),
+          t.identifier(i === 0 ? "firstChild" : "nextSibling")
+        );
       }
-      const walk = t.memberExpression(
-        t.identifier(tempPath),
-        t.identifier(i === 0 ? "firstChild" : "nextSibling")
-      );
       results.declarations.push(
-        t.variableDeclarator(
-          child.id,
-          config.hydratable && tagName === "html"
-            ? t.callExpression(getNextMatch, [walk, t.stringLiteral(child.tagName)])
-            : walk
-        )
+        t.variableDeclarator(child.id, walkExpr)
       );
       results.declarations.push(...child.declarations);
       results.exprs.push(...child.exprs);
