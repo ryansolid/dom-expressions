@@ -511,7 +511,7 @@ function createElement(path, { topLevel, hydratable }) {
           memo.push(t.stringLiteral("<!--$-->"));
         if (child.exprs.length && !doNotEscape && !child.spreadElement)
           child.exprs[0] = escapeExpression(path, child.exprs[0]);
-        memo.push(getCreateTemplate(config, path, child)(path, child, true));
+        memo.push(getCreateTemplate(config, path, child)(path, child, false));
         if (markers && child.exprs.length && !child.spreadElement)
           memo.push(t.stringLiteral("<!--/-->"));
       }

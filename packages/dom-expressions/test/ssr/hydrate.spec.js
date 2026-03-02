@@ -560,3 +560,71 @@ describe("Phase 2: Walk validation helpers", () => {
     warn.mockRestore();
   });
 });
+
+describe("Spread element hydration", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  beforeEach(() => {
+    globalThis._$HY = { events: [], completed: new WeakSet() };
+    container.innerHTML = "";
+  });
+
+  it("sibling spread elements produce sequential _hk values", () => {
+    const linkProps = { class: "link" };
+    const rendered = r2.renderToString(() => [
+      r2.ssrElement("a", linkProps, () => "First", true),
+      r2.ssrElement("a", linkProps, () => "Second", true)
+    ]);
+
+    const hkValues = [...rendered.matchAll(/_hk=(\S+?)[\s>]/g)].map(m => m[1]);
+    expect(hkValues).toEqual(["0", "1"]);
+  });
+
+  it("sibling spread elements with dynamic children produce sequential _hk values", () => {
+    const getProps = () => ({ class: "link" });
+    const rendered = r2.renderToString(() => [
+      r2.ssrElement("a", getProps(), () => "First", true),
+      r2.ssrElement("a", getProps(), () => r2.escape("dynamic1"), true),
+      r2.ssrElement("a", getProps(), () => "Third", true)
+    ]);
+
+    const hkValues = [...rendered.matchAll(/_hk=(\S+?)[\s>]/g)].map(m => m[1]);
+    expect(hkValues).toEqual(["0", "1", "2"]);
+  });
+
+  it("hydrates sibling spread elements preserving DOM nodes", () => {
+    const linkProps = { class: "link" };
+    const rendered = r2.renderToString(() => [
+      r2.ssrElement("a", linkProps, () => "First", true),
+      r2.ssrElement("a", linkProps, () => "Second", true)
+    ]);
+
+    container.innerHTML = rendered;
+    const el1 = container.firstChild;
+    const el2 = el1.nextSibling;
+    expect(el1.tagName).toBe("A");
+    expect(el2.tagName).toBe("A");
+
+    const _tmpl$ = r.template("<a></a>");
+    r.hydrate(() => {
+      const _el$1 = r.getNextElement(_tmpl$);
+      r.spread(_el$1, linkProps, false, true);
+      r.insert(_el$1, "First");
+      r.runHydrationEvents(_el$1.getAttribute("_hk"));
+
+      const _el$2 = r.getNextElement(_tmpl$);
+      r.spread(_el$2, linkProps, false, true);
+      r.insert(_el$2, "Second");
+      r.runHydrationEvents(_el$2.getAttribute("_hk"));
+
+      r.insert(container, [_el$1, _el$2], undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+    }, container);
+
+    expect(container.firstChild).toBe(el1);
+    expect(el1.nextSibling).toBe(el2);
+    expect(el1.textContent).toBe("First");
+    expect(el2.textContent).toBe("Second");
+  });
+});

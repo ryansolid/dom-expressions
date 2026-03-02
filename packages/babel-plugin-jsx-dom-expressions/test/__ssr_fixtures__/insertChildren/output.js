@@ -1,5 +1,4 @@
 import { mergeProps as _$mergeProps } from "r-server";
-import { memo as _$memo } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
 import { ssrRunInScope as _$ssrRunInScope } from "r-server";
 import { escape as _$escape } from "r-server";
@@ -38,12 +37,7 @@ const template6 = _$createComponent(Module, {
 });
 const template7 = _$ssrElement("module", dynamic, undefined, false);
 const template8 = _$ssrElement("module", dynamic, "Hello", false);
-const template9 = _$ssrElement(
-  "module",
-  dynamic,
-  _$memo(() => _$escape(dynamic.children)),
-  false
-);
+const template9 = _$ssrElement("module", dynamic, () => _$escape(dynamic.children), false);
 const template10 = _$createComponent(
   Module,
   _$mergeProps(dynamic, {
@@ -100,12 +94,7 @@ const template23 = _$createComponent(Module, {
     return state.children();
   }
 });
-const template24 = _$ssrElement(
-  "module",
-  dynamic,
-  ["Hi", _$memo(() => _$escape(dynamic.children))],
-  false
-);
+const template24 = _$ssrElement("module", dynamic, ["Hi", () => _$escape(dynamic.children)], false);
 const tiles = [];
 tiles.push(_$ssr(_tmpl$5));
 const template25 = (() => {
