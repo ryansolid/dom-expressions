@@ -640,7 +640,9 @@ function normalize(value, current, multi, doNotUnwrap) {
         t = typeof item;
       if (t === "string" || t === "number")
         value[i] =
-          prev && prev.nodeType === 3 && prev.data === item ? prev : document.createTextNode(item);
+          prev && prev.nodeType === 3 && (sharedConfig.hydrating || prev.data === "" + item)
+            ? prev
+            : document.createTextNode(item);
     }
   }
   return value;
