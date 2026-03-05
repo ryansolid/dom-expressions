@@ -17,6 +17,7 @@ export {
 
 function resolveAssets(moduleUrl, manifest) {
   if (!manifest) return null;
+  const base = manifest._base || "/";
   const entry = manifest[moduleUrl];
   if (!entry) return null;
   const css = [];
@@ -27,8 +28,8 @@ function resolveAssets(moduleUrl, manifest) {
     visited.add(key);
     const e = manifest[key];
     if (!e) return;
-    js.push(e.file);
-    if (e.css) for (let i = 0; i < e.css.length; i++) css.push(e.css[i]);
+    js.push(base + e.file);
+    if (e.css) for (let i = 0; i < e.css.length; i++) css.push(base + e.css[i]);
     if (e.imports) for (let i = 0; i < e.imports.length; i++) walk(e.imports[i]);
   };
   walk(moduleUrl);
