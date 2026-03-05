@@ -293,20 +293,6 @@ describe("r.hydrate", () => {
     expect(head.childNodes.length).toBe(4);
   });
 
-  it("skips hydrating simple text", () => {
-    rendered = r2.renderToString(() =>
-      r2.createComponent(r2.NoHydration, {
-        get children() {
-          return r2.ssr(
-            ["<span", "><!--#-->", "<!--/--> John</span>"],
-            r2.ssrHydrationKey(),
-            r2.escape("Hi")
-          );
-        }
-      })
-    );
-    expect(rendered).toBe(`<span><!--#-->Hi<!--/--> John</span>`);
-  });
 });
 
 describe("Phase 1: Hydration error diagnostics", () => {

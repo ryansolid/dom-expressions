@@ -634,7 +634,7 @@ export function mergeProps(...sources) {
 
 export function getHydrationKey() {
   const hydrate = sharedConfig.context;
-  return hydrate && !hydrate.noHydrate && sharedConfig.getNextContextId();
+  return hydrate && sharedConfig.getNextContextId();
 }
 
 export function applyRef(r, element) {
@@ -658,26 +658,6 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '", "'
   )}"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
-}
-
-export function Hydration(props) {
-  if (!sharedConfig.context.noHydrate) return props.children;
-  const context = sharedConfig.context;
-  sharedConfig.context = {
-    ...context,
-    noHydrate: false
-  };
-  const res = props.children;
-  sharedConfig.context = context;
-  return res;
-}
-
-export function NoHydration(props) {
-  let context = sharedConfig.context;
-  if (context) sharedConfig.context = { ...context, noHydrate: true };
-  const res = props.children;
-  if (context) sharedConfig.context = context;
-  return res;
 }
 
 function queue(fn) {

@@ -684,14 +684,6 @@ export function getHydrationKey() {
   return sharedConfig.getNextContextId();
 }
 
-export function NoHydration(props) {
-  return sharedConfig.hydrating ? undefined : props.children;
-}
-
-export function Hydration(props) {
-  return props.children;
-}
-
 const voidFn = () => undefined;
 
 // experimental

@@ -80,8 +80,6 @@ export interface RequestEvent {
 }
 export function getRequestEvent(): RequestEvent | undefined;
 
-export function Hydration(props: { children?: JSX.Element }): JSX.Element;
-export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function untrack<T>(fn: () => T): T;
 

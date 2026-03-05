@@ -79,8 +79,6 @@ export function getAssets(): string;
 export function HydrationScript(props?: { nonce?: string; eventNames?: string[] }): JSX.Element;
 export function generateHydrationScript(options?: { nonce?: string; eventNames?: string[] }): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
-export function Hydration(props: { children?: JSX.Element }): JSX.Element;
-export function NoHydration(props: { children?: JSX.Element }): JSX.Element;
 export interface RequestEvent {
   request: Request;
   locals: Record<string | number | symbol, any>;
