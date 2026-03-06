@@ -239,13 +239,16 @@ export function ref(fn, element) {
 export function insert(parent, accessor, marker, initial) {
   const multi = marker !== undefined;
   if (multi && !initial) initial = [];
-  if (isHydrating(parent) && Array.isArray(initial)) {
-    let j = 0;
-    for (let i = 0; i < initial.length; i++) {
-      if (initial[i].nodeType === 8 && initial[i].nodeValue === "!$") initial[i].remove();
-      else initial[j++] = initial[i];
+  if (isHydrating(parent)) {
+    if (!multi && initial === undefined && parent) initial = [...parent.childNodes];
+    if (Array.isArray(initial)) {
+      let j = 0;
+      for (let i = 0; i < initial.length; i++) {
+        if (initial[i].nodeType === 8 && initial[i].nodeValue === "!$") initial[i].remove();
+        else initial[j++] = initial[i];
+      }
+      initial.length = j;
     }
-    initial.length = j;
   }
   if (typeof accessor !== "function") {
     accessor = normalize(accessor, initial, multi, true);
