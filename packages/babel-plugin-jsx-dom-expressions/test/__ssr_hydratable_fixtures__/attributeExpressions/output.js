@@ -4,6 +4,7 @@ import { ssrStyleProperty as _$ssrStyleProperty } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
 import { ssrRunInScope as _$ssrRunInScope } from "r-server";
+import { memo as _$memo } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssrElement as _$ssrElement } from "r-server";
 import { mergeProps as _$mergeProps } from "r-server";

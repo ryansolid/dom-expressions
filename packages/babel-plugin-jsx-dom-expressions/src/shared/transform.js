@@ -158,7 +158,6 @@ export function transformNode(path, info = {}) {
     }
     const expr =
       config.wrapConditionals &&
-      config.generate !== "ssr" &&
       (t.isLogicalExpression(node.expression) || t.isConditionalExpression(node.expression))
         ? transformCondition(path.get("expression"), info.componentChild || info.fragmentChild)
         : !info.componentChild &&
