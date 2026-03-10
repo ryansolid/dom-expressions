@@ -255,6 +255,11 @@ export function insert(parent, accessor, marker, initial) {
     if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
   }
   accessor = memo(accessor, true);
+  if (multi && initial.length === 0 && !isHydrating(parent)) {
+    const placeholder = document.createTextNode("");
+    parent.insertBefore(placeholder, marker);
+    initial = [placeholder];
+  }
   effect(
     prev => normalize(accessor, prev, multi),
     (value, current) => insertExpression(parent, value, current, marker),
