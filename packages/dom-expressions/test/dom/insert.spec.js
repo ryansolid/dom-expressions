@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/client";
-import { createRoot } from "@solidjs/signals";
+import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("r.insert", () => {
   // <div><!-- insert --></div>
@@ -374,4 +374,96 @@ describe("r.insert with Markers", () => {
     r.insert(parent, val, parent.childNodes[1]);
     return parent;
   }
+});
+
+describe("r.insert caching", () => {
+  it("does not re-invoke accessor when inner memo updates", () => {
+    let accessorCalls = 0;
+    const [count, setCount] = createSignal(0);
+    const parent = document.createElement("div");
+    const staticNode = document.createElement("span");
+    staticNode.textContent = "static";
+
+    createRoot(() => {
+      r.insert(parent, () => {
+        accessorCalls++;
+        return [r.memo(() => count()), staticNode];
+      });
+    });
+    flush();
+
+    expect(accessorCalls).toBe(1);
+    expect(parent.innerHTML).toBe("0<span>static</span>");
+
+    setCount(1);
+    flush();
+
+    expect(accessorCalls).toBe(1);
+    expect(parent.innerHTML).toBe("1<span>static</span>");
+  });
+
+  it("still updates when accessor has direct reactive deps", () => {
+    const [count, setCount] = createSignal(0);
+    const parent = document.createElement("div");
+
+    createRoot(() => {
+      r.insert(parent, () => count());
+    });
+    flush();
+
+    expect(parent.innerHTML).toBe("0");
+
+    setCount(1);
+    flush();
+
+    expect(parent.innerHTML).toBe("1");
+  });
+
+  it("caches array with inline reactive functions", () => {
+    let accessorCalls = 0;
+    const [show, setShow] = createSignal(true);
+    const parent = document.createElement("div");
+    const staticNode = document.createElement("span");
+    staticNode.textContent = "static";
+
+    createRoot(() => {
+      r.insert(parent, () => {
+        accessorCalls++;
+        return [() => show() ? "yes" : "no", staticNode];
+      });
+    });
+    flush();
+
+    expect(accessorCalls).toBe(1);
+    expect(parent.innerHTML).toBe("yes<span>static</span>");
+
+    setShow(false);
+    flush();
+
+    expect(accessorCalls).toBe(1);
+    expect(parent.innerHTML).toBe("no<span>static</span>");
+  });
+
+  it("does not cache when accessor returns flat static content", () => {
+    let accessorCalls = 0;
+    const [count, setCount] = createSignal(0);
+    const parent = document.createElement("div");
+
+    createRoot(() => {
+      r.insert(parent, () => {
+        accessorCalls++;
+        return [count(), "text"];
+      });
+    });
+    flush();
+
+    expect(accessorCalls).toBe(1);
+    expect(parent.innerHTML).toBe("0text");
+
+    setCount(1);
+    flush();
+
+    expect(accessorCalls).toBe(2);
+    expect(parent.innerHTML).toBe("1text");
+  });
 });

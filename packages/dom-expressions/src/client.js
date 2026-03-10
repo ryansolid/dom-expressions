@@ -254,6 +254,7 @@ export function insert(parent, accessor, marker, initial) {
     accessor = normalize(accessor, initial, multi, true);
     if (typeof accessor !== "function") return insertExpression(parent, accessor, initial, marker);
   }
+  accessor = memo(accessor, true);
   effect(
     prev => normalize(accessor, prev, multi),
     (value, current) => insertExpression(parent, value, current, marker),
