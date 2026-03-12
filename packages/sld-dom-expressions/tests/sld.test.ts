@@ -823,6 +823,34 @@ describe("SLD Integration Tests", () => {
     });
   });
 
+  describe("Dynamic Components", () => {
+    it("renders dynamic component with expression as tag name", () => {
+      const Comp = (props: any) => sld`<div>Dynamic</div>`;
+      const result = sld.define({ Comp }).sld`<${Comp} />` as Node[];
+      const container = document.createElement("div");
+      container.append(...result);
+      expect(container.innerHTML).toBe("<div>Dynamic</div>");
+    });
+
+    it("renders dynamic component with children", () => {
+      const Comp = (props: any) => sld`<section>${props.children}</section>`;
+      const result = sld.define({ Comp }).sld`<${Comp}><span>content</span></${Comp}>` as Node[];
+      const container = document.createElement("div");
+      container.append(...result);
+      expect(container.querySelector("section")?.innerHTML).toContain("<span>content</span>");
+    });
+
+    it("renders dynamic component with shorthand close tag", () => {
+      const Comp = (props: any) => sld`<section>${props.children}</section>`;
+      const result = sld.define({ Comp }).sld`<Comp>text<//>` as Node[];
+      const container = document.createElement("div");
+      container.append(...result);
+      expect(container.querySelector("section")?.textContent).toBe("text");
+    });
+
+
+  });
+
   describe("GitHub Issues Compatibility", () => {
     it("https://github.com/ryansolid/dom-expressions/issues/156", () => {
       const elements =

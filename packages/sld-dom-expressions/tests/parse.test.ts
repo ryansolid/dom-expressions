@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   BOOLEAN_PROP,
+  COMPONENT_NODE,
   ELEMENT_NODE,
   EXPRESSION_NODE,
   MIXED_PROP,
@@ -527,6 +528,95 @@ describe("Specialized Element AST", () => {
     });
   });
 
+});
+
+describe("Dynamic Component Tags", () => {
+  it("parses dynamic opening tag with expression as tag name", () => {
+    const Comp = "Comp";
+    const ast = jsx`<${Comp}></${Comp}>`;
+    expect(ast).toEqual({
+      type: ROOT_NODE,
+      children: [
+        {
+          type: COMPONENT_NODE,
+          name: 0,
+          props: [],
+          children: [],
+        },
+      ],
+    });
+  });
+
+  it("parses dynamic component with children", () => {
+    const Comp = "Comp";
+    const ast = jsx`<${Comp}><span>content</span></${Comp}>`;
+    expect(ast).toEqual({
+      type: ROOT_NODE,
+      children: [
+        {
+          type: COMPONENT_NODE,
+          name: 0,
+          props: [],
+          children: [
+            {
+              type: ELEMENT_NODE,
+              name: "span",
+              props: [],
+              children: [{ type: TEXT_NODE, value: "content" }],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("parses self-closing dynamic component", () => {
+    const Comp = "Comp";
+    const ast = jsx`<${Comp} />`;
+    expect(ast).toEqual({
+      type: ROOT_NODE,
+      children: [
+        {
+          type: COMPONENT_NODE,
+          name: 0,
+          props: [],
+          children: [],
+        },
+      ],
+    });
+  });
+
+  it("parses shorthand close tag", () => {
+    const ast = jsx`<Comp>content<//>`;
+    expect(ast).toEqual({
+      type: ROOT_NODE,
+      children: [
+        {
+          type: COMPONENT_NODE,
+          name: "Comp",
+          props: [],
+          children: [{ type: TEXT_NODE, value: "content" }],
+        },
+      ],
+    });
+  });
+
+  it("parses dynamic component with attributes", () => {
+    const Comp = "Comp";
+    const value = "test";
+    const ast = jsx`<${Comp} id=${value}></${Comp}>`;
+    expect(ast).toEqual({
+      type: ROOT_NODE,
+      children: [
+        {
+          type: COMPONENT_NODE,
+          name: 0,
+          props: [{ name: "id", type: EXPRESSION_PROP, value: 1 }],
+          children: [],
+        },
+      ],
+    });
+  });
 });
 
 describe("Edge Cases", () => {

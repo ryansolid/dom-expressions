@@ -841,6 +841,76 @@ describe("handling of raw text elements", () => {
   });
 });
 
+describe("dynamic component tags", () => {
+  it("should tokenize dynamic opening tag with expression", () => {
+    const Comp = "Comp";
+    const tokens = tokenizeTemplate`<${Comp}>`;
+
+    expect(tokens).toEqual([
+      { type: OPEN_TAG_TOKEN },
+      { type: EXPRESSION_TOKEN, value: 0 },
+      { type: CLOSE_TAG_TOKEN },
+    ]);
+  });
+
+  it("should tokenize dynamic self-closing tag", () => {
+    const Comp = "Comp";
+    const tokens = tokenizeTemplate`<${Comp} />`;
+
+    expect(tokens).toEqual([
+      { type: OPEN_TAG_TOKEN },
+      { type: EXPRESSION_TOKEN, value: 0 },
+      { type: SLASH_TOKEN },
+      { type: CLOSE_TAG_TOKEN },
+    ]);
+  });
+
+  it("should tokenize dynamic closing tag", () => {
+    const Comp = "Comp";
+    const tokens = tokenizeTemplate`<${Comp}></${Comp}>`;
+
+    expect(tokens).toEqual([
+      { type: OPEN_TAG_TOKEN },
+      { type: EXPRESSION_TOKEN, value: 0 },
+      { type: CLOSE_TAG_TOKEN },
+      { type: OPEN_TAG_TOKEN },
+      { type: SLASH_TOKEN },
+      { type: EXPRESSION_TOKEN, value: 1 },
+      { type: CLOSE_TAG_TOKEN },
+    ]);
+  });
+
+  it("should tokenize shorthand close tag", () => {
+    const tokens = tokenizeTemplate`<Comp>content<//>`;
+
+    expect(tokens).toEqual([
+      { type: OPEN_TAG_TOKEN },
+      { type: IDENTIFIER_TOKEN, value: "Comp" },
+      { type: CLOSE_TAG_TOKEN },
+      { type: TEXT_TOKEN, value: "content" },
+      { type: OPEN_TAG_TOKEN },
+      { type: SLASH_TOKEN },
+      { type: SLASH_TOKEN },
+      { type: CLOSE_TAG_TOKEN },
+    ]);
+  });
+
+  it("should tokenize dynamic tag with attributes", () => {
+    const Comp = "Comp";
+    const tokens = tokenizeTemplate`<${Comp} id="test" />`;
+
+    expect(tokens).toEqual([
+      { type: OPEN_TAG_TOKEN },
+      { type: EXPRESSION_TOKEN, value: 0 },
+      { type: IDENTIFIER_TOKEN, value: "id" },
+      { type: EQUALS_TOKEN },
+      { type: ATTRIBUTE_VALUE_TOKEN, value: "test", quote: '"' },
+      { type: SLASH_TOKEN },
+      { type: CLOSE_TAG_TOKEN },
+    ]);
+  });
+});
+
 describe("comments handling", () => {
   it("should not tokenzie comments", () => {
     const tokens = tokenizeTemplate`<div><!-- This is a comment --></div>`;
