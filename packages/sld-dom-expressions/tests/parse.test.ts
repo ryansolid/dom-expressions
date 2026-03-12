@@ -184,132 +184,7 @@ describe("Attributes", () => {
     });
   });
 
-  it("quoted expression attribute", () => {
-    const id = "my-id";
-    const ast = jsx`<div id="${id}"></div>`;
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: ELEMENT_NODE,
 
-          name: "div",
-          props: [{ name: "id", type: EXPRESSION_PROP, value: 0, quote: '"' }],
-          children: [],
-        },
-      ],
-    });
-  });
-
-  it("single quoted expression attribute", () => {
-    const id = "my-id";
-    const ast = jsx`<div id='${id}'></div>`;
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: ELEMENT_NODE,
-
-          name: "div",
-          props: [{ name: "id", type: EXPRESSION_PROP, value: 0, quote: "'" }],
-          children: [],
-        },
-      ],
-    });
-  });
-
-  it("mixed attribute (string + expression)", () => {
-    const active = true;
-    const ast = jsx`<div class="btn ${active ? "active" : ""}"></div>`;
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: ELEMENT_NODE,
-          name: "div",
-          props: [
-            {
-              name: "class",
-              type: MIXED_PROP,
-              value: ["btn ", 0],
-              quote: '"',
-            },
-          ],
-          children: [],
-        },
-      ],
-    });
-  });
-
-  it("mixed attribute (string + expression) with single quotes", () => {
-    const active = true;
-    const ast = jsx`<div class='btn ${active ? "active" : ""}'></div>`;
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: ELEMENT_NODE,
-          name: "div",
-          props: [
-            {
-              name: "class",
-              type: MIXED_PROP,
-              value: ["btn ", 0],
-              quote: "'",
-            },
-          ],
-          children: [],
-        },
-      ],
-    });
-  });
-
-  it("mixed attribute (2 expression) with whitespace", () => {
-    const active = true;
-    const ast = jsx`<div class="${active ? "active" : ""}  ${"1"}"></div>`;
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: ELEMENT_NODE,
-          name: "div",
-          props: [
-            {
-              name: "class",
-              type: MIXED_PROP,
-              value: [0, "  ", 1],
-              quote: '"',
-            },
-          ],
-          children: [],
-        },
-      ],
-    });
-  });
-
-  it("mixed attributes", () => {
-    const ast = jsx`
-        <h1 title="${1} John ${"Smith"}"></h1>
-      `;
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: ELEMENT_NODE,
-          name: "h1",
-          props: [
-            {
-              name: "title",
-              type: MIXED_PROP,
-              value: [0, " John ", 1],
-              quote: '"',
-            },
-          ],
-          children: [],
-        },
-      ],
-    });
-  });
 
   it("multiple attributes", () => {
     const value = "test";
@@ -652,34 +527,6 @@ describe("Specialized Element AST", () => {
     });
   });
 
-  it("complex mixed props in void elements", () => {
-    const theme = "dark";
-    const ast = jsx`<input class="btn ${theme}" disabled />`;
-
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: ELEMENT_NODE,
-          name: "input",
-          props: [
-            {
-              name: "class",
-              type: MIXED_PROP,
-              value: ["btn ", 0], // 0 is index of 'theme' in expressions
-              quote: '"',
-            },
-            {
-              name: "disabled",
-              type: BOOLEAN_PROP,
-              value: true,
-            },
-          ],
-          children: [], // Input is self-closing/void
-        },
-      ],
-    });
-  });
 });
 
 describe("Edge Cases", () => {
@@ -775,107 +622,8 @@ describe("Advanced Parser Edge Cases", () => {
       });
     });
 
-    it("handles spread in quoted attribute context", () => {
-      const props = { class: "test" };
-      const ast = jsx`<div class="prefix-${props}-suffix"></div>`;
-
-      expect(ast).toEqual({
-        type: ROOT_NODE,
-        children: [
-          {
-            type: ELEMENT_NODE,
-            name: "div",
-            props: [
-              {
-                name: "class",
-                type: MIXED_PROP,
-                value: ["prefix-", 0, "-suffix"],
-                quote: '"',
-              },
-            ],
-            children: [],
-          },
-        ],
-      });
-    });
   });
 
-  describe("Complex Mixed Attributes", () => {
-    it("handles multiple expressions in single attribute", () => {
-      const firstName = "John";
-      const lastName = "Doe";
-      const ast = jsx`<div title="${firstName} ${lastName}"></div>`;
-
-      expect(ast).toEqual({
-        type: ROOT_NODE,
-        children: [
-          {
-            type: ELEMENT_NODE,
-            name: "div",
-            props: [
-              {
-                name: "title",
-                type: MIXED_PROP,
-                value: [0, " ", 1],
-                quote: '"',
-              },
-            ],
-            children: [],
-          },
-        ],
-      });
-    });
-
-    it("handles complex mixed expressions with functions", () => {
-      const getValue = () => "test";
-      const prefix = "pre-";
-      const ast = jsx`<div class="${prefix}${getValue()}"></div>`;
-
-      expect(ast).toEqual({
-        type: ROOT_NODE,
-        children: [
-          {
-            type: ELEMENT_NODE,
-            name: "div",
-            props: [
-              {
-                name: "class",
-                type: MIXED_PROP,
-                value: [0, 1],
-                quote: '"',
-              },
-            ],
-            children: [],
-          },
-        ],
-      });
-    });
-
-    it("handles attribute with only expressions", () => {
-      const part1 = "hello";
-      const part2 = "world";
-      const ast = jsx`<div class="${part1}${part2}"></div>`;
-
-      expect(ast).toEqual({
-        type: ROOT_NODE,
-        children: [
-          {
-            type: ELEMENT_NODE,
-            name: "div",
-            props: [
-              {
-                name: "class",
-                type: MIXED_PROP,
-                value: [0, 1],
-                quote: '"',
-              },
-            ],
-            children: [],
-          },
-        ],
-      });
-    });
-  });
 
   describe("Special Tag Names and Namespaces", () => {
     it("handles custom elements with hyphens", () => {
@@ -1167,30 +915,6 @@ describe("Advanced Parser Edge Cases", () => {
       expect(((ast.children[0] as any).props[0] as any).name).toBe("data-attr_with.special:chars");
     });
 
-    it("handles unusual attribute values", () => {
-      const ast = jsx`<div data-empty="" data-null="${null}" data-undefined="${undefined}"></div>`;
 
-      expect(((ast.children[0] as any).props[0] as any).value).toBe("");
-    });
-
-    it("handles deeply nested spread and mixed attributes", () => {
-      const baseProps = { class: "base", id: "test" };
-      const additionalProps = { "data-info": "additional" };
-      const dynamicClass = "dynamic";
-
-      const ast = jsx`<div 
-        class="static ${dynamicClass}"
-        ...${baseProps}
-        ...${additionalProps}
-        id="override"
-      ></div>`;
-
-      const elementProps = (ast.children[0] as any).props;
-      expect(elementProps).toHaveLength(4);
-      expect(elementProps[0].type).toBe(MIXED_PROP);
-      expect(elementProps[1].type).toBe(SPREAD_PROP);
-      expect(elementProps[2].type).toBe(SPREAD_PROP);
-      expect(elementProps[3].type).toBe(STATIC_PROP);
-    });
   });
 });

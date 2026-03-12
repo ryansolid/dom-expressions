@@ -23,12 +23,6 @@ const flat = (arr: any[]) => {
   return arr.length === 1 ? arr[0] : arr;
 };
 
-const getValue = (value: any) => {
-  while (typeof value === "function") value = value();
-  return value;
-};
-
-
 
 export function createSLDRuntime(r: Runtime) {
   const cache = new WeakMap<TemplateStringsArray, RootNode>();
@@ -97,7 +91,7 @@ export function createSLDRuntime(r: Runtime) {
       case EXPRESSION_NODE:
         return document.createComment("+");
       case COMPONENT_NODE:
-        return document.createComment(node.name);
+        return document.createComment(node.name as string);
       case ELEMENT_NODE:
         let hasSpread = false;
 
@@ -106,8 +100,7 @@ export function createSLDRuntime(r: Runtime) {
         node.props = node.props.filter(prop => {
           if (prop.type === STATIC_PROP) {
             if (prop.name.startsWith("prop:")) return true;
-            const name = prop.name.startsWith("attr:") ? prop.name.slice(5) : prop.name;
-            elem.setAttribute(name, prop.value);
+            elem.setAttribute(prop.name, prop.value);
             return hasSpread;
           } else if (prop.type === BOOLEAN_PROP) {
             // attributeHTML += ` ${prop.name}`;
@@ -132,8 +125,8 @@ export function createSLDRuntime(r: Runtime) {
       case EXPRESSION_NODE:
         return values[node.value];
       case COMPONENT_NODE:
-        const component = components[node.name];
-        if (component) {
+        const component = typeof node.name === "string" ? components[node.name] : values[node.name];
+        if (component && typeof component === "function") {
           return r.createComponent(component, gatherProps(node, values, components));
         } else {
           throw new Error(`Component "${node.name}" not found in registry`);
@@ -206,11 +199,6 @@ export function createSLDRuntime(r: Runtime) {
           break;
         case EXPRESSION_PROP:
           applyGetter(props, prop.name, values[prop.value]);
-          break;
-        case MIXED_PROP:
-          const value = () =>
-            prop.value.map(v => (typeof v === "number" ? getValue(values[v]) : v)).join("");
-          applyGetter(props, prop.name, value);
           break;
         case SPREAD_PROP:
           const spread = values[prop.value];

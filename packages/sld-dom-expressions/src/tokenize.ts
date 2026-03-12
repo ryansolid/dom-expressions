@@ -60,6 +60,7 @@ export interface EqualsToken {
 export interface AttributeToken {
   type: typeof ATTRIBUTE_VALUE_TOKEN;
   value: string;
+  quote: "'" | '"';
 }
 
 export interface TextToken {
@@ -72,10 +73,10 @@ export interface ExpressionToken {
   value: number;
 }
 
-export interface QuoteToken {
-  type: typeof QUOTE_CHAR_TOKEN;
-  value: "'" | '"';
-}
+// export interface QuoteToken {
+//   type: typeof QUOTE_CHAR_TOKEN;
+//   value: "'" | '"';
+// }
 
 export interface SpreadToken {
   type: typeof SPREAD_TOKEN;
@@ -91,7 +92,7 @@ export type Token =
   | AttributeToken
   | TextToken
   | ExpressionToken
-  | QuoteToken
+  // | QuoteToken
   | SpreadToken;
 
 // Add a new state for elements that contain raw text only
@@ -107,7 +108,7 @@ export const tokenize = (
 ): Token[] => {
   const tokens: Token[] = [];
   let state = STATE_TEXT;
-  let quoteChar: '"' | "'" | "" = "";
+  let quoteChar: '"' | "'"
   let lastTagName = "";
   let cursor = 0;
 
@@ -171,9 +172,7 @@ export const tokenize = (
             cursor++;
           } else if (code === 34 || code === 39) {
             // '"' or "'"
-            const char = str[cursor] as "'" | '"';
-            tokens.push({ type: QUOTE_CHAR_TOKEN, value: char });
-            quoteChar = char;
+            quoteChar = str[cursor] as "'" | '"';
             state = STATE_ATTR_VALUE;
             cursor++;
           } else if (isIdentifierStart(code)) {
@@ -194,23 +193,24 @@ export const tokenize = (
           break;
         }
         case STATE_ATTR_VALUE: {
-          const endQuoteIndex = str.indexOf(quoteChar, cursor);
+          const endQuoteIndex = str.indexOf(quoteChar, cursor); 
+          console.log({ quoteChar, cursor, endQuoteIndex, attrValue: str.slice(cursor, endQuoteIndex) });
           if (endQuoteIndex === -1) {
             tokens.push({
               type: ATTRIBUTE_VALUE_TOKEN,
               value: str.slice(cursor),
+              quote: quoteChar,
             });
             cursor = len;
           } else {
-            if (endQuoteIndex > cursor) {
+            if (endQuoteIndex >= cursor) {
               tokens.push({
                 type: ATTRIBUTE_VALUE_TOKEN,
                 value: str.slice(cursor, endQuoteIndex),
+                quote: quoteChar,
               });
             }
-            tokens.push({ type: QUOTE_CHAR_TOKEN, value: quoteChar as any });
             state = STATE_TAG;
-            quoteChar = "";
             cursor = endQuoteIndex + 1;
           }
           break;

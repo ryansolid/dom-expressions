@@ -1,4 +1,5 @@
 import {
+  ATTRIBUTE_VALUE_TOKEN,
   AttributeToken,
   CLOSE_TAG_TOKEN,
   EQUALS_TOKEN,
@@ -10,7 +11,7 @@ import {
   SLASH_TOKEN,
   SPREAD_TOKEN,
   TEXT_TOKEN,
-  Token,
+  Token
 } from "./tokenize";
 
 const isComponentNode = (name: string): boolean => {
@@ -64,7 +65,7 @@ export interface ElementNode {
 
 export interface ComponentNode {
   type: typeof COMPONENT_NODE;
-  name: string;
+  name: string | number;
   props: PropNode[];
   children: ChildNode[];
   template?: HTMLTemplateElement;
@@ -86,7 +87,7 @@ export interface BooleanProp {
   value: boolean;
 }
 
-export interface StaticProp {
+export interface StringProp {
   name: string;
   type: typeof STATIC_PROP;
   value: string;
@@ -97,7 +98,6 @@ export interface ExpressionProp {
   name: string;
   type: typeof EXPRESSION_PROP;
   value: number;
-  quote?: "'" | '"';
 }
 
 export interface SpreadProp {
@@ -105,14 +105,14 @@ export interface SpreadProp {
   value: number;
 }
 
-export interface MixedProp {
-  name: string;
-  type: typeof MIXED_PROP;
-  value: Array<string | number>;
-  quote?: "'" | '"';
-}
+// export interface MixedProp {
+//   name: string;
+//   type: typeof MIXED_PROP;
+//   value: Array<string | number>;
+//   quote?: "'" | '"';
+// }
 
-export type PropNode = BooleanProp | StaticProp | ExpressionProp | SpreadProp | MixedProp;
+export type PropNode = BooleanProp | StringProp | ExpressionProp | SpreadProp;
 
 export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
   const root: RootNode = { type: ROOT_NODE, children: [] };
@@ -161,7 +161,7 @@ export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
           if (
             stack.length > 1 &&
             nameToken?.type === IDENTIFIER_TOKEN &&
-            (stack[stack.length - 1] as ElementNode).name === nameToken.value
+            (stack[stack.length - 1] as ElementNode).name === nameToken.value || nameToken?.type === EXPRESSION_TOKEN || nameToken.type === SLASH_TOKEN
           ) {
             const node = stack.pop();
             if (node?.type === ELEMENT_NODE && voidElements.has(node.name)) {
@@ -174,14 +174,17 @@ export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
         }
 
         // Handle Opening Tag: <name ...>
-        if (nextToken.type === IDENTIFIER_TOKEN) {
+        if (nextToken.type === IDENTIFIER_TOKEN || nextToken.type === EXPRESSION_TOKEN) {
           const tagName = nextToken.value;
           const node: ElementNode | ComponentNode = {
-            type: isComponentNode(tagName) ? COMPONENT_NODE : ELEMENT_NODE,
+            type:
+              typeof tagName === "number" || isComponentNode(tagName)
+                ? COMPONENT_NODE
+                : ELEMENT_NODE,
             name: tagName,
             props: [],
-            children: [],
-          };
+            children: []
+          } as ElementNode | ComponentNode;
           parent.children.push(node);
           pos++; // Consume tag name
 
@@ -210,29 +213,17 @@ export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
                 if (valToken.type === EXPRESSION_TOKEN) {
                   node.props.push({ name, type: EXPRESSION_PROP, value: valToken.value });
                   pos++;
-                } else if (valToken.type === QUOTE_CHAR_TOKEN) {
-                  const quote = valToken.value;
-                  pos++; // Consume opening quote
-                  const parts: (string | number)[] = [];
-                  while (pos < len && tokens[pos].type !== QUOTE_CHAR_TOKEN) {
-                    const part = tokens[pos++] as ExpressionToken | AttributeToken;
-                    if (part.value !== "") parts.push(part.value);
-                  }
-                  pos++; // Consume closing quote
-
-                  if (parts.length === 0) {
-                    node.props.push({ name, type: STATIC_PROP, value: "", quote });
-                  } else if (parts.length === 1) {
-                    const v = parts[0];
-                    node.props.push({
-                      name,
-                      type: typeof v === "string" ? STATIC_PROP : EXPRESSION_PROP,
-                      value: v as any,
-                      quote,
-                    });
-                  } else {
-                    node.props.push({ name, type: MIXED_PROP, value: parts, quote });
-                  }
+                } else if (valToken.type === ATTRIBUTE_VALUE_TOKEN) {
+                  const quote = valToken.quote;
+                  node.props.push({
+                    name,
+                    value: valToken.value,
+                    quote,
+                    type: STATIC_PROP
+                  } as StringProp);
+                  pos++;
+                } else {
+                  throw new Error("Attribute value must be an expression or a string.");
                 }
               } else {
                 // Boolean prop
