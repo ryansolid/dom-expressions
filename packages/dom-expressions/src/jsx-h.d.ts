@@ -165,8 +165,7 @@ export namespace JSX {
   > = EHandler | BoundEventHandler<T, E, EHandler>;
 
   interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
-    extends AddEventListenerOptions,
-      EventListenerOptions {
+    extends AddEventListenerOptions, EventListenerOptions {
     handleEvent: EHandler;
   }
 
@@ -235,40 +234,19 @@ export namespace JSX {
     [SERIALIZABLE]: never;
   }
 
+  type RefCallback<T> = (el: T) => void;
+  type Ref<T> = T | RefCallback<T> | (RefCallback<T> | Ref<T>)[];
+
   interface IntrinsicAttributes {
-    ref?: unknown | ((e: unknown) => void) | undefined;
+    ref?: Ref<unknown> | undefined;
   }
   interface CustomAttributes<T> {
-    ref?: T | ((el: T) => void) | undefined;
+    ref?: Ref<T> | undefined;
     children?: FunctionMaybe<Element | undefined>;
     $ServerOnly?: boolean | undefined;
   }
-  type Accessor<T> = () => T;
-  interface Directives {}
-  interface DirectiveFunctions {
-    [x: string]: (el: DOMElement, accessor: Accessor<any>) => void;
-  }
   interface ExplicitProperties {}
   interface CustomEvents {}
-  type DirectiveAttributes = {
-    [Key in keyof Directives as `use:${Key}`]?: Directives[Key];
-  };
-  type DirectiveFunctionAttributes<T> = {
-    [K in keyof DirectiveFunctions as string extends K
-      ? never
-      : `use:${K}`]?: DirectiveFunctions[K] extends (
-      el: infer E, // will be unknown if not provided
-      ...rest: infer R // use rest so that we can check whether it's provided or not
-    ) => void
-      ? T extends E // everything extends unknown if E is unknown
-        ? R extends [infer A] // check if has accessor provided
-          ? A extends Accessor<infer V>
-            ? V // it's an accessor
-            : never // it isn't, type error
-          : true // no accessor provided
-        : never // T is the wrong element
-      : never; // it isn't a function
-  };
   type PropAttributes = {
     [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key];
   };
@@ -1010,15 +988,15 @@ export namespace JSX {
         ? K extends `on:${infer T}`
           ? T
           : K extends `on${infer T}`
-          ? Lowercase<T>
-          : never
+            ? Lowercase<T>
+            : never
         : never)
     | (keyof EventHandlersElement<any> extends infer K
         ? K extends `on:${infer T}`
           ? T
           : K extends `on${infer T}`
-          ? Lowercase<T>
-          : never
+            ? Lowercase<T>
+            : never
         : never)
     | (string & {});
 
@@ -1031,9 +1009,8 @@ export namespace JSX {
    * 2. Includes `keys` defined by `Element` and `Node` interfaces.
    */
   interface ElementAttributes<T>
-    extends CustomAttributes<T>,
-      DirectiveAttributes,
-      DirectiveFunctionAttributes<T>,
+    extends
+      CustomAttributes<T>,
       PropAttributes,
       OnAttributes<T>,
       EventHandlersElement<T>,
@@ -1251,7 +1228,7 @@ export namespace JSX {
     | "worker";
 
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
-    download?: FunctionMaybe<string | RemoveAttribute>;
+    download?: FunctionMaybe<string | EnumeratedAcceptsEmpty | RemoveAttribute>;
     href?: FunctionMaybe<string | RemoveAttribute>;
     hreflang?: FunctionMaybe<string | RemoveAttribute>;
     ping?: FunctionMaybe<string | RemoveAttribute>;
@@ -1280,7 +1257,7 @@ export namespace JSX {
   interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: FunctionMaybe<string | RemoveAttribute>;
     coords?: FunctionMaybe<string | RemoveAttribute>;
-    download?: FunctionMaybe<string | RemoveAttribute>;
+    download?: FunctionMaybe<string | EnumeratedAcceptsEmpty | RemoveAttribute>;
     href?: FunctionMaybe<string | RemoveAttribute>;
     ping?: FunctionMaybe<string | RemoveAttribute>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
@@ -2233,9 +2210,7 @@ export namespace JSX {
     visibility?: FunctionMaybe<"visible" | "hidden" | "collapse" | "inherit" | RemoveAttribute>;
   }
   interface AnimationElementSVGAttributes<T>
-    extends SVGAttributes<T>,
-      ExternalResourceSVGAttributes,
-      ConditionalProcessingSVGAttributes {
+    extends SVGAttributes<T>, ExternalResourceSVGAttributes, ConditionalProcessingSVGAttributes {
     // TODO TimeEvent is currently undefined on TS
     onBegin?: EventHandlerUnion<T, Event> | undefined;
     "on:begin"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
@@ -2249,7 +2224,8 @@ export namespace JSX {
     "on:repeat"?: EventHandlerWithOptionsUnion<T, Event> | undefined;
   }
   interface ContainerElementSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
@@ -2263,8 +2239,7 @@ export namespace JSX {
         | "color-rendering"
       > {}
   interface FilterPrimitiveElementSVGAttributes<T>
-    extends SVGAttributes<T>,
-      Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
+    extends SVGAttributes<T>, Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
     height?: FunctionMaybe<number | string | RemoveAttribute>;
     result?: FunctionMaybe<string | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2283,16 +2258,15 @@ export namespace JSX {
     viewBox?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface GradientElementSVGAttributes<T>
-    extends SVGAttributes<T>,
-      ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
+    extends SVGAttributes<T>, ExternalResourceSVGAttributes, StylableSVGAttributes {
     gradientTransform?: FunctionMaybe<string | RemoveAttribute>;
     gradientUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
     href?: FunctionMaybe<string | RemoveAttribute>;
     spreadMethod?: FunctionMaybe<"pad" | "reflect" | "repeat" | RemoveAttribute>;
   }
   interface GraphicsElementSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "clip-rule"
@@ -2308,12 +2282,12 @@ export namespace JSX {
       > {}
   interface LightSourceElementSVGAttributes<T> extends SVGAttributes<T> {}
   interface NewViewportSVGAttributes<T>
-    extends SVGAttributes<T>,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
+    extends SVGAttributes<T>, Pick<PresentationSVGAttributes, "overflow" | "clip"> {
     viewBox?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface ShapeElementSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "color"
@@ -2332,7 +2306,8 @@ export namespace JSX {
         | "pathLength"
       > {}
   interface TextContentElementSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "font-family"
@@ -2373,14 +2348,16 @@ export namespace JSX {
     zoomAndPan?: FunctionMaybe<"disable" | "magnify" | RemoveAttribute>;
   }
   interface AnimateSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
+    extends
+      AnimationElementSVGAttributes<T>,
       AnimationAttributeTargetSVGAttributes,
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes,
       Pick<PresentationSVGAttributes, "color-interpolation" | "color-rendering"> {}
   interface AnimateMotionSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
+    extends
+      AnimationElementSVGAttributes<T>,
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
@@ -2390,7 +2367,8 @@ export namespace JSX {
     rotate?: FunctionMaybe<number | string | "auto" | "auto-reverse" | RemoveAttribute>;
   }
   interface AnimateTransformSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
+    extends
+      AnimationElementSVGAttributes<T>,
       AnimationAttributeTargetSVGAttributes,
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
@@ -2398,7 +2376,8 @@ export namespace JSX {
     type?: FunctionMaybe<"translate" | "scale" | "rotate" | "skewX" | "skewY" | RemoveAttribute>;
   }
   interface CircleSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
@@ -2409,7 +2388,8 @@ export namespace JSX {
     r?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface ClipPathSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2418,14 +2398,16 @@ export namespace JSX {
     clipPathUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
   }
   interface DefsSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {}
   interface DescSVGAttributes<T> extends SVGAttributes<T>, StylableSVGAttributes {}
   interface EllipseSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2438,13 +2420,15 @@ export namespace JSX {
     ry?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeBlendSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
     mode?: FunctionMaybe<"normal" | "multiply" | "screen" | "darken" | "lighten" | RemoveAttribute>;
   }
   interface FeColorMatrixSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     type?: FunctionMaybe<
@@ -2453,11 +2437,13 @@ export namespace JSX {
     values?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface FeComponentTransferSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {}
   interface FeCompositeSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
     k1?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2469,7 +2455,8 @@ export namespace JSX {
     >;
   }
   interface FeConvolveMatrixSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     bias?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2483,7 +2470,8 @@ export namespace JSX {
     targetY?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeDiffuseLightingSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
@@ -2492,7 +2480,8 @@ export namespace JSX {
     surfaceScale?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeDisplacementMapSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
     scale?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2504,7 +2493,8 @@ export namespace JSX {
     elevation?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeDropShadowSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {
@@ -2513,7 +2503,8 @@ export namespace JSX {
     stdDeviation?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeFloodSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
   interface FeFuncSVGAttributes<T> extends SVGAttributes<T> {
@@ -2526,31 +2517,34 @@ export namespace JSX {
     type?: FunctionMaybe<"identity" | "table" | "discrete" | "linear" | "gamma" | RemoveAttribute>;
   }
   interface FeGaussianBlurSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     stdDeviation?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeImageSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
     href?: FunctionMaybe<string | RemoveAttribute>;
     preserveAspectRatio?: FunctionMaybe<SVGPreserveAspectRatio | RemoveAttribute>;
   }
   interface FeMergeSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
-      StylableSVGAttributes {}
+    extends FilterPrimitiveElementSVGAttributes<T>, StylableSVGAttributes {}
   interface FeMergeNodeSVGAttributes<T> extends SVGAttributes<T>, SingleInputFilterSVGAttributes {}
   interface FeMorphologySVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     operator?: FunctionMaybe<"erode" | "dilate" | RemoveAttribute>;
     radius?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeOffsetSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     dx?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2562,7 +2556,8 @@ export namespace JSX {
     z?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeSpecularLightingSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
@@ -2582,12 +2577,12 @@ export namespace JSX {
     z?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface FeTileSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {}
   interface FeTurbulanceSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
-      StylableSVGAttributes {
+    extends FilterPrimitiveElementSVGAttributes<T>, StylableSVGAttributes {
     baseFrequency?: FunctionMaybe<number | string | RemoveAttribute>;
     numOctaves?: FunctionMaybe<number | string | RemoveAttribute>;
     seed?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2595,9 +2590,7 @@ export namespace JSX {
     type?: FunctionMaybe<"fractalNoise" | "turbulence" | RemoveAttribute>;
   }
   interface FilterSVGAttributes<T>
-    extends SVGAttributes<T>,
-      ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
+    extends SVGAttributes<T>, ExternalResourceSVGAttributes, StylableSVGAttributes {
     filterRes?: FunctionMaybe<number | string | RemoveAttribute>;
     filterUnits?: FunctionMaybe<SVGUnits | RemoveAttribute>;
     height?: FunctionMaybe<number | string | RemoveAttribute>;
@@ -2607,7 +2600,8 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface ForeignObjectSVGAttributes<T>
-    extends NewViewportSVGAttributes<T>,
+    extends
+      NewViewportSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2619,14 +2613,16 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface GSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "display" | "visibility"> {}
   interface ImageSVGAttributes<T>
-    extends NewViewportSVGAttributes<T>,
+    extends
+      NewViewportSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
@@ -2640,7 +2636,8 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface LineSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2659,7 +2656,8 @@ export namespace JSX {
     y2?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface MarkerSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
@@ -2672,7 +2670,8 @@ export namespace JSX {
     refY?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface MaskSVGAttributes<T>
-    extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
+    extends
+      Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2687,7 +2686,8 @@ export namespace JSX {
   interface MetadataSVGAttributes<T> extends SVGAttributes<T> {}
   interface MPathSVGAttributes<T> extends SVGAttributes<T> {}
   interface PathSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2698,7 +2698,8 @@ export namespace JSX {
     pathLength?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface PatternSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2714,7 +2715,8 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface PolygonSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2724,7 +2726,8 @@ export namespace JSX {
     points?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface PolylineSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2741,7 +2744,8 @@ export namespace JSX {
     r?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface RectSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2756,17 +2760,17 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface SetSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
-      StylableSVGAttributes,
-      AnimationTimingSVGAttributes {}
+    extends AnimationElementSVGAttributes<T>, StylableSVGAttributes, AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "stop-color" | "stop-opacity"> {
     offset?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface SvgSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       NewViewportSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2789,14 +2793,16 @@ export namespace JSX {
     version?: FunctionMaybe<string | RemoveAttribute>;
   }
   interface SwitchSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "display" | "visibility"> {}
   interface SymbolSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2812,7 +2818,8 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface TextSVGAttributes<T>
-    extends TextContentElementSVGAttributes<T>,
+    extends
+      TextContentElementSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2828,7 +2835,8 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface TextPathSVGAttributes<T>
-    extends TextContentElementSVGAttributes<T>,
+    extends
+      TextContentElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2842,7 +2850,8 @@ export namespace JSX {
     startOffset?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface TSpanSVGAttributes<T>
-    extends TextContentElementSVGAttributes<T>,
+    extends
+      TextContentElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2860,7 +2869,8 @@ export namespace JSX {
   }
   /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       StylableSVGAttributes,
       ConditionalProcessingSVGAttributes,
       GraphicsElementSVGAttributes<T>,
@@ -2874,7 +2884,8 @@ export namespace JSX {
     y?: FunctionMaybe<number | string | RemoveAttribute>;
   }
   interface ViewSVGAttributes<T>
-    extends SVGAttributes<T>,
+    extends
+      SVGAttributes<T>,
       ExternalResourceSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes {
@@ -4159,8 +4170,5 @@ export namespace JSX {
   }
 
   interface IntrinsicElements
-    extends HTMLElementTags,
-      HTMLElementDeprecatedTags,
-      SVGElementTags,
-      MathMLElementTags {}
+    extends HTMLElementTags, HTMLElementDeprecatedTags, SVGElementTags, MathMLElementTags {}
 }
