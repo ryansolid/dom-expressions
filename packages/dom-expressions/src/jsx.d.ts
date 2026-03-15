@@ -984,7 +984,9 @@ export namespace JSX {
     "on:wheel"?: EventHandlerWithOptionsUnion<T, WheelEvent> | undefined;
   }
 
-  type EventType =
+  // EventName = "click" | "mousedown" ...
+
+  type EventName =
     | (keyof EventHandlersWindow<any> extends infer K
         ? K extends `on:${infer T}`
           ? T
@@ -1000,6 +1002,17 @@ export namespace JSX {
             : never
         : never)
     | (string & {});
+
+  type ExtractEventType<T> = {
+    [K in keyof T as K extends `on:${infer Name}`
+      ? Name
+      : never]: T[K] extends EventHandlerWithOptionsUnion<Element, infer E> ? E : never;
+  };
+
+  // EventType["click"] = MouseEvent
+
+  type EventType = ExtractEventType<EventHandlersElement<Element>> &
+    ExtractEventType<EventHandlersWindow<Element>>;
 
   // GLOBAL ATTRIBUTES
 
