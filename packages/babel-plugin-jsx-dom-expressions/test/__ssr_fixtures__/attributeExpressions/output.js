@@ -98,7 +98,7 @@ const template3 = _$ssr(
   _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content)
 );
-const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class, true) || ""} ccc:ddd`);
+const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class || "", true)} ccc:ddd`);
 const template5 = _$ssr(_tmpl$5, `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrStyle(someStyle()));
 let undefVar;

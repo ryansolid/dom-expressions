@@ -163,6 +163,12 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
     expression.alternate = escapeExpression(path, expression.alternate, attr, escapeLiterals);
     return expression;
   } else if (t.isLogicalExpression(expression)) {
+    if (attr) {
+      return t.callExpression(
+        registerImportMethod(path, "escape"),
+        [expression].concat([t.booleanLiteral(true)])
+      );
+    }
     expression.right = escapeExpression(path, expression.right, attr, escapeLiterals);
     if (expression.operator !== "&&") {
       expression.left = escapeExpression(path, expression.left, attr, escapeLiterals);
