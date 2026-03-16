@@ -35,7 +35,30 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$27 = "<video playsinline></video>",
   _tmpl$28 = "<video></video>",
   _tmpl$29 = ['<div class="bg-(--bg)" style="', '"></div>'],
-  _tmpl$30 = ['<div class="progress-fill" style="', '"></div>'];
+  _tmpl$30 = ['<div class="progress-fill" style="', '"></div>'],
+  _tmpl$31 = [
+    "<div><div",
+    ">empty string</div>;<div",
+    ">js empty</div>;<div",
+    ">hola</div>;<div",
+    '>"hola js"</div>;<div',
+    ">true</div>;<div",
+    ">false</div>;<div",
+    ">1</div>;<div",
+    ">0</div>;<div",
+    '>"1"</div>;<div',
+    '>"0"</div>;<div',
+    ">undefined</div>;<div",
+    ">null</div>;<div",
+    ">boolTest()</div>;<div",
+    ">boolTest</div>;<div",
+    ">boolTestBinding</div>;<div",
+    ">boolTestObjBinding.value</div>;<div",
+    ">fn</div>;<div before",
+    ">should have space before</div>;<div before",
+    " after>should have space before/after</div>;<div",
+    " after>should have space before/after</div>;</div>"
+  ];
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -321,3 +344,35 @@ function Progress(props) {
     )
   );
 }
+
+// bool:
+function boolTest() {
+  return true;
+}
+const boolTestBinding = false;
+const boolTestObjBinding = {
+  value: false
+};
+const template53 = _$ssr(
+  _tmpl$31,
+  _$ssrAttribute("quack", "", true),
+  _$ssrAttribute("quack", "", true),
+  _$ssrAttribute("quack", "hola", true),
+  _$ssrAttribute("quack", "hola js", true),
+  _$ssrAttribute("quack", true, true),
+  _$ssrAttribute("quack", false, true),
+  _$ssrAttribute("quack", 1, true),
+  _$ssrAttribute("quack", 0, true),
+  _$ssrAttribute("quack", "1", true),
+  _$ssrAttribute("quack", "0", true),
+  _$ssrAttribute("quack", undefined, true),
+  _$ssrAttribute("quack", null, true),
+  _$ssrAttribute("quack", boolTest(), true),
+  _$ssrAttribute("quack", boolTest, true),
+  _$ssrAttribute("quack", false, true),
+  _$ssrAttribute("quack", boolTestObjBinding.value, true),
+  _$ssrAttribute("quack", () => false, true),
+  _$ssrAttribute("quack", "true", true),
+  _$ssrAttribute("quack", "true", true),
+  _$ssrAttribute("quack", "true", true)
+);
