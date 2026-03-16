@@ -415,7 +415,7 @@ export function ssrElement(tag, props, children, needsId) {
 }
 
 export function ssrAttribute(key, value, isBoolean) {
-  return isBoolean ? (!!value ? " " + key : "") : value != null ? ` ${key}="${value}"` : "";
+  return isBoolean ? (value ? " " + key : "") : value != null ? ` ${key}="${value}"` : "";
 }
 
 export function ssrHydrationKey() {
