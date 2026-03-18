@@ -129,6 +129,50 @@ describe("r.hydrate", () => {
     expect(container.innerHTML).toBe("prefixworld");
   });
 
+  it("updates an initially empty hydrating marker range before its following sibling", () => {
+    const _tmpl$4 = r.template(`<div>TEXT</div>`),
+      _tmpl$5 = r.template(`<div><!$><!/><button>Toggle: <!$><!/></button></div>`);
+
+    rendered = r2.renderToString(() =>
+      r2.ssr(
+        ["<div", "><!--$-->", "<!--/--><button>Toggle: <!--$-->", "<!--/--></button></div>"],
+        r2.ssrHydrationKey(),
+        undefined,
+        r2.escape(0)
+      )
+    );
+
+    container.innerHTML = rendered;
+    let setter;
+
+    r.hydrate(() => {
+      const [toggle, setToggle] = createSignal(0);
+      setter = setToggle;
+      const _el$ = r.getNextElement(_tmpl$5),
+        _el$2 = _el$.firstChild,
+        [_el$3, _co$2] = r.getNextMarker(_el$2.nextSibling),
+        _el$4 = _el$3.nextSibling,
+        _el$5 = _el$4.firstChild,
+        _el$6 = _el$5.nextSibling,
+        [_el$7, _co$] = r.getNextMarker(_el$6.nextSibling);
+
+      r.insert(_el$, r.memo(() => (toggle() ? r.getNextElement(_tmpl$4) : undefined)), _el$3, _co$2);
+      r.insert(_el$4, toggle, _el$7, _co$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+    }, container);
+
+    expect(container.innerHTML).toBe(
+      '<div _hk="0"><!--$--><!--/--><button>Toggle: <!--$-->0<!--/--></button></div>'
+    );
+
+    setter(1);
+    flush();
+    expect(container.innerHTML).toBe(
+      '<div _hk="0"><!--$--><div>TEXT</div><!--/--><button>Toggle: <!--$-->1<!--/--></button></div>'
+    );
+  });
+
   it("hydrates standalone head with static children", () => {
     rendered = r2.renderToString(() =>
       r2.ssr(
