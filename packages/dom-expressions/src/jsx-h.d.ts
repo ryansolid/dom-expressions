@@ -1523,6 +1523,7 @@ export namespace JSX {
     autocomplete?: FunctionMaybe<HTMLAutocomplete | RemoveAttribute>;
     capture?: FunctionMaybe<"user" | "environment" | RemoveAttribute>;
     checked?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    "prop:checked"?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     colorspace?: FunctionMaybe<string | RemoveAttribute>;
     dirname?: FunctionMaybe<string | RemoveAttribute>;
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
@@ -1578,6 +1579,7 @@ export namespace JSX {
       | RemoveAttribute
     >;
     value?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
+    "prop:value"?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
     width?: FunctionMaybe<number | string | RemoveAttribute>;
 
     /** @non-standard */
@@ -1658,6 +1660,7 @@ export namespace JSX {
     disableremoteplayback?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     loop?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     muted?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    "prop:muted"?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     preload?: FunctionMaybe<
       "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute
     >;
@@ -1764,7 +1767,9 @@ export namespace JSX {
     disabled?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     label?: FunctionMaybe<string | RemoveAttribute>;
     selected?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    "prop:selected"?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     value?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
+    "prop:value"?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
     for?: FunctionMaybe<string | RemoveAttribute>;
@@ -1819,6 +1824,7 @@ export namespace JSX {
     required?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
     size?: FunctionMaybe<number | string | RemoveAttribute>;
     value?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
+    "prop:value"?: FunctionMaybe<string | string[] | number | RemoveAttribute>;
   }
   interface HTMLSlotElementAttributes<T> extends HTMLAttributes<T> {
     name?: FunctionMaybe<string | RemoveAttribute>;
