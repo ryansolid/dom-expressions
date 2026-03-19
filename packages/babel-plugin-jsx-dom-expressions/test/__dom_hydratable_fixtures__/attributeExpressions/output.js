@@ -330,7 +330,7 @@ const template20 = (() => {
     }
   );
   _$effect(s, _v$ => {
-    _el$26.value = _v$;
+    _el$26.value = _v$ ?? "";
   });
   _$effect(s2, _v$ => {
     _el$27.checked = _v$;

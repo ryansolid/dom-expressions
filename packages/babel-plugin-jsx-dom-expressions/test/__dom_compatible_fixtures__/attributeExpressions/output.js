@@ -339,7 +339,7 @@ const template20 = (() => {
     }
   );
   _$effect(s, _v$ => {
-    _el$26.value = _v$;
+    _el$26.value = _v$ ?? "";
   });
   _$effect(s2, _v$ => {
     _el$27.checked = _v$;
@@ -930,22 +930,22 @@ const template93 = (() => {
   _el$117.value = "static property";
   _el$120.value = "static property";
   _$effect(dynamicProperty, _v$ => {
-    _el$115.value = _v$;
+    _el$115.value = _v$ ?? "";
   });
   _$effect(dynamicAttribute, _v$ => {
     _$setAttribute(_el$117, "value", _v$);
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$122.value = _v$;
+    _el$122.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$123.value = _v$;
+    _el$123.value = _v$ ?? "";
   });
   _$effect(dynamicAttribute, _v$ => {
     _$setAttribute(_el$125, "value", _v$);
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$125.value = _v$;
+    _el$125.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
     _el$131.muted = _v$;

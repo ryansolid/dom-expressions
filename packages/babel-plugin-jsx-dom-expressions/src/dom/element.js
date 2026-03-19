@@ -281,6 +281,19 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
         assignment
       );
     }
+    if (
+      name === "value" &&
+      tagName === "input" &&
+      !t.isStringLiteral(value) &&
+      !t.isNumericLiteral(value)
+    ) {
+      // prevents undefined on input.value, fallback to empty string
+      return t.assignmentExpression(
+        "=",
+        t.memberExpression(elem, t.identifier("value")),
+        t.logicalExpression("??", value, t.stringLiteral(""))
+      );
+    }
     return assignment;
   }
 
