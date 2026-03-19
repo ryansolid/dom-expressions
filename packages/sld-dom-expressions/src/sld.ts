@@ -7,7 +7,6 @@ import {
   EXPRESSION_NODE,
   EXPRESSION_PROP,
   ElementNode,
-  MIXED_PROP,
   ROOT_NODE,
   RootNode,
   SPREAD_PROP,

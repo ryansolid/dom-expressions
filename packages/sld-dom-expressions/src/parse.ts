@@ -1,13 +1,10 @@
 import {
-  ATTRIBUTE_VALUE_TOKEN,
-  AttributeToken,
+  STRING_TOKEN,
   CLOSE_TAG_TOKEN,
   EQUALS_TOKEN,
   EXPRESSION_TOKEN,
-  ExpressionToken,
   IDENTIFIER_TOKEN,
   OPEN_TAG_TOKEN,
-  QUOTE_CHAR_TOKEN,
   SLASH_TOKEN,
   SPREAD_TOKEN,
   TEXT_TOKEN,
@@ -33,7 +30,6 @@ export const BOOLEAN_PROP = 0;
 export const STATIC_PROP = 1;
 export const EXPRESSION_PROP = 2;
 export const SPREAD_PROP = 3;
-export const MIXED_PROP = 4;
 
 export type NodeType =
   | typeof ROOT_NODE
@@ -45,8 +41,7 @@ export type PropType =
   | typeof BOOLEAN_PROP
   | typeof STATIC_PROP
   | typeof EXPRESSION_PROP
-  | typeof SPREAD_PROP
-  | typeof MIXED_PROP;
+  | typeof SPREAD_PROP;
 
 export type ChildNode = ElementNode | TextNode | ExpressionNode | ComponentNode;
 
@@ -105,13 +100,6 @@ export interface SpreadProp {
   value: number;
 }
 
-// export interface MixedProp {
-//   name: string;
-//   type: typeof MIXED_PROP;
-//   value: Array<string | number>;
-//   quote?: "'" | '"';
-// }
-
 export type PropNode = BooleanProp | StringProp | ExpressionProp | SpreadProp;
 
 export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
@@ -151,23 +139,25 @@ export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
 
       case OPEN_TAG_TOKEN: {
         // --- TAG ---
-        pos++; // Consume '<'
-        const nextToken = tokens[pos];
+        const nextToken = tokens[++pos];
 
         // Handle Closing Tag: </name>
         if (nextToken.type === SLASH_TOKEN) {
-          pos++; // Consume '/'
-          const nameToken = tokens[pos];
+          const nameToken = tokens[++pos];
+          const closeToken = tokens[++pos];
+          const currentParent = stack[stack.length - 1] as ElementNode | ComponentNode;
           if (
             stack.length > 1 &&
-            nameToken?.type === IDENTIFIER_TOKEN &&
-            (stack[stack.length - 1] as ElementNode).name === nameToken.value || nameToken?.type === EXPRESSION_TOKEN || nameToken.type === SLASH_TOKEN
+            closeToken.type === CLOSE_TAG_TOKEN &&
+            ((nameToken?.type === IDENTIFIER_TOKEN && currentParent.name === nameToken.value) ||
+              ((nameToken?.type === EXPRESSION_TOKEN || nameToken.type === SLASH_TOKEN) &&
+                typeof currentParent.name === "number"))
           ) {
             const node = stack.pop();
             if (node?.type === ELEMENT_NODE && voidElements.has(node.name)) {
               node.children = [];
             }
-            pos += 2; // Consume 'name' and '>'
+            pos++;
             continue;
           }
           throw new Error("Mismatched closing tag.");
@@ -213,7 +203,7 @@ export const parse = (tokens: Token[], voidElements: Set<string>): RootNode => {
                 if (valToken.type === EXPRESSION_TOKEN) {
                   node.props.push({ name, type: EXPRESSION_PROP, value: valToken.value });
                   pos++;
-                } else if (valToken.type === ATTRIBUTE_VALUE_TOKEN) {
+                } else if (valToken.type === STRING_TOKEN) {
                   const quote = valToken.quote;
                   node.props.push({
                     name,

@@ -840,9 +840,17 @@ describe("SLD Integration Tests", () => {
       expect(container.querySelector("section")?.innerHTML).toContain("<span>content</span>");
     });
 
-    it("renders dynamic component with shorthand close tag", () => {
+    // it("renders dynamic component with shorthand close tag", () => {
+    //   const Comp = (props: any) => sld`<section>${props.children}</section>`;
+    //   const result = sld.define({ Comp }).sld`<Comp>text<//>` as Node[];
+    //   const container = document.createElement("div");
+    //   container.append(...result);
+    //   expect(container.querySelector("section")?.textContent).toBe("text");
+    // });
+
+      it("renders dynamic component with shorthand close tag", () => {
       const Comp = (props: any) => sld`<section>${props.children}</section>`;
-      const result = sld.define({ Comp }).sld`<Comp>text<//>` as Node[];
+      const result = sld.define({ Comp }).sld`<${Comp}>text<//>` as Node[];
       const container = document.createElement("div");
       container.append(...result);
       expect(container.querySelector("section")?.textContent).toBe("text");

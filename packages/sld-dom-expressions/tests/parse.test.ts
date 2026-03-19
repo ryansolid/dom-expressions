@@ -4,7 +4,6 @@ import {
   COMPONENT_NODE,
   ELEMENT_NODE,
   EXPRESSION_NODE,
-  MIXED_PROP,
   ROOT_NODE,
   STATIC_PROP,
   TEXT_NODE,
@@ -586,20 +585,6 @@ describe("Dynamic Component Tags", () => {
     });
   });
 
-  it("parses shorthand close tag", () => {
-    const ast = jsx`<Comp>content<//>`;
-    expect(ast).toEqual({
-      type: ROOT_NODE,
-      children: [
-        {
-          type: COMPONENT_NODE,
-          name: "Comp",
-          props: [],
-          children: [{ type: TEXT_NODE, value: "content" }],
-        },
-      ],
-    });
-  });
 
   it("parses dynamic component with attributes", () => {
     const Comp = "Comp";

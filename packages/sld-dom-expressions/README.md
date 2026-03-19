@@ -15,7 +15,7 @@ sld is a no-build, no-JSX tagged-template library for SolidJS
 Use the default `sld` tag for templates and the `SLD` or `sld.define` factory to create a local instance.
 
 ```ts
-import { sld } from "solid-html";
+import { sld } from "@solidjs/sld";
 
 //Write a component with JSX like syntax
 function Counter() {
@@ -51,7 +51,7 @@ render(() => App(), document.body);
 - Elements/Components can be self closing `<div />` or matched closing `<div></div>`
 - Capital tags are treated as components and will throw if now registered `<ComponentA></ComponentA>` or `<ComponentA />`
 - Content between tags is treated as children. Will return an array unless only a single child node (text,elem, or expression)
-- Inline components can be closed with </${ComponentA}> or <//>
+- Inline components can be closed with `</${ComponentA}>` or `<//>`
 
 ### Attributes & Properties
 
@@ -90,9 +90,9 @@ sld`<Route component=${() => Counter} />`;
 | Feature              | Solid JSX                                         | `sld` Tagged Template                                      |
 | :------------------- | :------------------------------------------------ | :--------------------------------------------------------- |
 | **Fragments**        | Required: `<>...</>` for multiple root nodes      | **None needed**: Returns a flat array of nodes             |
-| **Dot Notation**     | Supported: `<Input.Label />`                      | **Supported**: `.` is valid in identifier tokens           |
+| **Dot Notation**     | Supported: `<Input.Label />`                      | `.` is valid in identifier tokens           |
 | **Spread Syntax**    | `<div {...props} />`                              | `<div ...${props} />`                                      |
 | **Comments**         | `{/* JSX Comment */}`                             | `<!-- -->` (Stripped by parser)                            |
-| **Raw Text Tags**    | Escaping or `innerHTML` required                  | **Automatic**: `<style>`/`<script>` treat children as text |
+| **Raw Text Tags**    | Escaping or `innerHTML` required                  | `<style>`/`<script>` treat children as text |
 | **Whitespace**       | JSX-style stripping                               | Contextual: Trims between tags, preserves inside text      |
 | **Reactivity**       | Signals are auto-wrapped in JSX                   | Reactive Holes must be wrapped in `()=> `     |

@@ -3,20 +3,18 @@ export const CLOSE_TAG_TOKEN = 1;
 export const SLASH_TOKEN = 2;
 export const IDENTIFIER_TOKEN = 3;
 export const EQUALS_TOKEN = 4;
-export const ATTRIBUTE_VALUE_TOKEN = 5;
+export const STRING_TOKEN = 5;
 export const TEXT_TOKEN = 6;
 export const EXPRESSION_TOKEN = 7;
-export const QUOTE_CHAR_TOKEN = 8;
-export const SPREAD_TOKEN = 9;
+export const SPREAD_TOKEN = 8;
 
-// Character code helpers for fast path testing (faster than regex)
 const isIdentifierChar = (code: number): boolean => {
   return (
     isIdentifierStart(code) ||
     (code >= 48 && code <= 58) || // 0-9, :
     code === 46 || // .
-    code === 45
-  ); // -
+    code === 45 // -
+  );
 };
 
 const isIdentifierStart = (code: number): boolean => {
@@ -57,8 +55,8 @@ export interface EqualsToken {
   // value: "=";
 }
 
-export interface AttributeToken {
-  type: typeof ATTRIBUTE_VALUE_TOKEN;
+export interface StringToken {
+  type: typeof STRING_TOKEN;
   value: string;
   quote: "'" | '"';
 }
@@ -68,19 +66,14 @@ export interface TextToken {
   value: string;
 }
 
-export interface ExpressionToken {
-  type: typeof EXPRESSION_TOKEN;
-  value: number;
-}
-
-// export interface QuoteToken {
-//   type: typeof QUOTE_CHAR_TOKEN;
-//   value: "'" | '"';
-// }
-
 export interface SpreadToken {
   type: typeof SPREAD_TOKEN;
   // value: "..."
+}
+
+export interface ExpressionToken {
+  type: typeof EXPRESSION_TOKEN;
+  value: number;
 }
 
 export type Token =
@@ -89,7 +82,7 @@ export type Token =
   | SlashToken
   | IdentifierToken
   | EqualsToken
-  | AttributeToken
+  | StringToken
   | TextToken
   | ExpressionToken
   // | QuoteToken
@@ -98,17 +91,15 @@ export type Token =
 // Add a new state for elements that contain raw text only
 const STATE_TEXT = 0;
 const STATE_TAG = 1;
-const STATE_ATTR_VALUE = 2;
-const STATE_RAW_TEXT = 3;
-const STATE_COMMENT = 4;
+const STATE_RAW_TEXT = 2;
+const STATE_COMMENT = 3;
 
 export const tokenize = (
   strings: TemplateStringsArray | string[],
-  rawTextElements: Set<string>,
+  rawTextElements: Set<string>
 ): Token[] => {
   const tokens: Token[] = [];
   let state = STATE_TEXT;
-  let quoteChar: '"' | "'"
   let lastTagName = "";
   let cursor = 0;
 
@@ -129,7 +120,7 @@ export const tokenize = (
             if (nextTag > cursor)
               tokens.push({
                 type: TEXT_TOKEN,
-                value: str.slice(cursor, nextTag),
+                value: str.slice(cursor, nextTag)
               });
 
             if (str[nextTag + 1] === "!" && str[nextTag + 2] === "-" && str[nextTag + 3] === "-") {
@@ -171,10 +162,18 @@ export const tokenize = (
             tokens.push({ type: SLASH_TOKEN });
             cursor++;
           } else if (code === 34 || code === 39) {
-            // '"' or "'"
-            quoteChar = str[cursor] as "'" | '"';
-            state = STATE_ATTR_VALUE;
-            cursor++;
+            const char = str[cursor] as "'" | '"';
+            const endQuoteIndex = str.indexOf(char, cursor + 1);
+
+            if (endQuoteIndex === -1) {
+              throw new Error(`Unterminated string`);
+            }
+            tokens.push({
+              type: STRING_TOKEN,
+              value: str.slice(cursor + 1, endQuoteIndex),
+              quote: char
+            });
+            cursor = endQuoteIndex + 1;
           } else if (isIdentifierStart(code)) {
             const start = cursor;
             while (cursor < len && isIdentifierChar(str.charCodeAt(cursor))) cursor++;
@@ -192,29 +191,6 @@ export const tokenize = (
           }
           break;
         }
-        case STATE_ATTR_VALUE: {
-          const endQuoteIndex = str.indexOf(quoteChar, cursor); 
-          console.log({ quoteChar, cursor, endQuoteIndex, attrValue: str.slice(cursor, endQuoteIndex) });
-          if (endQuoteIndex === -1) {
-            tokens.push({
-              type: ATTRIBUTE_VALUE_TOKEN,
-              value: str.slice(cursor),
-              quote: quoteChar,
-            });
-            cursor = len;
-          } else {
-            if (endQuoteIndex >= cursor) {
-              tokens.push({
-                type: ATTRIBUTE_VALUE_TOKEN,
-                value: str.slice(cursor, endQuoteIndex),
-                quote: quoteChar,
-              });
-            }
-            state = STATE_TAG;
-            cursor = endQuoteIndex + 1;
-          }
-          break;
-        }
         case STATE_RAW_TEXT: {
           // Case-sensitive search for the specific closing tag with optional whitespace in between, e.g. < / textarea >
           const closeTagRegex = new RegExp(`<\\s*/\\s*${lastTagName}\\s*>`, "g");
@@ -226,7 +202,7 @@ export const tokenize = (
             if (endOfRawIdx > cursor) {
               tokens.push({
                 type: TEXT_TOKEN,
-                value: str.slice(cursor, endOfRawIdx),
+                value: str.slice(cursor, endOfRawIdx)
               });
             }
             state = STATE_TEXT;

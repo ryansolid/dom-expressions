@@ -6,7 +6,7 @@ import {
   SLASH_TOKEN,
   IDENTIFIER_TOKEN,
   EQUALS_TOKEN,
-  ATTRIBUTE_VALUE_TOKEN,
+  STRING_TOKEN,
   TEXT_TOKEN,
   EXPRESSION_TOKEN,
   QUOTE_CHAR_TOKEN,
@@ -122,7 +122,7 @@ describe("attribute values", () => {
         type: EQUALS_TOKEN,
       },
       {
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "hello",
         quote: '"',
       },
@@ -151,7 +151,7 @@ describe("attribute values", () => {
         type: EQUALS_TOKEN,
       },
       {
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "hello",
         quote: "'",
       },
@@ -180,7 +180,7 @@ describe("attribute values", () => {
         type: EQUALS_TOKEN,
       },
       {
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "",
         quote: '"',
       },
@@ -221,7 +221,7 @@ describe("attribute values", () => {
 
     expect(tokens).toContainEqual(
       expect.objectContaining({
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "value with 'nested' quotes",
         quote: '"',
       }),
@@ -233,7 +233,7 @@ describe("attribute values", () => {
 
     expect(tokens).toContainEqual(
       expect.objectContaining({
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "!@#$%^&*()_+-=[]{}|;:,.<>?",
         quote: '"',
       }),
@@ -246,7 +246,7 @@ describe("attribute values", () => {
 
     expect(tokens).toContainEqual(
       expect.objectContaining({
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "https://example.com/path?query=value&other=test#section",
         quote: '"',
       }),
@@ -264,7 +264,7 @@ describe("attribute values", () => {
       { type: IDENTIFIER_TOKEN, value: "h1" },
       { type: IDENTIFIER_TOKEN, value: "title" },
       { type: EQUALS_TOKEN },
-      { type: ATTRIBUTE_VALUE_TOKEN, value: "", quote: '"' },
+      { type: STRING_TOKEN, value: "", quote: '"' },
 
       { type: CLOSE_TAG_TOKEN },
       { type: OPEN_TAG_TOKEN },
@@ -392,7 +392,7 @@ describe("whitespace handling", () => {
       },
 
       {
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "app",
         quote: '"',
       },
@@ -723,7 +723,7 @@ describe("bad but valid syntaxes", () => {
     );
     expect(tokens).toContainEqual(
       expect.objectContaining({
-        type: ATTRIBUTE_VALUE_TOKEN,
+        type: STRING_TOKEN,
         value: "value",
       }),
     );
@@ -904,7 +904,7 @@ describe("dynamic component tags", () => {
       { type: EXPRESSION_TOKEN, value: 0 },
       { type: IDENTIFIER_TOKEN, value: "id" },
       { type: EQUALS_TOKEN },
-      { type: ATTRIBUTE_VALUE_TOKEN, value: "test", quote: '"' },
+      { type: STRING_TOKEN, value: "test", quote: '"' },
       { type: SLASH_TOKEN },
       { type: CLOSE_TAG_TOKEN },
     ]);
