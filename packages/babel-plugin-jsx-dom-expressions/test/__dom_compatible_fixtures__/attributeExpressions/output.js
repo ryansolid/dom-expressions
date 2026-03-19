@@ -76,7 +76,10 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$47 = /*#__PURE__*/ _$template(`<button type="button"></button>`),
   _tmpl$48 = /*#__PURE__*/ _$template(`<div style="padding-left:clamp(2px, 2px, 2px)"></div>`),
   _tmpl$49 = /*#__PURE__*/ _$template(`<div style="a:clamp(2px, 2px, 2px)"></div>`),
-  _tmpl$50 = /*#__PURE__*/ _$template(`<div style="duplicate2"></div>`);
+  _tmpl$50 = /*#__PURE__*/ _$template(`<div style="duplicate2"></div>`),
+  _tmpl$51 = /*#__PURE__*/ _$template(
+    `<div>static inlined, prop:value in effect<input value="static attribute">value in effect, prop:value inlined<input>static<input value="static attribute"><input>dynamic property<input><input>dynamic attribute/property<input>inlined muted<video muted></video>not inlined muted<video></video>not inlined muted dynamic muted property<video></video>inlined muted dynamic muted property<video muted></video>dynamic attribute muted, dynamic muted property<video></video></div>`
+  );
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -900,4 +903,62 @@ const template91 = (() => {
   return _el$111;
 })();
 const template92 = _tmpl$50();
+const template93 = (() => {
+  var _el$113 = _tmpl$51(),
+    _el$114 = _el$113.firstChild,
+    _el$115 = _el$114.nextSibling,
+    _el$116 = _el$115.nextSibling,
+    _el$117 = _el$116.nextSibling,
+    _el$118 = _el$117.nextSibling,
+    _el$119 = _el$118.nextSibling,
+    _el$120 = _el$119.nextSibling,
+    _el$121 = _el$120.nextSibling,
+    _el$122 = _el$121.nextSibling,
+    _el$123 = _el$122.nextSibling,
+    _el$124 = _el$123.nextSibling,
+    _el$125 = _el$124.nextSibling,
+    _el$126 = _el$125.nextSibling,
+    _el$127 = _el$126.nextSibling,
+    _el$128 = _el$127.nextSibling,
+    _el$129 = _el$128.nextSibling,
+    _el$130 = _el$129.nextSibling,
+    _el$131 = _el$130.nextSibling,
+    _el$132 = _el$131.nextSibling,
+    _el$133 = _el$132.nextSibling,
+    _el$134 = _el$133.nextSibling,
+    _el$135 = _el$134.nextSibling;
+  _el$117.value = "static property";
+  _el$120.value = "static property";
+  _$effect(dynamicProperty, _v$ => {
+    _el$115.value = _v$;
+  });
+  _$effect(dynamicAttribute, _v$ => {
+    _$setAttribute(_el$117, "value", _v$);
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$122.value = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$123.value = _v$;
+  });
+  _$effect(dynamicAttribute, _v$ => {
+    _$setAttribute(_el$125, "value", _v$);
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$125.value = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$131.muted = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$133.muted = _v$;
+  });
+  _$effect(dynamicAttribute, _v$ => {
+    _$setAttribute(_el$135, "muted", _v$);
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$135.muted = _v$;
+  });
+  return _el$113;
+})();
 _$delegateEvents(["click", "input"]);

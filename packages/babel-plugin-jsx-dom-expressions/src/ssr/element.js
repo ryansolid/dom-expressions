@@ -1,6 +1,6 @@
 import * as t from "@babel/types";
 import { decode } from "html-entities";
-import { ChildProperties } from "dom-expressions/src/constants";
+import { ChildProperties, DOMWithState } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
   evaluateAndInline,
@@ -36,7 +36,9 @@ function hoistExpression(path, results, expr, { group, post, skipWrap } = {}) {
     return t.memberExpression(results.groupId, t.numericLiteral(results.dynamics.length - 1), true);
   }
   const variable = path.scope.generateUidIdentifier("v$");
-  !skipWrap && t.isFunction(expr) && (expr = t.callExpression(registerImportMethod(path, "ssrRunInScope"), [expr]));
+  !skipWrap &&
+    t.isFunction(expr) &&
+    (expr = t.callExpression(registerImportMethod(path, "ssrRunInScope"), [expr]));
   post
     ? results.postDeclarations.push(t.variableDeclarator(variable, expr))
     : results.declarations.push(t.variableDeclarator(variable, expr));
@@ -44,6 +46,8 @@ function hoistExpression(path, results, expr, { group, post, skipWrap } = {}) {
 }
 
 export function transformElement(path, info) {
+  const tagName = getTagName(path.node);
+
   path
     .get("openingElement")
     .get("attributes")
@@ -51,8 +55,11 @@ export function transformElement(path, info) {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
 
+  /*  if (DOMWithState[tagName.toUpperCase()]) {
+    transformSpecialCaseAttributes(path, tagName);
+  }*/
+
   const config = getConfig(path);
-  const tagName = getTagName(path.node);
   if (tagName === "script" || tagName === "style") path.doNotEscape = true;
 
   // contains spread attributes
@@ -296,18 +303,11 @@ function transformAttributes(path, results, info) {
     ) {
       if (key === "ref") {
         results.declarations.push(
-          t.variableDeclarator(
-            path.scope.generateUidIdentifier("_ref$"),
-            value.expression
-          )
+          t.variableDeclarator(path.scope.generateUidIdentifier("_ref$"), value.expression)
         );
         return;
       }
-      if (
-        key.startsWith("prop:") ||
-        key.startsWith("on")
-      )
-        return;
+      if (key.startsWith("prop:") || key.startsWith("on")) return;
       if (ChildProperties.has(key)) {
         if (info.hydratable && key === "textContent" && value && value.expression) {
           const comments = value.expression.leadingComments;
@@ -396,7 +396,9 @@ function transformAttributes(path, results, info) {
           results.template.push(`"`);
           if (isDynamicValue) {
             results.templateValues.push(
-              hoistExpression(path, results, inlineCallExpression(value.expression), { group: true })
+              hoistExpression(path, results, inlineCallExpression(value.expression), {
+                group: true
+              })
             );
           } else results.templateValues.push(value.expression);
         } else setAttr(attribute, results, key, value.expression, isDynamicValue, isBoolean);
@@ -404,7 +406,7 @@ function transformAttributes(path, results, info) {
     } else {
       if (key === "$ServerOnly") return;
       if (t.isJSXExpressionContainer(value)) value = value.expression;
-      const isBoolean = t.isBooleanLiteral(value)
+      const isBoolean = t.isBooleanLiteral(value);
       if (isBoolean && value && value.value !== "" && !value.value) return;
       appendToTemplate(results.template, ` ${key}`);
       if (!value) return;
@@ -552,18 +554,11 @@ function createElement(path, { topLevel, hydratable }) {
         if (key === "ref") {
           if (t.isJSXExpressionContainer(value))
             results.declarations.push(
-              t.variableDeclarator(
-                path.scope.generateUidIdentifier("_ref$"),
-                value.expression
-              )
+              t.variableDeclarator(path.scope.generateUidIdentifier("_ref$"), value.expression)
             );
           return;
         }
-        if (
-          key.startsWith("prop:") ||
-          key.startsWith("on")
-        )
-          return;
+        if (key.startsWith("prop:") || key.startsWith("on")) return;
         if (t.isJSXExpressionContainer(value))
           if (
             isDynamic(attribute.get("value").get("expression"), {

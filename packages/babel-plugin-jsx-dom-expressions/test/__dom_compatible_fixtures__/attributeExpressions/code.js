@@ -361,3 +361,28 @@ const template90 = <div style={{}}/>
 const template91 = <video something={{value:{value:1+1}}}/>
 
 const template92 = <div style="duplicate1" style="duplicate2"/>
+
+const template93 = <div>
+  static inlined, prop:value in effect
+  <input value="static attribute" prop:value={dynamicProperty()}/>
+  value in effect, prop:value inlined
+  <input value={dynamicAttribute()} prop:value="static property"/>
+  static
+  <input value={"static attribute"}/>
+  <input prop:value={"static property"}/>
+  dynamic property
+  <input value={dynamicProperty()}/>
+  <input prop:value={dynamicProperty()}/>
+  dynamic attribute/property
+  <input value={dynamicAttribute()} prop:value={dynamicProperty()}/>
+  inlined muted
+  <video muted={true}/>
+  not inlined muted
+  <video muted={false}/>
+  not inlined muted dynamic muted property
+  <video muted={false} prop:muted={dynamicProperty()}/>
+  inlined muted dynamic muted property
+  <video muted={true} prop:muted={dynamicProperty()}/>
+  dynamic attribute muted, dynamic muted property
+  <video muted={dynamicAttribute()} prop:muted={dynamicProperty()}/>
+</div>

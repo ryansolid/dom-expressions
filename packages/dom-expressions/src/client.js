@@ -12,6 +12,7 @@ import {
   flatten
 } from "rxcore";
 import reconcileArrays from "./reconcile";
+import { DOMWithState } from "./constants";
 export {
   Properties,
   ChildProperties,
@@ -62,7 +63,7 @@ export function render(code, element, init, options = {}) {
 
 export function template(html, isImportNode, isSVG, isMathML) {
   let node;
-  const create = (bypassGuard) => {
+  const create = bypassGuard => {
     if ("_DX_DEV_" && isHydrating() && !bypassGuard)
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
@@ -76,8 +77,8 @@ export function template(html, isImportNode, isSVG, isMathML) {
     return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
   };
   const fn = isImportNode
-    ? (bypassGuard) => untrack(() => document.importNode(node || (node = create(bypassGuard)), true))
-    : (bypassGuard) => (node || (node = create(bypassGuard))).cloneNode(true);
+    ? bypassGuard => untrack(() => document.importNode(node || (node = create(bypassGuard)), true))
+    : bypassGuard => (node || (node = create(bypassGuard))).cloneNode(true);
   if ("_DX_DEV_") fn._html = html;
   return fn;
 }
@@ -113,8 +114,8 @@ export function setAttribute(node, name, value) {
 
 export function setAttributeNS(node, namespace, name, value) {
   if (isHydrating(node)) return;
-  if (value == null) node.removeAttributeNS(namespace, name);
-  else node.setAttributeNS(namespace, name, value);
+  if (value == null || value === false) node.removeAttributeNS(namespace, name);
+  else node.setAttributeNS(namespace, name, value === true ? "" : value);
 }
 
 export function className(node, value, isSVG, prev) {
@@ -268,11 +269,21 @@ export function insert(parent, accessor, marker, initial) {
 }
 
 export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef = false) {
+  const nodeName = node.nodeName;
   props || (props = {});
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
+      prevProps[prop] = assignProp(
+        node,
+        prop,
+        null,
+        prevProps[prop],
+        isSVG,
+        skipRef,
+        nodeName,
+        prevProps
+      );
     }
   }
   for (const prop in props) {
@@ -280,8 +291,16 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
       if (!skipChildren) insertExpression(node, props.children);
       continue;
     }
-    const value = props[prop];
-    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef);
+    prevProps[prop] = assignProp(
+      node,
+      prop,
+      props[prop],
+      prevProps[prop],
+      isSVG,
+      skipRef,
+      nodeName,
+      props
+    );
   }
 }
 
@@ -320,9 +339,7 @@ export function hydrate(code, element, options = {}) {
         const orphaned = [...sharedConfig.registry.values()];
         console.warn(
           `Hydration completed with ${orphaned.length} unclaimed server-rendered node(s):\n` +
-            orphaned
-              .map(node => `  ${node.outerHTML.slice(0, 100)}`)
-              .join("\n")
+            orphaned.map(node => `  ${node.outerHTML.slice(0, 100)}`).join("\n")
         );
       }
     };
@@ -341,9 +358,7 @@ export function getNextElement(template) {
     hydrating = isHydrating();
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if (!template) {
-      throw new Error(
-        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`
-      );
+      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`);
     }
     return template(true);
   }
@@ -442,9 +457,7 @@ function describeSiblings(parent, mismatchChild, expectedTag, isMissing) {
   const tags = children
     .slice(start, end)
     .map(c =>
-      c === mismatchChild
-        ? `<${c.localName} \u2190 expected ${expectedTag}>`
-        : `<${c.localName}>`
+      c === mismatchChild ? `<${c.localName} \u2190 expected ${expectedTag}>` : `<${c.localName}>`
     )
     .join("");
   return `<${pTag}>${prefix}${tags}${suffix}</${pTag}>`;
@@ -500,11 +513,12 @@ function flattenClassList(list, result) {
   }
 }
 
-function assignProp(node, prop, value, prev, isSVG, skipRef) {
+function assignProp(node, prop, value, prev, isSVG, skipRef, nodeName, props) {
   let forceProp;
-  if (prop === "style") return style(node, value, prev), value;
-  if (prop === "class") return className(node, value, isSVG, prev), value;
-  if (value === prev) return prev;
+  if (prop === "style") return (style(node, value, prev), value);
+  if (prop === "class") return (className(node, value, isSVG, prev), value);
+  // dom with state may differs from reactive state
+  if (value === prev && (!DOMWithState[nodeName] || !DOMWithState[nodeName][prop])) return prev;
   if (prop === "ref") {
     if (!skipRef && value) ref(() => value, node);
   } else if (prop.slice(0, 3) === "on:") {
@@ -525,11 +539,11 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||
-    (!isSVG && Properties.has(prop))
+    (DOMWithState[nodeName] && DOMWithState[nodeName][prop] && !props["prop:" + prop])
   ) {
     if (forceProp) prop = prop.slice(5);
-    else if (isHydrating(node)) return value;
-    if (prop === "value" && node.nodeName === "SELECT")
+    else if (isHydrating(node)) return value; // TODO IS this correct?
+    if (prop === "value" && nodeName === "SELECT")
       queueMicrotask(() => (node.value = value)) || (node.value = value);
     else node[prop] = value;
   } else {
