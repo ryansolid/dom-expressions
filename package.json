@@ -44,7 +44,7 @@
     "jest-ts-webcompat-resolver": "^1.0.0",
     "jsdom": "^21.0.0",
     "lerna": "^6.4.0",
-    "prettier": "^3.8.1",
+    "prettier": "^2.8.8",
     "rimraf": "^3.0.2",
     "rollup": "^3.9.1",
     "rollup-plugin-cleanup": "^3.2.1",
