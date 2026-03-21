@@ -132,8 +132,8 @@ const template2 = _$ssrElement(
   "div",
   getProps("test"),
   () => [
-    _$ssr(_tmpl$2, _$escape(rowId) || " "),
-    _$ssr(_tmpl$2, _$escape(row.label) || " "),
+    _$ssr(_tmpl$2, _$escape(rowId || " ")),
+    _$ssr(_tmpl$2, _$escape(row.label || " ")),
     _$ssr(_tmpl$3)
   ],
   true
@@ -144,7 +144,7 @@ const template3 = _$ssr(
   _$ssrAttribute("id", _$escape(state.id, true), false),
   _$ssrStyleProperty("background-color:", _$escape(state.color, true)),
   _$ssrAttribute("name", _$escape(state.name, true), false),
-  _$escape(state.content) || " "
+  _$escape(state.content || " ")
 );
 const template4 = _$ssr(
   _tmpl$5,
@@ -215,7 +215,7 @@ const template23 = _$ssr(
   _tmpl$18,
   _$ssrHydrationKey(),
   _$ssrAttribute("disabled", "t" in test, true),
-  "t" in test && "true"
+  _$escape("t" in test && "true")
 );
 const template24 = _$ssrElement(
   "a",
