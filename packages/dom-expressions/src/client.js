@@ -16,7 +16,6 @@ export {
   Properties,
   ChildProperties,
   DOMElements,
-  SVGElements,
   SVGNamespace,
   DelegatedEvents
 } from "./constants";
@@ -60,24 +59,23 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-export function template(html, isImportNode, isSVG, isMathML) {
+export function template(html, isImportNode) {
   let node;
-  const create = (bypassGuard) => {
+  function create(bypassGuard) {
     if ("_DX_DEV_" && isHydrating() && !bypassGuard)
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
       );
 
-    const t = isMathML
-      ? document.createElementNS("http://www.w3.org/1998/Math/MathML", "template")
-      : document.createElement("template");
+    const t = document.createElement("template");
     t.innerHTML = html;
 
-    return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
-  };
-  const fn = isImportNode
-    ? (bypassGuard) => untrack(() => document.importNode(node || (node = create(bypassGuard)), true))
-    : (bypassGuard) => (node || (node = create(bypassGuard))).cloneNode(true);
+    return (node = t.content.firstChild);
+  }
+  const fn = bypassGuard =>
+    isImportNode
+      ? document.importNode(node || create(bypassGuard), true)
+      : (node || create(bypassGuard)).cloneNode(true);
   if ("_DX_DEV_") fn._html = html;
   return fn;
 }
@@ -117,14 +115,14 @@ export function setAttributeNS(node, namespace, name, value) {
   else node.setAttributeNS(namespace, name, value);
 }
 
-export function className(node, value, isSVG, prev) {
+export function className(node, value, prev) {
   if (isHydrating(node)) return;
   if (value == null || value === false) {
     prev && node.removeAttribute("class");
     return;
   }
   if (typeof value === "string") {
-    value !== prev && (isSVG ? node.setAttribute("class", value) : (node.className = value));
+    value !== prev && node.setAttribute("class", value);
     return;
   }
   if (typeof prev === "string") {
@@ -184,7 +182,7 @@ export function setStyleProperty(node, name, value) {
 }
 
 // TODO: make this better
-export function spread(node, props = {}, isSVG, skipChildren) {
+export function spread(node, props = {}, skipChildren) {
   const prevProps = {};
   if (!skipChildren) insert(node, () => props.children);
   effect(
@@ -203,7 +201,7 @@ export function spread(node, props = {}, isSVG, skipChildren) {
       }
       return newProps;
     },
-    props => assign(node, props, isSVG, true, prevProps, true)
+    props => assign(node, props, true, prevProps, true)
   );
   return prevProps;
 }
@@ -259,12 +257,12 @@ export function insert(parent, accessor, marker, initial) {
   );
 }
 
-export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef = false) {
+export function assign(node, props, skipChildren, prevProps = {}, skipRef = false) {
   props || (props = {});
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], isSVG, skipRef);
+      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], skipRef);
     }
   }
   for (const prop in props) {
@@ -273,7 +271,7 @@ export function assign(node, props, isSVG, skipChildren, prevProps = {}, skipRef
       continue;
     }
     const value = props[prop];
-    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], isSVG, skipRef);
+    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], skipRef);
   }
 }
 
@@ -312,9 +310,7 @@ export function hydrate(code, element, options = {}) {
         const orphaned = [...sharedConfig.registry.values()];
         console.warn(
           `Hydration completed with ${orphaned.length} unclaimed server-rendered node(s):\n` +
-            orphaned
-              .map(node => `  ${node.outerHTML.slice(0, 100)}`)
-              .join("\n")
+            orphaned.map(node => `  ${node.outerHTML.slice(0, 100)}`).join("\n")
         );
       }
     };
@@ -333,9 +329,7 @@ export function getNextElement(template) {
     hydrating = isHydrating();
   if (!hydrating || !(node = sharedConfig.registry.get((key = getHydrationKey())))) {
     if (!template) {
-      throw new Error(
-        `Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`
-      );
+      throw new Error(`Hydration Mismatch. Unable to find DOM nodes for hydration key: ${key}`);
     }
     return template(true);
   }
@@ -434,9 +428,7 @@ function describeSiblings(parent, mismatchChild, expectedTag, isMissing) {
   const tags = children
     .slice(start, end)
     .map(c =>
-      c === mismatchChild
-        ? `<${c.localName} \u2190 expected ${expectedTag}>`
-        : `<${c.localName}>`
+      c === mismatchChild ? `<${c.localName} \u2190 expected ${expectedTag}>` : `<${c.localName}>`
     )
     .join("");
   return `<${pTag}>${prefix}${tags}${suffix}</${pTag}>`;
@@ -492,10 +484,10 @@ function flattenClassList(list, result) {
   }
 }
 
-function assignProp(node, prop, value, prev, isSVG, skipRef) {
+function assignProp(node, prop, value, prev, skipRef) {
   let forceProp;
-  if (prop === "style") return style(node, value, prev), value;
-  if (prop === "class") return className(node, value, isSVG, prev), value;
+  if (prop === "style") return (style(node, value, prev), value);
+  if (prop === "class") return (className(node, value, prev), value);
   if (value === prev) return prev;
   if (prop === "ref") {
     if (!skipRef && value) ref(() => value, node);
@@ -517,7 +509,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||
-    (!isSVG && Properties.has(prop))
+    Properties.has(prop)
   ) {
     if (forceProp) prop = prop.slice(5);
     else if (isHydrating(node)) return value;
@@ -525,7 +517,7 @@ function assignProp(node, prop, value, prev, isSVG, skipRef) {
       queueMicrotask(() => (node.value = value)) || (node.value = value);
     else node[prop] = value;
   } else {
-    const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
+    const ns = prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
     if (ns) setAttributeNS(node, ns, prop, value);
     else setAttribute(node, prop, value);
   }

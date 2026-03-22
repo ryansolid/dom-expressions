@@ -1,12 +1,7 @@
 import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
 
-export const reservedNameSpaces = new Set([
-  "class",
-  "on",
-  "style",
-  "prop"
-]);
+export const reservedNameSpaces = new Set(["class", "on", "style", "prop"]);
 
 export const nonSpreadNameSpaces = new Set(["class", "style", "prop"]);
 
@@ -470,4 +465,35 @@ export function evaluateAndInline(value, valueNode) {
       }
     }
   }
+}
+
+export function getAttributeNamed(path, name) {
+  return path
+    .get("openingElement")
+    .get("attributes")
+    .find(attr => {
+      if (attr.isJSXAttribute()) {
+        const key = t.isJSXNamespacedName(attr.node.name)
+          ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
+          : attr.node.name.name;
+
+        return key === name;
+      }
+    });
+}
+
+export function addAttribute(path, name, value) {
+  path.get("openingElement").pushContainer("attributes", t.jsxAttribute(name, value));
+}
+
+export function isTopTemplateElement(path) {
+  let current = path.parentPath;
+  while (current) {
+    const name = current.node?.openingElement?.name?.name;
+    if (name && name[0] === name[0].toLowerCase() && name[0] !== name[0].toUpperCase()) {
+      return false; // a lowercase JSX element ancestor = we're nested
+    }
+    current = current.parentPath;
+  }
+  return true;
 }

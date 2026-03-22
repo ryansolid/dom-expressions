@@ -123,9 +123,49 @@ const SVGElements = /*#__PURE__*/ new Set([
   "vkern"
 ]);
 
+const MathMLElements = /*#__PURE__*/ new Set([
+  "annotation",
+  "annotation-xml",
+  "maction",
+  "math",
+  "menclose",
+  "merror",
+  "mfenced",
+  "mfrac",
+  "mi",
+  "mmultiscripts",
+  "mn",
+  "mo",
+  "mover",
+  "mpadded",
+  "mphantom",
+  "mprescripts",
+  "mroot",
+  "mrow",
+  "ms",
+  "mspace",
+  "msqrt",
+  "mstyle",
+  "msub",
+  "msubsup",
+  "msup",
+  "mtable",
+  "mtd",
+  "mtext",
+  "mtr",
+  "munder",
+  "munderover",
+  "semantics"
+]);
+
 const SVGNamespace = {
   xlink: "http://www.w3.org/1999/xlink",
   xml: "http://www.w3.org/XML/1998/namespace"
+};
+
+const Namespaces = {
+  svg: "http://www.w3.org/2000/svg",
+  mathml: "http://www.w3.org/1998/Math/MathML"
 };
 
 const DOMElements = /*#__PURE__*/ new Set([
@@ -426,6 +466,8 @@ export {
   ChildProperties,
   DelegatedEvents,
   SVGElements,
+  MathMLElements,
   SVGNamespace,
+  Namespaces,
   DOMElements
 };

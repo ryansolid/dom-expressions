@@ -5,11 +5,15 @@ import {
   ChildProperties,
   SVGNamespace,
   DelegatedEvents,
-  SVGElements
+  SVGElements,
+  MathMLElements,
+  Namespaces
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
+  addAttribute,
   evaluateAndInline,
+  getAttributeNamed,
   getTagName,
   isDynamic,
   isComponent,
@@ -27,7 +31,8 @@ import {
   transformCondition,
   trimWhitespace,
   inlineCallExpression,
-  hasStaticMarker
+  hasStaticMarker,
+  isTopTemplateElement
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 import { InlineElements, BlockElements } from "./constants";
@@ -57,6 +62,8 @@ const alwaysClose = [
 ];
 
 export function transformElement(path, info) {
+  const tagName = getTagName(path.node);
+
   path
     .get("openingElement")
     .get("attributes")
@@ -64,9 +71,19 @@ export function transformElement(path, info) {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
 
-  let tagName = getTagName(path.node),
-    config = getConfig(path),
-    wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
+  if (isTopTemplateElement(path)) {
+    // svg and math tags do not need a explicit xmlns
+    if (tagName !== "svg" && tagName !== "math") {
+      // add a xmlns attribute for partials
+      if (SVGElements.has(tagName) && !getAttributeNamed(path, "xmlns")) {
+        addAttribute(path, t.jsxIdentifier("xmlns"), t.stringLiteral(Namespaces.svg));
+      } else if (MathMLElements.has(tagName) && !getAttributeNamed(path, "xmlns")) {
+        addAttribute(path, t.jsxIdentifier("xmlns"), t.stringLiteral(Namespaces.mathml));
+      }
+    }
+  }
+
+  let config = getConfig(path),
     voidTag = VoidElements.indexOf(tagName) > -1,
     isCustomElement =
       tagName.indexOf("-") > -1 ||
@@ -87,7 +104,6 @@ export function transformElement(path, info) {
       exprs: [],
       dynamics: [],
       postExprs: [],
-      isSVG: wrapSVG,
       hasCustomElement: isCustomElement,
       isImportNode,
       tagName,
@@ -140,10 +156,7 @@ export function transformElement(path, info) {
   if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body")) {
     results.skipTemplate = true;
   }
-  if (wrapSVG) {
-    results.template = "<svg>" + results.template;
-    results.templateWithClosingTags = "<svg>" + results.templateWithClosingTags;
-  }
+
   if (!info.skipId) {
     results.id = path.scope.generateUidIdentifier("el$");
   }
@@ -176,14 +189,11 @@ export function transformElement(path, info) {
     );
     results.postExprs.push(t.expressionStatement(t.callExpression(runHydrationEvents, [])));
   }
-  if (wrapSVG) {
-    results.template += "</svg>";
-    results.templateWithClosingTags += "</svg>";
-  }
+
   return results;
 }
 
-export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagName }) {
+export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
   // pull out namespace
   const config = getConfig(path);
   let parts, namespace;
@@ -229,11 +239,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
   if (name === "class") {
     return t.callExpression(
       registerImportMethod(path, "className", getRendererConfig(path, "dom").moduleName),
-      prevId
-        ? [elem, value, t.booleanLiteral(isSVG), prevId]
-        : isSVG
-          ? [elem, value, t.booleanLiteral(true)]
-          : [elem, value]
+      prevId ? [elem, value, prevId] : [elem, value]
     );
   }
 
@@ -250,7 +256,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
 
   const isChildProp = ChildProperties.has(name);
   const isProp = Properties.has(name);
-  if (isChildProp || (!isSVG && isProp) || namespace === "prop") {
+  if (isChildProp || isProp || namespace === "prop") {
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
@@ -276,8 +282,7 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
     return assignment;
   }
 
-  let isNameSpaced = name.indexOf(":") > -1;
-  const ns = isNameSpaced && SVGNamespace[name.split(":")[0]];
+  const ns = name.indexOf(":") > -1 && SVGNamespace[name.split(":")[0]];
   if (ns) {
     return t.callExpression(
       registerImportMethod(path, "setAttributeNS", getRendererConfig(path, "dom").moduleName),
@@ -312,7 +317,6 @@ function transformAttributes(path, results) {
     spreadExpr,
     attributes = path.get("openingElement").get("attributes");
   const tagName = getTagName(path.node),
-    isSVG = SVGElements.has(tagName),
     hasChildren = path.node.children.length > 0,
     config = getConfig(path);
 
@@ -320,7 +324,6 @@ function transformAttributes(path, results) {
   if (attributes.some(attribute => t.isJSXSpreadAttribute(attribute.node))) {
     [attributes, spreadExpr] = processSpreads(path, attributes, {
       elem,
-      isSVG,
       hasChildren,
       wrapConditionals: config.wrapConditionals
     });
@@ -561,7 +564,7 @@ function transformAttributes(path, results) {
   let needsSpacing = true;
 
   // scoped because of `needsSpacing`
-  function inlineAttributeOnTemplate(isSVG, key, results, value) {
+  function inlineAttributeOnTemplate(key, results, value) {
     results.template += `${needsSpacing ? " " : ""}${key}`;
 
     if (!value) {
@@ -679,9 +682,10 @@ function transformAttributes(path, results) {
                       t.unaryExpression("typeof", refIdentifier),
                       t.stringLiteral("function")
                     ),
-                    t.callExpression(t.memberExpression(t.identifier("Array"), t.identifier("isArray")), [
-                      refIdentifier
-                    ])
+                    t.callExpression(
+                      t.memberExpression(t.identifier("Array"), t.identifier("isArray")),
+                      [refIdentifier]
+                    )
                   ),
                   t.callExpression(
                     registerImportMethod(path, "ref", getRendererConfig(path, "dom").moduleName),
@@ -872,8 +876,7 @@ function transformAttributes(path, results) {
                     t.blockStatement([
                       t.expressionStatement(
                         setAttr(path, elem, key, v, {
-                          tagName,
-                          isSVG
+                          tagName
                         })
                       )
                     ])
@@ -895,14 +898,11 @@ function transformAttributes(path, results) {
             elem: nextElem,
             key,
             value: value.expression,
-            isSVG,
             tagName
           });
         } else {
           results.exprs.push(
-            t.expressionStatement(
-              setAttr(attribute, elem, key, value.expression, { isSVG, tagName })
-            )
+            t.expressionStatement(setAttr(attribute, elem, key, value.expression, { tagName }))
           );
         }
       } else {
@@ -926,10 +926,10 @@ function transformAttributes(path, results) {
         // properties
         if (value && ChildProperties.has(key)) {
           results.exprs.push(
-            t.expressionStatement(setAttr(attribute, elem, key, value, { isSVG, tagName }))
+            t.expressionStatement(setAttr(attribute, elem, key, value, { tagName }))
           );
         } else {
-          inlineAttributeOnTemplate(isSVG, key, results, value);
+          inlineAttributeOnTemplate(key, results, value);
         }
       }
     });
@@ -1029,9 +1029,7 @@ function transformChildren(path, results, config) {
           t.identifier(i === 0 ? "firstChild" : "nextSibling")
         );
       }
-      results.declarations.push(
-        t.variableDeclarator(child.id, walkExpr)
-      );
+      results.declarations.push(t.variableDeclarator(child.id, walkExpr));
       results.declarations.push(...child.declarations);
       results.exprs.push(...child.exprs);
       results.dynamics.push(...child.dynamics);
@@ -1184,7 +1182,7 @@ function contextToCustomElement(path, results) {
   );
 }
 
-function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapConditionals }) {
+function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals }) {
   const config = getConfig(path);
   // TODO: skip but collect the names of any properties after the last spread to not overwrite them
   const filteredAttributes = [];
@@ -1263,7 +1261,7 @@ function processSpreads(path, attributes, { elem, isSVG, hasChildren, wrapCondit
     t.expressionStatement(
       t.callExpression(
         registerImportMethod(path, "spread", getRendererConfig(path, "dom").moduleName),
-        [elem, props, t.booleanLiteral(isSVG), t.booleanLiteral(hasChildren)]
+        [elem, props, t.booleanLiteral(hasChildren)]
       )
     )
   ];
