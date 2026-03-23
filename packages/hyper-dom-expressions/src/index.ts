@@ -112,7 +112,7 @@ export function createHyperScript(r: Runtime): HyperScript {
           e = r.SVGElements.has(v)
             ? document.createElementNS("http://www.w3.org/2000/svg", v)
             : r.MathMLElements.has(v)
-              ? document.createElementNS("http://www.w3.org/2000/svg", v)
+              ? document.createElementNS("http://www.w3.org/1998/Math/MathML", v)
               : document.createElement(v);
         else if (v[0] === ".") classes.push(s);
         else if (v[0] === "#") e.setAttribute("id", s);
