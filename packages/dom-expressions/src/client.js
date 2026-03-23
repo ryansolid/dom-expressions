@@ -63,7 +63,7 @@ export function render(code, element, init, options = {}) {
 
 export function template(html, isImportNode) {
   let node;
-  function create(bypassGuard) {
+  const create = bypassGuard => {
     if ("_DX_DEV_" && isHydrating() && !bypassGuard)
       throw new Error(
         "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
@@ -73,7 +73,7 @@ export function template(html, isImportNode) {
     t.innerHTML = html;
 
     return (node = t.content.firstChild);
-  }
+  };
   const fn = bypassGuard =>
     isImportNode
       ? document.importNode(node || create(bypassGuard), true)
