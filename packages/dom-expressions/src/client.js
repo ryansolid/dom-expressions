@@ -61,27 +61,25 @@ export function render(code, element, init, options = {}) {
   };
 }
 
+function create(html, bypassGuard) {
+  if ("_DX_DEV_" && isHydrating() && !bypassGuard)
+    throw new Error(
+      "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
+    );
+  const t = document.createElement("template");
+  t.innerHTML = html;
+  return t.content.firstChild;
+}
+
 export function template(html, isImportNode) {
   let node;
-  const create = bypassGuard => {
-    if ("_DX_DEV_" && isHydrating() && !bypassGuard)
-      throw new Error(
-        "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
-      );
+  const fn = isImportNode
+    ? bypassGuard => document.importNode(node || (node = create(html, bypassGuard)), true)
+    : bypassGuard => (node || (node = create(html, bypassGuard))).cloneNode(true);
 
-    const t = document.createElement("template");
-    t.innerHTML = html;
-
-    return (node = t.content.firstChild);
-  };
-  const fn = bypassGuard =>
-    isImportNode
-      ? document.importNode(node || create(bypassGuard), true)
-      : (node || create(bypassGuard)).cloneNode(true);
   if ("_DX_DEV_") fn._html = html;
   return fn;
 }
-
 export function delegateEvents(eventNames, document = window.document) {
   const e = document[$$EVENTS] || (document[$$EVENTS] = new Set());
   for (let i = 0, l = eventNames.length; i < l; i++) {
