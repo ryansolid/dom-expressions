@@ -17,6 +17,8 @@ export {
   ChildProperties,
   DOMElements,
   SVGNamespace,
+  SVGElements,
+  MathMLElements,
   DelegatedEvents
 } from "./constants";
 

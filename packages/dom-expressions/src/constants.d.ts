@@ -6,6 +6,8 @@ export const DelegatedEvents: Set<string>;
 
 export const SVGElements: Set<string>;
 
+export const MathMLElements: Set<string>;
+
 export const SVGNamespace: Record<string, string>;
 
 export const Namespaces: Record<string, string>;
