@@ -40,19 +40,21 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href=/>Welcome`),
   _tmpl$23 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
   _tmpl$24 = /*#__PURE__*/ _$template(`<img src>`),
   _tmpl$25 = /*#__PURE__*/ _$template(`<div><img src>`),
-  _tmpl$26 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
-  _tmpl$27 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true),
   _tmpl$28 = /*#__PURE__*/ _$template(`<iframe src>`),
   _tmpl$29 = /*#__PURE__*/ _$template(`<div><iframe src>`),
-  _tmpl$30 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
-  _tmpl$31 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true),
+  _tmpl$31 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true),
   _tmpl$32 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
   _tmpl$33 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
   _tmpl$34 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
   _tmpl$35 = /*#__PURE__*/ _$template(`<div true>`),
   _tmpl$36 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`),
-  _tmpl$37 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
-  _tmpl$38 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true),
+  _tmpl$37 = /*#__PURE__*/ _$template(`<math display=block><mrow>`),
+  _tmpl$38 = /*#__PURE__*/ _$template(
+    `<mrow xmlns=http://www.w3.org/1998/Math/MathML><mi>x</mi><mo>=`
+  ),
   _tmpl$39 = /*#__PURE__*/ _$template(`<div style=background:red>`),
   _tmpl$40 = /*#__PURE__*/ _$template(
     `<div style=background:red;color:green;margin:3;padding:0.4>`
@@ -94,7 +96,6 @@ const template = (() => {
         }
       }
     ),
-    false,
     true
   );
   _$spread(
@@ -127,7 +128,6 @@ const template = (() => {
         }
       }
     ),
-    false,
     true
   );
   var _ref$ = link;
@@ -146,7 +146,6 @@ const template2 = (() => {
   _$spread(
     _el$4,
     _$mergeProps(() => getProps("test")),
-    false,
     true
   );
   _el$5.textContent = rowId;
@@ -283,7 +282,6 @@ const template18 = (() => {
         return props.value;
       }
     })),
-    false,
     false
   );
   return _el$23;
@@ -364,7 +362,6 @@ const template24 = (() => {
     _$mergeProps(props, {
       something: true
     }),
-    false,
     false
   );
   return _el$31;
@@ -378,7 +375,6 @@ const template25 = (() => {
     _$mergeProps(props, {
       something: true
     }),
-    false,
     false
   );
   return _el$32;
@@ -394,7 +390,6 @@ const template26 = (() => {
       },
       spread
     ),
-    false,
     true
   );
   return _el$34;
@@ -413,7 +408,6 @@ const template27 = (() => {
       },
       second
     ),
-    false,
     true
   );
   return _el$35;
@@ -424,11 +418,11 @@ const template28 = (() => {
     _el$38 = _el$37.firstChild,
     _el$39 = _el$37.nextSibling,
     _el$40 = _el$39.nextSibling;
-  _$spread(_el$36, _$mergeProps(api), false, true);
-  _$spread(_el$37, _$mergeProps(api), false, true);
+  _$spread(_el$36, _$mergeProps(api), true);
+  _$spread(_el$37, _$mergeProps(api), true);
   _$insert(_el$37, () => (api() ? "checked" : "unchecked"), null);
-  _$spread(_el$39, _$mergeProps(api), false, false);
-  _$spread(_el$40, _$mergeProps(api), false, false);
+  _$spread(_el$39, _$mergeProps(api), false);
+  _$spread(_el$40, _$mergeProps(api), false);
   return _el$36;
 })();
 const template29 = (() => {
@@ -455,7 +449,7 @@ const template33 = [
     _$effect(
       () => styles.button,
       (_v$, _$p) => {
-        _$className(_el$45, _v$, false, _$p);
+        _$className(_el$45, _v$, _$p);
       }
     );
     return _el$45;
@@ -465,7 +459,7 @@ const template33 = [
     _$effect(
       () => styles["foo--bar"],
       (_v$, _$p) => {
-        _$className(_el$46, _v$, false, _$p);
+        _$className(_el$46, _v$, _$p);
       }
     );
     return _el$46;
@@ -475,7 +469,7 @@ const template33 = [
     _$effect(
       () => styles.foo.bar,
       (_v$, _$p) => {
-        _$className(_el$47, _v$, false, _$p);
+        _$className(_el$47, _v$, _$p);
       }
     );
     return _el$47;
@@ -485,7 +479,7 @@ const template33 = [
     _$effect(
       () => styles[foo()],
       (_v$, _$p) => {
-        _$className(_el$48, _v$, false, _$p);
+        _$className(_el$48, _v$, _$p);
       }
     );
     return _el$48;
@@ -699,7 +693,7 @@ const propsSpread = {
 };
 const template80 = (() => {
   var _el$97 = _tmpl$4();
-  _$spread(_el$97, propsSpread, false, false);
+  _$spread(_el$97, propsSpread, false);
   return _el$97;
 })();
 const template81 = (() => {
@@ -709,7 +703,6 @@ const template81 = (() => {
     {
       ...propsSpread
     },
-    false,
     false
   );
   return _el$98;
@@ -724,7 +717,6 @@ const template82 = (() => {
       },
       "data-static": color()
     }),
-    false,
     false
   );
   return _el$99;
@@ -744,7 +736,6 @@ const template83 = (() => {
         "data-static": color()
       }
     ),
-    false,
     false
   );
   return _el$100;
@@ -768,7 +759,6 @@ const template84 = (() => {
         "data-static": color()
       }
     ),
-    false,
     false
   );
   return _el$101;
@@ -814,7 +804,7 @@ const template87 = (() => {
     ({ e, t, a }, _p$) => {
       e !== _p$.e && _$setAttribute(_el$104, "aria-label", e);
       _$style(_el$104, t, _p$.t);
-      _$className(_el$104, a, false, _p$.a);
+      _$className(_el$104, a, _p$.a);
     },
     {
       e: undefined,

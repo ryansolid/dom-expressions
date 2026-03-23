@@ -42,19 +42,19 @@ const template6 = _$createComponent(Module, {
 });
 const template7 = (() => {
   var _el$6 = _$getNextElement(_tmpl$2);
-  _$spread(_el$6, dynamic, false, false);
+  _$spread(_el$6, dynamic, false);
   _$runHydrationEvents();
   return _el$6;
 })();
 const template8 = (() => {
   var _el$7 = _$getNextElement(_tmpl$3);
-  _$spread(_el$7, dynamic, false, true);
+  _$spread(_el$7, dynamic, true);
   _$runHydrationEvents();
   return _el$7;
 })();
 const template9 = (() => {
   var _el$8 = _$getNextElement(_tmpl$2);
-  _$spread(_el$8, dynamic, false, true);
+  _$spread(_el$8, dynamic, true);
   _$insert(_el$8, () => dynamic.children);
   _$runHydrationEvents();
   return _el$8;
@@ -128,7 +128,7 @@ const template24 = (() => {
     _el$18 = _el$17.firstChild,
     _el$19 = _el$18.nextSibling,
     [_el$20, _co$2] = _$getNextMarker(_el$19.nextSibling);
-  _$spread(_el$17, dynamic, false, true);
+  _$spread(_el$17, dynamic, true);
   _$insert(_el$17, () => dynamic.children, _el$20, _co$2);
   _$runHydrationEvents();
   return _el$17;

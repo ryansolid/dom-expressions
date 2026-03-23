@@ -193,7 +193,7 @@ const Mesh = props => {
       _$createComponent(HTML, {
         get children() {
           var _el$22 = _tmpl$4();
-          _$spread2(_el$22, props, false, true);
+          _$spread2(_el$22, props, true);
           _$insert(_el$22, b ? _tmpl$4() : _tmpl$2());
           return _el$22;
         }

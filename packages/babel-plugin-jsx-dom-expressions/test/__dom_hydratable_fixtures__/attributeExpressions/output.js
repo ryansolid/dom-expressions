@@ -42,19 +42,21 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href=/>Welcome`),
   _tmpl$23 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue`),
   _tmpl$24 = /*#__PURE__*/ _$template(`<img src>`),
   _tmpl$25 = /*#__PURE__*/ _$template(`<div><img src>`),
-  _tmpl$26 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true, false, false),
-  _tmpl$27 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true, false, false),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<img src loading=lazy>`, true),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<div><img src loading=lazy>`, true),
   _tmpl$28 = /*#__PURE__*/ _$template(`<iframe src>`),
   _tmpl$29 = /*#__PURE__*/ _$template(`<div><iframe src>`),
-  _tmpl$30 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true, false, false),
-  _tmpl$31 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true, false, false),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<iframe src loading=lazy>`, true),
+  _tmpl$31 = /*#__PURE__*/ _$template(`<div><iframe src loading=lazy>`, true),
   _tmpl$32 = /*#__PURE__*/ _$template(`<div title="<u>data</u>">`),
   _tmpl$33 = /*#__PURE__*/ _$template(`<div true truestr=true truestrjs=true>`),
   _tmpl$34 = /*#__PURE__*/ _$template(`<div falsestr=false falsestrjs=false>`),
   _tmpl$35 = /*#__PURE__*/ _$template(`<div true>`),
   _tmpl$36 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`),
-  _tmpl$37 = /*#__PURE__*/ _$template(`<math display=block><mrow>`, false, false, true),
-  _tmpl$38 = /*#__PURE__*/ _$template(`<mrow><mi>x</mi><mo>=`, false, false, true),
+  _tmpl$37 = /*#__PURE__*/ _$template(`<math display=block><mrow>`),
+  _tmpl$38 = /*#__PURE__*/ _$template(
+    `<mrow xmlns=http://www.w3.org/1998/Math/MathML><mi>x</mi><mo>=`
+  ),
   _tmpl$39 = /*#__PURE__*/ _$template(`<div style=background:red>`),
   _tmpl$40 = /*#__PURE__*/ _$template(
     `<div style=background:red;color:green;margin:3;padding:0.4>`
@@ -94,7 +96,6 @@ const template = (() => {
         }
       }
     ),
-    false,
     true
   );
   _$spread(
@@ -127,7 +128,6 @@ const template = (() => {
         }
       }
     ),
-    false,
     true
   );
   var _ref$ = link;
@@ -147,7 +147,6 @@ const template2 = (() => {
   _$spread(
     _el$4,
     _$mergeProps(() => getProps("test")),
-    false,
     true
   );
   _$setProperty(_el$5, "textContent", rowId);
@@ -286,7 +285,6 @@ const template18 = (() => {
         return props.value;
       }
     })),
-    false,
     false
   );
   _$runHydrationEvents();
@@ -369,7 +367,6 @@ const template24 = (() => {
     _$mergeProps(props, {
       something: true
     }),
-    false,
     false
   );
   _$runHydrationEvents();
@@ -386,7 +383,6 @@ const template25 = (() => {
     _$mergeProps(props, {
       something: true
     }),
-    false,
     false
   );
   _$runHydrationEvents();
@@ -403,7 +399,6 @@ const template26 = (() => {
       },
       spread
     ),
-    false,
     true
   );
   _$runHydrationEvents();
@@ -423,7 +418,6 @@ const template27 = (() => {
       },
       second
     ),
-    false,
     true
   );
   _$runHydrationEvents();
@@ -437,11 +431,11 @@ const template28 = (() => {
     [_el$42, _co$2] = _$getNextMarker(_el$41.nextSibling),
     _el$43 = _el$39.nextSibling,
     _el$44 = _el$43.nextSibling;
-  _$spread(_el$38, _$mergeProps(api), false, true);
-  _$spread(_el$39, _$mergeProps(api), false, true);
+  _$spread(_el$38, _$mergeProps(api), true);
+  _$spread(_el$39, _$mergeProps(api), true);
   _$insert(_el$39, () => (api() ? "checked" : "unchecked"), _el$42, _co$2);
-  _$spread(_el$43, _$mergeProps(api), false, false);
-  _$spread(_el$44, _$mergeProps(api), false, false);
+  _$spread(_el$43, _$mergeProps(api), false);
+  _$spread(_el$44, _$mergeProps(api), false);
   _$runHydrationEvents();
   return _el$38;
 })();
@@ -469,7 +463,7 @@ const template33 = [
     _$effect(
       () => styles.button,
       (_v$, _$p) => {
-        _$className(_el$49, _v$, false, _$p);
+        _$className(_el$49, _v$, _$p);
       }
     );
     return _el$49;
@@ -479,7 +473,7 @@ const template33 = [
     _$effect(
       () => styles["foo--bar"],
       (_v$, _$p) => {
-        _$className(_el$50, _v$, false, _$p);
+        _$className(_el$50, _v$, _$p);
       }
     );
     return _el$50;
@@ -489,7 +483,7 @@ const template33 = [
     _$effect(
       () => styles.foo.bar,
       (_v$, _$p) => {
-        _$className(_el$51, _v$, false, _$p);
+        _$className(_el$51, _v$, _$p);
       }
     );
     return _el$51;
@@ -499,7 +493,7 @@ const template33 = [
     _$effect(
       () => styles[foo()],
       (_v$, _$p) => {
-        _$className(_el$52, _v$, false, _$p);
+        _$className(_el$52, _v$, _$p);
       }
     );
     return _el$52;
@@ -713,7 +707,7 @@ const propsSpread = {
 };
 const template80 = (() => {
   var _el$101 = _$getNextElement(_tmpl$4);
-  _$spread(_el$101, propsSpread, false, false);
+  _$spread(_el$101, propsSpread, false);
   _$runHydrationEvents();
   return _el$101;
 })();
@@ -724,7 +718,6 @@ const template81 = (() => {
     {
       ...propsSpread
     },
-    false,
     false
   );
   _$runHydrationEvents();
@@ -740,7 +733,6 @@ const template82 = (() => {
       },
       "data-static": color()
     }),
-    false,
     false
   );
   _$runHydrationEvents();
@@ -761,7 +753,6 @@ const template83 = (() => {
         "data-static": color()
       }
     ),
-    false,
     false
   );
   _$runHydrationEvents();
@@ -786,7 +777,6 @@ const template84 = (() => {
         "data-static": color()
       }
     ),
-    false,
     false
   );
   _$runHydrationEvents();
@@ -833,7 +823,7 @@ const template87 = (() => {
     ({ e, t, a }, _p$) => {
       e !== _p$.e && _$setAttribute(_el$108, "aria-label", e);
       _$style(_el$108, t, _p$.t);
-      _$className(_el$108, a, false, _p$.a);
+      _$className(_el$108, a, _p$.a);
     },
     {
       e: undefined,

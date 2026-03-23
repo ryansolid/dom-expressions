@@ -14,10 +14,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(
   ),
   _tmpl$3 = /*#__PURE__*/ _$template(`<svg width=400 height=180><rect>`),
   _tmpl$4 = /*#__PURE__*/ _$template(
-    `<svg><rect x=50 y=20 width=150 height=150></svg>`,
-    false,
-    true,
-    false
+    `<rect x=50 y=20 width=150 height=150 xmlns=http://www.w3.org/2000/svg>`
   ),
   _tmpl$5 = /*#__PURE__*/ _$template(
     `<svg viewBox="0 0 160 40"xmlns=http://www.w3.org/2000/svg><a><text x=10 y=25>MDN Web Docs`
@@ -38,7 +35,7 @@ const template2 = (() => {
       i: props.stroke
     }),
     ({ e, t, a, o, i }, _p$) => {
-      _$className(_el$3, e, true, _p$.e);
+      _$className(_el$3, e, _p$.e);
       t !== _p$.t && _$setAttribute(_el$3, "stroke-width", t);
       a !== _p$.a && _$setAttribute(_el$3, "x", a);
       o !== _p$.o && _$setAttribute(_el$3, "y", o);
@@ -57,7 +54,7 @@ const template2 = (() => {
 const template3 = (() => {
   var _el$4 = _tmpl$3(),
     _el$5 = _el$4.firstChild;
-  _$spread(_el$5, props, true, false);
+  _$spread(_el$5, props, false);
   return _el$4;
 })();
 const template4 = _tmpl$4();

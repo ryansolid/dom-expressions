@@ -22,7 +22,7 @@ const FIXTURES = /** @type {const} */ ([
   "<div><div>Hi</div></div>",
   "<div><b>Hello, my name is: <i>John</i></b></div>",
   "<style>.something{color:red}</style>",
-  '<div class="second"></div>'
+  '<div class="first second"></div>'
 ]);
 
 describe("Test HTML", () => {
