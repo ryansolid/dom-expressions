@@ -8,12 +8,12 @@ const template2 = _$ssr(_tmpl$, _$escape(state.dynamic));
 const template3 = _$ssr(_tmpl$, simple ? _$escape(good) : _$escape(bad));
 const template4 = _$ssr(_tmpl$, simple ? _$escape(good()) : _$escape(bad));
 const template5 = _$ssr(_tmpl$, state.dynamic ? _$escape(good()) : _$escape(bad));
-const template6 = _$ssr(_tmpl$, _$escape(state.dynamic && good()));
+const template6 = _$ssr(_tmpl$, state.dynamic && _$escape(good()));
 const template7 = _$ssr(
   _tmpl$,
   state.count > 5 ? (state.dynamic ? _$escape(best) : _$escape(good())) : _$escape(bad)
 );
-const template8 = _$ssr(_tmpl$, _$escape(state.dynamic && state.something && good()));
+const template8 = _$ssr(_tmpl$, state.dynamic && state.something && _$escape(good()));
 const template9 = _$ssr(_tmpl$, _$escape((state.dynamic && good()) || bad));
 const template10 = _$ssr(_tmpl$, state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback");
 const template11 = _$ssr(

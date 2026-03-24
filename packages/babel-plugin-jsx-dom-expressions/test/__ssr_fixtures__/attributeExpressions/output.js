@@ -178,7 +178,7 @@ const template22 = _$ssr(_tmpl$17);
 const template23 = _$ssr(
   _tmpl$18,
   _$ssrAttribute("disabled", "t" in test, true),
-  _$escape("t" in test && "true")
+  "t" in test && "true"
 );
 const template24 = _$ssrElement(
   "a",

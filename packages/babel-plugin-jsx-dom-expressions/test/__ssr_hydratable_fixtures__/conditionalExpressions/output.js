@@ -13,7 +13,7 @@ const template5 = _$ssr(
   _$ssrHydrationKey(),
   state.dynamic ? _$escape(good()) : _$escape(bad)
 );
-const template6 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(state.dynamic && good()));
+const template6 = _$ssr(_tmpl$, _$ssrHydrationKey(), state.dynamic && _$escape(good()));
 const template7 = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
@@ -22,7 +22,7 @@ const template7 = _$ssr(
 const template8 = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
-  _$escape(state.dynamic && state.something && good())
+  state.dynamic && state.something && _$escape(good())
 );
 const template9 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape((state.dynamic && good()) || bad));
 const template10 = _$ssr(

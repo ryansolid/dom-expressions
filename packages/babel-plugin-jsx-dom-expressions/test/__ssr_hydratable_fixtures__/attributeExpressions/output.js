@@ -215,7 +215,7 @@ const template23 = _$ssr(
   _tmpl$18,
   _$ssrHydrationKey(),
   _$ssrAttribute("disabled", "t" in test, true),
-  _$escape("t" in test && "true")
+  "t" in test && "true"
 );
 const template24 = _$ssrElement(
   "a",
@@ -348,8 +348,8 @@ const template43 = _$ssr(
     false
   ),
   _$ssrAttribute("attribute", _$escape(escapeMe || (someValue ? escapeMe : escapeMe), true), false),
-  _$ssrAttribute("attribute", _$escape(someValue && escapeMe, true), false),
-  _$ssrAttribute("attribute", _$escape(someValue++ && escapeMe, true), false),
+  _$ssrAttribute("attribute", someValue && _$escape(escapeMe, true), false),
+  _$ssrAttribute("attribute", someValue++ && _$escape(escapeMe, true), false),
   _$ssrAttribute(
     "attribute",
     someValue
@@ -410,7 +410,7 @@ const template43 = _$ssr(
     someValue != null ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
     false
   ),
-  _$ssrAttribute("attribute", _$escape(someValue.toString() && escapeMe, true), false),
+  _$ssrAttribute("attribute", someValue.toString() && _$escape(escapeMe, true), false),
   _$ssrAttribute(
     "attribute",
     String(someValue) ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
@@ -434,20 +434,20 @@ const template43 = _$ssr(
     arr.includes(someValue) ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
     false
   ),
-  _$ssrAttribute("attribute", _$escape(someValue + 1 && escapeMe, true), false),
+  _$ssrAttribute("attribute", someValue + 1 && _$escape(escapeMe, true), false),
   _$ssrAttribute(
     "attribute",
     someValue - 1 ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
     false
   ),
   _$ssrAttribute("attribute", _$escape(escapeMe * 0 || escapeMe, true), false),
-  _$ssrAttribute("attribute", _$escape(~someValue && escapeMe, true), false),
+  _$ssrAttribute("attribute", ~someValue && _$escape(escapeMe, true), false),
   _$ssrAttribute("attribute", _$escape((someValue, escapeMe), true), false),
   _$ssrAttribute("attribute", _$escape(((someValue = 42), escapeMe), true), false),
-  _$ssrAttribute("attribute", _$escape(someValue && (0, escapeMe), true), false),
+  _$ssrAttribute("attribute", someValue && _$escape((0, escapeMe), true), false),
   _$ssrAttribute(
     "attribute",
-    someValue ? _$escape(escapeMe || escapeMe, true) : _$escape(someValue && escapeMe, true),
+    someValue ? _$escape(escapeMe || escapeMe, true) : someValue && _$escape(escapeMe, true),
     false
   ),
   _$ssrAttribute(
@@ -455,7 +455,7 @@ const template43 = _$ssr(
     someValue
       ? otherValue
         ? _$escape(escapeMe, true)
-        : _$escape(escapeMe && escapeMe, true)
+        : escapeMe && _$escape(escapeMe, true)
       : _$escape(escapeMe, true),
     false
   ),
