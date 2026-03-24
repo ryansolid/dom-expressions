@@ -363,6 +363,8 @@ const template92 = (
   />
 );
 
+const template93 = <div data-test={state.flag || undefined} />;
+
 function Progress(props) {
   return (
     <div

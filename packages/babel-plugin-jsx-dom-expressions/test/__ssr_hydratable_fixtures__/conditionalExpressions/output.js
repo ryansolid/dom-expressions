@@ -109,7 +109,7 @@ const template9 = (() => {
   var _v$27 = _$ssrHydrationKey(),
     _v$28 = (() => {
       var _c$9 = _$memo(() => !!state.dynamic);
-      return () => (_c$9() && _$escape(good())) || _$escape(bad);
+      return () => _$escape((_c$9() && good()) || bad);
     })();
   return _$ssr(_tmpl$, _v$27, _v$28);
 })();
@@ -117,7 +117,7 @@ const template9a = (() => {
   var _v$29 = _$ssrHydrationKey(),
     _v$30 = (() => {
       var _c$10 = _$memo(() => !!state.dynamic);
-      return () => (_c$10() && _$escape(good.good)) || _$escape(bad);
+      return () => _$escape((_c$10() && good.good) || bad);
     })();
   return _$ssr(_tmpl$, _v$29, _v$30);
 })();
@@ -269,14 +269,14 @@ const template27 = (() => {
 })();
 const template28 = (() => {
   var _v$47 = _$ssrHydrationKey(),
-    _v$48 = _$ssrRunInScope(() => _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {})));
+    _v$48 = _$ssrRunInScope(() => _$escape(state.dynamic ?? _$createComponent(Comp, {})));
   return _$ssr(_tmpl$, _v$47, _v$48);
 })();
 const template29 = (() => {
   var _v$49 = _$ssrHydrationKey(),
     _v$50 = (() => {
       var _c$16 = _$memo(() => !!thing());
-      return () => (_c$16() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3());
+      return () => _$escape((_c$16() && thing1()) ?? thing2() ?? thing3());
     })();
   return _$ssr(_tmpl$, _v$49, _v$50);
 })();
@@ -284,21 +284,18 @@ const template29a = (() => {
   var _v$51 = _$ssrHydrationKey(),
     _v$52 = (() => {
       var _c$17 = _$memo(() => !!thing.thing);
-      return () =>
-        (_c$17() && _$escape(thing1.thing1)) ?? _$escape(thing2.thing2) ?? _$escape(thing3.thing3);
+      return () => _$escape((_c$17() && thing1.thing1) ?? thing2.thing2 ?? thing3.thing3);
     })();
   return _$ssr(_tmpl$, _v$51, _v$52);
 })();
 const template30 = (() => {
   var _v$53 = _$ssrHydrationKey(),
-    _v$54 = _$ssrRunInScope(() => _$escape(thing()) || _$escape(thing1()) || _$escape(thing2()));
+    _v$54 = _$ssrRunInScope(() => _$escape(thing() || thing1() || thing2()));
   return _$ssr(_tmpl$, _v$53, _v$54);
 })();
 const template30a = (() => {
   var _v$55 = _$ssrHydrationKey(),
-    _v$56 = _$ssrRunInScope(
-      () => _$escape(thing.thing) || _$escape(thing1.thing1) || _$escape(thing2.thing2)
-    );
+    _v$56 = _$ssrRunInScope(() => _$escape(thing.thing || thing1.thing1 || thing2.thing2));
   return _$ssr(_tmpl$, _v$55, _v$56);
 })();
 const template31 = _$createComponent(Comp, {

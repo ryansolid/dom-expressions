@@ -157,11 +157,12 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
     expression.alternate = escapeExpression(path, expression.alternate, attr, escapeLiterals);
     return expression;
   } else if (t.isLogicalExpression(expression)) {
-    expression.right = escapeExpression(path, expression.right, attr, escapeLiterals);
-    if (expression.operator !== "&&") {
-      expression.left = escapeExpression(path, expression.left, attr, escapeLiterals);
+    // Preserve the cheaper short-circuit path for && while escaping the
+    // selected result of || and ?? as a whole.
+    if (expression.operator === "&&") {
+      expression.right = escapeExpression(path, expression.right, attr, escapeLiterals);
+      return expression;
     }
-    return expression;
   } else if (t.isCallExpression(expression) && t.isFunction(expression.callee)) {
     if (t.isBlockStatement(expression.callee.body)) {
       expression.callee.body.body = expression.callee.body.body.map(e => {

@@ -76,6 +76,6 @@ const template7 = (() => {
 })();
 const template8 = (() => {
   var _v$10 = _$ssrHydrationKey(),
-    _v$11 = _$escape(text) || " ";
+    _v$11 = _$escape(text || " ");
   return _$ssr(_tmpl$6, _v$10, _v$11);
 })();
