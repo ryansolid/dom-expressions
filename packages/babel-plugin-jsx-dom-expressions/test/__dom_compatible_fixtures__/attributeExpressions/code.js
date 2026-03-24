@@ -278,3 +278,20 @@ const template93 = <video playsInline={true}/>
 const template94 = <video playsInline={false}/>
 
 const template95 = <video something={{value:{value:1+1}}}/>
+
+const template96 = (
+  <svg width="400" height="180">
+    <rect
+      rx="20"
+      ry="20"
+      width="150"
+      height="150"
+      style={{
+        fill: "red",
+        stroke: "black",
+        "stroke-width": props.stroke,
+        opacity: 0.5
+      }}
+    />
+  </svg>
+);

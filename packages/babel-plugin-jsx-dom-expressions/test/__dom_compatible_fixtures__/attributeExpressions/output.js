@@ -90,7 +90,10 @@ var _tmpl$ = /*#__PURE__*/ _$template(
   _tmpl$59 = /*#__PURE__*/ _$template(`<video></video>`),
   _tmpl$60 = /*#__PURE__*/ _$template(`<div><video></video></div>`),
   _tmpl$61 = /*#__PURE__*/ _$template(`<video poster></video>`),
-  _tmpl$62 = /*#__PURE__*/ _$template(`<div><video poster></video></div>`);
+  _tmpl$62 = /*#__PURE__*/ _$template(`<div><video poster></video></div>`),
+  _tmpl$63 = /*#__PURE__*/ _$template(
+    `<svg width="400"height="180"><rect rx="20"ry="20"width="150"height="150"style="fill:red;stroke:black;opacity:0.5"></rect></svg>`
+  );
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -628,5 +631,11 @@ const template95 = (() => {
     }
   });
   return _el$113;
+})();
+const template96 = (() => {
+  var _el$114 = _tmpl$63(),
+    _el$115 = _el$114.firstChild;
+  _$effect(_$p => _$setStyleProperty(_el$115, "stroke-width", props.stroke));
+  return _el$114;
 })();
 _$delegateEvents(["click", "input"]);
