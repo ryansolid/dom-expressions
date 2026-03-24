@@ -261,3 +261,33 @@ function Progress(props) {
     />
   );
 }
+
+
+// bool:
+function boolTest(){return true}
+const boolTestBinding = false
+const boolTestObjBinding = {value:false}
+
+const template53 = <div>
+  <div bool:quack="">empty string</div>;
+  <div bool:quack={""}>js empty</div>;
+  <div bool:quack="hola">hola</div>;
+  <div bool:quack={"hola js"}>"hola js"</div>;
+  <div bool:quack={true}>true</div>;
+  <div bool:quack={false}>false</div>;
+  <div bool:quack={1}>1</div>;
+  <div bool:quack={0}>0</div>;
+  <div bool:quack={"1"}>"1"</div>;
+  <div bool:quack={"0"}>"0"</div>;
+  <div bool:quack={undefined}>undefined</div>;
+  <div bool:quack={null}>null</div>;
+  <div bool:quack={boolTest()}>boolTest()</div>;
+  <div bool:quack={boolTest}>boolTest</div>;
+  <div bool:quack={boolTestBinding}>boolTestBinding</div>;
+  <div bool:quack={boolTestObjBinding.value}>boolTestObjBinding.value</div>;
+  <div bool:quack={()=>false}>fn</div>;
+
+  <div before bool:quack="true">should have space before</div>;
+  <div before bool:quack="true" after>should have space before/after</div>;
+  <div bool:quack="true" after>should have space before/after</div>;
+</div>

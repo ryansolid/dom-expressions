@@ -323,8 +323,10 @@ function transformAttributes(path, results, info) {
         children = value;
       } else {
         let doEscape = true;
+
         if (key.startsWith("attr:")) key = key.replace("attr:", "");
-        if (BooleanAttributes.has(key)) {
+        if (BooleanAttributes.has(key) || key.startsWith("bool:")) {
+          key = key.replace("bool:", "");
           results.template.push("");
           const fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
             t.stringLiteral(key),
