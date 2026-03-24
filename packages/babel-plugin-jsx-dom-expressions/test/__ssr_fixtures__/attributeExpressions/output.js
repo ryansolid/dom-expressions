@@ -121,7 +121,7 @@ const template3 = _$ssr(
   _$ssrAttribute("name", _$escape(state.name, true), false),
   _$escape(state.content)
 );
-const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class, true) || ""} ccc:ddd`);
+const template4 = _$ssr(_tmpl$5, `hi ${_$escape(state.class || "", true)} ccc:ddd`);
 const template5 = _$ssr(_tmpl$5, `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrStyle(someStyle()));
 let undefVar;
@@ -178,7 +178,7 @@ const template22 = _$ssr(_tmpl$17);
 const template23 = _$ssr(
   _tmpl$18,
   _$ssrAttribute("disabled", "t" in test, true),
-  "t" in test && "true"
+  _$escape("t" in test && "true")
 );
 const template24 = _$ssrElement(
   "a",

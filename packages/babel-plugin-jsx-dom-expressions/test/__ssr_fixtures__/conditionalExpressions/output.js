@@ -8,13 +8,13 @@ const template2 = _$ssr(_tmpl$, _$escape(state.dynamic));
 const template3 = _$ssr(_tmpl$, simple ? _$escape(good) : _$escape(bad));
 const template4 = _$ssr(_tmpl$, simple ? _$escape(good()) : _$escape(bad));
 const template5 = _$ssr(_tmpl$, state.dynamic ? _$escape(good()) : _$escape(bad));
-const template6 = _$ssr(_tmpl$, state.dynamic && _$escape(good()));
+const template6 = _$ssr(_tmpl$, _$escape(state.dynamic && good()));
 const template7 = _$ssr(
   _tmpl$,
   state.count > 5 ? (state.dynamic ? _$escape(best) : _$escape(good())) : _$escape(bad)
 );
-const template8 = _$ssr(_tmpl$, state.dynamic && state.something && _$escape(good()));
-const template9 = _$ssr(_tmpl$, (state.dynamic && _$escape(good())) || _$escape(bad));
+const template8 = _$ssr(_tmpl$, _$escape(state.dynamic && state.something && good()));
+const template9 = _$ssr(_tmpl$, _$escape((state.dynamic && good()) || bad));
 const template10 = _$ssr(_tmpl$, state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback");
 const template11 = _$ssr(
   _tmpl$,
@@ -90,12 +90,9 @@ const template26 = _$createComponent(Comp, {
   }
 });
 const template27 = _$ssr(_tmpl$, state.dynamic ?? _$createComponent(Comp, {}));
-const template28 = _$ssr(_tmpl$, _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {})));
-const template29 = _$ssr(
-  _tmpl$,
-  (thing() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3())
-);
-const template30 = _$ssr(_tmpl$, _$escape(thing()) || _$escape(thing1()) || _$escape(thing2()));
+const template28 = _$ssr(_tmpl$, _$escape(state.dynamic ?? _$createComponent(Comp, {})));
+const template29 = _$ssr(_tmpl$, _$escape((thing() && thing1()) ?? thing2() ?? thing3()));
+const template30 = _$ssr(_tmpl$, _$escape(thing() || thing1() || thing2()));
 const template31 = _$createComponent(Comp, {
   get value() {
     return count() ? (count() ? count() : count()) : count();

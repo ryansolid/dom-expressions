@@ -204,3 +204,65 @@ const template41 = (
 );
 
 const template42 = <div style={{ }} />;
+
+const template43 = <div>
+  {/* ─── your original cases ─── */}
+  <div attribute={!!someValue}/>
+  <div attribute={!!someValue ? escapeMe : escapeMe}/>
+  <div attribute={escapeMe || escapeMe || escapeMe}/>
+  <div attribute={someValue ? escapeMe : escapeMe}/>
+  <div attribute={escapeMe || (someValue ? escapeMe : escapeMe)}/>
+  <div attribute={someValue && escapeMe}/>
+  <div attribute={someValue++ && escapeMe}/>
+
+  {/* ─── more conditional shapes ─── */}
+  <div attribute={someValue ? escapeMe : someValue ? escapeMe : escapeMe}/>
+  <div attribute={someValue && otherValue ? escapeMe : escapeMe}/>
+  <div attribute={!(someValue || otherValue) ? escapeMe : escapeMe}/>
+  <div attribute={someValue ? (otherValue ? escapeMe : escapeMe) : escapeMe}/>
+
+  {/* ─── logical with side-effects / unusual precedence ─── */}
+  <div attribute={someValue || escapeMe && escapeMe}/>
+  <div attribute={someValue && escapeMe || escapeMe}/>
+  <div attribute={escapeMe ?? someValue ? escapeMe : escapeMe}/>
+  <div attribute={someValue ? escapeMe ?? escapeMe : escapeMe}/>
+
+  {/* ─── comparisons & equality traps ─── */}
+  <div attribute={someValue == true ? escapeMe : escapeMe}/>
+  <div attribute={someValue === "text" ? escapeMe : escapeMe}/>
+  <div attribute={0 == someValue ? escapeMe : escapeMe}/>
+  <div attribute={someValue != null ? escapeMe : escapeMe}/>
+
+  {/* ─── function calls, method calls, property access ─── */}
+  <div attribute={someValue.toString() && escapeMe}/>
+  <div attribute={String(someValue) ? escapeMe : escapeMe}/>
+  <div attribute={someFunc() ? escapeMe : escapeMe}/>
+  <div attribute={obj?.prop ? escapeMe : escapeMe}/>
+  <div attribute={obj?.escapeMe}/>
+  <div attribute={obj?.escapeMe || obj?.escapeMe}/>
+  <div attribute={obj.escapeMe}/>
+  <div attribute={arr.includes(someValue) ? escapeMe : escapeMe}/>
+
+  {/* ─── arithmetic & bitwise that can be falsy/truthy ─── */}
+  <div attribute={someValue + 1 && escapeMe}/>
+  <div attribute={someValue - 1 ? escapeMe : escapeMe}/>
+  <div attribute={escapeMe * 0 || escapeMe}/>
+  <div attribute={~someValue && escapeMe}/>
+
+  {/* ─── comma operator traps ─── */}
+  <div attribute={someValue, escapeMe}/>
+  <div attribute={(someValue = 42, escapeMe)}/>
+  <div attribute={someValue && (0, escapeMe)}/>
+
+  {/* ─── ternary + logical nesting ─── */}
+  <div attribute={someValue ? escapeMe || escapeMe : someValue && escapeMe}/>
+  <div attribute={someValue ? otherValue ? escapeMe : escapeMe && escapeMe : escapeMe}/>
+  <div attribute={someValue && otherValue || thirdValue ? escapeMe : escapeMe}/>
+
+  {/* ─── immediately invoked expressions ─── */}
+  <div attribute={(()=> escapeMe )()}/>
+  <div attribute={(() => someValue ? escapeMe : escapeMe)()}/>
+  <div attribute={(function(){ return escapeMe })()}/>
+  <div attribute={(function(){ return someValue ? escapeMe : escapeMe })()}/>
+
+</div>

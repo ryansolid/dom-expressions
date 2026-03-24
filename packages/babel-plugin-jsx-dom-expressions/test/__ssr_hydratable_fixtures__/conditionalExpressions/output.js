@@ -13,7 +13,7 @@ const template5 = _$ssr(
   _$ssrHydrationKey(),
   state.dynamic ? _$escape(good()) : _$escape(bad)
 );
-const template6 = _$ssr(_tmpl$, _$ssrHydrationKey(), state.dynamic && _$escape(good()));
+const template6 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(state.dynamic && good()));
 const template7 = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
@@ -22,13 +22,9 @@ const template7 = _$ssr(
 const template8 = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
-  state.dynamic && state.something && _$escape(good())
+  _$escape(state.dynamic && state.something && good())
 );
-const template9 = _$ssr(
-  _tmpl$,
-  _$ssrHydrationKey(),
-  (state.dynamic && _$escape(good())) || _$escape(bad)
-);
+const template9 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape((state.dynamic && good()) || bad));
 const template10 = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
@@ -114,18 +110,14 @@ const template27 = _$ssr(_tmpl$, _$ssrHydrationKey(), state.dynamic ?? _$createC
 const template28 = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
-  _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {}))
+  _$escape(state.dynamic ?? _$createComponent(Comp, {}))
 );
 const template29 = _$ssr(
   _tmpl$,
   _$ssrHydrationKey(),
-  (thing() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3())
+  _$escape((thing() && thing1()) ?? thing2() ?? thing3())
 );
-const template30 = _$ssr(
-  _tmpl$,
-  _$ssrHydrationKey(),
-  _$escape(thing()) || _$escape(thing1()) || _$escape(thing2())
-);
+const template30 = _$ssr(_tmpl$, _$ssrHydrationKey(), _$escape(thing() || thing1() || thing2()));
 const template31 = _$createComponent(Comp, {
   get value() {
     return count() ? (count() ? count() : count()) : count();

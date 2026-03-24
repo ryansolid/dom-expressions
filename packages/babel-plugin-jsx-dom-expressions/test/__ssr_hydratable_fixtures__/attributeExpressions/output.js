@@ -32,7 +32,52 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   ],
   _tmpl$22 = ["<button", "></button>"],
   _tmpl$23 = ["<input", ' value="10">'],
-  _tmpl$24 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"];
+  _tmpl$24 = ["<select", "><option", ">Red</option><option", ">Blue</option></select>"],
+  _tmpl$25 = [
+    "<div",
+    "><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div><div",
+    "></div></div>"
+  ];
 import * as styles from "./styles.module.css";
 const selected = true;
 let id = "my-h1";
@@ -87,8 +132,8 @@ const template2 = _$ssrElement(
   "div",
   getProps("test"),
   () => [
-    _$ssr(_tmpl$2, _$escape(rowId) || " "),
-    _$ssr(_tmpl$2, _$escape(row.label) || " "),
+    _$ssr(_tmpl$2, _$escape(rowId || " ")),
+    _$ssr(_tmpl$2, _$escape(row.label || " ")),
     _$ssr(_tmpl$3)
   ],
   true
@@ -99,12 +144,12 @@ const template3 = _$ssr(
   _$ssrAttribute("id", _$escape(state.id, true), false),
   _$ssrStyleProperty("background-color:", _$escape(state.color, true)),
   _$ssrAttribute("name", _$escape(state.name, true), false),
-  _$escape(state.content) || " "
+  _$escape(state.content || " ")
 );
 const template4 = _$ssr(
   _tmpl$5,
   _$ssrHydrationKey(),
-  `hi ${_$escape(state.class, true) || ""} ccc:ddd`
+  `hi ${_$escape(state.class || "", true)} ccc:ddd`
 );
 const template5 = _$ssr(_tmpl$5, _$ssrHydrationKey(), `a b`);
 const template6 = _$ssr(_tmpl$6, _$ssrHydrationKey(), _$ssrStyle(someStyle()));
@@ -170,7 +215,7 @@ const template23 = _$ssr(
   _tmpl$18,
   _$ssrHydrationKey(),
   _$ssrAttribute("disabled", "t" in test, true),
-  "t" in test && "true"
+  _$escape("t" in test && "true")
 );
 const template24 = _$ssrElement(
   "a",
@@ -287,3 +332,156 @@ const template41 = _$ssr(
   _$ssrAttribute("value", _$escape(Color.Blue, true), false)
 );
 const template42 = _$ssr(_tmpl$8, _$ssrHydrationKey());
+const template43 = _$ssr(
+  _tmpl$25,
+  _$ssrHydrationKey(),
+  _$ssrAttribute("attribute", !!someValue, false),
+  _$ssrAttribute(
+    "attribute",
+    !!someValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", _$escape(escapeMe || escapeMe || escapeMe, true), false),
+  _$ssrAttribute(
+    "attribute",
+    someValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", _$escape(escapeMe || (someValue ? escapeMe : escapeMe), true), false),
+  _$ssrAttribute("attribute", _$escape(someValue && escapeMe, true), false),
+  _$ssrAttribute("attribute", _$escape(someValue++ && escapeMe, true), false),
+  _$ssrAttribute(
+    "attribute",
+    someValue
+      ? _$escape(escapeMe, true)
+      : someValue
+      ? _$escape(escapeMe, true)
+      : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someValue && otherValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    !(someValue || otherValue) ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someValue
+      ? otherValue
+        ? _$escape(escapeMe, true)
+        : _$escape(escapeMe, true)
+      : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", _$escape(someValue || (escapeMe && escapeMe), true), false),
+  _$ssrAttribute("attribute", _$escape((someValue && escapeMe) || escapeMe, true), false),
+  _$ssrAttribute(
+    "attribute",
+    escapeMe ?? someValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someValue ? _$escape(escapeMe ?? escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someValue == true ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someValue === "text" ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    0 == someValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someValue != null ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", _$escape(someValue.toString() && escapeMe, true), false),
+  _$ssrAttribute(
+    "attribute",
+    String(someValue) ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someFunc() ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    obj?.prop ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", _$escape(obj?.escapeMe, true), false),
+  _$ssrAttribute("attribute", _$escape(obj?.escapeMe || obj?.escapeMe, true), false),
+  _$ssrAttribute("attribute", _$escape(obj.escapeMe, true), false),
+  _$ssrAttribute(
+    "attribute",
+    arr.includes(someValue) ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", _$escape(someValue + 1 && escapeMe, true), false),
+  _$ssrAttribute(
+    "attribute",
+    someValue - 1 ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", _$escape(escapeMe * 0 || escapeMe, true), false),
+  _$ssrAttribute("attribute", _$escape(~someValue && escapeMe, true), false),
+  _$ssrAttribute("attribute", _$escape((someValue, escapeMe), true), false),
+  _$ssrAttribute("attribute", _$escape(((someValue = 42), escapeMe), true), false),
+  _$ssrAttribute("attribute", _$escape(someValue && (0, escapeMe), true), false),
+  _$ssrAttribute(
+    "attribute",
+    someValue ? _$escape(escapeMe || escapeMe, true) : _$escape(someValue && escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    someValue
+      ? otherValue
+        ? _$escape(escapeMe, true)
+        : _$escape(escapeMe && escapeMe, true)
+      : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    (someValue && otherValue) || thirdValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true),
+    false
+  ),
+  _$ssrAttribute("attribute", (() => _$escape(escapeMe, true))(), false),
+  _$ssrAttribute(
+    "attribute",
+    (() => (someValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true)))(),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    (function () {
+      return _$escape(escapeMe, true);
+    })(),
+    false
+  ),
+  _$ssrAttribute(
+    "attribute",
+    (function () {
+      return someValue ? _$escape(escapeMe, true) : _$escape(escapeMe, true);
+    })(),
+    false
+  )
+);
