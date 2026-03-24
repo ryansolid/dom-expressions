@@ -5,6 +5,7 @@ import VoidElements from "../VoidElements";
 import {
   evaluateAndInline,
   getTagName,
+  isStatefulDOMProperty,
   registerImportMethod,
   filterChildren,
   checkLength,
@@ -15,7 +16,8 @@ import {
   isDynamic,
   isComponent,
   convertJSXIdentifier,
-  inlineCallExpression
+  inlineCallExpression,
+  transformSpecialCaseAttributes
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -55,9 +57,9 @@ export function transformElement(path, info) {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
 
-  /*  if (DOMWithState[tagName.toUpperCase()]) {
-    transformSpecialCaseAttributes(path, tagName);
-  }*/
+  if (DOMWithState[tagName.toUpperCase()]) {
+    transformSpecialCaseAttributes(path, tagName, true);
+  }
 
   const config = getConfig(path);
   if (tagName === "script" || tagName === "style") path.doNotEscape = true;
@@ -100,7 +102,7 @@ export function transformElement(path, info) {
   return results;
 }
 
-function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
+function setAttr(tagName, attribute, results, name, value, isDynamic, isBoolean) {
   // strip out namespaces for now, everything at this point is an attribute
   let parts;
   if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
@@ -113,11 +115,10 @@ function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
   ]);
   if (isDynamic) {
     attr = t.arrowFunctionExpression([], attr);
-    const post = name === "value" || name === "checked";
+
     results.templateValues.push(
       hoistExpression(attribute, results, attr, {
-        group: true,
-        post
+        group: true
       })
     );
     results.template.push("");
@@ -271,6 +272,8 @@ function normalizeAttributes(path) {
 }
 
 function transformAttributes(path, results, info) {
+  const tagName = getTagName(path.node);
+
   const hasChildren = path.node.children.length > 0,
     attributes = normalizeAttributes(path);
   let children;
@@ -384,10 +387,7 @@ function transformAttributes(path, results, info) {
         }
         if (doEscape) value.expression = escapeExpression(path, value.expression, true);
 
-        if (
-          !(doEscape || isBoolean || key === "value" || key === "checked") ||
-          t.isLiteral(value.expression)
-        ) {
+        if (!(doEscape || isBoolean) || t.isLiteral(value.expression)) {
           if (isBoolean) {
             value.expression.value === true && appendToTemplate(results.template, ` ${key}`);
             return;
@@ -401,7 +401,8 @@ function transformAttributes(path, results, info) {
               })
             );
           } else results.templateValues.push(value.expression);
-        } else setAttr(attribute, results, key, value.expression, isDynamicValue, isBoolean);
+        } else
+          setAttr(tagName, attribute, results, key, value.expression, isDynamicValue, isBoolean);
       }
     } else {
       if (key === "$ServerOnly") return;

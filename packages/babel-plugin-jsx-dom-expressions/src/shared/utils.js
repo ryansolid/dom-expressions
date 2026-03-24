@@ -494,14 +494,16 @@ function renameAttribute(attr, name) {
   }
 }
 
-export function transformSpecialCaseAttributes(path, tagName) {
+export function transformSpecialCaseAttributes(path, tagName, isSSR) {
   tagName = tagName.toUpperCase();
 
   for (const propName in DOMWithState[tagName]) {
     const attr = getAttributeNamed(path, propName);
     if (attr && !getAttributeNamed(path, "prop:" + propName)) {
-      const value = attr.node.value.expression ? attr.node.value.expression : attr.node.value;
+      const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
 
+      // if `<input value="some value"/>` is just literal and no `prop:` exists
+      // then it can be just inlined as `<input value="some value"/>`
       if (
         !t.isStringLiteral(value) &&
         !t.isNumericLiteral(value) &&
@@ -509,6 +511,11 @@ export function transformSpecialCaseAttributes(path, tagName) {
         !t.isNullLiteral(value)
       ) {
         renameAttribute(attr, "prop:" + propName);
+
+        // `value` is not present, only `prop:value`, SSR `value`
+        if (isSSR) {
+          addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
+        }
       }
     }
   }
@@ -522,4 +529,8 @@ export function isStatefulDOMProperty(tagName, propName) {
   }
 
   return DOMWithState[tagName] && DOMWithState[tagName][propName];
+}
+
+export function addAttribute(path, name, value) {
+  path.get("openingElement").pushContainer("attributes", t.jsxAttribute(name, value));
 }
