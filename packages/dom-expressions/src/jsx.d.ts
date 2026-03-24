@@ -1523,6 +1523,7 @@ export namespace JSX {
     autocomplete?: HTMLAutocomplete | RemoveAttribute;
     capture?: "user" | "environment" | RemoveAttribute;
     checked?: BooleanAttribute | RemoveAttribute;
+    "prop:checked"?: BooleanAttribute | RemoveAttribute;
     colorspace?: string | RemoveAttribute;
     dirname?: string | RemoveAttribute;
     disabled?: BooleanAttribute | RemoveAttribute;
@@ -1577,6 +1578,7 @@ export namespace JSX {
       | (string & {})
       | RemoveAttribute;
     value?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveAttribute;
     width?: number | string | RemoveAttribute;
 
     /** @non-standard */
@@ -1656,6 +1658,7 @@ export namespace JSX {
     disableremoteplayback?: BooleanAttribute | RemoveAttribute;
     loop?: BooleanAttribute | RemoveAttribute;
     muted?: BooleanAttribute | RemoveAttribute;
+    "prop:muted"?: BooleanAttribute | RemoveAttribute;
     preload?: "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute;
     src?: string | RemoveAttribute;
 
@@ -1759,7 +1762,9 @@ export namespace JSX {
     disabled?: BooleanAttribute | RemoveAttribute;
     label?: string | RemoveAttribute;
     selected?: BooleanAttribute | RemoveAttribute;
+    "prop:selected"?: BooleanAttribute | RemoveAttribute;
     value?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveAttribute;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
     for?: string | RemoveAttribute;
@@ -1812,6 +1817,7 @@ export namespace JSX {
     required?: BooleanAttribute | RemoveAttribute;
     size?: number | string | RemoveAttribute;
     value?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveAttribute;
   }
   interface HTMLSlotElementAttributes<T> extends HTMLAttributes<T> {
     name?: string | RemoveAttribute;

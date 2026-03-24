@@ -1,12 +1,8 @@
 import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
+import { DOMWithState } from "../../../dom-expressions/src/constants";
 
-export const reservedNameSpaces = new Set([
-  "class",
-  "on",
-  "style",
-  "prop"
-]);
+export const reservedNameSpaces = new Set(["class", "on", "style", "prop"]);
 
 export const nonSpreadNameSpaces = new Set(["class", "style", "prop"]);
 
@@ -470,4 +466,71 @@ export function evaluateAndInline(value, valueNode) {
       }
     }
   }
+}
+
+function getAttributeNamed(path, name) {
+  return path
+    .get("openingElement")
+    .get("attributes")
+    .find(attr => {
+      if (attr.isJSXAttribute()) {
+        const key = t.isJSXNamespacedName(attr.node.name)
+          ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
+          : attr.node.name.name;
+
+        return key === name;
+      }
+    });
+}
+
+function renameAttribute(attr, name) {
+  const [ns, propName] = name.split(":");
+  if (propName) {
+    attr
+      .get("name")
+      .replaceWith(t.jsxNamespacedName(t.jsxIdentifier(ns), t.jsxIdentifier(propName)));
+  } else {
+    attr.get("name").replaceWith(t.jsxIdentifier(name));
+  }
+}
+
+export function transformSpecialCaseAttributes(path, tagName, isSSR) {
+  tagName = tagName.toUpperCase();
+
+  for (const propName in DOMWithState[tagName]) {
+    const attr = getAttributeNamed(path, propName);
+    if (attr && !getAttributeNamed(path, "prop:" + propName)) {
+      const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
+
+      // if `<input value="some value"/>` is just literal and no `prop:` exists
+      // then it can be just inlined as `<input value="some value"/>`
+      if (
+        !t.isStringLiteral(value) &&
+        !t.isNumericLiteral(value) &&
+        !t.isBooleanLiteral(value) &&
+        !t.isNullLiteral(value)
+      ) {
+        renameAttribute(attr, "prop:" + propName);
+
+        // `value` is not present, only `prop:value`, SSR `value`
+        if (isSSR) {
+          addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
+        }
+      }
+    }
+  }
+}
+
+export function isStatefulDOMProperty(tagName, propName) {
+  tagName = tagName.toUpperCase();
+
+  if (propName.includes("prop:")) {
+    propName = propName.replace("prop:", "");
+  }
+
+  return DOMWithState[tagName] && DOMWithState[tagName][propName];
+}
+
+export function addAttribute(path, name, value) {
+  path.get("openingElement").pushContainer("attributes", t.jsxAttribute(name, value));
 }
