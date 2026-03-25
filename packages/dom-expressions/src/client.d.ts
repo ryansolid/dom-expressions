@@ -4,6 +4,7 @@ export const ChildProperties: Set<string>;
 export const DelegatedEvents: Set<string>;
 export const DOMElements: Set<string>;
 export const SVGElements: Set<string>;
+export const MathMLElements: Set<string>;
 export const SVGNamespace: Record<string, string>;
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
@@ -13,7 +14,7 @@ export function render(
   init?: JSX.Element,
   options?: { owner?: unknown }
 ): () => void;
-export function template(html: string, isImportNode?: boolean, isSVG?: boolean, isMathML?: boolean): () => Element;
+export function template(html: string, isImportNode?: boolean): () => Element;
 export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function untrack<T>(fn: () => T): T;
@@ -29,13 +30,11 @@ export function clearDelegatedEvents(d?: Document): void;
 export function spread<T>(
   node: Element,
   accessor: T,
-  isSVG?: Boolean,
   skipChildren?: Boolean
 ): void;
 export function assign(
   node: Element,
   props: any,
-  isSVG?: Boolean,
   skipChildren?: Boolean,
   prevProps?: any,
   skipRef?: Boolean
@@ -45,7 +44,7 @@ export function setAttributeNS(node: Element, namespace: string, name: string, v
 type ClassList =
   | Record<string, boolean>
   | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
-export function className(node: Element, value: string | ClassList, isSvg?: boolean, prev?: string | ClassList): void;
+export function className(node: Element, value: string | ClassList, prev?: string | ClassList): void;
 export function setProperty(node: Element, name: string, value: any): void;
 export function setStyleProperty(node: Element, name: string, value: any): void;
 export function addEventListener(

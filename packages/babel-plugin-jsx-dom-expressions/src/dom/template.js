@@ -49,10 +49,6 @@ export function appendTemplates(path, templates) {
     };
 
     const shouldUseImportNode = template.isCE || template.isImportNode;
-    const isMathML =
-      /^<(math|annotation|annotation-xml|maction|math|merror|mfrac|mi|mmultiscripts|mn|mo|mover|mpadded|mphantom|mprescripts|mroot|mrow|ms|mspace|msqrt|mstyle|msub|msubsup|msup|mtable|mtd|mtext|mtr|munder|munderover|semantics|menclose|mfenced)(\s|>)/.test(
-        template.template
-      );
 
     return t.variableDeclarator(
       template.id,
@@ -60,13 +56,7 @@ export function appendTemplates(path, templates) {
         t.callExpression(
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
-            template.isSVG || shouldUseImportNode || isMathML
-              ? [
-                  t.booleanLiteral(!!shouldUseImportNode),
-                  t.booleanLiteral(template.isSVG),
-                  t.booleanLiteral(isMathML)
-                ]
-              : []
+            shouldUseImportNode ? [t.booleanLiteral(!!shouldUseImportNode)] : []
           )
         ),
         "leading",
@@ -94,7 +84,6 @@ function registerTemplate(path, results) {
           id: templateId,
           template: results.template,
           templateWithClosingTags: results.templateWithClosingTags,
-          isSVG: results.isSVG,
           isCE: results.hasCustomElement,
           isImportNode: results.isImportNode,
           renderer: "dom"
@@ -141,7 +130,6 @@ function wrapDynamics(path, dynamics) {
           t.blockStatement([
             t.expressionStatement(
               setAttr(path, dynamics[0].elem, dynamics[0].key, newValue, {
-                isSVG: dynamics[0].isSVG,
                 tagName: dynamics[0].tagName,
                 dynamic: true,
                 prevId: prevValue
@@ -162,7 +150,7 @@ function wrapDynamics(path, dynamics) {
   /** @type {t.Identifier[]} */
   const properties = [];
 
-  dynamics.forEach(({ elem, key, value, isSVG, tagName }, index) => {
+  dynamics.forEach(({ elem, key, value, tagName }, index) => {
     const propIdent = t.identifier(getNumberedId(index));
     const propMember = t.memberExpression(prevId, propIdent);
 
@@ -177,7 +165,6 @@ function wrapDynamics(path, dynamics) {
       statements.push(
         t.expressionStatement(
           setAttr(path, elem, key, propIdent, {
-            isSVG,
             tagName,
             dynamic: true,
             prevId: propMember
@@ -192,7 +179,6 @@ function wrapDynamics(path, dynamics) {
             "&&",
             t.binaryExpression("!==", propIdent, propMember),
             setAttr(path, elem, key, propIdent, {
-              isSVG,
               tagName,
               dynamic: true,
               prevId: prev

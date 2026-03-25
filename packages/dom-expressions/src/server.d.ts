@@ -107,7 +107,6 @@ export function insert<T>(
 export function spread<T>(
   node: Element,
   accessor: T,
-  isSVG?: Boolean,
   skipChildren?: Boolean
 ): void;
 
@@ -131,13 +130,13 @@ export function addEventListener(
 /** @deprecated not supported on the server side */
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
 /** @deprecated not supported on the server side */
-export function template(html: string, isImportNode?: boolean, isSVG?: boolean, isMathML?: boolean): () => Element;
+export function template(html: string, isImportNode?: boolean): () => Element;
 /** @deprecated not supported on the server side */
 export function setProperty(node: Element, name: string, value: any): void;
 /** @deprecated not supported on the server side */
 export function className(node: Element, value: string): void;
 /** @deprecated not supported on the server side */
-export function assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
+export function assign(node: Element, props: any, skipChildren?: Boolean): void;
 
 /** @deprecated not supported on the server side */
 export function hydrate(

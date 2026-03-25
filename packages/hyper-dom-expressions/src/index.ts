@@ -1,11 +1,12 @@
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 interface Runtime {
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
-  spread(node: Element, accessor: any, isSVG?: Boolean, skipChildren?: Boolean): void;
-  assign(node: Element, props: any, isSVG?: Boolean, skipChildren?: Boolean): void;
+  spread(node: Element, accessor: any, skipChildren?: Boolean): void;
+  assign(node: Element, props: any, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
   dynamicProperty(props: any, key: string): any;
   SVGElements: Set<string>;
+  MathMLElements: Set<string>;
 }
 
 type ExpandableNode = Node & { [key: string]: any };
@@ -63,8 +64,8 @@ export function createHyperScript(r: Runtime): HyperScript {
           } else if (d[k].get) dynamic = true;
         }
         dynamic
-          ? r.spread(e as Element, l, e instanceof SVGElement, !!args.length)
-          : r.assign(e as Element, l, e instanceof SVGElement, !!args.length);
+          ? r.spread(e as Element, l, !!args.length)
+          : r.assign(e as Element, l, !!args.length);
       } else if ("function" === type) {
         if (!e) {
           let props: Props | undefined,
@@ -110,7 +111,9 @@ export function createHyperScript(r: Runtime): HyperScript {
         if (!e)
           e = r.SVGElements.has(v)
             ? document.createElementNS("http://www.w3.org/2000/svg", v)
-            : document.createElement(v);
+            : r.MathMLElements.has(v)
+              ? document.createElementNS("http://www.w3.org/1998/Math/MathML", v)
+              : document.createElement(v);
         else if (v[0] === ".") classes.push(s);
         else if (v[0] === "#") e.setAttribute("id", s);
       }

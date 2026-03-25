@@ -38,17 +38,17 @@ const template6 = _$createComponent(Module, {
 });
 const template7 = (() => {
   var _el$6 = _tmpl$2();
-  _$spread(_el$6, dynamic, false, false);
+  _$spread(_el$6, dynamic, false);
   return _el$6;
 })();
 const template8 = (() => {
   var _el$7 = _tmpl$3();
-  _$spread(_el$7, dynamic, false, true);
+  _$spread(_el$7, dynamic, true);
   return _el$7;
 })();
 const template9 = (() => {
   var _el$8 = _tmpl$2();
-  _$spread(_el$8, dynamic, false, true);
+  _$spread(_el$8, dynamic, true);
   _$insert(_el$8, () => dynamic.children);
   return _el$8;
 })();
