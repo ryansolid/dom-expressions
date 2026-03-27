@@ -1,4 +1,6 @@
 // babel.config.js
+const path = require('path');
+
 module.exports = {
   presets: ['@babel/preset-env'],
   plugins: [
@@ -6,7 +8,7 @@ module.exports = {
       "babel-plugin-transform-rename-import",
       {
         original: "rxcore",
-        replacement: "../test/core"
+        replacement: path.join(__dirname, '..', 'dom-expressions', 'test', 'core')
       }
     ]
   ]
