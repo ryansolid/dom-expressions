@@ -283,11 +283,11 @@ export function setAttr(path, elem, name, value, { isSVG, dynamic, prevId, tagNa
     }
     if (
       name === "value" &&
-      tagName === "input" &&
+      (tagName === "input" || tagName === "textarea") &&
       !t.isStringLiteral(value) &&
       !t.isNumericLiteral(value)
     ) {
-      // prevents undefined on input.value, fallback to empty string
+      // prevents undefined on input/textarea.value, fallback to empty string
       return t.assignmentExpression(
         "=",
         t.memberExpression(elem, t.identifier("value")),
