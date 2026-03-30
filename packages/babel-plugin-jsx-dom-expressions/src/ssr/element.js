@@ -116,9 +116,12 @@ function setAttr(tagName, attribute, results, name, value, isDynamic, isBoolean)
   if (isDynamic) {
     attr = t.arrowFunctionExpression([], attr);
 
+    const post = DOMWithState[tagName.toUpperCase()] && DOMWithState[tagName.toUpperCase()][name];
+
     results.templateValues.push(
       hoistExpression(attribute, results, attr, {
-        group: true
+        group: true,
+        post
       })
     );
     results.template.push("");
