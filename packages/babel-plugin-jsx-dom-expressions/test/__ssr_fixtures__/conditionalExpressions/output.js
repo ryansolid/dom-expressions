@@ -94,14 +94,14 @@ const template8a = (() => {
 const template9 = (() => {
   var _v$14 = (() => {
     var _c$9 = _$memo(() => !!state.dynamic);
-    return () => (_c$9() && _$escape(good())) || _$escape(bad);
+    return () => _$escape((_c$9() && good()) || bad);
   })();
   return _$ssr(_tmpl$, _v$14);
 })();
 const template9a = (() => {
   var _v$15 = (() => {
     var _c$10 = _$memo(() => !!state.dynamic);
-    return () => (_c$10() && _$escape(good.good)) || _$escape(bad);
+    return () => _$escape((_c$10() && good.good) || bad);
   })();
   return _$ssr(_tmpl$, _v$15);
 })();
@@ -244,34 +244,29 @@ const template27 = (() => {
   return _$ssr(_tmpl$, _v$23);
 })();
 const template28 = (() => {
-  var _v$24 = _$ssrRunInScope(
-    () => _$escape(state.dynamic) ?? _$escape(_$createComponent(Comp, {}))
-  );
+  var _v$24 = _$ssrRunInScope(() => _$escape(state.dynamic ?? _$createComponent(Comp, {})));
   return _$ssr(_tmpl$, _v$24);
 })();
 const template29 = (() => {
   var _v$25 = (() => {
     var _c$16 = _$memo(() => !!thing());
-    return () => (_c$16() && _$escape(thing1())) ?? _$escape(thing2()) ?? _$escape(thing3());
+    return () => _$escape((_c$16() && thing1()) ?? thing2() ?? thing3());
   })();
   return _$ssr(_tmpl$, _v$25);
 })();
 const template29a = (() => {
   var _v$26 = (() => {
     var _c$17 = _$memo(() => !!thing.thing);
-    return () =>
-      (_c$17() && _$escape(thing1.thing1)) ?? _$escape(thing2.thing2) ?? _$escape(thing3.thing3);
+    return () => _$escape((_c$17() && thing1.thing1) ?? thing2.thing2 ?? thing3.thing3);
   })();
   return _$ssr(_tmpl$, _v$26);
 })();
 const template30 = (() => {
-  var _v$27 = _$ssrRunInScope(() => _$escape(thing()) || _$escape(thing1()) || _$escape(thing2()));
+  var _v$27 = _$ssrRunInScope(() => _$escape(thing() || thing1() || thing2()));
   return _$ssr(_tmpl$, _v$27);
 })();
 const template30a = (() => {
-  var _v$28 = _$ssrRunInScope(
-    () => _$escape(thing.thing) || _$escape(thing1.thing1) || _$escape(thing2.thing2)
-  );
+  var _v$28 = _$ssrRunInScope(() => _$escape(thing.thing || thing1.thing1 || thing2.thing2));
   return _$ssr(_tmpl$, _v$28);
 })();
 const template31 = _$createComponent(Comp, {

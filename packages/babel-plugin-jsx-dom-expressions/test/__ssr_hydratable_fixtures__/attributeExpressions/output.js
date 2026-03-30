@@ -58,7 +58,8 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$44 = ["<video", ' poster="1.jpg"></video>'],
   _tmpl$45 = ["<div", '><video poster="1.jpg"></video></div>'],
   _tmpl$46 = ["<div", "><video></video></div>"],
-  _tmpl$47 = ["<button", ' type="button"', ' style="', '" class="', '">', "</button>"];
+  _tmpl$47 = ["<button", ' type="button"', ' style="', '" class="', '">', "</button>"],
+  _tmpl$48 = ["<div", "", "></div>"];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -127,11 +128,11 @@ const template2 = _$ssrElement(
   getProps("test"),
   () => [
     (() => {
-      var _v$ = _$escape(rowId) || " ";
+      var _v$ = _$escape(rowId || " ");
       return _$ssr(_tmpl$2, _v$);
     })(),
     (() => {
-      var _v$2 = _$ssrRunInScope(() => _$escape(row.label) || " ");
+      var _v$2 = _$ssrRunInScope(() => _$escape(row.label || " "));
       return _$ssr(_tmpl$2, _v$2);
     })(),
     _$ssr(_tmpl$3)
@@ -140,7 +141,7 @@ const template2 = _$ssrElement(
 );
 const template3 = (() => {
   var _v$3 = _$ssrHydrationKey(),
-    _v$5 = _$escape(state.content) || " ",
+    _v$5 = _$escape(state.content || " "),
     _v$4 = _$ssrRunInScope([() => _$ssrAttribute("name", _$escape(state.name, true))]);
   return _$ssr(
     _tmpl$4,
@@ -740,4 +741,11 @@ const template88 = (() => {
 const template89 = (() => {
   var _v$107 = _$ssrHydrationKey();
   return _$ssr(_tmpl$9, _v$107);
+})();
+const template90 = (() => {
+  var _v$112 = _$ssrHydrationKey(),
+    _v$113 = _$ssrRunInScope([
+      () => _$ssrAttribute("data-test", _$escape(state.flag || undefined, true))
+    ]);
+  return _$ssr(_tmpl$48, _v$112, _v$113[0]);
 })();

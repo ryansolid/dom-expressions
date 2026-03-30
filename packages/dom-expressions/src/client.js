@@ -187,15 +187,7 @@ export function setStyleProperty(node, name, value) {
 // TODO: make this better
 export function spread(node, props = {}, isSVG, skipChildren) {
   const prevProps = {};
-  if (!skipChildren) {
-    effect(
-      () => normalize(props.children, prevProps.children),
-      value => {
-        insertExpression(node, value, prevProps.children);
-        prevProps.children = value;
-      }
-    );
-  }
+  if (!skipChildren) insert(node, () => props.children);
   effect(
     () => {
       const r = props.ref;

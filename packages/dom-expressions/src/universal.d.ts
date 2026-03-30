@@ -1,6 +1,7 @@
 export interface RendererOptions<NodeType> {
   createElement(tag: string): NodeType;
   createTextNode(value: string): NodeType;
+  createSentinel?(): NodeType;
   replaceText(textNode: NodeType, value: string): void;
   isTextNode(node: NodeType): boolean;
   setProperty<T>(node: NodeType, name: string, value: T, prev?: T): void;
@@ -20,7 +21,7 @@ export interface Renderer<NodeType> {
   createTextNode(value: string): NodeType;
   insertNode(parent: NodeType, node: NodeType, anchor?: NodeType): void;
   insert<T>(parent: any, accessor: (() => T) | T, marker?: any | null, initial?: any): NodeType;
-  spread<T>(node: any, accessor: (() => T) | T, skipChildren?: boolean): void;
+  spread<T extends object>(node: any, props: T, skipChildren?: boolean): void;
   setProp<T>(node: NodeType, name: string, value: T, prev?: T): T;
   mergeProps(...sources: unknown[]): unknown;
   applyRef(r: ((element: NodeType) => void) | ((element: NodeType) => void)[], element: NodeType): void;

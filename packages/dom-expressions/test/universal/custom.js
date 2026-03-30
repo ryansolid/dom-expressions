@@ -31,7 +31,8 @@ export const {
   },
   setProperty(node, name, value) {
     if (name === "style") Object.assign(node.style, value);
-    else if (PROPERTIES.has(name)) node[name] = value;
+    else if (PROPERTIES.has(name)) node[name] = value == null ? "" : value;
+    else if (value == null) node.removeAttribute(name);
     else node.setAttribute(name, value);
   },
   insertNode(parent, node, anchor) {

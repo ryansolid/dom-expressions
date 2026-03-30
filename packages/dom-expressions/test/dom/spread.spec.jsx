@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createRoot, createSignal, flush } from "@solidjs/signals";
+import { createMemo, createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("create element with various spreads", () => {
   it("should properly spread ref, click, attribute, and children", () => {
@@ -285,6 +285,63 @@ describe("ref scope for cleanup in the spread for elements and components", () =
     expect(refCount1).toBe(1);
     expect(refCount2).toBe(1);
 
+    disposer();
+  });
+});
+
+describe("spread children caching", () => {
+  it("preserves isolated child slots", () => {
+    let div, disposer, setShow;
+    const rendered = jest.fn(() => undefined);
+    createRoot(dispose => {
+      disposer = dispose;
+      const [show, _setShow] = createSignal(true);
+      const stableRendered = createMemo(() => rendered(), undefined, { lazy: true });
+      setShow = _setShow;
+      div = <div
+        {...{
+          get children() {
+            return [<button />, stableRendered, show() ? "hide" : null];
+          },
+          ref(el) {
+            div = el;
+          }
+        }}
+      />;
+    });
+
+    expect(rendered).toHaveBeenCalledTimes(1);
+    expect(div.innerHTML).toBe("<button></button>hide");
+
+    setShow(false);
+    flush();
+    expect(rendered).toHaveBeenCalledTimes(1);
+    expect(div.innerHTML).toBe("<button></button>");
+    disposer();
+  });
+
+  it("keeps reactive arrays live", () => {
+    let div, disposer, setList;
+    createRoot(dispose => {
+      disposer = dispose;
+      const [list, _setList] = createSignal(["a", "b"]);
+      setList = _setList;
+      div = <div
+        {...{
+          get children() {
+            return list();
+          },
+          ref(el) {
+            div = el;
+          }
+        }}
+      />;
+    });
+
+    expect(div.innerHTML).toBe("ab");
+    setList(["x"]);
+    flush();
+    expect(div.innerHTML).toBe("x");
     disposer();
   });
 });

@@ -66,6 +66,8 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
     "</textarea><textarea></textarea><textarea>",
     "</textarea><textarea>static content</textarea><textarea>static content</textarea></div>"
   ];
+  _tmpl$50 = ["<div", "></div>"],
+  _tmpl$51 = ['<div class="progress-fill" style="', '"></div>'];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -641,16 +643,22 @@ const template91 = (() => {
   return _$ssr(_tmpl$49, _v$35[0]);
 })();
 const template92 = _$ssr(_tmpl$9);
+const template93 = (() => {
+  var _v$40 = _$ssrRunInScope([
+    () => _$ssrAttribute("data-test", _$escape(state.flag || undefined, true))
+  ]);
+  return _$ssr(_tmpl$50, _v$40[0]);
+})();
 function Progress(props) {
   return (() => {
-    var _v$36 = _$ssrRunInScope([
+    var _v$41 = _$ssrRunInScope([
       () =>
         _$ssrStyleProperty(
           (props.orientation === "y" ? "height" : "width") + ":",
           `${_$escape(props.value, true) * 100}%`
         )
     ]);
-    return _$ssr(_tmpl$50, _v$36[0]);
+    return _$ssr(_tmpl$51, _v$41[0]);
   })();
 }
 const template93 = (() => {
