@@ -14,11 +14,8 @@ import {
   escapeStringForTemplate
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
-import { DOMWithState } from "../../../dom-expressions/src/constants";
 
 export function transformElement(path, info) {
-  const tagName = getTagName(path.node);
-
   path
     .get("openingElement")
     .get("attributes")
@@ -26,19 +23,16 @@ export function transformElement(path, info) {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
 
-  /* if (DOMWithState[tagName.toUpperCase()]) {
-    transformSpecialCaseAttributes(path, tagName);
-  }*/
-
-  let results = {
-    id: path.scope.generateUidIdentifier("el$"),
-    declarations: [],
-    exprs: [],
-    dynamics: [],
-    postExprs: [],
-    tagName,
-    renderer: "universal"
-  };
+  let tagName = getTagName(path.node),
+    results = {
+      id: path.scope.generateUidIdentifier("el$"),
+      declarations: [],
+      exprs: [],
+      dynamics: [],
+      postExprs: [],
+      tagName,
+      renderer: "universal"
+    };
 
   results.declarations.push(
     t.variableDeclarator(
