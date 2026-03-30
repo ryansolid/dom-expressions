@@ -11,6 +11,7 @@ const DOMWithState = {
   INPUT: { value: 1, checked: 1 },
   SELECT: { value: 1 },
   OPTION: { value: 1, selected: 1 },
+  TEXTAREA: { value: 1 },
   VIDEO: { muted: 1 },
   AUDIO: { muted: 1 }
 };

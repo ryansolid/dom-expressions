@@ -373,3 +373,13 @@ function Progress(props) {
     />
   );
 }
+
+const template93 = <div>
+  <textarea value={dynamicProperty()}/>
+  <textarea value={dynamicProperty()}>{dynamicContent()}</textarea>
+  <textarea value={dynamicContent()} prop:value={dynamicProperty()}/>
+  <textarea prop:value={dynamicProperty()}/>
+  <textarea>{dynamicContent()}</textarea>
+  <textarea value="static content"/>
+  <textarea value="static content">I get replaced</textarea>
+</div>

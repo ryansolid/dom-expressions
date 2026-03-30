@@ -499,23 +499,49 @@ export function transformSpecialCaseAttributes(path, tagName, isSSR) {
 
   for (const propName in DOMWithState[tagName]) {
     const attr = getAttributeNamed(path, propName);
-    if (attr && !getAttributeNamed(path, "prop:" + propName)) {
+    const prop = getAttributeNamed(path, "prop:" + propName);
+
+    if (attr && !prop) {
+      /** Transforms `attr` into `prop:`. When `prop:` is not present. */
+
       const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
 
-      // if `<input value="some value"/>` is just literal and no `prop:` exists
-      // then it can be just inlined as `<input value="some value"/>`
+      /** If value is not dynamic, leave it as is */
       if (
         !t.isStringLiteral(value) &&
         !t.isNumericLiteral(value) &&
         !t.isBooleanLiteral(value) &&
         !t.isNullLiteral(value)
       ) {
+        // value is dynamic
         renameAttribute(attr, "prop:" + propName);
 
         // `value` is not present, only `prop:value`, SSR `value`
         if (isSSR) {
-          addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
+          // <textarea value=""/> doesnt exists
+          if (tagName === "TEXTAREA" && propName === "value") {
+            path.set("children", [t.jsxExpressionContainer(value)]);
+          } else {
+            addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
+          }
         }
+      } else {
+        // value is not dynamic
+        // `prop:value` is not present, only `value`
+        // <textarea value=""/> doesnt exists
+        if (tagName === "TEXTAREA" && propName === "value") {
+          attr.remove();
+          path.set("children", [t.jsxExpressionContainer(value)]);
+        }
+      }
+    } else if (attr) {
+      // `prop:value` and `value` are present
+      // <textarea value=""/> doesnt exists
+      if (tagName === "TEXTAREA" && propName === "value") {
+        const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
+
+        attr.remove();
+        path.set("children", [t.jsxExpressionContainer(value)]);
       }
     }
   }

@@ -79,6 +79,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$50 = /*#__PURE__*/ _$template(`<div style="duplicate2"></div>`),
   _tmpl$51 = /*#__PURE__*/ _$template(
     `<div>static inlined, prop:value in effect<input value="static attribute">value in effect, prop:value inlined<input>static<input value="static attribute"><input>dynamic property<input><input>dynamic attribute/property<input>inlined muted<video muted></video>not inlined muted<video></video>not inlined muted dynamic muted property<video></video>inlined muted dynamic muted property<video muted></video>dynamic attribute muted, dynamic muted property<video></video></div>`
+  ),
+  _tmpl$52 = /*#__PURE__*/ _$template(
+    `<div><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea>static content</textarea><textarea>static content</textarea></div>`
   );
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
@@ -960,5 +963,29 @@ const template93 = (() => {
     _el$135.muted = _v$;
   });
   return _el$113;
+})();
+const template94 = (() => {
+  var _el$136 = _tmpl$52(),
+    _el$137 = _el$136.firstChild,
+    _el$138 = _el$137.nextSibling,
+    _el$139 = _el$138.nextSibling,
+    _el$140 = _el$139.nextSibling,
+    _el$141 = _el$140.nextSibling;
+  _$insert(_el$138, dynamicContent);
+  _$insert(_el$139, dynamicContent);
+  _$insert(_el$141, dynamicContent);
+  _$effect(dynamicProperty, _v$ => {
+    _el$137.value = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$138.value = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$139.value = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$140.value = _v$;
+  });
+  return _el$136;
 })();
 _$delegateEvents(["click", "input"]);

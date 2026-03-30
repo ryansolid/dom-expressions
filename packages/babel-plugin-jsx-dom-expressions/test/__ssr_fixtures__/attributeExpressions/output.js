@@ -58,7 +58,14 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$47 = ['<button type="button"', ' style="', '" class="', '">', "</button>"],
   _tmpl$48 = ["<style>", "</style>"],
   _tmpl$49 = ['<div class="bg-(--bg)" style="', '"></div>'],
-  _tmpl$50 = ['<div class="progress-fill" style="', '"></div>'];
+  _tmpl$50 = ['<div class="progress-fill" style="', '"></div>'],
+  _tmpl$51 = [
+    "<div><textarea>",
+    "</textarea><textarea>",
+    "</textarea><textarea>",
+    "</textarea><textarea></textarea><textarea>",
+    "</textarea><textarea>static content</textarea><textarea>static content</textarea></div>"
+  ];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -646,3 +653,10 @@ function Progress(props) {
     return _$ssr(_tmpl$50, _v$36[0]);
   })();
 }
+const template93 = (() => {
+  var _v$37 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
+    _v$38 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
+    _v$39 = _$ssrRunInScope(() => _$escape(dynamicContent())),
+    _v$40 = _$ssrRunInScope(() => _$escape(dynamicContent()));
+  return _$ssr(_tmpl$51, _v$37, _v$38, _v$39, _v$40);
+})();
