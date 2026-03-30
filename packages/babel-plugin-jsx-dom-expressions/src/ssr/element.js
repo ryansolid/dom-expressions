@@ -1,10 +1,11 @@
 import * as t from "@babel/types";
 import { decode } from "html-entities";
-import { ChildProperties } from "dom-expressions/src/constants";
+import { ChildProperties, DOMWithState } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
   evaluateAndInline,
   getTagName,
+  isStatefulDOMProperty,
   registerImportMethod,
   filterChildren,
   checkLength,
@@ -15,7 +16,8 @@ import {
   isDynamic,
   isComponent,
   convertJSXIdentifier,
-  inlineCallExpression
+  inlineCallExpression,
+  transformSpecialCaseAttributes
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -36,7 +38,9 @@ function hoistExpression(path, results, expr, { group, post, skipWrap } = {}) {
     return t.memberExpression(results.groupId, t.numericLiteral(results.dynamics.length - 1), true);
   }
   const variable = path.scope.generateUidIdentifier("v$");
-  !skipWrap && t.isFunction(expr) && (expr = t.callExpression(registerImportMethod(path, "ssrRunInScope"), [expr]));
+  !skipWrap &&
+    t.isFunction(expr) &&
+    (expr = t.callExpression(registerImportMethod(path, "ssrRunInScope"), [expr]));
   post
     ? results.postDeclarations.push(t.variableDeclarator(variable, expr))
     : results.declarations.push(t.variableDeclarator(variable, expr));
@@ -44,6 +48,8 @@ function hoistExpression(path, results, expr, { group, post, skipWrap } = {}) {
 }
 
 export function transformElement(path, info) {
+  const tagName = getTagName(path.node);
+
   path
     .get("openingElement")
     .get("attributes")
@@ -51,8 +57,11 @@ export function transformElement(path, info) {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
 
+  if (DOMWithState[tagName.toUpperCase()]) {
+    transformSpecialCaseAttributes(path, tagName, true);
+  }
+
   const config = getConfig(path);
-  const tagName = getTagName(path.node);
   if (tagName === "script" || tagName === "style") path.doNotEscape = true;
 
   // contains spread attributes
@@ -93,7 +102,7 @@ export function transformElement(path, info) {
   return results;
 }
 
-function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
+function setAttr(tagName, attribute, results, name, value, isDynamic, isBoolean) {
   // strip out namespaces for now, everything at this point is an attribute
   let parts;
   if ((parts = name.split(":")) && parts[1] && reservedNameSpaces.has(parts[0])) {
@@ -106,7 +115,9 @@ function setAttr(attribute, results, name, value, isDynamic, isBoolean) {
   ]);
   if (isDynamic) {
     attr = t.arrowFunctionExpression([], attr);
-    const post = name === "value" || name === "checked";
+
+    const post = DOMWithState[tagName.toUpperCase()] && DOMWithState[tagName.toUpperCase()][name];
+
     results.templateValues.push(
       hoistExpression(attribute, results, attr, {
         group: true,
@@ -265,6 +276,8 @@ function normalizeAttributes(path) {
 }
 
 function transformAttributes(path, results, info) {
+  const tagName = getTagName(path.node);
+
   const hasChildren = path.node.children.length > 0,
     attributes = normalizeAttributes(path);
   let children;
@@ -297,18 +310,11 @@ function transformAttributes(path, results, info) {
     ) {
       if (key === "ref") {
         results.declarations.push(
-          t.variableDeclarator(
-            path.scope.generateUidIdentifier("_ref$"),
-            value.expression
-          )
+          t.variableDeclarator(path.scope.generateUidIdentifier("_ref$"), value.expression)
         );
         return;
       }
-      if (
-        key.startsWith("prop:") ||
-        key.startsWith("on")
-      )
-        return;
+      if (key.startsWith("prop:") || key.startsWith("on")) return;
       if (ChildProperties.has(key)) {
         if (info.hydratable && key === "textContent" && value && value.expression) {
           const comments = value.expression.leadingComments;
@@ -385,10 +391,7 @@ function transformAttributes(path, results, info) {
         }
         if (doEscape) value.expression = escapeExpression(path, value.expression, true);
 
-        if (
-          !(doEscape || isBoolean || key === "value" || key === "checked") ||
-          t.isLiteral(value.expression)
-        ) {
+        if (!(doEscape || isBoolean) || t.isLiteral(value.expression)) {
           if (isBoolean) {
             value.expression.value === true && appendToTemplate(results.template, ` ${key}`);
             return;
@@ -397,15 +400,18 @@ function transformAttributes(path, results, info) {
           results.template.push(`"`);
           if (isDynamicValue) {
             results.templateValues.push(
-              hoistExpression(path, results, inlineCallExpression(value.expression), { group: true })
+              hoistExpression(path, results, inlineCallExpression(value.expression), {
+                group: true
+              })
             );
           } else results.templateValues.push(value.expression);
-        } else setAttr(attribute, results, key, value.expression, isDynamicValue, isBoolean);
+        } else
+          setAttr(tagName, attribute, results, key, value.expression, isDynamicValue, isBoolean);
       }
     } else {
       if (key === "$ServerOnly") return;
       if (t.isJSXExpressionContainer(value)) value = value.expression;
-      const isBoolean = t.isBooleanLiteral(value)
+      const isBoolean = t.isBooleanLiteral(value);
       if (isBoolean && value && value.value !== "" && !value.value) return;
       appendToTemplate(results.template, ` ${key}`);
       if (!value) return;
@@ -553,18 +559,11 @@ function createElement(path, { topLevel, hydratable }) {
         if (key === "ref") {
           if (t.isJSXExpressionContainer(value))
             results.declarations.push(
-              t.variableDeclarator(
-                path.scope.generateUidIdentifier("_ref$"),
-                value.expression
-              )
+              t.variableDeclarator(path.scope.generateUidIdentifier("_ref$"), value.expression)
             );
           return;
         }
-        if (
-          key.startsWith("prop:") ||
-          key.startsWith("on")
-        )
-          return;
+        if (key.startsWith("prop:") || key.startsWith("on")) return;
         if (t.isJSXExpressionContainer(value))
           if (
             isDynamic(attribute.get("value").get("expression"), {

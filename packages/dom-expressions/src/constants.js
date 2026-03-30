@@ -1,10 +1,20 @@
+// TODO remove me and use DOMWithState
 const Properties = /*#__PURE__*/ new Set([
   // locked to properties
-  "value",
-  "checked",
-  "selected",
-  "muted"
+  "value", // input, select, option
+  "checked", // input
+  "selected", // option
+  "muted" // HTMLMediaElement (video, audio)
 ]);
+
+const DOMWithState = {
+  INPUT: { value: 1, checked: 1 },
+  SELECT: { value: 1 },
+  OPTION: { value: 1, selected: 1 },
+  TEXTAREA: { value: 1 },
+  VIDEO: { muted: 1 },
+  AUDIO: { muted: 1 }
+};
 
 const ChildProperties = /*#__PURE__*/ new Set([
   "innerHTML",
@@ -423,6 +433,7 @@ const DOMElements = /*#__PURE__*/ new Set([
 
 export {
   Properties,
+  DOMWithState,
   ChildProperties,
   DelegatedEvents,
   SVGElements,

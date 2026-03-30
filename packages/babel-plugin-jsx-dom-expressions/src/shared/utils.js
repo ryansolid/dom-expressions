@@ -1,12 +1,8 @@
 import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
+import { DOMWithState } from "../../../dom-expressions/src/constants";
 
-export const reservedNameSpaces = new Set([
-  "class",
-  "on",
-  "style",
-  "prop"
-]);
+export const reservedNameSpaces = new Set(["class", "on", "style", "prop"]);
 
 export const nonSpreadNameSpaces = new Set(["class", "style", "prop"]);
 
@@ -470,4 +466,97 @@ export function evaluateAndInline(value, valueNode) {
       }
     }
   }
+}
+
+function getAttributeNamed(path, name) {
+  return path
+    .get("openingElement")
+    .get("attributes")
+    .find(attr => {
+      if (attr.isJSXAttribute()) {
+        const key = t.isJSXNamespacedName(attr.node.name)
+          ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
+          : attr.node.name.name;
+
+        return key === name;
+      }
+    });
+}
+
+function renameAttribute(attr, name) {
+  const [ns, propName] = name.split(":");
+  if (propName) {
+    attr
+      .get("name")
+      .replaceWith(t.jsxNamespacedName(t.jsxIdentifier(ns), t.jsxIdentifier(propName)));
+  } else {
+    attr.get("name").replaceWith(t.jsxIdentifier(name));
+  }
+}
+
+export function transformSpecialCaseAttributes(path, tagName, isSSR) {
+  tagName = tagName.toUpperCase();
+
+  for (const propName in DOMWithState[tagName]) {
+    const attr = getAttributeNamed(path, propName);
+    const prop = getAttributeNamed(path, "prop:" + propName);
+
+    if (attr && !prop) {
+      /** Transforms `attr` into `prop:`. When `prop:` is not present. */
+
+      const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
+
+      /** If value is not dynamic, leave it as is */
+      if (
+        !t.isStringLiteral(value) &&
+        !t.isNumericLiteral(value) &&
+        !t.isBooleanLiteral(value) &&
+        !t.isNullLiteral(value)
+      ) {
+        // value is dynamic
+        renameAttribute(attr, "prop:" + propName);
+
+        // `value` is not present, only `prop:value`, SSR `value`
+        if (isSSR) {
+          // <textarea value=""/> doesnt exists
+          if (tagName === "TEXTAREA" && propName === "value") {
+            path.set("children", [t.jsxExpressionContainer(value)]);
+          } else {
+            addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
+          }
+        }
+      } else {
+        // value is not dynamic
+        // `prop:value` is not present, only `value`
+        // <textarea value=""/> doesnt exists
+        if (tagName === "TEXTAREA" && propName === "value") {
+          attr.remove();
+          path.set("children", [t.jsxExpressionContainer(value)]);
+        }
+      }
+    } else if (attr) {
+      // `prop:value` and `value` are present
+      // <textarea value=""/> doesnt exists
+      if (tagName === "TEXTAREA" && propName === "value") {
+        const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
+
+        attr.remove();
+        path.set("children", [t.jsxExpressionContainer(value)]);
+      }
+    }
+  }
+}
+
+export function isStatefulDOMProperty(tagName, propName) {
+  tagName = tagName.toUpperCase();
+
+  if (propName.includes("prop:")) {
+    propName = propName.replace("prop:", "");
+  }
+
+  return DOMWithState[tagName] && DOMWithState[tagName][propName];
+}
+
+export function addAttribute(path, name, value) {
+  path.get("openingElement").pushContainer("attributes", t.jsxAttribute(name, value));
 }

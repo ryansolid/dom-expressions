@@ -24,7 +24,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$14 = ['<button class="', '" type="button">Write</button>'],
   _tmpl$15 = ['<button class="', '">Hi</button>'],
   _tmpl$16 = ['<div class="', '"></div>'],
-  _tmpl$17 = ["<div><input", "", "", " readonly><input", "", "", "", "></div>"],
+  _tmpl$17 = ["<div><input", "", " readonly", "><input", "", "", "", "></div>"],
   _tmpl$18 = ['<div style="', '"></div>'],
   _tmpl$19 = '<div data="&quot;hi&quot;" data2="&quot;"></div>',
   _tmpl$20 = ["<div", ">", "</div>"],
@@ -59,7 +59,14 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$48 = ["<style>", "</style>"],
   _tmpl$49 = ['<div class="bg-(--bg)" style="', '"></div>'],
   _tmpl$50 = ["<div", "></div>"],
-  _tmpl$51 = ['<div class="progress-fill" style="', '"></div>'];
+  _tmpl$51 = ['<div class="progress-fill" style="', '"></div>'],
+  _tmpl$52 = [
+    "<div><textarea>",
+    "</textarea><textarea>",
+    "</textarea><textarea>",
+    "</textarea><textarea></textarea><textarea>",
+    "</textarea><textarea>static content</textarea><textarea>static content</textarea></div>"
+  ];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -220,23 +227,23 @@ const template19 = _$ssr(
   ])
 );
 const template20 = (() => {
-  var _v$10 = _$ssrRunInScope([
+  var _v$9 = _$ssrRunInScope([
       () => _$ssrAttribute("min", _$escape(min(), true)),
       () => _$ssrAttribute("max", _$escape(max(), true)),
       () => _$ssrAttribute("min", _$escape(min(), true)),
       () => _$ssrAttribute("max", _$escape(max(), true))
     ]),
-    _v$9 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
+    _v$10 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
     _v$11 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(s2(), true)));
   return _$ssr(
     _tmpl$17,
-    _v$9,
-    _v$10[0],
-    _v$10[1],
-    _v$11,
-    _v$10[2],
-    _v$10[3],
-    _$ssrAttribute("readonly", _$escape(value, true))
+    _v$9[0],
+    _v$9[1],
+    _v$10,
+    _v$9[2],
+    _v$9[3],
+    _$ssrAttribute("readonly", _$escape(value, true)),
+    _v$11
   );
 })();
 const template21 = (() => {
@@ -651,3 +658,10 @@ function Progress(props) {
     return _$ssr(_tmpl$51, _v$41[0]);
   })();
 }
+const template94 = (() => {
+  var _v$42 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
+    _v$43 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
+    _v$44 = _$ssrRunInScope(() => _$escape(dynamicContent())),
+    _v$45 = _$ssrRunInScope(() => _$escape(dynamicContent()));
+  return _$ssr(_tmpl$52, _v$42, _v$43, _v$44, _v$45);
+})();
