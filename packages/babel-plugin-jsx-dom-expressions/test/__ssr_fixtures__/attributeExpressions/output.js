@@ -58,16 +58,15 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$47 = ['<button type="button"', ' style="', '" class="', '">', "</button>"],
   _tmpl$48 = ["<style>", "</style>"],
   _tmpl$49 = ['<div class="bg-(--bg)" style="', '"></div>'],
-  _tmpl$50 = ['<div class="progress-fill" style="', '"></div>'],
-  _tmpl$51 = [
+  _tmpl$50 = ["<div", "></div>"],
+  _tmpl$51 = ['<div class="progress-fill" style="', '"></div>'],
+  _tmpl$52 = [
     "<div><textarea>",
     "</textarea><textarea>",
     "</textarea><textarea>",
     "</textarea><textarea></textarea><textarea>",
     "</textarea><textarea>static content</textarea><textarea>static content</textarea></div>"
   ];
-  _tmpl$50 = ["<div", "></div>"],
-  _tmpl$51 = ['<div class="progress-fill" style="', '"></div>'];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -644,27 +643,27 @@ const template91 = (() => {
 })();
 const template92 = _$ssr(_tmpl$9);
 const template93 = (() => {
-  var _v$40 = _$ssrRunInScope([
+  var _v$36 = _$ssrRunInScope([
     () => _$ssrAttribute("data-test", _$escape(state.flag || undefined, true))
   ]);
-  return _$ssr(_tmpl$50, _v$40[0]);
+  return _$ssr(_tmpl$50, _v$36[0]);
 })();
 function Progress(props) {
   return (() => {
-    var _v$41 = _$ssrRunInScope([
+    var _v$37 = _$ssrRunInScope([
       () =>
         _$ssrStyleProperty(
           (props.orientation === "y" ? "height" : "width") + ":",
           `${_$escape(props.value, true) * 100}%`
         )
     ]);
-    return _$ssr(_tmpl$51, _v$41[0]);
+    return _$ssr(_tmpl$51, _v$37[0]);
   })();
 }
-const template93 = (() => {
-  var _v$37 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
-    _v$38 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
-    _v$39 = _$ssrRunInScope(() => _$escape(dynamicContent())),
-    _v$40 = _$ssrRunInScope(() => _$escape(dynamicContent()));
-  return _$ssr(_tmpl$51, _v$37, _v$38, _v$39, _v$40);
+const template94 = (() => {
+  var _v$38 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
+    _v$39 = _$ssrRunInScope(() => _$escape(dynamicProperty())),
+    _v$40 = _$ssrRunInScope(() => _$escape(dynamicContent())),
+    _v$41 = _$ssrRunInScope(() => _$escape(dynamicContent()));
+  return _$ssr(_tmpl$52, _v$38, _v$39, _v$40, _v$41);
 })();
