@@ -60,4 +60,6 @@ $(`prettier "./jsx.d.ts" --write`);
 
 // discard temporal file
 
-fs.unlink("./jsx-h.temp.d.ts", () => {});
+fs.unlink("./jsx-h.temp.d.ts", () => {
+	console.log("DONE\n");
+});
