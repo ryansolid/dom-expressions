@@ -277,11 +277,15 @@ export namespace JSX {
 
   type BooleanAttribute = true | false | "";
 
+  type BooleanProperty = true | false;
+
   type EnumeratedPseudoBoolean = "false" | "true";
 
   type EnumeratedAcceptsEmpty = "" | true;
 
   type RemoveAttribute = undefined | false;
+
+  type RemoveProperty = undefined;
 
   // ARIA
 
@@ -1523,7 +1527,7 @@ export namespace JSX {
     autocomplete?: HTMLAutocomplete | RemoveAttribute;
     capture?: "user" | "environment" | RemoveAttribute;
     checked?: BooleanAttribute | RemoveAttribute;
-    "prop:checked"?: BooleanAttribute | RemoveAttribute;
+    "prop:checked"?: BooleanProperty | RemoveProperty;
     colorspace?: string | RemoveAttribute;
     dirname?: string | RemoveAttribute;
     disabled?: BooleanAttribute | RemoveAttribute;
@@ -1578,7 +1582,7 @@ export namespace JSX {
       | (string & {})
       | RemoveAttribute;
     value?: string | string[] | number | RemoveAttribute;
-    "prop:value"?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveProperty;
     width?: number | string | RemoveAttribute;
 
     /** @non-standard */
@@ -1658,7 +1662,7 @@ export namespace JSX {
     disableremoteplayback?: BooleanAttribute | RemoveAttribute;
     loop?: BooleanAttribute | RemoveAttribute;
     muted?: BooleanAttribute | RemoveAttribute;
-    "prop:muted"?: BooleanAttribute | RemoveAttribute;
+    "prop:muted"?: BooleanProperty | RemoveProperty;
     preload?: "none" | "metadata" | "auto" | EnumeratedAcceptsEmpty | RemoveAttribute;
     src?: string | RemoveAttribute;
 
@@ -1762,9 +1766,9 @@ export namespace JSX {
     disabled?: BooleanAttribute | RemoveAttribute;
     label?: string | RemoveAttribute;
     selected?: BooleanAttribute | RemoveAttribute;
-    "prop:selected"?: BooleanAttribute | RemoveAttribute;
+    "prop:selected"?: BooleanProperty | RemoveProperty;
     value?: string | string[] | number | RemoveAttribute;
-    "prop:value"?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveProperty;
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
     for?: string | RemoveAttribute;
@@ -1817,7 +1821,7 @@ export namespace JSX {
     required?: BooleanAttribute | RemoveAttribute;
     size?: number | string | RemoveAttribute;
     value?: string | string[] | number | RemoveAttribute;
-    "prop:value"?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveProperty;
   }
   interface HTMLSlotElementAttributes<T> extends HTMLAttributes<T> {
     name?: string | RemoveAttribute;
@@ -1892,7 +1896,7 @@ export namespace JSX {
     required?: BooleanAttribute | RemoveAttribute;
     rows?: number | string | RemoveAttribute;
     value?: string | string[] | number | RemoveAttribute;
-    "prop:value"?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveProperty;
     wrap?: "hard" | "soft" | "off" | RemoveAttribute;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
