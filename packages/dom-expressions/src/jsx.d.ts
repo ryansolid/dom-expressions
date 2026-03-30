@@ -1892,6 +1892,7 @@ export namespace JSX {
     required?: BooleanAttribute | RemoveAttribute;
     rows?: number | string | RemoveAttribute;
     value?: string | string[] | number | RemoveAttribute;
+    "prop:value"?: string | string[] | number | RemoveAttribute;
     wrap?: "hard" | "soft" | "off" | RemoveAttribute;
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
