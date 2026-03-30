@@ -975,16 +975,16 @@ const template94 = (() => {
   _$insert(_el$139, dynamicContent);
   _$insert(_el$141, dynamicContent);
   _$effect(dynamicProperty, _v$ => {
-    _el$137.value = _v$;
+    _el$137.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$138.value = _v$;
+    _el$138.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$139.value = _v$;
+    _el$139.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$140.value = _v$;
+    _el$140.value = _v$ ?? "";
   });
   return _el$136;
 })();
