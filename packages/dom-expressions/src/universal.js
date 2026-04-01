@@ -3,6 +3,7 @@ import { root, effect, memo, createComponent, untrack, runWithOwner, mergeProps,
 export function createRenderer({
   createElement,
   createTextNode,
+  createSentinel = () => createTextNode(""),
   isTextNode,
   replaceText,
   insertNode,
@@ -19,6 +20,12 @@ export function createRenderer({
       accessor = normalize(accessor, multi, true);
       if (typeof accessor !== "function")
         return insertExpression(parent, accessor, initial, marker);
+    }
+    accessor = memo(accessor, true);
+    if (multi && initial.length === 0) {
+      const sentinel = createSentinel();
+      insertNode(parent, sentinel, marker);
+      initial = [sentinel];
     }
     effect(
       () => normalize(accessor, multi),
@@ -185,15 +192,7 @@ export function createRenderer({
   function spread(node, props, skipChildren) {
     const prevProps = {};
     props || (props = {});
-    if (!skipChildren) {
-      effect(
-        () => normalize(props.children),
-        value => {
-          insertExpression(node, value, prevProps.children);
-          prevProps.children = value;
-        }
-      );
-    }
+    if (!skipChildren) insert(node, () => props.children);
     effect(
       () => {
         const r = props.ref;
@@ -206,15 +205,20 @@ export function createRenderer({
         const newProps = {};
         for (const prop in props) {
           if (prop === "children" || prop === "ref") continue;
-          const value = props[prop];
-          if (value === prevProps[prop]) continue;
-          newProps[prop] = value;
+          newProps[prop] = props[prop];
         }
         return newProps;
       },
       props => {
+        for (const prop in prevProps) {
+          if (!(prop in props)) {
+            setProperty(node, prop, undefined, prevProps[prop]);
+            delete prevProps[prop];
+          }
+        }
         for (const prop in props) {
           const value = props[prop];
+          if (value === prevProps[prop]) continue;
           setProperty(node, prop, value, prevProps[prop]);
           prevProps[prop] = value;
         }

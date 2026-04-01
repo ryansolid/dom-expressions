@@ -68,7 +68,13 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$47 = /*#__PURE__*/ _$template(`<button type="button"></button>`),
   _tmpl$48 = /*#__PURE__*/ _$template(`<div style="padding-left:clamp(2px, 2px, 2px)"></div>`),
   _tmpl$49 = /*#__PURE__*/ _$template(`<div style="a:clamp(2px, 2px, 2px)"></div>`),
-  _tmpl$50 = /*#__PURE__*/ _$template(`<div style="duplicate2"></div>`);
+  _tmpl$50 = /*#__PURE__*/ _$template(`<div style="duplicate2"></div>`),
+  _tmpl$51 = /*#__PURE__*/ _$template(
+    `<div>static inlined, prop:value in effect<input value="static attribute">value in effect, prop:value inlined<input>static<input value="static attribute"><input>dynamic property<input><input>dynamic attribute/property<input>inlined muted<video muted></video>not inlined muted<video></video>not inlined muted dynamic muted property<video></video>inlined muted dynamic muted property<video muted></video>dynamic attribute muted, dynamic muted property<video></video></div>`
+  ),
+  _tmpl$52 = /*#__PURE__*/ _$template(
+    `<div><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea>static content</textarea><textarea>static content</textarea></div>`
+  );
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -324,7 +330,7 @@ const template20 = (() => {
     }
   );
   _$effect(s, _v$ => {
-    _el$26.value = _v$;
+    _el$26.value = _v$ ?? "";
   });
   _$effect(s2, _v$ => {
     _el$27.checked = _v$;

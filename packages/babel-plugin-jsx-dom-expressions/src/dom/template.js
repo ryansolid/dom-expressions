@@ -5,6 +5,7 @@ import {
   getNumberedId,
   getRendererConfig,
   inlineCallExpression,
+  isStatefulDOMProperty,
   registerImportMethod
 } from "../shared/utils";
 import { setAttr } from "./element";
@@ -161,7 +162,7 @@ function wrapDynamics(path, dynamics) {
     properties.push(propIdent);
     values.push(t.objectProperty(propIdent, value));
 
-    if (key === "class" || key === "style") {
+    if (key === "class" || key === "style" || isStatefulDOMProperty(tagName, key)) {
       statements.push(
         t.expressionStatement(
           setAttr(path, elem, key, propIdent, {

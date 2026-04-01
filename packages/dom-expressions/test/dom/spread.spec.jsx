@@ -345,3 +345,121 @@ describe("spread children caching", () => {
     disposer();
   });
 });
+
+describe("DOM with state props", () => {
+  it("resyncs spread input value when the DOM drifts", () => {
+    let input, disposer;
+    const [tick, setTick] = createSignal(0);
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <input
+        ref={input}
+        {...{
+          get value() {
+            tick();
+            return "fixed";
+          }
+        }}
+      />;
+    });
+
+    expect(input.value).toBe("fixed");
+    input.value = "typed";
+    expect(input.value).toBe("typed");
+
+    setTick(1);
+    flush();
+    expect(input.value).toBe("fixed");
+    disposer();
+  });
+
+  it("resyncs spread textarea value when the DOM drifts", () => {
+    let textarea, disposer;
+    const [tick, setTick] = createSignal(0);
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <textarea
+        ref={textarea}
+        {...{
+          get value() {
+            tick();
+            return "fixed";
+          }
+        }}
+      />;
+    });
+
+    expect(textarea.value).toBe("fixed");
+    textarea.value = "typed";
+    expect(textarea.value).toBe("typed");
+
+    setTick(1);
+    flush();
+    expect(textarea.value).toBe("fixed");
+    disposer();
+  });
+
+  it("keeps static value attributes while prop:value drives the live value", () => {
+    let input, disposer;
+    const [value, setValue] = createSignal("live");
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <input ref={input} value="default value" prop:value={value()} />;
+    });
+
+    expect(input.getAttribute("value")).toBe("default value");
+    expect(input.value).toBe("live");
+
+    setValue("next");
+    flush();
+
+    expect(input.getAttribute("value")).toBe("default value");
+    expect(input.value).toBe("next");
+    disposer();
+  });
+
+  it("normalizes nullish input values to an empty string", () => {
+    let input, disposer;
+    const [value, setValue] = createSignal("start");
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <input ref={input} value={value()} />;
+    });
+
+    expect(input.value).toBe("start");
+
+    setValue(undefined);
+    flush();
+    expect(input.value).toBe("");
+
+    setValue(null);
+    flush();
+    expect(input.value).toBe("");
+    disposer();
+  });
+
+  it("normalizes nullish textarea values to an empty string", () => {
+    let textarea, disposer;
+    const [value, setValue] = createSignal("start");
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <textarea ref={textarea} value={value()} />;
+    });
+
+    expect(textarea.value).toBe("start");
+
+    setValue(undefined);
+    flush();
+    expect(textarea.value).toBe("");
+
+    setValue(null);
+    flush();
+    expect(textarea.value).toBe("");
+    disposer();
+  });
+});

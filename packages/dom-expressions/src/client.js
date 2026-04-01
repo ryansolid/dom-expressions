@@ -12,6 +12,7 @@ import {
   flatten
 } from "rxcore";
 import reconcileArrays from "./reconcile";
+import { DOMWithState } from "./constants";
 export {
   Properties,
   ChildProperties,
@@ -111,8 +112,8 @@ export function setAttribute(node, name, value) {
 
 export function setAttributeNS(node, namespace, name, value) {
   if (isHydrating(node)) return;
-  if (value == null) node.removeAttributeNS(namespace, name);
-  else node.setAttributeNS(namespace, name, value);
+  if (value == null || value === false) node.removeAttributeNS(namespace, name);
+  else node.setAttributeNS(namespace, name, value === true ? "" : value);
 }
 
 export function className(node, value, prev) {
@@ -258,11 +259,20 @@ export function insert(parent, accessor, marker, initial) {
 }
 
 export function assign(node, props, skipChildren, prevProps = {}, skipRef = false) {
+  const nodeName = node.nodeName;
   props || (props = {});
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], skipRef);
+      prevProps[prop] = assignProp(
+        node,
+        prop,
+        null,
+        prevProps[prop],
+        skipRef,
+        nodeName,
+        prevProps
+      );
     }
   }
   for (const prop in props) {
@@ -270,8 +280,15 @@ export function assign(node, props, skipChildren, prevProps = {}, skipRef = fals
       if (!skipChildren) insertExpression(node, props.children);
       continue;
     }
-    const value = props[prop];
-    prevProps[prop] = assignProp(node, prop, value, prevProps[prop], skipRef);
+    prevProps[prop] = assignProp(
+      node,
+      prop,
+      props[prop],
+      prevProps[prop],
+      skipRef,
+      nodeName,
+      props
+    );
   }
 }
 
@@ -484,11 +501,12 @@ function flattenClassList(list, result) {
   }
 }
 
-function assignProp(node, prop, value, prev, skipRef) {
+function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
   let forceProp;
   if (prop === "style") return (style(node, value, prev), value);
-  if (prop === "class") return (className(node, value, prev), value);
-  if (value === prev) return prev;
+  if (prop === "class") return (className(node, value, isSVG, prev), value);
+  // dom with state may differs from reactive state
+  if (value === prev && (!DOMWithState[nodeName] || !DOMWithState[nodeName][prop])) return prev;
   if (prop === "ref") {
     if (!skipRef && value) ref(() => value, node);
   } else if (prop.slice(0, 3) === "on:") {
@@ -509,11 +527,11 @@ function assignProp(node, prop, value, prev, skipRef) {
   } else if (
     (forceProp = prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||
-    Properties.has(prop)
+    (DOMWithState[nodeName] && DOMWithState[nodeName][prop] && !props["prop:" + prop])
   ) {
     if (forceProp) prop = prop.slice(5);
-    else if (isHydrating(node)) return value;
-    if (prop === "value" && node.nodeName === "SELECT")
+    else if (isHydrating(node)) return value; // TODO IS this correct?
+    if (prop === "value" && nodeName === "SELECT")
       queueMicrotask(() => (node.value = value)) || (node.value = value);
     else node[prop] = value;
   } else {

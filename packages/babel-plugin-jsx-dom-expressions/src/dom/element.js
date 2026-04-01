@@ -1,7 +1,7 @@
 import * as t from "@babel/types";
 
 import {
-  Properties,
+  DOMWithState,
   ChildProperties,
   SVGNamespace,
   DelegatedEvents,
@@ -17,6 +17,7 @@ import {
   getTagName,
   isDynamic,
   isComponent,
+  isStatefulDOMProperty,
   registerImportMethod,
   filterChildren,
   toEventName,
@@ -29,6 +30,7 @@ import {
   escapeHTML,
   convertJSXIdentifier,
   transformCondition,
+  transformSpecialCaseAttributes,
   trimWhitespace,
   inlineCallExpression,
   hasStaticMarker,
@@ -83,7 +85,12 @@ export function transformElement(path, info) {
     }
   }
 
+  if (DOMWithState[tagName.toUpperCase()]) {
+    transformSpecialCaseAttributes(path, tagName);
+  }
+
   let config = getConfig(path),
+    wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
     isCustomElement =
       tagName.indexOf("-") > -1 ||
@@ -255,8 +262,8 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
   }
 
   const isChildProp = ChildProperties.has(name);
-  const isProp = Properties.has(name);
-  if (isChildProp || isProp || namespace === "prop") {
+
+  if (isChildProp || namespace === "prop") {
     if (config.hydratable && namespace !== "prop") {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
@@ -270,6 +277,7 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
       value
     );
     // handle select/options... TODO: consider other ways in the future
+    // TODO: there may be a race condition here
     if (name === "value" && tagName === "select") {
       return t.logicalExpression(
         "||",
@@ -277,6 +285,19 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
           t.arrowFunctionExpression([], assignment)
         ]),
         assignment
+      );
+    }
+    if (
+      name === "value" &&
+      (tagName === "input" || tagName === "textarea") &&
+      !t.isStringLiteral(value) &&
+      !t.isNumericLiteral(value)
+    ) {
+      // prevents undefined on input/textarea.value, fallback to empty string
+      return t.assignmentExpression(
+        "=",
+        t.memberExpression(elem, t.identifier("value")),
+        t.logicalExpression("??", value, t.stringLiteral(""))
       );
     }
     return assignment;
@@ -635,7 +656,7 @@ function transformAttributes(path, results) {
           evaluated !== undefined &&
           ((type = typeof evaluated) === "string" || type === "number")
         ) {
-          if (type === "number" && (Properties.has(key) || key.startsWith("prop:"))) {
+          if (type === "number" && key.startsWith("prop:")) {
             value = t.jsxExpressionContainer(t.numericLiteral(evaluated));
           } else value = t.stringLiteral(String(evaluated));
         }
@@ -863,8 +884,9 @@ function transformAttributes(path, results) {
               !attribute.get("value").get("expression").evaluate().confident &&
               !hasStaticMarker(value, path)))
         ) {
+          // own effect
           let nextElem = elem;
-          if (key === "value" || key === "checked") {
+          if (isStatefulDOMProperty(tagName, key)) {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
             const v = t.identifier("_v$");
             results.postExprs.push(
