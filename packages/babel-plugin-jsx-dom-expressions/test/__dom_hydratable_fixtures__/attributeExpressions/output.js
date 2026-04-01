@@ -258,6 +258,12 @@ const template14 = (() => {
       _el$19.checked = _v$;
     }
   );
+  _$effect(
+    () => state.visible,
+    _v$ => {
+      _$setAttribute(_el$19, "checked", _v$);
+    }
+  );
   return _el$19;
 })();
 const template15 = _$getNextElement(_tmpl$10);
@@ -332,8 +338,14 @@ const template20 = (() => {
   _$effect(s, _v$ => {
     _el$26.value = _v$ ?? "";
   });
+  _$effect(s, _v$ => {
+    _$setAttribute(_el$26, "value", _v$);
+  });
   _$effect(s2, _v$ => {
     _el$27.checked = _v$;
+  });
+  _$effect(s2, _v$ => {
+    _$setAttribute(_el$27, "checked", _v$);
   });
   _$runHydrationEvents();
   return _el$25;
@@ -550,15 +562,33 @@ const template41 = (() => {
     }
   );
   _$effect(
+    () => Color.Red,
+    _v$ => {
+      _$setAttribute(_el$60, "value", _v$);
+    }
+  );
+  _$effect(
     () => Color.Blue,
     _v$ => {
       _el$61.value = _v$;
     }
   );
   _$effect(
+    () => Color.Blue,
+    _v$ => {
+      _$setAttribute(_el$61, "value", _v$);
+    }
+  );
+  _$effect(
     () => state.color,
     _v$ => {
       queueMicrotask(() => (_el$59.value = _v$)) || (_el$59.value = _v$);
+    }
+  );
+  _$effect(
+    () => state.color,
+    _v$ => {
+      _$setAttribute(_el$59, "value", _v$);
     }
   );
   return _el$59;

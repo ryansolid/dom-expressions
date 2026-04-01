@@ -494,7 +494,7 @@ function renameAttribute(attr, name) {
   }
 }
 
-export function transformSpecialCaseAttributes(path, tagName, isSSR) {
+export function transformSpecialCaseAttributes(path, tagName) {
   tagName = tagName.toUpperCase();
 
   for (const propName in DOMWithState[tagName]) {
@@ -517,13 +517,13 @@ export function transformSpecialCaseAttributes(path, tagName, isSSR) {
         renameAttribute(attr, "prop:" + propName);
 
         // `value` is not present, only `prop:value`, SSR `value`
-        if (isSSR) {
-          // <textarea value=""/> doesnt exists
-          if (tagName === "TEXTAREA" && propName === "value") {
-            path.set("children", [t.jsxExpressionContainer(value)]);
-          } else {
-            addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
-          }
+        // it has to also do same for dom as for hydration ids to match
+
+        // <textarea value=""/> doesnt exists
+        if (tagName === "TEXTAREA" && propName === "value") {
+          path.set("children", [t.jsxExpressionContainer(value)]);
+        } else {
+          addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
         }
       } else {
         // value is not dynamic

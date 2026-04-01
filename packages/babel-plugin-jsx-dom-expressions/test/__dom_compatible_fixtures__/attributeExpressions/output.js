@@ -272,6 +272,12 @@ const template14 = (() => {
       _el$19.checked = _v$;
     }
   );
+  _$effect(
+    () => state.visible,
+    _v$ => {
+      _$setAttribute(_el$19, "checked", _v$);
+    }
+  );
   return _el$19;
 })();
 const template15 = _tmpl$10();
@@ -344,8 +350,14 @@ const template20 = (() => {
   _$effect(s, _v$ => {
     _el$26.value = _v$ ?? "";
   });
+  _$effect(s, _v$ => {
+    _$setAttribute(_el$26, "value", _v$);
+  });
   _$effect(s2, _v$ => {
     _el$27.checked = _v$;
+  });
+  _$effect(s2, _v$ => {
+    _$setAttribute(_el$27, "checked", _v$);
   });
   return _el$25;
 })();
@@ -552,15 +564,33 @@ const template41 = (() => {
     }
   );
   _$effect(
+    () => Color.Red,
+    _v$ => {
+      _$setAttribute(_el$56, "value", _v$);
+    }
+  );
+  _$effect(
     () => Color.Blue,
     _v$ => {
       _el$57.value = _v$;
     }
   );
   _$effect(
+    () => Color.Blue,
+    _v$ => {
+      _$setAttribute(_el$57, "value", _v$);
+    }
+  );
+  _$effect(
     () => state.color,
     _v$ => {
       queueMicrotask(() => (_el$55.value = _v$)) || (_el$55.value = _v$);
+    }
+  );
+  _$effect(
+    () => state.color,
+    _v$ => {
+      _$setAttribute(_el$55, "value", _v$);
     }
   );
   return _el$55;
@@ -942,6 +972,9 @@ const template93 = (() => {
     _el$122.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
+    _$setAttribute(_el$122, "value", _v$);
+  });
+  _$effect(dynamicProperty, _v$ => {
     _el$123.value = _v$ ?? "";
   });
   _$effect(dynamicAttribute, _v$ => {
@@ -971,7 +1004,8 @@ const template94 = (() => {
     _el$139 = _el$138.nextSibling,
     _el$140 = _el$139.nextSibling,
     _el$141 = _el$140.nextSibling;
-  _$insert(_el$138, dynamicContent);
+  _$insert(_el$137, dynamicProperty);
+  _$insert(_el$138, dynamicProperty);
   _$insert(_el$139, dynamicContent);
   _$insert(_el$141, dynamicContent);
   _$effect(dynamicProperty, _v$ => {
