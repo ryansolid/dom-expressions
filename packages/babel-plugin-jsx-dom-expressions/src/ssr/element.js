@@ -116,7 +116,7 @@ function setAttr(tagName, attribute, results, name, value, isDynamic, isBoolean)
   if (isDynamic) {
     attr = t.arrowFunctionExpression([], attr);
 
-    const post = DOMWithState[tagName.toUpperCase()] && DOMWithState[tagName.toUpperCase()][name];
+    const post = isStatefulDOMProperty(tagName, name);
 
     results.templateValues.push(
       hoistExpression(attribute, results, attr, {
