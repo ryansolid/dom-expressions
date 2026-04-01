@@ -90,7 +90,6 @@ export function transformElement(path, info) {
   }
 
   let config = getConfig(path),
-    wrapSVG = info.topLevel && tagName != "svg" && SVGElements.has(tagName),
     voidTag = VoidElements.indexOf(tagName) > -1,
     isCustomElement =
       tagName.indexOf("-") > -1 ||

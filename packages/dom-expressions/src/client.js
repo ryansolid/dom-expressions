@@ -264,15 +264,7 @@ export function assign(node, props, skipChildren, prevProps = {}, skipRef = fals
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(
-        node,
-        prop,
-        null,
-        prevProps[prop],
-        skipRef,
-        nodeName,
-        prevProps
-      );
+      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], skipRef, nodeName, prevProps);
     }
   }
   for (const prop in props) {
@@ -504,7 +496,7 @@ function flattenClassList(list, result) {
 function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
   let forceProp;
   if (prop === "style") return (style(node, value, prev), value);
-  if (prop === "class") return (className(node, value, isSVG, prev), value);
+  if (prop === "class") return (className(node, value, prev), value);
   // dom with state may differs from reactive state
   if (value === prev && (!DOMWithState[nodeName] || !DOMWithState[nodeName][prop])) return prev;
   if (prop === "ref") {

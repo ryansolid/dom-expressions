@@ -483,8 +483,6 @@ export function getAttributeNamed(path, name) {
     });
 }
 
- 
-
 export function isTopTemplateElement(path) {
   let current = path.parentPath;
   while (current) {
@@ -495,6 +493,8 @@ export function isTopTemplateElement(path) {
     current = current.parentPath;
   }
   return true;
+}
+
 function renameAttribute(attr, name) {
   const [ns, propName] = name.split(":");
   if (propName) {
