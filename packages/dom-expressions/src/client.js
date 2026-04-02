@@ -329,7 +329,9 @@ export function hydrate(code, element, options = {}) {
   if ("_DX_DEV_") {
     sharedConfig.verifyHydration = () => {
       if (sharedConfig.registry && sharedConfig.registry.size) {
-        const orphaned = [...sharedConfig.registry.values()];
+        const orphaned = [...sharedConfig.registry.values()].filter(node => node.isConnected);
+        sharedConfig.registry.clear();
+        if (!orphaned.length) return;
         console.warn(
           `Hydration completed with ${orphaned.length} unclaimed server-rendered node(s):\n` +
             orphaned.map(node => `  ${node.outerHTML.slice(0, 100)}`).join("\n")

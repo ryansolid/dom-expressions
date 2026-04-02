@@ -451,6 +451,19 @@ describe("Phase 1: Hydration error diagnostics", () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  it("verifyHydration ignores disconnected registry entries", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const stale = document.createElement("div");
+    stale.setAttribute("_hk", "1");
+    stale.textContent = "Stale";
+    sharedConfig.registry = new Map([["1", stale]]);
+
+    sharedConfig.verifyHydration();
+    expect(sharedConfig.registry.size).toBe(0);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
 });
 
 describe("Phase 2: Walk validation helpers", () => {
