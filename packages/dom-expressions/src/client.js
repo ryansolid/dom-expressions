@@ -15,6 +15,7 @@ import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
 export {
   Properties,
+  DOMWithState,
   ChildProperties,
   DOMElements,
   SVGElements,

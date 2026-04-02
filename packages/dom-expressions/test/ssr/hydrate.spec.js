@@ -658,3 +658,83 @@ describe("Spread element hydration", () => {
     expect(el2.textContent).toBe("Second");
   });
 });
+
+describe("SSR scope hydration alignment", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  beforeEach(() => {
+    globalThis._$HY = { events: [], completed: new WeakSet() };
+    container.innerHTML = "";
+  });
+
+  it("keeps sibling hydration keys aligned for ssrRunInScope-wrapped attributes", () => {
+    const rendered = r2.renderToString(() => [
+      r2.ssr(
+        ["<input", "", ">"],
+        r2.ssrHydrationKey(),
+        r2.ssrRunInScope(() => r2.ssrAttribute("value", "first"))()
+      ),
+      r2.ssr(["<div", ">Second</div>"], r2.ssrHydrationKey())
+    ]);
+
+    const hkValues = [...rendered.matchAll(/_hk=(\S+?)[\s>]/g)].map(m => m[1]);
+    expect(hkValues).toEqual(["0", "1"]);
+
+    container.innerHTML = rendered;
+
+    const inputNode = container.firstChild;
+    const divNode = inputNode.nextSibling;
+    const inputTemplate = r.template("<input>");
+    const divTemplate = r.template("<div>Second</div>");
+
+    r.hydrate(() => {
+      const _el$1 = r.getNextElement(inputTemplate);
+      r.runHydrationEvents(_el$1.getAttribute("_hk"));
+
+      const _el$2 = r.getNextElement(divTemplate);
+      r.runHydrationEvents(_el$2.getAttribute("_hk"));
+
+      r.insert(container, [_el$1, _el$2], undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+    }, container);
+
+    expect(container.firstChild).toBe(inputNode);
+    expect(inputNode.nextSibling).toBe(divNode);
+  });
+
+  it("keeps sibling hydration keys aligned for ssrRunInScope-wrapped textarea children", () => {
+    const rendered = r2.renderToString(() => [
+      r2.ssr(
+        ["<textarea", ">", "</textarea>"],
+        r2.ssrHydrationKey(),
+        r2.ssrRunInScope(() => r2.escape("first"))()
+      ),
+      r2.ssr(["<div", ">Second</div>"], r2.ssrHydrationKey())
+    ]);
+
+    const hkValues = [...rendered.matchAll(/_hk=(\S+?)[\s>]/g)].map(m => m[1]);
+    expect(hkValues).toEqual(["0", "1"]);
+
+    container.innerHTML = rendered;
+
+    const textareaNode = container.firstChild;
+    const divNode = textareaNode.nextSibling;
+    const textareaTemplate = r.template("<textarea></textarea>");
+    const divTemplate = r.template("<div>Second</div>");
+
+    r.hydrate(() => {
+      const _el$1 = r.getNextElement(textareaTemplate);
+      r.runHydrationEvents(_el$1.getAttribute("_hk"));
+
+      const _el$2 = r.getNextElement(divTemplate);
+      r.runHydrationEvents(_el$2.getAttribute("_hk"));
+
+      r.insert(container, [_el$1, _el$2], undefined, [...container.childNodes]);
+      r.runHydrationEvents();
+    }, container);
+
+    expect(container.firstChild).toBe(textareaNode);
+    expect(textareaNode.nextSibling).toBe(divNode);
+  });
+});

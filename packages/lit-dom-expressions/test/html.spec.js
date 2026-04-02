@@ -12,6 +12,26 @@ const html = createHTML(r, { functionBuilder: (...args) => {
   return new Function(...args);
 }});
 
+class ValueAttributeOnlyElement extends HTMLElement {
+  constructor() {
+    super();
+    this.setterCalls = 0;
+    this.propValue = undefined;
+  }
+
+  set value(value) {
+    this.setterCalls++;
+    this.propValue = value;
+  }
+
+  get value() {
+    return this.propValue;
+  }
+}
+
+customElements.get("dx-value-attribute-only") ||
+  customElements.define("dx-value-attribute-only", ValueAttributeOnlyElement);
+
 const FIXTURES = /** @type {const} */ ([
   '<div id="main"><!-- this is a comment --><h1 random="">Welcome</h1><span style="color: rgb(85, 85, 85);">555</span><label class="name" for="entry">Edit:</label><input id="entry" type="text" readonly=""></div>',
   '<div id="main" refset="true" class="selected also" title="hi"><h1 class="hello" title="hello John Smith" style="background-color: red;"><a href="/">Welcome</a></h1></div>',
@@ -277,6 +297,40 @@ describe("Test HTML", () => {
       setD("second");
       flush();
       expect(div.innerHTML.replace(/<!--#-->/g, "")).toBe(FIXTURES[9]);
+    });
+  });
+
+  test("custom elements keep dynamic value on the attribute path", () => {
+    createRoot(() => {
+      const [value, setValue] = createSignal("initial");
+      const el = html`<dx-value-attribute-only value=${value} />`;
+
+      expect(el.getAttribute("value")).toBe("initial");
+      expect(el.setterCalls).toBe(0);
+      expect(el.value).toBeUndefined();
+
+      setValue("next");
+      flush();
+
+      expect(el.getAttribute("value")).toBe("next");
+      expect(el.setterCalls).toBe(0);
+      expect(el.value).toBeUndefined();
+    });
+  });
+
+  test("input keeps dynamic value on the property path", () => {
+    createRoot(() => {
+      const [value, setValue] = createSignal("initial");
+      const input = html`<input value=${value} />`;
+
+      expect(input.value).toBe("initial");
+      expect(input.getAttribute("value")).toBe(null);
+
+      setValue("next");
+      flush();
+
+      expect(input.value).toBe("next");
+      expect(input.getAttribute("value")).toBe(null);
     });
   });
 

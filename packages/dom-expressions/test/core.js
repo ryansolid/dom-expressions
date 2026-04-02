@@ -1,4 +1,4 @@
-import { untrack, getOwner, createOwner, runWithOwner, getNextChildId } from "@solidjs/signals";
+import { untrack, getOwner, runWithOwner, getNextChildId } from "@solidjs/signals";
 
 export const sharedConfig = {
   getNextContextId() {
@@ -18,11 +18,11 @@ export function createComponent(Comp, props) {
 }
 
 export function ssrRunInScope(fn) {
-  if (Array.isArray(fn)) {
-    const o = createOwner();
-    return fn.map(f => runWithOwner.bind(null, o, f));
-  }
-  return runWithOwner.bind(null, createOwner(), fn);
+  const owner = getOwner();
+  if (!owner) return fn;
+  return Array.isArray(fn)
+    ? fn.map(f => () => runWithOwner(owner, f))
+    : () => runWithOwner(owner, fn);
 }
 
 import { createRoot, createRenderEffect, createMemo, merge, flatten } from "@solidjs/signals";

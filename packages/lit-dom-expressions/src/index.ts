@@ -24,6 +24,7 @@ interface Runtime {
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
   Properties: Set<string>;
+  DOMWithState: Record<string, Record<string, number>>;
   ChildProperties: Set<string>;
   DelegatedEvents: Set<string>;
   SVGElements: Set<string>;
@@ -185,14 +186,14 @@ export function createHTML(
       namespace = parts[0];
     }
     const isChildProp = r.ChildProperties.has(name);
-    const isProp = r.Properties.has(name);
+    const isStatefulDOMProperty = !isSVG && !!r.DOMWithState[node.name.toUpperCase()]?.[name];
 
     if (name === "style") {
       options.exprs.push(`r.style(${tag},${expr},_$p)`);
     } else if (name === "class") {
       options.exprs.push(`r.className(${tag},${expr},${isSVG},_$p)`);
     } else if (
-      (isChildProp || (!isSVG && isProp) || namespace === "prop")
+      (isChildProp || isStatefulDOMProperty || namespace === "prop")
     ) {
       options.exprs.push(`${tag}.${name} = ${expr}`);
     } else {
