@@ -79,7 +79,7 @@ export function template(html, flag) {
       ? bypassGuard => document.importNode(node || (node = create(html, bypassGuard, flag)), true)
       : bypassGuard => (node || (node = create(html, bypassGuard, flag))).cloneNode(true);
 
-  if ("_DX_DEV_") fn._html = html;
+  if ("_DX_DEV_") fn._html = flag === 2 ? html.replace(/^<[^>]+>/, "") : html;
   return fn;
 }
 export function delegateEvents(eventNames, document = window.document) {
