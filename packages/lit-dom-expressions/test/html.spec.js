@@ -42,7 +42,7 @@ const FIXTURES = /** @type {const} */ ([
   "<div><div>Hi</div></div>",
   "<div><b>Hello, my name is: <i>John</i></b></div>",
   "<style>.something{color:red}</style>",
-  '<div class="first second">this test is broken</div>'
+  '<div class="second"></div>'
 ]);
 
 describe("Test HTML", () => {
@@ -291,7 +291,7 @@ describe("Test HTML", () => {
   test("Test double toggle class", () => {
     createRoot(() => {
       const [d, setD] = createSignal("first");
-      const template = html`<div class=${() => ({ [d()]: true })} >this test is broken</div>`;
+      const template = html`<div class=${() => ({ [d()]: true })} ></div>`;
       const div = document.createElement("div");
       div.appendChild(template);
       setD("second");
