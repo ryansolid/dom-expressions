@@ -33,8 +33,7 @@ import {
   transformSpecialCaseAttributes,
   trimWhitespace,
   inlineCallExpression,
-  hasStaticMarker,
-  isTopTemplateElement
+  hasStaticMarker
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 import { InlineElements, BlockElements } from "./constants";
@@ -73,7 +72,7 @@ export function transformElement(path, info) {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
 
-  if (isTopTemplateElement(path)) {
+  if (info.topLevel) {
     // svg and math tags do not need a explicit xmlns
     if (tagName !== "svg" && tagName !== "math") {
       // add a xmlns attribute for partials
