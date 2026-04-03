@@ -2,13 +2,13 @@ import { parse, stringify, IDom } from "html-parse-string";
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 type ClassList =
-| Record<string, boolean>
-| Array<string | number | boolean | null | undefined | Record<string, boolean>>;
+  | Record<string, boolean>
+  | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
 interface Runtime {
   effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
   untrack<T>(fn: () => T): T;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
-  spread<T>(node: Element, accessor: (() => T) | T, isSVG?: Boolean, skipChildren?: Boolean): void;
+  spread<T>(node: Element, accessor: (() => T) | T, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
   addEventListener(
     node: Element,
@@ -17,7 +17,7 @@ interface Runtime {
     delegate: boolean
   ): void;
   delegateEvents(eventNames: string[]): void;
-  className(node: Element, value: string | ClassList, isSVG?: boolean, prev?: string | ClassList): void;
+  className(node: Element, value: string | ClassList, prev?: string | ClassList): void;
   style(node: Element, value: { [k: string]: string }, prev?: { [k: string]: string }): void;
   mergeProps(...sources: unknown[]): unknown;
   dynamicProperty(props: any, key: string): any;
@@ -87,7 +87,6 @@ function replaceAttributes($0: string, $1: string, $2: string) {
 function fullClosing($0: string, $1: string, $2: string) {
   return VOID_ELEMENTS.test($1) ? $0 : "<" + $1 + $2 + "></" + $1 + ">";
 }
-
 
 export function createHTML(
   r: Runtime,
@@ -161,20 +160,12 @@ export function createHTML(
     return templates;
   }
 
-  function parseKeyValue(
-    node: IDom,
-    tag: string,
-    name: string,
-    value: string,
-    isSVG: boolean,
-    options: Options
-  ) {
+  function parseKeyValue(node: IDom, tag: string, name: string, value: string, options: Options) {
     let expr, parts, namespace;
     if (value === "###") {
       expr = `_$v`;
       options.counter++;
-    }
-    else {
+    } else {
       const chunks = value.split("###");
       options.counter = chunks.length - 1 + options.counter;
       expr = chunks.map((v, i) => (i ? ` + _$v[${i - 1}] + "${v}"` : `"${v}"`)).join("");
@@ -185,31 +176,22 @@ export function createHTML(
       namespace = parts[0];
     }
     const isChildProp = r.ChildProperties.has(name);
-    const isStatefulDOMProperty = !isSVG && !!r.DOMWithState[node.name.toUpperCase()]?.[name];
+    const isStatefulDOMProperty = !!r.DOMWithState[node.name.toUpperCase()]?.[name];
 
     if (name === "style") {
       options.exprs.push(`r.style(${tag},${expr},_$p)`);
     } else if (name === "class") {
-      options.exprs.push(`r.className(${tag},${expr},${isSVG},_$p)`);
-    } else if (
-      (isChildProp || isStatefulDOMProperty || namespace === "prop")
-    ) {
+      options.exprs.push(`r.className(${tag},${expr},_$p)`);
+    } else if (isChildProp || isStatefulDOMProperty || namespace === "prop") {
       options.exprs.push(`${tag}.${name} = ${expr}`);
     } else {
-      const ns = isSVG && name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
+      const ns = name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);
       else options.exprs.push(`r.setAttribute(${tag},"${name}",${expr})`);
     }
   }
 
-  function parseAttribute(
-    node: IDom,
-    tag: string,
-    name: string,
-    value: string,
-    isSVG: boolean,
-    options: Options
-  ) {
+  function parseAttribute(node: IDom, tag: string, name: string, value: string, options: Options) {
     if (name.slice(0, 2) === "on") {
       if (!name.includes(":")) {
         const lc = name.slice(2).toLowerCase();
@@ -228,7 +210,7 @@ export function createHTML(
     } else {
       const childOptions = Object.assign({}, options, { exprs: [] }),
         count = options.counter;
-      parseKeyValue(node, tag, name, value, isSVG, childOptions);
+      parseKeyValue(node, tag, name, value, childOptions);
       options.decl.push(`_fn${count} = (_$v, _$p) => {\n${childOptions.exprs.join(";\n")};\n}`);
       if (value === "###") {
         options.exprs.push(
@@ -424,7 +406,6 @@ export function createHTML(
       options.decl.push(
         topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
-      const isSVG = r.SVGElements.has(node.name);
       options.hasCustomElement = node.name.includes("-") || node.attrs.some(e => e.name === "is");
       options.isImportNode =
         (node.name === "img" || node.name === "iframe") &&
@@ -462,7 +443,7 @@ export function createHTML(
             spreadArgs.length === 1
               ? `typeof ${spreadArgs[0]} === "function" ? r.mergeProps(${spreadArgs[0]}) : ${spreadArgs[0]}`
               : `r.mergeProps(${spreadArgs.join(",")})`
-          },${isSVG},${!!node.children.length})`
+          },${!!node.children.length})`
         );
       } else {
         for (let i = 0; i < node.attrs.length; i++) {
@@ -471,7 +452,7 @@ export function createHTML(
             if (value.includes("###")) {
               node.attrs.splice(i, 1);
               i--;
-              parseAttribute(node, tag, name, value, isSVG, options);
+              parseAttribute(node, tag, name, value, options);
             }
           }
         }
@@ -482,7 +463,7 @@ export function createHTML(
       if (topDecl) {
         options.decl[0] =
           options.hasCustomElement || options.isImportNode
-            ? `const ${tag} = r.untrack(() => document.importNode(tmpls[${templateId}].content.firstChild, true))`
+            ? `const ${tag} = document.importNode(tmpls[${templateId}].content.firstChild, true)`
             : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
       }
     } else if (node.type === "text") {
