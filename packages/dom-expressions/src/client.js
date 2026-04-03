@@ -496,14 +496,18 @@ function flattenClassList(list, result) {
 }
 
 function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
-  let forceProp;
   if (prop === "style") return (style(node, value, prev), value);
   if (prop === "class") return (className(node, value, prev), value);
   // dom with state may differs from reactive state
   if (value === prev && (!DOMWithState[nodeName] || !DOMWithState[nodeName][prop])) return prev;
   if (prop === "ref") {
     if (!skipRef && value) ref(() => value, node);
-  } else if (prop.slice(0, 3) === "on:") {
+    return value;
+  }
+
+  const hasNamespace = prop.indexOf(":") > -1;
+
+  if (hasNamespace && prop.slice(0, 3) === "on:") {
     const e = prop.slice(3);
     prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
     value && node.addEventListener(e, value, typeof value !== "function" && value);
@@ -519,17 +523,17 @@ function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
       delegate && delegateEvents([name]);
     }
   } else if (
-    (forceProp = prop.slice(0, 5) === "prop:") ||
+    (hasNamespace && prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||
-    (DOMWithState[nodeName] && DOMWithState[nodeName][prop] && !props["prop:" + prop])
+    (DOMWithState[nodeName] && DOMWithState[nodeName][prop] && !("prop:" + prop in props))
   ) {
-    if (forceProp) prop = prop.slice(5);
+    if (hasNamespace) prop = prop.slice(5);
     else if (isHydrating(node)) return value; // TODO IS this correct?
     if (prop === "value" && nodeName === "SELECT")
       queueMicrotask(() => (node.value = value)) || (node.value = value);
     else node[prop] = value;
   } else {
-    const ns = prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];
+    const ns = hasNamespace && SVGNamespace[prop.split(":")[0]];
     if (ns) setAttributeNS(node, ns, prop, value);
     else setAttribute(node, prop, value);
   }
