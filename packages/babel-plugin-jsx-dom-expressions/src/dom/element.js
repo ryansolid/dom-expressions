@@ -91,18 +91,19 @@ export function transformElement(path, info) {
 
   let config = getConfig(path),
     voidTag = VoidElements.indexOf(tagName) > -1,
-    isCustomElement =
+    hasCustomElement =
       tagName.indexOf("-") > -1 ||
       path
         .get("openingElement")
         .get("attributes")
         .some(a => a.node?.name?.name === "is" || a.name?.name === "is"),
     isImportNode =
-      (tagName === "img" || tagName === "iframe") &&
-      path
-        .get("openingElement")
-        .get("attributes")
-        .some(a => a.node.name?.name === "loading"),
+      hasCustomElement ||
+      ((tagName === "img" || tagName === "iframe") &&
+        path
+          .get("openingElement")
+          .get("attributes")
+          .some(a => a.node.name?.name === "loading")),
     results = {
       template: `<${tagName}`,
       templateWithClosingTags: `<${tagName}`,
@@ -110,7 +111,6 @@ export function transformElement(path, info) {
       exprs: [],
       dynamics: [],
       postExprs: [],
-      hasCustomElement: isCustomElement,
       isImportNode,
       tagName,
       renderer: "dom",
@@ -167,7 +167,7 @@ export function transformElement(path, info) {
     results.id = path.scope.generateUidIdentifier("el$");
   }
   transformAttributes(path, results);
-  if (config.contextToCustomElements && (tagName === "slot" || isCustomElement)) {
+  if (config.contextToCustomElements && (tagName === "slot" || hasCustomElement)) {
     contextToCustomElement(path, results);
   }
   results.template += ">";
@@ -1056,7 +1056,6 @@ function transformChildren(path, results, config) {
       results.dynamics.push(...child.dynamics);
       childPostExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
-      results.hasCustomElement = results.hasCustomElement || child.hasCustomElement;
       results.isImportNode = results.isImportNode || child.isImportNode;
       tempPath = child.id.name;
       nextPlaceholder = null;

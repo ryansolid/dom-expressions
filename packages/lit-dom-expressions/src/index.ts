@@ -43,7 +43,6 @@ type Options = {
   templateId: number;
   templateNodes: IDom[][];
   wrap?: boolean;
-  hasCustomElement?: boolean;
   isImportNode?: boolean;
   parent?: boolean;
   fragment?: boolean;
@@ -275,7 +274,6 @@ export function createHTML(
     }
     options.counter = childOptions.counter;
     options.templateId = childOptions.templateId;
-    options.hasCustomElement = options.hasCustomElement || childOptions.hasCustomElement;
     options.isImportNode = options.isImportNode || childOptions.isImportNode;
   }
 
@@ -406,10 +404,11 @@ export function createHTML(
       options.decl.push(
         topDecl ? "" : `${tag} = ${options.path}.${options.first ? "firstChild" : "nextSibling"}`
       );
-      options.hasCustomElement = node.name.includes("-") || node.attrs.some(e => e.name === "is");
       options.isImportNode =
-        (node.name === "img" || node.name === "iframe") &&
-        node.attrs.some(e => e.name === "loading" && e.value === "lazy");
+        node.name.includes("-") ||
+        node.attrs.some(e => e.name === "is") ||
+        ((node.name === "img" || node.name === "iframe") &&
+          node.attrs.some(e => e.name === "loading" && e.value === "lazy"));
 
       if (node.attrs.some(e => e.name === "###")) {
         const spreadArgs = [];
@@ -461,10 +460,9 @@ export function createHTML(
       options.first = false;
       processChildren(node, options);
       if (topDecl) {
-        options.decl[0] =
-          options.hasCustomElement || options.isImportNode
-            ? `const ${tag} = document.importNode(tmpls[${templateId}].content.firstChild, true)`
-            : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
+        options.decl[0] = options.isImportNode
+          ? `const ${tag} = document.importNode(tmpls[${templateId}].content.firstChild, true)`
+          : `const ${tag} = tmpls[${templateId}].content.firstChild.cloneNode(true)`;
       }
     } else if (node.type === "text") {
       const tag = `_$el${uuid++}`;
