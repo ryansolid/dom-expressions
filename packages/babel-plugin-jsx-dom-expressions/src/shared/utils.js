@@ -560,3 +560,14 @@ export function isStatefulDOMProperty(tagName, propName) {
 export function addAttribute(path, name, value) {
   path.get("openingElement").pushContainer("attributes", t.jsxAttribute(name, value));
 }
+
+export function wrapWithTag(path, tagName) {
+  const wrapper = t.jsxElement(
+    t.jsxOpeningElement(t.jsxIdentifier(tagName), [], false),
+    t.jsxClosingElement(t.jsxIdentifier(tagName)),
+    [path.node],
+    false
+  );
+
+  path.replaceWith(wrapper);
+}

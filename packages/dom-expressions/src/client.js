@@ -62,21 +62,22 @@ export function render(code, element, init, options = {}) {
   };
 }
 
-function create(html, bypassGuard) {
+function create(html, bypassGuard, flag) {
   if ("_DX_DEV_" && isHydrating() && !bypassGuard)
     throw new Error(
       "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
     );
   const t = document.createElement("template");
   t.innerHTML = html;
-  return t.content.firstChild;
+  return flag === 2 ? t.content.firstChild.firstChild : t.content.firstChild;
 }
 
-export function template(html, isImportNode) {
+export function template(html, flag) {
   let node;
-  const fn = isImportNode
-    ? bypassGuard => document.importNode(node || (node = create(html, bypassGuard)), true)
-    : bypassGuard => (node || (node = create(html, bypassGuard))).cloneNode(true);
+  const fn =
+    flag === 1
+      ? bypassGuard => document.importNode(node || (node = create(html, bypassGuard, flag)), true)
+      : bypassGuard => (node || (node = create(html, bypassGuard, flag))).cloneNode(true);
 
   if ("_DX_DEV_") fn._html = html;
   return fn;

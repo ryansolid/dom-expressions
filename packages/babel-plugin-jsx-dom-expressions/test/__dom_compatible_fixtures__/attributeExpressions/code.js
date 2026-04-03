@@ -396,3 +396,5 @@ const template94 = <div>
   <textarea value="static content"/>
   <textarea value="static content">I get replaced</textarea>
 </div>
+
+const template95 = <a xmlns="http://www.w3.org/2000/svg">xml link partial</a>

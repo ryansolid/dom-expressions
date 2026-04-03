@@ -2,10 +2,10 @@ import { template as _$template } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { getOwner as _$getOwner } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
-var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, true),
-  _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot=head>Title`, true),
+var _tmpl$ = /*#__PURE__*/ _$template(`<my-element>`, 1),
+  _tmpl$2 = /*#__PURE__*/ _$template(`<my-element><header slot=head>Title`, 1),
   _tmpl$3 = /*#__PURE__*/ _$template(`<slot name=head>`),
-  _tmpl$4 = /*#__PURE__*/ _$template(`<a is=my-element>`, true);
+  _tmpl$4 = /*#__PURE__*/ _$template(`<a is=my-element>`, 1);
 const template = (() => {
   var _el$ = _tmpl$();
   _$setAttribute(_el$, "some-attr", name);

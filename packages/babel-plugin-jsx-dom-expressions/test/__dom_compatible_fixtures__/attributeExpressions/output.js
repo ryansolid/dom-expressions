@@ -40,21 +40,19 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$23 = /*#__PURE__*/ _$template(`<select><option>Red</option><option>Blue</option></select>`),
   _tmpl$24 = /*#__PURE__*/ _$template(`<img src>`),
   _tmpl$25 = /*#__PURE__*/ _$template(`<div><img src></div>`),
-  _tmpl$26 = /*#__PURE__*/ _$template(`<img src loading="lazy">`, true),
-  _tmpl$27 = /*#__PURE__*/ _$template(`<div><img src loading="lazy"></div>`, true),
+  _tmpl$26 = /*#__PURE__*/ _$template(`<img src loading="lazy">`, 1),
+  _tmpl$27 = /*#__PURE__*/ _$template(`<div><img src loading="lazy"></div>`, 1),
   _tmpl$28 = /*#__PURE__*/ _$template(`<iframe src></iframe>`),
   _tmpl$29 = /*#__PURE__*/ _$template(`<div><iframe src></iframe></div>`),
-  _tmpl$30 = /*#__PURE__*/ _$template(`<iframe src loading="lazy"></iframe>`, true),
-  _tmpl$31 = /*#__PURE__*/ _$template(`<div><iframe src loading="lazy"></iframe></div>`, true),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<iframe src loading="lazy"></iframe>`, 1),
+  _tmpl$31 = /*#__PURE__*/ _$template(`<div><iframe src loading="lazy"></iframe></div>`, 1),
   _tmpl$32 = /*#__PURE__*/ _$template(`<div title="<u>data</u>"></div>`),
   _tmpl$33 = /*#__PURE__*/ _$template(`<div true truestr="true"truestrjs="true"></div>`),
   _tmpl$34 = /*#__PURE__*/ _$template(`<div falsestr="false"falsestrjs="false"></div>`),
   _tmpl$35 = /*#__PURE__*/ _$template(`<div true></div>`),
   _tmpl$36 = /*#__PURE__*/ _$template(`<div a b c d f="0"g h l></div>`),
   _tmpl$37 = /*#__PURE__*/ _$template(`<math display="block"><mrow></mrow></math>`),
-  _tmpl$38 = /*#__PURE__*/ _$template(
-    `<mrow xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi><mo>=</mo></mrow>`
-  ),
+  _tmpl$38 = /*#__PURE__*/ _$template(`<math><mrow><mi>x</mi><mo>=</mo></mrow></math>`, 2),
   _tmpl$39 = /*#__PURE__*/ _$template(`<div style="background:red"></div>`),
   _tmpl$40 = /*#__PURE__*/ _$template(
     `<div style="background:red;color:green;margin:3;padding:0.4"></div>`
@@ -74,7 +72,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   ),
   _tmpl$52 = /*#__PURE__*/ _$template(
     `<div><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea>static content</textarea><textarea>static content</textarea></div>`
-  );
+  ),
+  _tmpl$53 = /*#__PURE__*/ _$template(`<svg><a>xml link partial</a></svg>`, 2);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -968,4 +967,5 @@ const template94 = (() => {
   });
   return _el$136;
 })();
+const template95 = _tmpl$53();
 _$delegateEvents(["click", "input"]);

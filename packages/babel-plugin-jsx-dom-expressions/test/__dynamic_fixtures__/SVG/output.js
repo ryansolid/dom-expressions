@@ -13,15 +13,9 @@ var _tmpl$ = /*#__PURE__*/ _$template(
     `<svg width=400 height=180><rect rx=20 ry=20 width=150 height=150 style=fill:red;stroke:black;opacity:0.5>`
   ),
   _tmpl$3 = /*#__PURE__*/ _$template(`<svg width=400 height=180><rect>`),
-  _tmpl$4 = /*#__PURE__*/ _$template(
-    `<rect x=50 y=20 width=150 height=150 xmlns=http://www.w3.org/2000/svg>`
-  ),
-  _tmpl$5 = /*#__PURE__*/ _$template(
-    `<svg viewBox="0 0 160 40"xmlns=http://www.w3.org/2000/svg><a><text x=10 y=25>MDN Web Docs`
-  ),
-  _tmpl$6 = /*#__PURE__*/ _$template(
-    `<svg viewBox="0 0 160 40"xmlns=http://www.w3.org/2000/svg><text x=10 y=25>`
-  );
+  _tmpl$4 = /*#__PURE__*/ _$template(`<svg><rect x=50 y=20 width=150 height=150>`, 2),
+  _tmpl$5 = /*#__PURE__*/ _$template(`<svg viewBox="0 0 160 40"><a><text x=10 y=25>MDN Web Docs`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<svg viewBox="0 0 160 40"><text x=10 y=25>`);
 const template = _tmpl$();
 const template2 = (() => {
   var _el$2 = _tmpl$2(),

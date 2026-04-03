@@ -33,7 +33,8 @@ import {
   transformSpecialCaseAttributes,
   trimWhitespace,
   inlineCallExpression,
-  hasStaticMarker
+  hasStaticMarker,
+  wrapWithTag
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 import { InlineElements, BlockElements } from "./constants";
@@ -63,7 +64,7 @@ const alwaysClose = [
 ];
 
 export function transformElement(path, info) {
-  const tagName = getTagName(path.node);
+  let tagName = getTagName(path.node);
 
   path
     .get("openingElement")
@@ -72,15 +73,42 @@ export function transformElement(path, info) {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
 
+  let isWrapped = false;
+
   if (info.topLevel) {
-    // svg and math tags do not need a explicit xmlns
+    /**
+     * XML handling.
+     *
+     * 1. XML partials are wrapped into their "owner" tag <svg>/<math>
+     * 2. "xmlns" attribute is also used to know if a tag needs to be wrapped. For example `<a
+     *    xmlns="http://www.w3.org/2000/svg"/>` becomes `<svg><a/></svg>`
+     * 3. "xmlns" attribute is not needed by the browser and removed to make templates smaller
+     */
+    const xmlnsAttr = getAttributeNamed(path, "xmlns");
+
+    // svg and math tags are already wrapped
     if (tagName !== "svg" && tagName !== "math") {
-      // add a xmlns attribute for partials
-      if (SVGElements.has(tagName) && !getAttributeNamed(path, "xmlns")) {
-        addAttribute(path, t.jsxIdentifier("xmlns"), t.stringLiteral(Namespaces.svg));
-      } else if (MathMLElements.has(tagName) && !getAttributeNamed(path, "xmlns")) {
-        addAttribute(path, t.jsxIdentifier("xmlns"), t.stringLiteral(Namespaces.mathml));
+      const xmlns = xmlnsAttr
+        ? xmlnsAttr.node.value?.expression
+          ? xmlnsAttr.node.value?.expression.value
+          : xmlnsAttr.node.value?.value
+        : undefined;
+
+      if (SVGElements.has(tagName) || xmlns === Namespaces.svg) {
+        wrapWithTag(path, "svg");
+        path.skip(); // avoid visiting the newly created wrapper
+        isWrapped = true;
+        tagName = "svg";
+        xmlnsAttr && xmlnsAttr.remove();
+      } else if (MathMLElements.has(tagName) || xmlns === Namespaces.mathml) {
+        wrapWithTag(path, "math");
+        path.skip(); // avoid visiting the newly created wrapper
+        isWrapped = true;
+        tagName = "math";
+        xmlnsAttr && xmlnsAttr.remove();
       }
+    } else {
+      xmlnsAttr && xmlnsAttr.remove();
     }
   }
 
@@ -111,6 +139,7 @@ export function transformElement(path, info) {
       dynamics: [],
       postExprs: [],
       isImportNode,
+      isWrapped,
       tagName,
       renderer: "dom",
       skipTemplate: false
@@ -1018,6 +1047,7 @@ function transformChildren(path, results, config) {
     results.template += child.template;
     results.templateWithClosingTags += child.templateWithClosingTags || child.template;
     results.isImportNode = results.isImportNode || child.isImportNode;
+    results.isWrapped = results.isWrapped || child.isWrapped;
 
     if (child.id) {
       let walkExpr;
@@ -1056,6 +1086,7 @@ function transformChildren(path, results, config) {
       childPostExprs.push(...child.postExprs);
       results.hasHydratableEvent = results.hasHydratableEvent || child.hasHydratableEvent;
       results.isImportNode = results.isImportNode || child.isImportNode;
+      results.isWrapped = results.isWrapped || child.isWrapped;
       tempPath = child.id.name;
       nextPlaceholder = null;
       i++;

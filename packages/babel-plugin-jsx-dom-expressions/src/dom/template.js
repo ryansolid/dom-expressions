@@ -49,7 +49,7 @@ export function appendTemplates(path, templates) {
       raw: escapeStringForTemplate(template.template)
     };
 
-    const shouldUseImportNode = template.isImportNode;
+    const flag = template.isImportNode ? 1 : template.isWrapped ? 2 : null;
 
     return t.variableDeclarator(
       template.id,
@@ -57,7 +57,7 @@ export function appendTemplates(path, templates) {
         t.callExpression(
           registerImportMethod(path, "template", getRendererConfig(path, "dom").moduleName),
           [t.templateLiteral([t.templateElement(tmpl, true)], [])].concat(
-            shouldUseImportNode ? [t.booleanLiteral(true)] : []
+            flag ? [t.numericLiteral(flag)] : []
           )
         ),
         "leading",
@@ -86,6 +86,7 @@ function registerTemplate(path, results) {
           template: results.template,
           templateWithClosingTags: results.templateWithClosingTags,
           isImportNode: results.isImportNode,
+          isWrapped: results.isWrapped,
           renderer: "dom"
         });
       }

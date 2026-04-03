@@ -129,7 +129,7 @@ export function addEventListener(
 /** @deprecated not supported on the server side */
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
 /** @deprecated not supported on the server side */
-export function template(html: string, isImportNode?: boolean): () => Element;
+export function template(html: string, flag?: number): () => Element;
 /** @deprecated not supported on the server side */
 export function setProperty(node: Element, name: string, value: any): void;
 /** @deprecated not supported on the server side */
