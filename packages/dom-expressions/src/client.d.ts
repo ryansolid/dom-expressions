@@ -1,5 +1,4 @@
 import { JSX } from "./jsx.js";
-export const Properties: Set<string>;
 export const DOMWithState: Record<string, Record<string, number>>;
 export const ChildProperties: Set<string>;
 export const DelegatedEvents: Set<string>;

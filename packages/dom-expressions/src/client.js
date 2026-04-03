@@ -1,4 +1,4 @@
-import { Properties, ChildProperties, SVGNamespace, DelegatedEvents } from "./constants";
+import { ChildProperties, SVGNamespace, DelegatedEvents } from "./constants";
 import {
   root,
   effect,
@@ -14,7 +14,6 @@ import {
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
 export {
-  Properties,
   DOMWithState,
   ChildProperties,
   DOMElements,

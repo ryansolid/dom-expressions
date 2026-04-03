@@ -5,7 +5,6 @@ import { createSerializer, getLocalHeaderScript } from "./serializer";
 export { getOwner, createComponent, effect, memo, untrack, ssrRunInScope } from "rxcore";
 
 export {
-  Properties,
   ChildProperties,
   DOMElements,
   SVGElements,

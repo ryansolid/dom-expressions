@@ -23,7 +23,6 @@ interface Runtime {
   dynamicProperty(props: any, key: string): any;
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
-  Properties: Set<string>;
   DOMWithState: Record<string, Record<string, number>>;
   ChildProperties: Set<string>;
   DelegatedEvents: Set<string>;

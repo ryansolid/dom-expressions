@@ -1,12 +1,3 @@
-// TODO remove me and use DOMWithState
-const Properties = /*#__PURE__*/ new Set([
-  // locked to properties
-  "value", // input, select, option
-  "checked", // input
-  "selected", // option
-  "muted" // HTMLMediaElement (video, audio)
-]);
-
 const DOMWithState = {
   INPUT: { value: 1, checked: 1 },
   SELECT: { value: 1 },
@@ -472,7 +463,6 @@ const DOMElements = /*#__PURE__*/ new Set([
 ]);
 
 export {
-  Properties,
   DOMWithState,
   ChildProperties,
   DelegatedEvents,
