@@ -499,7 +499,7 @@ function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
   if (prop === "style") return (style(node, value, prev), value);
   if (prop === "class") return (className(node, value, prev), value);
   // dom with state may differs from reactive state
-  if (value === prev && (!DOMWithState[nodeName] || !DOMWithState[nodeName][prop])) return prev;
+  if (value === prev && !DOMWithState[nodeName]?.[prop]) return prev;
   if (prop === "ref") {
     if (!skipRef && value) ref(() => value, node);
     return value;
@@ -525,7 +525,7 @@ function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
   } else if (
     (hasNamespace && prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||
-    (DOMWithState[nodeName] && DOMWithState[nodeName][prop] && !("prop:" + prop in props))
+    (DOMWithState[nodeName]?.[prop] && !("prop:" + prop in props))
   ) {
     if (hasNamespace) prop = prop.slice(5);
     else if (isHydrating(node)) return value; // TODO IS this correct?

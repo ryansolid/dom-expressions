@@ -566,7 +566,7 @@ export function isStatefulDOMProperty(tagName, propName) {
     propName = propName.replace("prop:", "");
   }
 
-  return DOMWithState[tagName] && DOMWithState[tagName][propName];
+  return DOMWithState[tagName]?.[propName];
 }
 
 export function addAttribute(path, name, value) {
