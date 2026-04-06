@@ -1,4 +1,4 @@
-import { ChildProperties, SVGNamespace, DelegatedEvents } from "./constants";
+import { ChildProperties, Namespaces, DelegatedEvents } from "./constants";
 import {
   root,
   effect,
@@ -17,9 +17,9 @@ export {
   DOMWithState,
   ChildProperties,
   DOMElements,
-  SVGNamespace,
   SVGElements,
   MathMLElements,
+  Namespaces,
   DelegatedEvents
 } from "./constants";
 
@@ -534,7 +534,7 @@ function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
       queueMicrotask(() => (node.value = value)) || (node.value = value);
     else node[prop] = value;
   } else {
-    const ns = hasNamespace && SVGNamespace[prop.split(":")[0]];
+    const ns = hasNamespace && Namespaces[prop.split(":")[0]];
     if (ns) setAttributeNS(node, ns, prop, value);
     else setAttribute(node, prop, value);
   }

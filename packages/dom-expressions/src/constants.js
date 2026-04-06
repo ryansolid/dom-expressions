@@ -159,14 +159,11 @@ const MathMLElements = /*#__PURE__*/ new Set([
   "semantics"
 ]);
 
-const SVGNamespace = {
-  xlink: "http://www.w3.org/1999/xlink",
-  xml: "http://www.w3.org/XML/1998/namespace"
-};
-
 const Namespaces = {
   svg: "http://www.w3.org/2000/svg",
-  mathml: "http://www.w3.org/1998/Math/MathML"
+  mathml: "http://www.w3.org/1998/Math/MathML",
+  xlink: "http://www.w3.org/1999/xlink",
+  xml: "http://www.w3.org/XML/1998/namespace"
 };
 
 const DOMElements = /*#__PURE__*/ new Set([
@@ -468,7 +465,6 @@ export {
   DelegatedEvents,
   SVGElements,
   MathMLElements,
-  SVGNamespace,
   Namespaces,
   DOMElements
 };

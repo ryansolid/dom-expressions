@@ -3,7 +3,6 @@ import * as t from "@babel/types";
 import {
   DOMWithState,
   ChildProperties,
-  SVGNamespace,
   DelegatedEvents,
   SVGElements,
   MathMLElements,
@@ -330,7 +329,7 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
     return assignment;
   }
 
-  const ns = name.indexOf(":") > -1 && SVGNamespace[name.split(":")[0]];
+  const ns = name.indexOf(":") > -1 && Namespaces[name.split(":")[0]];
   if (ns) {
     return t.callExpression(
       registerImportMethod(path, "setAttributeNS", getRendererConfig(path, "dom").moduleName),
