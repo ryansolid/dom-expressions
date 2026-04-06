@@ -466,6 +466,57 @@ describe("Phase 1: Hydration error diagnostics", () => {
   });
 });
 
+/**
+ * XML partials (e.g. <rect> returned from a nested component under <svg>) compile to
+ * template(html, 2): a synthetic wrapper in `html` is stripped at clone time, and
+ * fn._html must reflect the inner root so getNextElement's dev tag check matches SSR.
+ */
+describe("wrapped XML partial templates (flag 2)", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  const WRAPPED_RECT =
+    '<svg xmlns="http://www.w3.org/2000/svg"><rect rx="20" ry="20" width="150" height="150" style="fill:red"></rect></svg>';
+
+  beforeEach(() => {
+    globalThis._$HY = { events: [], completed: new WeakSet() };
+    container.innerHTML = "";
+  });
+
+  it("records the inner root tag on fn._html, not the synthetic wrapper", () => {
+    const tmpl = r.template(WRAPPED_RECT, 2);
+    expect(tmpl._html).toMatch(/^<rect\b/);
+    expect(tmpl._html).not.toMatch(/^<svg\b/);
+  });
+
+  it("yields the inner element when the template is instantiated", () => {
+    const tmpl = r.template(WRAPPED_RECT, 2);
+    const el = tmpl(true);
+    expect(el.localName).toBe("rect");
+    expect(el.namespaceURI).toBe("http://www.w3.org/2000/svg");
+  });
+
+  it("hydrates without tag mismatch warning when the server node is the inner element", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const tmpl = r.template(WRAPPED_RECT, 2);
+    container.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg"><rect _hk="0" rx="20" ry="20" width="150" height="150" style="fill:red"></rect></svg>';
+    const svg = container.firstChild;
+    const serverRect = svg.firstChild;
+
+    r.hydrate(() => {
+      const el = r.getNextElement(tmpl);
+      expect(el).toBe(serverRect);
+      expect(el.localName).toBe("rect");
+      r.insert(svg, el, undefined, [...svg.childNodes]);
+      r.runHydrationEvents();
+    }, container);
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
 describe("Phase 2: Walk validation helpers", () => {
   const container = document.createElement("div");
   document.body.appendChild(container);
