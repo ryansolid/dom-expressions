@@ -96,7 +96,15 @@ function applyAssetTracking(context, tracking, manifest) {
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
   /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
-const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}function $dfs(e,c){(_$HY.sc=_$HY.sc||{})[e]=c}function $dfc(e){if(--_$HY.sc[e]<=0)delete _$HY.sc[e],$df(e)}`;
+// Fragment replacement helpers emitted into stream task scripts:
+// - $df(id): swap template payload into the `pl-*` marker range.
+// - $dfl(id): materialize fallback from `pl-*` template content without resolving.
+// - $dflj(ids): materialize the first available fallback in ordered ids.
+// - $dfs(id, count, defer): register pending stylesheet count for fragment `id`.
+// - $dfc(id): style completion callback; reveals when the fragment/group is unblocked.
+// - $dfg(id): group-style gate check; reveals a waiting group once all style counts hit zero.
+// - $dfj(ids): reveal a group in registration order, waiting if any member still has pending styles.
+const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e))||!(o=document.getElementById("pl-"+e)))return 0;for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content),n.remove(),_$HY.fe(e);return 1}function $dfl(e,o,n){if(!(o=document.getElementById("pl-"+e)))return 0;if(o._$fl)return 1;for(n=o.nextSibling;n;){if(8===n.nodeType&&n.nodeValue==="pl-"+e){o.parentNode&&o.parentNode.insertBefore(o.content.cloneNode(!0),n),o._$fl=1;return 1}n=n.nextSibling}return 0}function $dflj(e,i){for(i=0;i<e.length;i++)if($dfl(e[i]))return e[i];return null}function $dfs(e,c,d){(_$HY.sc=_$HY.sc||{})[e]=c,d&&((_$HY.sd=_$HY.sd||{})[e]=1)}function $dfg(e,g,i,k){if(!(g=_$HY.sg&&_$HY.sg[e]))return;for(i=0;i<g.length;i++)if(_$HY.sc&&_$HY.sc[g[i]]>0)return;for(i=0;i<g.length;i++)k=g[i],delete _$HY.sg[k],$df(k)}function $dfc(e){if(--_$HY.sc[e]<=0){delete _$HY.sc[e],_$HY.sg&&_$HY.sg[e]?$dfg(e):!(_$HY.sd&&_$HY.sd[e])&&$df(e);_$HY.sd&&delete _$HY.sd[e]}}function $dfj(e,i,n){for(i=0;i<e.length;i++)if(_$HY.sc&&_$HY.sc[e[i]]>0){for(n=0;n<e.length;n++)(_$HY.sg=_$HY.sg||{})[e[n]]=e;return}for(i=0;i<e.length;i++)$df(e[i])}`;
 
 export function renderToString(code, options = {}) {
   const { renderId = "", nonce, noScripts, manifest } = options;
@@ -220,7 +228,25 @@ export function renderToStream(code, options = {}) {
   let shellCompleted = false;
   let scriptFlushed = false;
   let headStyles;
+  const revealGroups = new Map();
   let timer = null;
+  const emitTask = task => {
+    pushTask(`${task}${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
+    scriptFlushed = true;
+  };
+  function resolveRevealKeys(groupOrKeys, release, consume) {
+    if (Array.isArray(groupOrKeys)) return groupOrKeys.slice();
+    let group = revealGroups.get(groupOrKeys);
+    if (!group) {
+      if (!release) return;
+      group = { order: [], keys: new Set(), released: true };
+      revealGroups.set(groupOrKeys, group);
+    } else if (release) group.released = true;
+    if (!group.order.length) return;
+    const keys = group.order.slice();
+    if (consume) revealGroups.delete(groupOrKeys);
+    return keys;
+  }
   let rootHoles = null;
   let nextHoleId = 0;
   let buffer = {
@@ -274,7 +300,26 @@ export function renderToStream(code, options = {}) {
     escape: escape,
     resolve: resolveSSRNode,
     ssr: ssr,
-    registerFragment(key) {
+    registerFragment(key, options) {
+      const revealGroup = options && options.revealGroup;
+      if (revealGroup) {
+        let group = revealGroups.get(revealGroup);
+        if (!group) {
+          group = { order: [], keys: new Set(), released: false };
+          revealGroups.set(revealGroup, group);
+        }
+        if (!group.keys.has(key)) {
+          group.keys.add(key);
+          group.order.push(key);
+        }
+        if (group.released) {
+          throw new Error(
+            "registerFragment() for reveal group '" +
+              revealGroup +
+              "' was called after revealFragments(). Ensure template payload is emitted before grouped reveal."
+          );
+        }
+      }
       if (!registry.has(key)) {
         let resolve, reject;
         const p = new Promise((r, rej) => ((resolve = r), (reject = rej)));
@@ -288,7 +333,7 @@ export function renderToStream(code, options = {}) {
               })
             )
         });
-        serializer.write(key, p);
+        serializer.write(key + "_fr", p);
       }
       return (value, error) => {
         if (registry.has(key)) {
@@ -319,9 +364,9 @@ export function renderToStream(code, options = {}) {
             } else {
               serializeFragmentAssets(key, tracking.boundaryModules, context);
               const styles = collectStreamStyles(key, tracking, headStyles);
+              const deferActivation = !!revealGroup;
               if (styles.length) {
-                pushTask(`$dfs("${key}",${styles.length})${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
-                scriptFlushed = true;
+                emitTask(`$dfs("${key}",${styles.length},${deferActivation ? 1 : 0})`);
                 writeTasks();
                 for (const url of styles) {
                   buffer.write(`<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`);
@@ -329,8 +374,9 @@ export function renderToStream(code, options = {}) {
                 buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
               } else {
                 buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
-                pushTask(`$df("${key}")${!scriptFlushed ? ";" + REPLACE_SCRIPT : ""}`);
-                scriptFlushed = true;
+                if (!deferActivation) {
+                  emitTask(`$df("${key}")`);
+                }
               }
               item.resolve(error);
             }
@@ -338,6 +384,18 @@ export function renderToStream(code, options = {}) {
         }
         return firstFlushed;
       };
+    },
+    revealFragments(groupOrKeys) {
+      // Group reveal follows fragment registration order so visibility order
+      // cannot be changed by resolve timing.
+      const keys = resolveRevealKeys(groupOrKeys, true, true);
+      if (!keys) return;
+      emitTask(`$dfj(${JSON.stringify(keys)})`);
+    },
+    revealFallbacks(groupOrKeys) {
+      const keys = resolveRevealKeys(groupOrKeys, false, false);
+      if (!keys) return;
+      emitTask(`$dflj(${JSON.stringify(keys)})`);
     }
   };
   applyAssetTracking(context, tracking, manifest);

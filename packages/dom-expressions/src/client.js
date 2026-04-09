@@ -270,7 +270,7 @@ export function assign(node, props, skipChildren, prevProps = {}, skipRef = fals
   }
   for (const prop in props) {
     if (prop === "children") {
-      if (!skipChildren) insertExpression(node, props.children);
+      if (!skipChildren) insertExpression(node, normalize(props.children, undefined, false));
       continue;
     }
     prevProps[prop] = assignProp(
