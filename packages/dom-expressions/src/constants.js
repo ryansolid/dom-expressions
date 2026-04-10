@@ -1,11 +1,19 @@
 const DOMWithState = {
-  INPUT: { value: 1, checked: 1 },
+  INPUT: { value: 1, defaultValue: 1, checked: 1, defaultChecked: 1 },
   SELECT: { value: 1 },
-  OPTION: { value: 1, selected: 1 },
-  TEXTAREA: { value: 1 },
-  VIDEO: { muted: 1 },
-  AUDIO: { muted: 1 }
+  OPTION: { value: 1, selected: 1, defaultSelected: 1 },
+  TEXTAREA: { value: 1, defaultValue: 1 },
+  VIDEO: { muted: 1, defaultMuted: 1 },
+  AUDIO: { muted: 1, defaultMuted: 1 }
 };
+
+// this is for spreads, spreads will receive "prop:value" and "value"
+// either we do this here once or in spreads remove `prop:` from every key name
+for (const tagName in DOMWithState) {
+  for (const propName in DOMWithState[tagName]) {
+    DOMWithState[tagName]["prop:" + propName] = 1;
+  }
+}
 
 const ChildProperties = /*#__PURE__*/ new Set([
   "innerHTML",

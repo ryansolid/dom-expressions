@@ -363,38 +363,29 @@ const template91 = <video something={{value:{value:1+1}}}/>
 const template92 = <div style="duplicate1" style="duplicate2"/>
 
 const template93 = <div>
-  static inlined, prop:value in effect
-  <input value="static attribute" prop:value={dynamicProperty()}/>
-  value in effect, prop:value inlined
-  <input value={dynamicAttribute()} prop:value="static property"/>
-  static
-  <input value={"static attribute"}/>
-  <input prop:value={"static property"}/>
-  dynamic property
+  <input defaultValue="static attribute" value={dynamicProperty()}/>
+  <input defaultValue={dynamicAttribute()} value="static property"/>
+  <input defaultValue={"static attribute"}/>
+  <input value={"static property"}/>
   <input value={dynamicProperty()}/>
-  <input prop:value={dynamicProperty()}/>
-  dynamic attribute/property
-  <input value={dynamicAttribute()} prop:value={dynamicProperty()}/>
-  inlined muted
+  <input defaultValue={dynamicAttribute()} value={dynamicProperty()}/>
+  <video defaultMuted={true}/>
+  <video defaultMuted={false}/>
   <video muted={true}/>
-  not inlined muted
   <video muted={false}/>
-  not inlined muted dynamic muted property
-  <video muted={false} prop:muted={dynamicProperty()}/>
-  inlined muted dynamic muted property
-  <video muted={true} prop:muted={dynamicProperty()}/>
-  dynamic attribute muted, dynamic muted property
-  <video muted={dynamicAttribute()} prop:muted={dynamicProperty()}/>
+  <video defaultMuted={false} muted={dynamicProperty()}/>
+  <video defaultMuted={true} muted={dynamicProperty()}/>
+  <video defaultMuted={dynamicAttribute()} muted={dynamicProperty()}/>
 </div>
 
 const template94 = <div>
   <textarea value={dynamicProperty()}/>
   <textarea value={dynamicProperty()}>{dynamicContent()}</textarea>
-  <textarea value={dynamicContent()} prop:value={dynamicProperty()}/>
-  <textarea prop:value={dynamicProperty()}/>
+  <textarea defaultValue={dynamicContent()} value={dynamicProperty()}/>
+  <textarea value={dynamicProperty()}/>
   <textarea>{dynamicContent()}</textarea>
-  <textarea value="static content"/>
-  <textarea value="static content">I get replaced</textarea>
+  <textarea defaultValue="static content"/>
+  <textarea defaultValue="static content">I get replaced</textarea>
 </div>
 
 const template95 = <a xmlns="http://www.w3.org/2000/svg">xml link partial</a>

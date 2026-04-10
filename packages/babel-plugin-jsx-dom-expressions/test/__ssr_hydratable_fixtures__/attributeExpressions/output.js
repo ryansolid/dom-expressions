@@ -25,7 +25,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$14 = ["<button", ' class="', '" type="button">Write</button>'],
   _tmpl$15 = ["<button", ' class="', '">Hi</button>'],
   _tmpl$16 = ["<div", ' class="', '"></div>'],
-  _tmpl$17 = ["<div", "><input", "", " readonly", "><input", "", "", "", "></div>"],
+  _tmpl$17 = ["<div", "><input", "", "", " readonly><input", "", "", "", "></div>"],
   _tmpl$18 = ["<div", ' style="', '"></div>'],
   _tmpl$19 = ["<div", ' data="&quot;hi&quot;" data2="&quot;"></div>'],
   _tmpl$20 = ["<div", "", ">", "</div>"],
@@ -255,24 +255,24 @@ const template19 = (() => {
 })();
 const template20 = (() => {
   var _v$24 = _$ssrHydrationKey(),
-    _v$25 = _$ssrRunInScope([
+    _v$26 = _$ssrRunInScope([
       () => _$ssrAttribute("min", _$escape(min(), true)),
       () => _$ssrAttribute("max", _$escape(max(), true)),
       () => _$ssrAttribute("min", _$escape(min(), true)),
       () => _$ssrAttribute("max", _$escape(max(), true))
     ]),
-    _v$26 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
+    _v$25 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(s(), true))),
     _v$27 = _$ssrRunInScope(() => _$ssrAttribute("checked", _$escape(s2(), true)));
   return _$ssr(
     _tmpl$17,
     _v$24,
-    _v$25[0],
-    _v$25[1],
-    _v$26,
-    _v$25[2],
-    _v$25[3],
-    _$ssrAttribute("readonly", _$escape(value, true)),
-    _v$27
+    _v$25,
+    _v$26[0],
+    _v$26[1],
+    _v$27,
+    _v$26[2],
+    _v$26[3],
+    _$ssrAttribute("readonly", _$escape(value, true))
   );
 })();
 const template21 = (() => {

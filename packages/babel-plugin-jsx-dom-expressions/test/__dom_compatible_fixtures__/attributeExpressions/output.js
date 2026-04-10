@@ -68,7 +68,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$49 = /*#__PURE__*/ _$template(`<div style="a:clamp(2px, 2px, 2px)"></div>`),
   _tmpl$50 = /*#__PURE__*/ _$template(`<div style="duplicate2"></div>`),
   _tmpl$51 = /*#__PURE__*/ _$template(
-    `<div>static inlined, prop:value in effect<input value="static attribute">value in effect, prop:value inlined<input>static<input value="static attribute"><input>dynamic property<input><input>dynamic attribute/property<input>inlined muted<video muted></video>not inlined muted<video></video>not inlined muted dynamic muted property<video></video>inlined muted dynamic muted property<video muted></video>dynamic attribute muted, dynamic muted property<video></video></div>`
+    `<div><input value="static attribute"><input><input value="static attribute"><input value="static property"><input><input><video muted></video><video></video><video muted></video><video></video><video></video><video muted></video><video></video></div>`
   ),
   _tmpl$52 = /*#__PURE__*/ _$template(
     `<div><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea>static content</textarea><textarea>static content</textarea></div>`
@@ -899,73 +899,53 @@ const template93 = (() => {
     _el$123 = _el$122.nextSibling,
     _el$124 = _el$123.nextSibling,
     _el$125 = _el$124.nextSibling,
-    _el$126 = _el$125.nextSibling,
-    _el$127 = _el$126.nextSibling,
-    _el$128 = _el$127.nextSibling,
-    _el$129 = _el$128.nextSibling,
-    _el$130 = _el$129.nextSibling,
-    _el$131 = _el$130.nextSibling,
-    _el$132 = _el$131.nextSibling,
-    _el$133 = _el$132.nextSibling,
-    _el$134 = _el$133.nextSibling,
-    _el$135 = _el$134.nextSibling;
-  _el$117.value = "static property";
-  _el$120.value = "static property";
+    _el$126 = _el$125.nextSibling;
+  _el$115.value = "static property";
   _$effect(dynamicProperty, _v$ => {
+    _el$114.value = _v$ ?? "";
+  });
+  _$effect(dynamicAttribute, _v$ => {
     _el$115.value = _v$ ?? "";
   });
-  _$effect(dynamicAttribute, _v$ => {
-    _$setAttribute(_el$117, "value", _v$);
-  });
   _$effect(dynamicProperty, _v$ => {
-    _el$122.value = _v$ ?? "";
-  });
-  _$effect(dynamicProperty, _v$ => {
-    _el$123.value = _v$ ?? "";
+    _el$118.value = _v$ ?? "";
   });
   _$effect(dynamicAttribute, _v$ => {
-    _$setAttribute(_el$125, "value", _v$);
+    _el$119.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$125.value = _v$ ?? "";
+    _el$119.value = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$131.muted = _v$;
+    _el$124.muted = _v$;
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$133.muted = _v$;
+    _el$125.muted = _v$;
   });
   _$effect(dynamicAttribute, _v$ => {
-    _$setAttribute(_el$135, "muted", _v$);
+    _el$126.defaultMuted = _v$;
   });
   _$effect(dynamicProperty, _v$ => {
-    _el$135.muted = _v$;
+    _el$126.muted = _v$;
   });
   return _el$113;
 })();
 const template94 = (() => {
-  var _el$136 = _tmpl$52(),
-    _el$137 = _el$136.firstChild,
-    _el$138 = _el$137.nextSibling,
-    _el$139 = _el$138.nextSibling,
-    _el$140 = _el$139.nextSibling,
-    _el$141 = _el$140.nextSibling;
-  _$insert(_el$138, dynamicContent);
-  _$insert(_el$139, dynamicContent);
-  _$insert(_el$141, dynamicContent);
+  var _el$127 = _tmpl$52(),
+    _el$128 = _el$127.firstChild,
+    _el$129 = _el$128.nextSibling,
+    _el$130 = _el$129.nextSibling,
+    _el$131 = _el$130.nextSibling,
+    _el$132 = _el$131.nextSibling;
+  _$insert(_el$128, dynamicProperty);
+  _$insert(_el$129, dynamicProperty);
+  _$insert(_el$130, dynamicContent);
+  _$insert(_el$131, dynamicProperty);
+  _$insert(_el$132, dynamicContent);
   _$effect(dynamicProperty, _v$ => {
-    _el$137.value = _v$ ?? "";
+    _el$130.value = _v$ ?? "";
   });
-  _$effect(dynamicProperty, _v$ => {
-    _el$138.value = _v$ ?? "";
-  });
-  _$effect(dynamicProperty, _v$ => {
-    _el$139.value = _v$ ?? "";
-  });
-  _$effect(dynamicProperty, _v$ => {
-    _el$140.value = _v$ ?? "";
-  });
-  return _el$136;
+  return _el$127;
 })();
 const template95 = _tmpl$53();
 _$delegateEvents(["click", "input"]);

@@ -1,6 +1,6 @@
 import * as t from "@babel/types";
 import { decode } from "html-entities";
-import { ChildProperties, DOMWithState } from "dom-expressions/src/constants";
+import { ChildProperties } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
   evaluateAndInline,
@@ -16,8 +16,7 @@ import {
   isDynamic,
   isComponent,
   convertJSXIdentifier,
-  inlineCallExpression,
-  transformSpecialCaseAttributes
+  inlineCallExpression
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
 import { createTemplate } from "./template";
@@ -56,10 +55,6 @@ export function transformElement(path, info) {
     .forEach(attr => {
       evaluateAndInline(attr.node.value, attr.get("value"));
     });
-
-  if (DOMWithState[tagName.toUpperCase()]) {
-    transformSpecialCaseAttributes(path, tagName, true);
-  }
 
   const config = getConfig(path);
   if (tagName === "script" || tagName === "style") path.doNotEscape = true;
