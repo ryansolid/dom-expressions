@@ -937,13 +937,22 @@ const template94 = (() => {
     _el$130 = _el$129.nextSibling,
     _el$131 = _el$130.nextSibling,
     _el$132 = _el$131.nextSibling;
-  _$insert(_el$128, dynamicProperty);
-  _$insert(_el$129, dynamicProperty);
-  _$insert(_el$130, dynamicContent);
-  _$insert(_el$131, dynamicProperty);
+  _$insert(_el$129, dynamicContent);
   _$insert(_el$132, dynamicContent);
   _$effect(dynamicProperty, _v$ => {
+    _el$128.value = _v$ ?? "";
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$129.value = _v$ ?? "";
+  });
+  _$effect(dynamicContent, _v$ => {
+    _el$130.defaultValue = _v$ ?? "";
+  });
+  _$effect(dynamicProperty, _v$ => {
     _el$130.value = _v$ ?? "";
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$131.value = _v$ ?? "";
   });
   return _el$127;
 })();
