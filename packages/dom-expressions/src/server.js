@@ -8,7 +8,8 @@ export {
   ChildProperties,
   DOMElements,
   SVGElements,
-  SVGNamespace,
+  MathMLElements,
+  Namespaces,
   DelegatedEvents
 } from "./constants.js";
 

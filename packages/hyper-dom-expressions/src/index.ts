@@ -7,6 +7,7 @@ interface Runtime {
   dynamicProperty(props: any, key: string): any;
   SVGElements: Set<string>;
   MathMLElements: Set<string>;
+  Namespaces: Record<string, string>;
 }
 
 type ExpandableNode = Node & { [key: string]: any };
@@ -110,9 +111,9 @@ export function createHyperScript(r: Runtime): HyperScript {
         if (!v) continue;
         if (!e)
           e = r.SVGElements.has(v)
-            ? document.createElementNS("http://www.w3.org/2000/svg", v)
+            ? document.createElementNS(r.Namespaces.svg, v)
             : r.MathMLElements.has(v)
-              ? document.createElementNS("http://www.w3.org/1998/Math/MathML", v)
+              ? document.createElementNS(r.Namespaces.mathml, v)
               : document.createElement(v);
         else if (v[0] === ".") classes.push(s);
         else if (v[0] === "#") e.setAttribute("id", s);

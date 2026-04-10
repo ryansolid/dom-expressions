@@ -27,7 +27,8 @@ interface Runtime {
   ChildProperties: Set<string>;
   DelegatedEvents: Set<string>;
   SVGElements: Set<string>;
-  SVGNamespace: Record<string, string>;
+  MathMLElements: Set<string>;
+  Namespaces: Record<string, string>;
 }
 type TemplateCreate = (tmpl: HTMLTemplateElement[], data: any[], r: Runtime) => Node;
 type CreateableTemplate = HTMLTemplateElement & { create: TemplateCreate };
@@ -184,7 +185,7 @@ export function createHTML(
     } else if (isChildProp || isStatefulDOMProperty || namespace === "prop") {
       options.exprs.push(`${tag}.${name} = ${expr}`);
     } else {
-      const ns = name.indexOf(":") > -1 && r.SVGNamespace[name.split(":")[0]];
+      const ns = name.indexOf(":") > -1 && r.Namespaces[name.split(":")[0]];
       if (ns) options.exprs.push(`r.setAttributeNS(${tag},"${ns}","${name}",${expr})`);
       else options.exprs.push(`r.setAttribute(${tag},"${name}",${expr})`);
     }
