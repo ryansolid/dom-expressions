@@ -905,13 +905,13 @@ const template93 = (() => {
     _el$114.value = _v$ ?? "";
   });
   _$effect(dynamicAttribute, _v$ => {
-    _el$115.value = _v$ ?? "";
+    _el$115.defaultValue = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
     _el$118.value = _v$ ?? "";
   });
   _$effect(dynamicAttribute, _v$ => {
-    _el$119.value = _v$ ?? "";
+    _el$119.defaultValue = _v$ ?? "";
   });
   _$effect(dynamicProperty, _v$ => {
     _el$119.value = _v$ ?? "";
