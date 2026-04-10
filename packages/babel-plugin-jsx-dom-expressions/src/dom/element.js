@@ -1,7 +1,6 @@
 import * as t from "@babel/types";
 
 import {
-  DOMWithState,
   ChildProperties,
   SVGNamespace,
   DelegatedEvents,
@@ -30,7 +29,6 @@ import {
   escapeHTML,
   convertJSXIdentifier,
   transformCondition,
-  transformSpecialCaseAttributes,
   trimWhitespace,
   inlineCallExpression,
   hasStaticMarker,
@@ -110,10 +108,6 @@ export function transformElement(path, info) {
     } else {
       xmlnsAttr && xmlnsAttr.remove();
     }
-  }
-
-  if (DOMWithState[tagName.toUpperCase()]) {
-    transformSpecialCaseAttributes(path, tagName);
   }
 
   let config = getConfig(path),
@@ -298,6 +292,7 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
         value
       ]);
     }
+
     const assignment = t.assignmentExpression(
       "=",
       t.memberExpression(elem, t.identifier(name)),
@@ -315,12 +310,12 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
       );
     }
     if (
-      name === "value" &&
+      (name === "value" || name === "defaultValue") &&
       (tagName === "input" || tagName === "textarea") &&
       !t.isStringLiteral(value) &&
       !t.isNumericLiteral(value)
     ) {
-      // prevents undefined on input/textarea.value, fallback to empty string
+      // prevents undefined on input/textarea.value/defaultValue, fallback to empty string
       return t.assignmentExpression(
         "=",
         t.memberExpression(elem, t.identifier("value")),

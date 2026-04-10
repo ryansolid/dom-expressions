@@ -13,8 +13,10 @@ import {
   transformCondition,
   getStaticExpression,
   escapeHTML,
-  getConfig
+  getConfig,
+  transformSpecialCaseAttributes
 } from "./utils";
+import { DOMWithState } from "dom-expressions/src/constants";
 import transformComponent from "./component";
 import transformFragmentChildren from "./fragment";
 
@@ -24,6 +26,26 @@ export function transformJSX(path, state) {
   const config = getConfig(path);
 
   const replace = transformThis(path);
+
+  // Pre-pass: normalize stateful DOM attributes (value/defaultValue/checked/etc)
+  // BEFORE transformNode runs so the parent's detectExpressions sees the
+  // resulting `prop:*` attributes and reserves an element id when needed.
+  // Decide per-element which renderer it will go to (mirrors transformElement),
+  // so dynamic mode (generate: "dynamic" + renderers: [{ name: "dom", ... }])
+  // is handled correctly.
+  const visit = p => {
+    const tagName = getTagName(p.node);
+    if (isComponent(tagName)) return;
+    if (!DOMWithState[tagName.toUpperCase()]) return;
+    const tagRenderer = (config.renderers ?? []).find(r => r.elements.includes(tagName));
+    const willBeDOM = tagRenderer?.name === "dom" || config.generate === "dom";
+    const willBeSSR = !willBeDOM && config.generate === "ssr";
+    if (!willBeDOM && !willBeSSR) return;
+    transformSpecialCaseAttributes(p, tagName, willBeSSR);
+  };
+  if (t.isJSXElement(path.node)) visit(path);
+  path.traverse({ JSXElement: visit });
+
   const result = transformNode(
     path,
     t.isJSXFragment(path.node)

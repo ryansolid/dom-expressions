@@ -265,7 +265,7 @@ export function assign(node, props, skipChildren, prevProps = {}, skipRef = fals
   for (const prop in prevProps) {
     if (!(prop in props)) {
       if (prop === "children") continue;
-      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], skipRef, nodeName, prevProps);
+      prevProps[prop] = assignProp(node, prop, null, prevProps[prop], skipRef, nodeName);
     }
   }
   for (const prop in props) {
@@ -273,15 +273,7 @@ export function assign(node, props, skipChildren, prevProps = {}, skipRef = fals
       if (!skipChildren) insertExpression(node, props.children);
       continue;
     }
-    prevProps[prop] = assignProp(
-      node,
-      prop,
-      props[prop],
-      prevProps[prop],
-      skipRef,
-      nodeName,
-      props
-    );
+    prevProps[prop] = assignProp(node, prop, props[prop], prevProps[prop], skipRef, nodeName);
   }
 }
 
@@ -496,10 +488,11 @@ function flattenClassList(list, result) {
   }
 }
 
-function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
+function assignProp(node, prop, value, prev, skipRef, nodeName) {
   if (prop === "style") return (style(node, value, prev), value);
   if (prop === "class") return (className(node, value, prev), value);
   // dom with state may differs from reactive state
+  // reactive state is the source of truth
   if (value === prev && !DOMWithState[nodeName]?.[prop]) return prev;
   if (prop === "ref") {
     if (!skipRef && value) ref(() => value, node);
@@ -512,7 +505,7 @@ function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
     const e = prop.slice(3);
     prev && node.removeEventListener(e, prev, typeof prev !== "function" && prev);
     value && node.addEventListener(e, value, typeof value !== "function" && value);
-  } else if (prop.slice(0, 2) === "on") {
+  } else if (!hasNamespace && prop.slice(0, 2) === "on") {
     const name = prop.slice(2).toLowerCase();
     const delegate = DelegatedEvents.has(name);
     if (!delegate && prev) {
@@ -526,7 +519,7 @@ function assignProp(node, prop, value, prev, skipRef, nodeName, props) {
   } else if (
     (hasNamespace && prop.slice(0, 5) === "prop:") ||
     ChildProperties.has(prop) ||
-    (DOMWithState[nodeName]?.[prop] && !("prop:" + prop in props))
+    DOMWithState[nodeName]?.[prop]
   ) {
     if (hasNamespace) prop = prop.slice(5);
     else if (isHydrating(node)) return value; // TODO IS this correct?

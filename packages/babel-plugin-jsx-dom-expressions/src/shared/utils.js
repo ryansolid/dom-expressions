@@ -484,65 +484,69 @@ export function getAttributeNamed(path, name) {
 }
 
 function renameAttribute(attr, name) {
+  const original = attr.node.name;
   const [ns, propName] = name.split(":");
   if (propName) {
     attr
       .get("name")
-      .replaceWith(t.jsxNamespacedName(t.jsxIdentifier(ns), t.jsxIdentifier(propName)));
+      .replaceWith(
+        t.inherits(t.jsxNamespacedName(t.jsxIdentifier(ns), t.jsxIdentifier(propName)), original)
+      );
   } else {
-    attr.get("name").replaceWith(t.jsxIdentifier(name));
+    attr.get("name").replaceWith(t.inherits(t.jsxIdentifier(name), original));
   }
 }
 
 export function transformSpecialCaseAttributes(path, tagName, isSSR) {
   tagName = tagName.toUpperCase();
+  const transforms = [];
 
   for (const propName in DOMWithState[tagName]) {
+    if (propName.startsWith("prop:")) continue;
     const attr = getAttributeNamed(path, propName);
-    const prop = getAttributeNamed(path, "prop:" + propName);
+    if (attr) {
+      transforms.push({ propName, attr });
+    }
+  }
 
-    if (attr && !prop) {
-      /** Transforms `attr` into `prop:`. When `prop:` is not present. */
+  for (const { propName, attr } of transforms) {
+    const value = t.cloneNode(attr.node.value?.expression ?? attr.node.value);
 
-      const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
+    const isDefault =
+      propName.includes("default") ||
+      !getAttributeNamed(path, "default" + propName[0].toUpperCase() + propName.slice(1));
 
-      /** If value is not dynamic, leave it as is */
-      if (
-        !t.isStringLiteral(value) &&
-        !t.isNumericLiteral(value) &&
-        !t.isBooleanLiteral(value) &&
-        !t.isNullLiteral(value)
-      ) {
-        // value is dynamic
-        renameAttribute(attr, "prop:" + propName);
+    const defaultAttrName = propName.replace("default", "").toLowerCase();
 
-        // `value` is not present, only `prop:value`, SSR `value`
-        if (isSSR) {
-          // <textarea value=""/> doesnt exists
-          if (tagName === "TEXTAREA" && propName === "value") {
-            path.set("children", [t.jsxExpressionContainer(value)]);
-          } else {
-            addAttribute(path, t.jsxIdentifier(propName), t.jsxExpressionContainer(value));
-          }
-        }
+    const isLiteral =
+      t.isStringLiteral(value) ||
+      t.isNumericLiteral(value) ||
+      t.isBooleanLiteral(value) ||
+      t.isNullLiteral(value);
+
+    if (
+      isDefault &&
+      tagName === "TEXTAREA" &&
+      defaultAttrName === "value" &&
+      !t.isNullLiteral(value)
+    ) {
+      let child;
+      if (t.isStringLiteral(value)) {
+        child = t.jsxText(value.value);
+        // filterChildren reads child.extra.raw for JSXText nodes
+        child.extra = { raw: value.value, rawValue: value.value };
       } else {
-        // value is not dynamic
-        // `prop:value` is not present, only `value`
-        // <textarea value=""/> doesnt exists
-        if (tagName === "TEXTAREA" && propName === "value") {
-          attr.remove();
-          path.set("children", [t.jsxExpressionContainer(value)]);
-        }
+        child = t.jsxExpressionContainer(value);
       }
-    } else if (attr) {
-      // `prop:value` and `value` are present
-      // <textarea value=""/> doesnt exists
-      if (tagName === "TEXTAREA" && propName === "value") {
-        const value = attr.node.value?.expression ? attr.node.value.expression : attr.node.value;
-
-        attr.remove();
-        path.set("children", [t.jsxExpressionContainer(value)]);
+      path.node.children = [child];
+      attr.remove();
+    } else if (isDefault && (isLiteral || isSSR)) {
+      // should inline
+      if (propName !== defaultAttrName) {
+        renameAttribute(attr, defaultAttrName);
       }
+    } else {
+      renameAttribute(attr, "prop:" + propName);
     }
   }
 }
@@ -569,5 +573,5 @@ export function wrapWithTag(path, tagName) {
     false
   );
 
-  path.replaceWith(wrapper);
+  path.replaceWith(t.inherits(wrapper, path.node));
 }
