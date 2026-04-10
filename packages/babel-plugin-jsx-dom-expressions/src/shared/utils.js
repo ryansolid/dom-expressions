@@ -528,7 +528,12 @@ export function transformSpecialCaseAttributes(path, tagName, isSSR) {
       isDefault &&
       tagName === "TEXTAREA" &&
       defaultAttrName === "value" &&
-      !t.isNullLiteral(value)
+      !t.isNullLiteral(value) &&
+      // Only fold into children when SSR (HTML output needs the text content)
+      // or when the value is a static literal (template-inlined HTML attribute
+      // on parse). For dynamic DOM, prop:* survives the textarea "dirty" flag
+      // and preserves any user-supplied children.
+      (isSSR || isLiteral)
     ) {
       let child;
       if (t.isStringLiteral(value)) {
