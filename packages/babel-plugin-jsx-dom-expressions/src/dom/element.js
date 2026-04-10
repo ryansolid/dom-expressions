@@ -317,7 +317,7 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
       // prevents undefined on input/textarea.value/defaultValue, fallback to empty string
       return t.assignmentExpression(
         "=",
-        t.memberExpression(elem, t.identifier("value")),
+        t.memberExpression(elem, t.identifier(name)),
         t.logicalExpression("??", value, t.stringLiteral(""))
       );
     }
