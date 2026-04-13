@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { createMemo, createRoot, createSignal, flush } from "@solidjs/signals";
+import { createMemo, createRoot, createSignal, flush, omit } from "@solidjs/signals";
 
 describe("create element with various spreads", () => {
   it("should properly spread ref, click, attribute, and children", () => {
@@ -342,6 +342,86 @@ describe("spread children caching", () => {
     setList(["x"]);
     flush();
     expect(div.innerHTML).toBe("x");
+    disposer();
+  });
+});
+
+describe("component with ref, omit, spread, and children", () => {
+  it("should forward ref, spread remaining props, and render children", () => {
+    let el, disposer;
+
+    function MyComponent(props) {
+      const others = omit(props, "children");
+      return (
+        <div ref={el} {...others}>
+          {props.children}
+        </div>
+      );
+    }
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <MyComponent class="test" data-id="123">
+        <span>Hello</span>
+      </MyComponent>;
+    });
+
+    expect(el).toBeInstanceOf(HTMLDivElement);
+    expect(el.className).toBe("test");
+    expect(el.getAttribute("data-id")).toBe("123");
+    expect(el.innerHTML).toBe("<span>Hello</span>");
+    disposer();
+  });
+
+  it("should work with a function ref", () => {
+    let el, disposer;
+
+    function MyComponent(props) {
+      const others = omit(props, "children");
+      return (
+        <div ref={e => (el = e)} {...others}>
+          {props.children}
+        </div>
+      );
+    }
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <MyComponent class="test">
+        <span>Hello</span>
+      </MyComponent>;
+    });
+
+    expect(el).toBeInstanceOf(HTMLDivElement);
+    expect(el.className).toBe("test");
+    expect(el.innerHTML).toBe("<span>Hello</span>");
+    disposer();
+  });
+
+  it("should work with a signal ref", () => {
+    let disposer;
+    const [ref, setRef] = createSignal();
+
+    function MyComponent(props) {
+      const others = omit(props, "children");
+      return (
+        <div ref={setRef} {...others}>
+          {props.children}
+        </div>
+      );
+    }
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <MyComponent class="test">
+        <span>Hello</span>
+      </MyComponent>;
+    });
+
+    flush();
+    expect(ref()).toBeInstanceOf(HTMLDivElement);
+    expect(ref().className).toBe("test");
+    expect(ref().innerHTML).toBe("<span>Hello</span>");
     disposer();
   });
 });

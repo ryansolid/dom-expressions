@@ -551,13 +551,7 @@ function createElement(path, { topLevel, hydratable }) {
             : node.name.name;
 
         if (hasChildren && key === "children") return;
-        if (key === "ref") {
-          if (t.isJSXExpressionContainer(value))
-            results.declarations.push(
-              t.variableDeclarator(path.scope.generateUidIdentifier("_ref$"), value.expression)
-            );
-          return;
-        }
+        if (key === "ref") return;
         if (key.startsWith("prop:") || key.startsWith("on")) return;
         if (t.isJSXExpressionContainer(value))
           if (

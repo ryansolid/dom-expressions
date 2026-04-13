@@ -1,4 +1,5 @@
 import { template as _$template } from "r-dom";
+import { spread as _$spread } from "r-dom";
 import { memo as _$memo } from "r-dom";
 import { For as _$For } from "r-dom";
 import { createComponent as _$createComponent } from "r-dom";
@@ -515,3 +516,17 @@ const template34 = _$createComponent(Comp, {
       : (refUnknown = r$);
   }
 });
+function MyComponent(props) {
+  let el;
+  const others = omit(props, "children");
+  return (() => {
+    var _el$43 = _tmpl$2();
+    var _ref$8 = el;
+    typeof _ref$8 === "function" || Array.isArray(_ref$8)
+      ? _$ref(() => _ref$8, _el$43)
+      : (el = _el$43);
+    _$spread(_el$43, others, true);
+    _$insert(_el$43, () => props.children);
+    return _el$43;
+  })();
+}

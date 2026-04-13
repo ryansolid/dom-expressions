@@ -1,3 +1,4 @@
+import { ssrElement as _$ssrElement } from "r-server";
 import { memo as _$memo } from "r-server";
 import { For as _$For } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
@@ -453,3 +454,8 @@ const template34 = _$createComponent(Comp, {
       : (refUnknown = r$);
   }
 });
+function MyComponent(props) {
+  let el;
+  const others = omit(props, "children");
+  return _$ssrElement("div", others, () => _$escape(props.children), false);
+}
