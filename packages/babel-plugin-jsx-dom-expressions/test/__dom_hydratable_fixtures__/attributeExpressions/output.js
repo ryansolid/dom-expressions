@@ -309,32 +309,32 @@ const template20 = (() => {
   _$setAttribute(_el$27, "readonly", value);
   _$effect(
     () => ({
-      e: min(),
-      t: max(),
-      a: min(),
-      o: max()
+      e: s(),
+      t: min(),
+      a: max(),
+      o: s2(),
+      i: min(),
+      n: max()
     }),
     (
-      { e, t, a, o },
+      { e, t, a, o, i, n },
       _p$ = {
         e: undefined,
         t: undefined,
         a: undefined,
-        o: undefined
+        o: undefined,
+        i: undefined,
+        n: undefined
       }
     ) => {
-      e !== _p$.e && _$setAttribute(_el$26, "min", e);
-      t !== _p$.t && _$setAttribute(_el$26, "max", t);
-      a !== _p$.a && _$setAttribute(_el$27, "min", a);
-      o !== _p$.o && _$setAttribute(_el$27, "max", o);
+      _el$26.value = e ?? "";
+      t !== _p$.t && _$setAttribute(_el$26, "min", t);
+      a !== _p$.a && _$setAttribute(_el$26, "max", a);
+      _el$27.checked = o;
+      i !== _p$.i && _$setAttribute(_el$27, "min", i);
+      n !== _p$.n && _$setAttribute(_el$27, "max", n);
     }
   );
-  _$effect(s, _v$ => {
-    _el$26.value = _v$ ?? "";
-  });
-  _$effect(s2, _v$ => {
-    _el$27.checked = _v$;
-  });
   _$runHydrationEvents();
   return _el$25;
 })();
@@ -540,21 +540,22 @@ const template41 = (() => {
     _el$60 = _el$59.firstChild,
     _el$61 = _el$60.nextSibling;
   _$effect(
-    () => Color.Red,
-    _v$ => {
-      _el$60.value = _v$;
-    }
-  );
-  _$effect(
-    () => Color.Blue,
-    _v$ => {
-      _el$61.value = _v$;
-    }
-  );
-  _$effect(
-    () => state.color,
-    _v$ => {
-      queueMicrotask(() => (_el$59.value = _v$)) || (_el$59.value = _v$);
+    () => ({
+      e: state.color,
+      t: Color.Red,
+      a: Color.Blue
+    }),
+    (
+      { e, t, a },
+      _p$ = {
+        e: undefined,
+        t: undefined,
+        a: undefined
+      }
+    ) => {
+      queueMicrotask(() => (_el$59.value = e)) || (_el$59.value = e);
+      _el$60.value = t;
+      _el$61.value = a;
     }
   );
   return _el$59;

@@ -907,6 +907,8 @@ function transformAttributes(path, results) {
         ) {
           // own effect
           let nextElem = elem;
+          /*
+
           if (isStatefulDOMProperty(tagName, key)) {
             const effectWrapperId = registerImportMethod(path, config.effectWrapper);
             const v = t.identifier("_v$");
@@ -928,7 +930,7 @@ function transformAttributes(path, results) {
               )
             );
             return;
-          }
+          }*/
           if (key === "textContent") {
             nextElem = attribute.scope.generateUidIdentifier("el$");
             children = t.jsxText(" ");

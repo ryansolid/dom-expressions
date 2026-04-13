@@ -309,32 +309,32 @@ const template20 = (() => {
   _$setAttribute(_el$27, "readonly", value);
   _$effect(
     () => ({
-      e: min(),
-      t: max(),
-      a: min(),
-      o: max()
+      e: s(),
+      t: min(),
+      a: max(),
+      o: s2(),
+      i: min(),
+      n: max()
     }),
     (
-      { e, t, a, o },
+      { e, t, a, o, i, n },
       _p$ = {
         e: undefined,
         t: undefined,
         a: undefined,
-        o: undefined
+        o: undefined,
+        i: undefined,
+        n: undefined
       }
     ) => {
-      e !== _p$.e && _$setAttribute(_el$26, "min", e);
-      t !== _p$.t && _$setAttribute(_el$26, "max", t);
-      a !== _p$.a && _$setAttribute(_el$27, "min", a);
-      o !== _p$.o && _$setAttribute(_el$27, "max", o);
+      _el$26.value = e ?? "";
+      t !== _p$.t && _$setAttribute(_el$26, "min", t);
+      a !== _p$.a && _$setAttribute(_el$26, "max", a);
+      _el$27.checked = o;
+      i !== _p$.i && _$setAttribute(_el$27, "min", i);
+      n !== _p$.n && _$setAttribute(_el$27, "max", n);
     }
   );
-  _$effect(s, _v$ => {
-    _el$26.value = _v$ ?? "";
-  });
-  _$effect(s2, _v$ => {
-    _el$27.checked = _v$;
-  });
   return _el$25;
 })();
 const template21 = (() => {
@@ -530,21 +530,22 @@ const template41 = (() => {
     _el$56 = _el$55.firstChild,
     _el$57 = _el$56.nextSibling;
   _$effect(
-    () => Color.Red,
-    _v$ => {
-      _el$56.value = _v$;
-    }
-  );
-  _$effect(
-    () => Color.Blue,
-    _v$ => {
-      _el$57.value = _v$;
-    }
-  );
-  _$effect(
-    () => state.color,
-    _v$ => {
-      queueMicrotask(() => (_el$55.value = _v$)) || (_el$55.value = _v$);
+    () => ({
+      e: state.color,
+      t: Color.Red,
+      a: Color.Blue
+    }),
+    (
+      { e, t, a },
+      _p$ = {
+        e: undefined,
+        t: undefined,
+        a: undefined
+      }
+    ) => {
+      queueMicrotask(() => (_el$55.value = e)) || (_el$55.value = e);
+      _el$56.value = t;
+      _el$57.value = a;
     }
   );
   return _el$55;
@@ -895,18 +896,28 @@ const template93 = (() => {
     _el$116 = _el$115.nextSibling,
     _el$117 = _el$116.nextSibling,
     _el$118 = _el$117.nextSibling;
-  _$effect(dynamicProperty, _v$ => {
-    _el$116.muted = _v$;
-  });
-  _$effect(dynamicProperty, _v$ => {
-    _el$117.muted = _v$;
-  });
-  _$effect(dynamicAttribute, _v$ => {
-    _el$118.defaultMuted = _v$;
-  });
-  _$effect(dynamicProperty, _v$ => {
-    _el$118.muted = _v$;
-  });
+  _$effect(
+    () => ({
+      e: dynamicProperty(),
+      t: dynamicProperty(),
+      a: dynamicAttribute(),
+      o: dynamicProperty()
+    }),
+    (
+      { e, t, a, o },
+      _p$ = {
+        e: undefined,
+        t: undefined,
+        a: undefined,
+        o: undefined
+      }
+    ) => {
+      _el$116.muted = e;
+      _el$117.muted = t;
+      _el$118.defaultMuted = a;
+      _el$118.muted = o;
+    }
+  );
   return _el$113;
 })();
 function MyVideo() {
