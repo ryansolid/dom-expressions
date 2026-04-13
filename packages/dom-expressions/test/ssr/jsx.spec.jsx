@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/server";
+import { omit } from "@solidjs/signals";
 
 const fixture1 = '<div style="--color:red"></div>';
 const fixture2 = '<div style=""></div>';
@@ -172,6 +173,29 @@ describe("video with static muted", () => {
     const res = r.renderToString(() => <video src="test.mp4" muted />);
     expect(res).toContain("muted");
     expect(res).toContain('src="test.mp4"');
+  });
+});
+
+describe("component with ref, omit, spread, and children", () => {
+  it("renders component with spread props and children", () => {
+    function MyComponent(props) {
+      let el;
+      const others = omit(props, "children");
+      return (
+        <div ref={el} {...others}>
+          {props.children}
+        </div>
+      );
+    }
+
+    const res = r.renderToString(() => (
+      <MyComponent class="test" data-id="123">
+        <span>Hello</span>
+      </MyComponent>
+    ));
+    expect(res).toContain('class="test"');
+    expect(res).toContain('data-id="123"');
+    expect(res).toContain("<span>Hello</span>");
   });
 });
 

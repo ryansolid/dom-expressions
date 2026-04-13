@@ -158,6 +158,13 @@ const template24 = <Component>
   {state.dynamic}
 </Component>
 
-const template25 = <Component> 
+const template25 = <Component>
   <div />
 </Component>
+
+function MyComponent(props) {
+  let el
+  const others = omit(props, "children")
+  return <div ref={el} {...others}>{props.children}</div>
+}
+

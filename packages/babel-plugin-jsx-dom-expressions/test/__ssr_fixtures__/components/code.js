@@ -229,3 +229,10 @@ const template32 = <Comp ref={refFn} />
 const template33 = <Comp ref={refConst} />
 
 const template34 = <Comp ref={refUnknown} />
+
+function MyComponent(props) {
+  let el
+  const others = omit(props, "children")
+  return <div ref={el} {...others}>{props.children}</div>
+}
+
