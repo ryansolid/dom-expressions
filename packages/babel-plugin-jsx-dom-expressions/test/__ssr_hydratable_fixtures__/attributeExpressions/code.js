@@ -326,3 +326,16 @@ const template88 = (
 
 const template89 = <div style={{ }} />;
 const template90 = <div data-test={state.flag || undefined} />;
+
+const template91 = <div>
+  <video muted={true}/>
+  <video muted={false}/>
+  <video defaultMuted={false} muted={dynamicProperty()}/>
+  <video defaultMuted={true} muted={dynamicProperty()}/>
+  <video defaultMuted={dynamicAttribute()} muted={dynamicProperty()}/>
+  <video src="test.mp4" muted/>
+</div>
+
+function MyVideo() {
+  return <video src="test.mp4" muted />
+}

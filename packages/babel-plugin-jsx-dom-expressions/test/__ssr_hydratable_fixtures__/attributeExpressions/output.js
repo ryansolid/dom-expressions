@@ -59,7 +59,13 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$45 = ["<div", '><video poster="1.jpg"></video></div>'],
   _tmpl$46 = ["<div", "><video></video></div>"],
   _tmpl$47 = ["<button", ' type="button"', ' style="', '" class="', '">', "</button>"],
-  _tmpl$48 = ["<div", "", "></div>"];
+  _tmpl$48 = ["<div", "", "></div>"],
+  _tmpl$49 = [
+    "<div",
+    "><video muted></video><video></video><video></video><video muted></video><video",
+    '></video><video src="test.mp4" muted></video></div>'
+  ],
+  _tmpl$50 = ["<video", ' src="test.mp4" muted></video>'];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -747,3 +753,14 @@ const template90 = (() => {
     ]);
   return _$ssr(_tmpl$48, _v$112, _v$113[0]);
 })();
+const template91 = (() => {
+  var _v$114 = _$ssrHydrationKey(),
+    _v$115 = _$ssrRunInScope(() => _$ssrAttribute("muted", _$escape(dynamicAttribute(), true)));
+  return _$ssr(_tmpl$49, _v$114, _v$115);
+})();
+function MyVideo() {
+  return (() => {
+    var _v$116 = _$ssrHydrationKey();
+    return _$ssr(_tmpl$50, _v$116);
+  })();
+}

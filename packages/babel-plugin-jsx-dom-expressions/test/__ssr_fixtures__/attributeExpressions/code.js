@@ -385,3 +385,12 @@ const template94 = <div>
   <textarea value="static content"/>
   <textarea value="static content">I get replaced</textarea>
 </div>
+
+const template95 = <div>
+  <video muted={true}/>
+  <video muted={false}/>
+  <video defaultMuted={false} muted={dynamicProperty()}/>
+  <video defaultMuted={true} muted={dynamicProperty()}/>
+  <video defaultMuted={dynamicAttribute()} muted={dynamicProperty()}/>
+  <video src="test.mp4" muted/>
+</div>

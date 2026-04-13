@@ -510,7 +510,9 @@ export function transformSpecialCaseAttributes(path, tagName, isSSR) {
   }
 
   for (const { propName, attr } of transforms) {
-    const value = t.cloneNode(attr.node.value?.expression ?? attr.node.value);
+    const value = attr.node.value == null
+      ? t.booleanLiteral(true)
+      : t.cloneNode(attr.node.value.expression ?? attr.node.value);
 
     const isDefault =
       propName.includes("default") ||

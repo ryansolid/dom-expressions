@@ -167,6 +167,14 @@ describe("fragments", () => {
   });
 });
 
+describe("video with static muted", () => {
+  it("renders video with muted attribute and src", () => {
+    const res = r.renderToString(() => <video src="test.mp4" muted />);
+    expect(res).toContain("muted");
+    expect(res).toContain('src="test.mp4"');
+  });
+});
+
 // avoid double escaping - https://github.com/ryansolid/dom-expressions/issues/393
 {
   const a = ["<"];

@@ -389,3 +389,9 @@ const template94 = <div>
 </div>
 
 const template95 = <a xmlns="http://www.w3.org/2000/svg">xml link partial</a>
+
+const template96 = <video src="test.mp4" muted/>
+
+function MyVideo() {
+  return <video src="test.mp4" muted />
+}
