@@ -303,30 +303,30 @@ const template20 = (() => {
   _$setAttribute(_el$27, "readonly", value);
   _$effect(
     () => ({
-      e: min(),
-      t: max(),
-      a: min(),
-      o: max()
+      e: s(),
+      t: min(),
+      a: max(),
+      o: s2(),
+      i: min(),
+      n: max()
     }),
-    ({ e, t, a, o }, _p$) => {
-      e !== _p$.e && _$setAttribute(_el$26, "min", e);
-      t !== _p$.t && _$setAttribute(_el$26, "max", t);
-      a !== _p$.a && _$setAttribute(_el$27, "min", a);
-      o !== _p$.o && _$setAttribute(_el$27, "max", o);
+    ({ e, t, a, o, i, n }, _p$) => {
+      _el$26.value = e ?? "";
+      t !== _p$.t && _$setAttribute(_el$26, "min", t);
+      a !== _p$.a && _$setAttribute(_el$26, "max", a);
+      _el$27.checked = o;
+      i !== _p$.i && _$setAttribute(_el$27, "min", i);
+      n !== _p$.n && _$setAttribute(_el$27, "max", n);
     },
     {
       e: undefined,
       t: undefined,
       a: undefined,
-      o: undefined
+      o: undefined,
+      i: undefined,
+      n: undefined
     }
   );
-  _$effect(s, _v$ => {
-    _el$26.value = _v$ ?? "";
-  });
-  _$effect(s2, _v$ => {
-    _el$27.checked = _v$;
-  });
   return _el$25;
 })();
 const template21 = (() => {
@@ -522,21 +522,20 @@ const template41 = (() => {
     _el$56 = _el$55.firstChild,
     _el$57 = _el$56.nextSibling;
   _$effect(
-    () => Color.Red,
-    _v$ => {
-      _el$56.value = _v$;
-    }
-  );
-  _$effect(
-    () => Color.Blue,
-    _v$ => {
-      _el$57.value = _v$;
-    }
-  );
-  _$effect(
-    () => state.color,
-    _v$ => {
-      queueMicrotask(() => (_el$55.value = _v$)) || (_el$55.value = _v$);
+    () => ({
+      e: state.color,
+      t: Color.Red,
+      a: Color.Blue
+    }),
+    ({ e, t, a }, _p$) => {
+      queueMicrotask(() => (_el$55.value = e)) || (_el$55.value = e);
+      _el$56.value = t;
+      _el$57.value = a;
+    },
+    {
+      e: undefined,
+      t: undefined,
+      a: undefined
     }
   );
   return _el$55;
