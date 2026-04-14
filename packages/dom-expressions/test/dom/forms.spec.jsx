@@ -213,12 +213,16 @@ describe("form reset restores default* props", () => {
       dispose = d;
       document.body.appendChild(
         <form ref={form}>
-          <select ref={select} value={sel()}>
-            <option value="1">One</option>
-            <option value="2" defaultSelected={true}>
+          <select ref={select}>
+            <option value="1" selected={sel() === "1"}>
+              One
+            </option>
+            <option value="2" defaultSelected={true} selected={sel() === "2"}>
               Two
             </option>
-            <option value="3">Three</option>
+            <option value="3" selected={sel() === "3"}>
+              Three
+            </option>
           </select>
           <button type="reset">Reset</button>
         </form>
