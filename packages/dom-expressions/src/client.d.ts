@@ -14,7 +14,13 @@ export function render(
   init?: JSX.Element,
   options?: { owner?: unknown }
 ): () => void;
-export function template(html: string, flag?: number): () => Element;
+/**
+ * @param flag
+ * - `undefined` — clone the template as-is (uses `cloneNode`).
+ * - `1` — use `document.importNode` instead of `cloneNode`.
+ * - `2` — the template html is wrapped; the outer tag is stripped at clone time.
+ */
+export function template(html: string, flag?: 1 | 2): () => Element;
 export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function untrack<T>(fn: () => T): T;

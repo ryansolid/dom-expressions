@@ -52,7 +52,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href=/>Welcome`),
   _tmpl$35 = /*#__PURE__*/ _$template(`<div true>`),
   _tmpl$36 = /*#__PURE__*/ _$template(`<div a b c d f=0 g h l>`),
   _tmpl$37 = /*#__PURE__*/ _$template(`<math display=block><mrow>`),
-  _tmpl$38 = /*#__PURE__*/ _$template(`<math><mrow><mi>x</mi><mo>=`, 2),
+  _tmpl$38 = /*#__PURE__*/ _$template(`<math><mrow><mi>x</mi><mo>=</math>`, 2),
   _tmpl$39 = /*#__PURE__*/ _$template(`<div style=background:red>`),
   _tmpl$40 = /*#__PURE__*/ _$template(
     `<div style=background:red;color:green;margin:3;padding:0.4>`
