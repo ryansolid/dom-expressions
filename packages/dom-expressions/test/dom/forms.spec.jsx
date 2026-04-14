@@ -578,6 +578,26 @@ describe("various default/current combinations", () => {
   });
 });
 
+describe("file input ordering", () => {
+  it("does not throw when component props set value before file type", () => {
+    let input, dispose;
+
+    const Input = props => <input ref={input} value={props.a} type={props.a} />;
+
+    expect(() => {
+      createRoot(d => {
+        dispose = d;
+        document.body.appendChild(<Input a="file" />);
+      });
+    }).not.toThrow();
+
+    expect(input.type).toBe("file");
+    expect(input.value).toBe("");
+
+    dispose();
+  });
+});
+
 describe("textarea edge cases (suspected bugs)", () => {
   // These tests document expected behaviour that the current babel transform
   // does NOT yet honour. They may fail until `transformSpecialCaseAttributes`
