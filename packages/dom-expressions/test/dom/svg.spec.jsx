@@ -59,4 +59,26 @@ describe("create simple svg", () => {
     expect(g.namespaceURI).toBe("http://www.w3.org/2000/svg");
     expect(circle.namespaceURI).toBe("http://www.w3.org/2000/svg");
   });
+
+  it("Children of a component rendered inside <math> receive the MathML namespace", () => {
+    let row, identifier;
+    function Term() {
+      return (
+        <mrow ref={row}>
+          <mi ref={identifier}>x</mi>
+        </mrow>
+      );
+    }
+    function App() {
+      return (
+        <math display="block">
+          <Term />
+        </math>
+      );
+    }
+
+    createRoot(() => <App />);
+    expect(row.namespaceURI).toBe("http://www.w3.org/1998/Math/MathML");
+    expect(identifier.namespaceURI).toBe("http://www.w3.org/1998/Math/MathML");
+  });
 });
