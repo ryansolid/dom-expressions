@@ -21,7 +21,7 @@ export function render(
  * - `2` — the template html is wrapped; the outer tag is stripped at clone time.
  */
 export function template(html: string, flag?: 1 | 2): () => Element;
-export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
+export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function untrack<T>(fn: () => T): T;
 export function insert<T>(

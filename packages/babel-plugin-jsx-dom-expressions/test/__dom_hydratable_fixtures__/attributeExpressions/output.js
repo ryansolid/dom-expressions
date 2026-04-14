@@ -207,15 +207,17 @@ const template7 = (() => {
       t: props.top,
       a: !!props.active
     }),
-    ({ e, t, a }, _p$) => {
+    (
+      { e, t, a },
+      _p$ = {
+        e: undefined,
+        t: undefined,
+        a: undefined
+      }
+    ) => {
       _$style(_el$13, e, _p$.e);
       t !== _p$.t && _$setStyleProperty(_el$13, "padding-top", t);
       a !== _p$.a && _el$13.classList.toggle("my-class", a);
-    },
-    {
-      e: undefined,
-      t: undefined,
-      a: undefined
     }
   );
   return _el$13;
@@ -312,17 +314,19 @@ const template20 = (() => {
       a: min(),
       o: max()
     }),
-    ({ e, t, a, o }, _p$) => {
+    (
+      { e, t, a, o },
+      _p$ = {
+        e: undefined,
+        t: undefined,
+        a: undefined,
+        o: undefined
+      }
+    ) => {
       e !== _p$.e && _$setAttribute(_el$26, "min", e);
       t !== _p$.t && _$setAttribute(_el$26, "max", t);
       a !== _p$.a && _$setAttribute(_el$27, "min", a);
       o !== _p$.o && _$setAttribute(_el$27, "max", o);
-    },
-    {
-      e: undefined,
-      t: undefined,
-      a: undefined,
-      o: undefined
     }
   );
   _$effect(s, _v$ => {
@@ -818,15 +822,17 @@ const template87 = (() => {
       t: style,
       a: style
     }),
-    ({ e, t, a }, _p$) => {
+    (
+      { e, t, a },
+      _p$ = {
+        e: undefined,
+        t: undefined,
+        a: undefined
+      }
+    ) => {
       e !== _p$.e && _$setAttribute(_el$108, "aria-label", e);
       _$style(_el$108, t, _p$.t);
       _$className(_el$108, a, _p$.a);
-    },
-    {
-      e: undefined,
-      t: undefined,
-      a: undefined
     }
   );
   return _el$108;

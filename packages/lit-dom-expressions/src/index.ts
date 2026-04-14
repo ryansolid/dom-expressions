@@ -5,7 +5,7 @@ type ClassList =
   | Record<string, boolean>
   | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
 interface Runtime {
-  effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
+  effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void): void;
   untrack<T>(fn: () => T): T;
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   spread<T>(node: Element, accessor: (() => T) | T, skipChildren?: Boolean): void;

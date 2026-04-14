@@ -31,19 +31,21 @@ const template2 = (() => {
       o: state.y,
       i: props.stroke
     }),
-    ({ e, t, a, o, i }, _p$) => {
+    (
+      { e, t, a, o, i },
+      _p$ = {
+        e: undefined,
+        t: undefined,
+        a: undefined,
+        o: undefined,
+        i: undefined
+      }
+    ) => {
       _$className(_el$3, e, _p$.e);
       t !== _p$.t && _$setAttribute(_el$3, "stroke-width", t);
       a !== _p$.a && _$setAttribute(_el$3, "x", a);
       o !== _p$.o && _$setAttribute(_el$3, "y", o);
       i !== _p$.i && _$setStyleProperty(_el$3, "stroke-width", i);
-    },
-    {
-      e: undefined,
-      t: undefined,
-      a: undefined,
-      o: undefined,
-      i: undefined
     }
   );
   return _el$2;

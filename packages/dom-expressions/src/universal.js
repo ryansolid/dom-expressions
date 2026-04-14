@@ -29,8 +29,7 @@ export function createRenderer({
     }
     effect(
       () => normalize(accessor, multi),
-      (value, current) => insertExpression(parent, value, current, marker),
-      initial
+      (value, current = initial) => insertExpression(parent, value, current, marker)
     );
   }
 

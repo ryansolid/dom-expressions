@@ -253,9 +253,8 @@ export function insert(parent, accessor, marker, initial) {
     initial = [placeholder];
   }
   effect(
-    prev => normalize(accessor, prev, multi),
-    (value, current) => insertExpression(parent, value, current, marker),
-    initial
+    (prev = initial) => normalize(accessor, prev, multi),
+    (value, current = initial) => insertExpression(parent, value, current, marker)
   );
 }
 
