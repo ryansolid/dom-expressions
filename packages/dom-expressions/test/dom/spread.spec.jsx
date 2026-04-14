@@ -346,6 +346,22 @@ describe("spread children caching", () => {
   });
 });
 
+describe("video with static muted", () => {
+  it("should set defaultMuted via the muted HTML attribute", () => {
+    let video, disposer;
+
+    createRoot(dispose => {
+      disposer = dispose;
+      video = <video ref={video} src="test.mp4" muted />;
+    });
+
+    expect(video).toBeDefined();
+    expect(video.defaultMuted).toBe(true);
+    expect(video.getAttribute("src")).toBe("test.mp4");
+    disposer();
+  });
+});
+
 describe("DOM with state props", () => {
   it("resyncs spread input value when the DOM drifts", () => {
     let input, disposer;

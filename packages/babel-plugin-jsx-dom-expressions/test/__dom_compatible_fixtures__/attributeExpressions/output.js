@@ -73,7 +73,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$52 = /*#__PURE__*/ _$template(
     `<div><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea>static content</textarea><textarea>static content</textarea></div>`
   ),
-  _tmpl$53 = /*#__PURE__*/ _$template(`<svg><a>xml link partial</a></svg>`, 2);
+  _tmpl$53 = /*#__PURE__*/ _$template(`<svg><a>xml link partial</a></svg>`, 2),
+  _tmpl$54 = /*#__PURE__*/ _$template(`<video src="test.mp4"muted></video>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -963,4 +964,8 @@ const template94 = (() => {
   return _el$127;
 })();
 const template95 = _tmpl$53();
+const template96 = _tmpl$54();
+function MyVideo() {
+  return _tmpl$54();
+}
 _$delegateEvents(["click", "input"]);

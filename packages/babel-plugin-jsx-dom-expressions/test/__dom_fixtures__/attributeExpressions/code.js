@@ -361,3 +361,16 @@ const template90 = <div style={{}}/>
 const template91 = <video something={{value:{value:1+1}}}/>
 
 const template92 = <div style="duplicate1" style="duplicate2"/>
+
+const template93 = <div>
+  <video muted={true}/>
+  <video muted={false}/>
+  <video defaultMuted={false} muted={dynamicProperty()}/>
+  <video defaultMuted={true} muted={dynamicProperty()}/>
+  <video defaultMuted={dynamicAttribute()} muted={dynamicProperty()}/>
+  <video src="test.mp4" muted/>
+</div>
+
+function MyVideo() {
+  return <video src="test.mp4" muted />
+}

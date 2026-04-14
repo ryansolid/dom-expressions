@@ -66,7 +66,11 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href=/>Welcome`),
   _tmpl$47 = /*#__PURE__*/ _$template(`<button type=button>`),
   _tmpl$48 = /*#__PURE__*/ _$template(`<div style="padding-left:clamp(2px, 2px, 2px)">`),
   _tmpl$49 = /*#__PURE__*/ _$template(`<div style="a:clamp(2px, 2px, 2px)">`),
-  _tmpl$50 = /*#__PURE__*/ _$template(`<div style=duplicate2>`);
+  _tmpl$50 = /*#__PURE__*/ _$template(`<div style=duplicate2>`),
+  _tmpl$51 = /*#__PURE__*/ _$template(
+    `<div><video muted></video><video></video><video></video><video muted></video><video></video><video src=test.mp4 muted>`
+  ),
+  _tmpl$52 = /*#__PURE__*/ _$template(`<video src=test.mp4 muted>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -884,4 +888,28 @@ const template91 = (() => {
   return _el$111;
 })();
 const template92 = _tmpl$50();
+const template93 = (() => {
+  var _el$113 = _tmpl$51(),
+    _el$114 = _el$113.firstChild,
+    _el$115 = _el$114.nextSibling,
+    _el$116 = _el$115.nextSibling,
+    _el$117 = _el$116.nextSibling,
+    _el$118 = _el$117.nextSibling;
+  _$effect(dynamicProperty, _v$ => {
+    _el$116.muted = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$117.muted = _v$;
+  });
+  _$effect(dynamicAttribute, _v$ => {
+    _el$118.defaultMuted = _v$;
+  });
+  _$effect(dynamicProperty, _v$ => {
+    _el$118.muted = _v$;
+  });
+  return _el$113;
+})();
+function MyVideo() {
+  return _tmpl$52();
+}
 _$delegateEvents(["click", "input"]);

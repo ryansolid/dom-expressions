@@ -66,6 +66,10 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
     "</textarea><textarea>",
     "</textarea><textarea></textarea><textarea>",
     "</textarea><textarea>static content</textarea><textarea>static content</textarea></div>"
+  ],
+  _tmpl$53 = [
+    "<div><video muted></video><video></video><video></video><video muted></video><video",
+    '></video><video src="test.mp4" muted></video></div>'
   ];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
@@ -664,4 +668,8 @@ const template94 = (() => {
     _v$44 = _$ssrRunInScope(() => _$escape(dynamicContent())),
     _v$45 = _$ssrRunInScope(() => _$escape(dynamicContent()));
   return _$ssr(_tmpl$52, _v$42, _v$43, _v$44, _v$45);
+})();
+const template95 = (() => {
+  var _v$46 = _$ssrRunInScope(() => _$ssrAttribute("muted", _$escape(dynamicAttribute(), true)));
+  return _$ssr(_tmpl$53, _v$46);
 })();
