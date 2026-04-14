@@ -29,6 +29,8 @@ pluginTester({
           "button",
           "a",
           "svg",
+          "g",
+          "circle",
           "rect",
           "x",
           "y",
