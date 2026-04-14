@@ -368,10 +368,10 @@ const template40 = (() => {
   return _$ssr(_tmpl$18, _v$21[0]);
 })();
 const template41 = (() => {
-  var _v$22 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(state.color, true))),
+  var _v$22 = _$ssrRunInScope([() => _$ssrAttribute("value", _$escape(state.color, true))]),
     _v$23 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Red, true))),
     _v$24 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Blue, true)));
-  return _$ssr(_tmpl$25, _v$22, _v$23, _v$24);
+  return _$ssr(_tmpl$25, _v$22[0], _v$23, _v$24);
 })();
 const template42 = _$ssr(_tmpl$26);
 const template43 = _$ssr(_tmpl$27);

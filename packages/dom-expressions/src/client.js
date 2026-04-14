@@ -523,9 +523,7 @@ function assignProp(node, prop, value, prev, skipRef, nodeName) {
   ) {
     if (hasNamespace) prop = prop.slice(5);
     else if (isHydrating(node)) return value; // TODO IS this correct?
-    if (prop === "value" && nodeName === "SELECT")
-      queueMicrotask(() => (node.value = value)) || (node.value = value);
-    else node[prop] = value;
+    node[prop] = value;
   } else {
     const ns = hasNamespace && Namespaces[prop.split(":")[0]];
     if (ns) setAttributeNS(node, ns, prop, value);

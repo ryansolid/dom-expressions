@@ -430,10 +430,10 @@ const template40 = (() => {
 })();
 const template41 = (() => {
   var _v$56 = _$ssrHydrationKey(),
-    _v$57 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(state.color, true))),
+    _v$57 = _$ssrRunInScope([() => _$ssrAttribute("value", _$escape(state.color, true))]),
     _v$58 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Red, true))),
     _v$59 = _$ssrRunInScope(() => _$ssrAttribute("value", _$escape(Color.Blue, true)));
-  return _$ssr(_tmpl$25, _v$56, _v$57, _v$58, _v$59);
+  return _$ssr(_tmpl$25, _v$56, _v$57[0], _v$58, _v$59);
 })();
 const template42 = (() => {
   var _v$60 = _$ssrHydrationKey();

@@ -1864,8 +1864,9 @@ export namespace JSX {
 
     // special cases locked to properties
 
-    value?: string | string[] | number | RemoveProperty;
-    /** @error use `<select value={..}/>` instead */
+    /** @error use `<option selected={..}/>` instead */
+    value?: never;
+    /** @error use `<option selected={..}/>` instead */
     "prop:value"?: never;
 
     // for sanity
