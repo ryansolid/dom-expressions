@@ -9,7 +9,6 @@ import {
 } from "dom-expressions/src/constants";
 import VoidElements from "../VoidElements";
 import {
-  addAttribute,
   evaluateAndInline,
   getAttributeNamed,
   getTagName,
@@ -30,8 +29,7 @@ import {
   transformCondition,
   trimWhitespace,
   inlineCallExpression,
-  hasStaticMarker,
-  wrapWithTag
+  hasStaticMarker
 } from "../shared/utils";
 import { transformNode } from "../shared/transform";
 import { InlineElements, BlockElements } from "./constants";
@@ -71,7 +69,7 @@ export function transformElement(path, info) {
     });
 
   let isWrapped = false;
-
+  let wrapperTag = "";
   if (info.topLevel) {
     /**
      * XML handling.
@@ -92,16 +90,12 @@ export function transformElement(path, info) {
         : undefined;
 
       if (SVGElements.has(tagName) || xmlns === Namespaces.svg) {
-        wrapWithTag(path, "svg");
-        path.skip(); // avoid visiting the newly created wrapper
         isWrapped = true;
-        tagName = "svg";
+        wrapperTag = "svg";
         xmlnsAttr && xmlnsAttr.remove();
       } else if (MathMLElements.has(tagName) || xmlns === Namespaces.mathml) {
-        wrapWithTag(path, "math");
-        path.skip(); // avoid visiting the newly created wrapper
         isWrapped = true;
-        tagName = "math";
+        wrapperTag = "math";
         xmlnsAttr && xmlnsAttr.remove();
       }
     } else {
@@ -183,7 +177,10 @@ export function transformElement(path, info) {
   if (config.hydratable && (tagName === "html" || tagName === "head" || tagName === "body")) {
     results.skipTemplate = true;
   }
-
+  if (wrapperTag !== "") {
+    results.template = `<${wrapperTag}>` + results.template;
+    results.templateWithClosingTags = `<${wrapperTag}>` + results.templateWithClosingTags;
+  }
   if (!info.skipId) {
     results.id = path.scope.generateUidIdentifier("el$");
   }
@@ -216,7 +213,10 @@ export function transformElement(path, info) {
     );
     results.postExprs.push(t.expressionStatement(t.callExpression(runHydrationEvents, [])));
   }
-
+  if (wrapperTag !== "") {
+    results.template += `</${wrapperTag}>`;
+    results.templateWithClosingTags += `</${wrapperTag}>`;
+  }
   return results;
 }
 
