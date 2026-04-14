@@ -536,6 +536,12 @@ const template41 = (() => {
     _el$60 = _el$59.firstChild,
     _el$61 = _el$60.nextSibling;
   _$effect(
+    () => state.color,
+    _v$ => {
+      _$setAttribute(_el$59, "value", _v$);
+    }
+  );
+  _$effect(
     () => Color.Red,
     _v$ => {
       _el$60.value = _v$;
@@ -545,12 +551,6 @@ const template41 = (() => {
     () => Color.Blue,
     _v$ => {
       _el$61.value = _v$;
-    }
-  );
-  _$effect(
-    () => state.color,
-    _v$ => {
-      queueMicrotask(() => (_el$59.value = _v$)) || (_el$59.value = _v$);
     }
   );
   return _el$59;

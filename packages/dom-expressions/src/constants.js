@@ -1,6 +1,5 @@
 const DOMWithState = {
   INPUT: { value: 1, defaultValue: 1, checked: 1, defaultChecked: 1 },
-  SELECT: { value: 1 },
   OPTION: { value: 1, selected: 1, defaultSelected: 1 },
   TEXTAREA: { value: 1, defaultValue: 1 },
   VIDEO: { muted: 1, defaultMuted: 1 },

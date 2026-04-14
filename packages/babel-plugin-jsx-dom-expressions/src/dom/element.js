@@ -297,17 +297,6 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
       t.memberExpression(elem, t.identifier(name)),
       value
     );
-    // handle select/options... TODO: consider other ways in the future
-    // TODO: there may be a race condition here
-    if (name === "value" && tagName === "select") {
-      return t.logicalExpression(
-        "||",
-        t.callExpression(t.identifier("queueMicrotask"), [
-          t.arrowFunctionExpression([], assignment)
-        ]),
-        assignment
-      );
-    }
     if (
       (name === "value" || name === "defaultValue") &&
       (tagName === "input" || tagName === "textarea") &&
