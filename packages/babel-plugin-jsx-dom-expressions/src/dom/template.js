@@ -49,7 +49,7 @@ export function appendTemplates(path, templates) {
       raw: escapeStringForTemplate(template.template)
     };
 
-    const flag = template.isImportNode ? 1 : template.isWrapped ? 2 : null;
+    const flag = template.isWrapped ? 2 : template.isImportNode ? 1 : null;
 
     return t.variableDeclarator(
       template.id,
