@@ -69,7 +69,7 @@ export function applyRef(r: ((element: any) => void) | ((element: any) => void)[
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function getHydrationKey(): string | undefined;
-export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void, init?: T): void;
+export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
 export function mergeProps(...sources: unknown[]): unknown;
