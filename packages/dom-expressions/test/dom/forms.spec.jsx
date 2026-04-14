@@ -244,6 +244,39 @@ describe("form reset restores default* props", () => {
     });
   });
 
+  it("select: options loaded asynchronously — value signal selects option 2 once it exists", async () => {
+    let select, dispose;
+    const [options, setOptions] = createSignal([]);
+    const [sel] = createSignal("2");
+
+    createRoot(d => {
+      dispose = d;
+      document.body.appendChild(
+        <select ref={select}>
+          {options().map(v => (
+            <option value={v} selected={v === sel()}>
+              {v}
+            </option>
+          ))}
+        </select>
+      );
+    });
+
+    // No options yet — nothing can be selected.
+    expect(select.options.length).toBe(0);
+
+    // Simulate options arriving from a promise that resolves after 200ms.
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setOptions(["1", "2", "3"]);
+    flush();
+
+    expect(select.options.length).toBe(3);
+    expect(select.value).toBe("2");
+    expect(select.options[1].selected).toBe(true);
+
+    dispose();
+  });
+
   it("multi-select: defaultSelected on multiple options is the reset target", () => {
     let select, form, dispose;
     // Two options have defaultSelected={true}; the dynamic `selected` signals
