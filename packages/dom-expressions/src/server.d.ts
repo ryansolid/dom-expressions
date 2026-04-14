@@ -129,8 +129,14 @@ export function addEventListener(
 
 /** @deprecated not supported on the server side */
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
-/** @deprecated not supported on the server side */
-export function template(html: string, flag?: number): () => Element;
+/**
+ * @deprecated not supported on the server side
+ * @param flag
+ * - `undefined` — clone the template as-is (uses `cloneNode`).
+ * - `1` — use `document.importNode` instead of `cloneNode`.
+ * - `2` — the template html is wrapped; the outer tag is stripped at clone time.
+ */
+export function template(html: string, flag?: 1 | 2): () => Element;
 /** @deprecated not supported on the server side */
 export function setProperty(node: Element, name: string, value: any): void;
 /** @deprecated not supported on the server side */
