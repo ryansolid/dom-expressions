@@ -32,6 +32,37 @@ const source = fs.readFileSync("./jsx-h.temp.d.ts").toString().split("\n");
 
 // remove `-h` types
 
+/**
+ * Unwraps every occurrence of `FunctionMaybe<X>` → `X` in a line, with balanced `<>`
+ * matching. Handles nested generics like `FunctionMaybe<WidenPropValue<T[K]>>`, which
+ * the previous `[^>]+` regex could not match.
+ */
+function unwrapFunctionMaybe(line) {
+	const marker = "FunctionMaybe<";
+	let out = "";
+	let i = 0;
+	while (i < line.length) {
+		const idx = line.indexOf(marker, i);
+		if (idx === -1) {
+			out += line.slice(i);
+			break;
+		}
+		out += line.slice(i, idx);
+		let depth = 1;
+		let j = idx + marker.length;
+		while (j < line.length && depth > 0) {
+			const c = line[j];
+			if (c === "<") depth++;
+			else if (c === ">") depth--;
+			if (depth > 0) j++;
+		}
+		// `j` now points at the closing `>` that matches `FunctionMaybe<`.
+		out += line.slice(idx + marker.length, j);
+		i = j + 1;
+	}
+	return out;
+}
+
 for (let i = 0; i < source.length; i++) {
 	const line = source[i].trim();
 
@@ -39,8 +70,8 @@ for (let i = 0; i < source.length; i++) {
 		// remove `| FunctionElement` from 'type Element'
 		source[i] = line.replace("| FunctionElement", "");
 	} else if (!line.startsWith("type FunctionMaybe") && line.includes("FunctionMaybe")) {
-		// unwrap `FunctionMaybe'
-		source[i] = line.replace(/: FunctionMaybe<([^>]+)>;$/, ": $1");
+		// unwrap `FunctionMaybe<X>`
+		source[i] = unwrapFunctionMaybe(source[i]);
 	}
 }
 
