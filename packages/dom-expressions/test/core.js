@@ -7,6 +7,10 @@ export const sharedConfig = {
   }
 };
 
+export function ssrHandleError(err) {
+  if (err && err._promise) return err._promise;
+}
+
 export function createComponent(Comp, props) {
   if (Comp.prototype && Comp.prototype.isClassComponent) {
     return untrack(() => {

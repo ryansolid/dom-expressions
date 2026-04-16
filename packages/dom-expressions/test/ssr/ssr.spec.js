@@ -505,6 +505,170 @@ describe("reveal defensive invariants", () => {
   });
 });
 
+describe("cascading root holes in streaming shell", () => {
+  function streamToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) { chunks.push(v); },
+        end() { resolve(chunks.join("")); }
+      });
+    });
+  }
+
+  function asyncError() {
+    let resolve;
+    const promise = new Promise(r => (resolve = r));
+    const err = new Error("async");
+    err._promise = promise;
+    return { err, resolve };
+  }
+
+  it("shell includes content from nested async holes via pipe", async () => {
+    const outer = asyncError();
+    const inner = asyncError();
+    let outerCalls = 0;
+    let innerCalls = 0;
+
+    const stream = r.renderToStream(() => {
+      return r.ssr`<div>${() => {
+        if (++outerCalls === 1) throw outer.err;
+        return r.ssr`<span>outer-${() => {
+          if (++innerCalls === 1) throw inner.err;
+          return "resolved";
+        }}-end</span>`;
+      }}</div>`;
+    });
+
+    setTimeout(() => outer.resolve(), 5);
+    setTimeout(() => inner.resolve(), 15);
+
+    const html = await streamToString(stream);
+    expect(html).toContain("<span>outer-");
+    expect(html).toContain("resolved");
+    expect(html).toContain("-end</span>");
+  });
+
+  it("shell includes content from nested async holes via pipeTo", async () => {
+    const outer = asyncError();
+    const inner = asyncError();
+    let outerCalls = 0;
+    let innerCalls = 0;
+
+    const chunks = [];
+    const stream = r.renderToStream(() => {
+      return r.ssr`<div>${() => {
+        if (++outerCalls === 1) throw outer.err;
+        return r.ssr`<span>hello-${() => {
+          if (++innerCalls === 1) throw inner.err;
+          return "world";
+        }}</span>`;
+      }}</div>`;
+    });
+
+    setTimeout(() => outer.resolve(), 5);
+    setTimeout(() => inner.resolve(), 15);
+
+    await stream.pipeTo({
+      getWriter() {
+        return {
+          write(v) { chunks.push(v); return Promise.resolve(); },
+          releaseLock() {}
+        };
+      },
+      close() { return Promise.resolve(); }
+    });
+
+    const html = chunks.join("");
+    expect(html).toContain("<span>hello-");
+    expect(html).toContain("world");
+  });
+
+  it("mixed resolved and pending root holes all appear in shell", async () => {
+    const delayed = asyncError();
+    let delayCalls = 0;
+
+    const stream = r.renderToStream(() => {
+      return r.ssr`<div>${"sync-content"}-${() => {
+        if (++delayCalls === 1) throw delayed.err;
+        return "async-content";
+      }}</div>`;
+    });
+
+    setTimeout(() => delayed.resolve(), 5);
+
+    const html = await streamToString(stream);
+    expect(html).toContain("sync-content");
+    expect(html).toContain("async-content");
+  });
+
+  it("three-level deep cascading holes all resolve in shell", async () => {
+    const level1 = asyncError();
+    const level2 = asyncError();
+    const level3 = asyncError();
+    let l1 = 0, l2 = 0, l3 = 0;
+
+    const stream = r.renderToStream(() => {
+      return r.ssr`<div>${() => {
+        if (++l1 === 1) throw level1.err;
+        return r.ssr`<a>${() => {
+          if (++l2 === 1) throw level2.err;
+          return r.ssr`<b>${() => {
+            if (++l3 === 1) throw level3.err;
+            return "deep";
+          }}</b>`;
+        }}</a>`;
+      }}</div>`;
+    });
+
+    setTimeout(() => level1.resolve(), 5);
+    setTimeout(() => level2.resolve(), 15);
+    setTimeout(() => level3.resolve(), 25);
+
+    const html = await streamToString(stream);
+    expect(html).toContain("<a>");
+    expect(html).toContain("<b>");
+    expect(html).toContain("deep");
+  });
+
+  it("multiple sibling holes with different cascade depths", async () => {
+    const a1 = asyncError();
+    const b1 = asyncError();
+    const b2 = asyncError();
+    let aCalls = 0, bCalls = 0, b2Calls = 0;
+
+    const stream = r.renderToStream(() => {
+      return r.ssr`<div>${() => {
+        if (++aCalls === 1) throw a1.err;
+        return "shallow";
+      }}-${() => {
+        if (++bCalls === 1) throw b1.err;
+        return r.ssr`<span>${() => {
+          if (++b2Calls === 1) throw b2.err;
+          return "nested";
+        }}</span>`;
+      }}</div>`;
+    });
+
+    setTimeout(() => { a1.resolve(); b1.resolve(); }, 5);
+    setTimeout(() => b2.resolve(), 15);
+
+    const html = await streamToString(stream);
+    expect(html).toContain("shallow");
+    expect(html).toContain("<span>");
+    expect(html).toContain("nested");
+  });
+
+  it("sync-only content passes through without delay", async () => {
+    const stream = r.renderToStream(() => {
+      return r.ssr`<div>${"hello"}-${"world"}</div>`;
+    });
+
+    const html = await streamToString(stream);
+    expect(html).toContain("<div>hello-world</div>");
+  });
+});
+
 describe("root-level module asset serialization", () => {
   function streamToString(stream) {
     return new Promise(resolve => {

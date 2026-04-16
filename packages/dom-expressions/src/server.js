@@ -422,10 +422,26 @@ export function renderToStream(code, options = {}) {
   function doShell() {
     if (shellCompleted) return;
     if (rootHoles) {
+      const pending = [];
       for (const { id, fn } of rootHoles) {
         const marker = `<!--rh${id}-->`;
         const res = resolveSSRNode(fn);
-        html = html.replace(marker, !res.h.length ? res.t[0] : "");
+        if (!res.h.length) {
+          html = html.replace(marker, res.t[0]);
+        } else {
+          let out = res.t[0];
+          for (let j = 0; j < res.h.length; j++) {
+            const newId = nextHoleId++;
+            pending.push({ id: newId, fn: res.h[j] });
+            out += `<!--rh${newId}-->` + res.t[j + 1];
+          }
+          html = html.replace(marker, out);
+          for (const p of res.p) blockingPromises.add(p);
+        }
+      }
+      if (pending.length) {
+        rootHoles = pending;
+        return;
       }
       rootHoles = null;
     }
@@ -464,48 +480,56 @@ export function renderToStream(code, options = {}) {
       queue(flushEnd);
     },
     pipe(w) {
-      allSettled(blockingPromises).then(() => {
-        setTimeout(() => {
-          doShell();
-          buffer = writable = w;
-          buffer.write(tmp);
-          firstFlushed = true;
-          if (completed) {
-            dispose();
-            writable.end();
-          } else flushEnd();
+      function flush() {
+        allSettled(blockingPromises).then(() => {
+          setTimeout(() => {
+            doShell();
+            if (!shellCompleted) return flush();
+            buffer = writable = w;
+            buffer.write(tmp);
+            firstFlushed = true;
+            if (completed) {
+              dispose();
+              writable.end();
+            } else flushEnd();
+          });
         });
-      });
+      }
+      flush();
     },
     pipeTo(w) {
-      return allSettled(blockingPromises).then(() => {
-        let resolve;
-        const p = new Promise(r => (resolve = r));
-        setTimeout(() => {
-          doShell();
-          const encoder = new TextEncoder();
-          const writer = w.getWriter();
-          writable = {
-            end() {
-              writer.releaseLock();
-              w.close().catch(() => {});
-              resolve();
-            }
-          };
-          buffer = {
-            write(payload) {
-              writer.write(encoder.encode(payload)).catch(() => {});
-            }
-          };
-          buffer.write(tmp);
-          firstFlushed = true;
-          if (completed) {
-            dispose();
-            writable.end();
-          } else flushEnd();
+      let resolve;
+      const p = new Promise(r => (resolve = r));
+      function flush() {
+        allSettled(blockingPromises).then(() => {
+          setTimeout(() => {
+            doShell();
+            if (!shellCompleted) return flush();
+            const encoder = new TextEncoder();
+            const writer = w.getWriter();
+            writable = {
+              end() {
+                writer.releaseLock();
+                w.close().catch(() => {});
+                resolve();
+              }
+            };
+            buffer = {
+              write(payload) {
+                writer.write(encoder.encode(payload)).catch(() => {});
+              }
+            };
+            buffer.write(tmp);
+            firstFlushed = true;
+            if (completed) {
+              dispose();
+              writable.end();
+            } else flushEnd();
+          });
         });
-        return p;
-      });
+      }
+      flush();
+      return p;
     }
   };
 }
