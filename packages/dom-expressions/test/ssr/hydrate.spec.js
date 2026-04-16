@@ -802,3 +802,82 @@ describe("SSR scope hydration alignment", () => {
     expect(textareaNode.nextSibling).toBe(divNode);
   });
 });
+
+describe("root-level module asset loading in hydrate()", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  afterEach(() => {
+    container.innerHTML = "";
+  });
+
+  it("sets sharedConfig.loadModuleAssets during hydration", () => {
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {}, done: false, fe() {} };
+    container.innerHTML = '<div _hk="0">Content</div>';
+    const _tmpl$ = r.template("<div>Content</div>");
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(typeof sharedConfig.loadModuleAssets).toBe("function");
+  });
+
+  it("loads root module assets before rendering when _assets key is present", async () => {
+    const fakeModule = { default: () => "LazyComponent" };
+    const moduleUrl = "./Lazy.tsx";
+    const entryUrl = "/assets/Lazy-abc.js";
+
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: { "_assets": { [moduleUrl]: entryUrl } },
+      modules: {},
+      loading: { [moduleUrl]: Promise.resolve(fakeModule).then(mod => { globalThis._$HY.modules[moduleUrl] = mod; }) },
+      done: false,
+      fe() {}
+    };
+    container.innerHTML = '<div _hk="0">Lazy</div>';
+    const _tmpl$ = r.template("<div>Lazy</div>");
+
+    let rendered = false;
+    r.hydrate(() => {
+      rendered = true;
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    // render is deferred because root assets need loading
+    expect(rendered).toBe(false);
+
+    // wait for the promise to resolve and microtask to flush
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(rendered).toBe(true);
+    expect(globalThis._$HY.modules[moduleUrl]).toBe(fakeModule);
+  });
+
+  it("hydrates synchronously when no root assets are present", () => {
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: {},
+      modules: {},
+      loading: {},
+      done: false,
+      fe() {}
+    };
+    container.innerHTML = '<div _hk="0">Sync</div>';
+    const _tmpl$ = r.template("<div>Sync</div>");
+
+    let rendered = false;
+    r.hydrate(() => {
+      rendered = true;
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(rendered).toBe(true);
+  });
+});

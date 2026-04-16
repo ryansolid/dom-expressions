@@ -65,11 +65,11 @@ function createAssetTracking() {
     get currentBoundaryId() { return currentBoundaryId; },
     set currentBoundaryId(v) { currentBoundaryId = v; },
     registerModule(moduleUrl, entryUrl) {
-      if (!currentBoundaryId) return;
-      let map = boundaryModules.get(currentBoundaryId);
+      const id = currentBoundaryId || "";
+      let map = boundaryModules.get(id);
       if (!map) {
         map = {};
-        boundaryModules.set(currentBoundaryId, map);
+        boundaryModules.set(id, map);
       }
       map[moduleUrl] = entryUrl;
     },
@@ -160,6 +160,7 @@ export function renderToString(code, options = {}) {
     },
     { id: renderId }
   );
+  serializeFragmentAssets("", tracking.boundaryModules, sharedConfig.context);
   sharedConfig.context.noHydrate = true;
   serializer.close();
   html = injectAssets(sharedConfig.context.assets, html);
@@ -172,10 +173,12 @@ export function renderToStream(code, options = {}) {
   let { nonce, onCompleteShell, onCompleteAll, renderId = "", noScripts, manifest } = options;
   let dispose;
   const blockingPromises = new Set();
+  let headerEmitted = false;
   const pushTask = task => {
     if (noScripts) return;
-    if (!tasks && !firstFlushed) {
-      tasks = getLocalHeaderScript(renderId);
+    if (!headerEmitted) {
+      headerEmitted = true;
+      tasks += getLocalHeaderScript(renderId);
     }
     tasks += task + ";";
     if (!timer && firstFlushed) {
@@ -204,9 +207,6 @@ export function renderToStream(code, options = {}) {
   });
   const flushEnd = () => {
     if (!registry.size) {
-      // We are no longer writing any resource
-      // now we just need to wait for the pending promises
-      // to resolve
       queue(() => queue(() => serializer.flush())); // double queue because of elsewhere
     }
   };
@@ -436,6 +436,7 @@ export function renderToStream(code, options = {}) {
       if (url.endsWith(".css")) headStyles.add(url);
     }
     html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
+    serializeFragmentAssets("", tracking.boundaryModules, context);
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
     tasks = "";

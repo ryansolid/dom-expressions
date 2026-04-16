@@ -504,3 +504,67 @@ describe("reveal defensive invariants", () => {
     expect(html).toContain('$dfj(["known-a"])');
   });
 });
+
+describe("root-level module asset serialization", () => {
+  function streamToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) { chunks.push(v); },
+        end() { resolve(chunks.join("")); }
+      });
+    });
+  }
+
+  it("registerModule without a boundary stores modules under root sentinel", () => {
+    const html = r.renderToString(() => {
+      const ctx = sharedConfig.context;
+      ctx.registerModule("./Lazy.tsx", "/assets/Lazy-abc.js");
+      return r.ssr`<div>content</div>`;
+    });
+    expect(html).toContain("_assets");
+    expect(html).toContain("./Lazy.tsx");
+    expect(html).toContain("/assets/Lazy-abc.js");
+  });
+
+  it("renderToStream serializes root-level modules in hydration data", async () => {
+    const html = await new Promise(resolve => {
+      const chunks = [];
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        ctx.registerModule("./Lazy.tsx", "/assets/Lazy-abc.js");
+        ctx.registerModule("./Other.tsx", "/assets/Other-def.js");
+        return r.ssr`<div>content</div>`;
+      }).pipe({
+        write(v) { chunks.push(v); },
+        end() { resolve(chunks.join("")); }
+      });
+    });
+    expect(html).toContain("_assets");
+    expect(html).toContain("./Lazy.tsx");
+    expect(html).toContain("/assets/Lazy-abc.js");
+    expect(html).toContain("./Other.tsx");
+    expect(html).toContain("/assets/Other-def.js");
+  });
+
+  it("boundary-scoped modules still serialize under their boundary key", async () => {
+    const html = await new Promise(resolve => {
+      const chunks = [];
+      let done;
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        done = ctx.registerFragment("b1");
+        ctx._currentBoundaryId = "b1";
+        ctx.registerModule("./Scoped.tsx", "/assets/Scoped-123.js");
+        ctx._currentBoundaryId = null;
+        return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
+      }).pipe({
+        write(v) { chunks.push(v); },
+        end() { resolve(chunks.join("")); }
+      });
+      setTimeout(() => done("<span>loaded</span>"));
+    });
+    expect(html).toContain("b1_assets");
+    expect(html).toContain("./Scoped.tsx");
+  });
+});

@@ -46,19 +46,20 @@ export function render(code, element, init, options = {}) {
       "The `element` passed to `render(..., element)` doesn't exist. Make sure `element` exists in the document."
     );
   }
+  const renderRoot = getChildRoot(element);
   let disposer;
   root(
     dispose => {
       disposer = dispose;
       element === document
         ? flatten(code)
-        : insert(element, code(), element.firstChild ? null : undefined, init);
+        : insert(element, code(), renderRoot.firstChild ? null : undefined, init);
     },
     { id: options.renderId }
   );
   return () => {
     disposer();
-    element.textContent = "";
+    renderRoot.textContent = "";
   };
 }
 
@@ -229,10 +230,11 @@ export function ref(fn, element) {
 }
 
 export function insert(parent, accessor, marker, initial) {
+  const childRoot = getChildRoot(parent);
   const multi = marker !== undefined;
   if (multi && !initial) initial = [];
   if (isHydrating(parent)) {
-    if (!multi && initial === undefined && parent) initial = [...parent.childNodes];
+    if (!multi && initial === undefined && parent) initial = [...childRoot.childNodes];
     if (Array.isArray(initial)) {
       let j = 0;
       for (let i = 0; i < initial.length; i++) {
@@ -249,7 +251,7 @@ export function insert(parent, accessor, marker, initial) {
   accessor = memo(accessor, true);
   if (multi && initial.length === 0) {
     const placeholder = document.createTextNode("");
-    parent.insertBefore(placeholder, marker);
+    childRoot.insertBefore(placeholder, marker);
     initial = [placeholder];
   }
   effect(
@@ -276,9 +278,27 @@ export function assign(node, props, skipChildren, prevProps = {}, skipRef = fals
   }
 }
 
+// Module asset loading for hydration
+function loadModuleAssets(mapping) {
+  const hy = globalThis._$HY;
+  if (!hy) return;
+  const pending = [];
+  for (const moduleUrl in mapping) {
+    if (hy.modules[moduleUrl]) continue;
+    const entryUrl = mapping[moduleUrl];
+    if (!hy.loading[moduleUrl]) {
+      hy.loading[moduleUrl] = import(/* @vite-ignore */ entryUrl).then(mod => {
+        hy.modules[moduleUrl] = mod;
+      });
+    }
+    pending.push(hy.loading[moduleUrl]);
+  }
+  return pending.length ? Promise.all(pending).then(() => {}) : undefined;
+}
+
 // Hydrate
 export function hydrate(code, element, options = {}) {
-  if (globalThis._$HY.done) return render(code, element, [...element.childNodes], options);
+  if (globalThis._$HY.done) return render(code, element, [...getChildRoot(element).childNodes], options);
   options.renderId ||= "";
   if (!globalThis._$HY.modules) globalThis._$HY.modules = {};
   if (!globalThis._$HY.loading) globalThis._$HY.loading = {};
@@ -287,6 +307,7 @@ export function hydrate(code, element, options = {}) {
   sharedConfig.load = id => globalThis._$HY.r[id];
   sharedConfig.has = id => id in globalThis._$HY.r;
   sharedConfig.gather = root => gatherHydratable(element, root);
+  sharedConfig.loadModuleAssets = loadModuleAssets;
   sharedConfig.cleanupFragment = id => {
     const tpl = document.getElementById("pl-" + id);
     if (tpl) {
@@ -318,9 +339,30 @@ export function hydrate(code, element, options = {}) {
       }
     };
   }
+  const rootMapping = globalThis._$HY.r && globalThis._$HY.r["_assets"];
+  if (rootMapping && typeof rootMapping === "object") {
+    const p = loadModuleAssets(rootMapping);
+    if (p) {
+      gatherHydratable(element, options.renderId);
+      let disposer;
+      p.then(
+        () => {
+          try {
+            disposer = render(code, element, [...getChildRoot(element).childNodes], options);
+          } finally {
+            sharedConfig.hydrating = false;
+          }
+        },
+        () => {
+          sharedConfig.hydrating = false;
+        }
+      );
+      return () => disposer && disposer();
+    }
+  }
   try {
     gatherHydratable(element, options.renderId);
-    return render(code, element, [...element.childNodes], options);
+    return render(code, element, [...getChildRoot(element).childNodes], options);
   } finally {
     sharedConfig.hydrating = false;
   }
@@ -377,7 +419,7 @@ export function getNextMarker(start) {
 }
 
 export function getFirstChild(node, expectedTag) {
-  const child = node.firstChild;
+  const child = getChildRoot(node).firstChild;
   if ("_DX_DEV_" && isHydrating() && expectedTag && child?.localName !== expectedTag) {
     const isMissing = !child || child.nodeType !== 1;
     console.warn(
@@ -392,7 +434,7 @@ export function getFirstChild(node, expectedTag) {
 export function getNextSibling(node, expectedTag) {
   const sibling = node.nextSibling;
   if ("_DX_DEV_" && isHydrating() && expectedTag && sibling?.localName !== expectedTag) {
-    const parent = node.parentElement;
+    const parent = node.parentNode;
     const isMissing = !sibling || sibling.nodeType !== 1;
     console.warn(
       "Hydration structure mismatch: expected <" + expectedTag + "> after",
@@ -406,13 +448,14 @@ export function getNextSibling(node, expectedTag) {
 }
 
 function describeSiblings(parent, mismatchChild, expectedTag, isMissing) {
+  if (!parent) return `<${expectedTag} \u2190 parent unavailable>`;
   const children = [];
-  let child = parent.firstChild;
+  let child = getChildRoot(parent).firstChild;
   while (child) {
     if (child.nodeType === 1) children.push(child);
     child = child.nextSibling;
   }
-  const pTag = parent.localName;
+  const pTag = parent.localName || "#fragment";
   if (isMissing) {
     const tags = children.map(c => `<${c.localName}>`).join("");
     return `<${pTag}>${tags}<${expectedTag} \u2190 missing></${pTag}>`;
@@ -461,6 +504,10 @@ export function runHydrationEvents() {
 // Internal Functions
 function isHydrating(node) {
   return sharedConfig.hydrating && (!node || node.isConnected);
+}
+
+function getChildRoot(node) {
+  return node && node.localName === "template" ? node.content : node;
 }
 
 function toggleClassKey(node, key, value) {
@@ -598,6 +645,7 @@ function eventHandler(e) {
 function insertExpression(parent, value, current, marker) {
   if (isHydrating(parent)) return;
   if (value === current) return;
+  const childRoot = getChildRoot(parent);
   const t = typeof value,
     multi = marker !== undefined;
   // is this necessary anymore?
@@ -606,16 +654,16 @@ function insertExpression(parent, value, current, marker) {
   if (t === "string" || t === "number") {
     const tc = typeof current;
     if (tc === "string" || tc === "number") {
-      parent.firstChild.data = value;
-    } else parent.textContent = value;
+      childRoot.firstChild.data = value;
+    } else childRoot.textContent = value;
   } else if (value === undefined) {
     cleanChildren(parent, current, marker);
   } else if (value.nodeType) {
     if (Array.isArray(current)) {
       cleanChildren(parent, current, multi ? marker : null, value);
-    } else if (current === undefined || !parent.firstChild) {
-      parent.appendChild(value);
-    } else parent.replaceChild(value, parent.firstChild);
+    } else if (current === undefined || !childRoot.firstChild) {
+      childRoot.appendChild(value);
+    } else childRoot.replaceChild(value, childRoot.firstChild);
   } else if (Array.isArray(value)) {
     const currentArray = current && Array.isArray(current);
     if (value.length === 0) {
@@ -623,7 +671,7 @@ function insertExpression(parent, value, current, marker) {
     } else if (currentArray) {
       if (current.length === 0) {
         appendNodes(parent, value, marker);
-      } else reconcileArrays(parent, current, value);
+      } else reconcileArrays(childRoot, current, value);
     } else {
       current && cleanChildren(parent);
       appendNodes(parent, value);
@@ -651,10 +699,12 @@ function normalize(value, current, multi, doNotUnwrap) {
 }
 
 function appendNodes(parent, array, marker = null) {
+  parent = getChildRoot(parent);
   for (let i = 0, len = array.length; i < len; i++) parent.insertBefore(array[i], marker);
 }
 
 function cleanChildren(parent, current, marker, replacement) {
+  parent = getChildRoot(parent);
   if (marker === undefined) return (parent.textContent = "");
   if (current.length) {
     let inserted = false;
