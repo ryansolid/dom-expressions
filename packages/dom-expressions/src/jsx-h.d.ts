@@ -1,5 +1,5 @@
 import * as csstype from "csstype";
-import type { PropKey, WidenPropValue } from "./jsx-properties";
+import type { PropKey, WidenPropValue } from "./jsx-properties.js";
 
 /**
  * Originally based on JSX types for Surplus and Inferno and adapted for `dom-expressions`.
