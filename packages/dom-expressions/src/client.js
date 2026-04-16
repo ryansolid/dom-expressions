@@ -538,8 +538,8 @@ function assignProp(node, prop, value, prev, skipRef, nodeName) {
   if (prop === "style") return (style(node, value, prev), value);
   if (prop === "class") return (className(node, value, prev), value);
   // dom with state may differs from reactive state
-  // reactive state is the source of truth
-  if (value === prev && !DOMWithState[nodeName]?.[prop]) return prev;
+  // dom value derives from reactive state
+  if (value === prev && DOMWithState[nodeName]?.[prop] !== 1) return prev;
   if (prop === "ref") {
     if (!skipRef && value) ref(() => value, node);
     return value;

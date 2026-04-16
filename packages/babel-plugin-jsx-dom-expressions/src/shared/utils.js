@@ -477,7 +477,6 @@ export function getAttributeNamed(path, name) {
         const key = t.isJSXNamespacedName(attr.node.name)
           ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
           : attr.node.name.name;
-
         return key === name;
       }
     });
@@ -501,22 +500,25 @@ export function transformSpecialCaseAttributes(path, tagName, isSSR) {
   tagName = tagName.toUpperCase();
   const transforms = [];
 
+  let hasOrHadAttribute = {};
+
   for (const propName in DOMWithState[tagName]) {
-    if (propName.startsWith("prop:")) continue;
     const attr = getAttributeNamed(path, propName);
     if (attr) {
+      hasOrHadAttribute[propName] = true;
       transforms.push({ propName, attr });
     }
   }
 
   for (const { propName, attr } of transforms) {
-    const value = attr.node.value == null
-      ? t.booleanLiteral(true)
-      : t.cloneNode(attr.node.value.expression ?? attr.node.value);
+    const value =
+      attr.node.value == null
+        ? t.booleanLiteral(true)
+        : t.cloneNode(attr.node.value.expression ?? attr.node.value);
 
     const isDefault =
       propName.includes("default") ||
-      !getAttributeNamed(path, "default" + propName[0].toUpperCase() + propName.slice(1));
+      !hasOrHadAttribute["default" + propName[0].toUpperCase() + propName.slice(1)];
 
     const defaultAttrName = propName.replace("default", "").toLowerCase();
 
@@ -558,7 +560,7 @@ export function transformSpecialCaseAttributes(path, tagName, isSSR) {
   }
 }
 
-export function isStatefulDOMProperty(tagName, propName) {
+export function isDOMWithState(tagName, propName) {
   tagName = tagName.toUpperCase();
 
   if (propName.includes("prop:")) {
@@ -566,6 +568,14 @@ export function isStatefulDOMProperty(tagName, propName) {
   }
 
   return DOMWithState[tagName]?.[propName];
+}
+
+export function isStatefulDOMProperty(tagName, propName) {
+  return isDOMWithState(tagName, propName) === 1;
+}
+
+export function isLockedDOMProperty(tagName, propName) {
+  return !!isDOMWithState(tagName, propName);
 }
 
 export function addAttribute(path, name, value) {

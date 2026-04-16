@@ -26,6 +26,7 @@ import {
   getConfig,
   escapeHTML,
   convertJSXIdentifier,
+  isLockedDOMProperty,
   transformCondition,
   trimWhitespace,
   inlineCallExpression,
@@ -283,8 +284,8 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
 
   const isChildProp = ChildProperties.has(name);
 
-  if (isChildProp || namespace === "prop") {
-    if (config.hydratable && namespace !== "prop") {
+  if (isChildProp || namespace === "prop" || isLockedDOMProperty(tagName, name)) {
+    if (config.hydratable && namespace !== "prop" && !isLockedDOMProperty(tagName, name)) {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
         t.stringLiteral(name),
@@ -1230,6 +1231,8 @@ function contextToCustomElement(path, results) {
 
 function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals }) {
   const config = getConfig(path);
+  const tagName = getTagName(path.node);
+
   // TODO: skip but collect the names of any properties after the last spread to not overwrite them
   const filteredAttributes = [];
   const spreadArgs = [];
@@ -1266,7 +1269,10 @@ function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals 
       const dynamic =
         isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });
       if (dynamic) {
-        const id = convertJSXIdentifier(node.name);
+        const id = isLockedDOMProperty(tagName, key)
+          ? t.identifier(key.replace(/^prop:/, ""))
+          : convertJSXIdentifier(node.name);
+
         let expr =
           wrapConditionals &&
           (t.isLogicalExpression(node.value.expression) ||
@@ -1279,13 +1285,15 @@ function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals 
             id,
             [],
             t.blockStatement([t.returnStatement(expr.body)]),
-            !t.isValidIdentifier(key)
+            !t.isValidIdentifier(
+              isLockedDOMProperty(tagName, key) ? key.replace(/^prop:/, "") : key
+            )
           )
         );
       } else {
         runningObject.push(
           t.objectProperty(
-            t.stringLiteral(key),
+            t.stringLiteral(isLockedDOMProperty(tagName, key) ? key.replace(/^prop:/, "") : key),
             isContainer ? node.value.expression : node.value || t.booleanLiteral(true)
           )
         );
