@@ -26,6 +26,7 @@ import {
   getConfig,
   escapeHTML,
   convertJSXIdentifier,
+  isLockedDOMProperty,
   transformCondition,
   trimWhitespace,
   inlineCallExpression,
@@ -283,8 +284,8 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
 
   const isChildProp = ChildProperties.has(name);
 
-  if (isChildProp || namespace === "prop") {
-    if (config.hydratable && namespace !== "prop") {
+  if (isChildProp || namespace === "prop" || isLockedDOMProperty(tagName, name)) {
+    if (config.hydratable && namespace !== "prop" && !isLockedDOMProperty(tagName, name)) {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
         t.stringLiteral(name),

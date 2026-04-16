@@ -23,7 +23,7 @@ interface Runtime {
   dynamicProperty(props: any, key: string): any;
   setAttribute(node: Element, name: string, value: any): void;
   setAttributeNS(node: Element, namespace: string, name: string, value: any): void;
-  DOMWithState: Record<string, Record<string, number>>;
+  DOMWithState: Record<string, Record<string, 1 | 2>>;
   ChildProperties: Set<string>;
   DelegatedEvents: Set<string>;
   SVGElements: Set<string>;
@@ -176,13 +176,13 @@ export function createHTML(
       namespace = parts[0];
     }
     const isChildProp = r.ChildProperties.has(name);
-    const isStatefulDOMProperty = !!r.DOMWithState[node.name.toUpperCase()]?.[name];
+    const isLockedDOMProperty = !!r.DOMWithState[node.name.toUpperCase()]?.[name];
 
     if (name === "style") {
       options.exprs.push(`r.style(${tag},${expr},_$p)`);
     } else if (name === "class") {
       options.exprs.push(`r.className(${tag},${expr},_$p)`);
-    } else if (isChildProp || isStatefulDOMProperty || namespace === "prop") {
+    } else if (isChildProp || isLockedDOMProperty || namespace === "prop") {
       options.exprs.push(`${tag}.${name} = ${expr}`);
     } else {
       const ns = name.indexOf(":") > -1 && r.Namespaces[name.split(":")[0]];

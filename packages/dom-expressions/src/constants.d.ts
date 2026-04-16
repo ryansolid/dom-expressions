@@ -1,4 +1,10 @@
-export const DOMWithState: Record<string, Record<string, number>>;
+/**
+ * Flags
+ *
+ * - 1 - Stateful property - value derives from reactive state
+ * - 2 - Locked to property - value not specially treated
+ */
+export const DOMWithState: Record<string, Record<string, 1 | 2>>;
 
 export const ChildProperties: Set<string>;
 

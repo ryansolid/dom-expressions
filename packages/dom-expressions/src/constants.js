@@ -1,19 +1,17 @@
+/**
+ * Flags
+ *
+ * - 1 - Stateful property - value derives from reactive state
+ * - 2 - Locked to property - value not specially treated
+ */
 const DOMWithState = {
-  INPUT: { value: 1, defaultValue: 1, checked: 1, defaultChecked: 1 },
+  INPUT: { value: 1, defaultValue: 2, checked: 1, defaultChecked: 2 },
   SELECT: { value: 1 },
-  OPTION: { value: 1, selected: 1, defaultSelected: 1 },
-  TEXTAREA: { value: 1, defaultValue: 1 },
-  VIDEO: { muted: 1, defaultMuted: 1 },
-  AUDIO: { muted: 1, defaultMuted: 1 }
+  OPTION: { value: 1, selected: 1, defaultSelected: 2 },
+  TEXTAREA: { value: 1, defaultValue: 2 },
+  VIDEO: { muted: 1, defaultMuted: 2 },
+  AUDIO: { muted: 1, defaultMuted: 2 }
 };
-
-// this is for spreads, spreads will receive "prop:value" and "value"
-// either we do this here once or in spreads remove `prop:` from every key name
-for (const tagName in DOMWithState) {
-  for (const propName in DOMWithState[tagName]) {
-    DOMWithState[tagName]["prop:" + propName] = 1;
-  }
-}
 
 const ChildProperties = /*#__PURE__*/ new Set([
   "innerHTML",
