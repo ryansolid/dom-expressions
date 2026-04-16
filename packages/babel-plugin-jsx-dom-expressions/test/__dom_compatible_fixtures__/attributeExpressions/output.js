@@ -74,7 +74,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
     `<div><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea></textarea><textarea>static content</textarea><textarea>static content</textarea></div>`
   ),
   _tmpl$53 = /*#__PURE__*/ _$template(`<svg><a>xml link partial</a></svg>`, 2),
-  _tmpl$54 = /*#__PURE__*/ _$template(`<video src="test.mp4"muted></video>`);
+  _tmpl$54 = /*#__PURE__*/ _$template(`<video src="test.mp4"muted></video>`),
+  _tmpl$55 = /*#__PURE__*/ _$template(`<input>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -661,9 +662,6 @@ const template76 = (() => {
   _el$93.poster = "1.jpg";
   return _el$92;
 })();
-
-// ONCE TESTS
-
 const template77 = (() => {
   var _el$94 = _tmpl$4();
   _$setStyleProperty(_el$94, "width", props.width);
@@ -691,9 +689,6 @@ const template79 = (() => {
   );
   return _el$96;
 })();
-
-// ONCE TESTS SPREADS
-
 const propsSpread = {
   something: color(),
   style: {
@@ -775,9 +770,8 @@ const template84 = (() => {
   return _el$101;
 })();
 
-// ONCE PROPERTY OF OBJECT ACCESS
+/* https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563 */
 
-// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
 const styleProp = {
   style: {
     width: props.width,
@@ -837,8 +831,6 @@ const template88 = (() => {
   });
   return _el$105;
 })();
-
-// Style edge cases from main
 {
   _tmpl$48();
 }
@@ -936,13 +928,13 @@ const template93 = (() => {
       }
     ) => {
       _el$114.value = e ?? "";
-      _el$115.defaultValue = t ?? "";
+      t !== _p$.t && (_el$115.defaultValue = t ?? "");
       _el$118.value = a ?? "";
-      _el$119.defaultValue = o ?? "";
+      o !== _p$.o && (_el$119.defaultValue = o ?? "");
       _el$119.value = i ?? "";
       _el$124.muted = n;
       _el$125.muted = s;
-      _el$126.defaultMuted = h;
+      h !== _p$.h && (_el$126.defaultMuted = h);
       _el$126.muted = r;
     }
   );
@@ -977,7 +969,7 @@ const template94 = (() => {
     ) => {
       _el$128.value = e ?? "";
       _el$129.value = t ?? "";
-      _el$130.defaultValue = a ?? "";
+      a !== _p$.a && (_el$130.defaultValue = a ?? "");
       _el$130.value = o ?? "";
       _el$131.value = i ?? "";
     }
@@ -989,4 +981,22 @@ const template96 = _tmpl$54();
 function MyVideo() {
   return _tmpl$54();
 }
+const template97 = (() => {
+  var _el$136 = _tmpl$55();
+  _$spread(
+    _el$136,
+    _$mergeProps(
+      {
+        get value() {
+          return get();
+        }
+      },
+      {
+        style: "color:red"
+      }
+    ),
+    false
+  );
+  return _el$136;
+})();
 _$delegateEvents(["click", "input"]);

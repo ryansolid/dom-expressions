@@ -914,7 +914,7 @@ const template93 = (() => {
     ) => {
       _el$116.muted = e;
       _el$117.muted = t;
-      _el$118.defaultMuted = a;
+      a !== _p$.a && (_el$118.defaultMuted = a);
       _el$118.muted = o;
     }
   );

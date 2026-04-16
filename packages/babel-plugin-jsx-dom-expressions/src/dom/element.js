@@ -1293,7 +1293,7 @@ function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals 
       } else {
         runningObject.push(
           t.objectProperty(
-            t.stringLiteral(key),
+            t.stringLiteral(isLockedDOMProperty(tagName, key) ? key.replace(/^prop:/, "") : key),
             isContainer ? node.value.expression : node.value || t.booleanLiteral(true)
           )
         );

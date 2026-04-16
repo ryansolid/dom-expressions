@@ -249,8 +249,6 @@ const template74 = <div><video poster="1.jpg"/></div>
 const template75 = <video prop:poster="1.jpg"/>
 const template76 = <div><video prop:poster="1.jpg"/></div>
 
-// ONCE TESTS
-
 const template77 = <div style={/*@once*/ { width: props.width, height: props.height }} />;
 
 const template78 = (
@@ -263,8 +261,6 @@ const template79 = (
     something={/*@once*/ color()}
   />
 );
-
-// ONCE TESTS SPREADS
 
 const propsSpread = {
   something: color(),
@@ -300,9 +296,8 @@ const template84 = (
   />
 );
 
-// ONCE PROPERTY OF OBJECT ACCESS
+/* https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563 */
 
-// https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563
 const styleProp = { style: { width: props.width, height: props.height } };
 const template85 = <div style={/* @once */ styleProp.style} />;
 const template86 = <div style={styleProp.style} />;
@@ -324,7 +319,6 @@ const template88 = (
   </button>
 );
 
-// Style edge cases from main
 {
   <div
     style={{
@@ -395,3 +389,5 @@ const template96 = <video src="test.mp4" muted/>
 function MyVideo() {
   return <video src="test.mp4" muted />
 }
+
+const template97 = <input value={get()} {...{style:"color:red"}}/>
