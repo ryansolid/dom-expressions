@@ -14,7 +14,6 @@ import {
   getTagName,
   isDynamic,
   isComponent,
-  isStatefulDOMProperty,
   registerImportMethod,
   filterChildren,
   toEventName,
@@ -283,9 +282,10 @@ export function setAttr(path, elem, name, value, { dynamic, prevId, tagName }) {
   }
 
   const isChildProp = ChildProperties.has(name);
+  const isLocked = isLockedDOMProperty(tagName, name);
 
-  if (isChildProp || namespace === "prop" || isLockedDOMProperty(tagName, name)) {
-    if (config.hydratable && namespace !== "prop" && !isLockedDOMProperty(tagName, name)) {
+  if (isChildProp || namespace === "prop" || isLocked) {
+    if (config.hydratable && namespace !== "prop" && !isLocked) {
       return t.callExpression(registerImportMethod(path, "setProperty"), [
         elem,
         t.stringLiteral(name),
@@ -908,30 +908,6 @@ function transformAttributes(path, results) {
         ) {
           // own effect
           let nextElem = elem;
-          /*
-
-          if (isStatefulDOMProperty(tagName, key)) {
-            const effectWrapperId = registerImportMethod(path, config.effectWrapper);
-            const v = t.identifier("_v$");
-            results.postExprs.push(
-              t.expressionStatement(
-                t.callExpression(effectWrapperId, [
-                  inlineCallExpression(value.expression),
-                  t.arrowFunctionExpression(
-                    [v],
-                    t.blockStatement([
-                      t.expressionStatement(
-                        setAttr(path, elem, key, v, {
-                          tagName
-                        })
-                      )
-                    ])
-                  )
-                ])
-              )
-            );
-            return;
-          }*/
           if (key === "textContent") {
             nextElem = attribute.scope.generateUidIdentifier("el$");
             children = t.jsxText(" ");
@@ -1268,9 +1244,10 @@ function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals 
       const isContainer = t.isJSXExpressionContainer(node.value);
       const dynamic =
         isContainer && isDynamic(attribute.get("value").get("expression"), { checkMember: true });
+      const normalized = isLockedDOMProperty(tagName, key) ? key.replace(/^prop:/, "") : key;
       if (dynamic) {
         const id = isLockedDOMProperty(tagName, key)
-          ? t.identifier(key.replace(/^prop:/, ""))
+          ? t.identifier(normalized)
           : convertJSXIdentifier(node.name);
 
         let expr =
@@ -1285,15 +1262,13 @@ function processSpreads(path, attributes, { elem, hasChildren, wrapConditionals 
             id,
             [],
             t.blockStatement([t.returnStatement(expr.body)]),
-            !t.isValidIdentifier(
-              isLockedDOMProperty(tagName, key) ? key.replace(/^prop:/, "") : key
-            )
+            !t.isValidIdentifier(normalized)
           )
         );
       } else {
         runningObject.push(
           t.objectProperty(
-            t.stringLiteral(isLockedDOMProperty(tagName, key) ? key.replace(/^prop:/, "") : key),
+            t.stringLiteral(normalized),
             isContainer ? node.value.expression : node.value || t.booleanLiteral(true)
           )
         );
