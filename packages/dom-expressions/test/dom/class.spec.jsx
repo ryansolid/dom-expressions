@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import * as r from "../../src/client";
 import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("Test class binding", () => {
@@ -190,5 +191,49 @@ describe("Test class binding", () => {
     flush();
     expect(div.className).toBe("next shiny");
     dispose();
+  });
+
+  // Nested arrays in a class list recurse through flattenClassList.
+  test("flattens nested arrays in class binding", () => {
+    let div, dispose;
+    createRoot(d => {
+      dispose = d;
+      div = <div class={["one", ["two", ["three", { four: true }]]]} />;
+    });
+    expect(div.className).toBe("one two three four");
+    dispose();
+  });
+
+  // Empty-string keys in a class-object are filtered out by the diff
+  // loops' first guard (`!key`).
+  test("r.className ignores empty-string keys", () => {
+    const node = document.createElement("div");
+    r.className(node, { "": true, real: true });
+    expect(node.classList.contains("real")).toBe(true);
+    expect(node.classList.length).toBe(1);
+  });
+
+  // When prev contains an empty-string key, the removal loop has to skip
+  // it as well (covers the first guard in the prevKeys loop).
+  test("r.className skips empty-string keys from prev on diff", () => {
+    const node = document.createElement("div");
+    node.classList.add("one"); // simulate prev having applied "one"
+    // prev declares "" and "one"; new state drops both and adds "two".
+    r.className(node, { two: true }, { "": true, one: true });
+    expect(node.classList.contains("one")).toBe(false);
+    expect(node.classList.contains("two")).toBe(true);
+  });
+
+  // className with a non-string, non-object truthy value (e.g. number 0
+  // via dynamic expressions) sends classListToObject through its fallback
+  // `return classList;` path, and the subsequent `Object.keys(value || {})`
+  // falls back to `{}`.
+  test("r.className with numeric 0 value walks empty diff loops", () => {
+    const node = document.createElement("div");
+    node.classList.add("stale");
+    r.className(node, 0, { stale: true });
+    // Nothing should be added; previous class is dropped because it was
+    // in prev but not in the (empty) new keys.
+    expect(node.classList.contains("stale")).toBe(false);
   });
 });

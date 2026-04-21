@@ -5,6 +5,18 @@ import * as r from "../../src/client";
 import { createSignal, createRoot } from "@solidjs/signals";
 
 describe("render", () => {
+  // Rendering into `document` itself short-circuits insert and runs the
+  // code via flatten — covers the `element === document` branch.
+  it("runs code via flatten when the root element is document", () => {
+    let called = 0;
+    const dispose = r.render(() => {
+      called++;
+      return document.createElement("span"); // never inserted
+    }, document);
+    expect(called).toBe(1);
+    dispose();
+  });
+
   it("should render JSX", () => {
     let span;
     const [favoriteCar] = createSignal("Porsche 911 Turbo");

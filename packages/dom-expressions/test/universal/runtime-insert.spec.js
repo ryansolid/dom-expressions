@@ -348,6 +348,52 @@ describe("universal insert tail-branch coverage", () => {
     expect(parent.innerHTML).toBe("<span>x</span><span>a</span><span>b</span>");
     dispose();
   });
+
+  it("reconcileArrays: inserts in the middle (common prefix + common suffix)", () => {
+    const parent = document.createElement("div");
+    const a = document.createElement("span");
+    a.textContent = "a";
+    const b = document.createElement("span");
+    b.textContent = "b";
+
+    const [list, setList] = createSignal([a, b]);
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => list());
+    });
+    flush();
+
+    const x = document.createElement("span");
+    x.textContent = "x";
+    // [a, b] → [a, x, b]: prefix matches a, suffix matches b, append path
+    // runs with bStart > 0 → anchor is getNextSibling(b[bStart - 1]).
+    setList([a, x, b]);
+    flush();
+    expect(parent.innerHTML).toBe("<span>a</span><span>x</span><span>b</span>");
+    dispose();
+  });
+});
+
+// applyRef is used by universal spread for the `ref` prop; nested/sparse
+// ref arrays go through a flatten + forEach with a truthy guard.
+describe("universal applyRef", () => {
+  it("invokes a single function ref with the element", () => {
+    const el = { tag: "a" };
+    let seen;
+    r.applyRef(e => (seen = e), el);
+    expect(seen).toBe(el);
+  });
+
+  it("flattens nested arrays and skips falsy entries", () => {
+    const el = { tag: "b" };
+    const seen = [];
+    r.applyRef(
+      [e => seen.push("a"), null, [undefined, e => seen.push("b")], false],
+      el
+    );
+    expect(seen).toEqual(["a", "b"]);
+  });
 });
 
 // spread's update effect removes dropped props and skips unchanged values —

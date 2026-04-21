@@ -1049,8 +1049,115 @@ describe("eventHandler hydration early-return", () => {
     // Pretend hydration is still in progress with this exact event queued.
     sharedConfig.registry = new Map();
     sharedConfig.events = [[btn, event]];
+    // Re-ensure container is attached (earlier describes may have reset body).
+    if (!container.isConnected) document.body.appendChild(container);
 
     btn.dispatchEvent(event);
     expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+// When _$HY.done is true a subsequent hydrate() call short-circuits into
+// a plain render — useful for mount-after-hydration scenarios.
+describe("hydrate short-circuits to render once hydration is done", () => {
+  it("renders via r.render when _$HY.done is already set", () => {
+    const container = document.createElement("div");
+    container.innerHTML = "<span>stale</span>";
+    document.body.appendChild(container);
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: {},
+      done: true,
+      fe() {}
+    };
+
+    const _tmpl$ = r.template("<p>fresh</p>");
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(container.innerHTML).toBe("<p>fresh</p>");
+    document.body.removeChild(container);
+  });
+});
+
+// loadModuleAssets has several shortcut branches: already-loaded modules,
+// already-in-flight loads, and an all-preloaded pending list that bails
+// out of the Promise.all wrap entirely.
+describe("loadModuleAssets shortcut branches", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  afterEach(() => {
+    container.innerHTML = "";
+  });
+
+  it("skips modules already present in _$HY.modules", () => {
+    const moduleUrl = "./Preloaded.tsx";
+    const entryUrl = "/assets/Preloaded-xyz.js";
+    const preloaded = { default: () => "pre" };
+
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: { "_assets": { [moduleUrl]: entryUrl } },
+      modules: { [moduleUrl]: preloaded }, // already loaded
+      loading: {},
+      done: false,
+      fe() {}
+    };
+    container.innerHTML = '<div _hk="0">Pre</div>';
+    const _tmpl$ = r.template("<div>Pre</div>");
+
+    let rendered = false;
+    r.hydrate(() => {
+      rendered = true;
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    // All modules preloaded → loadModuleAssets returns undefined (empty
+    // pending list) and hydrate falls through to the synchronous path.
+    expect(rendered).toBe(true);
+    expect(globalThis._$HY.modules[moduleUrl]).toBe(preloaded);
+  });
+
+  it("reuses an in-flight loading promise without kicking off another import", async () => {
+    const moduleUrl = "./InFlight.tsx";
+    const entryUrl = "/assets/InFlight-abc.js";
+    const shared = { default: () => "in-flight" };
+
+    const loadingPromise = Promise.resolve(shared).then(mod => {
+      globalThis._$HY.modules[moduleUrl] = mod;
+    });
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: { "_assets": { [moduleUrl]: entryUrl } },
+      modules: {},
+      loading: { [moduleUrl]: loadingPromise },
+      done: false,
+      fe() {}
+    };
+    container.innerHTML = '<div _hk="0">Flight</div>';
+    const _tmpl$ = r.template("<div>Flight</div>");
+
+    let rendered = false;
+    r.hydrate(() => {
+      rendered = true;
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    // Rendering is deferred onto the existing loading promise (hit the
+    // `!hy.loading[moduleUrl]` false branch).
+    expect(rendered).toBe(false);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(rendered).toBe(true);
+    expect(globalThis._$HY.modules[moduleUrl]).toBe(shared);
+    // The loading entry we installed was reused rather than replaced.
+    expect(globalThis._$HY.loading[moduleUrl]).toBe(loadingPromise);
   });
 });

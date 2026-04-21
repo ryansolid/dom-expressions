@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import * as r from "../../src/client";
 import { createRoot, createSignal, flush } from "@solidjs/signals";
 describe("Test style binding", () => {
   test("var from function", () => {
@@ -85,5 +86,25 @@ describe("Test style binding", () => {
     flush();
     expect(div.style.color).toBe("green");
     dispose();
+  });
+});
+
+// r.style is a module-level helper. Calling it directly exercises branches
+// that `<div style={...} />` can't reach (e.g. no prior value, default
+// prev arg).
+describe("r.style direct usage", () => {
+  test("noops when both value and prev are falsy", () => {
+    const node = document.createElement("div");
+    // No prior style, clear with null → both early-return branches fire
+    // without touching the node.
+    r.style(node, null, undefined);
+    expect(node.hasAttribute("style")).toBe(false);
+  });
+
+  test("applies default prev={} when omitted", () => {
+    const node = document.createElement("div");
+    // Only 2 args → prev defaults.
+    r.style(node, { color: "red" });
+    expect(node.style.color).toBe("red");
   });
 });
