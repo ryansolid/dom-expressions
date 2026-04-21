@@ -731,4 +731,46 @@ describe("root-level module asset serialization", () => {
     expect(html).toContain("b1_assets");
     expect(html).toContain("./Scoped.tsx");
   });
+
+  // Regression: when a boundary fragment resolves while root holes are still
+  // cascading (shell not yet committed), the fragment's post-resolve flushEnd
+  // must not flush the serializer before the final root `_assets` write runs.
+  // Otherwise seroval's Serializer.write silently drops the root asset map
+  // once flushed=true. Seen in the /stream page: an inner Loading boundary
+  // completes its first chunk while an outer async tree is still resolving,
+  // leaving lazy module mappings out of the hydration registry on the client.
+  it("root modules serialize when a fragment resolves before shell completes", async () => {
+    let outerResolve;
+    const outerPromise = new Promise(r => (outerResolve = r));
+    const outerErr = new Error("outer");
+    outerErr._promise = outerPromise;
+    let outerCalls = 0;
+    let fragmentDone;
+
+    const html = await new Promise(resolve => {
+      const chunks = [];
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        ctx.registerModule("./Lazy.tsx", "/assets/Lazy-abc.js");
+        fragmentDone = ctx.registerFragment("b1");
+        return r.ssr`<div><template id="pl-b1"></template><!--pl-b1-->${() => {
+          if (++outerCalls === 1) throw outerErr;
+          return "done";
+        }}</div>`;
+      }).pipe({
+        write(v) { chunks.push(v); },
+        end() { resolve(chunks.join("")); }
+      });
+      setTimeout(() => {
+        fragmentDone("<span>loaded</span>");
+      }, 5);
+      setTimeout(() => outerResolve(), 30);
+    });
+
+    expect(html).toContain("<span>loaded</span>");
+    expect(html).toContain("done");
+    expect(html).toContain("_assets");
+    expect(html).toContain("./Lazy.tsx");
+    expect(html).toContain("/assets/Lazy-abc.js");
+  });
 });

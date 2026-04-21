@@ -205,8 +205,21 @@ export function renderToStream(code, options = {}) {
     onDone,
     onError: options.onError
   });
+  let rootAssetsSerialized = false;
+  const serializeRootAssets = () => {
+    if (rootAssetsSerialized) return;
+    rootAssetsSerialized = true;
+    // Ensure the root boundary's module map is written to the serializer
+    // before it flushes. A Loading boundary's resolve path can queue flushEnd
+    // while the shell is still pending (cascading root holes), which would
+    // otherwise call serializer.flush() before doShell() writes root _assets.
+    // Seroval silently drops writes after flush, so the root module mapping
+    // would be lost and lazy hydration would fail for root-level lazy modules.
+    serializeFragmentAssets("", tracking.boundaryModules, context);
+  };
   const flushEnd = () => {
     if (!registry.size) {
+      serializeRootAssets();
       queue(() => queue(() => serializer.flush())); // double queue because of elsewhere
     }
   };
@@ -452,7 +465,7 @@ export function renderToStream(code, options = {}) {
       if (url.endsWith(".css")) headStyles.add(url);
     }
     html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
-    serializeFragmentAssets("", tracking.boundaryModules, context);
+    serializeRootAssets();
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
     tasks = "";
