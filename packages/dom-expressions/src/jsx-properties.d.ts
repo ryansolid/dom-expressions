@@ -41,18 +41,18 @@ export type PropValue =
  *   narrowing
  * - other types pass through unchanged
  */
-export type WidenPropValue<V> = [V] extends [string]
-  ? string extends V
-    ? string | number
-    : V
-  : V;
+type WidenString<V> = string extends V ? string | number : V;
+export type WidenPropValue<V> = [V] extends [string] ? WidenString<V> : V;
 
 /**
  * Structurally identical → `Y`; distinct → `N`. Used by `IsReadonlyKey` to detect
  * readonly keys by comparing `Pick<T, K>` with `Readonly<Pick<T, K>>`.
  */
-export type IfEquals<A, B, Y = unknown, N = never> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? Y : N;
+export type IfEquals<A, B, Y = unknown, N = never> = (<T>() => T extends A ? 1 : 2) extends <
+  T
+>() => T extends B ? 1 : 2
+  ? Y
+  : N;
 
 /**
  * True when `K` is readonly on `T`. Singleton-constant properties (e.g.
@@ -83,13 +83,13 @@ export type IsReadonlyKey<T, K extends keyof T> = IfEquals<
 export type PropKey<T, K extends keyof T> = K extends keyof SkipPropsFrom
   ? never
   : K extends string
-    ? string extends K
+  ? string extends K
+    ? never
+    : K extends `aria${string}`
+    ? never
+    : T[K] extends PropValue
+    ? IsReadonlyKey<T, K> extends true
       ? never
-      : K extends `aria${string}`
-        ? never
-        : T[K] extends PropValue
-          ? IsReadonlyKey<T, K> extends true
-            ? never
-            : `prop:${K}`
-          : never
-    : never;
+      : `prop:${K}`
+    : never
+  : never;
