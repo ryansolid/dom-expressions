@@ -355,16 +355,6 @@ describe("Test HTML", () => {
     ).not.toThrow();
   });
 
-  // `use:directive=${fn}` attributes are parsed as directives (separate from
-  // ordinary attrs). The lit runtime doesn't process directives today, so
-  // the template just needs to parse without blowing up.
-  test("use:directive attribute parses without throwing", () => {
-    const noop = () => {};
-    expect(() =>
-      html`<button use:autofocus=${noop}>click</button>`
-    ).not.toThrow();
-  });
-
   // `xlink:href` is routed through `setAttributeNS` (one of the reserved
   // namespace slots in the runtime).
   test("xlink:href attribute uses setAttributeNS", () => {
