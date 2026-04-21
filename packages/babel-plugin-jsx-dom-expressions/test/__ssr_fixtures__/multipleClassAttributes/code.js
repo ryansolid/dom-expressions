@@ -1,5 +1,7 @@
-// Multiple `class=` attributes on a single element should be combined
-// by the SSR compiler into a single class attribute with a joined value.
+// Duplicate attributes on the same element resolve to the last value
+// (matching JSX spread semantics: later attributes override earlier ones).
+// This test keeps the `class=` case specifically since it used to be a
+// special compiler path.
 const dynamicClass = () => "dyn";
 const flag = true;
 
