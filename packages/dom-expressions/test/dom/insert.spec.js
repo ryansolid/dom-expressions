@@ -376,6 +376,127 @@ describe("r.insert with Markers", () => {
   }
 });
 
+describe("r.insert edge cases", () => {
+  // insertExpression: value has nodeType, current is not an array and
+  // childRoot.firstChild exists → hit the replaceChild branch.
+  it("replaces existing firstChild with a DOM node", () => {
+    const parent = document.createElement("div");
+    parent.appendChild(document.createTextNode("old"));
+    const span = document.createElement("span");
+    span.textContent = "new";
+
+    r.insert(parent, span, undefined, "old");
+    expect(parent.innerHTML).toBe("<span>new</span>");
+  });
+
+  // insertExpression: value has nodeType, current is an array → routes
+  // through cleanChildren with the marker branch.
+  it("replaces an array-current with a single node via cleanChildren", () => {
+    const parent = document.createElement("div");
+    const marker = document.createTextNode("");
+    const existing = document.createTextNode("p1");
+    parent.appendChild(existing);
+    parent.appendChild(marker);
+
+    const span = document.createElement("span");
+    span.textContent = "x";
+    r.insert(parent, span, marker, [existing]);
+    expect(parent.innerHTML).toBe("<span>x</span>");
+  });
+
+  // cleanChildren: replacement matches a member of current → sets the
+  // `inserted` flag so the remainder of the pass only removes siblings.
+  it("keeps replacement node in place when it is already part of current", () => {
+    const parent = document.createElement("div");
+    const marker = document.createTextNode("");
+    const n1 = document.createElement("span");
+    n1.textContent = "1";
+    const n2 = document.createElement("span");
+    n2.textContent = "2";
+    parent.appendChild(n1);
+    parent.appendChild(n2);
+    parent.appendChild(marker);
+
+    // Move from [n1, n2] to just n2 (reused, so hits the `inserted = true`
+    // branch). The other element should be removed.
+    r.insert(parent, n2, marker, [n1, n2]);
+    expect(parent.childNodes.length).toBe(2);
+    expect(parent.firstChild).toBe(n2);
+  });
+
+  // insertExpression dev warning for unrecognized value types.
+  it("warns for unrecognized value shapes in DEV", () => {
+    const parent = document.createElement("div");
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    r.insert(parent, { unknown: true });
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+});
+
+// insertExpression takes the nodeType/Array.isArray(current) branch only
+// when the accessor is passed without a marker — normalize only wraps in
+// an array when multi=true, so these cases need marker=undefined.
+describe("r.insert with no marker + array current", () => {
+  it("replaces array-current with a single node via cleanChildren", () => {
+    const parent = document.createElement("div");
+    const old = document.createTextNode("old");
+    parent.appendChild(old);
+
+    const span = document.createElement("span");
+    span.textContent = "new";
+    r.insert(parent, span, undefined, [old]);
+    expect(parent.childNodes.length).toBe(1);
+    expect(parent.firstChild).toBe(span);
+  });
+
+  it("keeps replacement already present in array-current and drops the rest", () => {
+    const parent = document.createElement("div");
+    const a = document.createElement("a");
+    const b = document.createElement("b");
+    parent.appendChild(a);
+    parent.appendChild(b);
+
+    // b is a member of current [a, b] → hits `inserted = true` at i=1;
+    // a is removed at i=0 since `inserted` is already true.
+    r.insert(parent, b, undefined, [a, b]);
+    expect(parent.childNodes.length).toBe(1);
+    expect(parent.firstChild).toBe(b);
+  });
+
+  it("appends replacement when the current element is detached from parent", () => {
+    const parent = document.createElement("div");
+    const detached = document.createElement("p"); // never attached
+    const span = document.createElement("span");
+    span.textContent = "x";
+
+    // cleanChildren hits isParent=false → insertBefore(span, null) appends.
+    r.insert(parent, span, undefined, [detached]);
+    expect(parent.childNodes.length).toBe(1);
+    expect(parent.firstChild).toBe(span);
+  });
+
+  it("replaces array-current whose element is a child via replaceChild", () => {
+    const parent = document.createElement("div");
+    const child = document.createElement("p");
+    parent.appendChild(child);
+    const span = document.createElement("span");
+
+    // isParent=true at i=0 → replaceChild(span, child).
+    r.insert(parent, span, undefined, [child]);
+    expect(parent.childNodes.length).toBe(1);
+    expect(parent.firstChild).toBe(span);
+  });
+});
+
+describe("r.render error handling", () => {
+  it("throws when element argument is missing", () => {
+    expect(() => r.render(() => document.createElement("div"), null)).toThrow(
+      /element.*doesn't exist/i
+    );
+  });
+});
+
 describe("r.insert caching", () => {
   it("does not re-invoke accessor when inner memo updates", () => {
     let accessorCalls = 0;

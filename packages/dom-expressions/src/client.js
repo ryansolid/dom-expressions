@@ -114,7 +114,9 @@ export function setAttribute(node, name, value) {
 
 export function setAttributeNS(node, namespace, name, value) {
   if (isHydrating(node)) return;
-  if (value == null || value === false) node.removeAttributeNS(namespace, name);
+  // removeAttributeNS takes the local name; setAttributeNS accepts the qualified form.
+  if (value == null || value === false)
+    node.removeAttributeNS(namespace, name.indexOf(":") > -1 ? name.split(":").pop() : name);
   else node.setAttributeNS(namespace, name, value === true ? "" : value);
 }
 

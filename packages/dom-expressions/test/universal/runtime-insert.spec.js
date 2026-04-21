@@ -5,6 +5,402 @@ import * as r from "./custom";
 import { createRenderer } from "../../src/universal";
 import { createRoot, createSignal, flush, NotReadyError } from "@solidjs/signals";
 
+// Static (non-function) accessors skip the effect wiring and call
+// insertExpression synchronously — exercise each branch of that path.
+describe("universal insert (static values)", () => {
+  it("inserts a static string", () => {
+    const parent = document.createElement("div");
+    r.insert(parent, "hello");
+    expect(parent.innerHTML).toBe("hello");
+  });
+
+  it("inserts a static DOM node", () => {
+    const parent = document.createElement("div");
+    const span = document.createElement("span");
+    span.textContent = "x";
+    r.insert(parent, span);
+    expect(parent.innerHTML).toBe("<span>x</span>");
+  });
+
+  it("inserts a static array of nodes", () => {
+    const parent = document.createElement("div");
+    const a = document.createElement("a");
+    const b = document.createElement("b");
+    r.insert(parent, [a, b]);
+    expect(parent.innerHTML).toBe("<a></a><b></b>");
+  });
+
+  it("inserts nothing for a static null", () => {
+    const parent = document.createElement("div");
+    r.insert(parent, null);
+    expect(parent.innerHTML).toBe("");
+  });
+
+  it("inserts an empty string for a static empty array", () => {
+    const parent = document.createElement("div");
+    r.insert(parent, []);
+    expect(parent.innerHTML).toBe("");
+  });
+});
+
+// Exercise insertExpression branches that are only reachable with a
+// pre-existing `current` state (i.e. when the effect runs again).
+describe("universal insert transitions", () => {
+  it("string → node replaces existing text node via cleanChildren", () => {
+    const parent = document.createElement("div");
+    const [value, setValue] = createSignal("before");
+
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => value());
+    });
+    flush();
+    expect(parent.innerHTML).toBe("before");
+
+    const span = document.createElement("span");
+    span.textContent = "after";
+    setValue(span);
+    flush();
+    expect(parent.innerHTML).toBe("<span>after</span>");
+    dispose();
+  });
+
+  it("node → string replaces existing DOM child", () => {
+    const parent = document.createElement("div");
+    const span = document.createElement("span");
+    span.textContent = "first";
+    const [value, setValue] = createSignal(span);
+
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => value());
+    });
+    flush();
+    expect(parent.innerHTML).toBe("<span>first</span>");
+
+    setValue("plain");
+    flush();
+    expect(parent.innerHTML).toBe("plain");
+    dispose();
+  });
+
+  it("node → null clears children", () => {
+    const parent = document.createElement("div");
+    const span = document.createElement("span");
+    span.textContent = "v";
+    const [value, setValue] = createSignal(span);
+
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => value());
+    });
+    flush();
+    expect(parent.innerHTML).toBe("<span>v</span>");
+
+    setValue(null);
+    flush();
+    expect(parent.innerHTML).toBe("");
+    dispose();
+  });
+
+  it("array → empty array clears children", () => {
+    const parent = document.createElement("div");
+    const a = document.createElement("a");
+    const b = document.createElement("b");
+    const [value, setValue] = createSignal([a, b]);
+
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => value());
+    });
+    flush();
+    expect(parent.innerHTML).toBe("<a></a><b></b>");
+
+    setValue([]);
+    flush();
+    expect(parent.innerHTML).toBe("");
+    dispose();
+  });
+
+  it("node → array appends, array → node replaces via cleanChildren", () => {
+    const parent = document.createElement("div");
+    const solo = document.createElement("i");
+    solo.textContent = "solo";
+    const [value, setValue] = createSignal(solo);
+
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => value());
+    });
+    flush();
+    expect(parent.innerHTML).toBe("<i>solo</i>");
+
+    const a = document.createElement("a");
+    const b = document.createElement("b");
+    setValue([a, b]);
+    flush();
+    expect(parent.innerHTML).toBe("<a></a><b></b>");
+
+    const replacement = document.createElement("em");
+    replacement.textContent = "em";
+    setValue(replacement);
+    flush();
+    expect(parent.innerHTML).toBe("<em>em</em>");
+    dispose();
+  });
+
+  it("reconcileArrays: reverses elements", () => {
+    const parent = document.createElement("div");
+    const n1 = document.createElement("span");
+    n1.textContent = "1";
+    const n2 = document.createElement("span");
+    n2.textContent = "2";
+    const n3 = document.createElement("span");
+    n3.textContent = "3";
+    const n4 = document.createElement("span");
+    n4.textContent = "4";
+
+    const [list, setList] = createSignal([n1, n2, n3, n4]);
+
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => list());
+    });
+    flush();
+    expect(parent.innerHTML).toBe(
+      "<span>1</span><span>2</span><span>3</span><span>4</span>"
+    );
+
+    // Reverse → exercises the swap-backward and map-fallback branches.
+    setList([n4, n3, n2, n1]);
+    flush();
+    expect(parent.innerHTML).toBe(
+      "<span>4</span><span>3</span><span>2</span><span>1</span>"
+    );
+
+    // Rotate → common prefix / suffix branches + append path.
+    setList([n3, n2, n1, n4]);
+    flush();
+    expect(parent.innerHTML).toBe(
+      "<span>3</span><span>2</span><span>1</span><span>4</span>"
+    );
+
+    // Remove head and tail.
+    setList([n2, n1]);
+    flush();
+    expect(parent.innerHTML).toBe("<span>2</span><span>1</span>");
+    dispose();
+  });
+});
+
+describe("universal render()", () => {
+  it("renders code into an element and returns a disposer that unmounts", () => {
+    const parent = document.createElement("div");
+    const span = document.createElement("span");
+    span.textContent = "mounted";
+
+    const dispose = r.render(() => span, parent);
+    expect(parent.firstChild).toBe(span);
+
+    dispose();
+    // The disposer itself does not empty the parent (that's render()'s
+    // caller's concern in the universal build), but after disposal no new
+    // reactive work will fire — exercised simply by calling it cleanly.
+    expect(() => dispose()).not.toThrow();
+  });
+});
+
+// Remaining insertExpression / cleanChildren edge cases in the universal
+// renderer — reached only with very specific (current, value, marker)
+// shapes.
+describe("universal insert tail-branch coverage", () => {
+  it("appends new children when the previous multi-insert was empty", () => {
+    const parent = document.createElement("div");
+    const marker = document.createTextNode("");
+    parent.appendChild(marker);
+
+    const [list, setList] = createSignal([]);
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => list(), marker);
+    });
+    flush();
+
+    const a = document.createElement("a");
+    const b = document.createElement("b");
+    setList([a, b]);
+    flush();
+
+    // empty → non-empty with a marker hits appendNodes(parent, value, marker).
+    expect(parent.firstChild).toBe(a);
+    expect(a.nextSibling).toBe(b);
+    expect(b.nextSibling).toBe(marker);
+    dispose();
+  });
+
+  it("reconcileArrays: shift-many path via map fallback", () => {
+    const parent = document.createElement("div");
+    const nodes = ["x1", "x2", "y"].map(ch => {
+      const el = document.createElement("span");
+      el.textContent = ch;
+      return el;
+    });
+    const [x1, x2, y] = nodes;
+
+    const [list, setList] = createSignal([x1, x2, y]);
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => list());
+    });
+    flush();
+    expect(parent.innerHTML).toBe("<span>x1</span><span>x2</span><span>y</span>");
+
+    // [x1, x2, y] → [y, x1, x2]
+    // No common prefix/suffix, no swap-backward; map fallback kicks in,
+    // sees x1 + x2 as a consecutive run in b, uses the "shift many"
+    // insertion loop before the aStart anchor.
+    setList([y, x1, x2]);
+    flush();
+    expect(parent.innerHTML).toBe("<span>y</span><span>x1</span><span>x2</span>");
+    dispose();
+  });
+
+  it("cleanChildren: keeps replacement present in array-current", () => {
+    const parent = document.createElement("div");
+    const a = document.createElement("a");
+    const b = document.createElement("b");
+    parent.appendChild(a);
+    parent.appendChild(b);
+
+    // b is already in current → inserted=true branch in cleanChildren.
+    r.insert(parent, b, undefined, [a, b]);
+    expect(parent.childNodes.length).toBe(1);
+    expect(parent.firstChild).toBe(b);
+  });
+
+  it("cleanChildren: inserts single node when current is empty", () => {
+    const parent = document.createElement("div");
+    const span = document.createElement("span");
+
+    // current.length === 0 with a replacement → else-if (replacement)
+    // inserts without the iteration path.
+    r.insert(parent, span, undefined, []);
+    expect(parent.firstChild).toBe(span);
+  });
+
+  it("cleanChildren: appends replacement when the only array element is detached", () => {
+    const parent = document.createElement("div");
+    const detached = document.createElement("p"); // never attached
+    const span = document.createElement("span");
+
+    // Non-array value + array current of length 1 whose element isn't in
+    // parent → cleanChildren hits `isParent=false` and appends via the
+    // (null) marker.
+    r.insert(parent, span, undefined, [detached]);
+    expect(parent.childNodes.length).toBe(1);
+    expect(parent.firstChild).toBe(span);
+  });
+
+  it("normalize wraps a static null into an empty text node when multi", () => {
+    const parent = document.createElement("div");
+    const marker = document.createTextNode("");
+    parent.appendChild(marker);
+
+    // Static null + marker → normalize's `value != null ? value : ""`
+    // branch converts null to an empty string text node.
+    r.insert(parent, null, marker);
+    // An empty-string text node sits before the marker.
+    expect(parent.firstChild.nodeType).toBe(3);
+    expect(parent.firstChild.data).toBe("");
+    expect(parent.firstChild.nextSibling).toBe(marker);
+  });
+
+  it("reconcileArrays: prepends a new element (no common prefix, common suffix)", () => {
+    const parent = document.createElement("div");
+    const a = document.createElement("span");
+    a.textContent = "a";
+    const b = document.createElement("span");
+    b.textContent = "b";
+
+    const [list, setList] = createSignal([a, b]);
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => list());
+    });
+    flush();
+    expect(parent.innerHTML).toBe("<span>a</span><span>b</span>");
+
+    const x = document.createElement("span");
+    x.textContent = "x";
+    // [a, b] → [x, a, b]: suffix matches entirely, append path runs with
+    // bStart=0 and bEnd < bLength → anchor is b[bEnd - bStart].
+    setList([x, a, b]);
+    flush();
+    expect(parent.innerHTML).toBe("<span>x</span><span>a</span><span>b</span>");
+    dispose();
+  });
+});
+
+// spread's update effect removes dropped props and skips unchanged values —
+// both branches only run on subsequent invocations of the effect.
+describe("universal spread reactive updates", () => {
+  it("removes dropped props and skips unchanged values across updates", () => {
+    const node = document.createElement("span");
+
+    const [state, setState] = createSignal({ class: "a", id: "first" });
+    // Proxy props so for...in reflects whichever keys the signal currently
+    // exposes — lets spread observe a key disappearing between renders.
+    const props = new Proxy(
+      {},
+      {
+        has: (_t, key) => key in state(),
+        get: (_t, key) => state()[key],
+        ownKeys: () => Object.keys(state()),
+        getOwnPropertyDescriptor: (_t, key) =>
+          key in state()
+            ? { enumerable: true, configurable: true, value: state()[key] }
+            : undefined
+      }
+    );
+
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.spread(node, props);
+    });
+    flush();
+    expect(node.getAttribute("class")).toBe("a");
+    expect(node.getAttribute("id")).toBe("first");
+
+    // Drop `id`, keep `class` identical → remove-old branch + equal-value
+    // continue branch both fire.
+    setState({ class: "a" });
+    flush();
+    expect(node.hasAttribute("id")).toBe(false);
+    expect(node.getAttribute("class")).toBe("a");
+    dispose();
+  });
+});
+
+describe("universal setProp", () => {
+  it("delegates to the renderer's setProperty", () => {
+    const node = document.createElement("div");
+    r.setProp(node, "class", "a", undefined);
+    expect(node.getAttribute("class")).toBe("a");
+    r.setProp(node, "class", null, "a");
+    expect(node.hasAttribute("class")).toBe(false);
+  });
+});
+
 describe("universal insert caching", () => {
   it("does not re-invoke accessor when inner memo updates", () => {
     let accessorCalls = 0;

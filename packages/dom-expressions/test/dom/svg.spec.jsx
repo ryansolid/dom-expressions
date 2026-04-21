@@ -64,11 +64,12 @@ describe("create simple svg", () => {
   // A reactive signal value exercises both the set and the remove
   // branches (value === null removes via NS).
   it("sets and removes xlink:href via setAttributeNS", () => {
-    let use;
+    let use, dispose;
     const [href, setHref] = createSignal("#icon-a");
     const xlinkNS = "http://www.w3.org/1999/xlink";
 
-    createRoot(() => {
+    createRoot(d => {
+      dispose = d;
       <svg>
         <use ref={use} xlink:href={href()} />
       </svg>;
@@ -79,6 +80,7 @@ describe("create simple svg", () => {
     setHref(null);
     flush();
     expect(use.getAttributeNS(xlinkNS, "href")).toBe(null);
+    dispose();
   });
 
   it("Children of a component rendered inside <math> receive the MathML namespace", () => {

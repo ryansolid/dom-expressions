@@ -60,6 +60,25 @@ describe("applyRef", () => {
   });
 });
 
+describe("dynamicProperty", () => {
+  it("rewrites the property to a live getter that invokes the original thunk", () => {
+    let calls = 0;
+    const props = {
+      value: () => {
+        calls++;
+        return `call-${calls}`;
+      }
+    };
+    const out = r.dynamicProperty(props, "value");
+    expect(out).toBe(props);
+    expect(props.value).toBe("call-1");
+    expect(props.value).toBe("call-2");
+
+    // The redefined property must still show up in enumeration.
+    expect(Object.keys(props)).toContain("value");
+  });
+});
+
 describe("ref", () => {
   it("should resolve thunk and apply ref", () => {
     let received;
