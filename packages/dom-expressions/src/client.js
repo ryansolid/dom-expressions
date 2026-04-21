@@ -172,7 +172,6 @@ export function style(node, value, prev) {
   if (typeof value === "string") return (nodeStyle.cssText = value);
   typeof prev === "string" && (nodeStyle.cssText = prev = undefined);
   prev || (prev = {});
-  value || (value = {});
   let v, s;
   for (s in value) {
     v = value[s];
