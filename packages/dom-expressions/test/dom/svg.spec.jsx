@@ -60,6 +60,27 @@ describe("create simple svg", () => {
     expect(circle.namespaceURI).toBe("http://www.w3.org/2000/svg");
   });
 
+  // xlink:href on <use> flows through assignProp → setAttributeNS.
+  // A reactive signal value exercises both the set and the remove
+  // branches (value === null removes via NS).
+  it("sets and removes xlink:href via setAttributeNS", () => {
+    let use;
+    const [href, setHref] = createSignal("#icon-a");
+    const xlinkNS = "http://www.w3.org/1999/xlink";
+
+    createRoot(() => {
+      <svg>
+        <use ref={use} xlink:href={href()} />
+      </svg>;
+    });
+
+    expect(use.getAttributeNS(xlinkNS, "href")).toBe("#icon-a");
+
+    setHref(null);
+    flush();
+    expect(use.getAttributeNS(xlinkNS, "href")).toBe(null);
+  });
+
   it("Children of a component rendered inside <math> receive the MathML namespace", () => {
     let row, identifier;
     function Term() {
