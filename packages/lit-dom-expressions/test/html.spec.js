@@ -345,4 +345,134 @@ describe("Test HTML", () => {
     expect(div.innerHTML.replace(`<!--<div name="###"></div>-->`, "")).toBe(FIXTURES[7]);
   });
 
+  // --- Previously uncovered branches ---
+
+  // Templates with a standalone `<!-- ... -->` at the root go through
+  // html-parse-string's comment-handling branch (res.name.startsWith('!--')).
+  test("standalone HTML comment at top level parses without throwing", () => {
+    expect(() =>
+      html`<!-- just a static comment --><div>after</div>`
+    ).not.toThrow();
+  });
+
+  // `use:directive=${fn}` attributes are parsed as directives (separate from
+  // ordinary attrs). The lit runtime doesn't process directives today, so
+  // the template just needs to parse without blowing up.
+  test("use:directive attribute parses without throwing", () => {
+    const noop = () => {};
+    expect(() =>
+      html`<button use:autofocus=${noop}>click</button>`
+    ).not.toThrow();
+  });
+
+  // `xlink:href` is routed through `setAttributeNS` (one of the reserved
+  // namespace slots in the runtime).
+  test("xlink:href attribute uses setAttributeNS", () => {
+    const href = "#icon-a";
+    const xlinkNS = "http://www.w3.org/1999/xlink";
+    // Use an SVG context so the attribute actually lands on a use element.
+    const template = html`
+      <svg>
+        <use xlink:href=${href}></use>
+      </svg>
+    `;
+    const use = template.querySelector("use");
+    expect(use.getAttributeNS(xlinkNS, "href")).toBe("#icon-a");
+  });
+
+  // An `<img loading="lazy">` flags the tree as isImportNode=true (for
+  // document.importNode bypass of some loading behavior).
+  test("img with loading='lazy' parses without error", () => {
+    expect(() =>
+      html`<img src="/x.png" loading="lazy" />`
+    ).not.toThrow();
+  });
+
+  test("iframe with loading='lazy' parses without error", () => {
+    expect(() =>
+      html`<iframe src="/frame.html" loading="lazy"></iframe>`
+    ).not.toThrow();
+  });
+
+  // The `is=` attribute marks a builtin extension (customized built-ins),
+  // another flag for the isImportNode path.
+  test("element with is= attribute parses without error", () => {
+    expect(() =>
+      html`<button is="my-button">hello</button>`
+    ).not.toThrow();
+  });
+
+  // Components with a single expression child take the "children as single
+  // accessor" branch (processComponent line: `children: () => exprs[...]`).
+  test("component with a single expression child uses the children accessor shortcut", () => {
+    const Comp = props => {
+      const div = document.createElement("div");
+      const child = typeof props.children === "function" ? props.children() : props.children;
+      div.appendChild(child);
+      return div;
+    };
+    const kid = document.createElement("b");
+    kid.textContent = "inner";
+    const template = html`<${Comp}>${kid}<//>`;
+    expect(template.firstChild).toBe(kid);
+  });
+
+  // Component that mixes explicit props with a spread (`...${obj}`) hits
+  // the propGroups.push branch where the running group gets closed and a
+  // new one is started for the spread argument.
+  test("component with mixed explicit + spread props merges both", () => {
+    let captured;
+    const Comp = props => {
+      captured = props;
+      const div = document.createElement("div");
+      div.textContent = props.a + "|" + props.b + "|" + props.c;
+      return div;
+    };
+    const template = html`<${Comp} a="A" ...${{ b: "B" }} c="C"/>`;
+    expect(template.textContent).toBe("A|B|C");
+    expect(captured.a).toBe("A");
+    expect(captured.b).toBe("B");
+    expect(captured.c).toBe("C");
+  });
+
+  // Element spread mixed with static attributes — exercises the branch
+  // where an attribute is static (goes to newAttrs) alongside the ### spread.
+  test("element with static attribute alongside spread keeps the static attribute", () => {
+    const template = html`<div id="kept" ...${{ class: "extra" }}>body</div>`;
+    expect(template.getAttribute("id")).toBe("kept");
+    expect(template.classList.contains("extra")).toBe(true);
+  });
+
+  // Fragment with expressions inside a comment hits the
+  // `child.content.split("###")` count loop in parseNode's fragment
+  // comment branch.
+  test("top-level comment with interpolations in a multi-root template", () => {
+    const a = "one";
+    const b = "two";
+    expect(() =>
+      html`
+        <!-- ${a} and ${b} -->
+        <span>left</span>
+        <span>right</span>
+      `
+    ).not.toThrow();
+  });
+
+  // createHTML's default functionBuilder option (`new Function(...)`)
+  // triggers when the options arg is omitted.
+  test("createHTML with default functionBuilder option builds templates", () => {
+    const html2 = createHTML(r);
+    const template = html2`<div>default builder</div>`;
+    expect(template.outerHTML).toBe("<div>default builder</div>");
+  });
+
+  // `prop:name` — reserved-namespace attribute routes through parseKeyValue's
+  // colon-split branch (name = parts[1]; namespace = parts[0]; then the
+  // `namespace === "prop"` tail assigns the value as a DOM property).
+  test("prop:name attribute sets a DOM property directly", () => {
+    const payload = { answer: 42 };
+    const template = html`<div prop:customData=${payload}>x</div>`;
+    expect(template.customData).toBe(payload);
+    expect(template.hasAttribute("customData")).toBe(false);
+  });
 });
