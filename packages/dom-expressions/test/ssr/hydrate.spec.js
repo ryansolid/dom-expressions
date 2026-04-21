@@ -1060,6 +1060,14 @@ describe("eventHandler hydration early-return", () => {
 // When _$HY.done is true a subsequent hydrate() call short-circuits into
 // a plain render — useful for mount-after-hydration scenarios.
 describe("hydrate short-circuits to render once hydration is done", () => {
+  let originalHY;
+  beforeEach(() => {
+    originalHY = globalThis._$HY;
+  });
+  afterEach(() => {
+    globalThis._$HY = originalHY;
+  });
+
   it("renders via r.render when _$HY.done is already set", () => {
     const container = document.createElement("div");
     container.innerHTML = "<span>stale</span>";
@@ -1090,8 +1098,13 @@ describe("loadModuleAssets shortcut branches", () => {
   const container = document.createElement("div");
   document.body.appendChild(container);
 
+  let originalHY;
+  beforeEach(() => {
+    originalHY = globalThis._$HY;
+  });
   afterEach(() => {
     container.innerHTML = "";
+    globalThis._$HY = originalHY;
   });
 
   it("skips modules already present in _$HY.modules", () => {

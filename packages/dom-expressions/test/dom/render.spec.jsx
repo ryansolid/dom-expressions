@@ -8,6 +8,10 @@ describe("render", () => {
   // Rendering into `document` itself short-circuits insert and runs the
   // code via flatten — covers the `element === document` branch.
   it("runs code via flatten when the root element is document", () => {
+    // Snapshot the live body in case dispose's `renderRoot.textContent = ""`
+    // ever regresses to mutating the document node itself.
+    const savedBody = document.body.innerHTML;
+    const savedBodyChildCount = document.documentElement.childNodes.length;
     let called = 0;
     const dispose = r.render(() => {
       called++;
@@ -15,6 +19,8 @@ describe("render", () => {
     }, document);
     expect(called).toBe(1);
     dispose();
+    expect(document.body.innerHTML).toBe(savedBody);
+    expect(document.documentElement.childNodes.length).toBe(savedBodyChildCount);
   });
 
   it("should render JSX", () => {
