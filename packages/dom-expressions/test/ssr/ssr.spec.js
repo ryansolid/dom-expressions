@@ -349,16 +349,35 @@ describe("reveal defensive invariants", () => {
         .filter(n => n.nodeType === 1 && n.localName === "span")
         .map(n => n.textContent);
 
-    runtime.$dflj(["a", "b", "c"]);
+    // Callers pass only the keys they intend to materialize now; $dflj reveals
+    // every id in the list (idempotent, so repeats are safe).
+    runtime.$dflj(["a"]);
     expect(visibleSpans()).toEqual(["FA"]);
 
     runtime.$df("a");
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["b"]);
     expect(visibleSpans()).toEqual(["A", "FB"]);
 
     runtime.$df("b");
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["c"]);
     expect(visibleSpans()).toEqual(["A", "B", "FC"]);
+    container.remove();
+  });
+
+  it("materializes all provided fallbacks in one call", async () => {
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {}, done: false, fe() {} };
+    const container = document.createElement("div");
+    container.innerHTML =
+      '<div><template id="pl-a"><span>FA</span></template><!--pl-a--><template id="a"><span>A</span></template><template id="pl-b"><span>FB</span></template><!--pl-b--><template id="b"><span>B</span></template><template id="pl-c"><span>FC</span></template><!--pl-c--><template id="c"><span>C</span></template></div>';
+    document.body.appendChild(container);
+    const host = container.firstChild;
+    const visibleSpans = () =>
+      [...host.childNodes]
+        .filter(n => n.nodeType === 1 && n.localName === "span")
+        .map(n => n.textContent);
+
+    runtime.$dflj(["a", "b", "c"]);
+    expect(visibleSpans()).toEqual(["FA", "FB", "FC"]);
     container.remove();
   });
 
@@ -394,6 +413,8 @@ describe("reveal defensive invariants", () => {
         .map(n => n.textContent);
 
     runtime.$df("a");
+    // Already-resolved ids and ids missing from the DOM are skipped; remaining
+    // ids are all materialized.
     runtime.$dflj(["missing", "a", "b"]);
     expect(visibleSpans()).toEqual(["A", "FB"]);
     container.remove();
@@ -430,11 +451,11 @@ describe("reveal defensive invariants", () => {
         .map(n => n.textContent);
 
     runtime.$dfs("b", 1, 1);
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["a"]);
     expect(visibleSpans()).toEqual(["FA"]);
 
     runtime.$df("a");
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["b"]);
     expect(visibleSpans()).toEqual(["A", "FB"]);
 
     runtime.$dfj(["a", "b", "c"]);
