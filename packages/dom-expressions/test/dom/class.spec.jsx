@@ -126,4 +126,69 @@ describe("Test class binding", () => {
       expect(div.className).toBe("one three four");
     });
   });
+
+  // Clearing a previously set string class (value === null / false) takes
+  // the early-return branch in className() that removes the attribute.
+  test("string class cleared to null removes attribute", () => {
+    const [c, setC] = createSignal("hello");
+    let div, dispose;
+    createRoot(d => {
+      dispose = d;
+      div = <div class={c()} />;
+    });
+    expect(div.getAttribute("class")).toBe("hello");
+
+    setC(null);
+    flush();
+    expect(div.hasAttribute("class")).toBe(false);
+    dispose();
+  });
+
+  test("object class cleared to false removes attribute", () => {
+    const [c, setC] = createSignal({ alpha: true, beta: true });
+    let div, dispose;
+    createRoot(d => {
+      dispose = d;
+      div = <div class={c()} />;
+    });
+    expect(div.className).toBe("alpha beta");
+
+    setC(false);
+    flush();
+    expect(div.hasAttribute("class")).toBe(false);
+    dispose();
+  });
+
+  // Switching prev from a raw string to an object value should reset
+  // the prev-as-object bookkeeping and remove the old class attribute
+  // before applying the new keys.
+  test("string class switched to object swaps classes", () => {
+    const [c, setC] = createSignal("old");
+    let div, dispose;
+    createRoot(d => {
+      dispose = d;
+      div = <div class={c()} />;
+    });
+    expect(div.className).toBe("old");
+
+    setC({ fresh: true, bright: true });
+    flush();
+    expect(div.className).toBe("fresh bright");
+    dispose();
+  });
+
+  test("string class switched to array swaps classes", () => {
+    const [c, setC] = createSignal("legacy");
+    let div, dispose;
+    createRoot(d => {
+      dispose = d;
+      div = <div class={c()} />;
+    });
+    expect(div.className).toBe("legacy");
+
+    setC(["next", "shiny"]);
+    flush();
+    expect(div.className).toBe("next shiny");
+    dispose();
+  });
 });
