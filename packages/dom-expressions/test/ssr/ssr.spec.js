@@ -827,3 +827,681 @@ describe("root-level module asset serialization", () => {
     expect(html).toContain("/assets/Lazy-abc.js");
   });
 });
+
+// Manifest support threads through `renderToString`. When an entry is
+// marked with `isEntry: true`, its CSS should register as a preload link;
+// `context.resolveAssets` should walk the `imports` chain and collect the
+// full js+css closure.
+describe("manifest-driven asset resolution", () => {
+  it("emits preload links for CSS of manifest entries when </head> is present", () => {
+    const manifest = {
+      _base: "/out/",
+      "app.tsx": {
+        file: "app-abc.js",
+        css: ["app.css"],
+        imports: ["shared.tsx"],
+        isEntry: true
+      },
+      "shared.tsx": {
+        file: "shared-def.js",
+        css: ["shared.css"]
+      }
+    };
+
+    // injectPreloadLinks looks for `</head>` as its insertion point, so the
+    // document must include a head to observe the effect.
+    const html = r.renderToString(
+      () => r.ssr`<html><head></head><body><div>x</div></body></html>`,
+      { manifest }
+    );
+    expect(html).toContain("/out/app.css");
+    expect(html).toContain("/out/shared.css");
+  });
+
+  it("context.resolveAssets walks the import graph and prefixes _base", () => {
+    const manifest = {
+      _base: "/assets/",
+      "app.tsx": {
+        file: "app-abc.js",
+        css: ["app.css"],
+        imports: ["shared.tsx"]
+      },
+      "shared.tsx": {
+        file: "shared-def.js",
+        css: ["shared.css"]
+      }
+    };
+
+    let resolved;
+    r.renderToString(
+      () => {
+        resolved = sharedConfig.context.resolveAssets("app.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest }
+    );
+
+    expect(resolved).toEqual({
+      js: ["/assets/app-abc.js", "/assets/shared-def.js"],
+      css: ["/assets/app.css", "/assets/shared.css"]
+    });
+  });
+
+  it("context.resolveAssets returns null for unknown module urls", () => {
+    const manifest = { _base: "/", "a.tsx": { file: "a.js" } };
+    let resolved;
+    r.renderToString(
+      () => {
+        resolved = sharedConfig.context.resolveAssets("unknown.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest }
+    );
+    expect(resolved).toBeNull();
+  });
+
+  it("tolerates manifest entries with no imports or css", () => {
+    const manifest = {
+      "bare.tsx": { file: "bare.js", isEntry: true }
+    };
+    // Should render without throwing even though entry has no css/imports.
+    const html = r.renderToString(() => r.ssr`<div>x</div>`, { manifest });
+    expect(html).toContain("<div>x</div>");
+  });
+});
+
+// context.getBoundaryModules is exposed on the SSR context so callers can
+// read back what registerModule has staged for a given boundary id.
+// context._currentBoundaryId is the paired accessor — its getter has to
+// reflect the live `currentBoundaryId` on the tracking object.
+describe("boundary module/id accessors", () => {
+  it("roundtrips registerModule via getBoundaryModules under the root sentinel", () => {
+    let modules;
+    let initialBoundary;
+    r.renderToString(() => {
+      const ctx = sharedConfig.context;
+      initialBoundary = ctx._currentBoundaryId;
+      ctx.registerModule("./Lazy.tsx", "/assets/Lazy-abc.js");
+      ctx.registerModule("./Other.tsx", "/assets/Other-def.js");
+      modules = ctx.getBoundaryModules("");
+      return r.ssr`<div>x</div>`;
+    });
+
+    expect(initialBoundary).toBeNull();
+    expect(modules).toEqual({
+      "./Lazy.tsx": "/assets/Lazy-abc.js",
+      "./Other.tsx": "/assets/Other-def.js"
+    });
+  });
+
+  it("getBoundaryModules returns null for an unregistered boundary id", () => {
+    let missing;
+    r.renderToString(() => {
+      missing = sharedConfig.context.getBoundaryModules("nope");
+      return r.ssr`<div>x</div>`;
+    });
+    expect(missing).toBeNull();
+  });
+
+  it("reflects _currentBoundaryId after a setter assignment", () => {
+    const observed = [];
+    r.renderToString(() => {
+      const ctx = sharedConfig.context;
+      observed.push(ctx._currentBoundaryId);
+      ctx._currentBoundaryId = "frag-1";
+      observed.push(ctx._currentBoundaryId);
+      ctx._currentBoundaryId = null;
+      observed.push(ctx._currentBoundaryId);
+      return r.ssr`<div>x</div>`;
+    });
+    expect(observed).toEqual([null, "frag-1", null]);
+  });
+});
+
+// Pure-helper branches that aren't exercised by the higher-level render
+// tests. Cheap to target and push the overall branch coverage up.
+describe("escape helper branches", () => {
+  it("escapes both < and & in non-attribute mode", () => {
+    // The interleaved loop handles iDelim < iAmp then iAmp < iDelim.
+    expect(r.escape("a<b&c<d&e")).toBe("a&lt;b&amp;c&lt;d&amp;e");
+  });
+
+  it("continues with trailing < after ampersands are consumed", () => {
+    // Exits interleaved loop with iAmp === -1, then only-delim loop runs.
+    expect(r.escape("a&b<c<d")).toBe("a&amp;b&lt;c&lt;d");
+  });
+
+  it("continues with trailing & after angle brackets are consumed", () => {
+    // Exits interleaved loop with iDelim === -1, then only-amp loop runs.
+    expect(r.escape("a<b&c&d")).toBe("a&lt;b&amp;c&amp;d");
+  });
+
+  it("returns the original string when nothing needs escaping", () => {
+    expect(r.escape("plain text")).toBe("plain text");
+  });
+
+  it("escapes quotes and ampersands in attribute mode", () => {
+    expect(r.escape('a"b&c', true)).toBe("a&quot;b&amp;c");
+  });
+
+  it("escapes arrays without double-escaping contents", () => {
+    expect(r.escape(["a<b", "c&d"])).toEqual(["a&lt;b", "c&amp;d"]);
+  });
+
+  it("passes booleans through in attribute mode", () => {
+    expect(r.escape(true, true)).toBe(true);
+    expect(r.escape(false, true)).toBe(false);
+  });
+});
+
+// applyRef is exported on the server build for isomorphic code paths —
+// it should behave identically to the client implementation.
+describe("server applyRef", () => {
+  it("calls a single function ref with the element", () => {
+    let received;
+    const el = { tag: "svg" };
+    r.applyRef(el2 => (received = el2), el);
+    expect(received).toBe(el);
+  });
+
+  it("flattens nested array refs and calls each function", () => {
+    const calls = [];
+    const el = { tag: "a" };
+    r.applyRef([el2 => calls.push("a"), [el2 => calls.push("b")]], el);
+    expect(calls).toEqual(["a", "b"]);
+  });
+});
+
+// The server entry re-exports every client-only mutation API as a stub
+// that throws, so misuse fails loudly instead of silently.
+describe("client-only API stubs", () => {
+  it("r.render throws when invoked on the server", () => {
+    expect(() => r.render(() => "x", {})).toThrow(/Client-only API/);
+  });
+
+  it("r.style throws when invoked on the server", () => {
+    expect(() => r.style({}, {}, undefined)).toThrow(/Client-only API/);
+  });
+
+  it("r.delegateEvents throws when invoked on the server", () => {
+    expect(() => r.delegateEvents(["click"])).toThrow(/Client-only API/);
+  });
+});
+
+// ssrElement has tag-specific children handling: script / style / innerHTML
+// children are passed through as-is, while any other child property is
+// escaped. Each branch needs its own case to hit the conditional.
+describe("ssrElement child-property handling", () => {
+  it("passes <script> textContent through unescaped", () => {
+    const html = r.renderToString(() => r.ssrElement("script", { textContent: "var a = 1 < 2;" }));
+    expect(html).toContain("var a = 1 < 2;");
+  });
+
+  it("passes <style> textContent through unescaped", () => {
+    const html = r.renderToString(() =>
+      r.ssrElement("style", { textContent: ".a>b { color: red; }" })
+    );
+    expect(html).toContain(".a>b { color: red; }");
+  });
+
+  it("passes innerHTML through unescaped for other tags", () => {
+    const html = r.renderToString(() => r.ssrElement("div", { innerHTML: "<b>bold</b>" }));
+    expect(html).toContain("<b>bold</b>");
+  });
+
+  it("escapes non-special child properties like textContent on a <div>", () => {
+    const html = r.renderToString(() => r.ssrElement("div", { textContent: "a < b & c" }));
+    // The child is escape()'d for non-script/style/innerHTML cases.
+    expect(html).toContain("a &lt; b &amp; c");
+  });
+});
+
+// injectAssets inserts useAssets-registered output above </head>. Without a
+// head tag it is a no-op; with one it should splice in the output.
+describe("useAssets injection path", () => {
+  it("injects useAssets output just before </head>", () => {
+    const html = r.renderToString(() => {
+      r.useAssets(() => r.ssr`<meta name="rendered" content="1">`);
+      return r.ssr`<html><head></head><body><div>x</div></body></html>`;
+    });
+    expect(html).toContain('<meta name="rendered" content="1"></head>');
+  });
+});
+
+// resolveSSRSync throws whenever an async hole reaches the synchronous
+// resolver — i.e. the sync entry path tried to render an unresolved async
+// boundary. Simulate by throwing a hole-bearing error from inside
+// renderToString (async renderer would hand it off to the stream).
+describe("resolveSSRSync error", () => {
+  it("throws a helpful error when a pending async hole reaches sync path", () => {
+    expect(() =>
+      r.renderToString(
+        () =>
+          r.ssr`<div>${() => {
+            const err = new Error("async-in-sync");
+            err._promise = new Promise(() => {}); // never resolves
+            throw err;
+          }}</div>`
+      )
+    ).toThrow(/cannot be rendered synchronously/);
+  });
+});
+
+// renderToStream's context exposes `replace(id, fn)` for synchronous
+// placeholder substitution between the shell render and flush. It looks
+// for <!--!$id--> / <!--!$/id--> pairs in the in-progress html string.
+describe("renderToStream context.replace", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("splices payloadFn output between matching marker comments", async () => {
+    // context.replace closes over the html variable that isn't initialized
+    // until code() returns, so the call has to be deferred via block().
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        const p = new Promise(resolve => {
+          setTimeout(() => {
+            ctx.replace("slot", () => r.ssr`<b>replaced</b>`);
+            resolve();
+          }, 0);
+        });
+        ctx.block(p);
+        return r.ssr`<div><!--!$slot--><i>original</i><!--!$/slot--></div>`;
+      })
+    );
+    expect(html).toContain("<b>replaced</b>");
+    expect(html).not.toContain("<i>original</i>");
+  });
+
+  it("is a no-op when the start marker cannot be found", async () => {
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        const p = new Promise(resolve => {
+          setTimeout(() => {
+            ctx.replace("unknown", () => r.ssr`<b>never</b>`);
+            resolve();
+          }, 0);
+        });
+        ctx.block(p);
+        return r.ssr`<div>no markers</div>`;
+      })
+    );
+    expect(html).toContain("<div>no markers</div>");
+    expect(html).not.toContain("<b>never</b>");
+  });
+});
+
+// context.serialize with `deferStream=true` puts the promise into the
+// blocking queue and pipes its resolved/rejected value through the
+// serializer on the next tick.
+describe("renderToStream context.serialize deferStream", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("defers promise-typed serialize entries into the blocking set", async () => {
+    // Self-resolving promise so the stream doesn't hang waiting for it.
+    const data = new Promise(resolve => setTimeout(() => resolve("payload"), 5));
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        ctx.serialize("deferred-id", data, true);
+        return r.ssr`<div>shell</div>`;
+      })
+    );
+    expect(html).toContain("<div>shell</div>");
+  });
+});
+
+// registerFragment must throw when a fragment key joins a reveal group
+// that has already been released — otherwise ordering invariants break.
+describe("registerFragment reveal-group guard", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("throws if registration happens after revealFragments released the group", async () => {
+    let caught;
+    await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        // Release first, then try to join — the guard should fire.
+        ctx.revealFragments("g-late");
+        try {
+          ctx.registerFragment("frag-x", { revealGroup: "g-late" });
+        } catch (err) {
+          caught = err;
+        }
+        return r.ssr`<div>shell</div>`;
+      })
+    );
+    expect(caught).toBeInstanceOf(Error);
+    expect(caught.message).toMatch(/called after revealFragments/);
+  });
+});
+
+// Nested fragments: a child fragment resolves while its parent is still
+// pending. The child's resolve path should attach it to the parent via
+// `parent.children` and propagate boundary styles instead of flushing.
+describe("nested fragment resolution", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("stores child payload on the parent and propagates boundary styles", async () => {
+    let resolveParent, resolveChild;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        // Parent registered first so the child key (which starts with the
+        // parent key) can look it up as its parent via waitForFragments.
+        resolveParent = ctx.registerFragment("pa");
+        resolveChild = ctx.registerFragment("pa-child");
+        // Register a style asset for the child boundary so propagation has
+        // something to forward to the parent.
+        ctx._currentBoundaryId = "pa-child";
+        ctx.registerAsset("style", "/child-only.css");
+        ctx._currentBoundaryId = null;
+        setTimeout(() => {
+          // Resolve child first → child gets pinned on parent.children.
+          resolveChild("<span>child</span>");
+          // Then parent resolves, iterating children and replacing the
+          // placeholder-template range with the child payload.
+          resolveParent('<i>parent<template id="pl-pa-child"></template><!--pl-pa-child--></i>');
+        });
+        return r.ssr`<div><template id="pl-pa"></template><!--pl-pa--></div>`;
+      })
+    );
+    expect(html).toContain("parent");
+    expect(html).toContain("<span>child</span>");
+  });
+});
+
+// The shell finisher doubles up onCompleteAll callbacks when `.then(fn)`
+// is called as well. The extra wrapper must invoke both the original
+// user-supplied option and the then-callback.
+describe("renderToStream .then + onCompleteAll interplay", () => {
+  it("runs both the onCompleteAll option and the .then handler", async () => {
+    const calls = [];
+    const stream = r.renderToStream(() => r.ssr`<div>z</div>`, {
+      onCompleteAll: () => calls.push("option")
+    });
+    await new Promise(resolve => {
+      stream.then(() => {
+        calls.push("then");
+        resolve();
+      });
+    });
+    expect(calls).toEqual(["option", "then"]);
+  });
+});
+
+// renderToString also has a per-boundary style tracker, reachable by
+// setting _currentBoundaryId before calling registerAsset. The "url
+// already registered" path is hit by re-registering the same url.
+describe("renderToString registerAsset boundary-style path", () => {
+  it("tracks boundary styles and deduplicates repeated urls", () => {
+    let capturedStylesForB1;
+    const html = r.renderToString(() => {
+      const ctx = sharedConfig.context;
+      ctx._currentBoundaryId = "b1";
+      ctx.registerAsset("style", "/x.css");
+      ctx.registerAsset("style", "/x.css"); // duplicate → Set dedups
+      ctx.registerAsset("style", "/y.css");
+      ctx._currentBoundaryId = null;
+      // Non-boundary style still goes to emittedAssets.
+      ctx.registerAsset("style", "/outside.css");
+      return r.ssr`<html><head></head><body><div>x</div></body></html>`;
+    });
+    // All three unique urls appear as preload links in <head>.
+    expect(html).toContain("/x.css");
+    expect(html).toContain("/y.css");
+    expect(html).toContain("/outside.css");
+  });
+});
+
+// The stream's registerAsset emits a <link rel=modulepreload> inline when
+// a module is registered *after* the shell has already flushed.
+describe("renderToStream late registerAsset(module)", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("emits a modulepreload link when a module registers after shell flush", async () => {
+    let done;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        done = ctx.registerFragment("late-mod");
+        setTimeout(() => {
+          ctx.registerAsset("module", "/late-chunk.js");
+          done("<span>done</span>");
+        }, 10);
+        return r.ssr`<div><template id="pl-late-mod"></template><!--pl-late-mod--></div>`;
+      })
+    );
+    expect(html).toContain('rel="modulepreload"');
+    expect(html).toContain("/late-chunk.js");
+  });
+});
+
+// Fragments that carry boundary styles and resolve *after* the shell has
+// flushed run the styled-fragment branch: emit $dfs task + stylesheet
+// <link> tags + template payload.
+describe("renderToStream styled fragment after shell flush", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("emits $dfs + <link> tags when a fragment boundary has styles", async () => {
+    let done;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        done = ctx.registerFragment("sf");
+        setTimeout(() => {
+          // Register the style *after* the shell has flushed so it is not
+          // in `headStyles` and collectStreamStyles yields a non-empty list.
+          ctx._currentBoundaryId = "sf";
+          ctx.registerAsset("style", "/fragment.css");
+          ctx._currentBoundaryId = null;
+          done("<span>loaded</span>");
+        }, 10);
+        return r.ssr`<div><template id="pl-sf"></template><!--pl-sf--></div>`;
+      })
+    );
+    expect(html).toContain('$dfs("sf"');
+    expect(html).toContain("/fragment.css");
+  });
+});
+
+// onCompleteShell / onCompleteAll writers accept user-supplied chunks
+// and splice them into the buffer as long as the stream hasn't ended.
+describe("renderToStream onComplete writer callbacks", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("onCompleteShell writer.write adds content to the flushed shell", async () => {
+    const html = await pipeToString(
+      r.renderToStream(() => r.ssr`<div>shell</div>`, {
+        onCompleteShell(writer) {
+          writer.write("<extra-shell>");
+        }
+      })
+    );
+    expect(html).toContain("<div>shell</div>");
+    expect(html).toContain("<extra-shell>");
+  });
+
+  it("onCompleteAll writer.write appends content before the stream ends", async () => {
+    const html = await pipeToString(
+      r.renderToStream(() => r.ssr`<div>body</div>`, {
+        onCompleteAll(writer) {
+          writer.write("<extra-final>");
+        }
+      })
+    );
+    expect(html).toContain("<extra-final>");
+  });
+});
+
+// injectPreloadLinks handles both .css and non-.css urls — the non-css
+// branch outputs a <link rel=modulepreload> tag.
+describe("modulepreload link for non-CSS assets", () => {
+  it("emits rel=modulepreload for registered .js assets", () => {
+    const html = r.renderToString(() => {
+      sharedConfig.context.registerAsset("module", "/chunk.js");
+      return r.ssr`<html><head></head><body><div>x</div></body></html>`;
+    });
+    expect(html).toContain('rel="modulepreload"');
+    expect(html).toContain("/chunk.js");
+  });
+});
+
+// injectScripts has two branches: splice before <!--xs--> (left by
+// HydrationScript) or append at the end when that marker is absent.
+describe("injectScripts placement", () => {
+  it("appends the serialization script when <!--xs--> is absent", () => {
+    const html = r.renderToString(() => {
+      // serialize makes the serializer produce a hydration bootstrap script.
+      sharedConfig.context.serialize("sc-id", { hello: "world" });
+      return r.ssr`<div>no-hs</div>`;
+    });
+    // No <!--xs--> since HydrationScript wasn't used; script is appended.
+    expect(html).toContain("<div>no-hs</div>");
+    expect(html).toContain("<script>");
+    const scriptIdx = html.indexOf("<script>");
+    const divIdx = html.indexOf("<div>no-hs</div>");
+    expect(scriptIdx).toBeGreaterThan(divIdx);
+  });
+
+  it("splices the serialization script at <!--xs--> when HydrationScript was used", () => {
+    const html = r.renderToString(() => {
+      sharedConfig.context.serialize("sc-id", { hello: "world" });
+      return r.ssr`<html><head>${r.HydrationScript()}</head><body><div>x</div></body></html>`;
+    });
+    // HydrationScript produces <!--xs--> which is the insertion anchor.
+    expect(html).toContain("<!--xs-->");
+    // Serialization output reference ("sc-id" shows up in the scope map).
+    expect(html).toContain("sc-id");
+  });
+});
+
+// getRequestEvent surfaces the current request's async-local store when
+// RequestContext has been attached on globalThis (Cloudflare-style host).
+describe("getRequestEvent", () => {
+  it("returns the store from globalThis[RequestContext]", () => {
+    const event = { method: "GET", url: "/" };
+    globalThis[r.RequestContext] = { getStore: () => event };
+    try {
+      expect(r.getRequestEvent()).toBe(event);
+    } finally {
+      delete globalThis[r.RequestContext];
+    }
+  });
+
+  it("falls back to undefined when RequestContext is absent", () => {
+    expect(r.getRequestEvent()).toBeUndefined();
+  });
+});
+
+// renderToString cannot serialize async values — it is synchronous. The
+// guard in context.serialize must fire for Promise / async-iterator values.
+describe("renderToString async-serialize guard", () => {
+  it("throws a helpful error when given a Promise", () => {
+    expect(() =>
+      r.renderToString(() => {
+        sharedConfig.context.serialize("promise-id", Promise.resolve(42));
+        return r.ssr`<div>x</div>`;
+      })
+    ).toThrow(/Cannot serialize async value.*renderToString.*promise-id/);
+  });
+
+  it("throws for async iterators too", () => {
+    const asyncIterable = {
+      [Symbol.asyncIterator]() {
+        return { next: () => Promise.resolve({ done: true }) };
+      }
+    };
+    expect(() =>
+      r.renderToString(() => {
+        sharedConfig.context.serialize("iter-id", asyncIterable);
+        return r.ssr`<div>x</div>`;
+      })
+    ).toThrow(/Cannot serialize async value.*iter-id/);
+  });
+});

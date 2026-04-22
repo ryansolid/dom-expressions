@@ -63,6 +63,30 @@ export function transformElement(path, info) {
   if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
     return createElement(path, { ...info, ...config });
 
+  // Duplicate same-named attributes on the same element resolve to the
+  // last value (matching DOM-mode and JSX spread semantics). Strip the
+  // earlier occurrences before the rest of the SSR transform runs.
+  {
+    const seenAttributes = {};
+    const duplicates = [];
+    path
+      .get("openingElement")
+      .get("attributes")
+      .forEach(attr => {
+        const key = t.isJSXNamespacedName(attr.node.name)
+          ? `${attr.node.name.namespace.name}:${attr.node.name.name.name}`
+          : attr.node.name.name;
+
+        if (key !== "ref" && seenAttributes[key]) {
+          duplicates.push(seenAttributes[key]);
+        }
+        seenAttributes[key] = attr;
+      });
+    for (const duplicate of duplicates) {
+      duplicate.remove();
+    }
+  }
+
   const voidTag = VoidElements.indexOf(tagName) > -1,
     results = {
       template: [`<${tagName}`],

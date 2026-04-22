@@ -5,6 +5,24 @@ import * as r from "../../src/client";
 import { createSignal, createRoot } from "@solidjs/signals";
 
 describe("render", () => {
+  // Rendering into `document` itself short-circuits insert and runs the
+  // code via flatten — covers the `element === document` branch.
+  it("runs code via flatten when the root element is document", () => {
+    // Snapshot the live body in case dispose's `renderRoot.textContent = ""`
+    // ever regresses to mutating the document node itself.
+    const savedBody = document.body.innerHTML;
+    const savedBodyChildCount = document.documentElement.childNodes.length;
+    let called = 0;
+    const dispose = r.render(() => {
+      called++;
+      return document.createElement("span"); // never inserted
+    }, document);
+    expect(called).toBe(1);
+    dispose();
+    expect(document.body.innerHTML).toBe(savedBody);
+    expect(document.documentElement.childNodes.length).toBe(savedBodyChildCount);
+  });
+
   it("should render JSX", () => {
     let span;
     const [favoriteCar] = createSignal("Porsche 911 Turbo");
@@ -54,6 +72,25 @@ describe("applyRef", () => {
     const el = document.createElement("div");
     r.applyRef([null, el2 => calls.push("a"), undefined, false, el2 => calls.push("b")], el);
     expect(calls).toEqual(["a", "b"]);
+  });
+});
+
+describe("dynamicProperty", () => {
+  it("rewrites the property to a live getter that invokes the original thunk", () => {
+    let calls = 0;
+    const props = {
+      value: () => {
+        calls++;
+        return `call-${calls}`;
+      }
+    };
+    const out = r.dynamicProperty(props, "value");
+    expect(out).toBe(props);
+    expect(props.value).toBe("call-1");
+    expect(props.value).toBe("call-2");
+
+    // The redefined property must still show up in enumeration.
+    expect(Object.keys(props)).toContain("value");
   });
 });
 

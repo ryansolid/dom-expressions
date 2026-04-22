@@ -135,6 +135,18 @@ describe("class handling", () => {
     const res = r.renderToString(() => <div class={state.cls} />);
     expect(res).toBe('<div class="my-class"></div>');
   });
+
+  // Per HTML / JSX spread semantics, later attributes override earlier
+  // ones — duplicate `class=` on the same element should resolve to the
+  // last value, matching how `<div {...{class: "a"}} class="b" />` works.
+  it("duplicate class= attributes resolve to the last value", () => {
+    const res = r.renderToString(() => (
+      <div class="a" class="b">
+        static static
+      </div>
+    ));
+    expect(res).toBe('<div class="b">static static</div>');
+  });
 });
 
 describe("spread attributes", () => {
@@ -148,6 +160,28 @@ describe("spread attributes", () => {
     const props = { id: "base", class: "a" };
     const res = r.renderToString(() => <div {...props} class="b" />);
     expect(res).toBe('<div id="base" class="b"></div>');
+  });
+
+  // Spread placed *after* a static attribute should override it — matches
+  // plain JSX/object-spread semantics where later keys win.
+  it("spread after a static attribute overrides that attribute", () => {
+    const props = { class: "b" };
+    const res = r.renderToString(() => <div class="a" {...props} />);
+    expect(res).toBe('<div class="b"></div>');
+  });
+
+  it("spread overrides multiple earlier static attributes", () => {
+    const props = { id: "newId", title: "newTitle" };
+    const res = r.renderToString(() => (
+      <div id="oldId" title="oldTitle" data-static="kept" {...props} />
+    ));
+    // Non-overridden static attrs stay; overridden ones are replaced by
+    // the spread's values (order may differ from the JSX source).
+    expect(res).toContain('data-static="kept"');
+    expect(res).toContain('id="newId"');
+    expect(res).toContain('title="newTitle"');
+    expect(res).not.toContain('"oldId"');
+    expect(res).not.toContain('"oldTitle"');
   });
 });
 

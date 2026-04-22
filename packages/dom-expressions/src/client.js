@@ -114,7 +114,9 @@ export function setAttribute(node, name, value) {
 
 export function setAttributeNS(node, namespace, name, value) {
   if (isHydrating(node)) return;
-  if (value == null || value === false) node.removeAttributeNS(namespace, name);
+  // removeAttributeNS takes the local name; setAttributeNS accepts the qualified form.
+  if (value == null || value === false)
+    node.removeAttributeNS(namespace, name.indexOf(":") > -1 ? name.split(":").pop() : name);
   else node.setAttributeNS(namespace, name, value === true ? "" : value);
 }
 
@@ -170,7 +172,6 @@ export function style(node, value, prev) {
   if (typeof value === "string") return (nodeStyle.cssText = value);
   typeof prev === "string" && (nodeStyle.cssText = prev = undefined);
   prev || (prev = {});
-  value || (value = {});
   let v, s;
   for (s in value) {
     v = value[s];

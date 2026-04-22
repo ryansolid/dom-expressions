@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import * as r from "../../src/client";
 import { createRoot, createSignal, flush } from "@solidjs/signals";
 
 describe("create simple svg", () => {
@@ -60,6 +61,29 @@ describe("create simple svg", () => {
     expect(circle.namespaceURI).toBe("http://www.w3.org/2000/svg");
   });
 
+  // xlink:href on <use> flows through assignProp → setAttributeNS.
+  // A reactive signal value exercises both the set and the remove
+  // branches (value === null removes via NS).
+  it("sets and removes xlink:href via setAttributeNS", () => {
+    let use, dispose;
+    const [href, setHref] = createSignal("#icon-a");
+    const xlinkNS = "http://www.w3.org/1999/xlink";
+
+    createRoot(d => {
+      dispose = d;
+      <svg>
+        <use ref={use} xlink:href={href()} />
+      </svg>;
+    });
+
+    expect(use.getAttributeNS(xlinkNS, "href")).toBe("#icon-a");
+
+    setHref(null);
+    flush();
+    expect(use.getAttributeNS(xlinkNS, "href")).toBe(null);
+    dispose();
+  });
+
   it("Children of a component rendered inside <math> receive the MathML namespace", () => {
     let row, identifier;
     function Term() {
@@ -80,5 +104,29 @@ describe("create simple svg", () => {
     createRoot(() => <App />);
     expect(row.namespaceURI).toBe("http://www.w3.org/1998/Math/MathML");
     expect(identifier.namespaceURI).toBe("http://www.w3.org/1998/Math/MathML");
+  });
+
+  // Boolean `true` values are serialized as empty-string attributes.
+  it("setAttribute with value=true serializes as empty-string attribute", () => {
+    const node = document.createElement("div");
+    r.setAttribute(node, "data-ready", true);
+    expect(node.getAttribute("data-ready")).toBe("");
+  });
+
+  it("setAttributeNS with value=true serializes as empty-string attribute", () => {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    const xlinkNS = "http://www.w3.org/1999/xlink";
+    r.setAttributeNS(node, xlinkNS, "xlink:show", true);
+    expect(node.getAttributeNS(xlinkNS, "show")).toBe("");
+  });
+
+  it("setAttributeNS removes attribute when name has no prefix", () => {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    const xlinkNS = "http://www.w3.org/1999/xlink";
+    node.setAttributeNS(xlinkNS, "href", "#icon");
+    // Direct setAttributeNS with a local-only name hits the no-colon
+    // branch of the removeAttributeNS helper.
+    r.setAttributeNS(node, xlinkNS, "href", null);
+    expect(node.getAttributeNS(xlinkNS, "href")).toBe(null);
   });
 });

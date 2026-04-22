@@ -872,6 +872,34 @@ describe("root-level module asset loading in hydrate()", () => {
     expect(globalThis._$HY.modules[moduleUrl]).toBe(fakeModule);
   });
 
+  it("clears sharedConfig.hydrating when the root asset load rejects", async () => {
+    const moduleUrl = "./FailingLazy.tsx";
+    const entryUrl = "/assets/FailingLazy-abc.js";
+
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: { _assets: { [moduleUrl]: entryUrl } },
+      modules: {},
+      loading: { [moduleUrl]: Promise.reject(new Error("module load failed")) },
+      done: false,
+      fe() {}
+    };
+    // Suppress unhandled-rejection noise in jest's output.
+    globalThis._$HY.loading[moduleUrl].catch(() => {});
+
+    container.innerHTML = '<div _hk="0">Lazy</div>';
+    const _tmpl$ = r.template("<div>Lazy</div>");
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(sharedConfig.hydrating).toBe(false);
+  });
+
   it("hydrates synchronously when no root assets are present", () => {
     globalThis._$HY = {
       events: [],
@@ -893,5 +921,273 @@ describe("root-level module asset loading in hydrate()", () => {
     }, container);
 
     expect(rendered).toBe(true);
+  });
+});
+
+// sharedConfig.cleanupFragment is installed by hydrate() so surrounding
+// packages can discard placeholder + closing-comment ranges that wrap
+// lazy fragments. Each branch of the inner scan (plain removal, the
+// comment-break exit, and the no-op on missing id) must be exercised.
+describe("sharedConfig.cleanupFragment", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  beforeEach(() => {
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {}, done: false, fe() {} };
+    container.innerHTML = '<div _hk="0">Mount</div>';
+    const _tmpl$ = r.template("<div>Mount</div>");
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    document.body.appendChild(container);
+    container.innerHTML = "";
+  });
+
+  it("removes the placeholder template, interleaved siblings, and the closing marker comment", () => {
+    const tpl = document.createElement("template");
+    tpl.id = "pl-frag";
+    const between1 = document.createElement("span");
+    between1.textContent = "a";
+    const between2 = document.createTextNode("b");
+    const closing = document.createComment("pl-frag");
+    document.body.appendChild(tpl);
+    document.body.appendChild(between1);
+    document.body.appendChild(between2);
+    document.body.appendChild(closing);
+
+    sharedConfig.cleanupFragment("frag");
+
+    expect(document.getElementById("pl-frag")).toBeNull();
+    expect(between1.isConnected).toBe(false);
+    expect(between2.isConnected).toBe(false);
+    expect(closing.isConnected).toBe(false);
+  });
+
+  it("is a no-op when the placeholder id is not in the document", () => {
+    expect(() => sharedConfig.cleanupFragment("never-registered")).not.toThrow();
+  });
+});
+
+// runHydrationEvents drains captured events once their owning element is
+// marked completed; when sharedConfig.done is set it also releases the
+// shared event + completed references so hydration memory is freed.
+describe("runHydrationEvents drain", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  afterEach(() => {
+    container.innerHTML = "";
+    sharedConfig.events = undefined;
+    sharedConfig.completed = undefined;
+    sharedConfig.done = false;
+  });
+
+  it("drains completed events from the queue and clears state when done", async () => {
+    const btn = document.createElement("button");
+    container.appendChild(btn);
+    r.delegateEvents(["click"]);
+
+    // Dispatch a real event so target is set naturally; the SSR-queued
+    // entry keeps the synthetic delegation from firing the handler during
+    // the dispatch itself.
+    const event = new MouseEvent("click", { bubbles: true });
+    sharedConfig.registry = new Map();
+    sharedConfig.events = [[btn, event]];
+    sharedConfig.completed = new WeakSet([btn]);
+    btn.dispatchEvent(event);
+
+    sharedConfig.done = true;
+    r.runHydrationEvents();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(sharedConfig.events).toBeNull();
+    expect(sharedConfig.completed).toBeNull();
+  });
+
+  it("stops the drain when the next queued target is not yet completed", async () => {
+    const btnA = document.createElement("button");
+    const btnB = document.createElement("button");
+    container.appendChild(btnA);
+    container.appendChild(btnB);
+    r.delegateEvents(["click"]);
+
+    const eventA = new MouseEvent("click", { bubbles: true });
+    const eventB = new MouseEvent("click", { bubbles: true });
+
+    // Both dispatches are absorbed by the delegation short-circuit because
+    // the queue is pre-populated (covers the eventHandler hydration check).
+    sharedConfig.registry = new Map();
+    sharedConfig.events = [
+      [btnA, eventA],
+      [btnB, eventB]
+    ];
+    sharedConfig.completed = new WeakSet([btnA]); // btnB intentionally missing
+    btnA.dispatchEvent(eventA);
+    btnB.dispatchEvent(eventB);
+
+    sharedConfig.done = false;
+    r.runHydrationEvents();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // btnA is drained, btnB blocks the rest; shared state is retained.
+    expect(sharedConfig.events).not.toBeNull();
+    expect(sharedConfig.events.length).toBe(1);
+    expect(sharedConfig.events[0][0]).toBe(btnB);
+  });
+});
+
+// eventHandler short-circuits for events already queued in sharedConfig.events
+// while hydration is still in progress, so they aren't double-fired when the
+// synthetic replay happens.
+describe("eventHandler hydration early-return", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  afterEach(() => {
+    container.innerHTML = "";
+    sharedConfig.registry = undefined;
+    sharedConfig.events = undefined;
+  });
+
+  it("skips dispatch when the event is already in the sharedConfig queue", () => {
+    const btn = document.createElement("button");
+    container.appendChild(btn);
+    const handler = jest.fn();
+    btn.$$click = handler;
+
+    r.delegateEvents(["click"]);
+
+    const event = new MouseEvent("click", { bubbles: true });
+    // Pretend hydration is still in progress with this exact event queued.
+    sharedConfig.registry = new Map();
+    sharedConfig.events = [[btn, event]];
+    // Re-ensure container is attached (earlier describes may have reset body).
+    if (!container.isConnected) document.body.appendChild(container);
+
+    btn.dispatchEvent(event);
+    expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+// When _$HY.done is true a subsequent hydrate() call short-circuits into
+// a plain render — useful for mount-after-hydration scenarios.
+describe("hydrate short-circuits to render once hydration is done", () => {
+  let originalHY;
+  beforeEach(() => {
+    originalHY = globalThis._$HY;
+  });
+  afterEach(() => {
+    globalThis._$HY = originalHY;
+  });
+
+  it("renders via r.render when _$HY.done is already set", () => {
+    const container = document.createElement("div");
+    container.innerHTML = "<span>stale</span>";
+    document.body.appendChild(container);
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: {},
+      done: true,
+      fe() {}
+    };
+
+    const _tmpl$ = r.template("<p>fresh</p>");
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(container.innerHTML).toBe("<p>fresh</p>");
+    document.body.removeChild(container);
+  });
+});
+
+// loadModuleAssets has several shortcut branches: already-loaded modules,
+// already-in-flight loads, and an all-preloaded pending list that bails
+// out of the Promise.all wrap entirely.
+describe("loadModuleAssets shortcut branches", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  let originalHY;
+  beforeEach(() => {
+    originalHY = globalThis._$HY;
+  });
+  afterEach(() => {
+    container.innerHTML = "";
+    globalThis._$HY = originalHY;
+  });
+
+  it("skips modules already present in _$HY.modules", () => {
+    const moduleUrl = "./Preloaded.tsx";
+    const entryUrl = "/assets/Preloaded-xyz.js";
+    const preloaded = { default: () => "pre" };
+
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: { _assets: { [moduleUrl]: entryUrl } },
+      modules: { [moduleUrl]: preloaded }, // already loaded
+      loading: {},
+      done: false,
+      fe() {}
+    };
+    container.innerHTML = '<div _hk="0">Pre</div>';
+    const _tmpl$ = r.template("<div>Pre</div>");
+
+    let rendered = false;
+    r.hydrate(() => {
+      rendered = true;
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    // All modules preloaded → loadModuleAssets returns undefined (empty
+    // pending list) and hydrate falls through to the synchronous path.
+    expect(rendered).toBe(true);
+    expect(globalThis._$HY.modules[moduleUrl]).toBe(preloaded);
+  });
+
+  it("reuses an in-flight loading promise without kicking off another import", async () => {
+    const moduleUrl = "./InFlight.tsx";
+    const entryUrl = "/assets/InFlight-abc.js";
+    const shared = { default: () => "in-flight" };
+
+    const loadingPromise = Promise.resolve(shared).then(mod => {
+      globalThis._$HY.modules[moduleUrl] = mod;
+    });
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: { _assets: { [moduleUrl]: entryUrl } },
+      modules: {},
+      loading: { [moduleUrl]: loadingPromise },
+      done: false,
+      fe() {}
+    };
+    container.innerHTML = '<div _hk="0">Flight</div>';
+    const _tmpl$ = r.template("<div>Flight</div>");
+
+    let rendered = false;
+    r.hydrate(() => {
+      rendered = true;
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    // Rendering is deferred onto the existing loading promise (hit the
+    // `!hy.loading[moduleUrl]` false branch).
+    expect(rendered).toBe(false);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(rendered).toBe(true);
+    expect(globalThis._$HY.modules[moduleUrl]).toBe(shared);
+    // The loading entry we installed was reused rather than replaced.
+    expect(globalThis._$HY.loading[moduleUrl]).toBe(loadingPromise);
   });
 });
