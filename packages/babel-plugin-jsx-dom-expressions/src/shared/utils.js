@@ -405,7 +405,78 @@ export function inlineCallExpression(node) {
 const chars = "etaoinshrdlucwmfygpbTAOISWCBvkxjqzPHFMDRELNGUKVYJQZX_$";
 const base = chars.length;
 
+// Identifiers produced by getNumberedId are used as object shorthand
+// destructuring bindings (e.g. `({ in }) => ...`), which is invalid for any
+// reserved word. We shift past the natural indices that would encode to one
+// so the mapping stays injective and the output is always a valid binding.
+const reservedWords = [
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "enum",
+  "export",
+  "extends",
+  "false",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "import",
+  "in",
+  "instanceof",
+  "new",
+  "null",
+  "return",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "true",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield",
+  "let",
+  "static",
+  "implements",
+  "interface",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "await"
+];
+
+const reservedIndices = reservedWords
+  .map(word => {
+    let num = 0;
+    for (const ch of word) {
+      const i = chars.indexOf(ch);
+      if (i < 0) return -1;
+      num = num * base + i;
+    }
+    return num;
+  })
+  .filter(n => n >= 0)
+  .sort((a, b) => a - b);
+
 export function getNumberedId(num) {
+  for (const r of reservedIndices) {
+    if (r <= num) num++;
+    else break;
+  }
+
   let out = "";
 
   do {
