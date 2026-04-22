@@ -1,0 +1,45 @@
+---
+description: Git merge conventions for this repo
+alwaysApply: true
+---
+
+# Git Merge Conventions
+
+## Never Squash-Merge PRs
+
+**This repo does not squash-merge.** Preserving per-commit history is
+intentional — authors craft commits that tell the story of a change (bug
+reproduction, fix, tests, refactor), and that history is load-bearing for
+`git blame`, bisect, and future archaeology.
+
+When merging a PR via `gh pr merge`, use `--merge`, never `--squash`:
+
+```bash
+# GOOD
+gh pr merge <N> --merge --delete-branch
+
+# BAD — squashes the author's commits into one
+gh pr merge <N> --squash --delete-branch
+```
+
+If a PR's commit history is genuinely messy (WIP, typo fixes, reverts
+of the author's own changes), **ask** before merging — the author may
+want to clean up with `git rebase -i` first. Do not silently squash on
+their behalf.
+
+## Before Merging
+
+- Confirm CI is green and the PR is mergeable (`gh pr checks <N>`,
+  `gh pr view <N> --json mergeStateStatus`).
+- Resolve merge conflicts on the PR branch (not by rebasing onto `next`
+  unless the author has kept their branch rebase-clean) and push the
+  resolution so CI re-runs against the real merged state.
+- Ensure a changeset exists if the change is consumer-visible (see
+  [`releases.mdc`](./releases.mdc)).
+
+## Never Force-Push `next`
+
+`next` is the active development branch and the source of truth for
+prereleases. Do not force-push it. If a wrong merge lands, prefer
+`git revert` over a history rewrite, and surface the trade-off to the
+user before taking either action.
