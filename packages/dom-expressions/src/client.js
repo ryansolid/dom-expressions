@@ -229,7 +229,7 @@ export function ref(fn, element) {
   runWithOwner(null, () => applyRef(resolved, element));
 }
 
-export function insert(parent, accessor, marker, initial) {
+export function insert(parent, accessor, marker, initial, options) {
   const childRoot = getChildRoot(parent);
   const multi = marker !== undefined;
   if (multi && !initial) initial = [];
@@ -256,7 +256,8 @@ export function insert(parent, accessor, marker, initial) {
   }
   effect(
     (prev = initial) => normalize(accessor, prev, multi),
-    (value, current = initial) => insertExpression(parent, value, current, marker)
+    (value, current = initial) => insertExpression(parent, value, current, marker),
+    options
   );
 }
 
