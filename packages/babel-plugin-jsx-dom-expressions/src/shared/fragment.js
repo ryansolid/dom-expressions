@@ -10,7 +10,11 @@ export default function transformFragmentChildren(children, results, config) {
         const v = decode(trimWhitespace(path.node.extra.raw));
         if (v.length) memo.push(t.stringLiteral(v));
       } else {
-        const child = transformNode(path, { topLevel: true, fragmentChild: true, lastElement: true });
+        const child = transformNode(path, {
+          topLevel: true,
+          fragmentChild: true,
+          lastElement: true
+        });
         memo.push(getCreateTemplate(config, path, child)(path, child, true));
       }
       return memo;

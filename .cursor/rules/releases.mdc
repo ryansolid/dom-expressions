@@ -1,0 +1,77 @@
+---
+description: Release workflow and changeset policy for this repo
+alwaysApply: true
+---
+
+# Release Workflow
+
+This repo uses [Changesets](https://github.com/changesets/changesets) (not lerna
+— it was migrated off) and is currently in **prerelease mode** with the `next`
+tag, targeting a future `0.50.0` stable release. See `VERSIONING.md` for the
+full versioning policy including the `0.41`–`0.49` range reservation for the
+Solid 1.x maintenance line.
+
+## Changeset Policy
+
+**Any change with a consumer-visible effect MUST ship with a changeset.** This
+includes:
+
+- New or changed runtime APIs (`client.js`, `server.js`, `universal.js`)
+- New or changed compiler output (`babel-plugin-jsx-dom-expressions`)
+- Behavior changes to SSR, hydration, event delegation, or reconciliation
+- Type-definition changes that affect consumers (`jsx.d.ts`, `jsx-h.d.ts`,
+  `jsx-properties.d.ts`)
+- Bug fixes that change observable behavior
+- Bumps to peer dependency ranges
+
+Changesets are **not** required for:
+
+- Test-only changes
+- Internal refactors with no observable effect
+- Documentation changes (README, VERSIONING.md, comments)
+- CI / repo tooling changes
+- Changes under `.cursor/`
+
+When in doubt, add one.
+
+## Bump Type — Always `patch` During Prerelease
+
+While `.changeset/pre.json` exists in `mode: "pre"`, **every changeset must use
+`patch`** for all listed packages. A `minor` or `major` changeset will cause
+`pre exit` to overshoot the `0.50.0` target (`minor` → `0.51.0`, `major` →
+`1.0.0`).
+
+If a change is genuinely breaking enough to warrant a stable-version bump,
+surface that explicitly to the user rather than silently authoring a `minor`
+changeset.
+
+## Fixed Group
+
+All four published packages are in a `fixed` group in `.changeset/config.json`
+and bump together. List all four in every changeset's frontmatter:
+
+```markdown
+---
+"babel-plugin-jsx-dom-expressions": patch
+"dom-expressions": patch
+"hyper-dom-expressions": patch
+"lit-dom-expressions": patch
+---
+
+<description of the change>
+```
+
+## Writing the Changeset Body
+
+- Lead with the user-visible effect, not the internal mechanism.
+- For fixes, state the observable bug and the resolution briefly.
+- For features/API additions, show the new surface area (signature,
+  parameters).
+- Group multiple related commits into a single changeset when they form one
+  logical change; otherwise use one changeset per change.
+
+## File Naming
+
+Use a short descriptive kebab-case slug: `.changeset/fix-streaming-flush.md`,
+`.changeset/insert-options-arg.md`. Avoid the default random animal names —
+they're harmless but less searchable.

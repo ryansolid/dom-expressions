@@ -77,9 +77,7 @@ describe("r.hydrate", () => {
       r.insert(container, multiExpression, undefined, [...container.childNodes]);
       r.runHydrationEvents();
     }, container);
-    expect(container.innerHTML).toBe(
-      `<div _hk="0">First</div>middle<div _hk="1">Last</div>`
-    );
+    expect(container.innerHTML).toBe(`<div _hk="0">First</div>middle<div _hk="1">Last</div>`);
     expect(container.firstChild).toBe(el1);
     expect(el1.nextSibling).toEqual(el2);
     expect(el1.nextSibling.nextSibling).toBe(el3);
@@ -156,7 +154,12 @@ describe("r.hydrate", () => {
         _el$6 = _el$5.nextSibling,
         [_el$7, _co$] = r.getNextMarker(_el$6.nextSibling);
 
-      r.insert(_el$, r.memo(() => (toggle() ? r.getNextElement(_tmpl$4) : undefined)), _el$3, _co$2);
+      r.insert(
+        _el$,
+        r.memo(() => (toggle() ? r.getNextElement(_tmpl$4) : undefined)),
+        _el$3,
+        _co$2
+      );
       r.insert(_el$4, toggle, _el$7, _co$);
       r.insert(container, _el$, undefined, [...container.childNodes]);
       r.runHydrationEvents();
@@ -176,11 +179,16 @@ describe("r.hydrate", () => {
   it("hydrates standalone head with static children", () => {
     rendered = r2.renderToString(() =>
       r2.ssr(
-        ["<head", '><title>Test</title><meta charset="UTF-8"><link rel="stylesheet" href="/styles.css"></head>'],
+        [
+          "<head",
+          '><title>Test</title><meta charset="UTF-8"><link rel="stylesheet" href="/styles.css"></head>'
+        ],
         r2.ssrHydrationKey()
       )
     );
-    expect(rendered).toBe('<head _hk=0><title>Test</title><meta charset="UTF-8"><link rel="stylesheet" href="/styles.css"></head>');
+    expect(rendered).toBe(
+      '<head _hk=0><title>Test</title><meta charset="UTF-8"><link rel="stylesheet" href="/styles.css"></head>'
+    );
 
     const head = document.createElement("head");
     head.setAttribute("_hk", "0");
@@ -336,7 +344,6 @@ describe("r.hydrate", () => {
     expect(extScript.nextSibling).toBe(extStyle);
     expect(head.childNodes.length).toBe(4);
   });
-
 });
 
 describe("Phase 1: Hydration error diagnostics", () => {
@@ -432,7 +439,7 @@ describe("Phase 1: Hydration error diagnostics", () => {
     const message = warn.mock.calls[0][0];
     expect(message).toBe(
       `Hydration completed with 1 unclaimed server-rendered node(s):\n` +
-      `  <span _hk="1">Orphan</span>`
+        `  <span _hk="1">Orphan</span>`
     );
     warn.mockRestore();
   });
@@ -529,7 +536,10 @@ describe("Phase 2: Walk validation helpers", () => {
   });
 
   afterEach(() => {
-    if (dispose) { dispose(); dispose = null; }
+    if (dispose) {
+      dispose();
+      dispose = null;
+    }
   });
 
   it("getFirstChild warns on tag mismatch with parent-wrapped visualization", () => {
@@ -832,9 +842,13 @@ describe("root-level module asset loading in hydrate()", () => {
     globalThis._$HY = {
       events: [],
       completed: new WeakSet(),
-      r: { "_assets": { [moduleUrl]: entryUrl } },
+      r: { _assets: { [moduleUrl]: entryUrl } },
       modules: {},
-      loading: { [moduleUrl]: Promise.resolve(fakeModule).then(mod => { globalThis._$HY.modules[moduleUrl] = mod; }) },
+      loading: {
+        [moduleUrl]: Promise.resolve(fakeModule).then(mod => {
+          globalThis._$HY.modules[moduleUrl] = mod;
+        })
+      },
       done: false,
       fe() {}
     };
@@ -865,7 +879,7 @@ describe("root-level module asset loading in hydrate()", () => {
     globalThis._$HY = {
       events: [],
       completed: new WeakSet(),
-      r: { "_assets": { [moduleUrl]: entryUrl } },
+      r: { _assets: { [moduleUrl]: entryUrl } },
       modules: {},
       loading: { [moduleUrl]: Promise.reject(new Error("module load failed")) },
       done: false,
@@ -1008,7 +1022,10 @@ describe("runHydrationEvents drain", () => {
     // Both dispatches are absorbed by the delegation short-circuit because
     // the queue is pre-populated (covers the eventHandler hydration check).
     sharedConfig.registry = new Map();
-    sharedConfig.events = [[btnA, eventA], [btnB, eventB]];
+    sharedConfig.events = [
+      [btnA, eventA],
+      [btnB, eventB]
+    ];
     sharedConfig.completed = new WeakSet([btnA]); // btnB intentionally missing
     btnA.dispatchEvent(eventA);
     btnB.dispatchEvent(eventB);
@@ -1115,7 +1132,7 @@ describe("loadModuleAssets shortcut branches", () => {
     globalThis._$HY = {
       events: [],
       completed: new WeakSet(),
-      r: { "_assets": { [moduleUrl]: entryUrl } },
+      r: { _assets: { [moduleUrl]: entryUrl } },
       modules: { [moduleUrl]: preloaded }, // already loaded
       loading: {},
       done: false,
@@ -1148,7 +1165,7 @@ describe("loadModuleAssets shortcut branches", () => {
     globalThis._$HY = {
       events: [],
       completed: new WeakSet(),
-      r: { "_assets": { [moduleUrl]: entryUrl } },
+      r: { _assets: { [moduleUrl]: entryUrl } },
       modules: {},
       loading: { [moduleUrl]: loadingPromise },
       done: false,

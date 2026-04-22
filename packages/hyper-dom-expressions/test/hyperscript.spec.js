@@ -91,8 +91,7 @@ describe("Test HyperScript", () => {
   });
 
   test("Components", () => {
-    const Comp = props =>
-      h("div", () => props.name + " " + props.middle, props.children);
+    const Comp = props => h("div", () => props.name + " " + props.middle, props.children);
     const div = createRoot(() => {
       const template = h("#main", [
         h(Comp, { name: () => "John", middle: "R." }, () => h("span", "Smith"))
@@ -242,7 +241,9 @@ describe("Test HyperScript", () => {
     const [value, setValue] = createSignal("first");
     const props = {};
     Object.defineProperty(props, "title", {
-      get() { return value(); },
+      get() {
+        return value();
+      },
       enumerable: true,
       configurable: true
     });

@@ -102,7 +102,9 @@ function wrapDynamics(path, dynamics) {
           t.objectPattern(properties.map(id => t.objectProperty(id, id, false, true))),
           t.assignmentPattern(
             prevId,
-            t.objectExpression(properties.map(id => t.objectProperty(id, t.identifier("undefined"))))
+            t.objectExpression(
+              properties.map(id => t.objectProperty(id, t.identifier("undefined")))
+            )
           )
         ],
         t.blockStatement(statements)

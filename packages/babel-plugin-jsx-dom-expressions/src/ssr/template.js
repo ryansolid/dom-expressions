@@ -4,7 +4,9 @@ import { getConfig, registerImportMethod } from "../shared/utils";
 export function createTemplate(path, result, wrap) {
   if (!result.template) {
     if (wrap && result.dynamic && getConfig(path).memoWrapper) {
-      return t.callExpression(registerImportMethod(path, getConfig(path).memoWrapper), [result.exprs[0]]);
+      return t.callExpression(registerImportMethod(path, getConfig(path).memoWrapper), [
+        result.exprs[0]
+      ]);
     }
     return result.exprs[0];
   }
@@ -75,11 +77,10 @@ export function createTemplate(path, result, wrap) {
     t.arrowFunctionExpression(
       [],
       t.blockStatement([
-        t.variableDeclaration("var", [
-          ...result.declarations,
-          dynamicDecl,
-          ...result.postDeclarations
-        ].filter(Boolean)),
+        t.variableDeclaration(
+          "var",
+          [...result.declarations, dynamicDecl, ...result.postDeclarations].filter(Boolean)
+        ),
         t.returnStatement(
           t.callExpression(
             registerImportMethod(path, "ssr"),
@@ -103,6 +104,6 @@ export function appendTemplates(path, templates) {
 
 function wrapDynamics(path, groupId, dynamics) {
   if (!dynamics || !dynamics.length) return null;
-  const run = registerImportMethod(path, "ssrRunInScope")
+  const run = registerImportMethod(path, "ssrRunInScope");
   return t.variableDeclarator(groupId, t.callExpression(run, [t.arrayExpression(dynamics)]));
 }

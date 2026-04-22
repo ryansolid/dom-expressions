@@ -1,9 +1,6 @@
 import { createRenderer } from "../../src/universal";
 
-const PROPERTIES = new Set([
-  "className",
-  "textContent"
-])
+const PROPERTIES = new Set(["className", "textContent"]);
 
 export const {
   render,

@@ -33,11 +33,7 @@ export function insert<T>(
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
 export function delegateEvents(eventNames: string[], d?: Document): void;
 export function clearDelegatedEvents(d?: Document): void;
-export function spread<T>(
-  node: Element,
-  accessor: T,
-  skipChildren?: Boolean
-): void;
+export function spread<T>(node: Element, accessor: T, skipChildren?: Boolean): void;
 export function assign(
   node: Element,
   props: any,
@@ -50,7 +46,11 @@ export function setAttributeNS(node: Element, namespace: string, name: string, v
 type ClassList =
   | Record<string, boolean>
   | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
-export function className(node: Element, value: string | ClassList, prev?: string | ClassList): void;
+export function className(
+  node: Element,
+  value: string | ClassList,
+  prev?: string | ClassList
+): void;
 export function setProperty(node: Element, name: string, value: any): void;
 export function setStyleProperty(node: Element, name: string, value: any): void;
 export function addEventListener(
@@ -67,8 +67,14 @@ export function style(
 export function getOwner(): unknown;
 export function mergeProps(...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
-export function applyRef(r: ((element: Element) => void) | ((element: Element) => void)[], element: Element): void;
-export function ref(fn: () => ((element: Element) => void) | ((element: Element) => void)[], element: Element): void;
+export function applyRef(
+  r: ((element: Element) => void) | ((element: Element) => void)[],
+  element: Element
+): void;
+export function ref(
+  fn: () => ((element: Element) => void) | ((element: Element) => void)[],
+  element: Element
+): void;
 
 export function hydrate(
   fn: () => JSX.Element,
@@ -82,7 +88,10 @@ export function getNextMarker(start: Node): [Node, Array<Node>];
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function HydrationScript(props?: { nonce?: string; eventNames?: string[] }): JSX.Element;
-export function generateHydrationScript(options?: { nonce?: string; eventNames?: string[] }): string;
+export function generateHydrationScript(options?: {
+  nonce?: string;
+  eventNames?: string[];
+}): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export interface RequestEvent {
   request: Request;

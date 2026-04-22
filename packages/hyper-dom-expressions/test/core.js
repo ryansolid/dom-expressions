@@ -12,5 +12,12 @@ export function createComponent(Comp, props) {
   return untrack(() => Comp(props));
 }
 
-
-export { createRoot as root, createRenderEffect as effect, createMemo as memo, getOwner, untrack, merge as mergeProps, flatten } from "@solidjs/signals";
+export {
+  createRoot as root,
+  createRenderEffect as effect,
+  createMemo as memo,
+  getOwner,
+  untrack,
+  merge as mergeProps,
+  flatten
+} from "@solidjs/signals";

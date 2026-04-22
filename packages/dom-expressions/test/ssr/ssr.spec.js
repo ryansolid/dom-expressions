@@ -52,7 +52,7 @@ const Comp1 = () => {
         style: {
           "background-color": color(),
           "border-color": colorUndefined,
-          "color": colorUndefinedFn(),
+          color: colorUndefinedFn()
         },
         class: {
           selected: selected(),
@@ -80,7 +80,7 @@ const Comp2 = () => {
 const Comp3 = () => {
   const greeting = "Hello",
     name = "<div/>";
-  r.useAssets(() => r.ssr`<link rel="modulepreload" href="chunk.js">`)
+  r.useAssets(() => r.ssr`<link rel="modulepreload" href="chunk.js">`);
   return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)}${r.HydrationScript()}${r.getAssets()}</span>`;
 };
 
@@ -93,7 +93,7 @@ const Comp4 = () => {
 const Comp5 = () => {
   const greeting = ["Hello"],
     name = ["<div/>"];
-  return r.ssr`<span > ${r.escape(greeting)} ${r.escape(name)} </span>`
+  return r.ssr`<span > ${r.escape(greeting)} ${r.escape(name)} </span>`;
 };
 
 describe("renderToString", () => {
@@ -349,16 +349,35 @@ describe("reveal defensive invariants", () => {
         .filter(n => n.nodeType === 1 && n.localName === "span")
         .map(n => n.textContent);
 
-    runtime.$dflj(["a", "b", "c"]);
+    // Callers pass only the keys they intend to materialize now; $dflj reveals
+    // every id in the list (idempotent, so repeats are safe).
+    runtime.$dflj(["a"]);
     expect(visibleSpans()).toEqual(["FA"]);
 
     runtime.$df("a");
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["b"]);
     expect(visibleSpans()).toEqual(["A", "FB"]);
 
     runtime.$df("b");
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["c"]);
     expect(visibleSpans()).toEqual(["A", "B", "FC"]);
+    container.remove();
+  });
+
+  it("materializes all provided fallbacks in one call", async () => {
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {}, done: false, fe() {} };
+    const container = document.createElement("div");
+    container.innerHTML =
+      '<div><template id="pl-a"><span>FA</span></template><!--pl-a--><template id="a"><span>A</span></template><template id="pl-b"><span>FB</span></template><!--pl-b--><template id="b"><span>B</span></template><template id="pl-c"><span>FC</span></template><!--pl-c--><template id="c"><span>C</span></template></div>';
+    document.body.appendChild(container);
+    const host = container.firstChild;
+    const visibleSpans = () =>
+      [...host.childNodes]
+        .filter(n => n.nodeType === 1 && n.localName === "span")
+        .map(n => n.textContent);
+
+    runtime.$dflj(["a", "b", "c"]);
+    expect(visibleSpans()).toEqual(["FA", "FB", "FC"]);
     container.remove();
   });
 
@@ -394,6 +413,8 @@ describe("reveal defensive invariants", () => {
         .map(n => n.textContent);
 
     runtime.$df("a");
+    // Already-resolved ids and ids missing from the DOM are skipped; remaining
+    // ids are all materialized.
     runtime.$dflj(["missing", "a", "b"]);
     expect(visibleSpans()).toEqual(["A", "FB"]);
     container.remove();
@@ -430,11 +451,11 @@ describe("reveal defensive invariants", () => {
         .map(n => n.textContent);
 
     runtime.$dfs("b", 1, 1);
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["a"]);
     expect(visibleSpans()).toEqual(["FA"]);
 
     runtime.$df("a");
-    runtime.$dflj(["a", "b", "c"]);
+    runtime.$dflj(["b"]);
     expect(visibleSpans()).toEqual(["A", "FB"]);
 
     runtime.$dfj(["a", "b", "c"]);
@@ -510,8 +531,12 @@ describe("cascading root holes in streaming shell", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -572,11 +597,16 @@ describe("cascading root holes in streaming shell", () => {
     await stream.pipeTo({
       getWriter() {
         return {
-          write(v) { chunks.push(v); return Promise.resolve(); },
+          write(v) {
+            chunks.push(v);
+            return Promise.resolve();
+          },
           releaseLock() {}
         };
       },
-      close() { return Promise.resolve(); }
+      close() {
+        return Promise.resolve();
+      }
     });
 
     const html = chunks.join("");
@@ -606,7 +636,9 @@ describe("cascading root holes in streaming shell", () => {
     const level1 = asyncError();
     const level2 = asyncError();
     const level3 = asyncError();
-    let l1 = 0, l2 = 0, l3 = 0;
+    let l1 = 0,
+      l2 = 0,
+      l3 = 0;
 
     const stream = r.renderToStream(() => {
       return r.ssr`<div>${() => {
@@ -635,7 +667,9 @@ describe("cascading root holes in streaming shell", () => {
     const a1 = asyncError();
     const b1 = asyncError();
     const b2 = asyncError();
-    let aCalls = 0, bCalls = 0, b2Calls = 0;
+    let aCalls = 0,
+      bCalls = 0,
+      b2Calls = 0;
 
     const stream = r.renderToStream(() => {
       return r.ssr`<div>${() => {
@@ -650,7 +684,10 @@ describe("cascading root holes in streaming shell", () => {
       }}</div>`;
     });
 
-    setTimeout(() => { a1.resolve(); b1.resolve(); }, 5);
+    setTimeout(() => {
+      a1.resolve();
+      b1.resolve();
+    }, 5);
     setTimeout(() => b2.resolve(), 15);
 
     const html = await streamToString(stream);
@@ -674,8 +711,12 @@ describe("root-level module asset serialization", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -700,8 +741,12 @@ describe("root-level module asset serialization", () => {
         ctx.registerModule("./Other.tsx", "/assets/Other-def.js");
         return r.ssr`<div>content</div>`;
       }).pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
     expect(html).toContain("_assets");
@@ -723,13 +768,63 @@ describe("root-level module asset serialization", () => {
         ctx._currentBoundaryId = null;
         return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
       }).pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
       setTimeout(() => done("<span>loaded</span>"));
     });
     expect(html).toContain("b1_assets");
     expect(html).toContain("./Scoped.tsx");
+  });
+
+  // Regression: when a boundary fragment resolves while root holes are still
+  // cascading (shell not yet committed), the fragment's post-resolve flushEnd
+  // must not flush the serializer before the final root `_assets` write runs.
+  // Otherwise seroval's Serializer.write silently drops the root asset map
+  // once flushed=true. Seen in the /stream page: an inner Loading boundary
+  // completes its first chunk while an outer async tree is still resolving,
+  // leaving lazy module mappings out of the hydration registry on the client.
+  it("root modules serialize when a fragment resolves before shell completes", async () => {
+    let outerResolve;
+    const outerPromise = new Promise(r => (outerResolve = r));
+    const outerErr = new Error("outer");
+    outerErr._promise = outerPromise;
+    let outerCalls = 0;
+    let fragmentDone;
+
+    const html = await new Promise(resolve => {
+      const chunks = [];
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        ctx.registerModule("./Lazy.tsx", "/assets/Lazy-abc.js");
+        fragmentDone = ctx.registerFragment("b1");
+        return r.ssr`<div><template id="pl-b1"></template><!--pl-b1-->${() => {
+          if (++outerCalls === 1) throw outerErr;
+          return "done";
+        }}</div>`;
+      }).pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+      setTimeout(() => {
+        fragmentDone("<span>loaded</span>");
+      }, 5);
+      setTimeout(() => outerResolve(), 30);
+    });
+
+    expect(html).toContain("<span>loaded</span>");
+    expect(html).toContain("done");
+    expect(html).toContain("_assets");
+    expect(html).toContain("./Lazy.tsx");
+    expect(html).toContain("/assets/Lazy-abc.js");
   });
 });
 
@@ -778,10 +873,13 @@ describe("manifest-driven asset resolution", () => {
     };
 
     let resolved;
-    r.renderToString(() => {
-      resolved = sharedConfig.context.resolveAssets("app.tsx");
-      return r.ssr`<div>x</div>`;
-    }, { manifest });
+    r.renderToString(
+      () => {
+        resolved = sharedConfig.context.resolveAssets("app.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest }
+    );
 
     expect(resolved).toEqual({
       js: ["/assets/app-abc.js", "/assets/shared-def.js"],
@@ -792,10 +890,13 @@ describe("manifest-driven asset resolution", () => {
   it("context.resolveAssets returns null for unknown module urls", () => {
     const manifest = { _base: "/", "a.tsx": { file: "a.js" } };
     let resolved;
-    r.renderToString(() => {
-      resolved = sharedConfig.context.resolveAssets("unknown.tsx");
-      return r.ssr`<div>x</div>`;
-    }, { manifest });
+    r.renderToString(
+      () => {
+        resolved = sharedConfig.context.resolveAssets("unknown.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest }
+    );
     expect(resolved).toBeNull();
   });
 
@@ -932,9 +1033,7 @@ describe("client-only API stubs", () => {
 // escaped. Each branch needs its own case to hit the conditional.
 describe("ssrElement child-property handling", () => {
   it("passes <script> textContent through unescaped", () => {
-    const html = r.renderToString(() =>
-      r.ssrElement("script", { textContent: "var a = 1 < 2;" })
-    );
+    const html = r.renderToString(() => r.ssrElement("script", { textContent: "var a = 1 < 2;" }));
     expect(html).toContain("var a = 1 < 2;");
   });
 
@@ -946,16 +1045,12 @@ describe("ssrElement child-property handling", () => {
   });
 
   it("passes innerHTML through unescaped for other tags", () => {
-    const html = r.renderToString(() =>
-      r.ssrElement("div", { innerHTML: "<b>bold</b>" })
-    );
+    const html = r.renderToString(() => r.ssrElement("div", { innerHTML: "<b>bold</b>" }));
     expect(html).toContain("<b>bold</b>");
   });
 
   it("escapes non-special child properties like textContent on a <div>", () => {
-    const html = r.renderToString(() =>
-      r.ssrElement("div", { textContent: "a < b & c" })
-    );
+    const html = r.renderToString(() => r.ssrElement("div", { textContent: "a < b & c" }));
     // The child is escape()'d for non-script/style/innerHTML cases.
     expect(html).toContain("a &lt; b &amp; c");
   });
@@ -980,12 +1075,13 @@ describe("useAssets injection path", () => {
 describe("resolveSSRSync error", () => {
   it("throws a helpful error when a pending async hole reaches sync path", () => {
     expect(() =>
-      r.renderToString(() =>
-        r.ssr`<div>${() => {
-          const err = new Error("async-in-sync");
-          err._promise = new Promise(() => {}); // never resolves
-          throw err;
-        }}</div>`
+      r.renderToString(
+        () =>
+          r.ssr`<div>${() => {
+            const err = new Error("async-in-sync");
+            err._promise = new Promise(() => {}); // never resolves
+            throw err;
+          }}</div>`
       )
     ).toThrow(/cannot be rendered synchronously/);
   });
@@ -999,8 +1095,12 @@ describe("renderToStream context.replace", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -1052,8 +1152,12 @@ describe("renderToStream context.serialize deferStream", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -1079,8 +1183,12 @@ describe("registerFragment reveal-group guard", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -1113,8 +1221,12 @@ describe("nested fragment resolution", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -1138,9 +1250,7 @@ describe("nested fragment resolution", () => {
           resolveChild("<span>child</span>");
           // Then parent resolves, iterating children and replacing the
           // placeholder-template range with the child payload.
-          resolveParent(
-            '<i>parent<template id="pl-pa-child"></template><!--pl-pa-child--></i>'
-          );
+          resolveParent('<i>parent<template id="pl-pa-child"></template><!--pl-pa-child--></i>');
         });
         return r.ssr`<div><template id="pl-pa"></template><!--pl-pa--></div>`;
       })
@@ -1200,8 +1310,12 @@ describe("renderToStream late registerAsset(module)", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -1232,8 +1346,12 @@ describe("renderToStream styled fragment after shell flush", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -1267,8 +1385,12 @@ describe("renderToStream onComplete writer callbacks", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -1370,7 +1492,11 @@ describe("renderToString async-serialize guard", () => {
   });
 
   it("throws for async iterators too", () => {
-    const asyncIterable = { [Symbol.asyncIterator]() { return { next: () => Promise.resolve({ done: true }) }; } };
+    const asyncIterable = {
+      [Symbol.asyncIterator]() {
+        return { next: () => Promise.resolve({ done: true }) };
+      }
+    };
     expect(() =>
       r.renderToString(() => {
         sharedConfig.context.serialize("iter-id", asyncIterable);

@@ -24,9 +24,14 @@ export interface Renderer<NodeType> {
   spread<T extends object>(node: any, props: T, skipChildren?: boolean): void;
   setProp<T>(node: NodeType, name: string, value: T, prev?: T): T;
   mergeProps(...sources: unknown[]): unknown;
-  applyRef(r: ((element: NodeType) => void) | ((element: NodeType) => void)[], element: NodeType): void;
-  ref(fn: () => ((element: NodeType) => void) | ((element: NodeType) => void)[], element: NodeType): void;
+  applyRef(
+    r: ((element: NodeType) => void) | ((element: NodeType) => void)[],
+    element: NodeType
+  ): void;
+  ref(
+    fn: () => ((element: NodeType) => void) | ((element: NodeType) => void)[],
+    element: NodeType
+  ): void;
 }
 
 export function createRenderer<NodeType>(options: RendererOptions<NodeType>): Renderer<NodeType>;
-

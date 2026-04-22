@@ -1,4 +1,13 @@
-import { root, effect, memo, createComponent, untrack, runWithOwner, mergeProps, flatten } from "rxcore";
+import {
+  root,
+  effect,
+  memo,
+  createComponent,
+  untrack,
+  runWithOwner,
+  mergeProps,
+  flatten
+} from "rxcore";
 
 export function createRenderer({
   createElement,

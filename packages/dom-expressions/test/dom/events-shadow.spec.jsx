@@ -10,23 +10,23 @@ describe("Synthetic event target with shadow DOM web components", () => {
     slotButton: null,
     outerContainer: null,
     innerContainer: null,
-    myComponent: null,
+    myComponent: null
   };
 
   let innerOnClickHandler = null;
-  const innerOnClick = (e) => {
+  const innerOnClick = e => {
     innerOnClickHandler?.(e);
-  }
+  };
 
   let outerOnClickHandler = null;
-  const outerOnClick = (e) => {
+  const outerOnClick = e => {
     outerOnClickHandler?.(e);
-  }
+  };
 
   class MyComponent extends HTMLElement {
     constructor() {
       super();
-      const shadowRoot = this.attachShadow({ mode: 'open' });
+      const shadowRoot = this.attachShadow({ mode: "open" });
       createRoot(() =>
         shadowRoot.appendChild(
           <div ref={Elements.innerContainer} onClick={innerOnClick}>
@@ -38,7 +38,7 @@ describe("Synthetic event target with shadow DOM web components", () => {
     }
   }
 
-  customElements.define('my-component', MyComponent);
+  customElements.define("my-component", MyComponent);
 
   document.body.innerHTML = "";
   createRoot(() =>
@@ -51,11 +51,11 @@ describe("Synthetic event target with shadow DOM web components", () => {
     )
   );
 
-  r.delegateEvents(['click'], document);
+  r.delegateEvents(["click"], document);
 
   test("Events inside web component have target button", () => {
     let target = null;
-    innerOnClickHandler = (e) => target = e.target;
+    innerOnClickHandler = e => (target = e.target);
     Elements.button.click();
     innerOnClickHandler = null;
     expect(target.tagName).toBe("BUTTON");
@@ -63,35 +63,34 @@ describe("Synthetic event target with shadow DOM web components", () => {
 
   test("Events outside web component have target my-component", () => {
     let target = null;
-    outerOnClickHandler = (e) => target = e.target;
+    outerOnClickHandler = e => (target = e.target);
     Elements.button.click();
     outerOnClickHandler = null;
-    expect(target.tagName).toBe('MY-COMPONENT');
+    expect(target.tagName).toBe("MY-COMPONENT");
   });
 
   test("Events on document (non-delegated) have target my-component", () => {
     let target = null;
-    const handler = (e) => target = e.target;
-    document.addEventListener('click', handler);
+    const handler = e => (target = e.target);
+    document.addEventListener("click", handler);
     Elements.button.click();
-    document.removeEventListener('click', handler);
-    expect(target.tagName).toBe('MY-COMPONENT');
+    document.removeEventListener("click", handler);
+    expect(target.tagName).toBe("MY-COMPONENT");
   });
 
   test("Events outside web component but from slot have target slotbutton", () => {
     let target = null;
-    outerOnClickHandler = (e) => target = e.target;
+    outerOnClickHandler = e => (target = e.target);
     Elements.slotButton.click();
     outerOnClickHandler = null;
-    expect(target.id).toBe('slotbutton');
+    expect(target.id).toBe("slotbutton");
   });
 
   test("Events inside web component but from slot have target slotbutton", () => {
     let target = null;
-    innerOnClickHandler = (e) => target = e.target;
+    innerOnClickHandler = e => (target = e.target);
     Elements.slotButton.click();
     innerOnClickHandler = null;
-    expect(target.id).toBe('slotbutton');
-  })
+    expect(target.id).toBe("slotbutton");
+  });
 });
-

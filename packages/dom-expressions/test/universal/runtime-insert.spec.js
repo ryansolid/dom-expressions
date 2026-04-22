@@ -173,23 +173,17 @@ describe("universal insert transitions", () => {
       r.insert(parent, () => list());
     });
     flush();
-    expect(parent.innerHTML).toBe(
-      "<span>1</span><span>2</span><span>3</span><span>4</span>"
-    );
+    expect(parent.innerHTML).toBe("<span>1</span><span>2</span><span>3</span><span>4</span>");
 
     // Reverse → exercises the swap-backward and map-fallback branches.
     setList([n4, n3, n2, n1]);
     flush();
-    expect(parent.innerHTML).toBe(
-      "<span>4</span><span>3</span><span>2</span><span>1</span>"
-    );
+    expect(parent.innerHTML).toBe("<span>4</span><span>3</span><span>2</span><span>1</span>");
 
     // Rotate → common prefix / suffix branches + append path.
     setList([n3, n2, n1, n4]);
     flush();
-    expect(parent.innerHTML).toBe(
-      "<span>3</span><span>2</span><span>1</span><span>4</span>"
-    );
+    expect(parent.innerHTML).toBe("<span>3</span><span>2</span><span>1</span><span>4</span>");
 
     // Remove head and tail.
     setList([n2, n1]);
@@ -388,10 +382,7 @@ describe("universal applyRef", () => {
   it("flattens nested arrays and skips falsy entries", () => {
     const el = { tag: "b" };
     const seen = [];
-    r.applyRef(
-      [e => seen.push("a"), null, [undefined, e => seen.push("b")], false],
-      el
-    );
+    r.applyRef([e => seen.push("a"), null, [undefined, e => seen.push("b")], false], el);
     expect(seen).toEqual(["a", "b"]);
   });
 });
@@ -412,9 +403,7 @@ describe("universal spread reactive updates", () => {
         get: (_t, key) => state()[key],
         ownKeys: () => Object.keys(state()),
         getOwnPropertyDescriptor: (_t, key) =>
-          key in state()
-            ? { enumerable: true, configurable: true, value: state()[key] }
-            : undefined
+          key in state() ? { enumerable: true, configurable: true, value: state()[key] } : undefined
       }
     );
 
@@ -546,14 +535,22 @@ describe("universal insert caching", () => {
     parent.appendChild(marker);
 
     createRoot(() => {
-      r.insert(parent, () => {
-        if (!firstReady()) throw new NotReadyError(firstReady);
-        return ["A"];
-      }, marker);
-      r.insert(parent, () => {
-        if (!secondReady()) throw new NotReadyError(secondReady);
-        return ["B"];
-      }, marker);
+      r.insert(
+        parent,
+        () => {
+          if (!firstReady()) throw new NotReadyError(firstReady);
+          return ["A"];
+        },
+        marker
+      );
+      r.insert(
+        parent,
+        () => {
+          if (!secondReady()) throw new NotReadyError(secondReady);
+          return ["B"];
+        },
+        marker
+      );
     });
     flush();
 
@@ -612,10 +609,14 @@ describe("universal insert caching", () => {
     parent.appendChild(marker);
 
     createRoot(() => {
-      renderer.insert(parent, () => {
-        if (!ready()) throw new NotReadyError(ready);
-        return ["A"];
-      }, marker);
+      renderer.insert(
+        parent,
+        () => {
+          if (!ready()) throw new NotReadyError(ready);
+          return ["A"];
+        },
+        marker
+      );
     });
     flush();
 

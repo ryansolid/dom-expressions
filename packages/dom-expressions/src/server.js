@@ -23,7 +23,7 @@ function resolveAssets(moduleUrl, manifest) {
   const css = [];
   const js = [];
   const visited = new Set();
-  const walk = (key) => {
+  const walk = key => {
     if (visited.has(key)) return;
     visited.add(key);
     const e = manifest[key];
@@ -62,8 +62,12 @@ function createAssetTracking() {
     boundaryModules,
     boundaryStyles,
     emittedAssets,
-    get currentBoundaryId() { return currentBoundaryId; },
-    set currentBoundaryId(v) { currentBoundaryId = v; },
+    get currentBoundaryId() {
+      return currentBoundaryId;
+    },
+    set currentBoundaryId(v) {
+      currentBoundaryId = v;
+    },
     registerModule(moduleUrl, entryUrl) {
       const id = currentBoundaryId || "";
       let map = boundaryModules.get(id);
@@ -84,14 +88,18 @@ function createAssetTracking() {
 
 function applyAssetTracking(context, tracking, manifest) {
   Object.defineProperty(context, "_currentBoundaryId", {
-    get() { return tracking.currentBoundaryId; },
-    set(v) { tracking.currentBoundaryId = v; },
+    get() {
+      return tracking.currentBoundaryId;
+    },
+    set(v) {
+      tracking.currentBoundaryId = v;
+    },
     configurable: true,
     enumerable: true
   });
   context.registerModule = tracking.registerModule;
   context.getBoundaryModules = tracking.getBoundaryModules;
-  if (manifest) context.resolveAssets = (moduleUrl) => resolveAssets(moduleUrl, manifest);
+  if (manifest) context.resolveAssets = moduleUrl => resolveAssets(moduleUrl, manifest);
 }
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
@@ -100,12 +108,12 @@ const VOID_ELEMENTS =
 // Fragment replacement helpers emitted into stream task scripts:
 // - $df(id): swap template payload into the `pl-*` marker range.
 // - $dfl(id): materialize fallback from `pl-*` template content without resolving.
-// - $dflj(ids): materialize the first available fallback in ordered ids.
+// - $dflj(ids): materialize fallback content for every id in the list.
 // - $dfs(id, count, defer): register pending stylesheet count for fragment `id`.
 // - $dfc(id): style completion callback; reveals when the fragment/group is unblocked.
 // - $dfg(id): group-style gate check; reveals a waiting group once all style counts hit zero.
 // - $dfj(ids): reveal a group in registration order, waiting if any member still has pending styles.
-const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e))||!(o=document.getElementById("pl-"+e)))return 0;for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content),n.remove(),_$HY.fe(e);return 1}function $dfl(e,o,n){if(!(o=document.getElementById("pl-"+e)))return 0;if(o._$fl)return 1;for(n=o.nextSibling;n;){if(8===n.nodeType&&n.nodeValue==="pl-"+e){o.parentNode&&o.parentNode.insertBefore(o.content.cloneNode(!0),n),o._$fl=1;return 1}n=n.nextSibling}return 0}function $dflj(e,i){for(i=0;i<e.length;i++)if($dfl(e[i]))return e[i];return null}function $dfs(e,c,d){(_$HY.sc=_$HY.sc||{})[e]=c,d&&((_$HY.sd=_$HY.sd||{})[e]=1)}function $dfg(e,g,i,k){if(!(g=_$HY.sg&&_$HY.sg[e]))return;for(i=0;i<g.length;i++)if(_$HY.sc&&_$HY.sc[g[i]]>0)return;for(i=0;i<g.length;i++)k=g[i],delete _$HY.sg[k],$df(k)}function $dfc(e){if(--_$HY.sc[e]<=0){delete _$HY.sc[e],_$HY.sg&&_$HY.sg[e]?$dfg(e):!(_$HY.sd&&_$HY.sd[e])&&$df(e);_$HY.sd&&delete _$HY.sd[e]}}function $dfj(e,i,n){for(i=0;i<e.length;i++)if(_$HY.sc&&_$HY.sc[e[i]]>0){for(n=0;n<e.length;n++)(_$HY.sg=_$HY.sg||{})[e[n]]=e;return}for(i=0;i<e.length;i++)$df(e[i])}`;
+const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e))||!(o=document.getElementById("pl-"+e)))return 0;for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content),n.remove(),_$HY.fe(e);return 1}function $dfl(e,o,n){if(!(o=document.getElementById("pl-"+e)))return 0;if(o._$fl)return 1;for(n=o.nextSibling;n;){if(8===n.nodeType&&n.nodeValue==="pl-"+e){o.parentNode&&o.parentNode.insertBefore(o.content.cloneNode(!0),n),o._$fl=1;return 1}n=n.nextSibling}return 0}function $dflj(e,i){for(i=0;i<e.length;i++)$dfl(e[i])}function $dfs(e,c,d){(_$HY.sc=_$HY.sc||{})[e]=c,d&&((_$HY.sd=_$HY.sd||{})[e]=1)}function $dfg(e,g,i,k){if(!(g=_$HY.sg&&_$HY.sg[e]))return;for(i=0;i<g.length;i++)if(_$HY.sc&&_$HY.sc[g[i]]>0)return;for(i=0;i<g.length;i++)k=g[i],delete _$HY.sg[k],$df(k)}function $dfc(e){if(--_$HY.sc[e]<=0){delete _$HY.sc[e],_$HY.sg&&_$HY.sg[e]?$dfg(e):!(_$HY.sd&&_$HY.sd[e])&&$df(e);_$HY.sd&&delete _$HY.sd[e]}}function $dfj(e,i,n){for(i=0;i<e.length;i++)if(_$HY.sc&&_$HY.sc[e[i]]>0){for(n=0;n<e.length;n++)(_$HY.sg=_$HY.sg||{})[e[n]]=e;return}for(i=0;i<e.length;i++)$df(e[i])}`;
 
 export function renderToString(code, options = {}) {
   const { renderId = "", nonce, noScripts, manifest } = options;
@@ -131,10 +139,16 @@ export function renderToString(code, options = {}) {
     ssr: ssr,
     serialize(id, p) {
       if (sharedConfig.context.noHydrate) return;
-      if (p != null && typeof p === "object" && (typeof p.then === "function" || typeof p[Symbol.asyncIterator] === "function")) {
+      if (
+        p != null &&
+        typeof p === "object" &&
+        (typeof p.then === "function" || typeof p[Symbol.asyncIterator] === "function")
+      ) {
         throw new Error(
-          "Cannot serialize async value in renderToString (id: " + id + "). " +
-          "Use renderToStream for async data."
+          "Cannot serialize async value in renderToString (id: " +
+            id +
+            "). " +
+            "Use renderToStream for async data."
         );
       }
       serializer.write(id, p);
@@ -205,8 +219,21 @@ export function renderToStream(code, options = {}) {
     onDone,
     onError: options.onError
   });
+  let rootAssetsSerialized = false;
+  const serializeRootAssets = () => {
+    if (rootAssetsSerialized) return;
+    rootAssetsSerialized = true;
+    // Ensure the root boundary's module map is written to the serializer
+    // before it flushes. A Loading boundary's resolve path can queue flushEnd
+    // while the shell is still pending (cascading root holes), which would
+    // otherwise call serializer.flush() before doShell() writes root _assets.
+    // Seroval silently drops writes after flush, so the root module mapping
+    // would be lost and lazy hydration would fail for root-level lazy modules.
+    serializeFragmentAssets("", tracking.boundaryModules, context);
+  };
   const flushEnd = () => {
     if (!registry.size) {
+      serializeRootAssets();
       queue(() => queue(() => serializer.flush())); // double queue because of elsewhere
     }
   };
@@ -370,11 +397,17 @@ export function renderToStream(code, options = {}) {
                 emitTask(`$dfs("${key}",${styles.length},${deferActivation ? 1 : 0})`);
                 writeTasks();
                 for (const url of styles) {
-                  buffer.write(`<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`);
+                  buffer.write(
+                    `<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+                  );
                 }
-                buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
+                buffer.write(
+                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
+                );
               } else {
-                buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
+                buffer.write(
+                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
+                );
                 if (!deferActivation) {
                   emitTask(`$df("${key}")`);
                 }
@@ -452,7 +485,7 @@ export function renderToStream(code, options = {}) {
       if (url.endsWith(".css")) headStyles.add(url);
     }
     html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
-    serializeFragmentAssets("", tracking.boundaryModules, context);
+    serializeRootAssets();
     if (tasks.length) html = injectScripts(html, tasks, nonce);
     buffer.write(html);
     tasks = "";
@@ -922,9 +955,7 @@ function resolveSSRNode(
 function resolveSSRSync(node) {
   const res = resolveSSRNode(node);
   if (!res.h.length) return res.t[0];
-  throw new Error(
-    "This value cannot be rendered synchronously. Are you missing a boundary?"
-  );
+  throw new Error("This value cannot be rendered synchronously. Are you missing a boundary?");
 }
 
 // experimental

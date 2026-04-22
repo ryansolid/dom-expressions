@@ -63,10 +63,7 @@ describe("applyRef", () => {
   it("should handle nested arrays via flat(Infinity)", () => {
     const calls = [];
     const el = document.createElement("div");
-    r.applyRef(
-      [el2 => calls.push("a"), [el2 => calls.push("b"), [el2 => calls.push("c")]]],
-      el
-    );
+    r.applyRef([el2 => calls.push("a"), [el2 => calls.push("b"), [el2 => calls.push("c")]]], el);
     expect(calls).toEqual(["a", "b", "c"]);
   });
 

@@ -72,7 +72,7 @@ describe("Test Synthetic event bubbling", () => {
     var event = new MouseEvent("click", { bubbles: true });
     eventTarget.dispatchEvent(event);
     expect(count).toBe(0);
-  })
+  });
 
   test("clearDelegatedEvents on a fresh document is a no-op", () => {
     // Targets with no prior delegation take the `if (document[$$EVENTS])`
@@ -81,7 +81,6 @@ describe("Test Synthetic event bubbling", () => {
     expect(() => r.clearDelegatedEvents(alt)).not.toThrow();
   });
 });
-
 
 // custom event
 describe("Custom Events", () => {
@@ -161,10 +160,7 @@ describe("Custom Events", () => {
     createRoot(d => {
       dispose = d;
       document.body.appendChild(
-        <section
-          ref={parent}
-          on:click={{ handleEvent: () => order.push("parent"), capture: true }}
-        >
+        <section ref={parent} on:click={{ handleEvent: () => order.push("parent"), capture: true }}>
           <button ref={child} on:click={() => order.push("child")} />
         </section>
       );
@@ -259,9 +255,7 @@ describe("eventHandler shadow/portal branches", () => {
     r.delegateEvents(["click"]);
     portalChild._$host = logicalParent;
 
-    portalChild.dispatchEvent(
-      new MouseEvent("click", { bubbles: true, composed: true })
-    );
+    portalChild.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
 
     expect(calls).toEqual([
       ["portal", "BUTTON"],
@@ -306,9 +300,7 @@ describe("eventHandler shadow/portal branches", () => {
     let portalChild, dispose;
     createRoot(d => {
       dispose = d;
-      document.body.appendChild(
-        <button ref={portalChild} onClick={() => {}} />
-      );
+      document.body.appendChild(<button ref={portalChild} onClick={() => {}} />);
     });
     r.delegateEvents(["click"]);
     // _$host points at document → walkUpTree tries to step to
@@ -612,7 +604,10 @@ describe("spread prop: namespace", () => {
     setProps({ "on:foo": second });
     flush();
     node.dispatchEvent(new Event("foo"));
-    expect(calls).toEqual([["first", "foo"], ["second", "foo"]]);
+    expect(calls).toEqual([
+      ["first", "foo"],
+      ["second", "foo"]
+    ]);
     dispose();
   });
 

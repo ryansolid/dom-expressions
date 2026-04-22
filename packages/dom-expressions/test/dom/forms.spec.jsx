@@ -59,14 +59,7 @@ describe("form reset restores default* props", () => {
       dispose = d;
       document.body.appendChild(
         <form ref={form}>
-          <input
-            ref={input}
-            type="number"
-            min="0"
-            max="100"
-            defaultValue="42"
-            value={num()}
-          />
+          <input ref={input} type="number" min="0" max="100" defaultValue="42" value={num()} />
           <button type="reset">Reset</button>
         </form>
       );
@@ -130,13 +123,7 @@ describe("form reset restores default* props", () => {
       dispose = d;
       document.body.appendChild(
         <form ref={form}>
-          <input
-            ref={r1}
-            type="radio"
-            name="g"
-            value="1"
-            checked={selected() === "1"}
-          />
+          <input ref={r1} type="radio" name="g" value="1" checked={selected() === "1"} />
           <input
             ref={r2}
             type="radio"
@@ -145,13 +132,7 @@ describe("form reset restores default* props", () => {
             defaultChecked={true}
             checked={selected() === "2"}
           />
-          <input
-            ref={r3}
-            type="radio"
-            name="g"
-            value="3"
-            checked={selected() === "3"}
-          />
+          <input ref={r3} type="radio" name="g" value="3" checked={selected() === "3"} />
           <button type="reset">Reset</button>
         </form>
       );
@@ -317,9 +298,7 @@ describe("form reset restores default* props", () => {
 
     createRoot(d => {
       dispose = d;
-      document.body.appendChild(
-        <video ref={video} defaultMuted={true} muted={muted()} />
-      );
+      document.body.appendChild(<video ref={video} defaultMuted={true} muted={muted()} />);
     });
 
     expect(video.muted).toBe(false); // dynamic wins

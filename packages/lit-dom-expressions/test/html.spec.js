@@ -4,13 +4,17 @@ import * as r from "dom-expressions/src/client";
 
 /** @type {{ bodyFunc: string }[]} */
 const context = [];
-const html = createHTML(r, { functionBuilder: (...args) => {
-  const ctx = context.pop();
-  if (ctx) {
-    expect(args[args.length - 1].replace(/_\$el\d+/g, '_$el')).toBe(ctx.bodyFunc.replace(/_\$el\d+/g, '_$el'));
+const html = createHTML(r, {
+  functionBuilder: (...args) => {
+    const ctx = context.pop();
+    if (ctx) {
+      expect(args[args.length - 1].replace(/_\$el\d+/g, "_$el")).toBe(
+        ctx.bodyFunc.replace(/_\$el\d+/g, "_$el")
+      );
+    }
+    return new Function(...args);
   }
-  return new Function(...args);
-}});
+});
 
 class ValueAttributeOnlyElement extends HTMLElement {
   constructor() {
@@ -93,12 +97,8 @@ describe("Test HTML", () => {
     const template = html`
       <div id="main">
         <button onclick=${() => (exec.bound = true)}>Click Bound</button>
-        <button onClick=${[v => (exec.delegated = v), true]}>
-          Click Delegated
-        </button>
-        <button on:click=${() => (exec.listener = true)}>
-          Click Listener
-        </button>
+        <button onClick=${[v => (exec.delegated = v), true]}>Click Delegated</button>
+        <button on:click=${() => (exec.listener = true)}>Click Listener</button>
       </div>
     `;
     expect(template.outerHTML).toBe(FIXTURES[2]);
@@ -137,8 +137,9 @@ describe("Test HTML", () => {
   });
 
   test("Components", () => {
-    const Comp = props =>
-      html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
+    const Comp = props => html`
+      <div>${() => props.name + " " + props.middle}${props.children}</div>
+    `;
     createRoot(() => {
       const template = html`
         <div id="main" ...${() => ({ title: "hi" })}>
@@ -153,8 +154,9 @@ describe("Test HTML", () => {
   });
 
   test("Top Level Components", () => {
-    const Comp = props =>
-      html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
+    const Comp = props => html`
+      <div>${() => props.name + " " + props.middle}${props.children}</div>
+    `;
     createRoot(() => {
       const template = html` <${Comp} name=${() => "John"} middle="R."><span>Smith</span><//> `;
       const div = document.createElement("div");
@@ -291,7 +293,7 @@ describe("Test HTML", () => {
   test("Test double toggle class", () => {
     createRoot(() => {
       const [d, setD] = createSignal("first");
-      const template = html`<div class=${() => ({ [d()]: true })} ></div>`;
+      const template = html`<div class=${() => ({ [d()]: true })}></div>`;
       const div = document.createElement("div");
       div.appendChild(template);
       setD("second");
@@ -334,7 +336,7 @@ describe("Test HTML", () => {
     });
   });
 
-  test("Expressions in Comment", () =>{
+  test("Expressions in Comment", () => {
     const name = "John";
     const template = html`<div>
       <!--<div name=${name} />-->
@@ -350,8 +352,10 @@ describe("Test HTML", () => {
   // Templates with a standalone `<!-- ... -->` at the root go through
   // html-parse-string's comment-handling branch (res.name.startsWith('!--')).
   test("standalone HTML comment at top level parses without throwing", () => {
-    expect(() =>
-      html`<!-- just a static comment --><div>after</div>`
+    expect(
+      () =>
+        html`<!-- just a static comment -->
+          <div>after</div>`
     ).not.toThrow();
   });
 
@@ -373,23 +377,17 @@ describe("Test HTML", () => {
   // An `<img loading="lazy">` flags the tree as isImportNode=true (for
   // document.importNode bypass of some loading behavior).
   test("img with loading='lazy' parses without error", () => {
-    expect(() =>
-      html`<img src="/x.png" loading="lazy" />`
-    ).not.toThrow();
+    expect(() => html`<img src="/x.png" loading="lazy" />`).not.toThrow();
   });
 
   test("iframe with loading='lazy' parses without error", () => {
-    expect(() =>
-      html`<iframe src="/frame.html" loading="lazy"></iframe>`
-    ).not.toThrow();
+    expect(() => html`<iframe src="/frame.html" loading="lazy"></iframe>`).not.toThrow();
   });
 
   // The `is=` attribute marks a builtin extension (customized built-ins),
   // another flag for the isImportNode path.
   test("element with is= attribute parses without error", () => {
-    expect(() =>
-      html`<button is="my-button">hello</button>`
-    ).not.toThrow();
+    expect(() => html`<button is="my-button">hello</button>`).not.toThrow();
   });
 
   // Components with a single expression child take the "children as single
@@ -418,7 +416,7 @@ describe("Test HTML", () => {
       div.textContent = props.a + "|" + props.b + "|" + props.c;
       return div;
     };
-    const template = html`<${Comp} a="A" ...${{ b: "B" }} c="C"/>`;
+    const template = html`<${Comp} a="A" ...${{ b: "B" }} c="C" />`;
     expect(template.textContent).toBe("A|B|C");
     expect(captured.a).toBe("A");
     expect(captured.b).toBe("B");
@@ -439,8 +437,8 @@ describe("Test HTML", () => {
   test("top-level comment with interpolations in a multi-root template", () => {
     const a = "one";
     const b = "two";
-    expect(() =>
-      html`
+    expect(
+      () => html`
         <!-- ${a} and ${b} -->
         <span>left</span>
         <span>right</span>

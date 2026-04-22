@@ -298,16 +298,18 @@ describe("spread children caching", () => {
       const [show, _setShow] = createSignal(true);
       const stableRendered = createMemo(() => rendered(), undefined, { lazy: true });
       setShow = _setShow;
-      div = <div
-        {...{
-          get children() {
-            return [<button />, stableRendered, show() ? "hide" : null];
-          },
-          ref(el) {
-            div = el;
-          }
-        }}
-      />;
+      div = (
+        <div
+          {...{
+            get children() {
+              return [<button />, stableRendered, show() ? "hide" : null];
+            },
+            ref(el) {
+              div = el;
+            }
+          }}
+        />
+      );
     });
 
     expect(rendered).toHaveBeenCalledTimes(1);
@@ -326,16 +328,18 @@ describe("spread children caching", () => {
       disposer = dispose;
       const [list, _setList] = createSignal(["a", "b"]);
       setList = _setList;
-      div = <div
-        {...{
-          get children() {
-            return list();
-          },
-          ref(el) {
-            div = el;
-          }
-        }}
-      />;
+      div = (
+        <div
+          {...{
+            get children() {
+              return list();
+            },
+            ref(el) {
+              div = el;
+            }
+          }}
+        />
+      );
     });
 
     expect(div.innerHTML).toBe("ab");

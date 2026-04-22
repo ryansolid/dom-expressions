@@ -26,7 +26,7 @@ describe("create element with various spreads", () => {
   it("should properly spread false", () => {
     let span, disposer;
 
-    const Component = (props) => <span ref={props.ref} {...false} />;
+    const Component = props => <span ref={props.ref} {...false} />;
 
     createRoot(dispose => {
       disposer = dispose;
@@ -236,16 +236,18 @@ describe("spread children caching", () => {
       const [show, _setShow] = createSignal(true);
       const stableRendered = createMemo(() => rendered(), undefined, { lazy: true });
       setShow = _setShow;
-      div = <div
-        {...{
-          get children() {
-            return [<button />, stableRendered, show() ? "hide" : null];
-          },
-          ref(el) {
-            div = el;
-          }
-        }}
-      />;
+      div = (
+        <div
+          {...{
+            get children() {
+              return [<button />, stableRendered, show() ? "hide" : null];
+            },
+            ref(el) {
+              div = el;
+            }
+          }}
+        />
+      );
     });
 
     expect(rendered).toHaveBeenCalledTimes(1);
@@ -264,16 +266,18 @@ describe("spread children caching", () => {
       disposer = dispose;
       const [list, _setList] = createSignal(["a", "b"]);
       setList = _setList;
-      div = <div
-        {...{
-          get children() {
-            return list();
-          },
-          ref(el) {
-            div = el;
-          }
-        }}
-      />;
+      div = (
+        <div
+          {...{
+            get children() {
+              return list();
+            },
+            ref(el) {
+              div = el;
+            }
+          }}
+        />
+      );
     });
 
     expect(div.innerHTML).toBe("ab");

@@ -550,7 +550,7 @@ describe("r.insert caching", () => {
     createRoot(() => {
       r.insert(parent, () => {
         accessorCalls++;
-        return [() => show() ? "yes" : "no", staticNode];
+        return [() => (show() ? "yes" : "no"), staticNode];
       });
     });
     flush();
