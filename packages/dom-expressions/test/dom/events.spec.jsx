@@ -72,9 +72,8 @@ describe("Test Synthetic event bubbling", () => {
     var event = new MouseEvent("click", { bubbles: true });
     eventTarget.dispatchEvent(event);
     expect(count).toBe(0);
-  })
+  });
 });
-
 
 // custom event
 describe("Custom Events", () => {

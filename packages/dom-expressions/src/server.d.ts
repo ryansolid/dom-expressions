@@ -15,7 +15,10 @@ export function renderToString<T>(
     renderId?: string;
     noScripts?: boolean;
     plugins?: any[];
-    manifest?: Record<string, { file: string; css?: string[]; isEntry?: boolean; imports?: string[] }> & { _base?: string };
+    manifest?: Record<
+      string,
+      { file: string; css?: string[]; isEntry?: boolean; imports?: string[] }
+    > & { _base?: string };
     onError?: (err: any) => void;
   }
 ): string;
@@ -28,7 +31,10 @@ export function renderToStringAsync<T>(
     renderId?: string;
     noScripts?: boolean;
     plugins?: any[];
-    manifest?: Record<string, { file: string; css?: string[]; isEntry?: boolean; imports?: string[] }> & { _base?: string };
+    manifest?: Record<
+      string,
+      { file: string; css?: string[]; isEntry?: boolean; imports?: string[] }
+    > & { _base?: string };
     onError?: (err: any) => void;
   }
 ): Promise<string>;
@@ -39,7 +45,10 @@ export function renderToStream<T>(
     renderId?: string;
     noScripts?: boolean;
     plugins?: any[];
-    manifest?: Record<string, { file: string; css?: string[]; isEntry?: boolean; imports?: string[] }> & { _base?: string };
+    manifest?: Record<
+      string,
+      { file: string; css?: string[]; isEntry?: boolean; imports?: string[] }
+    > & { _base?: string };
     onCompleteShell?: (info: { write: (v: string) => void }) => void;
     onCompleteAll?: (info: { write: (v: string) => void }) => void;
     onError?: (err: any) => void;
@@ -65,7 +74,10 @@ export function ssrAttribute(key: string, value: any): string;
 export function ssrHydrationKey(): string;
 export function resolveSSRNode(node: any, result?: any, top?: boolean): any;
 export function escape(s: any, attr?: boolean): any;
-export function applyRef(r: ((element: any) => void) | ((element: any) => void)[], element: any): void;
+export function applyRef(
+  r: ((element: any) => void) | ((element: any) => void)[],
+  element: any
+): void;
 export function useAssets(fn: () => JSX.Element): void;
 export function getAssets(): string;
 export function getHydrationKey(): string | undefined;
@@ -75,7 +87,10 @@ export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): J
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function ssrRunInScope(fn: () => void, owner: unknown): void;
-export function generateHydrationScript(options?: { nonce?: string; eventNames?: string[] }): string;
+export function generateHydrationScript(options?: {
+  nonce?: string;
+  eventNames?: string[];
+}): string;
 export declare const RequestContext: unique symbol;
 export interface RequestEvent {
   request: Request;
@@ -104,11 +119,7 @@ export function insert<T>(
 ): JSX.Element;
 
 /** @deprecated not supported on the server side */
-export function spread<T>(
-  node: Element,
-  accessor: T,
-  skipChildren?: Boolean
-): void;
+export function spread<T>(node: Element, accessor: T, skipChildren?: Boolean): void;
 
 /** @deprecated not supported on the server side */
 export function delegateEvents(eventNames: string[], d?: Document): void;

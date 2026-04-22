@@ -22,28 +22,23 @@ export default function reconcileArrays(parentNode, a, b) {
     }
     // append
     if (aEnd === aStart) {
-      const node =
-        bEnd < bLength
-          ? bStart
-            ? b[bStart - 1].nextSibling
-            : b[bEnd - bStart]
-          : after;
+      const node = bEnd < bLength ? (bStart ? b[bStart - 1].nextSibling : b[bEnd - bStart]) : after;
 
       while (bStart < bEnd) parentNode.insertBefore(b[bStart++], node);
-    // remove
+      // remove
     } else if (bEnd === bStart) {
       while (aStart < aEnd) {
         if (!map || !map.has(a[aStart])) a[aStart].remove();
         aStart++;
       }
-    // swap backward
+      // swap backward
     } else if (a[aStart] === b[bEnd - 1] && b[bStart] === a[aEnd - 1]) {
       const node = a[--aEnd].nextSibling;
       parentNode.insertBefore(b[bStart++], a[aStart++].nextSibling);
       parentNode.insertBefore(b[--bEnd], node);
 
       a[aEnd] = b[bEnd];
-    // fallback to map
+      // fallback to map
     } else {
       if (!map) {
         map = new Map();

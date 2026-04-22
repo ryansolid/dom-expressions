@@ -1,6 +1,6 @@
 module.exports = {
   collectCoverageFrom: ["src/**/*.js"],
-  "testEnvironment": "jsdom",
+  testEnvironment: "jsdom",
   projects: [
     {
       displayName: "browser",

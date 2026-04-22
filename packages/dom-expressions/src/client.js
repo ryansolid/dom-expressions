@@ -299,7 +299,8 @@ function loadModuleAssets(mapping) {
 
 // Hydrate
 export function hydrate(code, element, options = {}) {
-  if (globalThis._$HY.done) return render(code, element, [...getChildRoot(element).childNodes], options);
+  if (globalThis._$HY.done)
+    return render(code, element, [...getChildRoot(element).childNodes], options);
   options.renderId ||= "";
   if (!globalThis._$HY.modules) globalThis._$HY.modules = {};
   if (!globalThis._$HY.loading) globalThis._$HY.loading = {};

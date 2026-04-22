@@ -9,10 +9,10 @@ const plugins = [
     moduleDirectories: ["node_modules", "packages"]
   }),
   babel({
-    extensions: ['.js', '.ts'],
+    extensions: [".js", ".ts"],
     babelHelpers: "bundled",
     presets: ["@babel/preset-typescript"],
-    exclude: 'node_modules/**',
+    exclude: "node_modules/**",
     babelrc: false,
     configFile: false,
     retainLines: true
@@ -21,7 +21,12 @@ const plugins = [
 
 export default {
   input: "src/index.ts",
-  external: ["@babel/plugin-syntax-jsx", "@babel/helper-module-imports", "@babel/types", "html-entities"],
+  external: [
+    "@babel/plugin-syntax-jsx",
+    "@babel/helper-module-imports",
+    "@babel/types",
+    "html-entities"
+  ],
   output: {
     file: "index.js",
     format: "cjs",

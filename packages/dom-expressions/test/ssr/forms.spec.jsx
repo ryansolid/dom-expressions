@@ -27,9 +27,7 @@ describe("SSR renders default* props as HTML", () => {
   it("input: dynamic defaultValue + dynamic value → default in HTML", () => {
     const [def] = createSignal("dynamic default");
     const [cur] = createSignal("dynamic current");
-    const html = r.renderToString(() => (
-      <input type="text" defaultValue={def()} value={cur()} />
-    ));
+    const html = r.renderToString(() => <input type="text" defaultValue={def()} value={cur()} />);
     expect(html).toContain('value="dynamic default"');
     expect(html).not.toContain('value="dynamic current"');
   });
@@ -111,9 +109,7 @@ describe("SSR renders default* props as HTML", () => {
   it("textarea: dynamic defaultValue + dynamic value → default in text content", () => {
     const [def] = createSignal("dynamic default body");
     const [cur] = createSignal("dynamic body");
-    const html = r.renderToString(() => (
-      <textarea defaultValue={def()} value={cur()} />
-    ));
+    const html = r.renderToString(() => <textarea defaultValue={def()} value={cur()} />);
     expect(html).toContain("<textarea>dynamic default body</textarea>");
   });
 
@@ -142,7 +138,9 @@ describe("SSR renders default* props as HTML", () => {
     // The option with defaultSelected should carry the `selected` HTML attr.
     // We don't pin down exactly where the attribute lands within the option,
     // just that it's present on the second option's text.
-    expect(html).toMatch(/<option[^>]*value="2"[^>]*selected[^>]*>Two<\/option>|<option[^>]*selected[^>]*value="2"[^>]*>Two<\/option>/);
+    expect(html).toMatch(
+      /<option[^>]*value="2"[^>]*selected[^>]*>Two<\/option>|<option[^>]*selected[^>]*value="2"[^>]*>Two<\/option>/
+    );
   });
 
   it("multi-select: HTML has selected on each defaulted option", () => {

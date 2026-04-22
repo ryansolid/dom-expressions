@@ -31,12 +31,21 @@ export function ssrRunInScope(fn) {
 
 import { createRoot, createRenderEffect, createMemo, merge, flatten } from "@solidjs/signals";
 
-export { createRoot as root, getOwner, untrack, runWithOwner, merge as mergeProps, flatten } from "@solidjs/signals";
+export {
+  createRoot as root,
+  getOwner,
+  untrack,
+  runWithOwner,
+  merge as mergeProps,
+  flatten
+} from "@solidjs/signals";
 
 export const effect = (fn, effectFn, initial) =>
   createRenderEffect(fn, effectFn, initial, { transparent: true });
 
 export const memo = (fn, transparent) =>
   transparent
-    ? fn.$r ? fn : createMemo(() => fn(), undefined, { transparent: true })
+    ? fn.$r
+      ? fn
+      : createMemo(() => fn(), undefined, { transparent: true })
     : createMemo(() => fn());

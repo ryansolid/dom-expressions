@@ -29,7 +29,6 @@ describe("renderToString", () => {
   });
 });
 
-
 describe("dynamic attributes", () => {
   it("renders dynamic attribute on a standard element", () => {
     const state = { name: "hello" };
@@ -69,7 +68,9 @@ describe("text interpolation", () => {
   it("renders multiple dynamic text children", () => {
     const state = { first: "Jane", last: "Doe" };
     const res = r.renderToString(() => (
-      <div>{state.first} {state.last}</div>
+      <div>
+        {state.first} {state.last}
+      </div>
     ));
     expect(res).toBe("<div>Jane Doe</div>");
   });
@@ -84,17 +85,13 @@ describe("text interpolation", () => {
 describe("conditional rendering", () => {
   it("renders true branch of ternary", () => {
     const show = true;
-    const res = r.renderToString(() => (
-      <div>{show ? <span>yes</span> : <span>no</span>}</div>
-    ));
+    const res = r.renderToString(() => <div>{show ? <span>yes</span> : <span>no</span>}</div>);
     expect(res).toBe("<div><span>yes</span></div>");
   });
 
   it("renders false branch of ternary", () => {
     const show = false;
-    const res = r.renderToString(() => (
-      <div>{show ? <span>yes</span> : <span>no</span>}</div>
-    ));
+    const res = r.renderToString(() => <div>{show ? <span>yes</span> : <span>no</span>}</div>);
     expect(res).toBe("<div><span>no</span></div>");
   });
 
@@ -115,7 +112,11 @@ describe("components", () => {
 
   it("renders nested components", () => {
     const Inner = props => <em>{props.text}</em>;
-    const Outer = props => <div><Inner text={props.label} /></div>;
+    const Outer = props => (
+      <div>
+        <Inner text={props.label} />
+      </div>
+    );
     const res = r.renderToString(() => <Outer label="nested" />);
     expect(res).toBe("<div><em>nested</em></div>");
   });
@@ -154,7 +155,9 @@ describe("fragments", () => {
   it("renders fragment with mixed elements and text", () => {
     const res = r.renderToString(() => (
       <div>
-        <><span>A</span> and <span>B</span></>
+        <>
+          <span>A</span> and <span>B</span>
+        </>
       </div>
     ));
     expect(res).toBe("<div><span>A</span> and <span>B</span></div>");
@@ -163,7 +166,14 @@ describe("fragments", () => {
   it("renders fragment with adjacent text nodes using separators", () => {
     const a = "hello";
     const b = "world";
-    const res = r.renderToString(() => <div><>{a}{b}</></div>);
+    const res = r.renderToString(() => (
+      <div>
+        <>
+          {a}
+          {b}
+        </>
+      </div>
+    ));
     expect(res).toBe("<div>hello<!--!$-->world</div>");
   });
 });

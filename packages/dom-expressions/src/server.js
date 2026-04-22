@@ -23,7 +23,7 @@ function resolveAssets(moduleUrl, manifest) {
   const css = [];
   const js = [];
   const visited = new Set();
-  const walk = (key) => {
+  const walk = key => {
     if (visited.has(key)) return;
     visited.add(key);
     const e = manifest[key];
@@ -62,8 +62,12 @@ function createAssetTracking() {
     boundaryModules,
     boundaryStyles,
     emittedAssets,
-    get currentBoundaryId() { return currentBoundaryId; },
-    set currentBoundaryId(v) { currentBoundaryId = v; },
+    get currentBoundaryId() {
+      return currentBoundaryId;
+    },
+    set currentBoundaryId(v) {
+      currentBoundaryId = v;
+    },
     registerModule(moduleUrl, entryUrl) {
       const id = currentBoundaryId || "";
       let map = boundaryModules.get(id);
@@ -84,14 +88,18 @@ function createAssetTracking() {
 
 function applyAssetTracking(context, tracking, manifest) {
   Object.defineProperty(context, "_currentBoundaryId", {
-    get() { return tracking.currentBoundaryId; },
-    set(v) { tracking.currentBoundaryId = v; },
+    get() {
+      return tracking.currentBoundaryId;
+    },
+    set(v) {
+      tracking.currentBoundaryId = v;
+    },
     configurable: true,
     enumerable: true
   });
   context.registerModule = tracking.registerModule;
   context.getBoundaryModules = tracking.getBoundaryModules;
-  if (manifest) context.resolveAssets = (moduleUrl) => resolveAssets(moduleUrl, manifest);
+  if (manifest) context.resolveAssets = moduleUrl => resolveAssets(moduleUrl, manifest);
 }
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
@@ -131,10 +139,16 @@ export function renderToString(code, options = {}) {
     ssr: ssr,
     serialize(id, p) {
       if (sharedConfig.context.noHydrate) return;
-      if (p != null && typeof p === "object" && (typeof p.then === "function" || typeof p[Symbol.asyncIterator] === "function")) {
+      if (
+        p != null &&
+        typeof p === "object" &&
+        (typeof p.then === "function" || typeof p[Symbol.asyncIterator] === "function")
+      ) {
         throw new Error(
-          "Cannot serialize async value in renderToString (id: " + id + "). " +
-          "Use renderToStream for async data."
+          "Cannot serialize async value in renderToString (id: " +
+            id +
+            "). " +
+            "Use renderToStream for async data."
         );
       }
       serializer.write(id, p);
@@ -383,11 +397,17 @@ export function renderToStream(code, options = {}) {
                 emitTask(`$dfs("${key}",${styles.length},${deferActivation ? 1 : 0})`);
                 writeTasks();
                 for (const url of styles) {
-                  buffer.write(`<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`);
+                  buffer.write(
+                    `<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+                  );
                 }
-                buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
+                buffer.write(
+                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
+                );
               } else {
-                buffer.write(`<template id="${key}">${value !== undefined ? value : " "}</template>`);
+                buffer.write(
+                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
+                );
                 if (!deferActivation) {
                   emitTask(`$df("${key}")`);
                 }
@@ -935,9 +955,7 @@ function resolveSSRNode(
 function resolveSSRSync(node) {
   const res = resolveSSRNode(node);
   if (!res.h.length) return res.t[0];
-  throw new Error(
-    "This value cannot be rendered synchronously. Are you missing a boundary?"
-  );
+  throw new Error("This value cannot be rendered synchronously. Are you missing a boundary?");
 }
 
 // experimental

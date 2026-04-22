@@ -4,13 +4,17 @@ import * as r from "dom-expressions/src/client";
 
 /** @type {{ bodyFunc: string }[]} */
 const context = [];
-const html = createHTML(r, { functionBuilder: (...args) => {
-  const ctx = context.pop();
-  if (ctx) {
-    expect(args[args.length - 1].replace(/_\$el\d+/g, '_$el')).toBe(ctx.bodyFunc.replace(/_\$el\d+/g, '_$el'));
+const html = createHTML(r, {
+  functionBuilder: (...args) => {
+    const ctx = context.pop();
+    if (ctx) {
+      expect(args[args.length - 1].replace(/_\$el\d+/g, "_$el")).toBe(
+        ctx.bodyFunc.replace(/_\$el\d+/g, "_$el")
+      );
+    }
+    return new Function(...args);
   }
-  return new Function(...args);
-}});
+});
 
 class ValueAttributeOnlyElement extends HTMLElement {
   constructor() {
@@ -93,12 +97,8 @@ describe("Test HTML", () => {
     const template = html`
       <div id="main">
         <button onclick=${() => (exec.bound = true)}>Click Bound</button>
-        <button onClick=${[v => (exec.delegated = v), true]}>
-          Click Delegated
-        </button>
-        <button on:click=${() => (exec.listener = true)}>
-          Click Listener
-        </button>
+        <button onClick=${[v => (exec.delegated = v), true]}>Click Delegated</button>
+        <button on:click=${() => (exec.listener = true)}>Click Listener</button>
       </div>
     `;
     expect(template.outerHTML).toBe(FIXTURES[2]);
@@ -137,8 +137,9 @@ describe("Test HTML", () => {
   });
 
   test("Components", () => {
-    const Comp = props =>
-      html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
+    const Comp = props => html`
+      <div>${() => props.name + " " + props.middle}${props.children}</div>
+    `;
     createRoot(() => {
       const template = html`
         <div id="main" ...${() => ({ title: "hi" })}>
@@ -153,8 +154,9 @@ describe("Test HTML", () => {
   });
 
   test("Top Level Components", () => {
-    const Comp = props =>
-      html` <div>${() => props.name + " " + props.middle}${props.children}</div> `;
+    const Comp = props => html`
+      <div>${() => props.name + " " + props.middle}${props.children}</div>
+    `;
     createRoot(() => {
       const template = html` <${Comp} name=${() => "John"} middle="R."><span>Smith</span><//> `;
       const div = document.createElement("div");
@@ -291,7 +293,7 @@ describe("Test HTML", () => {
   test("Test double toggle class", () => {
     createRoot(() => {
       const [d, setD] = createSignal("first");
-      const template = html`<div class=${() => ({ [d()]: true })} ></div>`;
+      const template = html`<div class=${() => ({ [d()]: true })}></div>`;
       const div = document.createElement("div");
       div.appendChild(template);
       setD("second");
@@ -334,7 +336,7 @@ describe("Test HTML", () => {
     });
   });
 
-  test("Expressions in Comment", () =>{
+  test("Expressions in Comment", () => {
     const name = "John";
     const template = html`<div>
       <!--<div name=${name} />-->
@@ -344,5 +346,4 @@ describe("Test HTML", () => {
     div.appendChild(template);
     expect(div.innerHTML.replace(`<!--<div name="###"></div>-->`, "")).toBe(FIXTURES[7]);
   });
-
 });

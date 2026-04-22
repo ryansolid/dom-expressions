@@ -14,9 +14,7 @@ describe("create component with dynamic expressions", () => {
       </span>
     );
 
-    const Component = () => (
-      <DynamicChild ref={span} name="John" favoriteCar={favoriteCar()} />
-    );
+    const Component = () => <DynamicChild ref={span} name="John" favoriteCar={favoriteCar()} />;
 
     createRoot(dispose => {
       disposer = dispose;

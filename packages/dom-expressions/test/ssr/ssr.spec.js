@@ -52,7 +52,7 @@ const Comp1 = () => {
         style: {
           "background-color": color(),
           "border-color": colorUndefined,
-          "color": colorUndefinedFn(),
+          color: colorUndefinedFn()
         },
         class: {
           selected: selected(),
@@ -80,7 +80,7 @@ const Comp2 = () => {
 const Comp3 = () => {
   const greeting = "Hello",
     name = "<div/>";
-  r.useAssets(() => r.ssr`<link rel="modulepreload" href="chunk.js">`)
+  r.useAssets(() => r.ssr`<link rel="modulepreload" href="chunk.js">`);
   return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)}${r.HydrationScript()}${r.getAssets()}</span>`;
 };
 
@@ -93,7 +93,7 @@ const Comp4 = () => {
 const Comp5 = () => {
   const greeting = ["Hello"],
     name = ["<div/>"];
-  return r.ssr`<span > ${r.escape(greeting)} ${r.escape(name)} </span>`
+  return r.ssr`<span > ${r.escape(greeting)} ${r.escape(name)} </span>`;
 };
 
 describe("renderToString", () => {
@@ -531,8 +531,12 @@ describe("cascading root holes in streaming shell", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -593,11 +597,16 @@ describe("cascading root holes in streaming shell", () => {
     await stream.pipeTo({
       getWriter() {
         return {
-          write(v) { chunks.push(v); return Promise.resolve(); },
+          write(v) {
+            chunks.push(v);
+            return Promise.resolve();
+          },
           releaseLock() {}
         };
       },
-      close() { return Promise.resolve(); }
+      close() {
+        return Promise.resolve();
+      }
     });
 
     const html = chunks.join("");
@@ -627,7 +636,9 @@ describe("cascading root holes in streaming shell", () => {
     const level1 = asyncError();
     const level2 = asyncError();
     const level3 = asyncError();
-    let l1 = 0, l2 = 0, l3 = 0;
+    let l1 = 0,
+      l2 = 0,
+      l3 = 0;
 
     const stream = r.renderToStream(() => {
       return r.ssr`<div>${() => {
@@ -656,7 +667,9 @@ describe("cascading root holes in streaming shell", () => {
     const a1 = asyncError();
     const b1 = asyncError();
     const b2 = asyncError();
-    let aCalls = 0, bCalls = 0, b2Calls = 0;
+    let aCalls = 0,
+      bCalls = 0,
+      b2Calls = 0;
 
     const stream = r.renderToStream(() => {
       return r.ssr`<div>${() => {
@@ -671,7 +684,10 @@ describe("cascading root holes in streaming shell", () => {
       }}</div>`;
     });
 
-    setTimeout(() => { a1.resolve(); b1.resolve(); }, 5);
+    setTimeout(() => {
+      a1.resolve();
+      b1.resolve();
+    }, 5);
     setTimeout(() => b2.resolve(), 15);
 
     const html = await streamToString(stream);
@@ -695,8 +711,12 @@ describe("root-level module asset serialization", () => {
     return new Promise(resolve => {
       const chunks = [];
       stream.pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
   }
@@ -721,8 +741,12 @@ describe("root-level module asset serialization", () => {
         ctx.registerModule("./Other.tsx", "/assets/Other-def.js");
         return r.ssr`<div>content</div>`;
       }).pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
     });
     expect(html).toContain("_assets");
@@ -744,8 +768,12 @@ describe("root-level module asset serialization", () => {
         ctx._currentBoundaryId = null;
         return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
       }).pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
       setTimeout(() => done("<span>loaded</span>"));
     });
@@ -779,8 +807,12 @@ describe("root-level module asset serialization", () => {
           return "done";
         }}</div>`;
       }).pipe({
-        write(v) { chunks.push(v); },
-        end() { resolve(chunks.join("")); }
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
       });
       setTimeout(() => {
         fragmentDone("<span>loaded</span>");

@@ -66,8 +66,8 @@ importers:
         specifier: ^21.0.0
         version: 21.0.0
       prettier:
-        specifier: ^2.8.8
-        version: 2.8.8
+        specifier: ^3.8.3
+        version: 3.8.3
       rimraf:
         specifier: ^3.0.2
         version: 3.0.2
@@ -77,6 +77,9 @@ importers:
       rollup-plugin-cleanup:
         specifier: ^3.2.1
         version: 3.2.1(rollup@3.29.5)
+      simple-git-hooks:
+        specifier: ^2.13.1
+        version: 2.13.1
       typescript:
         specifier: ~5.3.3
         version: 5.3.3
@@ -2226,6 +2229,11 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
+  prettier@3.8.3:
+    resolution: {integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==}
+    engines: {node: '>=14'}
+    hasBin: true
+
   pretty-format@29.3.1:
     resolution: {integrity: sha512-FyLnmb1cYJV8biEIiRyzRFvs2lry7PPIvOqKVe1GCUEYg4YGmlx1qG9EJNMxArYm7piII4qb8UV1Pncq5dxmcg==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -2391,6 +2399,10 @@ packages:
   signal-exit@4.1.0:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
+
+  simple-git-hooks@2.13.1:
+    resolution: {integrity: sha512-WszCLXwT4h2k1ufIXAgsbiTOazqqevFCIncOuUBZJ91DdvWcC5+OFkluWRQPrcuSYd8fjq+o2y1QfWqYMoAToQ==}
+    hasBin: true
 
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
@@ -5283,6 +5295,8 @@ snapshots:
 
   prettier@2.8.8: {}
 
+  prettier@3.8.3: {}
+
   pretty-format@29.3.1:
     dependencies:
       '@jest/schemas': 29.0.0
@@ -5444,6 +5458,8 @@ snapshots:
   signal-exit@3.0.7: {}
 
   signal-exit@4.1.0: {}
+
+  simple-git-hooks@2.13.1: {}
 
   sisteransi@1.0.5: {}
 

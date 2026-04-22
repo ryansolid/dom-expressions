@@ -11,12 +11,10 @@ declare function verifyHTMLElementTags(
 type HTMLElementTagsComplement = Exclude<keyof HTMLElementTagNameMap, keyof JSX.HTMLElementTags>;
 type ExpectHTMLElementTags = Expect<HTMLElementTagsComplement>;
 
-
 type SvgTagsNoDuplicates = keyof JSX.SVGElementTags | "a" | "script" | "style" | "title";
 declare function verifySVGElementTags(t: keyof SVGElementTagNameMap): t is SvgTagsNoDuplicates;
 type SVGElementTagsComplement = Exclude<keyof SVGElementTagNameMap, SvgTagsNoDuplicates>;
 type ExpectSVGElementTags = Expect<SVGElementTagsComplement>;
-
 
 interface EventHandlersWithUnimplemented extends JSX.CustomEventHandlersLowerCase<{}> {
   onanimationcancel: any;
@@ -48,7 +46,6 @@ type CustomGlobalEventHandlersComplement = Exclude<
   keyof EventHandlersWithUnimplemented
 >;
 type ExpectCustomGlobalEventHandlers = Expect<CustomGlobalEventHandlersComplement>;
-
 
 type LoweredEventHandlerNames = Lowercase<keyof JSX.CustomEventHandlersCamelCase<{}>>;
 declare function verifyEventHandlerCaseMatches(

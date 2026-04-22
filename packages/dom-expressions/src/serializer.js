@@ -10,14 +10,14 @@ import {
   RequestPlugin,
   ResponsePlugin,
   URLPlugin,
-  URLSearchParamsPlugin,
-} from 'seroval-plugins/web';
+  URLSearchParamsPlugin
+} from "seroval-plugins/web";
 
 const ES2017FLAG =
-  Feature.AggregateError // ES2021
-  | Feature.BigIntTypedArray // ES2020;
+  Feature.AggregateError | // ES2021
+  Feature.BigIntTypedArray; // ES2020;
 
-const GLOBAL_IDENTIFIER = '_$HY.r'; // TODO this is a pending name
+const GLOBAL_IDENTIFIER = "_$HY.r"; // TODO this is a pending name
 
 export function createSerializer({ onData, onDone, scopeId, onError, plugins: customPlugins }) {
   const defaultPlugins = [
@@ -33,10 +33,10 @@ export function createSerializer({ onData, onDone, scopeId, onError, plugins: cu
     RequestPlugin,
     ResponsePlugin,
     URLSearchParamsPlugin,
-    URLPlugin,
+    URLPlugin
   ];
 
-  const allPlugins = customPlugins ? [...customPlugins, ...defaultPlugins] : defaultPlugins
+  const allPlugins = customPlugins ? [...customPlugins, ...defaultPlugins] : defaultPlugins;
 
   return new Serializer({
     scopeId,
@@ -45,10 +45,10 @@ export function createSerializer({ onData, onDone, scopeId, onError, plugins: cu
     disabledFeatures: ES2017FLAG,
     onData,
     onDone,
-    onError,
+    onError
   });
 }
 
 export function getLocalHeaderScript(id) {
-  return getCrossReferenceHeader(id) + ';';
+  return getCrossReferenceHeader(id) + ";";
 }

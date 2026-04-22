@@ -19,9 +19,7 @@ describe("Test class binding", () => {
     const [title] = createSignal("title"),
       [color] = createSignal(true),
       [danger, setDanger] = createSignal(false),
-      div = createRoot(() => (
-        <div title={title()} class={{ color: color(), danger: danger() }} />
-      ));
+      div = createRoot(() => <div title={title()} class={{ color: color(), danger: danger() }} />);
     expect(div.className).toBe("color");
 
     setDanger(true);

@@ -104,14 +104,22 @@ describe("universal insert caching", () => {
     parent.appendChild(marker);
 
     createRoot(() => {
-      r.insert(parent, () => {
-        if (!firstReady()) throw new NotReadyError(firstReady);
-        return ["A"];
-      }, marker);
-      r.insert(parent, () => {
-        if (!secondReady()) throw new NotReadyError(secondReady);
-        return ["B"];
-      }, marker);
+      r.insert(
+        parent,
+        () => {
+          if (!firstReady()) throw new NotReadyError(firstReady);
+          return ["A"];
+        },
+        marker
+      );
+      r.insert(
+        parent,
+        () => {
+          if (!secondReady()) throw new NotReadyError(secondReady);
+          return ["B"];
+        },
+        marker
+      );
     });
     flush();
 
@@ -170,10 +178,14 @@ describe("universal insert caching", () => {
     parent.appendChild(marker);
 
     createRoot(() => {
-      renderer.insert(parent, () => {
-        if (!ready()) throw new NotReadyError(ready);
-        return ["A"];
-      }, marker);
+      renderer.insert(
+        parent,
+        () => {
+          if (!ready()) throw new NotReadyError(ready);
+          return ["A"];
+        },
+        marker
+      );
     });
     flush();
 

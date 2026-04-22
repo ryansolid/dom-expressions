@@ -10,6 +10,7 @@
   },
   "private": true,
   "scripts": {
+    "postinstall": "simple-git-hooks",
     "clean": "pnpm run clean:artifacts && pnpm run clean:packages && pnpm run clean:root",
     "clean:artifacts": "pnpm -r --parallel run clean",
     "clean:packages": "pnpm -r exec rimraf node_modules",
@@ -18,10 +19,17 @@
     "test:coverage": "pnpm -r --parallel run test:coverage",
     "build": "pnpm -r --workspace-concurrency=1 run build",
     "report:coverage": "pnpm -r --parallel run report:coverage",
+    "format": "prettier --write --cache \"**/*.[tj]s?(x)\"",
     "changeset": "changeset",
     "version": "changeset version",
     "publish:release": "pnpm run build && changeset publish",
     "jsx-sync-types": "node packages/dom-expressions/src/jsx-update.mjs"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm run format"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["simple-git-hooks"]
   },
   "devDependencies": {
     "@babel/core": "^7.20.12",
@@ -43,10 +51,11 @@
     "jest-resolve": "^29.3.1",
     "jest-ts-webcompat-resolver": "^1.0.0",
     "jsdom": "^21.0.0",
-    "prettier": "^2.8.8",
+    "prettier": "^3.8.3",
     "rimraf": "^3.0.2",
     "rollup": "^3.9.1",
     "rollup-plugin-cleanup": "^3.2.1",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "~5.3.3"
   }
 }
