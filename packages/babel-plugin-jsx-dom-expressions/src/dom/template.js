@@ -4,9 +4,9 @@ import {
   getConfig,
   getNumberedId,
   getRendererConfig,
-  inlineCallExpression,
   isStatefulDOMProperty,
-  registerImportMethod
+  registerImportMethod,
+  wrapForEffect
 } from "../shared/utils";
 import { setAttr } from "./element";
 
@@ -125,7 +125,7 @@ function wrapDynamics(path, dynamics) {
     const newValue = t.identifier("_v$");
     return t.expressionStatement(
       t.callExpression(effectWrapperId, [
-        inlineCallExpression(dynamics[0].value),
+        wrapForEffect(dynamics[0].value),
         t.arrowFunctionExpression(
           prevValue ? [newValue, prevValue] : [newValue],
           t.blockStatement([

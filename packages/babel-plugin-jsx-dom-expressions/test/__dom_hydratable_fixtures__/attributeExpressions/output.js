@@ -188,9 +188,12 @@ const template5 = _$getNextElement(_tmpl$5);
 const template6 = (() => {
   var _el$12 = _$getNextElement(_tmpl$4);
   _$setProperty(_el$12, "textContent", "Hi");
-  _$effect(someStyle, (_v$, _$p) => {
-    _$style(_el$12, _v$, _$p);
-  });
+  _$effect(
+    () => someStyle(),
+    (_v$, _$p) => {
+      _$style(_el$12, _v$, _$p);
+    }
+  );
   return _el$12;
 })();
 let undefVar;
@@ -530,9 +533,12 @@ const template38 = (() => {
 const template39 = _$getNextElement(_tmpl$22);
 const template40 = (() => {
   var _el$58 = _$getNextElement(_tmpl$4);
-  _$effect(a, _v$ => {
-    _$setStyleProperty(_el$58, "color", _v$);
-  });
+  _$effect(
+    () => a(),
+    _v$ => {
+      _$setStyleProperty(_el$58, "color", _v$);
+    }
+  );
   return _el$58;
 })();
 const template41 = (() => {
@@ -626,9 +632,12 @@ const template64 = _$getNextElement(_tmpl$40);
 const template65 = _$getNextElement(_tmpl$41);
 const template66 = (() => {
   var _el$86 = _$getNextElement(_tmpl$41);
-  _$effect(signal, _v$ => {
-    _$setStyleProperty(_el$86, "border", _v$);
-  });
+  _$effect(
+    () => signal(),
+    _v$ => {
+      _$setStyleProperty(_el$86, "border", _v$);
+    }
+  );
   return _el$86;
 })();
 const template67 = (() => {
@@ -680,9 +689,12 @@ const template78 = (() => {
   var _el$99 = _$getNextElement(_tmpl$4);
   _$setStyleProperty(_el$99, "width", props.width);
   _$setStyleProperty(_el$99, "height", props.height);
-  _$effect(color, _v$ => {
-    _$setAttribute(_el$99, "something", _v$);
-  });
+  _$effect(
+    () => color(),
+    _v$ => {
+      _$setAttribute(_el$99, "something", _v$);
+    }
+  );
   return _el$99;
 })();
 const template79 = (() => {
@@ -843,9 +855,12 @@ const template88 = (() => {
   _$style(_el$109, style);
   _$className(_el$109, style);
   _$insert(_el$109, count);
-  _$effect(count, _v$ => {
-    _$setAttribute(_el$109, "aria-label", _v$);
-  });
+  _$effect(
+    () => count(),
+    _v$ => {
+      _$setAttribute(_el$109, "aria-label", _v$);
+    }
+  );
   return _el$109;
 })();
 const template89 = _$getNextElement(_tmpl$48);

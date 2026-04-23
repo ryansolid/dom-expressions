@@ -195,9 +195,12 @@ const template5 = _tmpl$5();
 const template6 = (() => {
   var _el$12 = _tmpl$4();
   _el$12.textContent = "Hi";
-  _$effect(someStyle, (_v$, _$p) => {
-    _$style(_el$12, _v$, _$p);
-  });
+  _$effect(
+    () => someStyle(),
+    (_v$, _$p) => {
+      _$style(_el$12, _v$, _$p);
+    }
+  );
   return _el$12;
 })();
 let undefVar;
@@ -525,9 +528,12 @@ const template38 = (() => {
 const template39 = _tmpl$22();
 const template40 = (() => {
   var _el$54 = _tmpl$4();
-  _$effect(a, _v$ => {
-    _$setStyleProperty(_el$54, "color", _v$);
-  });
+  _$effect(
+    () => a(),
+    _v$ => {
+      _$setStyleProperty(_el$54, "color", _v$);
+    }
+  );
   return _el$54;
 })();
 const template41 = (() => {
@@ -621,9 +627,12 @@ const template64 = _tmpl$40();
 const template65 = _tmpl$41();
 const template66 = (() => {
   var _el$82 = _tmpl$41();
-  _$effect(signal, _v$ => {
-    _$setStyleProperty(_el$82, "border", _v$);
-  });
+  _$effect(
+    () => signal(),
+    _v$ => {
+      _$setStyleProperty(_el$82, "border", _v$);
+    }
+  );
   return _el$82;
 })();
 const template67 = (() => {
@@ -672,9 +681,12 @@ const template78 = (() => {
   var _el$95 = _tmpl$4();
   _$setStyleProperty(_el$95, "width", props.width);
   _$setStyleProperty(_el$95, "height", props.height);
-  _$effect(color, _v$ => {
-    _$setAttribute(_el$95, "something", _v$);
-  });
+  _$effect(
+    () => color(),
+    _v$ => {
+      _$setAttribute(_el$95, "something", _v$);
+    }
+  );
   return _el$95;
 })();
 const template79 = (() => {
@@ -826,9 +838,12 @@ const template88 = (() => {
   _$style(_el$105, style);
   _$className(_el$105, style);
   _$insert(_el$105, count);
-  _$effect(count, _v$ => {
-    _$setAttribute(_el$105, "aria-label", _v$);
-  });
+  _$effect(
+    () => count(),
+    _v$ => {
+      _$setAttribute(_el$105, "aria-label", _v$);
+    }
+  );
   return _el$105;
 })();
 {

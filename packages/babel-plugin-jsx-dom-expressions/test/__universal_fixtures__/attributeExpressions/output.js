@@ -121,9 +121,12 @@ const template5 = (() => {
 const template6 = (() => {
   var _el$12 = _$createElement("div");
   _$setProp(_el$12, "textContent", "Hi");
-  _$effect(someStyle, (_v$, _$p) => {
-    _$setProp(_el$12, "style", _v$, _$p);
-  });
+  _$effect(
+    () => someStyle(),
+    (_v$, _$p) => {
+      _$setProp(_el$12, "style", _v$, _$p);
+    }
+  );
   return _el$12;
 })();
 const template7 = (() => {
