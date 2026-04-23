@@ -9,6 +9,8 @@ import {
   flatten
 } from "rxcore";
 
+const INNER_OWNED = {};
+
 export function createRenderer({
   createElement,
   createTextNode,
@@ -30,15 +32,31 @@ export function createRenderer({
       if (typeof accessor !== "function")
         return insertExpression(parent, accessor, initial, marker);
     }
-    accessor = memo(accessor, true);
     if (multi && initial.length === 0) {
       const sentinel = createSentinel();
       insertNode(parent, sentinel, marker);
       initial = [sentinel];
     }
+    let current = initial;
     effect(
-      () => normalize(accessor, multi),
-      (value, current = initial) => insertExpression(parent, value, current, marker),
+      () => {
+        const value = normalize(accessor(), multi, true);
+        if (typeof value !== "function") return value;
+        effect(
+          () => normalize(value, multi),
+          inner => {
+            insertExpression(parent, inner, current, marker);
+            current = inner;
+          },
+          options
+        );
+        return INNER_OWNED;
+      },
+      value => {
+        if (value === INNER_OWNED) return;
+        insertExpression(parent, value, current, marker);
+        current = value;
+      },
       options
     );
   }
