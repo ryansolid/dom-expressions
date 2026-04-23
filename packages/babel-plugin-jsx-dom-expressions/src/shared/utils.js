@@ -402,6 +402,18 @@ export function inlineCallExpression(node) {
     : t.arrowFunctionExpression([], node);
 }
 
+// Like inlineCallExpression, but only unwraps IIFEs — never a bare identifier
+// call. Used for the first argument of a two-arg effect, where the reactive
+// system passes the previous value into the compute function and a bare
+// identifier callee would leak that prev into user-authored accessors.
+export function wrapForEffect(node) {
+  return t.isCallExpression(node) &&
+    !node.arguments.length &&
+    (t.isArrowFunctionExpression(node.callee) || t.isFunctionExpression(node.callee))
+    ? node.callee
+    : t.arrowFunctionExpression([], node);
+}
+
 const chars = "etaoinshrdlucwmfygpbTAOISWCBvkxjqzPHFMDRELNGUKVYJQZX_$";
 const base = chars.length;
 

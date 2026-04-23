@@ -13,9 +13,12 @@ const flag = true;
 const t1 = _tmpl$();
 const t2 = (() => {
   var _el$2 = _tmpl$2();
-  _$effect(dynamicClass, (_v$, _$p) => {
-    _$className(_el$2, _v$, _$p);
-  });
+  _$effect(
+    () => dynamicClass(),
+    (_v$, _$p) => {
+      _$className(_el$2, _v$, _$p);
+    }
+  );
   return _el$2;
 })();
 const t3 = _tmpl$3();

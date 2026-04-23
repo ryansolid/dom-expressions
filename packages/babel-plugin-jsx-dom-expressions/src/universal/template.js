@@ -3,7 +3,7 @@ import {
   getConfig,
   getNumberedId,
   registerImportMethod,
-  inlineCallExpression
+  wrapForEffect
 } from "../shared/utils";
 import { setAttr } from "./element";
 
@@ -51,7 +51,7 @@ function wrapDynamics(path, dynamics) {
 
     return t.expressionStatement(
       t.callExpression(effectWrapperId, [
-        inlineCallExpression(dynamics[0].value),
+        wrapForEffect(dynamics[0].value),
         t.arrowFunctionExpression(
           [newValue, prevValue],
           t.blockStatement([
