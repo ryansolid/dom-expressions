@@ -48,14 +48,30 @@ changeset.
 ## Fixed Group
 
 All four published packages are in a `fixed` group in `.changeset/config.json`
-and bump together. List all four in every changeset's frontmatter:
+and bump together regardless of which ones are listed in a changeset's
+frontmatter. Because of this, **only list the packages the change actually
+touches** — listing a package in the frontmatter adds the changeset body to
+that package's `CHANGELOG.md`, so listing untouched packages pollutes their
+changelog with notes that don't apply to them.
+
+Common cases:
+
+- Runtime-only fix in `dom-expressions/server.js`: list `dom-expressions`.
+- Compiler-only fix in `babel-plugin-jsx-dom-expressions`: list that package.
+- Paired runtime + compiler change (e.g. a new SSR helper emitted by the
+  compiler and implemented in the runtime): list both.
+- Change to `hyper-dom-expressions` or `lit-dom-expressions` source:
+  list that package (plus `dom-expressions` if the shared runtime also
+  changed).
+- Release-coordination / tooling / cross-cutting notes that genuinely apply
+  to every package: list all four.
+
+Example — a fix that only touches the compiler and the SSR runtime:
 
 ```markdown
 ---
 "babel-plugin-jsx-dom-expressions": patch
 "dom-expressions": patch
-"hyper-dom-expressions": patch
-"lit-dom-expressions": patch
 ---
 
 <description of the change>

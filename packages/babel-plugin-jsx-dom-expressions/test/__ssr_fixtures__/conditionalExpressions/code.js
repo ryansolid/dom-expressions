@@ -106,3 +106,18 @@ const template42 = <>{state.a ? a() : state.b ? b() : state.c ? "c" : "fallback"
 const template42a = <>{state.a ? a.a : state.b ? b.b : state.c ? "c" : "fallback"}</>;
 
 const template43 = <>{obj1.prop ? obj2.prop ? <div>Output</div> : <></> : <></>}</>
+
+// single-significant-child fragment in element slot — outer _$escape wrap
+// is skipped because the fragment compiles to a self-escaping form.
+const template44 = <div>{cond && <>{state.text}</>}</div>;
+const template45 = <div>{cond ? <>{state.a}</> : <>{state.b}</>}</div>;
+const template46 = <div>{cond && <><span>s</span></>}</div>;
+const template47 = <div>{cond ? <><span>a</span></> : <><span>b</span></>}</div>;
+
+// component inside fragment must keep the outer _$escape wrap because a
+// component call can return any runtime type, including a raw string.
+const template48 = <div>{cond && <><Comp /></>}</div>;
+
+// mixed fragment content keeps the outer wrap — predicate is conservative
+// and only skips when exactly one significant child is provably safe.
+const template49 = <div>{cond && <>hello {state.text}</>}</div>;

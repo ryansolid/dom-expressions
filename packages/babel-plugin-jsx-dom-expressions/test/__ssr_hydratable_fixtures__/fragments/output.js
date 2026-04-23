@@ -41,7 +41,7 @@ const multiDynamic = [
       _v$6 = _$ssrRunInScope([() => _$ssrAttribute("id", _$escape(state.first, true))]);
     return _$ssr(_tmpl$3, _v$5, _v$6[0]);
   })(),
-  _$memo(() => state.inserted),
+  _$memo(() => _$escape(state.inserted)),
   (() => {
     var _v$7 = _$ssrHydrationKey(),
       _v$8 = _$ssrRunInScope([() => _$ssrAttribute("id", _$escape(state.last, true))]);
@@ -50,7 +50,7 @@ const multiDynamic = [
   "After"
 ];
 const singleExpression = inserted;
-const singleDynamic = _$memo(inserted);
+const singleDynamic = _$memo(() => _$escape(inserted()));
 const firstStatic = [
   inserted,
   (() => {
@@ -59,7 +59,7 @@ const firstStatic = [
   })()
 ];
 const firstDynamic = [
-  _$memo(inserted),
+  _$memo(() => _$escape(inserted())),
   (() => {
     var _v$10 = _$ssrHydrationKey();
     return _$ssr(_tmpl$5, _v$10);
@@ -84,7 +84,7 @@ const lastDynamic = [
     var _v$13 = _$ssrHydrationKey();
     return _$ssr(_tmpl$5, _v$13);
   })(),
-  _$memo(inserted)
+  _$memo(() => _$escape(inserted()))
 ];
 const lastComponent = [
   (() => {

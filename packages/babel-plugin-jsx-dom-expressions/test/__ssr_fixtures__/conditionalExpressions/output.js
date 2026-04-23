@@ -4,7 +4,10 @@ import { ssrRunInScope as _$ssrRunInScope } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 var _tmpl$ = ["<div>", "</div>"],
-  _tmpl$2 = "<div>Output</div>";
+  _tmpl$2 = "<div>Output</div>",
+  _tmpl$3 = "<span>s</span>",
+  _tmpl$4 = "<span>a</span>",
+  _tmpl$5 = "<span>b</span>";
 const template1 = (() => {
   var _v$ = _$escape(simple);
   return _$ssr(_tmpl$, _v$);
@@ -298,30 +301,75 @@ const template33a = _$createComponent(Comp, {
   }
 });
 const template34 = simple ? good : bad;
-const template35 = _$memo(() => (simple ? good() : bad));
-const template35a = _$memo(() => (simple ? good.good : bad));
-const template36 = _$memo(() => (_$memo(() => !!state.dynamic)() ? good() : bad));
-const template36a = _$memo(() => (_$memo(() => !!state.dynamic)() ? good.good : bad));
-const template37 = _$memo(() => _$memo(() => !!state.dynamic)() && good());
-const template37a = _$memo(() => _$memo(() => !!state.dynamic)() && good.good);
+const template35 = _$memo(() => _$escape(simple ? good() : bad));
+const template35a = _$memo(() => _$escape(simple ? good.good : bad));
+const template36 = _$memo(() => _$escape(_$memo(() => !!state.dynamic)() ? good() : bad));
+const template36a = _$memo(() => _$escape(_$memo(() => !!state.dynamic)() ? good.good : bad));
+const template37 = _$memo(() => _$escape(_$memo(() => !!state.dynamic)() && good()));
+const template37a = _$memo(() => _$escape(_$memo(() => !!state.dynamic)() && good.good));
 const template38 = _$memo(() =>
-  _$memo(() => state.count > 5)() ? (_$memo(() => !!state.dynamic)() ? best : good()) : bad
+  _$escape(
+    _$memo(() => state.count > 5)() ? (_$memo(() => !!state.dynamic)() ? best : good()) : bad
+  )
 );
 const template38a = _$memo(() =>
-  _$memo(() => state.count > 5)() ? (_$memo(() => !!state.dynamic)() ? best : good.good) : bad.bad
+  _$escape(
+    _$memo(() => state.count > 5)() ? (_$memo(() => !!state.dynamic)() ? best : good.good) : bad.bad
+  )
 );
-const template39 = _$memo(() => _$memo(() => !!(state.dynamic && state.something))() && good());
-const template40 = _$memo(() => (_$memo(() => !!state.dynamic)() && good()) || bad);
-const template40a = _$memo(() => (_$memo(() => !!state.dynamic)() && good.good) || bad);
+const template39 = _$memo(() =>
+  _$escape(_$memo(() => !!(state.dynamic && state.something))() && good())
+);
+const template40 = _$memo(() => _$escape((_$memo(() => !!state.dynamic)() && good()) || bad));
+const template40a = _$memo(() => _$escape((_$memo(() => !!state.dynamic)() && good.good) || bad));
 const template41 = _$memo(() =>
-  _$memo(() => !!state.a)() ? "a" : _$memo(() => !!state.b)() ? "b" : state.c ? "c" : "fallback"
+  _$escape(
+    _$memo(() => !!state.a)() ? "a" : _$memo(() => !!state.b)() ? "b" : state.c ? "c" : "fallback"
+  )
 );
 const template42 = _$memo(() =>
-  _$memo(() => !!state.a)() ? a() : _$memo(() => !!state.b)() ? b() : state.c ? "c" : "fallback"
+  _$escape(
+    _$memo(() => !!state.a)() ? a() : _$memo(() => !!state.b)() ? b() : state.c ? "c" : "fallback"
+  )
 );
 const template42a = _$memo(() =>
-  _$memo(() => !!state.a)() ? a.a : _$memo(() => !!state.b)() ? b.b : state.c ? "c" : "fallback"
+  _$escape(
+    _$memo(() => !!state.a)() ? a.a : _$memo(() => !!state.b)() ? b.b : state.c ? "c" : "fallback"
+  )
 );
 const template43 = _$memo(() =>
-  _$memo(() => !!obj1.prop)() ? (_$memo(() => !!obj2.prop)() ? _$ssr(_tmpl$2) : []) : []
+  _$escape(_$memo(() => !!obj1.prop)() ? (_$memo(() => !!obj2.prop)() ? _$ssr(_tmpl$2) : []) : [])
 );
+
+// single-significant-child fragment in element slot — outer _$escape wrap
+// is skipped because the fragment compiles to a self-escaping form.
+const template44 = (() => {
+  var _v$31 = cond && _$memo(() => _$escape(state.text));
+  return _$ssr(_tmpl$, _v$31);
+})();
+const template45 = (() => {
+  var _v$32 = cond ? _$memo(() => _$escape(state.a)) : _$memo(() => _$escape(state.b));
+  return _$ssr(_tmpl$, _v$32);
+})();
+const template46 = (() => {
+  var _v$33 = cond && _$ssr(_tmpl$3);
+  return _$ssr(_tmpl$, _v$33);
+})();
+const template47 = (() => {
+  var _v$34 = cond ? _$ssr(_tmpl$4) : _$ssr(_tmpl$5);
+  return _$ssr(_tmpl$, _v$34);
+})();
+
+// component inside fragment must keep the outer _$escape wrap because a
+// component call can return any runtime type, including a raw string.
+const template48 = (() => {
+  var _v$35 = cond && _$escape(_$createComponent(Comp, {}));
+  return _$ssr(_tmpl$, _v$35);
+})();
+
+// mixed fragment content keeps the outer wrap — predicate is conservative
+// and only skips when exactly one significant child is provably safe.
+const template49 = (() => {
+  var _v$36 = cond && _$escape(["hello ", _$memo(() => _$escape(state.text))]);
+  return _$ssr(_tmpl$, _v$36);
+})();

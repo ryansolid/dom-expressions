@@ -11,7 +11,7 @@ globalThis.TextEncoder = function () {
 
 const fixture = `<div _hk=0 id="main" data-id="12" aria-role="button" class="selected" checked style="color:red" ><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span _hk=0 class="Hello John"> Hello &lt;div/> </span>`;
-const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"_hk\")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));[\"click\", \"input\"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs--><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
+const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"_hk\")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));[\"click\",\"input\"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs--><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
 const fixture4 = `<span > Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
@@ -1503,5 +1503,39 @@ describe("renderToString async-serialize guard", () => {
         return r.ssr`<div>x</div>`;
       })
     ).toThrow(/Cannot serialize async value.*iter-id/);
+  });
+});
+
+// Runtime contract for the pure-string SSR helpers. Security claims live
+// with the JSX round-trip tests in `jsx.spec.jsx` (they demonstrate the
+// hostile input actually reachable from compiler output). These tests only
+// cover helper-shape behavior: null / empty / undefined skipping.
+describe("SSR helper contracts", () => {
+  it("ssrStyle returns empty string for null / empty input", () => {
+    expect(r.ssrStyle(null)).toBe("");
+    expect(r.ssrStyle("")).toBe("");
+    expect(r.ssrStyle({})).toBe("");
+  });
+
+  it("ssrStyle skips entries whose value is undefined", () => {
+    expect(r.ssrStyle({ a: "1", b: undefined, c: "3" })).toBe("a:1;c:3");
+  });
+
+  it("ssrStyleProperty returns empty string when value is null / undefined", () => {
+    expect(r.ssrStyleProperty("color:", null)).toBe("");
+    expect(r.ssrStyleProperty("color:", undefined)).toBe("");
+  });
+
+  it("ssrAttribute emits empty string for null / false", () => {
+    expect(r.ssrAttribute("disabled", null)).toBe("");
+    expect(r.ssrAttribute("disabled", false)).toBe("");
+  });
+
+  it("ssrAttribute emits bare attribute for `true`", () => {
+    expect(r.ssrAttribute("disabled", true)).toBe(" disabled");
+  });
+
+  it("ssrAttribute does not double-escape values (trusts compiler-escaped input)", () => {
+    expect(r.ssrAttribute("title", "pre&amp;escaped")).toBe(' title="pre&amp;escaped"');
   });
 });

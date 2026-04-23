@@ -206,12 +206,67 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
   } else if (t.isJSXElement(expression) && !isComponent(getTagName(expression))) {
     expression.wontEscape = true;
     return expression;
+  } else if (t.isJSXFragment(expression) && fragmentWillSelfEscape(expression)) {
+    // The fragment will later be transformed into a runtime value the
+    // `escape` helper passes through unchanged — either a memoized
+    // accessor function or an `_$ssr(...)` SSRNode object (see
+    // `fragmentWillSelfEscape`). Wrapping it in another `_$escape(...)`
+    // here would be a guaranteed no-op, so leave the fragment in place
+    // and let the later traversal emit the inner form directly.
+    return expression;
   }
 
   return t.callExpression(
     registerImportMethod(path, "escape"),
     [expression].concat(attr ? [t.booleanLiteral(true)] : [])
   );
+}
+
+// Predicts whether a JSXFragment AST will compile to a single runtime
+// value for which the outer `_$escape(...)` wrap is a no-op. Must stay
+// conservative: any shape this returns `true` for must, when later
+// transformed, produce a self-escaping (or escape-immune) runtime value.
+// When in doubt, return false so the outer `_$escape` wrap is kept.
+//
+// Recognized single-significant-child shapes:
+//   A. `<>{memberOrCall}</>` — a `JSXExpressionContainer` whose
+//      expression matches the top-level subset of
+//      `isDynamic({ checkMember: true })` (member access, call, tagged
+//      template, optional variants, `in` checks). `createTemplate`
+//      emits `_$memo(() => _$escape(expr))`; the memo returns a
+//      function accessor at runtime and `escape(fn)` is a pass-through.
+//      Nested-dynamic shapes (conditional/logical carrying dynamic
+//      sub-expressions) are excluded — confirming them needs the full
+//      `isDynamic` traversal and a missed optimization costs only one
+//      runtime no-op call.
+//   B. `<><native /></>` — a single native (non-component) JSXElement.
+//      `createTemplate` emits `_$ssr(_tmpl$N, …)`, which returns an
+//      SSRNode object; `escape(object)` is a pass-through.
+function fragmentWillSelfEscape(fragment) {
+  let only = null;
+  for (const c of fragment.children) {
+    if (t.isJSXText(c)) {
+      if (trimWhitespace(c.extra.raw).length === 0) continue;
+      return false;
+    }
+    if (t.isJSXExpressionContainer(c) && t.isJSXEmptyExpression(c.expression)) continue;
+    if (only !== null) return false;
+    only = c;
+  }
+  if (!only) return false;
+  if (t.isJSXExpressionContainer(only)) {
+    const expr = only.expression;
+    return (
+      t.isCallExpression(expr) ||
+      t.isOptionalCallExpression(expr) ||
+      t.isTaggedTemplateExpression(expr) ||
+      t.isMemberExpression(expr) ||
+      t.isOptionalMemberExpression(expr) ||
+      (t.isBinaryExpression(expr) && expr.operator === "in")
+    );
+  }
+  if (t.isJSXElement(only)) return !isComponent(getTagName(only));
+  return false;
 }
 
 function transformToObject(attrName, attributes, selectedAttributes) {
@@ -363,8 +418,16 @@ function transformAttributes(path, results, info) {
             }
             const props = value.expression.properties.map((p, i) => {
               if (p.computed) {
+                // Computed keys are user-controlled at runtime; wrap with
+                // `_$escape(..., true)` so ssrStyleProperty can stay a pure
+                // string concat helper (literal-key path is already safe).
+                const escape = registerImportMethod(path, "escape");
                 return t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
-                  t.binaryExpression("+", p.key, t.stringLiteral(":")),
+                  t.binaryExpression(
+                    "+",
+                    t.callExpression(escape, [p.key, t.booleanLiteral(true)]),
+                    t.stringLiteral(":")
+                  ),
                   escapeExpression(path, p.value, true, true)
                 ]);
               }
@@ -489,10 +552,16 @@ function transformClasslistObject(path, expr, values, quasis) {
 
 function transformChildren(path, results, { hydratable }) {
   const doNotEscape = path.doNotEscape;
+  const tagName = getTagName(path.node);
   const filteredChildren = filterChildren(path.get("children"));
   const multi = checkLength(filteredChildren),
     markers = hydratable && multi;
   filteredChildren.forEach(node => {
+    if (node.isJSXFragment()) {
+      throw new Error(
+        `Fragments can only be used top level in JSX. Not used under a <${tagName}>.`
+      );
+    }
     const child = transformNode(node, { doNotEscape, parentResults: results });
     if (!child) return;
     appendToTemplate(results.template, child.template);
@@ -532,6 +601,11 @@ function createElement(path, { topLevel, hydratable }) {
         const v = decode(trimWhitespace(path.node.extra.raw));
         if (v.length) memo.push(t.stringLiteral(v));
       } else {
+        if (path.isJSXFragment()) {
+          throw new Error(
+            `Fragments can only be used top level in JSX. Not used under a <${tagName}>.`
+          );
+        }
         const child = transformNode(path);
         if (markers && child.exprs.length && !child.spreadElement)
           memo.push(t.stringLiteral("<!--$-->"));

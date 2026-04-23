@@ -1,12 +1,41 @@
 import * as t from "@babel/types";
 import { getConfig, registerImportMethod } from "../shared/utils";
 
+// Wrap the *inner* value of a fragment-child accessor with `_$escape` so that
+// hostile string values returned from reactive accessors cannot be
+// concatenated raw into the SSR output. Element-child expressions already get
+// this treatment via `escapeExpression` in `ssr/element.js`; fragment
+// children reach SSR via a different code path and would otherwise skip the
+// escape step.
+//
+// `expr` is the first entry of `result.exprs` produced by `transformNode`
+// for a `JSXExpressionContainer`. It is either:
+//   - an arrow function `() => X` (default case)
+//   - a bare callee (`fnRef`, emitted when the expression is `fnRef()` with
+//     no args — see the JSXExpressionContainer branch in shared/transform.js)
+//   - the result of `transformCondition(..., inline=true)`, which also
+//     returns an arrow function
+// For arrows with an expression body we rewrite in place; for anything else
+// we conservatively wrap in a new arrow that calls and escapes.
+function wrapFragmentChildWithEscape(path, expr) {
+  const escape = registerImportMethod(path, "escape");
+  if (t.isArrowFunctionExpression(expr) && !t.isBlockStatement(expr.body)) {
+    expr.body = t.callExpression(escape, [expr.body]);
+    return expr;
+  }
+  return t.arrowFunctionExpression([], t.callExpression(escape, [t.callExpression(expr, [])]));
+}
+
 export function createTemplate(path, result, wrap) {
   if (!result.template) {
     if (wrap && result.dynamic && getConfig(path).memoWrapper) {
-      return t.callExpression(registerImportMethod(path, getConfig(path).memoWrapper), [
-        result.exprs[0]
-      ]);
+      // wontEscape is set on JSXElement children whose compiled form is
+      // already a safe SSR node (e.g. `_$ssr(...)` call). Wrapping those in
+      // escape would be a no-op at runtime but obscures intent — skip it.
+      const inner = result.wontEscape
+        ? result.exprs[0]
+        : wrapFragmentChildWithEscape(path, result.exprs[0]);
+      return t.callExpression(registerImportMethod(path, getConfig(path).memoWrapper), [inner]);
     }
     return result.exprs[0];
   }

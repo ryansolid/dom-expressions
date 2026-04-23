@@ -655,7 +655,7 @@ function Progress(props) {
     var _v$41 = _$ssrRunInScope([
       () =>
         _$ssrStyleProperty(
-          (props.orientation === "y" ? "height" : "width") + ":",
+          _$escape(props.orientation === "y" ? "height" : "width", true) + ":",
           `${_$escape(props.value, true) * 100}%`
         )
     ]);

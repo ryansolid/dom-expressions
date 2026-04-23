@@ -195,7 +195,7 @@ const template7 = _$createComponent(Child, {
         var _v$16 = _$ssrHydrationKey();
         return _$ssr(_tmpl$5, _v$16);
       })(),
-      _$memo(() => state.dynamic)
+      _$memo(() => _$escape(state.dynamic))
     ];
   }
 });
@@ -397,7 +397,7 @@ const template23 = _$createComponent(Component, {
 });
 const template24 = _$createComponent(Component, {
   get children() {
-    return state.dynamic;
+    return _$escape(state.dynamic);
   }
 });
 const template25 = _$createComponent(Component, {

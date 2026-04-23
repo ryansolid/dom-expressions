@@ -590,7 +590,8 @@ export function ssrClassName(value) {
       classValue = !!value[key];
     if (!key || key === "undefined" || !classValue) continue;
     i && (result += " ");
-    result += escape(key);
+    // Object keys land inside class="..." so they must be attribute-escaped.
+    result += escape(key, true);
   }
   return result;
 }
@@ -602,8 +603,10 @@ export function ssrStyle(value) {
   let result = "";
   const k = Object.keys(value);
   for (let i = 0; i < k.length; i++) {
-    const s = k[i];
-    const v = value[s];
+    // Object keys land inside style="..." so they must be attribute-escaped
+    // to prevent breaking out via `"`.
+    const s = escape(k[i], true);
+    const v = value[k[i]];
     if (v != undefined) {
       if (i) result += ";";
       const r = escape(v, true);
@@ -616,6 +619,11 @@ export function ssrStyle(value) {
 }
 
 export function ssrStyleProperty(name, value) {
+  // Compiler contract: for literal-key `style={{ color: v }}` the compiler
+  // passes a fixed string like `"color:"`; for computed-key
+  // `style={{ [k]: v }}` the compiler wraps the key with `_$escape(k, true)`
+  // before concatenating the `:` suffix. Either way `name` is safe to splice
+  // into style="..." without further escaping.
   return value != null ? name + value : "";
 }
 
@@ -663,6 +671,11 @@ export function ssrElement(tag, props, children, needsId) {
 }
 
 export function ssrAttribute(key, value) {
+  // Compiler contract: `key` is always a compile-time string literal emitted
+  // from a JSX attribute name (see setAttr in babel-plugin/src/ssr/element.js)
+  // which can never contain `"`, `<`, `&`, or `>`. `value` is already
+  // attribute-escaped by the compiler via `_$escape(..., true)`. Both are
+  // trusted here so this hot path stays a pure string concatenation.
   return value == null || value === false ? "" : value === true ? ` ${key}` : ` ${key}="${value}"`;
 }
 
@@ -773,7 +786,7 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
   return `<script${
     nonce ? ` nonce="${nonce}"` : ""
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
-    '", "'
+    '","'
   )}"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
 }
 

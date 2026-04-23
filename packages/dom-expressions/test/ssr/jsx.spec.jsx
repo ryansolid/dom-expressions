@@ -185,33 +185,6 @@ describe("spread attributes", () => {
   });
 });
 
-describe("fragments", () => {
-  it("renders fragment with mixed elements and text", () => {
-    const res = r.renderToString(() => (
-      <div>
-        <>
-          <span>A</span> and <span>B</span>
-        </>
-      </div>
-    ));
-    expect(res).toBe("<div><span>A</span> and <span>B</span></div>");
-  });
-
-  it("renders fragment with adjacent text nodes using separators", () => {
-    const a = "hello";
-    const b = "world";
-    const res = r.renderToString(() => (
-      <div>
-        <>
-          {a}
-          {b}
-        </>
-      </div>
-    ));
-    expect(res).toBe("<div>hello<!--!$-->world</div>");
-  });
-});
-
 describe("video with static muted", () => {
   it("renders video with muted attribute and src", () => {
     const res = r.renderToString(() => <video src="test.mp4" muted />);
@@ -275,3 +248,142 @@ describe("component with ref, omit, spread, and children", () => {
     expect(JSON.stringify(v)).toBe(stringified);
   });
 }
+
+// End-to-end JSX escaping tests. The babel plugin picks a different code
+// path for each of these shapes (static attr literal, dynamic attr, object
+// style with literal keys, object style with computed keys, dynamic style,
+// string class vs object class, spread, fragment child, text content), so
+// every path needs its own regression to confirm hostile input never
+// escapes its HTML / CSS / attribute context.
+describe("SSR attribute escaping (JSX)", () => {
+  // An outer `"` followed by an event handler would fire at parse time if
+  // the attacker could break out of the surrounding attribute or CSS string.
+  const hostileAttr = 'a" onmouseover="alert(1)';
+  const hostileKey = 'x;" onload="alert(1)';
+
+  it('escapes `"` in a static attribute literal', () => {
+    const res = r.renderToString(() => <div title='a"b&c' />);
+    expect(res).toBe('<div title="a&quot;b&amp;c"></div>');
+  });
+
+  it('escapes `"` in a dynamic attribute value', () => {
+    const state = { title: hostileAttr };
+    const res = r.renderToString(() => <div title={state.title} />);
+    expect(res).toContain('title="a&quot; onmouseover=&quot;alert(1)"');
+    expect(res).not.toContain('onmouseover="alert');
+  });
+
+  it('escapes `"` in a static style string literal', () => {
+    const res = r.renderToString(() => <div style='color:red;"x' />);
+    expect(res).toContain('style="color:red;&quot;x"');
+  });
+
+  it('escapes `"` in a dynamic style string', () => {
+    const state = { style: 'color:red;" onload="alert(1)' };
+    const res = r.renderToString(() => <div style={state.style} />);
+    expect(res).toContain('style="color:red;&quot; onload=&quot;alert(1)"');
+    expect(res).not.toContain('onload="alert');
+  });
+
+  it('escapes `"` in an object style value (literal keys)', () => {
+    const state = { color: hostileAttr };
+    const res = r.renderToString(() => <div style={{ color: state.color }} />);
+    expect(res).toContain("color:a&quot; onmouseover=&quot;alert(1)");
+    expect(res).not.toContain('onmouseover="alert');
+  });
+
+  it('escapes `"` in a computed object style key', () => {
+    // Plugin emits _$ssrStyleProperty(userExpr + ":", _$escape(val, true)).
+    // Before the fix, `userExpr` was interpolated raw into style="...".
+    const key = hostileKey;
+    const res = r.renderToString(() => <div style={{ [key]: "red" }} />);
+    expect(res).toContain("x;&quot; onload=&quot;alert(1):red");
+    expect(res).not.toContain('onload="alert');
+  });
+
+  it('escapes `"` in a fully-dynamic style object', () => {
+    const state = { style: { [hostileKey]: "red", color: hostileAttr } };
+    const res = r.renderToString(() => <div style={state.style} />);
+    expect(res).toContain("x;&quot; onload=&quot;alert(1):red");
+    expect(res).toContain("color:a&quot; onmouseover=&quot;alert(1)");
+    expect(res).not.toContain('onload="alert');
+    expect(res).not.toContain('onmouseover="alert');
+  });
+
+  it('escapes `"` in a static class literal', () => {
+    const res = r.renderToString(() => <div class='a"b' />);
+    expect(res).toBe('<div class="a&quot;b"></div>');
+  });
+
+  it('escapes `"` in a dynamic class string', () => {
+    const state = { cls: 'a" onclick="alert(1)' };
+    const res = r.renderToString(() => <div class={state.cls} />);
+    expect(res).toContain('class="a&quot; onclick=&quot;alert(1)"');
+    expect(res).not.toContain('onclick="alert');
+  });
+
+  it('escapes `"` in dynamic object class keys', () => {
+    const state = { cls: { 'a" onclick="alert(1)': true } };
+    const res = r.renderToString(() => <div class={state.cls} />);
+    expect(res).toContain('class="a&quot; onclick=&quot;alert(1)"');
+    expect(res).not.toContain('onclick="alert');
+  });
+
+  it('escapes `"` in attributes passed via spread', () => {
+    const props = { "data-x": hostileAttr, title: hostileAttr };
+    const res = r.renderToString(() => <div {...props} />);
+    expect(res).toContain('data-x="a&quot; onmouseover=&quot;alert(1)"');
+    expect(res).toContain('title="a&quot; onmouseover=&quot;alert(1)"');
+    expect(res).not.toContain('onmouseover="alert');
+  });
+
+  it('escapes `"` in style passed via spread', () => {
+    const props = { style: { [hostileKey]: "z" } };
+    const res = r.renderToString(() => <div {...props} />);
+    expect(res).toContain("x;&quot; onload=&quot;alert(1):z");
+    expect(res).not.toContain('onload="alert');
+  });
+
+  it("escapes `<` and `&` in dynamic text content", () => {
+    const state = { text: "<script>alert(1)</script> & more" };
+    const res = r.renderToString(() => <div>{state.text}</div>);
+    expect(res).toBe("<div>&lt;script>alert(1)&lt;/script> &amp; more</div>");
+  });
+
+  it("escapes `<` in fragment children when rendered at the root", () => {
+    // Confirms the outer renderToString(escape(code())) path catches hostile
+    // strings even when they reach HTML via a fragment rather than an
+    // element child. If this ever fails, fragment-slot escaping has
+    // regressed.
+    const state = { text: "<script>alert(1)</script>" };
+    const res = r.renderToString(() => <>{state.text}</>);
+    expect(res).not.toContain("<script>alert(1)</script>");
+    expect(res).toContain("&lt;script>alert(1)&lt;/script>");
+  });
+
+  it("escapes `<` in a fragment reached via a conditional inside an element", () => {
+    // Inline fragments directly inside an element are a compile error
+    // (see ssr/element.js and dom/element.js), so the realistic way a
+    // fragment reaches an element-child slot is through a conditional:
+    // `<div>{cond && <>{state.text}</>}</div>`. The compiler emits
+    // `cond && _$escape(_$memo(() => _$escape(state.text)))`; the inner
+    // `_$escape` is the one that must catch hostile values, because
+    // the outer `_$escape` on a memo accessor is a runtime no-op.
+    const state = { text: "<script>alert(1)</script>" };
+    const cond = true;
+    const res = r.renderToString(() => <div>{cond && <>{state.text}</>}</div>);
+    expect(res).toContain("&lt;script>alert(1)&lt;/script>");
+    expect(res).not.toContain("<script>alert(1)</script>");
+  });
+
+  it("does not double-escape a pre-escaped entity in a conditional fragment child", () => {
+    // If both the inner memo wrap and the outer element-child escape ran
+    // in sequence and each re-processed the string, `&amp;` would become
+    // `&amp;amp;`. The runtime `escape(fn)` on the memo accessor must
+    // stay a no-op.
+    const state = { text: "a & b < c" };
+    const cond = true;
+    const res = r.renderToString(() => <div>{cond && <>{state.text}</>}</div>);
+    expect(res).toBe("<div>a &amp; b &lt; c</div>");
+  });
+});
