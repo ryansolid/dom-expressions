@@ -8,6 +8,11 @@
     "lit-dom-expressions": "0.50.0-next.0"
   },
   "changesets": [
+    "fix-effect-compute-prev-leak",
+    "fix-insert-double-bind",
+    "fix-numbered-id-reserved-words",
+    "harden-ssr-escape",
+    "pr-511-ssr-dedupe-and-xlink-removal",
     "release-0-50-0-next-1"
   ]
 }

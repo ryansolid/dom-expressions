@@ -1,5 +1,26 @@
 # lit-dom-expressions
 
+## 0.50.0-next.2
+
+### Patch Changes
+
+- 39c207c: Fix a SyntaxError when an element has 222+ merged dynamic attributes
+  (solidjs/solid#2682). The internal identifier generator produced `in` at
+  index 221, and since these identifiers are emitted as object shorthand
+  destructuring bindings, the resulting `({ …, in }) => …` could not be parsed.
+  `getNumberedId` now shifts past any natural index that would encode to a JS
+  reserved word, keeping the mapping injective and the output at 2 characters
+  for all practical dynamic counts.
+- 305d9ce: - SSR: Duplicate attributes in JSX without spreads are now deduplicated —
+  `<div class="a" class="b" />` correctly renders as `<div class="b" />`
+  (last-wins), matching client behavior. Previously the compiler kept both
+  attributes in the output.
+  - Client: `setAttributeNS` / `removeAttributeNS` now use matching names when
+    clearing namespaced attributes (e.g. `xlink:href`). Previously removal could
+    leave the attribute in place because it used the local name while the set
+    used the qualified name.
+  - Expanded test coverage across all four packages; no other behavior changes.
+
 ## 0.50.0-next.1
 
 ### Patch Changes

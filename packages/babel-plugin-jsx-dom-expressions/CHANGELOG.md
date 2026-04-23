@@ -1,5 +1,76 @@
 # babel-plugin-jsx-dom-expressions
 
+## 0.50.0-next.2
+
+### Patch Changes
+
+- 4d14c82: Fix single-dynamic attribute accessors being silently invoked with the
+  previous value. Given `<div style={source()} />`, the compiler previously
+  emitted `effect(source, (v, p) => style(el, v, p))`, which causes the
+  reactive core to call `source(p)` — leaking `prev` into a user-authored
+  accessor that the source expression wrote as a zero-arg call. Polymorphic
+  accessors (e.g. atom-style signals) would observe an unexpected argument
+  and misbehave.
+
+  The compute position now emits `() => source()` so the user's call shape
+  is preserved. The prior optimization of unwrapping an IIFE
+  (`(() => x)()` → `() => x`) is retained since IIFEs are zero-arg and
+  cannot leak `prev`.
+
+  Fixes #510.
+
+- 39c207c: Fix a SyntaxError when an element has 222+ merged dynamic attributes
+  (solidjs/solid#2682). The internal identifier generator produced `in` at
+  index 221, and since these identifiers are emitted as object shorthand
+  destructuring bindings, the resulting `({ …, in }) => …` could not be parsed.
+  `getNumberedId` now shifts past any natural index that would encode to a JS
+  reserved word, keeping the mapping injective and the output at 2 characters
+  for all practical dynamic counts.
+- 03da8a5: Fix SSR escaping gaps reachable from JSX, and tighten the compiler so
+  redundant runtime `escape` calls drop out of the output.
+
+  Security fixes:
+  - `ssrStyle` and `ssrClassName` now attribute-escape object keys, not
+    just values. Previously a user-controlled key in `<div style={{…}} />`
+    or `<div class={{…}} />` could break out of the surrounding attribute.
+  - Dynamic fragment-child expressions (`<>{state.text}</>`) now compile
+    to `_$memo(() => _$escape(expr))`. Element-child expressions already
+    escaped via `escapeExpression`; fragment children reached SSR through
+    a separate path and were concatenated raw.
+  - Computed-key object styles (`style={{ [k]: v }}`) escape the key at
+    compile time.
+
+  Compiler alignment:
+  - SSR now matches DOM in rejecting fragments placed directly inside an
+    element: `<div><>…</></div>` is a compile error in both renderers.
+    Fragments reached via conditionals (`<div>{cond && <>…</>}</div>`)
+    remain legal.
+
+  Compiler optimizations:
+  - `escapeExpression` drops the outer `_$escape` wrap on a `JSXFragment`
+    when its single significant child is either a dynamic expression
+    (compiles to a memoized accessor function, `escape(fn)` is a no-op)
+    or a native element (compiles to an `_$ssr(…)` SSR node object,
+    `escape(object)` is a no-op). This turns
+    `cond && _$escape(_$memo(() => _$escape(state.text)))` into
+    `cond && _$memo(() => _$escape(state.text))`, and
+    `cond && _$escape(_$ssr(_tmpl$N))` into `cond && _$ssr(_tmpl$N)`.
+
+  SSR fixtures for `components`, `conditionalExpressions`, `fragments`,
+  and `attributeExpressions` regenerate. Each security fix has a JSX
+  round-trip test in `packages/dom-expressions/test/ssr/jsx.spec.jsx`
+  that feeds hostile input through `renderToString`.
+
+- 305d9ce: - SSR: Duplicate attributes in JSX without spreads are now deduplicated —
+  `<div class="a" class="b" />` correctly renders as `<div class="b" />`
+  (last-wins), matching client behavior. Previously the compiler kept both
+  attributes in the output.
+  - Client: `setAttributeNS` / `removeAttributeNS` now use matching names when
+    clearing namespaced attributes (e.g. `xlink:href`). Previously removal could
+    leave the attribute in place because it used the local name while the set
+    used the qualified name.
+  - Expanded test coverage across all four packages; no other behavior changes.
+
 ## 0.50.0-next.1
 
 ### Patch Changes
