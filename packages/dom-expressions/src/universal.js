@@ -22,7 +22,7 @@ export function createRenderer({
   getFirstChild,
   getNextSibling
 }) {
-  function insert(parent, accessor, marker, initial) {
+  function insert(parent, accessor, marker, initial, options) {
     const multi = marker !== undefined;
     if (multi && !initial) initial = [];
     if (typeof accessor !== "function") {
@@ -38,7 +38,8 @@ export function createRenderer({
     }
     effect(
       () => normalize(accessor, multi),
-      (value, current = initial) => insertExpression(parent, value, current, marker)
+      (value, current = initial) => insertExpression(parent, value, current, marker),
+      options
     );
   }
 

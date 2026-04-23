@@ -51,9 +51,18 @@ export function render(code, element, init, options = {}) {
   root(
     dispose => {
       disposer = dispose;
-      element === document
-        ? flatten(code)
-        : insert(element, code(), renderRoot.firstChild ? null : undefined, init);
+      if (element === document) {
+        flatten(code);
+      } else {
+        const tree = code();
+        insert(
+          element,
+          () => tree,
+          renderRoot.firstChild ? null : undefined,
+          init,
+          options.insertOptions
+        );
+      }
     },
     { id: options.renderId }
   );
