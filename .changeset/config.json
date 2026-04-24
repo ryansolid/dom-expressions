@@ -7,7 +7,8 @@
       "babel-plugin-jsx-dom-expressions",
       "dom-expressions",
       "hyper-dom-expressions",
-      "lit-dom-expressions"
+      "lit-dom-expressions",
+      "sld-dom-expressions"
     ]
   ],
   "linked": [],

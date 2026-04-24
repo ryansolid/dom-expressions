@@ -17,6 +17,7 @@ export {
   createRenderEffect as effect,
   createMemo as memo,
   getOwner,
+  runWithOwner,
   untrack,
   merge as mergeProps,
   flatten,
