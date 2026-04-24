@@ -151,15 +151,12 @@ importers:
 
   packages/sld-dom-expressions:
     devDependencies:
-      '@vitest/browser-playwright':
-        specifier: ^4.0.18
-        version: 4.1.5(playwright@1.59.1)(vite@8.0.10(@types/node@18.11.18))(vitest@4.1.5)
-      '@vitest/browser-preview':
-        specifier: ^4.0.18
-        version: 4.1.5(vite@8.0.10(@types/node@18.11.18))(vitest@4.1.5)
       dom-expressions:
         specifier: workspace:*
         version: link:../dom-expressions
+      jsdom:
+        specifier: ^21.0.0
+        version: 21.0.0
       tsdown:
         specifier: ^0.20.3
         version: 0.20.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(typescript@5.3.3)
@@ -4266,7 +4263,8 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@blazediff/core@1.9.1': {}
+  '@blazediff/core@1.9.1':
+    optional: true
 
   '@changesets/apply-release-plan@7.1.1':
     dependencies:
@@ -4682,7 +4680,8 @@ snapshots:
 
   '@oxc-project/types@0.127.0': {}
 
-  '@polka/url@1.0.0-next.29': {}
+  '@polka/url@1.0.0-next.29':
+    optional: true
 
   '@quansync/fs@1.0.0':
     dependencies:
@@ -4856,10 +4855,12 @@ snapshots:
       lz-string: 1.5.0
       picocolors: 1.1.1
       pretty-format: 27.5.1
+    optional: true
 
   '@testing-library/user-event@14.6.1(@testing-library/dom@10.4.1)':
     dependencies:
       '@testing-library/dom': 10.4.1
+    optional: true
 
   '@tootallnate/once@2.0.0': {}
 
@@ -4868,7 +4869,8 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@types/aria-query@5.0.4': {}
+  '@types/aria-query@5.0.4':
+    optional: true
 
   '@types/babel-plugin-tester@9.0.5':
     dependencies:
@@ -4962,6 +4964,7 @@ snapshots:
       - msw
       - utf-8-validate
       - vite
+    optional: true
 
   '@vitest/browser-preview@4.1.5(vite@8.0.10(@types/node@18.11.18))(vitest@4.1.5)':
     dependencies:
@@ -4974,6 +4977,7 @@ snapshots:
       - msw
       - utf-8-validate
       - vite
+    optional: true
 
   '@vitest/browser@4.1.5(vite@8.0.10(@types/node@18.11.18))(vitest@4.1.5)':
     dependencies:
@@ -4991,6 +4995,7 @@ snapshots:
       - msw
       - utf-8-validate
       - vite
+    optional: true
 
   '@vitest/expect@4.1.5':
     dependencies:
@@ -5091,6 +5096,7 @@ snapshots:
   aria-query@5.3.0:
     dependencies:
       dequal: 2.0.3
+    optional: true
 
   array-union@2.1.0: {}
 
@@ -5373,7 +5379,8 @@ snapshots:
 
   delayed-stream@1.0.0: {}
 
-  dequal@2.0.3: {}
+  dequal@2.0.3:
+    optional: true
 
   detect-indent@6.1.0: {}
 
@@ -5387,7 +5394,8 @@ snapshots:
     dependencies:
       path-type: 4.0.0
 
-  dom-accessibility-api@0.5.16: {}
+  dom-accessibility-api@0.5.16:
+    optional: true
 
   domexception@4.0.0:
     dependencies:
@@ -6280,7 +6288,8 @@ snapshots:
     dependencies:
       yallist: 4.0.0
 
-  lz-string@1.5.0: {}
+  lz-string@1.5.0:
+    optional: true
 
   magic-string@0.25.9:
     dependencies:
@@ -6338,7 +6347,8 @@ snapshots:
 
   mri@1.2.0: {}
 
-  mrmime@2.0.1: {}
+  mrmime@2.0.1:
+    optional: true
 
   ms@2.1.2: {}
 
@@ -6448,15 +6458,18 @@ snapshots:
     dependencies:
       find-up: 4.1.0
 
-  playwright-core@1.59.1: {}
+  playwright-core@1.59.1:
+    optional: true
 
   playwright@1.59.1:
     dependencies:
       playwright-core: 1.59.1
     optionalDependencies:
       fsevents: 2.3.2
+    optional: true
 
-  pngjs@7.0.0: {}
+  pngjs@7.0.0:
+    optional: true
 
   postcss@8.5.10:
     dependencies:
@@ -6475,6 +6488,7 @@ snapshots:
       ansi-regex: 5.0.1
       ansi-styles: 5.2.0
       react-is: 17.0.2
+    optional: true
 
   pretty-format@29.3.1:
     dependencies:
@@ -6507,7 +6521,8 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  react-is@17.0.2: {}
+  react-is@17.0.2:
+    optional: true
 
   react-is@18.2.0: {}
 
@@ -6713,6 +6728,7 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
+    optional: true
 
   sisteransi@1.0.5: {}
 
@@ -6828,7 +6844,8 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
-  totalist@3.0.1: {}
+  totalist@3.0.1:
+    optional: true
 
   tough-cookie@2.5.0:
     dependencies:
@@ -7039,7 +7056,8 @@ snapshots:
 
   ws@8.12.0: {}
 
-  ws@8.20.0: {}
+  ws@8.20.0:
+    optional: true
 
   xml-name-validator@4.0.0: {}
 

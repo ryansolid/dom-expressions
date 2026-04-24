@@ -24,10 +24,9 @@
     "prepare": "npm run build"
   },
   "devDependencies": {
-    "@vitest/browser-playwright": "^4.0.18",
-    "@vitest/browser-preview": "^4.0.18",
     "dom-expressions": "workspace:*",
-    "vitest": "^4.0.18",
-    "tsdown": "^0.20.3"
+    "jsdom": "^21.0.0",
+    "tsdown": "^0.20.3",
+    "vitest": "^4.0.18"
   }
 }
