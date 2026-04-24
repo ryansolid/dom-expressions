@@ -5,66 +5,114 @@
 ![](https://img.shields.io/bundlephobia/minzip/hyper-dom-expressions.svg?style=flat)
 ![](https://img.shields.io/npm/dt/hyper-dom-expressions.svg?style=flat)
 
-This package is a Runtime API built for [DOM Expressions](https://github.com/ryansolid/dom-expressions) to provide HyperScript DSL for reactive libraries that do fine grained change detection. While the JSX plugin [Babel Plugin JSX DOM Expressions](https://github.com/ryansolid/dom-expressions/blob/main/packages/babel-plugin-jsx-dom-expressions) is more optimized with precompilation, smaller size, and cleaner syntax, this HyperScript solution has the flexibility of not being precompiled. However, Tagged Template Literals are likely a better choice in terms of performance in non-compiled environments [Lit DOM Expressions](https://github.com/ryansolid/dom-expressions/blob/main/packages/lit-dom-expressions).
+HyperScript DSL for [DOM Expressions](https://github.com/ryansolid/dom-expressions), targeting fine-grained reactive libraries that want a no-build authoring syntax.
+
+> **Performance note.** Of the four DOM-expressions frontends, hyperscript is the **slowest**. Every `h(...)` call materializes a small tree at runtime, versus the precompiled constants and cloned templates emitted by [`babel-plugin-jsx-dom-expressions`](https://github.com/ryansolid/dom-expressions/blob/main/packages/babel-plugin-jsx-dom-expressions), or the parse-once-then-clone caching of [`lit-dom-expressions`](https://github.com/ryansolid/dom-expressions/blob/main/packages/lit-dom-expressions). Both hyper and lit run with no build step — if you just want a no-tooling authoring syntax, prefer `lit-dom-expressions`; it's considerably faster. Hyperscript's niche is interop with React-style JSX transforms and other ecosystems that already emit `h(tag, props, …children)` calls.
 
 ## Compatible Libraries
-* [Solid](https://github.com/ryansolid/solid): A declarative JavaScript library for building user interfaces.
-* [ko-jsx](https://github.com/ryansolid/ko-jsx): Knockout JS with JSX rendering.
-* [mobx-jsx](https://github.com/ryansolid/mobx-jsx): Ever wondered how much more performant MobX is without React? A lot.
+
+- [Solid](https://github.com/ryansolid/solid)
+- [ko-jsx](https://github.com/ryansolid/ko-jsx)
+- [mobx-jsx](https://github.com/ryansolid/mobx-jsx)
 
 ## Getting Started
 
-Install alongside the DOM Expressions and the fine grained library of your choice. For example with S.js:
+Install alongside DOM Expressions and a reactive library. For Solid:
 
 ```sh
-> npm install s-js dom-expressions hyper-dom-expressions
+npm install @solidjs/signals dom-expressions hyper-dom-expressions
 ```
-Create your configuration and run dom-expressions command to generate runtime.js. More info [here](https://github.com/ryansolid/dom-expressions).
 
-Use it to initialize your Hyper function
+Initialize `h` against the runtime:
+
 ```js
-import { createHyperScript } from 'hyper-dom-expressions';
-import * as r from './runtime';
+import { createHyperScript } from "hyper-dom-expressions";
+import * as r from "dom-expressions/src/client";
 
 const h = createHyperScript(r);
 ```
 
-Profit:
-```js
-const view = h('table.table.table-hover.table-striped.test-data',
-  h('tbody', mapSample(() => state.data, row =>
-    h('tr', [
-      h('td.col-md-1', row.id),
-      h('td.col-md-4', h('a', {onClick: [select, row.id]}, () => row.label)),
-      h('td.col-md-1', h('a', {onClick: [remove, row.id]}, h('span.glyphicon.glyphicon-remove'))),
-      h('td.col-md-6')
-    ])
-  ))
-));
+Consumers typically re-export a pre-wired `h` — Solid exposes `solid-js/h`.
 
-S.root(() => r.insert(document.getElementById('main'), view());)
+## The `h` contract
+
+`h(...)` is **lazy**. Every call returns a zero-arity thunk tagged with an internal symbol; the thunk materializes DOM (or invokes the component) under the current reactive owner when called. Laziness is what keeps per-row render effects inside `For`/`mapArray` rooted under their own owners rather than the parent `insert` effect.
+
+```js
+const tree = h("div", h(Counter)); // thunk
+tree(); // materializes DOM
 ```
 
-Libraries may expose access to h in different ways. For example Solid has it's own entry point 'solid-js/h'.
+Mount via `r.render`. Pass the thunk directly; `render` invokes it inside its root so the whole tree materializes under that owner:
+
+```js
+import { render } from "dom-expressions/src/client";
+
+const App = () => h("main", h(Home));
+
+render(h(App), document.getElementById("app"));
+```
+
+Inside `h(...)` composition works without ceremony: nested `h(...)` children are invoked once at consumption, and user-supplied accessors (`() => expr`) route through `r.insert` so they stay reactive.
+
+## Components, props, and children
+
+- **Props are uniform.** Zero-arity function props are routed through `dynamicProperty` so reading them invokes the accessor and returns the current value — the same getter-style convention Solid's JSX compiler produces. Event props (`on…`) and higher-arity functions (e.g. a `For` render callback) pass through unchanged.
+
+- **`props.children`** mirrors the caller's input:
+
+  | call shape | `props.children` |
+  | --- | --- |
+  | `h(Comp)` | `undefined` |
+  | `h(Comp, { children: v })` | `v` |
+  | `h(Comp, null, a)` | `a` |
+  | `h(Comp, null, a, b, c)` | `[a, b, c]` |
+
+  Nested `h(...)` thunks flow through as-is and auto-invoke once when consumed.
+
+- **Reactive consumption.** `h("p", props.children)` reads `props.children` once at render time. For reactive re-reads, the consumer wraps in its own accessor: `h("p", () => props.children)`. `r.insert` tracks the read and re-runs on change. This mirrors Solid JSX, which compiles `{props.children}` to `insert(el, () => props.children)`.
+
+- **Fragments** are either plain arrays (`[h(...), h(...)]`) or the built-in `h.Fragment` component.
+
+- **JSX-compiler interop.** Components compiled by `babel-plugin-jsx-dom-expressions` can be invoked from inside `h(...)`. Their bodies see the same `props` shape they expect from compiled call sites (getters for dynamic props, `children` as a value / function / array), so typical library components (e.g. Solid Router routes) work. The reverse direction — passing a hyperscript thunk to compiled call sites expecting an element — is not supported.
+
+## Example
+
+```js
+import { createHyperScript } from "hyper-dom-expressions";
+import * as r from "dom-expressions/src/client";
+import { createSignal, mapArray } from "@solidjs/signals";
+
+const h = createHyperScript(r);
+
+const For = props => mapArray(() => props.each, props.children);
+
+const App = () => {
+  const [rows, setRows] = createSignal([
+    { id: 1, label: "one" },
+    { id: 2, label: "two" }
+  ]);
+  return h(
+    "table.table",
+    h(
+      "tbody",
+      h(For, { each: rows }, row =>
+        h(
+          "tr",
+          h("td.col-md-1", () => row().id),
+          h("td.col-md-4", () => row().label)
+        )
+      )
+    )
+  );
+};
+
+r.render(h(App), document.getElementById("main"));
+```
 
 ## Differences from JSX
 
-There are also several small differences but generally follows HyperScript conventions. Ref work by passing a function. Keep in mind you need to wrap expressions in functions if you want them to be observed. For attributes since wrapping in a function is the only indicator of reactivity, passing a non-event function as a value requires wrapping it in a function.
-
-Fragments are just arrays. Components are handled by passing a Function to the first argument of the h function. Ie:
-```jsx
-const view = <>
-  <Component prop={value} />
-  {someValue()}
-</>
-
-// is equivalent to:
-const view = [
-  h(Component, {prop: value}),
-  () => someValue()
-]
-```
-
-## Status
-
-I'm still working out API details and performance profiling.
+- Refs are passed as a function prop (`ref: el => { … }`).
+- Reactivity is explicit: wrap expressions in a function when they should be tracked (`() => count()`), including when forwarding a component prop (`h("p", () => props.foo)`).
+- Fragments are arrays (or `h.Fragment`).
+- Tag selectors understand `#id` and `.class` shorthands (`h("div#main.sel", …)`).

@@ -5,6 +5,7 @@ interface Runtime {
   assign(node: Element, props: any, skipChildren?: Boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
   dynamicProperty(props: any, key: string): any;
+  untrack<T>(fn: () => T): T;
   SVGElements: Set<string>;
   MathMLElements: Set<string>;
   Namespaces: Record<string, string>;
@@ -13,25 +14,40 @@ interface Runtime {
 type ExpandableNode = Node & { [key: string]: any };
 type Props = { [key: string]: any };
 
+// Tags h() thunks so consumers can distinguish them from user-written
+// accessors and invoke them once under the correct owner rather than
+// wrapping them in an effect.
+const $ELEMENT: unique symbol = Symbol("hyper-element");
+
+export type HyperElement = {
+  (): ExpandableNode | ExpandableNode[];
+  [$ELEMENT]: true;
+};
+
 export type HyperScript = {
-  (...args: any[]): ExpandableNode | ExpandableNode[];
-  Fragment: (props: {
-    children: ExpandableNode | ExpandableNode[];
-  }) => ExpandableNode | ExpandableNode[];
+  (...args: any[]): HyperElement | ExpandableNode[];
+  Fragment: (props: { children: any }) => any;
 };
 
 // Inspired by https://github.com/hyperhype/hyperscript
 export function createHyperScript(r: Runtime): HyperScript {
-  function h() {
-    let args: any = [].slice.call(arguments),
-      e: ExpandableNode | undefined,
-      classes: string[] = [],
-      multiExpression = false;
+  function h(...rawArgs: any[]): any {
+    if (rawArgs.length === 1 && Array.isArray(rawArgs[0])) return rawArgs[0];
+    const thunk = (() => r.untrack(() => materialize(rawArgs))) as unknown as HyperElement;
+    thunk[$ELEMENT] = true;
+    return thunk;
+  }
+
+  function materialize(args: any[]): ExpandableNode | ExpandableNode[] {
+    let e: ExpandableNode | undefined;
+    let classes: string[] = [];
+    let multiExpression = false;
+    args = args.slice();
 
     function item(l: any) {
+      if (l == null) return;
       const type = typeof l;
-      if (l == null) void 0;
-      else if ("string" === type) {
+      if ("string" === type) {
         if (!e) parseClass(l);
         else e.appendChild(document.createTextNode(l));
       } else if (
@@ -69,40 +85,34 @@ export function createHyperScript(r: Runtime): HyperScript {
           : r.assign(e as Element, l, !!args.length);
       } else if ("function" === type) {
         if (!e) {
-          let props: Props | undefined,
-            next = args[0];
-          if (
-            next == null ||
-            (typeof next === "object" && !Array.isArray(next) && !(next instanceof Element))
-          )
-            props = args.shift();
-          props || (props = {});
-          if (args.length) {
-            props.children = args.length > 1 ? args : args[0];
-          }
-          const d = Object.getOwnPropertyDescriptors(props);
-          for (const k in d) {
-            if (typeof d[k].value === "function" && !d[k].value.length) r.dynamicProperty(props, k);
+          const first = args[0];
+          const props: Props =
+            first == null ||
+            (typeof first === "object" && !Array.isArray(first) && !(first instanceof Element))
+              ? args.shift() || {}
+              : {};
+          if (args.length) props.children = args.length > 1 ? args : args[0];
+          for (const k in props) {
+            const v = props[k];
+            if (typeof v === "function" && !v.length) r.dynamicProperty(props, k);
           }
           e = r.createComponent(l, props);
+          // Drain nested h() thunks so downstream sees the real render result.
+          while (typeof e === "function" && (e as any)[$ELEMENT]) e = (e as any)();
           args = [];
-        } else {
-          r.insert(e as Element, l, multiExpression ? null : undefined);
-        }
+        } else if ((l as any)[$ELEMENT]) item(l());
+        else r.insert(e as Element, l, multiExpression ? null : undefined);
       }
     }
 
-    if (args.length === 1 && Array.isArray(args[0])) return args[0];
-    typeof args[0] === "string" && detectMultiExpression(args);
+    if (typeof args[0] === "string") detectMultiExpression(args);
     while (args.length) item(args.shift());
     if (e instanceof Element && classes.length) e.classList.add(...classes);
     return e as ExpandableNode;
 
     function parseClass(string: string) {
-      // Our minimal parser doesn’t understand escaping CSS special
-      // characters like `#`. Don’t use them. More reading:
-      // https://mathiasbynens.be/notes/css-escapes .
-
+      // Does not understand escaped CSS specials; see
+      // https://mathiasbynens.be/notes/css-escapes.
       const m = string.split(/([\.#]?[^\s#.]+)/);
       if (/^\.|#/.test(m[1])) e = document.createElement("div");
       for (let i = 0; i < m.length; i++) {
@@ -132,5 +142,5 @@ export function createHyperScript(r: Runtime): HyperScript {
   }
 
   h.Fragment = (props: any) => props.children;
-  return h;
+  return h as HyperScript;
 }
