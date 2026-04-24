@@ -32,7 +32,10 @@ export type SLDInstance<T extends ComponentRegistry> = {
    * const myTemplate = sld`<div>Hello World</div>`
    * ```
    */
-  (strings: TemplateStringsArray, ...values: any[]): Array<Node | string | number | boolean | null | undefined>;
+  (
+    strings: TemplateStringsArray,
+    ...values: any[]
+  ): Array<Node | string | number | boolean | null | undefined>;
 
   /**
    * Self reference to SLD instance for tooling
@@ -70,8 +73,8 @@ export type SLDInstance<T extends ComponentRegistry> = {
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
 type ClassList =
-| Record<string, boolean>
-| Array<string | number | boolean | null | undefined | Record<string, boolean>>;
+  | Record<string, boolean>
+  | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
 export interface Runtime {
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
   spread<T>(node: Element, accessor: (() => T) | T, skipChildren?: Boolean): void;
@@ -80,5 +83,5 @@ export interface Runtime {
   SVGElements: Set<string>;
   VoidElements: Set<string>;
   RawTextElements: Set<string>;
-  MathMLElements:Set<string>
+  MathMLElements: Set<string>;
 }

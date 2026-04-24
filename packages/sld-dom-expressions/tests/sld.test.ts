@@ -2,24 +2,20 @@ import { createRoot, createSignal, flush, createMemo } from "@solidjs/signals";
 import { createSLDRuntime } from "../src";
 import { expect, it, describe, beforeEach } from "vitest";
 import * as r from "../../dom-expressions/src/client";
-import {  MathMLElements} from "../../dom-expressions/src/constants";
+import { MathMLElements } from "../../dom-expressions/src/constants";
 import { RawTextElements, VoidElements } from "./core";
 
+const createSLD = createSLDRuntime({ ...r, VoidElements, RawTextElements, MathMLElements });
 
+const For = (props: any) => {
+  return createMemo(() => props.each.map((v: any) => props.children(v))) as any;
+};
 
-const createSLD = createSLDRuntime({...r,VoidElements,RawTextElements,MathMLElements})
-
-const For = (props:any)=>{
-  return createMemo(()=>props.each.map((v:any)=>props.children(v) ))as any
-}
-
-const Show = (props:any)=>{
-  return createMemo(()=>props.when ? props.children : null) as any
-}
-
+const Show = (props: any) => {
+  return createMemo(() => (props.when ? props.children : null)) as any;
+};
 
 const sld = createSLD({ For, Show });
-
 
 beforeEach(() => {
   document.body.innerHTML = "";
@@ -58,14 +54,14 @@ describe("SLD Integration Tests", () => {
     it("handles complex attribute names and mixed values", () => {
       const [cls, setCls] = createSignal("active");
       const result =
-        sld`<div class=${()=>`base ${cls()}`} data-test-id="main-div" aria-hidden="false"></div>` as Node[];
+        sld`<div class=${() => `base ${cls()}`} data-test-id="main-div" aria-hidden="false"></div>` as Node[];
       const el = result[0] as HTMLElement;
 
       expect(el.className).toBe("base active");
       expect(el.getAttribute("data-test-id")).toBe("main-div");
 
       setCls("inactive");
-              flush()
+      flush();
 
       expect(el.className).toBe("base inactive");
     });
@@ -79,7 +75,7 @@ describe("SLD Integration Tests", () => {
       expect(btn.hasAttribute("autofocus")).toBe(true);
 
       setDisabled(false);
-              flush()
+      flush();
 
       expect(btn.disabled).toBe(false);
     });
@@ -122,7 +118,7 @@ describe("SLD Integration Tests", () => {
       expect(input.getAttribute("title")).toBe("hello");
 
       setVal("updated");
-              flush()
+      flush();
 
       expect(input.value).toBe("updated");
     });
@@ -131,7 +127,7 @@ describe("SLD Integration Tests", () => {
       const [welcoming] = createSignal("hello");
       const result = sld`
         <h1 title=${() => `${welcoming()} John ${"Smith"}`}></h1>
-      ` as HTMLElement[]; 
+      ` as HTMLElement[];
 
       expect(result[0].title).toBe("hello John Smith");
     });
@@ -179,7 +175,7 @@ describe("SLD Integration Tests", () => {
 
       expect(el.textContent).toBe("Counter: 0");
       setCount(5);
-              flush()
+      flush();
 
       expect(el.textContent).toBe("Counter: 5");
     });
@@ -213,7 +209,7 @@ describe("SLD Integration Tests", () => {
 
       expect(el.hasAttribute("hidden")).toBe(false);
       setVisible(false);
-              flush()
+      flush();
 
       expect(el.hasAttribute("hidden")).toBe(false);
     });
@@ -235,7 +231,7 @@ describe("SLD Integration Tests", () => {
       expect(container.querySelector("#target")).toBeNull();
 
       setVisible(true);
-              flush()
+      flush();
 
       expect(container.querySelector("#target")).not.toBeNull();
       expect(container.querySelector("#target")?.textContent).toBe("I am visible");
@@ -256,7 +252,7 @@ describe("SLD Integration Tests", () => {
       expect(container.querySelectorAll("li").length).toBe(2);
 
       setItems(["A", "B", "C"]);
-              flush()
+      flush();
 
       expect(container.querySelectorAll("li").length).toBe(3);
     });
@@ -379,7 +375,7 @@ describe("SLD Integration Tests", () => {
       expect(circle.getAttribute("r")).toBe("10");
 
       setRadius(20);
-      flush()
+      flush();
       expect(circle.getAttribute("r")).toBe("20");
     });
 
@@ -490,7 +486,7 @@ describe("SLD Integration Tests", () => {
         expect(button.textContent).toBe("Click");
 
         setClass("inactive");
-                flush()
+        flush();
 
         expect(button.className).toBe("btn-inactive");
       });
@@ -509,7 +505,7 @@ describe("SLD Integration Tests", () => {
 
         setEnabled(false);
         setChecked(true);
-                flush()
+        flush();
 
         expect(input.disabled).toBe(true);
         expect(input.checked).toBe(true);
@@ -526,7 +522,7 @@ describe("SLD Integration Tests", () => {
         expect(el.style.padding).toBe("10px");
 
         setColor("green");
-                flush()
+        flush();
 
         expect(el.style.color).toBe("green");
       });
@@ -536,14 +532,14 @@ describe("SLD Integration Tests", () => {
         const [theme, setTheme] = createSignal("dark");
 
         const result =
-          sld`<div class=${()=>`${isActive() ? "active" : "inactive"} theme-${theme()} static-class`}>Mixed classes</div>` as Node[];
+          sld`<div class=${() => `${isActive() ? "active" : "inactive"} theme-${theme()} static-class`}>Mixed classes</div>` as Node[];
         const el = result[0] as HTMLElement;
 
         expect(el.className).toBe("active theme-dark static-class");
 
         setActive(false);
         setTheme("light");
-                flush()
+        flush();
 
         expect(el.className).toBe("inactive theme-light static-class");
       });
@@ -571,8 +567,7 @@ describe("SLD Integration Tests", () => {
 
         setCount(5);
         setText("Updated");
-                flush()
-
+        flush();
 
         expect(countSpan.className).toBe("count-5");
         expect(countSpan.textContent).toBe("Count: 5");
@@ -599,8 +594,7 @@ describe("SLD Integration Tests", () => {
 
         setVisible(false);
         setDisabled(true);
-                flush()
-
+        flush();
 
         expect(button.hidden).toBe(true);
         expect(button.disabled).toBe(true);
@@ -682,8 +676,7 @@ describe("SLD Integration Tests", () => {
 
         setValue("updated");
         setChecked(true);
-        flush()
-
+        flush();
 
         expect(textInput.value).toBe("updated");
         expect(checkboxInput.checked).toBe(true);
@@ -701,7 +694,7 @@ describe("SLD Integration Tests", () => {
         expect(textarea.value).toBe("Initial content");
 
         setContent("Updated content");
-                flush()
+        flush();
 
         expect(textarea.value).toBe("Updated content");
       });
@@ -711,7 +704,7 @@ describe("SLD Integration Tests", () => {
       it("renders table with dynamic rows and cells", () => {
         const [rows, setRows] = createSignal([
           ["Cell 1", "Cell 2", "Cell 3"],
-          ["Cell 4", "Cell 5", "Cell 6"],
+          ["Cell 4", "Cell 5", "Cell 6"]
         ]);
 
         const result = sld`<table>
@@ -749,7 +742,7 @@ describe("SLD Integration Tests", () => {
       it("renders ordered and unordered lists with nested items", () => {
         const [items, setItems] = createSignal([
           { text: "Item 1", children: ["Subitem 1.1", "Subitem 1.2"] },
-          { text: "Item 2", children: [] },
+          { text: "Item 2", children: [] }
         ]);
 
         const result = sld`<div>
@@ -799,7 +792,7 @@ describe("SLD Integration Tests", () => {
         setSrc("image2.jpg");
         setAlt("Image 2");
 
-        flush()
+        flush();
 
         expect(img.src).toContain("image2.jpg");
         expect(img.alt).toBe("Image 2");
@@ -852,15 +845,13 @@ describe("SLD Integration Tests", () => {
     //   expect(container.querySelector("section")?.textContent).toBe("text");
     // });
 
-      it("renders dynamic component with shorthand close tag", () => {
+    it("renders dynamic component with shorthand close tag", () => {
       const Comp = (props: any) => sld`<section>${props.children}</section>`;
       const result = sld.define({ Comp }).sld`<${Comp}>text<//>` as Node[];
       const container = document.createElement("div");
       container.append(...result);
       expect(container.querySelector("section")?.textContent).toBe("text");
     });
-
-
   });
 
   describe("GitHub Issues Compatibility", () => {
@@ -870,7 +861,7 @@ describe("SLD Integration Tests", () => {
       const container = document.createElement("div");
       container.append(...elements);
       expect(container.innerHTML).toBe(
-        "<div><h1>1<!--+--></h1><h1>2<!--+--></h1><h1>3<!--+--></h1><!--For--></div>",
+        "<div><h1>1<!--+--></h1><h1>2<!--+--></h1><h1>3<!--+--></h1><!--For--></div>"
       );
     });
 
@@ -878,7 +869,7 @@ describe("SLD Integration Tests", () => {
       const Comp = (props: any) => sld`<div>${props.children}</div>`;
       const result = sld.define({ Comp }).sld`<Comp>test "ups"</Comp>` as Node[];
       const container = document.createElement("div");
-      container.append(...result)
+      container.append(...result);
       expect(container.innerHTML).toBe('<div>test "ups"<!--+--></div>');
     });
 
@@ -901,7 +892,7 @@ describe("SLD Integration Tests", () => {
         color:red<!--+-->;
         background-color:blue;
       }
-    </style>`,
+    </style>`
       );
     });
 

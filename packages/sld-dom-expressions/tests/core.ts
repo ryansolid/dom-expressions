@@ -30,7 +30,7 @@ export const RawTextElements = new Set([
   "noscript",
   "template",
   "textarea",
-  "title",
+  "title"
 ]);
 
 export const VoidElements = new Set([
@@ -47,5 +47,5 @@ export const VoidElements = new Set([
   "param",
   "source",
   "track",
-  "wbr",
+  "wbr"
 ]);

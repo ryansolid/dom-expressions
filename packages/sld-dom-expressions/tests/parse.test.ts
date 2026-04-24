@@ -9,9 +9,9 @@ import {
   TEXT_NODE,
   EXPRESSION_PROP,
   SPREAD_PROP,
-  parse,
+  parse
 } from "../src/parse";
-import { MathMLElements} from "../../dom-expressions/src/constants";
+import { MathMLElements } from "../../dom-expressions/src/constants";
 import { tokenize } from "../src/tokenize";
 import { RawTextElements, VoidElements } from "./core";
 
@@ -24,7 +24,7 @@ describe("Simple AST", () => {
     const ast = jsx`Hello World!`;
     expect(ast).toEqual({
       type: ROOT_NODE,
-      children: [{ type: TEXT_NODE, value: "Hello World!" }],
+      children: [{ type: TEXT_NODE, value: "Hello World!" }]
     });
   });
 
@@ -32,7 +32,7 @@ describe("Simple AST", () => {
     const ast = jsx`<div></div>`;
     expect(ast).toEqual({
       type: ROOT_NODE,
-      children: [{ type: ELEMENT_NODE, name: "div", props: [], children: [] }],
+      children: [{ type: ELEMENT_NODE, name: "div", props: [], children: [] }]
     });
   });
 
@@ -45,9 +45,9 @@ describe("Simple AST", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [],
-          children: [{ type: TEXT_NODE, value: "Hello" }],
-        },
-      ],
+          children: [{ type: TEXT_NODE, value: "Hello" }]
+        }
+      ]
     });
   });
 
@@ -63,10 +63,10 @@ describe("Simple AST", () => {
           props: [],
           children: [
             { type: TEXT_NODE, value: "Hello " },
-            { type: EXPRESSION_NODE, value: 0 },
-          ],
-        },
-      ],
+            { type: EXPRESSION_NODE, value: 0 }
+          ]
+        }
+      ]
     });
   });
 
@@ -74,7 +74,7 @@ describe("Simple AST", () => {
     const ast = jsx`<input />`;
     expect(ast).toEqual({
       type: ROOT_NODE,
-      children: [{ type: ELEMENT_NODE, name: "input", props: [], children: [] }],
+      children: [{ type: ELEMENT_NODE, name: "input", props: [], children: [] }]
     });
   });
 
@@ -96,11 +96,11 @@ describe("Simple AST", () => {
               type: ELEMENT_NODE,
               name: "span",
               props: [],
-              children: [{ type: TEXT_NODE, value: "text" }],
-            },
-          ],
-        },
-      ],
+              children: [{ type: TEXT_NODE, value: "text" }]
+            }
+          ]
+        }
+      ]
     });
   });
 });
@@ -115,9 +115,9 @@ describe("Attributes", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [{ name: "id", type: STATIC_PROP, value: "app", quote: '"' }],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 
@@ -130,9 +130,9 @@ describe("Attributes", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [{ name: "id", type: STATIC_PROP, value: "app", quote: "'" }],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 
@@ -146,9 +146,9 @@ describe("Attributes", () => {
 
           name: "input",
           props: [{ name: "checked", type: BOOLEAN_PROP, value: true }],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 
@@ -162,9 +162,9 @@ describe("Attributes", () => {
 
           name: "button",
           props: [{ name: "checked", type: BOOLEAN_PROP, value: true }],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 
@@ -179,13 +179,11 @@ describe("Attributes", () => {
 
           name: "div",
           props: [{ name: "id", type: EXPRESSION_PROP, value: 0 }],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
-
-
 
   it("multiple attributes", () => {
     const value = "test";
@@ -199,11 +197,11 @@ describe("Attributes", () => {
           props: [
             { name: "type", type: STATIC_PROP, value: "text", quote: '"' },
             { name: "value", type: EXPRESSION_PROP, value: 0 },
-            { name: "disabled", type: BOOLEAN_PROP, value: true },
+            { name: "disabled", type: BOOLEAN_PROP, value: true }
           ],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 
@@ -217,9 +215,9 @@ describe("Attributes", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [{ type: SPREAD_PROP, value: 0 }],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 });
@@ -235,10 +233,10 @@ describe("whitespace handling", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [],
-          children: [{ type: TEXT_NODE, value: "   Hello   World   " }],
+          children: [{ type: TEXT_NODE, value: "   Hello   World   " }]
         },
-        { type: TEXT_NODE, value: " !   " },
-      ],
+        { type: TEXT_NODE, value: " !   " }
+      ]
     });
   });
 
@@ -253,9 +251,9 @@ describe("whitespace handling", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [],
-          children: [{ type: TEXT_NODE, value: "Hello World" }],
-        },
-      ],
+          children: [{ type: TEXT_NODE, value: "Hello World" }]
+        }
+      ]
     });
   });
 
@@ -268,9 +266,9 @@ describe("whitespace handling", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [],
-          children: [{ type: TEXT_NODE, value: "   Hello   World   " }],
-        },
-      ],
+          children: [{ type: TEXT_NODE, value: "   Hello   World   " }]
+        }
+      ]
     });
   });
   it("preserves whitespace in text nodes with elements", () => {
@@ -290,17 +288,17 @@ describe("whitespace handling", () => {
               type: TEXT_NODE,
               value: `
        Hello World
-       `,
+       `
             },
             {
               type: ELEMENT_NODE,
               name: "span",
               props: [],
-              children: [{ type: TEXT_NODE, value: "!" }],
-            },
-          ],
-        },
-      ],
+              children: [{ type: TEXT_NODE, value: "!" }]
+            }
+          ]
+        }
+      ]
     });
   });
 
@@ -317,10 +315,10 @@ describe("whitespace handling", () => {
           children: [
             { type: TEXT_NODE, value: "  Hello " },
             { type: EXPRESSION_NODE, value: 0 },
-            { type: TEXT_NODE, value: "  !  " },
-          ],
-        },
-      ],
+            { type: TEXT_NODE, value: "  !  " }
+          ]
+        }
+      ]
     });
   });
 
@@ -336,9 +334,9 @@ describe("whitespace handling", () => {
           type: ELEMENT_NODE,
           name: "div",
           props: [],
-          children: [{ type: EXPRESSION_NODE, value: 0 }],
-        },
-      ],
+          children: [{ type: EXPRESSION_NODE, value: 0 }]
+        }
+      ]
     });
   });
 
@@ -350,17 +348,17 @@ describe("whitespace handling", () => {
       children: [
         {
           type: TEXT_NODE,
-          value: "   ",
+          value: "   "
         },
         {
           type: EXPRESSION_NODE,
-          value: 0,
+          value: 0
         },
         {
           type: TEXT_NODE,
-          value: "   ",
-        },
-      ],
+          value: "   "
+        }
+      ]
     });
   });
 
@@ -378,10 +376,10 @@ describe("whitespace handling", () => {
             { type: EXPRESSION_NODE, value: 0 },
             { type: TEXT_NODE, value: "  " },
             { type: EXPRESSION_NODE, value: 1 },
-            { type: TEXT_NODE, value: "  !  " },
-          ],
-        },
-      ],
+            { type: TEXT_NODE, value: "  !  " }
+          ]
+        }
+      ]
     });
   });
 });
@@ -409,7 +407,7 @@ describe("Complex Examples", () => {
               type: ELEMENT_NODE,
               name: "h1",
               props: [],
-              children: [{ type: EXPRESSION_NODE, value: 0 }],
+              children: [{ type: EXPRESSION_NODE, value: 0 }]
             },
             {
               type: ELEMENT_NODE,
@@ -418,12 +416,12 @@ describe("Complex Examples", () => {
               children: [
                 { type: EXPRESSION_NODE, value: 1 },
                 { type: TEXT_NODE, value: " - " },
-                { type: EXPRESSION_NODE, value: 2 },
-              ],
-            },
-          ],
-        },
-      ],
+                { type: EXPRESSION_NODE, value: 2 }
+              ]
+            }
+          ]
+        }
+      ]
     });
   });
 
@@ -448,23 +446,23 @@ describe("Complex Examples", () => {
               type: ELEMENT_NODE,
               name: "li",
               props: [],
-              children: [{ type: EXPRESSION_NODE, value: 0 }],
+              children: [{ type: EXPRESSION_NODE, value: 0 }]
             },
             {
               type: ELEMENT_NODE,
               name: "li",
               props: [],
-              children: [{ type: EXPRESSION_NODE, value: 1 }],
+              children: [{ type: EXPRESSION_NODE, value: 1 }]
             },
             {
               type: ELEMENT_NODE,
               name: "li",
               props: [],
-              children: [{ type: EXPRESSION_NODE, value: 2 }],
-            },
-          ],
-        },
-      ],
+              children: [{ type: EXPRESSION_NODE, value: 2 }]
+            }
+          ]
+        }
+      ]
     });
   });
 });
@@ -490,14 +488,14 @@ describe("Specialized Element AST", () => {
                   name: "src",
                   type: STATIC_PROP,
                   value: "test.png",
-                  quote: '"',
-                },
+                  quote: '"'
+                }
               ],
-              children: [],
-            },
-          ],
-        },
-      ],
+              children: []
+            }
+          ]
+        }
+      ]
     });
   });
 
@@ -515,19 +513,18 @@ describe("Specialized Element AST", () => {
           children: [
             {
               type: TEXT_NODE,
-              value: '<div class="fake">',
+              value: '<div class="fake">'
             },
             { type: EXPRESSION_NODE, value: 0 },
             {
               type: TEXT_NODE,
-              value: "</div>",
-            },
-          ],
-        },
-      ],
+              value: "</div>"
+            }
+          ]
+        }
+      ]
     });
   });
-
 });
 
 describe("Dynamic Component Tags", () => {
@@ -541,9 +538,9 @@ describe("Dynamic Component Tags", () => {
           type: COMPONENT_NODE,
           name: 0,
           props: [],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 
@@ -562,11 +559,11 @@ describe("Dynamic Component Tags", () => {
               type: ELEMENT_NODE,
               name: "span",
               props: [],
-              children: [{ type: TEXT_NODE, value: "content" }],
-            },
-          ],
-        },
-      ],
+              children: [{ type: TEXT_NODE, value: "content" }]
+            }
+          ]
+        }
+      ]
     });
   });
 
@@ -580,12 +577,11 @@ describe("Dynamic Component Tags", () => {
           type: COMPONENT_NODE,
           name: 0,
           props: [],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
-
 
   it("parses dynamic component with attributes", () => {
     const Comp = "Comp";
@@ -598,9 +594,9 @@ describe("Dynamic Component Tags", () => {
           type: COMPONENT_NODE,
           name: 0,
           props: [{ name: "id", type: EXPRESSION_PROP, value: 1 }],
-          children: [],
-        },
-      ],
+          children: []
+        }
+      ]
     });
   });
 });
@@ -618,8 +614,8 @@ describe("Edge Cases", () => {
       type: ROOT_NODE,
       children: [
         { type: EXPRESSION_NODE, value: 0 },
-        { type: EXPRESSION_NODE, value: 1 },
-      ],
+        { type: EXPRESSION_NODE, value: 1 }
+      ]
     });
   });
 });
@@ -669,11 +665,11 @@ describe("Advanced Parser Edge Cases", () => {
             name: "div",
             props: [
               { type: SPREAD_PROP, value: 0 },
-              { type: SPREAD_PROP, value: 1 },
+              { type: SPREAD_PROP, value: 1 }
             ],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
 
@@ -690,16 +686,14 @@ describe("Advanced Parser Edge Cases", () => {
             props: [
               { name: "id", type: STATIC_PROP, value: "static", quote: '"' },
               { type: SPREAD_PROP, value: 0 },
-              { name: "required", type: BOOLEAN_PROP, value: true },
+              { name: "required", type: BOOLEAN_PROP, value: true }
             ],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
-
   });
-
 
   describe("Special Tag Names and Namespaces", () => {
     it("handles custom elements with hyphens", () => {
@@ -712,9 +706,9 @@ describe("Advanced Parser Edge Cases", () => {
             type: ELEMENT_NODE,
             name: "my-custom-element",
             props: [{ name: "attr", type: STATIC_PROP, value: "value", quote: '"' }],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
 
@@ -729,11 +723,11 @@ describe("Advanced Parser Edge Cases", () => {
             name: "svg:rect",
             props: [
               { name: "x", type: STATIC_PROP, value: "10", quote: '"' },
-              { name: "y", type: STATIC_PROP, value: "20", quote: '"' },
+              { name: "y", type: STATIC_PROP, value: "20", quote: '"' }
             ],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
 
@@ -757,13 +751,13 @@ describe("Advanced Parser Edge Cases", () => {
                     type: ELEMENT_NODE,
                     name: "div",
                     props: [],
-                    children: [{ type: TEXT_NODE, value: "HTML content" }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
+                    children: [{ type: TEXT_NODE, value: "HTML content" }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       });
     });
   });
@@ -781,8 +775,8 @@ describe("Advanced Parser Edge Cases", () => {
           { type: EXPRESSION_NODE, value: 1 },
           { type: EXPRESSION_NODE, value: 2 },
           { type: EXPRESSION_NODE, value: 3 },
-          { type: EXPRESSION_NODE, value: 4 },
-        ],
+          { type: EXPRESSION_NODE, value: 4 }
+        ]
       });
     });
 
@@ -796,9 +790,9 @@ describe("Advanced Parser Edge Cases", () => {
             type: ELEMENT_NODE,
             name: "div",
             props: [],
-            children: [{ type: TEXT_NODE, value: "Use &lt; and &gt; for brackets" }],
-          },
-        ],
+            children: [{ type: TEXT_NODE, value: "Use &lt; and &gt; for brackets" }]
+          }
+        ]
       });
     });
 
@@ -812,9 +806,9 @@ describe("Advanced Parser Edge Cases", () => {
             type: ELEMENT_NODE,
             name: "div",
             props: [],
-            children: [{ type: TEXT_NODE, value: "Copyright &#169; 2023" }],
-          },
-        ],
+            children: [{ type: TEXT_NODE, value: "Copyright &#169; 2023" }]
+          }
+        ]
       });
     });
   });
@@ -878,11 +872,11 @@ describe("Advanced Parser Edge Cases", () => {
             name: "img",
             props: [
               { name: "src", type: STATIC_PROP, value: "test.jpg", quote: '"' },
-              { name: "alt", type: STATIC_PROP, value: "Test Image", quote: '"' },
+              { name: "alt", type: STATIC_PROP, value: "Test Image", quote: '"' }
             ],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
 
@@ -896,9 +890,9 @@ describe("Advanced Parser Edge Cases", () => {
             type: ELEMENT_NODE,
             name: "br",
             props: [],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
 
@@ -910,7 +904,7 @@ describe("Advanced Parser Edge Cases", () => {
       </script>`;
 
       expect(((ast.children[0] as any).children[0] as any).value).toContain(
-        "return x < y && z > w;",
+        "return x < y && z > w;"
       );
     });
 
@@ -940,9 +934,9 @@ describe("Advanced Parser Edge Cases", () => {
             type: ELEMENT_NODE,
             name: "div",
             props: [{ name: "on:click", type: EXPRESSION_PROP, value: 0 }],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
 
@@ -958,11 +952,11 @@ describe("Advanced Parser Edge Cases", () => {
             name: "input",
             props: [
               { name: "prop:value", type: EXPRESSION_PROP, value: 0 },
-              { name: "attr:title", type: STATIC_PROP, value: "Title", quote: '"' },
+              { name: "attr:title", type: STATIC_PROP, value: "Title", quote: '"' }
             ],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
 
@@ -977,9 +971,9 @@ describe("Advanced Parser Edge Cases", () => {
             type: ELEMENT_NODE,
             name: "div",
             props: [{ name: "ref", type: EXPRESSION_PROP, value: 0 }],
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       });
     });
   });
@@ -990,7 +984,5 @@ describe("Advanced Parser Edge Cases", () => {
 
       expect(((ast.children[0] as any).props[0] as any).name).toBe("data-attr_with.special:chars");
     });
-
-
   });
 });

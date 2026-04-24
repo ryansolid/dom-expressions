@@ -22,7 +22,6 @@ const flat = (arr: any[]) => {
   return arr.length === 1 ? arr[0] : arr;
 };
 
-
 export function createSLDRuntime(r: Runtime) {
   const cache = new WeakMap<TemplateStringsArray, RootNode>();
 
@@ -33,8 +32,8 @@ export function createSLDRuntime(r: Runtime) {
     return r.SVGElements.has(name)
       ? document.createElementNS("http://www.w3.org/2000/svg", name)
       : r.MathMLElements.has(name)
-      ? document.createElementNS("http://www.w3.org/1998/Math/MathML", name)
-      : document.createElement(name);
+        ? document.createElementNS("http://www.w3.org/1998/Math/MathML", name)
+        : document.createElement(name);
   };
 
   //Factory function to create new SLD instances.
