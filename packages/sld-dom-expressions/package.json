@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build": "tsdown src/index.ts --format esm --minify",
-    "test": "vitest",
+    "test": "vitest --run",
     "prepare": "npm run build"
   },
   "devDependencies": {
