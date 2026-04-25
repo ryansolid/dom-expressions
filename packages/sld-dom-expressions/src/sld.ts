@@ -36,7 +36,7 @@ export function createSLDRuntime(r: Runtime) {
         : document.createElement(name);
   };
 
-  //Factory function to create new SLD instances.
+  // Internal: build an SLD tag bound to a component registry.
   const createSLD = <T extends ComponentRegistry>(components: T): SLDInstance<T> => {
     const sld = (strings: TemplateStringsArray, ...values: any[]) => {
       const root = getCachedRoot(strings);
@@ -234,5 +234,5 @@ export function createSLDRuntime(r: Runtime) {
     }
   };
 
-  return createSLD;
+  return createSLD({});
 }

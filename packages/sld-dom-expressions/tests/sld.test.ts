@@ -5,8 +5,6 @@ import * as r from "../../dom-expressions/src/client";
 import { MathMLElements } from "../../dom-expressions/src/constants";
 import { RawTextElements, VoidElements } from "./core";
 
-const createSLD = createSLDRuntime({ ...r, VoidElements, RawTextElements, MathMLElements });
-
 const For = (props: any) => {
   return createMemo(() => props.each.map((v: any) => props.children(v))) as any;
 };
@@ -15,7 +13,12 @@ const Show = (props: any) => {
   return createMemo(() => (props.when ? props.children : null)) as any;
 };
 
-const sld = createSLD({ For, Show });
+const sld = createSLDRuntime({
+  ...r,
+  VoidElements,
+  RawTextElements,
+  MathMLElements
+}).define({ For, Show });
 
 // sld returns a scalar when a template resolves to a single node/value, and
 // an array when it resolves to multiple. Tests that need to iterate or spread
@@ -369,7 +372,7 @@ describe("SLD Integration Tests", () => {
     it("passes children correctly to registered components", () =>
       createRoot(dispose => {
         const Wrapper = (props: { children: any }) => sld`<section>${props.children}</section>`;
-        const localSld = createSLD({ Wrapper });
+        const localSld = sld.define({ Wrapper });
 
         const section = localSld`
       <Wrapper>
@@ -384,7 +387,7 @@ describe("SLD Integration Tests", () => {
     it("handles deep nesting with custom components", () =>
       createRoot(dispose => {
         const Box = (props: any) => sld`<div class="box">${props.children}</div>`;
-        const localSld = createSLD({ Box });
+        const localSld = sld.define({ Box });
 
         const result = localSld`
         <Box>
