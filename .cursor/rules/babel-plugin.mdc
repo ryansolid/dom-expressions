@@ -33,7 +33,8 @@ Compiles JSX into optimized DOM creation code. Supports three output modes: `dom
 - `src/universal/` — universal-mode code generation
   - `element.js`, `template.js`
 - `src/config.ts` — plugin configuration and defaults
-- `src/VoidElements.ts` — self-closing HTML element set
+
+HTML facts (void elements, raw-text elements, delegated events, namespaces, MathML/SVG element sets, child-property/state-property mappings) live in `dom-expressions/src/constants` and are imported from there — the babel plugin does not maintain its own copies.
 
 ## Key Concepts
 

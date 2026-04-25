@@ -1,7 +1,6 @@
 import * as t from "@babel/types";
 import { decode } from "html-entities";
-import { ChildProperties } from "dom-expressions/src/constants";
-import VoidElements from "../VoidElements";
+import { ChildProperties, VoidElements } from "dom-expressions/src/constants";
 import {
   evaluateAndInline,
   getTagName,
@@ -87,7 +86,7 @@ export function transformElement(path, info) {
     }
   }
 
-  const voidTag = VoidElements.indexOf(tagName) > -1,
+  const voidTag = VoidElements.has(tagName),
     results = {
       template: [`<${tagName}`],
       templateValues: [],

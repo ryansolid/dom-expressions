@@ -5,9 +5,9 @@ import {
   DelegatedEvents,
   SVGElements,
   MathMLElements,
-  Namespaces
+  Namespaces,
+  VoidElements
 } from "dom-expressions/src/constants";
-import VoidElements from "../VoidElements";
 import {
   evaluateAndInline,
   getAttributeNamed,
@@ -104,7 +104,7 @@ export function transformElement(path, info) {
   }
 
   let config = getConfig(path),
-    voidTag = VoidElements.indexOf(tagName) > -1,
+    voidTag = VoidElements.has(tagName),
     hasCustomElement =
       tagName.indexOf("-") > -1 ||
       path
