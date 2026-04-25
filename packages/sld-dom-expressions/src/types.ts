@@ -1,4 +1,4 @@
-// import {type JSX} from "../../dom-expressions/src/jsx"
+import { type JSX } from "../../dom-expressions/src/jsx";
 
 export type MaybeFunction<T> = T | (() => T);
 export type MaybeFunctionProps<T> = {
@@ -32,10 +32,7 @@ export type SLDInstance<T extends ComponentRegistry> = {
    * const myTemplate = sld`<div>Hello World</div>`
    * ```
    */
-  (
-    strings: TemplateStringsArray,
-    ...values: any[]
-  ): Array<Node | string | number | boolean | null | undefined>;
+  (strings: TemplateStringsArray, ...values: any[]): JSX.Element;
 
   /**
    * Self reference to SLD instance for tooling

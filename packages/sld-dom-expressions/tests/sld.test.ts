@@ -17,6 +17,11 @@ const Show = (props: any) => {
 
 const sld = createSLD({ For, Show });
 
+// sld returns a scalar when a template resolves to a single node/value, and
+// an array when it resolves to multiple. Tests that need to iterate or spread
+// normalize via this helper.
+const arrify = (v: any): Node[] => (Array.isArray(v) ? v : [v]);
+
 beforeEach(() => {
   document.body.innerHTML = "";
 });
@@ -32,8 +37,7 @@ describe("SLD Integration Tests", () => {
 
     it("renders simple elements", () =>
       createRoot(dispose => {
-        const result = sld`<div>Test</div>` as Node[];
-        const el = result[0] as HTMLElement;
+        const el = sld`<div>Test</div>` as HTMLElement;
         expect(el.tagName).toBe("DIV");
         expect(el.textContent).toBe("Test");
         dispose();
@@ -41,8 +45,7 @@ describe("SLD Integration Tests", () => {
 
     it("renders self-closing elements", () =>
       createRoot(dispose => {
-        const result = sld`<input type="text" />` as Node[];
-        const input = result[0] as HTMLInputElement;
+        const input = sld`<input type="text" />` as HTMLInputElement;
         expect(input.tagName).toBe("INPUT");
         expect(input.type).toBe("text");
         dispose();
@@ -50,8 +53,7 @@ describe("SLD Integration Tests", () => {
 
     it("renders nested elements", () =>
       createRoot(dispose => {
-        const result = sld`<div><span>Nested</span></div>` as Node[];
-        const div = result[0] as HTMLElement;
+        const div = sld`<div><span>Nested</span></div>` as HTMLElement;
         const span = div.querySelector("span");
         expect(span?.textContent).toBe("Nested");
         dispose();
@@ -63,9 +65,8 @@ describe("SLD Integration Tests", () => {
       const [cls, setCls] = createSignal("active");
       let el!: HTMLElement;
       const dispose = createRoot(d => {
-        const result =
-          sld`<div class=${() => `base ${cls()}`} data-test-id="main-div" aria-hidden="false"></div>` as Node[];
-        el = result[0] as HTMLElement;
+        el =
+          sld`<div class=${() => `base ${cls()}`} data-test-id="main-div" aria-hidden="false"></div>` as HTMLElement;
         return d;
       });
 
@@ -83,8 +84,7 @@ describe("SLD Integration Tests", () => {
       const [disabled, setDisabled] = createSignal(true);
       let btn!: HTMLButtonElement;
       const dispose = createRoot(d => {
-        const result = sld`<button disabled=${disabled} autofocus>Click</button>` as Node[];
-        btn = result[0] as HTMLButtonElement;
+        btn = sld`<button disabled=${disabled} autofocus>Click</button>` as HTMLButtonElement;
         return d;
       });
 
@@ -101,8 +101,7 @@ describe("SLD Integration Tests", () => {
     it("handles spread props with static before spread", () =>
       createRoot(dispose => {
         const props = { id: "spread", class: "blue", "data-attr": "val" };
-        const result = sld`<div id="static" class="red" ...${props}></div>` as Node[];
-        const el = result[0] as HTMLElement;
+        const el = sld`<div id="static" class="red" ...${props}></div>` as HTMLElement;
 
         expect(el.id).toBe("spread");
         expect(el.className).toBe("blue");
@@ -113,8 +112,7 @@ describe("SLD Integration Tests", () => {
     it("handles spread props with static after spread", () =>
       createRoot(dispose => {
         const props = { id: "spread", class: "blue", "data-attr": "val" };
-        const result = sld`<div ...${props} id="static" class="red"></div>` as Node[];
-        const el = result[0] as HTMLElement;
+        const el = sld`<div ...${props} id="static" class="red"></div>` as HTMLElement;
 
         expect(el.id).toBe("static");
         expect(el.className).toBe("red");
@@ -125,8 +123,7 @@ describe("SLD Integration Tests", () => {
     it("respects override order with spreads and static attributes", () =>
       createRoot(dispose => {
         const props = { id: "from-spread", "data-info": "hidden" };
-        const result = sld`<div ...${props} id="final-id"></div>` as Node[];
-        const el = result[0] as HTMLElement;
+        const el = sld`<div ...${props} id="final-id"></div>` as HTMLElement;
 
         expect(el.id).toBe("final-id");
         expect(el.getAttribute("data-info")).toBe("hidden");
@@ -137,8 +134,7 @@ describe("SLD Integration Tests", () => {
       const [val, setVal] = createSignal("initial");
       let input!: HTMLInputElement;
       const dispose = createRoot(d => {
-        const result = sld`<input prop:value=${val} title=${"hello"} />` as Node[];
-        input = result[0] as HTMLInputElement;
+        input = sld`<input prop:value=${val} title=${"hello"} />` as HTMLInputElement;
         return d;
       });
 
@@ -155,26 +151,24 @@ describe("SLD Integration Tests", () => {
     it("handles mixed static and dynamic attribute parts", () =>
       createRoot(dispose => {
         const [welcoming] = createSignal("hello");
-        const result = sld`
+        const h1 = sld`
         <h1 title=${() => `${welcoming()} John ${"Smith"}`}></h1>
-      ` as HTMLElement[];
+      ` as HTMLHeadingElement;
 
-        expect(result[0].title).toBe("hello John Smith");
+        expect(h1.title).toBe("hello John Smith");
         dispose();
       }));
 
     it("handles multi-line, complex, and unquoted-style attributes", () =>
       createRoot(dispose => {
-        const result = sld`
+        const div = sld`
         <div
           multiline="
             foo
             bar
           "
           lorem ipsum
-        ></div>` as HTMLElement[];
-
-        const div = result[0];
+        ></div>` as HTMLElement;
 
         expect(div.getAttribute("multiline")).toContain("foo");
         expect(div.getAttribute("multiline")).toContain("bar");
@@ -185,11 +179,11 @@ describe("SLD Integration Tests", () => {
 
     it("correctly handles JSON-like strings in attributes", () =>
       createRoot(dispose => {
-        const result = sld`
+        const el = sld`
         <lume-box uniforms='{ "iTime": { "value": 0 } }'></lume-box>
-      ` as HTMLElement[];
+      ` as HTMLElement;
 
-        expect(result[0].getAttribute("uniforms")).toBe('{ "iTime": { "value": 0 } }');
+        expect(el.getAttribute("uniforms")).toBe('{ "iTime": { "value": 0 } }');
         dispose();
       }));
   });
@@ -198,8 +192,7 @@ describe("SLD Integration Tests", () => {
     it("handles expressions inside text", () =>
       createRoot(dispose => {
         const name = "World";
-        const result = sld`<div>Hello ${name}!</div>` as Node[];
-        const el = result[0] as HTMLElement;
+        const el = sld`<div>Hello ${name}!</div>` as HTMLElement;
         expect(el.textContent).toBe("Hello World!");
         dispose();
       }));
@@ -209,8 +202,7 @@ describe("SLD Integration Tests", () => {
       let el!: HTMLElement;
       const dispose = createRoot(d => {
         const name = "Counter";
-        const result = sld`<div>${name}: ${count}</div>` as Node[];
-        el = result[0] as HTMLElement;
+        el = sld`<div>${name}: ${count}</div>` as HTMLElement;
         return d;
       });
 
@@ -227,8 +219,7 @@ describe("SLD Integration Tests", () => {
         const [a] = createSignal("A");
         const [b] = createSignal("B");
 
-        const result = sld`<div>${a} - ${b} !</div>` as Node[];
-        const el = result[0] as HTMLDivElement;
+        const el = sld`<div>${a} - ${b} !</div>` as HTMLDivElement;
 
         expect(el.textContent).toBe("A - B !");
         dispose();
@@ -237,13 +228,13 @@ describe("SLD Integration Tests", () => {
     it("trims whitespace correctly while preserving nested spaces", () =>
       createRoot(dispose => {
         const name = "John";
-        const result = sld`
+        const div = sld`
         <div>
           <b>Hello, my name is: <i> ${name}</i></b>
         </div>
-      ` as HTMLElement[];
+      ` as HTMLElement;
 
-        const b = result[0].querySelector("b")!;
+        const b = div.querySelector("b")!;
         expect(b.textContent).toBe("Hello, my name is: John");
         dispose();
       }));
@@ -252,8 +243,7 @@ describe("SLD Integration Tests", () => {
       const [visible, setVisible] = createSignal(true);
       let el!: HTMLElement;
       const dispose = createRoot(d => {
-        const result = sld`<div hidden=${!visible}>Content</div>` as Node[];
-        el = result[0] as HTMLElement;
+        el = sld`<div hidden=${!visible}>Content</div>` as HTMLElement;
         return d;
       });
 
@@ -275,8 +265,8 @@ describe("SLD Integration Tests", () => {
         <Show when=${visible}>
           <span id="target">I am visible</span>
         </Show>
-        </div>` as Node[];
-        container.append(...result);
+        </div>`;
+        container.append(...arrify(result));
         document.body.appendChild(container);
         return d;
       });
@@ -300,8 +290,8 @@ describe("SLD Integration Tests", () => {
           <For each=${items}>
             ${(item: string) => sld`<li>${item}</li>`}
           </For>
-        </ul>` as Node[];
-        container.append(...result);
+        </ul>`;
+        container.append(...arrify(result));
         return d;
       });
 
@@ -321,13 +311,11 @@ describe("SLD Integration Tests", () => {
         let elementRef: HTMLDivElement | undefined;
         let clickCount = 0;
 
-        const result = sld`
+        const el = sld`
       <div 
         ref=${(el: HTMLDivElement) => (elementRef = el)} 
         on:click=${() => clickCount++}
-      >Click me</div>` as Node[];
-
-        const el = result[0] as HTMLDivElement;
+      >Click me</div>` as HTMLDivElement;
 
         expect(elementRef).toBe(el);
         el.click();
@@ -339,16 +327,16 @@ describe("SLD Integration Tests", () => {
       createRoot(dispose => {
         const exec = { bound: false, delegated: false, listener: false };
 
-        const result = sld`
+        const el = sld`
         <div id="main">
           <button onclick=${() => (exec.bound = true)}>Bound</button>
           <button onClick=${[(v: any) => (exec.delegated = v), true]}>Delegated</button>
           <button on:click=${() => (exec.listener = true)}>Listener</button>
         </div>
-      ` as HTMLElement[];
-        document.body.append(...result);
+      ` as HTMLElement;
+        document.body.append(el);
 
-        const [btn1, btn2, btn3] = result[0].querySelectorAll("button");
+        const [btn1, btn2, btn3] = el.querySelectorAll("button");
 
         expect(btn1.textContent).toBe("Bound");
         expect(btn2.textContent).toBe("Delegated");
@@ -366,13 +354,13 @@ describe("SLD Integration Tests", () => {
     it("captures refs across components and elements", () =>
       createRoot(dispose => {
         let linkRef: HTMLAnchorElement | undefined;
-        const result = sld`
+        const div = sld`
         <div>
           <a href="/" ref=${(el: HTMLAnchorElement) => (linkRef = el)}>Link</a>
         </div>
-      ` as HTMLElement[];
+      ` as HTMLElement;
 
-        expect(linkRef).toBe(result[0].querySelector("a"));
+        expect(linkRef).toBe(div.querySelector("a"));
         dispose();
       }));
   });
@@ -383,12 +371,11 @@ describe("SLD Integration Tests", () => {
         const Wrapper = (props: { children: any }) => sld`<section>${props.children}</section>`;
         const localSld = createSLD({ Wrapper });
 
-        const result = localSld`
+        const section = localSld`
       <Wrapper>
         <span>Inside</span>
-      </Wrapper>` as Node[];
+      </Wrapper>` as HTMLElement;
 
-        const section = result[0] as HTMLElement;
         expect(section.tagName).toBe("SECTION");
         expect(section.querySelector("span")?.textContent).toBe("Inside");
         dispose();
@@ -405,10 +392,10 @@ describe("SLD Integration Tests", () => {
             <li><Box>Item 1</Box></li>
             <li><Box>Item 2</Box></li>
           </ul>
-        </Box>` as Node[];
+        </Box>`;
 
         const container = document.createElement("div");
-        container.append(...result);
+        container.append(...arrify(result));
         expect(container.querySelectorAll(".box").length).toBe(3);
         expect(container.querySelector("li")?.textContent).toBe("Item 1");
         dispose();
@@ -418,13 +405,13 @@ describe("SLD Integration Tests", () => {
   describe("Special Elements and Namespaces", () => {
     it("treats <script> and <style> as raw text", () =>
       createRoot(dispose => {
-        const result = sld`
+        const style = sld`
         <style>
           body > div { color: red; }
-        </style>` as Node[];
+        </style>` as HTMLStyleElement;
 
-        expect(result[0].textContent).toContain("body > div");
-        expect((result[0] as HTMLElement).tagName).toBe("STYLE");
+        expect(style.textContent).toContain("body > div");
+        expect(style.tagName).toBe("STYLE");
         dispose();
       }));
 
@@ -432,14 +419,13 @@ describe("SLD Integration Tests", () => {
       const [radius, setRadius] = createSignal(10);
       let circle!: SVGCircleElement;
       const dispose = createRoot(d => {
-        const result = sld`
+        const svg = sld`
       <svg>
         <g>
           <circle r=${radius} />
         </g>
-      </svg>` as Node[];
+      </svg>` as SVGSVGElement;
 
-        const svg = result[0] as SVGSVGElement;
         circle = svg.querySelector("circle")!;
         return d;
       });
@@ -468,15 +454,15 @@ describe("SLD Integration Tests", () => {
       <mn>3</mn>
     </mfrac>`;
 
-        const result = sld.define({ Frac }).sld`<p>
+        const p = sld.define({ Frac }).sld`<p>
       The fraction
       <math>
         <Frac />
       </math>
       is not a decimal number.
-    </p>` as Node[];
+    </p>` as HTMLElement;
 
-        document.body.append(...result);
+        document.body.append(p);
         expect(document.querySelector("math")).toBeTruthy();
         dispose();
       }));
@@ -509,14 +495,13 @@ describe("SLD Integration Tests", () => {
 
     it("handles weird whitespace and line breaks in tags", () =>
       createRoot(dispose => {
-        const result = sld`
+        const el = sld`
         <div 
           id="test
           "
           class = 
             "spaced"
-        >  Text  </div>` as Node[];
-        const el = result[0] as HTMLElement;
+        >  Text  </div>` as HTMLElement;
         expect(el.id).toBe(`test
           `);
         expect(el.className).toBe("spaced");
@@ -527,14 +512,14 @@ describe("SLD Integration Tests", () => {
     it("ignores HTML comments and their contents", () =>
       createRoot(dispose => {
         const signal = () => "HIDDEN";
-        const result = sld`
+        const div = sld`
         <div>
             <!-- This is a comment with an expression: ${signal()} -->
           <p>Visible</p>
-        </div>` as Node[];
+        </div>` as HTMLElement;
 
         const container = document.createElement("div");
-        container.append(...result);
+        container.append(div);
         expect(container.innerHTML).not.toContain("HIDDEN");
         expect(container.querySelector("p")?.textContent).toBe("Visible");
         dispose();
@@ -549,9 +534,8 @@ describe("SLD Integration Tests", () => {
           const overrideProps = { class: "override", "data-override": true };
           const finalId = "final-id";
 
-          const result =
-            sld`<div ...${baseProps} ...${overrideProps} id=${finalId} class="final">Content</div>` as Node[];
-          const el = result[0] as HTMLElement;
+          const el =
+            sld`<div ...${baseProps} ...${overrideProps} id=${finalId} class="final">Content</div>` as HTMLElement;
 
           expect(el.className).toBe("final");
           expect(el.id).toBe("final-id");
@@ -566,9 +550,8 @@ describe("SLD Integration Tests", () => {
         const staticTitle = "Static Title";
         let button!: HTMLButtonElement;
         const dispose = createRoot(d => {
-          const result =
-            sld`<button class=${() => `btn-${dynamicClass()}`} id=${dynamicId} title=${staticTitle} disabled=${dynamicClass() === "active"}>Click</button>` as Node[];
-          button = result[0] as HTMLButtonElement;
+          button =
+            sld`<button class=${() => `btn-${dynamicClass()}`} id=${dynamicId} title=${staticTitle} disabled=${dynamicClass() === "active"}>Click</button>` as HTMLButtonElement;
           return d;
         });
 
@@ -590,9 +573,8 @@ describe("SLD Integration Tests", () => {
         const [checked, setChecked] = createSignal(false);
         let input!: HTMLInputElement;
         const dispose = createRoot(d => {
-          const result =
-            sld`<input type="checkbox" disabled=${() => !enabled()} checked=${checked} readonly />` as Node[];
-          input = result[0] as HTMLInputElement;
+          input =
+            sld`<input type="checkbox" disabled=${() => !enabled()} checked=${checked} readonly />` as HTMLInputElement;
           return d;
         });
 
@@ -613,9 +595,8 @@ describe("SLD Integration Tests", () => {
         const [color, setColor] = createSignal("red");
         let el!: HTMLElement;
         const dispose = createRoot(d => {
-          const result =
-            sld`<div style=${() => `color: ${color()}; background: blue; padding: ${10}px`}>Styled content</div>` as Node[];
-          el = result[0] as HTMLElement;
+          el =
+            sld`<div style=${() => `color: ${color()}; background: blue; padding: ${10}px`}>Styled content</div>` as HTMLElement;
           return d;
         });
 
@@ -635,9 +616,8 @@ describe("SLD Integration Tests", () => {
         const [theme, setTheme] = createSignal("dark");
         let el!: HTMLElement;
         const dispose = createRoot(d => {
-          const result =
-            sld`<div class=${() => `${isActive() ? "active" : "inactive"} theme-${theme()} static-class`}>Mixed classes</div>` as Node[];
-          el = result[0] as HTMLElement;
+          el =
+            sld`<div class=${() => `${isActive() ? "active" : "inactive"} theme-${theme()} static-class`}>Mixed classes</div>` as HTMLElement;
           return d;
         });
 
@@ -658,11 +638,11 @@ describe("SLD Integration Tests", () => {
         const [text, setText] = createSignal("Initial");
         const container = document.createElement("div");
         const dispose = createRoot(d => {
-          const result = sld`<div>
+          const div = sld`<div>
           <span class=${() => `count-${count()}`}>Count: ${count}</span>
           <span class=${() => `text-${text()}`}>Text: ${text}</span>
-        </div>` as Node[];
-          container.append(...result);
+        </div>` as HTMLElement;
+          container.append(div);
           return d;
         });
 
@@ -690,13 +670,12 @@ describe("SLD Integration Tests", () => {
         const [disabled, setDisabled] = createSignal(false);
         let button!: HTMLButtonElement;
         const dispose = createRoot(d => {
-          const result = sld`<button 
+          button = sld`<button 
           hidden=${() => !visible()}
           disabled=${disabled}
           aria-hidden=${() => !visible()}
           class=${() => (visible() ? "visible" : "hidden")}
-        >Button</button>` as Node[];
-          button = result[0] as HTMLButtonElement;
+        >Button</button>` as HTMLButtonElement;
           return d;
         });
 
@@ -724,13 +703,13 @@ describe("SLD Integration Tests", () => {
           let mouseOverCount = 0;
           let inputChangeCount = 0;
 
-          const result = sld`<div>
+          const div = sld`<div>
           <button on:click=${() => clickCount++}>Click me</button>
           <span on:mouseover=${() => mouseOverCount++}>Hover me</span>
           <input on:input=${() => inputChangeCount++} />
-        </div>` as Node[];
+        </div>` as HTMLElement;
           const container = document.createElement("div");
-          container.append(...result);
+          container.append(div);
           document.body.append(container);
 
           const button = container.querySelector("button")!;
@@ -748,14 +727,14 @@ describe("SLD Integration Tests", () => {
         createRoot(dispose => {
           const events: string[] = [];
 
-          const result = sld`<div onClick=${() => events.push("parent")}>
+          const div = sld`<div onClick=${() => events.push("parent")}>
           <button onClick=${(e: Event) => {
             e.stopPropagation();
             events.push("child");
           }}>Child</button>
-        </div>` as Node[];
+        </div>` as HTMLElement;
           const container = document.createElement("div");
-          container.append(...result);
+          container.append(div);
           document.body.append(container);
 
           const button = container.querySelector("button")!;
@@ -772,15 +751,15 @@ describe("SLD Integration Tests", () => {
         const [checked, setChecked] = createSignal(false);
         const container = document.createElement("div");
         const dispose = createRoot(d => {
-          const result = sld`<form>
+          const form = sld`<form>
           <input type="text" value=${value} />
           <input type="checkbox" checked=${checked} />
           <select value=${value}>
             <option value="initial">Option 1</option>
             <option value="updated">Option 2</option>
           </select>
-        </form>` as Node[];
-          container.append(...result);
+        </form>` as HTMLFormElement;
+          container.append(form);
           document.body.append(container);
           return d;
         });
@@ -807,8 +786,8 @@ describe("SLD Integration Tests", () => {
         const [content, setContent] = createSignal("Initial content");
         const container = document.createElement("div");
         const dispose = createRoot(d => {
-          const result = sld`<textarea>${content}</textarea>` as Node[];
-          container.append(...result);
+          const textarea = sld`<textarea>${content}</textarea>` as HTMLTextAreaElement;
+          container.append(textarea);
           return d;
         });
 
@@ -831,7 +810,7 @@ describe("SLD Integration Tests", () => {
             ["Cell 4", "Cell 5", "Cell 6"]
           ]);
 
-          const result = sld`<table>
+          const table = sld`<table>
           <thead>
             <tr><th>Col 1</th><th>Col 2</th><th>Col 3</th></tr>
           </thead>
@@ -846,11 +825,10 @@ describe("SLD Integration Tests", () => {
               `}
             </For>
           </tbody>
-        </table>` as Node[];
+        </table>` as HTMLTableElement;
           const container = document.createElement("div");
-          container.append(...result);
+          container.append(table);
 
-          const table = container.querySelector("table")!;
           const tbody = table.querySelector("tbody")!;
           const trElements = tbody.querySelectorAll("tr");
 
@@ -871,7 +849,7 @@ describe("SLD Integration Tests", () => {
             { text: "Item 2", children: [] }
           ]);
 
-          const result = sld`<div>
+          const div = sld`<div>
           <ul>
             <For each=${items}>
               ${(item: any) => sld`
@@ -886,9 +864,9 @@ describe("SLD Integration Tests", () => {
               `}
             </For>
           </ul>
-        </div>` as Node[];
+        </div>` as HTMLElement;
           const container = document.createElement("div");
-          container.append(...result);
+          container.append(div);
 
           const parentItems = container.querySelectorAll(".parent-item");
           expect(parentItems.length).toBe(2);
@@ -907,8 +885,9 @@ describe("SLD Integration Tests", () => {
         const [alt, setAlt] = createSignal("Image 1");
         const container = document.createElement("div");
         const dispose = createRoot(d => {
-          const result = sld`<img src=${src} alt=${alt} width="100" height="100" />` as Node[];
-          container.append(...result);
+          const img =
+            sld`<img src=${src} alt=${alt} width="100" height="100" />` as HTMLImageElement;
+          container.append(img);
           return d;
         });
 
@@ -929,13 +908,13 @@ describe("SLD Integration Tests", () => {
 
       it("handles link and meta elements correctly", () =>
         createRoot(dispose => {
-          const result = sld`<head>
+          const head = sld`<head>
           <link rel="stylesheet" href="style.css" />
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-        </head>` as Node[];
+        </head>` as HTMLElement;
           const container = document.createElement("div");
-          container.append(...result);
+          container.append(head);
 
           const link = container.querySelector("link") as HTMLLinkElement;
           expect(link.rel).toBe("stylesheet");
@@ -955,9 +934,9 @@ describe("SLD Integration Tests", () => {
     it("renders dynamic component with expression as tag name", () =>
       createRoot(dispose => {
         const Comp = (props: any) => sld`<div>Dynamic</div>`;
-        const result = sld.define({ Comp }).sld`<${Comp} />` as Node[];
+        const result = sld.define({ Comp }).sld`<${Comp} />`;
         const container = document.createElement("div");
-        container.append(...result);
+        container.append(...arrify(result));
         expect(container.innerHTML).toBe("<div>Dynamic</div>");
         dispose();
       }));
@@ -965,27 +944,27 @@ describe("SLD Integration Tests", () => {
     it("renders dynamic component with children", () =>
       createRoot(dispose => {
         const Comp = (props: any) => sld`<section>${props.children}</section>`;
-        const result = sld.define({ Comp }).sld`<${Comp}><span>content</span></${Comp}>` as Node[];
+        const result = sld.define({ Comp }).sld`<${Comp}><span>content</span></${Comp}>`;
         const container = document.createElement("div");
-        container.append(...result);
+        container.append(...arrify(result));
         expect(container.querySelector("section")?.innerHTML).toContain("<span>content</span>");
         dispose();
       }));
 
     // it("renders dynamic component with shorthand close tag", () => {
     //   const Comp = (props: any) => sld`<section>${props.children}</section>`;
-    //   const result = sld.define({ Comp }).sld`<Comp>text<//>` as Node[];
+    //   const result = sld.define({ Comp }).sld`<Comp>text<//>`;
     //   const container = document.createElement("div");
-    //   container.append(...result);
+    //   container.append(...arrify(result));
     //   expect(container.querySelector("section")?.textContent).toBe("text");
     // });
 
     it("renders dynamic component with shorthand close tag", () =>
       createRoot(dispose => {
         const Comp = (props: any) => sld`<section>${props.children}</section>`;
-        const result = sld.define({ Comp }).sld`<${Comp}>text<//>` as Node[];
+        const result = sld.define({ Comp }).sld`<${Comp}>text<//>`;
         const container = document.createElement("div");
-        container.append(...result);
+        container.append(...arrify(result));
         expect(container.querySelector("section")?.textContent).toBe("text");
         dispose();
       }));
@@ -994,10 +973,10 @@ describe("SLD Integration Tests", () => {
   describe("GitHub Issues Compatibility", () => {
     it("https://github.com/ryansolid/dom-expressions/issues/156", () =>
       createRoot(dispose => {
-        const elements =
-          sld`<div><For each=${() => [1, 2, 3]}>${(n: number) => sld`<h1>${n}</h1>`}</For></div>` as Node[];
+        const div =
+          sld`<div><For each=${() => [1, 2, 3]}>${(n: number) => sld`<h1>${n}</h1>`}</For></div>` as HTMLElement;
         const container = document.createElement("div");
-        container.append(...elements);
+        container.append(div);
         expect(container.innerHTML).toBe(
           "<div><h1>1<!--+--></h1><h1>2<!--+--></h1><h1>3<!--+--></h1><!--For--></div>"
         );
@@ -1007,9 +986,9 @@ describe("SLD Integration Tests", () => {
     it("https://github.com/ryansolid/dom-expressions/issues/248", () =>
       createRoot(dispose => {
         const Comp = (props: any) => sld`<div>${props.children}</div>`;
-        const result = sld.define({ Comp }).sld`<Comp>test "ups"</Comp>` as Node[];
+        const result = sld.define({ Comp }).sld`<Comp>test "ups"</Comp>`;
         const container = document.createElement("div");
-        container.append(...result);
+        container.append(...arrify(result));
         expect(container.innerHTML).toBe('<div>test "ups"<!--+--></div>');
         dispose();
       }));
@@ -1055,7 +1034,7 @@ describe("SLD Integration Tests", () => {
       }));
 
     // it("https://github.com/solidjs/solid/issues/1996", () => {
-    //   const [elem] = sld`<some-el attr:foo="123">inspect element</some-el>` as HTMLElement[];
+    //   const elem = sld`<some-el attr:foo="123">inspect element</some-el>` as HTMLElement;
     //   expect(elem.hasAttribute("foo")).toEqual(true);
     // });
 

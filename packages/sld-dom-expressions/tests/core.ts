@@ -24,28 +24,4 @@ export {
   flush
 } from "@solidjs/signals";
 
-export const RawTextElements = new Set([
-  "style",
-  "script",
-  "noscript",
-  "template",
-  "textarea",
-  "title"
-]);
-
-export const VoidElements = new Set([
-  "area",
-  "base",
-  "br",
-  "col",
-  "embed",
-  "hr",
-  "img",
-  "input",
-  "link",
-  "meta",
-  "param",
-  "source",
-  "track",
-  "wbr"
-]);
+export { RawTextElements, VoidElements } from "../../dom-expressions/src/constants";

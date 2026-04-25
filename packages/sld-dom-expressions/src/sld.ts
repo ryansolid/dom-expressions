@@ -151,7 +151,7 @@ export function createSLDRuntime(r: Runtime) {
       return flat(node.children.map(n => renderNode(n, values, components)));
     }
 
-    const clone = node.template.content.cloneNode(true);
+    const clone = node.template.content.cloneNode(true) as DocumentFragment;
     walker.currentNode = clone;
 
     const walkNodes = (nodes: ChildNode[]) => {
@@ -177,7 +177,7 @@ export function createSLDRuntime(r: Runtime) {
       }
     };
     walkNodes(node.children);
-    return Array.from(clone.childNodes);
+    return clone.childNodes.length === 1 ? clone.firstChild : Array.from(clone.childNodes);
   };
 
   const gatherProps = (
