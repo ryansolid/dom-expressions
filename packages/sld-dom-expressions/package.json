@@ -12,7 +12,7 @@
   "main": "dist/index.mjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.mts",
-  "typings": "dist/index.d.mts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
@@ -22,7 +22,7 @@
   "scripts": {
     "build": "tsdown src/index.ts --format esm --minify",
     "test": "vitest --run",
-    "prepare": "npm run build"
+    "prepare": "pnpm run build"
   },
   "devDependencies": {
     "dom-expressions": "workspace:*",

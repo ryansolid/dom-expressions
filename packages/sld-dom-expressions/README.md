@@ -1,98 +1,178 @@
-# sld
+# sld-dom-expressions
 
-sld is a no-build, no-JSX tagged-template library for SolidJS
+A tagged-template runtime for fine-grained reactive libraries (e.g. SolidJS).
 
-## Quick overview
+`sld` parses templates at runtime and installs reactive bindings against the
+resulting DOM. Component references are real JavaScript values — either a name
+registered via `.define()` or an expression hole — never a string parsed at
+render time.
 
-- `sld` - default tagged template instance with the built-in component registry.
-  - `sld.define({CompA})` - creates a new instance from the existing instance and combines registered components
-  - `sld.sld` - self reference so all tags can start with `sld` for potential tooling
-- `SLD({CompA})` - factory function which includes built-in components
-- `createSLD({CompA})` - factory function which doesn't include built-in components
+## Install
 
-## Basic usage
-
-Use the default `sld` tag for templates and the `SLD` or `sld.define` factory to create a local instance.
-
-```ts
-import { sld } from "@solidjs/sld";
-
-//Write a component with JSX like syntax
-function Counter() {
-  const [count, setCount] = createSignal(0);
-  return sld`<button onClick=${() => setCount((v) => v + 1)}>
-    ${() => count()}
-  </button>`;
-}
-
-//Use component in another template by defining or inlining
-function App() {
-  return sld.define({ Counter }).sld`
-  <Counter />
-  <${Counter} />
-`;
-}
-
-//Render like normal solid-js component
-render(() => App(), document.body);
+```sh
+npm install sld-dom-expressions
 ```
 
-## Syntax
+## Quick start
 
-### Text & Whitespace
-
-- Text in the template gets set via innerHTML so it will decode html encoded characters. You really only need this for < `&lt;` and > `&gt;` and sometimes spaces (&nbsp;)
-- Pure whitepace between elements is ignored in the AST. Leading and Trailing Whitespace is omitted when there is at least one expression in it
-- When in doubt set text via expression to ensure exact match.
-
-### Elements && Component Tags
-
-- Tag names must start with `a-zA-Z$_` and then can have `a-zA-Z0-9$.:-_` characters.
-- Elements/Components can be self closing `<div />` or matched closing `<div></div>`
-- Capital tags are treated as components and will throw if now registered `<ComponentA></ComponentA>` or `<ComponentA />`
-- Content between tags is treated as children. Will return an array unless only a single child node (text,elem, or expression)
-- Inline components can be closed with `</${ComponentA}>` or `<//>`
-
-### Attributes & Properties
-
-- `<input value="Hello World" />` - static string property
-- `<input value='Hello World' />` - static string property
-- `<input disabled />` - static boolean property
-- `<input value=${val} />` - dynamic property
-- `<input onEvent=${} />` — Delgated event listener (Not Reactive)
-- `<input onevent=${} />` - Delegated event (depracated) (Not Reactive)
-- `<input on:event=${} />` - event listener on the element (Not Reactive)
-- `<input prop:value=${} />` — DOM property
-- `<input ...${} />` — spread properties
-- `<input ref=${} />` — ref (Not Reactive)
-- `<div children=${} />` attribute is used only if the element has no child nodes (JSX-like behavior).
-
-## Reactivity and props
-
-- Props that are functions with zero arguments and not `on` events or `ref` are treated as reactive accessors and are auto-wrapped to getters on props (so you can pass `() => value` and the runtime will call it for updates).
-- For properties that accept a function that are not `on` events. You may need to add `()=>` to ensure the function doesn't get wrapped as a getter.
+`createSLDRuntime(runtime)` returns a ready-to-use tag bound to that runtime.
+Components are added via `.define({ ... })`, which returns a new tag with the
+combined registry.
 
 ```ts
-import { sld} from "@solidjs/sld";
+import { createSLDRuntime } from "sld-dom-expressions";
+import * as web from "@solidjs/web";
+import { For, Show, createSignal } from "solid-js";
+import { render } from "@solidjs/web";
 
-const [count, setCount] = createSignal(0);
+const sld = createSLDRuntime(web).define({ For, Show });
 
-sld`<button count=${() => count()}  />`;
-//or just the signal/memo
+function Counter() {
+  const [count, setCount] = createSignal(0);
+  return sld`
+    <button onClick=${() => setCount(c => c + 1)}>
+      Count: ${count}
+    </button>
+  `;
+}
+
+render(Counter, document.body);
+```
+
+## API
+
+### `createSLDRuntime(runtime): SLDInstance<{}>`
+
+Binds the runtime once and returns a tag with an empty component registry.
+The `runtime` object provides the reactive primitives and HTML facts the tag
+needs at render time. When using `@solidjs/web`, the module itself satisfies
+the shape (`import * as web from "@solidjs/web"`).
+
+The `Runtime` type is exported for consumers wiring custom reactive cores:
+
+```ts
+import { type Runtime } from "sld-dom-expressions";
+
+interface Runtime {
+  insert(parent: Node, accessor: any, marker?: Node | null, init?: any): any;
+  spread(node: Element, accessor: any, skipChildren?: boolean): void;
+  createComponent(Comp: (props: any) => any, props: any): any;
+  mergeProps(...sources: unknown[]): any;
+  SVGElements: Set<string>;
+  MathMLElements: Set<string>;
+  VoidElements: Set<string>;
+  RawTextElements: Set<string>;
+}
+```
+
+### `tag.define(components): SLDInstance<T & TNew>`
+
+Returns a new tag with the supplied components merged into the registry.
+The original tag is unchanged.
+
+```ts
+const base = createSLDRuntime(web);
+const withFor = base.define({ For });
+const withForAndShow = withFor.define({ Show });
+```
+
+### `tag.sld`
+
+Self-reference. Lets every template start with `sld\`...\`` regardless of
+which local variable name was used to bind the tag — useful for codemods,
+syntax highlighters, and tooling that keys off the literal text `sld\``.
+
+### `tag.components`
+
+The current registry, as a plain object.
+
+## Template syntax
+
+### Elements and components
+
+```ts
+sld`<div />`               // self-closing
+sld`<div></div>`           // matched
+sld`<MyComponent />`       // registered component (capitalized)
+sld`<${MyComponent} />`    // inline component via expression hole
+sld`<${MyComponent}>...<//>`  // shorthand close for inline component (see Limitations)
+```
+
+- Tag names start with `a-zA-Z$_` and may contain `a-zA-Z0-9$.:-_`.
+- Capitalized tag names are looked up in the registry. An unregistered
+  capitalized name throws.
+- Lowercase tag names are HTML/SVG/MathML elements; namespace is inferred
+  from the element name and walked into nested children.
+
+### Text and whitespace
+
+- Text content is decoded as HTML (`&copy;` → `©`, `&gt;` → `>`).
+- Pure-whitespace runs between elements are dropped from the AST.
+- Leading and trailing whitespace inside an element is dropped when the
+  element contains at least one expression hole.
+- When in doubt, use an expression: `sld\`<p>${"  exact  "}</p>\``.
+
+### Attributes and properties
+
+```ts
+sld`<input value="hi" />`           // static string attribute
+sld`<input disabled />`             // static boolean attribute
+sld`<input value=${val} />`         // dynamic attribute or property (auto)
+sld`<input prop:value=${val} />`    // forced DOM property
+sld`<input attr:foo=${val} />`      // forced HTML attribute
+sld`<input ...${props} />`          // spread
+sld`<input ref=${el => ...} />`     // ref (not reactive)
+sld`<input on:input=${handler} />`  // native addEventListener
+sld`<input onClick=${handler} />`   // delegated event (Solid)
+sld`<input onclick=${handler} />`   // bound listener (legacy lowercase)
+```
+
+`children` as an attribute is honored only when the element has no template
+children, matching JSX behavior.
+
+### Reactivity
+
+A function passed to a non-event, non-`ref` attribute is auto-wrapped as a
+getter if it takes zero arguments. Both forms below are reactive and
+equivalent:
+
+```ts
+const [count] = createSignal(0);
+
+sld`<button count=${() => count()} />`;
 sld`<button count=${count} />`;
+```
 
-//Add ()=> to avoid Counter possibly getting auto-wrapped
+If the value you want to pass is itself a zero-arg function and you don't
+want it auto-wrapped, wrap it again to break the heuristic:
+
+```ts
 sld`<Route component=${() => Counter} />`;
+```
 
+`on*` and `ref` props are never auto-wrapped — they're passed as-is.
 
-## JSX vs SLD
+## JSX vs `sld`
 
-| Feature              | Solid JSX                                         | `sld` Tagged Template                                      |
-| :------------------- | :------------------------------------------------ | :--------------------------------------------------------- |
-| **Fragments**        | Required: `<>...</>` for multiple root nodes      | **None needed**: Returns a flat array of nodes             |
-| **Dot Notation**     | Supported: `<Input.Label />`                      | `.` is valid in identifier tokens           |
-| **Spread Syntax**    | `<div {...props} />`                              | `<div ...${props} />`                                      |
-| **Comments**         | `{/* JSX Comment */}`                             | `<!-- -->` (Stripped by parser)                            |
-| **Raw Text Tags**    | Escaping or `innerHTML` required                  | `<style>`/`<script>` treat children as text |
-| **Whitespace**       | JSX-style stripping                               | Contextual: Trims between tags, preserves inside text      |
-| **Reactivity**       | Signals are auto-wrapped in JSX                   | Reactive Holes must be wrapped in `()=> `     |
+| Feature             | Solid JSX                               | `sld` tagged template                              |
+| :------------------ | :-------------------------------------- | :------------------------------------------------- |
+| **Fragments**       | Required: `<>...</>` for multiple roots | None needed: returns a node, or array of nodes     |
+| **Spread**          | `<div {...props} />`                    | `<div ...${props} />`                              |
+| **Comments**        | `{/* ... */}`                           | `<!-- ... -->` (stripped)                          |
+| **Raw-text tags**   | `innerHTML` workaround                  | `<style>` / `<script>` bodies are raw text         |
+| **Whitespace**      | JSX-style stripping                     | Trims between tags; preserves inside text          |
+| **Reactivity**      | Signals auto-wrapped                    | Zero-arg functions auto-wrapped (use `() =>` to opt out) |
+| **Component refs** | Identifier in scope                     | Registered name (`<Foo />`) or expression (`<${Foo} />`) |
+
+Because `sld` returns a `JSX.Element` — a single node when the template
+resolves to one root, an array when it resolves to many — consumers that
+need to iterate or spread should normalize:
+
+```ts
+const result = sld`<div /><span />`;
+const nodes = Array.isArray(result) ? result : [result];
+```
+
+## License
+
+MIT

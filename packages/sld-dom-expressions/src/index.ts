@@ -1,4 +1,2 @@
-import { createSLDRuntime } from "./sld";
-import { type SLDInstance } from "./types";
-
-export { createSLDRuntime, SLDInstance };
+export { createSLDRuntime } from "./sld";
+export type { SLDInstance, Runtime, ComponentRegistry, FunctionComponent } from "./types";

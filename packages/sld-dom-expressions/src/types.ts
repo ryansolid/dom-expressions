@@ -1,13 +1,5 @@
 import { type JSX } from "../../dom-expressions/src/jsx";
 
-export type MaybeFunction<T> = T | (() => T);
-export type MaybeFunctionProps<T> = {
-  [K in keyof T]: K extends `on${string}` | "ref" ? T[K] : MaybeFunction<T[K]>;
-};
-// export type IntrinsicElementsMaybeFunction = {
-//   [K in keyof JSX.IntrinsicElements]: MaybeFunctionProps<JSX.IntrinsicElements[K]>;
-// };
-
 export type FunctionComponent = (...args: any[]) => any;
 /**
  * Component registry type
@@ -61,20 +53,13 @@ export type SLDInstance<T extends ComponentRegistry> = {
    * Component registry
    */
   components: T;
-
-  /**
-   * For types for tools only. Not used at runtime.
-   */
-  // elements: JSX.IntrinsicElements;
 };
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
-type ClassList =
-  | Record<string, boolean>
-  | Array<string | number | boolean | null | undefined | Record<string, boolean>>;
+
 export interface Runtime {
   insert(parent: MountableElement, accessor: any, marker?: Node | null, init?: any): any;
-  spread<T>(node: Element, accessor: (() => T) | T, skipChildren?: Boolean): void;
+  spread<T>(node: Element, accessor: (() => T) | T, skipChildren?: boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
   mergeProps(...sources: unknown[]): any;
   SVGElements: Set<string>;
