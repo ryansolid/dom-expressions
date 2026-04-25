@@ -14,6 +14,10 @@ export const SVGElements: Set<string>;
 
 export const MathMLElements: Set<string>;
 
+export const VoidElements: Set<string>;
+
+export const RawTextElements: Set<string>;
+
 export const Namespaces: Record<string, string>;
 
 export const DOMElements: Set<string>;

@@ -172,6 +172,32 @@ const Namespaces = {
   xml: "http://www.w3.org/XML/1998/namespace"
 };
 
+const VoidElements = /*#__PURE__*/ new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr"
+]);
+
+const RawTextElements = /*#__PURE__*/ new Set([
+  "style",
+  "script",
+  "noscript",
+  "template",
+  "textarea",
+  "title"
+]);
+
 const DOMElements = /*#__PURE__*/ new Set([
   "html",
   "base",
@@ -471,6 +497,8 @@ export {
   DelegatedEvents,
   SVGElements,
   MathMLElements,
+  VoidElements,
+  RawTextElements,
   Namespaces,
   DOMElements
 };
