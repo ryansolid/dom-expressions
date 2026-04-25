@@ -6,7 +6,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ryansolid/dom-expressions/blob/main/packages/babel-plugin-jsx-dom-expressions"
+    "url": "git+https://github.com/ryansolid/dom-expressions.git",
+    "directory": "packages/babel-plugin-jsx-dom-expressions"
   },
   "readmeFilename": "README.md",
   "main": "index.js",
