@@ -1,5 +1,15 @@
 # lit-dom-expressions
 
+## 0.50.0-next.3
+
+### Patch Changes
+
+- 4dae801: Normalize the `repository` field in every package to the standard npm
+  convention: a `git+https://github.com/ryansolid/dom-expressions.git` URL
+  with a `directory` pointing at the package within the monorepo. Restores
+  "View source" / "Open in repo" links on the npm registry and unblocks
+  tooling that resolves source from package metadata.
+
 ## 0.50.0-next.2
 
 ### Patch Changes
