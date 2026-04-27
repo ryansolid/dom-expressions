@@ -57,7 +57,9 @@ Inside `h(...)` composition works without ceremony: nested `h(...)` children are
 
 ## Components, props, and children
 
-- **Props are uniform.** Zero-arity function props are routed through `dynamicProperty` so reading them invokes the accessor and returns the current value — the same getter-style convention Solid's JSX compiler produces. Event props (`on…`) and higher-arity functions (e.g. a `For` render callback) pass through unchanged.
+- **Props are uniform.** Zero-arity function props are routed through `dynamicProperty` so reading them invokes the accessor and returns the current value — the same getter-style convention Solid's JSX compiler produces. Function props with arity ≥ 1 (render-callbacks like `children: row => h(Row, …)`, `header: tab => h(Tab, …)`, a `mapArray` `(item, index) => h(Row, …)` row callback, event handlers like `onClick: e => …`, etc.) are wrapped so any nested `h(...)` thunks in the return value are materialized at the call site, matching what JSX-compiled call sites store; this is what keeps `mapArray`-style consumers (`For`, `Index`, `Show`, etc.) from re-running stable row components on list mutations and gives the same property to any third-party JSX-compiled component that re-invokes a callback prop with arguments. Arity (so `cb.length` introspection still works), `this`-binding, and identity once the wrap is in place are all preserved; the wrap is idempotent across nested components.
+
+  > **Footgun (events on components).** Because zero-arity function props on components are wrapped as getters, an event handler written `onClick: () => doStuff()` is invoked at render time and its return value (`undefined`) becomes the prop — the click never fires. Take the unused argument to mark it as a 1-arity callback: `onClick: e => doStuff()`. The same goes for any other component prop you want passed by reference. Solid's `@solidjs/h` README documents this same caveat.
 
 - **`props.children`** mirrors the caller's input:
 

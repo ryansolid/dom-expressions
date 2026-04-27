@@ -15,9 +15,13 @@ type ExpandableNode = Node & { [key: string]: any };
 type Props = { [key: string]: any };
 
 // Tags h() thunks so consumers can distinguish them from user-written
-// accessors and invoke them once under the correct owner rather than
-// wrapping them in an effect.
+// accessors and invoke them once rather than wrapping them in an effect.
 const $ELEMENT: unique symbol = Symbol("hyper-element");
+// Marks callback props that have already been wrapped (see the
+// prop-loop below) so re-passing them through nested `h(Comp, ...)`
+// calls is idempotent — important for identity stability across
+// component boundaries.
+const $WRAPPED: unique symbol = Symbol("hyper-wrapped");
 
 export type HyperElement = {
   (): ExpandableNode | ExpandableNode[];
@@ -28,6 +32,43 @@ export type HyperScript = {
   (...args: any[]): HyperElement | ExpandableNode[];
   Fragment: (props: { children: any }) => any;
 };
+
+// Recursively invokes h() thunks (and walks arrays containing them) so a
+// callback's return value lands in the consumer pre-rendered.
+function resolveThunks(value: any): any {
+  if (typeof value === "function" && (value as any)[$ELEMENT]) return resolveThunks(value());
+  if (Array.isArray(value)) {
+    const out = new Array(value.length);
+    for (let i = 0; i < value.length; i++) out[i] = resolveThunks(value[i]);
+    return out;
+  }
+  return value;
+}
+
+// Common arities (1 and 2) are hand-shaped so the wrapped function has
+// the right native `length` without paying for `defineProperty`. 1-arity
+// covers most render-props and 1-arity event handlers; 2-arity covers
+// `mapArray` row callbacks that take an index. Anything higher falls
+// back to rest-args + `apply` and a one-shot `defineProperty`.
+function wrapCallback(orig: any): any {
+  let w: any;
+  if (orig.length === 1) {
+    w = function (this: any, a: any) {
+      return resolveThunks(orig.call(this, a));
+    };
+  } else if (orig.length === 2) {
+    w = function (this: any, a: any, b: any) {
+      return resolveThunks(orig.call(this, a, b));
+    };
+  } else {
+    w = function (this: any, ...args: any[]) {
+      return resolveThunks(orig.apply(this, args));
+    };
+    Object.defineProperty(w, "length", { value: orig.length });
+  }
+  w[$WRAPPED] = true;
+  return w;
+}
 
 // Inspired by https://github.com/hyperhype/hyperscript
 export function createHyperScript(r: Runtime): HyperScript {
@@ -92,9 +133,25 @@ export function createHyperScript(r: Runtime): HyperScript {
               ? args.shift() || {}
               : {};
           if (args.length) props.children = args.length > 1 ? args : args[0];
+          // Zero-arity props become getters (JSX-getter parity).
+          // Higher-arity callbacks get wrapped so any tagged thunks
+          // they return are materialized at the call site — otherwise
+          // a render-prop consumer (`mapArray`-style `For`/`Index`,
+          // any third-party JSX-compiled component that re-invokes a
+          // callback with arguments) would store the raw thunk and
+          // re-invoke it on every parent change, re-mounting stable
+          // children. `this` is preserved via `.call`/`.apply`; arity
+          // is preserved so consumers that introspect `cb.length`
+          // (e.g. `mapArray` deciding whether to allocate an index
+          // signal) see the original signature.
           for (const k in props) {
             const v = props[k];
-            if (typeof v === "function" && !v.length) r.dynamicProperty(props, k);
+            if (typeof v === "function") {
+              if (!v.length) r.dynamicProperty(props, k);
+              else if (!(v as any)[$ELEMENT] && !(v as any)[$WRAPPED]) {
+                props[k] = wrapCallback(v);
+              }
+            }
           }
           e = r.createComponent(l, props);
           // Drain nested h() thunks so downstream sees the real render result.

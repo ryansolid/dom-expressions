@@ -7,7 +7,7 @@
  * regression loud.
  */
 
-import { createRoot, createSignal, mapArray, flush } from "@solidjs/signals";
+import { createRoot, createSignal, mapArray, onCleanup, flush } from "@solidjs/signals";
 import { createHyperScript } from "../dist/hyper-dom-expressions";
 import * as r from "dom-expressions/src/client";
 
@@ -174,6 +174,103 @@ describe("hyperscript over-execution guards", () => {
     flush();
     expect(host.textContent).toBe("abcT");
     expect(sideReads).toBe(2);
+
+    dispose[0]();
+  });
+
+  test("component-children rows do not re-mount on list mutation", () => {
+    // `mapArray` stores whatever its row callback returns. If that's a
+    // raw hyperscript thunk, `r.insert.flatten` re-invokes it on every
+    // list change, re-running the row component, re-creating its DOM,
+    // and firing its `onCleanup` even for rows the diff would have
+    // kept. `h(...)` materializes thunks at the callback-prop boundary
+    // so what the consumer stores is already the rendered tree —
+    // matching what JSX-compiled `<For>` produces.
+    const rowExecs = new Map();
+    const rowCleanups = new Map();
+
+    function Row(props) {
+      const id = props.item.id;
+      rowExecs.set(id, (rowExecs.get(id) || 0) + 1);
+      onCleanup(() => rowCleanups.set(id, (rowCleanups.get(id) || 0) + 1));
+      return h("li", () => props.item.label);
+    }
+
+    const a = { id: "a", label: "A" };
+    const b = { id: "b", label: "B" };
+    const c = { id: "c", label: "C" };
+    const [list, setList] = createSignal([a, b]);
+
+    const dispose = [];
+    const host = createRoot(d => {
+      dispose.push(d);
+      return h("ul", h(For, { each: list, children: item => h(Row, { item }) }))();
+    });
+
+    expect(host.textContent).toBe("AB");
+    expect(rowExecs.get("a")).toBe(1);
+    expect(rowExecs.get("b")).toBe(1);
+    expect(rowCleanups.size).toBe(0);
+
+    setList([a, b, c]);
+    flush();
+
+    expect(host.textContent).toBe("ABC");
+    expect(rowExecs.get("c")).toBe(1);
+    expect(rowExecs.get("a")).toBe(1);
+    expect(rowExecs.get("b")).toBe(1);
+    expect(rowCleanups.get("a")).toBeUndefined();
+    expect(rowCleanups.get("b")).toBeUndefined();
+
+    setList([a, c]);
+    flush();
+
+    expect(host.textContent).toBe("AC");
+    expect(rowExecs.get("a")).toBe(1);
+    expect(rowExecs.get("c")).toBe(1);
+    expect(rowCleanups.get("b")).toBe(1);
+
+    dispose[0]();
+    expect(rowCleanups.get("a")).toBe(1);
+    expect(rowCleanups.get("c")).toBe(1);
+  });
+
+  test("component-children rows with an index argument also don't re-mount", () => {
+    // Same shape as above but the row callback is 2-arity — covers
+    // `mapArray((item, index) => ...)` style callers and any other
+    // render-prop consumer that passes a positional index. The wrap
+    // has to forward both arguments and still resolve the returned
+    // tagged thunk so the diff doesn't re-build stable rows.
+    const rowExecs = new Map();
+
+    function Row(props) {
+      const id = props.item.id;
+      rowExecs.set(id, (rowExecs.get(id) || 0) + 1);
+      return h("li", () => `${props.index}:${props.item.label}`);
+    }
+
+    const a = { id: "a", label: "A" };
+    const b = { id: "b", label: "B" };
+    const c = { id: "c", label: "C" };
+    const [list, setList] = createSignal([a, b]);
+
+    const dispose = [];
+    const host = createRoot(d => {
+      dispose.push(d);
+      return h("ul", h(For, { each: list, children: (item, i) => h(Row, { item, index: i }) }))();
+    });
+
+    expect(host.textContent).toBe("0:A1:B");
+    expect(rowExecs.get("a")).toBe(1);
+    expect(rowExecs.get("b")).toBe(1);
+
+    setList([a, b, c]);
+    flush();
+
+    expect(host.textContent).toBe("0:A1:B2:C");
+    expect(rowExecs.get("a")).toBe(1);
+    expect(rowExecs.get("b")).toBe(1);
+    expect(rowExecs.get("c")).toBe(1);
 
     dispose[0]();
   });

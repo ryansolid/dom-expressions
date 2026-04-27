@@ -2,15 +2,26 @@
  * Contract tests for how `h(Component, …)` collects and exposes
  * `props.children` under the lazy / tagged-thunk design.
  *
- *   - `props.children` mirrors the caller's input. A function stays a
- *     function, a scalar stays a scalar, a Node (or a tagged thunk)
- *     stays whatever the caller passed. Multiple positional children
- *     become an array.
+ *   - `props.children` mirrors the caller's input. A scalar stays a
+ *     scalar, a Node (or a tagged thunk) stays whatever the caller
+ *     passed. Multiple positional children become an array.
+ *   - Zero-arity function props go through `dynamicProperty` so
+ *     attributes/props stay reactive.
+ *   - Function props with arity ≥ 1 (render-callback shape:
+ *     `children: row => h(Row, …)`, `header: tab => h(…)`, a `mapArray`
+ *     `(item, index) => h(Row, …)` row callback, etc.) are wrapped so
+ *     any tagged `h(...)` thunks in the callback's return value are
+ *     materialized at the call site. This matches what JSX-compiled
+ *     call sites store and prevents render-prop consumers (including
+ *     `mapArray`-style `For`/`Index` and any third-party JSX-compiled
+ *     component that re-invokes a callback with arguments) from
+ *     re-running stable children on parent updates. Arity (so consumers
+ *     that introspect `cb.length` see the original signature),
+ *     `this`-binding, and identity within the rest of the tree are
+ *     preserved.
  *   - Consumers insert children by placing them inside another `h(…)`
  *     call; tagged thunks auto-invoke at consumption, user accessors
  *     route through `r.insert`.
- *   - Non-`children` zero-arity function props still go through
- *     `dynamicProperty` so attributes/props stay reactive.
  *   - JSX-compiler output (eagerly-evaluated arrays / scalars / Nodes
  *     passed as children) continues to work.
  */
@@ -159,7 +170,7 @@ describe("dynamicProperty wrapping regression guard", () => {
     expect(el.getAttribute("title")).toBe("second");
   });
 
-  test("higher-arity function props are left alone (not wrapped)", () => {
+  test("higher-arity function props are wrapped but preserve arity and forward all args", () => {
     let received;
     const Comp = props => {
       received = props.onUse;
@@ -167,7 +178,9 @@ describe("dynamicProperty wrapping regression guard", () => {
     };
     const handler = (a, b) => a + b;
     mount(() => h(Comp, { onUse: handler }));
-    expect(received).toBe(handler);
+    expect(received).not.toBe(handler);
+    expect(received.length).toBe(2);
+    expect(received(2, 3)).toBe(5);
   });
 
   test("getter-backed props still route through spread and stay reactive", () => {
@@ -215,6 +228,87 @@ describe("JSX-compiler output compatibility", () => {
     const Comp = props => h("p", props.children);
     expect(mount(() => h(Comp, { children: "lit" })).textContent).toBe("lit");
     expect(mount(() => h(Comp, { children: 7 })).textContent).toBe("7");
+  });
+});
+
+describe("callback prop wrap", () => {
+  test("preserves arity so consumers can introspect props.cb.length", () => {
+    let observed1, observed2, observed3;
+    const Comp = props => {
+      observed1 = props.cb1.length;
+      observed2 = props.cb2.length;
+      observed3 = props.cb3.length;
+      return h("span", "x");
+    };
+    mount(() =>
+      h(Comp, {
+        cb1: x => x,
+        cb2: (x, y) => x + y,
+        cb3: (a, b, c) => a + b + c
+      })
+    );
+    expect(observed1).toBe(1);
+    expect(observed2).toBe(2);
+    expect(observed3).toBe(3);
+  });
+
+  test("forwards all arguments through the wrap (2-arity row callback shape)", () => {
+    // `mapArray` invokes its row callback as `cb(item, index)` (or
+    // with an index signal). The wrap mustn't drop the second arg.
+    let seen;
+    const Comp = props => {
+      seen = props.cb("item", 7);
+      return h("span", "x");
+    };
+    mount(() => h(Comp, { cb: (a, b) => `${a}:${b}` }));
+    expect(seen).toBe("item:7");
+  });
+
+  test("is idempotent across nested components (passing through doesn't re-wrap)", () => {
+    // The wrap exists only to materialize tagged thunks at the
+    // boundary; threading a wrapped callback through more layers must
+    // not nest further wrappers (that would erode identity unbounded).
+    const orig = a => a;
+    let received1, received2;
+
+    const Inner = props => {
+      received2 = props.cb;
+      return h("span", "x");
+    };
+    const Outer = props => {
+      received1 = props.cb;
+      return h(Inner, { cb: props.cb });
+    };
+
+    mount(() => h(Outer, { cb: orig }));
+
+    expect(received1).not.toBe(orig);
+    expect(received1).toBe(received2);
+  });
+
+  test("preserves `this` binding when the callback is forwarded as a DOM event handler", () => {
+    // Any-arity event handler routed through a component prop hits
+    // the wrap, so we have to forward `this` explicitly.
+    // dom-expressions binds `this` to the element when invoking
+    // delegated handlers — that contract has to survive the wrap.
+    let observedThis = null;
+    const handler = function (e) {
+      observedThis = this;
+    };
+
+    const Button = props => h("button", { onClick: props.onClick }, "Go");
+
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    const dispose = r.render(() => h(Button, { onClick: handler }), root);
+    try {
+      const btn = root.querySelector("button");
+      btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(observedThis).toBe(btn);
+    } finally {
+      dispose();
+      document.body.removeChild(root);
+    }
   });
 });
 
