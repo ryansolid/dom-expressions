@@ -9,6 +9,8 @@ export {
   DOMElements,
   SVGElements,
   MathMLElements,
+  VoidElements,
+  RawTextElements,
   Namespaces,
   DelegatedEvents
 } from "./constants.js";
