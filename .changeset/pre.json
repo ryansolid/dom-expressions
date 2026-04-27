@@ -11,10 +11,12 @@
   "changesets": [
     "add-sld-dom-expressions",
     "export-void-rawtext-element-sets",
+    "expose-void-rawtext-everywhere",
     "fix-effect-compute-prev-leak",
     "fix-insert-double-bind",
     "fix-numbered-id-reserved-words",
     "harden-ssr-escape",
+    "hyper-mapArray-row-overexec",
     "hyper-tagged-thunks",
     "normalize-repository-urls",
     "pr-511-ssr-dedupe-and-xlink-removal",
