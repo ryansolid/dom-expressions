@@ -175,6 +175,15 @@ Removes tags from the template output if they have no closing parents and are th
 
 Removes quotes for html attributes when possible from the template output. This may not work in all browser-like environments the same. The solution has been tested again Chrome/Edge/Firefox/Safari.
 
+### omitAttributeSpacing
+
+- Type: `boolean`
+- Default: `true`
+
+When `true` (the default), the template output drops the whitespace between a quoted attribute and the next attribute (`<svg width="12"height="13">`). This mirrors the prior behavior and relies on the browser's HTML parser to tolerate the missing space. Some strict parsers (notably XML/SVG-only or game-engine browser-likes such as Coherent Gameface) reject the resulting markup.
+
+Set this to `false` to emit a single space between attributes (`<svg width="12" height="13">`) so the generated HTML is strictly valid. This may also be desirable together with `omitQuotes: false` / `omitLastClosingTag: false` when targeting stricter parsers.
+
 ### requireImportSource
 
 - Type: `string | false`
