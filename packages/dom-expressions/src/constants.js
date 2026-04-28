@@ -32,17 +32,10 @@ const DelegatedEvents = /*#__PURE__*/ new Set([
   "keydown",
   "keyup",
   "mousedown",
-  "mousemove",
-  "mouseout",
-  "mouseover",
   "mouseup",
   "pointerdown",
-  "pointermove",
-  "pointerout",
-  "pointerover",
   "pointerup",
   "touchend",
-  "touchmove",
   "touchstart"
 ]);
 
