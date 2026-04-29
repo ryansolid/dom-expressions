@@ -771,7 +771,7 @@ describe("handling of raw text elements", () => {
       { type: OPEN_TAG_TOKEN },
       { type: SLASH_TOKEN },
       { type: IDENTIFIER_TOKEN, value: "div" },
-      { type: CLOSE_TAG_TOKEN },
+      { type: CLOSE_TAG_TOKEN }
     ]);
   });
 
