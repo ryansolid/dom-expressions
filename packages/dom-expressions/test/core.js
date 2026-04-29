@@ -40,12 +40,16 @@ export {
   flatten
 } from "@solidjs/signals";
 
-export const effect = (fn, effectFn, initial) =>
-  createRenderEffect(fn, effectFn, initial, { transparent: true });
+export const effect = (fn, effectFn, options) =>
+  createRenderEffect(
+    fn,
+    effectFn,
+    options ? { transparent: true, ...options } : { transparent: true }
+  );
 
 export const memo = (fn, transparent) =>
   transparent
     ? fn.$r
       ? fn
-      : createMemo(() => fn(), undefined, { transparent: true })
+      : createMemo(() => fn(), { transparent: true })
     : createMemo(() => fn());

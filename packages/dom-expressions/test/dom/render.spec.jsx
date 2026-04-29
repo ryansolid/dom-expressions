@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/client";
-import { createSignal, createRoot } from "@solidjs/signals";
+import { createSignal, createRoot, createMemo, flush } from "@solidjs/signals";
 
 describe("render", () => {
   // Rendering into `document` itself short-circuits insert and runs the
@@ -21,6 +21,34 @@ describe("render", () => {
     dispose();
     expect(document.body.innerHTML).toBe(savedBody);
     expect(document.documentElement.childNodes.length).toBe(savedBodyChildCount);
+  });
+
+  it("keeps lazy memo-owned content reactive when the root element is document", () => {
+    const savedBody = document.body.innerHTML;
+    let setShow, rendered;
+
+    document.body.innerHTML = "";
+    const dispose = r.render(() => {
+      const [show, set] = createSignal(false);
+      setShow = set;
+
+      return createMemo(
+        () => {
+          rendered = show() ? "show branch" : "fallback branch";
+          return <main>{rendered}</main>;
+        },
+        { lazy: true }
+      );
+    }, document);
+
+    expect(rendered).toBe("fallback branch");
+
+    setShow(true);
+    flush();
+
+    expect(rendered).toBe("show branch");
+    dispose();
+    document.body.innerHTML = savedBody;
   });
 
   it("should render JSX", () => {
