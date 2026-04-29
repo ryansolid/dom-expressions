@@ -55,7 +55,11 @@ export function render(code, element, init, options = {}) {
     dispose => {
       disposer = dispose;
       if (element === document) {
-        flatten(code);
+        const tree = code();
+        effect(
+          () => flatten(tree),
+          () => {}
+        );
       } else {
         const tree = code();
         insert(
