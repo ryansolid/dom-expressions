@@ -11,6 +11,9 @@
   },
   "readmeFilename": "README.md",
   "sideEffects": false,
+  "bin": {
+    "dom-expressions-jsx-types": "./src/jsx-customize.mjs"
+  },
   "scripts": {
     "test": "jest --no-cache",
     "test:coverage": "jest --coverage --no-cache",

@@ -23,13 +23,16 @@
     "changeset": "changeset",
     "version": "changeset version",
     "publish:release": "pnpm run build && changeset publish",
-    "jsx-sync-types": "node packages/dom-expressions/src/jsx-update.mjs"
+    "jsx-sync-types": "node packages/dom-expressions/src/jsx-update.mjs",
+    "jsx-customize-types": "node packages/dom-expressions/src/jsx-customize.mjs"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm run format"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["simple-git-hooks"]
+    "onlyBuiltDependencies": [
+      "simple-git-hooks"
+    ]
   },
   "devDependencies": {
     "@babel/core": "^7.20.12",
