@@ -1,5 +1,7 @@
 # lit-dom-expressions
 
+## 0.50.0-next.5
+
 ## 0.50.0-next.4
 
 ## 0.50.0-next.3

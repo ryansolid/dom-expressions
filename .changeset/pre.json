@@ -12,6 +12,7 @@
     "add-sld-dom-expressions",
     "export-void-rawtext-element-sets",
     "expose-void-rawtext-everywhere",
+    "fix-document-root-reactivity",
     "fix-effect-compute-prev-leak",
     "fix-insert-double-bind",
     "fix-numbered-id-reserved-words",
