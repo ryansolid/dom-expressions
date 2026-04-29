@@ -753,6 +753,28 @@ describe("handling of raw text elements", () => {
     ]);
   });
 
+  it("should handle nested raw text elements ", () => {
+    const tokens = tokenizeTemplate`<div><style>.class > span { color: red; }</style></div>`;
+
+    expect(tokens).toEqual([
+      { type: OPEN_TAG_TOKEN },
+      { type: IDENTIFIER_TOKEN, value: "div" },
+      { type: CLOSE_TAG_TOKEN },
+      { type: OPEN_TAG_TOKEN },
+      { type: IDENTIFIER_TOKEN, value: "style" },
+      { type: CLOSE_TAG_TOKEN },
+      { type: TEXT_TOKEN, value: ".class > span { color: red; }" },
+      { type: OPEN_TAG_TOKEN },
+      { type: SLASH_TOKEN },
+      { type: IDENTIFIER_TOKEN, value: "style" },
+      { type: CLOSE_TAG_TOKEN },
+      { type: OPEN_TAG_TOKEN },
+      { type: SLASH_TOKEN },
+      { type: IDENTIFIER_TOKEN, value: "div" },
+      { type: CLOSE_TAG_TOKEN },
+    ]);
+  });
+
   it("should tokenize content inside <textarea> as text", () => {
     const tokens = tokenizeTemplate`<textarea>This is <span>not parsed</span>.</textarea>`;
 
