@@ -615,7 +615,7 @@ function transformAttributes(path, results) {
     }
 
     if (needsQuoting) {
-      needsSpacing = false;
+      needsSpacing = !config.omitAttributeSpacing;
       results.template += `="${escapeHTML(text, true)}"`;
     } else {
       needsSpacing = true;

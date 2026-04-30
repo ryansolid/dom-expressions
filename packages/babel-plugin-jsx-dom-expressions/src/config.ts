@@ -10,6 +10,7 @@ export default {
   omitNestedClosingTags: false,
   omitLastClosingTag: true,
   omitQuotes: true,
+  omitAttributeSpacing: true,
   contextToCustomElements: false,
   staticMarker: "@once",
   effectWrapper: "effect",
