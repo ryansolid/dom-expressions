@@ -1,5 +1,12 @@
 # sld-dom-expressions
 
+## 0.50.0-next.6
+
+### Patch Changes
+
+- a843315: Fix SLD `<template>` rendering so dynamic expressions are inserted into inert template content.
+- a8a8f81: Inline `csstype` in the `sld-dom-expressions` build output so the published type declarations do not require consumers to resolve that transitive JSX type dependency separately.
+
 ## 0.50.0-next.5
 
 ## 0.50.0-next.4

@@ -9,6 +9,7 @@
     "sld-dom-expressions": "0.50.0-next.2"
   },
   "changesets": [
+    "add-jsx-customize-script",
     "add-sld-dom-expressions",
     "export-void-rawtext-element-sets",
     "expose-void-rawtext-everywhere",
@@ -16,6 +17,7 @@
     "fix-effect-compute-prev-leak",
     "fix-insert-double-bind",
     "fix-numbered-id-reserved-words",
+    "fix-sld-template-content",
     "harden-ssr-escape",
     "hyper-mapArray-row-overexec",
     "hyper-tagged-thunks",
@@ -24,6 +26,7 @@
     "release-0-50-0-next-1",
     "sld-create-sld-runtime-returns-tag",
     "sld-flat-return-and-jsx-element-type",
+    "sld-inline-csstype",
     "sld-public-type-exports",
     "unify-babel-void-elements"
   ]

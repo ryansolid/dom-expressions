@@ -1,5 +1,11 @@
 # dom-expressions
 
+## 0.50.0-next.6
+
+### Patch Changes
+
+- f0ca033: Add a build-time JSX declaration customization script for renderer packages.
+
 ## 0.50.0-next.5
 
 ### Patch Changes
