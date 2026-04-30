@@ -442,11 +442,11 @@ describe("SLD Integration Tests", () => {
       dispose();
     });
 
-    it.skip("handles template elements correctly", () =>
+    it("handles template elements correctly", () =>
       createRoot(dispose => {
         const nodes = sld`${"hole"}<template>Count: ${() => 1}</template>` as Node[];
         document.body.append(...nodes);
-        expect(nodes[2].textContent).toEqual("Count: 1");
+        expect((nodes[2] as HTMLTemplateElement).content.textContent).toEqual("Count: 1");
         dispose();
       }));
 
@@ -1053,7 +1053,7 @@ describe("SLD Integration Tests", () => {
         dispose();
       }));
 
-    it.skip("template element edge case", () =>
+    it("template element edge case", () =>
       createRoot(dispose => {
         const elem = sld`
     <div>
@@ -1062,7 +1062,8 @@ describe("SLD Integration Tests", () => {
       </template>
     </div>
   `;
-        expect(elem);
+        const template = (elem as HTMLElement).querySelector("template")!;
+        expect(template.content.querySelector("h1")?.textContent).toBe("123");
         dispose();
       }));
   });

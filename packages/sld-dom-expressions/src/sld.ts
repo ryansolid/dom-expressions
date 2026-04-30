@@ -24,6 +24,8 @@ const flat = (arr: any[]) => {
 
 export function createSLDRuntime(r: Runtime) {
   const cache = new WeakMap<TemplateStringsArray, RootNode>();
+  const rawTextElements = new Set(r.RawTextElements);
+  rawTextElements.delete("template");
 
   //Walk over text, comment, and element nodes
   const walker = document.createTreeWalker(document, 129);
@@ -55,7 +57,7 @@ export function createSLDRuntime(r: Runtime) {
   const getCachedRoot = (strings: TemplateStringsArray): RootNode => {
     let root = cache.get(strings);
     if (!root) {
-      root = parse(tokenize(strings, r.RawTextElements), r.VoidElements);
+      root = parse(tokenize(strings, rawTextElements), r.VoidElements);
       buildTemplate(root);
       cache.set(strings, root);
     }
@@ -110,7 +112,8 @@ export function createSLDRuntime(r: Runtime) {
           }
           return true;
         });
-        elem.append(...node.children.map(buildNodes));
+        const childRoot = node.name === "template" ? (elem as HTMLTemplateElement).content : elem;
+        childRoot.append(...node.children.map(buildNodes));
 
         return elem;
     }
@@ -154,7 +157,7 @@ export function createSLDRuntime(r: Runtime) {
     const clone = node.template.content.cloneNode(true) as DocumentFragment;
     walker.currentNode = clone;
 
-    const walkNodes = (nodes: ChildNode[]) => {
+    const walkNodes = (nodes: ChildNode[], walker: TreeWalker) => {
       for (const node of nodes) {
         if (
           node.type === ELEMENT_NODE ||
@@ -171,12 +174,17 @@ export function createSLDRuntime(r: Runtime) {
               const props = gatherProps(node, values, components);
               r.spread(domNode as Element, props, true);
             }
-            walkNodes(node.children);
+            walkNodes(
+              node.children,
+              node.name === "template"
+                ? document.createTreeWalker((domNode as HTMLTemplateElement).content, 129)
+                : walker
+            );
           }
         }
       }
     };
-    walkNodes(node.children);
+    walkNodes(node.children, walker);
     return clone.childNodes.length === 1 ? clone.firstChild : Array.from(clone.childNodes);
   };
 
