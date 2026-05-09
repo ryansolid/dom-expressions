@@ -149,8 +149,8 @@ export function className(node, value, prev) {
   if (typeof prev === "string") {
     prev = {};
     node.removeAttribute("class");
-  } else prev = classListToObject(prev || {});
-  value = classListToObject(value);
+  } else prev = reconcileClassObject(classListToObject(prev || {}));
+  value = reconcileClassObject(classListToObject(value));
   const classKeys = Object.keys(value || {});
   const prevKeys = Object.keys(prev);
   let i, len;
@@ -546,9 +546,25 @@ function getChildRoot(node) {
 }
 
 function toggleClassKey(node, key, value) {
-  const classNames = key.trim().split(/\s+/);
-  for (let i = 0, nameLen = classNames.length; i < nameLen; i++)
-    node.classList.toggle(classNames[i], value);
+  node.classList.toggle(key, value);
+}
+
+function reconcileClassObject(classObject) {
+  if (typeof classObject !== "object") return classObject;
+  const result = {};
+  const keys = Object.keys(classObject);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i],
+      value = classObject[key];
+    if (!classObject[key]) continue;
+
+    const classNames = key.trim().split(/\s+/);
+    for (let j = 0; j < classNames.length; j++) {
+      const className = classNames[j];
+      if (className && !(className in result)) result[className] = true;
+    }
+  }
+  return result;
 }
 
 function classListToObject(classList) {

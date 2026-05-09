@@ -234,4 +234,28 @@ describe("Test class binding", () => {
     // in prev but not in the (empty) new keys.
     expect(node.classList.contains("stale")).toBe(false);
   });
+
+  test("shared class tokens remain when switching composite class keys", () => {
+    const node = document.createElement("span");
+
+    const first = {
+      "bg-zinc-400 text-white": true,
+      "bg-sky-400 text-white": true
+    };
+
+    const second = {
+      "bg-zinc-400 text-white": false,
+      "bg-sky-400 text-white": true
+    };
+
+    r.className(node, first);
+    expect(node.classList.contains("text-white")).toBe(true);
+    expect(node.classList.contains("bg-zinc-400")).toBe(true);
+    expect(node.classList.contains("bg-sky-400")).toBe(true);
+
+    r.className(node, second, first);
+    expect(node.classList.contains("text-white")).toBe(true);
+    expect(node.classList.contains("bg-zinc-400")).toBe(false);
+    expect(node.classList.contains("bg-sky-400")).toBe(true);
+  });
 });
