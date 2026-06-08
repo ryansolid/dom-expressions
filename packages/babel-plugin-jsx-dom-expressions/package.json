@@ -8,6 +8,10 @@
     "type": "git",
     "url": "https://github.com/ryansolid/dom-expressions/blob/main/packages/babel-plugin-jsx-dom-expressions"
   },
+  "homepage": "https://github.com/ryansolid/dom-expressions/tree/main/packages/babel-plugin-jsx-dom-expressions#readme",
+  "bugs": {
+    "url": "https://github.com/ryansolid/dom-expressions/issues"
+  },
   "readmeFilename": "README.md",
   "main": "index.js",
   "sideEffects": false,
