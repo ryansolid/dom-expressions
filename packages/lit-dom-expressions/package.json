@@ -8,6 +8,10 @@
     "type": "git",
     "url": "https://github.com/ryansolid/dom-expressions/blob/main/packages/lit-dom-expressions"
   },
+  "homepage": "https://github.com/ryansolid/dom-expressions/tree/main/packages/lit-dom-expressions#readme",
+  "bugs": {
+    "url": "https://github.com/ryansolid/dom-expressions/issues"
+  },
   "main": "lib/lit-dom-expressions.js",
   "module": "dist/lit-dom-expressions.js",
   "types": "types/index.d.ts",
