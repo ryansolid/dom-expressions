@@ -49,5 +49,9 @@
     "rollup-plugin-cleanup": "^3.2.1",
     "s-js": "0.4.9",
     "typescript": "~5.3.3"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/ryansolid/dom-expressions/issues"
+  },
+  "homepage": "https://github.com/ryansolid/dom-expressions#readme"
 }
