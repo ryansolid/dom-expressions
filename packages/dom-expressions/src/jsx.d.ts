@@ -68,8 +68,7 @@ export namespace JSX {
   > = EHandler | BoundEventHandler<T, E, EHandler>;
 
   interface EventHandlerWithOptions<T, E extends Event, EHandler = EventHandler<T, E>>
-    extends AddEventListenerOptions,
-      EventListenerOptions {
+    extends AddEventListenerOptions, EventListenerOptions {
     handleEvent: EHandler;
   }
 
@@ -663,7 +662,8 @@ export namespace JSX {
    * Includes `keys` defined for the `Element` and `Node` interfaces.
    */
   interface DOMAttributes<T>
-    extends CustomAttributes<T>,
+    extends
+      CustomAttributes<T>,
       DirectiveAttributes,
       DirectiveFunctionAttributes<T>,
       PropAttributes,
@@ -2300,7 +2300,8 @@ export namespace JSX {
     visibility?: "visible" | "hidden" | "collapse" | "inherit" | undefined;
   }
   interface AnimationElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       ConditionalProcessingSVGAttributes {
     // TODO TimeEvent is currently undefined on TS
@@ -2320,7 +2321,8 @@ export namespace JSX {
   }
 
   interface ContainerElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
@@ -2334,8 +2336,7 @@ export namespace JSX {
         | "color-rendering"
       > {}
   interface FilterPrimitiveElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
+    extends CoreSVGAttributes<T>, Pick<PresentationSVGAttributes, "color-interpolation-filters"> {
     height?: number | string | undefined;
     result?: string | undefined;
     width?: number | string | undefined;
@@ -2354,16 +2355,15 @@ export namespace JSX {
     viewBox?: string | undefined;
   }
   interface GradientElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
+    extends CoreSVGAttributes<T>, ExternalResourceSVGAttributes, StylableSVGAttributes {
     gradientTransform?: string | undefined;
     gradientUnits?: SVGUnits | undefined;
     href?: string | undefined;
     spreadMethod?: "pad" | "reflect" | "repeat" | undefined;
   }
   interface GraphicsElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "clip-rule"
@@ -2379,12 +2379,12 @@ export namespace JSX {
       > {}
   interface LightSourceElementSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface NewViewportSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      Pick<PresentationSVGAttributes, "overflow" | "clip"> {
+    extends CoreSVGAttributes<T>, Pick<PresentationSVGAttributes, "overflow" | "clip"> {
     viewBox?: string | undefined;
   }
   interface ShapeElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "color"
@@ -2403,7 +2403,8 @@ export namespace JSX {
         | "pathLength"
       > {}
   interface TextContentElementSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       Pick<
         PresentationSVGAttributes,
         | "font-family"
@@ -2444,14 +2445,16 @@ export namespace JSX {
     zoomAndPan?: "disable" | "magnify" | undefined;
   }
   interface AnimateSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
+    extends
+      AnimationElementSVGAttributes<T>,
       AnimationAttributeTargetSVGAttributes,
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes,
       Pick<PresentationSVGAttributes, "color-interpolation" | "color-rendering"> {}
   interface AnimateMotionSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
+    extends
+      AnimationElementSVGAttributes<T>,
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
@@ -2461,7 +2464,8 @@ export namespace JSX {
     rotate?: number | string | "auto" | "auto-reverse" | undefined;
   }
   interface AnimateTransformSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
+    extends
+      AnimationElementSVGAttributes<T>,
       AnimationAttributeTargetSVGAttributes,
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
@@ -2469,7 +2473,8 @@ export namespace JSX {
     type?: "translate" | "scale" | "rotate" | "skewX" | "skewY" | undefined;
   }
   interface CircleSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
@@ -2480,7 +2485,8 @@ export namespace JSX {
     r?: number | string | undefined;
   }
   interface ClipPathSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2489,14 +2495,16 @@ export namespace JSX {
     clipPathUnits?: SVGUnits | undefined;
   }
   interface DefsSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {}
   interface DescSVGAttributes<T> extends CoreSVGAttributes<T>, StylableSVGAttributes {}
   interface EllipseSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2509,24 +2517,28 @@ export namespace JSX {
     ry?: number | string | undefined;
   }
   interface FeBlendSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
     mode?: "normal" | "multiply" | "screen" | "darken" | "lighten" | undefined;
   }
   interface FeColorMatrixSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     type?: "matrix" | "saturate" | "hueRotate" | "luminanceToAlpha" | undefined;
     values?: string | undefined;
   }
   interface FeComponentTransferSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {}
   interface FeCompositeSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
     k1?: number | string | undefined;
@@ -2536,7 +2548,8 @@ export namespace JSX {
     operator?: "over" | "in" | "out" | "atop" | "xor" | "arithmetic" | undefined;
   }
   interface FeConvolveMatrixSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     bias?: number | string | undefined;
@@ -2550,7 +2563,8 @@ export namespace JSX {
     targetY?: number | string | undefined;
   }
   interface FeDiffuseLightingSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
@@ -2559,7 +2573,8 @@ export namespace JSX {
     surfaceScale?: number | string | undefined;
   }
   interface FeDisplacementMapSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
     scale?: number | string | undefined;
@@ -2571,7 +2586,8 @@ export namespace JSX {
     elevation?: number | string | undefined;
   }
   interface FeDropShadowSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {
@@ -2580,7 +2596,8 @@ export namespace JSX {
     stdDeviation?: number | string | undefined;
   }
   interface FeFloodSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "flood-color" | "flood-opacity"> {}
   interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
@@ -2593,33 +2610,35 @@ export namespace JSX {
     type?: "identity" | "table" | "discrete" | "linear" | "gamma" | undefined;
   }
   interface FeGaussianBlurSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     stdDeviation?: number | string | undefined;
   }
   interface FeImageSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
     href?: string | undefined;
     preserveAspectRatio?: SVGPreserveAspectRatio | undefined;
   }
   interface FeMergeSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
-      StylableSVGAttributes {}
+    extends FilterPrimitiveElementSVGAttributes<T>, StylableSVGAttributes {}
   interface FeMergeNodeSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      SingleInputFilterSVGAttributes {}
+    extends CoreSVGAttributes<T>, SingleInputFilterSVGAttributes {}
   interface FeMorphologySVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     operator?: "erode" | "dilate" | undefined;
     radius?: number | string | undefined;
   }
   interface FeOffsetSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
     dx?: number | string | undefined;
@@ -2631,7 +2650,8 @@ export namespace JSX {
     z?: number | string | undefined;
   }
   interface FeSpecularLightingSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "lighting-color"> {
@@ -2651,12 +2671,12 @@ export namespace JSX {
     z?: number | string | undefined;
   }
   interface FeTileSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
+    extends
+      FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {}
   interface FeTurbulanceSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
-      StylableSVGAttributes {
+    extends FilterPrimitiveElementSVGAttributes<T>, StylableSVGAttributes {
     baseFrequency?: number | string | undefined;
     numOctaves?: number | string | undefined;
     seed?: number | string | undefined;
@@ -2664,9 +2684,7 @@ export namespace JSX {
     type?: "fractalNoise" | "turbulence" | undefined;
   }
   interface FilterSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
+    extends CoreSVGAttributes<T>, ExternalResourceSVGAttributes, StylableSVGAttributes {
     filterRes?: number | string | undefined;
     filterUnits?: SVGUnits | undefined;
     height?: number | string | undefined;
@@ -2676,7 +2694,8 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface ForeignObjectSVGAttributes<T>
-    extends NewViewportSVGAttributes<T>,
+    extends
+      NewViewportSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2688,14 +2707,16 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface GSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "clip-path" | "display" | "visibility"> {}
   interface ImageSVGAttributes<T>
-    extends NewViewportSVGAttributes<T>,
+    extends
+      NewViewportSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
@@ -2709,7 +2730,8 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface LineSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2728,7 +2750,8 @@ export namespace JSX {
     y2?: number | string | undefined;
   }
   interface MarkerSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
@@ -2741,7 +2764,8 @@ export namespace JSX {
     refY?: number | string | undefined;
   }
   interface MaskSVGAttributes<T>
-    extends Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
+    extends
+      Omit<ContainerElementSVGAttributes<T>, "opacity" | "filter">,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2756,7 +2780,8 @@ export namespace JSX {
   interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface PathSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2767,7 +2792,8 @@ export namespace JSX {
     pathLength?: number | string | undefined;
   }
   interface PatternSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2783,7 +2809,8 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface PolygonSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2793,7 +2820,8 @@ export namespace JSX {
     points?: string | undefined;
   }
   interface PolylineSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2810,7 +2838,8 @@ export namespace JSX {
     r?: number | string | undefined;
   }
   interface RectSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
+    extends
+      GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2825,17 +2854,17 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface SetSVGAttributes<T>
-    extends AnimationElementSVGAttributes<T>,
-      StylableSVGAttributes,
-      AnimationTimingSVGAttributes {}
+    extends AnimationElementSVGAttributes<T>, StylableSVGAttributes, AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, "color" | "stop-color" | "stop-opacity"> {
     offset?: number | string | undefined;
   }
   interface SvgSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       NewViewportSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2859,14 +2888,16 @@ export namespace JSX {
     version?: string | undefined;
   }
   interface SwitchSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, "display" | "visibility"> {}
   interface SymbolSVGAttributes<T>
-    extends ContainerElementSVGAttributes<T>,
+    extends
+      ContainerElementSVGAttributes<T>,
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2882,7 +2913,8 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface TextSVGAttributes<T>
-    extends TextContentElementSVGAttributes<T>,
+    extends
+      TextContentElementSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
@@ -2898,7 +2930,8 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface TextPathSVGAttributes<T>
-    extends TextContentElementSVGAttributes<T>,
+    extends
+      TextContentElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2912,7 +2945,8 @@ export namespace JSX {
     startOffset?: number | string | undefined;
   }
   interface TSpanSVGAttributes<T>
-    extends TextContentElementSVGAttributes<T>,
+    extends
+      TextContentElementSVGAttributes<T>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
@@ -2930,7 +2964,8 @@ export namespace JSX {
   }
   /** @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use */
   interface UseSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       StylableSVGAttributes,
       ConditionalProcessingSVGAttributes,
       GraphicsElementSVGAttributes<T>,
@@ -2944,7 +2979,8 @@ export namespace JSX {
     y?: number | string | undefined;
   }
   interface ViewSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
+    extends
+      CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes {
@@ -3190,563 +3226,563 @@ export namespace JSX {
   /** @type {HTMLElementTagNameMap} */
   interface HTMLElementTags {
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLAnchorElement
+     * If the a element has an href attribute, then it represents a hyperlink (a hypertext anchor) labeled by its contents.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/a)
      */
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The abbr element represents an abbreviation or acronym, optionally with its expansion. The title attribute may be used to provide an expansion of the abbreviation. The attribute, if specified, must contain an expansion of the abbreviation, and nothing else.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/abbr)
      */
     abbr: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The address element represents the contact information for its nearest article or body element ancestor. If that is the body element, then the contact information applies to the document as a whole.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/address)
      */
     address: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLAreaElement
+     * The area element represents either a hyperlink with some text and a corresponding area on an image map, or a dead area on an image map.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/area)
      */
     area: AreaHTMLAttributes<HTMLAreaElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The article element represents a complete, or self-contained, composition in a document, page, application, or site and that is, in principle, independently distributable or reusable, e.g. in syndication. This could be a forum post, a magazine or newspaper article, a blog entry, a user-submitted comment, an interactive widget or gadget, or any other independent item of content. Each article should be identified, typically by including a heading (h1–h6 element) as a child of the article element.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/article)
      */
     article: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The aside element represents a section of a page that consists of content that is tangentially related to the content around the aside element, and which could be considered separate from that content. Such sections are often represented as sidebars in printed typography.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/aside)
      */
     aside: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLAudioElement
+     * An audio element represents a sound or audio stream.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/audio)
      */
     audio: AudioHTMLAttributes<HTMLAudioElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The b element represents a span of text to which attention is being drawn for utilitarian purposes without conveying any extra importance and with no implication of an alternate voice or mood, such as key words in a document abstract, product names in a review, actionable words in interactive text-driven software, or an article lede.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/b)
      */
     b: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBaseElement
+     * The base element allows authors to specify the document base URL for the purposes of resolving relative URLs, and the name of the default browsing context for the purposes of following hyperlinks. The element does not represent any content beyond this information.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/base)
      */
     base: BaseHTMLAttributes<HTMLBaseElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The bdi element represents a span of text that is to be isolated from its surroundings for the purposes of bidirectional text formatting. [BIDI]
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/bdi)
      */
     bdi: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The bdo element represents explicit text directionality formatting control for its children. It allows authors to override the Unicode bidirectional algorithm by explicitly specifying a direction override. [BIDI]
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/bdo)
      */
     bdo: BdoHTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLQuoteElement
+     * The blockquote element represents content that is quoted from another source, optionally with a citation which must be within a footer or cite element, and optionally with in-line changes such as annotations and abbreviations.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/blockquote)
      */
     blockquote: BlockquoteHTMLAttributes<HTMLQuoteElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/body
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBodyElement
+     * The body element represents the content of the document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/body)
      */
     body: BodyHTMLAttributes<HTMLBodyElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLBRElement
+     * The br element represents a line break.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/br)
      */
     br: HTMLAttributes<HTMLBRElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLButtonElement
+     * The button element represents a button labeled by its contents.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/button)
      */
     button: ButtonHTMLAttributes<HTMLButtonElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement
+     * The canvas element provides scripts with a resolution-dependent bitmap canvas, which can be used for rendering graphs, game graphics, art, or other visual images on the fly.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/canvas)
      */
     canvas: CanvasHTMLAttributes<HTMLCanvasElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCaptionElement
+     * The caption element represents the title of the table that is its parent, if it has a parent and that is a table element.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/caption)
      */
     caption: CaptionHTMLAttributes<HTMLTableCaptionElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The cite element represents a reference to a creative work. It must include the title of the work or the name of the author(person, people or organization) or an URL reference, or a reference in abbreviated form as per the conventions used for the addition of citation metadata.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/cite)
      */
     cite: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The code element represents a fragment of computer code. This could be an XML element name, a file name, a computer program, or any other string that a computer would recognize.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/code)
      */
     code: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableColElement
+     * If a col element has a parent and that is a colgroup element that itself has a parent that is a table element, then the col element represents one or more columns in the column group represented by that colgroup.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/col)
      */
     col: ColHTMLAttributes<HTMLTableColElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableColElement
+     * The colgroup element represents a group of one or more columns in the table that is its parent, if it has a parent and that is a table element.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/colgroup)
      */
     colgroup: ColgroupHTMLAttributes<HTMLTableColElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement
+     * The data element links a given piece of content with a machine-readable translation.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/data)
      */
     data: DataHTMLAttributes<HTMLDataElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataListElement
+     * The datalist element represents a set of option elements that represent predefined options for other controls. In the rendering, the datalist element represents nothing and it, along with its children, should be hidden.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/datalist)
      */
     datalist: HTMLAttributes<HTMLDataListElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The dd element represents the description, definition, or value, part of a term-description group in a description list (dl element).
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/dd)
      */
     dd: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLModElement
+     * The del element represents a removal from the document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/del)
      */
     del: ModHTMLAttributes<HTMLModElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement
+     * The details element represents a disclosure widget from which the user can obtain additional information or controls.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/details)
      */
     details: DetailsHtmlAttributes<HTMLDetailsElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The dfn element represents the defining instance of a term. The paragraph, description list group, or section that is the nearest ancestor of the dfn element must also contain the definition(s) for the term given by the dfn element.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/dfn)
      */
     dfn: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement
+     * The dialog element represents a part of an application that a user interacts with to perform a task, for example a dialog box, inspector, or window.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/dialog)
      */
     dialog: DialogHtmlAttributes<HTMLDialogElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDivElement
+     * The div element has no special meaning at all. It represents its children. It can be used with the class, lang, and title attributes to mark up semantics common to a group of consecutive elements.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/div)
      */
     div: HTMLAttributes<HTMLDivElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLDListElement
+     * The dl element represents an association list consisting of zero or more name-value groups (a description list). A name-value group consists of one or more names (dt elements) followed by one or more values (dd elements), ignoring any nodes other than dt and dd elements. Within a single dl element, there should not be more than one dt element for each name.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/dl)
      */
     dl: HTMLAttributes<HTMLDListElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The dt element represents the term, or name, part of a term-description group in a description list (dl element).
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/dt)
      */
     dt: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The em element represents stress emphasis of its contents.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/em)
      */
     em: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLEmbedElement
+     * The embed element provides an integration point for an external (typically non-HTML) application or interactive content.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/embed)
      */
     embed: EmbedHTMLAttributes<HTMLEmbedElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLFieldSetElement
+     * The fieldset element represents a set of form controls optionally grouped under a common name.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/fieldset)
      */
     fieldset: FieldsetHTMLAttributes<HTMLFieldSetElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The figcaption element represents a caption or legend for the rest of the contents of the figcaption element's parent figure element, if any.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/figcaption)
      */
     figcaption: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The figure element represents some flow content, optionally with a caption, that is self-contained (like a complete sentence) and is typically referenced as a single unit from the main flow of the document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/figure)
      */
     figure: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The footer element represents a footer for its nearest ancestor sectioning content or sectioning root element. A footer typically contains information about its section such as who wrote it, links to related documents, copyright data, and the like.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/footer)
      */
     footer: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement
+     * The form element represents a collection of form-associated elements, some of which can represent editable values that can be submitted to a server for processing.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/form)
      */
     form: FormHTMLAttributes<HTMLFormElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h1
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     * The h1 element represents a section heading.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/h1)
      */
     h1: HTMLAttributes<HTMLHeadingElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h2
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     * The h2 element represents a section heading.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/h2)
      */
     h2: HTMLAttributes<HTMLHeadingElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h3
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     * The h3 element represents a section heading.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/h3)
      */
     h3: HTMLAttributes<HTMLHeadingElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h4
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     * The h4 element represents a section heading.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/h4)
      */
     h4: HTMLAttributes<HTMLHeadingElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h5
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     * The h5 element represents a section heading.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/h5)
      */
     h5: HTMLAttributes<HTMLHeadingElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/h6
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+     * The h6 element represents a section heading.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/h6)
      */
     h6: HTMLAttributes<HTMLHeadingElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadElement
+     * The head element represents a collection of metadata for the Document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/head)
      */
     head: HTMLAttributes<HTMLHeadElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The header element represents introductory content for its nearest ancestor sectioning content or sectioning root element. A header typically contains a group of introductory or navigational aids. When the nearest ancestor sectioning content or sectioning root element is the body element, then it applies to the whole page.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/header)
      */
     header: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The hgroup element represents a heading and related content. It groups a single h1–h6 element with one or more p.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/hgroup)
      */
     hgroup: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHRElement
+     * The hr element represents a paragraph-level thematic break, e.g. a scene change in a story, or a transition to another topic within a section of a reference book.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/hr)
      */
     hr: HTMLAttributes<HTMLHRElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLHtmlElement
+     * The html element represents the root of an HTML document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/html)
      */
     html: HTMLAttributes<HTMLHtmlElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The i element represents a span of text in an alternate voice or mood, or otherwise offset from the normal prose in a manner indicating a different quality of text, such as a taxonomic designation, a technical term, an idiomatic phrase from another language, transliteration, a thought, or a ship name in Western texts.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/i)
      */
     i: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLIFrameElement
+     * The iframe element represents a nested browsing context.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/iframe)
      */
     iframe: IframeHTMLAttributes<HTMLIFrameElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement
+     * An img element represents an image.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/img)
      */
     img: ImgHTMLAttributes<HTMLImageElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement
+     * The input element represents a typed data field, usually with a form control to allow the user to edit the data.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/input)
      */
     input: InputHTMLAttributes<HTMLInputElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLModElement
+     * The ins element represents an addition to the document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/ins)
      */
     ins: ModHTMLAttributes<HTMLModElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The kbd element represents user input (typically keyboard input, although it may also be used to represent other input, such as voice commands).
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/kbd)
      */
     kbd: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement
+     * The label element represents a caption in a user interface. The caption can be associated with a specific form control, known as the label element's labeled control, either using the for attribute, or by putting the form control inside the label element itself.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/label)
      */
     label: LabelHTMLAttributes<HTMLLabelElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/legend
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLegendElement
+     * The legend element represents a caption for the rest of the contents of the legend element's parent fieldset element, if any.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/legend)
      */
     legend: HTMLAttributes<HTMLLegendElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLIElement
+     * The li element represents a list item. If its parent element is an ol, ul, or menu element, then the element is an item of the parent element's list, as defined for those elements. Otherwise, the list item has no defined list-related relationship to any other li element.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/li)
      */
     li: LiHTMLAttributes<HTMLLIElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLLinkElement
+     * The link element allows authors to link their document to other resources.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/link)
      */
     link: LinkHTMLAttributes<HTMLLinkElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The main element represents the main content of the body of a document or application. The main content area consists of content that is directly related to or expands upon the central topic of a document or central functionality of an application.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/main)
      */
     main: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMapElement
+     * The map element, in conjunction with an img element and any area element descendants, defines an image map. The element represents its children.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/map)
      */
     map: MapHTMLAttributes<HTMLMapElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The mark element represents a run of text in one document marked or highlighted for reference purposes, due to its relevance in another context. When used in a quotation or other block of text referred to from the prose, it indicates a highlight that was not originally present but which has been added to bring the reader's attention to a part of the text that might not have been considered important by the original author when the block was originally written, but which is now under previously unexpected scrutiny. When used in the main prose of a document, it indicates a part of the document that has been highlighted due to its likely relevance to the user's current activity.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/mark)
      */
     mark: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMenuElement
+     * The menu element represents an unordered list of interactive items.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/menu)
      */
     menu: MenuHTMLAttributes<HTMLMenuElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMetaElement
+     * The meta element represents various kinds of metadata that cannot be expressed using the title, base, link, style, and script elements.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/meta)
      */
     meta: MetaHTMLAttributes<HTMLMetaElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLMeterElement
+     * The meter element represents a scalar measurement within a known range, or a fractional value; for example disk usage, the relevance of a query result, or the fraction of a voting population to have selected a particular candidate.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/meter)
      */
     meter: MeterHTMLAttributes<HTMLMeterElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The nav element represents a section of a page that links to other pages or to parts within the page: a section with navigation links.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/nav)
      */
     nav: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/noscript
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The noscript element represents nothing if scripting is enabled, and represents its children if scripting is disabled. It is used to present different markup to user agents that support scripting and those that don't support scripting, by affecting how the document is parsed.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/noscript)
      */
     noscript: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLObjectElement
+     * The object element can represent an external resource, which, depending on the type of the resource, will either be treated as an image, as a nested browsing context, or as an external resource to be processed by a plugin.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/object)
      */
     object: ObjectHTMLAttributes<HTMLObjectElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOListElement
+     * The ol element represents a list of items, where the items have been intentionally ordered, such that changing the order would change the meaning of the document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/ol)
      */
     ol: OlHTMLAttributes<HTMLOListElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptGroupElement
+     * The optgroup element represents a group of option elements with a common label.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/optgroup)
      */
     optgroup: OptgroupHTMLAttributes<HTMLOptGroupElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement
+     * The option element represents an option in a select element or as part of a list of suggestions in a datalist element.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/option)
      */
     option: OptionHTMLAttributes<HTMLOptionElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLOutputElement
+     * The output element represents the result of a calculation performed by the application, or the result of a user action.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/output)
      */
     output: OutputHTMLAttributes<HTMLOutputElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLParagraphElement
+     * The p element represents a paragraph.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/p)
      */
     p: HTMLAttributes<HTMLParagraphElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLPictureElement
+     * The picture element is a container which provides multiple sources to its contained img element to allow authors to declaratively control or give hints to the user agent about which image resource to use, based on the screen pixel density, viewport size, image format, and other factors. It represents its children.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/picture)
      */
     picture: HTMLAttributes<HTMLPictureElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLPreElement
+     * The pre element represents a block of preformatted text, in which structure is represented by typographic conventions rather than by elements.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/pre)
      */
     pre: HTMLAttributes<HTMLPreElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLProgressElement
+     * The progress element represents the completion progress of a task. The progress is either indeterminate, indicating that progress is being made but that it is not clear how much more work remains to be done before the task is complete (e.g. because the task is waiting for a remote host to respond), or the progress is a number in the range zero to a maximum, giving the fraction of work that has so far been completed.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/progress)
      */
     progress: ProgressHTMLAttributes<HTMLProgressElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLQuoteElement
+     * The q element represents some phrasing content quoted from another source.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/q)
      */
     q: QuoteHTMLAttributes<HTMLQuoteElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The rp element is used to provide fallback text to be shown by user agents that don't support ruby annotations. One widespread convention is to provide parentheses around the ruby text component of a ruby annotation.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/rp)
      */
     rp: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The rt element marks the ruby text component of a ruby annotation. When it is the child of a ruby element or of an rtc element that is itself the child of a ruby element, it doesn't represent anything itself, but its ancestor ruby element uses it as part of determining what it represents.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/rt)
      */
     rt: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The ruby element allows one or more spans of phrasing content to be marked with ruby annotations. Ruby annotations are short runs of text presented alongside base text, primarily used in East Asian typography as a guide for pronunciation or to include other annotations. In Japanese, this form of typography is also known as furigana. Ruby text can appear on either side, and sometimes both sides, of the base text, and it is possible to control its position using CSS. A more complete introduction to ruby can be found in the Use Cases & Exploratory Approaches for Ruby Markup document as well as in CSS Ruby Module Level 1. [RUBY-UC] [CSSRUBY]
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/ruby)
      */
     ruby: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The s element represents contents that are no longer accurate or no longer relevant.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/s)
      */
     s: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The samp element represents sample or quoted output from another program or computing system.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/samp)
      */
     samp: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement
+     * The script element allows authors to include dynamic script and data blocks in their documents. The element does not represent content for the user.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/script)
      */
     script: ScriptHTMLAttributes<HTMLScriptElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/search
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The search element represents the parts of the document or application with form controls or other content related to performing a search or filtering operation.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/search)
      */
     search: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The section element represents a generic section of a document or application. A section, in this context, is a thematic grouping of content. Each section should be identified, typically by including a heading ( h1- h6 element) as a child of the section element.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/section)
      */
     section: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSelectElement
+     * The select element represents a control for selecting amongst a set of options.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/select)
      */
     select: SelectHTMLAttributes<HTMLSelectElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSlotElement
+     * The slot element is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/slot)
      */
     slot: HTMLSlotElementAttributes<HTMLSlotElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The small element represents side comments such as small print.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/small)
      */
     small: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSourceElement
+     * The source element allows authors to specify multiple alternative media resources for media elements. It does not represent anything on its own.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/source)
      */
     source: SourceHTMLAttributes<HTMLSourceElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLSpanElement
+     * The span element doesn't mean anything on its own, but can be useful when used together with the global attributes, e.g. class, lang, or dir. It represents its children.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/span)
      */
     span: HTMLAttributes<HTMLSpanElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The strong element represents strong importance, seriousness, or urgency for its contents.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/strong)
      */
     strong: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLStyleElement
+     * The style element allows authors to embed style information in their documents. The style element is one of several inputs to the styling processing model. The element does not represent content for the user.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/style)
      */
     style: StyleHTMLAttributes<HTMLStyleElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The sub element represents a subscript.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/sub)
      */
     sub: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The summary element represents a summary, caption, or legend for the rest of the contents of the summary element's parent details element, if any.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/summary)
      */
     summary: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The sup element represents a superscript.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/sup)
      */
     sup: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableElement
+     * The table element represents data with more than one dimension, in the form of a table.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/table)
      */
     table: HTMLAttributes<HTMLTableElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableSectionElement
+     * The tbody element represents a block of rows that consist of a body of data for the parent table element, if the tbody element has a parent and it is a table.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/tbody)
      */
     tbody: HTMLAttributes<HTMLTableSectionElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCellElement
+     * The td element represents a data cell in a table.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/td)
      */
     td: TdHTMLAttributes<HTMLTableCellElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTemplateElement
+     * The template element is used to declare fragments of HTML that can be cloned and inserted in the document by script.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/template)
      */
     template: TemplateHTMLAttributes<HTMLTemplateElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTextAreaElement
+     * The textarea element represents a multiline plain text edit control for the element's raw value. The contents of the control represent the control's default value.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/textarea)
      */
     textarea: TextareaHTMLAttributes<HTMLTextAreaElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableSectionElement
+     * The tfoot element represents the block of rows that consist of the column summaries (footers) for the parent table element, if the tfoot element has a parent and it is a table.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/tfoot)
      */
     tfoot: HTMLAttributes<HTMLTableSectionElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableCellElement
+     * The th element represents a header cell in a table.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/th)
      */
     th: ThHTMLAttributes<HTMLTableCellElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableSectionElement
+     * The thead element represents the block of rows that consist of the column labels (headers) for the parent table element, if the thead element has a parent and it is a table.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/thead)
      */
     thead: HTMLAttributes<HTMLTableSectionElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTimeElement
+     * The time element represents its contents, along with a machine-readable form of those contents in the datetime attribute. The kind of content is limited to various kinds of dates, times, time-zone offsets, and durations, as described below.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/time)
      */
     time: TimeHTMLAttributes<HTMLTimeElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTitleElement
+     * The title element represents the document's title or name. Authors should use titles that identify their documents even when they are used out of context, for example in a user's history or bookmarks, or in search results. The document's title is often different from its first heading, since the first heading does not have to stand alone when taken out of context.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/title)
      */
     title: HTMLAttributes<HTMLTitleElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTableRowElement
+     * The tr element represents a row of cells in a table.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/tr)
      */
     tr: HTMLAttributes<HTMLTableRowElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLTrackElement
+     * The track element allows authors to specify explicit external timed text tracks for media elements. It does not represent anything on its own.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/track)
      */
     track: TrackHTMLAttributes<HTMLTrackElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The u element represents a span of text with an unarticulated, though explicitly rendered, non-textual annotation, such as labeling the text as being a proper name in Chinese text (a Chinese proper name mark), or labeling the text as being misspelt.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/u)
      */
     u: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLUListElement
+     * The ul element represents a list of items, where the order of the items is not important — that is, where changing the order would not materially change the meaning of the document.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/ul)
      */
     ul: HTMLAttributes<HTMLUListElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The var element represents a variable. This could be an actual variable in a mathematical expression or programming context, an identifier representing a constant, a symbol identifying a physical quantity, a function parameter, or just be a term used as a placeholder in prose.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/var)
      */
     var: HTMLAttributes<HTMLElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement
+     * A video element is used for playing videos or movies, and audio files with captions.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/video)
      */
     video: VideoHTMLAttributes<HTMLVideoElement>;
     /**
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
+     * The wbr element represents a line break opportunity.
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/wbr)
      */
     wbr: HTMLAttributes<HTMLElement>;
     /** @url https://www.electronjs.org/docs/latest/api/webview-tag */
@@ -3773,9 +3809,9 @@ export namespace JSX {
      */
     menuitem: HTMLAttributes<HTMLUnknownElement>;
     /**
+     * The param element defines parameters for plugins invoked by object elements. It does not represent anything on its own.
      * @deprecated
-     * @url https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
-     * @url https://developer.mozilla.org/en-US/docs/Web/API/HTMLParamElement
+     * [MDN Reference](https://developer.mozilla.org/docs/Web/HTML/Reference/Elements/param)
      */
     param: ParamHTMLAttributes<HTMLParamElement>;
   }
@@ -4246,8 +4282,5 @@ export namespace JSX {
   }
 
   interface IntrinsicElements
-    extends HTMLElementTags,
-      HTMLElementDeprecatedTags,
-      SVGElementTags,
-      MathMLElementTags {}
+    extends HTMLElementTags, HTMLElementDeprecatedTags, SVGElementTags, MathMLElementTags {}
 }
