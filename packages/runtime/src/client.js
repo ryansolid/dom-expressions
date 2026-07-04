@@ -348,7 +348,7 @@ export function insert(parent, accessor, marker, initial, options) {
         () => normalize(value, current, multi),
         inner => {
           insertExpression(parent, inner, current, marker);
-          current = inner;
+          if (!isHydrating(parent) || tracksDOM(inner)) current = inner;
           host && tagHost(current, host);
         },
         prev !== undefined && !(options && options.schedule)
@@ -360,11 +360,29 @@ export function insert(parent, accessor, marker, initial, options) {
     value => {
       if (value === INNER_OWNED) return;
       insertExpression(parent, value, current, marker);
-      current = value;
+      if (!isHydrating(parent) || tracksDOM(value)) current = value;
       host && tagHost(current, host);
     },
     options
   );
+}
+
+// During hydration `insertExpression` leaves the server-rendered DOM
+// untouched, so a value holding DOM nodes only becomes the tracked `current`
+// if those nodes re-identify nodes already in the document (claimed elements
+// / adopted text). Transient values holding detached nodes — e.g. a
+// <Loading> fallback rendered while the boundary waits to resume — must not
+// clobber the tracked DOM nodes; otherwise the resume pass can't adopt the
+// existing text node via `normalize` and later updates leave it behind as a
+// ghost. Non-node values (strings, undefined) pass through unchanged.
+function tracksDOM(value) {
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      if (!tracksDOM(value[i])) return false;
+    }
+    return true;
+  }
+  return !(value && value.nodeType) || value.isConnected;
 }
 
 export function assign(node, props, skipChildren, prevProps = {}, skipRef = false) {

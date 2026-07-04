@@ -1147,3 +1147,54 @@ describe("loadModuleAssets shortcut branches", () => {
     expect(globalThis._$HY.loading[moduleUrl]).toBe(loadingPromise);
   });
 });
+
+describe("transient detached value during hydration (solidjs/solid#2801)", () => {
+  it("keeps tracking the adopted text node across a fallback pass", () => {
+    // created here, not at describe time — earlier suites reset document.body
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {} };
+    const _tmpl$ = r.template(`<button>Refresh</button>`);
+
+    const rendered = r2.renderToString(() => [
+      r2.ssr(["<button", ">Refresh</button>"], r2.ssrHydrationKey()),
+      r2.escape("value-1")
+    ]);
+    expect(rendered).toBe(`<button _hk=0>Refresh</button>value-1`);
+
+    container.innerHTML = rendered;
+    const btnNode = container.firstChild;
+    const textNode = container.lastChild;
+
+    // A boundary (e.g. <Loading>) renders its fallback — a detached node —
+    // while waiting to resume, then swaps to the claimed children before
+    // hydration completes. The fallback pass must not clobber the tracked
+    // server nodes or the text node can never be adopted.
+    const fallback = document.createElement("div");
+    fallback.textContent = "loading";
+
+    let claimed, setter;
+    r.hydrate(() => {
+      const [view, setView] = createSignal(fallback);
+      setter = setView;
+      r.insert(container, () => view(), undefined, [...container.childNodes]);
+      claimed = r.getNextElement(_tmpl$);
+      setView([claimed, "value-1"]);
+      flush();
+      r.runHydrationEvents();
+    }, container);
+
+    expect(container.innerHTML).toBe(`<button _hk="0">Refresh</button>value-1`);
+    expect(container.firstChild).toBe(btnNode);
+    expect(container.lastChild).toBe(textNode);
+
+    // Post-hydration swap must replace the adopted text, not ghost it.
+    setter([claimed, "value-2"]);
+    flush();
+    expect(container.innerHTML).toBe(`<button _hk="0">Refresh</button>value-2`);
+
+    setter([claimed, "value-3"]);
+    flush();
+    expect(container.innerHTML).toBe(`<button _hk="0">Refresh</button>value-3`);
+  });
+});
