@@ -246,20 +246,45 @@ export function addEvent(node, name, handler, delegate) {
 
 export function style(node, value, prev) {
   if (!value) {
-    if (prev) setAttribute(node, "style");
+    if (prev || node._$styles) {
+      setAttribute(node, "style");
+      node._$styles = undefined;
+    }
     return;
   }
   const nodeStyle = node.style;
-  if (typeof value === "string") return (nodeStyle.cssText = value);
-  typeof prev === "string" && (nodeStyle.cssText = prev = undefined);
-  prev || (prev = {});
+  if (typeof value === "string") {
+    node._$styles = undefined;
+    return (nodeStyle.cssText = value);
+  }
+  if (typeof prev === "string") {
+    nodeStyle.cssText = "";
+    prev = undefined;
+  }
+  // Track declarations applied by style() itself. value/prev are user-owned
+  // and may be the same object on shared-effect reruns.
+  let applied = node._$styles;
+  if (!applied) {
+    // seed from prev so direct callers that track their own previous value
+    // still get removals on their first call here
+    applied = node._$styles = prev ? { ...prev } : {};
+  }
   let v, s;
+  for (s in applied) {
+    if (value[s] == null) {
+      nodeStyle.removeProperty(s);
+      delete applied[s];
+    }
+  }
+  // Diff against applied state so in-place mutations are detected without
+  // rewriting unchanged DOM styles.
   for (s in value) {
     v = value[s];
-    if (v !== prev[s]) nodeStyle.setProperty(s, v);
-    delete prev[s];
+    if (v != null && v !== applied[s]) {
+      nodeStyle.setProperty(s, v);
+      applied[s] = v;
+    }
   }
-  for (s in prev) value[s] == null && nodeStyle.removeProperty(s);
 }
 
 export function setStyleProperty(node, name, value) {
