@@ -597,14 +597,34 @@ export function runHydrationEvents() {
         const [el, e] = events[0];
         if (!completed.has(el)) return;
         events.shift();
-        let match;
+        let matchContainer, matchState, matchDistance, matches;
         for (const [container, state] of delegatedContainers) {
           if (!state.handlers.has(e.type)) continue;
           const entry = findOwner(e.target, state);
-          if (entry && (!match || entry.distance < match.distance))
-            match = { container, state, distance: entry.distance };
+          if (!entry) continue;
+          if (matchContainer) {
+            if (!matches)
+              matches = [
+                {
+                  container: matchContainer,
+                  state: matchState,
+                  distance: matchDistance
+                }
+              ];
+            matches.push({ container, state, distance: entry.distance });
+          } else {
+            matchContainer = container;
+            matchState = state;
+            matchDistance = entry.distance;
+          }
         }
-        if (match) eventHandler(e, match.container, match.state);
+        if (matches) {
+          // Replay innermost-first so queued hydration events follow the same
+          // root-boundary handoff as live native bubbling.
+          matches.sort((a, b) => a.distance - b.distance);
+          for (let i = 0; i < matches.length; i++)
+            eventHandler(e, matches[i].container, matches[i].state);
+        } else if (matchContainer) eventHandler(e, matchContainer, matchState);
       }
       if (sharedConfig.done) {
         sharedConfig.events = _$HY.events = null;
@@ -696,7 +716,15 @@ function eventHandler(e, container, state) {
   if (sharedConfig.registry && sharedConfig.events) {
     if (sharedConfig.events.find(([el, ev]) => ev === e)) return;
   }
-  if (e[$$EVENT_OWNER]) return;
+  const prev = e[$$EVENT_OWNER];
+  let resumeNode;
+  if (prev) {
+    // An inner root already walked its segment. Ancestor roots resume from
+    // that boundary; unrelated/shared containers must not see the event as
+    // theirs. Native stopPropagation still prevents this listener from running.
+    if (prev === true || prev === container || !container.contains(prev)) return;
+    resumeNode = prev;
+  }
   const owner =
     state &&
     (state.owners.size === 1 && state.owners.has(container)
@@ -705,7 +733,7 @@ function eventHandler(e, container, state) {
   if (state && !owner) return;
   e[$$EVENT_OWNER] = owner || true;
 
-  let node = e.target;
+  let node = resumeNode || e.target;
   const key = `$$${e.type}`;
   const oriTarget = e.target;
   const boundary = owner || container || e.currentTarget;
@@ -742,7 +770,13 @@ function eventHandler(e, container, state) {
       return node || boundary || document;
     }
   });
-  if (e.composedPath) {
+  if (resumeNode) {
+    // If the boundary was the target, the inner walk already fired it.
+    // Resume above it so boundary handlers do not run twice.
+    if (resumeNode === e.target)
+      node = resumeNode._$host || resumeNode.parentNode || resumeNode.host;
+    if (node && node !== boundary) walkUpTree();
+  } else if (e.composedPath) {
     const path = e.composedPath();
     if (path.length) {
       retarget(path[0]);
