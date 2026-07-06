@@ -12,6 +12,7 @@ import {
   flatten
 } from "rxcore";
 import reconcileArrays from "./reconcile";
+import { createSlot, registerSlot, slotBoundary } from "./slots";
 import { DOMWithState } from "./constants";
 export {
   DOMWithState,
@@ -313,6 +314,8 @@ export function ref(fn, element) {
 
 export function insert(parent, accessor, marker, initial, options) {
   const multi = marker !== undefined;
+  // Adjacent slots can share a physical marker; token identity separates them.
+  const slot = multi ? createSlot(initial) : undefined;
   const host = options && options.host;
   if (multi && !initial) initial = [];
   if (isHydrating(parent)) {
@@ -329,6 +332,12 @@ export function insert(parent, accessor, marker, initial, options) {
   if (typeof accessor !== "function") {
     accessor = normalize(accessor, initial, multi, true);
     if (typeof accessor !== "function") {
+      // One-shot callers may thread `current` across insert() calls. Register
+      // only for neighboring-slot boundary recovery; leave ownership untagged.
+      if (multi) {
+        slot.current = Array.isArray(accessor) ? accessor : [accessor];
+        registerSlot(parent, slot);
+      }
       insertExpression(parent, accessor, initial, marker);
       host && tagHost(accessor, host);
       return;
@@ -340,6 +349,10 @@ export function insert(parent, accessor, marker, initial, options) {
     initial = [placeholder];
   }
   let current = initial;
+  if (slot) {
+    registerSlot(parent, slot);
+    slot.current = current;
+  }
   effect(
     prev => {
       const value = normalize(accessor(), current, multi, true);
@@ -347,8 +360,9 @@ export function insert(parent, accessor, marker, initial, options) {
       effect(
         () => normalize(value, current, multi),
         inner => {
-          insertExpression(parent, inner, current, marker);
+          insertExpression(parent, inner, current, marker, slot);
           current = inner;
+          if (slot && slot.shared) slot.current = current;
           host && tagHost(current, host);
         },
         prev !== undefined && !(options && options.schedule)
@@ -359,8 +373,9 @@ export function insert(parent, accessor, marker, initial, options) {
     },
     value => {
       if (value === INNER_OWNED) return;
-      insertExpression(parent, value, current, marker);
+      insertExpression(parent, value, current, marker, slot);
       current = value;
+      if (slot && slot.shared) slot.current = current;
       host && tagHost(current, host);
     },
     options
@@ -767,9 +782,12 @@ function eventHandler(e, container, state) {
   retarget(oriTarget);
 }
 
-function insertExpression(parent, value, current, marker) {
+function insertExpression(parent, value, current, marker, slot) {
   if (isHydrating(parent)) return;
   if (value === current) return;
+  // Before a parent has multiple slots, marker-delimited inserts use marker
+  // ownership so adopted token-tagged nodes become removable by their new slot.
+  if (slot && !slot.shared) slot = marker || undefined;
   const t = typeof value,
     multi = marker !== undefined;
 
@@ -779,32 +797,40 @@ function insertExpression(parent, value, current, marker) {
       parent.firstChild.data = value;
     } else parent.textContent = value;
   } else if (value === undefined) {
-    cleanChildren(parent, current, marker);
+    cleanChildren(parent, current, marker, undefined, slot);
   } else if (value.nodeType) {
     if (Array.isArray(current)) {
-      cleanChildren(parent, current, multi ? marker : null, value);
+      cleanChildren(parent, current, multi ? marker : null, value, slot);
     } else if (current && current.nodeType) {
       // `current` is a node we previously inserted but it may have been
       // moved out by user code (e.g. ref-driven migration, JSX wrapping)
       // since the last render. If it's still here, replace it in place;
-      // otherwise append — never `replaceChild` a node that isn't ours.
+      // otherwise re-insert at the slot's region. Never `replaceChild` a
+      // node that isn't ours.
       current.parentNode === parent
         ? parent.replaceChild(value, current)
-        : parent.appendChild(value);
+        : parent.insertBefore(value, slot ? slotBoundary(parent, slot, marker) : null);
     } else if (current && parent.firstChild) {
       parent.replaceChild(value, parent.firstChild);
     } else {
       parent.appendChild(value);
     }
-    if (marker) value[$$SLOT] = marker;
+    if (slot && value[$$SLOT] !== slot) value[$$SLOT] = slot;
   } else if (Array.isArray(value)) {
     const currentArray = current && Array.isArray(current);
     if (value.length === 0) {
-      cleanChildren(parent, current, marker);
+      cleanChildren(parent, current, marker, undefined, slot);
     } else if (currentArray) {
       if (current.length === 0) {
-        appendNodes(parent, value, marker);
-      } else reconcileArrays(parent, current, value, marker);
+        // Empty slots have no local anchor; recover from a later slot boundary
+        // when available, otherwise fall back to the physical marker.
+        appendNodes(
+          parent,
+          value,
+          slot && !slot.nodeType ? slotBoundary(parent, slot, marker) : marker,
+          slot
+        );
+      } else reconcileArrays(parent, current, value, marker, slot);
     } else {
       current && cleanChildren(parent);
       appendNodes(parent, value);
@@ -847,15 +873,15 @@ function tagHost(value, host) {
   }
 }
 
-function appendNodes(parent, array, marker = null) {
+function appendNodes(parent, array, marker = null, slot) {
   for (let i = 0, len = array.length; i < len; i++) {
     const n = array[i];
     parent.insertBefore(n, marker);
-    if (marker) n[$$SLOT] = marker;
+    if (slot && n[$$SLOT] !== slot) n[$$SLOT] = slot;
   }
 }
 
-function cleanChildren(parent, current, marker, replacement) {
+function cleanChildren(parent, current, marker, replacement, slot) {
   if (marker === undefined) return (parent.textContent = "");
   if (current.length) {
     let inserted = false;
@@ -863,14 +889,17 @@ function cleanChildren(parent, current, marker, replacement) {
       const el = current[i];
       if (replacement !== el) {
         const tag = el[$$SLOT];
-        const owns = el.parentNode === parent && (!tag || tag === marker);
+        // Pre-share marker tags remain valid; adopted token-tagged nodes are retagged.
+        const owns = el.parentNode === parent && (!tag || tag === slot || tag === marker);
         if (replacement && !inserted && !i)
-          owns ? parent.replaceChild(replacement, el) : parent.insertBefore(replacement, marker);
+          owns
+            ? parent.replaceChild(replacement, el)
+            : parent.insertBefore(replacement, slot ? slotBoundary(parent, slot, marker) : marker);
         else if (owns) el.remove();
       } else inserted = true;
     }
   } else if (replacement) parent.insertBefore(replacement, marker);
-  if (replacement && marker) replacement[$$SLOT] = marker;
+  if (replacement && slot && replacement[$$SLOT] !== slot) replacement[$$SLOT] = slot;
 }
 
 function gatherHydratable(element, root) {

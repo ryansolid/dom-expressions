@@ -20,10 +20,12 @@ const ChildProperties = /*#__PURE__*/ new Set([
   "children"
 ]);
 
-// Per-node tag identifying the owning slot's marker. Set on every runtime
-// insertion site so that subsequent reconcile / cleanup work can distinguish
-// "the node still belongs to my slot" from "the node has migrated to another
-// slot in the same parent" without consulting external bookkeeping.
+// Per-node ownership tag identifying the slot that inserted the node: the
+// slot's identity token when its parent hosts multiple slots, or the slot's
+// physical marker for single-slot marker-delimited inserts. Set on runtime
+// insertion sites so reconcile / cleanup can distinguish "the node still
+// belongs to my slot" from "the node has migrated to another slot" without
+// external bookkeeping.
 const $$SLOT = /*#__PURE__*/ Symbol("slot");
 
 // Guard companion to the `_$host` getter applied by `insert`'s `host` option:
