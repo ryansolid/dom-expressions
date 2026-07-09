@@ -313,6 +313,51 @@ export function renderToStream(code, options = {}) {
     data(payload) {
       pushTask(payload);
     },
+    // An async fragment resolved post-shell with its normalized HTML payload.
+    // Document behavior: <template id=key> plus, when the fragment carries
+    // streamed style links, a $dfs gate and onload-$dfc stylesheet links
+    // (inline styles apply as the parser sees them — no gating); eager
+    // (ungrouped, link-free) fragments self-activate with $df. Grouped
+    // fragments defer to reveal().
+    fragment(key, value, meta) {
+      const deferActivation = !!meta.revealGroup;
+      const styles = meta.styles;
+      for (let i = 0; i < styles.inline.length; i++) {
+        buffer.write(renderInlineStyle(styles.inline[i], nonce));
+      }
+      if (styles.links.length) {
+        emitTask(`$dfs("${key}",${styles.links.length},${deferActivation ? 1 : 0})`);
+        // Flush the $dfs gate before the links so their onload can't fire
+        // ahead of the pending-style registration.
+        writeTasks();
+        for (const url of styles.links) {
+          buffer.write(
+            `<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+          );
+        }
+        buffer.write(`<template id="${key}">${value}</template>`);
+      } else {
+        buffer.write(`<template id="${key}">${value}</template>`);
+        if (!deferActivation) {
+          emitTask(`$df("${key}")`);
+        }
+      }
+    },
+    // Reveal a set of fragments (registration order). Document behavior:
+    // $dfj task, or $dflj to materialize fallback content instead.
+    reveal(keys, meta) {
+      emitTask(`${meta.fallback ? "$dflj" : "$dfj"}(${JSON.stringify(keys)})`);
+    },
+    // A late-registered asset while streaming. Document behavior: style links
+    // are handled per-fragment (see fragment()); modules preload immediately;
+    // non-boundary inline styles write their <style> tag directly.
+    asset(type, value) {
+      if (type === "module") {
+        buffer.write(`<link rel="modulepreload" href="${value}">`);
+      } else if (type === "inline-style") {
+        buffer.write(renderInlineStyle(value, nonce));
+      }
+    },
     ...options.sink
   };
   const serializer = createHydrationSerializer({
@@ -396,10 +441,10 @@ export function renderToStream(code, options = {}) {
         const entry = tracking.registerInlineStyle(value);
         // Boundary-attributed inline styles flush with their fragment; a late
         // registration outside any boundary has no other emission point, so
-        // write the tag into the stream immediately.
+        // emit it immediately.
         if (firstFlushed && !tracking.currentBoundaryId && !entry.emitted) {
           entry.emitted = true;
-          buffer.write(renderInlineStyle(entry, nonce));
+          sink.asset("inline-style", entry);
         }
         return;
       }
@@ -413,9 +458,7 @@ export function renderToStream(code, options = {}) {
       }
       if (!tracking.emittedAssets.has(value)) {
         tracking.emittedAssets.add(value);
-        if (firstFlushed && type === "module") {
-          buffer.write(`<link rel="modulepreload" href="${value}">`);
-        }
+        if (firstFlushed) sink.asset(type, value);
       }
     },
     block(p) {
@@ -506,31 +549,7 @@ export function renderToStream(code, options = {}) {
             } else {
               serializeFragmentAssets(key, tracking.boundaryModules, context);
               const styles = collectStreamStyles(key, tracking, headStyles);
-              const deferActivation = !!revealGroup;
-              // Inline styles apply as soon as the parser sees them — emit
-              // before the template, no load gating needed.
-              for (let i = 0; i < styles.inline.length; i++) {
-                buffer.write(renderInlineStyle(styles.inline[i], nonce));
-              }
-              if (styles.links.length) {
-                emitTask(`$dfs("${key}",${styles.links.length},${deferActivation ? 1 : 0})`);
-                writeTasks();
-                for (const url of styles.links) {
-                  buffer.write(
-                    `<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
-                  );
-                }
-                buffer.write(
-                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
-                );
-              } else {
-                buffer.write(
-                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
-                );
-                if (!deferActivation) {
-                  emitTask(`$df("${key}")`);
-                }
-              }
+              sink.fragment(key, value !== undefined ? value : " ", { styles, revealGroup });
               item.resolve(error);
             }
           }
@@ -543,12 +562,12 @@ export function renderToStream(code, options = {}) {
       // cannot be changed by resolve timing.
       const keys = resolveRevealKeys(groupOrKeys, true, true);
       if (!keys) return;
-      emitTask(`$dfj(${JSON.stringify(keys)})`);
+      sink.reveal(keys, { fallback: false });
     },
     revealFallbacks(groupOrKeys) {
       const keys = resolveRevealKeys(groupOrKeys, false, false);
       if (!keys) return;
-      emitTask(`$dflj(${JSON.stringify(keys)})`);
+      sink.reveal(keys, { fallback: true });
     }
   };
   applyAssetTracking(context, tracking, manifest);

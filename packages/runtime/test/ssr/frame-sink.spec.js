@@ -89,3 +89,149 @@ describe("renderToStream options.sink — data seam", () => {
     });
   });
 });
+
+describe("renderToStream options.sink — fragment/reveal/asset seam", () => {
+  function pipeToString(stream, onFirstChunk) {
+    return new Promise(resolve => {
+      const chunks = [];
+      let seenFirst = false;
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+          if (!seenFirst) {
+            seenFirst = true;
+            onFirstChunk && onFirstChunk();
+          }
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("routes an eager fragment through sink.fragment with normalized value and styles", async () => {
+    const calls = [];
+    let fragDone;
+    const html = await pipeToString(
+      r.renderToStream(
+        () => {
+          const ctx = sharedConfig.context;
+          fragDone = ctx.registerFragment("b1");
+          return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
+        },
+        { sink: { fragment: (key, value, meta) => calls.push([key, value, meta]) } }
+      ),
+      () =>
+        setTimeout(() => {
+          // Register the boundary style post-flush so it is not hoisted into
+          // the shell head (pre-flush styles are, and are then excluded from
+          // the fragment's streamed styles).
+          const ctx = sharedConfig.context;
+          ctx._currentBoundaryId = "b1";
+          ctx.registerAsset("style", "/b1.css");
+          ctx._currentBoundaryId = null;
+          fragDone("<span>B</span>");
+        })
+    );
+    expect(calls).toEqual([
+      ["b1", "<span>B</span>", { styles: ["/b1.css"], revealGroup: undefined }]
+    ]);
+    // Document emission for the fragment was fully intercepted.
+    expect(html).not.toContain('<template id="b1">');
+    expect(html).not.toContain("$df");
+  });
+
+  it("routes grouped reveals through sink.reveal in registration order", async () => {
+    const fragments = [];
+    const reveals = [];
+    let doneA, doneB, reveal;
+    await pipeToString(
+      r.renderToStream(
+        () => {
+          const ctx = sharedConfig.context;
+          doneA = ctx.registerFragment("fa", { revealGroup: "g" });
+          doneB = ctx.registerFragment("fb", { revealGroup: "g" });
+          reveal = () => ctx.revealFragments("g");
+          return r.ssr`<div><template id="pl-fa"></template><!--pl-fa--><template id="pl-fb"></template><!--pl-fb--></div>`;
+        },
+        {
+          sink: {
+            fragment: (key, value, meta) => fragments.push([key, meta.revealGroup]),
+            reveal: (keys, meta) => reveals.push([keys, meta])
+          }
+        }
+      ),
+      () =>
+        setTimeout(() => {
+          // Resolve out of registration order; reveal must still be [fa, fb].
+          doneB("<span>B</span>");
+          doneA("<span>A</span>");
+          reveal();
+        })
+    );
+    expect(fragments).toEqual([
+      ["fb", "g"],
+      ["fa", "g"]
+    ]);
+    expect(reveals).toEqual([[["fa", "fb"], { fallback: false }]]);
+  });
+
+  it("routes fallback reveals through sink.reveal with fallback: true", async () => {
+    const reveals = [];
+    let doneA, showFallbacks;
+    await pipeToString(
+      r.renderToStream(
+        () => {
+          const ctx = sharedConfig.context;
+          doneA = ctx.registerFragment("fa", { revealGroup: "g" });
+          showFallbacks = () => ctx.revealFallbacks("g");
+          return r.ssr`<div><template id="pl-fa"><span>F</span></template><!--pl-fa--></div>`;
+        },
+        { sink: { reveal: (keys, meta) => reveals.push([keys, meta]) } }
+      ),
+      () =>
+        setTimeout(() => {
+          showFallbacks();
+          doneA("<span>A</span>");
+        })
+    );
+    expect(reveals[0]).toEqual([["fa"], { fallback: true }]);
+  });
+
+  it("routes late module assets through sink.asset", async () => {
+    const assets = [];
+    let fragDone;
+    const html = await pipeToString(
+      r.renderToStream(
+        () => {
+          const ctx = sharedConfig.context;
+          fragDone = ctx.registerFragment("b1");
+          return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
+        },
+        { sink: { asset: (type, url) => assets.push([type, url]) } }
+      ),
+      () =>
+        setTimeout(() => {
+          sharedConfig.context.registerAsset("module", "/late-chunk.js");
+          fragDone("<span>B</span>");
+        })
+    );
+    expect(assets).toEqual([["module", "/late-chunk.js"]]);
+    expect(html).not.toContain("/late-chunk.js");
+  });
+
+  it("document fragment/reveal output is unchanged when no sink is passed", async () => {
+    let fragDone;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        fragDone = ctx.registerFragment("b1");
+        return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
+      }),
+      () => setTimeout(() => fragDone("<span>B</span>"))
+    );
+    expect(html).toContain('<template id="b1"><span>B</span></template>');
+    expect(html).toContain('$df("b1")');
+  });
+});
