@@ -235,3 +235,58 @@ describe("renderToStream options.sink — fragment/reveal/asset seam", () => {
     expect(html).toContain('$df("b1")');
   });
 });
+
+describe("renderToStream options.sink — shell seam", () => {
+  it("routes the resolved shell through sink.shell with evaluated assets, preloads, and tasks", done => {
+    const shells = [];
+    const Comp = () => {
+      const ctx = sharedConfig.context;
+      ctx.serialize("pt", { x: 1 });
+      r.useAssets(() => r.ssr`<link rel="stylesheet" href="/head.css">`);
+      ctx.registerAsset("module", "/entry.js");
+      return r.ssr`<head></head><span>shell</span>`;
+    };
+    r.renderToStream(Comp, {
+      sink: { shell: (html, meta) => shells.push([html, meta]) }
+    }).pipe({
+      write() {},
+      end() {
+        expect(shells.length).toBe(1);
+        const [html, meta] = shells[0];
+        // Core hands over the raw shell; splicing is the sink's job.
+        expect(html).toContain("<span>shell</span>");
+        expect(html).not.toContain("/head.css");
+        // useAssets closures are already evaluated to HTML.
+        expect(meta.assets).toContain('href="/head.css"');
+        expect([...meta.preloads]).toContain("/entry.js");
+        // Serialized data accumulated pre-flush rides along as tasks.
+        expect(meta.tasks).toContain("pt");
+        done();
+      }
+    });
+  });
+
+  it("document shell output is unchanged when no sink is passed", done => {
+    const chunks = [];
+    const Comp = () => {
+      const ctx = sharedConfig.context;
+      r.useAssets(() => r.ssr`<link rel="stylesheet" href="/head.css">`);
+      ctx.registerAsset("module", "/entry.js");
+      return r.ssr`<head></head><span>shell</span>`;
+    };
+    r.renderToStream(Comp).pipe({
+      write(v) {
+        chunks.push(v);
+      },
+      end() {
+        const html = chunks.join("");
+        // Assets are spliced before </head>, entry modulepreload follows them.
+        expect(html).toContain(
+          '<link rel="stylesheet" href="/head.css"><link rel="modulepreload" href="/entry.js"></head>'
+        );
+        expect(html).toContain("<span>shell</span>");
+        done();
+      }
+    });
+  });
+});

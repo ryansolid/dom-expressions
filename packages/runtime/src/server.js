@@ -358,6 +358,19 @@ export function renderToStream(code, options = {}) {
         buffer.write(renderInlineStyle(value, nonce));
       }
     },
+    // The resolved shell. `meta.assets` is the already-evaluated useAssets
+    // HTML (evaluation is core work — asset closures can serialize data, which
+    // must land in `meta.tasks`). Document behavior: head/script string
+    // surgery — assets and preload links spliced before </head>, accumulated
+    // tasks spliced at the <!--xs--> marker — then one write. Injection order
+    // (assets, preloads, scripts) is part of the byte-exact document output.
+    shell(shellHtml, meta) {
+      shellHtml = injectBeforeHead(shellHtml, meta.assets);
+      shellHtml = injectPreloadLinks(meta.preloads, shellHtml, nonce);
+      shellHtml = injectInlineStyles(meta.inlineStyles, shellHtml, nonce);
+      if (meta.tasks.length) shellHtml = injectScripts(shellHtml, meta.tasks, nonce);
+      buffer.write(shellHtml);
+    },
     ...options.sink
   };
   const serializer = createHydrationSerializer({
@@ -623,16 +636,21 @@ export function renderToStream(code, options = {}) {
     if (shellCompleted) return;
     if (!resolveRootHoles()) return;
     sharedConfig.context = context;
-    html = injectAssets(context.assets, html);
+    // Asset closures run before anything reads `tasks`: they can serialize
+    // data (via sink.data → tasks), which the shell snapshot must include.
+    const assetsHtml = resolveAssetsHtml(context.assets);
     headStyles = new Set();
     for (const url of tracking.emittedAssets) {
       if (url.endsWith(".css")) headStyles.add(url);
     }
-    html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
-    html = injectInlineStyles(tracking.inlineStyles, html, nonce);
+    // Same constraint: root _assets serialization feeds sink.data → tasks.
     serializeRootAssets();
-    if (tasks.length) html = injectScripts(html, tasks, nonce);
-    buffer.write(html);
+    sink.shell(html, {
+      assets: assetsHtml,
+      preloads: tracking.emittedAssets,
+      inlineStyles: tracking.inlineStyles,
+      tasks
+    });
     tasks = "";
     onCompleteShell &&
       onCompleteShell({
@@ -1186,13 +1204,24 @@ function allSettled(promises) {
   });
 }
 
-function injectAssets(assets, html) {
-  if (!assets || !assets.length) return html;
+function resolveAssetsHtml(assets) {
+  if (!assets || !assets.length) return "";
   let out = "";
   for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
+  return out;
+}
+
+function injectBeforeHead(html, content) {
+  if (!content) return html;
   const index = html.indexOf("</head>");
   if (index === -1) return html;
-  return html.slice(0, index) + out + html.slice(index);
+  return html.slice(0, index) + content + html.slice(index);
+}
+
+function injectAssets(assets, html) {
+  // Evaluation is unconditional (closures may have side effects) even when
+  // there is no </head> to splice into.
+  return injectBeforeHead(html, resolveAssetsHtml(assets));
 }
 
 function injectPreloadLinks(emittedAssets, html, nonce) {
