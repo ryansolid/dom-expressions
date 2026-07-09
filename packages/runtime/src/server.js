@@ -299,10 +299,26 @@ export function renderToStream(code, options = {}) {
     completed = true;
     if (firstFlushed) dispose();
   };
+  // FrameSink seam (design in frame-sink.js): semantic emission routes through
+  // a sink so the same render core can drive either document output (default)
+  // or a transport-agnostic frame-chunk stream. Methods close over stream
+  // state, so the document sink is assembled here rather than by a standalone
+  // factory. `options.sink` overrides individual methods (experimental —
+  // surface grows as seams extract; unlisted emission still writes document
+  // output directly).
+  const sink = {
+    // One serialized data record: a Seroval script addressing one or more ids
+    // (ids are embedded in the payload, not addressable here). Document
+    // behavior: accumulate as a task, flush inside a <script>.
+    data(payload) {
+      pushTask(payload);
+    },
+    ...options.sink
+  };
   const serializer = createHydrationSerializer({
     scopeId: options.renderId,
     plugins: options.plugins,
-    onData: pushTask,
+    onData: payload => sink.data(payload),
     onDone,
     onError: options.onError
   });
