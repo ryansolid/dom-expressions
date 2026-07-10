@@ -152,6 +152,37 @@ describe("pipeToWritable", () => {
   });
 });
 
+describe("escape value coercion", () => {
+  it("passes numbers, booleans and nullish values through in attribute mode", () => {
+    expect(r.escape(42, true)).toBe(42);
+    expect(r.escape(0, true)).toBe(0);
+    expect(r.escape(true, true)).toBe("true");
+    expect(r.escape(false, true)).toBe("false");
+    expect(r.escape(null, true)).toBe(null);
+    expect(r.escape(undefined, true)).toBe(undefined);
+  });
+
+  it("coerces arrays to their final string in attribute mode", () => {
+    // Matches the string the client DOM would receive (comma-join), applied
+    // before escaping rather than after interpolation.
+    expect(r.escape(['a"b', "c&d"], true)).toBe("a&quot;b,c&amp;d");
+  });
+
+  it("coerces objects via toString in attribute mode", () => {
+    const obj = { toString: () => 'x"y&z' };
+    expect(r.escape(obj, true)).toBe("x&quot;y&amp;z");
+    expect(r.escape({}, true)).toBe("[object Object]");
+  });
+
+  it("renders non-string attribute values consistently with the client DOM", () => {
+    const html = r.renderToString(() =>
+      r.ssrElement("div", { title: ['a"b', "c"], "data-count": 3 }, undefined, false)
+    );
+    expect(html).toContain('title="a&quot;b,c"');
+    expect(html).toContain('data-count="3"');
+  });
+});
+
 describe("custom serialization plugins", () => {
   class Point {
     constructor(x, y) {
