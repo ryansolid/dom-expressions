@@ -273,6 +273,44 @@ describe("SSR attribute escaping (JSX)", () => {
     expect(res).not.toContain('onmouseover="alert');
   });
 
+  it("escapes non-string dynamic attribute values after coercion", () => {
+    const state = { title: ['"><script>alert(1)</script>', "b"] };
+    const res = r.renderToString(() => <div title={state.title} />);
+    expect(res).toBe('<div title="&quot;><script>alert(1)</script>,b"></div>');
+    const template = document.createElement("template");
+    template.innerHTML = res;
+    expect(template.content.querySelector("script")).toBeNull();
+    expect(template.content.firstElementChild.title).toBe(String(state.title));
+  });
+
+  it("escapes coercible attribute values passed via spread", () => {
+    const props = {
+      title: { toString: () => '"><script>alert(1)</script>' }
+    };
+    const res = r.renderToString(() => <div {...props} />);
+    expect(res).toBe('<div title="&quot;><script>alert(1)</script>"></div>');
+  });
+
+  it("escapes array attribute values passed via spread", () => {
+    const props = { title: ['"><script>alert(1)</script>', "b"] };
+    const res = r.renderToString(() => <div {...props} />);
+    expect(res).toBe('<div title="&quot;><script>alert(1)</script>,b"></div>');
+  });
+
+  it("renders number attribute values as their string form", () => {
+    const state = { count: 0 };
+    const res = r.renderToString(() => <div data-count={state.count} />);
+    expect(res).toBe('<div data-count="0"></div>');
+    const spread = r.renderToString(() => <div {...{ tabindex: 5 }} />);
+    expect(spread).toBe('<div tabindex="5"></div>');
+  });
+
+  it("escapes a non-string style object value after coercion", () => {
+    const evil = { toString: () => '"><script>alert(1)</script>' };
+    const res = r.renderToString(() => <div style={{ background: evil }} />);
+    expect(res).toBe('<div style="background:&quot;><script>alert(1)</script>"></div>');
+  });
+
   it('escapes `"` in a static style string literal', () => {
     const res = r.renderToString(() => <div style='color:red;"x' />);
     expect(res).toContain('style="color:red;&quot;x"');

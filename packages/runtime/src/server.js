@@ -980,15 +980,16 @@ export function ssrHydrationKey() {
 export function escape(s, attr) {
   const t = typeof s;
   if (t !== "string") {
-    if (!attr && Array.isArray(s)) {
+    if (attr) {
+      if (s == null || t === "boolean") return s;
+      s = String(s);
+    } else if (Array.isArray(s)) {
       const joined = tryJoinPlainSSRArray(s);
       if (joined !== undefined) return joined;
       s = s.slice(); // avoids double escaping - https://github.com/ryansolid/dom-expressions/issues/393
       for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
       return s;
-    }
-    if (attr && t === "boolean") return s;
-    return s;
+    } else return s;
   }
   // Fast path: single forward pass over the string. Most values (color
   // names, ids, prop strings, plain text) contain none of `&`, `<`, or
