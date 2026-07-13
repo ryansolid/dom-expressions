@@ -1,115 +1,106 @@
 /**
- * FrameSink — DESIGN SKETCH (not wired in yet).
+ * FrameSink — the frame-chunk side of the renderToStream emission seam.
  *
- * `renderToString` and `renderToStream` share one render `context` API
- * (`serialize`/`resolve`/`ssr`/`registerFragment`/`registerAsset`/reveal) and
- * differ ONLY in how the results become output. Today that "how" is inlined
- * into the stream closure as document-specific emission (script tags, <template>
- * fragments, <link> styles, asset injection). A `FrameSink` factors that "how"
- * out behind semantic methods so the same renderer can drive either:
+ * `renderToStream` (server.js) routes all emission through semantic sink
+ * methods — data / fragment / reveal / asset / shell — with the document sink
+ * (inline <script>/<template>/<link> output) as the default. This module is
+ * the other side of that seam: a sink emitting the transport-agnostic
+ * FrameChunk stream, plus `renderToFrameStream`, the producer entry that
+ * wires it up with a frame envelope (start/complete chunks) in place of the
+ * document writable. Same render core, different assembly.
  *
- *   - a document sink  -> the current <script>/<template>/<link> behavior
- *   - a frame sink     -> the transport-agnostic FrameChunk stream (the spike)
- *
- * The methods are SEMANTIC, not raw writes, so the frame sink can emit
- * structured chunks while the document sink keeps its batching/injection.
- *
- * What stays in the (shared) renderer core, unchanged:
+ * What stays in the shared render core, unchanged:
  *   - the render context API and resolveSSRNode
- *   - root-hole resolution (resolveRootHoles), blockingPromises, flush scheduling
+ *   - root-hole resolution, blockingPromises, flush scheduling
  *   - the registerFragment registry, reveal groups, waitForFragments,
  *     propagateBoundaryStyles
  *   - asset tracking (createAssetTracking)
  *
- * Call-site map (current server.js -> sink method -> frame chunk):
+ * Call-site map (server.js core -> sink method -> frame chunks):
  *
- *   serializer onData (pushTask / renderToString onData)    -> data(payload)       -> { type:"data" }
- *   doShell buffer.write(injected html)                     -> shell(html, meta)   -> { type:"html" } (+assets)
- *   registerFragment resolve: <template>+<link>+$dfs/$df    -> fragment(key,v,meta)-> { type:"fragment" } (+assets,+reveal)
- *   revealFragments / revealFallbacks ($dfj / $dflj)        -> reveal(keys, meta)  -> { type:"reveal" }
- *   registerAsset late <link modulepreload> / injectPreload -> asset(type, url)    -> { type:"assets" }
- *   writable.end()                                          -> end()               -> { type:"complete" }
- *   error paths                                             -> error(id, err)      -> { type:"error" }
+ *   serializer onData                 -> data(payload)             -> data
+ *   doShell                           -> shell(html, meta)         -> [assets,] html
+ *   registerFragment resolve (post-flush)
+ *                                     -> fragment(key, html, meta) -> [assets,] fragment [, reveal when eager]
+ *   revealFragments / revealFallbacks -> reveal(keys, meta)        -> reveal
+ *   registerAsset (post-flush)        -> asset(type, url)          -> assets
+ *   envelope completion               -> end()                     -> complete
+ *   error paths (not yet routed)      -> error(id, err)            -> error
  *
- * @typedef {Object} FrameSink
- * @property {(html: string, meta: { assets?: unknown, tasks?: string }) => void} shell
- *   The initial shell. Document sink: injectAssets + injectPreloadLinks +
- *   injectScripts, then buffer.write. Frame sink: emit an `html` chunk plus any
- *   asset/data chunks.
- * @property {(payload: string) => void} data
- *   One serialized data record (Seroval JS string for a single id). Document
- *   sink: accumulate into tasks, flush as <script>. Frame sink: `data` chunk.
- * @property {(key: string, value: string, meta: { styles?: string[], revealGroup?: string, deferActivation?: boolean }) => void} fragment
- *   An async fragment resolved with its HTML payload. Document sink: write
- *   <template id=key>value</template> (+ style <link onload=$dfc> + $dfs/$df
- *   tasks). Frame sink: `fragment` chunk (+ `assets`, + `reveal` when eager).
- * @property {(keys: string[], meta: { fallback?: boolean, waitForStyles?: boolean }) => void} reveal
- *   Reveal a group of fragments. Document sink: $dfj / $dflj task. Frame sink:
- *   `reveal` chunk.
- * @property {(type: "module" | "style", url: string) => void} asset
- *   An asset for the current boundary. Document sink: <link modulepreload> /
- *   injected stylesheet. Frame sink: `assets` chunk keyed by boundary.
- * @property {() => void} end
- *   Stream completion. Document sink: writable.end(). Frame sink: `complete`.
- * @property {(id: string, error: unknown) => void} error
- *   An error for a boundary. Frame sink: `error` chunk; clears pending writes.
+ * Deliberately does NOT flush `<script>` tags, wrap data in the document
+ * `$HY` bootstrap, or do string injection: control flow is passive records,
+ * not active scripts (the reason the frame consumer must not reuse the $df*
+ * helpers).
  */
+import { renderToStream } from "./server.js";
 
 /**
- * The frame sink: emit the transport-agnostic FrameChunk stream instead of a
- * document. `emit(chunk)` is the envelope boundary (array push in tests, an
- * encoded write over a real transport). `id`/`version` address the frame.
- *
- * Deliberately does NOT flush `<script>` tags, wrap data in the document `$HY`
- * bootstrap, or do string injection: control flow is passive records, not
- * active scripts (the reason the frame consumer must not reuse the $df* helpers).
+ * A sink emitting the transport-agnostic FrameChunk stream. `emit(chunk)` is
+ * the envelope boundary (array push in tests, an encoded write over a real
+ * transport). `id`/`version` address the frame.
  *
  * @param {(chunk: object) => void} emit
  * @param {{ id: string, version: number }} frame
- * @returns {FrameSink}
  */
 export function createFrameSink(emit, frame) {
   const { id, version } = frame;
+  // Fragments that streamed styles ahead of a grouped reveal; the group's
+  // reveal chunk must tell the consumer to wait on them.
+  const styledKeys = new Set();
   return {
-    shell(html /*, meta */) {
-      // Server-owned shell HTML. Assets/data that the document sink would have
-      // injected inline are emitted as their own chunks instead (see asset/data).
+    shell(html, meta = {}) {
+      // Pre-flush assets (entry modules, hoisted boundary styles) are head
+      // splices in the document sink; a frame carries them as an assets chunk
+      // ahead of the shell html. `meta.assets` (evaluated useAssets HTML) is
+      // document-head material with no frame representation — frames are
+      // boundary content, not documents — so it is dropped.
+      if (meta.preloads && meta.preloads.size) {
+        const styles = [];
+        const modules = [];
+        for (const url of meta.preloads) {
+          (url.endsWith(".css") ? styles : modules).push(url);
+        }
+        const chunk = { type: "assets", id, version, key: "" };
+        if (styles.length) chunk.styles = styles;
+        if (modules.length) chunk.modules = modules;
+        emit(chunk);
+      }
       emit({ type: "html", id, version, html });
     },
     data(payload) {
-      // Seroval output for one id, delivered as a passive record rather than a
-      // <script> that assigns into _$HY.r. The consumer applies it to its store.
+      // Seroval output delivered as a passive record rather than a <script>
+      // assigning into _$HY.r. Record ids are embedded in the payload (one
+      // payload can carry streamed promise resolutions), so there is no chunk
+      // key; the consumer applies the payload against its record table.
       emit({ type: "data", id, version, payload });
     },
     fragment(key, value, meta = {}) {
-      if (meta.assets) {
-        emit({ type: "assets", id, version, key, ...meta.assets });
+      const hasStyles = !!(meta.styles && meta.styles.length);
+      if (hasStyles) {
+        styledKeys.add(key);
+        emit({ type: "assets", id, version, key, styles: meta.styles });
       }
       emit({ type: "fragment", id, version, key, html: value });
-      // An eagerly-revealed fragment (no reveal group) carries its own reveal;
-      // grouped fragments wait for an explicit reveal() call.
+      // An eagerly-revealed fragment (no reveal group) carries its own
+      // reveal; grouped fragments wait for an explicit reveal() call.
       if (!meta.revealGroup) {
-        emit({
-          type: "reveal",
-          id,
-          version,
-          keys: [key],
-          waitForStyles: !!(meta.styles && meta.styles.length)
-        });
+        emit({ type: "reveal", id, version, keys: [key], waitForStyles: hasStyles });
       }
     },
     reveal(keys, meta = {}) {
-      emit({
-        type: "reveal",
-        id,
-        version,
-        keys,
-        waitForStyles: !!meta.waitForStyles,
-        fallback: !!meta.fallback
-      });
+      let waitForStyles = false;
+      for (const key of keys) if (styledKeys.has(key)) waitForStyles = true;
+      const chunk = { type: "reveal", id, version, keys, waitForStyles };
+      if (meta.fallback) chunk.fallback = true;
+      emit(chunk);
     },
     asset(type, url) {
-      emit({ type: "assets", id, version, [type === "style" ? "styles" : "modules"]: [url] });
+      // Post-flush styles ride their fragment's assets chunk (fragment() gets
+      // them via meta.styles) — same as the document sink, which only writes
+      // style links on the fragment path. Emitting them here too would
+      // duplicate, mis-keyed to the root.
+      if (type !== "module") return;
+      emit({ type: "assets", id, version, key: "", modules: [url] });
     },
     end() {
       emit({ type: "complete", id, version });
@@ -121,17 +112,50 @@ export function createFrameSink(emit, frame) {
 }
 
 /**
- * Seam-extraction order (each gated by the existing 504-test baseline; the
- * document sink stays the default so document SSR output is unchanged):
+ * Render to a FrameChunk stream: the same render core as `renderToStream`,
+ * with emission swapped to `createFrameSink` and the document writable
+ * replaced by a chunk envelope. The envelope emits `start` up front and
+ * `complete` at stream end; no document text is ever written.
  *
- *   1. data   — route serializer `onData` through `sink.data`. Lowest risk;
- *               validates the serialization-delegation seam against real Seroval.
- *   2. fragment/reveal/asset — lift the registerFragment resolve closure and the
- *               reveal/asset emission behind the sink, keeping registry + reveal
- *               groups + waitForFragments in the core.
- *   3. shell  — the highest-risk seam: doShell does document string surgery
- *               (injectAssets/injectPreloadLinks/injectScripts). For a frame the
- *               shell is an `html` chunk plus separate asset/data chunks, so this
- *               is a different assembly, not just a different write. Prove this
- *               one last, guarded by the parity test.
+ *   renderToFrameStream(code, { frame: { id: "f0", version: 1 } })
+ *     .pipe({ write(chunk) { ... }, end() { ... } });
+ *
+ *   const chunks = await renderToFrameStream(code, opts); // collected array
+ *
+ * Remaining `renderToStream` options (renderId, plugins, onError, manifest,
+ * ...) pass through; `options.sink` is owned by this entry.
+ *
+ * @param {() => unknown} code
+ * @param {{ frame?: { id?: string, version?: number } } & object} options
  */
+export function renderToFrameStream(code, options = {}) {
+  const { id = "", version = 1 } = options.frame || {};
+  const frame = { id, version };
+  function stream(w) {
+    const emit = chunk => w.write(chunk);
+    const sink = createFrameSink(emit, frame);
+    emit({ type: "start", id, version });
+    renderToStream(code, { ...options, sink }).pipe({
+      // Every document emission is intercepted by the frame sink, so no text
+      // arrives here; the writable exists only for the completion signal.
+      write() {},
+      end() {
+        sink.end();
+        w.end && w.end();
+      }
+    });
+  }
+  return {
+    pipe: stream,
+    then(onFulfilled, onRejected) {
+      return new Promise((resolve, reject) => {
+        const chunks = [];
+        try {
+          stream({ write: chunk => chunks.push(chunk), end: () => resolve(chunks) });
+        } catch (err) {
+          reject(err);
+        }
+      }).then(onFulfilled, onRejected);
+    }
+  };
+}
