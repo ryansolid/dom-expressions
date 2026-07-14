@@ -1,5 +1,16 @@
 # dom-expressions
 
+## 0.50.0-next.21
+
+### Patch Changes
+
+- 8e54049: Expose reusable Seroval serializer primitives from the runtime's serializer module. `createSerializer(options)` builds a streaming serializer preconfigured with the default web plugin set (custom plugins compose ahead of the defaults and can shadow them) and the ~ES2017 feature policy, targeting a caller-provided `globalIdentifier`. The SSR-specific configuration (pinned `_$HY.r` global) moves to `createHydrationSerializer(options)`, which `renderToString`/`renderToStream` now use internally — hydration output is unchanged. `DEFAULT_WEB_PLUGINS` and `resolveSerializerPlugins(customPlugins)` are also exported, the module's type declarations are corrected to match the implementation (they previously declared a nonexistent default export), and the render options' `plugins` typing is tightened from `any[]` to `SerializerPlugin[]`.
+
+  The module also gains an isomorphic JSON codec for RPC-style transports (e.g. server functions): `serializeJSON(value, { onParse, onDone, onError, ... })` streams a value as `SerovalNode` chunks (async values continue streaming as they resolve), and `createJSONDeserializer(options)` returns its decoding counterpart with cross-chunk reference state. Both share the web plugin resolution, and default to a transport-hardened policy (RegExp disabled, parse depth capped at 64) that can be overridden per peer. Wire framing of chunks is intentionally left to the transport. This is groundwork for sharing one serialization configuration between SSR hydration and server function transports.
+
+- e717d06: Fix streamed fragment swaps leaving fallback content behind when the fallback contains unrelated comment markers.
+- 2c4ab6b: Raise the seroval / seroval-plugins peer dependency floor from `~1.5.0` to `~1.5.4`: seroval 1.5.3 and earlier are affected by a security issue fixed in 1.5.4.
+
 ## 0.50.0-next.20
 
 ### Patch Changes

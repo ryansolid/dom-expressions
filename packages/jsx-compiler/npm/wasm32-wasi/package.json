@@ -1,6 +1,6 @@
 {
   "name": "@dom-expressions/jsx-compiler-wasm32-wasi",
-  "version": "0.50.0-next.20",
+  "version": "0.50.0-next.21",
   "main": "jsx-compiler.wasi.cjs",
   "files": [
     "jsx-compiler.wasm32-wasi.wasm",
