@@ -239,6 +239,63 @@ describe("frame stream → client frame runtime", () => {
     await expect(value).resolves.toBe(42);
   });
 
+  it("async parity: an activated document stream and a frame stream converge to the same DOM", async () => {
+    // One component definition, rendered twice (fresh fragment resolver per
+    // run) so both paths see identical markup and hydration ids.
+    const makeRun = () => {
+      let fragDone;
+      return {
+        Comp: () => {
+          const ctx = sharedConfig.context;
+          fragDone = ctx.registerFragment("p1");
+          return r.ssr`<section><h1>Page</h1><template id="pl-p1"><em>loading</em></template><!--pl-p1--></section>`;
+        },
+        resolve: v => fragDone(v)
+      };
+    };
+
+    // Document path: collect the streamed html, then activate it the way a
+    // browser would — parse it, then evaluate its inline task scripts (the
+    // $df runtime piggybacks on the first task).
+    const doc = makeRun();
+    const htmlChunks = [];
+    await new Promise(res => {
+      r.renderToStream(doc.Comp).pipe({
+        write(v) {
+          htmlChunks.push(v);
+          if (htmlChunks.length === 1) setTimeout(() => doc.resolve("<p>Loaded</p>"));
+        },
+        end: res
+      });
+    });
+    const docBoundary = document.createElement("div");
+    document.body.appendChild(docBoundary);
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {}, fe() {} };
+    docBoundary.innerHTML = htmlChunks.join("");
+    const scripts = [...docBoundary.querySelectorAll("script")];
+    for (const s of scripts) (0, eval)(s.textContent);
+    for (const s of scripts) s.remove();
+    delete globalThis._$HY;
+
+    // Frame path: same component through the chunk stream and the real
+    // consumer.
+    const frameRun = makeRun();
+    const host = createFrameHost();
+    createFrame(boundary, { host, id: "pp" });
+    await streamInto(
+      renderToFrameStream(frameRun.Comp, { frame: { id: "pp" } }),
+      host,
+      chunk => {
+        if (chunk.type === "html") setTimeout(() => frameRun.resolve("<p>Loaded</p>"));
+      }
+    );
+
+    expect(boundary.innerHTML).toBe(docBoundary.innerHTML);
+    expect(boundary.innerHTML).toContain("<p>Loaded</p>");
+    expect(boundary.innerHTML).not.toContain("pl-p1");
+    docBoundary.remove();
+  });
+
   it("morphs a repeat render of the same frame id in place (policy A)", async () => {
     const Comp = version => () =>
       r.ssr`<section><h1>Story ${r.escape(String(version))}</h1><p>body</p></section>`;
