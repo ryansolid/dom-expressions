@@ -634,6 +634,57 @@ export function createFrame(boundary, options) {
   return new FrameImpl(boundary, null, null, options);
 }
 
+// Well-known brand shared with client.js's `insert` (constants.js defines
+// the same registered symbol) — Symbol.for keeps the two modules importless
+// in both directions, which is what makes frames zero-cost for apps that
+// never import this entry.
+const FRAME = Symbol.for("dom-expressions.frame");
+
+/**
+ * A branded frame-insertable value: `insert()` recognizes the brand and
+ * calls the mount handler this value carries, which establishes a comment
+ * range at the insertion point and binds a frame to it (registered with
+ * `options.host` under `options.id`, so streamed chunks route to it —
+ * including any buffered before mount).
+ *
+ * One static mount per value. Lifecycle belongs to the creator: server
+ * updates flow through the frame's stream (policy A morphs in place), and
+ * teardown is `value.dispose()` — the Solid binding registers it with its
+ * owner (`onCleanup`), keeping the reactive-core dependency on that side.
+ */
+export function createFrameInsertable(options) {
+  let frame = null;
+  let start = null;
+  let end = null;
+  return {
+    get frame() {
+      return frame;
+    },
+    dispose() {
+      if (!frame) return;
+      frame.dispose();
+      frame = null;
+      const parent = start.parentNode;
+      if (!parent) return;
+      let n = start;
+      while (n) {
+        const next = n.nextSibling;
+        parent.removeChild(n);
+        if (n === end) break;
+        n = next;
+      }
+    },
+    [FRAME](parent, marker) {
+      if (frame) return; // single-mount contract
+      start = document.createComment("frame:start");
+      end = document.createComment("frame:end");
+      parent.insertBefore(start, marker);
+      parent.insertBefore(end, marker);
+      frame = new FrameImpl(null, start, end, options);
+    }
+  };
+}
+
 /** Returns the segment name for a `seg:<name>` content key, else `null`. */
 function segmentName(key) {
   const m = /^seg:([^:]+)$/.exec(key);
