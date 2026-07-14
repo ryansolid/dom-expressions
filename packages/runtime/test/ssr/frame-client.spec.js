@@ -215,6 +215,47 @@ describe("segment reveal readiness", () => {
     expect(boundary.innerHTML).toBe("<section><p>one</p><p>two</p></section>");
   });
 
+  // The store-model analogue of the document runtime's $dfd retry drain
+  // (upstream 9d5a90ba): a reveal can insert another segment's placeholder
+  // into the DOM, so readiness must re-evaluate until a pass makes no
+  // progress — regardless of arrival/iteration order.
+  it("reveals a segment whose placeholder arrives inside another segment's content", () => {
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html(`<div>${ph("outer")}</div>`) } });
+    // Inner lands first: its placeholder is inside outer's unrevealed content,
+    // so it is structurally not ready when first evaluated.
+    frame.apply({ version: 1, r: { "seg:inner": html("<em>I</em>"), "seg:inner:reveal": true } });
+    expect(frame.isRevealed("inner")).toBe(false);
+    // Outer's reveal brings inner's placeholder into the DOM in the same
+    // flush; inner must reveal without any further chunk arriving.
+    frame.apply({
+      version: 1,
+      r: { "seg:outer": html(`<section>${ph("inner")}</section>`), "seg:outer:reveal": true }
+    });
+    expect(frame.isRevealed("outer")).toBe(true);
+    expect(frame.isRevealed("inner")).toBe(true);
+    expect(boundary.innerHTML).toBe("<div><section><em>I</em></section></div>");
+  });
+
+  it("materializes a fallback whose placeholder arrives inside revealed content", () => {
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html(`<div>${ph("outer")}</div>`) } });
+    // The inner fallback gate lands before the placeholder exists anywhere.
+    frame.apply({ version: 1, r: { "seg:inner:fallback": true } });
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:outer": html(
+          `<section><template id="pl-inner"><em>waiting</em></template><!--pl-inner--></section>`
+        ),
+        "seg:outer:reveal": true
+      }
+    });
+    expect(boundary.innerHTML).toBe(
+      `<div><section><template id="pl-inner"><em>waiting</em></template><em>waiting</em><!--pl-inner--></section></div>`
+    );
+  });
+
   it("does not double-apply a reveal on re-flush", () => {
     const frame = createFrame(boundary);
     frame.apply({ version: 1, r: { "": html(`<section>${ph("p1")}</section>`) } });

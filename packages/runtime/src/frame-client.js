@@ -263,26 +263,35 @@ class FrameImpl {
 
     // Re-evaluate every segment on each flush. Because readiness is checked
     // against the store + DOM (not arrival order), reveal/content/placeholder
-    // may arrive in any order.
-    for (const key of Object.keys(this.#store)) {
-      const name = segmentName(key);
-      if (name === null || this.#revealed.has(name)) continue;
-      if (this.#segmentReady(name)) {
-        this.#revealSegment(name);
-        this.#options.onApply?.({ version, reason: "reveal" });
+    // may arrive in any order. Passes repeat until one makes no progress:
+    // revealing a segment (or materializing a fallback) can insert another
+    // segment's placeholder into the DOM — the store-model analogue of the
+    // document runtime's $dfd retry drain. Terminates because every step
+    // moves a name into #revealed/#fallbackShown, bounded by the store.
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      for (const key of Object.keys(this.#store)) {
+        const name = segmentName(key);
+        if (name === null || this.#revealed.has(name)) continue;
+        if (this.#segmentReady(name)) {
+          this.#revealSegment(name);
+          this.#options.onApply?.({ version, reason: "reveal" });
+          progressed = true;
+        }
       }
-    }
-
-    // Fallback gates materialize placeholder-template content into the range
-    // ($dfl semantics) while the segment itself stays pending.
-    for (const key of Object.keys(this.#store)) {
-      const m = /^seg:([^:]+):fallback$/.exec(key);
-      if (!m) continue;
-      const name = m[1];
-      if (this.#revealed.has(name) || this.#fallbackShown.has(name)) continue;
-      if (this.#showFallback(name)) {
-        this.#fallbackShown.add(name);
-        this.#options.onApply?.({ version, reason: "reveal" });
+      // Fallback gates materialize placeholder-template content into the
+      // range ($dfl semantics) while the segment itself stays pending.
+      for (const key of Object.keys(this.#store)) {
+        const m = /^seg:([^:]+):fallback$/.exec(key);
+        if (!m) continue;
+        const name = m[1];
+        if (this.#revealed.has(name) || this.#fallbackShown.has(name)) continue;
+        if (this.#showFallback(name)) {
+          this.#fallbackShown.add(name);
+          this.#options.onApply?.({ version, reason: "reveal" });
+          progressed = true;
+        }
       }
     }
 
@@ -631,9 +640,7 @@ function parseFragment(html) {
 /** Whether `node` is the `<template id="pl-KEY">` placeholder start marker. */
 function isPlaceholderStart(node, id) {
   return (
-    node.nodeType === ELEMENT_NODE &&
-    node.tagName === "TEMPLATE" &&
-    node.getAttribute("id") === id
+    node.nodeType === ELEMENT_NODE && node.tagName === "TEMPLATE" && node.getAttribute("id") === id
   );
 }
 
