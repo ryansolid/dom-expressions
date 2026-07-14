@@ -135,7 +135,11 @@ describe("renderToStream options.sink — fragment/reveal/asset seam", () => {
         })
     );
     expect(calls).toEqual([
-      ["b1", "<span>B</span>", { styles: ["/b1.css"], revealGroup: undefined }]
+      [
+        "b1",
+        "<span>B</span>",
+        { styles: { links: ["/b1.css"], inline: [] }, revealGroup: undefined }
+      ]
     ]);
     // Document emission for the fragment was fully intercepted.
     expect(html).not.toContain('<template id="b1">');

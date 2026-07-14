@@ -75,16 +75,25 @@ export function createFrameSink(emit, frame) {
       emit({ type: "data", id, version, payload });
     },
     fragment(key, value, meta = {}) {
-      const hasStyles = !!(meta.styles && meta.styles.length);
-      if (hasStyles) {
-        styledKeys.add(key);
-        emit({ type: "assets", id, version, key, styles: meta.styles });
+      // meta.styles is the core's { links, inline } split: stylesheet URLs
+      // gate the reveal (they load async); inline styles are CSS content that
+      // applies on insertion, carried by value, no gating.
+      const links = (meta.styles && meta.styles.links) || [];
+      const inline = (meta.styles && meta.styles.inline) || [];
+      if (links.length || inline.length) {
+        if (links.length) styledKeys.add(key);
+        const chunk = { type: "assets", id, version, key };
+        if (links.length) chunk.styles = links;
+        if (inline.length) {
+          chunk.inlineStyles = inline.map(e => ({ id: e.id, content: e.content, attrs: e.attrs }));
+        }
+        emit(chunk);
       }
       emit({ type: "fragment", id, version, key, html: value });
       // An eagerly-revealed fragment (no reveal group) carries its own
       // reveal; grouped fragments wait for an explicit reveal() call.
       if (!meta.revealGroup) {
-        emit({ type: "reveal", id, version, keys: [key], waitForStyles: hasStyles });
+        emit({ type: "reveal", id, version, keys: [key], waitForStyles: !!links.length });
       }
     },
     reveal(keys, meta = {}) {
