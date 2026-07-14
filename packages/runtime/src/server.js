@@ -1,6 +1,6 @@
 import { ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner } from "rxcore";
-import { createSerializer, getLocalHeaderScript } from "./serializer";
+import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
 
 // `mergeProps` comes from the framework like the client/universal entries —
 // prop-merge semantics (function sources, precedence) belong to the reactive
@@ -200,7 +200,7 @@ const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e))
 export function renderToString(code, options = {}) {
   const { renderId = "", nonce, noScripts, manifest } = options;
   let scripts = "";
-  const serializer = createSerializer({
+  const serializer = createHydrationSerializer({
     scopeId: renderId,
     plugins: options.plugins,
     onData(script) {
@@ -299,7 +299,7 @@ export function renderToStream(code, options = {}) {
     completed = true;
     if (firstFlushed) dispose();
   };
-  const serializer = createSerializer({
+  const serializer = createHydrationSerializer({
     scopeId: options.renderId,
     plugins: options.plugins,
     onData: pushTask,

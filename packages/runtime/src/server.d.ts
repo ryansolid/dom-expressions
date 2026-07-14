@@ -1,4 +1,5 @@
 import { JSX } from "./jsx.js";
+import { SerializerPlugin } from "./serializer.js";
 export const DOMWithState: Record<string, Record<string, 1 | 2>>;
 export const ChildProperties: Set<string>;
 export const DelegatedEvents: Set<string>;
@@ -62,7 +63,7 @@ export function renderToString<T>(
     nonce?: string;
     renderId?: string;
     noScripts?: boolean;
-    plugins?: any[];
+    plugins?: SerializerPlugin[];
     manifest?: AssetManifest | AssetResolver | AssetResolverFn;
     onError?: (err: any) => void;
   }
@@ -75,7 +76,7 @@ export function renderToStringAsync<T>(
     nonce?: string;
     renderId?: string;
     noScripts?: boolean;
-    plugins?: any[];
+    plugins?: SerializerPlugin[];
     manifest?: AssetManifest | AssetResolver | AssetResolverFn;
     onError?: (err: any) => void;
   }
@@ -86,7 +87,7 @@ export function renderToStream<T>(
     nonce?: string;
     renderId?: string;
     noScripts?: boolean;
-    plugins?: any[];
+    plugins?: SerializerPlugin[];
     manifest?: AssetManifest | AssetResolver | AssetResolverFn;
     onCompleteShell?: (info: { write: (v: string) => void }) => void;
     onCompleteAll?: (info: { write: (v: string) => void }) => void;
