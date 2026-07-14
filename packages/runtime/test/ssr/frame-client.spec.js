@@ -256,6 +256,94 @@ describe("segment reveal readiness", () => {
     );
   });
 
+  it("gates a reveal on its stylesheet loading, inserting the link eagerly", () => {
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html(`<div>${ph("p1")}</div>`) } });
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:p1": html("<p>styled</p>"),
+        "seg:p1:assets": { type: "assets", key: "p1", styles: ["/p1.css"] },
+        "seg:p1:reveal": true
+      }
+    });
+    // The link is inserted immediately so loading overlaps the stream, but
+    // the reveal waits for it to settle.
+    const link = [...document.head.querySelectorAll("link")].find(
+      l => l.getAttribute("href") === "/p1.css"
+    );
+    expect(link).toBeTruthy();
+    expect(frame.isRevealed("p1")).toBe(false);
+    link.dispatchEvent(new Event("load"));
+    expect(frame.isRevealed("p1")).toBe(true);
+    expect(boundary.innerHTML).toBe("<div><p>styled</p></div>");
+    link.remove();
+  });
+
+  it("a stylesheet error unblocks the reveal (same policy as $dfc onerror)", () => {
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html(`<div>${ph("p1")}</div>`) } });
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:p1": html("<p>anyway</p>"),
+        "seg:p1:assets": { type: "assets", key: "p1", styles: ["/broken.css"] },
+        "seg:p1:reveal": true
+      }
+    });
+    const link = [...document.head.querySelectorAll("link")].find(
+      l => l.getAttribute("href") === "/broken.css"
+    );
+    expect(frame.isRevealed("p1")).toBe(false);
+    link.dispatchEvent(new Event("error"));
+    expect(frame.isRevealed("p1")).toBe(true);
+    link.remove();
+  });
+
+  it("treats a stylesheet already in the document as loaded", () => {
+    const existing = document.createElement("link");
+    existing.rel = "stylesheet";
+    existing.href = "/already.css";
+    document.head.appendChild(existing);
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html(`<div>${ph("p1")}</div>`) } });
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:p1": html("<p>ok</p>"),
+        "seg:p1:assets": { type: "assets", key: "p1", styles: ["/already.css"] },
+        "seg:p1:reveal": true
+      }
+    });
+    expect(frame.isRevealed("p1")).toBe(true);
+    existing.remove();
+  });
+
+  it("applies inline styles to the head on reveal, deduped by data-asset id", () => {
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html(`<div>${ph("p1")}${ph("p2")}</div>`) } });
+    const inline = [{ id: "css-a", content: ".a{color:red}" }];
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:p1": html("<p>one</p>"),
+        "seg:p1:assets": { type: "assets", key: "p1", inlineStyles: inline },
+        "seg:p1:reveal": true,
+        "seg:p2": html("<p>two</p>"),
+        "seg:p2:assets": { type: "assets", key: "p2", inlineStyles: inline },
+        "seg:p2:reveal": true
+      }
+    });
+    expect(frame.isRevealed("p1")).toBe(true);
+    expect(frame.isRevealed("p2")).toBe(true);
+    const styles = [...document.head.querySelectorAll("style")].filter(
+      s => s.getAttribute("data-asset") === "css-a"
+    );
+    expect(styles.length).toBe(1);
+    expect(styles[0].textContent).toBe(".a{color:red}");
+    styles[0].remove();
+  });
+
   it("does not double-apply a reveal on re-flush", () => {
     const frame = createFrame(boundary);
     frame.apply({ version: 1, r: { "": html(`<section>${ph("p1")}</section>`) } });

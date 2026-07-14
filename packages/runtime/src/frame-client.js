@@ -189,6 +189,11 @@ class FrameImpl {
   #slotArgs = new Map();
   #slotRegions = new Map();
   #disposed = false;
+  // Stable identity so a pending stylesheet holds at most one waiter per
+  // frame across repeated readiness checks.
+  #styleFlush = () => {
+    if (!this.#disposed) this.#flush();
+  };
 
   constructor(element, start, end, options = {}) {
     this.#element = element;
@@ -251,6 +256,7 @@ class FrameImpl {
   }
 
   #flush() {
+    if (this.#disposed) return;
     const version = this.#version;
 
     const root = this.#store[""];
@@ -534,6 +540,19 @@ class FrameImpl {
     }
     // Reveal gate must be present and truthy.
     if (!this.#store[`seg:${name}:reveal`]) return false;
+    // Style gate: the segment's streamed stylesheets must be loaded before it
+    // shows (the $dfs/$dfc analogue). ensureStylesheet inserts pending links
+    // immediately — even when other prerequisites are missing — so loading
+    // overlaps with the rest of the stream; #styleFlush re-runs this frame
+    // when one settles. Inline styles never gate (they apply on insertion).
+    const assets = this.#store[`seg:${name}:assets`];
+    if (assets && assets.styles) {
+      let ready = true;
+      for (const href of assets.styles) {
+        if (!ensureStylesheet(href, this.#styleFlush)) ready = false;
+      }
+      if (!ready) return false;
+    }
     // Structural prerequisite: the placeholder must exist in this frame's range.
     if (!this.#findPlaceholder(name)) return false;
     return true;
@@ -547,6 +566,10 @@ class FrameImpl {
   #revealSegment(name) {
     const tpl = this.#findPlaceholder(name);
     if (!tpl) return;
+    // Inline styles ride the segment's assets record and apply just before
+    // its content shows (document order: <style> precedes the template).
+    const assets = this.#store[`seg:${name}:assets`];
+    if (assets && assets.inlineStyles) applyInlineStyles(assets.inlineStyles);
     const content = this.#store[`seg:${name}`];
     const closing = rangeClose(tpl, placeholderId(name));
     const parent = tpl.parentNode;
@@ -635,6 +658,66 @@ function parseFragment(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
   return template.content;
+}
+
+// ---- Style loading (reveal gating) ------------------------------------
+//
+// Minimal, import-free mirror of the client asset registry's conventions
+// (client.js acquireAsset): data-asset ids for inline styles, attribute-
+// compared lookup instead of selector interpolation, adopt elements already
+// in the document. The dom-expressions binding can swap in the ref-counted
+// registry later; the gate only needs "are this segment's stylesheets loaded,
+// and call me back when they settle".
+
+/** Attribute-compared head lookup so href/id values never need escaping. */
+function findHeadElement(selector, attr, value) {
+  const nodes = document.head.querySelectorAll(selector);
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].getAttribute(attr) === value) return nodes[i];
+  }
+  return null;
+}
+
+/**
+ * Ensure a stylesheet link exists and report whether it has settled. A link
+ * this loader created tracks waiters until load/error (error unblocks too —
+ * same policy as the document runtime's $dfc onerror); a link that was
+ * already in the document counts as settled.
+ */
+function ensureStylesheet(href, onSettle) {
+  let link = findHeadElement('link[rel="stylesheet"]', "href", href);
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    const waiters = new Set();
+    link._$frWaiters = waiters;
+    const settle = () => {
+      link._$frWaiters = null;
+      for (const fn of waiters) fn();
+    };
+    link.addEventListener("load", settle);
+    link.addEventListener("error", settle);
+    document.head.appendChild(link);
+  }
+  const waiters = link._$frWaiters;
+  if (waiters == null) return true; // settled, or document-owned
+  waiters.add(onSettle);
+  return false;
+}
+
+/** Insert inline-style entries into the head, deduped by data-asset id. */
+function applyInlineStyles(inlineStyles) {
+  for (const entry of inlineStyles) {
+    if (findHeadElement("style[data-asset]", "data-asset", entry.id)) continue;
+    const el = document.createElement("style");
+    el.setAttribute("data-asset", entry.id);
+    if (entry.attrs) {
+      for (const name in entry.attrs) el.setAttribute(name, entry.attrs[name]);
+    }
+    el.textContent = entry.content || "";
+    document.head.appendChild(el);
+  }
 }
 
 /** Whether `node` is the `<template id="pl-KEY">` placeholder start marker. */

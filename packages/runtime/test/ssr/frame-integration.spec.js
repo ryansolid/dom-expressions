@@ -144,6 +144,43 @@ describe("frame stream → client frame runtime", () => {
     expect(boundary.innerHTML).toBe("<div><strong>ready</strong></div>");
   });
 
+  it("gates a produced styled fragment's reveal on stylesheet load, end to end", async () => {
+    let fragDone;
+    const host = createFrameHost();
+    const frame = createFrame(boundary, { host, id: "fs" });
+    await streamInto(
+      renderToFrameStream(
+        () => {
+          const ctx = sharedConfig.context;
+          fragDone = ctx.registerFragment("p1");
+          return r.ssr`<div><template id="pl-p1"></template><!--pl-p1--></div>`;
+        },
+        { frame: { id: "fs" } }
+      ),
+      host,
+      chunk => {
+        if (chunk.type === "html")
+          setTimeout(() => {
+            const ctx = sharedConfig.context;
+            ctx._currentBoundaryId = "p1";
+            ctx.registerAsset("style", "/frag.css");
+            ctx._currentBoundaryId = null;
+            fragDone("<p>styled</p>");
+          });
+      }
+    );
+    // Stream is complete but the stylesheet hasn't settled: still gated.
+    expect(frame.isRevealed("p1")).toBe(false);
+    const link = [...document.head.querySelectorAll("link")].find(
+      l => l.getAttribute("href") === "/frag.css"
+    );
+    expect(link).toBeTruthy();
+    link.dispatchEvent(new Event("load"));
+    expect(frame.isRevealed("p1")).toBe(true);
+    expect(boundary.innerHTML).toBe("<div><p>styled</p></div>");
+    link.remove();
+  });
+
   it("routes data payloads to the host's data hook, applied against the record table", async () => {
     const payloads = [];
     const host = createFrameHost({ applyData: p => payloads.push(p) });
