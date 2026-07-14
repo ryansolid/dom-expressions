@@ -520,6 +520,19 @@ describe("reveal defensive invariants", () => {
     expect(() => runtime.$dfj([])).not.toThrow();
   });
 
+  it("replaces a fallback range containing unrelated comment markers", () => {
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {}, done: false, fe() {} };
+    const container = document.createElement("div");
+    container.innerHTML =
+      '<div><template id="pl-frag"></template>Preparing file — <!--!$-->42<!--/-->% complete<!--pl-frag--><template id="frag">Download ready</template></div>';
+    document.body.appendChild(container);
+
+    runtime.$df("frag");
+
+    expect(container.innerHTML).toBe("<div>Download ready</div>");
+    container.remove();
+  });
+
   describe("deferred activation for markers inside held templates", () => {
     // A fragment marker that sits inside a flushed-but-unactivated ancestor
     // template (a reveal-held slot) is invisible to getElementById. These
