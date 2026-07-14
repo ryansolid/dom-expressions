@@ -2,15 +2,14 @@
  * @jest-environment jsdom
  */
 // Level-4 smoke: chunks produced by renderToFrameStream are consumable into
-// DOM. A minimal in-test applier stands in for the (not yet ported) client
-// frame runtime — it honors the document marker vocabulary the producer
-// emits: fragment placeholder ranges are `<template id="pl-KEY">` ...
-// `<!--pl-KEY-->`, and data payloads are eval-style Seroval records applied
-// against the `_$HY.r` table. The real consumer (the spike's reconciler +
-// slot model) replaces this; these tests pin the produce→consume contract.
+// DOM with a minimal in-test applier that is independent of the real client
+// runtime (frame-client.js) — it pins the produce→consume contract from
+// first principles: fragment placeholder ranges are `<template id="pl-KEY">`
+// ... `<!--pl-KEY-->`, and data records are keyed SerovalNode chunks decoded
+// through the JSON codec table, no eval.
 import * as r from "../../src/server";
 import { renderToFrameStream } from "../../src/frame-sink";
-import { getLocalHeaderScript } from "../../src/serializer";
+import { createJSONDataTable } from "../../src/serializer";
 import { sharedConfig } from "rxcore";
 
 globalThis.TextEncoder = function () {
@@ -39,9 +38,9 @@ function swapFragment(boundary, key, html) {
 
 function createFrameApplier(boundary) {
   const fragments = new Map();
-  const payloads = [];
+  const data = [];
   return {
-    payloads,
+    data,
     apply(chunk) {
       switch (chunk.type) {
         case "html":
@@ -55,7 +54,7 @@ function createFrameApplier(boundary) {
           for (const key of chunk.keys) swapFragment(boundary, key, fragments.get(key));
           break;
         case "data":
-          payloads.push(chunk.payload);
+          data.push(chunk);
           break;
       }
     }
@@ -141,7 +140,7 @@ describe("frame chunk consumption (produce → apply → DOM)", () => {
     expect(boundary.innerHTML).toBe("<ul><li><span>A</span></li><li><span>B</span></li></ul>");
   });
 
-  it("data payloads evaluate against the _$HY.r record table", async () => {
+  it("data records decode through the JSON codec table, no eval", async () => {
     const applier = await consume(
       renderToFrameStream(
         () => {
@@ -152,12 +151,8 @@ describe("frame chunk consumption (produce → apply → DOM)", () => {
       ),
       boundary
     );
-    globalThis._$HY = { r: {} };
-    // The consumer's bootstrap: the response-scoped cross-reference header,
-    // then each data payload, applied as passive records.
-    (0, eval)(getLocalHeaderScript(""));
-    for (const payload of applier.payloads) (0, eval)(payload);
-    expect(globalThis._$HY.r.user).toEqual({ name: "Ryan", tags: ["a", "b"] });
-    delete globalThis._$HY;
+    const table = createJSONDataTable();
+    for (const record of applier.data) table.apply(record);
+    expect(table.get("user")).toEqual({ name: "Ryan", tags: ["a", "b"] });
   });
 });

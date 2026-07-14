@@ -59,19 +59,21 @@ describe("root apply", () => {
   });
 
   it("merges partial writes for the same version", () => {
-    const payloads = [];
+    const data = [];
     const host = createFrameHost({
       ...createMockSerializer(),
-      applyData: p => payloads.push(p)
+      applyData: c => data.push(c)
     });
     const frame = createFrame(boundary, { id: "f", host });
     host.apply({ type: "html", id: "f", version: 1, html: `<section>${ph("p1")}</section>` });
-    host.apply({ type: "data", id: "f", version: 1, payload: "/*x*/" });
+    host.apply({ type: "data", id: "f", version: 1, key: "x", node: { t: 1 }, initial: true });
 
-    // The root write lands in the resident store; the data payload is
-    // response-scoped and goes through the host's data hook, not the store.
+    // The root write lands in the resident store; the data record is
+    // response-scoped and goes through the host's data hook (whole chunk),
+    // not the store.
     expect(frame.store[""]).toBeDefined();
-    expect(payloads).toEqual(["/*x*/"]);
+    expect(data.length).toBe(1);
+    expect(data[0].key).toBe("x");
     expect(frame.store["data:user"]).toBeUndefined();
   });
 });
@@ -692,17 +694,18 @@ describe("wire chunk format", () => {
     });
   });
 
-  it("delivers a data chunk's payload to applyData without touching the store", () => {
-    const payloads = [];
+  it("delivers a data chunk to applyData whole, without touching the store", () => {
+    const data = [];
     const host = createFrameHost({
       ...createMockSerializer(),
-      applyData: p => payloads.push(p)
+      applyData: c => data.push(c)
     });
     const frame = createFrame(boundary, { id: "f", host });
 
-    host.apply({ type: "data", id: "f", version: 1, payload: "/*records*/" });
+    const chunk = { type: "data", id: "f", version: 1, key: "user", node: { t: 1 }, initial: true };
+    host.apply(chunk);
 
-    expect(payloads).toEqual(["/*records*/"]);
+    expect(data).toEqual([chunk]);
     expect(Object.keys(frame.store)).toEqual([]);
   });
 

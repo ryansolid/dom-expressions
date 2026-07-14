@@ -104,18 +104,19 @@ export function chunkToRecords(chunk) {
  * @param {{
  *   serialize?: (value: unknown) => { $ref: string },
  *   resolve?: (ref: { $ref: string }) => unknown,
- *   applyData?: (payload: string) => void
+ *   applyData?: (chunk: object) => void
  * }} [options]
  *   `serialize`/`resolve` back slot data refs (response-scoped table);
- *   `applyData` receives each `data` chunk's payload (Seroval script — apply
- *   it to the record table; eval-style today, JSON-codec later).
+ *   `applyData` receives each `data` chunk whole — keyed codec records
+ *   ({ key, node, initial }, apply via createJSONDataTable) or eval-style
+ *   `payload` scripts, depending on the producer's serializer.
  */
 export function createFrameHost(options = {}) {
   const frames = new Map();
   const pending = new Map();
   const deliver = (frame, chunk) => {
     if (chunk.type === "data") {
-      options.applyData && options.applyData(chunk.payload);
+      options.applyData && options.applyData(chunk);
       return;
     }
     frame.apply({ version: chunk.version, r: chunkToRecords(chunk) });
@@ -137,7 +138,7 @@ export function createFrameHost(options = {}) {
     apply(chunk) {
       // Data payloads are response-scoped; apply immediately, no frame needed.
       if (chunk.type === "data") {
-        options.applyData && options.applyData(chunk.payload);
+        options.applyData && options.applyData(chunk);
         return;
       }
       const frame = frames.get(chunk.id);

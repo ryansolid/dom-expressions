@@ -33,6 +33,7 @@
  * helpers).
  */
 import { renderToStream } from "./server.js";
+import { createJSONSerializer } from "./serializer.js";
 
 /**
  * A sink emitting the transport-agnostic FrameChunk stream. `emit(chunk)` is
@@ -67,12 +68,24 @@ export function createFrameSink(emit, frame) {
       }
       emit({ type: "html", id, version, html });
     },
-    data(payload) {
-      // Seroval output delivered as a passive record rather than a <script>
-      // assigning into _$HY.r. Record ids are embedded in the payload (one
-      // payload can carry streamed promise resolutions), so there is no chunk
-      // key; the consumer applies the payload against its record table.
-      emit({ type: "data", id, version, payload });
+    data(record) {
+      // Keyed codec record ({ key, node, initial }) from createJSONSerializer
+      // — the frame wire format: eval-free SerovalNode data the consumer
+      // applies to its record table (createJSONDataTable). A plain string
+      // (hydration script from createHydrationSerializer) still passes
+      // through as a `payload` chunk for eval-style consumers.
+      if (typeof record === "string") {
+        emit({ type: "data", id, version, payload: record });
+      } else {
+        emit({
+          type: "data",
+          id,
+          version,
+          key: record.key,
+          node: record.node,
+          initial: record.initial
+        });
+      }
     },
     fragment(key, value, meta = {}) {
       // meta.styles is the core's { links, inline } split: stylesheet URLs
@@ -144,7 +157,10 @@ export function renderToFrameStream(code, options = {}) {
     const emit = chunk => w.write(chunk);
     const sink = createFrameSink(emit, frame);
     emit({ type: "start", id, version });
-    renderToStream(code, { ...options, sink }).pipe({
+    // Frames default to the keyed JSON codec for data records (eval-free
+    // nodes; decode with createJSONDataTable). `options.serializer` can
+    // override — e.g. createHydrationSerializer for eval-style payloads.
+    renderToStream(code, { serializer: createJSONSerializer, ...options, sink }).pipe({
       // Every document emission is intercepted by the frame sink, so no text
       // arrives here; the writable exists only for the completion signal.
       write() {},

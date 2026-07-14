@@ -373,7 +373,13 @@ export function renderToStream(code, options = {}) {
     },
     ...options.sink
   };
-  const serializer = createHydrationSerializer({
+  // Serializer seam (companion to the sink seam): `options.serializer` is a
+  // factory with the hydration serializer's contract — `write(id, value)` +
+  // `flush()`, completion via onDone once everything pending settles. What
+  // flows through onData is a contract between the serializer and the sink
+  // (hydration scripts for the document sink, keyed codec records for the
+  // frame sink); the core never inspects it.
+  const serializer = (options.serializer || createHydrationSerializer)({
     scopeId: options.renderId,
     plugins: options.plugins,
     onData: payload => sink.data(payload),

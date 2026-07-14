@@ -50,8 +50,11 @@ describe("renderToFrameStream chunk sequences", () => {
     );
     const data = chunks.filter(c => c.type === "data");
     expect(data.length).toBe(1);
-    expect(data[0]).toMatchObject({ id: "f1", version: 1 });
-    expect(data[0].payload).toContain("Ryan");
+    // Keyed codec record: an eval-free SerovalNode addressed by the write's
+    // id, not an executable script payload.
+    expect(data[0]).toMatchObject({ id: "f1", version: 1, key: "user", initial: true });
+    expect(data[0].node).toBeDefined();
+    expect(data[0].payload).toBeUndefined();
     // Passive records only — no chunk carries document script text.
     for (const c of chunks) {
       if (c.html) expect(c.html).not.toContain("<script");

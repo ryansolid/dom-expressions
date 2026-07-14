@@ -7,7 +7,7 @@
 // fallback reveals, data routing, and sync document/frame parity.
 import * as r from "../../src/server";
 import { renderToFrameStream } from "../../src/frame-sink";
-import { getLocalHeaderScript } from "../../src/serializer";
+import { createJSONDataTable } from "../../src/serializer";
 import { createFrame, createFrameHost } from "../../src/frame-client";
 import { sharedConfig } from "rxcore";
 
@@ -181,26 +181,62 @@ describe("frame stream → client frame runtime", () => {
     link.remove();
   });
 
-  it("routes data payloads to the host's data hook, applied against the record table", async () => {
-    const payloads = [];
-    const host = createFrameHost({ applyData: p => payloads.push(p) });
+  it("delivers keyed codec data records the table decodes without eval", async () => {
+    const table = createJSONDataTable();
+    const host = createFrameHost({ applyData: c => table.apply(c) });
     createFrame(boundary, { host, id: "f3" });
     await streamInto(
       renderToFrameStream(
         () => {
-          sharedConfig.context.serialize("user", { name: "Ryan" });
+          sharedConfig.context.serialize("user", { name: "Ryan", tags: ["a", "b"] });
           return r.ssr`<div>u</div>`;
         },
         { frame: { id: "f3" } }
       ),
       host
     );
-    expect(payloads.length).toBe(1);
-    globalThis._$HY = { r: {} };
-    (0, eval)(getLocalHeaderScript(""));
-    for (const p of payloads) (0, eval)(p);
-    expect(globalThis._$HY.r.user).toEqual({ name: "Ryan" });
-    delete globalThis._$HY;
+    expect(table.get("user")).toEqual({ name: "Ryan", tags: ["a", "b"] });
+  });
+
+  it("dedupes a value referenced across keyed writes to one decoded instance", async () => {
+    const table = createJSONDataTable();
+    const host = createFrameHost({ applyData: c => table.apply(c) });
+    createFrame(boundary, { host, id: "f4" });
+    await streamInto(
+      renderToFrameStream(
+        () => {
+          const shared = { n: 1 };
+          sharedConfig.context.serialize("a", { shared });
+          sharedConfig.context.serialize("b", { shared });
+          return r.ssr`<div>d</div>`;
+        },
+        { frame: { id: "f4" } }
+      ),
+      host
+    );
+    expect(table.get("a").shared).toEqual({ n: 1 });
+    // Referential dedupe across writes: one instance on the wire, one after
+    // decode — the no-double-serialize invariant at the codec level.
+    expect(table.get("b").shared).toBe(table.get("a").shared);
+  });
+
+  it("streams a promise as an initial node plus a patch that resolves it", async () => {
+    const table = createJSONDataTable();
+    const host = createFrameHost({ applyData: c => table.apply(c) });
+    createFrame(boundary, { host, id: "f5" });
+    await streamInto(
+      renderToFrameStream(
+        () => {
+          sharedConfig.context.serialize("later", Promise.resolve(42));
+          return r.ssr`<div>p</div>`;
+        },
+        { frame: { id: "f5" } }
+      ),
+      host
+    );
+    const value = table.get("later");
+    expect(typeof value.then).toBe("function");
+    await expect(value).resolves.toBe(42);
   });
 
   it("morphs a repeat render of the same frame id in place (policy A)", async () => {
