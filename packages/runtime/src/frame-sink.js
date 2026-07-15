@@ -32,6 +32,7 @@
  * not active scripts (the reason the frame consumer must not reuse the $df*
  * helpers).
  */
+import { sharedConfig } from "rxcore";
 import { renderToStream } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
 
@@ -129,6 +130,12 @@ export function createFrameSink(emit, frame) {
     },
     error(errorId, error) {
       emit({ type: "error", id, version, key: errorId, error });
+    },
+    // A named slot invocation from the projection props proxy: the client's
+    // render callback for the occurrence's prop is called with these args.
+    // No document-sink counterpart — projections only exist in frame streams.
+    slot(key, args) {
+      emit({ type: "slot", id, version, key, args });
     }
   };
 }
@@ -151,6 +158,42 @@ export function createFrameSink(emit, frame) {
  * @param {{ frame?: { id?: string, version?: number } } & object} options
  */
 export function renderToFrameStream(code, options = {}) {
+  return frameStream(() => code, options);
+}
+
+/**
+ * Render a **server component** — a `props => JSX` function, typically
+ * returned from a server function — to a FrameChunk stream. `props` is a
+ * projection proxy, not data: reading a prop as a child emits a projection
+ * marker range the client fills with its own content; calling a prop as a
+ * render function additionally emits a `slot` chunk carrying the call's
+ * args (one occurrence per call, so iteration and state-follows-id reorder
+ * work on the consumer). Args serialize through the frame's data codec —
+ * primitives ride literally, everything else becomes a `{ $ref }` the
+ * consumer resolves against its data table.
+ *
+ * This is the producing half of the convention "a function returned from a
+ * server function is a server component"; the props the *client* passes
+ * never reach the server — the server only marks where they go.
+ *
+ * @param {(props: object) => unknown} component
+ * @param {{ frame?: { id?: string, version?: number } } & object} options
+ */
+export function renderServerComponent(component, options = {}) {
+  return frameStream(
+    (sink, frame) => {
+      const props = createProjectionProps(sink, frame);
+      return () => component(props);
+    },
+    options
+  );
+}
+
+// The shared chunk envelope: `start` up front, the frame sink for all render
+// emission, `complete` + end on the stream settling. `makeCode` builds the
+// render thunk with access to the sink/frame (the projection proxy needs
+// both); no document text is ever written.
+function frameStream(makeCode, options) {
   const { id = "", version = 1 } = options.frame || {};
   const frame = { id, version };
   function stream(w) {
@@ -160,7 +203,11 @@ export function renderToFrameStream(code, options = {}) {
     // Frames default to the keyed JSON codec for data records (eval-free
     // nodes; decode with createJSONDataTable). `options.serializer` can
     // override — e.g. createHydrationSerializer for eval-style payloads.
-    renderToStream(code, { serializer: createJSONSerializer, ...options, sink }).pipe({
+    renderToStream(makeCode(sink, frame), {
+      serializer: createJSONSerializer,
+      ...options,
+      sink
+    }).pipe({
       // Every document emission is intercepted by the frame sink, so no text
       // arrives here; the writable exists only for the completion signal.
       write() {},
@@ -183,4 +230,66 @@ export function renderToFrameStream(code, options = {}) {
       }).then(onFulfilled, onRejected);
     }
   };
+}
+
+/** The projection marker range for an occurrence, as a pre-rendered SSR value. */
+function projectionRange(occurrence) {
+  return { t: `<!--proj:${occurrence}:start--><!--proj:${occurrence}:end-->` };
+}
+
+/**
+ * The props proxy handed to a server component. Every prop resolves to a
+ * function (SSR hole resolution invokes child-position functions with no
+ * arguments, so one shape serves both uses):
+ *
+ *  - invoked with no args (child position — `{props.children}`): renders as
+ *    the direct-insert marker range for the prop. Stable per prop; placing
+ *    the same prop twice repeats the same occurrence id and the consumer
+ *    mounts the first range found.
+ *  - invoked with an args object (render prop — `props.item({...})`): emits
+ *    a `slot` chunk for a fresh `prop#N` occurrence and renders as that
+ *    occurrence's marker range. Primitive args pass literally; other values
+ *    serialize under `arg:<occurrence>:<key>` ids (referential dedupe across
+ *    occurrences comes from the codec's shared refs — the no-double-data
+ *    invariant at the args level).
+ *
+ * Serialization goes through the live render context, so the proxy must
+ * only be *used* during the frame's render.
+ */
+export function createProjectionProps(sink, frame) {
+  const counts = Object.create(null);
+  const getters = new Map();
+  return new Proxy(Object.create(null), {
+    get(_, prop) {
+      if (typeof prop !== "string") return undefined;
+      let fn = getters.get(prop);
+      if (!fn) {
+        fn = (...callArgs) => {
+          if (callArgs.length === 0 || callArgs[0] === undefined) {
+            return projectionRange(prop);
+          }
+          const n = counts[prop] || 0;
+          counts[prop] = n + 1;
+          const occurrence = `${prop}#${n}`;
+          const raw = callArgs[0];
+          const args = {};
+          for (const key of Object.keys(raw)) {
+            const value = raw[key];
+            const t = typeof value;
+            if (value == null || t === "string" || t === "number" || t === "boolean") {
+              args[key] = value;
+            } else {
+              const ref = `arg:${occurrence}:${key}`;
+              sharedConfig.context.serialize(ref, value);
+              args[key] = { $ref: ref };
+            }
+          }
+          sink.slot(occurrence, args);
+          return projectionRange(occurrence);
+        };
+        getters.set(prop, fn);
+      }
+      return fn;
+    }
+  });
 }
