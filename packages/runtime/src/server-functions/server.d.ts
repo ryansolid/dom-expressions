@@ -16,6 +16,12 @@ export interface ServerFunctionsServerConfig {
    * global.
    */
   provideEvent?: <T>(event: ServerFunctionEvent, fn: () => T) => T;
+  /**
+   * Endpoint the handler is mounted on, used for the `url` of SSR'd
+   * references (e.g. form actions) — must match the client's.
+   * @default "/_server"
+   */
+  endpoint?: string;
   /** Codec options — must match the client's (stored in the shared layer). */
   codec?: JSONCodecOptions;
 }

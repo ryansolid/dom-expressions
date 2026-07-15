@@ -253,6 +253,16 @@ describe("registration", () => {
     const callable = cloneServerReference(createServerReference("url#0", async () => {}));
     expect(callable.url).toBe("/_server?id=url%230");
   });
+
+  it("prefixes urls with the configured endpoint", () => {
+    configureServerFunctionsServer({ endpoint: "/base/_server" });
+    try {
+      const callable = cloneServerReference(createServerReference("url#1", async () => {}));
+      expect(callable.url).toBe("/base/_server?id=url%231");
+    } finally {
+      configureServerFunctionsServer({ endpoint: "/_server" });
+    }
+  });
 });
 
 describe("handler", () => {

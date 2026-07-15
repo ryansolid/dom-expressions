@@ -25,17 +25,20 @@ import {
 export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
 
 const config = {
-  provideEvent: undefined
+  provideEvent: undefined,
+  endpoint: "/_server"
 };
 
 /**
  * Configures the server runtime: `provideEvent(event, fn)` establishes the
  * request-event scope for a call (e.g. @solidjs/web/storage's
- * provideRequestEvent) and `codec` must match the client's (stored in the
- * shared layer).
+ * provideRequestEvent), `endpoint` is where the handler is mounted (used for
+ * the `url` of SSR'd references, e.g. form actions — must match the client's),
+ * and `codec` must match the client's (stored in the shared layer).
  */
-export function configureServerFunctionsServer({ provideEvent, codec } = {}) {
+export function configureServerFunctionsServer({ provideEvent, endpoint, codec } = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
+  if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
 }
 
@@ -83,7 +86,7 @@ export function cloneServerReference({ id, fn }) {
   return new Proxy(fn, {
     get(target, prop, receiver) {
       if (prop === "url") {
-        return `/_server?id=${encodeURIComponent(id)}`;
+        return `${config.endpoint}?id=${encodeURIComponent(id)}`;
       }
       if (prop === "GET") return receiver;
       return target[prop];
