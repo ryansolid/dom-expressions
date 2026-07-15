@@ -35,6 +35,9 @@
 import { sharedConfig } from "rxcore";
 import { renderToStream } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
+import { createChunk } from "./server-functions/shared.js";
+import { isResponseEnvelope } from "./response.js";
+import { FRAME_STREAM_HEADER } from "./frame-transport.js";
 
 /**
  * A sink emitting the transport-agnostic FrameChunk stream. `emit(chunk)` is
@@ -289,4 +292,57 @@ export function createProjectionProps(sink, frame) {
       return fn;
     }
   });
+}
+
+/**
+ * A server component as an HTTP Response: `renderServerComponent`'s chunk
+ * stream, framed with the server-function wire convention (length-prefixed
+ * JSON — see frame-transport.js for the reader). Tagged with
+ * `X-Frame-Stream: <frame id>` for the client and `X-Content-Raw` so the
+ * server-function handler forwards it untouched instead of codec-encoding
+ * it. `init` (headers/status, e.g. from a `respond()` envelope) merges in;
+ * the frame tags win on conflict.
+ */
+export function serverComponentResponse(component, options = {}, init = {}) {
+  const { id = "", version = 1 } = options.frame || {};
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/x-frame-stream");
+  headers.set(FRAME_STREAM_HEADER, id);
+  headers.set("X-Content-Raw", "1");
+  const stream = renderServerComponent(component, { ...options, frame: { id, version } });
+  const body = new ReadableStream({
+    start(controller) {
+      stream.pipe({
+        write(chunk) {
+          controller.enqueue(createChunk(JSON.stringify(chunk)));
+        },
+        end() {
+          controller.close();
+        }
+      });
+    }
+  });
+  return new Response(body, { status: init.status || 200, headers });
+}
+
+/**
+ * The server-component convention as a `transformResult` policy for
+ * `handleServerFunctionRequest`: **a function returned from a server
+ * function is a server component** — it renders as a frame-stream Response
+ * (frame id defaulting to the server function's id, so repeat calls target
+ * the same client boundary and policy A morphs in place). A `respond()`
+ * envelope whose value is a function contributes its headers/status to the
+ * frame Response. Everything else passes through untouched.
+ */
+export function frameTransformResult(event, result) {
+  let init;
+  if (isResponseEnvelope(result)) {
+    const { response, value } = result;
+    if (typeof value !== "function") return result;
+    init = response ? { headers: response.headers, status: response.status } : undefined;
+    result = value;
+  }
+  if (typeof result !== "function") return result;
+  const meta = event && event.locals && event.locals.serverFunctionMeta;
+  return serverComponentResponse(result, { frame: { id: (meta && meta.id) || "" } }, init);
 }

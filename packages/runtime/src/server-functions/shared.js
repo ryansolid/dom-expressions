@@ -336,7 +336,10 @@ export async function extractBody(source, codecOptions) {
  * how much data to buffer before parsing, so multiple chunks (async values
  * resolving over time) can share one connection.
  */
-function createChunk(data) {
+// Exported for other framed transports over the same wire convention (frame
+// streams frame their chunks identically — see frame-transport.js) so there
+// is exactly one framing implementation.
+export function createChunk(data) {
   const encodeData = new TextEncoder().encode(data);
   const bytes = encodeData.length;
   const baseHex = bytes.toString(16);
@@ -349,7 +352,7 @@ function createChunk(data) {
   return chunk;
 }
 
-class ChunkReader {
+export class ChunkReader {
   constructor(stream) {
     this.reader = stream.getReader();
     this.buffer = new Uint8Array(0);
