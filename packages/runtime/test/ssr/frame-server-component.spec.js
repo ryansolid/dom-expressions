@@ -127,11 +127,17 @@ describe("renderServerComponent (projection emission)", () => {
     const host = createFrameHost();
     const toggle = document.createElement("input");
     createFrame(boundary, { host, id: "nav", slots: { children: () => toggle } });
-    await streamInto(renderServerComponent(ServerComp(1), { frame: { id: "nav", version: 1 } }), host);
+    await streamInto(
+      renderServerComponent(ServerComp(1), { frame: { id: "nav", version: 1 } }),
+      host
+    );
     // Client-only state the server must never see or reset:
     toggle.checked = true;
     const h1 = boundary.querySelector("h1");
-    await streamInto(renderServerComponent(ServerComp(2), { frame: { id: "nav", version: 2 } }), host);
+    await streamInto(
+      renderServerComponent(ServerComp(2), { frame: { id: "nav", version: 2 } }),
+      host
+    );
     // Server content morphed in place; the client-owned range and its state
     // survived the navigation.
     expect(boundary.querySelector("h1")).toBe(h1);

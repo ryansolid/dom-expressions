@@ -180,13 +180,10 @@ export function renderToFrameStream(code, options = {}) {
  * @param {{ frame?: { id?: string, version?: number } } & object} options
  */
 export function renderServerComponent(component, options = {}) {
-  return frameStream(
-    (sink, frame) => {
-      const props = createProjectionProps(sink, frame);
-      return () => component(props);
-    },
-    options
-  );
+  return frameStream((sink, frame) => {
+    const props = createProjectionProps(sink, frame);
+    return () => component(props);
+  }, options);
 }
 
 // The shared chunk envelope: `start` up front, the frame sink for all render

@@ -1398,8 +1398,7 @@ describe("hydration attach (adopted SSR DOM)", () => {
   });
 
   it("mounts fresh (empty-range) slots identically to before through the replace path", () => {
-    boundary.innerHTML =
-      "<div><!--proj:children:start--><!--proj:children:end--></div>";
+    boundary.innerHTML = "<div><!--proj:children:start--><!--proj:children:end--></div>";
     const el = document.createElement("span");
     el.textContent = "new";
     createFrame(boundary, { adopt: true, slots: { children: () => el } });
