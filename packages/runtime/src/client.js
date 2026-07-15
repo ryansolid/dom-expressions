@@ -346,6 +346,66 @@ export function scope(fn) {
 
 const SCOPE_OPTIONS = { scope: true };
 
+// Hydration-time behaviors reached from the hot insert/event paths, installed
+// by hydrate() so client-only bundles shake the implementations. Call sites
+// guard on the null slot; only hydrate() can assign it (#2883). Rollup folds
+// the guards away entirely in CSR bundles; esbuild keeps the ~30-byte residue
+// but drops these bodies once nothing else references them.
+let hydrationRt = null;
+export function installHydrationRuntime() {
+  hydrationRt = {
+    // insert(): claim the parent's childNodes as the initial current on
+    // hydration, dropping server text-hole separators.
+    claimInitial(parent, multi, initial) {
+      if (isHydrating(parent)) {
+        if (!multi && initial === undefined && parent) initial = [...parent.childNodes];
+        if (Array.isArray(initial)) stripTextSeparators(initial);
+      }
+      return initial;
+    },
+    // A streamed `$df` fragment swap replaces a hole's region out from under
+    // its bookkeeping (Loading fallback claimed during hydration, settled
+    // content swapped in later). When the tracked nodes are gone
+    // mid-hydration, re-claim the live region so the content pass can match
+    // loose text positionally — elements recover through the registry, text
+    // only has position. The region is `parent`'s children, or for
+    // marker-bounded holes the nodes back to the matching `<!--$-->` start.
+    reclaimRegion(current, parent, marker) {
+      if (!sharedConfig.hydrating || !current || !parent.isConnected) return current;
+      const first = Array.isArray(current) ? current[0] : current;
+      if (!first || !first.nodeType || first.isConnected) return current;
+      let nodes;
+      if (marker) {
+        nodes = [];
+        let node = marker.previousSibling,
+          depth = 0;
+        while (node) {
+          if (node.nodeType === 8) {
+            const v = node.nodeValue;
+            if (v === "/") depth++;
+            else if (v === "$") {
+              if (depth === 0) break;
+              depth--;
+            }
+          }
+          nodes.unshift(node);
+          node = node.previousSibling;
+        }
+      } else nodes = [...parent.childNodes];
+      return stripTextSeparators(nodes);
+    },
+    // eventHandler(): replayed server events are deduped against the live
+    // event queue during hydration.
+    dedupEvent(e) {
+      return !!(
+        sharedConfig.registry &&
+        sharedConfig.events &&
+        sharedConfig.events.find(([el, ev]) => ev === e)
+      );
+    }
+  };
+}
+
 // Drop the `<!--!$-->` text-hole separators the server emits so adjacent
 // text nodes stay individually claimable; the array is compacted in place.
 function stripTextSeparators(nodes) {
@@ -362,10 +422,7 @@ export function insert(parent, accessor, marker, initial, options) {
   const multi = marker !== undefined;
   const host = options && options.host;
   if (multi && !initial) initial = [];
-  if (isHydrating(parent)) {
-    if (!multi && initial === undefined && parent) initial = [...parent.childNodes];
-    if (Array.isArray(initial)) stripTextSeparators(initial);
-  }
+  if (hydrationRt !== null) initial = hydrationRt.claimInitial(parent, multi, initial);
   if (typeof accessor !== "function") {
     accessor = normalize(accessor, initial, multi, true);
     if (typeof accessor !== "function") {
@@ -380,44 +437,16 @@ export function insert(parent, accessor, marker, initial, options) {
     initial = [placeholder];
   }
   let current = initial;
-  // A streamed `$df` fragment swap replaces a hole's region out from under
-  // its bookkeeping (Loading fallback claimed during hydration, settled
-  // content swapped in later). When the tracked nodes are gone mid-hydration,
-  // re-claim the live region so the content pass can match loose text
-  // positionally — elements recover through the registry, text only has
-  // position. The region is `parent`'s children, or for marker-bounded holes
-  // the nodes back to the matching `<!--$-->` start marker.
-  function reclaimSwappedRegion() {
-    if (!sharedConfig.hydrating || !current || !parent.isConnected) return;
-    const first = Array.isArray(current) ? current[0] : current;
-    if (!first || !first.nodeType || first.isConnected) return;
-    let nodes;
-    if (marker) {
-      nodes = [];
-      let node = marker.previousSibling,
-        depth = 0;
-      while (node) {
-        if (node.nodeType === 8) {
-          const v = node.nodeValue;
-          if (v === "/") depth++;
-          else if (v === "$") {
-            if (depth === 0) break;
-            depth--;
-          }
-        }
-        nodes.unshift(node);
-        node = node.previousSibling;
-      }
-    } else nodes = [...parent.childNodes];
-    current = stripTextSeparators(nodes);
-  }
   effect(
     prev => {
-      reclaimSwappedRegion();
+      if (hydrationRt !== null) current = hydrationRt.reclaimRegion(current, parent, marker);
       const value = normalize(accessor(), current, multi, true);
       if (typeof value !== "function") return value;
       effect(
-        () => (reclaimSwappedRegion(), normalize(value, current, multi)),
+        () => (
+          hydrationRt !== null && (current = hydrationRt.reclaimRegion(current, parent, marker)),
+          normalize(value, current, multi)
+        ),
         inner => {
           insertExpression(parent, inner, current, marker);
           current = inner;
@@ -606,6 +635,7 @@ function loadModuleAssets(mapping) {
 
 // Hydrate
 export function hydrate(code, element, options = {}) {
+  installHydrationRuntime();
   if (globalThis._$HY.done) return render(code, element, [...element.childNodes], options);
   options.renderId ||= "";
   if (!globalThis._$HY.modules) globalThis._$HY.modules = {};
@@ -921,9 +951,7 @@ function assignProp(node, prop, value, prev, skipRef, nodeName) {
 }
 
 function eventHandler(e, container, state) {
-  if (sharedConfig.registry && sharedConfig.events) {
-    if (sharedConfig.events.find(([el, ev]) => ev === e)) return;
-  }
+  if (hydrationRt !== null && hydrationRt.dedupEvent(e)) return;
   const prev = e[$$EVENT_OWNER];
   let resumeNode;
   if (prev) {
@@ -1010,7 +1038,7 @@ function eventHandler(e, container, state) {
 }
 
 function insertExpression(parent, value, current, marker) {
-  if (isHydrating(parent)) return;
+  if (hydrationRt !== null && isHydrating(parent)) return;
   if (value === current) return;
   const t = typeof value,
     multi = marker !== undefined;
