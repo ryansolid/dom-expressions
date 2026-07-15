@@ -1407,7 +1407,10 @@ function resolveSSRSync(node) {
 }
 
 // experimental
-export const RequestContext = Symbol();
+// Registered symbol: the AsyncLocalStorage parked on globalThis must be
+// found by every copy of this module (core entry and server-functions entry
+// bundle separately downstream).
+export const RequestContext = Symbol.for("solid.RequestContext");
 
 export function getRequestEvent() {
   return globalThis[RequestContext]
