@@ -210,6 +210,12 @@ class FrameImpl {
     if (options.host && options.id !== undefined) {
       options.host.register(options.id, this);
     }
+    // Hydration attach: an adopted document-SSR boot may never receive a
+    // chunk, so sync slots against the existing DOM immediately — callbacks
+    // claim (`ctx.existing`, return undefined) or replace the server-rendered
+    // client content in each range. Idempotent with any buffered-chunk flush
+    // that already ran during registration.
+    if (options.adopt) this.#syncSlots();
   }
 
   /** The node content lives in (element itself, or the range markers' parent). */
@@ -328,13 +334,21 @@ class FrameImpl {
       if (!this.#mountedSlots.has(occurrence)) {
         // Direct-insert occurrences have no `slot:<id>` record and mount with
         // empty props; render-function occurrences mount with resolved props.
-        start.after(...this.#invokeSlot(occurrence, callback, record));
+        // Mounting replaces the range interior: on a fresh stream it is
+        // empty, but an adopted document-SSR range already holds the
+        // server-rendered client content — a callback that returns nodes
+        // replaces it (client render), one that returns undefined claims it
+        // in place (hydration attach; the DOM is untouched).
+        const nodes = this.#invokeSlot(occurrence, callback, record, start);
+        if (nodes) this.#replaceRange(occurrence, start, nodes);
         this.#mountedSlots.add(occurrence);
         this.#bindRegions(occurrence);
       } else if (record !== this.#slotArgs.get(occurrence)) {
         // Args changed (incl. late args): re-call this occurrence only,
-        // reusing its cached server-content regions.
-        this.#replaceRange(occurrence, start, this.#invokeSlot(occurrence, callback, record));
+        // reusing its cached server-content regions. Same contract: an
+        // undefined return keeps the current interior.
+        const nodes = this.#invokeSlot(occurrence, callback, record, start);
+        if (nodes) this.#replaceRange(occurrence, start, nodes);
         this.#bindRegions(occurrence);
       }
     }
@@ -345,15 +359,26 @@ class FrameImpl {
     }
   }
 
-  /** Invoke a slot occurrence's callback with resolved props, returning nodes. */
-  #invokeSlot(occurrence, callback, record) {
+  /**
+   * Invoke a slot occurrence's callback with resolved props. `ctx.existing`
+   * carries the range's current interior (server-rendered client content on
+   * an adopted document-SSR boot; the previous output on a re-call) so a
+   * framework binding can hydrate onto it. Returns the nodes to place, or
+   * null when the callback returned undefined — "I claimed the existing DOM,
+   * leave the range alone".
+   */
+  #invokeSlot(occurrence, callback, record, start) {
     const cleanups = this.#slotCleanups.get(occurrence) ?? [];
-    const ctx = { onCleanup: fn => cleanups.push(fn) };
+    const ctx = {
+      onCleanup: fn => cleanups.push(fn),
+      existing: start ? rangeInterior(start, projectionEnd(occurrence)) : []
+    };
     const props =
       record && record.kind === "slot" ? this.#resolveArgs(occurrence, record.args) : {};
     const content = callback(props, ctx);
     this.#slotArgs.set(occurrence, record);
     if (cleanups.length) this.#slotCleanups.set(occurrence, cleanups);
+    if (content == null) return null;
     return Array.isArray(content) ? content : [content];
   }
 
@@ -820,6 +845,17 @@ function collectSlots(root, out) {
     if (n.nodeType === ELEMENT_NODE) collectSlots(n, out);
     n = n.nextSibling;
   }
+}
+
+/** The nodes strictly between a range's start marker and its end comment. */
+function rangeInterior(start, endData) {
+  const nodes = [];
+  let n = start.nextSibling;
+  while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
+    nodes.push(n);
+    n = n.nextSibling;
+  }
+  return nodes;
 }
 
 /** Depth-first search for a comment node with exact `data`. */

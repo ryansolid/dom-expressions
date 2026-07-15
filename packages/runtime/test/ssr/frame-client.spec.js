@@ -1326,6 +1326,89 @@ describe("recursive comments (HN-shaped)", () => {
   });
 });
 
+describe("hydration attach (adopted SSR DOM)", () => {
+  const ssrDom =
+    "<article><h1>Story</h1>" +
+    "<!--proj:children:start--><button>0</button><!--proj:children:end-->" +
+    "</article>";
+
+  it("claims existing range content in place when the callback returns undefined", () => {
+    boundary.innerHTML = ssrDom;
+    const ssrButton = boundary.querySelector("button");
+    let seen;
+    createFrame(boundary, {
+      adopt: true,
+      slots: {
+        children: (props, ctx) => {
+          seen = ctx.existing;
+          // Bind behavior onto the server-rendered DOM — a stand-in for a
+          // framework hydrating over the range — and claim it.
+          ctx.existing[0].addEventListener("click", e => {
+            e.target.textContent = String(Number(e.target.textContent) + 1);
+          });
+          return undefined;
+        }
+      }
+    });
+    // Zero DOM mutation: same node, same markup.
+    expect(boundary.querySelector("button")).toBe(ssrButton);
+    expect(boundary.innerHTML).toBe(ssrDom);
+    expect(seen).toEqual([ssrButton]);
+    ssrButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(ssrButton.textContent).toBe("1");
+  });
+
+  it("replaces existing range content when the callback returns nodes (client render)", () => {
+    boundary.innerHTML = ssrDom;
+    const fresh = document.createElement("input");
+    createFrame(boundary, {
+      adopt: true,
+      slots: { children: () => fresh }
+    });
+    // No duplication: the SSR content is gone, the client content is in.
+    expect(boundary.querySelectorAll("button").length).toBe(0);
+    expect(boundary.querySelector("input")).toBe(fresh);
+    expect(boundary.innerHTML).toBe(
+      "<article><h1>Story</h1><!--proj:children:start--><input><!--proj:children:end--></article>"
+    );
+  });
+
+  it("attaches without any chunk arriving, then preserves the claim across a morph", () => {
+    boundary.innerHTML = ssrDom;
+    const ssrButton = boundary.querySelector("button");
+    ssrButton.dataset.bound = "yes"; // client-only state applied at attach
+    const frame = createFrame(boundary, {
+      adopt: true,
+      slots: { children: (p, ctx) => void ctx.existing }
+    });
+    // A later stream update morphs server content around the claimed range.
+    frame.apply({
+      version: 2,
+      r: {
+        "": html(
+          "<article><h1>Story updated</h1>" +
+            "<!--proj:children:start--><!--proj:children:end-->" +
+            "</article>"
+        )
+      }
+    });
+    expect(boundary.querySelector("h1").textContent).toBe("Story updated");
+    expect(boundary.querySelector("button")).toBe(ssrButton);
+    expect(ssrButton.dataset.bound).toBe("yes");
+  });
+
+  it("mounts fresh (empty-range) slots identically to before through the replace path", () => {
+    boundary.innerHTML =
+      "<div><!--proj:children:start--><!--proj:children:end--></div>";
+    const el = document.createElement("span");
+    el.textContent = "new";
+    createFrame(boundary, { adopt: true, slots: { children: () => el } });
+    expect(boundary.innerHTML).toBe(
+      "<div><!--proj:children:start--><span>new</span><!--proj:children:end--></div>"
+    );
+  });
+});
+
 describe("template / block payload mode", () => {
   it("materializes many block instances from one shared template (markup sent once)", () => {
     const host = createFrameHost(createMockSerializer());
