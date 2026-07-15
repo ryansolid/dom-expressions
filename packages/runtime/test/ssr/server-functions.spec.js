@@ -1,7 +1,13 @@
 /**
  * @jest-environment node
  */
-import { ResponseEnvelope, isResponseEnvelope, json, redirect, reload } from "../../src/response";
+import {
+  ResponseEnvelope,
+  isResponseEnvelope,
+  redirect,
+  reload,
+  respond
+} from "../../src/response";
 import {
   BODY_FORMAT_HEADER,
   BodyFormat,
@@ -193,14 +199,21 @@ describe("response helpers", () => {
     expect(isResponseEnvelope({ response: undefined, value: 1 })).toBe(false);
   });
 
-  it("json pairs the value with a real JSON response", async () => {
-    const result = json({ ok: true }, { revalidate: "/notes" });
+  it("respond pairs the value with metadata and a real JSON body", async () => {
+    const result = respond({ ok: true }, { revalidate: "/notes", status: 201 });
     expect(result).toBeInstanceOf(ResponseEnvelope);
     expect(isResponseEnvelope(result)).toBe(true);
     expect(result.value).toEqual({ ok: true });
-    expect(result.response.headers.get("Content-Type")).toBe("application/json");
+    expect(result.response.status).toBe(201);
     expect(result.response.headers.get("X-Revalidate")).toBe("/notes");
+    // invisible PE: consumers without the client runtime get real JSON
+    expect(result.response.headers.get("Content-Type")).toBe("application/json");
     expect(await result.response.json()).toEqual({ ok: true });
+
+    // values without a JSON form still carry through `value` for
+    // integrations — e.g. a function (the server-component convention)
+    const Component = () => null;
+    expect(respond(Component, { revalidate: "/notes" }).value).toBe(Component);
   });
 });
 
@@ -411,24 +424,42 @@ describe("handler", () => {
     expect(decoded).toEqual({ value: "action result", data: { "/notes": ["fresh"] } });
   });
 
-  it("serves json() results to scripted clients and raw HTTP alike", async () => {
-    registerServerFunction("json-0", async () => json({ ok: true }, { revalidate: "/notes" }));
+  it("serves respond() results to scripted clients and raw HTTP alike", async () => {
+    registerServerFunction("respond-0", async () =>
+      respond({ ok: true }, { revalidate: "/notes" })
+    );
     // scripted client: passthrough Response (X-Revalidate present), decoded explicitly
     const restore = connectTransport();
     try {
-      const viaClient = await cloneClientReference("json-0")();
+      const viaClient = await cloneClientReference("respond-0")();
       expect(viaClient).toBeInstanceOf(Response);
       expect(viaClient.headers.get("X-Revalidate")).toBe("/notes");
       expect(await decodeResponse(viaClient)).toEqual({ ok: true });
     } finally {
       restore();
     }
-    // raw HTTP (no instance header): the carried JSON body verbatim
+    // no client runtime (no-JS form posts, direct HTTP): the carried JSON
+    // body verbatim — progressive enhancement stays invisible
     const rawResponse = await dispatch(
-      new Request("http://localhost/_server?id=json-0", { method: "POST", body: "" })
+      new Request("http://localhost/_server?id=respond-0", { method: "POST", body: "" })
     );
     expect(rawResponse.headers.get("Content-Type")).toBe("application/json");
     expect(await rawResponse.json()).toEqual({ ok: true });
+  });
+
+  it("raw Responses serve literal bodies for full control", async () => {
+    registerServerFunction(
+      "literal-json-0",
+      async () =>
+        new Response(JSON.stringify({ ok: true }), {
+          headers: { "Content-Type": "application/json" }
+        })
+    );
+    const response = await dispatch(
+      new Request("http://localhost/_server?id=literal-json-0", { method: "POST", body: "" })
+    );
+    expect(response.headers.get("Content-Type")).toBe("application/json");
+    expect(await response.json()).toEqual({ ok: true });
   });
 
   it("propagates thrown redirects with forwarded metadata", async () => {

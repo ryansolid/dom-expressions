@@ -1,9 +1,9 @@
 /**
- * Envelope pairing HTTP metadata with a structured value. Produced by
- * `json()` and by server-function `transformResult` implementations (e.g.
- * single-flight payloads); the HTTP handler forwards `response`'s headers
- * and (non-redirect) status and serializes `value` as the body, while
- * client-only integrations read `value` directly — no reparse.
+ * Envelope pairing HTTP metadata with a value. Produced by `respond()` and
+ * by server-function `transformResult` implementations (e.g. single-flight
+ * payloads); the HTTP handler forwards `response`'s headers and
+ * (non-redirect) status and encodes `value` as the body through the codec,
+ * while client-only integrations read `value` directly — no reparse.
  */
 export class ResponseEnvelope<T = unknown> {
   constructor(response: Response | undefined, value: T);
@@ -36,8 +36,10 @@ export function redirect(url: string, init?: number | ResponseHelperInit): Respo
 export function reload(init?: ResponseHelperInit): Response;
 
 /**
- * A value paired with response metadata (status, headers, `revalidate`).
- * The carried response holds a plain JSON body so direct HTTP consumers
- * (no client runtime) get real JSON, while integrations read `value`.
+ * A value paired with response metadata (status, headers, `revalidate`) —
+ * for the things a naked return can't express. Progressive enhancement
+ * stays invisible: the carried response holds a plain JSON body so
+ * consumers without the client runtime (no-JS form posts, direct HTTP)
+ * get real JSON, while integrations read `value` — no reparse.
  */
-export function json<T>(data: T, init?: ResponseHelperInit): ResponseEnvelope<T>;
+export function respond<T>(value: T, init?: ResponseHelperInit): ResponseEnvelope<T>;

@@ -216,11 +216,11 @@ export async function handleServerFunctionRequest(request, options = {}) {
     }
 
     let status = 200;
-    // envelope (from `json()` or transformResult): HTTP metadata + value
+    // envelope (from `respond()` or transformResult): HTTP metadata + value
     if (isResponseEnvelope(result)) {
       const { response, value } = result;
-      // direct HTTP consumers (no client runtime) get the carried response
-      // whole — e.g. json()'s real JSON body
+      // consumers without the client runtime get the carried response
+      // whole — e.g. respond()'s real JSON body (invisible PE)
       if (!instance && !options.handleNoJS && response && response.body) {
         return response;
       }
