@@ -1,11 +1,4 @@
-import {
-  ChildProperties,
-  Namespaces,
-  DelegatedEvents,
-  $$SLOT,
-  $$HOST,
-  $$FRAME
-} from "./constants";
+import { ChildProperties, Namespaces, DelegatedEvents, $$SLOT, $$HOST, $$FRAME } from "./constants";
 import {
   root,
   effect,

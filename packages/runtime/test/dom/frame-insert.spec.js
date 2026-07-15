@@ -50,9 +50,7 @@ describe("insert with a branded frame value", () => {
       r.insert(container, value, marker);
     });
     host.apply({ type: "html", id: "f2", version: 1, html: "<b>x</b>" });
-    expect(container.innerHTML).toBe(
-      "<i></i><!--frame:start--><b>x</b><!--frame:end--><!--m-->"
-    );
+    expect(container.innerHTML).toBe("<i></i><!--frame:start--><b>x</b><!--frame:end--><!--m-->");
     expect(container.querySelector("i")).toBe(sibling);
     value.dispose();
   });

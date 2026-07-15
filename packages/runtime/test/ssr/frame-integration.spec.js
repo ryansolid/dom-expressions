@@ -282,13 +282,9 @@ describe("frame stream → client frame runtime", () => {
     const frameRun = makeRun();
     const host = createFrameHost();
     createFrame(boundary, { host, id: "pp" });
-    await streamInto(
-      renderToFrameStream(frameRun.Comp, { frame: { id: "pp" } }),
-      host,
-      chunk => {
-        if (chunk.type === "html") setTimeout(() => frameRun.resolve("<p>Loaded</p>"));
-      }
-    );
+    await streamInto(renderToFrameStream(frameRun.Comp, { frame: { id: "pp" } }), host, chunk => {
+      if (chunk.type === "html") setTimeout(() => frameRun.resolve("<p>Loaded</p>"));
+    });
 
     expect(boundary.innerHTML).toBe(docBoundary.innerHTML);
     expect(boundary.innerHTML).toContain("<p>Loaded</p>");
