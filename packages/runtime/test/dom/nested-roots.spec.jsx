@@ -165,6 +165,9 @@ describe("delegated events across nested render roots", () => {
     ));
 
     const event = new MouseEvent("click", { bubbles: true });
+    // Poking sharedConfig simulates mid-hydration state; real apps enter via
+    // hydrate(), which installs the hydration runtime the replay dedup uses.
+    r.installHydrationRuntime();
     sharedConfig.registry = new Map();
     sharedConfig.events = [[btn, event]];
     sharedConfig.completed = new WeakSet([btn]);
