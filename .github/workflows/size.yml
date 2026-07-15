@@ -1,0 +1,22 @@
+name: Size
+
+# Tree-shaking regression guard (solidjs/solid#2883): bundles import-subset
+# fixtures of the client runtime with rxcore external and fails if the
+# tree-shaken gzip cost exceeds the committed ceilings (~5% headroom). A
+# deliberate feature addition bumps the ceiling in the same PR with a reason.
+on:
+  pull_request:
+    branches: [main, next]
+
+jobs:
+  size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/size-guard.mjs

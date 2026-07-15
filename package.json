@@ -25,7 +25,8 @@
     "version": "changeset version && pnpm --filter @dom-expressions/jsx-compiler run napi:version",
     "publish:release": "pnpm run build && changeset publish",
     "jsx-sync-types": "node packages/runtime/src/jsx-update.mjs",
-    "jsx-customize-types": "node packages/runtime/src/jsx-customize.mjs"
+    "jsx-customize-types": "node packages/runtime/src/jsx-customize.mjs",
+    "size": "node scripts/size-guard.mjs"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm run format"
@@ -45,6 +46,7 @@
     "babel-plugin-tester": "^10.1.0",
     "babel-plugin-transform-rename-import": "^2.3.0",
     "coveralls": "^3.1.1",
+    "esbuild": "^0.28.1",
     "jest": "~29.3.1",
     "jest-environment-jsdom": "^29.3.1",
     "jest-resolve": "^29.3.1",
