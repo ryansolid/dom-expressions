@@ -14,10 +14,7 @@ import { JSDOM } from "jsdom";
 globalThis.document = new JSDOM("<body></body>").window.document;
 
 import * as r from "../../src/server";
-import {
-  frameTransformResult,
-  serverComponentResponse
-} from "../../src/frame-sink";
+import { frameTransformResult, serverComponentResponse } from "../../src/frame-sink";
 import {
   FRAME_STREAM_HEADER,
   applyFrameResponse,
@@ -56,7 +53,11 @@ describe("frameTransformResult", () => {
     const host = createFrameHost();
     const boundary = document.createElement("div");
     document.body.appendChild(boundary);
-    createFrame(boundary, { host, id: "story#0", slots: { children: () => document.createElement("b") } });
+    createFrame(boundary, {
+      host,
+      id: "story#0",
+      slots: { children: () => document.createElement("b") }
+    });
     const applied = await applyFrameResponse(response, host);
     expect(applied).toBe("story#0");
     expect(boundary.innerHTML).toBe(
