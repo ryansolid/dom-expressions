@@ -148,7 +148,7 @@ describe("server component over the real handler", () => {
     expect(isFrameStreamResponse(response)).toBe(false);
     expect(response.status).toBe(200);
     // Not an error envelope: a genuine serialized value came back.
-    expect(response.headers.get("x-error")).toBe(null);
+    expect(response.headers.get("X-Server-Function-Error")).toBe(null);
     expect(await response.text()).toContain("plain");
   });
 });
