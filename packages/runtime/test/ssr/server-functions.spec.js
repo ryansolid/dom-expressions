@@ -21,17 +21,17 @@ import {
   serializeString
 } from "../../src/server-functions/shared";
 import {
-  cloneServerReference as cloneClientReference,
+  createServerReference as createClientReference,
   configureServerFunctionsClient
 } from "../../src/server-functions/client";
 import {
-  cloneServerReference,
   configureServerFunctionsServer,
   createServerReference,
   getServerFunction,
   getServerFunctionMeta,
   handleServerFunctionRequest,
-  registerServerFunction
+  registerServerFunction,
+  registerServerReference
 } from "../../src/server-functions/server";
 import { RequestContext } from "../../src/server";
 
@@ -220,7 +220,7 @@ describe("response helpers", () => {
 describe("registration", () => {
   it("registers and resolves server references", () => {
     const fn = async () => "result";
-    const reference = createServerReference("fn#0", fn);
+    const reference = registerServerReference("fn#0", fn);
     expect(reference).toEqual({ id: "fn#0", fn });
     expect(getServerFunction("fn#0")).toBe(fn);
   });
@@ -229,14 +229,14 @@ describe("registration", () => {
     expect(() => getServerFunction("missing")).toThrow("invalid server function: missing");
   });
 
-  it("runs cloned references under a derived request event", async () => {
+  it("runs server-side callables under a derived request event", async () => {
     const seen = {};
     const fn = async () => {
       seen.meta = getServerFunctionMeta();
       return "ok";
     };
-    const reference = createServerReference("meta#0", fn);
-    const callable = cloneServerReference(reference);
+    const reference = registerServerReference("meta#0", fn);
+    const callable = createServerReference(reference);
 
     const event = { request: new Request("http://localhost/"), locals: {} };
     const result = await globalThis[RequestContext].run(event, () => callable());
@@ -244,20 +244,20 @@ describe("registration", () => {
     expect(seen.meta).toEqual({ id: "meta#0" });
   });
 
-  it("rejects cloned references outside of a request", () => {
-    const callable = cloneServerReference(createServerReference("outside#0", async () => {}));
+  it("rejects server-side callables outside of a request", () => {
+    const callable = createServerReference(registerServerReference("outside#0", async () => {}));
     expect(() => callable()).toThrow("Cannot call server function outside of a request");
   });
 
-  it("exposes a url on cloned references", () => {
-    const callable = cloneServerReference(createServerReference("url#0", async () => {}));
+  it("exposes a url on server-side callables", () => {
+    const callable = createServerReference(registerServerReference("url#0", async () => {}));
     expect(callable.url).toBe("/_server?id=url%230");
   });
 
   it("prefixes urls with the configured endpoint", () => {
     configureServerFunctionsServer({ endpoint: "/base/_server" });
     try {
-      const callable = cloneServerReference(createServerReference("url#1", async () => {}));
+      const callable = createServerReference(registerServerReference("url#1", async () => {}));
       expect(callable.url).toBe("/base/_server?id=url%231");
     } finally {
       configureServerFunctionsServer({ endpoint: "/_server" });
@@ -295,7 +295,7 @@ describe("handler", () => {
     registerServerFunction("echo-0", async (a, b) => ({ sum: a + b, when: new Date(0) }));
     const restore = connectTransport();
     try {
-      const callable = cloneClientReference("echo-0");
+      const callable = createClientReference("echo-0");
       const result = await callable(2, 3);
       expect(result).toEqual({ sum: 5, when: new Date(0) });
     } finally {
@@ -309,7 +309,7 @@ describe("handler", () => {
     try {
       const form = new FormData();
       form.set("name", "solid");
-      const result = await cloneClientReference("form-0")(form);
+      const result = await createClientReference("form-0")(form);
       expect(result).toBe("solid");
     } finally {
       restore();
@@ -320,7 +320,7 @@ describe("handler", () => {
     registerServerFunction("get-0", async n => n * 2);
     const restore = connectTransport();
     try {
-      const result = await cloneClientReference("get-0").GET(21);
+      const result = await createClientReference("get-0").GET(21);
       expect(result).toBe(42);
     } finally {
       restore();
@@ -333,7 +333,7 @@ describe("handler", () => {
     });
     const restore = connectTransport();
     try {
-      await expect(cloneClientReference("boom-0")()).rejects.toThrow("kaboom");
+      await expect(createClientReference("boom-0")()).rejects.toThrow("kaboom");
     } finally {
       restore();
     }
@@ -347,7 +347,7 @@ describe("handler", () => {
     });
     const restore = connectTransport();
     try {
-      await cloneClientReference("meta-1")();
+      await createClientReference("meta-1")();
       expect(seen.meta).toEqual({ id: "meta-1" });
     } finally {
       restore();
@@ -366,7 +366,7 @@ describe("handler", () => {
       new Request("http://localhost/_server", {
         method: "POST",
         headers: {
-          "X-Server-Function": "raw-0",
+          "X-Server-Function-Id": "raw-0",
           "X-Server-Function-Instance": "server-function:test"
         }
       })
@@ -384,7 +384,7 @@ describe("handler", () => {
       new Request("http://localhost/_server", {
         method: "POST",
         headers: {
-          "X-Server-Function": "resp-0",
+          "X-Server-Function-Id": "resp-0",
           "X-Server-Function-Instance": "server-function:test"
         }
       })
@@ -399,7 +399,7 @@ describe("handler", () => {
       new Request("http://localhost/_server", {
         method: "POST",
         headers: {
-          "X-Server-Function": "wrap-0",
+          "X-Server-Function-Id": "wrap-0",
           "X-Server-Function-Instance": "server-function:test"
         }
       }),
@@ -417,7 +417,7 @@ describe("handler", () => {
       new Request("http://localhost/_server", {
         method: "POST",
         headers: {
-          "X-Server-Function": "flight-0",
+          "X-Server-Function-Id": "flight-0",
           "X-Server-Function-Instance": "server-function:test"
         }
       }),
@@ -441,7 +441,7 @@ describe("handler", () => {
     // scripted client: passthrough Response (X-Revalidate present), decoded explicitly
     const restore = connectTransport();
     try {
-      const viaClient = await cloneClientReference("respond-0")();
+      const viaClient = await createClientReference("respond-0")();
       expect(viaClient).toBeInstanceOf(Response);
       expect(viaClient.headers.get("X-Revalidate")).toBe("/notes");
       expect(await decodeResponse(viaClient)).toEqual({ ok: true });
@@ -480,7 +480,7 @@ describe("handler", () => {
       new Request("http://localhost/_server", {
         method: "POST",
         headers: {
-          "X-Server-Function": "throw-redirect-0",
+          "X-Server-Function-Id": "throw-redirect-0",
           "X-Server-Function-Instance": "server-function:test"
         }
       })
@@ -489,7 +489,7 @@ describe("handler", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Location")).toBe("/login");
     expect(response.headers.get("X-Revalidate")).toBe("/session");
-    expect(response.headers.get("X-Error")).toBe("true");
+    expect(response.headers.get("X-Server-Function-Error")).toBe("true");
   });
 
   it("integration responses reach the caller whole and decode explicitly", async () => {
@@ -499,7 +499,7 @@ describe("handler", () => {
         new ResponseEnvelope(new Response(null, { headers: { "X-Revalidate": "/notes" } }), result)
     });
     try {
-      const response = await cloneClientReference("redir-0")();
+      const response = await createClientReference("redir-0")();
       expect(response).toBeInstanceOf(Response);
       expect(response.headers.get("X-Revalidate")).toBe("/notes");
       expect(await decodeResponse(response)).toBe("payload");

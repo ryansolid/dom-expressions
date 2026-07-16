@@ -1,6 +1,6 @@
 // Server half of the server function runtime ABI. Compiled server output
-// calls `createServerReference(id, fn)` for every server function
-// (registering it for HTTP dispatch) and `cloneServerReference(ref)` where
+// calls `registerServerReference(id, fn)` for every server function
+// (registering it for HTTP dispatch) and `createServerReference(ref)` where
 // the function was referenced — during SSR the original function runs
 // in-process under a per-call request event.
 //
@@ -69,7 +69,7 @@ export function getServerFunction(id) {
 }
 
 /** Registers a compiled server function under its id. */
-export function createServerReference(id, fn) {
+export function registerServerReference(id, fn) {
   registerServerFunction(id, fn);
   return { id, fn };
 }
@@ -79,7 +79,7 @@ export function createServerReference(id, fn) {
  * runs the original function in-process, under a request event derived from
  * the current one (marked server-only, carrying the function's meta).
  */
-export function cloneServerReference({ id, fn }) {
+export function createServerReference({ id, fn }) {
   if (typeof fn !== "function")
     throw new Error("Export from a 'use server' module must be a function");
 
@@ -291,7 +291,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
           x = null;
         }
       }
-      headers.set("X-Error", "true");
+      headers.set("X-Server-Function-Error", "true");
       if (!instance) {
         if (options.handleNoJS) return options.handleNoJS(x, request, parsed, true);
         if (x instanceof Response) return x;
@@ -306,7 +306,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
     }
 
     const error = x instanceof Error ? x.message : typeof x === "string" ? x : "true";
-    headers.set("X-Error", error.replace(/[\r\n]+/g, ""));
+    headers.set("X-Server-Function-Error", error.replace(/[\r\n]+/g, ""));
     return encodeResult(x, headers, 200, codec);
   }
 }

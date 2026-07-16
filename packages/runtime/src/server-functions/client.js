@@ -1,5 +1,5 @@
 // Client half of the server function runtime ABI. Compiled client output
-// calls `cloneServerReference(id)` where a server function was referenced;
+// calls `createServerReference(id)` where a server function was referenced;
 // the function body never reaches this bundle. Hoisted from SolidStart's
 // fns/client.ts with neutral header names and a configurable endpoint.
 import {
@@ -93,7 +93,7 @@ async function fetchServerFunction(base, id, options, args) {
   }
 
   const result = await decodeResponse(response.clone());
-  if (response.headers.has("X-Error")) {
+  if (response.headers.has("X-Server-Function-Error")) {
     throw result;
   }
   return result;
@@ -104,7 +104,7 @@ async function fetchServerFunction(base, id, options, args) {
  * proxy also exposes `url` (for forms), `GET` (encode args in the query
  * string), and `withOptions` (custom RequestInit).
  */
-export function cloneServerReference(id) {
+export function createServerReference(id) {
   const fn = (...args) => fetchServerFunction(config.endpoint, id, {}, args);
 
   return new Proxy(fn, {
@@ -145,6 +145,6 @@ export function cloneServerReference(id) {
 
 // Only ever referenced by server-mode compiler output; present so a
 // misconfigured build fails loudly instead of with a missing-export error.
-export function createServerReference() {
-  throw new Error("createServerReference must not be called in the client build");
+export function registerServerReference() {
+  throw new Error("registerServerReference must not be called in the client build");
 }

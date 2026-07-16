@@ -28,7 +28,7 @@ export function getServerFunctionsCodec() {
 }
 
 /** Header carrying the server function id. */
-export const FUNCTION_HEADER = "X-Server-Function";
+export const FUNCTION_HEADER = "X-Server-Function-Id";
 
 /**
  * Header carrying a per-call instance id. Its presence tells the server a

@@ -2,37 +2,62 @@ import { JSONCodecOptions } from "../serializer.js";
 
 export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
 
+/** Options for `configureServerFunctionsClient`. */
 export interface ServerFunctionsClientConfig {
   /**
-   * Endpoint the server handler is mounted on.
+   * Endpoint the server's HTTP handler is mounted on. Must match the
+   * server configuration — SSR'd reference `url`s (e.g. form actions) and
+   * client fetches both derive from it. Prefix it when the app serves from
+   * a base path (e.g. `` `${BASE_URL}_server` ``).
    * @default "/_server"
    */
   endpoint?: string;
-  /** Codec options — must match the server's (stored in the shared layer). */
+  /**
+   * Codec options (extra plugins etc.) for encoding arguments and decoding
+   * results — must match the server's. Stored in the shared layer, so
+   * `decodeResponse` sees them too.
+   */
   codec?: JSONCodecOptions;
 }
 
-/** Configures the transport. Call before any server function is invoked. */
+/**
+ * Configures the client transport. Call once, before any server function is
+ * invoked — typically in the client entry, next to `hydrate()`. Only needed
+ * when deviating from the defaults (custom endpoint or codec plugins).
+ */
 export function configureServerFunctionsClient(config?: ServerFunctionsClientConfig): void;
 
+/**
+ * What a server function import is at runtime on the client: an async
+ * callable that fetches the server, plus escape hatches for forms and
+ * custom requests.
+ */
 export interface ServerFunctionCallable {
   (...args: any[]): Promise<any>;
-  /** URL invoking this function directly (e.g. form actions). */
+  /** URL invoking this function directly over HTTP (e.g. form `action`s). */
   url: string;
-  /** Variant encoding arguments in the query string. */
+  /**
+   * Variant issuing GET requests with the arguments encoded in the query
+   * string — cacheable by HTTP infrastructure.
+   */
   GET: ServerFunctionCallable;
-  /** Variant with a custom RequestInit. */
+  /** Variant applying a custom RequestInit to every call (headers etc.). */
   withOptions(options: RequestInit): ServerFunctionCallable;
 }
 
 /**
- * Produces the client-side callable for a server function id. Compiled
- * client output calls this where a server function was referenced.
+ * Compiler ABI — emitted by compiled `"use server"` client output where a
+ * server function was referenced; produces the fetch-backed callable for
+ * the function's build-stable id. Not meant for hand-written code.
+ * @internal
  */
-export function cloneServerReference(id: string): ServerFunctionCallable;
+export function createServerReference(id: string): ServerFunctionCallable;
 
 /**
- * Only ever referenced by server-mode compiler output; throws so a
- * misconfigured build fails loudly.
+ * Compiler ABI — only ever referenced by server-mode compiler output;
+ * throws so a misconfigured build (server transform feeding a client
+ * bundle) fails loudly instead of with a missing-export error. Not meant
+ * for hand-written code.
+ * @internal
  */
-export function createServerReference(): never;
+export function registerServerReference(): never;

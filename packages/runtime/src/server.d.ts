@@ -132,11 +132,29 @@ export function generateHydrationScript(options?: {
   nonce?: string;
   eventNames?: string[];
 }): string;
+/**
+ * Registered symbol (`Symbol.for("solid.RequestContext")`) naming the
+ * global slot where `provideRequestEvent` parks the AsyncLocalStorage that
+ * scopes request events. Integration plumbing — application code reads the
+ * event through `getRequestEvent()` instead.
+ * @internal
+ */
 export declare const RequestContext: unique symbol;
+/**
+ * The per-request context available on the server: the incoming `Request`
+ * and a `locals` bag integrations and middleware can hang state on.
+ * Frameworks typically extend this shape with richer fields.
+ */
 export interface RequestEvent {
   request: Request;
   locals: Record<string | number | symbol, any>;
 }
+/**
+ * The current request event, when called on the server inside a request
+ * scope (established by `provideRequestEvent` from `@solidjs/web/storage`
+ * or by the framework). Undefined on the client and outside a request.
+ * Read it above `await` boundaries in partially-polyfilled environments.
+ */
 export function getRequestEvent(): RequestEvent | undefined;
 
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
