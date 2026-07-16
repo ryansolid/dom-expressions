@@ -157,6 +157,44 @@ Supported options track the Babel plugin where currently implemented:
 - `requireImportSource`
 - `renderers`
 
+### Server Function Directives (experimental)
+
+`transformDirectives(code, options)` is a second, independent pass that ports
+the `"use server"` directive transform (the Babel implementation hoisted from
+SolidStart into vite-plugin-solid). It applies to plain `.js`/`.ts` modules as
+well as JSX/TSX and is groundwork for the compiler becoming multi-pass (JSX,
+directives, refresh) over a single parse.
+
+```js
+const { transformDirectives } = require("@dom-expressions/compiler");
+
+const result = transformDirectives(source, {
+  filename: "/project/src/api.ts",
+  root: "/project",
+  mode: "server" // or "client"
+});
+
+result.valid; // false when no directive matched — keep the original module
+result.code; // registerServerReference/createServerReference output
+result.functions; // [{ id, name, exports }] for manifest building
+```
+
+Server mode registers extracted functions through `registerServerReference(id, fn)`;
+client mode replaces them with `createServerReference(id)` proxies and strips
+server-only code from the module. Function IDs use the frozen
+`xxhash32(root-relative path)-<count>` format (name-suffixed with
+`env: "development"`), interchangeable with the Babel implementation's
+manifests. The runtime module defaults to `@solidjs/web/server-functions` and
+is configurable through the `register`/`create` options.
+
+Ported so far (checked by the directives parity and snapshot suites):
+module-level `"use server"` with exported functions in both modes,
+function-level directives on function expressions/arrows (function
+declarations are bubbled to `const` form first), client dead-code
+elimination, and metadata reporting. Not yet ported: server functions nested
+inside other extracted server functions, object/class method directives, and
+sourcemap fidelity through the client DCE pass.
+
 ## Performance
 
 Compared against `@dom-expressions/babel-plugin-jsx` compiling identical

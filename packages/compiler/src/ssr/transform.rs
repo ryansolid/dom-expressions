@@ -164,6 +164,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         format!("_${}", self.memo_wrapper.as_deref().unwrap_or("memo"))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         allocator: &'a Allocator,
         source: &'source str,

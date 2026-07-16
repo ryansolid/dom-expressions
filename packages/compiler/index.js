@@ -22,6 +22,90 @@ function transformAsync(code, options) {
   return Promise.resolve().then(() => transform(code, options));
 }
 
+function transformDirectives(code, options) {
+  if (typeof code !== "string") {
+    throw new TypeError(
+      "@dom-expressions/compiler transformDirectives() expects source code as a string"
+    );
+  }
+
+  const nativeOptions = validateDirectivesOptions(options);
+  const result = native.transformDirectives(code, nativeOptions);
+  return {
+    code: result.code,
+    map: result.map ?? null,
+    valid: result.valid,
+    functions: result.functions
+  };
+}
+
+function transformDirectivesAsync(code, options) {
+  return Promise.resolve().then(() => transformDirectives(code, options));
+}
+
+const directivesOptionKeys = new Set([
+  "filename",
+  "root",
+  "mode",
+  "env",
+  "directive",
+  "sourceMap",
+  "register",
+  "create"
+]);
+
+function validateDirectivesOptions(options) {
+  if (options == null || typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError(
+      "@dom-expressions/compiler transformDirectives() expects options to be an object"
+    );
+  }
+
+  const nativeOptions = {};
+  for (const [key, value] of Object.entries(options)) {
+    if (!directivesOptionKeys.has(key)) {
+      throw new Error(`@dom-expressions/compiler received unknown option \`${key}\``);
+    }
+    if (key === "mode") {
+      if (value !== "server" && value !== "client") {
+        throw new TypeError('@dom-expressions/compiler `mode` option must be "server" or "client"');
+      }
+    }
+    if (key === "env") {
+      if (value !== "production" && value !== "development") {
+        throw new TypeError(
+          '@dom-expressions/compiler `env` option must be "production" or "development"'
+        );
+      }
+    }
+    if (key === "register" || key === "create") {
+      validateImportDefinition(key, value);
+    }
+    nativeOptions[key] = value;
+  }
+  if (typeof nativeOptions.filename !== "string") {
+    throw new TypeError("@dom-expressions/compiler transformDirectives() requires `filename`");
+  }
+  return nativeOptions;
+}
+
+function validateImportDefinition(key, value) {
+  if (typeof value !== "object" || value == null || Array.isArray(value)) {
+    throw new TypeError(`@dom-expressions/compiler \`${key}\` option must be an object`);
+  }
+  for (const nested of Object.keys(value)) {
+    if (nested !== "kind" && nested !== "name" && nested !== "source") {
+      throw new Error(`@dom-expressions/compiler received unknown \`${key}\` option \`${nested}\``);
+    }
+  }
+  if (typeof value.source !== "string") {
+    throw new TypeError(`@dom-expressions/compiler \`${key}.source\` must be a string`);
+  }
+  if (value.kind != null && value.kind !== "named" && value.kind !== "default") {
+    throw new TypeError(`@dom-expressions/compiler \`${key}.kind\` must be "named" or "default"`);
+  }
+}
+
 const nativeOptionKeys = new Set([
   "filename",
   "moduleName",
@@ -228,5 +312,7 @@ function isMissingPackage(error, packageName) {
 
 module.exports = {
   transform,
-  transformAsync
+  transformAsync,
+  transformDirectives,
+  transformDirectivesAsync
 };

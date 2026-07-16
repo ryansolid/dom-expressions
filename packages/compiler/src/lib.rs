@@ -1,4 +1,5 @@
 mod config;
+mod directives;
 mod dom;
 mod shared;
 mod ssr;
@@ -14,9 +15,24 @@ use oxc_parser::{ParseOptions, Parser};
 use config::source_type_for_filename;
 use config::RendererOption;
 pub use config::{TransformOptions, TransformResult};
+pub use directives::{
+    DirectiveImportOption, ServerFunctionMeta, TransformDirectivesOptions,
+    TransformDirectivesResult,
+};
 use dom::element::{AstDomTransform, DomTransformConfig};
 use ssr::transform::AstSsrTransform;
 use universal::transform::{AstUniversalTransform, DynamicDomConfig, UniversalWrapperConfig};
+
+/// The `"use server"` directive pass — a second, independent transform over
+/// the same parse infrastructure as the JSX pass. Applies to plain
+/// `.js`/`.ts` modules as well as JSX/TSX.
+#[napi]
+pub fn transform_directives(
+    code: String,
+    options: Option<TransformDirectivesOptions>,
+) -> Result<TransformDirectivesResult> {
+    directives::transform_directives(code, options)
+}
 
 #[napi]
 pub fn transform(code: String, options: Option<TransformOptions>) -> Result<TransformResult> {

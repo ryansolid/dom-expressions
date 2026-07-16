@@ -7,5 +7,6 @@ pnpm-lock.yaml
 packages/babel-plugin-jsx/index.js
 packages/babel-plugin-jsx/test/__*__/
 packages/compiler/__tests__/fixtures/
+packages/compiler/__tests__/directives/fixtures/
 packages/runtime/types
 packages/tagged-jsx/tests/tagged-jsx.test.ts
