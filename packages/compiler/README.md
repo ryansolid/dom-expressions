@@ -1,0 +1,225 @@
+# @dom-expressions/compiler
+
+Experimental AST-native JSX to DOM Expressions compiler implemented with Oxc.
+
+## Installation
+
+```bash
+npm install @dom-expressions/compiler
+```
+
+The package ships prebuilt native binaries as per-platform packages
+(`@dom-expressions/compiler-darwin-arm64`, `-darwin-x64`, `-linux-x64-gnu`,
+`-linux-arm64-gnu`, `-win32-x64-msvc`). Your package manager installs the one
+matching your platform automatically through `optionalDependencies`. On other
+platforms, build from source with `pnpm run build` inside
+`packages/compiler` (requires a Rust toolchain).
+
+### WebAssembly and StackBlitz
+
+The compiler also ships a WASI fallback for environments such as StackBlitz
+WebContainers, where Node.js reports a native platform but cannot load `.node`
+addons. Package managers install the WASI binding as an optional dependency
+without requiring architecture configuration. The normal package entry point
+prefers a native binding and falls back to
+`@dom-expressions/compiler-wasm32-wasi` when native addons are unavailable.
+Set `NAPI_RS_FORCE_WASI=error` to require the WASI binding for testing.
+
+## Usage
+
+This package exposes a compiler backend API. It is not a Vite, Rollup, or Babel
+plugin by itself; integrations should call `transform()` once per source module.
+
+```js
+const { transform } = require("@dom-expressions/compiler");
+
+const result = transform(`const view = <div>Hello</div>;`, {
+  filename: "App.jsx",
+  moduleName: "dom",
+  generate: "dom"
+});
+
+console.log(result.code);
+```
+
+`transformAsync()` is also available for integration points that expect a
+promise-returning transform:
+
+```js
+const { transformAsync } = require("@dom-expressions/compiler");
+
+const result = await transformAsync(source, {
+  filename: "App.jsx",
+  moduleName: "dom",
+  generate: "dom"
+});
+```
+
+### Solid-Style DOM
+
+Solid's DOM compiler preset uses DOM output with custom-element context
+capture enabled. This compiler defaults `contextToCustomElements` to `true` to
+match that behavior.
+
+```js
+const result = transform(source, {
+  filename: "App.jsx",
+  moduleName: "dom",
+  generate: "dom",
+  hydratable: true,
+  builtIns: ["For", "Show"]
+});
+```
+
+Use `dev: true` with `hydratable: true` to emit dev hydration walk validation
+helpers such as `getFirstChild` / `getNextSibling`.
+
+### SSR
+
+```js
+const result = transform(source, {
+  filename: "entry-server.jsx",
+  moduleName: "dom/server",
+  generate: "ssr",
+  hydratable: true,
+  builtIns: ["For", "Show"]
+});
+```
+
+### Universal
+
+```js
+const result = transform(source, {
+  filename: "scene.jsx",
+  moduleName: "renderer",
+  generate: "universal"
+});
+```
+
+### Dynamic Renderers
+
+Dynamic mode uses the universal renderer as the fallback and can route a
+configured set of native tags to the DOM renderer.
+
+```js
+const result = transform(source, {
+  filename: "hybrid.jsx",
+  moduleName: "renderer",
+  generate: "dynamic",
+  renderers: [
+    {
+      name: "dom",
+      moduleName: "dom",
+      elements: ["div", "span", "button", "input"]
+    }
+  ]
+});
+```
+
+### Source Maps
+
+Pass `sourceMap: true` to receive a JSON source map string in `result.map`.
+
+```js
+const result = transform(source, {
+  filename: "App.jsx",
+  moduleName: "dom",
+  sourceMap: true
+});
+
+console.log(result.map);
+```
+
+### Options
+
+Supported options track the Babel plugin where currently implemented:
+
+- `filename`
+- `moduleName`
+- `generate`: `"dom"`, `"ssr"`, `"universal"`, or `"dynamic"`
+- `hydratable`
+- `dev`
+- `sourceMap`
+- `contextToCustomElements`
+- `delegateEvents`
+- `delegatedEvents`
+- `omitQuotes`
+- `omitAttributeSpacing`
+- `inlineStyles`
+- `effectWrapper`: custom import name string, or `false` to disable
+- `memoWrapper`: custom import name string, or `false` to disable
+- `wrapConditionals`
+- `staticMarker`
+- `validate`
+- `omitNestedClosingTags`
+- `omitLastClosingTag`
+- `builtIns`
+- `requireImportSource`
+- `renderers`
+
+## Performance
+
+Compared against `@dom-expressions/babel-plugin-jsx` compiling identical
+sources under identical options (Apple Silicon, release build, in-process,
+median of 7 iterations after warmup — run `pnpm bench` in this package to
+reproduce on your machine):
+
+| Workload                                        | babel-plugin-jsx | compiler | Speedup |
+| ----------------------------------------------- | ---------------: | -----------: | ------: |
+| Fixture corpus (88 files, 174 KB, all 10 modes) |           151 ms |       8.4 ms |     18x |
+| 129 KB single module                            |           230 ms |       4.6 ms |     50x |
+| 1 MB single module                              |        10,164 ms |        39 ms |    258x |
+
+Native throughput stays flat at ~20–27 MB/s as input grows, while Babel's
+per-file cost grows super-linearly — so the gap widens with file size.
+
+## Current Scope
+
+This package is the AST-native compiler backend. It currently has checked fixture coverage for
+the DOM, hydratable DOM, dev hydratable DOM, SSR, hydratable SSR, universal, dynamic, no-inline-styles, and wrapperless renderer paths.
+
+- `generate: "dom"`
+- `generate: "ssr"`
+- `generate: "universal"`
+- `generate: "dynamic"`
+- native elements, components, fragments, refs, spreads, dynamic text, events, and
+  attribute handling covered by the checked fixture suites for those targets
+- Solid-compatible defaults such as `contextToCustomElements: true`
+- option coverage for `hydratable`, `dev`, `delegateEvents`, `delegatedEvents`,
+  `omitQuotes`, `omitAttributeSpacing`, `inlineStyles`, `effectWrapper`,
+  `memoWrapper`, `wrapConditionals`, `requireImportSource`, `staticMarker`,
+  `validate`, `omitNestedClosingTags`, `omitLastClosingTag`, `builtIns`, and
+  dynamic `renderers`
+- source maps for the implemented path
+
+## Not Implemented Yet
+
+The compiler intentionally rejects unsupported features instead of pretending to support them:
+
+- DOM `namespaceElements` sections that the current Oxc parser rejects before transform
+  (for example, hyphenated JSX member segments)
+- arbitrary custom renderer names beyond dynamic DOM renderer override plus universal fallback
+- unknown/custom namespaced DOM attributes outside known runtime namespaces such as `xlink`
+
+## Architecture
+
+The implementation is AST-native:
+
+1. Parse with Oxc.
+2. Transform JSX nodes with `VisitMut`.
+3. Build replacement expressions and helper declarations with `AstBuilder`.
+4. Codegen once with Oxc.
+
+The module layout mirrors the Babel plugin shape where possible:
+
+- `src/config.rs`
+- `src/shared/ast.rs`
+- `src/shared/transform.rs` for shared traversal and target dispatch
+- `src/shared/component.rs`
+- `src/shared/utils.rs`
+- `src/dom/element.rs`
+- `src/dom/template.rs`
+- `src/ssr/mod.rs`
+- `src/ssr/transform.rs`
+- `src/universal/mod.rs`
+- `src/universal/transform.rs`

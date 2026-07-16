@@ -6,7 +6,7 @@
     "@dom-expressions/runtime": "0.50.0-next.0",
     "@dom-expressions/hyperscript": "0.50.0-next.0",
     "@dom-expressions/tagged-jsx": "0.50.0-next.2",
-    "@dom-expressions/jsx-compiler": "0.50.0-next.14"
+    "@dom-expressions/compiler": "0.50.0-next.14"
   },
   "changesets": [
     "add-compiler-dynamic-attributes",

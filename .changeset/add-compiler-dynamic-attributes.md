@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/jsx-compiler": patch
+"@dom-expressions/compiler": patch
 ---
 
 Add initial AST-native DOM support for plain dynamic attributes by lowering them through reactive effects and `setAttribute`. The compiler now also supports the full Babel DOM `attributeExpressions` fixture, including DOM child-property, style, class/className, state-property, ref, `prop:*`, and spread attribute lowering.

@@ -1,0 +1,22 @@
+{
+  "name": "@dom-expressions/compiler-darwin-arm64",
+  "version": "0.50.0-next.22",
+  "cpu": [
+    "arm64"
+  ],
+  "main": "compiler.darwin-arm64.node",
+  "files": [
+    "compiler.darwin-arm64.node"
+  ],
+  "description": "A JSX to DOM Expressions compiler implemented with Oxc",
+  "author": "Ryan Carniato",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryansolid/dom-expressions.git",
+    "directory": "packages/compiler"
+  },
+  "os": [
+    "darwin"
+  ]
+}
