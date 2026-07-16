@@ -258,7 +258,24 @@ class FrameImpl {
       this.#version = v;
     }
 
-    Object.assign(this.#store, write.r);
+    for (const key of Object.keys(write.r)) {
+      const incoming = write.r[key];
+      // Slot-record dedupe: streams re-send their slot chunks, and re-call
+      // triggers on record identity — so an equivalent re-sent record keeps
+      // the existing object (no re-call, occurrence state preserved).
+      if (
+        incoming &&
+        incoming.kind === "slot" &&
+        key.charCodeAt(0) === 115 /* s */ &&
+        key.startsWith("slot:")
+      ) {
+        const existing = this.#store[key];
+        if (existing && existing.kind === "slot" && argsEquivalent(existing.args, incoming.args)) {
+          continue;
+        }
+      }
+      this.#store[key] = incoming;
+    }
     this.#flush();
   }
 
@@ -892,6 +909,39 @@ function afterFrameRegion(start, id) {
     n = n.nextSibling;
   }
   return null;
+}
+
+/**
+ * Whether two slot-args objects are equivalent for re-call purposes:
+ * primitives by value, `{$frame}` region refs by id (region content updates
+ * flow through the region's own chunks — a re-call is never needed for
+ * them). `{$ref}` codec refs are response-scoped — the same id can decode
+ * to a new value on a later stream — so they conservatively count as
+ * changed.
+ */
+function argsEquivalent(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const key of ka) {
+    const va = a[key];
+    const vb = b[key];
+    if (va === vb) continue;
+    if (
+      va &&
+      vb &&
+      typeof va === "object" &&
+      typeof vb === "object" &&
+      typeof va.$frame === "string" &&
+      va.$frame === vb.$frame
+    ) {
+      continue;
+    }
+    return false;
+  }
+  return true;
 }
 
 /** The nodes strictly between a range's start marker and its end comment. */

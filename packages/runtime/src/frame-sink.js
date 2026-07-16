@@ -304,10 +304,21 @@ export function createProjectionProps(sink, frame) {
           if (callArgs.length === 0 || callArgs[0] === undefined) {
             return projectionRange(prop);
           }
-          const n = counts[prop] || 0;
-          counts[prop] = n + 1;
-          const occurrence = `${prop}#${n}`;
           const raw = callArgs[0];
+          // Keyed identity (RFC open question 1): a primitive `key` arg names
+          // the occurrence, so client state follows the entity across
+          // responses — same key + equivalent args on a later stream is the
+          // same occurrence and the consumer's dedupe skips the re-call.
+          // Without a key, identity is positional per prop.
+          let occurrence;
+          const k = raw.key;
+          if (typeof k === "string" || typeof k === "number") {
+            occurrence = `${prop}#${k}`;
+          } else {
+            const n = counts[prop] || 0;
+            counts[prop] = n + 1;
+            occurrence = `${prop}#${n}`;
+          }
           const args = {};
           for (const key of Object.keys(raw)) {
             const value = raw[key];

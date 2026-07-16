@@ -233,6 +233,80 @@ describe("renderServerComponent (projection emission)", () => {
     expect(chunks.filter(c => c.type === "data")).toEqual([]);
   });
 
+  it("a primitive `key` arg names the occurrence (keyed identity)", async () => {
+    const ServerComp = props =>
+      r.ssr`<ul>${[{ id: "a1" }, { id: "b2" }].map(c =>
+        props.comment({ key: c.id, children: r.ssr`<p>${c.id}</p>` })
+      )}</ul>`;
+    const chunks = await renderServerComponent(ServerComp, { frame: { id: "k" } });
+    expect(chunks.filter(c => c.type === "slot").map(c => c.key)).toEqual([
+      "comment#a1",
+      "comment#b2"
+    ]);
+    // The shell chunk specifically — region chunks are html-typed too.
+    const html = chunks.find(c => c.type === "html" && c.id === "k").html;
+    expect(html).toContain("<!--proj:comment#a1:start-->");
+    expect(html).toContain("<!--proj:comment#b2:start-->");
+  });
+
+  it("keyed occurrences with equivalent args survive a navigation re-send (no re-call)", async () => {
+    const makeComp = title => props =>
+      r.ssr`<article><h1>${r.escape(title)}</h1>${props.comment({
+        key: "c1",
+        cid: 1,
+        children: r.ssr`<p>stable-body</p>`
+      })}</article>`;
+    const host = createFrameHost();
+    let calls = 0;
+    createFrame(boundary, {
+      host,
+      id: "nav",
+      slots: {
+        comment: p => {
+          calls++;
+          const wrap = document.createElement("div");
+          wrap.className = "comment";
+          wrap.appendChild(p.children);
+          return wrap;
+        }
+      }
+    });
+    await streamInto(renderServerComponent(makeComp("One"), { frame: { id: "nav", version: 1 } }), host);
+    const wrap = boundary.querySelector(".comment");
+    // Client-only per-comment state:
+    wrap.classList.add("collapsed");
+    await streamInto(renderServerComponent(makeComp("Two"), { frame: { id: "nav", version: 2 } }), host);
+    // Same key + equivalent args ({$frame} region ref included) deduped on
+    // the store write: no re-call, same wrapper node, client state intact —
+    // while the surrounding server content morphed.
+    expect(calls).toBe(1);
+    expect(boundary.querySelector("h1").textContent).toBe("Two");
+    expect(boundary.querySelector(".comment")).toBe(wrap);
+    expect(wrap.classList.contains("collapsed")).toBe(true);
+  });
+
+  it("a changed primitive arg on the same key re-calls the occurrence", async () => {
+    const makeComp = score => props =>
+      r.ssr`<div>${props.comment({ key: "c1", score, children: r.ssr`<p>body</p>` })}</div>`;
+    const host = createFrameHost();
+    const seen = [];
+    createFrame(boundary, {
+      host,
+      id: "up",
+      slots: {
+        comment: p => {
+          seen.push(p.score);
+          const b = document.createElement("b");
+          b.appendChild(p.children);
+          return b;
+        }
+      }
+    });
+    await streamInto(renderServerComponent(makeComp(1), { frame: { id: "up", version: 1 } }), host);
+    await streamInto(renderServerComponent(makeComp(2), { frame: { id: "up", version: 2 } }), host);
+    expect(seen).toEqual([1, 2]);
+  });
+
   it("reveals a slot inside an async fragment and mounts its client content", async () => {
     let fragDone;
     const ServerComp = props => {

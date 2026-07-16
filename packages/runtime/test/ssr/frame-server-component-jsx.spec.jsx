@@ -86,13 +86,12 @@ describe("server component authored in JSX", () => {
     expect(boundary.querySelector("h1").textContent).toBe("Show HN (edited)");
     expect(boundary.querySelector("footer button")).toBe(badge);
     expect(badge.dataset.clicked).toBe("yes");
-    // Known open edge (spike-documented): re-call triggers on slot-record
-    // identity, and a stream re-sends its slot chunks, so render-prop
-    // occurrences re-call on every navigation even with unchanged args —
-    // content is correct but node identity is not preserved. Direct-insert
-    // slots (no record) are unaffected. Fix direction: value-equality or
-    // record dedupe on the slot store write.
-    expect(boundary.querySelector("li")).not.toBe(firstLi);
+    // Formerly the spike-documented re-call edge: streams re-send slot
+    // chunks and re-call triggered on record identity. The store-write
+    // dedupe fixes it for primitive and {$frame} args — this occurrence's
+    // args are pure primitives, so the node survives the navigation.
+    // ({$ref} codec args still conservatively re-call.)
+    expect(boundary.querySelector("li")).toBe(firstLi);
     expect([...boundary.querySelectorAll("li")].map(li => li.textContent)).toEqual([
       "first!",
       "nice <script>"
