@@ -260,8 +260,22 @@ export function createProjectionProps(sink, frame) {
   const counts = Object.create(null);
   const getters = new Map();
   return new Proxy(Object.create(null), {
+    // Every key virtually exists — a prop is a *position* the client may
+    // fill, and the server cannot know which ones the client supplied. This
+    // is what routes reactive-core merge utilities down their proxy path
+    // ($PROXY in source) and resolves per-property lookups (property in s)
+    // to us; it also means merged defaults never override a projection —
+    // correct, since projection fallbacks belong to the client slot.
+    // Enumeration stays empty by nature (positions aren't listable), so
+    // spreads copy nothing: server components should read props directly.
+    has() {
+      return true;
+    },
     get(_, prop) {
       if (typeof prop !== "string") return undefined;
+      // `has: true` + callable gets would otherwise make the proxy thenable
+      // — a stray await/Promise.resolve would "call" a phantom then slot.
+      if (prop === "then") return undefined;
       let fn = getters.get(prop);
       if (!fn) {
         fn = (...callArgs) => {
