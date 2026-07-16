@@ -316,6 +316,19 @@ class FrameImpl {
     return this.#slots?.[prop] ?? this.#options.resolveSlot?.(prop);
   }
 
+  /**
+   * Resolve a slot occurrence's args record: this frame's store, then
+   * ancestors'. Occurrence markers evaluated inside nested server-content
+   * regions carry their records on the frame whose props proxy emitted them
+   * — the parent — while the marker lands in the child's content, so lookup
+   * threads up the frame tree exactly like callback resolution.
+   */
+  #resolveSlotRecord(occurrence) {
+    const record = this.#store[`slot:${occurrence}`];
+    if (record !== undefined) return record;
+    return this.#options.resolveSlotRecord?.(occurrence);
+  }
+
   #syncSlots() {
     if (!this.#slots && !this.#options.resolveSlot) return;
 
@@ -330,7 +343,7 @@ class FrameImpl {
     for (const [occurrence, start] of found) {
       const callback = this.#resolveSlot(propOf(occurrence));
       if (!callback) continue; // no client impl for this prop up the tree
-      const record = this.#store[`slot:${occurrence}`];
+      const record = this.#resolveSlotRecord(occurrence);
       if (!this.#mountedSlots.has(occurrence)) {
         // Direct-insert occurrences have no `slot:<id>` record and mount with
         // empty props; render-function occurrences mount with resolved props.
@@ -478,7 +491,8 @@ class FrameImpl {
         entry.frame = new FrameImpl(null, entry.start, entry.end, {
           id: entry.childId,
           host: this.#options.host,
-          resolveSlot: prop => this.#resolveSlot(prop)
+          resolveSlot: prop => this.#resolveSlot(prop),
+          resolveSlotRecord: occurrence => this.#resolveSlotRecord(occurrence)
         });
       }
     }
@@ -493,6 +507,14 @@ class FrameImpl {
       if (id !== null) {
         if (!found.has(id)) found.set(id, n);
         n = afterRange(n, id);
+        continue;
+      }
+      const regionId = frameRegionStartId(n);
+      if (regionId !== null) {
+        // Nested frame regions are child-owned: their interiors are opaque
+        // to this frame's discovery (the child discovers, with callbacks and
+        // records threaded down).
+        n = afterFrameRegion(n, regionId);
         continue;
       }
       if (n.nodeType === ELEMENT_NODE) collectSlots(n, found);
@@ -842,9 +864,34 @@ function collectSlots(root, out) {
       n = afterRange(n, id);
       continue;
     }
+    const regionId = frameRegionStartId(n);
+    if (regionId !== null) {
+      n = afterFrameRegion(n, regionId);
+      continue;
+    }
     if (n.nodeType === ELEMENT_NODE) collectSlots(n, out);
     n = n.nextSibling;
   }
+}
+
+const FRAME_REGION_START = /^frame:(.+):start$/;
+
+/** If `node` is a `frame:<id>:start` comment, return its id; else `null`. */
+function frameRegionStartId(node) {
+  if (node.nodeType !== COMMENT_NODE) return null;
+  const m = FRAME_REGION_START.exec(node.data);
+  return m ? m[1] : null;
+}
+
+/** The sibling immediately after the `frame:<id>:end` marker for `start`. */
+function afterFrameRegion(start, id) {
+  const end = `frame:${id}:end`;
+  let n = start.nextSibling;
+  while (n) {
+    if (n.nodeType === COMMENT_NODE && n.data === end) return n.nextSibling;
+    n = n.nextSibling;
+  }
+  return null;
 }
 
 /** The nodes strictly between a range's start marker and its end comment. */

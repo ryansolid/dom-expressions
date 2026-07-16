@@ -139,6 +139,12 @@ export function createFrameSink(emit, frame) {
     // No document-sink counterpart — projections only exist in frame streams.
     slot(key, args) {
       emit({ type: "slot", id, version, key, args });
+    },
+    // A nested server-content region (a `{$frame}` slot arg): its html is a
+    // chunk addressed to the CHILD frame id — the consumer binds a nested
+    // frame to the arg's marker range and the host routes/buffers by id.
+    region(childId, html) {
+      emit({ type: "html", id: childId, version, html });
     }
   };
 }
@@ -256,9 +262,25 @@ function projectionRange(occurrence) {
  * Serialization goes through the live render context, so the proxy must
  * only be *used* during the frame's render.
  */
+/** Whether a slot-arg value is server JSX: an SSR template object, or an
+ *  array made entirely of them (compiled children lists). */
+function isServerContent(value) {
+  if (value && typeof value === "object") {
+    if ("t" in value) return true;
+    if (Array.isArray(value) && value.length > 0) {
+      for (const item of value) {
+        if (!(item && typeof item === "object" && "t" in item)) return false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 export function createProjectionProps(sink, frame) {
   const counts = Object.create(null);
   const getters = new Map();
+  let regionCount = 0;
   return new Proxy(Object.create(null), {
     // Every key virtually exists — a prop is a *position* the client may
     // fill, and the server cannot know which ones the client supplied. This
@@ -292,6 +314,26 @@ export function createProjectionProps(sink, frame) {
             const t = typeof value;
             if (value == null || t === "string" || t === "number" || t === "boolean") {
               args[key] = value;
+            } else if (isServerContent(value)) {
+              // Server JSX flows as a nested region, never as data — the
+              // no-double-serialize invariant (transport dispatch case 1):
+              // its html is the transfer; the client wraps the range without
+              // re-rendering it. Nested occurrence markers evaluated inside
+              // this content already emitted their slot chunks against this
+              // frame — the consumer threads record lookup up the frame tree.
+              const resolved = sharedConfig.context.resolve(value);
+              if (resolved.h.length) {
+                throw new Error(
+                  "Async server content in slot args is not supported yet (arg '" +
+                    key +
+                    "' of " +
+                    occurrence +
+                    "). Move the async read above the projection or into a fragment."
+                );
+              }
+              const childId = `${frame.id}.${regionCount++}`;
+              sink.region(childId, resolved.t[0]);
+              args[key] = { $frame: childId };
             } else {
               const ref = `arg:${occurrence}:${key}`;
               sharedConfig.context.serialize(ref, value);

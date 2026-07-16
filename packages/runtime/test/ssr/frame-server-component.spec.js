@@ -146,6 +146,93 @@ describe("renderServerComponent (projection emission)", () => {
     expect(toggle.checked).toBe(true);
   });
 
+  it("passes server JSX args as nested regions — html once, zero data (dispatch case 1)", async () => {
+    const ServerComp = props =>
+      r.ssr`<section>${props.comment({
+        cid: 1,
+        children: r.ssr`<p>unique-text-42</p>`
+      })}</section>`;
+    const chunks = await renderServerComponent(ServerComp, { frame: { id: "f" } });
+    const regions = chunks.filter(c => c.type === "html" && c.id === "f.0");
+    expect(regions.length).toBe(1);
+    expect(regions[0].html).toBe("<p>unique-text-42</p>");
+    const slot = chunks.find(c => c.type === "slot");
+    expect(slot.args).toEqual({ cid: 1, children: { $frame: "f.0" } });
+    // The no-double-serialize invariant, literally: the text appears exactly
+    // once in the entire payload, and nothing was codec-serialized.
+    expect(JSON.stringify(chunks).split("unique-text-42").length).toBe(2);
+    expect(chunks.filter(c => c.type === "data")).toEqual([]);
+  });
+
+  it("client wraps a nested region without re-rendering it", async () => {
+    const ServerComp = props =>
+      r.ssr`<div>${props.wrap({ children: r.ssr`<em>server-owned</em>` })}</div>`;
+    const host = createFrameHost();
+    createFrame(boundary, {
+      host,
+      id: "w",
+      slots: {
+        wrap: p => {
+          const d = document.createElement("div");
+          d.className = "collapse";
+          d.appendChild(p.children);
+          return d;
+        }
+      }
+    });
+    await streamInto(renderServerComponent(ServerComp, { frame: { id: "w" } }), host);
+    expect(boundary.querySelector(".collapse em").textContent).toBe("server-owned");
+  });
+
+  it("recursive composition threads records through regions; every text ships once", async () => {
+    const comments = [
+      { id: 1, text: "root-comment", replies: [{ id: 2, text: "nested-reply", replies: [] }] }
+    ];
+    const ServerComp = props => {
+      const renderComment = c =>
+        props.comment({
+          cid: c.id,
+          children: r.ssr`<div class="body"><p>${c.text}</p>${c.replies.map(renderComment)}</div>`
+        });
+      return r.ssr`<section>${comments.map(renderComment)}</section>`;
+    };
+
+    const host = createFrameHost();
+    const seen = [];
+    createFrame(boundary, {
+      host,
+      id: "hn",
+      slots: {
+        comment: p => {
+          seen.push(p.cid);
+          const wrap = document.createElement("div");
+          wrap.className = "comment";
+          wrap.dataset.cid = String(p.cid);
+          wrap.appendChild(p.children);
+          return wrap;
+        }
+      }
+    });
+    const chunks = [];
+    await streamInto(renderServerComponent(ServerComp, { frame: { id: "hn" } }), host, c =>
+      chunks.push(c)
+    );
+
+    // Inner occurrences evaluate first (eager JS), so the reply is comment#0.
+    expect(seen.sort()).toEqual([1, 2]);
+    const outer = boundary.querySelector('.comment[data-cid="1"]');
+    const inner = outer.querySelector('.comment[data-cid="2"]');
+    expect(outer.querySelector("p").textContent).toBe("root-comment");
+    expect(inner.querySelector("p").textContent).toBe("nested-reply");
+
+    // The headline assertion: each comment's text crossed the wire exactly
+    // once — html only, no data records at all.
+    const payload = JSON.stringify(chunks);
+    expect(payload.split("root-comment").length).toBe(2);
+    expect(payload.split("nested-reply").length).toBe(2);
+    expect(chunks.filter(c => c.type === "data")).toEqual([]);
+  });
+
   it("reveals a slot inside an async fragment and mounts its client content", async () => {
     let fragDone;
     const ServerComp = props => {
