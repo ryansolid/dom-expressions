@@ -1,7 +1,7 @@
 {
   "name": "@dom-expressions/jsx-compiler",
   "description": "A JSX to DOM Expressions compiler implemented with Oxc",
-  "version": "0.50.0-next.21",
+  "version": "0.50.0-next.22",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -60,11 +60,11 @@
     "@napi-rs/wasm-runtime": "^1.1.6"
   },
   "optionalDependencies": {
-    "@dom-expressions/jsx-compiler-darwin-x64": "0.50.0-next.21",
-    "@dom-expressions/jsx-compiler-darwin-arm64": "0.50.0-next.21",
-    "@dom-expressions/jsx-compiler-linux-x64-gnu": "0.50.0-next.21",
-    "@dom-expressions/jsx-compiler-linux-arm64-gnu": "0.50.0-next.21",
-    "@dom-expressions/jsx-compiler-win32-x64-msvc": "0.50.0-next.21",
-    "@dom-expressions/jsx-compiler-wasm32-wasi": "0.50.0-next.21"
+    "@dom-expressions/jsx-compiler-darwin-x64": "0.50.0-next.22",
+    "@dom-expressions/jsx-compiler-darwin-arm64": "0.50.0-next.22",
+    "@dom-expressions/jsx-compiler-linux-x64-gnu": "0.50.0-next.22",
+    "@dom-expressions/jsx-compiler-linux-arm64-gnu": "0.50.0-next.22",
+    "@dom-expressions/jsx-compiler-win32-x64-msvc": "0.50.0-next.22",
+    "@dom-expressions/jsx-compiler-wasm32-wasi": "0.50.0-next.22"
   }
 }

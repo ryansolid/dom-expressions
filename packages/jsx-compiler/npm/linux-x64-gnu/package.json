@@ -1,6 +1,6 @@
 {
   "name": "@dom-expressions/jsx-compiler-linux-x64-gnu",
-  "version": "0.50.0-next.21",
+  "version": "0.50.0-next.22",
   "cpu": [
     "x64"
   ],
