@@ -149,6 +149,7 @@ pub fn transform_directives(
         })
         .collect();
     let needs_dce = pass.needs_dce();
+    let orphans = std::mem::take(&mut pass.orphans);
     drop(pass);
 
     let source_map = options.source_map.unwrap_or(false);
@@ -167,7 +168,8 @@ pub fn transform_directives(
         // printed output between passes, so when it runs the source map is
         // regenerated relative to the pre-DCE output (a known limitation of
         // this milestone).
-        let cleaned = dce::remove_unused_variables(build.code, source_type);
+        let cleaned =
+            dce::remove_unused_variables(build.code, source_type, orphans, env == Env::Development);
         if source_map {
             let allocator = Allocator::default();
             let reparsed = Parser::new(&allocator, &cleaned, source_type)
@@ -201,7 +203,10 @@ fn import_def(option: Option<&DirectiveImportOption>, default_name: &str) -> Imp
             } else {
                 ImportKind::Named
             },
-            name: option.name.clone().unwrap_or_else(|| default_name.to_string()),
+            name: option
+                .name
+                .clone()
+                .unwrap_or_else(|| default_name.to_string()),
             source: option.source.clone(),
         },
         None => ImportDef {

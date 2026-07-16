@@ -82,6 +82,10 @@ pub(crate) struct DirectivesTransform<'a> {
     prepended_imports: Vec<Statement<'a>>,
     pub(crate) functions: Vec<FunctionMeta>,
     pub(crate) valid: bool,
+    /// Names referenced from the client-mode replaced function subtrees —
+    /// the only bindings the DCE pass may shake (plus cascades). Mirrors the
+    /// Babel implementation's `StateContext.orphans`.
+    pub(crate) orphans: std::collections::HashSet<String>,
     module_level_applied: bool,
 }
 
@@ -115,6 +119,7 @@ impl<'a> DirectivesTransform<'a> {
             prepended_imports: Vec::new(),
             functions: Vec::new(),
             valid: false,
+            orphans: std::collections::HashSet::new(),
             module_level_applied: false,
         }
     }
@@ -182,6 +187,27 @@ impl<'a> DirectivesTransform<'a> {
             taken: &mut self.taken,
         };
         collector.visit_program(program);
+    }
+
+    /// Names in reference positions within a replaced subtree, recorded as
+    /// orphan candidates for the DCE pass (Babel's `collectReferencedNames`).
+    fn collect_orphan_references(&mut self, expression: &Expression<'a>) {
+        use oxc_ast_visit::Visit;
+
+        struct ReferencedNames<'t> {
+            names: &'t mut std::collections::HashSet<String>,
+        }
+
+        impl<'b> Visit<'b> for ReferencedNames<'_> {
+            fn visit_identifier_reference(&mut self, it: &oxc_ast::ast::IdentifierReference<'b>) {
+                self.names.insert(it.name.to_string());
+            }
+        }
+
+        let mut collector = ReferencedNames {
+            names: &mut self.orphans,
+        };
+        collector.visit_expression(expression);
     }
 
     /// Babel's `generateUniqueName`: `name_1`, `name_2`, ... skipping any
@@ -375,9 +401,8 @@ impl<'a> DirectivesTransform<'a> {
                     ) =>
                 {
                     let mut export = export;
-                    let placeholder = ExportDefaultDeclarationKind::from(
-                        ast.expression_null_literal(SPAN),
-                    );
+                    let placeholder =
+                        ExportDefaultDeclarationKind::from(ast.expression_null_literal(SPAN));
                     let ExportDefaultDeclarationKind::FunctionDeclaration(function) =
                         std::mem::replace(&mut export.declaration, placeholder)
                     else {
@@ -385,8 +410,7 @@ impl<'a> DirectivesTransform<'a> {
                     };
                     let name = function.id.as_ref().unwrap().name.to_string();
                     hoisted.push(self.function_declaration_to_const(function));
-                    export.declaration =
-                        ExportDefaultDeclarationKind::from(self.identifier(&name));
+                    export.declaration = ExportDefaultDeclarationKind::from(self.identifier(&name));
                     rest.push(Statement::ExportDefaultDeclaration(export));
                 }
                 other => rest.push(other),
@@ -416,8 +440,10 @@ impl<'a> DirectivesTransform<'a> {
             let Some(slot) = binding_init_function_slot(program, key) else {
                 continue;
             };
-            let function_expression =
-                std::mem::replace(slot, self.call(&create_local, vec![self.identifier(&source_local)]));
+            let function_expression = std::mem::replace(
+                slot,
+                self.call(&create_local, vec![self.identifier(&source_local)]),
+            );
             insertions.push((
                 key.statement,
                 self.const_statement(
@@ -502,26 +528,26 @@ impl<'a> DirectivesTransform<'a> {
 
         let ast = self.ast();
         if !declarators.is_empty() {
-            program
-                .body
-                .push(Statement::VariableDeclaration(ast.alloc_variable_declaration(
+            program.body.push(Statement::VariableDeclaration(
+                ast.alloc_variable_declaration(
                     SPAN,
                     VariableDeclarationKind::Const,
                     declarators,
                     false,
-                )));
+                ),
+            ));
         }
         if !specifiers.is_empty() {
-            program
-                .body
-                .push(Statement::ExportNamedDeclaration(ast.alloc_export_named_declaration(
+            program.body.push(Statement::ExportNamedDeclaration(
+                ast.alloc_export_named_declaration(
                     SPAN,
                     None,
                     specifiers,
                     None,
                     ImportOrExportKind::Value,
                     NONE,
-                )));
+                ),
+            ));
         }
     }
 
@@ -580,7 +606,14 @@ impl<'a> DirectivesTransform<'a> {
             }
             Mode::Client => {
                 let create_local = self.import_local(RuntimeImport::Create);
-                *expression = self.call(&create_local, vec![self.string(&fn_id)]);
+                let replaced = std::mem::replace(
+                    expression,
+                    self.call(&create_local, vec![self.string(&fn_id)]),
+                );
+                // The function subtree is discarded on the client: whatever
+                // it referenced may now be orphaned, and only those bindings
+                // are eligible for the post-transform shake.
+                self.collect_orphan_references(&replaced);
             }
         }
     }
@@ -803,7 +836,9 @@ impl ExportedBindings {
     }
 }
 
-fn collect_top_level_bindings(program: &Program<'_>) -> std::collections::HashMap<String, BindingKey> {
+fn collect_top_level_bindings(
+    program: &Program<'_>,
+) -> std::collections::HashMap<String, BindingKey> {
     let mut bindings = std::collections::HashMap::new();
     for (statement_index, statement) in program.body.iter().enumerate() {
         let declaration = match statement {
