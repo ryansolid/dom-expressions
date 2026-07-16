@@ -206,22 +206,33 @@ function frameStream(makeCode, options) {
     const emit = chunk => w.write(chunk);
     const sink = createFrameSink(emit, frame);
     emit({ type: "start", id, version });
-    // Frames default to the keyed JSON codec for data records (eval-free
-    // nodes; decode with createJSONDataTable). `options.serializer` can
-    // override — e.g. createHydrationSerializer for eval-style payloads.
-    renderToStream(makeCode(sink, frame), {
-      serializer: createJSONSerializer,
-      ...options,
-      sink
-    }).pipe({
-      // Every document emission is intercepted by the frame sink, so no text
-      // arrives here; the writable exists only for the completion signal.
-      write() {},
-      end() {
-        sink.end();
-        w.end && w.end();
-      }
-    });
+    try {
+      // Frames default to the keyed JSON codec for data records (eval-free
+      // nodes; decode with createJSONDataTable). `options.serializer` can
+      // override — e.g. createHydrationSerializer for eval-style payloads.
+      renderToStream(makeCode(sink, frame), {
+        serializer: createJSONSerializer,
+        ...options,
+        sink
+      }).pipe({
+        // Every document emission is intercepted by the frame sink, so no
+        // text arrives here; the writable exists only for the completion
+        // signal.
+        write() {},
+        end() {
+          sink.end();
+          w.end && w.end();
+        }
+      });
+    } catch (err) {
+      // A synchronous render failure travels as a structured chunk — the
+      // consumer stores an `:error` record instead of seeing a truncated
+      // stream. (Async fragment errors already ride their rejected `_fr`
+      // promise through the data codec.)
+      sink.error("", err instanceof Error ? err.message : String(err));
+      sink.end();
+      w.end && w.end();
+    }
   }
   return {
     pipe: stream,

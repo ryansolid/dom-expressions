@@ -189,6 +189,7 @@ class FrameImpl {
   #slotCleanups = new Map();
   #slotArgs = new Map();
   #slotRegions = new Map();
+  #processedAssets = new Set();
   #disposed = false;
   // Stable identity so a pending stylesheet holds at most one waiter per
   // frame across repeated readiness checks.
@@ -238,6 +239,11 @@ class FrameImpl {
 
   isRevealed(segment) {
     return this.#revealed.has(segment);
+  }
+
+  /** The stream's error record, if an `error` chunk arrived (else undefined). */
+  get error() {
+    return this.#store[":error"];
   }
 
   apply(write) {
@@ -322,6 +328,19 @@ class FrameImpl {
           this.#options.onApply?.({ version, reason: "reveal" });
           progressed = true;
         }
+      }
+    }
+
+    // Module assets preload as soon as their record lands (the document
+    // behavior's analogue: <link rel="modulepreload"> so lazy components
+    // inside the frame don't waterfall). Styles are handled by the reveal
+    // gate; this pass is modules only, once per record.
+    for (const key of Object.keys(this.#store)) {
+      if (this.#processedAssets.has(key) || !key.endsWith(":assets")) continue;
+      this.#processedAssets.add(key);
+      const record = this.#store[key];
+      if (record && record.modules) {
+        for (const href of record.modules) ensureModulePreload(href);
       }
     }
 
@@ -820,6 +839,15 @@ function ensureStylesheet(href, onSettle) {
   if (waiters == null) return true; // settled, or document-owned
   waiters.add(onSettle);
   return false;
+}
+
+/** Ensure a modulepreload link exists for `href` (deduped, adopt existing). */
+function ensureModulePreload(href) {
+  if (findHeadElement('link[rel="modulepreload"]', "href", href)) return;
+  const link = document.createElement("link");
+  link.rel = "modulepreload";
+  link.href = href;
+  document.head.appendChild(link);
 }
 
 /** Insert inline-style entries into the head, deduped by data-asset id. */

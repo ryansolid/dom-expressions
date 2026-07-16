@@ -271,11 +271,17 @@ describe("renderServerComponent (projection emission)", () => {
         }
       }
     });
-    await streamInto(renderServerComponent(makeComp("One"), { frame: { id: "nav", version: 1 } }), host);
+    await streamInto(
+      renderServerComponent(makeComp("One"), { frame: { id: "nav", version: 1 } }),
+      host
+    );
     const wrap = boundary.querySelector(".comment");
     // Client-only per-comment state:
     wrap.classList.add("collapsed");
-    await streamInto(renderServerComponent(makeComp("Two"), { frame: { id: "nav", version: 2 } }), host);
+    await streamInto(
+      renderServerComponent(makeComp("Two"), { frame: { id: "nav", version: 2 } }),
+      host
+    );
     // Same key + equivalent args ({$frame} region ref included) deduped on
     // the store write: no re-call, same wrapper node, client state intact —
     // while the surrounding server content morphed.
@@ -305,6 +311,50 @@ describe("renderServerComponent (projection emission)", () => {
     await streamInto(renderServerComponent(makeComp(1), { frame: { id: "up", version: 1 } }), host);
     await streamInto(renderServerComponent(makeComp(2), { frame: { id: "up", version: 2 } }), host);
     expect(seen).toEqual([1, 2]);
+  });
+
+  it("a synchronous render failure travels as a structured error chunk", async () => {
+    const chunks = await renderServerComponent(
+      () => {
+        throw new Error("boom in render");
+      },
+      { frame: { id: "err" } }
+    );
+    const error = chunks.find(c => c.type === "error");
+    expect(error.error).toContain("boom in render");
+    expect(chunks[chunks.length - 1].type).toBe("complete");
+    // The consumer stores it and exposes it, instead of a truncated stream.
+    const host = createFrameHost();
+    const frame = createFrame(boundary, { host, id: "err" });
+    for (const c of chunks) host.apply(c);
+    expect(frame.error).toContain("boom in render");
+  });
+
+  it("module assets preload as soon as their record lands", async () => {
+    const frame = createFrame(boundary);
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:p1:assets": { type: "assets", key: "p1", modules: ["/lazy-widget.js"] }
+      }
+    });
+    const links = [...document.head.querySelectorAll('link[rel="modulepreload"]')].filter(
+      l => l.getAttribute("href") === "/lazy-widget.js"
+    );
+    expect(links.length).toBe(1);
+    // Re-applying dedupes.
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:p2:assets": { type: "assets", key: "p2", modules: ["/lazy-widget.js"] }
+      }
+    });
+    expect(
+      [...document.head.querySelectorAll('link[rel="modulepreload"]')].filter(
+        l => l.getAttribute("href") === "/lazy-widget.js"
+      ).length
+    ).toBe(1);
+    links[0].remove();
   });
 
   it("reveals a slot inside an async fragment and mounts its client content", async () => {
