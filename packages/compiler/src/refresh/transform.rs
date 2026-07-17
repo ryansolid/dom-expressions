@@ -88,6 +88,12 @@ struct Analysis {
     /// Foreign bindings (granular `dependencies`) per candidate root span
     /// start.
     dependencies: std::collections::HashMap<u32, Vec<String>>,
+    /// Span starts of component function declarations left untouched
+    /// because rewriting them into `const` bindings would collide with TS
+    /// declaration merging (solid-refresh#76 / vite-plugin-solid#145) —
+    /// a deliberate divergence from the Babel plugin; see
+    /// `scan_merged_functions`.
+    merged_functions: std::collections::HashSet<u32>,
 }
 
 pub(crate) struct RefreshTransform<'a> {
@@ -117,6 +123,7 @@ impl<'a> RefreshTransform<'a> {
                 render_statements: std::collections::HashSet::new(),
                 context_calls: std::collections::HashSet::new(),
                 dependencies: std::collections::HashMap::new(),
+                merged_functions: std::collections::HashSet::new(),
             },
             taken: std::collections::HashSet::new(),
             imports: std::collections::HashMap::new(),
@@ -367,6 +374,8 @@ impl<'a> RefreshTransform<'a> {
             }
         }
 
+        self.scan_merged_functions(program, scoping);
+
         // Granular dependencies for component candidates.
         if self.config.granular {
             let root_scope = scoping.root_scope_id();
@@ -398,6 +407,81 @@ impl<'a> RefreshTransform<'a> {
                 }
             }
         }
+    }
+
+    /// solid-refresh#76 / vite-plugin-solid#145 (deliberate divergence from
+    /// the Babel plugin): rewriting `function A() {}` into
+    /// `const A = $$component(...)` collides with TypeScript declaration
+    /// merging. When `namespace A` merges with `function A`, tsc/esbuild
+    /// lower the namespace against the function binding (and esbuild
+    /// rejects `const`/`var` + `namespace` outright with "The symbol A has
+    /// already been declared"), so the wrapped output either fails to
+    /// compile or breaks the merge. Detect two shapes:
+    ///
+    /// - a same-name sibling *value* binding at the top level (namespace/
+    ///   module, enum, class, var — what merges look like before stripping,
+    ///   or what tsc emits alongside after stripping), and
+    /// - module-level writes to the function's own binding (the post-strip
+    ///   namespace IIFE assigns `A || (A = {})`, which `const` turns into a
+    ///   potential TypeError and an esbuild assign-to-constant warning).
+    ///
+    /// Matching functions keep their original declaration — effectively a
+    /// per-component `@refresh skip`: the component still works, it just
+    /// isn't hot-wrapped. Type-only merges (`interface A`, `type A`,
+    /// ambient `declare` declarations, bodiless overload signatures) are
+    /// erased by the TS strip and don't suppress wrapping.
+    fn scan_merged_functions(&mut self, program: &Program<'a>, scoping: &Scoping) {
+        // (name, binding-id span start) of every top-level value binding.
+        let mut bindings: Vec<(String, u32)> = Vec::new();
+        // (name, binding-id span start, function span start, symbol).
+        let mut candidates: Vec<(String, u32, u32, Option<SymbolId>)> = Vec::new();
+
+        for statement in &program.body {
+            match statement {
+                Statement::ExportNamedDeclaration(export) => {
+                    if let Some(declaration) = &export.declaration {
+                        collect_merge_bindings(declaration, &mut bindings, &mut candidates);
+                    }
+                }
+                Statement::ExportDefaultDeclaration(export) => {
+                    if let ExportDefaultDeclarationKind::FunctionDeclaration(function) =
+                        &export.declaration
+                    {
+                        collect_merge_function(function, &mut bindings, &mut candidates);
+                    }
+                }
+                other => {
+                    if let Some(declaration) = other.as_declaration() {
+                        collect_merge_bindings(declaration, &mut bindings, &mut candidates);
+                    }
+                }
+            }
+        }
+
+        for (name, id_span, function_span, symbol) in candidates {
+            let has_sibling = bindings
+                .iter()
+                .any(|(other, other_span)| *other == name && *other_span != id_span);
+            let has_write = symbol.is_some_and(|symbol| {
+                scoping
+                    .get_resolved_references(symbol)
+                    .any(oxc_semantic::Reference::is_write)
+            });
+            if has_sibling || has_write {
+                self.analysis.merged_functions.insert(function_span);
+            }
+        }
+    }
+
+    /// A component function declaration that is actually eligible for the
+    /// function→`const $$component(...)` rewrite (and the bubbling that
+    /// precedes it): merged declarations stay untouched.
+    fn function_is_wrappable(&self, function: &Function<'a>) -> bool {
+        function_is_component(function)
+            && !self
+                .analysis
+                .merged_functions
+                .contains(&function.span.start)
     }
 
     fn collect_candidate_function(
@@ -593,7 +677,9 @@ impl<'a> RefreshTransform<'a> {
 
         for statement in body {
             match statement {
-                Statement::FunctionDeclaration(function) if function_is_component(&function) => {
+                Statement::FunctionDeclaration(function)
+                    if self.function_is_wrappable(&function) =>
+                {
                     hoisted.push(Statement::FunctionDeclaration(function));
                     first_bubbled_exported.get_or_insert(false);
                 }
@@ -601,7 +687,7 @@ impl<'a> RefreshTransform<'a> {
                     if matches!(
                         &export.declaration,
                         Some(Declaration::FunctionDeclaration(function))
-                            if function_is_component(function)
+                            if self.function_is_wrappable(function)
                     ) =>
                 {
                     let export = export.unbox();
@@ -618,7 +704,7 @@ impl<'a> RefreshTransform<'a> {
                     if matches!(
                         &export.declaration,
                         ExportDefaultDeclarationKind::FunctionDeclaration(function)
-                            if function_is_component(function)
+                            if self.function_is_wrappable(function)
                     ) =>
                 {
                     let export = export.unbox();
@@ -688,7 +774,7 @@ impl<'a> RefreshTransform<'a> {
 
     fn wrap_statement(&mut self, index: usize, statement: Statement<'a>) -> Statement<'a> {
         match statement {
-            Statement::FunctionDeclaration(function) if function_is_component(&function) => {
+            Statement::FunctionDeclaration(function) if self.function_is_wrappable(&function) => {
                 self.wrap_function_declaration(index, function)
             }
             Statement::VariableDeclaration(mut declaration) => {
@@ -1132,10 +1218,113 @@ fn is_componentish(name: &str) -> bool {
     name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
 }
 
+/// Top-level value bindings and component-function candidates for the
+/// declaration-merge scan (`scan_merged_functions`).
+fn collect_merge_bindings(
+    declaration: &Declaration<'_>,
+    bindings: &mut Vec<(String, u32)>,
+    candidates: &mut Vec<(String, u32, u32, Option<SymbolId>)>,
+) {
+    match declaration {
+        Declaration::FunctionDeclaration(function) => {
+            collect_merge_function(function, bindings, candidates);
+        }
+        Declaration::VariableDeclaration(declaration) => {
+            if declaration.declare {
+                return;
+            }
+            for declarator in &declaration.declarations {
+                collect_binding_names(&declarator.id, bindings);
+            }
+        }
+        Declaration::ClassDeclaration(class) => {
+            if class.declare {
+                return;
+            }
+            if let Some(id) = &class.id {
+                bindings.push((id.name.to_string(), id.span.start));
+            }
+        }
+        Declaration::TSEnumDeclaration(declaration) => {
+            if !declaration.declare {
+                bindings.push((declaration.id.name.to_string(), declaration.id.span.start));
+            }
+        }
+        // Conservative: any non-ambient `namespace A` / `module A` counts
+        // as a merge even if its body turns out type-only (skipping the
+        // wrap is always safe; the component still renders, it just isn't
+        // hot-wrapped).
+        Declaration::TSModuleDeclaration(declaration) => {
+            if declaration.declare {
+                return;
+            }
+            if let TSModuleDeclarationName::Identifier(id) = &declaration.id {
+                bindings.push((id.name.to_string(), id.span.start));
+            }
+        }
+        _ => {}
+    }
+}
+
+fn collect_merge_function(
+    function: &Function<'_>,
+    bindings: &mut Vec<(String, u32)>,
+    candidates: &mut Vec<(String, u32, u32, Option<SymbolId>)>,
+) {
+    let Some(id) = &function.id else { return };
+    // Ambient declarations and TS overload signatures (no body) are erased
+    // by the strip and bind nothing.
+    if function.declare || function.body.is_none() {
+        return;
+    }
+    bindings.push((id.name.to_string(), id.span.start));
+    if function_is_component(function) {
+        candidates.push((
+            id.name.to_string(),
+            id.span.start,
+            function.span.start,
+            id.symbol_id.get(),
+        ));
+    }
+}
+
+fn collect_binding_names(pattern: &BindingPattern<'_>, bindings: &mut Vec<(String, u32)>) {
+    match pattern {
+        BindingPattern::BindingIdentifier(id) => {
+            bindings.push((id.name.to_string(), id.span.start));
+        }
+        BindingPattern::ObjectPattern(object) => {
+            for property in &object.properties {
+                collect_binding_names(&property.value, bindings);
+            }
+            if let Some(rest) = &object.rest {
+                collect_binding_names(&rest.argument, bindings);
+            }
+        }
+        BindingPattern::ArrayPattern(array) => {
+            for element in array.elements.iter().flatten() {
+                collect_binding_names(element, bindings);
+            }
+            if let Some(rest) = &array.rest {
+                collect_binding_names(&rest.argument, bindings);
+            }
+        }
+        BindingPattern::AssignmentPattern(assignment) => {
+            collect_binding_names(&assignment.left, bindings);
+        }
+    }
+}
+
 fn function_is_component(function: &Function<'_>) -> bool {
     let Some(id) = &function.id else {
         return false;
     };
+    // Bodiless functions are TS ambient declarations or overload
+    // signatures — Babel parses those as `TSDeclareFunction`, which the
+    // plugin's `FunctionDeclaration` visitors never match.
+    if function.declare || function.body.is_none() {
+        return false;
+    }
     is_componentish(id.name.as_str())
         && !function.generator
         && !function.r#async

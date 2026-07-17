@@ -37,3 +37,34 @@ when the pass's behavior is changed deliberately, by editing them by hand
 (or regenerating with a one-off script against the Babel plugin) in the
 same commit that changes the transform, with the diff reviewed as part of
 that change.
+
+## Deliberate divergences from the Babel plugin
+
+These fixtures freeze behavior where the native pass intentionally departs
+from solid-refresh@0.8.0-next.7 (their `expected.js` files are the native
+pass's intended output, not the plugin's):
+
+- **TS declaration merging** (solid-refresh#76, vite-plugin-solid#145;
+  `merge-namespace`, `merge-namespace-ts`): the plugin rewrites every
+  component `function A() {}` into `const A = $$component(...)`, which
+  breaks when a same-name `namespace A` merges with the function — esbuild
+  rejects `const A`/`var A` next to `namespace A` ("The symbol A has
+  already been declared"), and the post-strip namespace IIFE
+  (`(function (A) { ... })(A || (A = {}))`) conditionally assigns the
+  binding, which `const` turns into a potential TypeError. The native pass
+  detects a same-name top-level *value* binding (namespace/module, enum,
+  class, var) or a module-level write to the function's own binding, and
+  leaves such declarations untouched — a per-component `@refresh skip`:
+  the component still renders, it just isn't hot-wrapped. Type-only
+  merges (interfaces, type aliases, ambient `declare` declarations,
+  bodiless overload signatures; `merge-type-only`) are erased by the TS
+  strip and still wrap.
+- **Member-expression refs** (solid-refresh#77; `ref-member-passthrough`):
+  not a divergence but a documented non-bug — the crash lives in the
+  plugin's `jsx: true` extraction (`extractJSXExpressionFromRef`
+  safe-wraps identifier refs but lets member expressions fall into a
+  props getter that dom-expressions' non-function ref fallback then
+  assigns to). Under `jsx: false` — the only mode vite-plugin-solid uses
+  and the only mode the native pass accepts — JSX is never rewritten, so
+  `ref={props.setRef}` passes through verbatim and the code path is
+  unreachable. The fixture locks the pass-through in.
