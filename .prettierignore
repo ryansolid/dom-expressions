@@ -8,5 +8,7 @@ packages/babel-plugin-jsx/index.js
 packages/babel-plugin-jsx/test/__*__/
 packages/compiler/__tests__/fixtures/
 packages/compiler/__tests__/directives/fixtures/
+packages/compiler/__tests__/lazy/fixtures/
+packages/compiler/__tests__/refresh/fixtures/
 packages/runtime/types
 packages/tagged-jsx/tests/tagged-jsx.test.ts

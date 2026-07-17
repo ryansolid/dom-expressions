@@ -11,7 +11,7 @@
 mod dce;
 mod transform;
 mod validate;
-mod xxhash;
+pub(crate) mod xxhash;
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -233,7 +233,8 @@ fn import_def(option: Option<&DirectiveImportOption>, default_name: &str) -> Imp
 
 /// Node's `path.relative(root, id)` with separators normalized to `/` — the
 /// hash input contract shared with the Babel implementation's `compile()`.
-fn relative_id(root: Option<&str>, filename: &str) -> String {
+/// Also reused by the refresh pass for cwd-relative `location` strings.
+pub(crate) fn relative_id(root: Option<&str>, filename: &str) -> String {
     let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
     let root = normalize(&cwd, root.map(std::path::Path::new).unwrap_or(&cwd));
     let file = normalize(&cwd, std::path::Path::new(filename));

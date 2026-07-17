@@ -1,6 +1,8 @@
 mod config;
 mod directives;
 mod dom;
+mod lazy;
+mod refresh;
 mod shared;
 mod ssr;
 mod universal;
@@ -20,6 +22,8 @@ pub use directives::{
     TransformDirectivesResult,
 };
 use dom::element::{AstDomTransform, DomTransformConfig};
+pub use lazy::TransformLazyOptions;
+pub use refresh::TransformRefreshOptions;
 use ssr::transform::AstSsrTransform;
 use universal::transform::{AstUniversalTransform, DynamicDomConfig, UniversalWrapperConfig};
 
@@ -32,6 +36,28 @@ pub fn transform_directives(
     options: Option<TransformDirectivesOptions>,
 ) -> Result<TransformDirectivesResult> {
     directives::transform_directives(code, options)
+}
+
+/// The `lazy()` module-URL pass — injects `__SOLID_LAZY_MODULE__:` placeholder
+/// arguments into `lazy(() => import("..."))` calls for the bundler plugin to
+/// resolve. Ported from vite-plugin-solid's `lazy-module-url` Babel plugin.
+#[napi]
+pub fn transform_lazy(
+    code: String,
+    options: Option<TransformLazyOptions>,
+) -> Result<TransformResult> {
+    lazy::transform_lazy(code, options)
+}
+
+/// The solid-refresh HMR pass — wraps components in `$$component(...)`
+/// registrations targeting the frozen solid-refresh runtime ABI. Ported from
+/// the `solid-refresh` Babel plugin (jsx: false mode).
+#[napi]
+pub fn transform_refresh(
+    code: String,
+    options: Option<TransformRefreshOptions>,
+) -> Result<TransformResult> {
+    refresh::transform_refresh(code, options)
 }
 
 #[napi]

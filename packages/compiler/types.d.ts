@@ -97,3 +97,75 @@ export function transformDirectivesAsync(
   code: string,
   options: TransformDirectivesOptions
 ): Promise<TransformDirectivesResult>;
+
+/**
+ * Options for the experimental `lazy()` module-URL pass (ported from
+ * vite-plugin-solid's `lazy-module-url` Babel plugin).
+ */
+export interface TransformLazyOptions {
+  /**
+   * Mirrors the Babel plugin: without a filename the pass is a no-op (the
+   * emitted placeholder is only useful to a bundler resolving relative to a
+   * module id).
+   */
+  filename?: string;
+  sourceMap?: boolean;
+}
+
+export function transformLazy(code: string, options?: TransformLazyOptions | null): TransformResult;
+export function transformLazyAsync(
+  code: string,
+  options?: TransformLazyOptions | null
+): Promise<TransformResult>;
+
+/**
+ * Options for the experimental solid-refresh HMR pass (ported from the
+ * `solid-refresh` Babel plugin, `jsx: false` mode). Dev-only.
+ */
+export interface TransformRefreshOptions {
+  /**
+   * Used for `location` metadata (cwd-relative, matching the Babel plugin)
+   * and to pick the parser dialect. Without it no locations are emitted.
+   */
+  filename?: string;
+  /**
+   * Selects the HMR API: `import.meta.hot` (esm/vite),
+   * `import.meta.webpackHot` (webpack5/rspack-esm) or `module.hot`
+   * (standard).
+   * @default "standard"
+   */
+  bundler?: "esm" | "vite" | "webpack5" | "rspack-esm" | "standard";
+  /**
+   * Wrap top-level `render()`/`hydrate()` calls (imported from
+   * `@solidjs/web`) with `hot.dispose` cleanup.
+   * @default true
+   */
+  fixRender?: boolean;
+  /**
+   * Emit per-component `signature`/`dependencies` metadata for granular HMR.
+   * @default true
+   */
+  granular?: boolean;
+  /**
+   * The Babel plugin's JSX-granularity mode is not ported; only `false` is
+   * accepted (what vite-plugin-solid passes).
+   */
+  jsx?: false;
+  /**
+   * Module the runtime helpers (`$$registry`, `$$component`, `$$refresh`,
+   * `$$decline`) are imported from. The dev-only `solid-js/refresh` entry
+   * exposes the same frozen ABI.
+   * @default "solid-refresh"
+   */
+  importSource?: string;
+  sourceMap?: boolean;
+}
+
+export function transformRefresh(
+  code: string,
+  options?: TransformRefreshOptions | null
+): TransformResult;
+export function transformRefreshAsync(
+  code: string,
+  options?: TransformRefreshOptions | null
+): Promise<TransformResult>;

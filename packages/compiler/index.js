@@ -43,6 +43,125 @@ function transformDirectivesAsync(code, options) {
   return Promise.resolve().then(() => transformDirectives(code, options));
 }
 
+function transformLazy(code, options) {
+  if (typeof code !== "string") {
+    throw new TypeError(
+      "@dom-expressions/compiler transformLazy() expects source code as a string"
+    );
+  }
+
+  const nativeOptions = validateLazyOptions(options);
+  const result = native.transformLazy(code, nativeOptions);
+  return {
+    code: result.code,
+    map: result.map ?? null
+  };
+}
+
+function transformLazyAsync(code, options) {
+  return Promise.resolve().then(() => transformLazy(code, options));
+}
+
+function transformRefresh(code, options) {
+  if (typeof code !== "string") {
+    throw new TypeError(
+      "@dom-expressions/compiler transformRefresh() expects source code as a string"
+    );
+  }
+
+  const nativeOptions = validateRefreshOptions(options);
+  const result = native.transformRefresh(code, nativeOptions);
+  return {
+    code: result.code,
+    map: result.map ?? null
+  };
+}
+
+function transformRefreshAsync(code, options) {
+  return Promise.resolve().then(() => transformRefresh(code, options));
+}
+
+const lazyOptionKeys = new Set(["filename", "sourceMap"]);
+
+function validateLazyOptions(options) {
+  if (options == null) return options;
+  if (typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError(
+      "@dom-expressions/compiler transformLazy() expects options to be an object"
+    );
+  }
+
+  const nativeOptions = {};
+  for (const [key, value] of Object.entries(options)) {
+    if (!lazyOptionKeys.has(key)) {
+      throw new Error(`@dom-expressions/compiler received unknown option \`${key}\``);
+    }
+    if (key === "filename" && typeof value !== "string") {
+      throw new TypeError("@dom-expressions/compiler `filename` option must be a string");
+    }
+    if (key === "sourceMap" && typeof value !== "boolean") {
+      throw new TypeError("@dom-expressions/compiler `sourceMap` option must be boolean");
+    }
+    nativeOptions[key] = value;
+  }
+  return nativeOptions;
+}
+
+const refreshOptionKeys = new Set([
+  "filename",
+  "bundler",
+  "fixRender",
+  "granular",
+  "jsx",
+  "importSource",
+  "sourceMap"
+]);
+
+const refreshBundlers = new Set(["esm", "vite", "webpack5", "rspack-esm", "standard"]);
+
+function validateRefreshOptions(options) {
+  if (options == null) return options;
+  if (typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError(
+      "@dom-expressions/compiler transformRefresh() expects options to be an object"
+    );
+  }
+
+  const nativeOptions = {};
+  for (const [key, value] of Object.entries(options)) {
+    if (!refreshOptionKeys.has(key)) {
+      throw new Error(`@dom-expressions/compiler received unknown option \`${key}\``);
+    }
+    if ((key === "filename" || key === "importSource") && typeof value !== "string") {
+      throw new TypeError(`@dom-expressions/compiler \`${key}\` option must be a string`);
+    }
+    if (
+      (key === "fixRender" || key === "granular" || key === "sourceMap") &&
+      typeof value !== "boolean"
+    ) {
+      throw new TypeError(`@dom-expressions/compiler \`${key}\` option must be boolean`);
+    }
+    if (key === "bundler" && !refreshBundlers.has(value)) {
+      throw new TypeError(
+        '@dom-expressions/compiler `bundler` option must be "esm", "vite", "webpack5", "rspack-esm" or "standard"'
+      );
+    }
+    if (key === "jsx") {
+      // The Babel plugin's JSX-granularity mode (its default!) is not
+      // ported; only the vite-plugin-solid configuration (`jsx: false`) is.
+      if (value !== false) {
+        throw new Error(
+          "@dom-expressions/compiler transformRefresh() does not support `jsx: true` yet; pass `jsx: false`"
+        );
+      }
+      nativeOptions.jsx = false;
+      continue;
+    }
+    nativeOptions[key] = value;
+  }
+  return nativeOptions;
+}
+
 const directivesOptionKeys = new Set([
   "filename",
   "root",
@@ -314,5 +433,9 @@ module.exports = {
   transform,
   transformAsync,
   transformDirectives,
-  transformDirectivesAsync
+  transformDirectivesAsync,
+  transformLazy,
+  transformLazyAsync,
+  transformRefresh,
+  transformRefreshAsync
 };
