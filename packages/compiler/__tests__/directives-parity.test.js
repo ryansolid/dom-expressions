@@ -1,18 +1,16 @@
-// Babel vs Oxc parity for the `"use server"` directive pass.
+// Frozen-reference suite for the `"use server"` directive pass.
 //
-// Every fixture is compiled with BOTH implementations — the Babel reference
-// from the vite-plugin-solid checkout and the native `transformDirectives` —
-// under identical options, in every mode/env combination, and the normalized
-// outputs must match exactly (unlike the JSX pass, the directive port targets
-// structural and naming parity, not just semantic parity).
-//
-// When the reference checkout is not present (e.g. CI for this repo alone)
-// the suite skips; directives-fixtures.test.js still locks the Rust output.
+// Every fixture is compiled with the native `transformDirectives` in every
+// mode/env combination and the normalized output must match the committed
+// `expected.<mode>[.dev].js` files byte-for-byte. Those files were generated
+// one final time from the Babel reference implementation
+// (vite-plugin-solid@c052963e) and are now the spec — see
+// directives/fixtures/README.md for how to update them deliberately.
 
 const {
-  referenceAvailable,
   fixtureNames,
-  compileBabel,
+  readExpected,
+  readMeta,
   compileOxc,
   normalize,
   extractIds
@@ -25,32 +23,23 @@ for (const mode of ["server", "client"]) {
   }
 }
 
-const describeParity = referenceAvailable() ? describe : describe.skip;
-if (!referenceAvailable()) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    "directives-parity: vite-plugin-solid reference checkout not found " +
-      "(set SERVER_FUNCTIONS_REFERENCE); skipping Babel parity suite."
-  );
-}
-
-describeParity('"use server" directive Babel parity', () => {
+describe('"use server" directive frozen Babel reference', () => {
   for (const fixture of fixtureNames()) {
     describe(fixture, () => {
-      it.each(matrix)("%s/%s", async (mode, env) => {
-        const babel = await compileBabel(fixture, mode, env);
+      it.each(matrix)("%s/%s", (mode, env) => {
         const oxc = compileOxc(fixture, mode, env);
+        const meta = readMeta(fixture);
 
-        expect(oxc.valid).toBe(babel.valid);
-        expect(normalize(oxc.code)).toBe(normalize(babel.code));
+        expect(oxc.valid).toBe(meta.valid);
+        expect(normalize(oxc.code).trimEnd() + "\n").toBe(readExpected(fixture, mode, env));
 
-        // Every ID baked into the reference output must be reported in the
-        // metadata (the manifest contract). The reverse doesn't hold: an
-        // extracted function can consume a counter slot and then have its
-        // only reference dead-code-eliminated from the client output.
-        if (babel.valid) {
+        // Every ID baked into the output must be reported in the metadata
+        // (the manifest contract). The reverse doesn't hold: an extracted
+        // function can consume a counter slot and then have its only
+        // reference dead-code-eliminated from the client output.
+        if (oxc.valid) {
           const reportedIds = new Set(oxc.functions.map(fn => fn.id));
-          for (const id of extractIds(babel.code)) {
+          for (const id of extractIds(oxc.code)) {
             expect(reportedIds).toContain(id);
           }
         }

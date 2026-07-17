@@ -10,6 +10,7 @@
 
 mod dce;
 mod transform;
+mod validate;
 mod xxhash;
 
 use napi::bindgen_prelude::*;
@@ -127,6 +128,19 @@ pub fn transform_directives(
     let hash = xxhash::xxhash32_hex(&relative_id(options.root.as_deref(), filename));
 
     let mut program = parsed.program;
+
+    // Closure-capture validation for function-level directives. Module-level
+    // directives are unaffected: the whole module runs on the server, so its
+    // closures survive intact.
+    let is_module_level = program
+        .directives
+        .iter()
+        .any(|entry| entry.expression.value == directive);
+    if !is_module_level {
+        validate::validate_captures(&program, &code, filename, &directive)
+            .map_err(Error::from_reason)?;
+    }
+
     let mut pass = DirectivesTransform::new(
         &allocator,
         mode,

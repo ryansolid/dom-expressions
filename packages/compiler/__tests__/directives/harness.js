@@ -1,77 +1,30 @@
-// Harness for `"use server"` directive parity checking.
+// Harness for the `"use server"` directive pass.
 //
-// The reference implementation is the Babel-based transform living in the
-// vite-plugin-solid checkout (`src/server-functions/`, hoisted from
-// solid-start). Its source is TypeScript, so the harness transpiles each
-// module on the fly with vite-plugin-solid's own @babel/core +
-// preset-typescript (no extra devDependency, no build step) and evaluates it
-// in a tiny CommonJS module cache.
-//
-// The reference checkout is located via SERVER_FUNCTIONS_REFERENCE or the
-// conventional sibling path `../vite-plugin-solid` next to the dom-expressions
-// checkout; when absent (e.g. CI), the parity suite skips and the snapshot
-// suite (directives-fixtures.test.js) still guards the Rust output.
+// The reference for this pass is FROZEN: every fixture carries committed
+// `expected.<mode>[.dev].js` files generated one final time from the Babel
+// implementation in vite-plugin-solid@c052963e (see fixtures/README.md).
+// The directives-parity suite compares the native `transformDirectives`
+// output — normalized through the same Babel re-print the live parity
+// harness used — against those files; the frozen files are the spec and
+// change only deliberately.
 
 const fs = require("fs");
 const path = require("path");
 const { createRequire } = require("module");
 
 const compilerDir = path.resolve(__dirname, "../..");
-const referenceRepo =
-  process.env.SERVER_FUNCTIONS_REFERENCE || path.resolve(compilerDir, "../../../vite-plugin-solid");
-const referenceDir = path.join(referenceRepo, "src", "server-functions");
-
 const { transformDirectives } = require(compilerDir);
 
-// Both compilers are pointed at the frozen runtime ABI:
+// Normalization re-prints through @babel/core; use the sibling package's
+// install like the JSX parity harness (no extra devDependency).
+const babelPkgDir = path.resolve(compilerDir, "../babel-plugin-jsx");
+const babel = createRequire(path.join(babelPkgDir, "package.json"))("@babel/core");
+
+// The compiler is pointed at the frozen runtime ABI:
 // registerServerReference / createServerReference from a configurable module.
 const RUNTIME = "@solidjs/web/server-functions";
 const ROOT = "/project";
 const DIRECTIVE = "use server";
-
-function referenceAvailable() {
-  return fs.existsSync(path.join(referenceDir, "compile.ts"));
-}
-
-let referenceCompile = null;
-let referenceBabel = null;
-
-function loadReference() {
-  if (referenceCompile) return referenceCompile;
-  const requireReference = createRequire(path.join(referenceRepo, "package.json"));
-  const babel = requireReference("@babel/core");
-  const presetEnv = requireReference("@babel/preset-env");
-  const presetTs = requireReference("@babel/preset-typescript");
-  referenceBabel = babel;
-
-  const cache = new Map();
-  function loadTsModule(file) {
-    if (cache.has(file)) return cache.get(file).exports;
-    const source = fs.readFileSync(file, "utf8");
-    const { code } = babel.transformSync(source, {
-      babelrc: false,
-      configFile: false,
-      filename: file,
-      presets: [[presetEnv, { targets: { node: "current" } }], presetTs]
-    });
-    const mod = { exports: {} };
-    cache.set(file, mod);
-    const localRequire = spec => {
-      if (spec.startsWith("./") || spec.startsWith("../")) {
-        let target = path.resolve(path.dirname(file), spec);
-        if (!fs.existsSync(target)) target = target.replace(/\.js$/, ".ts");
-        return loadTsModule(target);
-      }
-      return requireReference(spec);
-    };
-    const factory = new Function("exports", "require", "module", "__filename", "__dirname", code);
-    factory(mod.exports, localRequire, mod, file, path.dirname(file));
-    return mod.exports;
-  }
-
-  referenceCompile = loadTsModule(path.join(referenceDir, "compile.ts")).compile;
-  return referenceCompile;
-}
 
 // --- Fixtures ----------------------------------------------------------------
 
@@ -102,22 +55,21 @@ function readFixture(fixture) {
   return fs.readFileSync(fixtureSourceFile(fixture), "utf8");
 }
 
-// --- Compiling ----------------------------------------------------------------
-
-async function compileBabel(fixture, mode, env) {
-  const compile = loadReference();
-  const result = await compile(fixtureId(fixture), readFixture(fixture), {
-    mode,
-    env,
-    directive: DIRECTIVE,
-    root: ROOT,
-    definitions: {
-      register: { kind: "named", name: "registerServerReference", source: RUNTIME },
-      create: { kind: "named", name: "createServerReference", source: RUNTIME }
-    }
-  });
-  return { valid: result.valid, code: result.code };
+/// Committed frozen-reference file for a mode/env combination.
+function expectedPath(fixture, mode, env) {
+  const suffix = env === "development" ? ".dev" : "";
+  return path.join(fixtureDir, fixture, `expected.${mode}${suffix}.js`);
 }
+
+function readExpected(fixture, mode, env) {
+  return fs.readFileSync(expectedPath(fixture, mode, env), "utf8");
+}
+
+function readMeta(fixture) {
+  return JSON.parse(fs.readFileSync(path.join(fixtureDir, fixture, "meta.json"), "utf8"));
+}
+
+// --- Compiling ----------------------------------------------------------------
 
 function compileOxc(fixture, mode, env) {
   const result = transformDirectives(readFixture(fixture), {
@@ -134,13 +86,13 @@ function compileOxc(fixture, mode, env) {
 
 // --- Normalization --------------------------------------------------------------
 //
-// Unlike the JSX parity harness, the directive transform targets *identical*
-// structure and naming, so normalization only erases printer cosmetics:
-// both outputs are re-parsed and re-printed through the reference Babel
-// generator with literal raws stripped.
+// The directive transform targets *identical* structure and naming to the
+// frozen Babel reference, so normalization only erases printer cosmetics:
+// output is re-parsed and re-printed through the Babel generator with
+// literal raws stripped. The frozen expected files were normalized the same
+// way (with this same @babel/core) at freeze time.
 
 function normalize(code) {
-  const babel = referenceBabel;
   const t = babel.types;
   return babel.transformSync(code, {
     babelrc: false,
@@ -191,11 +143,11 @@ function extractIds(code) {
 }
 
 module.exports = {
-  referenceAvailable,
   fixtureNames,
   readFixture,
   fixtureId,
-  compileBabel,
+  readExpected,
+  readMeta,
   compileOxc,
   normalize,
   extractIds
