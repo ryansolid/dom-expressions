@@ -1,5 +1,60 @@
 # @dom-expressions/compiler
 
+## 0.50.0-next.23
+
+### Patch Changes
+
+- 4a5e702: Add two new experimental, independent passes that port the remaining Babel transforms of the Solid toolchain's dev support pass to native:
+
+  `transformLazy(code, options)` (and `transformLazyAsync`) — the `lazy()` module-URL pass from vite-plugin-solid's `lazy-module-url` plugin. Detects `lazy(() => import("specifier"))` calls where `lazy` is a named import from `solid-js` and appends the frozen `"__SOLID_LAZY_MODULE__:<specifier>"` placeholder argument that the bundler plugin's `resolveLazyModuleUrls` resolves afterwards. Verified against frozen outputs of the Babel reference across import-binding, shadowing, and non-matching edge cases.
+
+  `transformRefresh(code, options)` (and `transformRefreshAsync`) — the solid-refresh HMR transform (solid-refresh@0.8.0-next.7, `jsx: false` mode as vite-plugin-solid invokes it). Supports the `bundler` (`esm`/`vite`/`webpack5`/`rspack-esm`/`standard`), `granular`, and `fixRender` options plus `@refresh skip`/`@refresh reload` pragmas, and emits the frozen runtime ABI (`$$registry`/`$$component`/`$$refresh`/`$$decline`) with bit-exact xxhash32 signature hashes — the native signature printer reproduces `@babel/generator`'s default print of the component so HMR state survives the Babel→native swap without spurious remounts. The runtime import source is configurable via `importSource` (default `"solid-refresh"`, byte-for-byte like the Babel plugin; override to `solid-js/refresh` for the in-core runtime). A frozen parity suite compares whole outputs and signature hashes against committed reference files generated from the actual Babel plugin, including printer torture fixtures.
+
+  Not ported (rejected or documented): the plugin's `jsx: true` JSX-granularity mode (its standalone default; vite-plugin-solid always passes `jsx: false`), the typed-but-ignored `imports` option, and exotic TypeScript types inside component signatures fall back to raw source slices when printed.
+
+  Deliberate divergences from the Babel plugin (inherited bugs fixed in the native pass):
+  - solid-refresh#76 / vite-plugin-solid#145 — TypeScript declaration merging: the plugin rewrites `function A() {}` into `const A = $$component(...)`, which collides when a same-name `namespace A` merges with the function (esbuild rejects `const`/`var` + `namespace` outright, and the post-strip namespace IIFE conditionally assigns the binding, a TypeError under `const`). The native pass detects a same-name top-level value binding (namespace/module, enum, class, var) or a module-level write to the function's own binding and leaves that declaration untouched — a per-component `@refresh skip`: the component still renders, it just isn't hot-wrapped. Type-only merges (interfaces, type aliases, ambient declarations, overload signatures) are erased by the TS strip and still wrap.
+  - solid-refresh#77 — member-expression refs (`ref={props.setRef}`) crashing with "Cannot set property which has only a getter": documented as unreachable rather than patched. The broken safe-wrap lives in the plugin's `jsx: true` extraction; under `jsx: false` — the only mode vite-plugin-solid uses and the only mode the native pass accepts — JSX is never rewritten and refs pass through verbatim. A pass-through fixture locks this in.
+
+- 7bc90dc: Add `transformDirectives(code, options)` (and `transformDirectivesAsync`) — an experimental, incomplete port of the `"use server"` directive transform as a second, independent pass alongside the JSX transform. It applies to plain `.js`/`.ts` modules as well as JSX/TSX and follows the Babel reference implementation (vite-plugin-solid `src/server-functions/`, hoisted from SolidStart) with a fixture parity suite checking structural and naming parity.
+
+  Covered so far: module-level `"use server"` (exported function declarations, const-assigned functions/arrows, aliased and default exports) in both server and client output modes, function-level `"use server"` on function expressions and arrows (including function declarations bubbled to `const` form), client-side dead-code elimination of server-only code, development-mode ID suffixes, and the frozen runtime ABI — `registerServerReference` / `createServerReference` imports from a configurable module and `xxhash32(relative path)-<count>` function IDs interchangeable with the Babel output. The result reports extracted function metadata (`{ id, name, exports }`) alongside `{ code, map, valid }` for bundler manifest building.
+
+  Not yet ported: server functions nested inside other extracted server functions, object/class method directives, and sourcemap fidelity through the client DCE pass.
+
+- 3d1e2f2: `transformDirectives` now validates closure captures at compile time. A function-level `"use server"` function may only reference its own parameters and locals (including nested function scopes within it), module top-level bindings (imports, top-level `const`/`let`/`var`/`function`/`class`), and true globals. Referencing a binding declared in an intermediate enclosing scope — an enclosing function's local or parameter, a loop variable, a catch parameter — previously extracted a function that silently lost the captured value; it is now a compile error naming the variable, the capture site, and the declaration site (e.g. ``src/module.ts:5:12: server functions cannot capture non-top-level variables: `secret` is declared in an enclosing function``). Module-level `"use server"` directives are unaffected, as are directives the transform never extracts (object/class methods, and functions nested inside an already-extracted server function).
+- fa7c011: Fix scope resolution in the native JSX transform's binding classification. The binding table collected declarations into flat name-keyed lists that were never cleared when a scope closed, so an identifier in a JSX attribute could resolve to a same-named binding from an earlier, already-closed sibling scope (or fail to be shadowed by an inner declaration). A `ref={div}` whose `div` was a `let` in the enclosing function could be classified as const/function-like because an unrelated earlier callback declared `const div = ...` — emitting the `_$ref(...)`-only form (broken assignment at runtime) or, for stale literal bindings, silently inlining the value into the template. The same stale lookup affected resolvable event-handler detection, static value/boolean inlining of any attribute, style/classList folding, children text, and namespace-import spread classification.
+
+  The binding table now keeps a scope stack synchronized with the traversal: statement lists open block frames, functions/arrows/static blocks open function frames, `var` declarations hoist out of block frames to the enclosing function frame, and lookups resolve the innermost live declaration like Babel's scope chain.
+
+- d6ea225: `@dom-expressions/jsx-compiler` is now `@dom-expressions/compiler` (platform
+  binary packages follow: `@dom-expressions/compiler-darwin-arm64`,
+  `...-wasm32-wasi`, etc.). The compiler is growing beyond the JSX transform —
+  directive extraction (`use server` and future directives) and other passes
+  will live in the same binary, composing over a single parse — so the name no
+  longer singles out one pass. The old packages will be deprecated on npm with
+  a pointer to the new names; no API changes ride along with the rename. The
+  native-binding escape-hatch env var follows the rename:
+  `JSX_DOM_EXPRESSIONS_COMPILER_NATIVE` → `DOM_EXPRESSIONS_COMPILER_NATIVE`,
+  and local build artifacts are now named `compiler.*.node` / `compiler.wasi.cjs`.
+- 91efc41: More precise dead-code elimination after the `"use server"` client rewrite
+  in `transformDirectives()` (kept in lockstep with the Babel reference
+  implementation):
+  - The shake is now scoped to bindings orphaned by the rewrite (names
+    referenced from the replaced function bodies, cascading through removed
+    declarations). Code that was already unreferenced before the transform —
+    e.g. `const t = startTimer()` written for its side effect — is no longer
+    deleted from client output.
+  - Destructuring patterns are now shaken: `const { db } = createClient()`
+    used only inside a server function is removed from the client build along
+    with its now-unused imports, closing a server-code-leak hole. Array
+    pattern elements become holes (or truncate the tail), rest elements and
+    nested patterns cascade, and a declarator whose pattern empties is dropped
+    entirely.
+  - Modules containing a direct `eval(...)` call skip the shake (reference
+    counts are unreliable there); the directive rewrite itself still applies,
+    and a warning is logged in development mode.
+
 ## 0.50.0-next.22
 
 ## 0.50.0-next.21

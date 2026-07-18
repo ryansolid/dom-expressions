@@ -1,5 +1,7 @@
 # dom-expressions
 
+## 0.50.0-next.23
+
 ## 0.50.0-next.22
 
 ### Patch Changes

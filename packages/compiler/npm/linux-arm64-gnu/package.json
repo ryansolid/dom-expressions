@@ -1,6 +1,6 @@
 {
   "name": "@dom-expressions/compiler-linux-arm64-gnu",
-  "version": "0.50.0-next.22",
+  "version": "0.50.0-next.23",
   "cpu": [
     "arm64"
   ],
