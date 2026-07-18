@@ -963,7 +963,7 @@ fn has_following_static_content(children: &[JSXChild<'_>]) -> bool {
         JSXChild::Text(text) => !trim_jsx_text(&text.value).is_empty(),
         JSXChild::ExpressionContainer(container) => {
             !matches!(container.expression, JSXExpression::EmptyExpression(_))
-                && static_jsx_expression(&container.expression, &[]).is_some()
+                && static_jsx_expression(&container.expression, None).is_some()
         }
         JSXChild::Element(child) => !is_component_name(&child.opening_element.name),
         _ => false,
@@ -974,7 +974,7 @@ fn has_previous_static_text(children: &[JSXChild<'_>]) -> bool {
     children.iter().rev().any(|child| match child {
         JSXChild::Text(text) => !trim_jsx_text(&text.value).is_empty(),
         JSXChild::ExpressionContainer(container) => {
-            static_jsx_expression(&container.expression, &[]).is_some()
+            static_jsx_expression(&container.expression, None).is_some()
         }
         _ => false,
     })
@@ -984,7 +984,7 @@ fn has_next_static_text(children: &[JSXChild<'_>]) -> bool {
     children.iter().any(|child| match child {
         JSXChild::Text(text) => !trim_jsx_text(&text.value).is_empty(),
         JSXChild::ExpressionContainer(container) => {
-            static_jsx_expression(&container.expression, &[]).is_some()
+            static_jsx_expression(&container.expression, None).is_some()
         }
         _ => false,
     })
@@ -997,7 +997,7 @@ fn dynamic_run_end(children: &[JSXChild<'_>], start: usize) -> usize {
             break;
         };
         if matches!(container.expression, JSXExpression::EmptyExpression(_))
-            || static_jsx_expression(&container.expression, &[]).is_some()
+            || static_jsx_expression(&container.expression, None).is_some()
         {
             break;
         }

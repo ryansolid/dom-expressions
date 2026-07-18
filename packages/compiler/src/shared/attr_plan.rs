@@ -118,24 +118,14 @@ impl<'a> AttrPlanner<'a, '_> {
                 if identifier.name == "Infinity" {
                     return Some(ConfidentValue::Num(f64::INFINITY));
                 }
-                if let Some((_, value)) = self
-                    .bindings
-                    .static_bindings
-                    .iter()
-                    .find(|(name, _)| name == identifier.name.as_str())
-                {
+                if let Some(value) = self.bindings.static_value(identifier.name.as_str()) {
                     return Some(match value {
-                        StaticValue::String(value) => ConfidentValue::Str(value.clone()),
-                        StaticValue::Number(value) => ConfidentValue::Num(*value),
+                        StaticValue::String(value) => ConfidentValue::Str(value),
+                        StaticValue::Number(value) => ConfidentValue::Num(value),
                     });
                 }
-                if let Some((_, value)) = self
-                    .bindings
-                    .static_bool_bindings
-                    .iter()
-                    .find(|(name, _)| name == identifier.name.as_str())
-                {
-                    return Some(ConfidentValue::Bool(*value));
+                if let Some(value) = self.bindings.static_bool(identifier.name.as_str()) {
+                    return Some(ConfidentValue::Bool(value));
                 }
                 None
             }

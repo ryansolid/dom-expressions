@@ -43,6 +43,8 @@ impl<'a> AstDomTransform<'a, '_> {
 
     pub(crate) fn process_statements(&mut self, statements: &mut ArenaVec<'a, Statement<'a>>) {
         self.statement_depth += 1;
+        self.bindings
+            .enter_scope(crate::shared::bindings::BindingScopeKind::Block);
         let mut body = ArenaVec::new_in(self.allocator);
         for mut statement in statements.drain(..) {
             if self.error.is_some() {
@@ -99,6 +101,7 @@ impl<'a> AstDomTransform<'a, '_> {
         // has processed its own roots — templates for JSX in attribute
         // values, handlers, and refs register after all sibling roots.
         crate::shared::transform::lower_deferred_jsx_statements(self, &mut body);
+        self.bindings.exit_scope();
         *statements = body;
         self.statement_depth -= 1;
     }

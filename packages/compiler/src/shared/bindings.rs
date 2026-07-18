@@ -4,27 +4,69 @@ use oxc_ast::ast::{
 
 use crate::shared::utils::{static_expression, StaticValue};
 
-/// Module-level binding facts collected while walking statements, shared by
-/// all generates. Approximates the parts of Babel's scope analysis the
-/// transforms rely on (`path.scope.hasBinding`, `path.evaluate()` over const
-/// bindings, `detectResolvableEventHandler`).
-#[derive(Default)]
-pub(crate) struct BindingTable {
-    /// Every locally declared name (any variable kind, function declarations,
-    /// imports) — the `scope.hasBinding` approximation.
-    pub(crate) declared: std::vec::Vec<String>,
-    /// `const`-declared names (destructure-aware) plus imports.
-    pub(crate) const_bindings: std::vec::Vec<String>,
-    /// Function declarations and function-valued variable initializers
-    /// (Babel's `detectResolvableEventHandler` follows both).
-    pub(crate) function_bindings: std::vec::Vec<String>,
-    /// Confidently string/number-valued bindings for `path.evaluate()`.
-    pub(crate) static_bindings: std::vec::Vec<(String, StaticValue)>,
-    /// Confidently boolean-valued bindings for `path.evaluate()`.
-    pub(crate) static_bool_bindings: std::vec::Vec<(String, bool)>,
-    /// `import * as ns` locals — Babel's `isDynamic` treats property access
+/// How a binding scope closes. Function-like scopes drop everything declared
+/// inside them; block scopes keep hoisted (`var`) declarations by moving them
+/// into the parent frame, mirroring Babel registering `var`s on the enclosing
+/// function scope.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum BindingScopeKind {
+    Function,
+    Block,
+}
+
+/// One declared name plus the classification facts the transforms consult.
+struct Binding {
+    name: String,
+    /// Index of the owning frame in the scope stack at declaration time
+    /// (re-tagged to the parent frame when a block scope pops a hoisted
+    /// binding).
+    scope: usize,
+    /// `var`-declared: survives block-scope exits up to the enclosing
+    /// function scope.
+    hoisted: bool,
+    /// `binding.kind === "const" || binding.kind === "module"` in Babel.
+    is_const: bool,
+    /// Function declaration or function-valued variable initializer (Babel's
+    /// `detectResolvableEventHandler` follows both).
+    is_function: bool,
+    /// `import * as ns` local — Babel's `isDynamic` treats property access
     /// on namespace imports as static.
-    pub(crate) namespace_imports: std::vec::Vec<String>,
+    namespace_import: bool,
+    /// Confidently string/number-valued initializer for `path.evaluate()`.
+    static_value: Option<StaticValue>,
+    /// Confidently boolean-valued initializer for `path.evaluate()`.
+    static_bool: Option<bool>,
+}
+
+/// Facts about a declaration being recorded, before it is attached to the
+/// current scope frame.
+#[derive(Default)]
+struct DeclarationFacts {
+    hoisted: bool,
+    is_const: bool,
+    is_function: bool,
+    namespace_import: bool,
+    static_value: Option<StaticValue>,
+    static_bool: Option<bool>,
+}
+
+/// Binding facts collected while walking statements, shared by all
+/// generates. Approximates the parts of Babel's scope analysis the
+/// transforms rely on (`path.scope.getBinding`, `path.evaluate()` over const
+/// bindings, `detectResolvableEventHandler`).
+///
+/// Bindings live in a stack of scope frames kept in sync with the traversal:
+/// each generate's `process_statements` brackets a statement list with a
+/// block frame, and the function/arrow visitors bracket function bodies with
+/// a function frame. Lookups resolve the *innermost live* declaration of a
+/// name — a binding from an earlier, already-popped sibling scope is gone,
+/// and an inner declaration shadows outer ones, matching Babel's scope-chain
+/// resolution.
+pub(crate) struct BindingTable {
+    /// Live declarations, in collection order. A frame's entries always form
+    /// a suffix of this vec, so name resolution walks it back to front.
+    bindings: std::vec::Vec<Binding>,
+    scopes: std::vec::Vec<BindingScopeKind>,
     /// Every identifier name appearing anywhere in the program (bindings and
     /// references, any depth). Babel's `generateUid` skips candidates that
     /// collide with any binding, global, or reference; generated locals
@@ -39,17 +81,115 @@ pub(crate) struct BindingTable {
     pub(crate) shadowed_builtin_spans: std::collections::HashSet<u32>,
 }
 
+impl Default for BindingTable {
+    fn default() -> Self {
+        Self {
+            bindings: std::vec::Vec::new(),
+            // Root frame so program-level collection always has a target.
+            scopes: vec![BindingScopeKind::Function],
+            taken_names: std::collections::HashSet::new(),
+            shadowed_builtin_spans: std::collections::HashSet::new(),
+        }
+    }
+}
+
 impl BindingTable {
+    pub(crate) fn enter_scope(&mut self, kind: BindingScopeKind) {
+        self.scopes.push(kind);
+    }
+
+    pub(crate) fn exit_scope(&mut self) {
+        debug_assert!(self.scopes.len() > 1, "cannot pop the root binding scope");
+        let index = self.scopes.len() - 1;
+        let kind = self.scopes.pop().expect("scope stack is never empty");
+        let first = self
+            .bindings
+            .iter()
+            .rposition(|binding| binding.scope < index)
+            .map_or(0, |position| position + 1);
+        if kind == BindingScopeKind::Block && index > 0 {
+            // `var`s escape the block into the parent frame; lexical
+            // declarations die with it.
+            let popped = self.bindings.split_off(first);
+            for mut binding in popped {
+                if binding.hoisted {
+                    binding.scope = index - 1;
+                    self.bindings.push(binding);
+                }
+            }
+        } else {
+            self.bindings.truncate(first);
+        }
+    }
+
+    /// Innermost live declaration of `name` (Babel's `scope.getBinding`).
+    /// Entries are in collection order and popped frames are removed, so the
+    /// last match is the innermost one.
+    fn resolve(&self, name: &str) -> Option<&Binding> {
+        self.bindings
+            .iter()
+            .rev()
+            .find(|binding| binding.name == name)
+    }
+
+    /// Records a declaration in the current frame. A redeclaration of the
+    /// same name in the same frame merges (`var x = 1; var x = () => {};`
+    /// stays one binding), preserving the accumulate-only semantics the
+    /// classifications rely on.
+    fn declare(&mut self, name: &str, facts: DeclarationFacts) {
+        let scope = self.scopes.len() - 1;
+        let existing = self
+            .bindings
+            .iter_mut()
+            .rev()
+            .take_while(|binding| binding.scope == scope)
+            .find(|binding| binding.name == name);
+        if let Some(existing) = existing {
+            existing.hoisted |= facts.hoisted;
+            existing.is_const |= facts.is_const;
+            existing.is_function |= facts.is_function;
+            existing.namespace_import |= facts.namespace_import;
+            if facts.static_value.is_some() {
+                existing.static_value = facts.static_value;
+            }
+            if facts.static_bool.is_some() {
+                existing.static_bool = facts.static_bool;
+            }
+            return;
+        }
+        self.bindings.push(Binding {
+            name: name.to_string(),
+            scope,
+            hoisted: facts.hoisted,
+            is_const: facts.is_const,
+            is_function: facts.is_function,
+            namespace_import: facts.namespace_import,
+            static_value: facts.static_value,
+            static_bool: facts.static_bool,
+        });
+    }
+
     pub(crate) fn is_const(&self, name: &str) -> bool {
-        self.const_bindings.iter().any(|binding| binding == name)
+        self.resolve(name).is_some_and(|binding| binding.is_const)
     }
 
     pub(crate) fn is_function(&self, name: &str) -> bool {
-        self.function_bindings.iter().any(|binding| binding == name)
+        self.resolve(name)
+            .is_some_and(|binding| binding.is_function)
     }
 
     pub(crate) fn is_namespace_import(&self, name: &str) -> bool {
-        self.namespace_imports.iter().any(|binding| binding == name)
+        self.resolve(name)
+            .is_some_and(|binding| binding.namespace_import)
+    }
+
+    pub(crate) fn static_value(&self, name: &str) -> Option<StaticValue> {
+        self.resolve(name)
+            .and_then(|binding| binding.static_value.clone())
+    }
+
+    pub(crate) fn static_bool(&self, name: &str) -> Option<bool> {
+        self.resolve(name).and_then(|binding| binding.static_bool)
     }
 
     pub(crate) fn is_taken(&self, name: &str) -> bool {
@@ -116,8 +256,14 @@ impl BindingTable {
                 }
                 Some(oxc_ast::ast::Declaration::FunctionDeclaration(function)) => {
                     if let Some(id) = &function.id {
-                        push_unique(&mut self.declared, &id.name);
-                        push_unique(&mut self.function_bindings, &id.name);
+                        let name = id.name.to_string();
+                        self.declare(
+                            &name,
+                            DeclarationFacts {
+                                is_function: true,
+                                ..DeclarationFacts::default()
+                            },
+                        );
                     }
                 }
                 _ => {}
@@ -127,27 +273,39 @@ impl BindingTable {
             }
             Statement::FunctionDeclaration(function) => {
                 if let Some(id) = &function.id {
-                    push_unique(&mut self.declared, &id.name);
-                    push_unique(&mut self.function_bindings, &id.name);
+                    let name = id.name.to_string();
+                    self.declare(
+                        &name,
+                        DeclarationFacts {
+                            is_function: true,
+                            ..DeclarationFacts::default()
+                        },
+                    );
                 }
             }
             Statement::ImportDeclaration(import_declaration) => {
                 if let Some(specifiers) = &import_declaration.specifiers {
                     for specifier in specifiers {
-                        let local = match specifier {
+                        let (local, namespace_import) = match specifier {
                             ImportDeclarationSpecifier::ImportSpecifier(specifier) => {
-                                &specifier.local.name
+                                (&specifier.local.name, false)
                             }
                             ImportDeclarationSpecifier::ImportDefaultSpecifier(specifier) => {
-                                &specifier.local.name
+                                (&specifier.local.name, false)
                             }
                             ImportDeclarationSpecifier::ImportNamespaceSpecifier(specifier) => {
-                                push_unique(&mut self.namespace_imports, &specifier.local.name);
-                                &specifier.local.name
+                                (&specifier.local.name, true)
                             }
                         };
-                        push_unique(&mut self.declared, local);
-                        push_unique(&mut self.const_bindings, local);
+                        let local = local.to_string();
+                        self.declare(
+                            &local,
+                            DeclarationFacts {
+                                is_const: true,
+                                namespace_import,
+                                ..DeclarationFacts::default()
+                            },
+                        );
                     }
                 }
             }
@@ -159,39 +317,46 @@ impl BindingTable {
         &mut self,
         declaration: &oxc_ast::ast::VariableDeclaration<'_>,
     ) {
+        let is_const = declaration.kind == VariableDeclarationKind::Const;
+        let hoisted = declaration.kind == VariableDeclarationKind::Var;
         for declarator in &declaration.declarations {
-            collect_binding_names(&declarator.id, &mut self.declared);
-            if declaration.kind == VariableDeclarationKind::Const {
-                collect_binding_names(&declarator.id, &mut self.const_bindings);
-            }
             let BindingPattern::BindingIdentifier(binding) = &declarator.id else {
+                let mut names = std::vec::Vec::new();
+                collect_binding_names(&declarator.id, &mut names);
+                for name in names {
+                    self.declare(
+                        &name,
+                        DeclarationFacts {
+                            hoisted,
+                            is_const,
+                            ..DeclarationFacts::default()
+                        },
+                    );
+                }
                 continue;
             };
             let name = binding.name.to_string();
-            let Some(init) = &declarator.init else {
-                continue;
+            let mut facts = DeclarationFacts {
+                hoisted,
+                is_const,
+                ..DeclarationFacts::default()
             };
-            // Babel's `detectResolvableEventHandler` follows variable
-            // declarators of any kind to a function-valued init.
-            if matches!(
-                init,
-                oxc_ast::ast::Expression::ArrowFunctionExpression(_)
-                    | oxc_ast::ast::Expression::FunctionExpression(_)
-            ) {
-                push_unique(&mut self.function_bindings, &name);
+            if let Some(init) = &declarator.init {
+                // Babel's `detectResolvableEventHandler` follows variable
+                // declarators of any kind to a function-valued init.
+                facts.is_function = matches!(
+                    init,
+                    oxc_ast::ast::Expression::ArrowFunctionExpression(_)
+                        | oxc_ast::ast::Expression::FunctionExpression(_)
+                );
+                if let oxc_ast::ast::Expression::BooleanLiteral(literal) = init {
+                    facts.static_bool = Some(literal.value);
+                }
+                // Evaluate before declaring so a self-referential init can't
+                // resolve to itself; earlier declarators are already visible.
+                facts.static_value = static_expression(init, Some(self));
             }
-            if let oxc_ast::ast::Expression::BooleanLiteral(literal) = init {
-                self.static_bool_bindings
-                    .retain(|(existing, _)| existing != &name);
-                self.static_bool_bindings
-                    .push((name.clone(), literal.value));
-            }
-            let Some(value) = static_expression(init, &self.static_bindings) else {
-                continue;
-            };
-            self.static_bindings
-                .retain(|(existing, _)| existing != &name);
-            self.static_bindings.push((name, value));
+            self.declare(&name, facts);
         }
     }
 }

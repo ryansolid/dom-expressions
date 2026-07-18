@@ -581,7 +581,7 @@ impl AstDomTransform<'_, '_> {
         &self,
         expression: &JSXExpression<'_>,
     ) -> Option<String> {
-        static_jsx_expression(expression, &self.bindings.static_bindings)
+        static_jsx_expression(expression, Some(&self.bindings))
             .map(StaticValue::into_template_value)
     }
 

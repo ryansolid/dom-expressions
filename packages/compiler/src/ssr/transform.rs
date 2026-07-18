@@ -538,7 +538,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     /// Babel's `getStaticExpression` (`path.evaluate()`): resolves constant
     /// string/number bindings collected while walking statements.
     fn static_jsx_expression_value(&self, expression: &JSXExpression<'_>) -> Option<String> {
-        crate::shared::utils::static_jsx_expression(expression, &self.bindings.static_bindings)
+        crate::shared::utils::static_jsx_expression(expression, Some(&self.bindings))
             .map(crate::shared::utils::StaticValue::into_template_value)
     }
 
@@ -2915,6 +2915,8 @@ impl<'a> ComponentCalleeContext<'a> for AstSsrTransform<'a, '_> {
 impl<'a> AstSsrTransform<'a, '_> {
     pub(crate) fn process_statements(&mut self, statements: &mut ArenaVec<'a, Statement<'a>>) {
         self.statement_depth += 1;
+        self.bindings
+            .enter_scope(crate::shared::bindings::BindingScopeKind::Block);
         let mut body = ArenaVec::new_in(self.allocator);
         for mut statement in statements.drain(..) {
             if self.error.is_some() {
@@ -2973,6 +2975,7 @@ impl<'a> AstSsrTransform<'a, '_> {
             crate::shared::transform::lower_deferred_jsx_statements(self, &mut body);
             self.deferring = was_deferring;
         }
+        self.bindings.exit_scope();
         *statements = body;
         self.statement_depth -= 1;
     }

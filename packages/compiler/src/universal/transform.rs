@@ -1059,9 +1059,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
             return Ok(());
         }
-        if let Some(value) =
-            static_jsx_expression(&container.expression, &self.bindings.static_bindings)
-        {
+        if let Some(value) = static_jsx_expression(&container.expression, Some(&self.bindings)) {
             // Folded expression values are escaped like Babel's template text
             // (raw JSXText keeps its entities as written and is not escaped).
             push_text_plan(
@@ -1894,8 +1892,23 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         }
     }
 
+    pub(crate) fn enter_binding_scope(&mut self, kind: crate::shared::bindings::BindingScopeKind) {
+        self.bindings.enter_scope(kind);
+        if let Some(dom) = &mut self.dynamic_dom {
+            dom.bindings.enter_scope(kind);
+        }
+    }
+
+    pub(crate) fn exit_binding_scope(&mut self) {
+        self.bindings.exit_scope();
+        if let Some(dom) = &mut self.dynamic_dom {
+            dom.bindings.exit_scope();
+        }
+    }
+
     pub(crate) fn process_statements(&mut self, statements: &mut ArenaVec<'a, Statement<'a>>) {
         self.statement_depth += 1;
+        self.enter_binding_scope(crate::shared::bindings::BindingScopeKind::Block);
         let mut body = ArenaVec::new_in(self.allocator);
         for mut statement in statements.drain(..) {
             if self.error.is_some() {
@@ -1947,6 +1960,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         // Babel's container-level queue, so JSX deferred into them lowers
         // after every statement in this body has processed its own roots.
         self.lower_foreign_jsx_statements(&mut body);
+        self.exit_binding_scope();
         *statements = body;
         self.statement_depth -= 1;
     }

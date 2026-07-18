@@ -41,6 +41,11 @@ pub(crate) trait JsxTransform<'a>: VisitMut<'a> {
     /// Pre-scan hook: collect every identifier name in the program so uid
     /// generation (Babel's `generateUid`) can skip colliding candidates.
     fn scan_taken_names(&mut self, program: &Program<'a>);
+    /// Opens a function frame in the binding table(s) when the traversal
+    /// enters a function-like scope (functions, arrows, static blocks), so
+    /// identifier classification resolves against the live scope chain.
+    fn enter_function_bindings(&mut self);
+    fn exit_function_bindings(&mut self);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -148,7 +153,9 @@ pub(crate) fn visit_function_scope<'a, T: JsxTransform<'a>>(
     };
     let pending_at_entry = target.pending_capture_name();
     target.function_parents().push(kind);
+    target.enter_function_bindings();
     walk_mut::walk_function(target, function, flags);
+    target.exit_function_bindings();
     if let Some(capture) = exit_function_scope(target, kind, function.span, pending_at_entry) {
         if let Some(body) = function.body.as_mut() {
             unshift_capture_into_body(target.arena(), body, capture);
@@ -162,7 +169,9 @@ pub(crate) fn visit_arrow_function_scope<'a, T: JsxTransform<'a>>(
 ) {
     let pending_at_entry = target.pending_capture_name();
     target.function_parents().push(FunctionParentKind::Arrow);
+    target.enter_function_bindings();
     walk_mut::walk_arrow_function_expression(target, arrow);
+    target.exit_function_bindings();
     if let Some(capture) = exit_function_scope(
         target,
         FunctionParentKind::Arrow,
@@ -502,6 +511,13 @@ macro_rules! impl_jsx_visit_mut {
             ) {
                 visit_arrow_function_scope(self, arrow);
             }
+
+            fn visit_static_block(&mut self, block: &mut oxc_ast::ast::StaticBlock<'a>) {
+                // `var`s inside a class static block don't hoist past it.
+                self.enter_function_bindings();
+                walk_mut::walk_static_block(self, block);
+                self.exit_function_bindings();
+            }
         }
     };
 }
@@ -589,6 +605,15 @@ impl<'a> JsxTransform<'a> for AstDomTransform<'a, '_> {
         self.bindings.scan_builtin_shadowing(program, &built_ins);
     }
 
+    fn enter_function_bindings(&mut self) {
+        self.bindings
+            .enter_scope(crate::shared::bindings::BindingScopeKind::Function);
+    }
+
+    fn exit_function_bindings(&mut self) {
+        self.bindings.exit_scope();
+    }
+
     impl_function_parent_accessors!();
 }
 
@@ -655,6 +680,15 @@ impl<'a> JsxTransform<'a> for AstSsrTransform<'a, '_> {
         self.bindings.scan_taken_names(program);
         let built_ins = self.built_ins.clone();
         self.bindings.scan_builtin_shadowing(program, &built_ins);
+    }
+
+    fn enter_function_bindings(&mut self) {
+        self.bindings
+            .enter_scope(crate::shared::bindings::BindingScopeKind::Function);
+    }
+
+    fn exit_function_bindings(&mut self) {
+        self.bindings.exit_scope();
     }
 
     impl_function_parent_accessors!();
@@ -731,6 +765,17 @@ impl<'a> JsxTransform<'a> for AstUniversalTransform<'a, '_> {
         }
     }
 
+    fn enter_function_bindings(&mut self) {
+        AstUniversalTransform::enter_binding_scope(
+            self,
+            crate::shared::bindings::BindingScopeKind::Function,
+        );
+    }
+
+    fn exit_function_bindings(&mut self) {
+        AstUniversalTransform::exit_binding_scope(self);
+    }
+
     impl_function_parent_accessors!();
 }
 
@@ -775,6 +820,7 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
     ) {
         let pending_at_entry = self.pending_capture_name();
         self.function_parents().push(FunctionParentKind::Arrow);
+        self.enter_function_bindings();
         // Parameter positions resolve var hoists *outside* the function
         // (Babel's `getPatternParent`).
         self.push_var_scope(crate::ssr::transform::VarScopeKind::Params);
@@ -789,6 +835,7 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
             crate::ssr::transform::VarScopeKind::FunctionBody
         });
         self.visit_function_body(&mut arrow.body);
+        self.exit_function_bindings();
         if let Some(capture) = exit_function_scope(
             self,
             FunctionParentKind::Arrow,
@@ -818,6 +865,7 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
         };
         let pending_at_entry = self.pending_capture_name();
         self.function_parents().push(kind);
+        self.enter_function_bindings();
         // Parameter positions resolve var hoists *outside* the function
         // (Babel's `getPatternParent`).
         self.push_var_scope(crate::ssr::transform::VarScopeKind::Params);
@@ -827,6 +875,7 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
         if let Some(body) = function.body.as_mut() {
             self.visit_function_body(body);
         }
+        self.exit_function_bindings();
         if let Some(capture) = exit_function_scope(self, kind, function.span, pending_at_entry) {
             if let Some(body) = function.body.as_mut() {
                 unshift_capture_into_body(self.allocator, body, capture);
@@ -849,9 +898,12 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
     }
 
     fn visit_static_block(&mut self, block: &mut oxc_ast::ast::StaticBlock<'a>) {
+        // `var`s inside a class static block don't hoist past it.
+        self.enter_function_bindings();
         self.push_var_scope(crate::ssr::transform::VarScopeKind::StaticBlock);
         walk_mut::walk_static_block(self, block);
         self.attach_var_scope_to_statements(&mut block.body);
+        self.exit_function_bindings();
     }
 
     fn visit_switch_statement(&mut self, statement: &mut oxc_ast::ast::SwitchStatement<'a>) {

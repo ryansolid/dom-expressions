@@ -896,6 +896,143 @@ const a = <div /*c1*/ title={t()} /*c2*/ class="a">{x()}</div>;
 `,
   "deeply parenthesized jsx": `
 const a = (((<div>{x()}</div>)));
+`,
+
+  // --- Round 6: scope-aware binding classification. Identifier
+  // classifications (const refs, resolvable event handlers, static value
+  // inlining, namespace imports) must resolve against the live scope chain:
+  // bindings from an earlier, already-closed sibling scope must not leak,
+  // and inner declarations must shadow outer ones. ---------------------------
+  "ref stale const in closed sibling scope": `
+describe("first", () => {
+  const div = document.createElement("div");
+});
+describe("second", () => {
+  let div;
+  const Component = () => <div ref={div}>a</div>;
+});
+`,
+  "ref stale literal in closed sibling scope": `
+describe("first", () => {
+  const div = 1;
+});
+describe("second", () => {
+  let div;
+  const Component = () => <div ref={div}>a</div>;
+});
+`,
+  "ref let scope before sibling const scope": `
+describe("second", () => {
+  let div;
+  const Component = () => <div ref={div}>a</div>;
+});
+describe("first", () => {
+  const div = document.createElement("div");
+});
+`,
+  "ref const after let scope": `
+describe("second", () => {
+  let div;
+  const Component = () => <div ref={div}>a</div>;
+});
+const div = document.createElement("div");
+`,
+  "ref let shadowing outer const": `
+const div = document.createElement("div");
+function outer() {
+  let div;
+  return <div ref={div}>a</div>;
+}
+`,
+  "ref const shadowing outer let": `
+let r;
+function outer() {
+  const r = el => save(el);
+  return <div ref={r}>a</div>;
+}
+`,
+  "component ref stale const in closed sibling scope": `
+describe("first", () => {
+  const r = el => save(el);
+});
+describe("second", () => {
+  let r;
+  const Component = () => <Comp ref={r}>a</Comp>;
+});
+`,
+  "event handler stale function in closed sibling scope": `
+describe("first", () => {
+  const handler = () => {};
+});
+describe("second", () => {
+  let handler;
+  const Component = () => <div onClick={handler}>a</div>;
+});
+`,
+  "static string stale in closed sibling scope": `
+describe("first", () => {
+  const title = "stale";
+  const msg = "hello";
+});
+describe("second", () => {
+  let title;
+  let msg;
+  const Component = () => <div title={title}>{msg}</div>;
+});
+`,
+  "static bool stale in closed sibling scope": `
+describe("first", () => {
+  const draggable = true;
+});
+describe("second", () => {
+  let draggable;
+  const Component = () => <div draggable={draggable}>a</div>;
+});
+`,
+  "style static stale in closed sibling scope": `
+describe("first", () => {
+  const color = "red";
+});
+describe("second", () => {
+  let color;
+  const Component = () => <div style={{ color }}>a</div>;
+});
+`,
+  "classList stale const in closed sibling scope": `
+describe("first", () => {
+  const active = true;
+});
+describe("second", () => {
+  let active;
+  const Component = () => <div classList={{ active }}>a</div>;
+});
+`,
+  "component spread namespace shadowed by local": `
+import * as ns from "x";
+function f() {
+  let ns;
+  return <Comp {...ns.props}>a</Comp>;
+}
+`,
+  "var hoisted out of block keeps classification": `
+function f() {
+  {
+    var handler = () => {};
+    var title = "static";
+  }
+  return <div onClick={handler} title={title}>a</div>;
+}
+`,
+  "stale block let does not leak to sibling block": `
+function f() {
+  {
+    const div = 1;
+  }
+  {
+    let div;
+    return <div ref={div}>a</div>;
+  }
+}
 `
 };
 

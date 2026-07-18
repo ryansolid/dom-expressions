@@ -231,7 +231,7 @@ pub(crate) fn is_component_name(name: &JSXElementName<'_>) -> bool {
 }
 
 pub(crate) fn static_jsx_expression_value(expression: &JSXExpression<'_>) -> Option<String> {
-    static_jsx_expression(expression, &[]).map(StaticValue::into_template_value)
+    static_jsx_expression(expression, None).map(StaticValue::into_template_value)
 }
 
 /// Mirror of Babel's `getStaticExpression` filter: only confident *string or
@@ -239,7 +239,7 @@ pub(crate) fn static_jsx_expression_value(expression: &JSXExpression<'_>) -> Opt
 /// the `typeof` check and stay dynamic child inserts.
 pub(crate) fn static_jsx_expression(
     expression: &JSXExpression<'_>,
-    bindings: &[(String, StaticValue)],
+    bindings: Option<&crate::shared::bindings::BindingTable>,
 ) -> Option<StaticValue> {
     match expression {
         JSXExpression::StringLiteral(value) => Some(StaticValue::String(value.value.to_string())),
@@ -260,7 +260,7 @@ pub(crate) fn static_jsx_expression(
 
 pub(crate) fn static_expression(
     expression: &Expression<'_>,
-    bindings: &[(String, StaticValue)],
+    bindings: Option<&crate::shared::bindings::BindingTable>,
 ) -> Option<StaticValue> {
     match expression {
         Expression::StringLiteral(value) => Some(StaticValue::String(value.value.to_string())),
@@ -277,23 +277,23 @@ pub(crate) fn static_expression(
     }
 }
 
-fn static_identifier(name: &str, bindings: &[(String, StaticValue)]) -> Option<StaticValue> {
+fn static_identifier(
+    name: &str,
+    bindings: Option<&crate::shared::bindings::BindingTable>,
+) -> Option<StaticValue> {
     // `path.evaluate()` resolves the global number constants confidently;
     // `undefined` evaluates confidently too but fails the string/number check.
     match name {
         "NaN" => Some(StaticValue::Number(f64::NAN)),
         "Infinity" => Some(StaticValue::Number(f64::INFINITY)),
-        _ => bindings
-            .iter()
-            .find(|(binding, _)| binding == name)
-            .map(|(_, value)| value.clone()),
+        _ => bindings.and_then(|bindings| bindings.static_value(name)),
     }
 }
 
 fn static_unary_expression(
     operator: oxc_ast::ast::UnaryOperator,
     argument: &Expression<'_>,
-    bindings: &[(String, StaticValue)],
+    bindings: Option<&crate::shared::bindings::BindingTable>,
 ) -> Option<StaticValue> {
     use oxc_ast::ast::UnaryOperator;
     if operator == UnaryOperator::Typeof {
@@ -316,7 +316,7 @@ fn static_unary_expression(
 /// even though they aren't static child values themselves (booleans, null).
 fn static_typeof(
     argument: &Expression<'_>,
-    bindings: &[(String, StaticValue)],
+    bindings: Option<&crate::shared::bindings::BindingTable>,
 ) -> Option<&'static str> {
     match argument {
         Expression::BooleanLiteral(_) => Some("boolean"),
@@ -337,7 +337,7 @@ fn static_typeof(
 
 fn static_template_literal(
     template: &oxc_ast::ast::TemplateLiteral<'_>,
-    bindings: &[(String, StaticValue)],
+    bindings: Option<&crate::shared::bindings::BindingTable>,
 ) -> Option<StaticValue> {
     let mut result = String::new();
     let mut expressions = template.expressions.iter();
@@ -362,7 +362,7 @@ fn static_binary_expression(
     left: &Expression<'_>,
     operator: BinaryOperator,
     right: &Expression<'_>,
-    bindings: &[(String, StaticValue)],
+    bindings: Option<&crate::shared::bindings::BindingTable>,
 ) -> Option<StaticValue> {
     let left = static_expression(left, bindings)?;
     let right = static_expression(right, bindings)?;
