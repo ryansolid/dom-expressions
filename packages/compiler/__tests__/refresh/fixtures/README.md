@@ -59,6 +59,21 @@ pass's intended output, not the plugin's):
   merges (interfaces, type aliases, ambient `declare` declarations,
   bodiless overload signatures; `merge-type-only`) are erased by the TS
   strip and still wrap.
+- **Imported JSX tags in `dependencies`** (`deps-jsx-imports`): the plugin's
+  `getForeignBindings` skips plain JSX identifier tags entirely (only
+  member-expression roots count). That is right for same-module components —
+  their `$$component` proxy gets a new identity on every re-execution, so
+  counting them would remount everything on every edit — but wrong for
+  *imported* bindings: when an edit bubbles from the imported module, a
+  consumer that references the import only as a JSX tag has an unchanged
+  signature and unchanged dependency identities, so `patchComponent` skips
+  it and it keeps rendering the stale module instance while sibling non-JSX
+  references swap over (split-brain; reproduced as a `ContextNotFoundError`
+  when a re-created context's old `Provider` stays mounted). The native pass
+  includes a plain JSX tag in `dependencies` iff the identifier resolves to
+  an imported binding (any import form; scope-aware, so a component-local
+  variable shadowing an import doesn't count, and type-only imports are
+  ignored). Member-expression roots still count unconditionally.
 - **Member-expression refs** (solid-refresh#77; `ref-member-passthrough`):
   not a divergence but a documented non-bug — the crash lives in the
   plugin's `jsx: true` extraction (`extractJSXExpressionFromRef`

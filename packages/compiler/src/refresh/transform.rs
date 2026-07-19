@@ -1465,8 +1465,9 @@ fn collect_render_statement<'a, 'p>(
 
 /// Babel's `getForeignBindings`: referenced identifiers that resolve outside
 /// the component subtree (module scope or unresolved globals), excluding
-/// TS-type positions and plain JSX identifiers (only JSX member-expression
-/// roots count).
+/// TS-type positions. Plain JSX identifiers count only when they resolve to
+/// an imported binding (deliberate divergence from the Babel plugin, which
+/// skips them entirely); JSX member-expression roots always count.
 struct ForeignBindings<'s> {
     scoping: &'s Scoping,
     root_scope: ScopeId,
@@ -1516,20 +1517,51 @@ impl<'b> Visit<'b> for ForeignBindings<'_> {
         walk::walk_assignment_target(self, target);
     }
 
-    // `<Foo />` doesn't count; `<Foo.Bar />` counts `Foo` only.
+    // `<Foo.Bar />` counts `Foo`; `<Foo />` counts only when `Foo` resolves
+    // to an imported binding. Same-module components stay excluded (their
+    // `$$component` proxy identity changes on every re-execution, so counting
+    // them would remount everything on every edit), but an import gets a new
+    // identity exactly when its source module changed — skipping it leaves a
+    // patched component rendering the stale module while its non-JSX
+    // references swap over (split-brain; divergence from the Babel plugin,
+    // which skips all plain JSX identifiers).
     fn visit_jsx_element_name(&mut self, name: &JSXElementName<'b>) {
-        if let JSXElementName::MemberExpression(member) = name {
-            let mut object = &member.object;
-            loop {
-                match object {
-                    JSXMemberExpressionObject::MemberExpression(inner) => object = &inner.object,
-                    JSXMemberExpressionObject::IdentifierReference(identifier) => {
-                        self.record(identifier);
-                        break;
+        match name {
+            JSXElementName::MemberExpression(member) => {
+                let mut object = &member.object;
+                loop {
+                    match object {
+                        JSXMemberExpressionObject::MemberExpression(inner) => {
+                            object = &inner.object
+                        }
+                        JSXMemberExpressionObject::IdentifierReference(identifier) => {
+                            self.record(identifier);
+                            break;
+                        }
+                        JSXMemberExpressionObject::ThisExpression(_) => break,
                     }
-                    JSXMemberExpressionObject::ThisExpression(_) => break,
                 }
             }
+            JSXElementName::IdentifierReference(identifier) => {
+                // Resolution is scope-aware: a component-local variable
+                // shadowing an import resolves to the local symbol, which
+                // carries no import flag and is skipped. Type-only imports
+                // (`import type`) are erased by the TS strip and must not
+                // leak into the emitted dependencies object.
+                let imported = identifier
+                    .reference_id
+                    .get()
+                    .and_then(|id| self.scoping.get_reference(id).symbol_id())
+                    .is_some_and(|symbol| {
+                        self.scoping
+                            .symbol_flags(symbol)
+                            .contains(oxc_semantic::SymbolFlags::Import)
+                    });
+                if imported {
+                    self.record(identifier);
+                }
+            }
+            _ => {}
         }
     }
 
