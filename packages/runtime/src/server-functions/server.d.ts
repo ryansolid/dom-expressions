@@ -2,7 +2,14 @@ import { ResponseEnvelope } from "../response.js";
 import { JSONCodecOptions } from "../serializer.js";
 import { RequestEvent } from "../server.js";
 
-export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
+export {
+  FUNCTION_HEADER,
+  INSTANCE_HEADER,
+  SINGLE_FLIGHT_HEADER,
+  decodeResponse,
+  subscribeFlightData
+} from "./shared.js";
+export type { FlightDataConsumer, FlightDataContext, SingleFlightPayload } from "./shared.js";
 
 /**
  * The request event a server function call runs under: the base
@@ -12,6 +19,58 @@ export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
 export interface ServerFunctionEvent extends RequestEvent {
   serverOnly?: boolean;
 }
+
+/**
+ * What a server function call resolved to, as seen by the single-flight
+ * hook — enough context for any data-production strategy without core
+ * assuming one.
+ */
+export interface ServerFunctionOutcome {
+  /** The build-stable id of the function that ran. */
+  id: string;
+  /**
+   * The value the caller will receive: the raw return for plain results,
+   * the unwrapped `value` for `ResponseEnvelope`s, `null` for body-less
+   * control-flow `Response`s (redirect/reload).
+   */
+  value: unknown;
+  /**
+   * The `Response` carrying the result's HTTP metadata, when there is one
+   * (from a returned/thrown `Response` or a `ResponseEnvelope`). Read
+   * `Location` here for redirect-with-data — the data should describe the
+   * destination route — and `X-Revalidate` for the invalidated keys.
+   * Undefined for plain values.
+   */
+  response: Response | undefined;
+  /**
+   * The original HTTP request, untouched: headers the client integration
+   * sent (referrer, custom route context) ride here for the hook to read —
+   * core assigns them no meaning.
+   */
+  request: Request;
+  /** Whether the result was thrown rather than returned. */
+  thrown: boolean;
+}
+
+/**
+ * The single-flight server hook: given the request event and the function's
+ * outcome, optionally produce a data payload (possibly async) to fold into
+ * the response alongside the return value. Data production is a black box
+ * to the protocol — render data-only, run route preloads, query a cache,
+ * whatever the integration chooses; the payload just has to be
+ * codec-serializable. Return undefined to send the response unchanged
+ * (byte-identical to a call without the hook).
+ *
+ * Runs after `transformResult`, only for scripted calls that sent
+ * `SINGLE_FLIGHT_HEADER` on the request, on returned results and thrown
+ * `Response`/`ResponseEnvelope` control-flow signals alike (plain thrown
+ * errors never collect). The handler owns the enveloping: contributed data
+ * ships as `{ value, data }` under the single-flight response header.
+ */
+export type CollectFlightDataHook = (
+  event: ServerFunctionEvent,
+  outcome: ServerFunctionOutcome
+) => unknown | Promise<unknown>;
 
 /** Options for `configureServerFunctionsServer`. */
 export interface ServerFunctionsServerConfig {
@@ -23,6 +82,13 @@ export interface ServerFunctionsServerConfig {
    * an established request scope parks on the global.
    */
   provideEvent?: <T>(event: ServerFunctionEvent, fn: () => T) => T;
+  /**
+   * The single-flight hook: produces the data payload folded into
+   * responses of calls that opted in (see `CollectFlightDataHook`).
+   * Registered once by the integration that owns data production (a
+   * router); per-handler `collectFlightData` options override it.
+   */
+  collectFlightData?: CollectFlightDataHook;
   /**
    * Endpoint the HTTP handler is mounted on, used for the `url` of SSR'd
    * references (e.g. form actions) — must match the client configuration.
@@ -42,7 +108,8 @@ export interface ServerFunctionsServerConfig {
 /**
  * Configures the server runtime. Call once at server startup, before
  * handling requests. Only needed when deviating from the defaults (custom
- * endpoint, codec plugins, or an explicit event provider).
+ * endpoint, codec plugins, an explicit event provider, or a single-flight
+ * hook).
  */
 export function configureServerFunctionsServer(config?: ServerFunctionsServerConfig): void;
 
@@ -133,17 +200,26 @@ export interface HandleServerFunctionOptions {
   provideEvent?<T>(event: ServerFunctionEvent, fn: () => T): T;
   /**
    * Observes or replaces the function's result before encoding — the
-   * extension point for policies like single-flight payloads. Runs for
-   * returned and thrown results alike (`context.thrown` distinguishes);
-   * `context.instance` is null for no-JS calls. Return the result
-   * unchanged to pass through, or a `ResponseEnvelope` (exposed through
-   * the core entry) to send HTTP metadata plus a structured payload.
+   * extension point for response metadata policies (headers, statuses,
+   * substituted results). Runs for returned and thrown results alike
+   * (`context.thrown` distinguishes); `context.instance` is null for no-JS
+   * calls. Return the result unchanged to pass through, or a
+   * `ResponseEnvelope` (exposed through the core entry) to send HTTP
+   * metadata plus a structured payload. Runs before `collectFlightData`,
+   * so the flight hook sees the transformed outcome — use
+   * `collectFlightData`, not this, to fold data into the response.
    */
   transformResult?(
     event: ServerFunctionEvent,
     result: unknown,
     context: { instance: string | null; request: Request; thrown?: boolean }
   ): unknown | ResponseEnvelope | Promise<unknown | ResponseEnvelope>;
+  /**
+   * Overrides the configured single-flight hook for this handler — same
+   * contract as the `collectFlightData` config option (see
+   * `CollectFlightDataHook`).
+   */
+  collectFlightData?: CollectFlightDataHook;
   /**
    * Builds the response for calls made without the client runtime (no
    * instance header — no-JS form posts, direct HTTP) — the extension

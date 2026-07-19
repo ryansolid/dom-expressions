@@ -1,6 +1,13 @@
 import { JSONCodecOptions } from "../serializer.js";
 
-export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
+export {
+  FUNCTION_HEADER,
+  INSTANCE_HEADER,
+  SINGLE_FLIGHT_HEADER,
+  decodeResponse,
+  subscribeFlightData
+} from "./shared.js";
+export type { FlightDataConsumer, FlightDataContext, SingleFlightPayload } from "./shared.js";
 
 /** Options for `configureServerFunctionsClient`. */
 export interface ServerFunctionsClientConfig {

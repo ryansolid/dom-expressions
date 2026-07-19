@@ -14,6 +14,7 @@ import {
   BodyFormat,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
+  SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
   deserializeString,
   extractBody,
@@ -22,22 +23,37 @@ import {
   serializeStream
 } from "./shared.js";
 
-export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
+export {
+  FUNCTION_HEADER,
+  INSTANCE_HEADER,
+  SINGLE_FLIGHT_HEADER,
+  decodeResponse,
+  subscribeFlightData
+} from "./shared.js";
 
 const config = {
   provideEvent: undefined,
+  collectFlightData: undefined,
   endpoint: "/_server"
 };
 
 /**
  * Configures the server runtime: `provideEvent(event, fn)` establishes the
  * request-event scope for a call (e.g. @solidjs/web/storage's
- * provideRequestEvent), `endpoint` is where the handler is mounted (used for
- * the `url` of SSR'd references, e.g. form actions — must match the client's),
- * and `codec` must match the client's (stored in the shared layer).
+ * provideRequestEvent), `collectFlightData` is the single-flight hook (see
+ * `handleServerFunctionRequest`), `endpoint` is where the handler is mounted
+ * (used for the `url` of SSR'd references, e.g. form actions — must match
+ * the client's), and `codec` must match the client's (stored in the shared
+ * layer).
  */
-export function configureServerFunctionsServer({ provideEvent, endpoint, codec } = {}) {
+export function configureServerFunctionsServer({
+  provideEvent,
+  collectFlightData,
+  endpoint,
+  codec
+} = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
+  if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
 }
@@ -145,6 +161,21 @@ async function parseArguments(request, url, instance, codec) {
   return parsed;
 }
 
+/**
+ * Runs the single-flight hook and standardizes its contribution: when the
+ * hook returns data, the body becomes the `{ value, data }` payload and the
+ * response is tagged with the single-flight header; when it returns
+ * undefined the response is byte-identical to a call without the hook.
+ * Data production is the hook's black box — core never sees how the
+ * integration computed it.
+ */
+async function foldFlightData(hook, event, headers, outcome) {
+  const data = await hook(event, outcome);
+  if (data === undefined) return outcome.value;
+  headers.set(SINGLE_FLIGHT_HEADER, "true");
+  return { value: outcome.value, data };
+}
+
 function serializedResponse(value, headers, codec) {
   headers.set(BODY_FORMAT_HEADER, BodyFormat.Serialized);
   headers.set("Content-Type", "text/plain");
@@ -172,9 +203,19 @@ function encodeResult(value, headers, status, codec) {
  *   `{ request, locals: {} }`). Integrations supply their richer event.
  * - `provideEvent(event, fn)`: overrides the configured provider per call.
  * - `transformResult(event, result, context)`: observes/replaces the result
- *   before encoding — the extension point for single-flight payloads.
+ *   before encoding — the extension point for response metadata policies.
  *   Return a `ResponseEnvelope` (from ../response.js) to send HTTP
  *   metadata + payload.
+ * - `collectFlightData(event, outcome)`: overrides the configured
+ *   single-flight hook for this handler. Runs after `transformResult`,
+ *   for scripted calls that sent the single-flight request header, on
+ *   returned results and thrown Response/envelope signals alike (plain
+ *   thrown errors never collect). The outcome carries the unwrapped
+ *   `value`, the HTTP-metadata `response` (redirect location, revalidation
+ *   keys), the `request`, the function `id`, and `thrown`. Whatever data
+ *   payload it returns (undefined for none) is folded into the body as
+ *   `{ value, data }` under the single-flight response header — the
+ *   handler owns the enveloping, the hook owns the data.
  * - `handleNoJS(result, request, args)`: response for calls made without
  *   the client runtime (no instance header) — the extension point for
  *   no-JS form conventions. Defaults to the normal serialized response.
@@ -204,6 +245,11 @@ export async function handleServerFunctionRequest(request, options = {}) {
   }
   const event = options.createEvent ? options.createEvent(request) : { request, locals: {} };
   const provide = options.provideEvent || provideEvent;
+  const flightHook =
+    options.collectFlightData !== undefined ? options.collectFlightData : config.collectFlightData;
+  // single-flight is scripted-client opt-in: the caller sends the request
+  // header, the server must have a hook to produce the data
+  const collectsFlight = !!(flightHook && instance && request.headers.has(SINGLE_FLIGHT_HEADER));
 
   const parsed = await parseArguments(request, url, instance, codec);
 
@@ -219,6 +265,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
     }
 
     let status = 200;
+    let metadata;
     // envelope (from `respond()` or transformResult): HTTP metadata + value
     if (isResponseEnvelope(result)) {
       const { response, value } = result;
@@ -233,6 +280,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
       if (response && response.status && (response.status < 300 || response.status >= 400)) {
         status = response.status;
       }
+      metadata = response;
       result = value;
     } else if (result instanceof Response) {
       // raw responses pass through untouched
@@ -247,10 +295,21 @@ export async function handleServerFunctionRequest(request, options = {}) {
         if (result.status && (result.status < 300 || result.status >= 400)) {
           status = result.status;
         }
+        metadata = result;
         if (result.body == null) {
           result = null;
         }
       }
+    }
+
+    if (collectsFlight) {
+      result = await foldFlightData(flightHook, event, headers, {
+        id: functionId,
+        value: result,
+        response: metadata,
+        request,
+        thrown: false
+      });
     }
 
     // calls made without the client runtime (no-JS form posts)
@@ -267,6 +326,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
         x = await options.transformResult(event, x, { instance, request, thrown: true });
       }
       let status = 200;
+      let metadata;
       if (isResponseEnvelope(x)) {
         const { response, value } = x;
         if (response && response.headers) {
@@ -279,6 +339,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
         ) {
           status = response.status;
         }
+        metadata = response;
         x = value;
       } else if (x instanceof Response) {
         if (x.headers) {
@@ -287,10 +348,24 @@ export async function handleServerFunctionRequest(request, options = {}) {
         if (x.status && (!instance || x.status < 300 || x.status >= 400)) {
           status = x.status;
         }
+        metadata = x;
         if (x.body == null) {
           x = null;
         }
       }
+
+      // thrown control-flow signals collect too — a thrown redirect carries
+      // flight data for the destination route
+      if (collectsFlight) {
+        x = await foldFlightData(flightHook, event, headers, {
+          id: functionId,
+          value: x,
+          response: metadata,
+          request,
+          thrown: true
+        });
+      }
+
       headers.set("X-Server-Function-Error", "true");
       if (!instance) {
         if (options.handleNoJS) return options.handleNoJS(x, request, parsed, true);

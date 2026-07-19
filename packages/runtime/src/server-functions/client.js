@@ -7,14 +7,22 @@ import {
   BodyFormat,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
+  SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
   decodeResponse,
+  getFlightDataConsumer,
   getHeadersAndBody,
   getServerFunctionsCodec,
   serializeString
 } from "./shared.js";
 
-export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
+export {
+  FUNCTION_HEADER,
+  INSTANCE_HEADER,
+  SINGLE_FLIGHT_HEADER,
+  decodeResponse,
+  subscribeFlightData
+} from "./shared.js";
 
 const config = {
   endpoint: "/_server"
@@ -81,13 +89,38 @@ async function fetchServerFunction(base, id, options, args) {
 
   const response = await initializeResponse(base, id, instance, options, args);
 
+  // Single-flight responses: with a registered consumer the transport owns
+  // the unwrap — the standardized `{ value, data }` body is decoded, `data`
+  // is delivered to the consumer (with the response as envelope context:
+  // redirect location, revalidation keys, status), and `value` returns to
+  // the caller as if the call were plain. Error semantics mirror the
+  // passthrough path below: responses carrying integration metadata
+  // (Location/X-Revalidate) are control flow for the consumer to interpret,
+  // bare error-tagged ones throw the value.
+  if (response.headers.has(SINGLE_FLIGHT_HEADER)) {
+    const consumer = getFlightDataConsumer();
+    if (consumer) {
+      const payload = await decodeResponse(response);
+      await consumer(payload.data, { response });
+      if (
+        response.headers.has("X-Server-Function-Error") &&
+        !response.headers.has("Location") &&
+        !response.headers.has("X-Revalidate")
+      ) {
+        throw payload.value;
+      }
+      return payload.value;
+    }
+  }
+
   // Responses the caller's integration needs to see whole (redirects,
-  // revalidation, single-flight payloads) pass through untouched — the
-  // integration decodes the body itself with `decodeResponse`.
+  // revalidation, single-flight payloads without a registered consumer)
+  // pass through untouched — the integration decodes the body itself with
+  // `decodeResponse`.
   if (
     response.headers.has("Location") ||
     response.headers.has("X-Revalidate") ||
-    response.headers.has("X-Single-Flight")
+    response.headers.has(SINGLE_FLIGHT_HEADER)
   ) {
     return response;
   }

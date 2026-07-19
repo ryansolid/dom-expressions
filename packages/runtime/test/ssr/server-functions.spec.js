@@ -12,13 +12,15 @@ import {
   BODY_FORMAT_HEADER,
   BodyFormat,
   FILE_FORM_KEY,
+  SINGLE_FLIGHT_HEADER,
   decodeResponse,
   deserializeStream,
   deserializeString,
   extractBody,
   getHeadersAndBody,
   serializeStream,
-  serializeString
+  serializeString,
+  subscribeFlightData
 } from "../../src/server-functions/shared";
 import {
   createServerReference as createClientReference,
@@ -519,5 +521,305 @@ describe("handler", () => {
     );
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/?flash=value");
+  });
+});
+
+describe("single-flight", () => {
+  function dispatch(request, options) {
+    return handleServerFunctionRequest(request, options);
+  }
+
+  function connectTransport(options) {
+    const original = globalThis.fetch;
+    globalThis.fetch = (url, init) =>
+      dispatch(new Request(new URL(url, "http://localhost"), init), options);
+    return () => {
+      globalThis.fetch = original;
+    };
+  }
+
+  // A scripted call that opted into single-flight, like a router mutation.
+  function flightRequest(id, extraHeaders) {
+    return new Request("http://localhost/_server", {
+      method: "POST",
+      headers: {
+        "X-Server-Function-Id": id,
+        "X-Server-Function-Instance": "server-function:test",
+        [SINGLE_FLIGHT_HEADER]: "true",
+        ...extraHeaders
+      }
+    });
+  }
+
+  // The client half of the opt-in: the header ride on withOptions, exactly
+  // how a router sends it.
+  function flightReference(id) {
+    return createClientReference(id).withOptions({
+      headers: { [SINGLE_FLIGHT_HEADER]: "true" }
+    });
+  }
+
+  it("folds hook data into a success response as { value, data }", async () => {
+    registerServerFunction("sf-plain-0", async () => "mutated");
+    const seen = {};
+    const response = await dispatch(flightRequest("sf-plain-0"), {
+      collectFlightData: (event, outcome) => {
+        seen.event = event;
+        seen.outcome = outcome;
+        return { "/notes": ["fresh"] };
+      }
+    });
+    expect(response.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
+    expect(await decodeResponse(response)).toEqual({
+      value: "mutated",
+      data: { "/notes": ["fresh"] }
+    });
+    // enough context for any strategy: id, unwrapped value, no metadata
+    // for a plain return, the untouched request, thrown flag
+    expect(seen.outcome.id).toBe("sf-plain-0");
+    expect(seen.outcome.value).toBe("mutated");
+    expect(seen.outcome.response).toBeUndefined();
+    expect(seen.outcome.request.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
+    expect(seen.outcome.thrown).toBe(false);
+    expect(seen.event.request).toBe(seen.outcome.request);
+  });
+
+  it("supports async hooks and respond() envelopes", async () => {
+    registerServerFunction("sf-respond-0", async () =>
+      respond({ ok: true }, { revalidate: "/notes" })
+    );
+    const seen = {};
+    const response = await dispatch(flightRequest("sf-respond-0"), {
+      collectFlightData: async (event, outcome) => {
+        seen.outcome = outcome;
+        return { "/notes": ["fresh"] };
+      }
+    });
+    // envelope metadata still forwards; the hook saw it for its strategy
+    expect(response.headers.get("X-Revalidate")).toBe("/notes");
+    expect(response.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
+    expect(seen.outcome.value).toEqual({ ok: true });
+    expect(seen.outcome.response.headers.get("X-Revalidate")).toBe("/notes");
+    expect(await decodeResponse(response)).toEqual({
+      value: { ok: true },
+      data: { "/notes": ["fresh"] }
+    });
+  });
+
+  it("folds data into thrown redirects for the destination route", async () => {
+    registerServerFunction("sf-redirect-0", async () => {
+      throw redirect("/dashboard", { revalidate: "/session" });
+    });
+    const seen = {};
+    const response = await dispatch(flightRequest("sf-redirect-0"), {
+      collectFlightData: (event, outcome) => {
+        seen.outcome = outcome;
+        // a real integration reads the destination off the metadata and
+        // produces that route's data — core just hands it the context
+        return { destination: outcome.response.headers.get("Location") };
+      }
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Location")).toBe("/dashboard");
+    expect(response.headers.get("X-Revalidate")).toBe("/session");
+    expect(response.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
+    expect(seen.outcome.thrown).toBe(true);
+    expect(seen.outcome.value).toBe(null);
+    expect(await decodeResponse(response)).toEqual({
+      value: null,
+      data: { destination: "/dashboard" }
+    });
+  });
+
+  it("is byte-identical to today when the hook returns undefined", async () => {
+    registerServerFunction("sf-none-0", async () => ({ n: 1 }));
+    const withHook = await dispatch(flightRequest("sf-none-0"), {
+      collectFlightData: () => undefined
+    });
+    const withoutHook = await dispatch(flightRequest("sf-none-0"));
+    expect(withHook.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
+    expect(withHook.status).toBe(withoutHook.status);
+    expect([...withHook.headers.entries()]).toEqual([...withoutHook.headers.entries()]);
+    expect(await withHook.text()).toBe(await withoutHook.text());
+  });
+
+  it("only collects for scripted calls that sent the request header", async () => {
+    registerServerFunction("sf-optin-0", async () => "value");
+    const hook = jest.fn(() => ({ data: true }));
+
+    // no single-flight request header
+    const plain = await dispatch(
+      new Request("http://localhost/_server", {
+        method: "POST",
+        headers: {
+          "X-Server-Function-Id": "sf-optin-0",
+          "X-Server-Function-Instance": "server-function:test"
+        }
+      }),
+      { collectFlightData: hook }
+    );
+    expect(plain.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
+
+    // no instance (no-JS form post) — header alone must not opt in
+    const noJS = await dispatch(
+      new Request("http://localhost/_server?id=sf-optin-0", {
+        method: "POST",
+        body: "",
+        headers: { [SINGLE_FLIGHT_HEADER]: "true" }
+      }),
+      { collectFlightData: hook }
+    );
+    expect(noJS.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
+    expect(hook).not.toHaveBeenCalled();
+  });
+
+  it("never collects for plain thrown errors", async () => {
+    registerServerFunction("sf-error-0", async () => {
+      throw new Error("kaboom");
+    });
+    const hook = jest.fn(() => ({ data: true }));
+    const response = await dispatch(flightRequest("sf-error-0"), { collectFlightData: hook });
+    expect(hook).not.toHaveBeenCalled();
+    expect(response.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
+    expect(response.headers.get("X-Server-Function-Error")).toBe("kaboom");
+  });
+
+  it("registers through configureServerFunctionsServer with per-handler override", async () => {
+    registerServerFunction("sf-config-0", async () => "value");
+    configureServerFunctionsServer({ collectFlightData: () => ({ from: "config" }) });
+    try {
+      const viaConfig = await dispatch(flightRequest("sf-config-0"));
+      expect(await decodeResponse(viaConfig)).toEqual({
+        value: "value",
+        data: { from: "config" }
+      });
+
+      const overridden = await dispatch(flightRequest("sf-config-0"), {
+        collectFlightData: () => ({ from: "handler" })
+      });
+      expect(await decodeResponse(overridden)).toEqual({
+        value: "value",
+        data: { from: "handler" }
+      });
+    } finally {
+      configureServerFunctionsServer({ collectFlightData: null });
+    }
+  });
+
+  it("delivers data to the registered consumer and value to the caller", async () => {
+    registerServerFunction("sf-client-0", async () => "mutated");
+    const restore = connectTransport({
+      collectFlightData: () => ({ "/notes": ["fresh"] })
+    });
+    const delivered = [];
+    const unsubscribe = subscribeFlightData(async (data, context) => {
+      // async consumers settle before the caller sees the value
+      await Promise.resolve();
+      delivered.push({ data, context });
+    });
+    try {
+      const result = await flightReference("sf-client-0")();
+      expect(result).toBe("mutated");
+      expect(delivered).toHaveLength(1);
+      expect(delivered[0].data).toEqual({ "/notes": ["fresh"] });
+      expect(delivered[0].context.response.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
+    } finally {
+      unsubscribe();
+      restore();
+    }
+  });
+
+  it("hands redirect-with-data to the consumer through the envelope context", async () => {
+    registerServerFunction("sf-client-redirect-0", async () => {
+      throw redirect("/dashboard", { revalidate: "/session" });
+    });
+    const restore = connectTransport({
+      collectFlightData: () => ({ "/dashboard": ["destination data"] })
+    });
+    const delivered = [];
+    const unsubscribe = subscribeFlightData((data, context) => {
+      delivered.push({ data, context });
+    });
+    try {
+      // the redirect is the consumer's to interpret — the caller resolves
+      const result = await flightReference("sf-client-redirect-0")();
+      expect(result).toBe(null);
+      expect(delivered).toHaveLength(1);
+      expect(delivered[0].data).toEqual({ "/dashboard": ["destination data"] });
+      expect(delivered[0].context.response.headers.get("Location")).toBe("/dashboard");
+      expect(delivered[0].context.response.headers.get("X-Revalidate")).toBe("/session");
+    } finally {
+      unsubscribe();
+      restore();
+    }
+  });
+
+  it("throws the value for bare error envelopes after delivering data", async () => {
+    registerServerFunction("sf-client-error-0", async () => {
+      // no Location / X-Revalidate — a genuine error result with metadata
+      throw respond({ reason: "denied" }, { status: 403 });
+    });
+    const restore = connectTransport({
+      collectFlightData: () => ({ "/notes": ["still fresh"] })
+    });
+    const delivered = [];
+    const unsubscribe = subscribeFlightData(data => {
+      delivered.push(data);
+    });
+    try {
+      await expect(flightReference("sf-client-error-0")()).rejects.toEqual({ reason: "denied" });
+      expect(delivered).toEqual([{ "/notes": ["still fresh"] }]);
+    } finally {
+      unsubscribe();
+      restore();
+    }
+  });
+
+  it("passes single-flight responses through whole without a consumer", async () => {
+    registerServerFunction("sf-noconsumer-0", async () => "value");
+    const restore = connectTransport({
+      collectFlightData: () => ({ "/notes": ["fresh"] })
+    });
+    try {
+      // no consumer registered: same passthrough contract as before —
+      // the integration decodes the response itself
+      const response = await flightReference("sf-noconsumer-0")();
+      expect(response).toBeInstanceOf(Response);
+      expect(response.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
+      expect(await decodeResponse(response)).toEqual({
+        value: "value",
+        data: { "/notes": ["fresh"] }
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  it("unsubscribing restores passthrough and later registrations replace", async () => {
+    registerServerFunction("sf-unsub-0", async () => "value");
+    const restore = connectTransport({
+      collectFlightData: () => ({ data: true })
+    });
+    const first = jest.fn();
+    const second = jest.fn();
+    const unsubscribeFirst = subscribeFlightData(first);
+    const unsubscribeSecond = subscribeFlightData(second);
+    try {
+      await flightReference("sf-unsub-0")();
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledTimes(1);
+
+      // stale unsubscribe must not tear down the active consumer
+      unsubscribeFirst();
+      await flightReference("sf-unsub-0")();
+      expect(second).toHaveBeenCalledTimes(2);
+
+      unsubscribeSecond();
+      const response = await flightReference("sf-unsub-0")();
+      expect(response).toBeInstanceOf(Response);
+    } finally {
+      unsubscribeSecond();
+      restore();
+    }
   });
 });

@@ -27,6 +27,34 @@ export function getServerFunctionsCodec() {
   return codecConfig.codec;
 }
 
+// The single-flight consumer also lives in the universal layer: routers are
+// universal code, so the registration must be importable from any build
+// (the server side simply never delivers to it).
+const flightConfig = { consumer: undefined };
+
+/**
+ * Registers the consumer the client transport delivers single-flight data
+ * to: `consumer(data, { response })` — the integration-produced payload
+ * plus the response as envelope context (redirect location, revalidation
+ * keys, status). What the data means and what to do with it (seed caches,
+ * navigate, ...) is entirely the consumer's business. One active consumer
+ * at a time (a later registration replaces the current one); returns an
+ * unsubscribe function. With no consumer registered, single-flight
+ * responses pass through to the caller whole, exactly like other
+ * integration responses.
+ */
+export function subscribeFlightData(consumer) {
+  flightConfig.consumer = consumer;
+  return () => {
+    if (flightConfig.consumer === consumer) flightConfig.consumer = undefined;
+  };
+}
+
+/** The currently registered single-flight consumer. */
+export function getFlightDataConsumer() {
+  return flightConfig.consumer;
+}
+
 /** Header carrying the server function id. */
 export const FUNCTION_HEADER = "X-Server-Function-Id";
 
@@ -38,6 +66,16 @@ export const INSTANCE_HEADER = "X-Server-Function-Instance";
 
 /** Header carrying the body format tag (a `BodyFormat` value). */
 export const BODY_FORMAT_HEADER = "X-Server-Function-Format";
+
+/**
+ * Header driving the single-flight protocol on both legs: on the request it
+ * opts the call into flight-data collection (the integration sends it on
+ * calls whose response should fold in data), on the response it marks a
+ * body carrying the standardized `{ value, data }` payload. How the data
+ * is produced (and what it means) is entirely the integration's business —
+ * core only owns the wire shape and the delivery.
+ */
+export const SINGLE_FLIGHT_HEADER = "X-Single-Flight";
 
 /** FormData key used when a lone File is sent as the argument. */
 export const FILE_FORM_KEY = "__server_function_file__";

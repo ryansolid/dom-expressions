@@ -39,6 +39,78 @@ export const FUNCTION_HEADER: string;
 export const INSTANCE_HEADER: string;
 
 /**
+ * Header driving the single-flight protocol on both legs
+ * (`"X-Single-Flight"`). On the request it opts the call into data
+ * collection — the client integration sends it on calls whose response
+ * should fold in data (typically mutations). On the response it marks a
+ * body carrying the standardized `SingleFlightPayload`. How the data is
+ * produced (a data-only render, running route preloads, anything else) and
+ * what it means is entirely the integration's business — the protocol only
+ * standardizes the wire shape and the delivery.
+ */
+export const SINGLE_FLIGHT_HEADER: string;
+
+/**
+ * The standardized body of a single-flight response (a response tagged with
+ * `SINGLE_FLIGHT_HEADER`): the function's return `value` plus the
+ * integration-produced `data` payload, folded into one round trip by the
+ * HTTP handler. Integrations decoding passthrough responses themselves (no
+ * registered consumer) see this shape from `decodeResponse`. The top level
+ * is reserved for the protocol — integration payload lives entirely under
+ * `data`, which can be any codec-serializable value.
+ */
+export interface SingleFlightPayload<T = unknown, D = unknown> {
+  /** The server function's return (or thrown) value. */
+  value: T;
+  /** The integration-produced data payload. */
+  data: D;
+}
+
+/**
+ * Envelope context delivered alongside single-flight data: the transport
+ * response, whose headers carry the integration metadata (`Location` for
+ * redirect-with-data, `X-Revalidate` keys) and status. The body is already
+ * consumed — read `data` and `value` from the delivery, not from here.
+ */
+export interface FlightDataContext {
+  /** The HTTP response the data arrived on (metadata only). */
+  response: Response;
+}
+
+/**
+ * Consumer receiving single-flight data on the client: `data` is the
+ * integration-produced payload (opaque to the protocol), `context` carries
+ * the envelope metadata. Async consumers are awaited before the function
+ * value is returned to the caller, so caches are seeded first.
+ */
+export type FlightDataConsumer<D = unknown> = (
+  data: D,
+  context: FlightDataContext
+) => void | Promise<void>;
+
+/**
+ * Registers the consumer the client transport delivers single-flight data
+ * to. When a single-flight response arrives, the transport decodes the
+ * standardized `{ value, data }` payload, delivers `data` (with the
+ * response as envelope context — redirect location, revalidation keys),
+ * and returns `value` to the caller as if the call were plain. What to do
+ * with the data (seed caches, navigate, ...) is entirely the consumer's
+ * business. One active consumer at a time — a later registration replaces
+ * the current one; returns an unsubscribe function. With no consumer
+ * registered, single-flight responses pass through to the caller whole,
+ * exactly like other integration responses.
+ */
+export function subscribeFlightData<D = unknown>(consumer: FlightDataConsumer<D>): () => void;
+
+/**
+ * The currently registered single-flight consumer.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
+ */
+export function getFlightDataConsumer(): FlightDataConsumer | undefined;
+
+/**
  * Header carrying the body format tag (a `BodyFormat` value) —
  * `"X-Server-Function-Format"`.
  *
