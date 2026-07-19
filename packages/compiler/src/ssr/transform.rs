@@ -1136,10 +1136,19 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 if child.expression_source {
                     Some((child.value, child.dynamic))
                 } else {
-                    // Elements/fragments: zero-arg calls with non-identifier
-                    // callees pass through (the getter unwraps them);
-                    // everything else is dynamic as-is.
-                    Some((child.value, true))
+                    // Elements/fragments force a thunk (Babel's single-child
+                    // branch in `transformComponentChildren`): a zero-arg
+                    // IIFE unwraps to its callee, anything else — including
+                    // `memo(...)` calls from fragment children — arrow-wraps
+                    // so the getter returns it as-is instead of unwrapping
+                    // the memo.
+                    let span = child.value.span();
+                    let (value, setup) =
+                        crate::shared::ast::split_zero_arg_iife(self.allocator, child.value);
+                    let mut statements = self.ast().vec();
+                    statements.extend(setup);
+                    statements.push(self.ast().statement_return(span, Some(value)));
+                    Some((arrow_iife(self.allocator, span, statements), true))
                 }
             }
             _ => {

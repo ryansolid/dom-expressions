@@ -6,7 +6,7 @@ use oxc_ast::{
     },
     AstBuilder, NONE,
 };
-use oxc_span::Span;
+use oxc_span::{GetSpan, Span};
 
 use crate::shared::utils::{is_identifier_key, is_valid_babel_identifier};
 
@@ -282,6 +282,38 @@ pub(crate) fn zero_arg_iife_statements<'a>(
         arrow.expression,
         arrow.body,
     ))
+}
+
+/// Splits `(() => { ...setup; return value; })()` into its setup statements
+/// and returned value; anything else passes through with no setup. Mirrors
+/// Babel's zero-arg callee unwrap for element/fragment component children in
+/// `transformComponentChildren` — the single-child getter inlines the body,
+/// while array entries re-fold the setup into an identical per-entry IIFE.
+pub(crate) fn split_zero_arg_iife<'a>(
+    allocator: &'a Allocator,
+    value: Expression<'a>,
+) -> (Expression<'a>, std::vec::Vec<Statement<'a>>) {
+    let span = value.span();
+    let mut statements = match zero_arg_iife_statements(allocator, span, value) {
+        Ok(statements) => statements,
+        Err(value) => return (value, std::vec::Vec::new()),
+    };
+    match statements.pop() {
+        Some(Statement::ReturnStatement(return_statement)) => {
+            if let Some(argument) = return_statement.unbox().argument {
+                return (argument, statements.into_iter().collect());
+            }
+        }
+        Some(statement) => statements.push(statement),
+        None => {}
+    }
+    // Body without a trailing `return expr;` — rebuild the original IIFE.
+    let ast = ast(allocator);
+    let iife = arrow_iife(allocator, span, statements);
+    (
+        ast.expression_call(span, iife, NONE, ast.vec(), false),
+        std::vec::Vec::new(),
+    )
 }
 
 pub(crate) fn arrow_return_expression<'a>(

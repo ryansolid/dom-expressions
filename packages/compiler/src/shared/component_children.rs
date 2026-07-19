@@ -7,6 +7,7 @@ use crate::dom::element::AstDomTransform;
 use crate::shared::array::expression_to_array_element;
 use crate::shared::component::transform_component_expression;
 use crate::shared::condition::{is_condition_shape, memo_wrap_thunk};
+use crate::shared::fragment::lower_fragment;
 use crate::shared::utils::{decode_html_entities, is_dynamic_expression_deep, trim_jsx_text};
 
 pub(crate) struct ComponentChildren<'a> {
@@ -105,10 +106,23 @@ pub(crate) fn component_children<'a>(
                     setup: std::vec::Vec::new(),
                 });
             }
-            _ => {
-                return Err(Error::from_reason(
-                    "Only text and expression component children are implemented in the AST-native milestone",
-                ));
+            JSXChild::Fragment(fragment) => {
+                // Babel routes fragment children through `transformNode` →
+                // `transformFragmentChildren`, then treats the result like an
+                // element child (getter-hosted, never memo-wrapped). A
+                // fragment lowering to a single setup IIFE splits back into
+                // setup + value so the single-child getter inlines its body
+                // (Babel's zero-arg callee unwrap in
+                // `transformComponentChildren`); arrays re-fold the setup into
+                // a per-entry IIFE, reproducing the original shape.
+                let value = lower_fragment(ctx, fragment)?;
+                let (value, setup) =
+                    crate::shared::ast::split_zero_arg_iife(ctx.allocator, value);
+                values.push(ChildValue {
+                    value,
+                    kind: ChildKind::Element,
+                    setup,
+                });
             }
         }
     }

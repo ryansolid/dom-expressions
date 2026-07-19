@@ -1658,11 +1658,16 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                     });
                 }
                 JSXChild::Fragment(fragment) => {
+                    // Babel's zero-arg callee unwrap: a fragment lowering to
+                    // a single setup IIFE splits back into setup + value so
+                    // the single-child getter inlines its body.
                     let value = self.lower_fragment(fragment)?;
+                    let (value, setup) =
+                        crate::shared::ast::split_zero_arg_iife(self.allocator, value);
                     values.push(ChildValue {
                         value,
                         kind: Kind::Element,
-                        setup: std::vec::Vec::new(),
+                        setup,
                     });
                 }
                 JSXChild::Spread(spread) => {

@@ -1033,6 +1033,48 @@ function f() {
     return <div ref={div}>a</div>;
   }
 }
+`,
+
+  // --- Round 7: fragments as component children (dom mode used to reject
+  // these outright while babel and ssr accepted them). Sole fragment child
+  // vs mixed with siblings, static/dynamic/element content, nesting, keyed
+  // components, conditionals, and fragments in non-children props. ----------
+  "fragment component child with expression": `
+const a = <Show when={cond()}><>{props.children}</></Show>;
+`,
+  "fragment component child with text": `
+const a = <Show><>text</></Show>;
+`,
+  "fragment component child with element": `
+const a = <Show><><div /></></Show>;
+`,
+  "fragment component child with multiple elements": `
+const a = <Show><><div /><span /></></Show>;
+`,
+  "fragment component child with dynamic element child": `
+const a = <Show><><div>{x()}</div></></Show>;
+`,
+  "fragment component child mixed with siblings": `
+const a = <Show><p>P</p><>{x()}<div /></><p>P</p></Show>;
+`,
+  "nested fragment component child": `
+const a = <Show><><><div />{x()}</></></Show>;
+`,
+  "empty fragment component child": `
+const a = <Show><></></Show>;
+`,
+  "keyed fragment component child": `
+const a = <Show when={item()} keyed><>{x()}<div /></></Show>;
+`,
+  "fragment component child with conditional": `
+const a = <Show><>{cond() ? <div /> : x()}</></Show>;
+`,
+  "fragment component child with ref element": `
+let r;
+const a = <Show><><div ref={r}>{x()}</div></></Show>;
+`,
+  "fragment in non-children component prop": `
+const a = <Show thing={<><div /><span /></>} />;
 `
 };
 
