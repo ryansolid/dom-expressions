@@ -42,14 +42,23 @@ export function configureServerFunctionsClient({ endpoint, codec } = {}) {
 let INSTANCE = 0;
 
 function createRequest(base, id, instance, options) {
+  const headers = {
+    ...options.headers,
+    [FUNCTION_HEADER]: id,
+    [INSTANCE_HEADER]: instance
+  };
+  // Subscribing to flight data IS the single-flight opt-in: with a consumer
+  // registered the transport asks the server for collection on every
+  // mutation call; a consumer-less app never asks the server to do
+  // collection work. GET-encoded calls are reads (cacheable URLs) and stay
+  // plain — folding per-request flight data into them would defeat caching.
+  if (getFlightDataConsumer() && (!options.method || options.method.toUpperCase() !== "GET")) {
+    headers[SINGLE_FLIGHT_HEADER] = "true";
+  }
   return fetch(base, {
     method: "POST",
     ...options,
-    headers: {
-      ...options.headers,
-      [FUNCTION_HEADER]: id,
-      [INSTANCE_HEADER]: instance
-    }
+    headers
   });
 }
 

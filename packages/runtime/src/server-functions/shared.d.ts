@@ -41,12 +41,12 @@ export const INSTANCE_HEADER: string;
 /**
  * Header driving the single-flight protocol on both legs
  * (`"X-Single-Flight"`). On the request it opts the call into data
- * collection — the client integration sends it on calls whose response
- * should fold in data (typically mutations). On the response it marks a
- * body carrying the standardized `SingleFlightPayload`. How the data is
- * produced (a data-only render, running route preloads, anything else) and
- * what it means is entirely the integration's business — the protocol only
- * standardizes the wire shape and the delivery.
+ * collection — the transport sends it automatically on non-GET calls while
+ * a flight-data consumer is subscribed (subscribing IS the opt-in). On the
+ * response it marks a body carrying the standardized `SingleFlightPayload`.
+ * How the data is produced (a data-only render, running route preloads,
+ * anything else) and what it means is entirely the integration's business —
+ * the protocol only standardizes the wire shape and the delivery.
  */
 export const SINGLE_FLIGHT_HEADER: string;
 
@@ -90,15 +90,20 @@ export type FlightDataConsumer<D = unknown> = (
 
 /**
  * Registers the consumer the client transport delivers single-flight data
- * to. When a single-flight response arrives, the transport decodes the
- * standardized `{ value, data }` payload, delivers `data` (with the
- * response as envelope context — redirect location, revalidation keys),
- * and returns `value` to the caller as if the call were plain. What to do
- * with the data (seed caches, navigate, ...) is entirely the consumer's
- * business. One active consumer at a time — a later registration replaces
- * the current one; returns an unsubscribe function. With no consumer
- * registered, single-flight responses pass through to the caller whole,
- * exactly like other integration responses.
+ * to. Subscribing is the single-flight opt-in: while a consumer is
+ * registered the transport sends the request-leg `SINGLE_FLIGHT_HEADER` on
+ * non-GET calls (GET reads stay plain and cacheable), asking the server's
+ * collection hook to fold data into the response. When a single-flight
+ * response arrives, the transport decodes the standardized
+ * `{ value, data }` payload, delivers `data` (with the response as
+ * envelope context — redirect location, revalidation keys), and returns
+ * `value` to the caller as if the call were plain. What to do with the
+ * data (seed caches, navigate, ...) is entirely the consumer's business.
+ * One active consumer at a time — a later registration replaces the
+ * current one; returns an unsubscribe function. With no consumer
+ * registered, no header is sent and the server does no collection work;
+ * responses an integration opted in manually still pass through to the
+ * caller whole, exactly like other integration responses.
  */
 export function subscribeFlightData<D = unknown>(consumer: FlightDataConsumer<D>): () => void;
 

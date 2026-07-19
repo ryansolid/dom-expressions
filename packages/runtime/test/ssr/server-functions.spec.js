@@ -551,13 +551,9 @@ describe("single-flight", () => {
     });
   }
 
-  // The client half of the opt-in: the header ride on withOptions, exactly
-  // how a router sends it.
-  function flightReference(id) {
-    return createClientReference(id).withOptions({
-      headers: { [SINGLE_FLIGHT_HEADER]: "true" }
-    });
-  }
+  // The client half of the opt-in is subscribing: with a consumer
+  // registered the transport sends the request header itself, so plain
+  // references opt in automatically (see the consumer tests below).
 
   it("folds hook data into a success response as { value, data }", async () => {
     registerServerFunction("sf-plain-0", async () => "mutated");
@@ -706,6 +702,57 @@ describe("single-flight", () => {
     }
   });
 
+  it("subscribing opts calls in: the transport sends the request header itself", async () => {
+    registerServerFunction("sf-header-0", async () => "value");
+    const seenHeaders = [];
+    const restore = connectTransport({
+      collectFlightData: (event, outcome) => {
+        seenHeaders.push(outcome.request.headers.get(SINGLE_FLIGHT_HEADER));
+        return { collected: true };
+      }
+    });
+    const unsubscribe = subscribeFlightData(() => {});
+    try {
+      await createClientReference("sf-header-0")();
+      expect(seenHeaders).toEqual(["true"]);
+    } finally {
+      unsubscribe();
+      restore();
+    }
+  });
+
+  it("never sends the request header without a consumer", async () => {
+    registerServerFunction("sf-noheader-0", async () => "value");
+    const hook = jest.fn(() => ({ collected: true }));
+    const restore = connectTransport({ collectFlightData: hook });
+    try {
+      // no consumer registered: the server is never asked to collect, the
+      // call round-trips exactly like before the protocol existed
+      const result = await createClientReference("sf-noheader-0")();
+      expect(result).toBe("value");
+      expect(hook).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
+  it("keeps GET calls plain even with a consumer subscribed", async () => {
+    registerServerFunction("sf-get-0", async () => "read");
+    const hook = jest.fn(() => ({ collected: true }));
+    const restore = connectTransport({ collectFlightData: hook });
+    const unsubscribe = subscribeFlightData(() => {});
+    try {
+      // reads are cacheable URLs — folding per-request flight data into
+      // them would defeat caching, so only non-GET calls opt in
+      const result = await createClientReference("sf-get-0").GET();
+      expect(result).toBe("read");
+      expect(hook).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+      restore();
+    }
+  });
+
   it("delivers data to the registered consumer and value to the caller", async () => {
     registerServerFunction("sf-client-0", async () => "mutated");
     const restore = connectTransport({
@@ -718,7 +765,7 @@ describe("single-flight", () => {
       delivered.push({ data, context });
     });
     try {
-      const result = await flightReference("sf-client-0")();
+      const result = await createClientReference("sf-client-0")();
       expect(result).toBe("mutated");
       expect(delivered).toHaveLength(1);
       expect(delivered[0].data).toEqual({ "/notes": ["fresh"] });
@@ -742,7 +789,7 @@ describe("single-flight", () => {
     });
     try {
       // the redirect is the consumer's to interpret — the caller resolves
-      const result = await flightReference("sf-client-redirect-0")();
+      const result = await createClientReference("sf-client-redirect-0")();
       expect(result).toBe(null);
       expect(delivered).toHaveLength(1);
       expect(delivered[0].data).toEqual({ "/dashboard": ["destination data"] });
@@ -767,7 +814,9 @@ describe("single-flight", () => {
       delivered.push(data);
     });
     try {
-      await expect(flightReference("sf-client-error-0")()).rejects.toEqual({ reason: "denied" });
+      await expect(createClientReference("sf-client-error-0")()).rejects.toEqual({
+        reason: "denied"
+      });
       expect(delivered).toEqual([{ "/notes": ["still fresh"] }]);
     } finally {
       unsubscribe();
@@ -775,15 +824,18 @@ describe("single-flight", () => {
     }
   });
 
-  it("passes single-flight responses through whole without a consumer", async () => {
+  it("passes manually opted-in responses through whole without a consumer", async () => {
     registerServerFunction("sf-noconsumer-0", async () => "value");
     const restore = connectTransport({
       collectFlightData: () => ({ "/notes": ["fresh"] })
     });
     try {
-      // no consumer registered: same passthrough contract as before —
-      // the integration decodes the response itself
-      const response = await flightReference("sf-noconsumer-0")();
+      // an integration can still send the header by hand (withOptions);
+      // with no consumer registered the tagged response reaches the caller
+      // whole — the integration decodes it itself
+      const response = await createClientReference("sf-noconsumer-0").withOptions({
+        headers: { [SINGLE_FLIGHT_HEADER]: "true" }
+      })();
       expect(response).toBeInstanceOf(Response);
       expect(response.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
       expect(await decodeResponse(response)).toEqual({
@@ -795,28 +847,30 @@ describe("single-flight", () => {
     }
   });
 
-  it("unsubscribing restores passthrough and later registrations replace", async () => {
+  it("unsubscribing restores plain calls and later registrations replace", async () => {
     registerServerFunction("sf-unsub-0", async () => "value");
-    const restore = connectTransport({
-      collectFlightData: () => ({ data: true })
-    });
+    const hook = jest.fn(() => ({ data: true }));
+    const restore = connectTransport({ collectFlightData: hook });
     const first = jest.fn();
     const second = jest.fn();
     const unsubscribeFirst = subscribeFlightData(first);
     const unsubscribeSecond = subscribeFlightData(second);
     try {
-      await flightReference("sf-unsub-0")();
+      await createClientReference("sf-unsub-0")();
       expect(first).not.toHaveBeenCalled();
       expect(second).toHaveBeenCalledTimes(1);
 
       // stale unsubscribe must not tear down the active consumer
       unsubscribeFirst();
-      await flightReference("sf-unsub-0")();
+      await createClientReference("sf-unsub-0")();
       expect(second).toHaveBeenCalledTimes(2);
 
+      // unsubscribing removes the opt-in: no header, no collection
       unsubscribeSecond();
-      const response = await flightReference("sf-unsub-0")();
-      expect(response).toBeInstanceOf(Response);
+      hook.mockClear();
+      const result = await createClientReference("sf-unsub-0")();
+      expect(result).toBe("value");
+      expect(hook).not.toHaveBeenCalled();
     } finally {
       unsubscribeSecond();
       restore();
