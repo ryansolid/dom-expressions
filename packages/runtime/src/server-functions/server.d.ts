@@ -194,8 +194,9 @@ export function createServerReference<T extends any[], R>(
  * declaration on the reference's metadata channel
  * (`getServerFunctionMetadata(fn)?.method === "GET"`) and records the
  * declared method for the function's id so `handleServerFunctionRequest`
- * enforces it: GET-declared functions accept GET requests (and only GET),
- * everything else answers 405.
+ * honors it: GET-declared functions accept GET requests in addition to the
+ * default POST transport (declaring GET grants, it does not revoke);
+ * functions that never declared GET answer GET requests with 405.
  *
  * Wrap the reference at its declaration; the compiler round-trips the call
  * in both builds:
@@ -282,9 +283,9 @@ export interface HandleServerFunctionOptions {
 
 /**
  * Web-standard HTTP handler for server function calls: resolves the
- * function id from the request, enforces the declared method (405 when the
- * request method contradicts a `GET` declaration — or uses GET without
- * one), decodes arguments, runs the function under a request-event scope,
+ * function id from the request, gates GET dispatch on the declaration (405
+ * for a GET request to a function that never declared `GET`; POST is always
+ * accepted), decodes arguments, runs the function under a request-event scope,
  * and encodes the result (forwarding redirect/revalidation metadata
  * through headers). Mount it on the endpoint the client transport targets
  * (default `/_server`); platform adapters (h3, express, ...) convert their

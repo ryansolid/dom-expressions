@@ -1058,7 +1058,9 @@ describe("GET declaration", () => {
 });
 
 describe("method enforcement", () => {
-  it("405s a POST to a GET-declared function", async () => {
+  it("still accepts POST on a GET-declared function (GET grants, doesn't revoke)", async () => {
+    // a query()-wrapped function is GET-declared but may also be called
+    // directly over the default POST transport — both must dispatch
     serverGET(createServerReference(registerServerReference("m405-0", async () => "x")));
     const response = await handleServerFunctionRequest(
       new Request("http://localhost/_server", {
@@ -1069,8 +1071,8 @@ describe("method enforcement", () => {
         }
       })
     );
-    expect(response.status).toBe(405);
-    expect(response.headers.get("Allow")).toBe("GET");
+    expect(response.status).toBe(200);
+    expect(await extractBody(response)).toBe("x");
   });
 
   it("405s a GET to a function that never declared it", async () => {

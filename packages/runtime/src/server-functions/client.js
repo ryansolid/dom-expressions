@@ -203,7 +203,9 @@ export function createServerReference(id, name) {
  * query string — cacheable by HTTP infrastructure. The declaration is
  * recorded on the metadata channel (`getServerFunctionMetadata(fn).method
  * === "GET"`) for routers and integrations to read, and the server half
- * enforces it (non-GET requests answer 405).
+ * honors it: the declaration grants GET dispatch without revoking the
+ * default POST transport, while GET requests to undeclared functions
+ * answer 405.
  *
  * Wrap the reference at its declaration; the compiler round-trips the call
  * in both builds:

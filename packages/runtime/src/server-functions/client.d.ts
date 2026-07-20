@@ -97,10 +97,11 @@ export function configureServerFunctionsClient(config?: ServerFunctionsClientCon
  *
  * The declaration rides the metadata channel
  * (`getServerFunctionMetadata(fn)?.method === "GET"`) for routers and
- * integrations to detect, and the server enforces it: GET-declared
- * functions accept GET requests (and only GET), everything else answers
- * 405. Server-side the wrapper is identity-flavored — SSR calls stay
- * in-process.
+ * integrations to detect, and the server honors it: GET-declared functions
+ * accept GET requests in addition to the default POST transport (declaring
+ * GET grants, it does not revoke); functions that never declared GET answer
+ * GET requests with 405. Server-side the wrapper is identity-flavored — SSR
+ * calls stay in-process.
  *
  * Wrap the reference at its declaration; the compiler round-trips the call
  * in both builds:

@@ -78,8 +78,8 @@ function provideEvent(event, fn) {
 const REGISTRATIONS = new Map();
 // Declared-method bookkeeping keyed by function id (internal, not public
 // API): the server half of `GET` records entries here so the HTTP handler
-// can enforce the declaration — 405 for a POST to a GET-declared function,
-// and for a GET to one that never declared it.
+// can gate GET dispatch — a GET request to a function that never declared
+// it answers 405. Declaring GET grants GET without revoking POST.
 const METHODS = new Map();
 
 export function registerServerFunction(id, callback) {
@@ -148,8 +148,9 @@ export function createServerReference({ id, fn, name }) {
  * declaration on the reference's metadata channel
  * (`getServerFunctionMetadata(fn).method === "GET"`) and records the
  * declared method for the function's id so `handleServerFunctionRequest`
- * enforces it: GET-declared functions accept GET requests (and only GET),
- * everything else answers 405.
+ * honors it: GET-declared functions accept GET requests in addition to the
+ * default POST transport (declaring GET grants, it does not revoke);
+ * functions that never declared GET answer GET requests with 405.
  *
  * Wrap the reference at its declaration; the compiler round-trips the call
  * in both builds:
@@ -294,15 +295,18 @@ export async function handleServerFunctionRequest(request, options = {}) {
     );
   }
 
-  // method enforcement: GET-declared functions (the server half of `GET`
-  // records them) accept only GET; undeclared functions never accept GET
-  const allowedMethod = METHODS.get(functionId) || "POST";
-  if ((request.method === "GET") !== (allowedMethod === "GET")) {
+  // method enforcement: GET requests only dispatch to functions that
+  // declared GET (the server half of `GET` records them) — no crafted GET
+  // URLs against functions that never opted in. Declaring GET grants GET
+  // without revoking POST: the same function stays callable over the
+  // default transport (e.g. a query()-wrapped function also called
+  // directly).
+  if (request.method === "GET" && METHODS.get(functionId) !== "GET") {
     return new Response(
       process.env.NODE_ENV === "development"
         ? `Method not allowed for server function: ${functionId}`
         : null,
-      { status: 405, headers: { Allow: allowedMethod } }
+      { status: 405, headers: { Allow: "POST" } }
     );
   }
 
