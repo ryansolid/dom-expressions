@@ -1,13 +1,48 @@
 import { JSONCodecOptions } from "../serializer.js";
+import { ServerFunction, ServerFunctionMetadata } from "./shared.js";
 
 export {
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
   decodeResponse,
-  subscribeFlightData
+  getServerFunctionMetadata,
+  isServerFunction,
+  subscribeFlightData,
+  withMeta
 } from "./shared.js";
-export type { FlightDataConsumer, FlightDataContext, SingleFlightPayload } from "./shared.js";
+export type {
+  FlightDataConsumer,
+  FlightDataContext,
+  ServerFunction,
+  ServerFunctionMetadata,
+  SingleFlightPayload
+} from "./shared.js";
+
+/** The context `prepareRequest` receives alongside the outgoing RequestInit. */
+export interface PrepareRequestContext {
+  /** The build-stable id of the function being called. */
+  id: string;
+  /**
+   * The reference's declaration metadata (e.g. `method: "GET"` for
+   * `GET(fn)` references). Plain references carry an empty object.
+   */
+  meta: ServerFunctionMetadata | undefined;
+}
+
+/**
+ * Client-side session-dynamic transport hook: runs before every
+ * server-function fetch. Return (or mutate and return) the RequestInit the
+ * transport will use — the hook sees the final init, transport headers
+ * included. The motivating case is dynamic credentials that rotate during
+ * a session and apply uniformly to every call (OAuth bearer tokens); it is
+ * the client-side symmetric of the server handler hooks. Single hook, not
+ * a chain — compose by wrapping functions in userland.
+ */
+export type PrepareRequestHook = (
+  init: RequestInit,
+  context: PrepareRequestContext
+) => RequestInit | Promise<RequestInit>;
 
 /** Options for `configureServerFunctionsClient`. */
 export interface ServerFunctionsClientConfig {
@@ -25,32 +60,61 @@ export interface ServerFunctionsClientConfig {
    * `decodeResponse` sees them too.
    */
   codec?: JSONCodecOptions;
+  /**
+   * Runs before every server-function fetch. Return (or mutate and return)
+   * the RequestInit the transport will use; `context.meta` is the
+   * reference's declaration metadata (e.g. method). For session-dynamic
+   * cross-cutting concerns — bearer tokens, tracing headers:
+   *
+   * ```ts
+   * configureServerFunctionsClient({
+   *   prepareRequest(init) {
+   *     return {
+   *       ...init,
+   *       headers: { ...init.headers, Authorization: `Bearer ${session.token()}` }
+   *     };
+   *   }
+   * });
+   * ```
+   */
+  prepareRequest?: PrepareRequestHook;
 }
 
 /**
  * Configures the client transport. Call once, before any server function is
  * invoked — typically in the client entry, next to `hydrate()`. Only needed
- * when deviating from the defaults (custom endpoint or codec plugins).
+ * when deviating from the defaults (custom endpoint, codec plugins, or a
+ * `prepareRequest` hook).
  */
 export function configureServerFunctionsClient(config?: ServerFunctionsClientConfig): void;
 
 /**
- * What a server function import is at runtime on the client: an async
- * callable that fetches the server, plus escape hatches for forms and
- * custom requests.
+ * Declares a server function callable over HTTP GET: calls to the returned
+ * reference go out as GET requests with the arguments codec-encoded in the
+ * query string — cacheable by HTTP infrastructure. Cache headers flow
+ * through the handler's header forwarding
+ * (`respond(data, { headers: { "cache-control": "max-age=60" } })`).
+ *
+ * The declaration rides the metadata channel
+ * (`getServerFunctionMetadata(fn)?.method === "GET"`) for routers and
+ * integrations to detect, and the server enforces it: GET-declared
+ * functions accept GET requests (and only GET), everything else answers
+ * 405. Server-side the wrapper is identity-flavored — SSR calls stay
+ * in-process.
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getUser = GET(async (id: string) => {
+ *   "use server";
+ *   return db.users.find(id);
+ * });
+ * ```
  */
-export interface ServerFunctionCallable {
-  (...args: any[]): Promise<any>;
-  /** URL invoking this function directly over HTTP (e.g. form `action`s). */
-  url: string;
-  /**
-   * Variant issuing GET requests with the arguments encoded in the query
-   * string — cacheable by HTTP infrastructure.
-   */
-  GET: ServerFunctionCallable;
-  /** Variant applying a custom RequestInit to every call (headers etc.). */
-  withOptions(options: RequestInit): ServerFunctionCallable;
-}
+export function GET<A extends readonly any[], R>(
+  fn: (...args: A) => R
+): ServerFunction<A, Awaited<R>>;
 
 /**
  * Compiler ABI — emitted by compiled `"use server"` client output where a
@@ -58,7 +122,7 @@ export interface ServerFunctionCallable {
  * the function's build-stable id. Not meant for hand-written code.
  * @internal
  */
-export function createServerReference(id: string): ServerFunctionCallable;
+export function createServerReference(id: string): ServerFunction;
 
 /**
  * Compiler ABI — only ever referenced by server-mode compiler output;

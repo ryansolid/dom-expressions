@@ -18,15 +18,20 @@ import {
   deserializeString,
   extractBody,
   getHeadersAndBody,
+  getServerFunctionMetadata,
+  isServerFunction,
   serializeStream,
   serializeString,
-  subscribeFlightData
+  subscribeFlightData,
+  withMeta
 } from "../../src/server-functions/shared";
 import {
+  GET as clientGET,
   createServerReference as createClientReference,
   configureServerFunctionsClient
 } from "../../src/server-functions/client";
 import {
+  GET as serverGET,
   configureServerFunctionsServer,
   createServerReference,
   getServerFunction,
@@ -319,10 +324,11 @@ describe("handler", () => {
   });
 
   it("roundtrips GET calls with query-encoded args", async () => {
-    registerServerFunction("get-0", async n => n * 2);
+    // the server half of GET records the method declaration for dispatch
+    serverGET(createServerReference(registerServerReference("get-0", async n => n * 2)));
     const restore = connectTransport();
     try {
-      const result = await createClientReference("get-0").GET(21);
+      const result = await clientGET(createClientReference("get-0"))(21);
       expect(result).toBe(42);
     } finally {
       restore();
@@ -737,14 +743,14 @@ describe("single-flight", () => {
   });
 
   it("keeps GET calls plain even with a consumer subscribed", async () => {
-    registerServerFunction("sf-get-0", async () => "read");
+    serverGET(createServerReference(registerServerReference("sf-get-0", async () => "read")));
     const hook = jest.fn(() => ({ collected: true }));
     const restore = connectTransport({ collectFlightData: hook });
     const unsubscribe = subscribeFlightData(() => {});
     try {
       // reads are cacheable URLs — folding per-request flight data into
       // them would defeat caching, so only non-GET calls opt in
-      const result = await createClientReference("sf-get-0").GET();
+      const result = await clientGET(createClientReference("sf-get-0"))();
       expect(result).toBe("read");
       expect(hook).not.toHaveBeenCalled();
     } finally {
@@ -829,13 +835,17 @@ describe("single-flight", () => {
     const restore = connectTransport({
       collectFlightData: () => ({ "/notes": ["fresh"] })
     });
+    // an integration can still send the header by hand (session policy via
+    // prepareRequest); with no consumer registered the tagged response
+    // reaches the caller whole — the integration decodes it itself
+    configureServerFunctionsClient({
+      prepareRequest: init => ({
+        ...init,
+        headers: { ...init.headers, [SINGLE_FLIGHT_HEADER]: "true" }
+      })
+    });
     try {
-      // an integration can still send the header by hand (withOptions);
-      // with no consumer registered the tagged response reaches the caller
-      // whole — the integration decodes it itself
-      const response = await createClientReference("sf-noconsumer-0").withOptions({
-        headers: { [SINGLE_FLIGHT_HEADER]: "true" }
-      })();
+      const response = await createClientReference("sf-noconsumer-0")();
       expect(response).toBeInstanceOf(Response);
       expect(response.headers.get(SINGLE_FLIGHT_HEADER)).toBe("true");
       expect(await decodeResponse(response)).toEqual({
@@ -843,6 +853,7 @@ describe("single-flight", () => {
         data: { "/notes": ["fresh"] }
       });
     } finally {
+      configureServerFunctionsClient({ prepareRequest: null });
       restore();
     }
   });
@@ -873,6 +884,262 @@ describe("single-flight", () => {
       expect(hook).not.toHaveBeenCalled();
     } finally {
       unsubscribeSecond();
+      restore();
+    }
+  });
+});
+
+describe("metadata channel", () => {
+  it("brands references on both sides and exposes id", () => {
+    const client = createClientReference("md-0");
+    expect(isServerFunction(client)).toBe(true);
+    expect(client.id).toBe("md-0");
+    expect(getServerFunctionMetadata(client)).toEqual({});
+
+    const server = createServerReference(registerServerReference("md-1", async () => {}));
+    expect(isServerFunction(server)).toBe(true);
+    expect(server.id).toBe("md-1");
+    expect(getServerFunctionMetadata(server)).toEqual({});
+  });
+
+  it("rejects non-references", () => {
+    expect(isServerFunction(() => {})).toBe(false);
+    expect(getServerFunctionMetadata(() => {})).toBeUndefined();
+    expect(isServerFunction(null)).toBe(false);
+    expect(isServerFunction({})).toBe(false);
+    expect(getServerFunctionMetadata({})).toBeUndefined();
+  });
+
+  it("recognizes references across module copies", () => {
+    // simulate a separately bundled runtime copy branding its own
+    // references — the registered-symbol brand must hold, like the
+    // ResponseEnvelope one
+    const foreign = () => {};
+    foreign[Symbol.for("solid.ServerFunctionMetadata")] = { method: "GET" };
+    expect(isServerFunction(foreign)).toBe(true);
+    expect(getServerFunctionMetadata(foreign)).toEqual({ method: "GET" });
+  });
+
+  it("withMeta attaches user metadata, merging later writes", () => {
+    const ref = createClientReference("md-2");
+    expect(withMeta(ref, { requiresAuth: true })).toBe(ref);
+    expect(getServerFunctionMetadata(ref)).toEqual({ requiresAuth: true });
+    withMeta(ref, { tenant: "x" });
+    expect(getServerFunctionMetadata(ref)).toEqual({ requiresAuth: true, tenant: "x" });
+    expect(() => withMeta(() => {}, {})).toThrow("withMeta expects a server function reference");
+  });
+
+  it("withMeta composes with GET in either order", () => {
+    const inside = clientGET(withMeta(createClientReference("md-3"), { tenant: "x" }));
+    expect(getServerFunctionMetadata(inside)).toEqual({ method: "GET", tenant: "x" });
+
+    const outside = withMeta(clientGET(createClientReference("md-3")), { tenant: "x" });
+    expect(getServerFunctionMetadata(outside)).toEqual({ method: "GET", tenant: "x" });
+
+    const server = withMeta(
+      serverGET(createServerReference(registerServerReference("md-4", async () => {}))),
+      { tenant: "x" }
+    );
+    expect(getServerFunctionMetadata(server)).toEqual({ method: "GET", tenant: "x" });
+  });
+
+  it("withMeta on server references leaves SSR calls in-process", async () => {
+    const spy = jest.fn(async () => "ok");
+    const server = withMeta(createServerReference(registerServerReference("md-5", spy)), {
+      requiresAuth: true
+    });
+    expect(getServerFunctionMetadata(server)).toEqual({ requiresAuth: true });
+    const event = { request: new Request("http://localhost/"), locals: {} };
+    expect(await globalThis[RequestContext].run(event, () => server())).toBe("ok");
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("GET declaration", () => {
+  it("client references expose id/url and no legacy escape hatches", () => {
+    const ref = createClientReference("plain-0");
+    expect(ref.id).toBe("plain-0");
+    expect(ref.url).toBe("/_server?id=plain-0");
+    // the shrunken reference contract: `GET(fn)` and `prepareRequest`
+    // replaced the per-reference escape hatches
+    expect(ref.GET).toBeUndefined();
+    expect(ref.withOptions).toBeUndefined();
+  });
+
+  it("client GET produces a declared reference with id, url and metadata", () => {
+    const ref = clientGET(createClientReference("getd-0"));
+    expect(ref.id).toBe("getd-0");
+    expect(ref.url).toBe("/_server?id=getd-0");
+    expect(isServerFunction(ref)).toBe(true);
+    expect(getServerFunctionMetadata(ref)).toEqual({ method: "GET" });
+    expect(ref.GET).toBeUndefined();
+    expect(ref.withOptions).toBeUndefined();
+  });
+
+  it("server GET is identity and SSR calls stay in-process", async () => {
+    const spy = jest.fn(async n => n + 1);
+    const ref = createServerReference(registerServerReference("getd-1", spy));
+    const declared = serverGET(ref);
+    expect(declared).toBe(ref);
+    expect(getServerFunctionMetadata(declared)).toEqual({ method: "GET" });
+    expect(declared.GET).toBeUndefined();
+    expect(declared.withOptions).toBeUndefined();
+
+    const event = { request: new Request("http://localhost/"), locals: {} };
+    const result = await globalThis[RequestContext].run(event, () => declared(41));
+    expect(result).toBe(42);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects non-references", () => {
+    expect(() => clientGET(async () => {})).toThrow("GET expects a server function reference");
+    expect(() => serverGET(async () => {})).toThrow("GET expects a server function reference");
+  });
+
+  it("sends GET requests with args codec-encoded in the query string", async () => {
+    serverGET(createServerReference(registerServerReference("getd-2", async (a, b) => a + b)));
+    const seen = {};
+    const original = globalThis.fetch;
+    globalThis.fetch = (url, init) => {
+      seen.url = String(url);
+      seen.method = init.method;
+      seen.body = init.body;
+      return handleServerFunctionRequest(new Request(new URL(url, "http://localhost"), init));
+    };
+    try {
+      const result = await clientGET(createClientReference("getd-2"))(1, 2);
+      expect(result).toBe(3);
+      expect(seen.method).toBe("GET");
+      expect(seen.body).toBeUndefined();
+      expect(seen.url).toContain("id=getd-2");
+      expect(seen.url).toContain("&args=");
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});
+
+describe("method enforcement", () => {
+  it("405s a POST to a GET-declared function", async () => {
+    serverGET(createServerReference(registerServerReference("m405-0", async () => "x")));
+    const response = await handleServerFunctionRequest(
+      new Request("http://localhost/_server", {
+        method: "POST",
+        headers: {
+          "X-Server-Function-Id": "m405-0",
+          "X-Server-Function-Instance": "server-function:test"
+        }
+      })
+    );
+    expect(response.status).toBe(405);
+    expect(response.headers.get("Allow")).toBe("GET");
+  });
+
+  it("405s a GET to a function that never declared it", async () => {
+    registerServerFunction("m405-1", async () => "x");
+    const response = await handleServerFunctionRequest(
+      new Request("http://localhost/_server?id=m405-1", { method: "GET" })
+    );
+    expect(response.status).toBe(405);
+    expect(response.headers.get("Allow")).toBe("POST");
+  });
+
+  it("accepts GET on GET-declared functions, including no-JS calls", async () => {
+    serverGET(createServerReference(registerServerReference("m405-2", async () => "ok")));
+    // direct HTTP / no-JS form GET: no instance header
+    const response = await handleServerFunctionRequest(
+      new Request("http://localhost/_server?id=m405-2", { method: "GET" })
+    );
+    expect(response.status).toBe(200);
+    expect(await extractBody(response)).toBe("ok");
+  });
+});
+
+describe("prepareRequest", () => {
+  function connectTransport(options) {
+    const original = globalThis.fetch;
+    globalThis.fetch = (url, init) =>
+      handleServerFunctionRequest(new Request(new URL(url, "http://localhost"), init), options);
+    return () => {
+      globalThis.fetch = original;
+    };
+  }
+
+  // the server function reads the live request off the event scope, so the
+  // tests observe exactly what the hook put on the wire
+  function registerHeaderEcho(id, header) {
+    registerServerFunction(id, async () => {
+      const event = globalThis[RequestContext].getStore();
+      return event.request.headers.get(header);
+    });
+  }
+
+  afterEach(() => {
+    configureServerFunctionsClient({ prepareRequest: null });
+  });
+
+  it("runs before every fetch with the id and declaration metadata", async () => {
+    registerHeaderEcho("prep-0", "Authorization");
+    const seen = [];
+    configureServerFunctionsClient({
+      prepareRequest(init, context) {
+        seen.push(context);
+        return { ...init, headers: { ...init.headers, Authorization: "Bearer token-1" } };
+      }
+    });
+    const restore = connectTransport();
+    try {
+      const result = await createClientReference("prep-0")();
+      expect(result).toBe("Bearer token-1");
+      expect(seen).toEqual([{ id: "prep-0", meta: {} }]);
+    } finally {
+      restore();
+    }
+  });
+
+  it("supports async hooks and applies to GET-declared calls", async () => {
+    const echo = async () => {
+      const event = globalThis[RequestContext].getStore();
+      return event.request.headers.get("X-Tenant");
+    };
+    serverGET(createServerReference(registerServerReference("prep-get-0", echo)));
+    const seen = [];
+    configureServerFunctionsClient({
+      async prepareRequest(init, { meta }) {
+        seen.push(meta);
+        return { ...init, headers: { ...init.headers, "X-Tenant": "acme" } };
+      }
+    });
+    const restore = connectTransport();
+    try {
+      const result = await clientGET(createClientReference("prep-get-0"))();
+      expect(result).toBe("acme");
+      expect(seen).toEqual([{ method: "GET" }]);
+    } finally {
+      restore();
+    }
+  });
+
+  it("keys per-function behavior on withMeta declarations", async () => {
+    registerHeaderEcho("prep-auth-0", "Authorization");
+    registerHeaderEcho("prep-auth-1", "Authorization");
+    configureServerFunctionsClient({
+      // react-in-hook: the session policy keys on the declared metadata
+      // instead of comparing function ids
+      prepareRequest(init, { meta }) {
+        if (meta && meta.requiresAuth) {
+          return { ...init, headers: { ...init.headers, Authorization: "Bearer secret" } };
+        }
+        return init;
+      }
+    });
+    const restore = connectTransport();
+    try {
+      const authed = withMeta(createClientReference("prep-auth-0"), { requiresAuth: true });
+      const plain = createClientReference("prep-auth-1");
+      expect(await authed()).toBe("Bearer secret");
+      expect(await plain()).toBe(null);
+    } finally {
       restore();
     }
   });

@@ -7,9 +7,19 @@ export {
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
   decodeResponse,
-  subscribeFlightData
+  getServerFunctionMetadata,
+  isServerFunction,
+  subscribeFlightData,
+  withMeta
 } from "./shared.js";
-export type { FlightDataConsumer, FlightDataContext, SingleFlightPayload } from "./shared.js";
+export type {
+  FlightDataConsumer,
+  FlightDataContext,
+  ServerFunction,
+  ServerFunctionMetadata,
+  SingleFlightPayload
+} from "./shared.js";
+import { ServerFunction } from "./shared.js";
 
 /**
  * The request event a server function call runs under: the base
@@ -169,6 +179,29 @@ export function createServerReference<T extends any[], R>(
   reference: ServerFunctionReference<T, R>
 ): (...args: T) => R;
 
+/**
+ * Declares a server function callable over HTTP GET. The server half is
+ * identity-flavored — SSR calls stay in-process — but it brands the
+ * declaration on the reference's metadata channel
+ * (`getServerFunctionMetadata(fn)?.method === "GET"`) and records the
+ * declared method for the function's id so `handleServerFunctionRequest`
+ * enforces it: GET-declared functions accept GET requests (and only GET),
+ * everything else answers 405.
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getUser = GET(async (id: string) => {
+ *   "use server";
+ *   return db.users.find(id);
+ * });
+ * ```
+ */
+export function GET<A extends readonly any[], R>(
+  fn: (...args: A) => R
+): ServerFunction<A, Awaited<R>>;
+
 /** Identity of the currently executing server function. */
 export interface ServerFunctionMeta {
   id: string;
@@ -240,12 +273,13 @@ export interface HandleServerFunctionOptions {
 
 /**
  * Web-standard HTTP handler for server function calls: resolves the
- * function id from the request, decodes arguments, runs the function under
- * a request-event scope, and encodes the result (forwarding
- * redirect/revalidation metadata through headers). Mount it on the endpoint
- * the client transport targets (default `/_server`); platform adapters
- * (h3, express, ...) convert their request shape to a web `Request` around
- * it.
+ * function id from the request, enforces the declared method (405 when the
+ * request method contradicts a `GET` declaration — or uses GET without
+ * one), decodes arguments, runs the function under a request-event scope,
+ * and encodes the result (forwarding redirect/revalidation metadata
+ * through headers). Mount it on the endpoint the client transport targets
+ * (default `/_server`); platform adapters (h3, express, ...) convert their
+ * request shape to a web `Request` around it.
  *
  * @example
  * ```ts

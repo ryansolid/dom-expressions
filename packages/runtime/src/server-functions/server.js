@@ -14,13 +14,16 @@ import {
   BodyFormat,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
+  SERVER_FUNCTION_METADATA,
   SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
   deserializeString,
   extractBody,
   getHeadersAndBody,
   getServerFunctionsCodec,
-  serializeStream
+  isServerFunction,
+  serializeStream,
+  withMeta
 } from "./shared.js";
 
 export {
@@ -28,7 +31,10 @@ export {
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
   decodeResponse,
-  subscribeFlightData
+  getServerFunctionMetadata,
+  isServerFunction,
+  subscribeFlightData,
+  withMeta
 } from "./shared.js";
 
 const config = {
@@ -70,6 +76,11 @@ function provideEvent(event, fn) {
 }
 
 const REGISTRATIONS = new Map();
+// Declared-method bookkeeping keyed by function id (internal, not public
+// API): the server half of `GET` records entries here so the HTTP handler
+// can enforce the declaration — 405 for a POST to a GET-declared function,
+// and for a GET to one that never declared it.
+const METHODS = new Map();
 
 export function registerServerFunction(id, callback) {
   REGISTRATIONS.set(id, callback);
@@ -99,12 +110,16 @@ export function createServerReference({ id, fn }) {
   if (typeof fn !== "function")
     throw new Error("Export from a 'use server' module must be a function");
 
+  // the metadata lives in a closure (not on the user's function) so
+  // registering the raw implementation never mutates it
+  const metadata = {};
   return new Proxy(fn, {
-    get(target, prop, receiver) {
+    get(target, prop) {
+      if (prop === "id") return id;
       if (prop === "url") {
         return `${config.endpoint}?id=${encodeURIComponent(id)}`;
       }
-      if (prop === "GET") return receiver;
+      if (prop === SERVER_FUNCTION_METADATA) return metadata;
       return target[prop];
     },
     apply(target, thisArg, args) {
@@ -118,6 +133,34 @@ export function createServerReference({ id, fn }) {
       });
     }
   });
+}
+
+/**
+ * Declares a server function callable over HTTP GET. The server half is
+ * identity-flavored — SSR calls stay in-process — but it brands the
+ * declaration on the reference's metadata channel
+ * (`getServerFunctionMetadata(fn).method === "GET"`) and records the
+ * declared method for the function's id so `handleServerFunctionRequest`
+ * enforces it: GET-declared functions accept GET requests (and only GET),
+ * everything else answers 405.
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getUser = GET(async (id: string) => {
+ *   "use server";
+ *   return db.users.find(id);
+ * });
+ * ```
+ */
+export function GET(fn) {
+  if (!isServerFunction(fn) || typeof fn.id !== "string") {
+    throw new Error("GET expects a server function reference");
+  }
+  METHODS.set(fn.id, "GET");
+  // the declaration itself is a metadata write like any other
+  return withMeta(fn, { method: "GET" });
 }
 
 /** Reads the calling server function's meta off the current request event. */
@@ -243,6 +286,19 @@ export async function handleServerFunctionRequest(request, options = {}) {
       { status: 404 }
     );
   }
+
+  // method enforcement: GET-declared functions (the server half of `GET`
+  // records them) accept only GET; undeclared functions never accept GET
+  const allowedMethod = METHODS.get(functionId) || "POST";
+  if ((request.method === "GET") !== (allowedMethod === "GET")) {
+    return new Response(
+      process.env.NODE_ENV === "development"
+        ? `Method not allowed for server function: ${functionId}`
+        : null,
+      { status: 405, headers: { Allow: allowedMethod } }
+    );
+  }
+
   const event = options.createEvent ? options.createEvent(request) : { request, locals: {} };
   const provide = options.provideEvent || provideEvent;
   const flightHook =

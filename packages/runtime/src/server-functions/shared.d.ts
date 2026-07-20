@@ -116,6 +116,92 @@ export function subscribeFlightData<D = unknown>(consumer: FlightDataConsumer<D>
 export function getFlightDataConsumer(): FlightDataConsumer | undefined;
 
 /**
+ * The public contract of a server function reference — what a `"use
+ * server"` import is at runtime on either side: an async callable plus its
+ * build-stable identity.
+ */
+export interface ServerFunction<A extends readonly any[] = any[], T = any> {
+  (...args: A): Promise<T>;
+  /** The build-stable function id (stable across the client and server builds). */
+  readonly id: string;
+  /** URL invoking this function directly over HTTP (form `action`s, raw fetches). */
+  readonly url: string;
+}
+
+/**
+ * Declaration-static metadata attached to a server function reference
+ * through declaration wrappers (`GET`, `withMeta`). Read it with
+ * `getServerFunctionMetadata`; routers and integrations detect capability
+ * from here instead of property sniffing, and `prepareRequest` receives it
+ * as `context.meta`. Write through `withMeta` — later writes shallow-merge
+ * over earlier ones.
+ */
+export interface ServerFunctionMetadata {
+  /** The declared HTTP method. Undeclared references call over POST. */
+  readonly method?: "GET" | "POST";
+  /** User-declared transport metadata attached with `withMeta`. */
+  readonly [key: string]: unknown;
+}
+
+/**
+ * Reads a server function reference's declaration metadata — e.g.
+ * `getServerFunctionMetadata(fn)?.method === "GET"` detects a `GET(fn)`
+ * declaration. Returns undefined when `fn` is not a server function
+ * reference; plain references carry an empty metadata object. Works on
+ * client proxies and server-side references alike, across duplicated
+ * module instances (registered-symbol brand).
+ */
+export function getServerFunctionMetadata(fn: unknown): ServerFunctionMetadata | undefined;
+
+/**
+ * Whether `fn` is a server function reference (a client proxy or a
+ * server-side registered callable). Detection is structural — a
+ * registered-symbol metadata brand — so it holds across duplicated module
+ * instances and both sides of the directive boundary.
+ */
+export function isServerFunction(fn: unknown): fn is ServerFunction;
+
+/**
+ * Attaches user-declared transport metadata to a server function reference
+ * (client proxy or server-registered callable) and returns the reference.
+ * Writes ride the same channel `GET` uses: later writes shallow-merge over
+ * earlier ones, and `getServerFunctionMetadata(fn)` reads the merged bag —
+ * so `withMeta` composes with `GET` in either order
+ * (`GET(withMeta(fn, meta))` ≡ `withMeta(GET(fn), meta)`).
+ *
+ * The pattern is declare-on-function, react-in-hook: metadata declared
+ * here reaches `prepareRequest` as `context.meta`, letting session-dynamic
+ * transport policy key on declarations instead of comparing function ids:
+ *
+ * ```ts
+ * export const chargeCard = withMeta(async (amount: number) => {
+ *   "use server";
+ *   // ...
+ * }, { requiresAuth: true });
+ *
+ * configureServerFunctionsClient({
+ *   prepareRequest(init, { meta }) {
+ *     if (meta?.requiresAuth) {
+ *       return {
+ *         ...init,
+ *         headers: { ...init.headers, Authorization: `Bearer ${session.token()}` }
+ *       };
+ *     }
+ *     return init;
+ *   }
+ * });
+ * ```
+ */
+export function withMeta<F extends (...args: any[]) => any>(fn: F, meta: ServerFunctionMetadata): F;
+
+/**
+ * The registered symbol branding server function references with their
+ * declaration metadata. Use the typed accessors instead.
+ * @internal
+ */
+export const SERVER_FUNCTION_METADATA: unique symbol;
+
+/**
  * Header carrying the body format tag (a `BodyFormat` value) —
  * `"X-Server-Function-Format"`.
  *

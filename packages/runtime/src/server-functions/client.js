@@ -7,13 +7,17 @@ import {
   BodyFormat,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
+  SERVER_FUNCTION_METADATA,
   SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
   decodeResponse,
   getFlightDataConsumer,
   getHeadersAndBody,
+  getServerFunctionMetadata,
   getServerFunctionsCodec,
-  serializeString
+  isServerFunction,
+  serializeString,
+  withMeta
 } from "./shared.js";
 
 export {
@@ -21,27 +25,34 @@ export {
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
   decodeResponse,
-  subscribeFlightData
+  getServerFunctionMetadata,
+  isServerFunction,
+  subscribeFlightData,
+  withMeta
 } from "./shared.js";
 
 const config = {
-  endpoint: "/_server"
+  endpoint: "/_server",
+  prepareRequest: undefined
 };
 
 /**
  * Configures the transport before any server function is called: the
- * endpoint the server handler is mounted on and the codec options (extra
+ * endpoint the server handler is mounted on, the codec options (extra
  * plugins etc. — must match the server's; stored in the shared layer so
- * `decodeResponse` sees them too).
+ * `decodeResponse` sees them too), and the `prepareRequest` hook applied
+ * to every outgoing server-function fetch (session-dynamic transport
+ * policy — bearer tokens, tracing headers).
  */
-export function configureServerFunctionsClient({ endpoint, codec } = {}) {
+export function configureServerFunctionsClient({ endpoint, codec, prepareRequest } = {}) {
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
+  if (prepareRequest !== undefined) config.prepareRequest = prepareRequest;
 }
 
 let INSTANCE = 0;
 
-function createRequest(base, id, instance, options) {
+async function createRequest(base, id, instance, options, meta) {
   const headers = {
     ...options.headers,
     [FUNCTION_HEADER]: id,
@@ -55,48 +66,67 @@ function createRequest(base, id, instance, options) {
   if (getFlightDataConsumer() && (!options.method || options.method.toUpperCase() !== "GET")) {
     headers[SINGLE_FLIGHT_HEADER] = "true";
   }
-  return fetch(base, {
+  let init = {
     method: "POST",
     ...options,
     headers
-  });
+  };
+  // The session-dynamic transport hook runs last, over the final
+  // RequestInit (transport headers included), so session policy can adjust
+  // anything the transport is about to send.
+  if (config.prepareRequest) {
+    init = (await config.prepareRequest(init, { id, meta })) || init;
+  }
+  return fetch(base, init);
 }
 
-async function initializeResponse(base, id, instance, options, args) {
+async function initializeResponse(base, id, instance, options, args, meta) {
   // No args, skip serialization
   if (args.length === 0) {
-    return createRequest(base, id, instance, options);
+    return createRequest(base, id, instance, options, meta);
   }
   // A single argument with a natural HTTP encoding goes as-is
   if (args.length === 1) {
     const result = getHeadersAndBody(args[0]);
     if (result) {
-      return createRequest(base, id, instance, {
-        ...options,
-        body: result.body,
-        headers: {
-          ...options.headers,
-          ...result.headers
-        }
-      });
+      return createRequest(
+        base,
+        id,
+        instance,
+        {
+          ...options,
+          body: result.body,
+          headers: {
+            ...options.headers,
+            ...result.headers
+          }
+        },
+        meta
+      );
     }
   }
   // Everything else goes through the codec
-  return createRequest(base, id, instance, {
-    ...options,
-    body: await serializeString(args, getServerFunctionsCodec()),
-    headers: {
-      ...options.headers,
-      "Content-Type": "text/plain",
-      [BODY_FORMAT_HEADER]: BodyFormat.Serialized
-    }
-  });
+  return createRequest(
+    base,
+    id,
+    instance,
+    {
+      ...options,
+      body: await serializeString(args, getServerFunctionsCodec()),
+      headers: {
+        ...options.headers,
+        "Content-Type": "text/plain",
+        [BODY_FORMAT_HEADER]: BodyFormat.Serialized
+      }
+    },
+    meta
+  );
 }
 
-async function fetchServerFunction(base, id, options, args) {
+async function fetchServerFunction(base, id, options, args, meta) {
   const instance = `server-function:${INSTANCE++}`;
 
-  const response = await initializeResponse(base, id, instance, options, args);
+  const response = await initializeResponse(base, id, instance, options, args, meta);
 
   // Single-flight responses: with a registered consumer the transport owns
   // the unwrap — the standardized `{ value, data }` body is decoded, `data`
@@ -143,46 +173,69 @@ async function fetchServerFunction(base, id, options, args) {
 
 /**
  * Produces the client-side callable for a server function id. The returned
- * proxy also exposes `url` (for forms), `GET` (encode args in the query
- * string), and `withOptions` (custom RequestInit).
+ * proxy exposes `id` (the build-stable function id) and `url` (direct HTTP
+ * invocation — form actions, progressive enhancement) and carries the
+ * declaration-metadata brand so `isServerFunction` recognizes it.
  */
 export function createServerReference(id) {
-  const fn = (...args) => fetchServerFunction(config.endpoint, id, {}, args);
+  const metadata = {};
+  const fn = (...args) => fetchServerFunction(config.endpoint, id, {}, args, metadata);
+  fn[SERVER_FUNCTION_METADATA] = metadata;
 
   return new Proxy(fn, {
-    get(target, prop, receiver) {
+    get(target, prop) {
+      if (prop === "id") return id;
       if (prop === "url") {
         return `${config.endpoint}?id=${encodeURIComponent(id)}`;
-      }
-      if (prop === "GET") {
-        return receiver.withOptions({ method: "GET" });
-      }
-      if (prop === "withOptions") {
-        const url = `${config.endpoint}?id=${encodeURIComponent(id)}`;
-        return options => {
-          const wrapped = async (...args) => {
-            const encodeArgs = options.method && options.method.toUpperCase() === "GET";
-            return fetchServerFunction(
-              encodeArgs
-                ? url +
-                    (args.length
-                      ? `&args=${encodeURIComponent(
-                          await serializeString(args, getServerFunctionsCodec())
-                        )}`
-                      : "")
-                : config.endpoint,
-              id,
-              options,
-              encodeArgs ? [] : args
-            );
-          };
-          wrapped.url = url;
-          return wrapped;
-        };
       }
       return target[prop];
     }
   });
+}
+
+/**
+ * Declares a server function callable over HTTP GET: calls to the returned
+ * reference go out as GET requests with the arguments codec-encoded in the
+ * query string — cacheable by HTTP infrastructure. The declaration is
+ * recorded on the metadata channel (`getServerFunctionMetadata(fn).method
+ * === "GET"`) for routers and integrations to read, and the server half
+ * enforces it (non-GET requests answer 405).
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getUser = GET(async (id: string) => {
+ *   "use server";
+ *   return db.users.find(id);
+ * });
+ * ```
+ */
+export function GET(fn) {
+  if (!isServerFunction(fn)) {
+    throw new Error("GET expects a server function reference");
+  }
+  const id = fn.id;
+  // the GET-transport callable inherits the source reference's declared
+  // metadata (withMeta composes with GET in either order)
+  const metadata = { ...getServerFunctionMetadata(fn) };
+  const wrapped = async (...args) => {
+    let base = `${config.endpoint}?id=${encodeURIComponent(id)}`;
+    if (args.length) {
+      base += `&args=${encodeURIComponent(await serializeString(args, getServerFunctionsCodec()))}`;
+    }
+    return fetchServerFunction(base, id, { method: "GET" }, [], metadata);
+  };
+  wrapped[SERVER_FUNCTION_METADATA] = metadata;
+  wrapped.id = id;
+  // lazy like the base proxy's: the endpoint may be configured after the
+  // module-scope GET(...) call runs
+  Object.defineProperty(wrapped, "url", {
+    get: () => `${config.endpoint}?id=${encodeURIComponent(id)}`,
+    configurable: true
+  });
+  // the declaration itself is a metadata write like any other
+  return withMeta(wrapped, { method: "GET" });
 }
 
 // Only ever referenced by server-mode compiler output; present so a

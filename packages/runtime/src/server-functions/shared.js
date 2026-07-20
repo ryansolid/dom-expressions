@@ -55,6 +55,75 @@ export function getFlightDataConsumer() {
   return flightConfig.consumer;
 }
 
+// The declaration-metadata channel. `GET(fn)` (and any future
+// declaration-static capability) brands references with a metadata object
+// under a registered symbol — surviving duplicated module instances, the
+// same trick as the ResponseEnvelope brand — and routers/integrations read
+// it back through the typed accessors instead of property sniffing. The
+// channel lives in the universal layer because detection is universal code:
+// the same accessor works on client proxies and server references alike.
+export const SERVER_FUNCTION_METADATA = Symbol.for("solid.ServerFunctionMetadata");
+
+/**
+ * Reads a server function reference's declaration metadata (e.g.
+ * `method: "GET"` for `GET(fn)` references). Returns undefined when `fn`
+ * is not a server function reference; plain references carry an empty
+ * metadata object.
+ */
+export function getServerFunctionMetadata(fn) {
+  if (typeof fn !== "function") return undefined;
+  return fn[SERVER_FUNCTION_METADATA] || undefined;
+}
+
+/**
+ * Whether `fn` is a server function reference (a client proxy or a
+ * server-side registered callable). Detection is by the registered-symbol
+ * metadata brand, so it holds across duplicated module instances.
+ */
+export function isServerFunction(fn) {
+  return typeof fn === "function" && !!fn[SERVER_FUNCTION_METADATA];
+}
+
+/**
+ * Attaches user-declared transport metadata to a server function reference
+ * (client proxy or server-registered callable) and returns the reference.
+ * Writes ride the same channel `GET` uses: later writes shallow-merge over
+ * earlier ones, and `getServerFunctionMetadata(fn)` reads the merged bag —
+ * so `withMeta` composes with `GET` in either order.
+ *
+ * The pattern is declare-on-function, react-in-hook: metadata declared
+ * here is what `prepareRequest` receives as `context.meta`, letting
+ * session-dynamic transport policy key on declarations instead of
+ * comparing function ids:
+ *
+ * ```ts
+ * export const chargeCard = withMeta(async (amount: number) => {
+ *   "use server";
+ *   // ...
+ * }, { requiresAuth: true });
+ *
+ * configureServerFunctionsClient({
+ *   prepareRequest(init, { meta }) {
+ *     if (meta?.requiresAuth) {
+ *       return {
+ *         ...init,
+ *         headers: { ...init.headers, Authorization: `Bearer ${session.token()}` }
+ *       };
+ *     }
+ *     return init;
+ *   }
+ * });
+ * ```
+ */
+export function withMeta(fn, meta) {
+  const metadata = getServerFunctionMetadata(fn);
+  if (!metadata) {
+    throw new Error("withMeta expects a server function reference");
+  }
+  Object.assign(metadata, meta);
+  return fn;
+}
+
 /** Header carrying the server function id. */
 export const FUNCTION_HEADER = "X-Server-Function-Id";
 
