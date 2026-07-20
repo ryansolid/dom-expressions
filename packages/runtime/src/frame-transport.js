@@ -35,11 +35,18 @@ export function isFrameStreamResponse(response) {
 export async function applyFrameResponse(response, host, options = {}) {
   const rootId = response.headers.get(FRAME_STREAM_HEADER) ?? "";
   const as = options.as;
+  // The client owns versions too: the producer can't know how many streams
+  // a boundary has consumed, so pass `options.version` (the Nth response
+  // into this boundary) and every chunk of the response — one response IS
+  // one version — is restamped, making policy A's stale-guard real across
+  // navigations.
+  const version = options.version;
   const reader = new ChunkReader(response.body);
   let result = await reader.next();
   while (!result.done) {
     const chunk = JSON.parse(result.value);
     if (as !== undefined && chunk.id === rootId) chunk.id = as;
+    if (version !== undefined) chunk.version = version;
     host.apply(chunk);
     result = await reader.next();
   }
@@ -63,7 +70,7 @@ export async function applyFrameResponse(response, host, options = {}) {
  * once per boundary and cached (a WeakMap on the captured context, so
  * boundary caches die with their call sites).
  */
-export function createServerComponentHandler({ host, component, capture }) {
+export function createServerComponentHandler({ host, component, capture, onStream }) {
   const byContext = new WeakMap();
   const byFunction = new Map();
   let boundary = 0;
@@ -76,10 +83,16 @@ export function createServerComponentHandler({ host, component, capture }) {
       let entry = keyed ? byContext.get(key) : byFunction.get(ctx.id);
       if (!entry) {
         const frameId = `sc:${boundary++}`;
-        entry = { frameId, component: component(frameId) };
+        entry = { frameId, version: 0, component: component(frameId) };
         keyed ? byContext.set(key, entry) : byFunction.set(ctx.id, entry);
       }
-      applyFrameResponse(response, host, { as: entry.frameId });
+      // A new response into the boundary: bump the client-owned version and
+      // let the integration rotate response-scoped state (data tables).
+      const version = ++entry.version;
+      if (onStream) onStream(entry.frameId, version, response);
+      applyFrameResponse(response, host, { as: entry.frameId, version }).catch(
+        err => host.apply({ type: "error", id: entry.frameId, version, error: { message: String(err && err.message) } })
+      );
       return entry.component;
     }
   };

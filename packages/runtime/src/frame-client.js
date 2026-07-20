@@ -185,8 +185,8 @@ export function createFrameHost(options = {}) {
       if (!options.serialize) throw new Error("host has no serializer");
       return options.serialize(value);
     },
-    resolve(ref) {
-      return options.resolve ? options.resolve(ref) : undefined;
+    resolve(ref, frameId) {
+      return options.resolve ? options.resolve(ref, frameId) : undefined;
     }
   };
 }
@@ -310,11 +310,25 @@ class FrameImpl {
     } else if (v > this.#version) {
       // Policy A: version only guards against stale (older) writes. A newer
       // version is an in-place update, not a reset — the store, applied-root,
-      // and reveal state are kept so the reconciler morphs server content
+      // and slot records are kept so the reconciler morphs server content
       // while client-owned slots/regions and their state survive (e.g. across
       // a client-side navigation). Stale discard is the `v < version` branch;
       // a genuine teardown is `dispose()`.
+      //
+      // Segment state, though, is per-response: fragment names restart in
+      // every stream (`pl-0`, ...), so a new version's placeholder must not
+      // be skipped because the OLD version's segment of the same name
+      // already revealed — nor revealed instantly with the old version's
+      // content. Reveal bookkeeping and seg/tpl/error records reset; slot
+      // records stay (dedupe is what preserves occurrence state).
       this.#version = v;
+      this.#revealed.clear();
+      this.#fallbackShown.clear();
+      for (const key of Object.keys(this.#store)) {
+        if (key.startsWith("seg:") || key.startsWith("tpl:") || key === ":error") {
+          delete this.#store[key];
+        }
+      }
     }
 
     for (const key of Object.keys(write.r)) {
@@ -438,8 +452,8 @@ class FrameImpl {
       // siblings) is a zombie: remount fresh so content stays correct, even
       // though state can't survive a destroyed node.
       const prev = this.#slotNodes.get(occurrence);
-      const zombie =
-        this.#mountedSlots.has(occurrence) && prev && prev.length && !prev[0].parentNode;
+      const prevFirst = Array.isArray(prev) ? prev[0] : prev;
+      const zombie = this.#mountedSlots.has(occurrence) && prevFirst && !prevFirst.parentNode;
       if (zombie) {
         this.#mountedSlots.delete(occurrence);
         this.#runSlotCleanups(occurrence);
@@ -550,7 +564,9 @@ class FrameImpl {
     for (const key of Object.keys(args)) {
       const value = args[key];
       if (isDataRef(value)) {
-        props[key] = host ? host.resolve(value) : undefined;
+        // The frame's id rides along so multi-stream hosts can route the
+        // ref to the right response-scoped data table.
+        props[key] = host ? host.resolve(value, this.#options.id) : undefined;
       } else if (isFrameRef(value)) {
         const fragment = document.createDocumentFragment();
         let entry = regions.get(value.$frame);
@@ -1242,7 +1258,25 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null) {
       newChild = nextNew;
       continue;
     }
-    // Incompatible: place the new node and leave the old one for later
+    // Incompatible here — but a compatible element may sit further along:
+    // content churn between versions (a placeholder where revealed content
+    // was) shifts positions, and recreating a later match would destroy the
+    // client-owned interiors it carries. Relocate it instead (skipping over
+    // projection-range interiors, which belong to the client).
+    if (newChild.nodeType === 1) {
+      let ahead = old.nextSibling;
+      while (ahead && ahead !== boundEnd && !compatible(ahead, newChild)) {
+        const aheadPid = projectionStartId(ahead);
+        ahead = aheadPid !== null ? afterRange(ahead, aheadPid) : ahead.nextSibling;
+      }
+      if (ahead && ahead !== boundEnd) {
+        parent.insertBefore(ahead, old);
+        morphNode(ahead, newChild);
+        newChild = nextNew;
+        continue;
+      }
+    }
+    // No match anywhere: place the new node and leave the old one for later
     // matching or removal.
     parent.insertBefore(newChild, old);
     newChild = nextNew;

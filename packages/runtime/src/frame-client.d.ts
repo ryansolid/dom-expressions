@@ -123,7 +123,8 @@ export interface FrameHost {
   /** The first registered frame under the id, if any. */
   get(id: string): Frame | undefined;
   serialize(value: unknown): { $ref: string };
-  resolve(ref: { $ref: string }): unknown;
+  /** `frameId` is the resolving frame's id — route to its stream's table. */
+  resolve(ref: { $ref: string }, frameId?: string): unknown;
 }
 
 /**
@@ -139,8 +140,13 @@ export const FRAME_APPLIED_EVENT: "frame:applied";
 
 /** Options for `createFrameHost`. */
 export interface FrameHostOptions {
-  /** Backs `{$ref}` slot args (typically a codec data table's `resolve`). */
-  resolve?(ref: { $ref: string }): unknown;
+  /**
+   * Backs `{$ref}` slot args (typically a codec data table's `resolve`).
+   * `frameId` identifies the resolving frame — data tables are
+   * response-scoped, so multi-stream hosts route by it (nested region ids
+   * prefix-match their root).
+   */
+  resolve?(ref: { $ref: string }, frameId?: string): unknown;
   /** Test/host-side counterpart of `resolve`. */
   serialize?(value: unknown): { $ref: string };
   /**

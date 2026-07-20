@@ -324,7 +324,7 @@ inside.
 
 Measured, min+gzip, CI-guarded: the whole client machinery — store,
 streaming, slot model, transport, the stable-component policy — is
-**~5 KB** for an app already using server functions (~11 KB standalone,
+**~5.5 KB** for an app already using server functions (~11.5 KB standalone,
 dominated by the shared serializer).
 The DOM reconciler inside it is 0.7 KB — smaller than micromorph. An app
 that imports none of this pays **zero bytes**; that's enforced by the same

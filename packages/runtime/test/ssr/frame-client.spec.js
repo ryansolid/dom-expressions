@@ -1672,6 +1672,81 @@ describe("frame lifecycle", () => {
   });
 });
 
+describe("segment state across versions", () => {
+  it("a new version's same-named segment reveals fresh: no stale content, no stuck fallback", () => {
+    const host = createFrameHost(createMockSerializer());
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    createFrame(el, { id: "nav", host });
+
+    // v1: shell + async fragment, revealed.
+    host.apply({ type: "html", id: "nav", version: 1, html: `<article><h1>One</h1>${ph("0")}</article>` });
+    host.apply({ type: "fragment", id: "nav", version: 1, key: "0", html: "<p>one-comments</p>" });
+    host.apply({ type: "reveal", id: "nav", version: 1, keys: ["0"] });
+    expect(el.textContent).toBe("Oneone-comments");
+
+    // v2 shell arrives with ITS OWN pl-0 placeholder. The old version's
+    // reveal state must not leak: neither instantly revealing v1's fragment
+    // into it, nor skipping the segment so the fallback sticks forever.
+    host.apply({
+      type: "html",
+      id: "nav",
+      version: 2,
+      html: `<article><h1>Two</h1>${ph("0")}</article>`
+    });
+    expect(el.textContent).toBe("Two");
+    expect(el.innerHTML).toContain("pl-0");
+    expect(el.innerHTML).not.toContain("one-comments");
+
+    // v2's own fragment reveals normally.
+    host.apply({ type: "fragment", id: "nav", version: 2, key: "0", html: "<p>two-comments</p>" });
+    host.apply({ type: "reveal", id: "nav", version: 2, keys: ["0"] });
+    expect(el.textContent).toBe("Twotwo-comments");
+    expect(el.innerHTML).not.toContain("pl-0");
+    el.remove();
+  });
+});
+
+describe("morph lookahead", () => {
+  it("relocates a same-tag element past churned content, client interior intact", () => {
+    const host = createFrameHost(createMockSerializer());
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const badge = document.createElement("input");
+    createFrame(el, { id: "la", host, slots: { children: () => badge } });
+
+    // v1: revealed content sits between the meta and the footer.
+    host.apply({
+      type: "html",
+      id: "la",
+      version: 1,
+      html:
+        "<article><h1>One</h1><section>revealed</section>" +
+        "<footer><!--proj:children:start--><!--proj:children:end--></footer></article>"
+    });
+    const footer = el.querySelector("footer");
+    expect(el.querySelector("footer input")).toBe(badge);
+    badge.dataset.draft = "typed";
+
+    // v2: a placeholder + fallback where the section was — the footer moved
+    // positions. The morph must pair footer-to-footer across the churn, not
+    // recreate it (which would destroy the client-owned draft inside).
+    host.apply({
+      type: "html",
+      id: "la",
+      version: 2,
+      html:
+        `<article><h1>Two</h1>${ph("0")}` +
+        "<footer><!--proj:children:start--><!--proj:children:end--></footer></article>"
+    });
+    expect(el.querySelector("h1").textContent).toBe("Two");
+    expect(el.querySelector("footer")).toBe(footer);
+    expect(el.querySelector("footer input")).toBe(badge);
+    expect(badge.dataset.draft).toBe("typed");
+    el.remove();
+  });
+});
+
 describe("multi-mount fan-out and late-mount seeding", () => {
   let a, b;
   beforeEach(() => {
