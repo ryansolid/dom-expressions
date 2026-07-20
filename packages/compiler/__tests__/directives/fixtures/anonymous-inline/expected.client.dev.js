@@ -1,2 +1,3 @@
 import { createServerReference as createServerReference_1 } from "@solidjs/web/server-functions";
-export const run = createServerReference_1("cb5f8b97-1-run", "run");
+import { register } from "./bus";
+register(createServerReference_1("3a0ab4b1-0-anonymous"));

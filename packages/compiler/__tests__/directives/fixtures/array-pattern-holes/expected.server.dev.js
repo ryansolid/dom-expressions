@@ -5,6 +5,6 @@ const [first, second, third] = getTriple();
 const [head, ...tail] = getList();
 const serverFunction_1 = registerServerReference_1("70d95093-0-send", async () => {
   return first + third + tail.length;
-});
+}, "send");
 export const send = createServerReference_1(serverFunction_1);
 export const keep = () => second;

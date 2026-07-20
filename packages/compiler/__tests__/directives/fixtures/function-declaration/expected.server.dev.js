@@ -5,7 +5,7 @@ const todoActions = function todoActions() {
 };
 const serverFunction_1 = registerServerReference_1("f0017999-0-saveTodo", async function saveTodo(todo) {
   return db.todos.insert(todo);
-});
+}, "saveTodo");
 const saveTodo = createServerReference_1(serverFunction_1);
 import { db } from "./db";
 export { saveTodo };

@@ -7,5 +7,5 @@ const serverFunction_1 = registerServerReference_1("d1f836b4-0-push", async even
     method: "POST",
     body: event
   });
-});
+}, "push");
 export const push = createServerReference_1(serverFunction_1);

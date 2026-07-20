@@ -291,6 +291,17 @@ impl<'a> DirectivesTransform<'a> {
         ast.expression_string_literal(SPAN, ast.atom(value), None)
     }
 
+    /// Dev-only trailing `name` argument for the reference calls —
+    /// `registerServerReference(id, fn, name)` on the server,
+    /// `createServerReference(id, name)` on the client — seeding the runtime
+    /// metadata channel with a human-readable label for dev tooling. The
+    /// argument is trailing/optional (out-of-band consumers are unaffected),
+    /// production output emits nothing (byte-identical to before), and
+    /// anonymous extractions emit nothing.
+    fn dev_name_argument(&self, name: &str) -> Option<Expression<'a>> {
+        (self.env == Env::Development && name != "anonymous").then(|| self.string(name))
+    }
+
     fn call(&self, callee: &str, args: Vec<Expression<'a>>) -> Expression<'a> {
         let ast = self.ast();
         let mut arguments = ast.vec_with_capacity(args.len());
@@ -444,15 +455,13 @@ impl<'a> DirectivesTransform<'a> {
                 slot,
                 self.call(&create_local, vec![self.identifier(&source_local)]),
             );
+            let mut register_args = vec![self.string(&fn_id), function_expression];
+            if let Some(name_argument) = self.dev_name_argument(&name) {
+                register_args.push(name_argument);
+            }
             insertions.push((
                 key.statement,
-                self.const_statement(
-                    &source_local,
-                    self.call(
-                        &register_local,
-                        vec![self.string(&fn_id), function_expression],
-                    ),
-                ),
+                self.const_statement(&source_local, self.call(&register_local, register_args)),
             ));
             self.functions.push(FunctionMeta {
                 id: fn_id,
@@ -496,18 +505,23 @@ impl<'a> DirectivesTransform<'a> {
                 Some(local.clone())
             } else {
                 let local = self.generate_unique_name("fn");
-                let Some((_, fn_id, _)) = source_ids.iter().find(|(k, _, _)| k == key) else {
+                let Some((_, fn_id, name)) = source_ids.iter().find(|(k, _, _)| k == key) else {
                     continue;
                 };
                 let fn_id = fn_id.clone();
+                let name = name.clone();
                 let create_local = self.import_local(RuntimeImport::Create);
+                let mut create_args = vec![self.string(&fn_id)];
+                if let Some(name_argument) = self.dev_name_argument(&name) {
+                    create_args.push(name_argument);
+                }
                 let ast = self.ast();
                 declarators.push(ast.variable_declarator(
                     SPAN,
                     VariableDeclarationKind::Const,
                     ast.binding_pattern_binding_identifier(SPAN, ast.atom(&local)),
                     NONE,
-                    Some(self.call(&create_local, vec![self.string(&fn_id)])),
+                    Some(self.call(&create_local, create_args)),
                     false,
                 ));
                 declared.push((*key, local.clone()));
@@ -593,23 +607,23 @@ impl<'a> DirectivesTransform<'a> {
                     expression,
                     self.call(&create_local, vec![self.identifier(&source_local)]),
                 );
+                let mut register_args = vec![self.string(&fn_id), function_expression];
+                if let Some(name_argument) = self.dev_name_argument(name) {
+                    register_args.push(name_argument);
+                }
                 insertions.push((
                     top_index,
-                    self.const_statement(
-                        &source_local,
-                        self.call(
-                            &register_local,
-                            vec![self.string(&fn_id), function_expression],
-                        ),
-                    ),
+                    self.const_statement(&source_local, self.call(&register_local, register_args)),
                 ));
             }
             Mode::Client => {
                 let create_local = self.import_local(RuntimeImport::Create);
-                let replaced = std::mem::replace(
-                    expression,
-                    self.call(&create_local, vec![self.string(&fn_id)]),
-                );
+                let mut create_args = vec![self.string(&fn_id)];
+                if let Some(name_argument) = self.dev_name_argument(name) {
+                    create_args.push(name_argument);
+                }
+                let replaced =
+                    std::mem::replace(expression, self.call(&create_local, create_args));
                 // The function subtree is discarded on the client: whatever
                 // it referenced may now be orphaned, and only those bindings
                 // are eligible for the post-transform shake.
