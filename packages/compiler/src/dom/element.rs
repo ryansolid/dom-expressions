@@ -585,9 +585,9 @@ impl AstDomTransform<'_, '_> {
             .map(StaticValue::into_template_value)
     }
 
-    /// Whether the source region carries the configured static marker comment
-    /// (`/*@static*/` by default), opting the value out of effect wrapping.
-    pub(crate) fn has_static_marker(&self, span: oxc_span::Span) -> bool {
-        crate::shared::utils::source_from_span(span, self.source).contains(&self.static_marker)
+    /// The shared classification authority over this transform's bindings,
+    /// source, and configured static marker.
+    pub(crate) fn classify(&self) -> crate::shared::classify::Classify<'_> {
+        crate::shared::classify::Classify::new(&self.bindings, self.source, &self.static_marker)
     }
 }

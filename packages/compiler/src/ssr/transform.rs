@@ -19,6 +19,7 @@ use crate::shared::ast::{
 };
 use crate::shared::attr_plan::{AttrPlan, AttrPlanner, PlanValue};
 use crate::shared::bindings::BindingTable;
+use crate::shared::classify::Classify;
 use crate::shared::component_callee::{component_callee_expression, ComponentCalleeContext};
 use crate::shared::component_props::{
     component_property, component_props_expression, component_spread_expression,
@@ -34,8 +35,7 @@ use crate::shared::constants::{
 use crate::shared::utils::{
     child_slot_allocates_ids, decode_html_entities, element_name, escape_html_attribute,
     escape_html_text_expression, expression_can_return_hydratable_child, format_number,
-    is_component_name, is_dynamic_expression_with_namespaces, is_void_element,
-    normalize_static_attribute_value, trim_jsx_text,
+    is_component_name, is_void_element, normalize_static_attribute_value, trim_jsx_text,
 };
 
 use super::template::SsrTemplate;
@@ -162,6 +162,12 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     /// Local for the configured memo wrapper (Babel's `_$${name}` hint).
     pub(crate) fn memo_wrapper_local(&self) -> String {
         format!("_${}", self.memo_wrapper.as_deref().unwrap_or("memo"))
+    }
+
+    /// The shared classification authority over this transform's bindings,
+    /// source, and configured static marker.
+    pub(crate) fn classify(&self) -> Classify<'_> {
+        Classify::new(&self.bindings, self.source, &self.static_marker)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1055,11 +1061,8 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 }),
                 JSXChild::ExpressionContainer(container) => {
                     let dynamic = container.expression.as_expression().is_some_and(|raw| {
-                        let marker_static = self
-                            .attr_planner()
-                            .marker_between(container.span.start, raw.span().start);
-                        !marker_static
-                            && is_dynamic_expression_with_namespaces(raw, true, &self.bindings)
+                        self.classify()
+                            .is_dynamic(Some(container.span.start), raw, true)
                     });
                     if !dynamic {
                         values.push(ChildValue {
@@ -1100,8 +1103,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 }
                 JSXChild::Spread(spread) => {
                     let expression = spread.expression.clone_in(self.allocator);
-                    let dynamic =
-                        is_dynamic_expression_with_namespaces(&expression, false, &self.bindings);
+                    let dynamic = self.classify().is_dynamic(None, &expression, false);
                     if !dynamic {
                         values.push(ChildValue {
                             value: expression,
@@ -1183,17 +1185,14 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         if name == "ref" {
             return false;
         }
-        if crate::shared::utils::source_from_span(container.span, self.source)
-            .contains(&self.static_marker)
-        {
-            return false;
-        }
         // Babel gates component-prop getters on
-        // `isDynamic(value, { checkMember: true, checkTags: true })`.
-        container
-            .expression
-            .as_expression()
-            .is_some_and(|expr| is_dynamic_expression_with_namespaces(expr, true, &self.bindings))
+        // `isDynamic(value, { checkMember: true, checkTags: true })` —
+        // marker comments and namespace-import members short-circuit inside
+        // the shared predicate.
+        container.expression.as_expression().is_some_and(|expr| {
+            self.classify()
+                .is_dynamic(Some(container.span.start), expr, true)
+        })
     }
 
     fn lower_spread_element(
@@ -1253,7 +1252,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                     let mut argument = spread.argument.clone_in(self.allocator);
                     // Dynamic spreads defer behind a thunk and force the
                     // mergeProps wrap (Babel's `dynamicSpread`).
-                    if is_dynamic_expression_with_namespaces(&argument, false, &self.bindings) {
+                    if self.classify().is_dynamic(None, &argument, false) {
                         dynamic_spread = true;
                         argument = self.inline_call_expression(argument);
                     }
@@ -1346,13 +1345,11 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                     return Ok(None);
                 };
                 let value = expression.clone_in(self.allocator);
-                let marker_static = self
-                    .attr_planner()
-                    .marker_between(container.span.start, expression.span().start);
                 // Dynamic values become getters (Babel's objectMethod) unless
                 // marked static.
-                if !marker_static
-                    && is_dynamic_expression_with_namespaces(expression, true, &self.bindings)
+                if self
+                    .classify()
+                    .is_dynamic(Some(container.span.start), expression, true)
                 {
                     Ok(Some(self.object_getter_property(attr.span, &name, value)))
                 } else {
@@ -1443,15 +1440,11 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                     }
                     let expression =
                         jsx_expression_to_expression(&container.expression, self.allocator);
-                    let marker_static = self
-                        .attr_planner()
-                        .marker_between(container.span.start, expression.span().start);
-                    let dynamic = !marker_static
-                        && is_dynamic_expression_with_namespaces(
-                            &expression,
-                            false,
-                            &self.bindings,
-                        );
+                    let dynamic = self.classify().is_dynamic(
+                        Some(container.span.start),
+                        &expression,
+                        false,
+                    );
                     let allocates = self.hydratable && child_slot_allocates_ids(child);
                     let value = self.dynamic_child_value(container.span, expression, dynamic);
                     let value = if do_not_escape {
@@ -1474,8 +1467,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 }
                 JSXChild::Spread(spread) => {
                     let expression = spread.expression.clone_in(self.allocator);
-                    let dynamic =
-                        is_dynamic_expression_with_namespaces(&expression, false, &self.bindings);
+                    let dynamic = self.classify().is_dynamic(None, &expression, false);
                     let allocates = self.hydratable && child_slot_allocates_ids(child);
                     let value = if dynamic {
                         self.arrow_return_expression(spread.span, expression)
@@ -1560,15 +1552,11 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                     // a non-dynamic hole emits its raw expression below.
                     let expression =
                         jsx_expression_to_expression(&container.expression, self.allocator);
-                    let marker_static = self
-                        .attr_planner()
-                        .marker_between(container.span.start, expression.span().start);
-                    let dynamic = !marker_static
-                        && is_dynamic_expression_with_namespaces(
-                            &expression,
-                            false,
-                            &self.bindings,
-                        );
+                    let dynamic = self.classify().is_dynamic(
+                        Some(container.span.start),
+                        &expression,
+                        false,
+                    );
                     if !dynamic {
                         values.push(expression);
                         continue;
@@ -1588,8 +1576,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 JSXChild::Fragment(fragment) => values.push(self.lower_fragment(fragment)?),
                 JSXChild::Spread(spread) => {
                     let expression = spread.expression.clone_in(self.allocator);
-                    let dynamic =
-                        is_dynamic_expression_with_namespaces(&expression, false, &self.bindings);
+                    let dynamic = self.classify().is_dynamic(None, &expression, false);
                     if !dynamic {
                         values.push(expression);
                         continue;
@@ -1777,8 +1764,8 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             return Ok(());
         }
 
-        let is_dynamic_value = !plan.marker_static
-            && is_dynamic_expression_with_namespaces(&expression, true, &self.bindings);
+        let is_dynamic_value =
+            !plan.marker_static && self.classify().is_dynamic(None, &expression, true);
         let is_boolean = matches!(expression, Expression::BooleanLiteral(_));
         let mut do_escape = !is_boolean;
         let mut value = expression;
@@ -2220,15 +2207,11 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                     }
                     let expression =
                         jsx_expression_to_expression(&container.expression, self.allocator);
-                    let marker_static = self
-                        .attr_planner()
-                        .marker_between(container.span.start, expression.span().start);
-                    let dynamic = !marker_static
-                        && is_dynamic_expression_with_namespaces(
-                            &expression,
-                            false,
-                            &self.bindings,
-                        );
+                    let dynamic = self.classify().is_dynamic(
+                        Some(container.span.start),
+                        &expression,
+                        false,
+                    );
                     let allocates = self.hydratable && child_slot_allocates_ids(child);
                     let value = self.dynamic_child_value(container.span, expression, dynamic);
                     let value = if do_not_escape {
@@ -2245,8 +2228,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 }
                 JSXChild::Spread(spread) => {
                     let expression = spread.expression.clone_in(self.allocator);
-                    let dynamic =
-                        is_dynamic_expression_with_namespaces(&expression, false, &self.bindings);
+                    let dynamic = self.classify().is_dynamic(None, &expression, false);
                     let allocates = self.hydratable && child_slot_allocates_ids(child);
                     let value = if dynamic {
                         self.arrow_return_expression(spread.span, expression)
@@ -2313,8 +2295,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             }
             _ => {}
         }
-        let dynamic =
-            !marker_static && is_dynamic_expression_with_namespaces(&value, false, &self.bindings);
+        let dynamic = !marker_static && self.classify().is_dynamic(None, &value, false);
         let allocates = self.hydratable && expression_can_return_hydratable_child(&value);
         let value = self.dynamic_child_value(span, value, dynamic);
         let value = if do_not_escape {
@@ -2848,8 +2829,8 @@ impl<'a> ComponentPropContext<'a> for AstSsrTransform<'a, '_> {
         self.ast()
     }
 
-    fn binding_table(&self) -> &BindingTable {
-        &self.bindings
+    fn classify(&self) -> Classify<'_> {
+        AstSsrTransform::classify(self)
     }
 
     fn mark_merge_props(&mut self) {
@@ -3060,6 +3041,10 @@ impl<'a> ConditionBuilder<'a> for AstSsrTransform<'a, '_> {
 
     fn next_condition_id(&mut self) -> String {
         crate::shared::utils::next_unique_local("_c", &mut self.condition_index, &self.bindings)
+    }
+
+    fn classify(&self) -> Classify<'_> {
+        AstSsrTransform::classify(self)
     }
 }
 

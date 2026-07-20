@@ -1075,6 +1075,83 @@ const a = <Show><><div ref={r}>{x()}</div></></Show>;
 `,
   "fragment in non-children component prop": `
 const a = <Show thing={<><div /><span /></>} />;
+`,
+
+  // --- Round 8: one isDynamic authority. Babel's isDynamic combines the
+  // /*@static*/ leading-comment check, the namespace-import member carve-out,
+  // and the deep traversal in a single function that every mode consults;
+  // the port had split it into fragments reassembled differently per call
+  // site, so dom/universal misclassified namespace-import members (extra
+  // thunks/getters/effects where Babel emits static values), dom ignored
+  // static markers in fragment and component children, span-based marker
+  // scanning made trailing comments (`{a() /*@static*/}`) wrongly static,
+  // and transformCondition's branch probes missed the carve-out in every
+  // mode. -------------------------------------------------------------------
+  "ns import member element child": `
+import * as styles from "./m";
+const a = <div>{styles.button}</div>;
+`,
+  "ns import member fragment child": `
+import * as styles from "./m";
+const a = <>{styles.button}</>;
+`,
+  "ns import member component child": `
+import * as styles from "./m";
+const a = <Comp>{styles.button}</Comp>;
+`,
+  "ns import member component prop": `
+import * as ns from "./m";
+const a = <Comp p={ns.value} />;
+`,
+  "ns import member element attribute": `
+import * as ns from "./m";
+const a = <div title={ns.x}>{y()}</div>;
+`,
+  "ns import computed member static key": `
+import * as ns from "./m";
+const a = <div>{ns["key"]}</div>;
+`,
+  "ns import computed member dynamic key": `
+import * as ns from "./m";
+const a = <div>{ns[key()]}</div>;
+`,
+  "ns import optional member child": `
+import * as ns from "./m";
+const a = <div>{ns?.x}</div>;
+`,
+  "ns import member nested in expression": `
+import * as ns from "./m";
+const a = <div>{[ns.x]}</div>;
+`,
+  "ns import spread on component": `
+import * as ns from "./m";
+const a = <Comp {...ns.props} />;
+`,
+  "ns import spread on element": `
+import * as ns from "./m";
+const a = <div {...ns.props} />;
+`,
+  "ns import member in conditional branches": `
+import * as ns from "./m";
+const a = <div>{cond() ? ns.a : ns.b}</div>;
+`,
+  "static marker fragment child": `
+const a = <>{/*@static*/ a()}</>;
+`,
+  "static marker component child": `
+const a = <Comp>{/*@static*/ a()}</Comp>;
+`,
+  "static marker component children multi": `
+const a = <Comp>{/*@static*/ a()}{b()}</Comp>;
+`,
+  "static marker trailing comment stays dynamic": `
+const a = <div>{a() /*@static*/}</div>;
+`,
+  "static marker trailing in component prop": `
+const a = <Comp p={state.x /*@static*/} />;
+`,
+  "static marker in condition branch": `
+const a = <div>{cond() ? /*@static*/ x() : y()}</div>;
 `
 };
 

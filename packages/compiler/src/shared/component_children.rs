@@ -8,7 +8,7 @@ use crate::shared::array::expression_to_array_element;
 use crate::shared::component::transform_component_expression;
 use crate::shared::condition::{is_condition_shape, memo_wrap_thunk};
 use crate::shared::fragment::lower_fragment;
-use crate::shared::utils::{decode_html_entities, is_dynamic_expression_deep, trim_jsx_text};
+use crate::shared::utils::{decode_html_entities, trim_jsx_text};
 
 pub(crate) struct ComponentChildren<'a> {
     pub(crate) value: Expression<'a>,
@@ -65,11 +65,13 @@ pub(crate) fn component_children<'a>(
                 }
                 // Babel's `transformNode` gate for component children:
                 // `isDynamic(expr, { checkMember: true, checkTags: true })`
-                // on the original (pre-lowered) expression.
-                let dynamic = container
-                    .expression
-                    .as_expression()
-                    .is_some_and(|expression| is_dynamic_expression_deep(expression, true));
+                // on the original (pre-lowered) expression — marker comments
+                // and namespace-import members short-circuit inside the
+                // shared predicate.
+                let dynamic = container.expression.as_expression().is_some_and(|expression| {
+                    ctx.classify()
+                        .is_dynamic(Some(container.span.start), expression, true)
+                });
                 let mut value = transform_component_expression(ctx, &container.expression);
                 if dynamic && ctx.wrap_conditionals && is_condition_shape(&value) {
                     // `transformCondition(..., true)` — memos collapse inline.
@@ -95,7 +97,7 @@ pub(crate) fn component_children<'a>(
             }
             JSXChild::Spread(spread) => {
                 let value = spread.expression.clone_in(ctx.allocator);
-                let dynamic = is_dynamic_expression_deep(&value, false);
+                let dynamic = ctx.classify().is_dynamic(None, &value, false);
                 values.push(ChildValue {
                     value,
                     kind: if dynamic {

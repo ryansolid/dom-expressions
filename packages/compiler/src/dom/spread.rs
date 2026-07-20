@@ -8,7 +8,7 @@ use crate::shared::ast::arrow_return_expression;
 use crate::shared::condition::{
     is_condition_shape, transform_condition_inline, zero_arg_call_thunk,
 };
-use crate::shared::utils::{decode_html_entities, is_dynamic_expression_deep, source_from_span};
+use crate::shared::utils::{decode_html_entities, source_from_span};
 
 impl<'a> AstDomTransform<'a, '_> {
     /// Port of Babel's `processSpreads` (dom/element.ts).
@@ -38,7 +38,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     }
                     let is_static =
                         source_from_span(spread.span, self.source).contains(&self.static_marker);
-                    let dynamic = is_dynamic_expression_deep(&spread.argument, false);
+                    let dynamic = self.classify().is_dynamic(None, &spread.argument, false);
                     let value = spread.argument.clone_in(self.allocator);
                     let value = if dynamic {
                         dynamic_spread = true;
@@ -163,13 +163,10 @@ impl<'a> AstDomTransform<'a, '_> {
                 ))
             }
             Some(JSXAttributeValue::ExpressionContainer(container)) => {
-                let marked_static = source_from_span(container.span, self.source)
-                    .contains(&self.static_marker);
-                let dynamic = !marked_static
-                    && container
-                        .expression
-                        .as_expression()
-                        .is_some_and(|expression| is_dynamic_expression_deep(expression, false));
+                let dynamic = container.expression.as_expression().is_some_and(|expression| {
+                    self.classify()
+                        .is_dynamic(Some(container.span.start), expression, false)
+                });
                 let value = self.attribute_value_expression(container);
                 if dynamic {
                     // Babel: logical/conditional getter bodies flow through

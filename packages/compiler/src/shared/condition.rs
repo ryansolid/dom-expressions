@@ -5,11 +5,11 @@
 
 use oxc_allocator::{Allocator, CloneIn};
 use oxc_ast::{ast::Expression, AstBuilder, NONE};
-use oxc_span::Span;
+use oxc_span::{GetSpan, Span};
 use oxc_syntax::operator::{BinaryOperator, LogicalOperator, UnaryOperator};
 
 use crate::shared::ast::{arrow_return_expression, expression_to_argument, variable_statement};
-use crate::shared::utils::is_dynamic_expression_deep;
+use crate::shared::classify::Classify;
 
 pub(crate) trait ConditionBuilder<'a> {
     fn condition_allocator(&self) -> &'a Allocator;
@@ -20,6 +20,10 @@ pub(crate) trait ConditionBuilder<'a> {
     fn register_memo(&mut self) -> String;
     /// Fresh identifier for a hoisted memoized condition (Babel's `_c$` uid).
     fn next_condition_id(&mut self) -> String;
+    /// The shared classification authority (Babel's `isDynamic` probes on
+    /// tests and branches consult the same marker/namespace rules as child
+    /// holes).
+    fn classify(&self) -> Classify<'_>;
 }
 
 /// Result of `transform_condition`: Babel returns either a
@@ -243,12 +247,23 @@ fn transform_condition_value<'a, C: ConditionBuilder<'a>>(
         ctx.register_memo();
     }
     let allocator = ctx.condition_allocator();
+    // Babel probes the branches and test with the same `isDynamic` as child
+    // holes — marker comments and namespace-import members short-circuit
+    // here too. A branch's leading trivia starts after the preceding
+    // `?`/`:` token's operand (`test.span.end` / `consequent.span.end`).
     match value {
         Expression::ConditionalExpression(conditional)
-            if is_dynamic_expression_deep(&conditional.consequent, true)
-                || is_dynamic_expression_deep(&conditional.alternate, true) =>
+            if ctx.classify().is_dynamic(
+                Some(conditional.test.span().end),
+                &conditional.consequent,
+                true,
+            ) || ctx.classify().is_dynamic(
+                Some(conditional.consequent.span().end),
+                &conditional.alternate,
+                true,
+            ) =>
         {
-            if !is_dynamic_expression_deep(&conditional.test, false) {
+            if !ctx.classify().is_dynamic(None, &conditional.test, false) {
                 return (Expression::ConditionalExpression(conditional), None);
             }
             let condition = booleanize(allocator, span, conditional.test.clone_in(allocator));
@@ -316,8 +331,10 @@ fn transform_logical_chain<'a, C: ConditionBuilder<'a>>(
         }
         return (Expression::LogicalExpression(logical), None);
     }
-    if !is_dynamic_expression_deep(&logical.right, true)
-        || !is_dynamic_expression_deep(&logical.left, false)
+    if !ctx
+        .classify()
+        .is_dynamic(Some(logical.left.span().end), &logical.right, true)
+        || !ctx.classify().is_dynamic(None, &logical.left, false)
     {
         return (Expression::LogicalExpression(logical), None);
     }

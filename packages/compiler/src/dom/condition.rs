@@ -24,6 +24,10 @@ impl<'a> ConditionBuilder<'a> for AstDomTransform<'a, '_> {
     fn next_condition_id(&mut self) -> String {
         AstDomTransform::next_condition_id(self)
     }
+
+    fn classify(&self) -> crate::shared::classify::Classify<'_> {
+        AstDomTransform::classify(self)
+    }
 }
 
 impl<'a> AstDomTransform<'a, '_> {

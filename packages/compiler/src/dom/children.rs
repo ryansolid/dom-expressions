@@ -4,8 +4,7 @@ use crate::dom::static_template::lower_static_native_template;
 use crate::dom::template::InsertMarker;
 use crate::shared::utils::{
     child_slot_allocates_ids, element_name, escape_html_text, escape_html_text_expression,
-    is_component_name, is_dynamic_child_slot, is_dynamic_expression_deep, static_jsx_expression,
-    trim_jsx_text,
+    is_component_name, static_jsx_expression, trim_jsx_text,
 };
 use napi::bindgen_prelude::*;
 use oxc_allocator::CloneIn;
@@ -290,39 +289,31 @@ impl<'a> AstDomTransform<'a, '_> {
                             ));
                         };
                         self.template_state.uses_insert = true;
-                        // Babel's `transformNode` gates wrapping on a deep
+                        // Babel's `transformNode` gates wrapping on
                         // `isDynamic(expr, { checkMember: true })` of the
                         // original (pre-lowered) expression — tags don't
-                        // count in native child position, and a non-dynamic
-                        // hole inserts its expression untouched.
-                        let deep_dynamic =
-                            container
-                                .expression
-                                .as_expression()
-                                .is_some_and(|expression| {
-                                    is_dynamic_expression_deep(expression, false)
-                                });
+                        // count in native child position, marker comments and
+                        // namespace-import members short-circuit inside the
+                        // shared predicate, and a non-dynamic hole inserts
+                        // its expression untouched.
+                        let dynamic = self.classify().is_dynamic_child_slot(dynamic_child);
                         // JSX inside the hole stays raw for the deferred pass
                         // (Babel wraps the untransformed expression and its
                         // outer traversal lowers the JSX later).
                         let value =
                             jsx_expression_to_expression(&container.expression, self.allocator);
-                        // A `/*@static*/` marker opts the hole out of deferral:
-                        // the value inserts once, unwrapped and unscoped.
-                        let marked_static = self.has_static_marker(container.span);
-                        let value = if marked_static || !deep_dynamic {
-                            value
-                        } else {
+                        let value = if dynamic {
                             self.dom_child_expression(container.span, value)
+                        } else {
+                            value
                         };
                         // Mirror of the ssr generate's `scope()` wrap: deferred
                         // holes that can allocate hydration ids get their own
                         // owner scope. Both flags come from shared predicates
                         // so the generates can't desync.
-                        let value = if !marked_static
+                        let value = if dynamic
                             && self.hydratable
                             && child_slot_allocates_ids(dynamic_child)
-                            && is_dynamic_child_slot(dynamic_child)
                         {
                             self.scope_child_expression(container.span, value)
                         } else {
@@ -362,7 +353,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     let value = spread_child_expression(self, spread.span, &spread.expression);
                     // Spread children always allocate ids; scope keyed off the
                     // same shared dynamic predicate as the ssr generate.
-                    let value = if self.hydratable && is_dynamic_child_slot(child) {
+                    let value = if self.hydratable && self.classify().is_dynamic_child_slot(child) {
                         self.scope_child_expression(spread.span, value)
                     } else {
                         value

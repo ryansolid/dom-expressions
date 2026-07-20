@@ -16,7 +16,7 @@ use crate::shared::constants::{
 };
 use crate::shared::refs::{callable_test, ref_assignment_fallback};
 use crate::shared::utils::{
-    format_attribute_value_with_quotes, format_number, is_dynamic_expression_deep, is_void_element,
+    format_attribute_value_with_quotes, format_number, is_void_element,
     normalize_static_attribute_value,
 };
 
@@ -290,7 +290,7 @@ impl<'a> AstDomTransform<'a, '_> {
 
         let dynamic = self.effect_wrapper.is_some()
             && !plan.marker_static
-            && (is_dynamic_expression_deep(&raw, false)
+            && (self.classify().is_dynamic(None, &raw, false)
                 || ((plan.key == "class" || plan.key == "style")
                     && self.evaluate_confident(&raw).is_none()));
 

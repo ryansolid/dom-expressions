@@ -10,7 +10,7 @@ use crate::dom::element::AstDomTransform;
 pub(crate) trait ComponentPropContext<'a> {
     fn allocator(&self) -> &'a Allocator;
     fn ast(&self) -> AstBuilder<'a>;
-    fn binding_table(&self) -> &crate::shared::bindings::BindingTable;
+    fn classify(&self) -> crate::shared::classify::Classify<'_>;
     fn mark_merge_props(&mut self);
     fn call_identifier(
         &self,
@@ -42,8 +42,8 @@ impl<'a> ComponentPropContext<'a> for AstDomTransform<'a, '_> {
         self.ast()
     }
 
-    fn binding_table(&self) -> &crate::shared::bindings::BindingTable {
-        &self.bindings
+    fn classify(&self) -> crate::shared::classify::Classify<'_> {
+        AstDomTransform::classify(self)
     }
 
     fn mark_merge_props(&mut self) {
@@ -129,11 +129,7 @@ pub(crate) fn component_spread_expression<'a>(
     span: Span,
 ) -> ComponentSpread<'a> {
     let cloned = expression.clone_in(ctx.allocator());
-    if !crate::shared::utils::is_dynamic_expression_with_namespaces(
-        expression,
-        false,
-        ctx.binding_table(),
-    ) {
+    if !ctx.classify().is_dynamic(None, expression, false) {
         return ComponentSpread {
             value: cloned,
             force_merge: false,

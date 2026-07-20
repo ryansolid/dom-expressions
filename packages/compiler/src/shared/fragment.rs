@@ -6,7 +6,7 @@ use crate::dom::element::AstDomTransform;
 use crate::shared::array::expression_to_array_element;
 use crate::shared::component::transform_component_expression;
 use crate::shared::condition::{is_condition_shape, memo_wrap_thunk};
-use crate::shared::utils::{decode_html_entities, is_dynamic_expression_deep, trim_jsx_text};
+use crate::shared::utils::{decode_html_entities, trim_jsx_text};
 
 pub(crate) fn lower_fragment<'a>(
     ctx: &mut AstDomTransform<'a, '_>,
@@ -27,14 +27,16 @@ pub(crate) fn lower_fragment<'a>(
             }
             JSXChild::ExpressionContainer(container) => {
                 if !matches!(container.expression, JSXExpression::EmptyExpression(_)) {
-                    // Babel gates fragment-child wrapping on a deep
+                    // Babel gates fragment-child wrapping on
                     // `isDynamic(expr, { checkMember: true })` of the original
                     // (pre-lowered) expression — JSX tags don't count in
-                    // native fragment position.
-                    let dynamic = container
-                        .expression
-                        .as_expression()
-                        .is_some_and(|expression| is_dynamic_expression_deep(expression, false));
+                    // native fragment position; marker comments and
+                    // namespace-import members short-circuit inside the
+                    // shared predicate.
+                    let dynamic = container.expression.as_expression().is_some_and(|expression| {
+                        ctx.classify()
+                            .is_dynamic(Some(container.span.start), expression, false)
+                    });
                     let mut value = transform_component_expression(ctx, &container.expression);
                     if !dynamic {
                         values.push(value);

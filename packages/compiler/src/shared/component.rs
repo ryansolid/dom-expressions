@@ -14,7 +14,7 @@ use crate::shared::component_props::{
     flush_component_props,
 };
 use crate::shared::refs::component_ref_property;
-use crate::shared::utils::{decode_html_entities, is_dynamic_expression_deep};
+use crate::shared::utils::decode_html_entities;
 
 pub(crate) fn lower_component_with_setup<'a>(
     ctx: &mut AstDomTransform<'a, '_>,
@@ -140,8 +140,9 @@ pub(crate) fn lower_component_with_setup<'a>(
 }
 
 /// Babel gates component-prop getters on
-/// `isDynamic(value, { checkMember: true, checkTags: true })` — a deep
-/// traversal of the original (pre-lowered) expression.
+/// `isDynamic(value, { checkMember: true, checkTags: true })` of the
+/// original (pre-lowered) expression — marker comments and namespace-import
+/// members short-circuit inside the shared predicate.
 fn component_prop_is_dynamic(
     ctx: &AstDomTransform<'_, '_>,
     name: &str,
@@ -150,15 +151,10 @@ fn component_prop_is_dynamic(
     if name == "ref" {
         return false;
     }
-    if crate::shared::utils::source_from_span(container.span, ctx.source)
-        .contains(&ctx.static_marker)
-    {
-        return false;
-    }
-    container
-        .expression
-        .as_expression()
-        .is_some_and(|expression| is_dynamic_expression_deep(expression, true))
+    container.expression.as_expression().is_some_and(|expression| {
+        ctx.classify()
+            .is_dynamic(Some(container.span.start), expression, true)
+    })
 }
 
 pub(crate) fn transform_component_expression<'a>(

@@ -27,10 +27,10 @@ use crate::shared::condition::{
     zero_arg_call_thunk, ConditionBuilder,
 };
 use crate::shared::refs::{assignment_fallback, callable_test};
+use crate::shared::classify::Classify;
 use crate::shared::utils::{
     decode_html_entities, element_name, escape_html_text_expression, get_numbered_id,
-    is_component_name, is_dynamic_expression_deep, source_from_span, static_jsx_expression,
-    trim_jsx_text,
+    is_component_name, static_jsx_expression, trim_jsx_text,
 };
 
 pub(crate) struct AstUniversalTransform<'a, 'source> {
@@ -350,8 +350,10 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         self.effect_wrapper_local()
     }
 
-    fn has_static_marker(&self, span: Span) -> bool {
-        source_from_span(span, self.source).contains(&self.static_marker)
+    /// The shared classification authority over this transform's bindings,
+    /// source, and configured static marker.
+    pub(crate) fn classify(&self) -> Classify<'_> {
+        Classify::new(&self.bindings, self.source, &self.static_marker)
     }
 
     /// Shared attribute evaluation context (used here for Babel's
@@ -550,8 +552,9 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 // literals before the dynamic check.
                 self.attr_planner().fold_confident(&mut value);
                 let dynamic = self.effect_wrapper.is_some()
-                    && !self.has_static_marker(container.span)
-                    && is_dynamic_expression_deep(&value, false);
+                    && self
+                        .classify()
+                        .is_dynamic(Some(container.span.start), &value, false);
                 if dynamic {
                     // Babel stores the raw expression in the dynamics list —
                     // JSX inside it lowers in the deferred pass after the
@@ -679,7 +682,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                     // JSX inside spread arguments and property values stays
                     // raw for the deferred pass (Babel's outer traversal).
                     let argument = spread.argument.clone_in(self.allocator);
-                    let arg = if is_dynamic_expression_deep(&argument, false) {
+                    let arg = if self.classify().is_dynamic(None, &argument, false) {
                         dynamic_spread = true;
                         match zero_arg_call_thunk(&argument, self.allocator) {
                             Some(callee) => callee,
@@ -702,13 +705,10 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                         _ => None,
                     };
                     let dynamic = container.is_some_and(|container| {
-                        !self.has_static_marker(container.span)
-                            && container
-                                .expression
-                                .as_expression()
-                                .is_some_and(|expression| {
-                                    is_dynamic_expression_deep(expression, false)
-                                })
+                        container.expression.as_expression().is_some_and(|expression| {
+                            self.classify()
+                                .is_dynamic(Some(container.span.start), expression, false)
+                        })
                     });
                     let can_native_spread = key != "ref"
                         && !(key.contains(':')
@@ -959,7 +959,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                     significant += 1;
                     let mut value = spread.expression.clone_in(self.allocator);
                     self.visit_expression(&mut value);
-                    let value = if is_dynamic_expression_deep(&value, false) {
+                    let value = if self.classify().is_dynamic(None, &value, false) {
                         arrow_return_expression(self.allocator, spread.span, value)
                     } else {
                         value
@@ -1068,17 +1068,16 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
             );
             return Ok(());
         }
-        let deep_dynamic = container
-            .expression
-            .as_expression()
-            .is_some_and(|expression| is_dynamic_expression_deep(expression, false));
+        let dynamic = container.expression.as_expression().is_some_and(|expression| {
+            self.classify()
+                .is_dynamic(Some(container.span.start), expression, false)
+        });
         let mut value = jsx_expression_to_expression(&container.expression, self.allocator);
         self.visit_expression(&mut value);
-        let marked_static = self.has_static_marker(container.span);
-        let value = if marked_static || !deep_dynamic {
-            value
-        } else {
+        let value = if dynamic {
             self.universal_child_expression(container.span, value)
+        } else {
+            value
         };
         plans.push(ChildPlan::Value {
             span: container.span,
@@ -1466,7 +1465,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
     fn component_spread(&mut self, argument: &Expression<'a>, span: Span) -> ComponentSpread<'a> {
         let mut expression = argument.clone_in(self.allocator);
         self.visit_expression(&mut expression);
-        if is_dynamic_expression_deep(&expression, false) {
+        if self.classify().is_dynamic(None, &expression, false) {
             let value = match zero_arg_call_thunk(&expression, self.allocator) {
                 Some(callee) => callee,
                 None => arrow_return_expression(self.allocator, span, expression),
@@ -1491,13 +1490,10 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         if name == "ref" {
             return false;
         }
-        if self.has_static_marker(container.span) {
-            return false;
-        }
-        container
-            .expression
-            .as_expression()
-            .is_some_and(|expression| is_dynamic_expression_deep(expression, true))
+        container.expression.as_expression().is_some_and(|expression| {
+            self.classify()
+                .is_dynamic(Some(container.span.start), expression, true)
+        })
     }
 
     /// Component `ref` prop — same protocol as the shared Babel component
@@ -1630,11 +1626,10 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                     if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
                         continue;
                     }
-                    let dynamic = !self.has_static_marker(container.span)
-                        && container
-                            .expression
-                            .as_expression()
-                            .is_some_and(|expression| is_dynamic_expression_deep(expression, true));
+                    let dynamic = container.expression.as_expression().is_some_and(|expression| {
+                        self.classify()
+                            .is_dynamic(Some(container.span.start), expression, true)
+                    });
                     let mut value = self.transform_component_expression(&container.expression);
                     if dynamic && self.wrap_conditionals && is_condition_shape(&value) {
                         value = transform_condition_inline(self, container.span, value);
@@ -1673,7 +1668,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 JSXChild::Spread(spread) => {
                     let mut value = spread.expression.clone_in(self.allocator);
                     self.visit_expression(&mut value);
-                    let dynamic = is_dynamic_expression_deep(&value, false);
+                    let dynamic = self.classify().is_dynamic(None, &value, false);
                     values.push(ChildValue {
                         value,
                         kind: if dynamic {
@@ -1753,13 +1748,10 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                     if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
                         continue;
                     }
-                    let dynamic = !self.has_static_marker(container.span)
-                        && container
-                            .expression
-                            .as_expression()
-                            .is_some_and(|expression| {
-                                is_dynamic_expression_deep(expression, false)
-                            });
+                    let dynamic = container.expression.as_expression().is_some_and(|expression| {
+                        self.classify()
+                            .is_dynamic(Some(container.span.start), expression, false)
+                    });
                     let mut value = self.transform_component_expression(&container.expression);
                     if !dynamic {
                         values.push(value);
@@ -2158,6 +2150,10 @@ impl<'a> ConditionBuilder<'a> for AstUniversalTransform<'a, '_> {
         }
         crate::shared::utils::next_unique_local("_c", &mut self.condition_index, &self.bindings)
     }
+
+    fn classify(&self) -> Classify<'_> {
+        AstUniversalTransform::classify(self)
+    }
 }
 
 impl<'a> ComponentPropContext<'a> for AstUniversalTransform<'a, '_> {
@@ -2169,8 +2165,8 @@ impl<'a> ComponentPropContext<'a> for AstUniversalTransform<'a, '_> {
         self.ast()
     }
 
-    fn binding_table(&self) -> &crate::shared::bindings::BindingTable {
-        &self.bindings
+    fn classify(&self) -> Classify<'_> {
+        AstUniversalTransform::classify(self)
     }
 
     fn mark_merge_props(&mut self) {
