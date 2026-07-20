@@ -22,6 +22,12 @@ oxc_semantic = "0.118"
 oxc_span = "0.118"
 oxc_syntax = "0.118"
 
+[dev-dependencies]
+# `noop` stubs the Node-API symbols so `cargo test` can link the unit-test
+# harness (the classification-trace tests) without a Node host. Dev-only:
+# the shipped cdylib is unaffected.
+napi = { version = "3.8", default-features = false, features = ["napi4", "noop"] }
+
 [build-dependencies]
 napi-build = "2.2"
 

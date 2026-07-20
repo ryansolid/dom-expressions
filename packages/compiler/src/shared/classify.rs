@@ -62,12 +62,13 @@ impl<'c> Classify<'c> {
         expression: &Expression<'_>,
         check_tags: bool,
     ) -> bool {
-        if let Some(from) = leading_from {
-            if self.marker_between(from, expression.span().start) {
-                return false;
-            }
-        }
-        is_dynamic_with_namespaces(expression, check_tags, self.bindings)
+        let marker_static = leading_from
+            .is_some_and(|from| self.marker_between(from, expression.span().start));
+        let dynamic =
+            !marker_static && is_dynamic_with_namespaces(expression, check_tags, self.bindings);
+        #[cfg(test)]
+        trace::record(expression.span(), check_tags, dynamic);
+        dynamic
     }
 
     /// Mirror of the Babel plugin's `dynamic` marking for child holes
@@ -262,4 +263,155 @@ fn is_dynamic_deep(value: &Expression<'_>, check_tags: bool) -> bool {
         _ => detector.visit_expression(value),
     }
     detector.dynamic
+}
+
+/// Test-only recorder for [`Classify::is_dynamic`] decisions, keyed by the
+/// expression's source span. The classification-trace harness below runs the
+/// same source through every generate and asserts the *decisions* agree —
+/// mode output can differ, classification cannot.
+#[cfg(test)]
+pub(crate) mod trace {
+    use std::cell::RefCell;
+
+    /// `(span_start, span_end, check_tags)` → the question asked.
+    pub(crate) type Question = (u32, u32, bool);
+
+    thread_local! {
+        static TRACE: RefCell<Option<Vec<(Question, bool)>>> = const { RefCell::new(None) };
+    }
+
+    pub(crate) fn record(span: oxc_span::Span, check_tags: bool, dynamic: bool) {
+        TRACE.with(|trace| {
+            if let Some(decisions) = trace.borrow_mut().as_mut() {
+                decisions.push(((span.start, span.end, check_tags), dynamic));
+            }
+        });
+    }
+
+    pub(crate) fn capture<T>(run: impl FnOnce() -> T) -> (T, Vec<(Question, bool)>) {
+        TRACE.with(|trace| *trace.borrow_mut() = Some(Vec::new()));
+        let result = run();
+        let decisions = TRACE.with(|trace| trace.borrow_mut().take().unwrap_or_default());
+        (result, decisions)
+    }
+}
+
+/// The classification-trace harness: every generate must answer every shared
+/// classification question identically for the same source. Emission differs
+/// per mode; `Classify` decisions may not. A failure here means a call site
+/// drifted (wrong `leading_from`/`check_tags`, or a mode re-deriving
+/// classification on a rewritten expression).
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::trace::{capture, Question};
+    use crate::config::TransformOptions;
+
+    const MODES: [&str; 3] = ["dom", "ssr", "universal"];
+
+    fn classify_decisions(source: &str, generate: &str) -> BTreeMap<Question, Vec<bool>> {
+        let options = TransformOptions {
+            filename: Some("classify-trace.jsx".into()),
+            module_name: Some("r-test".into()),
+            generate: Some(generate.into()),
+            wrap_conditionals: Some(true),
+            built_ins: Some(vec!["For".into(), "Show".into()]),
+            ..Default::default()
+        };
+        let (result, decisions) =
+            capture(|| crate::transform(source.to_string(), Some(options)));
+        result.unwrap_or_else(|error| panic!("{generate} failed on {source:?}: {error}"));
+        let mut answers: BTreeMap<Question, Vec<bool>> = BTreeMap::new();
+        for (question, dynamic) in decisions {
+            let slot = answers.entry(question).or_default();
+            if !slot.contains(&dynamic) {
+                slot.push(dynamic);
+            }
+        }
+        answers
+    }
+
+    #[test]
+    fn all_generates_agree_on_classification() {
+        // Union of the traversal-level surfaces: child holes, spread
+        // children, component props and spreads, condition branches, static
+        // markers, and the namespace-import carve-out.
+        let corpus = [
+            "const a = <div>{x}</div>;",
+            "const a = <div>{x()}</div>;",
+            "const a = <div>{x.y}</div>;",
+            "const a = <div>{/*@static*/ x()}</div>;",
+            "const a = <div a={x()} b={x.y} c={/*@static*/ x()} d=\"s\">{y}</div>;",
+            "const a = <div>{cond() ? <b /> : y()}</div>;",
+            "const a = <div>{cond() ? /*@static*/ x() : y()}</div>;",
+            "const a = <div>{cond() && <span>{x()}</span>}</div>;",
+            "const a = <>{x()}<span>{y.z}</span>{'t'}</>;",
+            "const a = <>{...items()}</>;",
+            "const a = <>{...items}</>;",
+            "const a = <div>{...items()}</div>;",
+            "const a = <Comp p={x()} q={x.y} r={/*@static*/ x()}>{y()}</Comp>;",
+            "const a = <Comp {...props()} other={1} />;",
+            "const a = <Comp {...{ a: <div>hi</div> }} />;",
+            "const a = <Comp when={a() ? <b /> : <c />} />;",
+            "const a = <Comp>{...items()}</Comp>;",
+            "const a = <div {...spread()} {...stat} />;",
+            "import * as ns from './m';\nconst a = <div a={ns.x}>{ns.y}{ns[k()]}</div>;",
+            "import * as ns from './m';\nconst a = <Comp p={ns.x}>{ns.y}</Comp>;",
+            "import * as ns from './m';\nconst a = <>{...ns.list}</>;",
+            "const a = <div>{'a' in b}</div>;",
+            "const a = <div>{tag`t${x}`}</div>;",
+            "const a = <div>{() => x()}</div>;",
+            "const a = <For each={list()}>{item => <span>{item.name}</span>}</For>;",
+        ];
+
+        let mut failures = Vec::new();
+        let mut compared = 0usize;
+        for source in corpus {
+            let per_mode: Vec<(&str, BTreeMap<Question, Vec<bool>>)> = MODES
+                .iter()
+                .map(|generate| (*generate, classify_decisions(source, generate)))
+                .collect();
+            for (mode, answers) in &per_mode {
+                assert!(
+                    !answers.is_empty(),
+                    "{mode} recorded no classification decisions for {source:?}"
+                );
+                for ((start, end, check_tags), values) in answers {
+                    if values.len() > 1 {
+                        failures.push(format!(
+                            "{mode} self-conflicts on {:?} (checkTags={check_tags}) in {source:?}",
+                            &source[*start as usize..*end as usize]
+                        ));
+                    }
+                }
+            }
+            for (index, (mode_a, answers_a)) in per_mode.iter().enumerate() {
+                for (mode_b, answers_b) in per_mode.iter().skip(index + 1) {
+                    for (question, values_a) in answers_a {
+                        let Some(values_b) = answers_b.get(question) else {
+                            continue;
+                        };
+                        compared += 1;
+                        if values_a != values_b {
+                            let (start, end, check_tags) = question;
+                            failures.push(format!(
+                                "{mode_a}={values_a:?} vs {mode_b}={values_b:?} on {:?} (checkTags={check_tags}) in {source:?}",
+                                &source[*start as usize..*end as usize]
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+        assert!(
+            compared >= corpus.len(),
+            "harness is vacuous: only {compared} shared classification questions compared"
+        );
+        assert!(
+            failures.is_empty(),
+            "classification drift between generates:\n{}",
+            failures.join("\n")
+        );
+    }
 }
