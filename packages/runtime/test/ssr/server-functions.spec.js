@@ -953,6 +953,44 @@ describe("metadata channel", () => {
     expect(await globalThis[RequestContext].run(event, () => server())).toBe("ok");
     expect(spy).toHaveBeenCalledTimes(1);
   });
+
+  it("seeds the compiler-emitted dev name on both sides", () => {
+    // dev-mode compiled output passes the source name as the trailing ABI
+    // argument; it lands on the metadata channel as a human-readable label
+    const client = createClientReference("md-name-0", "sendMessage");
+    expect(getServerFunctionMetadata(client)).toEqual({ name: "sendMessage" });
+
+    const server = createServerReference(
+      registerServerReference("md-name-1", async () => {}, "saveTodo")
+    );
+    expect(getServerFunctionMetadata(server)).toEqual({ name: "saveTodo" });
+  });
+
+  it("dev name is a default: explicit withMeta writes win", () => {
+    const ref = createClientReference("md-name-2", "compiled");
+    withMeta(ref, { name: "user label" });
+    expect(getServerFunctionMetadata(ref)).toEqual({ name: "user label" });
+
+    // other writes merge alongside without disturbing the seeded name
+    const merged = createClientReference("md-name-3", "compiled");
+    withMeta(merged, { requiresAuth: true });
+    expect(getServerFunctionMetadata(merged)).toEqual({ name: "compiled", requiresAuth: true });
+  });
+
+  it("no name is seeded when none was emitted (prod / anonymous output)", () => {
+    const client = createClientReference("md-name-4");
+    expect(getServerFunctionMetadata(client)).toEqual({});
+    expect("name" in getServerFunctionMetadata(client)).toBe(false);
+
+    const server = createServerReference(registerServerReference("md-name-5", async () => {}));
+    expect(getServerFunctionMetadata(server)).toEqual({});
+    expect("name" in getServerFunctionMetadata(server)).toBe(false);
+  });
+
+  it("GET inherits the seeded dev name through the metadata channel", () => {
+    const declared = clientGET(createClientReference("md-name-6", "getUser"));
+    expect(getServerFunctionMetadata(declared)).toEqual({ method: "GET", name: "getUser" });
+  });
 });
 
 describe("GET declaration", () => {

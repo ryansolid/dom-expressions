@@ -119,10 +119,13 @@ export function GET<A extends readonly any[], R>(
 /**
  * Compiler ABI — emitted by compiled `"use server"` client output where a
  * server function was referenced; produces the fetch-backed callable for
- * the function's build-stable id. Not meant for hand-written code.
+ * the function's build-stable id. Development builds pass the function's
+ * source name as the trailing argument (dev-only metadata seeded on the
+ * metadata channel; never emitted in production). Not meant for
+ * hand-written code.
  * @internal
  */
-export function createServerReference(id: string): ServerFunction;
+export function createServerReference(id: string, name?: string): ServerFunction;
 
 /**
  * Compiler ABI — only ever referenced by server-mode compiler output;

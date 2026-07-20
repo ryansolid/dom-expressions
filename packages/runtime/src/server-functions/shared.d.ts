@@ -139,6 +139,14 @@ export interface ServerFunction<A extends readonly any[] = any[], T = any> {
 export interface ServerFunctionMetadata {
   /** The declared HTTP method. Undeclared references call over POST. */
   readonly method?: "GET" | "POST";
+  /**
+   * A human-readable label for the function, seeded by development builds
+   * from the compiled function's source name (dev tooling — inspectors,
+   * logs). Dev-only: production builds emit no name. Not unique and not an
+   * identity key — use `id` for identity. Seeded as a default: an explicit
+   * `withMeta` write wins.
+   */
+  readonly name?: string;
   /** User-declared transport metadata attached with `withMeta`. */
   readonly [key: string]: unknown;
 }

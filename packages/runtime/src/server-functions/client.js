@@ -176,9 +176,13 @@ async function fetchServerFunction(base, id, options, args, meta) {
  * proxy exposes `id` (the build-stable function id) and `url` (direct HTTP
  * invocation — form actions, progressive enhancement) and carries the
  * declaration-metadata brand so `isServerFunction` recognizes it.
+ *
+ * Development output passes the function's source name as the trailing
+ * argument; it seeds the metadata channel as a default — explicit
+ * `withMeta`/`GET` writes shallow-merge over it like any other write.
  */
-export function createServerReference(id) {
-  const metadata = {};
+export function createServerReference(id, name) {
+  const metadata = name === undefined ? {} : { name };
   const fn = (...args) => fetchServerFunction(config.endpoint, id, {}, args, metadata);
   fn[SERVER_FUNCTION_METADATA] = metadata;
 

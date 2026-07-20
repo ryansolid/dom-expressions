@@ -134,6 +134,12 @@ export function configureServerFunctionsServer(config?: ServerFunctionsServerCon
 export interface ServerFunctionReference<T extends any[] = any[], R = any> {
   id: string;
   fn: (...args: T) => R;
+  /**
+   * The function's source name, emitted by development builds only —
+   * `createServerReference` seeds the metadata channel with it.
+   * @internal
+   */
+  name?: string;
 }
 
 /**
@@ -159,12 +165,15 @@ export function getServerFunction<T extends any[], R>(id: string): (...args: T) 
  * Compiler ABI — emitted by compiled `"use server"` server output for
  * every server function: registers `fn` for HTTP dispatch under its
  * build-stable id and returns the reference the server-side
- * `createServerReference` consumes. Not meant for hand-written code.
+ * `createServerReference` consumes. Development builds pass the function's
+ * source name as the trailing argument (dev-only metadata; never emitted in
+ * production). Not meant for hand-written code.
  * @internal
  */
 export function registerServerReference<T extends any[], R>(
   id: string,
-  fn: (...args: T) => R
+  fn: (...args: T) => R,
+  name?: string
 ): ServerFunctionReference<T, R>;
 
 /**

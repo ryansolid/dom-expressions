@@ -95,10 +95,15 @@ export function getServerFunction(id) {
   throw new Error("invalid server function: " + id);
 }
 
-/** Registers a compiled server function under its id. */
-export function registerServerReference(id, fn) {
+/**
+ * Registers a compiled server function under its id. Development output
+ * passes the function's source name as the trailing argument; it rides the
+ * reference into `createServerReference`, which seeds the metadata channel
+ * with it.
+ */
+export function registerServerReference(id, fn, name) {
   registerServerFunction(id, fn);
-  return { id, fn };
+  return { id, fn, name };
 }
 
 /**
@@ -106,13 +111,15 @@ export function registerServerReference(id, fn) {
  * runs the original function in-process, under a request event derived from
  * the current one (marked server-only, carrying the function's meta).
  */
-export function createServerReference({ id, fn }) {
+export function createServerReference({ id, fn, name }) {
   if (typeof fn !== "function")
     throw new Error("Export from a 'use server' module must be a function");
 
   // the metadata lives in a closure (not on the user's function) so
-  // registering the raw implementation never mutates it
-  const metadata = {};
+  // registering the raw implementation never mutates it. The compiler's
+  // dev-only source name seeds it as a default — explicit `withMeta`/`GET`
+  // writes shallow-merge over it like any other write.
+  const metadata = name === undefined ? {} : { name };
   return new Proxy(fn, {
     get(target, prop) {
       if (prop === "id") return id;
