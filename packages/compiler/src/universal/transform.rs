@@ -1100,14 +1100,6 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
     }
 
     /// `createTemplate(wrap: true)` for a dynamic universal expression.
-    fn memoized_dynamic_expression(&mut self, span: Span, value: Expression<'a>) -> Expression<'a> {
-        let thunk = match zero_arg_call_thunk(&value, self.allocator) {
-            Some(callee) => callee,
-            None => arrow_return_expression(self.allocator, span, value),
-        };
-        memo_wrap_thunk(self, span, thunk)
-    }
-
     /// Babel's `wrapDynamics`: one effect per template root; multiple slots
     /// batch into a keyed object with per-key change detection.
     fn wrap_dynamics(
@@ -1731,70 +1723,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
     }
 
     pub(crate) fn lower_fragment(&mut self, fragment: &JSXFragment<'a>) -> Result<Expression<'a>> {
-        let mut values = std::vec::Vec::new();
-        for child in &fragment.children {
-            match child {
-                JSXChild::Text(text) => {
-                    let value = decode_html_entities(&trim_jsx_text(&text.value));
-                    if !value.is_empty() {
-                        values.push(self.ast().expression_string_literal(
-                            text.span,
-                            self.ast().atom(&value),
-                            None,
-                        ));
-                    }
-                }
-                JSXChild::ExpressionContainer(container) => {
-                    if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
-                        continue;
-                    }
-                    let dynamic = container.expression.as_expression().is_some_and(|expression| {
-                        self.classify()
-                            .is_dynamic(Some(container.span.start), expression, false)
-                    });
-                    let mut value = self.transform_component_expression(&container.expression);
-                    if !dynamic {
-                        values.push(value);
-                    } else if self.wrap_conditionals && is_condition_shape(&value) {
-                        value = transform_condition_inline(self, container.span, value);
-                        let thunk = arrow_return_expression(self.allocator, container.span, value);
-                        values.push(memo_wrap_thunk(self, container.span, thunk));
-                    } else {
-                        values.push(self.memoized_dynamic_expression(container.span, value));
-                    }
-                }
-                JSXChild::Element(element) => {
-                    let (value, setup) = self.lower_element(element)?;
-                    values.push(self.setup_iife(element.span, setup, value));
-                }
-                JSXChild::Fragment(fragment) => values.push(self.lower_fragment(fragment)?),
-                JSXChild::Spread(spread) => {
-                    // Babel's `JSXSpreadChild` branch of `transformNode`:
-                    // dynamic spreads become an explicit thunk the fragment
-                    // memo-wraps; static ones pass through raw.
-                    let mut value = spread.expression.clone_in(self.allocator);
-                    self.visit_expression(&mut value);
-                    if self.classify().is_dynamic(None, &value, false) {
-                        let thunk =
-                            arrow_return_expression(self.allocator, spread.span, value);
-                        values.push(memo_wrap_thunk(self, spread.span, thunk));
-                    } else {
-                        values.push(value);
-                    }
-                }
-            }
-        }
-        Ok(match values.len() {
-            0 => self.ast().expression_array(fragment.span, self.ast().vec()),
-            1 => values
-                .pop()
-                .expect("single universal fragment child exists"),
-            _ => self.ast().expression_array(
-                fragment.span,
-                self.ast()
-                    .vec_from_iter(values.into_iter().map(expression_to_array_element)),
-            ),
-        })
+        crate::shared::fragment::lower_fragment(self, fragment)
     }
 
     fn create_text_node(&mut self, span: Span, value: &str) -> Expression<'a> {
@@ -2162,6 +2091,21 @@ impl<'a> ConditionBuilder<'a> for AstUniversalTransform<'a, '_> {
 
     fn classify(&self) -> Classify<'_> {
         AstUniversalTransform::classify(self)
+    }
+}
+
+impl<'a> crate::shared::mode_lower::ModeLower<'a> for AstUniversalTransform<'a, '_> {
+    fn wrap_conditionals_enabled(&self) -> bool {
+        self.wrap_conditionals
+    }
+
+    fn lower_child_element(&mut self, element: &JSXElement<'a>) -> Result<Expression<'a>> {
+        let (value, setup) = self.lower_element(element)?;
+        Ok(self.setup_iife(element.span, setup, value))
+    }
+
+    fn memo_wrap_dynamic_child(&mut self, span: Span, thunk: Expression<'a>) -> Expression<'a> {
+        memo_wrap_thunk(self, span, thunk)
     }
 }
 

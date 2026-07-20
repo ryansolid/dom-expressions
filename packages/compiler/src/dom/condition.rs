@@ -1,11 +1,12 @@
 use oxc_allocator::Allocator;
-use oxc_ast::ast::Expression;
-use oxc_span::Span;
+use oxc_ast::ast::{Expression, JSXChild, JSXElement, JSXFragment};
+use oxc_span::{GetSpan, Span};
 
 use crate::dom::element::AstDomTransform;
 use crate::shared::condition::{
     is_condition_shape, memo_wrap_thunk, transform_condition, zero_arg_call_thunk, ConditionBuilder,
 };
+use crate::shared::mode_lower::ModeLower;
 
 impl<'a> ConditionBuilder<'a> for AstDomTransform<'a, '_> {
     fn condition_allocator(&self) -> &'a Allocator {
@@ -27,6 +28,30 @@ impl<'a> ConditionBuilder<'a> for AstDomTransform<'a, '_> {
 
     fn classify(&self) -> crate::shared::classify::Classify<'_> {
         AstDomTransform::classify(self)
+    }
+}
+
+impl<'a> ModeLower<'a> for AstDomTransform<'a, '_> {
+    fn wrap_conditionals_enabled(&self) -> bool {
+        self.wrap_conditionals
+    }
+
+    fn lower_child_element(
+        &mut self,
+        element: &JSXElement<'a>,
+    ) -> napi::bindgen_prelude::Result<Expression<'a>> {
+        self.lower_element(element)
+    }
+
+    fn memo_wrap_dynamic_child(&mut self, span: Span, thunk: Expression<'a>) -> Expression<'a> {
+        memo_wrap_thunk(self, span, thunk)
+    }
+
+    fn fragment_array_span(&self, fragment: &JSXFragment<'a>) -> Span {
+        fragment
+            .children
+            .first()
+            .map_or_else(|| Span::new(0, 0), JSXChild::span)
     }
 }
 
@@ -59,18 +84,4 @@ impl<'a> AstDomTransform<'a, '_> {
         crate::shared::condition::transform_condition_inline(self, span, value)
     }
 
-    /// `createTemplate(wrap: true)` for a dynamic expression: the value's
-    /// thunk (the zero-arg callee itself when the expression is already a
-    /// bare call, an arrow otherwise) wrapped in `memo` when configured.
-    pub(crate) fn memoized_dynamic_expression(
-        &mut self,
-        span: Span,
-        value: Expression<'a>,
-    ) -> Expression<'a> {
-        let thunk = match zero_arg_call_thunk(&value, self.allocator) {
-            Some(callee) => callee,
-            None => self.arrow_return_expression(span, value),
-        };
-        memo_wrap_thunk(self, span, thunk)
-    }
 }

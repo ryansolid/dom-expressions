@@ -1526,77 +1526,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     }
 
     pub(crate) fn lower_fragment(&mut self, fragment: &JSXFragment<'a>) -> Result<Expression<'a>> {
-        let mut values = std::vec::Vec::new();
-        for child in &fragment.children {
-            match child {
-                JSXChild::Text(text) => {
-                    let span = text.span;
-                    let text = decode_html_entities(&trim_jsx_text(&text.value));
-                    if !text.is_empty() {
-                        values.push(self.ast().expression_string_literal(
-                            span,
-                            self.ast().atom(&text),
-                            None,
-                        ));
-                    }
-                }
-                // Fragment children are top-level roots: native elements get
-                // hydration keys and their own attribute grouping.
-                JSXChild::Element(element) => values.push(self.lower_element_impl(element, true)?),
-                JSXChild::ExpressionContainer(container) => {
-                    if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
-                        continue;
-                    }
-                    // Babel's `getStaticExpression` requires a JSXElement
-                    // parent, so fragment children never fold statically —
-                    // a non-dynamic hole emits its raw expression below.
-                    let expression =
-                        jsx_expression_to_expression(&container.expression, self.allocator);
-                    let dynamic = self.classify().is_dynamic(
-                        Some(container.span.start),
-                        &expression,
-                        false,
-                    );
-                    if !dynamic {
-                        values.push(expression);
-                        continue;
-                    }
-                    // Fragment children inline their condition memos and
-                    // unwrap zero-arg calls (Babel's `fragmentChild` info).
-                    let value = if self.wrap_conditionals && is_condition_shape(&expression) {
-                        transform_condition(self, container.span, expression, true)
-                            .into_expression(self.allocator, container.span)
-                    } else if let Some(thunk) = zero_arg_call_thunk(&expression, self.allocator) {
-                        thunk
-                    } else {
-                        self.arrow_return_expression(container.span, expression)
-                    };
-                    values.push(self.memo_wrap_fragment_child(container.span, value));
-                }
-                JSXChild::Fragment(fragment) => values.push(self.lower_fragment(fragment)?),
-                JSXChild::Spread(spread) => {
-                    let expression = spread.expression.clone_in(self.allocator);
-                    let dynamic = self.classify().is_dynamic(None, &expression, false);
-                    if !dynamic {
-                        values.push(expression);
-                        continue;
-                    }
-                    let value = self.arrow_return_expression(spread.span, expression);
-                    values.push(self.memo_wrap_fragment_child(spread.span, value));
-                }
-            }
-        }
-
-        Ok(match values.len() {
-            1 => values
-                .pop()
-                .expect("SSR fragment value exists after length check"),
-            _ => self.ast().expression_array(
-                fragment.span,
-                self.ast()
-                    .vec_from_iter(values.into_iter().map(expression_to_array_element)),
-            ),
-        })
+        crate::shared::fragment::lower_fragment(self, fragment)
     }
 
     /// Babel's `createTemplate` wrap for dynamic fragment children:
@@ -3039,6 +2969,22 @@ impl<'a> ConditionBuilder<'a> for AstSsrTransform<'a, '_> {
 
     fn classify(&self) -> Classify<'_> {
         AstSsrTransform::classify(self)
+    }
+}
+
+impl<'a> crate::shared::mode_lower::ModeLower<'a> for AstSsrTransform<'a, '_> {
+    fn wrap_conditionals_enabled(&self) -> bool {
+        self.wrap_conditionals
+    }
+
+    /// Fragment children are top-level roots: native elements get hydration
+    /// keys and their own attribute grouping.
+    fn lower_child_element(&mut self, element: &JSXElement<'a>) -> Result<Expression<'a>> {
+        self.lower_element_impl(element, true)
+    }
+
+    fn memo_wrap_dynamic_child(&mut self, span: Span, thunk: Expression<'a>) -> Expression<'a> {
+        self.memo_wrap_fragment_child(span, thunk)
     }
 }
 

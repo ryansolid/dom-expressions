@@ -10,6 +10,7 @@ pub(crate) mod component_props;
 pub(crate) mod condition;
 pub(crate) mod constants;
 pub(crate) mod fragment;
+pub(crate) mod mode_lower;
 pub(crate) mod refs;
 pub(crate) mod statements;
 pub(crate) mod this;
