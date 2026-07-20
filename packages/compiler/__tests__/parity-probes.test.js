@@ -1187,6 +1187,31 @@ const a = <>{/*@static*/ ...items()}</>;
 `,
   "element spread child with nested jsx classifies on the original": `
 const a = <div>{...[<span/>]}</div>;
+`,
+
+  // --- Round 10: the component prop loop through the unified lowering.
+  // Babel's transformComponent is one function; the universal port's copy
+  // eagerly visited spread arguments before classifying them, so JSX inside
+  // a spread read as dynamic and grew a spurious mergeProps thunk. ----------
+  "jsx inside component spread arg": `
+const a = <Comp {...{ a: <div>hi</div> }} />;
+`,
+  "dynamic component spread forces merge": `
+const a = <Comp {...props()} other={1} />;
+`,
+  "static component spread passes through": `
+const obj = {};
+const a = <Comp {...obj} />;
+`,
+  "component prop inline condition": `
+const a = <Comp when={a() ? <b /> : <c />} />;
+`,
+  "component ref call value": `
+const a = <Comp ref={getRef()} />;
+`,
+  "component namespace member prop": `
+import * as styles from "./s.css";
+const a = <Comp class={styles.button} />;
 `
 };
 

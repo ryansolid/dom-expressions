@@ -1,27 +1,58 @@
+//! The single component-transformation prop loop for the client generates,
+//! mirroring the Babel plugin's `transformComponent` (`shared/component.ts`):
+//! one traversal with per-mode emission behind [`ComponentLower`].
+
 use napi::bindgen_prelude::*;
+use oxc_allocator::CloneIn;
 use oxc_ast::{
-    ast::{Expression, JSXAttributeItem, JSXAttributeValue, JSXElement, JSXExpression, Statement},
+    ast::{
+        Expression, JSXAttributeItem, JSXAttributeValue, JSXElement, ObjectPropertyKind, Statement,
+    },
     AstBuilder,
 };
 use oxc_span::{GetSpan, Span};
 
-use crate::dom::element::jsx_expression_to_expression;
 use crate::dom::element::AstDomTransform;
 use crate::shared::component_callee::{component_callee_expression, ComponentCalleeContext};
-use crate::shared::component_children::component_children;
+use crate::shared::component_children::{component_children, ComponentChildLower};
 use crate::shared::component_props::{
     component_property, component_props_expression, component_spread_expression,
-    flush_component_props,
+    flush_component_props, ComponentPropContext,
 };
+use crate::shared::condition::{is_condition_shape, transform_condition_inline};
+use crate::shared::mode_lower::mode_ast;
 use crate::shared::refs::component_ref_property;
 use crate::shared::utils::decode_html_entities;
 
-pub(crate) fn lower_component_with_setup<'a>(
-    ctx: &mut AstDomTransform<'a, '_>,
+/// The per-mode seams of the component prop loop beyond the children and
+/// prop-emission contexts: helper-usage bookkeeping, root-tag detection, and
+/// the mode's ref-prop lowering.
+pub(crate) trait ComponentLower<'a>:
+    ComponentChildLower<'a> + ComponentPropContext<'a> + ComponentCalleeContext<'a>
+{
+    /// Marks the `createComponent` helper as used.
+    fn mark_create_component(&mut self);
+    /// Whether this element is the JSX root currently being lowered (Babel
+    /// keeps a raw `this` in the root tag callee).
+    fn is_jsx_root_tag(&self, span: Span) -> bool;
+    /// Lowers a `ref` prop; setup statements (`var _ref$ = ...`) accumulate
+    /// into the surrounding component IIFE.
+    fn component_ref_prop(
+        &mut self,
+        span: Span,
+        value: Expression<'a>,
+        setup: &mut std::vec::Vec<Statement<'a>>,
+    ) -> Option<ObjectPropertyKind<'a>>;
+}
+
+pub(crate) fn lower_component_with_setup<'a, C: ComponentLower<'a>>(
+    ctx: &mut C,
     element: &JSXElement<'a>,
 ) -> Result<(Expression<'a>, std::vec::Vec<Statement<'a>>)> {
-    ctx.template_state.uses_create_component = true;
-    let root_tag = ctx.jsx_root_span == Some(element.span);
+    let allocator = ctx.condition_allocator();
+    let ast = mode_ast(ctx);
+    ctx.mark_create_component();
+    let root_tag = ctx.is_jsx_root_tag(element.span);
     let component = component_callee_expression(ctx, &element.opening_element.name, root_tag)?;
     let mut prop_objects = std::vec::Vec::new();
     let mut running_props = std::vec::Vec::new();
@@ -49,7 +80,7 @@ pub(crate) fn lower_component_with_setup<'a>(
         };
         let (value, needs_getter, condition_inlined) = match &attr.value {
             None => (
-                ctx.ast().expression_boolean_literal(attr.span, true),
+                ast.expression_boolean_literal(attr.span, true),
                 false,
                 false,
             ),
@@ -57,25 +88,28 @@ pub(crate) fn lower_component_with_setup<'a>(
                 let span = value.span;
                 let value = decode_html_entities(&value.value);
                 (
-                    ctx.ast()
-                        .expression_string_literal(span, ctx.ast().atom(&value), None),
+                    ast.expression_string_literal(span, ast.atom(&value), None),
                     false,
                     false,
                 )
             }
             Some(JSXAttributeValue::ExpressionContainer(container)) => {
                 let dynamic = component_prop_is_dynamic(ctx, &name, container);
-                let mut value = transform_component_expression(ctx, &container.expression);
+                // JSX inside the value stays raw: Babel builds prop getters
+                // around the untransformed expression and its outer traversal
+                // lowers the JSX later. `this` was already rewritten by the
+                // root-level `transformThis` pass.
+                let mut value = container
+                    .expression
+                    .clone_in(allocator)
+                    .into_expression();
                 // Dynamic conditional/logical props collapse their memos
                 // inline within the getter, mirroring Babel's
                 // `transformCondition(..., true)`.
                 let mut condition_inlined = false;
-                if dynamic
-                    && ctx.wrap_conditionals
-                    && crate::shared::condition::is_condition_shape(&value)
-                {
+                if dynamic && ctx.wrap_conditionals_enabled() && is_condition_shape(&value) {
                     let span = value.span();
-                    value = ctx.inline_condition_expression(span, value);
+                    value = transform_condition_inline(ctx, span, value);
                     condition_inlined = true;
                 }
                 (value, dynamic, condition_inlined)
@@ -87,16 +121,16 @@ pub(crate) fn lower_component_with_setup<'a>(
             }
         };
         if name == "ref" {
-            if let Some(ref_property) = component_ref_property(ctx, attr.span, value, &mut setup) {
+            if let Some(ref_property) = ctx.component_ref_prop(attr.span, value, &mut setup) {
                 running_props.push(ref_property);
             }
         } else if needs_getter && !condition_inlined {
             // Babel inlines a zero-arg arrow IIFE value's body straight into
             // the getter (`when={(() => {...})()}` → `get when() {...}`).
-            match crate::shared::ast::zero_arg_iife_statements(ctx.allocator, attr.span, value) {
+            match crate::shared::ast::zero_arg_iife_statements(allocator, attr.span, value) {
                 Ok(statements) => {
                     running_props.push(crate::shared::ast::object_getter_property_with_statements(
-                        ctx.allocator,
+                        allocator,
                         attr.span,
                         &name,
                         statements,
@@ -120,21 +154,32 @@ pub(crate) fn lower_component_with_setup<'a>(
     let children = component_children(ctx, &element.children)?;
     if let Some(children) = children {
         if children.needs_getter {
-            running_props.push(ctx.object_getter_property_with_setup(
+            running_props.push(crate::shared::ast::object_getter_property_with_setup(
+                allocator,
                 element.span,
                 "children",
                 children.setup,
                 children.value,
             ));
         } else {
-            running_props.push(ctx.object_property(element.span, "children", children.value));
+            running_props.push(ComponentPropContext::object_property(
+                ctx,
+                element.span,
+                "children",
+                children.value,
+            ));
         }
     }
 
     flush_component_props(ctx, &mut running_props, &mut prop_objects, element.span);
     let props = component_props_expression(ctx, element.span, prop_objects, force_merge_props);
     Ok((
-        ctx.call_identifier(element.span, "_$createComponent", vec![component, props]),
+        ComponentPropContext::call_identifier(
+            ctx,
+            element.span,
+            "_$createComponent",
+            vec![component, props],
+        ),
         setup,
     ))
 }
@@ -143,8 +188,8 @@ pub(crate) fn lower_component_with_setup<'a>(
 /// `isDynamic(value, { checkMember: true, checkTags: true })` of the
 /// original (pre-lowered) expression — marker comments and namespace-import
 /// members short-circuit inside the shared predicate.
-fn component_prop_is_dynamic(
-    ctx: &AstDomTransform<'_, '_>,
+fn component_prop_is_dynamic<'a, C: ComponentLower<'a>>(
+    ctx: &C,
     name: &str,
     container: &oxc_ast::ast::JSXExpressionContainer<'_>,
 ) -> bool {
@@ -157,15 +202,23 @@ fn component_prop_is_dynamic(
     })
 }
 
-pub(crate) fn transform_component_expression<'a>(
-    ctx: &mut AstDomTransform<'a, '_>,
-    expression: &JSXExpression<'a>,
-) -> Expression<'a> {
-    // JSX inside the value stays raw: Babel builds prop getters around the
-    // untransformed expression and its outer traversal lowers the JSX later
-    // (statement-position inlining, container-end template registration).
-    // `this` was already rewritten by the root-level `transformThis` pass.
-    jsx_expression_to_expression(expression, ctx.allocator)
+impl<'a> ComponentLower<'a> for AstDomTransform<'a, '_> {
+    fn mark_create_component(&mut self) {
+        self.template_state.uses_create_component = true;
+    }
+
+    fn is_jsx_root_tag(&self, span: Span) -> bool {
+        self.jsx_root_span == Some(span)
+    }
+
+    fn component_ref_prop(
+        &mut self,
+        span: Span,
+        value: Expression<'a>,
+        setup: &mut std::vec::Vec<Statement<'a>>,
+    ) -> Option<ObjectPropertyKind<'a>> {
+        component_ref_property(self, span, value, setup)
+    }
 }
 
 impl<'a> ComponentCalleeContext<'a> for AstDomTransform<'a, '_> {

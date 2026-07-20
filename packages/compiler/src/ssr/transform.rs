@@ -2753,10 +2753,6 @@ impl<'a> ComponentPropContext<'a> for AstSsrTransform<'a, '_> {
         self.ast()
     }
 
-    fn classify(&self) -> Classify<'_> {
-        AstSsrTransform::classify(self)
-    }
-
     fn mark_merge_props(&mut self) {
         self.uses_merge_props = true;
     }

@@ -86,14 +86,4 @@ impl<'a> AstDomTransform<'a, '_> {
         self.arrow_return_expression(span, value)
     }
 
-    /// Inline `transformCondition(path, true).body` for component props,
-    /// component children, and fragment children.
-    pub(crate) fn inline_condition_expression(
-        &mut self,
-        span: Span,
-        value: Expression<'a>,
-    ) -> Expression<'a> {
-        crate::shared::condition::transform_condition_inline(self, span, value)
-    }
-
 }

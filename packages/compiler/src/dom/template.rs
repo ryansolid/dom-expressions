@@ -13,7 +13,7 @@ use oxc_syntax::number::NumberBase;
 use crate::dom::element::AstDomTransform;
 use crate::shared::ast::{
     arrow_iife, arrow_return_expression, expression_to_argument, import_named,
-    object_getter_property, object_getter_property_with_setup, object_property, variable_statement,
+    object_getter_property, object_property, variable_statement,
 };
 pub(crate) struct DomTemplateState {
     pub(crate) templates: std::vec::Vec<DomTemplate>,
@@ -318,16 +318,6 @@ impl<'a> AstDomTransform<'a, '_> {
         value: Expression<'a>,
     ) -> ObjectPropertyKind<'a> {
         object_getter_property(self.allocator, span, name, value)
-    }
-
-    pub(crate) fn object_getter_property_with_setup(
-        &self,
-        span: Span,
-        name: &str,
-        setup: std::vec::Vec<Statement<'a>>,
-        value: Expression<'a>,
-    ) -> ObjectPropertyKind<'a> {
-        object_getter_property_with_setup(self.allocator, span, name, setup, value)
     }
 
     pub(crate) fn call_identifier(

@@ -12,15 +12,10 @@ use oxc_span::{GetSpan, Span};
 
 use crate::dom::element::{jsx_expression_to_expression, AstDomTransform, DomTransformConfig};
 use crate::shared::ast::{
-    arrow_return_expression, expression_to_argument, object_getter_property_with_setup,
-    object_method_property,
+    arrow_return_expression, expression_to_argument, object_method_property,
 };
 use crate::shared::bindings::BindingTable;
-use crate::shared::component_callee::component_callee_expression;
-use crate::shared::component_props::{
-    component_property, component_props_expression, flush_component_props, ComponentPropContext,
-    ComponentSpread,
-};
+use crate::shared::component_props::ComponentPropContext;
 use crate::shared::condition::{
     is_condition_shape, memo_wrap_thunk, transform_condition, transform_condition_inline,
     zero_arg_call_thunk, ConditionBuilder,
@@ -28,8 +23,8 @@ use crate::shared::condition::{
 use crate::shared::refs::{assignment_fallback, callable_test};
 use crate::shared::classify::Classify;
 use crate::shared::utils::{
-    decode_html_entities, element_name, escape_html_text_expression, get_numbered_id,
-    is_component_name, static_jsx_expression, trim_jsx_text,
+    element_name, escape_html_text_expression, get_numbered_id, is_component_name,
+    static_jsx_expression, trim_jsx_text,
 };
 
 pub(crate) struct AstUniversalTransform<'a, 'source> {
@@ -1330,167 +1325,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         &mut self,
         element: &JSXElement<'a>,
     ) -> Result<(Expression<'a>, std::vec::Vec<Statement<'a>>)> {
-        self.uses_create_component = true;
-        let root_tag = self.jsx_root_span == Some(element.span);
-        let component = component_callee_expression(self, &element.opening_element.name, root_tag)?;
-        let mut prop_objects = std::vec::Vec::new();
-        let mut running_props = std::vec::Vec::new();
-        let mut force_merge_props = false;
-        let mut setup = std::vec::Vec::new();
-        for attr in &element.opening_element.attributes {
-            let attr = match attr {
-                JSXAttributeItem::Attribute(attr) => attr,
-                JSXAttributeItem::SpreadAttribute(spread) => {
-                    flush_component_props(
-                        self,
-                        &mut running_props,
-                        &mut prop_objects,
-                        element.span,
-                    );
-                    let spread = self.component_spread(&spread.argument, spread.span);
-                    force_merge_props = force_merge_props || spread.force_merge;
-                    prop_objects.push(spread.value);
-                    continue;
-                }
-            };
-            // Namespaced attributes pass through as literal `ns:name` prop
-            // keys (Babel's `convertJSXIdentifier` string form).
-            let name = match &attr.name {
-                oxc_ast::ast::JSXAttributeName::Identifier(name) => name.name.to_string(),
-                oxc_ast::ast::JSXAttributeName::NamespacedName(name) => {
-                    format!("{}:{}", name.namespace.name, name.name.name)
-                }
-            };
-            let (value, needs_getter, condition_inlined) = match &attr.value {
-                None => (
-                    self.ast().expression_boolean_literal(attr.span, true),
-                    false,
-                    false,
-                ),
-                Some(JSXAttributeValue::StringLiteral(value)) => {
-                    let value = decode_html_entities(&value.value);
-                    (
-                        self.ast().expression_string_literal(
-                            attr.span,
-                            self.ast().atom(&value),
-                            None,
-                        ),
-                        false,
-                        false,
-                    )
-                }
-                Some(JSXAttributeValue::ExpressionContainer(container)) => {
-                    let dynamic = self.component_prop_is_dynamic(&name, container);
-                    let mut value = self.transform_component_expression(&container.expression);
-                    let mut condition_inlined = false;
-                    if dynamic && self.wrap_conditionals && is_condition_shape(&value) {
-                        let span = value.span();
-                        value = transform_condition_inline(self, span, value);
-                        condition_inlined = true;
-                    }
-                    (value, dynamic, condition_inlined)
-                }
-                Some(JSXAttributeValue::Element(_) | JSXAttributeValue::Fragment(_)) => {
-                    return Err(Error::from_reason(
-                        "Universal component JSX attribute values are not implemented in the AST-native milestone yet",
-                    ));
-                }
-            };
-            if name == "ref" {
-                if let Some(property) = self.universal_component_ref(attr.span, value, &mut setup) {
-                    running_props.push(property);
-                }
-            } else if needs_getter && !condition_inlined {
-                // Babel inlines a zero-arg arrow IIFE value's body straight
-                // into the getter (`p={(() => {...})()}` → `get p() {...}`).
-                match crate::shared::ast::zero_arg_iife_statements(self.allocator, attr.span, value)
-                {
-                    Ok(statements) => {
-                        running_props.push(
-                            crate::shared::ast::object_getter_property_with_statements(
-                                self.allocator,
-                                attr.span,
-                                &name,
-                                statements,
-                            ),
-                        );
-                    }
-                    Err(value) => {
-                        running_props.push(component_property(self, attr.span, &name, value, true));
-                    }
-                }
-            } else {
-                running_props.push(component_property(
-                    self,
-                    attr.span,
-                    &name,
-                    value,
-                    needs_getter,
-                ));
-            }
-        }
-        if let Some(children) =
-            crate::shared::component_children::component_children(self, &element.children)?
-        {
-            if children.needs_getter {
-                running_props.push(object_getter_property_with_setup(
-                    self.allocator,
-                    element.span,
-                    "children",
-                    children.setup,
-                    children.value,
-                ));
-            } else {
-                running_props.push(self.object_property(element.span, "children", children.value));
-            }
-        }
-        flush_component_props(self, &mut running_props, &mut prop_objects, element.span);
-        let props = component_props_expression(self, element.span, prop_objects, force_merge_props);
-        Ok((
-            self.call_identifier(
-                element.span,
-                &self.helper_local("_$createComponent"),
-                vec![
-                    expression_to_argument(component),
-                    expression_to_argument(props),
-                ],
-            ),
-            setup,
-        ))
-    }
-
-    fn component_spread(&mut self, argument: &Expression<'a>, span: Span) -> ComponentSpread<'a> {
-        let mut expression = argument.clone_in(self.allocator);
-        self.visit_expression(&mut expression);
-        if self.classify().is_dynamic(None, &expression, false) {
-            let value = match zero_arg_call_thunk(&expression, self.allocator) {
-                Some(callee) => callee,
-                None => arrow_return_expression(self.allocator, span, expression),
-            };
-            ComponentSpread {
-                value,
-                force_merge: true,
-            }
-        } else {
-            ComponentSpread {
-                value: expression,
-                force_merge: false,
-            }
-        }
-    }
-
-    fn component_prop_is_dynamic(
-        &self,
-        name: &str,
-        container: &oxc_ast::ast::JSXExpressionContainer<'_>,
-    ) -> bool {
-        if name == "ref" {
-            return false;
-        }
-        container.expression.as_expression().is_some_and(|expression| {
-            self.classify()
-                .is_dynamic(Some(container.span.start), expression, true)
-        })
+        crate::shared::component::lower_component_with_setup(self, element)
     }
 
     /// Component `ref` prop — same protocol as the shared Babel component
@@ -1585,14 +1420,6 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
             "r$",
             statements,
         ))
-    }
-
-    fn transform_component_expression(&mut self, expression: &JSXExpression<'a>) -> Expression<'a> {
-        // JSX inside the value stays raw: Babel builds prop getters around
-        // the untransformed expression and its outer traversal lowers the
-        // JSX later, inlining setup statements into getter bodies. `this`
-        // was already rewritten by the root-level `transformThis` pass.
-        jsx_expression_to_expression(expression, self.allocator)
     }
 
     pub(crate) fn lower_fragment(&mut self, fragment: &JSXFragment<'a>) -> Result<Expression<'a>> {
@@ -1987,6 +1814,25 @@ impl<'a> crate::shared::mode_lower::ModeLower<'a> for AstUniversalTransform<'a, 
     }
 }
 
+impl<'a> crate::shared::component::ComponentLower<'a> for AstUniversalTransform<'a, '_> {
+    fn mark_create_component(&mut self) {
+        self.uses_create_component = true;
+    }
+
+    fn is_jsx_root_tag(&self, span: Span) -> bool {
+        self.jsx_root_span == Some(span)
+    }
+
+    fn component_ref_prop(
+        &mut self,
+        span: Span,
+        value: Expression<'a>,
+        setup: &mut std::vec::Vec<Statement<'a>>,
+    ) -> Option<ObjectPropertyKind<'a>> {
+        self.universal_component_ref(span, value, setup)
+    }
+}
+
 impl<'a> ComponentPropContext<'a> for AstUniversalTransform<'a, '_> {
     fn allocator(&self) -> &'a Allocator {
         self.allocator
@@ -1994,10 +1840,6 @@ impl<'a> ComponentPropContext<'a> for AstUniversalTransform<'a, '_> {
 
     fn ast(&self) -> AstBuilder<'a> {
         self.ast()
-    }
-
-    fn classify(&self) -> Classify<'_> {
-        AstUniversalTransform::classify(self)
     }
 
     fn mark_merge_props(&mut self) {
