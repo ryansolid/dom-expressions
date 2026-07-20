@@ -153,11 +153,11 @@ describe("renderServerComponent (projection emission)", () => {
         children: r.ssr`<p>unique-text-42</p>`
       })}</section>`;
     const chunks = await renderServerComponent(ServerComp, { frame: { id: "f" } });
-    const regions = chunks.filter(c => c.type === "html" && c.id === "f.0");
+    const regions = chunks.filter(c => c.type === "html" && c.id === "f.comment#0.children");
     expect(regions.length).toBe(1);
     expect(regions[0].html).toBe("<p>unique-text-42</p>");
     const slot = chunks.find(c => c.type === "slot");
-    expect(slot.args).toEqual({ cid: 1, children: { $frame: "f.0" } });
+    expect(slot.args).toEqual({ cid: 1, children: { $frame: "f.comment#0.children" } });
     // The no-double-serialize invariant, literally: the text appears exactly
     // once in the entire payload, and nothing was codec-serialized.
     expect(JSON.stringify(chunks).split("unique-text-42").length).toBe(2);
@@ -233,10 +233,10 @@ describe("renderServerComponent (projection emission)", () => {
     expect(chunks.filter(c => c.type === "data")).toEqual([]);
   });
 
-  it("a primitive `key` arg names the occurrence (keyed identity)", async () => {
+  it("a primitive `$key` arg names the occurrence (keyed identity)", async () => {
     const ServerComp = props =>
       r.ssr`<ul>${[{ id: "a1" }, { id: "b2" }].map(c =>
-        props.comment({ key: c.id, children: r.ssr`<p>${c.id}</p>` })
+        props.comment({ $key: c.id, children: r.ssr`<p>${c.id}</p>` })
       )}</ul>`;
     const chunks = await renderServerComponent(ServerComp, { frame: { id: "k" } });
     expect(chunks.filter(c => c.type === "slot").map(c => c.key)).toEqual([
@@ -252,7 +252,7 @@ describe("renderServerComponent (projection emission)", () => {
   it("keyed occurrences with equivalent args survive a navigation re-send (no re-call)", async () => {
     const makeComp = title => props =>
       r.ssr`<article><h1>${r.escape(title)}</h1>${props.comment({
-        key: "c1",
+        $key: "c1",
         cid: 1,
         children: r.ssr`<p>stable-body</p>`
       })}</article>`;
@@ -291,9 +291,72 @@ describe("renderServerComponent (projection emission)", () => {
     expect(wrap.classList.contains("collapsed")).toBe(true);
   });
 
+  it("a server-side reorder follows $key: sibling occurrences keep their state", async () => {
+    const makeComp = order => props =>
+      r.ssr`<section>${order.map(id =>
+        props.comment({ $key: id, children: r.ssr`<p>${id}</p>` })
+      )}</section>`;
+    const host = createFrameHost();
+    createFrame(boundary, {
+      host,
+      id: "ro",
+      slots: {
+        comment: p => {
+          const wrap = document.createElement("div");
+          wrap.className = "comment";
+          wrap.appendChild(p.children);
+          return wrap;
+        }
+      }
+    });
+    await streamInto(renderServerComponent(makeComp(["a", "b"]), { frame: { id: "ro", version: 1 } }), host);
+    const [wrapA, wrapB] = boundary.querySelectorAll(".comment");
+    wrapA.classList.add("collapsed"); // client state on entity "a"
+    await streamInto(renderServerComponent(makeComp(["b", "a"]), { frame: { id: "ro", version: 2 } }), host);
+    const after = [...boundary.querySelectorAll(".comment")];
+    // Entity "a" moved to second position — same node, state intact.
+    expect(after[0]).toBe(wrapB);
+    expect(after[1]).toBe(wrapA);
+    expect(after[1].classList.contains("collapsed")).toBe(true);
+    expect(after[1].textContent).toBe("a");
+  });
+
+  it("documented limitation: a server element wrapping each occurrence defeats reorder identity", async () => {
+    // Keyed occurrences must be SIBLINGS for reorder to follow $key — ranges
+    // relocate within one parent only. Wrapping each call site in its own
+    // server element puts ranges in different parents: content still
+    // converges, but client state does not follow the entity. Let the CLIENT
+    // own the per-item wrapper instead (the slot callback returns it).
+    const makeComp = order => props =>
+      r.ssr`<section>${order.map(
+        id => r.ssr`<div class="row">${props.comment({ $key: id, label: id })}</div>`
+      )}</section>`;
+    const host = createFrameHost();
+    createFrame(boundary, {
+      host,
+      id: "wl",
+      slots: {
+        comment: p => {
+          const b = document.createElement("b");
+          b.textContent = p.label;
+          return b;
+        }
+      }
+    });
+    await streamInto(renderServerComponent(makeComp(["a", "b"]), { frame: { id: "wl", version: 1 } }), host);
+    const first = boundary.querySelectorAll("b")[0];
+    first.dataset.mine = "yes";
+    await streamInto(renderServerComponent(makeComp(["b", "a"]), { frame: { id: "wl", version: 2 } }), host);
+    // Content converges…
+    expect([...boundary.querySelectorAll("b")].map(b => b.textContent)).toEqual(["b", "a"]);
+    // …but entity "a"'s node did not travel: its state is gone.
+    const aNode = [...boundary.querySelectorAll("b")].find(b => b.textContent === "a");
+    expect(aNode.dataset.mine).toBeUndefined();
+  });
+
   it("a changed primitive arg on the same key re-calls the occurrence", async () => {
     const makeComp = score => props =>
-      r.ssr`<div>${props.comment({ key: "c1", score, children: r.ssr`<p>body</p>` })}</div>`;
+      r.ssr`<div>${props.comment({ $key: "c1", score, children: r.ssr`<p>body</p>` })}</div>`;
     const host = createFrameHost();
     const seen = [];
     createFrame(boundary, {

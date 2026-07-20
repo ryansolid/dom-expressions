@@ -291,7 +291,6 @@ function isServerContent(value) {
 export function createProjectionProps(sink, frame) {
   const counts = Object.create(null);
   const getters = new Map();
-  let regionCount = 0;
   return new Proxy(Object.create(null), {
     // Every key virtually exists — a prop is a *position* the client may
     // fill, and the server cannot know which ones the client supplied. This
@@ -316,13 +315,16 @@ export function createProjectionProps(sink, frame) {
             return projectionRange(prop);
           }
           const raw = callArgs[0];
-          // Keyed identity (RFC open question 1): a primitive `key` arg names
-          // the occurrence, so client state follows the entity across
-          // responses — same key + equivalent args on a later stream is the
-          // same occurrence and the consumer's dedupe skips the re-call.
-          // Without a key, identity is positional per prop.
+          // Occurrence identity (RFC open question 1): a primitive `$key` arg
+          // names the occurrence, so client state follows the entity across
+          // responses — the projection-level analogue of For's `keyed`
+          // function, for the case where references can't carry identity
+          // (every response re-creates everything). Without it, identity is
+          // positional per prop — the right default for most flows: a state
+          // reset across different lists is usually correct, and equivalent
+          // re-sends dedupe anyway. `$key` matters when a live list reorders.
           let occurrence;
-          const k = raw.key;
+          const k = raw.$key;
           if (typeof k === "string" || typeof k === "number") {
             occurrence = `${prop}#${k}`;
           } else {
@@ -353,7 +355,11 @@ export function createProjectionProps(sink, frame) {
                     "). Move the async read above the projection or into a fragment."
                 );
               }
-              const childId = `${frame.id}.${regionCount++}`;
+              // Region ids derive from occurrence + arg name — stable across
+              // responses (allocation order isn't), so a later stream's
+              // region content routes to the same bound region and morphs in
+              // place, and keyed dedupe holds under reorders.
+              const childId = `${frame.id}.${occurrence}.${key}`;
               sink.region(childId, resolved.t[0]);
               args[key] = { $frame: childId };
             } else {

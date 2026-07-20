@@ -48,7 +48,7 @@ async function getStory(storyId) {
       <h1>{story.title}</h1>
       <section class="comments">
         {story.comments.map((c) => (
-          <props.comment key={c.id} cid={c.id}>
+          <props.comment cid={c.id}>
             <div class="body">
               <p>{c.text}</p>
               {c.replies.map(renderReply /* recurse the same way */)}
@@ -78,33 +78,71 @@ What each piece does:
     This does *not* get serialized; it streams as a nested server region the
     client wraps without re-rendering. That's how recursive composition
     stays single-copy: the comment text is inside it, in HTML, once.
-- `key={c.id}` — names the occurrence by **entity** instead of position.
-  When the user navigates away and back, or the story refreshes, the same
-  key with unchanged args means the client's wrapper (and its state — a
-  collapse toggle, say) is reused, not re-created.
-
 Rules of thumb: put content on the server; pass primitives when the client
-needs a value; pass JSX when the client should wrap server content; give
-iterated positions a `key`. If you find yourself wanting to pass a big
-object to the client, ask whether the client actually needs it as *data* —
-usually it just needs it rendered, and rendering is free.
+needs a value; pass JSX when the client should wrap server content. If you
+find yourself wanting to pass a big object to the client, ask whether the
+client actually needs it as *data* — usually it just needs it rendered, and
+rendering is free.
+
+### Identity, if you need it (`$key`)
+
+Most apps never write this — the defaults do the right thing. Server content
+has no identity at all (it's stateless output; updates converge). A
+one-of-a-kind position like `props.children` is identified by its prop name,
+stable forever. Iterated positions are positional by default, and re-sends
+with unchanged args are deduplicated — state inside them already survives
+same-list refreshes, and resetting when the list *changes* is usually
+correct.
+
+The one case defaults get wrong is a **live list that reorders**: positional
+identity means client state stays at position 0 while the entity that owned
+it moves away. For that, name the occurrence by entity:
+
+```tsx
+<props.comment $key={c.id} cid={c.id}>…</props.comment>
+```
+
+If you know Solid 2.0's `<For keyed={item => key}>`, this is the same idea
+in the one place references can't carry it: a response re-creates
+everything, so identity across responses must be declared. Without `$key`
+you have positional semantics (`keyed={false}`); with it, state follows the
+entity through reorders, refetches, and navigations.
+
+Two constraints, both by design:
+
+- `$key` means something **only on projection calls**. On a DOM element it's
+  just an attribute (server elements have no identity to name).
+- Keyed occurrences must be **siblings** for reorders to follow the key —
+  don't wrap each call site in its own server element; let the *client*
+  wrapper (which the slot returns anyway) provide the per-item element. If a
+  server-wrapped occurrence does get reordered, content stays correct but
+  its client state resets.
+
+Relatedly: `<For>` and `<Show>` inside a server component work fine, but
+they're just one-shot control flow — a server component renders once per
+response, so there's no live reactivity for them to manage and no interplay
+with `$key`. Write `.map()` and ternaries if you prefer; they're the same
+thing here.
 
 ## Using it from the client
 
+There is no server-component API on the client. `dynamic` — the same
+utility you'd use to swap any component — is the whole surface:
+
 ```tsx
-import { createServerComponent } from "@solidjs/web/frames";
+import { dynamic } from "@solidjs/web";
 
-const [storyId, setStoryId] = createSignal(1);
-const [collapsedAll, setCollapsedAll] = createSignal(false);
+function StoryPage(props) {
+  const [collapsedAll, setCollapsedAll] = createSignal(false);
 
-// A stable component: the source is TRACKED — when storyId changes it
-// re-fetches, and the response streams into the same boundary. Server
-// content morphs; everything the client owns inside it stays put.
-const Story = createServerComponent(() => getStory(storyId()), {
-  id: "story-pane",
-});
+  // The source is tracked: when props.storyId changes it re-calls the
+  // server function. The call resolves to a STABLE component for this
+  // boundary — every response for the same boundary resolves to the same
+  // reference — so dynamic's equals-gate sees nothing new and nothing
+  // remounts. The real update rides the stream: server content morphs in
+  // place underneath.
+  const Story = dynamic(() => getStory(props.storyId));
 
-function StoryPage() {
   return (
     <Story
       comment={(p) => (
@@ -121,15 +159,72 @@ function StoryPage() {
 
 Things to notice:
 
-- **Navigation is just a signal.** No router ceremony required at this
-  layer: change `storyId`, the component re-fetches, the boundary morphs.
-  (A router integrates by doing exactly this — see below.)
+- **Navigation is just a prop change.** No router ceremony required at
+  this layer: the parent (or a router) changes `storyId`, the source
+  re-fetches, the boundary morphs. And because the `dynamic()` lives
+  inside `StoryPage`, each instance of the page is its own boundary —
+  render two story panes and they're independent, with nothing declared.
 - **`collapsedAll` never leaves the browser.** The request that fetches a
-  story carries the story id and nothing else. Global UI state affects the
-  current story and every future one, and the server cannot see it.
-- **The boundary id (`"story-pane"`) is yours.** The client names its
-  boundaries; the server's response is remapped onto your id. Two responses
-  into one id = one boundary, morphed.
+  story carries the story id and nothing else. This client-only state
+  affects the current story and every future one this pane navigates to,
+  and the server cannot see it.
+- **First load composes with `<Loading>`; refetches don't re-fallback.**
+  The initial call is a pending promise like any `lazy` component. A
+  refetch resolves to the same component reference, so the swap is
+  invisible to the tree — the only observable effect is the server content
+  updating.
+
+The trick making this zero-API is a transport policy, the mirror of the
+server's `frameTransformResult`: when the client's server-function runtime
+sees a frame-stream response, it streams the chunks into the boundary and
+resolves the call with a per-boundary stable component (get-or-create).
+That component does the mounting work at its one and only mount: create
+the boundary element (or claim the server-rendered one at hydration),
+register its props as the boundary's slots, dispose on cleanup.
+
+Boundary identity is **derived, never declared**, and it lives in two
+layers. On the wire, content is addressed by what the server naturally
+knows: the function and its arguments — one logical stream per (function,
+args). On the client, every call captures the reactive owner it was made
+under — per *call*, not per network fetch, so caching layers that dedupe
+requests don't hide it — and that owner binds the call site's boundary to
+the logical stream it asked for. The owner is stable across refetches of
+one source and unique per call site, so: a param navigation (same owner,
+new args) keeps the same component reference — nothing remounts — and
+rebinds the boundary to the new stream, morphing in place; two
+`dynamic()`s over one function get independent boundaries with nothing to
+spell; one component mounted in two places fans its stream out to both
+instances, each with its own slots. Imperative calls outside any reactive
+scope just warm content, binding nothing.
+(`applyFrameResponse(response, host, { as })` remains the low-level
+surface routers can drive directly.)
+
+### The data layer is the same data layer
+
+Because fetching a server component is just calling a server function, it
+composes with the data patterns apps already use rather than growing its
+own:
+
+- **Wrap the section function in `query`** and route-level `preload` warms
+  it on intent — the response's chunks buffer until a boundary mounts,
+  then drain. The `dynamic()` read resolves through the same cached
+  in-flight call.
+- **`revalidate` is granular server-content refresh**: re-running the
+  query streams a fresh version to every boundary bound to that logical
+  stream.
+- **Single-flight mutations generalize for free**: content is addressed by
+  (function, args), which the server knows for every section a mutation
+  invalidates — so the action response carries frames for all affected
+  sections in one round trip, and the client routes each to its bound
+  boundaries. Sections nobody currently displays are just cache warms.
+
+Preloading, deduping, invalidation, and mutation single-flight need no
+server-component-specific mechanism or API.
+
+If a boundary ever *does* re-suspend during a refetch, nothing is lost:
+Solid preserves the DOM off screen, the frame client morphs the detached
+range as chunks arrive (nothing in it requires document connectivity), and
+resolution restores the identical — already updated — nodes.
 
 ### Server wiring
 
@@ -217,9 +312,9 @@ must not break:
 ### What a router does with this
 
 A router integration is thin by design: give each outlet a stable frame id;
-translate URL changes into server-function calls; let the tracked source in
-`createServerComponent` (or `applyFrameResponse(response, host, { as })`
-directly) stream the result into the outlet's id. Back/forward is a re-fetch
+translate URL changes into server-function calls; let a `dynamic` source
+(or `applyFrameResponse(response, host, { as })` directly) stream the
+result into the outlet's id. Back/forward is a re-fetch
 into the same id — state inside the boundary survives because of invariant
 3, not because the router did anything. Scroll restoration, pending UI, and
 prefetching compose on top; none of them need to know how frames work

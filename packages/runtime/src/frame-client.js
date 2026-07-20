@@ -189,6 +189,7 @@ class FrameImpl {
   #slotCleanups = new Map();
   #slotArgs = new Map();
   #slotRegions = new Map();
+  #slotNodes = new Map();
   #processedAssets = new Set();
   #disposed = false;
   // Stable identity so a pending stylesheet holds at most one waiter per
@@ -380,6 +381,17 @@ class FrameImpl {
       const callback = this.#resolveSlot(propOf(occurrence));
       if (!callback) continue; // no client impl for this prop up the tree
       const record = this.#resolveSlotRecord(occurrence);
+      // A mount whose output the morph destroyed (its range was recreated
+      // inside a different server parent — ranges only relocate among
+      // siblings) is a zombie: remount fresh so content stays correct, even
+      // though state can't survive a destroyed node.
+      const prev = this.#slotNodes.get(occurrence);
+      const zombie =
+        this.#mountedSlots.has(occurrence) && prev && prev.length && !prev[0].parentNode;
+      if (zombie) {
+        this.#mountedSlots.delete(occurrence);
+        this.#runSlotCleanups(occurrence);
+      }
       if (!this.#mountedSlots.has(occurrence)) {
         // Direct-insert occurrences have no `slot:<id>` record and mount with
         // empty props; render-function occurrences mount with resolved props.
@@ -390,6 +402,7 @@ class FrameImpl {
         // in place (hydration attach; the DOM is untouched).
         const nodes = this.#invokeSlot(occurrence, callback, record, start);
         if (nodes) this.#replaceRange(occurrence, start, nodes);
+        this.#slotNodes.set(occurrence, nodes);
         this.#mountedSlots.add(occurrence);
         this.#bindRegions(occurrence);
       } else if (record !== this.#slotArgs.get(occurrence)) {
@@ -398,6 +411,7 @@ class FrameImpl {
         // undefined return keeps the current interior.
         const nodes = this.#invokeSlot(occurrence, callback, record, start);
         if (nodes) this.#replaceRange(occurrence, start, nodes);
+        this.#slotNodes.set(occurrence, nodes);
         this.#bindRegions(occurrence);
       }
     }
@@ -446,6 +460,7 @@ class FrameImpl {
 
   #unmountSlot(key) {
     this.#mountedSlots.delete(key);
+    this.#slotNodes.delete(key);
     this.#runSlotCleanups(key);
     const regions = this.#slotRegions.get(key);
     if (regions) {

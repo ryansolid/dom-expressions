@@ -47,8 +47,10 @@ export function renderToFrameStream(code: () => unknown, options?: FrameStreamOp
  *
  * - reading a prop as a child emits a marker range the client fills;
  * - calling a prop as a render function emits a `slot` chunk for a fresh
- *   occurrence (a primitive `key` arg names it, so client state follows the
- *   entity across responses; positional otherwise);
+ *   occurrence (a primitive `$key` arg names it, so client state follows the
+ *   entity across responses — the projection-level analogue of For's `keyed`
+ *   function; positional otherwise, which is the right default for most
+ *   flows);
  * - primitive args ride the chunk; server JSX args stream as nested regions
  *   (`{$frame}` — html once, never data); other values serialize as `{$ref}`
  *   data records with referential dedupe.

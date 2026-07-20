@@ -89,10 +89,7 @@ export interface SlotContext {
  * host, `{$frame}` regions as marker-range fragments). Return nodes to fill
  * the range, or `undefined` to claim `ctx.existing` untouched.
  */
-export type Slot = (
-  props: Record<string, unknown>,
-  ctx: SlotContext
-) => Node | Node[] | undefined;
+export type Slot = (props: Record<string, unknown>, ctx: SlotContext) => Node | Node[] | undefined;
 
 export interface Frame {
   /** Merge a write into the store and flush (morph/reveal/slot sync). */

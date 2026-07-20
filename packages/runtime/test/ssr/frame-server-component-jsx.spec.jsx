@@ -97,4 +97,34 @@ describe("server component authored in JSX", () => {
       "nice <script>"
     ]);
   });
+
+  it("$key on a DOM element is inert: just an attribute, no occurrence semantics", async () => {
+    // $key names occurrences on PROJECTION CALLS only. Server elements have
+    // no identity to name, so on an element it compiles to a plain attribute
+    // and nothing else.
+    const comp = props => (
+      <div $key="c1">
+        <span>{props.label({ $key: "c1", text: "hi" })}</span>
+      </div>
+    );
+    const host = createFrameHost();
+    const seen = [];
+    createFrame(boundary, {
+      host,
+      id: "inert",
+      slots: {
+        label: p => {
+          seen.push(p.text);
+          const b = document.createElement("b");
+          b.textContent = p.text;
+          return b;
+        }
+      }
+    });
+    await streamInto(renderServerComponent(comp, { frame: { id: "inert", version: 1 } }), host);
+    expect(boundary.querySelector("div").getAttribute("$key")).toBe("c1");
+    // The projection call next to it still keyed normally.
+    expect(seen).toEqual(["hi"]);
+    expect(boundary.querySelector("span b").textContent).toBe("hi");
+  });
 });
