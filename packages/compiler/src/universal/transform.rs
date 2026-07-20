@@ -11,7 +11,6 @@ use oxc_ast_visit::VisitMut;
 use oxc_span::{GetSpan, Span};
 
 use crate::dom::element::{jsx_expression_to_expression, AstDomTransform, DomTransformConfig};
-use crate::shared::array::expression_to_array_element;
 use crate::shared::ast::{
     arrow_return_expression, expression_to_argument, object_getter_property_with_setup,
     object_method_property,
@@ -957,9 +956,13 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 }
                 JSXChild::Spread(spread) => {
                     significant += 1;
+                    // Babel classifies the original expression — nested JSX
+                    // lowers after the dynamic decision, so `{...[<span/>]}`
+                    // stays static even though the lowered form is a call.
+                    let dynamic = self.classify().is_dynamic(None, &spread.expression, false);
                     let mut value = spread.expression.clone_in(self.allocator);
                     self.visit_expression(&mut value);
-                    let value = if self.classify().is_dynamic(None, &value, false) {
+                    let value = if dynamic {
                         arrow_return_expression(self.allocator, spread.span, value)
                     } else {
                         value
@@ -1426,7 +1429,9 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 ));
             }
         }
-        if let Some(children) = self.universal_component_children(&element.children)? {
+        if let Some(children) =
+            crate::shared::component_children::component_children(self, &element.children)?
+        {
             if children.needs_getter {
                 running_props.push(object_getter_property_with_setup(
                     self.allocator,
@@ -1580,138 +1585,6 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
             "r$",
             statements,
         ))
-    }
-
-    fn universal_component_children(
-        &mut self,
-        children: &[JSXChild<'a>],
-    ) -> Result<Option<UniversalComponentChildren<'a>>> {
-        enum Kind {
-            Static,
-            DynamicExpression,
-            Element,
-        }
-        struct ChildValue<'a> {
-            value: Expression<'a>,
-            kind: Kind,
-            setup: std::vec::Vec<Statement<'a>>,
-        }
-
-        let mut values: std::vec::Vec<ChildValue<'a>> = std::vec::Vec::new();
-        for child in children {
-            match child {
-                JSXChild::Text(text) => {
-                    let value = decode_html_entities(&trim_jsx_text(&text.value));
-                    if !value.is_empty() {
-                        values.push(ChildValue {
-                            value: self.ast().expression_string_literal(
-                                text.span,
-                                self.ast().atom(&value),
-                                None,
-                            ),
-                            kind: Kind::Static,
-                            setup: std::vec::Vec::new(),
-                        });
-                    }
-                }
-                JSXChild::ExpressionContainer(container) => {
-                    if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
-                        continue;
-                    }
-                    let dynamic = container.expression.as_expression().is_some_and(|expression| {
-                        self.classify()
-                            .is_dynamic(Some(container.span.start), expression, true)
-                    });
-                    let mut value = self.transform_component_expression(&container.expression);
-                    if dynamic && self.wrap_conditionals && is_condition_shape(&value) {
-                        value = transform_condition_inline(self, container.span, value);
-                    }
-                    values.push(ChildValue {
-                        value,
-                        kind: if dynamic {
-                            Kind::DynamicExpression
-                        } else {
-                            Kind::Static
-                        },
-                        setup: std::vec::Vec::new(),
-                    });
-                }
-                JSXChild::Element(element) => {
-                    let (value, setup) = self.lower_element(element)?;
-                    values.push(ChildValue {
-                        value,
-                        kind: Kind::Element,
-                        setup,
-                    });
-                }
-                JSXChild::Fragment(fragment) => {
-                    // Babel's zero-arg callee unwrap: a fragment lowering to
-                    // a single setup IIFE splits back into setup + value so
-                    // the single-child getter inlines its body.
-                    let value = self.lower_fragment(fragment)?;
-                    let (value, setup) =
-                        crate::shared::ast::split_zero_arg_iife(self.allocator, value);
-                    values.push(ChildValue {
-                        value,
-                        kind: Kind::Element,
-                        setup,
-                    });
-                }
-                JSXChild::Spread(spread) => {
-                    let mut value = spread.expression.clone_in(self.allocator);
-                    self.visit_expression(&mut value);
-                    let dynamic = self.classify().is_dynamic(None, &value, false);
-                    values.push(ChildValue {
-                        value,
-                        kind: if dynamic {
-                            Kind::DynamicExpression
-                        } else {
-                            Kind::Static
-                        },
-                        setup: std::vec::Vec::new(),
-                    });
-                }
-            }
-        }
-
-        Ok(match values.len() {
-            0 => None,
-            1 => {
-                let child = values.pop().expect("component child exists");
-                Some(UniversalComponentChildren {
-                    value: child.value,
-                    needs_getter: !matches!(child.kind, Kind::Static),
-                    setup: child.setup,
-                })
-            }
-            _ => {
-                let span = children
-                    .first()
-                    .map_or_else(|| Span::new(0, 0), JSXChild::span);
-                let elements = values
-                    .into_iter()
-                    .map(|child| {
-                        let span = child.value.span();
-                        let value = if !child.setup.is_empty() {
-                            self.setup_iife(span, child.setup, child.value)
-                        } else if matches!(child.kind, Kind::DynamicExpression) {
-                            let thunk = arrow_return_expression(self.allocator, span, child.value);
-                            memo_wrap_thunk(self, span, thunk)
-                        } else {
-                            child.value
-                        };
-                        expression_to_array_element(value)
-                    })
-                    .collect::<std::vec::Vec<_>>();
-                Some(UniversalComponentChildren {
-                    value: self
-                        .ast()
-                        .expression_array(span, self.ast().vec_from_iter(elements)),
-                    needs_getter: true,
-                    setup: std::vec::Vec::new(),
-                })
-            }
-        })
     }
 
     fn transform_component_expression(&mut self, expression: &JSXExpression<'a>) -> Expression<'a> {
@@ -2047,12 +1920,6 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
     }
 }
 
-pub(crate) struct UniversalComponentChildren<'a> {
-    pub(crate) value: Expression<'a>,
-    pub(crate) needs_getter: bool,
-    pub(crate) setup: std::vec::Vec<Statement<'a>>,
-}
-
 fn push_text_plan<'a>(plans: &mut std::vec::Vec<ChildPlan<'a>>, value: String) {
     if let Some(ChildPlan::Text {
         value: previous, ..
@@ -2091,6 +1958,17 @@ impl<'a> ConditionBuilder<'a> for AstUniversalTransform<'a, '_> {
 
     fn classify(&self) -> Classify<'_> {
         AstUniversalTransform::classify(self)
+    }
+}
+
+impl<'a> crate::shared::component_children::ComponentChildLower<'a>
+    for AstUniversalTransform<'a, '_>
+{
+    fn lower_child_element_with_setup(
+        &mut self,
+        element: &JSXElement<'a>,
+    ) -> Result<(Expression<'a>, std::vec::Vec<Statement<'a>>)> {
+        self.lower_element(element)
     }
 }
 

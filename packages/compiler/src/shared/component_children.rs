@@ -1,14 +1,30 @@
+//! The single component-children implementation, mirroring the Babel
+//! plugin's `transformComponentChildren` (`shared/component.ts`): one
+//! traversal shared by the client generates, with per-mode emission behind
+//! [`ModeLower`] / [`ComponentChildLower`].
+
 use napi::bindgen_prelude::*;
 use oxc_allocator::CloneIn;
-use oxc_ast::ast::{Expression, JSXChild, JSXExpression, Statement};
+use oxc_ast::ast::{Expression, JSXChild, JSXElement, JSXExpression, Statement};
+use oxc_ast::NONE;
 use oxc_span::GetSpan;
 
-use crate::dom::element::AstDomTransform;
 use crate::shared::array::expression_to_array_element;
-use crate::shared::component::transform_component_expression;
-use crate::shared::condition::{is_condition_shape, memo_wrap_thunk};
+use crate::shared::ast::arrow_return_expression;
+use crate::shared::condition::{is_condition_shape, transform_condition_inline};
 use crate::shared::fragment::lower_fragment;
+use crate::shared::mode_lower::{mode_ast, ModeLower};
 use crate::shared::utils::{decode_html_entities, trim_jsx_text};
+
+/// The extra seam component children need beyond [`ModeLower`]: element
+/// children keep their setup statements (template declarations + operations)
+/// separate so the caller can host them in the `children` getter.
+pub(crate) trait ComponentChildLower<'a>: ModeLower<'a> {
+    fn lower_child_element_with_setup(
+        &mut self,
+        element: &JSXElement<'a>,
+    ) -> Result<(Expression<'a>, std::vec::Vec<Statement<'a>>)>;
+}
 
 pub(crate) struct ComponentChildren<'a> {
     pub(crate) value: Expression<'a>,
@@ -37,10 +53,12 @@ struct ChildValue<'a> {
     setup: std::vec::Vec<Statement<'a>>,
 }
 
-pub(crate) fn component_children<'a>(
-    ctx: &mut AstDomTransform<'a, '_>,
+pub(crate) fn component_children<'a, C: ComponentChildLower<'a>>(
+    ctx: &mut C,
     children: &[JSXChild<'a>],
 ) -> Result<Option<ComponentChildren<'a>>> {
+    let allocator = ctx.condition_allocator();
+    let ast = mode_ast(ctx);
     let mut values = std::vec::Vec::new();
     for child in children {
         match child {
@@ -49,11 +67,7 @@ pub(crate) fn component_children<'a>(
                 let value = decode_html_entities(&trim_jsx_text(&text.value));
                 if !value.is_empty() {
                     values.push(ChildValue {
-                        value: ctx.ast().expression_string_literal(
-                            span,
-                            ctx.ast().atom(&value),
-                            None,
-                        ),
+                        value: ast.expression_string_literal(span, ast.atom(&value), None),
                         kind: ChildKind::Static,
                         setup: std::vec::Vec::new(),
                     });
@@ -67,15 +81,19 @@ pub(crate) fn component_children<'a>(
                 // `isDynamic(expr, { checkMember: true, checkTags: true })`
                 // on the original (pre-lowered) expression — marker comments
                 // and namespace-import members short-circuit inside the
-                // shared predicate.
+                // shared predicate. JSX inside the value stays raw for the
+                // deferred pass.
                 let dynamic = container.expression.as_expression().is_some_and(|expression| {
                     ctx.classify()
                         .is_dynamic(Some(container.span.start), expression, true)
                 });
-                let mut value = transform_component_expression(ctx, &container.expression);
-                if dynamic && ctx.wrap_conditionals && is_condition_shape(&value) {
+                let mut value = container
+                    .expression
+                    .clone_in(allocator)
+                    .into_expression();
+                if dynamic && ctx.wrap_conditionals_enabled() && is_condition_shape(&value) {
                     // `transformCondition(..., true)` — memos collapse inline.
-                    value = ctx.inline_condition_expression(container.span, value);
+                    value = transform_condition_inline(ctx, container.span, value);
                 }
                 values.push(ChildValue {
                     value,
@@ -88,7 +106,7 @@ pub(crate) fn component_children<'a>(
                 });
             }
             JSXChild::Element(element) => {
-                let (value, setup) = ctx.lower_element_with_setup(element)?;
+                let (value, setup) = ctx.lower_child_element_with_setup(element)?;
                 values.push(ChildValue {
                     value,
                     kind: ChildKind::Element,
@@ -96,7 +114,7 @@ pub(crate) fn component_children<'a>(
                 });
             }
             JSXChild::Spread(spread) => {
-                let value = spread.expression.clone_in(ctx.allocator);
+                let value = spread.expression.clone_in(allocator);
                 let dynamic = ctx.classify().is_dynamic(None, &value, false);
                 values.push(ChildValue {
                     value,
@@ -118,8 +136,7 @@ pub(crate) fn component_children<'a>(
                 // `transformComponentChildren`); arrays re-fold the setup into
                 // a per-entry IIFE, reproducing the original shape.
                 let value = lower_fragment(ctx, fragment)?;
-                let (value, setup) =
-                    crate::shared::ast::split_zero_arg_iife(ctx.allocator, value);
+                let (value, setup) = crate::shared::ast::split_zero_arg_iife(allocator, value);
                 values.push(ChildValue {
                     value,
                     kind: ChildKind::Element,
@@ -152,14 +169,14 @@ pub(crate) fn component_children<'a>(
                     // (`createTemplate(wrap: true)` with an arrow thunk —
                     // component children never use the bare-callee unwrap).
                     let value = if !child.setup.is_empty() {
-                        let mut statements = ctx.ast().vec();
+                        let mut statements = ast.vec();
                         statements.extend(child.setup);
-                        statements.push(ctx.ast().statement_return(span, Some(child.value)));
-                        let iife = ctx.arrow_iife(span, statements);
-                        ctx.call_expression(span, iife, std::vec::Vec::new())
+                        statements.push(ast.statement_return(span, Some(child.value)));
+                        let iife = crate::shared::ast::arrow_iife(allocator, span, statements);
+                        ast.expression_call(span, iife, NONE, ast.vec(), false)
                     } else if matches!(child.kind, ChildKind::DynamicExpression) {
-                        let thunk = ctx.arrow_return_expression(span, child.value);
-                        memo_wrap_thunk(ctx, span, thunk)
+                        let thunk = arrow_return_expression(allocator, span, child.value);
+                        ctx.memo_wrap_dynamic_child(span, thunk)
                     } else {
                         child.value
                     };
@@ -167,9 +184,7 @@ pub(crate) fn component_children<'a>(
                 })
                 .collect::<std::vec::Vec<_>>();
             Some(ComponentChildren {
-                value: ctx
-                    .ast()
-                    .expression_array(span, ctx.ast().vec_from_iter(elements)),
+                value: ast.expression_array(span, ast.vec_from_iter(elements)),
                 needs_getter: true,
                 setup: std::vec::Vec::new(),
             })

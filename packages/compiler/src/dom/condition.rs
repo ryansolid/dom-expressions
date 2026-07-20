@@ -31,6 +31,18 @@ impl<'a> ConditionBuilder<'a> for AstDomTransform<'a, '_> {
     }
 }
 
+impl<'a> crate::shared::component_children::ComponentChildLower<'a>
+    for AstDomTransform<'a, '_>
+{
+    fn lower_child_element_with_setup(
+        &mut self,
+        element: &JSXElement<'a>,
+    ) -> napi::bindgen_prelude::Result<(Expression<'a>, std::vec::Vec<oxc_ast::ast::Statement<'a>>)>
+    {
+        self.lower_element_with_setup(element)
+    }
+}
+
 impl<'a> ModeLower<'a> for AstDomTransform<'a, '_> {
     fn wrap_conditionals_enabled(&self) -> bool {
         self.wrap_conditionals

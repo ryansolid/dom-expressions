@@ -1184,6 +1184,9 @@ const a = <Comp>{...items()}</Comp>;
 `,
   "spread child marker ignored (attaches to spread, not expression)": `
 const a = <>{/*@static*/ ...items()}</>;
+`,
+  "element spread child with nested jsx classifies on the original": `
+const a = <div>{...[<span/>]}</div>;
 `
 };
 
