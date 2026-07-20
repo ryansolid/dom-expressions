@@ -19,7 +19,7 @@ use crate::shared::ast::{
 };
 use crate::shared::attr_plan::{AttrPlan, AttrPlanner, PlanValue};
 use crate::shared::bindings::BindingTable;
-use crate::shared::classify::Classify;
+use crate::shared::classify::{jsx_text_is_filtered, significant_children, Classify};
 use crate::shared::component_callee::{component_callee_expression, ComponentCalleeContext};
 use crate::shared::component_props::{
     component_property, component_props_expression, component_spread_expression,
@@ -1012,7 +1012,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 JSXChild::ExpressionContainer(container) => {
                     !matches!(container.expression, JSXExpression::EmptyExpression(_))
                 }
-                JSXChild::Text(text) => !jsx_text_filtered(&text.value),
+                JSXChild::Text(text) => !jsx_text_is_filtered(&text.value),
                 _ => true,
             })
             .collect();
@@ -2750,12 +2750,6 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     }
 }
 
-/// Babel's `filterChildren` text filter: raw JSX text starting with a newline
-/// and containing only whitespace is dropped before children counting.
-fn jsx_text_filtered(text: &str) -> bool {
-    matches!(text.chars().next(), Some('\r' | '\n')) && text.chars().all(|c| c.is_whitespace())
-}
-
 /// Babel's getter-body extraction for dynamic component children:
 /// `memo(fn)`-style calls unwrap to `fn`'s body, plain functions to their
 /// body, anything else becomes `return value;`.
@@ -3072,31 +3066,6 @@ fn is_literal_expression(value: &Expression<'_>) -> bool {
             | Expression::RegExpLiteral(_)
             | Expression::TemplateLiteral(_)
     )
-}
-
-/// Babel's `filterChildren` + `checkLength` composition: counts the children
-/// that render content (non-whitespace text or pure-space runs, non-empty
-/// containers, elements, spreads).
-fn significant_children(children: &[JSXChild<'_>]) -> usize {
-    children
-        .iter()
-        .filter(|child| match child {
-            JSXChild::Text(text) => {
-                let raw = text.value.as_str();
-                // filterChildren drops text starting with a newline that is
-                // all whitespace (`/^[\r\n]\s*$/`).
-                if raw.starts_with(['\r', '\n']) && raw.chars().all(char::is_whitespace) {
-                    return false;
-                }
-                // checkLength keeps text with content or pure-space runs.
-                raw.chars().any(|char| !char.is_whitespace()) || raw.chars().all(|char| char == ' ')
-            }
-            JSXChild::ExpressionContainer(container) => {
-                !matches!(container.expression, JSXExpression::EmptyExpression(_))
-            }
-            _ => true,
-        })
-        .count()
 }
 
 /// Port of Babel's `fragmentWillSelfEscape`: predicts whether a fragment

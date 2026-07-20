@@ -88,6 +88,42 @@ impl<'c> Classify<'c> {
     }
 }
 
+/// Babel's `filterChildren` text rule: raw JSX text starting with a newline
+/// and containing only whitespace is dropped before children counting and
+/// child-list filtering.
+pub(crate) fn jsx_text_is_filtered(raw: &str) -> bool {
+    matches!(raw.chars().next(), Some('\r' | '\n')) && raw.chars().all(char::is_whitespace)
+}
+
+/// Babel's `filterChildren` + `checkLength` composition: counts the children
+/// that render content — text that survives the filter and has non-whitespace
+/// content or is a pure-space run, non-empty expression containers, elements,
+/// fragments, and spreads.
+pub(crate) fn significant_children(children: &[JSXChild<'_>]) -> usize {
+    children
+        .iter()
+        .filter(|child| match child {
+            JSXChild::Text(text) => {
+                let raw = text.value.as_str();
+                if jsx_text_is_filtered(raw) {
+                    return false;
+                }
+                raw.chars().any(|char| !char.is_whitespace()) || raw.chars().all(|char| char == ' ')
+            }
+            JSXChild::ExpressionContainer(container) => !matches!(
+                container.expression,
+                oxc_ast::ast::JSXExpression::EmptyExpression(_)
+            ),
+            _ => true,
+        })
+        .count()
+}
+
+/// Babel's `checkLength`: more than one significant child.
+pub(crate) fn check_length(children: &[JSXChild<'_>]) -> bool {
+    significant_children(children) > 1
+}
+
 /// Babel's `isDynamic` namespace carve-out: a member expression whose object
 /// is an `import * as ns` local is not dynamic (top-level expression only —
 /// nested occurrences inside a larger expression still count as dynamic,

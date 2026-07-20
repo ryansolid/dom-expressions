@@ -2,6 +2,7 @@ use crate::dom::attrs::CloseTagContext;
 use crate::dom::element::{jsx_expression_to_expression, AstDomTransform};
 use crate::dom::static_template::lower_static_native_template;
 use crate::dom::template::InsertMarker;
+use crate::shared::classify::check_length;
 use crate::shared::utils::{
     child_slot_allocates_ids, element_name, escape_html_text, escape_html_text_expression,
     is_component_name, static_jsx_expression, trim_jsx_text,
@@ -924,26 +925,6 @@ fn spread_child_expression<'a>(
     } else {
         cloned
     }
-}
-
-/// Mirror of Babel's `checkLength`: more than one meaningful child. Texts
-/// count unless whitespace-only — except space-only runs (no newlines),
-/// which count as inline whitespace.
-fn check_length(children: &[JSXChild<'_>]) -> bool {
-    children
-        .iter()
-        .filter(|child| match child {
-            JSXChild::ExpressionContainer(container) => {
-                !matches!(container.expression, JSXExpression::EmptyExpression(_))
-            }
-            JSXChild::Text(text) => {
-                let raw = text.value.as_str();
-                !raw.chars().all(char::is_whitespace) || raw.chars().all(|c| c == ' ')
-            }
-            _ => true,
-        })
-        .count()
-        > 1
 }
 
 fn has_following_static_content(children: &[JSXChild<'_>]) -> bool {
