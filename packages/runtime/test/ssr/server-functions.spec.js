@@ -11,11 +11,14 @@ import {
 import {
   BODY_FORMAT_HEADER,
   BodyFormat,
+  ERROR_HEADER,
   FILE_FORM_KEY,
   SINGLE_FLIGHT_HEADER,
+  decodeErrorHeaderValue,
   decodeResponse,
   deserializeStream,
   deserializeString,
+  encodeErrorHeaderValue,
   extractBody,
   getHeadersAndBody,
   getServerFunctionMetadata,
@@ -345,6 +348,113 @@ describe("handler", () => {
     } finally {
       restore();
     }
+  });
+
+  describe("error header encoding", () => {
+    // Header values are latin1 ByteStrings: without the encoding guard,
+    // Headers.set throws on messages with code points above U+00FF and the
+    // whole call collapses into a bare 500 (solidjs/solid-start#1874).
+    const NON_LATIN1_MESSAGES = {
+      cjk: "服务器错误：找不到用户",
+      emoji: "rocket failed 🚀💥",
+      mixed: "Ошибка 🚀 ünïcode — special chars"
+    };
+
+    it("keeps plain ASCII messages verbatim on the wire", async () => {
+      registerServerFunction("err-ascii-0", async () => {
+        throw new Error("plain ascii message");
+      });
+      const response = await dispatch(
+        new Request("http://localhost/_server", {
+          method: "POST",
+          headers: {
+            "X-Server-Function-Id": "err-ascii-0",
+            "X-Server-Function-Instance": "server-function:test"
+          }
+        })
+      );
+      // fast path: byte-identical to the historical wire format
+      expect(response.headers.get(ERROR_HEADER)).toBe("plain ascii message");
+      expect(decodeErrorHeaderValue(response.headers.get(ERROR_HEADER))).toBe(
+        "plain ascii message"
+      );
+    });
+
+    for (const [label, message] of Object.entries(NON_LATIN1_MESSAGES)) {
+      it(`round-trips a ${label} message through the header`, async () => {
+        const id = `err-${label}-0`;
+        registerServerFunction(id, async () => {
+          throw new Error(message);
+        });
+        const response = await dispatch(
+          new Request("http://localhost/_server", {
+            method: "POST",
+            headers: {
+              "X-Server-Function-Id": id,
+              "X-Server-Function-Instance": "server-function:test"
+            }
+          })
+        );
+        // the response encoded without throwing, tagged as an error
+        expect(response.status).toBe(200);
+        const header = response.headers.get(ERROR_HEADER);
+        expect(header).not.toBeNull();
+        // decoded header restores the message exactly (astral planes included)
+        expect(decodeErrorHeaderValue(header)).toBe(message);
+        // and the structured error in the body still carries it
+        const decoded = await decodeResponse(response);
+        expect(decoded).toBeInstanceOf(Error);
+        expect(decoded.message).toBe(message);
+      });
+
+      it(`rejects the client call with the ${label} message intact`, async () => {
+        const id = `err-${label}-client-0`;
+        registerServerFunction(id, async () => {
+          throw new Error(message);
+        });
+        const restore = connectTransport();
+        try {
+          await expect(createClientReference(id)()).rejects.toThrow(message);
+        } finally {
+          restore();
+        }
+      });
+    }
+
+    it("encodes and decodes symmetrically at the codec level", () => {
+      for (const message of [
+        "plain",
+        "",
+        "true",
+        ...Object.values(NON_LATIN1_MESSAGES),
+        "𝒜stral 𝔻ata", // astral-plane letters
+        "  padded  ", // Headers.set would trim these
+        "=?1?looks-already-encoded", // verbatim marker collision
+        "line\r\nbreaks stripped"
+      ]) {
+        const encoded = encodeErrorHeaderValue(message);
+        // must be settable on real Headers without throwing or mutating
+        const headers = new Headers();
+        headers.set(ERROR_HEADER, encoded);
+        expect(headers.get(ERROR_HEADER)).toBe(encoded);
+        expect(decodeErrorHeaderValue(headers.get(ERROR_HEADER))).toBe(
+          message.replace(/[\r\n]+/g, "")
+        );
+      }
+    });
+
+    it("never throws on lone surrogates", () => {
+      const encoded = encodeErrorHeaderValue("broken \uD800 surrogate");
+      const headers = new Headers();
+      headers.set(ERROR_HEADER, encoded);
+      expect(decodeErrorHeaderValue(encoded)).toBe("broken \uFFFD surrogate");
+    });
+
+    it("passes unmarked values through decode untouched", () => {
+      expect(decodeErrorHeaderValue("kaboom")).toBe("kaboom");
+      expect(decodeErrorHeaderValue("true")).toBe("true");
+      expect(decodeErrorHeaderValue("50%25 there")).toBe("50%25 there");
+    });
   });
 
   it("provides the request event and meta during handling", async () => {

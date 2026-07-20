@@ -39,6 +39,35 @@ export const FUNCTION_HEADER: string;
 export const INSTANCE_HEADER: string;
 
 /**
+ * Response header marking a thrown server-function error
+ * (`"X-Server-Function-Error"`). The client transport rejects with the
+ * decoded body when it is present (unless redirect/revalidation metadata
+ * marks the response as control flow). The value carries the error's
+ * message — `"true"` for thrown control-flow responses and non-Error
+ * values — encoded with `encodeErrorHeaderValue`, so integrations reading
+ * it must pass it through `decodeErrorHeaderValue`.
+ */
+export const ERROR_HEADER: string;
+
+/**
+ * Encodes an error message for the `ERROR_HEADER` value. HTTP header values
+ * are latin1 ByteStrings — `Headers.set` throws on code points above U+00FF
+ * — so plain printable-latin1 messages ride verbatim (ASCII stays
+ * byte-identical on the wire) and everything else (CJK, emoji, controls)
+ * travels percent-encoded behind a marker. `decodeErrorHeaderValue`
+ * round-trips the message exactly, astral-plane characters included (lone
+ * surrogates are replaced with U+FFFD — they cannot survive UTF-8 anyway).
+ */
+export function encodeErrorHeaderValue(value: string): string;
+
+/**
+ * Decodes an `ERROR_HEADER` value produced by `encodeErrorHeaderValue`:
+ * marked values are percent-decoded, everything else (including values from
+ * peers that never encode) passes through untouched.
+ */
+export function decodeErrorHeaderValue(value: string): string;
+
+/**
  * Header driving the single-flight protocol on both legs
  * (`"X-Single-Flight"`). On the request it opts the call into data
  * collection — the transport sends it automatically on non-GET calls while

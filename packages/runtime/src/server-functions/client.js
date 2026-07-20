@@ -5,6 +5,7 @@
 import {
   BODY_FORMAT_HEADER,
   BodyFormat,
+  ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SERVER_FUNCTION_METADATA,
@@ -21,10 +22,13 @@ import {
 } from "./shared.js";
 
 export {
+  ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
+  decodeErrorHeaderValue,
   decodeResponse,
+  encodeErrorHeaderValue,
   getServerFunctionMetadata,
   isServerFunction,
   subscribeFlightData,
@@ -142,7 +146,7 @@ async function fetchServerFunction(base, id, options, args, meta) {
       const payload = await decodeResponse(response);
       await consumer(payload.data, { response });
       if (
-        response.headers.has("X-Server-Function-Error") &&
+        response.headers.has(ERROR_HEADER) &&
         !response.headers.has("Location") &&
         !response.headers.has("X-Revalidate")
       ) {
@@ -165,7 +169,7 @@ async function fetchServerFunction(base, id, options, args, meta) {
   }
 
   const result = await decodeResponse(response.clone());
-  if (response.headers.has("X-Server-Function-Error")) {
+  if (response.headers.has(ERROR_HEADER)) {
     throw result;
   }
   return result;

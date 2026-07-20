@@ -12,12 +12,14 @@ import { RequestContext, getRequestEvent } from "../server.js";
 import {
   BODY_FORMAT_HEADER,
   BodyFormat,
+  ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SERVER_FUNCTION_METADATA,
   SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
   deserializeString,
+  encodeErrorHeaderValue,
   extractBody,
   getHeadersAndBody,
   getServerFunctionsCodec,
@@ -27,10 +29,13 @@ import {
 } from "./shared.js";
 
 export {
+  ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
+  decodeErrorHeaderValue,
   decodeResponse,
+  encodeErrorHeaderValue,
   getServerFunctionMetadata,
   isServerFunction,
   subscribeFlightData,
@@ -433,7 +438,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
         });
       }
 
-      headers.set("X-Server-Function-Error", "true");
+      headers.set(ERROR_HEADER, "true");
       if (!instance) {
         if (options.handleNoJS) return options.handleNoJS(x, request, parsed, true);
         if (x instanceof Response) return x;
@@ -448,7 +453,10 @@ export async function handleServerFunctionRequest(request, options = {}) {
     }
 
     const error = x instanceof Error ? x.message : typeof x === "string" ? x : "true";
-    headers.set("X-Server-Function-Error", error.replace(/[\r\n]+/g, ""));
+    // header values are latin1 ByteStrings — Headers.set throws on anything
+    // above U+00FF, so non-latin1 messages ride percent-encoded (the client
+    // decodes symmetrically; the structured error still travels in the body)
+    headers.set(ERROR_HEADER, encodeErrorHeaderValue(error));
     return encodeResult(x, headers, 200, codec);
   }
 }

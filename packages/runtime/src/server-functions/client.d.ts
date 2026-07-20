@@ -2,10 +2,13 @@ import { JSONCodecOptions } from "../serializer.js";
 import { ServerFunction, ServerFunctionMetadata } from "./shared.js";
 
 export {
+  ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
+  decodeErrorHeaderValue,
   decodeResponse,
+  encodeErrorHeaderValue,
   getServerFunctionMetadata,
   isServerFunction,
   subscribeFlightData,
