@@ -15,11 +15,14 @@
 //! candidates are tracked by name, which survives reprints.
 
 use oxc_allocator::Allocator;
-use oxc_ast::ast::{BindingPattern, Expression, Program, Statement};
+use oxc_ast::{
+    ast::{BindingPattern, Expression, Program, Statement},
+    AstBuilder,
+};
 use oxc_ast_visit::{walk, walk_mut, Visit, VisitMut};
 use oxc_parser::{ParseOptions, Parser};
 use oxc_semantic::{AstNode, Scoping, SemanticBuilder};
-use oxc_span::{GetSpan, SourceType, Span};
+use oxc_span::{GetSpan, SourceType, Span, SPAN};
 
 /// Mirrors the Babel implementation's message verbatim (it warns through
 /// `console.warn`; this side uses stderr like the template validator).
@@ -83,8 +86,16 @@ pub(crate) fn remove_unused_variables(
             spans: removals.spans,
             pattern_ids: removals.pattern_ids,
             candidates: &mut candidates,
+            builder: AstBuilder::new(&allocator),
+            changed: false,
         };
         remover.visit_program(&mut program);
+        // Progress guard: a requested removal the remover has no handling
+        // for (e.g. a binding in a position that must stay) would otherwise
+        // be re-requested forever.
+        if !remover.changed {
+            return code;
+        }
         code = oxc_codegen::Codegen::new().build(&program).code;
     }
 }
@@ -182,7 +193,17 @@ fn collect_removals(
         match node.kind() {
             oxc_ast::AstKind::VariableDeclarator(declarator) => {
                 if matches!(&declarator.id, BindingPattern::BindingIdentifier(_)) {
-                    removals.spans.insert(declarator.span());
+                    // A for-in/for-of left binding cannot be removed whole —
+                    // the iteration must survive. (Babel crashes here trying;
+                    // keeping the loop binding is the safe superset.)
+                    let nodes = semantic.nodes();
+                    let declaration = nodes.parent_node(node.id());
+                    if !matches!(
+                        nodes.parent_kind(declaration.id()),
+                        oxc_ast::AstKind::ForInStatement(_) | oxc_ast::AstKind::ForOfStatement(_)
+                    ) {
+                        removals.spans.insert(declarator.span());
+                    }
                 } else {
                     // Destructured binding: remove just this element (the
                     // symbol span is the binding identifier's span).
@@ -296,15 +317,20 @@ fn collect_pattern_names(
     }
 }
 
-struct Remover<'c> {
+struct Remover<'c, 'a> {
     spans: std::collections::HashSet<Span>,
     pattern_ids: std::collections::HashSet<Span>,
     /// Removed declarations cascade: names their subtrees referenced become
     /// candidates for the next fixpoint pass.
     candidates: &'c mut std::collections::HashSet<String>,
+    builder: AstBuilder<'a>,
+    /// Whether this pass mutated anything — the fixpoint's progress guard
+    /// (a requested removal in a position that must stay would otherwise be
+    /// re-requested forever).
+    changed: bool,
 }
 
-impl Remover<'_> {
+impl<'a> Remover<'_, 'a> {
     fn collector(&mut self) -> ReferencedNames<'_> {
         ReferencedNames {
             names: &mut *self.candidates,
@@ -315,7 +341,7 @@ impl Remover<'_> {
     /// the pattern has no bindings left and should be removed by its parent
     /// (defaults and computed keys go with their element; the caller collects
     /// references from whatever it removes).
-    fn prune_pattern<'a>(&mut self, pattern: &mut BindingPattern<'a>) -> bool {
+    fn prune_pattern(&mut self, pattern: &mut BindingPattern<'a>) -> bool {
         match pattern {
             BindingPattern::BindingIdentifier(id) => self.pattern_ids.contains(&id.span),
             BindingPattern::AssignmentPattern(assignment) => {
@@ -332,6 +358,7 @@ impl Remover<'_> {
                     if self.prune_pattern(&mut object.properties[index].value) {
                         let removed = object.properties.remove(index);
                         self.collector().visit_binding_property(&removed);
+                        self.changed = true;
                     } else {
                         index += 1;
                     }
@@ -339,6 +366,7 @@ impl Remover<'_> {
                 if let Some(rest) = &mut object.rest {
                     if self.prune_pattern(&mut rest.argument) {
                         object.rest = None;
+                        self.changed = true;
                     }
                 }
                 object.properties.is_empty() && object.rest.is_none()
@@ -349,12 +377,14 @@ impl Remover<'_> {
                         if self.prune_pattern(pattern) {
                             let removed = element.take().expect("checked Some above");
                             self.collector().visit_binding_pattern(&removed);
+                            self.changed = true;
                         }
                     }
                 }
                 if let Some(rest) = &mut array.rest {
                     if self.prune_pattern(&mut rest.argument) {
                         array.rest = None;
+                        self.changed = true;
                     }
                 }
                 // A removed element leaves a hole when later elements remain;
@@ -366,9 +396,59 @@ impl Remover<'_> {
             }
         }
     }
+
+    /// Prunes removed declarators (whole spans and pattern surgery) out of a
+    /// declaration, wherever it appears — statement position, `for` init,
+    /// single-statement bodies. Returns true when no declarators remain.
+    fn prune_declaration(
+        &mut self,
+        declaration: &mut oxc_ast::ast::VariableDeclaration<'a>,
+    ) -> bool {
+        let mut index = 0;
+        while index < declaration.declarations.len() {
+            let declarator = &mut declaration.declarations[index];
+            let remove = self.spans.contains(&declarator.span())
+                || (!matches!(declarator.id, BindingPattern::BindingIdentifier(_))
+                    && self.prune_pattern(&mut declarator.id));
+            if remove {
+                // The initializer is orphaned with its declarator
+                // (aggressive-removal semantics), so its references cascade.
+                let removed = declaration.declarations.remove(index);
+                self.collector().visit_variable_declarator(&removed);
+                self.changed = true;
+            } else {
+                index += 1;
+            }
+        }
+        declaration.declarations.is_empty()
+    }
+
+    /// Whether `statement` was a declaration (possibly behind labels) that
+    /// pruning emptied entirely — the caller then applies its position's
+    /// policy: dropped from statement lists, replaced by `{}` as an
+    /// if/loop body (Babel's removal hooks), gone with its labels.
+    fn statement_fully_removed(&mut self, statement: &mut Statement<'a>) -> bool {
+        match statement {
+            Statement::VariableDeclaration(declaration) => self.prune_declaration(declaration),
+            // `label: var x = ...;` — the emptied statement takes its labels
+            // with it (Babel's LabeledStatement removal hook).
+            Statement::LabeledStatement(labeled) => self.statement_fully_removed(&mut labeled.body),
+            _ => false,
+        }
+    }
+
+    /// Applies removal to a single-statement body position (if/else arms,
+    /// loop bodies): an emptied declaration becomes an empty block, matching
+    /// Babel's removal-hook replacement.
+    fn empty_removed_body(&mut self, body: &mut Statement<'a>) {
+        if self.statement_fully_removed(body) {
+            *body = self.builder.statement_block(SPAN, self.builder.vec());
+            self.changed = true;
+        }
+    }
 }
 
-impl<'a> VisitMut<'a> for Remover<'_> {
+impl<'a> VisitMut<'a> for Remover<'_, 'a> {
     fn visit_statements(&mut self, statements: &mut oxc_allocator::Vec<'a, Statement<'a>>) {
         let mut index = 0;
         while index < statements.len() {
@@ -390,32 +470,19 @@ impl<'a> VisitMut<'a> for Remover<'_> {
                         true
                     }
                 }
-                Statement::VariableDeclaration(declaration) => {
-                    let mut declarator_index = 0;
-                    while declarator_index < declaration.declarations.len() {
-                        let declarator = &mut declaration.declarations[declarator_index];
-                        let remove = self.spans.contains(&declarator.span())
-                            || (!matches!(declarator.id, BindingPattern::BindingIdentifier(_))
-                                && self.prune_pattern(&mut declarator.id));
-                        if remove {
-                            // The initializer is orphaned with its declarator
-                            // (aggressive-removal semantics), so its
-                            // references cascade.
-                            let removed = declaration.declarations.remove(declarator_index);
-                            self.collector().visit_variable_declarator(&removed);
-                        } else {
-                            declarator_index += 1;
-                        }
-                    }
-                    // Babel's `VariableDeclaration` visitor drops emptied
-                    // declarations.
-                    !declaration.declarations.is_empty()
-                }
+                // Babel's `VariableDeclaration` visitor drops emptied
+                // declarations; an emptied labeled declaration goes with its
+                // labels (removal hook).
+                statement @ (Statement::VariableDeclaration(_)
+                | Statement::LabeledStatement(_)) => !self.statement_fully_removed(statement),
                 Statement::ImportDeclaration(import) => {
                     if let Some(specifiers) = &mut import.specifiers {
-                        let had = !specifiers.is_empty();
+                        let had = specifiers.len();
                         specifiers.retain(|specifier| !self.spans.contains(&specifier.span()));
-                        !(had && specifiers.is_empty())
+                        if specifiers.len() != had {
+                            self.changed = true;
+                        }
+                        !(had > 0 && specifiers.is_empty())
                     } else {
                         true
                     }
@@ -426,10 +493,77 @@ impl<'a> VisitMut<'a> for Remover<'_> {
                 index += 1;
             } else {
                 statements.remove(index);
+                self.changed = true;
             }
         }
         for statement in statements.iter_mut() {
             walk_mut::walk_statement(self, statement);
         }
+    }
+
+    /// Declarators in a `for` init are removable like statement-position
+    /// ones; an emptied init drops entirely (`for (;;)`), matching Babel's
+    /// single-declarator removal hook.
+    fn visit_for_statement(&mut self, it: &mut oxc_ast::ast::ForStatement<'a>) {
+        if let Some(oxc_ast::ast::ForStatementInit::VariableDeclaration(declaration)) = &mut it.init
+        {
+            if self.prune_declaration(declaration) {
+                it.init = None;
+                self.changed = true;
+            }
+        }
+        self.empty_removed_body(&mut it.body);
+        walk_mut::walk_for_statement(self, it);
+    }
+
+    /// For-in/for-of left patterns prune element-by-element, but the loop
+    /// binding itself must survive for the iteration to remain — a fully
+    /// emptied pattern stays as `{}`/`[]` (where Babel crashes trying to
+    /// remove the whole left).
+    fn visit_for_in_statement(&mut self, it: &mut oxc_ast::ast::ForInStatement<'a>) {
+        if let oxc_ast::ast::ForStatementLeft::VariableDeclaration(declaration) = &mut it.left {
+            for declarator in declaration.declarations.iter_mut() {
+                if !matches!(declarator.id, BindingPattern::BindingIdentifier(_)) {
+                    self.prune_pattern(&mut declarator.id);
+                }
+            }
+        }
+        self.empty_removed_body(&mut it.body);
+        walk_mut::walk_for_in_statement(self, it);
+    }
+
+    fn visit_for_of_statement(&mut self, it: &mut oxc_ast::ast::ForOfStatement<'a>) {
+        if let oxc_ast::ast::ForStatementLeft::VariableDeclaration(declaration) = &mut it.left {
+            for declarator in declaration.declarations.iter_mut() {
+                if !matches!(declarator.id, BindingPattern::BindingIdentifier(_)) {
+                    self.prune_pattern(&mut declarator.id);
+                }
+            }
+        }
+        self.empty_removed_body(&mut it.body);
+        walk_mut::walk_for_of_statement(self, it);
+    }
+
+    /// Emptied single-statement bodies: if arms become `{}` / drop the
+    /// `else`, loop bodies become `{}` (Babel's removal hooks).
+    fn visit_if_statement(&mut self, it: &mut oxc_ast::ast::IfStatement<'a>) {
+        self.empty_removed_body(&mut it.consequent);
+        if let Some(alternate) = &mut it.alternate {
+            if self.statement_fully_removed(alternate) {
+                it.alternate = None;
+                self.changed = true;
+            }
+        }
+        walk_mut::walk_if_statement(self, it);
+    }
+
+    fn visit_while_statement(&mut self, it: &mut oxc_ast::ast::WhileStatement<'a>) {
+        self.empty_removed_body(&mut it.body);
+        walk_mut::walk_while_statement(self, it);
+    }
+
+    fn visit_do_while_statement(&mut self, it: &mut oxc_ast::ast::DoWhileStatement<'a>) {
+        self.empty_removed_body(&mut it.body);
+        walk_mut::walk_do_while_statement(self, it);
     }
 }
