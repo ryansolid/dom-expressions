@@ -1769,9 +1769,18 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 }
                 JSXChild::Fragment(fragment) => values.push(self.lower_fragment(fragment)?),
                 JSXChild::Spread(spread) => {
+                    // Babel's `JSXSpreadChild` branch of `transformNode`:
+                    // dynamic spreads become an explicit thunk the fragment
+                    // memo-wraps; static ones pass through raw.
                     let mut value = spread.expression.clone_in(self.allocator);
                     self.visit_expression(&mut value);
-                    values.push(value);
+                    if self.classify().is_dynamic(None, &value, false) {
+                        let thunk =
+                            arrow_return_expression(self.allocator, spread.span, value);
+                        values.push(memo_wrap_thunk(self, spread.span, thunk));
+                    } else {
+                        values.push(value);
+                    }
                 }
             }
         }

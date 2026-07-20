@@ -1,4 +1,5 @@
 use napi::bindgen_prelude::*;
+use oxc_allocator::CloneIn;
 use oxc_ast::ast::{Expression, JSXChild, JSXExpression, JSXFragment};
 use oxc_span::{GetSpan, Span};
 
@@ -60,10 +61,18 @@ pub(crate) fn lower_fragment<'a>(
             JSXChild::Fragment(fragment) => {
                 values.push(lower_fragment(ctx, fragment)?);
             }
-            JSXChild::Spread(_) => {
-                return Err(Error::from_reason(
-                    "Fragment spread children are not implemented in the AST-native milestone yet",
-                ));
+            JSXChild::Spread(spread) => {
+                // Babel's `JSXSpreadChild` branch of `transformNode`: dynamic
+                // spreads become an explicit thunk the fragment memo-wraps;
+                // static ones pass through raw. JSX inside stays raw for the
+                // deferred pass, like expression containers.
+                let value = spread.expression.clone_in(ctx.allocator);
+                if ctx.classify().is_dynamic(None, &value, false) {
+                    let thunk = ctx.arrow_return_expression(spread.span, value);
+                    values.push(memo_wrap_thunk(ctx, spread.span, thunk));
+                } else {
+                    values.push(value);
+                }
             }
         }
     }

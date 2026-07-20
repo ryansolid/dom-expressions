@@ -1152,6 +1152,38 @@ const a = <Comp p={state.x /*@static*/} />;
 `,
   "static marker in condition branch": `
 const a = <div>{cond() ? /*@static*/ x() : y()}</div>;
+`,
+
+  // --- Round 9: spread children through the unified classifier. Babel's
+  // JSXSpreadChild handling is one transformNode branch (dynamic spreads
+  // become an explicit thunk, memo-wrapped in fragment position, inserted
+  // raw when static); the dom port rejected fragment spreads outright and
+  // keyed element spreads off expression shape, while universal emitted
+  // dynamic fragment spreads raw, silently losing reactivity. ---------------
+  "fragment spread child dynamic": `
+const a = <>{...items()}</>;
+`,
+  "fragment spread child static": `
+const a = <>{...items}</>;
+`,
+  "fragment spread child mixed siblings": `
+const a = <><span>s</span>{...items()}</>;
+`,
+  "fragment spread child ns import member": `
+import * as ns from "./m";
+const a = <>{...ns.list}</>;
+`,
+  "element spread child dynamic": `
+const a = <div>{...items()}</div>;
+`,
+  "element spread child static": `
+const a = <div>{...items}</div>;
+`,
+  "component spread child dynamic": `
+const a = <Comp>{...items()}</Comp>;
+`,
+  "spread child marker ignored (attaches to spread, not expression)": `
+const a = <>{/*@static*/ ...items()}</>;
 `
 };
 

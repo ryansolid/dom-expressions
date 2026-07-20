@@ -916,16 +916,13 @@ fn spread_child_expression<'a>(
     span: oxc_span::Span,
     expression: &Expression<'a>,
 ) -> Expression<'a> {
-    let expression = expression.clone_in(ctx.allocator);
-    if matches!(
-        expression,
-        Expression::StaticMemberExpression(_)
-            | Expression::ComputedMemberExpression(_)
-            | Expression::ChainExpression(_)
-    ) {
-        ctx.arrow_return_expression(span, expression)
+    // Babel's `JSXSpreadChild` branch of `transformNode`: dynamic spreads
+    // insert behind an explicit thunk; static ones insert raw.
+    let cloned = expression.clone_in(ctx.allocator);
+    if ctx.classify().is_dynamic(None, expression, false) {
+        ctx.arrow_return_expression(span, cloned)
     } else {
-        expression
+        cloned
     }
 }
 
