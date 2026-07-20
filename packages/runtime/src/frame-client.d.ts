@@ -110,15 +110,32 @@ export interface Frame {
  * Routes a flat stream of addressed chunks to frames by id, buffering chunks
  * for frames that have not registered yet (only the newest version's chunks
  * are kept). `data` chunks are response-scoped and go to `applyData`.
+ *
+ * An id may have several frames (the same server component mounted more
+ * than once): chunks fan out to all of them, and a frame registering after
+ * delivery is seeded from a sibling's store.
  */
 export interface FrameHost {
   register(id: string, frame: Frame): void;
-  unregister(id: string): void;
+  /** Remove one frame (or all frames of the id when `frame` is omitted). */
+  unregister(id: string, frame?: Frame): void;
   apply(chunk: FrameChunk): void;
+  /** The first registered frame under the id, if any. */
   get(id: string): Frame | undefined;
   serialize(value: unknown): { $ref: string };
   resolve(ref: { $ref: string }): unknown;
 }
+
+/**
+ * The bubbling DOM event (`"frame:applied"`) a frame dispatches from its
+ * parent element whenever server content lands in the document — root
+ * materialize/morph, segment reveal, fallback materialization — with
+ * `detail: { id, version, reason }`. One document-level listener sees every
+ * boundary (nested region frames dispatch too); use it to re-apply
+ * client-owned decorations on server-owned markup (router affordance
+ * reflection, e.g. `aria-current`) without a MutationObserver.
+ */
+export const FRAME_APPLIED_EVENT: "frame:applied";
 
 /** Options for `createFrameHost`. */
 export interface FrameHostOptions {

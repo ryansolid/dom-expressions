@@ -10,7 +10,12 @@
 //    `applyData` hook — they never land in a frame's store.
 //  - the host takes `{ serialize, resolve, applyData }` instead of a
 //    serializer object.
-import { createFrame, createFrameHost, chunkToRecords } from "../../src/frame-client";
+import {
+  createFrame,
+  createFrameHost,
+  chunkToRecords,
+  FRAME_APPLIED_EVENT
+} from "../../src/frame-client";
 
 // Mock serializer — response-scoped key/value with referential dedupe (the
 // essentials of the spike's serializer.ts). `serialize` records a value
@@ -1664,6 +1669,106 @@ describe("frame lifecycle", () => {
     expect(host.get("inner")).toBeUndefined();
     expect(button.isConnected).toBe(false);
     expect(boundary.innerHTML).toBe("<article>no slot</article>");
+  });
+});
+
+describe("multi-mount fan-out and late-mount seeding", () => {
+  let a, b;
+  beforeEach(() => {
+    a = document.createElement("div");
+    b = document.createElement("div");
+    document.body.append(a, b);
+  });
+  afterEach(() => {
+    a.remove();
+    b.remove();
+  });
+
+  it("fans chunks out to every frame registered under an id", () => {
+    const host = createFrameHost(createMockSerializer());
+    const badgeA = document.createElement("button");
+    const badgeB = document.createElement("button");
+    createFrame(a, { id: "m", host, slots: { children: () => badgeA } });
+    createFrame(b, { id: "m", host, slots: { children: () => badgeB } });
+
+    host.apply({
+      type: "html",
+      id: "m",
+      version: 1,
+      html: "<p>hi<!--proj:children:start--><!--proj:children:end--></p>"
+    });
+
+    // Same server content in both instances, each with its own client slot.
+    expect(a.querySelector("p")).toBeTruthy();
+    expect(b.querySelector("p")).toBeTruthy();
+    expect(a.contains(badgeA)).toBe(true);
+    expect(b.contains(badgeB)).toBe(true);
+  });
+
+  it("seeds a late-mounting sibling from an existing frame's store", () => {
+    const host = createFrameHost(createMockSerializer());
+    createFrame(a, { id: "m", host });
+    host.apply({ type: "html", id: "m", version: 2, html: "<p>content</p>" });
+    expect(a.innerHTML).toBe("<p>content</p>");
+
+    // Mounts AFTER the stream was delivered and its pending buffer drained:
+    // seeded from the sibling's store, not left empty.
+    const late = document.createElement("badge-late");
+    createFrame(b, {
+      id: "m",
+      host,
+      slots: { children: () => late }
+    });
+    expect(b.innerHTML).toBe("<p>content</p>");
+
+    // The seeded instance participates in future fan-out at the same version.
+    host.apply({ type: "html", id: "m", version: 3, html: "<p>updated</p>" });
+    expect(a.innerHTML).toBe("<p>updated</p>");
+    expect(b.innerHTML).toBe("<p>updated</p>");
+  });
+
+  it("unregisters per frame: disposing one instance keeps the others live", () => {
+    const host = createFrameHost(createMockSerializer());
+    const fa = createFrame(a, { id: "m", host });
+    createFrame(b, { id: "m", host });
+    host.apply({ type: "html", id: "m", version: 1, html: "<p>one</p>" });
+
+    fa.dispose();
+    host.apply({ type: "html", id: "m", version: 2, html: "<p>two</p>" });
+    expect(a.innerHTML).toBe("<p>one</p>");
+    expect(b.innerHTML).toBe("<p>two</p>");
+    expect(host.get("m")).toBeDefined();
+  });
+});
+
+describe("frame:applied document notification", () => {
+  let el, events, listener;
+  beforeEach(() => {
+    el = document.createElement("div");
+    document.body.appendChild(el);
+    events = [];
+    listener = e => events.push({ target: e.target, ...e.detail });
+    document.addEventListener(FRAME_APPLIED_EVENT, listener);
+  });
+  afterEach(() => {
+    document.removeEventListener(FRAME_APPLIED_EVENT, listener);
+    el.remove();
+  });
+
+  it("dispatches bubbling events for materialize, morph, and reveal", () => {
+    const host = createFrameHost(createMockSerializer());
+    createFrame(el, { id: "n", host });
+
+    host.apply({ type: "html", id: "n", version: 1, html: `<div>a${ph("p1")}</div>` });
+    expect(events).toEqual([{ target: el, id: "n", version: 1, reason: "materialize" }]);
+
+    host.apply({ type: "fragment", id: "n", version: 1, key: "p1", html: "<i>late</i>" });
+    host.apply({ type: "reveal", id: "n", version: 1, keys: ["p1"] });
+    expect(events[1]).toEqual({ target: el, id: "n", version: 1, reason: "reveal" });
+
+    host.apply({ type: "html", id: "n", version: 2, html: "<div>b</div>" });
+    expect(events[2]).toEqual({ target: el, id: "n", version: 2, reason: "morph" });
+    expect(events).toHaveLength(3);
   });
 });
 

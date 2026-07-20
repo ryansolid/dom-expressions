@@ -45,3 +45,42 @@ export async function applyFrameResponse(response, host, options = {}) {
   }
   return as !== undefined ? as : rootId;
 }
+
+/**
+ * The client mirror of `frameTransformResult`, shaped for the server-function
+ * client's `responseHandler` seam: frame-stream responses resolve the call
+ * with a **stable component** instead of data, so an equals-gated consumer
+ * (Solid's `dynamic`) never remounts across refetches — the response streams
+ * into the boundary underneath as the only observable effect.
+ *
+ * Boundary identity is derived, never declared. `capture` (framework-
+ * supplied, e.g. Solid's `getOwner`) runs synchronously at each call site;
+ * calls sharing a captured context share one boundary — a refetch resolves
+ * to the identical component — while distinct call sites get independent
+ * boundaries with nothing to spell. Ownerless calls (outside any reactive
+ * scope) fall back to one boundary per function id. `component(frameId)`
+ * builds the framework's mountable component for a boundary; it is invoked
+ * once per boundary and cached (a WeakMap on the captured context, so
+ * boundary caches die with their call sites).
+ */
+export function createServerComponentHandler({ host, component, capture }) {
+  const byContext = new WeakMap();
+  const byFunction = new Map();
+  let boundary = 0;
+  return {
+    capture,
+    handle(response, ctx) {
+      if (!isFrameStreamResponse(response)) return undefined;
+      const key = ctx.context;
+      const keyed = key !== null && typeof key === "object";
+      let entry = keyed ? byContext.get(key) : byFunction.get(ctx.id);
+      if (!entry) {
+        const frameId = `sc:${boundary++}`;
+        entry = { frameId, component: component(frameId) };
+        keyed ? byContext.set(key, entry) : byFunction.set(ctx.id, entry);
+      }
+      applyFrameResponse(response, host, { as: entry.frameId });
+      return entry.component;
+    }
+  };
+}

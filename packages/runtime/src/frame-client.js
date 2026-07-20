@@ -112,6 +112,9 @@ export function chunkToRecords(chunk) {
  *   `payload` scripts, depending on the producer's serializer.
  */
 export function createFrameHost(options = {}) {
+  // One logical stream may feed several mounted boundaries (the same server
+  // component mounted twice): ids map to SETS of frames and every chunk fans
+  // out to all of them.
   const frames = new Map();
   const pending = new Map();
   const deliver = (frame, chunk) => {
@@ -123,17 +126,36 @@ export function createFrameHost(options = {}) {
   };
   return {
     register(id, frame) {
-      frames.set(id, frame);
+      let set = frames.get(id);
+      if (!set) frames.set(id, (set = new Set()));
+      // A boundary mounting after siblings already streamed seeds from a
+      // sibling's store — replay-equivalent without the host retaining
+      // chunks (records are plain data; each frame dedupes in its own store).
+      const sibling = set.size ? set.values().next().value : undefined;
+      set.add(frame);
+      if (sibling) {
+        if (sibling.version !== undefined) {
+          frame.apply({ version: sibling.version, r: sibling.store });
+        }
+        return;
+      }
       const buffered = pending.get(id);
       if (buffered) {
         pending.delete(id);
         for (const chunk of buffered) deliver(frame, chunk);
       }
     },
-    /** Remove a frame and drop any chunks still buffered for its id. */
-    unregister(id) {
-      frames.delete(id);
-      pending.delete(id);
+    /**
+     * Remove a frame (or, with no frame argument, every frame) under an id;
+     * chunks still buffered for the id are dropped once none remain.
+     */
+    unregister(id, frame) {
+      const set = frames.get(id);
+      if (set && frame) set.delete(frame);
+      if (!set || !frame || !set.size) {
+        frames.delete(id);
+        pending.delete(id);
+      }
     },
     apply(chunk) {
       // Data payloads are response-scoped; apply immediately, no frame needed.
@@ -141,9 +163,9 @@ export function createFrameHost(options = {}) {
         options.applyData && options.applyData(chunk);
         return;
       }
-      const frame = frames.get(chunk.id);
-      if (frame) {
-        deliver(frame, chunk);
+      const set = frames.get(chunk.id);
+      if (set && set.size) {
+        for (const frame of set) deliver(frame, chunk);
         return;
       }
       // Buffer until the frame registers, keeping only the newest version's
@@ -156,7 +178,8 @@ export function createFrameHost(options = {}) {
       pending.set(chunk.id, kept);
     },
     get(id) {
-      return frames.get(id);
+      const set = frames.get(id);
+      return set && set.values().next().value;
     },
     serialize(value) {
       if (!options.serialize) throw new Error("host has no serializer");
@@ -167,6 +190,18 @@ export function createFrameHost(options = {}) {
     }
   };
 }
+
+/**
+ * The bubbling DOM event a frame dispatches from its parent element after
+ * server content lands in the document (root materialize/morph, segment
+ * reveal, fallback materialization) — `detail: { id, version, reason }`.
+ * Document-level listeners (router affordance reflection, scroll
+ * restoration) react to server-driven DOM changes without a
+ * MutationObserver; nested region frames dispatch too and the event
+ * bubbles, so one listener sees every boundary. Client-side renders never
+ * fire it — client code has reactivity to subscribe with.
+ */
+export const FRAME_APPLIED_EVENT = "frame:applied";
 
 class FrameImpl {
   // A frame renders either into an element (element boundary: #start/#end
@@ -223,6 +258,23 @@ class FrameImpl {
   /** The node content lives in (element itself, or the range markers' parent). */
   #parent() {
     return this.#element ?? this.#start.parentNode;
+  }
+
+  /** Server content landed: caller hook + the bubbling document notification. */
+  #applied(version, reason) {
+    this.#options.onApply?.({ version, reason });
+    const parent = this.#parent();
+    // Construct from the element's own realm — a cross-realm CustomEvent
+    // (e.g. Node's global against a JSDOM document) is rejected by dispatch.
+    const Ev = parent && (parent.ownerDocument || parent).defaultView?.CustomEvent;
+    if (Ev) {
+      parent.dispatchEvent(
+        new Ev(FRAME_APPLIED_EVENT, {
+          bubbles: true,
+          detail: { id: this.#options.id, version, reason }
+        })
+      );
+    }
   }
 
   /** First content node (or `#end`/null when empty). */
@@ -295,7 +347,7 @@ class FrameImpl {
       const reason = this.#hasContent ? "morph" : "materialize";
       this.#applyRoot(root.value);
       this.#appliedRootValue = root.value;
-      this.#options.onApply?.({ version, reason });
+      this.#applied(version, reason);
     }
 
     // Re-evaluate every segment on each flush. Because readiness is checked
@@ -313,7 +365,7 @@ class FrameImpl {
         if (name === null || this.#revealed.has(name)) continue;
         if (this.#segmentReady(name)) {
           this.#revealSegment(name);
-          this.#options.onApply?.({ version, reason: "reveal" });
+          this.#applied(version, "reveal");
           progressed = true;
         }
       }
@@ -326,7 +378,7 @@ class FrameImpl {
         if (this.#revealed.has(name) || this.#fallbackShown.has(name)) continue;
         if (this.#showFallback(name)) {
           this.#fallbackShown.add(name);
-          this.#options.onApply?.({ version, reason: "reveal" });
+          this.#applied(version, "reveal");
           progressed = true;
         }
       }
@@ -600,7 +652,7 @@ class FrameImpl {
     this.#slotRegions.clear();
     this.#mountedSlots.clear();
     const { host, id } = this.#options;
-    if (host && id !== undefined) host.unregister(id);
+    if (host && id !== undefined) host.unregister(id, this);
   }
 
   #applyRoot(html) {

@@ -37,7 +37,8 @@ export {
 
 const config = {
   endpoint: "/_server",
-  prepareRequest: undefined
+  prepareRequest: undefined,
+  responseHandler: undefined
 };
 
 /**
@@ -47,11 +48,25 @@ const config = {
  * `decodeResponse` sees them too), and the `prepareRequest` hook applied
  * to every outgoing server-function fetch (session-dynamic transport
  * policy — bearer tokens, tracing headers).
+ *
+ * `responseHandler` is the response-side integration seam — the client
+ * mirror of the handler's `transformResult`. `handle(response, ctx)` sees
+ * every response before the transport decodes it; returning anything but
+ * undefined resolves the call with that value instead. `capture(info)`
+ * runs synchronously at the call site, before any await, and its return
+ * arrives as `ctx.context` — ambient per-call state (e.g. a reactive
+ * owner) survives to response time even though handling is async.
  */
-export function configureServerFunctionsClient({ endpoint, codec, prepareRequest } = {}) {
+export function configureServerFunctionsClient({
+  endpoint,
+  codec,
+  prepareRequest,
+  responseHandler
+} = {}) {
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
   if (prepareRequest !== undefined) config.prepareRequest = prepareRequest;
+  if (responseHandler !== undefined) config.responseHandler = responseHandler;
 }
 
 let INSTANCE = 0;
@@ -129,8 +144,19 @@ async function initializeResponse(base, id, instance, options, args, meta) {
 
 async function fetchServerFunction(base, id, options, args, meta) {
   const instance = `server-function:${INSTANCE++}`;
+  // Captured synchronously at the call site (an async function body runs
+  // sync up to its first await), so ambient call context is still live.
+  const handler = config.responseHandler;
+  const context = handler && handler.capture ? handler.capture({ id, meta }) : undefined;
 
   const response = await initializeResponse(base, id, instance, options, args, meta);
+
+  // The integration seam sees the response first: a handler that claims it
+  // (returns non-undefined) owns the call's result.
+  if (handler) {
+    const handled = handler.handle(response, { id, meta, args, context });
+    if (handled !== undefined) return handled;
+  }
 
   // Single-flight responses: with a registered consumer the transport owns
   // the unwrap — the standardized `{ value, data }` body is decoded, `data`

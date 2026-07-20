@@ -36,11 +36,15 @@ const SCENARIOS = {
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
   // client scenarios above enforce that by being byte-stable.
+  // Ceiling history: 4967 at landing (guarded 5220); 5378 after the
+  // dynamic-first transport round (multi-mount fan-out + late-mount store
+  // seeding, the frame:applied document event, and the stable-component
+  // response handler) — deliberate feature weight, re-guarded at 5550.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    5220
+    5550
   ]
 };
 
