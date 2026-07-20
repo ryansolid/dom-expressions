@@ -663,6 +663,22 @@ export function hydrate(code, element, options = {}) {
     }
   };
   sharedConfig.registry = new Map();
+  // Multiple hydrate() roots share one sharedConfig, but each call replaces
+  // registry/gather. A boundary that resumes after another root has started
+  // must claim against the root it registered under (solidjs/solid#2917), so
+  // the reactive library calls captureBoundaryScope at boundary-registration
+  // time — the pair is unambiguous there, keyed by the full boundary id (no
+  // prefix parsing: root id and counter path have no delimiter). The resume
+  // path reads and removes the entry, falling back to the live globals when
+  // none exists. The map is shared across roots, so create it only once.
+  if (!sharedConfig.boundaryScopes) sharedConfig.boundaryScopes = new Map();
+  sharedConfig.captureBoundaryScope = id => {
+    if (sharedConfig.registry)
+      sharedConfig.boundaryScopes.set(id, {
+        registry: sharedConfig.registry,
+        gather: sharedConfig.gather
+      });
+  };
   sharedConfig.hydrating = true;
   if ("_DX_DEV_") {
     sharedConfig.verifyHydration = () => {
