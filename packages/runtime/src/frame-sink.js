@@ -33,7 +33,7 @@
  * helpers).
  */
 import { createPlugin } from "seroval";
-import { sharedConfig } from "rxcore";
+import { runWithHydrationScope, sharedConfig } from "rxcore";
 import { renderToStream } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
 import { createChunk } from "./server-functions/shared.js";
@@ -275,24 +275,14 @@ export function createDocumentProjectionProps(clientProps, frameId) {
     content,
     { t: `<!--proj:${occurrence}:end-->` }
   ];
-  // Client content renders under a per-occurrence hydration-key prefix, so
-  // the adopting client re-renders each slot under the SAME prefix and
-  // solid's registry claims the server-rendered nodes by key — templates
-  // never ship as data (the claim IS the transfer).
-  const scoped = (occurrence, render) => {
-    const context = sharedConfig.context;
-    if (!context) return render();
-    const prevId = context.id;
-    const prevCount = context.count;
-    context.id = `sc-${frameId}-${occurrence}-`;
-    context.count = 0;
-    try {
-      return render();
-    } finally {
-      context.id = prevId;
-      context.count = prevCount;
-    }
-  };
+  // Client content renders under a per-occurrence hydration-key OWNER
+  // scope, so the adopting client re-renders each slot under the SAME
+  // scope and solid's registry claims the server-rendered nodes by key —
+  // templates never ship as data (the claim IS the transfer). Key chains
+  // derive from the owner id on both sides (getNextChildId), which is why
+  // this is an owner, not a render-context poke.
+  const scoped = (occurrence, render) =>
+    runWithHydrationScope(`sc-${frameId}-${occurrence}-`, render);
   return new Proxy(Object.create(null), {
     has() {
       return true;

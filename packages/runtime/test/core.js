@@ -69,3 +69,8 @@ export const memo = (fn, transparent) =>
       ? fn
       : createMemo(() => fn(), { transparent: true })
     : createMemo(() => fn());
+
+// Hydration-key owner scoping (solid-web's rxcore implements this over
+// createOwner({ id })). The test core has no hydration id chain, so the
+// scope is a passthrough — document-mode tests assert markers, not keys.
+export const runWithHydrationScope = (id, fn) => fn();
