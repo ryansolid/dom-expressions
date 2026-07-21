@@ -800,6 +800,18 @@ export function createFrame(boundary, options) {
   return new FrameImpl(boundary, null, null, options);
 }
 
+/**
+ * Binds a frame to an EXISTING marker range — the document-SSR adoption
+ * path. The page already holds the server-rendered boundary between
+ * `frame:<id>:start`/`:end` comments: the frame constructed over it treats
+ * that content as its own (first stream morphs rather than materializes)
+ * and slots sync immediately, claiming their server-rendered DOM via
+ * `ctx.existing`.
+ */
+export function adoptFrameRange(start, end, options) {
+  return new FrameImpl(null, start, end, { ...options, adopt: true });
+}
+
 // Well-known brand shared with client.js's `insert` (constants.js defines
 // the same registered symbol) — Symbol.for keeps the two modules importless
 // in both directions, which is what makes frames zero-cost for apps that

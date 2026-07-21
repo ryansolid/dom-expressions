@@ -206,6 +206,14 @@ async function fetchServerFunction(base, id, options, args, meta) {
   const handler = config.responseHandler;
   const context = handler && handler.capture ? handler.capture({ id, meta }) : undefined;
 
+  // Local-answer seam: an integration that already holds this call's result
+  // (e.g. a document-SSR'd server-component boundary at hydration time)
+  // short-circuits the network entirely.
+  if (handler && handler.intercept) {
+    const hit = handler.intercept({ id, meta, args, context });
+    if (hit !== undefined) return hit;
+  }
+
   const response = await initializeResponse(base, id, instance, options, args, meta);
 
   // The integration seam sees the response first: a handler that claims it

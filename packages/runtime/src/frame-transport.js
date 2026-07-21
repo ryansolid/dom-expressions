@@ -70,20 +70,38 @@ export async function applyFrameResponse(response, host, options = {}) {
  * once per boundary and cached (a WeakMap on the captured context, so
  * boundary caches die with their call sites).
  */
-export function createServerComponentHandler({ host, component, capture, onStream }) {
+export function createServerComponentHandler({
+  host,
+  component,
+  capture,
+  onStream,
+  documentComponent,
+  intercept
+}) {
   const byContext = new WeakMap();
   const byFunction = new Map();
   let boundary = 0;
   return {
     capture,
+    intercept,
     handle(response, ctx) {
       if (!isFrameStreamResponse(response)) return undefined;
       const key = ctx.context;
       const keyed = key !== null && typeof key === "object";
       let entry = keyed ? byContext.get(key) : byFunction.get(ctx.id);
       if (!entry) {
-        const frameId = `sc:${boundary++}`;
-        entry = { frameId, version: 0, component: component(frameId) };
+        // A document-SSR boundary for this function adopts into the cache
+        // first: the initial navigation resolves to the SAME placeholder the
+        // hydration data produced, so the equals-gate holds and the stream
+        // morphs the adopted DOM instead of remounting. Document boundaries
+        // are addressed by function id (the logical wire address).
+        const adopted = documentComponent && documentComponent(ctx.id);
+        if (adopted) {
+          entry = { frameId: ctx.id, version: 0, component: adopted };
+        } else {
+          const frameId = `sc:${boundary++}`;
+          entry = { frameId, version: 0, component: component(frameId) };
+        }
         keyed ? byContext.set(key, entry) : byFunction.set(ctx.id, entry);
       }
       // A new response into the boundary: bump the client-owned version and
