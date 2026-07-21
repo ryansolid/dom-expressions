@@ -38,6 +38,7 @@ pub(crate) struct DomTemplateState {
     pub(crate) uses_effect: bool,
     pub(crate) uses_set_attribute: bool,
     pub(crate) uses_set_attribute_ns: bool,
+    pub(crate) uses_claim_element: bool,
     pub(crate) uses_set_property: bool,
     pub(crate) uses_add_event_listener: bool,
     pub(crate) uses_delegate_events: bool,
@@ -117,6 +118,7 @@ impl DomTemplateState {
             uses_effect: false,
             uses_set_attribute: false,
             uses_set_attribute_ns: false,
+            uses_claim_element: false,
             uses_set_property: false,
             uses_add_event_listener: false,
             uses_delegate_events: false,
@@ -199,6 +201,9 @@ impl<'a> AstDomTransform<'a, '_> {
         }
         if self.template_state.uses_set_attribute_ns {
             statements.push(self.import_named("setAttributeNS", "_$setAttributeNS"));
+        }
+        if self.template_state.uses_claim_element {
+            statements.push(self.import_named("claimElement", "_$claimElement"));
         }
         if self.template_state.uses_set_property {
             // Babel registers `setProperty` without a renderer config, so it
@@ -327,6 +332,19 @@ impl<'a> AstDomTransform<'a, '_> {
         args: std::vec::Vec<Expression<'a>>,
     ) -> Expression<'a> {
         self.call_expression(span, self.identifier_expression(span, callee), args)
+    }
+
+    /// `_$claimElement(_el$)` — the element-claim contract statement emitted
+    /// for `a[href]` / `form[action]` at element creation.
+    pub(crate) fn claim_element_statement(&mut self, element_id: &str) -> Statement<'a> {
+        self.template_state.uses_claim_element = true;
+        let span = oxc_span::SPAN;
+        let call = self.call_identifier(
+            span,
+            "_$claimElement",
+            vec![self.identifier_expression(span, element_id)],
+        );
+        self.ast().statement_expression(span, call)
     }
 
     pub(crate) fn call_expression(

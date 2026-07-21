@@ -474,6 +474,38 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
     }
 }
 
+/// Whether an element participates in the element-claim contract:
+/// `a[href]` and `form[action]` (attribute present in any form, or a spread
+/// that may carry it). Compiled output claims these at creation via
+/// `claimElement` so consumers (e.g. a router's link-state layer) can track
+/// them without per-element components or observers. Dormant at runtime
+/// until a consumer registers.
+pub(crate) fn is_claim_target(
+    tag_name: &str,
+    attributes: &[oxc_ast::ast::JSXAttributeItem<'_>],
+) -> bool {
+    let attribute_name = match tag_name {
+        "a" => "href",
+        "form" => "action",
+        _ => return false,
+    };
+    attributes.iter().any(|attr| match attr {
+        oxc_ast::ast::JSXAttributeItem::SpreadAttribute(_) => true,
+        oxc_ast::ast::JSXAttributeItem::Attribute(attribute) => matches!(
+            &attribute.name,
+            oxc_ast::ast::JSXAttributeName::Identifier(name) if name.name == attribute_name
+        ),
+    })
+}
+
+/// `is_claim_target` for a whole element node.
+pub(crate) fn element_is_claim_target(element: &JSXElement<'_>) -> bool {
+    let Ok(tag_name) = element_name(&element.opening_element.name) else {
+        return false;
+    };
+    is_claim_target(&tag_name, &element.opening_element.attributes)
+}
+
 fn has_attribute_named(element: &JSXElement<'_>, attribute_name: &str) -> bool {
     element.opening_element.attributes.iter().any(|attr| {
         matches!(

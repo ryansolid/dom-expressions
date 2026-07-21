@@ -1427,6 +1427,18 @@ export function renderToStringAsync(code, options = {}) {
   return new Promise(resolve => renderToStream(code, options).then(resolve));
 }
 
+// Element claims are a client-only concern (compiled DOM output claims
+// navigation-relevant elements for consumers like a router's link-state
+// layer), but consumers may register isomorphically — so these are silent
+// no-ops rather than loud stubs. Claims never fire during SSR.
+export function registerElementClaim() {
+  return noopCleanup;
+}
+function noopCleanup() {}
+export function claimElement(node) {
+  return node;
+}
+
 // client-only APIs
 
 export {

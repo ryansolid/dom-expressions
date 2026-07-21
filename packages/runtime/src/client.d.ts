@@ -66,6 +66,24 @@ export function assign(
 ): void;
 export function setAttribute(node: Element, name: string, value: string): void;
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
+/**
+ * Register a consumer for compiler-emitted element claims. Compiled DOM
+ * output claims navigation-relevant elements (`a[href]`, `form[action]`) at
+ * creation, and compiler-owned writes to `href`/`action` re-invoke the same
+ * handlers — so handlers must be idempotent and must check the element's
+ * relevance themselves (rechecks can fire for any element whose
+ * `href`/`action` is written, e.g. `<link href>`). Handlers run under the
+ * reactive owner current at element creation; scope per-element state and
+ * cleanup through your own reactive system. Dormant until registered —
+ * without a handler the emitted claims are null checks. Returns an
+ * unregister function.
+ */
+export function registerElementClaim(handler: (element: Element) => void): () => void;
+/**
+ * Claim `node` for registered consumers (see `registerElementClaim`).
+ * Emitted by the compiler at element creation; idempotent by contract.
+ */
+export function claimElement<T extends Element>(node: T): T;
 export function className(node: Element, value: JSX.ClassValue, prev?: JSX.ClassValue): void;
 export function setProperty(node: Element, name: string, value: any): void;
 export function setStyleProperty(node: Element, name: string, value: any): void;

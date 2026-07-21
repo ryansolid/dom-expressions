@@ -82,6 +82,25 @@ function isNamedAttribute(
   );
 }
 
+/**
+ * Whether an element participates in the element-claim contract: `a[href]`
+ * and `form[action]` (attribute present in any form, or a spread that may
+ * carry it). Compiled output claims these at creation via `claimElement` so
+ * consumers (e.g. a router's link-state layer) can track them without
+ * per-element components or observers. Dormant at runtime until a consumer
+ * registers.
+ */
+function isClaimTarget(node: babelTypes.JSXElement): boolean {
+  const tagName = getTagName(node);
+  const attrName = tagName === "a" ? "href" : tagName === "form" ? "action" : undefined;
+  if (!attrName) return false;
+  return node.openingElement.attributes.some(
+    attr =>
+      t.isJSXSpreadAttribute(attr) ||
+      (t.isJSXAttribute(attr) && t.isJSXIdentifier(attr.name) && attr.name.name === attrName)
+  );
+}
+
 const alwaysClose = [
   "title",
   "style",
@@ -262,6 +281,22 @@ export function transformElement(
   }
   if (!info.skipId) {
     results.id = path.scope.generateUidIdentifier("el$");
+  }
+  // Claim contract: a[href] / form[action] elements are claimed at creation
+  // so registered consumers (e.g. a router's link-state layer) see them.
+  // detectExpressions forces the id chain, so claim targets always have one.
+  // Emitted ahead of the attribute expressions — writes to the claimed
+  // attribute recheck through the runtime's setAttribute, so order stays
+  // correct either way, but "claim at creation" reads first.
+  if (results.id && isClaimTarget(path.node)) {
+    results.exprs.push(
+      t.expressionStatement(
+        t.callExpression(
+          registerImportMethod(path, "claimElement", getRendererConfig(path, "dom").moduleName),
+          [results.id]
+        )
+      )
+    );
   }
   transformAttributes(path, results);
   if (config.contextToCustomElements && (tagName === "slot" || hasCustomElement)) {
@@ -1473,6 +1508,9 @@ function detectExpressions(
           ))
       )
         return true;
+      // claim targets (a[href] / form[action]) need an element reference
+      // even when fully static — the emitted claimElement call walks to them
+      if (isClaimTarget(child)) return true;
       if (
         child.openingElement.attributes.some(
           attr =>

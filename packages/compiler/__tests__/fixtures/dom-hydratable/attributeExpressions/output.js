@@ -12,6 +12,7 @@ import { setStyleProperty as _$setStyleProperty } from "r-dom";
 import { className as _$className } from "r-dom";
 import { effect as _$effect } from "r-dom";
 import { setAttribute as _$setAttribute } from "r-dom";
+import { claimElement as _$claimElement } from "r-dom";
 import { setProperty as _$setProperty } from "r-dom";
 import { addEvent as _$addEvent } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
@@ -104,6 +105,7 @@ var _ref$ = link;
 typeof _ref$ === "function" || Array.isArray(_ref$) ? _$ref(() => {
 	return _ref$;
 }, _el$3) : link = _el$3;
+_$claimElement(_el$3);
 _$className(_el$3, { "ccc ddd": true });
 _$runHydrationEvents();
 const template = _el$;
@@ -248,6 +250,7 @@ _$effect(() => "t" in test, (_v$) => {
 });
 const template23 = _el$30;
 var _el$31 = _$getNextElement(_tmpl$16);
+_$claimElement(_el$31);
 _$spread(_el$31, _$mergeProps(props, { something: true }), false);
 _$runHydrationEvents();
 const template24 = _el$31;
@@ -258,6 +261,7 @@ var _el$36 = _el$34.nextSibling;
 _$insert(_el$32, _$scope(() => {
 	return props.children;
 }), _el$34, _el$35);
+_$claimElement(_el$36);
 _$spread(_el$36, _$mergeProps(props, { something: true }), false);
 _$runHydrationEvents();
 const template25 = _el$32;

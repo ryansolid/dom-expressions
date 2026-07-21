@@ -187,10 +187,52 @@ export function setProperty(node, name, value) {
   node[name] = value;
 }
 
+// === Element claims ===
+//
+// Compiled DOM output claims navigation-relevant elements (`a[href]`,
+// `form[action]`) at creation via `claimElement`, and the write sites the
+// compiler owns (binding effects and spread assigns, which both land in
+// `setAttribute`) re-invoke the same handlers when an `href`/`action`
+// attribute changes — handlers must be idempotent. Dormant by design: with
+// no handler registered every hook is a null check, so apps without a
+// consumer (e.g. a router's link-state layer) pay nothing at runtime.
+//
+// Handlers run during element creation, under whatever reactive owner is
+// current — consumers scope their per-element state and cleanup through
+// their own reactive system (e.g. onCleanup), not through this hook.
+let claimHandlers = null;
+
+/**
+ * Register a consumer for compiler-emitted element claims. Returns an
+ * unregister function.
+ */
+export function registerElementClaim(handler) {
+  (claimHandlers || (claimHandlers = [])).push(handler);
+  return () => {
+    const index = claimHandlers.indexOf(handler);
+    index > -1 && claimHandlers.splice(index, 1);
+  };
+}
+
+/**
+ * Claim `node` for registered consumers. Emitted by the compiler at element
+ * creation and re-invoked (idempotently) from claimed-attribute writes.
+ */
+export function claimElement(node) {
+  if (claimHandlers !== null) {
+    for (let i = 0; i < claimHandlers.length; i++) claimHandlers[i](node);
+  }
+  return node;
+}
+
 export function setAttribute(node, name, value) {
   if (isHydrating(node)) return;
   if (value == null || value === false) node.removeAttribute(name);
   else node.setAttribute(name, value === true ? "" : value);
+  // Frozen contract with compiled output: `href`/`action` can only change
+  // through compiler-owned write paths, which all land here — so one recheck
+  // at this site keeps claim consumers fresh with no observers.
+  if (claimHandlers !== null && (name === "href" || name === "action")) claimElement(node);
 }
 
 export function setAttributeNS(node, namespace, name, value) {

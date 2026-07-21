@@ -1,4 +1,4 @@
-@@ -508,7 +508,8 @@
+@@ -512,7 +512,8 @@
      get children() {
        return css();
      }
@@ -8,7 +8,7 @@
    return _g128$;
  })(), (() => {
    var _g129$ = _g48$();
-@@ -556,6 +557,7 @@
+@@ -560,6 +561,7 @@
  _g135$.firstChild.value = dynamicProperty() ?? "";
  _g135$.firstChild.nextSibling.value = dynamicProperty() ?? "";
  _$insert__r_dom(_g135$.firstChild.nextSibling, dynamicContent);

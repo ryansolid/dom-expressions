@@ -47,11 +47,7 @@ export { HREF };
 
 /** Whether `value` is an `Href`-branded URL-bearing value. */
 export function isHref(value) {
-  return !!(
-    value &&
-    (typeof value === "object" || typeof value === "function") &&
-    value[HREF]
-  );
+  return !!(value && (typeof value === "object" || typeof value === "function") && value[HREF]);
 }
 
 function initWithRevalidate(init) {

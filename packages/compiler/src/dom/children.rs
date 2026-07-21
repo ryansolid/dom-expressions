@@ -477,6 +477,12 @@ impl<'a> AstDomTransform<'a, '_> {
                     {
                         return true;
                     }
+                    // claim targets (a[href] / form[action]) need an element
+                    // reference even when fully static — the emitted
+                    // claimElement call walks to them
+                    if crate::dom::element::element_is_claim_target(element) {
+                        return true;
+                    }
                     let has_expression_attr =
                         element
                             .opening_element

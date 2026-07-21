@@ -12,6 +12,7 @@ import { setStyleProperty as _$setStyleProperty } from "r-dom";
 import { className as _$className } from "r-dom";
 import { effect as _$effect } from "r-custom";
 import { setAttribute as _$setAttribute } from "r-dom";
+import { claimElement as _$claimElement } from "r-dom";
 import { addEvent as _$addEvent } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
 var _tmpl$ = /* @__PURE__ */ _$template(`<div><h1><a href=/>Welcome`);
@@ -97,6 +98,7 @@ var _ref$ = link;
 typeof _ref$ === "function" || Array.isArray(_ref$) ? _$ref(() => {
 	return _ref$;
 }, _el$3) : link = _el$3;
+_$claimElement(_el$3);
 _$className(_el$3, { "ccc ddd": true });
 const template = _el$;
 var _el$4 = _tmpl$2();
@@ -231,6 +233,7 @@ _$effect(() => "t" in test, (_v$) => {
 });
 const template23 = _el$30;
 var _el$31 = _tmpl$16();
+_$claimElement(_el$31);
 _$spread(_el$31, _$mergeProps(props, { something: true }), false);
 const template24 = _el$31;
 var _el$32 = _tmpl$17();
@@ -238,6 +241,7 @@ var _el$33 = _el$32.firstChild;
 _$insert(_el$32, () => {
 	return props.children;
 }, _el$32.firstChild);
+_$claimElement(_el$33);
 _$spread(_el$33, _$mergeProps(props, { something: true }), false);
 const template25 = _el$32;
 var _el$34 = _tmpl$18();

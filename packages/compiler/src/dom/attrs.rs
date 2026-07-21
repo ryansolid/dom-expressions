@@ -100,6 +100,12 @@ impl<'a> AstDomTransform<'a, '_> {
         operations: &mut std::vec::Vec<Statement<'a>>,
         dynamics: &mut std::vec::Vec<DynamicSlot<'a>>,
     ) -> Result<AttrsLowering<'a>> {
+        // Claim contract: a[href] / form[action] elements are claimed at
+        // creation so registered consumers (e.g. a router's link-state layer)
+        // see them. Babel pushes the claim ahead of the attribute
+        // expressions (refs/events still unshift in front of it).
+        let claim_target = crate::dom::element::is_claim_target(tag_name, attributes);
+
         if attributes
             .iter()
             .any(|attr| matches!(attr, JSXAttributeItem::SpreadAttribute(_)))
@@ -130,6 +136,9 @@ impl<'a> AstDomTransform<'a, '_> {
             for group in front_groups.into_iter().rev() {
                 operations.extend(group);
             }
+            if claim_target {
+                operations.push(self.claim_element_statement(element_id));
+            }
             operations.push(self.spread_attribute_statement(
                 attributes,
                 element_id,
@@ -146,6 +155,9 @@ impl<'a> AstDomTransform<'a, '_> {
             children_replacement,
         } = self.plan_attributes(attributes, tag_name)?;
         let mut exprs: std::vec::Vec<Statement<'a>> = std::vec::Vec::new();
+        if claim_target {
+            exprs.push(self.claim_element_statement(element_id));
+        }
         let mut front_groups: std::vec::Vec<std::vec::Vec<Statement<'a>>> = std::vec::Vec::new();
         let mut needs_placeholder = false;
 

@@ -14,6 +14,7 @@ import { getNextElement as _$getNextElement } from "r-dom";
 import { runHydrationEvents as _$runHydrationEvents } from "r-dom";
 import { className as _$className } from "r-dom";
 import { ref as _$ref } from "r-dom";
+import { claimElement as _$claimElement } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { mergeProps as _$mergeProps } from "r-dom";
 var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href=/>Welcome`),
@@ -132,6 +133,7 @@ _$spread(
 );
 var _ref$ = link;
 typeof _ref$ === "function" || Array.isArray(_ref$) ? _$ref(() => _ref$, _el$3) : (link = _el$3);
+_$claimElement(_el$3);
 _$className(_el$3, {
   "ccc ddd": true
 });
@@ -302,6 +304,7 @@ _$effect(
 );
 const template23 = _el$28;
 var _el$29 = _$getNextElement(_tmpl$14);
+_$claimElement(_el$29);
 _$spread(
   _el$29,
   _$mergeProps(props, {
@@ -321,6 +324,7 @@ _$insert(
   _el$33,
   _co$
 );
+_$claimElement(_el$31);
 _$spread(
   _el$31,
   _$mergeProps(props, {

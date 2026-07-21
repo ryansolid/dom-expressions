@@ -18,6 +18,15 @@ pub(crate) fn lower_static_native_template<'a>(
     }
 
     let tag_name = element_name(&element.opening_element.name)?;
+
+    // Claim targets (a[href] / form[action]) can't inline into a static
+    // subtree — the emitted claimElement call needs an element reference, so
+    // they take the dynamic-child path. Descendants are covered by recursion
+    // (a child returning None propagates None up).
+    if crate::dom::element::is_claim_target(&tag_name, &element.opening_element.attributes) {
+        return Ok(None);
+    }
+
     let mut template = crate::dom::template::TemplateHtml::open_tag(&tag_name);
 
     // Attributes only land in the emitted markup, not the validation variant.

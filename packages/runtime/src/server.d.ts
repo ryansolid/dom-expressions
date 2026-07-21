@@ -205,6 +205,14 @@ export function setAttribute(node: Element, name: string, value: string): void;
 /** @deprecated not supported on the server side */
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
 
+/**
+ * Server no-op: element claims are a client-only concern, but consumers may
+ * register isomorphically. Returns a no-op unregister function.
+ */
+export function registerElementClaim(handler: (element: Element) => void): () => void;
+/** Server no-op: returns `node` unchanged. Claims never fire during SSR. */
+export function claimElement<T extends Element>(node: T): T;
+
 /** @deprecated not supported on the server side */
 export function addEvent(node: Element, name: string, handler: () => void, delegate: boolean): void;
 
