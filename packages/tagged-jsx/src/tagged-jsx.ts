@@ -97,14 +97,23 @@ export function createTaggedJSXRuntime(r: Runtime) {
         let hasSpread = false;
 
         const elem = createElement(node.name);
+        // Element-claim contract (`a[href]`, `form[action]`): stamped here,
+        // while static props are still visible — the filter below bakes them
+        // into the template, after which the runtime can't tell a claim
+        // target from any other element. Only the baked case needs a
+        // clone-time claim; props that survive into runtime assignment are
+        // claimed by `setAttribute`'s own recheck.
+        const claimAttr = node.name === "a" ? "href" : node.name === "form" ? "action" : undefined;
         // Props located after spread need to be applied after spread for possible overrides.
         node.props = node.props.filter(prop => {
           if (prop.type === STATIC_PROP) {
             if (prop.name.startsWith("prop:")) return true;
             elem.setAttribute(prop.name, prop.value);
+            if (!hasSpread && prop.name === claimAttr) node.claim = true;
             return hasSpread;
           } else if (prop.type === BOOLEAN_PROP) {
             elem.setAttribute(prop.name, "");
+            if (!hasSpread && prop.name === claimAttr) node.claim = true;
             return hasSpread;
           } else if (prop.type === SPREAD_PROP) {
             hasSpread = true;
@@ -137,6 +146,9 @@ export function createTaggedJSXRuntime(r: Runtime) {
         const props = gatherProps(node, values, components);
 
         r.spread(element, props, true);
+        // Static href/action was baked into the template at build, so the
+        // spread above never touched it — claim the clone directly.
+        if (node.claim) r.claimElement(element);
 
         return element;
     }
@@ -170,6 +182,7 @@ export function createTaggedJSXRuntime(r: Runtime) {
               const props = gatherProps(node, values, components);
               r.spread(domNode as Element, props, true);
             }
+            if (node.claim) r.claimElement(domNode as Element);
             walkNodes(
               node.children,
               node.name === "template"

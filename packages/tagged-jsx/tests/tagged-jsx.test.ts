@@ -1116,4 +1116,69 @@ describe("Tagged JSX Integration Tests", () => {
         dispose();
       }));
   });
+
+  describe("Element Claims", () => {
+    const withClaims = (fn: (claimed: Element[]) => void) =>
+      createRoot(dispose => {
+        const claimed: Element[] = [];
+        const unregister = r.registerElementClaim(el => claimed.push(el));
+        try {
+          fn(claimed);
+        } finally {
+          unregister();
+          dispose();
+        }
+      });
+
+    it("claims a top-level anchor with a static href baked into the template", () =>
+      withClaims(claimed => {
+        const a = html`<a href="/about">About</a>` as HTMLAnchorElement;
+        expect(claimed).toEqual([a]);
+      }));
+
+    it("claims a nested anchor with a static href", () =>
+      withClaims(claimed => {
+        const nav = html`<nav><a href="/about">About</a><span>plain</span></nav>` as HTMLElement;
+        expect(claimed).toEqual([nav.querySelector("a")]);
+      }));
+
+    it("claims a form with a static action", () =>
+      withClaims(claimed => {
+        const form = html`<form action="/submit"><input name="q" /></form>` as HTMLFormElement;
+        expect(claimed).toEqual([form]);
+      }));
+
+    it("claims anchors with dynamic hrefs through the attribute write", () => {
+      const claimed: Element[] = [];
+      const unregister = r.registerElementClaim(el => claimed.push(el));
+      const [href, setHref] = createSignal("/a");
+      let a!: HTMLAnchorElement;
+      const dispose = createRoot(d => {
+        a = html`<a href=${href}>Link</a>` as HTMLAnchorElement;
+        return d;
+      });
+      expect(claimed).toEqual([a]);
+      setHref("/b");
+      flush();
+      // the href recheck re-claims on change
+      expect(claimed).toEqual([a, a]);
+      unregister();
+      dispose();
+    });
+
+    it("does not claim anchors without an href or unrelated elements", () =>
+      withClaims(claimed => {
+        html`<div><a name="anchor">No href</a><button type="button">B</button></div>`;
+        expect(claimed).toEqual([]);
+      }));
+
+    it("claims every clone of a cached template independently", () =>
+      withClaims(claimed => {
+        const make = () => html`<a href="/about">About</a>` as HTMLAnchorElement;
+        const first = make();
+        const second = make();
+        expect(first).not.toBe(second);
+        expect(claimed).toEqual([first, second]);
+      }));
+  });
 });
