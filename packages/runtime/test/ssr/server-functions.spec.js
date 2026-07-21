@@ -352,6 +352,45 @@ describe("handler", () => {
     }
   });
 
+  it("prepends url-encoded bound args to natural-encoding instance posts", async () => {
+    // A router intercepting a server-rendered form action url
+    // (`?id=...&args=[7]`) posts the FormData to that url verbatim with the
+    // client transport. The server reconstructs [boundArgs..., formData]
+    // from url + body exactly as it does for no-JS posts.
+    registerServerFunction("bound-form-0", async (bound, form) => `${bound}:${form.get("name")}`);
+    const restore = connectTransport();
+    try {
+      const callable = createClientReference(
+        "bound-form-0",
+        undefined,
+        "/_server?id=bound-form-0&args=%5B7%5D"
+      );
+      const form = new FormData();
+      form.set("name", "solid");
+      expect(await callable(form)).toBe("7:solid");
+    } finally {
+      restore();
+    }
+  });
+
+  it("ignores url args for codec-serialized bodies", async () => {
+    // Client stubs with bound args serialize the full argument array in the
+    // body; a stray `args` in the url must not double-apply.
+    registerServerFunction("bound-serialized-0", async (...args) => args);
+    const restore = connectTransport();
+    try {
+      const callable = createClientReference(
+        "bound-serialized-0",
+        undefined,
+        "/_server?id=bound-serialized-0&args=%5B7%5D"
+      );
+      // two args force the codec path (no natural single-arg encoding)
+      expect(await callable("a", "b")).toEqual(["a", "b"]);
+    } finally {
+      restore();
+    }
+  });
+
   it("roundtrips GET calls with query-encoded args", async () => {
     // the server half of GET records the method declaration for dispatch
     serverGET(createServerReference(registerServerReference("get-0", async n => n * 2)));

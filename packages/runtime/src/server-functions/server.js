@@ -192,8 +192,14 @@ function resolveFunctionId(request, url) {
 
 async function parseArguments(request, url, instance, codec) {
   const parsed = [];
-  // bound arguments arrive on the url for GET calls and no-JS form posts
-  if (!instance || request.method === "GET") {
+  // Bound arguments arrive on the url for GET calls, no-JS form posts, and
+  // instance-carrying POSTs whose body is a natural HTTP encoding (FormData,
+  // urlencoded) — e.g. a router intercepting a form whose action url was
+  // rendered by the server. Codec-serialized bodies are the exception:
+  // client stubs with bound arguments serialize the full argument array in
+  // the body and never put arguments in the url.
+  const bodyFormat = request.method === "POST" ? request.headers.get(BODY_FORMAT_HEADER) : null;
+  if (!instance || request.method === "GET" || bodyFormat !== BodyFormat.Serialized) {
     const args = url.searchParams.get("args");
     if (args) {
       // framed codec output (from the client runtime) or plain JSON (from
@@ -207,9 +213,8 @@ async function parseArguments(request, url, instance, codec) {
     }
   }
   if (request.method === "POST" && request.body !== null) {
-    const format = request.headers.get(BODY_FORMAT_HEADER);
     const decoded = await extractBody(request.clone(), codec);
-    if (format === BodyFormat.Serialized) {
+    if (bodyFormat === BodyFormat.Serialized) {
       return decoded;
     }
     parsed.push(decoded);

@@ -185,16 +185,21 @@ async function fetchServerFunction(base, id, options, args, meta) {
  * argument; it seeds the metadata channel as a default — explicit
  * `withMeta`/`GET` writes shallow-merge over it like any other write.
  */
-export function createServerReference(id, name) {
+export function createServerReference(id, name, base) {
   const metadata = name === undefined ? {} : { name };
-  const fn = (...args) => fetchServerFunction(config.endpoint, id, {}, args, metadata);
+  // An explicit base targets that url verbatim — integrations reconstructing
+  // a callable from a server-rendered action url (`?id=...&args=...`) keep
+  // its bound arguments in the query string, where the server reads them
+  // for natural-encoding bodies. Default calls derive from the configured
+  // endpoint (lazily — it may be configured after module scope runs).
+  const fn = (...args) => fetchServerFunction(base || config.endpoint, id, {}, args, metadata);
   fn[SERVER_FUNCTION_METADATA] = metadata;
 
   return new Proxy(fn, {
     get(target, prop) {
       if (prop === "id") return id;
       if (prop === "url") {
-        return `${config.endpoint}?id=${encodeURIComponent(id)}`;
+        return base || `${config.endpoint}?id=${encodeURIComponent(id)}`;
       }
       return target[prop];
     }

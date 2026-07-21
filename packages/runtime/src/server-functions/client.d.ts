@@ -127,9 +127,16 @@ export function GET<A extends readonly any[], R>(
  * source name as the trailing argument (dev-only metadata seeded on the
  * metadata channel; never emitted in production). Not meant for
  * hand-written code.
+ *
+ * The optional `base` targets calls at that url verbatim instead of the
+ * configured endpoint — for integrations reconstructing a callable from a
+ * server-rendered action url (e.g. a router intercepting a form submit whose
+ * `action="/_server?id=...&args=..."` came off the wire): bound arguments
+ * stay in the query string, where the server reads them for natural-encoding
+ * bodies (FormData, urlencoded).
  * @internal
  */
-export function createServerReference(id: string, name?: string): ServerFunction;
+export function createServerReference(id: string, name?: string, base?: string): ServerFunction;
 
 /**
  * Compiler ABI — only ever referenced by server-mode compiler output;
