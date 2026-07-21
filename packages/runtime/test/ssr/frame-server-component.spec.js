@@ -484,3 +484,41 @@ describe("document-mode inline rendering (t=0)", () => {
     });
   });
 });
+
+describe("server-component hydration reference", () => {
+  it("serializes an inline server component as a stable placeholder reference", done => {
+    const {
+      inlineServerComponentResult,
+      ServerComponentPlugin,
+      SERVER_COMPONENT_BOOTSTRAP
+    } = require("../../src/frame-sink");
+    const { createHydrationSerializer } = require("../../src/serializer");
+
+    const Inline = inlineServerComponentResult(() => r.ssr`<b>x</b>`, { id: "hn/story-0" });
+    const scripts = [];
+    const serializer = createHydrationSerializer({
+      plugins: [ServerComponentPlugin],
+      onData: s => scripts.push(s),
+      onDone: () => {
+        const payload = scripts.join(";");
+        // The reference, not the function: resolution is invocation-time
+        // through the bootstrap's memoized placeholder.
+        expect(payload).toContain('self._$SC.r("hn/story-0")');
+        expect(payload).not.toContain("createDocumentProjectionProps");
+        // The bootstrap evaluates and memoizes stable identities.
+        // eslint-disable-next-line no-eval
+        (0, eval)(SERVER_COMPONENT_BOOTSTRAP);
+        const first = globalThis._$SC.r("hn/story-0");
+        expect(typeof first).toBe("function");
+        expect(globalThis._$SC.r("hn/story-0")).toBe(first);
+        // The placeholder delegates to the installed implementation.
+        globalThis._$SC.impl = (id, props) => `${id}:${props.x}`;
+        expect(first({ x: 1 })).toBe("hn/story-0:1");
+        delete globalThis._$SC;
+        done();
+      }
+    });
+    serializer.write("0", Inline);
+    serializer.flush();
+  });
+});

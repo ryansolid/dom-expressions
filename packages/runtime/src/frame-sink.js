@@ -32,6 +32,7 @@
  * not active scripts (the reason the frame consumer must not reuse the $df*
  * helpers).
  */
+import { createPlugin } from "seroval";
 import { sharedConfig } from "rxcore";
 import { renderToStream } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
@@ -338,12 +339,64 @@ export function createDocumentProjectionProps(clientProps, frameId) {
 export function inlineServerComponentResult(value, { id }) {
   if (typeof value !== "function") return value;
   const component = value;
-  return props => [
+  const wrapped = props => [
     { t: `<!--frame:${id}:start-->` },
     component(createDocumentProjectionProps(props, id)),
     { t: `<!--frame:${id}:end-->` }
   ];
+  // Branded so the hydration serializer can write it as a reference (see
+  // ServerComponentPlugin) instead of meeting an unserializable function.
+  wrapped[SERVER_COMPONENT] = id;
+  return wrapped;
 }
+
+/** Brands an inline-rendered server component with its function id. */
+export const SERVER_COMPONENT = /*#__PURE__*/ Symbol.for("dom-expressions.server-component");
+
+/**
+ * Seroval plugin for the document hydration serializer (`renderToStream`'s
+ * `options.plugins`): an inline-rendered server component — the resolved
+ * value of an async source like `dynamic(() => getStory(id))` — serializes
+ * as a REFERENCE, `self._$SC.r("<function id>")`. The document shell's
+ * inline bootstrap memoizes a stable placeholder component per id
+ * (hydration data scripts run during parse, before the module bundle, so
+ * resolution is invocation-time indirection); the frames client installs
+ * the implementation that placeholder delegates to, and the transport's
+ * document-adoption step returns the same placeholder so the first
+ * navigation's equals-gate holds.
+ */
+export const ServerComponentPlugin = /*#__PURE__*/ createPlugin({
+  tag: "dom-expressions/server-component",
+  test(value) {
+    return typeof value === "function" && SERVER_COMPONENT in value;
+  },
+  parse: {
+    sync(value, ctx) {
+      return { id: ctx.parse(value[SERVER_COMPONENT]) };
+    },
+    async async(value, ctx) {
+      return { id: await ctx.parse(value[SERVER_COMPONENT]) };
+    },
+    stream(value, ctx) {
+      return { id: ctx.parse(value[SERVER_COMPONENT]) };
+    }
+  },
+  serialize(node, ctx) {
+    return "self._$SC.r(" + ctx.serialize(node.id) + ")";
+  },
+  deserialize(node, ctx) {
+    return globalThis._$SC.r(ctx.deserialize(node.id));
+  }
+});
+
+/**
+ * The inline bootstrap the document shell must include BEFORE any hydration
+ * data script (e.g. in `<head>`): memoizes one stable placeholder component
+ * per server-component reference. `_$SC.impl` is installed later by the
+ * frames client runtime.
+ */
+export const SERVER_COMPONENT_BOOTSTRAP =
+  "self._$SC={c:{},r(i){return this.c[i]||(this.c[i]=(p)=>self._$SC.impl(i,p))}};";
 
 /**
  * The props proxy handed to a server component. Every prop resolves to a
