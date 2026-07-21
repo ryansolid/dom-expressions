@@ -1391,6 +1391,24 @@ describe("ssrElement child-property handling", () => {
     expect(html).toContain('title="a&quot;b,c"');
     expect(html).toContain('data-count="3"');
   });
+
+  it("stringifies URL-bearing objects passed as href/action", () => {
+    // The JSX types accept SerializableAttributeValue for a[href] and
+    // form[action] (typed path objects, action references). Their SSR
+    // serialization is the plain toString coercion — pinned here so the
+    // type-level contract always has a matching runtime lane.
+    const path = {
+      [Symbol.for("solid.Href")]: true,
+      toString: () => "/users/5?tab=a&b"
+    };
+    const anchor = r.renderToString(() => r.ssrElement("a", { href: path }));
+    expect(anchor).toContain('href="/users/5?tab=a&amp;b"');
+
+    const form = r.renderToString(() =>
+      r.ssrElement("form", { action: { toString: () => "/actions/save" } })
+    );
+    expect(form).toContain('action="/actions/save"');
+  });
 });
 
 // injectAssets inserts useAssets-registered output above </head>. Without a

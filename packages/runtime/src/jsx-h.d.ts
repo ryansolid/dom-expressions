@@ -1108,7 +1108,7 @@ export namespace JSX {
 
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: FunctionMaybe<string | EnumeratedAcceptsEmpty | RemoveAttribute>;
-    href?: FunctionMaybe<string | RemoveAttribute>;
+    href?: FunctionMaybe<string | SerializableAttributeValue | RemoveAttribute>;
     hreflang?: FunctionMaybe<string | RemoveAttribute>;
     ping?: FunctionMaybe<string | RemoveAttribute>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
@@ -1117,6 +1117,21 @@ export namespace JSX {
       "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute
     >;
     type?: FunctionMaybe<string | RemoveAttribute>;
+
+    // Client-side navigation contract. These attributes are inert markup on
+    // their own — a routing integration that delegates anchor clicks (e.g.
+    // @solidjs/router) reads them off the element at event time. Typed here
+    // so plain `<a>` elements participate without per-router augmentation.
+    /** Marks the anchor as a client-navigation link when the integration requires explicit opt-in. */
+    link?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    /** Serialized (JSON) history state pushed alongside the navigation. */
+    state?: FunctionMaybe<string | RemoveAttribute>;
+    /** Suppress scroll restoration/reset after the navigation. */
+    noScroll?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    /** Replace the current history entry instead of pushing a new one. */
+    replace?: FunctionMaybe<BooleanAttribute | RemoveAttribute>;
+    /** Route preload intent; `"false"` disables the integration's default eager preload. */
+    preload?: FunctionMaybe<boolean | "false" | RemoveAttribute>;
 
     /** @experimental */
     attributionsrc?: FunctionMaybe<string | RemoveAttribute>;
@@ -1137,7 +1152,7 @@ export namespace JSX {
     alt?: FunctionMaybe<string | RemoveAttribute>;
     coords?: FunctionMaybe<string | RemoveAttribute>;
     download?: FunctionMaybe<string | EnumeratedAcceptsEmpty | RemoveAttribute>;
-    href?: FunctionMaybe<string | RemoveAttribute>;
+    href?: FunctionMaybe<string | SerializableAttributeValue | RemoveAttribute>;
     ping?: FunctionMaybe<string | RemoveAttribute>;
     referrerpolicy?: FunctionMaybe<HTMLReferrerPolicy | RemoveAttribute>;
     rel?: FunctionMaybe<string | RemoveAttribute>;

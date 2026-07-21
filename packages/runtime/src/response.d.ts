@@ -23,6 +23,32 @@ export class ResponseEnvelope<T = unknown> {
  */
 export function isResponseEnvelope(value: unknown): value is ResponseEnvelope;
 
+/**
+ * Registered-symbol brand (`Symbol.for("solid.Href")`) marking URL-bearing
+ * values. Declared `unique symbol` type-side; the runtime value is the
+ * registered symbol, so separately bundled copies agree on identity.
+ */
+export declare const HREF: unique symbol;
+
+/**
+ * A URL-bearing value: coerces to its URL via `toString()` and carries the
+ * `HREF` registered-symbol brand. Integrations mint these (e.g. a router's
+ * typed path objects answer the brand from their proxy) and URL-accepting
+ * APIs like `redirect()` accept them alongside plain strings. The brand is
+ * what makes the type meaningful — every object has `toString()`.
+ */
+export interface Href {
+  [HREF]: true;
+  toString(): string;
+}
+
+/**
+ * Whether `value` is an `Href`-branded URL-bearing value. Registered-symbol
+ * check, so it stays correct across duplicated module instances — same
+ * rationale as `isResponseEnvelope`.
+ */
+export function isHref(value: unknown): value is Href;
+
 /** `ResponseInit` accepted by the response helpers, plus `revalidate`. */
 export interface ResponseHelperInit extends ResponseInit {
   /**
@@ -51,7 +77,7 @@ export interface ResponseHelperInit extends ResponseInit {
  * }
  * ```
  */
-export function redirect(url: string, init?: number | ResponseHelperInit): Response;
+export function redirect(url: string | Href, init?: number | ResponseHelperInit): Response;
 
 /**
  * Empty response requesting revalidation of the named cache keys — all of

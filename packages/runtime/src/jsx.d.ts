@@ -1119,13 +1119,28 @@ export namespace JSX {
 
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: string | EnumeratedAcceptsEmpty | RemoveAttribute;
-    href?: string | RemoveAttribute;
+    href?: string | SerializableAttributeValue | RemoveAttribute;
     hreflang?: string | RemoveAttribute;
     ping?: string | RemoveAttribute;
     referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
     rel?: string | RemoveAttribute;
     target?: "_self" | "_blank" | "_parent" | "_top" | (string & {}) | RemoveAttribute;
     type?: string | RemoveAttribute;
+
+    // Client-side navigation contract. These attributes are inert markup on
+    // their own — a routing integration that delegates anchor clicks (e.g.
+    // @solidjs/router) reads them off the element at event time. Typed here
+    // so plain `<a>` elements participate without per-router augmentation.
+    /** Marks the anchor as a client-navigation link when the integration requires explicit opt-in. */
+    link?: BooleanAttribute | RemoveAttribute;
+    /** Serialized (JSON) history state pushed alongside the navigation. */
+    state?: string | RemoveAttribute;
+    /** Suppress scroll restoration/reset after the navigation. */
+    noScroll?: BooleanAttribute | RemoveAttribute;
+    /** Replace the current history entry instead of pushing a new one. */
+    replace?: BooleanAttribute | RemoveAttribute;
+    /** Route preload intent; `"false"` disables the integration's default eager preload. */
+    preload?: boolean | "false" | RemoveAttribute;
 
     /** @experimental */
     attributionsrc?: string | RemoveAttribute;
@@ -1146,7 +1161,7 @@ export namespace JSX {
     alt?: string | RemoveAttribute;
     coords?: string | RemoveAttribute;
     download?: string | EnumeratedAcceptsEmpty | RemoveAttribute;
-    href?: string | RemoveAttribute;
+    href?: string | SerializableAttributeValue | RemoveAttribute;
     ping?: string | RemoveAttribute;
     referrerpolicy?: HTMLReferrerPolicy | RemoveAttribute;
     rel?: string | RemoveAttribute;

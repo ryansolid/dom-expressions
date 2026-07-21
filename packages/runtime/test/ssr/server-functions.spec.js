@@ -3,6 +3,7 @@
  */
 import {
   ResponseEnvelope,
+  isHref,
   isResponseEnvelope,
   redirect,
   reload,
@@ -192,6 +193,31 @@ describe("response helpers", () => {
   it("reload carries revalidation keys", () => {
     expect(reload().headers.get("X-Revalidate")).toBeNull();
     expect(reload({ revalidate: "/notes" }).headers.get("X-Revalidate")).toBe("/notes");
+  });
+
+  it("redirect accepts Href-branded values and rejects unbranded objects", () => {
+    // an integration's typed path object: coerces via toString, branded
+    // with the registered symbol (identity survives module copies)
+    const path = {
+      [Symbol.for("solid.Href")]: true,
+      toString: () => "/users/5"
+    };
+    expect(isHref(path)).toBe(true);
+    expect(redirect(path).headers.get("Location")).toBe("/users/5");
+
+    // callable values (proxy-based path builders) qualify too
+    const callablePath = Object.assign(() => "/users", {
+      [Symbol.for("solid.Href")]: true,
+      toString: () => "/users"
+    });
+    expect(isHref(callablePath)).toBe(true);
+    expect(redirect(callablePath).headers.get("Location")).toBe("/users");
+
+    // toString alone is every object in the language — without the brand
+    // redirect would silently emit "[object Object]"
+    expect(isHref({ toString: () => "/x" })).toBe(false);
+    expect(() => redirect({ toString: () => "/x" })).toThrow(TypeError);
+    expect(() => redirect(undefined)).toThrow(TypeError);
   });
 
   it("recognizes envelopes across module copies", () => {
