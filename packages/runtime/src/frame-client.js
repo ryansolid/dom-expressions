@@ -499,6 +499,10 @@ class FrameImpl {
   #invokeSlot(occurrence, callback, record, start) {
     const cleanups = this.#slotCleanups.get(occurrence) ?? [];
     const ctx = {
+      // Identity for hydration-claim scoping: consumers derive the same
+      // key prefix the document producer used for this occurrence.
+      frame: this.#options.id,
+      key: occurrence,
       onCleanup: fn => cleanups.push(fn),
       existing: start ? rangeInterior(start, projectionEnd(occurrence)) : []
     };

@@ -275,6 +275,24 @@ export function createDocumentProjectionProps(clientProps, frameId) {
     content,
     { t: `<!--proj:${occurrence}:end-->` }
   ];
+  // Client content renders under a per-occurrence hydration-key prefix, so
+  // the adopting client re-renders each slot under the SAME prefix and
+  // solid's registry claims the server-rendered nodes by key — templates
+  // never ship as data (the claim IS the transfer).
+  const scoped = (occurrence, render) => {
+    const context = sharedConfig.context;
+    if (!context) return render();
+    const prevId = context.id;
+    const prevCount = context.count;
+    context.id = `sc-${frameId}-${occurrence}-`;
+    context.count = 0;
+    try {
+      return render();
+    } finally {
+      context.id = prevId;
+      context.count = prevCount;
+    }
+  };
   return new Proxy(Object.create(null), {
     has() {
       return true;
@@ -288,7 +306,7 @@ export function createDocumentProjectionProps(clientProps, frameId) {
           // Direct-insert position: the client's content renders inline,
           // wrapped in the range the adopting frame will claim.
           if (callArgs.length === 0 || callArgs[0] === undefined) {
-            return range(prop, clientProps[prop]);
+            return scoped(prop, () => range(prop, clientProps[prop]));
           }
           const raw = callArgs[0];
           let occurrence;
@@ -319,7 +337,7 @@ export function createDocumentProjectionProps(clientProps, frameId) {
               resolved[key] = value;
             }
           }
-          return range(occurrence, slot(resolved));
+          return scoped(occurrence, () => range(occurrence, slot(resolved)));
         };
         getters.set(prop, fn);
       }
