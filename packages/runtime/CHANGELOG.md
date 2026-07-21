@@ -1,5 +1,52 @@
 # dom-expressions
 
+## 0.50.0-next.25
+
+### Patch Changes
+
+- 6da0028: Element-claim contract for navigation-relevant elements (Wave B, dormant):
+  - New runtime hooks in the client module: `registerElementClaim(handler)`
+    subscribes a consumer (returns an unregister function) and
+    `claimElement(node)` invokes registered handlers. With no consumer
+    registered every emitted claim is a null check — apps without a routing
+    integration pay effectively nothing. The server module exports silent
+    no-ops so consumers can register isomorphically.
+  - Compiled DOM output (both the Rust compiler and the Babel plugin) now
+    claims `a[href]` and `form[action]` elements at creation — including under
+    spreads, where the tag is still statically known. Previously reference-free
+    static anchors gain a positional walk so the claim call has a target.
+  - Compiler-owned writes to `href`/`action` (binding effects and spread
+    assigns, which both land in the runtime's `setAttribute`) re-invoke the
+    registered handlers, so a consumer's per-element state stays fresh with no
+    observers; handlers must be idempotent.
+
+  This is groundwork for router integrations (e.g. link active/pending state
+  on plain `<a>` elements without a wrapper component); behavior is inert
+  until a consumer registers.
+
+- 314dc9f: Relax server-side method enforcement: declaring `GET` grants GET dispatch without revoking the default POST transport. A GET-declared function now accepts both methods — necessary because routers auto-declare GET on query-wrapped functions that may also be called directly over POST. The security-relevant direction is unchanged: GET requests to functions that never declared it still answer 405.
+- a6a0889: Type-level groundwork for typed-path navigation (Wave A):
+  - JSX `href` on `<a>`/`<area>` now accepts `SerializableAttributeValue` in
+    addition to `string` — the same treatment form `action` already has — so
+    URL-bearing objects (e.g. a router's typed path nodes) typecheck directly
+    as `href={paths.users(id)}`. SSR serialization of such values is the plain
+    `toString()` coercion, now pinned by test.
+  - The client-side navigation attribute contract (`link`, `state`, `noScroll`,
+    `replace`, `preload`) moved into the shared JSX types on
+    `AnchorHTMLAttributes`. These are inert markup on their own; routing
+    integrations that delegate anchor clicks read them at event time.
+  - New `Href` brand in the response module: a registered-symbol
+    (`Symbol.for("solid.Href")`) brand for URL-bearing values, with `isHref()`
+    guard. `redirect()` now accepts `string | Href`, coerces branded values via
+    `String()`, and throws a `TypeError` for unbranded objects instead of
+    silently emitting `[object Object]` in the `Location` header.
+
+- d10a197: Make server-rendered action urls fully self-describing for client interception:
+  - The server handler now honors url-encoded bound arguments (`?args=`) for instance-carrying POSTs whose body is a natural HTTP encoding (FormData, urlencoded), not just no-JS posts and GETs. A router intercepting a form whose `action` url came off the wire can post the form data to it verbatim and get the same `[boundArgs..., formData]` reconstruction the no-JS path performs. Codec-serialized bodies are unaffected — client stubs with bound arguments serialize the full argument array in the body and never put arguments in the url.
+  - `createServerReference(id, name, base?)` accepts an explicit base url, targeting calls at it verbatim (preserving `?args=`) instead of deriving from the configured endpoint, so integrations can reconstruct a callable from a server-rendered action url while keeping `prepareRequest` hooks, codec config, and single-flight headers uniform.
+
+- 3ea261e: Encode non-latin1 error messages safely in the `X-Server-Function-Error` header. Header values are latin1 ByteStrings, so a thrown error whose message contained CJK, emoji, or other non-latin1 characters made `Headers.set` throw and collapsed the whole call into a bare 500 (solidjs/solid-start#1874 / #2215 — the guard from Start's bespoke handler was lost when the core runtime took over this path). Plain printable-latin1 messages still ride the header verbatim (the historical wire format, byte-identical); anything else travels percent-encoded behind a `=?1?` marker, with CR/LF stripped and lone surrogates well-formed first, so the decoded message round-trips exactly — astral-plane characters included. `ERROR_HEADER`, `encodeErrorHeaderValue`, and `decodeErrorHeaderValue` are exported from the shared/server/client entries (tagged `@internal`) for integrations that surface the header themselves.
+
 ## 0.50.0-next.24
 
 ### Patch Changes
