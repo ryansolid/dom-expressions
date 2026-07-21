@@ -41,13 +41,15 @@ const SCENARIOS = {
   // seeding, the frame:applied document event, and the stable-component
   // response handler); 5576 after the real-example hardening round
   // (client-owned stream versions, per-version segment-state reset,
-  // same-tag morph lookahead) — deliberate feature weight, re-guarded at
-  // 5700.
+  // same-tag morph lookahead); 5889 after the initial-load round (the
+  // intercept seam, document-boundary adoption, hydration-claim scoping,
+  // marker-driven region discovery for nested occurrences) — deliberate
+  // feature weight, re-guarded at 6000.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    5700
+    6000
   ]
 };
 

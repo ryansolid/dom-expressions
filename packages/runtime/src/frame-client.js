@@ -470,6 +470,8 @@ class FrameImpl {
         if (nodes) this.#replaceRange(occurrence, start, nodes);
         this.#slotNodes.set(occurrence, nodes);
         this.#mountedSlots.add(occurrence);
+        // Record-less mounts are adoption: the interior carries the regions.
+        if (!record) this.#discoverRegions(occurrence, start);
         this.#bindRegions(occurrence);
       } else if (record !== this.#slotArgs.get(occurrence)) {
         // Args changed (incl. late args): re-call this occurrence only,
@@ -500,8 +502,11 @@ class FrameImpl {
     const cleanups = this.#slotCleanups.get(occurrence) ?? [];
     const ctx = {
       // Identity for hydration-claim scoping: consumers derive the same
-      // key prefix the document producer used for this occurrence.
-      frame: this.#options.id,
+      // key prefix the document producer used for this occurrence. The
+      // producer scopes EVERY occurrence (nested ones included) under the
+      // root boundary's id, so region frames thread the root's claimScope
+      // down rather than their own region id.
+      frame: this.#options.claimScope ?? this.#options.id,
       key: occurrence,
       onCleanup: fn => cleanups.push(fn),
       existing: start ? rangeInterior(start, projectionEnd(occurrence)) : []
@@ -601,6 +606,73 @@ class FrameImpl {
   }
 
   /** Bind nested frames for a slot's regions once their markers are in the DOM. */
+  /**
+   * Marker-driven region discovery for the adopt path: a claimed
+   * occurrence's interior already holds its nested server-content regions
+   * between `frame:<childId>:start/:end` comments (the document producer
+   * emitted them), but no slot record exists at t = 0 to create the region
+   * entries `#resolveArgs` would. Seed entries from the OUTERMOST marker
+   * pairs found in the interior (deeper pairs belong to the regions' own
+   * occurrences and are discovered recursively when those claim);
+   * `#bindRegions` then constructs adopting frames over them, which run
+   * their own slot sync — this is what wires nested occurrences at boot.
+   */
+  #discoverRegions(slotKey, start) {
+    if (!start) return;
+    let regions = this.#slotRegions.get(slotKey);
+    if (!regions) {
+      regions = new Map();
+      this.#slotRegions.set(slotKey, regions);
+    }
+    // Flat, document-ordered comment list for the interior (top-level
+    // comments and element subtrees alike), then a depth stack pairs the
+    // OUTERMOST frame ranges.
+    const doc = start.ownerDocument;
+    const endData = projectionEnd(slotKey);
+    const comments = [];
+    let n = start.nextSibling;
+    while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
+      if (n.nodeType === COMMENT_NODE) comments.push(n);
+      else if (n.nodeType === 1) {
+        const walker = doc.createTreeWalker(n, 128 /* COMMENT */);
+        let c;
+        while ((c = walker.nextNode())) comments.push(c);
+      }
+      n = n.nextSibling;
+    }
+    let depth = 0;
+    let openId = null;
+    let openStart = null;
+    for (const c of comments) {
+      const data = c.data;
+      if (!data.startsWith("frame:")) continue;
+      if (data.endsWith(":start")) {
+        const childId = data.slice(6, -6);
+        if (!childId) continue; // the insertable's unnamed boundary markers
+        if (depth === 0) {
+          openId = childId;
+          openStart = c;
+        }
+        depth++;
+      } else if (data.endsWith(":end")) {
+        const childId = data.slice(6, -4);
+        if (!childId) continue;
+        if (depth > 0) {
+          depth--;
+          if (depth === 0 && childId === openId && !regions.has(openId)) {
+            regions.set(openId, {
+              childId: openId,
+              start: openStart,
+              end: c,
+              frame: undefined,
+              adopt: true
+            });
+          }
+        }
+      }
+    }
+  }
+
   #bindRegions(slotKey) {
     const regions = this.#slotRegions.get(slotKey);
     if (!regions) return;
@@ -614,6 +686,11 @@ class FrameImpl {
         entry.frame = new FrameImpl(null, entry.start, entry.end, {
           id: entry.childId,
           host: this.#options.host,
+          // Regions discovered from adopted document markers already hold
+          // their server-rendered content (adopt); streamed regions start
+          // empty. Claim scoping threads the root boundary's id down.
+          adopt: entry.adopt,
+          claimScope: this.#options.claimScope ?? this.#options.id,
           resolveSlot: prop => this.#resolveSlot(prop),
           resolveSlotRecord: occurrence => this.#resolveSlotRecord(occurrence)
         });
