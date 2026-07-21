@@ -45,6 +45,7 @@ export {
 const config = {
   provideEvent: undefined,
   collectFlightData: undefined,
+  transformDirectResult: undefined,
   endpoint: "/_server"
 };
 
@@ -60,11 +61,13 @@ const config = {
 export function configureServerFunctionsServer({
   provideEvent,
   collectFlightData,
+  transformDirectResult,
   endpoint,
   codec
 } = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
   if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
+  if (transformDirectResult !== undefined) config.transformDirectResult = transformDirectResult;
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
 }
@@ -140,9 +143,17 @@ export function createServerReference({ id, fn, name }) {
       const evt = { ...ogEvt };
       evt.locals.serverFunctionMeta = { id };
       evt.serverOnly = true;
-      return provideEvent(evt, () => {
+      const result = provideEvent(evt, () => {
         return fn.apply(thisArg, args);
       });
+      // In-process mirror of the handler's transformResult: direct SSR calls
+      // pass their settled value through the configured policy (e.g. frames
+      // wrapping a function result as an inline-renderable server component).
+      const transform = config.transformDirectResult;
+      if (transform && result && typeof result.then === "function") {
+        return result.then(value => transform(value, { id, event: evt }));
+      }
+      return transform ? transform(result, { id, event: evt }) : result;
     }
   });
 }

@@ -440,3 +440,47 @@ describe("renderServerComponent (projection emission)", () => {
     );
   });
 });
+
+describe("document-mode inline rendering (t=0)", () => {
+  it("wraps a direct function result with boundary/proj/region markers, client content inline, once", done => {
+    const { inlineServerComponentResult } = require("../../src/frame-sink");
+    // What the server function returned in-process during document SSR.
+    const serverComponent = props =>
+      r.ssr`<article><h1>One</h1><section>${[
+        props.comment({
+          $key: "c1",
+          cid: "c1",
+          children: r.ssr`<p>alpha-text</p>`
+        })
+      ]}</section><footer>${props.children()}</footer></article>`;
+
+    const Inline = inlineServerComponentResult(serverComponent, { id: "hn/story-0" });
+    // The client's REAL props render server-side at t=0 (the one exception).
+    const clientProps = {
+      comment: p => r.ssr`<div class="comment"><button>[-]</button>${p.children}</div>`,
+      children: r.ssr`<input class="draft">`
+    };
+
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps)).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        // Boundary + occurrence + region markers in the chunk dialect.
+        expect(html).toContain("<!--frame:hn/story-0:start-->");
+        expect(html).toContain("<!--proj:comment#c1:start-->");
+        expect(html).toContain("<!--frame:hn/story-0.comment#c1.children:start-->");
+        expect(html).toContain("<!--proj:children:start-->");
+        // Client wrapper rendered INSIDE its occurrence range, server body
+        // INSIDE the nested region, draft inside the direct-insert range.
+        expect(html).toMatch(
+          /<!--proj:comment#c1:start--><div class="comment"><button>\[-\]<\/button><!--frame:hn\/story-0\.comment#c1\.children:start--><p>alpha-text<\/p><!--frame:hn\/story-0\.comment#c1\.children:end--><\/div><!--proj:comment#c1:end-->/
+        );
+        // The single-occurrence invariant on the page itself.
+        expect(html.split("alpha-text").length).toBe(2);
+        expect(html).not.toContain('"alpha-text"');
+        done();
+      }
+    });
+  });
+});

@@ -255,6 +255,97 @@ function projectionRange(occurrence) {
 }
 
 /**
+ * Document-mode projection props — the t = 0 counterpart of
+ * `createProjectionProps`. During initial document SSR a server component
+ * renders INLINE, and (the one hydration-time exception) the client's real
+ * props render server-side inside its positions. This proxy hands the
+ * server component those real props while emitting the same marker dialect
+ * the chunk producer uses — proj ranges around positions, frame ranges
+ * around nested server content — so the client's `adopt` binds slots and
+ * regions onto the server-rendered ranges and post-load streams morph them
+ * in place. Occurrence identity (`$key`/positional) matches the chunk
+ * producer exactly; nothing here is serialized — the page IS the payload.
+ */
+export function createDocumentProjectionProps(clientProps, frameId) {
+  const counts = Object.create(null);
+  const getters = new Map();
+  const range = (occurrence, content) => [
+    { t: `<!--proj:${occurrence}:start-->` },
+    content,
+    { t: `<!--proj:${occurrence}:end-->` }
+  ];
+  return new Proxy(Object.create(null), {
+    has() {
+      return true;
+    },
+    get(_, prop) {
+      if (typeof prop !== "string") return undefined;
+      if (prop === "then") return undefined;
+      let fn = getters.get(prop);
+      if (!fn) {
+        fn = (...callArgs) => {
+          // Direct-insert position: the client's content renders inline,
+          // wrapped in the range the adopting frame will claim.
+          if (callArgs.length === 0 || callArgs[0] === undefined) {
+            return range(prop, clientProps[prop]);
+          }
+          const raw = callArgs[0];
+          let occurrence;
+          const k = raw.$key;
+          if (typeof k === "string" || typeof k === "number") {
+            occurrence = `${prop}#${k}`;
+          } else {
+            const n = counts[prop] || 0;
+            counts[prop] = n + 1;
+            occurrence = `${prop}#${n}`;
+          }
+          const slot = clientProps[prop];
+          if (typeof slot !== "function") return range(occurrence, undefined);
+          const resolved = {};
+          for (const key of Object.keys(raw)) {
+            const value = raw[key];
+            if (key !== "$key" && isServerContent(value)) {
+              // Nested server content renders inline inside its region
+              // markers — ids match the chunk producer's derivation so a
+              // later stream addresses the same adopted region.
+              const childId = `${frameId}.${occurrence}.${key}`;
+              resolved[key] = [
+                { t: `<!--frame:${childId}:start-->` },
+                value,
+                { t: `<!--frame:${childId}:end-->` }
+              ];
+            } else {
+              resolved[key] = value;
+            }
+          }
+          return range(occurrence, slot(resolved));
+        };
+        getters.set(prop, fn);
+      }
+      return fn;
+    }
+  });
+}
+
+/**
+ * The in-process mirror of `frameTransformResult`, for DOCUMENT SSR:
+ * install as `configureServerFunctionsServer({ transformDirectResult })`
+ * and a server function whose direct (same-process) call resolves to a
+ * function comes back as an inline-renderable server component — boundary
+ * frame markers around it, document-mode projection props inside. HTTP
+ * calls are untouched (`frameTransformResult` owns that leg).
+ */
+export function inlineServerComponentResult(value, { id }) {
+  if (typeof value !== "function") return value;
+  const component = value;
+  return props => [
+    { t: `<!--frame:${id}:start-->` },
+    component(createDocumentProjectionProps(props, id)),
+    { t: `<!--frame:${id}:end-->` }
+  ];
+}
+
+/**
  * The props proxy handed to a server component. Every prop resolves to a
  * function (SSR hole resolution invokes child-position functions with no
  * arguments, so one shape serves both uses):
