@@ -15,9 +15,7 @@ import {
   getFlightDataConsumer,
   getHeadersAndBody,
   getServerFunctionMetadata,
-  getServerFunctionsCodec,
   isServerFunction,
-  serializeString,
   withMeta
 } from "./shared.js";
 
@@ -38,8 +36,45 @@ export {
 const config = {
   endpoint: "/_server",
   prepareRequest: undefined,
-  responseHandler: undefined
+  responseHandler: undefined,
+  serializeArgs: undefined
 };
+
+/**
+ * Whether the argument list survives a `JSON.stringify` round trip
+ * faithfully: JSON primitives (finite numbers only), arrays, and plain
+ * objects. Anything else — Dates, Maps, typed arrays, undefined, NaN,
+ * class instances — needs the codec (see `enableRichArguments`).
+ */
+function isJSONSafe(value) {
+  if (value === null) return true;
+  const t = typeof value;
+  if (t === "string" || t === "boolean") return true;
+  if (t === "number") return Number.isFinite(value);
+  if (t !== "object") return false;
+  if (Array.isArray(value)) {
+    for (const v of value) if (!isJSONSafe(v)) return false;
+    return true;
+  }
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return false;
+  for (const k in value) if (!isJSONSafe(value[k])) return false;
+  return true;
+}
+
+function serializeArguments(args) {
+  if (!config.serializeArgs) {
+    throw new Error(
+      "Server function arguments are sent as JSON by default and these " +
+        "arguments are not JSON-serializable. Call enableRichArguments() " +
+        "(from the server-functions rich-args entry) once at startup to " +
+        "send Dates, Maps, Sets, typed arrays, etc. through the codec — or " +
+        "pass a single Blob/FormData/File argument, which has a native " +
+        "HTTP encoding."
+    );
+  }
+  return config.serializeArgs(args);
+}
 
 /**
  * Configures the transport before any server function is called: the
@@ -61,12 +96,14 @@ export function configureServerFunctionsClient({
   endpoint,
   codec,
   prepareRequest,
-  responseHandler
+  responseHandler,
+  serializeArgs
 } = {}) {
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
   if (prepareRequest !== undefined) config.prepareRequest = prepareRequest;
   if (responseHandler !== undefined) config.responseHandler = responseHandler;
+  if (serializeArgs !== undefined) config.serializeArgs = serializeArgs;
 }
 
 let INSTANCE = 0;
@@ -124,14 +161,34 @@ async function initializeResponse(base, id, instance, options, args, meta) {
       );
     }
   }
-  // Everything else goes through the codec
+  // JSON-safe argument lists go as plain JSON — no codec on the wire, and
+  // (because nothing else here references the serializer) no serialize-half
+  // of the codec in the bundle.
+  if (isJSONSafe(args)) {
+    return createRequest(
+      base,
+      id,
+      instance,
+      {
+        ...options,
+        body: JSON.stringify(args),
+        headers: {
+          ...options.headers,
+          "Content-Type": "application/json",
+          [BODY_FORMAT_HEADER]: BodyFormat.Json
+        }
+      },
+      meta
+    );
+  }
+  // Everything else needs the codec, which is opt-in (enableRichArguments).
   return createRequest(
     base,
     id,
     instance,
     {
       ...options,
-      body: await serializeString(args, getServerFunctionsCodec()),
+      body: await serializeArguments(args),
       headers: {
         ...options.headers,
         "Content-Type": "text/plain",
@@ -263,7 +320,10 @@ export function GET(fn) {
   const wrapped = async (...args) => {
     let base = `${config.endpoint}?id=${encodeURIComponent(id)}`;
     if (args.length) {
-      base += `&args=${encodeURIComponent(await serializeString(args, getServerFunctionsCodec()))}`;
+      // The handler's GET path accepts both encodings: plain JSON and the
+      // codec's framed string (distinguished by the `;0x` frame prefix).
+      const encoded = isJSONSafe(args) ? JSON.stringify(args) : await serializeArguments(args);
+      base += `&args=${encodeURIComponent(encoded)}`;
     }
     return fetchServerFunction(base, id, { method: "GET" }, [], metadata);
   };

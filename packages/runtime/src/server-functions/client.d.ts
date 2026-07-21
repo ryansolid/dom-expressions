@@ -81,6 +81,30 @@ export interface ServerFunctionsClientConfig {
    * ```
    */
   prepareRequest?: PrepareRequestHook;
+  /**
+   * Response-side integration seam — the client mirror of the handler's
+   * `transformResult`. `handle(response, ctx)` sees every response before
+   * the transport decodes it; returning anything but undefined resolves the
+   * call with that value. `capture(info)` runs synchronously at the call
+   * site (before any await) and its return arrives as `ctx.context`, so
+   * ambient per-call state (e.g. a reactive owner) survives to response
+   * time. See `createServerComponentHandler` in frame-transport for the
+   * canonical implementation.
+   */
+  responseHandler?: {
+    capture?(info: { id: string; meta: unknown }): unknown;
+    handle(
+      response: Response,
+      ctx: { id: string; meta: unknown; args: unknown[]; context: unknown }
+    ): unknown;
+  };
+  /**
+   * Encoder for argument lists JSON can't carry faithfully. JSON-safe args
+   * always go as plain JSON (no codec in the bundle); anything else throws
+   * unless this is set. Installed by `enableRichArguments()` from the
+   * rich-args entry — set directly only for custom wire encodings.
+   */
+  serializeArgs?(args: unknown[]): string | Promise<string>;
 }
 
 /**

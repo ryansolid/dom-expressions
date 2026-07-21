@@ -214,7 +214,8 @@ async function parseArguments(request, url, instance, codec) {
   }
   if (request.method === "POST" && request.body !== null) {
     const decoded = await extractBody(request.clone(), codec);
-    if (bodyFormat === BodyFormat.Serialized) {
+    // Both argument-array encodings: codec-framed and plain JSON.
+    if (bodyFormat === BodyFormat.Serialized || bodyFormat === BodyFormat.Json) {
       return decoded;
     }
     parsed.push(decoded);

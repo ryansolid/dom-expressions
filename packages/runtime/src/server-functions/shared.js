@@ -223,7 +223,9 @@ export const BodyFormat = {
   Blob: "4",
   File: "5",
   ArrayBuffer: "6",
-  Uint8Array: "7"
+  Uint8Array: "7",
+  /** Plain `JSON.stringify(args)` — the fast path for JSON-safe arguments. */
+  Json: "8"
 };
 
 /**
@@ -304,6 +306,8 @@ export async function extractBody(source, codecOptions) {
   switch (true) {
     case format === BodyFormat.Serialized:
       return await deserializeStream(clone, codecOptions);
+    case format === BodyFormat.Json:
+      return JSON.parse(await clone.text());
     case format === BodyFormat.String:
       return await clone.text();
     case format === BodyFormat.File: {

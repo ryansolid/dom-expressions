@@ -1359,3 +1359,66 @@ describe("prepareRequest", () => {
     }
   });
 });
+
+describe("argument encoding fast path", () => {
+  const requests = [];
+  function connectTransport(options) {
+    const original = globalThis.fetch;
+    globalThis.fetch = (url, init) => {
+      requests.push({ url: String(url), init });
+      return handleServerFunctionRequest(new Request(new URL(url, "http://localhost"), init), options);
+    };
+    return () => {
+      globalThis.fetch = original;
+    };
+  }
+  const provideEvent = (event, run) => run();
+
+  it("JSON-safe args ride as plain JSON — no codec framing on the wire", async () => {
+    registerServerReference("json-args-0", async (a, b) => a.n + b);
+    const callable = createClientReference("json-args-0");
+    const restore = connectTransport({ provideEvent });
+    try {
+      requests.length = 0;
+      await expect(callable({ n: 40 }, 2)).resolves.toBe(42);
+      const { init } = requests[0];
+      expect(init.headers[BODY_FORMAT_HEADER]).toBe(BodyFormat.Json);
+      expect(init.body).toBe('[{"n":40},2]');
+    } finally {
+      restore();
+    }
+  });
+
+  it("GET-declared functions encode JSON-safe args unframed in the url", async () => {
+    serverGET(createServerReference(registerServerReference("json-get-0", async n => n * 2)));
+    const callable = clientGET(createClientReference("json-get-0"));
+    const restore = connectTransport({ provideEvent });
+    try {
+      requests.length = 0;
+      await expect(callable(21)).resolves.toBe(42);
+      const url = new URL(requests[0].url, "http://localhost");
+      expect(url.searchParams.get("args")).toBe("[21]");
+    } finally {
+      restore();
+    }
+  });
+
+  it("non-JSON-safe args throw with guidance until rich arguments are enabled", async () => {
+    registerServerReference("rich-args-0", async d => d instanceof Date && d.getTime());
+    const callable = createClientReference("rich-args-0");
+    const restore = connectTransport({ provideEvent });
+    try {
+      requests.length = 0;
+      await expect(callable(new Date(1234))).rejects.toThrow(/not JSON-serializable/);
+      expect(requests).toHaveLength(0);
+
+      const { enableRichArguments } = await import("../../src/server-functions/rich-args");
+      enableRichArguments();
+      await expect(callable(new Date(1234))).resolves.toBe(1234);
+      expect(requests[0].init.headers[BODY_FORMAT_HEADER]).toBe(BodyFormat.Serialized);
+      expect(requests[0].init.body.startsWith(";0x")).toBe(true);
+    } finally {
+      restore();
+    }
+  });
+});
