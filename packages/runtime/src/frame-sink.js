@@ -319,23 +319,62 @@ export function createDocumentProjectionProps(clientProps, frameId) {
           const slot = clientProps[prop];
           if (typeof slot !== "function") return range(occurrence, undefined);
           const resolved = {};
+          // Usage tracking (dispatch case 3, document face): regions ride as
+          // THUNKS, so SSR hole resolution evaluating one IS the usage
+          // signal. A wrapper that never renders an arg (collapsed by
+          // default) leaves its thunk unevaluated — that content would
+          // vanish from the page, so after the wrapper's render it FLIPS:
+          // serialized once as hydration-data records (the occurrence's args
+          // + the region html, keyed for the adopting frame's store) and the
+          // client mounts it from there when the wrapper finally renders it.
+          const regions = [];
           for (const key of Object.keys(raw)) {
             const value = raw[key];
             if (key !== "$key" && isServerContent(value)) {
-              // Nested server content renders inline inside its region
-              // markers — ids match the chunk producer's derivation so a
-              // later stream addresses the same adopted region.
               const childId = `${frameId}.${occurrence}.${key}`;
-              resolved[key] = [
-                { t: `<!--frame:${childId}:start-->` },
-                value,
-                { t: `<!--frame:${childId}:end-->` }
-              ];
+              const region = { key, childId, value, used: false };
+              regions.push(region);
+              resolved[key] = () => {
+                region.used = true;
+                return [
+                  { t: `<!--frame:${childId}:start-->` },
+                  value,
+                  { t: `<!--frame:${childId}:end-->` }
+                ];
+              };
             } else {
               resolved[key] = value;
             }
           }
-          return scoped(occurrence, () => range(occurrence, slot(resolved)));
+          const out = scoped(occurrence, () => range(occurrence, slot(resolved)));
+          const unused = regions.filter(r => !r.used);
+          if (unused.length && sharedConfig.context) {
+            // Occluded content ships ONCE — as data instead of markup. The
+            // slot record re-arms the occurrence with real args at adoption
+            // (occluded args become region refs); each region's html record
+            // fills the frame store the ref resolves against.
+            const args = {};
+            for (const key of Object.keys(raw)) {
+              const value = raw[key];
+              if (key === "$key") continue;
+              const region = regions.find(r => r.key === key);
+              if (region) args[key] = { $frame: region.childId };
+              else if (!isServerContent(value)) args[key] = value;
+            }
+            sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
+            for (const region of unused) {
+              // Resolve the region's server content to html through the live
+              // render context. Async content inside an occluded region is
+              // out of scope for the flip (needs its own streaming story).
+              const res = sharedConfig.context.resolve(region.value);
+              if (res && res.h && res.h.length) continue;
+              sharedConfig.context.serialize(
+                `sc:region:${region.childId}`,
+                res && res.t ? res.t[0] : String(res ?? "")
+              );
+            }
+          }
+          return out;
         };
         getters.set(prop, fn);
       }
