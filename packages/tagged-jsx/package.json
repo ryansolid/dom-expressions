@@ -1,7 +1,7 @@
 {
   "name": "@dom-expressions/tagged-jsx",
   "description": "A Fine-Grained Rendering Runtime API using Tagged Template Literals",
-  "version": "0.50.0-next.27",
+  "version": "0.50.0-next.28",
   "author": "Daniel Kling",
   "license": "MIT",
   "repository": {

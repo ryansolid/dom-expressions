@@ -1,6 +1,6 @@
 {
   "name": "@dom-expressions/compiler-linux-x64-gnu",
-  "version": "0.50.0-next.27",
+  "version": "0.50.0-next.28",
   "cpu": [
     "x64"
   ],

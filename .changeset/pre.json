@@ -19,6 +19,7 @@
     "asset-registry-inline-styles",
     "auto-install-wasm-compiler",
     "babel-wrapperless-and-style-fixes",
+    "batched-registration-flush",
     "compiler-fragment-component-children",
     "compiler-lazy-refresh-passes",
     "compiler-use-server-directives",
