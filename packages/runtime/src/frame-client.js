@@ -88,7 +88,10 @@ export function chunkToRecords(chunk) {
     case "complete":
       return { ":complete": true };
     case "error":
-      return { ":error": chunk.error };
+      // Keyed errors are segment-scoped (an errored fragment); unkeyed ones
+      // are stream-level. Both surface through the store — `frame.error`
+      // reads the stream-level record.
+      return chunk.key ? { [`seg:${chunk.key}:error`]: chunk.error } : { ":error": chunk.error };
     default:
       return {};
   }

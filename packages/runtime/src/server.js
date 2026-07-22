@@ -568,7 +568,10 @@ export function renderToStream(code, options = {}) {
             } else {
               serializeFragmentAssets(key, tracking.boundaryModules, context);
               const styles = collectStreamStyles(key, tracking, headStyles);
-              sink.fragment(key, value !== undefined ? value : " ", { styles, revealGroup });
+              // The error rides the sink call: the document sink ignores it
+              // (its protocol rejects `<key>_fr` via item.resolve below), but
+              // transport sinks with no resume protocol need the signal.
+              sink.fragment(key, value !== undefined ? value : " ", { styles, revealGroup, error });
               item.resolve(error);
             }
           }

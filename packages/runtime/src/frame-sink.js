@@ -122,6 +122,18 @@ export function createFrameSink(emit, frame) {
         emit(chunk);
       }
       emit({ type: "fragment", id, version, key, html: value });
+      // A fragment that ERRORED still reveals (its html is the fallback /
+      // error template), but the failure is surfaced as a keyed error chunk
+      // — the frame protocol has no `<key>_fr` rejection to ride.
+      if (meta.error) {
+        emit({
+          type: "error",
+          id,
+          version,
+          key,
+          error: { message: String((meta.error && meta.error.message) || meta.error) }
+        });
+      }
       // An eagerly-revealed fragment (no reveal group) carries its own
       // reveal; grouped fragments wait for an explicit reveal() call.
       if (!meta.revealGroup) {

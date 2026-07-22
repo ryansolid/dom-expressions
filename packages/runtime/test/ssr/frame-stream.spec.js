@@ -271,3 +271,31 @@ describe("renderToFrameStream chunk sequences", () => {
     }
   });
 });
+
+describe("errored fragments surface as keyed error chunks", () => {
+  it("an error completion reveals the fallback template AND emits error keyed to the segment", async () => {
+    let fragDone;
+    const chunks = await collect(
+      renderToFrameStream(
+        () => {
+          const ctx = sharedConfig.context;
+          fragDone = ctx.registerFragment("p1");
+          return r.ssr`<div><template id="pl-p1"></template><!--pl-p1--></div>`;
+        },
+        { frame: { id: "fe", version: 1 } }
+      ),
+      c => {
+        if (c.type === "html") setTimeout(() => fragDone("<p>error fallback</p>", new Error("boom")));
+      }
+    );
+    const fragment = chunks.find(c => c.type === "fragment");
+    const error = chunks.find(c => c.type === "error");
+    const reveal = chunks.find(c => c.type === "reveal");
+    expect(fragment).toMatchObject({ key: "p1", html: "<p>error fallback</p>" });
+    expect(error).toMatchObject({ id: "fe", key: "p1", error: { message: "boom" } });
+    expect(reveal).toMatchObject({ keys: ["p1"] });
+    // Consumer mapping: keyed errors are segment records, not stream-level.
+    const { chunkToRecords } = require("../../src/frame-client");
+    expect(chunkToRecords(error)).toEqual({ "seg:p1:error": { message: "boom" } });
+  });
+});
