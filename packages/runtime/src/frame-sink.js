@@ -33,7 +33,34 @@
  * helpers).
  */
 import { createPlugin } from "seroval";
-import { runWithHydrationScope, sharedConfig } from "rxcore";
+import {
+  runWithHydrationScope,
+  sharedConfig,
+  getOwner,
+  runWithOwner,
+  NoHydration,
+  Hydration
+} from "rxcore";
+
+/**
+ * Render server-owned output under NoHydration semantics (mimicking solid's
+ * `<NoHydration>`): elements emit no hydration keys and async values skip
+ * hydration serialization — adopted server content's HTML IS its data, so
+ * per-element keys are pure tax ("hydration:false regions"). Ids are still
+ * CONSUMED (the zone's owner inherits normally), so sibling key sequences
+ * and fragment/Loading ids are untouched. Client positions re-enter through
+ * `Hydration` in the document projection props. Cores without the
+ * components fall back to plain evaluation (keys stay, nothing breaks).
+ */
+function serverOwned(render) {
+  return NoHydration
+    ? NoHydration({
+        get children() {
+          return render();
+        }
+      })
+    : render();
+}
 import { renderToStream } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
 import { createChunk } from "./server-functions/shared.js";
@@ -233,11 +260,15 @@ function frameStream(makeCode, options) {
     const emit = chunk => w.write(chunk);
     const sink = createFrameSink(emit, frame);
     emit({ type: "start", id, version });
+    const code = makeCode(sink, frame);
     try {
       // Frames default to the keyed JSON codec for data records (eval-free
       // nodes; decode with createJSONDataTable). `options.serializer` can
       // override — e.g. createHydrationSerializer for eval-style payloads.
-      renderToStream(makeCode(sink, frame), {
+      // The whole stream render is server-owned: client positions never
+      // render server-side post-load, so nothing in a frame stream carries
+      // hydration keys or async-value hydration records.
+      renderToStream(() => serverOwned(code), {
         serializer: createJSONSerializer,
         ...options,
         sink
@@ -306,9 +337,31 @@ export function createDocumentProjectionProps(clientProps, frameId) {
   // scope and solid's registry claims the server-rendered nodes by key —
   // templates never ship as data (the claim IS the transfer). Key chains
   // derive from the owner id on both sides (getNextChildId), which is why
-  // this is an owner, not a render-context poke.
-  const scoped = (occurrence, render) =>
-    runWithHydrationScope(`sc-${frameId}-${occurrence}-`, render);
+  // this is an owner, not a render-context poke. Inside the serverOwned
+  // (NoHydration) zone this is the `<Hydration id>` re-entry — same owner,
+  // plus re-enabling key emission for the client position's subtree.
+  //
+  // The zone owner is captured HERE (proxy creation happens inside
+  // serverOwned) because a position hole can evaluate later under an
+  // ambient owner outside the zone: template holes re-enter their
+  // registration owner (ssrScope), but a position sitting in a top-level
+  // fragment resolves as an array element at flush time — Hydration would
+  // see "no NoHydration zone" and pass through, leaking ambient-chain keys
+  // onto the wrapper instead of its sc- occurrence namespace.
+  const zoneOwner = getOwner ? getOwner() : null;
+  const scoped = (occurrence, render) => {
+    const id = `sc-${frameId}-${occurrence}-`;
+    const run = () =>
+      Hydration
+        ? Hydration({
+            id,
+            get children() {
+              return render();
+            }
+          })
+        : runWithHydrationScope(id, render);
+    return zoneOwner ? runWithOwner(zoneOwner, run) : run();
+  };
   return new Proxy(Object.create(null), {
     has() {
       return true;
@@ -443,7 +496,7 @@ export function inlineServerComponentResult(value, { id }) {
   const component = value;
   const wrapped = props => [
     { t: `<!--frame:${id}:start-->` },
-    component(createDocumentProjectionProps(props, id)),
+    serverOwned(() => component(createDocumentProjectionProps(props, id))),
     { t: `<!--frame:${id}:end-->` }
   ];
   // Branded so the hydration serializer can write it as a reference (see

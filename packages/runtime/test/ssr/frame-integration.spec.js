@@ -45,7 +45,7 @@ describe("frame stream → client frame runtime", () => {
   });
   afterEach(() => boundary.remove());
 
-  it("parity: a sync component renders identically via document SSR and via frame stream", async () => {
+  it("parity: a sync component renders identically via document SSR and via frame stream (minus hydration keys — streams are server-owned NoHydration zones)", async () => {
     const Comp = () =>
       r.ssrElement(
         "section",
@@ -54,10 +54,14 @@ describe("frame stream → client frame runtime", () => {
         true
       );
     const documentHtml = r.renderToString(Comp);
+    // Document SSR of a bare (non-frame) render keys its elements for
+    // hydration; frame streams never carry `_hk` — post-load content is
+    // adopted, not hydrated, so keys would be pure wire tax.
+    expect(documentHtml).toContain("_hk=");
     const host = createFrameHost();
     createFrame(boundary, { host, id: "f0" });
     await streamInto(renderToFrameStream(Comp, { frame: { id: "f0" } }), host);
-    expect(boundary.innerHTML).toBe(normalize(documentHtml));
+    expect(boundary.innerHTML).toBe(normalize(documentHtml.replace(/ _hk=(?:"[^"]*"|[^ >]+)/g, "")));
   });
 
   it("reveals a produced async fragment through the real consumer", async () => {

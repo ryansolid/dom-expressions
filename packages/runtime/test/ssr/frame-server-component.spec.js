@@ -483,6 +483,50 @@ describe("document-mode inline rendering (t=0)", () => {
       }
     });
   });
+
+  it("server-owned elements carry no hydration keys; client wrappers keep sc- keys (NoHydration/Hydration zones)", done => {
+    const { inlineServerComponentResult } = require("../../src/frame-sink");
+    // Compiled-shape output: ssrElement with needsId emits `_hk` when keys
+    // flow. Server-owned content renders in a NoHydration zone (keys are
+    // pure tax on adopted markup — "hydration:false regions"); the client
+    // wrapper re-enters via Hydration under its sc- occurrence namespace.
+    const serverComponent = props =>
+      r.ssrElement(
+        "article",
+        null,
+        [
+          r.ssrElement("h1", null, "One", true),
+          props.comment({
+            $key: "c1",
+            cid: "c1",
+            children: r.ssrElement("p", null, "alpha", true)
+          })
+        ],
+        true
+      );
+    const Inline = inlineServerComponentResult(serverComponent, { id: "hn/story-0" });
+    const clientProps = {
+      comment: p => r.ssrElement("div", { class: "comment" }, [p.children], true)
+    };
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps)).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        // ssrElement leaves the empty key slot's space behind — the point
+        // is the ABSENCE of `_hk` on every server-owned element.
+        expect(html).toContain("<article >");
+        expect(html).toContain("<h1 >One</h1>");
+        expect(html).toContain("<p >alpha</p>");
+        // Exactly one key in the whole boundary: the wrapper root, in its
+        // occurrence namespace.
+        const keys = html.match(/ _hk=[^ >]+/g) || [];
+        expect(keys).toHaveLength(1);
+        expect(keys[0]).toContain("_hk=sc-hn/story-0-comment#c1-");
+        done();
+      }
+    });
+  });
 });
 
 describe("server-component hydration reference", () => {

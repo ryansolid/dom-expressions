@@ -1351,11 +1351,13 @@ function compatible(a, b) {
 
 function morphAttributes(oldEl, newEl, claim) {
   let reclaim = false;
+  let changed = false;
   const oldAttrs = oldEl.attributes;
   for (let i = oldAttrs.length - 1; i >= 0; i--) {
     const name = oldAttrs[i].name;
     if (!newEl.hasAttribute(name)) {
       oldEl.removeAttribute(name);
+      changed = true;
       reclaim ||= claimedAttr(name);
     }
   }
@@ -1364,14 +1366,18 @@ function morphAttributes(oldEl, newEl, claim) {
     const attr = newAttrs[i];
     if (oldEl.getAttribute(attr.name) !== attr.value) {
       oldEl.setAttribute(attr.name, attr.value);
+      changed = true;
       reclaim ||= claimedAttr(attr.name);
     }
   }
-  // In-place `href`/`action` rewrites bypass the compiled runtime's
-  // setAttribute recheck (the morph writes raw DOM), so mirror it here —
-  // claim consumers must stay fresh across policy-A morphs. Direct (not a
-  // selector sweep): removal transitions must fire too.
-  if (reclaim && claim) claim(oldEl, true);
+  // The morph is the only write path for server-owned elements, and it makes
+  // attributes match server output exactly — including STRIPPING state a
+  // claim consumer applied (aria-current, data-active). So a claimable
+  // element re-claims on ANY attribute change, letting the consumer
+  // reassert; `href`/`action` transitions re-claim even when the element no
+  // longer matches the selector (removal must fire, mirroring compiled
+  // setAttribute). Direct claims, not subtree sweeps.
+  if (claim && (reclaim || (changed && oldEl.matches(CLAIMED_ELEMENTS)))) claim(oldEl, true);
 }
 
 /** Morph `oldNode` in place to match `newNode` (assumed `compatible`). */

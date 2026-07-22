@@ -119,6 +119,28 @@ describe("claims across morphs (policy A)", () => {
     expect(claimed[1]).toBe(boundary.querySelectorAll("a")[1]);
   });
 
+  it("a morph changing NON-claim attributes on a claimable element re-claims it (consumer-applied state was overwritten)", () => {
+    register();
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html('<a href="/one" aria-current="page">x</a>') } });
+    expect(claimed).toHaveLength(1);
+    // Server output never carries consumer state: the morph strips
+    // aria-current — the re-claim lets the consumer reassert it.
+    frame.apply({ version: 2, r: { "": html('<a href="/one" class="hot">x</a>') } });
+    expect(claimed).toHaveLength(2);
+    expect(claimed[1]).toBe(claimed[0]);
+    expect(claimed[1].hasAttribute("aria-current")).toBe(false);
+    expect(claimed[1].getAttribute("class")).toBe("hot");
+  });
+
+  it("attribute changes on non-claimable elements never claim", () => {
+    register();
+    const frame = createFrame(boundary);
+    frame.apply({ version: 1, r: { "": html('<div class="a">x</div>') } });
+    frame.apply({ version: 2, r: { "": html('<div class="b">x</div>') } });
+    expect(claimed).toEqual([]);
+  });
+
   it("removing an href stops future claims only via consumer filtering — the removal itself re-claims", () => {
     register();
     const frame = createFrame(boundary);

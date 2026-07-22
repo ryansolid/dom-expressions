@@ -256,7 +256,14 @@ client boots, it **adopts** that DOM rather than re-rendering it: client
 components claim their already-rendered markup and bind behavior onto it.
 
 This is where the single-copy rule pays off twice: the initial page has no
-hydration data blob for server content (the HTML *is* the data), and
+hydration data blob for server content (the HTML *is* the data) — and no
+per-element hydration keys either: server-owned output renders inside a
+`NoHydration` zone (adopted markup never hydrates element-by-element, so
+`_hk` would be pure tax), with each client position re-entering via
+`Hydration` under its occurrence namespace — those wrapper keys are the
+claim keys, the only ones the page carries. The same zone suppresses
+async-value hydration records, on the page and on every post-load frame
+stream. And
 `<Loading>` boundaries stream on first load exactly as they do on
 navigation. Boot makes **zero requests** — the page itself is the payload:
 each boundary's markers are the record, wrappers claim their
@@ -337,7 +344,11 @@ claims `a[href]`/`form[action]` per element at creation
 (`registerElementClaim` in the client runtime); frame content has no
 compiled creation code, so the frame runtime sweeps every subtree it
 materializes — initial adoption, streamed applies, reveals — and re-claims
-elements whose `href`/`action` a morph rewrites (or removes) in place.
+a claimable element whenever a morph touches ANY of its attributes: the
+morph makes attributes match server output exactly, which strips
+consumer-applied state (`aria-current`, `data-active`), so the re-claim is
+what lets the consumer reassert it (`href`/`action` transitions re-claim
+even on removal).
 Claims fire under the boundary's reactive owner, so a consumer that scopes
 per-element state with `onCleanup` disposes with the boundary. One
 registry, both render paths, no exposed wire machinery: a third-party
