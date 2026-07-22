@@ -363,20 +363,39 @@ export function createDocumentProjectionProps(clientProps, frameId) {
           }
           const out = scoped(occurrence, () => range(occurrence, slot(resolved)));
           const unused = regions.filter(r => !r.used);
-          if (unused.length && sharedConfig.context) {
-            // Occluded content ships ONCE — as data instead of markup. The
-            // slot record re-arms the occurrence with real args at adoption
-            // (occluded args become region refs); each region's html record
-            // fills the frame store the ref resolves against.
+          if (sharedConfig.context) {
+            // Every occurrence re-arms with real args at adoption via a
+            // t=0 slot record — occluded args become region refs, and
+            // primitives ride along UNLESS their (escaped) value already
+            // appears in the occurrence's rendered output: those are
+            // recoverable from the page (reverse-templating's job, not yet
+            // built) and re-sending them would break the single-copy
+            // invariant. Exclusion errs toward the claim: a coincidental
+            // substring match just means that arg reads undefined at t=0.
+            const rendered = renderedHtmlOf(out);
             const args = {};
+            let any = false;
             for (const key of Object.keys(raw)) {
               const value = raw[key];
               if (key === "$key") continue;
               const region = regions.find(r => r.key === key);
-              if (region) args[key] = { $frame: region.childId };
-              else if (!isServerContent(value)) args[key] = value;
+              if (region) {
+                if (!region.used) {
+                  args[key] = { $frame: region.childId };
+                  any = true;
+                }
+                continue;
+              }
+              if (isServerContent(value)) continue;
+              const t = typeof value;
+              if ((t === "string" || t === "number") && rendered !== null) {
+                const needle = t === "string" ? sharedConfig.context.escape(String(value)) : String(value);
+                if (needle !== "" && rendered.includes(needle)) continue;
+              }
+              args[key] = value;
+              any = true;
             }
-            sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
+            if (any) sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
             for (const region of unused) {
               // Resolve the region's server content through the live render
               // context. Sync content serializes directly; async content
@@ -419,6 +438,24 @@ export function inlineServerComponentResult(value, { id }) {
   // ServerComponentPlugin) instead of meeting an unserializable function.
   wrapped[SERVER_COMPONENT] = id;
   return wrapped;
+}
+
+/**
+ * The occurrence's rendered output as html when synchronously available
+ * (`null` when async holes are pending — exclusion then errs toward
+ * including the arg, which is safe: the value was NOT rendered yet).
+ */
+function renderedHtmlOf(out) {
+  try {
+    const res = sharedConfig.context.resolve(out);
+    // Markers stripped: the occurrence/region ids inside comments would
+    // false-positive the recoverability check (e.g. an arg value "c1"
+    // matching its own `proj:comment#c1` marker).
+    if (res && res.t && (!res.h || !res.h.length)) {
+      return res.t[0].replace(/<!--[^>]*-->/g, "");
+    }
+  } catch (e) {}
+  return null;
 }
 
 /**

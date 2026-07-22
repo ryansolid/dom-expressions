@@ -224,6 +224,7 @@ class FrameImpl {
   #slotCleanups = new Map();
   #slotArgs = new Map();
   #slotRegions = new Map();
+  #slotResolvedRefs = new Map();
   #slotNodes = new Map();
   #processedAssets = new Set();
   #disposed = false;
@@ -474,6 +475,15 @@ class FrameImpl {
         if (!record) this.#discoverRegions(occurrence, start);
         this.#bindRegions(occurrence);
       } else if (record !== this.#slotArgs.get(occurrence)) {
+        // A re-sent record differing only in {$ref} identity may carry the
+        // SAME values (tables rotate per response, so the store-write
+        // dedupe stays conservative). Value-compare the new refs against
+        // the cached resolutions: all equal -> adopt the record without
+        // re-calling, occurrence state intact.
+        if (this.#refArgsUnchanged(occurrence, record)) {
+          this.#slotArgs.set(occurrence, record);
+          continue;
+        }
         // Args changed (incl. late args): re-call this occurrence only,
         // reusing its cached server-content regions. Same contract: an
         // undefined return keeps the current interior.
@@ -536,6 +546,11 @@ class FrameImpl {
   #unmountSlot(key) {
     this.#mountedSlots.delete(key);
     this.#slotNodes.delete(key);
+    // Long-session hygiene: an occurrence gone from the stream releases its
+    // record and caches — keyed churn must not accumulate forever.
+    this.#slotArgs.delete(key);
+    this.#slotResolvedRefs.delete(key);
+    delete this.#store[`slot:${key}`];
     this.#runSlotCleanups(key);
     const regions = this.#slotRegions.get(key);
     if (regions) {
@@ -574,8 +589,15 @@ class FrameImpl {
       const value = args[key];
       if (isDataRef(value)) {
         // The frame's id rides along so multi-stream hosts can route the
-        // ref to the right response-scoped data table.
-        props[key] = host ? host.resolve(value, this.#options.id) : undefined;
+        // ref to the right response-scoped data table. The resolution is
+        // cached per occurrence so a later stream's re-sent ref can be
+        // VALUE-compared (tables rotate per response, so ref identity
+        // alone can't prove equivalence).
+        const resolved = host ? host.resolve(value, this.#options.id) : undefined;
+        let cache = this.#slotResolvedRefs.get(slotKey);
+        if (!cache) this.#slotResolvedRefs.set(slotKey, (cache = {}));
+        cache[key] = resolved;
+        props[key] = resolved;
       } else if (isFrameRef(value)) {
         const fragment = document.createDocumentFragment();
         let entry = regions.get(value.$frame);
@@ -671,6 +693,41 @@ class FrameImpl {
         }
       }
     }
+  }
+
+  /**
+   * Whether a re-sent slot record's args are VALUE-equal to the mounted
+   * occurrence's: primitives and {$frame} ids structurally, {$ref}s by
+   * resolving the incoming ref (current table) against the cached
+   * resolution from mount. Unresolvable or non-JSON-comparable values fall
+   * back to "changed" (re-call) — the conservative default.
+   */
+  #refArgsUnchanged(occurrence, record) {
+    const old = this.#slotArgs.get(occurrence);
+    if (!old || old.kind !== "slot" || !record || record.kind !== "slot") return false;
+    const a = old.args || {};
+    const b = record.args || {};
+    const ka = Object.keys(a);
+    if (ka.length !== Object.keys(b).length) return false;
+    const cache = this.#slotResolvedRefs.get(occurrence);
+    for (const key of ka) {
+      const va = a[key];
+      const vb = b[key];
+      if (va === vb) continue;
+      if (!va || !vb || typeof va !== "object" || typeof vb !== "object") return false;
+      if (typeof va.$frame === "string" && va.$frame === vb.$frame) continue;
+      if (typeof va.$ref === "string" && typeof vb.$ref === "string" && cache && key in cache) {
+        const host = this.#options.host;
+        const next = host ? host.resolve(vb, this.#options.id) : undefined;
+        try {
+          if (JSON.stringify(next) === JSON.stringify(cache[key])) continue;
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    }
+    return true;
   }
 
   #bindRegions(slotKey) {

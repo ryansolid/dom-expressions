@@ -43,13 +43,16 @@ const SCENARIOS = {
   // (client-owned stream versions, per-version segment-state reset,
   // same-tag morph lookahead); 5889 after the initial-load round (the
   // intercept seam, document-boundary adoption, hydration-claim scoping,
-  // marker-driven region discovery for nested occurrences) — deliberate
-  // feature weight, re-guarded at 6000.
+  // marker-driven region discovery for nested occurrences); 6108 after
+  // the case-3/hardening round (occlusion flip with async hole-retry,
+  // wire bookkeeping deny-list, $ref value-equality re-call guard,
+  // unmount store hygiene, claim-safe t=0 args records) — deliberate
+  // feature weight, re-guarded at 6250.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6000
+    6250
   ]
 };
 

@@ -529,7 +529,10 @@ describe("document-mode occlusion flip (case 3)", () => {
     const serverComponent = props =>
       r.ssr`<article>${[
         props.comment({ $key: "c1", cid: "c1", children: r.ssr`<p>occluded-text</p>` }),
-        props.comment({ $key: "c2", cid: "c2", children: r.ssr`<p>visible-text</p>` })
+        // `title` duplicates rendered content — it must be EXCLUDED from the
+        // t=0 record (recoverable from the page; re-sending would break the
+        // single-copy invariant). `cid` is not rendered anywhere: it ships.
+        props.comment({ $key: "c2", cid: "c2", title: "visible-text", children: r.ssr`<p>visible-text</p>` })
       ]}</article>`;
     const Inline = inlineServerComponentResult(serverComponent, { id: "occ-0" });
     // The client wrapper renders c2's children but SKIPS c1's (collapsed by
@@ -551,9 +554,14 @@ describe("document-mode occlusion flip (case 3)", () => {
         expect(html).toContain('"sc:region:occ-0.comment#c1.children"');
         expect(html).toContain('"sc:slot:occ-0:comment#c1"');
         // The record carries the region REF for the occluded arg + the
-        // primitive; the rendered occurrence stays record-free.
+        // primitive.
         expect(html).toContain('$frame:"occ-0.comment#c1.children"');
-        expect(html).not.toContain('"sc:slot:occ-0:comment#c2"');
+        // Rendered occurrences also re-arm at t=0 — but ONLY with values not
+        // recoverable from the page: `cid` ships, `title` (rendered into the
+        // content) is excluded, so nothing appears twice.
+        expect(html).toContain('"sc:slot:occ-0:comment#c2"');
+        expect(html).toContain('cid:"c2"');
+        expect(html).not.toContain("title:");
         // The visible region renders inline as markup, once.
         expect(html.split("visible-text").length).toBe(2);
         expect(html).toContain("frame:occ-0.comment#c2.children:start");
