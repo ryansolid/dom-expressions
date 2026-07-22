@@ -84,6 +84,14 @@ export function registerElementClaim(handler: (element: Element) => void): () =>
  * Emitted by the compiler at element creation; idempotent by contract.
  */
 export function claimElement<T extends Element>(node: T): T;
+/**
+ * Sweep-claim every navigation-relevant element (`a[href]`, `form[action]`)
+ * in `root` — the subtree equivalent of the per-element `claimElement`
+ * compiled output emits, for content that becomes live DOM without compiled
+ * creation code (frame streams, adopted SSR ranges). Dormant without a
+ * registered consumer.
+ */
+export function claimElementTree<T extends Node>(root: T): T;
 export function className(node: Element, value: JSX.ClassValue, prev?: JSX.ClassValue): void;
 export function setProperty(node: Element, name: string, value: any): void;
 export function setStyleProperty(node: Element, name: string, value: any): void;

@@ -332,13 +332,29 @@ into the same id — state inside the boundary survives because of invariant
 prefetching compose on top; none of them need to know how frames work
 inside.
 
+**Link state rides the element-claim contract.** Compiled client output
+claims `a[href]`/`form[action]` per element at creation
+(`registerElementClaim` in the client runtime); frame content has no
+compiled creation code, so the frame runtime sweeps every subtree it
+materializes — initial adoption, streamed applies, reveals — and re-claims
+elements whose `href`/`action` a morph rewrites (or removes) in place.
+Claims fire under the boundary's reactive owner, so a consumer that scopes
+per-element state with `onCleanup` disposes with the boundary. One
+registry, both render paths, no exposed wire machinery: a third-party
+router that already consumes compiled claims gets server-component anchors
+for free, active-state correct across morphs. Claims are emitted
+indiscriminately per the attribute contract — filtering (external links,
+`download`, `target`, base paths) belongs to the consumer — and the whole
+mechanism is dormant (one property read per apply) without a registered
+consumer.
+
 ## What it costs
 
 Measured, min+gzip, CI-guarded: the whole client machinery — store,
-streaming, slot model, transport, the stable-component policy — is
-**~5.5 KB** for an app already using server functions (~11.5 KB standalone,
-dominated by the shared serializer).
-The DOM reconciler inside it is 0.7 KB — smaller than micromorph. An app
+streaming, slot model, transport, the stable-component policy, the
+element-claim sweeps routers consume — is **~6.5 KB** for an app already
+using server functions (standalone adds the shared serializer on top).
+The DOM reconciler inside it is 0.86 KB — smaller than micromorph. An app
 that imports none of this pays **zero bytes**; that's enforced by the same
 CI guard. For scale: the frame runtime costs about as much as Solid's core
 renderer itself.

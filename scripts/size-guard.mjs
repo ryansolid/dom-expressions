@@ -47,12 +47,15 @@ const SCENARIOS = {
   // the case-3/hardening round (occlusion flip with async hole-retry,
   // wire bookkeeping deny-list, $ref value-equality re-call guard,
   // unmount store hygiene, claim-safe t=0 args records) — deliberate
-  // feature weight, re-guarded at 6250.
+  // feature weight, re-guarded at 6250; 6460 after element-claim sweeps
+  // (the router link-state contract: seam-read registry, sweep at every
+  // materialization site, morph attribute re-claims, ownerScope) —
+  // deliberate feature weight, re-guarded at 6600.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6250
+    6600
   ]
 };
 

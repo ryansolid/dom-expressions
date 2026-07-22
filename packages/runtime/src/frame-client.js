@@ -34,6 +34,42 @@ const ELEMENT_NODE = 1;
 const TEXT_NODE = 3;
 const COMMENT_NODE = 8;
 
+// === Element claims for server content ===
+//
+// Compiled client output claims navigation-relevant elements per element at
+// creation (client.js `claimElement`); frame content becomes live DOM from
+// serialized HTML with no compiled creation code, so this module sweeps each
+// subtree it materializes — and re-claims elements whose `href`/`action` the
+// morph rewrites in place — against the SAME consumer registry, read through
+// the registered symbol client.js mirrors it on (importless in both
+// directions, like the FRAME brand below). Sweeps claim indiscriminately per
+// the attribute contract; filtering belongs to the consumer. Dormant costs
+// one property read per apply — the selectors never run without a consumer.
+const CLAIM_SEAM = Symbol.for("dom-expressions.element-claims");
+const CLAIMED_ELEMENTS = "a[href], form[action]";
+
+/** The live consumer list (undefined when dormant — the one check sweeps pay). */
+function claimHandlers() {
+  const handlers = globalThis[CLAIM_SEAM];
+  return handlers !== undefined && handlers.length !== 0 ? handlers : undefined;
+}
+
+/** Fire every handler on one element unconditionally. */
+function claimNode(handlers, el) {
+  for (let i = 0; i < handlers.length; i++) handlers[i](el);
+}
+
+const claimedAttr = name => name === "href" || name === "action";
+
+/** Sweep `root` (element or fragment) and its claimable interior. */
+function claimTree(handlers, root) {
+  const isElement = root.nodeType === ELEMENT_NODE;
+  if (!isElement && root.nodeType !== 11 /* DOCUMENT_FRAGMENT_NODE */) return;
+  if (isElement && root.matches(CLAIMED_ELEMENTS)) claimNode(handlers, root);
+  const found = root.querySelectorAll(CLAIMED_ELEMENTS);
+  for (let i = 0; i < found.length; i++) claimNode(handlers, found[i]);
+}
+
 /** Fragment placeholder start: `<template id="pl-KEY">` (content = fallback). */
 const placeholderId = name => `pl-${name}`;
 
@@ -237,6 +273,22 @@ class FrameImpl {
     if (!this.#disposed) this.#flush();
   };
 
+  // Element-claim sweep for one materialized/morph-touched subtree, run
+  // under `ownerScope` when the creator provided one — claim consumers
+  // register per-element cleanup against the reactive owner current at claim
+  // time, and the boundary's owner is what bounds this frame's content.
+  // `direct` claims one element unconditionally — the morph's attribute
+  // recheck, which must fire on `href`/`action` REMOVAL too (the element no
+  // longer matches the sweep selector), mirroring compiled setAttribute.
+  // Stable identity so it threads into the morph without allocation.
+  #claimTree = (node, direct) => {
+    const handlers = claimHandlers();
+    if (!handlers) return;
+    const run = () => (direct ? claimNode(handlers, node) : claimTree(handlers, node));
+    const scope = this.#options.ownerScope;
+    scope ? scope(run) : run();
+  };
+
   constructor(element, start, end, options = {}) {
     this.#element = element;
     this.#start = start;
@@ -245,7 +297,13 @@ class FrameImpl {
     this.#slots = options.slots;
     // Adopt: the boundary already holds server-rendered content, so the first
     // root apply morphs against it rather than materializing from scratch.
-    if (options.adopt) this.#hasContent = true;
+    // That content never ran compiled creation code, so sweep its claimable
+    // elements now — before registration can flush a buffered morph over it
+    // (in-place `href`/`action` rewrites re-claim on their own).
+    if (options.adopt) {
+      this.#hasContent = true;
+      this.#claimContent();
+    }
     // Register last, after all fields are initialized: registration may flush
     // buffered chunks straight into `apply`.
     if (options.host && options.id !== undefined) {
@@ -751,6 +809,9 @@ class FrameImpl {
           // empty. Claim scoping threads the root boundary's id down.
           adopt: entry.adopt,
           claimScope: this.#options.claimScope ?? this.#options.id,
+          // Element-claim sweeps in the region bind cleanup to the same
+          // boundary owner as the root's.
+          ownerScope: this.#options.ownerScope,
           resolveSlot: prop => this.#resolveSlot(prop),
           resolveSlotRecord: occurrence => this.#resolveSlotRecord(occurrence)
         });
@@ -817,10 +878,16 @@ class FrameImpl {
     const parent = this.#parent();
     if (!this.#hasContent) {
       this.#clearContent();
+      // Claim before insertion empties the fragment — matching compiled
+      // output, which claims at creation, pre-insert.
+      this.#claimTree(fragment);
       parent.insertBefore(fragment, this.#end);
       this.#hasContent = true;
     } else {
-      reconcileChildren(parent, fragment, this.#start, this.#end);
+      // Dormancy hoisted to once per apply: a null claim keeps the reconcile
+      // inner loop at a register compare per node instead of a seam read.
+      const claim = claimHandlers() ? this.#claimTree : null;
+      reconcileChildren(parent, fragment, this.#start, this.#end, claim);
     }
   }
 
@@ -832,6 +899,16 @@ class FrameImpl {
       const next = n.nextSibling;
       parent.removeChild(n);
       n = next;
+    }
+  }
+
+  /** Sweep-claim the frame's existing content (the adoption path). */
+  #claimContent() {
+    if (!claimHandlers()) return;
+    let n = this.#firstContent();
+    while (n && n !== this.#end) {
+      this.#claimTree(n);
+      n = n.nextSibling;
     }
   }
 
@@ -887,7 +964,9 @@ class FrameImpl {
       parent.removeChild(n);
       n = next;
     }
-    parent.insertBefore(this.#materialize(content), closing);
+    const materialized = this.#materialize(content);
+    this.#claimTree(materialized);
+    parent.insertBefore(materialized, closing);
     tpl.remove();
     closing && closing.remove();
     this.#revealed.add(name);
@@ -903,7 +982,9 @@ class FrameImpl {
     if (!tpl) return false;
     const closing = rangeClose(tpl, placeholderId(name));
     if (!closing) return false;
-    closing.parentNode.insertBefore(tpl.content.cloneNode(true), closing);
+    const fallback = tpl.content.cloneNode(true);
+    this.#claimTree(fallback);
+    closing.parentNode.insertBefore(fallback, closing);
     return true;
   }
 
@@ -1268,24 +1349,36 @@ function compatible(a, b) {
   return a.nodeType === TEXT_NODE || a.nodeType === COMMENT_NODE;
 }
 
-function morphAttributes(oldEl, newEl) {
+function morphAttributes(oldEl, newEl, claim) {
+  let reclaim = false;
   const oldAttrs = oldEl.attributes;
   for (let i = oldAttrs.length - 1; i >= 0; i--) {
     const name = oldAttrs[i].name;
-    if (!newEl.hasAttribute(name)) oldEl.removeAttribute(name);
+    if (!newEl.hasAttribute(name)) {
+      oldEl.removeAttribute(name);
+      reclaim ||= claimedAttr(name);
+    }
   }
   const newAttrs = newEl.attributes;
   for (let i = 0; i < newAttrs.length; i++) {
     const attr = newAttrs[i];
-    if (oldEl.getAttribute(attr.name) !== attr.value) oldEl.setAttribute(attr.name, attr.value);
+    if (oldEl.getAttribute(attr.name) !== attr.value) {
+      oldEl.setAttribute(attr.name, attr.value);
+      reclaim ||= claimedAttr(attr.name);
+    }
   }
+  // In-place `href`/`action` rewrites bypass the compiled runtime's
+  // setAttribute recheck (the morph writes raw DOM), so mirror it here —
+  // claim consumers must stay fresh across policy-A morphs. Direct (not a
+  // selector sweep): removal transitions must fire too.
+  if (reclaim && claim) claim(oldEl, true);
 }
 
 /** Morph `oldNode` in place to match `newNode` (assumed `compatible`). */
-function morphNode(oldNode, newNode) {
+function morphNode(oldNode, newNode, claim) {
   if (oldNode.nodeType === ELEMENT_NODE) {
-    morphAttributes(oldNode, newNode);
-    reconcileChildren(oldNode, newNode);
+    morphAttributes(oldNode, newNode, claim);
+    reconcileChildren(oldNode, newNode, null, null, claim);
   } else if (oldNode.data !== newNode.data) {
     oldNode.data = newNode.data;
   }
@@ -1335,7 +1428,7 @@ function moveRangeBefore(parent, start, id, ref) {
  * Move an incoming projection range from the source into `parent` before
  * `ref`, returning the source cursor just past the range's end marker.
  */
-function adoptRange(parent, start, id, ref) {
+function adoptRange(parent, start, id, ref, claim) {
   const end = projectionEnd(id);
   let n = start;
   let after = null;
@@ -1343,6 +1436,10 @@ function adoptRange(parent, start, id, ref) {
     const next = n.nextSibling;
     const isEnd = n.nodeType === COMMENT_NODE && n.data === end;
     parent.insertBefore(n, ref);
+    // Fresh server-sent placeholder content: claim indiscriminately (the
+    // slot mount that later fills the range claims its own output through
+    // compiled creation).
+    if (claim) claim(n);
     if (isEnd) {
       after = next;
       break;
@@ -1362,7 +1459,7 @@ function adoptRange(parent, start, id, ref) {
  * this is how a range-boundary frame reconciles between its markers without
  * touching the client content around them.
  */
-function reconcileChildren(parent, source, boundStart = null, boundEnd = null) {
+function reconcileChildren(parent, source, boundStart = null, boundEnd = null, claim = null) {
   let oldChild = boundStart ? boundStart.nextSibling : parent.firstChild;
   let newChild = source.firstChild;
 
@@ -1387,7 +1484,7 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null) {
           newChild = skipRange(newChild, pid);
         } else {
           // New projection: adopt the server-sent placeholder range as-is.
-          newChild = adoptRange(parent, newChild, pid, old ?? boundEnd);
+          newChild = adoptRange(parent, newChild, pid, old ?? boundEnd, claim);
         }
       }
       continue;
@@ -1395,6 +1492,7 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null) {
 
     if (!old) {
       parent.insertBefore(newChild, boundEnd);
+      if (claim) claim(newChild);
       newChild = nextNew;
       continue;
     }
@@ -1402,11 +1500,12 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null) {
       // Old projection anchor: flow new server content in front of it without
       // disturbing the client-owned range.
       parent.insertBefore(newChild, old);
+      if (claim) claim(newChild);
       newChild = nextNew;
       continue;
     }
     if (compatible(old, newChild)) {
-      morphNode(old, newChild);
+      morphNode(old, newChild, claim);
       oldChild = old.nextSibling;
       newChild = nextNew;
       continue;
@@ -1424,7 +1523,7 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null) {
       }
       if (ahead && ahead !== boundEnd) {
         parent.insertBefore(ahead, old);
-        morphNode(ahead, newChild);
+        morphNode(ahead, newChild, claim);
         newChild = nextNew;
         continue;
       }
@@ -1432,6 +1531,7 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null) {
     // No match anywhere: place the new node and leave the old one for later
     // matching or removal.
     parent.insertBefore(newChild, old);
+    if (claim) claim(newChild);
     newChild = nextNew;
   }
 

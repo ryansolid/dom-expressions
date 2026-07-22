@@ -1511,6 +1511,9 @@ function noopCleanup() {}
 export function claimElement(node) {
   return node;
 }
+export function claimElementTree(root) {
+  return root;
+}
 
 // client-only APIs
 

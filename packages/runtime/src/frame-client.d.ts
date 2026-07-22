@@ -173,6 +173,15 @@ export interface FrameOptions {
   adopt?: boolean;
   /** Called after each apply flush (tests/telemetry). */
   onApply?(info: { version: number; reason: "materialize" | "morph" | "reveal" }): void;
+  /**
+   * Wraps element-claim sweeps (`a[href]`/`form[action]` in materialized
+   * server content — and only those) so claim consumers register their
+   * per-element cleanup against the boundary's reactive owner, e.g.
+   * `fn => runWithOwner(owner, fn)`. Nested region frames inherit it.
+   * Without it, sweeps run under whatever owner is current (none, for
+   * streamed chunks).
+   */
+  ownerScope?<T>(fn: () => T): T;
 }
 
 /** A frame rendering into an element boundary. */

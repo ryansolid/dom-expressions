@@ -212,6 +212,8 @@ export function setAttributeNS(node: Element, namespace: string, name: string, v
 export function registerElementClaim(handler: (element: Element) => void): () => void;
 /** Server no-op: returns `node` unchanged. Claims never fire during SSR. */
 export function claimElement<T extends Element>(node: T): T;
+/** Server no-op: returns `root` unchanged. Claims never fire during SSR. */
+export function claimElementTree<T extends Node>(root: T): T;
 
 /** @deprecated not supported on the server side */
 export function addEvent(node: Element, name: string, handler: () => void, delegate: boolean): void;

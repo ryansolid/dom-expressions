@@ -202,16 +202,54 @@ export function setProperty(node, name, value) {
 // their own reactive system (e.g. onCleanup), not through this hook.
 let claimHandlers = null;
 
+// The live handler list is mirrored onto a registered symbol so the frame
+// runtime — deliberately importless in both directions, like the FRAME
+// brand — sweeps serialized server content against the SAME registry, even
+// when the two land in separately bundled copies of this module.
+const CLAIM_SEAM = Symbol.for("dom-expressions.element-claims");
+
 /**
  * Register a consumer for compiler-emitted element claims. Returns an
  * unregister function.
  */
 export function registerElementClaim(handler) {
-  (claimHandlers || (claimHandlers = [])).push(handler);
+  (claimHandlers || (claimHandlers = globalThis[CLAIM_SEAM] = [])).push(handler);
   return () => {
     const index = claimHandlers.indexOf(handler);
     index > -1 && claimHandlers.splice(index, 1);
   };
+}
+
+// Elements the claim contract covers, and the subtree sweep over them.
+// Serialized server content (frame streams, adopted SSR ranges) becomes
+// live DOM without per-element compiled creation code, so its producer
+// claims whole subtrees at materialization instead. Claims fire
+// indiscriminately per the attribute contract — filtering (external links,
+// `download`, `target`, base paths) belongs to the consumer.
+const CLAIMED_ELEMENTS = "a[href], form[action]";
+
+/**
+ * Sweep-claim every navigation-relevant element in `root` (an element or a
+ * DocumentFragment) — the subtree equivalent of the per-element
+ * `claimElement` compiled output emits. Dormant like every claim hook:
+ * without a registered consumer this is one check and the selector never
+ * runs.
+ */
+export function claimElementTree(root) {
+  // Read through the seam (not the module-local) so a separately bundled
+  // copy of this function still sees the registry consumers write to.
+  const handlers = globalThis[CLAIM_SEAM];
+  if (handlers === undefined || handlers.length === 0) return root;
+  const isElement = root.nodeType === 1;
+  if (!isElement && root.nodeType !== 11) return root;
+  if (isElement && root.matches(CLAIMED_ELEMENTS)) {
+    for (let i = 0; i < handlers.length; i++) handlers[i](root);
+  }
+  const found = root.querySelectorAll(CLAIMED_ELEMENTS);
+  for (let i = 0; i < found.length; i++) {
+    for (let j = 0; j < handlers.length; j++) handlers[j](found[i]);
+  }
+  return root;
 }
 
 /**
