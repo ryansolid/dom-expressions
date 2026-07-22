@@ -37,8 +37,8 @@ records. It should prove that keyed frame-store writes, partial/streamed updates
 segment reveal readiness, stale-version discard, and a minimal server-owned DOM
 morph path work before deciding whether the client frame runtime belongs in
 `dom-expressions` core, above it as a separate package/framework layer, or only
-needs small `dom-expressions` hooks. Projection reconciliation is not the first
-full feature, but protected projection marker/range preservation should be
+needs small `dom-expressions` hooks. Slot reconciliation is not the first
+full feature, but protected slot marker/range preservation should be
 exercised early so the morph path does not choose an incompatible shape. It
 should not integrate with `insert`, SSR production, serialization, or public APIs
 yet.
@@ -50,7 +50,7 @@ that
 - renders JSX into frame chunks (HTML, serialization records, assets,
   completion, errors) without the document/script envelope,
 - applies those chunks to a boundary, ignoring stale versions, while
-  preserving and rematching client-owned projection ranges, and
+  preserving and rematching client-owned slot ranges, and
 - folds the same logical stream into initial SSR, an API/server-function
   response, or a same-process test?
 
@@ -73,13 +73,13 @@ That fails for the server-components use case. The invariant we need is:
 
 ```txt
 server-owned frame changes
-client-owned projections survive / rematch
+client-owned slot ranges survive / rematch
 ```
 
 This is why a frame is not an island, HTMX target, Datastar fragment, or a
 generic morph target. Islands are server-rendered once and then client-owned.
 Hypermedia can patch later but generally does not understand framework-owned
-projection ranges. Server frames need **ownership-aware patching**.
+slot ranges. Server frames need **ownership-aware patching**.
 
 ### North-star scenario: HN comments with client-only collapse
 
@@ -132,7 +132,7 @@ client reconciler.
   SSR renderer and streaming machinery but emits structured frame chunks instead
   of a document with inline `<script>` tasks.
 - A native client **consumer** that applies chunks to a boundary, ignores stale
-  versions, and preserves/rematches client-owned projection ranges. The explicit
+  versions, and preserves/rematches client-owned slot ranges. The explicit
   `consumeFrameStream` / `reconcileFrame` form is a test harness; the production
   form is `insert`-adjacent (see [Producer / Consumer API](#producer--consumer-api)).
 - One logical `ServerFrameStream` that is **transport-agnostic**: folded into
@@ -146,8 +146,8 @@ client reconciler.
 - Full React Flight compatibility.
 - Solid authoring semantics (`"use server"`, `dynamic`) and compiler transforms.
 - Network/closure serialization of server functions.
-- Client-side projection slotting as the *first* milestone (the format reserves
-  room for it; see [Projection Model](#projection-model)).
+- Client-side slot slotting as the *first* milestone (the format reserves
+  room for it; see [Slot Model](#slot-model)).
 - A renderer-neutral runtime. v1 is **DOM-only**. Renderer neutrality is
   aspirational and must not gate v1 (see [Renderer Neutrality](#renderer-neutrality)).
 
@@ -160,7 +160,7 @@ client reconciler.
 >   resets, so client state survives navigation), partial/streamed writes;
 > - async segment reveal with readiness buffering, including inside nested
 >   regions;
-> - a zero-allocation, range-aware, projection-preserving reconciler (benchmarked
+> - a zero-allocation, range-aware, slot-preserving reconciler (benchmarked
 >   smallest and morphdom-class — see [Frame Reconciliation](#frame-reconciliation));
 > - the full [client fill model](#the-client-fill-model-implemented): direct-insert
 >   and render-function slots as one callback primitive, a data + server-content
@@ -215,28 +215,28 @@ This spike should test:
 - readiness buffering when reveal arrives before content or placeholder
 - stale-version discard
 - minimal morph/patch for repeated server-owned frame updates
-- protected projection marker/range preservation during morph, without full
-  projection lifecycle callbacks yet
+- protected slot marker/range preservation during morph, without full
+  slot lifecycle callbacks yet
 - early perf direction for replace vs morph vs segment reveal
 - payload records shaped so later `html`, `block`, and `ops` modes remain possible
 
 It should not test `insert`, SSR production, Seroval, network envelopes,
-projection preservation, final package ownership, or any in-repo integration yet.
+slot preservation, final package ownership, or any in-repo integration yet.
 If the mechanism cannot be proven without importing `dom-expressions`, that is a
 finding and the spike should fail rather than quietly leaning on runtime
 internals.
 
 The morph path should be intentionally narrow at first: text changes, attribute
 changes, simple child insertion/removal, segment marker preservation, and
-projection marker/range preservation. It is not the final projection-aware
+slot marker/range preservation. It is not the final slot-aware
 reconciler: mount/move/dispose callbacks can wait. Its purpose is to decide early
 whether the frame-store approach has a plausible performance path beyond
-wholesale replacement without blocking later projection ownership.
+wholesale replacement without blocking later slot ownership.
 
 ## Producer / Consumer API
 
 ```ts
-const stream = renderToFrameStream(() => factory(projectionProps), options);
+const stream = renderToFrameStream(() => factory(slotProps), options);
 consumeFrameStream(boundary, stream);
 ```
 
@@ -249,7 +249,7 @@ consumeFrameStream(boundary, stream);
 
 - **Consumer**: accepts the chunk format, applies shell/segment/complete/error
   chunks to a boundary, ignores stale versions, and preserves/rematches
-  projection ranges. The value inserted through DOM APIs can use a tight private
+  slot ranges. The value inserted through DOM APIs can use a tight private
   brand because `dom-expressions` controls both ends.
 
 - **Envelope adapters**: the same logical chunks are consumed with different
@@ -335,7 +335,7 @@ reconciles a single resident value. A frame stream is push-based — chunks arri
 asynchronously. These reconcile as follows:
 
 - The branded frame value carries the stream subscription **and** the
-  projection-aware reconciler, not a static snapshot.
+  slot-aware reconciler, not a static snapshot.
 - `insert` runs once to establish a stable range and owner, then delegates. It
   does **not** re-run per chunk; the owner is stable and the reconciler patches
   inside the range as writes land.
@@ -350,7 +350,7 @@ them relative to a frame boundary/version rather than relying on global template
 ids and inline scripts.
 
 The schema should make existing implicit identities explicit: serialized data
-ids, fragment ids, reveal groups, asset boundary ids, and (later) slot/projection
+ids, fragment ids, reveal groups, asset boundary ids, and (later) slot/slot
 ids. Treat all of these as first-class structured record identities.
 
 The first schema can be a readable object shape for tests; it must leave room for
@@ -401,7 +401,7 @@ type FrameChunk =
 
 The exact shape can change. The requirement is that each async chunk carries
 enough location information for the consumer to place it relative to the active
-frame, and that projection/slot chunks follow the same rule.
+frame, and that slot/slot chunks follow the same rule.
 
 > **Implemented (spike).** The two forms are kept as distinct types with one
 > translation point, which keeps the wire schema free to change without
@@ -437,17 +437,17 @@ The format uses two deliberately distinct identity schemes:
 
 - **String keys** for server-owned content — segments, data, assets
   (`seg:p1`, `data:user`, `seg:p1:assets`). The producer assigns these.
-- **Positional index** for projections/slots (`index: 0`). Projections match by
+- **Positional index** for slots/slots (`index: 0`). Slots match by
   occurrence index to mirror unkeyed reconciliation (see
-  [Projection Model](#projection-model)).
+  [Slot Model](#slot-model)).
 
 These coexist on purpose: server-owned records are keyed by the producer, while
-client-owned projections are positional so state follows position on update.
+client-owned slot ranges are positional so state follows position on update.
 
 ### Versioning and stale chunks
 
 Every invocation carries a boundary `id` and a `version` (request id).
-Projection indexes are stable within an invocation. When a newer invocation
+Slot indexes are stable within an invocation. When a newer invocation
 starts, late chunks from older invocations must be ignored.
 
 > **Implemented — version is a stale-guard, not a reset (policy A).** A version
@@ -536,7 +536,7 @@ frame.r["seg:profile"] = {
 ## Frame Host, Addressing, and Recursive Composition
 
 A single response streams chunks for a whole tree of frames — a server frame
-whose client projection hosts another server frame, and so on. Those chunks
+whose client slot hosts another server frame, and so on. Those chunks
 arrive as one flat, `id`-addressed stream. A **frame host** owns the id → frame
 registry and routes each chunk to its frame:
 
@@ -596,7 +596,7 @@ This is the key reason the frame consumer must **not** reuse or generalize the
 existing `$HY` / `$df*` document helpers. Those helpers are optimized for
 initial-SSR bootstrap size and must stay small and specialized. The bundled
 frame consumer can afford richer data structures, stale-version checks, and
-projection reconciliation.
+slot reconciliation.
 
 ## Streaming and SSR
 
@@ -633,42 +633,42 @@ completion. The two clients intentionally **diverge**: document streaming keeps
 tiny inline helpers; frame streaming uses normal bundled `dom-expressions`
 client code.
 
-During initial SSR, projection output may already be present in the HTML:
+During initial SSR, slot output may already be present in the HTML:
 
 ```html
-<!--proj:1:start-->
+<!--slot:1:start-->
 <button>Click</button>
-<!--proj:1:end-->
+<!--slot:1:end-->
 ```
 
-Hydration gathers that range as client-owned projection `1`. Later frame updates
+Hydration gathers that range as client-owned slot `1`. Later frame updates
 move or preserve the hydrated range instead of remounting it. Because server
 frames may live in the same files as normal hydratable JSX, this must use local
 `noHydrate` semantics rather than a file-wide `hydratable: false` compile mode.
 
-## Projection Model
+## Slot Model
 
-In this RFC, "projection reconciliation" does **not** mean reconciling the
-inside of a client projection. Projection internals remain owned by whatever
+In this RFC, "slot reconciliation" does **not** mean reconciling the
+inside of a client slot. Slot internals remain owned by whatever
 client code created them. The frame runtime's responsibility is only the boundary
 contract:
 
-- identify projection marker/range positions in server-owned HTML,
-- match those ranges to existing client-owned projections by occurrence index,
+- identify slot marker/range positions in server-owned HTML,
+- match those ranges to existing client-owned slot ranges by occurrence index,
 - preserve or move the projected range when surrounding server-owned DOM changes,
-- create a placeholder for a projection that client code should mount later, and
-- notify/dispose only at the range boundary when a projection disappears.
+- create a placeholder for a slot that client code should mount later, and
+- notify/dispose only at the range boundary when a slot disappears.
 
-The frame reconciler must not diff inside a projection range.
+The frame reconciler must not diff inside a slot range.
 
-### Slots and projections are one primitive
+### Slots and slots are one primitive
 
 A **slot** (a hole a server template declares for client content) and a
-**projection** (a client-owned range the reconciler protects and rematches) are
-the same thing viewed from opposite ends — one range, `<!--proj:<key>:start-->
-… <!--proj:<key>:end-->`. The server declares the hole; the client fills the
+**slot** (a client-owned range the reconciler protects and rematches) are
+the same thing viewed from opposite ends — one range, `<!--slot:<key>:start-->
+… <!--slot:<key>:end-->`. The server declares the hole; the client fills the
 interior once; the reconciler thereafter treats it as an opaque protected range.
-The spike confirmed this unification: the "slot" fill path and the "projection"
+The spike confirmed this unification: the "slot" fill path and the "slot"
 preserve/rematch path are the same marker range and the same reconciler rule,
 not two mechanisms. Discovery of a frame's own slots is scoped so it never
 descends into a range interior, which is exactly why nested frames' slots are
@@ -732,7 +732,7 @@ preserves server regions and client-owned DOM ranges, not closure state.
 
 ### Identity
 
-Use **projection occurrence index** as the base identity. A factory like:
+Use **slot occurrence index** as the base identity. A factory like:
 
 ```tsx
 return props => (
@@ -744,7 +744,7 @@ return props => (
 );
 ```
 
-produces projection records equivalent to:
+produces slot records equivalent to:
 
 ```ts
 [
@@ -754,14 +754,14 @@ produces projection records equivalent to:
 ]
 ```
 
-On update, old projection `1` rematches new projection `1`. If server output
-changes projection order, state follows position — consistent with Solid's
-unkeyed behavior. An explicit keyed projection helper can be considered later but
+On update, old slot `1` rematches new slot `1`. If server output
+changes slot order, state follows position — consistent with Solid's
+unkeyed behavior. An explicit keyed slot helper can be considered later but
 must not be required for the base model.
 
 > Because server-controlled reordering silently migrates client-owned state, the
 > reconciler's first-class test cases must include a conditional/reordering
-> projection, not only text/attribute patching.
+> slot, not only text/attribute patching.
 
 > **Implemented.** The occurrence id in the marker *is* the identity, so the id
 > scheme the producer chooses selects the behavior: index-style ids
@@ -778,8 +778,8 @@ must not be required for the base model.
 return props => <div>{props.children(data)}</div>;
 ```
 
-The server is explicitly sending `data` to a local projection. When the factory
-calls `props.children(data)`, the protocol emits a projection record with
+The server is explicitly sending `data` to a local slot. When the factory
+calls `props.children(data)`, the protocol emits a slot record with
 serialized `data` arguments. This makes server-to-client values visible at the
 callsite. If a nested server frame depends on that value, that is a real
 dependency; if the same inputs are available from route/search params or
@@ -800,10 +800,10 @@ That stays out of scope. Server frames have a narrower opportunity:
 
 - Data used only inside server-owned frame rendering becomes HTML and is **not**
   serialized.
-- Data passed into client projections/render props **must** be serialized.
-- Repeated projection args should be deduped through frame-store references.
+- Data passed into client slots/render props **must** be serialized.
+- Repeated slot args should be deduped through frame-store references.
 - The hard case is data that is **both** rendered into server HTML **and** sent
-  to a client projection.
+  to a client slot.
 
 Baseline behavior may accept duplication for the hard case, but the protocol
 leaves room for better approaches:
@@ -818,55 +818,55 @@ frame.r["slot:0"] = {
 ```
 
 Avoid HTML reversal as the primary strategy. HTML is a lossy representation of
-typed data and must not become the source of truth for reconstructing projection
+typed data and must not become the source of truth for reconstructing slot
 values.
 
-### Projection usage tracking and the streaming-occlusion case
+### Slot usage tracking and the streaming-occlusion case
 
-Getter-backed projection props let the server track usage:
+Getter-backed slot props let the server track usage:
 
 ```txt
-projection prop getter read on server   -> server rendered it -> HTML is the representation -> skip serialization
-projection prop getter not read         -> server did not render it -> serialize for client render
+slot prop getter read on server   -> server rendered it -> HTML is the representation -> skip serialization
+slot prop getter not read         -> server did not render it -> serialize for client render
 ```
 
-The representation is exclusive: a projection read during server render is
-streamed as HTML and adopted by the client; a projection not read is serialized
+The representation is exclusive: a slot read during server render is
+streamed as HTML and adopted by the client; a slot not read is serialized
 and rendered on the client.
 
 Streaming destabilizes the "not read" case only in specific **occluded** cases.
-A projection may be unaccessed at shell flush but accessed later when an async
+A slot may be unaccessed at shell flush but accessed later when an async
 segment resumes:
 
 ```txt
-shell render does not read projection
+shell render does not read slot
 shell flushes
-later LoadingBoundary segment reads projection
+later LoadingBoundary segment reads slot
 ```
 
-If the runtime serialized the projection at shell flush and later also streamed
-rendered projection HTML, it would duplicate. This is rare. To preserve the
+If the runtime serialized the slot at shell flush and later also streamed
+rendered slot HTML, it would duplicate. This is rare. To preserve the
 no-double-serialization invariant, this case needs an explicit, locked policy:
 
 - Scope usage tracking to the segment being flushed.
-- Once a representation is chosen for a projection in a segment, do not emit the
-  other representation for that same projection instance.
-- If a projection is serialized before the server can prove it will be read
+- Once a representation is chosen for a slot in a segment, do not emit the
+  other representation for that same slot instance.
+- If a slot is serialized before the server can prove it will be read
   later, that decision is locked: later server renders must not also stream final
-  projection markup for that instance; they emit a placeholder/marker and let the
-  client-rendered projection own that slot.
-- If a projection's server usage cannot be known before the relevant flush
-  boundary, prefer CSR for that projection instance.
+  slot markup for that instance; they emit a placeholder/marker and let the
+  client-rendered slot own that slot.
+- If a slot's server usage cannot be known before the relevant flush
+  boundary, prefer CSR for that slot instance.
 
 In short:
 
 ```txt
 sync / known server read         -> stream HTML and adopt
 known unread                     -> serialize and client render
-async / uncertain before flush   -> serialize once, client render, suppress later server projection markup
+async / uncertain before flush   -> serialize once, client render, suppress later server slot markup
 ```
 
-This is a rare per-projection escape hatch, not a global CSR fallback.
+This is a rare per-slot escape hatch, not a global CSR fallback.
 
 > **Open risk.** This invariant is the main value over plain islands/hypermedia.
 > Whether the "uncertain before flush" escape hatch is rare or common in real
@@ -876,16 +876,16 @@ This is a rare per-projection escape hatch, not a global CSR fallback.
 
 > **Proven (executable model, `src/double-data.ts`).** A flush-ordered policy
 > engine with a guard that *throws on any double emission* resolves a
-> representation per projection; a passing run is a proof the no-double invariant
-> holds for that scenario, across 200-projection mixed runs. The key refinement:
-> a projection **forwarded** into a pending segment (the render can prove at
+> representation per slot; a passing run is a proof the no-double invariant
+> holds for that scenario, across 200-slot mixed runs. The key refinement:
+> a slot **forwarded** into a pending segment (the render can prove at
 > shell flush that it is consumed later) is **deferred** — it streams HTML if
 > read there, serializes if not, with no double and no occlusion. Only a
 > **conditional** read (data-dependent, unknowable at shell flush) hits the
 > escape hatch: serialize once at shell, suppress the later server HTML. So the
-> escape hatch is confined to conditional-async projection reads, not "any read
+> escape hatch is confined to conditional-async slot reads, not "any read
 > after flush." This bounds open question 2: its real-world frequency reduces to
-> how often a projection is *conditionally* (not statically) read inside an async
+> how often a slot is *conditionally* (not statically) read inside an async
 > segment — a narrow, characterizable case — rather than threatening the
 > invariant broadly.
 
@@ -896,34 +896,34 @@ Generic morphers (e.g. micromorph) infer identity from DOM shape, ids, keys, and
 heuristics. Server frames have stronger invariants:
 
 - Server-owned DOM can be patched or replaced.
-- Client-owned projection ranges are explicit.
-- Projection identity is positional/indexed by default.
-- Hydration can gather projection ranges up front.
+- Client-owned slot ranges are explicit.
+- Slot identity is positional/indexed by default.
+- Hydration can gather slot ranges up front.
 - The boundary scope is known.
-- The runtime owns projection insertion, disposal, delegation, and owner
+- The runtime owns slot insertion, disposal, delegation, and owner
   lifetimes.
 
 Target API:
 
 ```ts
 reconcileFrame(boundary, nextFragment, {
-  getProjection(index) {},
-  mountProjection(index, marker) {},
-  moveProjection(index, marker) {},
-  unmountProjection(index) {}
+  getSlot(index) {},
+  mountSlot(index, marker) {},
+  moveSlot(index, marker) {},
+  unmountSlot(index) {}
 });
 ```
 
 The reconciler updates server text, elements, attributes, and child order while
-skipping projection interiors. On a matching projection marker it moves or
-preserves the existing projected range; on a disappearing projection it clears or
+skipping slot interiors. On a matching slot marker it moves or
+preserves the existing projected range; on a disappearing slot it clears or
 disposes through the owning runtime callback — without destroying unrelated
 client owners, events, refs, or local state.
 
 Use micromorph as a reference/benchmark, not the architecture. The reconciler can
-be simpler and more correct than generic morphing because projection markers are
+be simpler and more correct than generic morphing because slot markers are
 explicit, boundaries are scoped, and server-owned DOM is separate from
-client-owned projection ranges.
+client-owned slot ranges.
 
 ### Correctness invariant: never detach a client-owned range
 
@@ -953,7 +953,7 @@ Two consequences:
   place *around* immovable client anchors.
 - **Pure insertion/removal of server siblings is safe.** Inserting or removing a
   server-owned sibling next to a client range does not detach the range, so the
-  common "server text/markup churn around stable projections" case preserves
+  common "server text/markup churn around stable slots" case preserves
   client state for free. Only a genuine *reorder* of a client range forces a
   move.
 
@@ -965,7 +965,7 @@ The reorder case is the one place a client range must physically move, and only
 but Safari has no implementation and no shipped timeline, and it has blocked
 Baseline since late 2025. So v1 correctness must hold on plain
 `insertBefore`/`removeChild`. This is a strong argument to keep **positional
-projection identity** as the v1 default (the Nth range stays the Nth node, so no
+slot identity** as the v1 default (the Nth range stays the Nth node, so no
 client range is ever moved) and to treat any keyed-reorder helper as an opt-in
 that documents its degradation and uses `moveBefore` only as a feature-detected
 fast path, with a focus save/restore fallback (imperfect: recovers focus + caret,
@@ -975,8 +975,8 @@ not IME/media/animation) elsewhere.
 
 A prototype compared this reconciler against the popular general-purpose
 morphers on identical inputs in Chromium (2000 server rows; the client-anchor
-case interleaves 20 client `<input>`s inside projection ranges and the server
-update carries *empty* projection markers):
+case interleaves 20 client `<input>`s inside slot ranges and the server
+update carries *empty* slot markers):
 
 | library | size (min+gz) | server diff (1 of 2000) | client-anchor case | client kept | focus |
 | --- | --- | --- | --- | --- | --- |
@@ -991,15 +991,15 @@ workloads.</small>
 
 The decisive column is correctness, not speed. Every general-purpose morpher
 faithfully diffs the live DOM toward the server target — and because the frame
-server update carries *empty* projection markers (the client owns that DOM; the
+server update carries *empty* slot markers (the client owns that DOM; the
 server never re-sends it), each morpher **deletes the client-owned content and
 blows away focus**. Making them correct requires per-node
 `onBeforeNodeDiscarded` / `beforeNodeMorphed` callbacks that re-implement
-projection-range protection — i.e. rebuilding this reconciler on top of theirs,
+slot-range protection — i.e. rebuilding this reconciler on top of theirs,
 and still shipping their bytes. Meanwhile a purpose-built two-cursor reconciler
-that treats projection ranges as opaque protected units is the smallest of the
+that treats slot ranges as opaque protected units is the smallest of the
 set, is morphdom-class on raw server diffing, and is the fastest *and only
-correct* option on the projection-preserving case. Conclusion: do not adopt a
+correct* option on the slot-preserving case. Conclusion: do not adopt a
 generic morpher; keep the specialized reconciler.
 
 ## Example Chunk Shapes
@@ -1060,7 +1060,7 @@ passive data.
 ]
 ```
 
-### 5. Reserved projection slot
+### 5. Reserved slot slot
 
 Likely not in the first implementation; the format leaves room for it.
 
@@ -1133,7 +1133,7 @@ merge metadata -> placement/control records
 ```
 
 But Datastar's selector/merge model is insufficient alone: dom-expressions must
-preserve and rematch runtime-owned projection ranges, hydration ranges, owners,
+preserve and rematch runtime-owned slot ranges, hydration ranges, owners,
 and eventual `insert` semantics.
 
 ### Mikado / proxied DOM
@@ -1149,7 +1149,7 @@ template+data stream vs. DOM op stream. HTML chunks are the DOM v1 target;
 For the later Solid integration, do not model `use server` component factories as
 closure serialization. Captured server state is consumed while rendering the
 frame on the server. The wire format carries frame chunks, rendered HTML or
-renderer operations, projection markers, and explicit projection arguments. The
+renderer operations, slot markers, and explicit slot arguments. The
 client receives a **proxy component**, not the returned server closure.
 
 ## Layered Ownership
@@ -1157,7 +1157,7 @@ client receives a **proxy component**, not the returned server closure.
 Ownership of the client frame runtime is intentionally undecided until the first
 standalone spike proves the mechanism. There are three plausible outcomes:
 
-- The frame runtime belongs in `dom-expressions` because projection/hydration
+- The frame runtime belongs in `dom-expressions` because slot/hydration
   ownership forces it down into the DOM renderer.
 - The frame runtime belongs above `dom-expressions` as a separate package or
   framework layer, with `dom-expressions` only providing small hooks.
@@ -1165,19 +1165,19 @@ standalone spike proves the mechanism. There are three plausible outcomes:
   added to `dom-expressions`.
 
 - **`dom-expressions` server**: DOM SSR frame rendering — JSX-to-HTML fragments,
-  escaping, async frame chunks, projection marker emission, local `noHydrate`
+  escaping, async frame chunks, slot marker emission, local `noHydrate`
   ownership, asset/module tracking, `registerFragment`-style streaming. Exposes
   frame output independent of transport envelope.
 - **`dom-expressions` client**: DOM frame reconciliation — parsing/materializing
-  server HTML, diffing server-owned nodes, preserving/rematching projection
+  server HTML, diffing server-owned nodes, preserving/rematching slot
   ranges, coordinating with hydration/event/insert semantics.
 - **SolidStart / server functions** (later): `"use server"` transformation,
   routing, preload/query integration, transport envelopes, cache keys,
   invalidation, deployment.
 - **Solid runtime** (later): `dynamic`, async memo/component semantics,
-  owner/disposal, execution of local projections/render props.
+  owner/disposal, execution of local slots/render props.
 - **Future renderer adapters**: renderer-native frame materialization and
-  sentinel/projection movement once the protocol is stable.
+  sentinel/slot movement once the protocol is stable.
 
 ## Proposed Resolution
 
@@ -1192,15 +1192,15 @@ Adopt a native `dom-expressions` frame stream:
 - A shared Seroval/chunk-framing substrate centralized in `dom-expressions` and
   exposed via `solid-js/web`.
 - HTML payload chunks as the DOM v1 target, with `template` / `block` / `ops` and
-  projection/slot records reserved as extension points.
+  slot/slot records reserved as extension points.
 
-Defer client-side projection slotting, double-data dedup, the Solid integration
+Defer client-side slot slotting, double-data dedup, the Solid integration
 layer, compiler boundary analysis, and non-DOM renderers — but reserve schema
 space for each.
 
 ## Open Questions
 
-1. Is positional projection identity sufficient, or is a keyed projection helper
+1. Is positional slot identity sufficient, or is a keyed slot helper
    needed in v1 for common reordering cases? *Partly resolved:* the occurrence id
    in the marker is the identity, so both are supported by the id scheme the
    producer chooses (index-style ids + shifted args = positional; stable ids =
@@ -1209,14 +1209,14 @@ space for each.
    media preserved everywhere), while a keyed reorder physically moves a range and
    loses that state wherever `moveBefore` is unavailable (see open question 7).
    Which should be the default authoring model remains open.
-2. Is the "uncertain before flush" projection escape hatch rare in real Solid
+2. Is the "uncertain before flush" slot escape hatch rare in real Solid
    Suspense usage, or common enough to undermine the no-double-serialize
    invariant? *Bounded by proof:* an executable policy model
    (`src/double-data.ts`) shows the no-double invariant holds and that the escape
-   hatch is confined to *conditional* async reads — a projection statically
+   hatch is confined to *conditional* async reads — a slot statically
    forwarded into a pending segment defers cleanly (HTML or serialize) with no
    occlusion. So the question reduces to the frequency of conditional (not
-   statically forwarded) projection reads inside async segments, which needs real
+   statically forwarded) slot reads inside async segments, which needs real
    Solid Suspense usage to measure but is a much narrower target than "any read
    after flush."
 3. Can a clean `FrameSink` seam actually be extracted from the current

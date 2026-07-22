@@ -69,6 +69,20 @@ export interface ServerComponentHandlerOptions<C = unknown> {
    * client-owned stream counter the chunks will be stamped with.
    */
   onStream?(frameId: string, version: number, response: Response): void;
+  /**
+   * Document-SSR adoption: given a boundary id the page already carries
+   * (server-rendered between `frame:<id>` markers), return the component
+   * that adopts that range — or `undefined` to stream normally. Consulted
+   * once per boundary, before any fetch.
+   */
+  documentComponent?(frameId: string): C | undefined;
+  /**
+   * Answer a call SYNCHRONOUSLY before any request is made (t = 0 local
+   * answers — e.g. a boundary the document already carries). Returning a
+   * non-undefined value resolves the call with it; a hydrating consumer
+   * never observes a pending beat.
+   */
+  intercept?(info: { id: string; meta: unknown; args: unknown[] }): C | undefined;
 }
 
 /**
@@ -86,5 +100,6 @@ export function createServerComponentHandler<C>(
   options: ServerComponentHandlerOptions<C>
 ): {
   capture?(info: { id: string; meta: unknown }): unknown;
+  intercept?(info: { id: string; meta: unknown; args: unknown[] }): C | undefined;
   handle(response: Response, ctx: { id: string; meta: unknown; args: unknown[]; context: unknown }): C | undefined;
 };

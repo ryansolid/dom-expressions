@@ -137,3 +137,15 @@ export function serializeJSON(value: unknown, options: JSONSerializeOptions): ()
  * settles the async values referenced inside it.
  */
 export function createJSONDeserializer(options?: JSONCodecOptions): <T>(node: SerovalNode) => T;
+
+/**
+ * A resident, response-scoped decode table over the keyed JSON codec: apply
+ * each frame `data` chunk with `apply`, resolve `{ $ref }` slot args with
+ * `resolve`. The frames client host wires one per response
+ * (`applyData: c => table.apply(c)`).
+ */
+export interface JSONDataTable {
+  apply(chunk: { key?: string; node?: unknown; initial?: boolean }): void;
+  resolve<T = unknown>(ref: { $ref: string }): T;
+}
+export function createJSONDataTable(options?: JSONCodecOptions): JSONDataTable;

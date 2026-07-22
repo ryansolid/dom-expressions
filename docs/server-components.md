@@ -110,7 +110,7 @@ entity through reorders, refetches, and navigations.
 
 Two constraints, both by design:
 
-- `$key` means something **only on projection calls**. On a DOM element it's
+- `$key` means something **only on slot calls**. On a DOM element it's
   just an attribute (server elements have no identity to name).
 - Keyed occurrences must be **siblings** for reorders to follow the key —
   don't wrap each call site in its own server element; let the *client*

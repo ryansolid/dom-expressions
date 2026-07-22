@@ -13,7 +13,7 @@
  *     dispose(), never a version bump)
  *   - async fragment placeholder ranges + reveal readiness buffering
  *   - a zero-allocation server-owned morph that preserves protected
- *     projection ranges and fragment placeholders
+ *     slot ranges and fragment placeholders
  *   - the slot model: direct-insert and render-function slots as one callback
  *     primitive, iteration by occurrence id, re-call on args change, slot
  *     resolution threaded down through nested frames
@@ -73,9 +73,9 @@ function claimTree(handlers, root) {
 /** Fragment placeholder start: `<template id="pl-KEY">` (content = fallback). */
 const placeholderId = name => `pl-${name}`;
 
-const PROJECTION_START = /^proj:(.+):start$/;
-const PROJECTION_END = /^proj:(.+):end$/;
-const projectionEnd = id => `proj:${id}:end`;
+const SLOT_START = /^slot:(.+):start$/;
+const SLOT_END = /^slot:(.+):end$/;
+const slotEnd = id => `slot:${id}:end`;
 
 /**
  * Map a wire chunk onto resident-store record writes. `html` is the root,
@@ -580,7 +580,7 @@ class FrameImpl {
       frame: this.#options.claimScope ?? this.#options.id,
       key: occurrence,
       onCleanup: fn => cleanups.push(fn),
-      existing: start ? rangeInterior(start, projectionEnd(occurrence)) : []
+      existing: start ? rangeInterior(start, slotEnd(occurrence)) : []
     };
     const props =
       record && record.kind === "slot" ? this.#resolveArgs(occurrence, record.args) : {};
@@ -593,7 +593,7 @@ class FrameImpl {
 
   /** Replace the nodes between a slot range's start marker and its end marker. */
   #replaceRange(key, start, nodes) {
-    const end = projectionEnd(key);
+    const end = slotEnd(key);
     const parent = start.parentNode;
     let n = start.nextSibling;
     while (n && !(n.nodeType === COMMENT_NODE && n.data === end)) {
@@ -711,7 +711,7 @@ class FrameImpl {
     // comments and element subtrees alike), then a depth stack pairs the
     // OUTERMOST frame ranges.
     const doc = start.ownerDocument;
-    const endData = projectionEnd(slotKey);
+    const endData = slotEnd(slotKey);
     const comments = [];
     let n = start.nextSibling;
     while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
@@ -824,7 +824,7 @@ class FrameImpl {
     let n = this.#firstContent();
     const end = this.#end;
     while (n && n !== end) {
-      const id = projectionStartId(n);
+      const id = slotStartId(n);
       if (id !== null) {
         if (!found.has(id)) found.set(id, n);
         n = afterRange(n, id);
@@ -1213,14 +1213,14 @@ function findPlaceholder(root, id) {
 }
 
 /**
- * Collect this frame's own slot ranges (`proj:<key>:start`) into `out`, keyed
+ * Collect this frame's own slot ranges (`slot:<key>:start`) into `out`, keyed
  * by slot id. Descends through server-owned elements but never into a range's
  * interior, so slots belonging to nested frames / client content are ignored.
  */
 function collectSlots(root, out) {
   let n = root.firstChild;
   while (n) {
-    const id = projectionStartId(n);
+    const id = slotStartId(n);
     if (id !== null) {
       if (!out.has(id)) out.set(id, n);
       n = afterRange(n, id);
@@ -1318,29 +1318,29 @@ function findComment(root, data) {
 //
 // A zero-allocation, two-cursor server-owned DOM patch path: text/attribute
 // updates, child insertion/removal, and preservation of two protected marker
-// kinds — fragment placeholder ranges and projection ranges. It walks the
+// kinds — fragment placeholder ranges and slot ranges. It walks the
 // live children and the freshly parsed source in lockstep instead of building
 // intermediate token/result arrays, so the common "server churn around client
 // anchors" case stays competitive with hand-written morphers.
 //
-// Projection ranges are opaque protected units: their interior is never
+// Slot ranges are opaque protected units: their interior is never
 // diffed, and a range already in the right position is never touched — which
 // is what preserves focus/selection/media inside it. Placeholder templates
 // morph as ordinary elements (their fallback lives in .content, which child
 // reconciliation never descends into).
 
-/** If `node` is a `proj:<id>:start` comment, return its id; else `null`. */
-function projectionStartId(node) {
+/** If `node` is a `slot:<id>:start` comment, return its id; else `null`. */
+function slotStartId(node) {
   if (node.nodeType !== COMMENT_NODE) return null;
-  const m = PROJECTION_START.exec(node.data);
+  const m = SLOT_START.exec(node.data);
   return m ? m[1] : null;
 }
 
-/** Whether `node` is any projection marker (start or end). */
-function isProjectionMarker(node) {
+/** Whether `node` is any slot marker (start or end). */
+function isSlotMarker(node) {
   if (node.nodeType !== COMMENT_NODE) return false;
   const data = node.data;
-  return PROJECTION_START.test(data) || PROJECTION_END.test(data);
+  return SLOT_START.test(data) || SLOT_END.test(data);
 }
 
 function compatible(a, b) {
@@ -1390,9 +1390,9 @@ function morphNode(oldNode, newNode, claim) {
   }
 }
 
-/** The sibling immediately after the `proj:<id>:end` marker for `start`. */
+/** The sibling immediately after the `slot:<id>:end` marker for `start`. */
 function afterRange(start, id) {
-  const end = projectionEnd(id);
+  const end = slotEnd(id);
   let n = start.nextSibling;
   while (n) {
     if (n.nodeType === COMMENT_NODE && n.data === end) return n.nextSibling;
@@ -1401,14 +1401,14 @@ function afterRange(start, id) {
   return null;
 }
 
-/** The sibling after the `proj:<id>:end` marker in the incoming source. */
+/** The sibling after the `slot:<id>:end` marker in the incoming source. */
 function skipRange(start, id) {
   return afterRange(start, id);
 }
 
-/** Find a `proj:<id>:start` comment among siblings in `[from, bound)`. */
+/** Find a `slot:<id>:start` comment among siblings in `[from, bound)`. */
 function findRangeStart(from, id, bound) {
-  const target = `proj:${id}:start`;
+  const target = `slot:${id}:start`;
   let n = from;
   while (n && n !== bound) {
     if (n.nodeType === COMMENT_NODE && n.data === target) return n;
@@ -1417,9 +1417,9 @@ function findRangeStart(from, id, bound) {
   return null;
 }
 
-/** Move the range `[start .. proj:<id>:end]` to before `ref` within `parent`. */
+/** Move the range `[start .. slot:<id>:end]` to before `ref` within `parent`. */
 function moveRangeBefore(parent, start, id, ref) {
-  const end = projectionEnd(id);
+  const end = slotEnd(id);
   let n = start;
   while (n) {
     const next = n.nextSibling;
@@ -1431,11 +1431,11 @@ function moveRangeBefore(parent, start, id, ref) {
 }
 
 /**
- * Move an incoming projection range from the source into `parent` before
+ * Move an incoming slot range from the source into `parent` before
  * `ref`, returning the source cursor just past the range's end marker.
  */
 function adoptRange(parent, start, id, ref, claim) {
-  const end = projectionEnd(id);
+  const end = slotEnd(id);
   let n = start;
   let after = null;
   while (n) {
@@ -1471,13 +1471,13 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
 
   while (newChild) {
     const nextNew = newChild.nextSibling;
-    const pid = projectionStartId(newChild);
+    const pid = slotStartId(newChild);
     // Treat reaching the upper bound as "no more old nodes".
     const old = oldChild === boundEnd ? null : oldChild;
 
     if (pid !== null) {
-      if (old && projectionStartId(old) === pid) {
-        // Same projection already here: preserve its live interior untouched
+      if (old && slotStartId(old) === pid) {
+        // Same slot already here: preserve its live interior untouched
         // (this is what keeps focus/selection/media alive) and skip both
         // ranges.
         oldChild = afterRange(old, pid);
@@ -1489,7 +1489,7 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
           moveRangeBefore(parent, existing, pid, old ?? boundEnd);
           newChild = skipRange(newChild, pid);
         } else {
-          // New projection: adopt the server-sent placeholder range as-is.
+          // New slot: adopt the server-sent placeholder range as-is.
           newChild = adoptRange(parent, newChild, pid, old ?? boundEnd, claim);
         }
       }
@@ -1502,8 +1502,8 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
       newChild = nextNew;
       continue;
     }
-    if (isProjectionMarker(old)) {
-      // Old projection anchor: flow new server content in front of it without
+    if (isSlotMarker(old)) {
+      // Old slot anchor: flow new server content in front of it without
       // disturbing the client-owned range.
       parent.insertBefore(newChild, old);
       if (claim) claim(newChild);
@@ -1520,11 +1520,11 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
     // content churn between versions (a placeholder where revealed content
     // was) shifts positions, and recreating a later match would destroy the
     // client-owned interiors it carries. Relocate it instead (skipping over
-    // projection-range interiors, which belong to the client).
+    // slot-range interiors, which belong to the client).
     if (newChild.nodeType === 1) {
       let ahead = old.nextSibling;
       while (ahead && ahead !== boundEnd && !compatible(ahead, newChild)) {
-        const aheadPid = projectionStartId(ahead);
+        const aheadPid = slotStartId(ahead);
         ahead = aheadPid !== null ? afterRange(ahead, aheadPid) : ahead.nextSibling;
       }
       if (ahead && ahead !== boundEnd) {

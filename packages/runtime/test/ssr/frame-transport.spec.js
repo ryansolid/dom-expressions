@@ -61,7 +61,7 @@ describe("frameTransformResult", () => {
     const applied = await applyFrameResponse(response, host);
     expect(applied).toBe("story#0");
     expect(boundary.innerHTML).toBe(
-      "<div><h1>S</h1><!--proj:children:start--><b></b><!--proj:children:end--></div>"
+      "<div><h1>S</h1><!--slot:children:start--><b></b><!--slot:children:end--></div>"
     );
     boundary.remove();
   });

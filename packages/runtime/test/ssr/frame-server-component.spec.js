@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 // The server-component convention, producer half: renderServerComponent
-// renders a `props => JSX` function with a projection props proxy — prop
+// renders a `props => JSX` function with a slot props proxy — prop
 // reads become marker ranges the client fills, render-prop calls become
 // occurrence-keyed slot chunks with codec-serialized args. Consumed by the
 // real client runtime end to end.
@@ -37,7 +37,7 @@ function createTableHost(slots) {
   return { host, table, slots };
 }
 
-describe("renderServerComponent (projection emission)", () => {
+describe("renderServerComponent (slot emission)", () => {
   let boundary;
   beforeEach(() => {
     boundary = document.createElement("div");
@@ -50,7 +50,7 @@ describe("renderServerComponent (projection emission)", () => {
     const chunks = await renderServerComponent(ServerComp, { frame: { id: "f0" } });
     const html = chunks.find(c => c.type === "html").html;
     expect(html).toBe(
-      "<section><h1>Story</h1><!--proj:children:start--><!--proj:children:end--></section>"
+      "<section><h1>Story</h1><!--slot:children:start--><!--slot:children:end--></section>"
     );
     // Direct insert: position only — no slot chunk, nothing serialized.
     expect(chunks.filter(c => c.type === "slot")).toEqual([]);
@@ -65,7 +65,7 @@ describe("renderServerComponent (projection emission)", () => {
     createFrame(boundary, { host, id: "f1", slots: { children: () => el } });
     await streamInto(renderServerComponent(ServerComp, { frame: { id: "f1" } }), host);
     expect(boundary.innerHTML).toBe(
-      "<div><p>server</p><!--proj:children:start--><button>client</button><!--proj:children:end--></div>"
+      "<div><p>server</p><!--slot:children:start--><button>client</button><!--slot:children:end--></div>"
     );
     expect(boundary.querySelector("button")).toBe(el);
   });
@@ -81,8 +81,8 @@ describe("renderServerComponent (projection emission)", () => {
     expect(slots[0].args).toEqual({ label: "a", meta: { $ref: "arg:item#0:meta" } });
     expect(slots[1].args).toEqual({ label: "b", meta: { $ref: "arg:item#1:meta" } });
     const html = chunks.find(c => c.type === "html").html;
-    expect(html).toContain("<!--proj:item#0:start--><!--proj:item#0:end-->");
-    expect(html).toContain("<!--proj:item#1:start--><!--proj:item#1:end-->");
+    expect(html).toContain("<!--slot:item#0:start--><!--slot:item#0:end-->");
+    expect(html).toContain("<!--slot:item#1:start--><!--slot:item#1:end-->");
     // The refs decode through the data table.
     const table = createJSONDataTable();
     for (const c of chunks.filter(x => x.type === "data")) table.apply(c);
@@ -245,8 +245,8 @@ describe("renderServerComponent (projection emission)", () => {
     ]);
     // The shell chunk specifically — region chunks are html-typed too.
     const html = chunks.find(c => c.type === "html" && c.id === "k").html;
-    expect(html).toContain("<!--proj:comment#a1:start-->");
-    expect(html).toContain("<!--proj:comment#b2:start-->");
+    expect(html).toContain("<!--slot:comment#a1:start-->");
+    expect(html).toContain("<!--slot:comment#b2:start-->");
   });
 
   it("keyed occurrences with equivalent args survive a navigation re-send (no re-call)", async () => {
@@ -436,14 +436,14 @@ describe("renderServerComponent (projection emission)", () => {
     });
     expect(frame.isRevealed("p1")).toBe(true);
     expect(boundary.innerHTML).toBe(
-      "<div><p>late</p><!--proj:footer:start--><em>foot</em><!--proj:footer:end--></div>"
+      "<div><p>late</p><!--slot:footer:start--><em>foot</em><!--slot:footer:end--></div>"
     );
   });
 });
 
 describe("document-mode inline rendering (t=0)", () => {
   it("wraps a direct function result with boundary/proj/region markers, client content inline, once", done => {
-    const { inlineServerComponentResult } = require("../../src/frame-sink");
+    const { frameTransformDirectResult } = require("../../src/frame-sink");
     // What the server function returned in-process during document SSR.
     const serverComponent = props =>
       r.ssr`<article><h1>One</h1><section>${[
@@ -454,7 +454,7 @@ describe("document-mode inline rendering (t=0)", () => {
         })
       ]}</section><footer>${props.children()}</footer></article>`;
 
-    const Inline = inlineServerComponentResult(serverComponent, { id: "hn/story-0" });
+    const Inline = frameTransformDirectResult(serverComponent, { id: "hn/story-0" });
     // The client's REAL props render server-side at t=0 (the one exception).
     const clientProps = {
       comment: p => r.ssr`<div class="comment"><button>[-]</button>${p.children}</div>`,
@@ -468,13 +468,13 @@ describe("document-mode inline rendering (t=0)", () => {
         const html = chunks.join("");
         // Boundary + occurrence + region markers in the chunk dialect.
         expect(html).toContain("<!--frame:hn/story-0:start-->");
-        expect(html).toContain("<!--proj:comment#c1:start-->");
+        expect(html).toContain("<!--slot:comment#c1:start-->");
         expect(html).toContain("<!--frame:hn/story-0.comment#c1.children:start-->");
-        expect(html).toContain("<!--proj:children:start-->");
+        expect(html).toContain("<!--slot:children:start-->");
         // Client wrapper rendered INSIDE its occurrence range, server body
         // INSIDE the nested region, draft inside the direct-insert range.
         expect(html).toMatch(
-          /<!--proj:comment#c1:start--><div class="comment"><button>\[-\]<\/button><!--frame:hn\/story-0\.comment#c1\.children:start--><p>alpha-text<\/p><!--frame:hn\/story-0\.comment#c1\.children:end--><\/div><!--proj:comment#c1:end-->/
+          /<!--slot:comment#c1:start--><div class="comment"><button>\[-\]<\/button><!--frame:hn\/story-0\.comment#c1\.children:start--><p>alpha-text<\/p><!--frame:hn\/story-0\.comment#c1\.children:end--><\/div><!--slot:comment#c1:end-->/
         );
         // The single-occurrence invariant on the page itself.
         expect(html.split("alpha-text").length).toBe(2);
@@ -485,7 +485,7 @@ describe("document-mode inline rendering (t=0)", () => {
   });
 
   it("server-owned elements carry no hydration keys; client wrappers keep sc- keys (NoHydration/Hydration zones)", done => {
-    const { inlineServerComponentResult } = require("../../src/frame-sink");
+    const { frameTransformDirectResult } = require("../../src/frame-sink");
     // Compiled-shape output: ssrElement with needsId emits `_hk` when keys
     // flow. Server-owned content renders in a NoHydration zone (keys are
     // pure tax on adopted markup — "hydration:false regions"); the client
@@ -504,7 +504,7 @@ describe("document-mode inline rendering (t=0)", () => {
         ],
         true
       );
-    const Inline = inlineServerComponentResult(serverComponent, { id: "hn/story-0" });
+    const Inline = frameTransformDirectResult(serverComponent, { id: "hn/story-0" });
     const clientProps = {
       comment: p => r.ssrElement("div", { class: "comment" }, [p.children], true)
     };
@@ -532,13 +532,13 @@ describe("document-mode inline rendering (t=0)", () => {
 describe("server-component hydration reference", () => {
   it("serializes an inline server component as a stable placeholder reference", done => {
     const {
-      inlineServerComponentResult,
+      frameTransformDirectResult,
       ServerComponentPlugin,
       SERVER_COMPONENT_BOOTSTRAP
     } = require("../../src/frame-sink");
     const { createHydrationSerializer } = require("../../src/serializer");
 
-    const Inline = inlineServerComponentResult(() => r.ssr`<b>x</b>`, { id: "hn/story-0" });
+    const Inline = frameTransformDirectResult(() => r.ssr`<b>x</b>`, { id: "hn/story-0" });
     const scripts = [];
     const serializer = createHydrationSerializer({
       plugins: [ServerComponentPlugin],
@@ -548,7 +548,7 @@ describe("server-component hydration reference", () => {
         // The reference, not the function: resolution is invocation-time
         // through the bootstrap's memoized placeholder.
         expect(payload).toContain('self._$SC.r("hn/story-0")');
-        expect(payload).not.toContain("createDocumentProjectionProps");
+        expect(payload).not.toContain("createDocumentSlotProps");
         // The bootstrap evaluates and memoizes stable identities.
         // eslint-disable-next-line no-eval
         (0, eval)(SERVER_COMPONENT_BOOTSTRAP);
@@ -569,7 +569,7 @@ describe("server-component hydration reference", () => {
 
 describe("document-mode occlusion flip (case 3)", () => {
   it("a region the wrapper never renders ships once — as records, not markup", done => {
-    const { inlineServerComponentResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
     const serverComponent = props =>
       r.ssr`<article>${[
         props.comment({ $key: "c1", cid: "c1", children: r.ssr`<p>occluded-text</p>` }),
@@ -578,7 +578,7 @@ describe("document-mode occlusion flip (case 3)", () => {
         // single-copy invariant). `cid` is not rendered anywhere: it ships.
         props.comment({ $key: "c2", cid: "c2", title: "visible-text", children: r.ssr`<p>visible-text</p>` })
       ]}</article>`;
-    const Inline = inlineServerComponentResult(serverComponent, { id: "occ-0" });
+    const Inline = frameTransformDirectResult(serverComponent, { id: "occ-0" });
     // The client wrapper renders c2's children but SKIPS c1's (collapsed by
     // default) — evaluation is the usage signal.
     const clientProps = {
@@ -617,7 +617,7 @@ describe("document-mode occlusion flip (case 3)", () => {
 
 describe("document-mode occlusion flip — async region content", () => {
   it("an occluded region with pending async content still ships once, patched when it settles", done => {
-    const { inlineServerComponentResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
     const wait = ms => new Promise(res => setTimeout(res, ms));
     // Server content whose html resolves asynchronously (a hole that lands
     // after the wrapper's render has already occluded it).
@@ -636,7 +636,7 @@ describe("document-mode occlusion flip — async region content", () => {
     };
     const serverComponent = props =>
       r.ssr`<article>${[props.comment({ $key: "c1", children: AsyncBody() })]}</article>`;
-    const Inline = inlineServerComponentResult(serverComponent, { id: "aocc-0" });
+    const Inline = frameTransformDirectResult(serverComponent, { id: "aocc-0" });
     const clientProps = {
       comment: () => r.ssr`<div class="comment collapsed"><button>[+]</button></div>`
     };

@@ -137,7 +137,7 @@ describe("version bump preserves client state (policy A)", () => {
       }
     });
 
-    const range = "<!--proj:panel#0:start--><!--proj:panel#0:end-->";
+    const range = "<!--slot:panel#0:start--><!--slot:panel#0:end-->";
     host.apply({
       type: "slot",
       id: "f",
@@ -413,23 +413,23 @@ describe("morph", () => {
     expect(boundary.innerHTML).toBe("<section>y<p>Loaded</p></section>");
   });
 
-  it("preserves a protected projection range and its client-owned interior", () => {
-    const frame = withContent("<div><!--proj:0:start--><!--proj:0:end--></div>");
+  it("preserves a protected slot range and its client-owned interior", () => {
+    const frame = withContent("<div><!--slot:0:start--><!--slot:0:end--></div>");
     const div = boundary.firstElementChild;
 
-    // Simulate client code mounting owned content inside the projection range.
+    // Simulate client code mounting owned content inside the slot range.
     const start = Array.from(div.childNodes).find(
-      n => n.nodeType === 8 && n.data === "proj:0:start"
+      n => n.nodeType === 8 && n.data === "slot:0:start"
     );
     const clientSpan = document.createElement("span");
     clientSpan.textContent = "client";
     start.after(clientSpan);
-    expect(div.innerHTML).toBe("<!--proj:0:start--><span>client</span><!--proj:0:end-->");
+    expect(div.innerHTML).toBe("<!--slot:0:start--><span>client</span><!--slot:0:end-->");
 
-    // Server-owned surroundings change; the projection interior must survive.
+    // Server-owned surroundings change; the slot interior must survive.
     frame.apply({
       version: 2,
-      r: { "": html("<div>prefix<!--proj:0:start--><!--proj:0:end-->suffix</div>") }
+      r: { "": html("<div>prefix<!--slot:0:start--><!--slot:0:end-->suffix</div>") }
     });
 
     expect(boundary.firstElementChild).toBe(div);
@@ -437,24 +437,24 @@ describe("morph", () => {
     expect(div.contains(clientSpan)).toBe(true);
     expect(clientSpan.parentNode).toBe(div);
     expect(div.innerHTML).toBe(
-      "prefix<!--proj:0:start--><span>client</span><!--proj:0:end-->suffix"
+      "prefix<!--slot:0:start--><span>client</span><!--slot:0:end-->suffix"
     );
   });
 
-  it("does not diff inside a projection range even when server sends interior", () => {
-    const frame = withContent("<div><!--proj:0:start--><!--proj:0:end--></div>");
+  it("does not diff inside a slot range even when server sends interior", () => {
+    const frame = withContent("<div><!--slot:0:start--><!--slot:0:end--></div>");
     const div = boundary.firstElementChild;
     const start = Array.from(div.childNodes).find(
-      n => n.nodeType === 8 && n.data === "proj:0:start"
+      n => n.nodeType === 8 && n.data === "slot:0:start"
     );
     const clientSpan = document.createElement("span");
     clientSpan.textContent = "client-owned";
     start.after(clientSpan);
 
-    // Server resends the projection with placeholder interior; client wins.
+    // Server resends the slot with placeholder interior; client wins.
     frame.apply({
       version: 2,
-      r: { "": html("<div><!--proj:0:start--><em>server</em><!--proj:0:end--></div>") }
+      r: { "": html("<div><!--slot:0:start--><em>server</em><!--slot:0:end--></div>") }
     });
 
     expect(div.contains(clientSpan)).toBe(true);
@@ -479,20 +479,20 @@ describe("client-anchor invariant", () => {
     const frame = createFrame(boundary);
     frame.apply({
       version: 1,
-      r: { "": html("<div><p>a</p><!--proj:0:start--><!--proj:0:end--><p>b</p></div>") }
+      r: { "": html("<div><p>a</p><!--slot:0:start--><!--slot:0:end--><p>b</p></div>") }
     });
     const div = boundary.firstElementChild;
     const clientNode = document.createElement("input");
     clientNode.value = "typed";
-    findComment(div, "proj:0:start").after(clientNode);
+    findComment(div, "slot:0:start").after(clientNode);
     expect(clientNode.isConnected).toBe(true);
 
     // Server churn: change both <p> texts and insert a new server sibling before
-    // the projection range.
+    // the slot range.
     frame.apply({
       version: 2,
       r: {
-        "": html("<div><p>A</p><span>new</span><!--proj:0:start--><!--proj:0:end--><p>B</p></div>")
+        "": html("<div><p>A</p><span>new</span><!--slot:0:start--><!--slot:0:end--><p>B</p></div>")
       }
     });
 
@@ -500,11 +500,11 @@ describe("client-anchor invariant", () => {
     expect(clientNode.isConnected).toBe(true);
     expect(div.contains(clientNode)).toBe(true);
     expect(clientNode.value).toBe("typed");
-    // Still bracketed by its projection markers.
-    expect(clientNode.previousSibling.data).toBe("proj:0:start");
-    expect(clientNode.nextSibling.data).toBe("proj:0:end");
+    // Still bracketed by its slot markers.
+    expect(clientNode.previousSibling.data).toBe("slot:0:start");
+    expect(clientNode.nextSibling.data).toBe("slot:0:end");
     expect(div.innerHTML).toBe(
-      "<p>A</p><span>new</span><!--proj:0:start--><input><!--proj:0:end--><p>B</p>"
+      "<p>A</p><span>new</span><!--slot:0:start--><input><!--slot:0:end--><p>B</p>"
     );
   });
 
@@ -514,7 +514,7 @@ describe("client-anchor invariant", () => {
       version: 1,
       r: {
         "": html(
-          "<div><!--proj:0:start--><!--proj:0:end--><!--proj:1:start--><!--proj:1:end--></div>"
+          "<div><!--slot:0:start--><!--slot:0:end--><!--slot:1:start--><!--slot:1:end--></div>"
         )
       }
     });
@@ -523,8 +523,8 @@ describe("client-anchor invariant", () => {
     a.textContent = "A";
     const b = document.createElement("span");
     b.textContent = "B";
-    findComment(div, "proj:0:start").after(a);
-    findComment(div, "proj:1:start").after(b);
+    findComment(div, "slot:0:start").after(a);
+    findComment(div, "slot:1:start").after(b);
 
     // Server reorders the two ranges. State follows the id, not the position.
     // (This path uses ordinary insertBefore, so a real browser would lose focus
@@ -533,7 +533,7 @@ describe("client-anchor invariant", () => {
       version: 2,
       r: {
         "": html(
-          "<div><!--proj:1:start--><!--proj:1:end--><!--proj:0:start--><!--proj:0:end--></div>"
+          "<div><!--slot:1:start--><!--slot:1:end--><!--slot:0:start--><!--slot:0:end--></div>"
         )
       }
     });
@@ -541,10 +541,10 @@ describe("client-anchor invariant", () => {
     expect(div.contains(a)).toBe(true);
     expect(div.contains(b)).toBe(true);
     // A stays inside range 0, B inside range 1, and the ranges swapped order.
-    expect(a.previousSibling.data).toBe("proj:0:start");
-    expect(b.previousSibling.data).toBe("proj:1:start");
+    expect(a.previousSibling.data).toBe("slot:0:start");
+    expect(b.previousSibling.data).toBe("slot:1:start");
     expect(div.innerHTML).toBe(
-      "<!--proj:1:start--><span>B</span><!--proj:1:end--><!--proj:0:start--><span>A</span><!--proj:0:end-->"
+      "<!--slot:1:start--><span>B</span><!--slot:1:end--><!--slot:0:start--><span>A</span><!--slot:0:end-->"
     );
   });
 });
@@ -556,11 +556,11 @@ describe("client slots", () => {
     const frame = createFrame(boundary, { slots: { 0: () => clientNode } });
     frame.apply({
       version: 1,
-      r: { "": html("<div>server<!--proj:0:start--><!--proj:0:end--></div>") }
+      r: { "": html("<div>server<!--slot:0:start--><!--slot:0:end--></div>") }
     });
 
     expect(boundary.innerHTML).toBe(
-      "<div>server<!--proj:0:start--><button>client</button><!--proj:0:end--></div>"
+      "<div>server<!--slot:0:start--><button>client</button><!--slot:0:end--></div>"
     );
     expect(clientNode.isConnected).toBe(true);
   });
@@ -579,11 +579,11 @@ describe("client slots", () => {
     });
     frame.apply({
       version: 1,
-      r: { "": html("<div><h1>A</h1><!--proj:0:start--><!--proj:0:end--></div>") }
+      r: { "": html("<div><h1>A</h1><!--slot:0:start--><!--slot:0:end--></div>") }
     });
     frame.apply({
       version: 2,
-      r: { "": html("<div><h1>B</h1><!--proj:0:start--><!--proj:0:end--></div>") }
+      r: { "": html("<div><h1>B</h1><!--slot:0:start--><!--slot:0:end--></div>") }
     });
 
     expect(calls).toBe(1);
@@ -609,7 +609,7 @@ describe("client slots", () => {
 
     frame.apply({
       version: 2,
-      r: { "": html("<div><!--proj:0:start--><!--proj:0:end--></div>") }
+      r: { "": html("<div><!--slot:0:start--><!--slot:0:end--></div>") }
     });
     expect(calls).toBe(1);
     expect(boundary.textContent).toBe("c");
@@ -627,7 +627,7 @@ describe("client slots", () => {
           inner.apply({
             version: 1,
             r: {
-              "": html("<section>Comment<!--proj:reply:start--><!--proj:reply:end--></section>")
+              "": html("<section>Comment<!--slot:reply:start--><!--slot:reply:end--></section>")
             }
           });
           return innerHost;
@@ -638,7 +638,7 @@ describe("client slots", () => {
       version: 1,
       r: {
         "": html(
-          "<article><h1>Post</h1><!--proj:children:start--><!--proj:children:end--></article>"
+          "<article><h1>Post</h1><!--slot:children:start--><!--slot:children:end--></article>"
         )
       }
     });
@@ -652,7 +652,7 @@ describe("client slots", () => {
       version: 2,
       r: {
         "": html(
-          "<article><h1>UPDATED</h1><!--proj:children:start--><!--proj:children:end--></article>"
+          "<article><h1>UPDATED</h1><!--slot:children:start--><!--slot:children:end--></article>"
         )
       }
     });
@@ -663,7 +663,7 @@ describe("client slots", () => {
     // Update the INNER template independently: the client button still survives.
     inner.apply({
       version: 2,
-      r: { "": html("<section>EDITED<!--proj:reply:start--><!--proj:reply:end--></section>") }
+      r: { "": html("<section>EDITED<!--slot:reply:start--><!--slot:reply:end--></section>") }
     });
     expect(boundary.querySelector("section").textContent).toContain("EDITED");
     expect(boundary.contains(replyButton)).toBe(true);
@@ -754,11 +754,11 @@ describe("render-function slots", () => {
       type: "html",
       id: "f",
       version: 1,
-      html: "<p><!--proj:greeting:start--><!--proj:greeting:end--></p>"
+      html: "<p><!--slot:greeting:start--><!--slot:greeting:end--></p>"
     });
 
     expect(boundary.innerHTML).toBe(
-      "<p><!--proj:greeting:start--><b>Hi</b><!--proj:greeting:end--></p>"
+      "<p><!--slot:greeting:start--><b>Hi</b><!--slot:greeting:end--></p>"
     );
   });
 
@@ -791,7 +791,7 @@ describe("render-function slots", () => {
       type: "html",
       id: "outer",
       version: 1,
-      html: "<section><!--proj:children:start--><!--proj:children:end--></section>"
+      html: "<section><!--slot:children:start--><!--slot:children:end--></section>"
     });
 
     // Server streams the nested region's content, then updates it.
@@ -840,7 +840,7 @@ describe("render-function slots", () => {
       type: "html",
       id: "outer",
       version: 1,
-      html: "<section><!--proj:children:start--><!--proj:children:end--></section>"
+      html: "<section><!--slot:children:start--><!--slot:children:end--></section>"
     });
     host.apply({ type: "html", id: "child", version: 1, html: "<p>content</p>" });
 
@@ -886,10 +886,10 @@ describe("render-function slots", () => {
       type: "html",
       id: "f",
       version: 1,
-      html: "<p><!--proj:label:start--><!--proj:label:end--></p>"
+      html: "<p><!--slot:label:start--><!--slot:label:end--></p>"
     });
     expect(boundary.innerHTML).toBe(
-      "<p><!--proj:label:start--><b>...</b><!--proj:label:end--></p>"
+      "<p><!--slot:label:start--><b>...</b><!--slot:label:end--></p>"
     );
 
     // Args land later -> re-call with resolved props.
@@ -901,7 +901,7 @@ describe("render-function slots", () => {
       args: { text: host.serialize("ida") }
     });
     expect(boundary.innerHTML).toBe(
-      "<p><!--proj:label:start--><b>Hi ida</b><!--proj:label:end--></p>"
+      "<p><!--slot:label:start--><b>Hi ida</b><!--slot:label:end--></p>"
     );
   });
 });
@@ -918,7 +918,7 @@ describe("iterated callback slots", () => {
     "<ul>" +
     Array.from(
       { length: n },
-      (_, i) => `<!--proj:comment#${i}:start--><!--proj:comment#${i}:end-->`
+      (_, i) => `<!--slot:comment#${i}:start--><!--slot:comment#${i}:end-->`
     ).join("") +
     "</ul>";
 
@@ -994,7 +994,7 @@ describe("iterated callback slots", () => {
     // Server reorders the occurrences (same ids, new positions), args unchanged.
     const order = (...ids) =>
       "<ul>" +
-      ids.map(i => `<!--proj:comment#${i}:start--><!--proj:comment#${i}:end-->`).join("") +
+      ids.map(i => `<!--slot:comment#${i}:start--><!--slot:comment#${i}:end-->`).join("") +
       "</ul>";
     host.apply({ type: "html", id: "f", version: 1, html: order(2, 0, 1) });
 
@@ -1061,7 +1061,7 @@ describe("client slots revealed inside server-content regions", () => {
       type: "html",
       id: "root",
       version: 1,
-      html: "<ul><!--proj:comment#0:start--><!--proj:comment#0:end--></ul>"
+      html: "<ul><!--slot:comment#0:start--><!--slot:comment#0:end--></ul>"
     });
 
     // Stream into the region content that reveals a NESTED comment occurrence.
@@ -1076,7 +1076,7 @@ describe("client slots revealed inside server-content regions", () => {
       type: "html",
       id: "c0",
       version: 1,
-      html: "<div>body<!--proj:comment#0:start--><!--proj:comment#0:end--></div>"
+      html: "<div>body<!--slot:comment#0:start--><!--slot:comment#0:end--></div>"
     });
 
     // The nested slot inside the streamed region was filled by the inherited
@@ -1092,7 +1092,7 @@ describe("client slots revealed inside server-content regions", () => {
 });
 
 describe("recursive comments (HN-shaped)", () => {
-  const projRange = id => `<!--proj:${id}:start--><!--proj:${id}:end-->`;
+  const projRange = id => `<!--slot:${id}:start--><!--slot:${id}:end-->`;
 
   it("iterates, recurses, and preserves client-only collapse across a server update", () => {
     const host = createFrameHost(createMockSerializer());
@@ -1334,7 +1334,7 @@ describe("recursive comments (HN-shaped)", () => {
 describe("hydration attach (adopted SSR DOM)", () => {
   const ssrDom =
     "<article><h1>Story</h1>" +
-    "<!--proj:children:start--><button>0</button><!--proj:children:end-->" +
+    "<!--slot:children:start--><button>0</button><!--slot:children:end-->" +
     "</article>";
 
   it("claims existing range content in place when the callback returns undefined", () => {
@@ -1374,7 +1374,7 @@ describe("hydration attach (adopted SSR DOM)", () => {
     expect(boundary.querySelectorAll("button").length).toBe(0);
     expect(boundary.querySelector("input")).toBe(fresh);
     expect(boundary.innerHTML).toBe(
-      "<article><h1>Story</h1><!--proj:children:start--><input><!--proj:children:end--></article>"
+      "<article><h1>Story</h1><!--slot:children:start--><input><!--slot:children:end--></article>"
     );
   });
 
@@ -1392,7 +1392,7 @@ describe("hydration attach (adopted SSR DOM)", () => {
       r: {
         "": html(
           "<article><h1>Story updated</h1>" +
-            "<!--proj:children:start--><!--proj:children:end-->" +
+            "<!--slot:children:start--><!--slot:children:end-->" +
             "</article>"
         )
       }
@@ -1403,12 +1403,12 @@ describe("hydration attach (adopted SSR DOM)", () => {
   });
 
   it("mounts fresh (empty-range) slots identically to before through the replace path", () => {
-    boundary.innerHTML = "<div><!--proj:children:start--><!--proj:children:end--></div>";
+    boundary.innerHTML = "<div><!--slot:children:start--><!--slot:children:end--></div>";
     const el = document.createElement("span");
     el.textContent = "new";
     createFrame(boundary, { adopt: true, slots: { children: () => el } });
     expect(boundary.innerHTML).toBe(
-      "<div><!--proj:children:start--><span>new</span><!--proj:children:end--></div>"
+      "<div><!--slot:children:start--><span>new</span><!--slot:children:end--></div>"
     );
   });
 });
@@ -1565,13 +1565,13 @@ describe("chunk addressing", () => {
       type: "html",
       id: "inner",
       version: 1,
-      html: "<section>Comment<!--proj:reply:start--><!--proj:reply:end--></section>"
+      html: "<section>Comment<!--slot:reply:start--><!--slot:reply:end--></section>"
     });
     host.apply({
       type: "html",
       id: "outer",
       version: 1,
-      html: "<article><h1>Post</h1><!--proj:children:start--><!--proj:children:end--></article>"
+      html: "<article><h1>Post</h1><!--slot:children:start--><!--slot:children:end--></article>"
     });
 
     expect(boundary.querySelector("article > h1").textContent).toBe("Post");
@@ -1583,7 +1583,7 @@ describe("chunk addressing", () => {
       type: "html",
       id: "inner",
       version: 2,
-      html: "<section>EDITED<!--proj:reply:start--><!--proj:reply:end--></section>"
+      html: "<section>EDITED<!--slot:reply:start--><!--slot:reply:end--></section>"
     });
     expect(boundary.querySelector("section").textContent).toContain("EDITED");
     expect(boundary.contains(replyButton)).toBe(true);
@@ -1652,13 +1652,13 @@ describe("frame lifecycle", () => {
       type: "html",
       id: "outer",
       version: 1,
-      html: "<article><!--proj:children:start--><!--proj:children:end--></article>"
+      html: "<article><!--slot:children:start--><!--slot:children:end--></article>"
     });
     host.apply({
       type: "html",
       id: "inner",
       version: 1,
-      html: "<section>c<!--proj:reply:start--><!--proj:reply:end--></section>"
+      html: "<section>c<!--slot:reply:start--><!--slot:reply:end--></section>"
     });
     expect(host.get("inner")).toBeDefined();
     expect(button.isConnected).toBe(true);
@@ -1722,7 +1722,7 @@ describe("morph lookahead", () => {
       version: 1,
       html:
         "<article><h1>One</h1><section>revealed</section>" +
-        "<footer><!--proj:children:start--><!--proj:children:end--></footer></article>"
+        "<footer><!--slot:children:start--><!--slot:children:end--></footer></article>"
     });
     const footer = el.querySelector("footer");
     expect(el.querySelector("footer input")).toBe(badge);
@@ -1737,7 +1737,7 @@ describe("morph lookahead", () => {
       version: 2,
       html:
         `<article><h1>Two</h1>${ph("0")}` +
-        "<footer><!--proj:children:start--><!--proj:children:end--></footer></article>"
+        "<footer><!--slot:children:start--><!--slot:children:end--></footer></article>"
     });
     expect(el.querySelector("h1").textContent).toBe("Two");
     expect(el.querySelector("footer")).toBe(footer);
@@ -1770,7 +1770,7 @@ describe("multi-mount fan-out and late-mount seeding", () => {
       type: "html",
       id: "m",
       version: 1,
-      html: "<p>hi<!--proj:children:start--><!--proj:children:end--></p>"
+      html: "<p>hi<!--slot:children:start--><!--slot:children:end--></p>"
     });
 
     // Same server content in both instances, each with its own client slot.

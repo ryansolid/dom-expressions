@@ -49,7 +49,7 @@ import {
  * per-element keys are pure tax ("hydration:false regions"). Ids are still
  * CONSUMED (the zone's owner inherits normally), so sibling key sequences
  * and fragment/Loading ids are untouched. Client positions re-enter through
- * `Hydration` in the document projection props. Cores without the
+ * `Hydration` in the document slot props. Cores without the
  * components fall back to plain evaluation (keys stay, nothing breaks).
  */
 function serverOwned(render) {
@@ -188,9 +188,9 @@ export function createFrameSink(emit, frame) {
     error(errorId, error) {
       emit({ type: "error", id, version, key: errorId, error });
     },
-    // A named slot invocation from the projection props proxy: the client's
+    // A named slot invocation from the slot props proxy: the client's
     // render callback for the occurrence's prop is called with these args.
-    // No document-sink counterpart — projections only exist in frame streams.
+    // No document-sink counterpart — slots only exist in frame streams.
     slot(key, args) {
       emit({ type: "slot", id, version, key, args });
     },
@@ -227,7 +227,7 @@ export function renderToFrameStream(code, options = {}) {
 /**
  * Render a **server component** — a `props => JSX` function, typically
  * returned from a server function — to a FrameChunk stream. `props` is a
- * projection proxy, not data: reading a prop as a child emits a projection
+ * slot-props proxy, not data: reading a prop as a child emits a slot
  * marker range the client fills with its own content; calling a prop as a
  * render function additionally emits a `slot` chunk carrying the call's
  * args (one occurrence per call, so iteration and state-follows-id reorder
@@ -244,14 +244,14 @@ export function renderToFrameStream(code, options = {}) {
  */
 export function renderServerComponent(component, options = {}) {
   return frameStream((sink, frame) => {
-    const props = createProjectionProps(sink, frame);
+    const props = createSlotProps(sink, frame);
     return () => component(props);
   }, options);
 }
 
 // The shared chunk envelope: `start` up front, the frame sink for all render
 // emission, `complete` + end on the stream settling. `makeCode` builds the
-// render thunk with access to the sink/frame (the projection proxy needs
+// render thunk with access to the sink/frame (the slot-props proxy needs
 // both); no document text is ever written.
 function frameStream(makeCode, options) {
   const { id = "", version = 1 } = options.frame || {};
@@ -307,14 +307,14 @@ function frameStream(makeCode, options) {
   };
 }
 
-/** The projection marker range for an occurrence, as a pre-rendered SSR value. */
-function projectionRange(occurrence) {
-  return { t: `<!--proj:${occurrence}:start--><!--proj:${occurrence}:end-->` };
+/** The slot marker range for an occurrence, as a pre-rendered SSR value. */
+function slotRange(occurrence) {
+  return { t: `<!--slot:${occurrence}:start--><!--slot:${occurrence}:end-->` };
 }
 
 /**
- * Document-mode projection props — the t = 0 counterpart of
- * `createProjectionProps`. During initial document SSR a server component
+ * Document-mode slot props — the t = 0 counterpart of
+ * `createSlotProps`. During initial document SSR a server component
  * renders INLINE, and (the one hydration-time exception) the client's real
  * props render server-side inside its positions. This proxy hands the
  * server component those real props while emitting the same marker dialect
@@ -324,13 +324,13 @@ function projectionRange(occurrence) {
  * in place. Occurrence identity (`$key`/positional) matches the chunk
  * producer exactly; nothing here is serialized — the page IS the payload.
  */
-export function createDocumentProjectionProps(clientProps, frameId) {
+export function createDocumentSlotProps(clientProps, frameId) {
   const counts = Object.create(null);
   const getters = new Map();
   const range = (occurrence, content) => [
-    { t: `<!--proj:${occurrence}:start-->` },
+    { t: `<!--slot:${occurrence}:start-->` },
     content,
-    { t: `<!--proj:${occurrence}:end-->` }
+    { t: `<!--slot:${occurrence}:end-->` }
   ];
   // Client content renders under a per-occurrence hydration-key OWNER
   // scope, so the adopting client re-renders each slot under the SAME
@@ -488,15 +488,15 @@ export function createDocumentProjectionProps(clientProps, frameId) {
  * install as `configureServerFunctionsServer({ transformDirectResult })`
  * and a server function whose direct (same-process) call resolves to a
  * function comes back as an inline-renderable server component — boundary
- * frame markers around it, document-mode projection props inside. HTTP
+ * frame markers around it, document-mode slot props inside. HTTP
  * calls are untouched (`frameTransformResult` owns that leg).
  */
-export function inlineServerComponentResult(value, { id }) {
+export function frameTransformDirectResult(value, { id }) {
   if (typeof value !== "function") return value;
   const component = value;
   const wrapped = props => [
     { t: `<!--frame:${id}:start-->` },
-    serverOwned(() => component(createDocumentProjectionProps(props, id))),
+    serverOwned(() => component(createDocumentSlotProps(props, id))),
     { t: `<!--frame:${id}:end-->` }
   ];
   // Branded so the hydration serializer can write it as a reference (see
@@ -515,7 +515,7 @@ function renderedHtmlOf(out) {
     const res = sharedConfig.context.resolve(out);
     // Markers stripped: the occurrence/region ids inside comments would
     // false-positive the recoverability check (e.g. an arg value "c1"
-    // matching its own `proj:comment#c1` marker).
+    // matching its own `slot:comment#c1` marker).
     if (res && res.t && (!res.h || !res.h.length)) {
       return res.t[0].replace(/<!--[^>]*-->/g, "");
     }
@@ -628,7 +628,7 @@ function isServerContent(value) {
   return false;
 }
 
-export function createProjectionProps(sink, frame) {
+export function createSlotProps(sink, frame) {
   const counts = Object.create(null);
   const getters = new Map();
   return new Proxy(Object.create(null), {
@@ -636,8 +636,8 @@ export function createProjectionProps(sink, frame) {
     // fill, and the server cannot know which ones the client supplied. This
     // is what routes reactive-core merge utilities down their proxy path
     // ($PROXY in source) and resolves per-property lookups (property in s)
-    // to us; it also means merged defaults never override a projection —
-    // correct, since projection fallbacks belong to the client slot.
+    // to us; it also means merged defaults never override a slot —
+    // correct, since slot fallbacks belong to the client slot.
     // Enumeration stays empty by nature (positions aren't listable), so
     // spreads copy nothing: server components should read props directly.
     has() {
@@ -652,12 +652,12 @@ export function createProjectionProps(sink, frame) {
       if (!fn) {
         fn = (...callArgs) => {
           if (callArgs.length === 0 || callArgs[0] === undefined) {
-            return projectionRange(prop);
+            return slotRange(prop);
           }
           const raw = callArgs[0];
           // Occurrence identity (RFC open question 1): a primitive `$key` arg
           // names the occurrence, so client state follows the entity across
-          // responses — the projection-level analogue of For's `keyed`
+          // responses — the slot-level analogue of For's `keyed`
           // function, for the case where references can't carry identity
           // (every response re-creates everything). Without it, identity is
           // positional per prop — the right default for most flows: a state
@@ -692,7 +692,7 @@ export function createProjectionProps(sink, frame) {
                     key +
                     "' of " +
                     occurrence +
-                    "). Move the async read above the projection or into a fragment."
+                    "). Move the async read above the slot or into a fragment."
                 );
               }
               // Region ids derive from occurrence + arg name — stable across
@@ -709,7 +709,7 @@ export function createProjectionProps(sink, frame) {
             }
           }
           sink.slot(occurrence, args);
-          return projectionRange(occurrence);
+          return slotRange(occurrence);
         };
         getters.set(prop, fn);
       }

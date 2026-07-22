@@ -3,7 +3,7 @@
  */
 // The server-component convention with REAL JSX: this file goes through the
 // babel SSR transform, so the component below is authored the way a `use
-// server` function's return value would be — proving the projection props
+// server` function's return value would be — proving the slot props
 // proxy works against actual compiler output, not just hand-written r.ssr
 // calls.
 import { renderServerComponent } from "../../src/frame-sink";
@@ -24,7 +24,7 @@ describe("server component authored in JSX", () => {
   });
   afterEach(() => boundary.remove());
 
-  it("renders JSX markup, dynamic values, projections, and render props end to end", async () => {
+  it("renders JSX markup, dynamic values, slots, and render props end to end", async () => {
     // What a server function would build and return: server data closed
     // over, client positions expressed as props.
     const makeServerComp = (title, comments) => props => (
@@ -71,7 +71,7 @@ describe("server component authored in JSX", () => {
       "first!",
       "nice <script>"
     ]);
-    // Direct-insert projection filled by the client.
+    // Direct-insert slot filled by the client.
     expect(boundary.querySelector("footer button")).toBe(badge);
 
     // Navigation: same boundary, new server data — client content survives.
@@ -123,7 +123,7 @@ describe("server component authored in JSX", () => {
     });
     await streamInto(renderServerComponent(comp, { frame: { id: "inert", version: 1 } }), host);
     expect(boundary.querySelector("div").getAttribute("$key")).toBe("c1");
-    // The projection call next to it still keyed normally.
+    // The slot call next to it still keyed normally.
     expect(seen).toEqual(["hi"]);
     expect(boundary.querySelector("span b").textContent).toBe("hi");
   });

@@ -43,12 +43,12 @@ export function renderToFrameStream(code: () => unknown, options?: FrameStreamOp
 /**
  * Render a **server component** — a `props => JSX` function, typically
  * returned from a server function — to a FrameChunk stream. `props` is a
- * projection proxy, not data:
+ * slot-props proxy, not data:
  *
  * - reading a prop as a child emits a marker range the client fills;
  * - calling a prop as a render function emits a `slot` chunk for a fresh
  *   occurrence (a primitive `$key` arg names it, so client state follows the
- *   entity across responses — the projection-level analogue of For's `keyed`
+ *   entity across responses — the slot-level analogue of For's `keyed`
  *   function; positional otherwise, which is the right default for most
  *   flows);
  * - primitive args ride the chunk; server JSX args stream as nested regions
@@ -64,14 +64,14 @@ export function renderServerComponent(
 ): FrameStream;
 
 /**
- * The projection props proxy used by `renderServerComponent`. Every key
+ * The slot props proxy used by `renderServerComponent`. Every key
  * virtually exists (`in` is always true — a prop is a position the client
  * may fill), enumeration is empty by design, and serialization goes through
  * the live render context, so it must only be used during the frame's
  * render.
  * @internal Exposed for framework bindings composing their own producers.
  */
-export function createProjectionProps(
+export function createSlotProps(
   sink: ReturnType<typeof createFrameSink>,
   frame: FrameAddress
 ): Record<string, any>;
@@ -105,3 +105,41 @@ export function serverComponentResponse(
  * ```
  */
 export function frameTransformResult(event: unknown, result: unknown): unknown;
+
+// === Document SSR (t = 0) ===
+
+/**
+ * Document-mode slot props — the t = 0 counterpart of
+ * `createSlotProps`: the server component renders INLINE in the
+ * document and the client's real props render server-side inside its
+ * positions (the one hydration-time exception), wrapped in the same marker
+ * dialect the chunk producer emits so the adopting client binds slots and
+ * regions onto the server-rendered ranges.
+ */
+export function createDocumentSlotProps(
+  clientProps: Record<string, unknown>,
+  frameId: string
+): Record<string, unknown>;
+
+/**
+ * The in-process mirror of `frameTransformResult` for DOCUMENT SSR: install
+ * as `configureServerFunctionsServer({ transformDirectResult })` and a
+ * direct (same-process) server-function result that is a function comes back
+ * as an inline-renderable server component (frame markers + document
+ * slot props). Non-function results pass through.
+ */
+export function frameTransformDirectResult<T>(value: T, options: { id: string }): T;
+
+/**
+ * Seroval plugin for the hydration serializer: writes an inline server
+ * component as a stable per-function-id placeholder reference
+ * (`self._$SC.r(id)`) instead of meeting an unserializable function.
+ */
+export const ServerComponentPlugin: unknown;
+
+/**
+ * Inline bootstrap for the document shell: installs the `self._$SC`
+ * placeholder registry the hydration references resolve through; the client
+ * upgrades it via `installServerComponents()`.
+ */
+export const SERVER_COMPONENT_BOOTSTRAP: string;

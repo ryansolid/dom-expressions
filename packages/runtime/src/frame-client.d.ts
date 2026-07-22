@@ -2,8 +2,8 @@
  * Client frame runtime — the consumer side of a frame stream. A frame
  * renders server-owned content into a DOM boundary from a resident keyed
  * record store: chunks are writes, not events, so application is
- * prerequisite-driven and order-independent. Client-owned projections
- * (slots) inside the boundary are preserved across server updates — the
+ * prerequisite-driven and order-independent. Client-owned slot ranges
+ * inside the boundary are preserved across server updates — the
  * version is a stale-guard only ("policy A"): newer content morphs in
  * place, and teardown is `dispose()`, never a version bump.
  */
@@ -60,7 +60,11 @@ export type FrameChunk =
  */
 export function chunkToRecords(chunk: FrameChunk): Record<string, unknown>;
 
-/** A batch of record writes for a frame version, merged into its store. */
+/**
+ * One store write applied to a frame: `r` maps record keys to values
+ * (`chunkToRecords` produces these from wire chunks) and `version` is the
+ * stream stamp — an older version than the frame's current one is ignored.
+ */
 export interface FrameWrite {
   version: number;
   r: Record<string, unknown>;
@@ -83,7 +87,7 @@ export interface SlotContext {
 }
 
 /**
- * Client content for a server-declared projection. Direct-insert occurrences
+ * Client content for a server-declared slot. Direct-insert occurrences
  * call it with empty props; render-prop occurrences pass the occurrence's
  * resolved args (primitives literal, `{$ref}` data resolved through the
  * host, `{$frame}` regions as marker-range fragments). Return nodes to fill
