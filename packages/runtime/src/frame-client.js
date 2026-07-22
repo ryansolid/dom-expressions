@@ -181,7 +181,24 @@ export function createFrameHost(options = {}) {
       const buffered = pending.get(id);
       if (buffered) {
         pending.delete(id);
-        for (const chunk of buffered) deliver(frame, chunk);
+        // ONE store write for the whole buffer: per-chunk applies flush (and
+        // sync slots) between records, so the first record would mount every
+        // discovered occurrence — the rest record-less — and each later
+        // record would then look like an args CHANGE, re-calling with
+        // incomplete args and wiping adopted interiors (the #547 boot face).
+        // The buffer holds a single version by construction (stale-version
+        // chunks are dropped at buffering time).
+        const records = {};
+        let version;
+        for (const chunk of buffered) {
+          if (chunk.type === "data") {
+            options.applyData && options.applyData(chunk);
+            continue;
+          }
+          version = chunk.version;
+          Object.assign(records, chunkToRecords(chunk));
+        }
+        if (version !== undefined) frame.apply({ version, r: records });
       }
     },
     /**

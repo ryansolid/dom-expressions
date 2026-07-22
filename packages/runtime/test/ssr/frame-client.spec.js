@@ -1467,6 +1467,39 @@ describe("adoption -> first morph with nested regions (#547)", () => {
     expect(boundary.querySelector(".row button")).toBeTruthy();
   });
 
+  it("a multi-record drain applies as ONE write: every occurrence mounts armed exactly once (#547 boot face)", () => {
+    // Per-chunk register-flush applies would mount ALL occurrences on the
+    // first record's sync — the rest record-less — then re-call them as
+    // each later record landed, rendering with incomplete args and wiping
+    // adopted interiors.
+    boundary.innerHTML =
+      "<div>" +
+      "<!--slot:row#r1:start--><b>one</b><!--slot:row#r1:end-->" +
+      "<!--slot:row#r2:start--><b>two</b><!--slot:row#r2:end-->" +
+      "</div>";
+    const host = createFrameHost(createMockSerializer());
+    host.apply({ type: "slot", id: "f", version: 0, key: "row#r1", args: { cid: "r1" } });
+    host.apply({ type: "slot", id: "f", version: 0, key: "row#r2", args: { cid: "r2" } });
+    const calls = [];
+    createFrame(boundary, {
+      id: "f",
+      host,
+      adopt: true,
+      slots: {
+        row: (props, ctx) => {
+          calls.push([props.cid, ctx.adopted]);
+          return undefined;
+        }
+      }
+    });
+    expect(calls.sort()).toEqual([
+      ["r1", true],
+      ["r2", true]
+    ]);
+    // The adopted interiors are untouched.
+    expect(boundary.querySelectorAll("b").length).toBe(2);
+  });
+
   it("a RECORD-LESS adopted occurrence treats a first record of only known {$frame} regions as unchanged", () => {
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
