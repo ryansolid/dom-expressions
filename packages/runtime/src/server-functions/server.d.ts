@@ -103,6 +103,23 @@ export interface ServerFunctionsServerConfig {
    */
   collectFlightData?: CollectFlightDataHook;
   /**
+   * Server-wide default for the handler's `transformResult` (same contract
+   * — see `HandleServerFunctionRequestOptions`); a per-request option
+   * overrides it. Registering it here makes result policies (e.g. frames'
+   * `frameTransformResult`) work through generic dispatchers that call
+   * `handleServerFunctionRequest(request)` with no options.
+   */
+  transformResult?(
+    event: ServerFunctionEvent,
+    result: unknown,
+    context: { instance: string | null; request: Request; thrown?: boolean }
+  ): unknown | ResponseEnvelope | Promise<unknown | ResponseEnvelope>;
+  /**
+   * The in-process mirror of `transformResult` for direct (same-server)
+   * calls during document SSR — e.g. frames' `frameTransformDirectResult`.
+   */
+  transformDirectResult?(value: unknown, options: { id: string }): unknown;
+  /**
    * Endpoint the HTTP handler is mounted on, used for the `url` of SSR'd
    * references (e.g. form actions) — must match the client configuration.
    * Prefix it when the app serves from a base path (e.g.

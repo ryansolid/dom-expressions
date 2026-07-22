@@ -1413,6 +1413,127 @@ describe("hydration attach (adopted SSR DOM)", () => {
   });
 });
 
+describe("adoption -> first morph with nested regions (#547)", () => {
+  const adoptedDom =
+    "<article><h1>Row</h1>" +
+    "<!--slot:row#r1:start-->" +
+    '<div class="row"><button>[-]</button>' +
+    "<!--frame:f.row#r1.children:start--><em>body-1</em><!--frame:f.row#r1.children:end-->" +
+    "</div>" +
+    "<!--slot:row#r1:end-->" +
+    "</article>";
+  const streamHtml =
+    "<article><h1>Row v2</h1><!--slot:row#r1:start--><!--slot:row#r1:end--></article>";
+
+  it("an ARMED adopted occurrence (t=0 record drained pre-adoption) does not re-call when the stream adds its used region as {$frame}; the region morphs in place", () => {
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    // The documentBoundary drain: the t=0 record (used regions omitted by
+    // design) applies BEFORE the frame binds; the host buffers it.
+    host.apply({ type: "slot", id: "f", version: 0, key: "row#r1", args: { cid: "r1" } });
+    const calls = [];
+    createFrame(boundary, {
+      id: "f",
+      host,
+      adopt: true,
+      slots: {
+        row: (props, ctx) => {
+          calls.push({ cid: props.cid, adopted: ctx.adopted });
+          return undefined; // claim
+        }
+      }
+    });
+    expect(calls).toEqual([{ cid: "r1", adopted: true }]);
+    const em = boundary.querySelector("em");
+
+    // First post-boot stream: same cid, plus the used region as {$frame}.
+    host.apply({ type: "html", id: "f", version: 2, html: streamHtml });
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 2,
+      key: "row#r1",
+      args: { cid: "r1", children: { $frame: "f.row#r1.children" } }
+    });
+    // No re-call, wrapper and region intact, server content morphed.
+    expect(calls.length).toBe(1);
+    expect(boundary.querySelector("h1").textContent).toBe("Row v2");
+    expect(boundary.querySelector("em")).toBe(em);
+    expect(em.textContent).toBe("body-1");
+
+    // The region's own stream morphs its interior in place.
+    host.apply({ type: "html", id: "f.row#r1.children", version: 2, html: "<em>body-2</em>" });
+    expect(boundary.querySelector("em").textContent).toBe("body-2");
+    expect(boundary.querySelector(".row button")).toBeTruthy();
+  });
+
+  it("a RECORD-LESS adopted occurrence treats a first record of only known {$frame} regions as unchanged", () => {
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    createFrame(boundary, {
+      id: "f",
+      host,
+      adopt: true,
+      slots: {
+        row: (props, ctx) => {
+          calls.push(ctx.adopted);
+          return undefined;
+        }
+      }
+    });
+    expect(calls).toEqual([true]);
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 2,
+      key: "row#r1",
+      args: { children: { $frame: "f.row#r1.children" } }
+    });
+    expect(calls.length).toBe(1);
+    expect(boundary.querySelector("em").textContent).toBe("body-1");
+  });
+
+  it("a GENUINE arg change re-calls as a real render (ctx.adopted unset) and the moved region re-places", () => {
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    host.apply({ type: "slot", id: "f", version: 0, key: "row#r1", args: { cid: "r1" } });
+    const calls = [];
+    createFrame(boundary, {
+      id: "f",
+      host,
+      adopt: true,
+      slots: {
+        row: (props, ctx) => {
+          calls.push({ cid: props.cid, adopted: ctx.adopted });
+          if (ctx.adopted) return undefined; // claim at attach
+          // Real re-render: place the region fragment inside fresh output.
+          const div = document.createElement("div");
+          div.className = "row fresh";
+          div.append(props.children);
+          return div;
+        }
+      }
+    });
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 2,
+      key: "row#r1",
+      args: { cid: "r2", children: { $frame: "f.row#r1.children" } }
+    });
+    expect(calls.length).toBe(2);
+    expect(calls[1]).toEqual({ cid: "r2", adopted: false });
+    // The fresh output holds the region range — nothing dropped.
+    const fresh = boundary.querySelector(".row.fresh");
+    expect(fresh).toBeTruthy();
+    expect(fresh.querySelector("em").textContent).toBe("body-1");
+    // And the region still morphs after the re-place.
+    host.apply({ type: "html", id: "f.row#r1.children", version: 2, html: "<em>body-3</em>" });
+    expect(fresh.querySelector("em").textContent).toBe("body-3");
+  });
+});
+
 describe("template / block payload mode", () => {
   it("materializes many block instances from one shared template (markup sent once)", () => {
     const host = createFrameHost(createMockSerializer());

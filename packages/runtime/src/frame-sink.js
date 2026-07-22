@@ -513,11 +513,14 @@ export function frameTransformDirectResult(value, { id }) {
 function renderedHtmlOf(out) {
   try {
     const res = sharedConfig.context.resolve(out);
-    // Markers stripped: the occurrence/region ids inside comments would
-    // false-positive the recoverability check (e.g. an arg value "c1"
-    // matching its own `slot:comment#c1` marker).
+    // Markers AND hydration keys stripped: the occurrence/region ids inside
+    // comments would false-positive the recoverability check (e.g. an arg
+    // value "c1" matching its own `slot:comment#c1` marker), and `_hk`
+    // attributes embed the occurrence key — so any `cid === $key` occurrence
+    // would match its own wrapper's hydration key and never arm its t=0
+    // record (#547). Only element TEXT counts as recoverable-from-page.
     if (res && res.t && (!res.h || !res.h.length)) {
-      return res.t[0].replace(/<!--[^>]*-->/g, "");
+      return res.t[0].replace(/<!--[^>]*-->/g, "").replace(/ _hk=("[^"]*"|[^\s>]+)/g, "");
     }
   } catch (e) {}
   return null;

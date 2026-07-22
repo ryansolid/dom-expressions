@@ -615,6 +615,38 @@ describe("document-mode occlusion flip (case 3)", () => {
   });
 });
 
+describe("document-mode t=0 arming vs hydration keys (#547)", () => {
+  it("a cid equal to $key still arms its record — _hk attributes are not recoverable content", done => {
+    const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const serverComponent = props =>
+      r.ssr`<article>${[
+        props.comment({ $key: "c1", cid: "c1", children: r.ssr`<p>body-text</p>` })
+      ]}</article>`;
+    const Inline = frameTransformDirectResult(serverComponent, { id: "hk-0" });
+    // Compiled-shape wrapper: the root element takes a hydration key, and
+    // that key EMBEDS the occurrence id ($key) — before the fix, the
+    // recoverability check matched cid against its own wrapper's _hk and
+    // never shipped the record, so adopted occurrences mounted un-armed.
+    const clientProps = {
+      comment: p => r.ssrElement("div", { class: "comment" }, [p.children], true)
+    };
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps), { plugins: [ServerComponentPlugin] }).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        expect(html).toContain("_hk=sc-hk-0-comment#c1-");
+        expect(html).toContain('"sc:slot:hk-0:comment#c1"');
+        expect(html).toContain('cid:"c1"');
+        // Element TEXT still counts as recoverable: body-text renders, so
+        // it must not be re-shipped anywhere as data.
+        expect(html.split("body-text").length).toBe(2);
+        done();
+      }
+    });
+  });
+});
+
 describe("document-mode occlusion flip — async region content", () => {
   it("an occluded region with pending async content still ships once, patched when it settles", done => {
     const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");

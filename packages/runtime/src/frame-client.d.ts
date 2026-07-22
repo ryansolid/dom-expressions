@@ -73,6 +73,14 @@ export interface FrameWrite {
 /** Context passed to a slot callback. */
 export interface SlotContext {
   /**
+   * True only for the hydration-attach invocation of an adopted
+   * document-SSR range — the one call a consumer may answer with a claim
+   * (`existing` IS the server-rendered output for these args). Unset on
+   * stream-driven re-calls: those must render for real, or content the
+   * re-call displaced (e.g. `{$frame}` region ranges) is dropped.
+   */
+  adopted?: boolean;
+  /**
    * Register cleanup for when this occurrence's range is removed from the
    * server content, or the owning frame is disposed.
    */

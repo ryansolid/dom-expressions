@@ -45,6 +45,7 @@ export {
 const config = {
   provideEvent: undefined,
   collectFlightData: undefined,
+  transformResult: undefined,
   transformDirectResult: undefined,
   endpoint: "/_server"
 };
@@ -53,20 +54,25 @@ const config = {
  * Configures the server runtime: `provideEvent(event, fn)` establishes the
  * request-event scope for a call (e.g. @solidjs/web/storage's
  * provideRequestEvent), `collectFlightData` is the single-flight hook (see
- * `handleServerFunctionRequest`), `endpoint` is where the handler is mounted
- * (used for the `url` of SSR'd references, e.g. form actions — must match
- * the client's), and `codec` must match the client's (stored in the shared
- * layer).
+ * `handleServerFunctionRequest`), `transformResult` is the server-wide
+ * default for the handler's result transform (per-request options override;
+ * this is how frames installs `frameTransformResult` once for generic
+ * dispatchers), `transformDirectResult` is its in-process mirror for direct
+ * SSR calls, `endpoint` is where the handler is mounted (used for the `url`
+ * of SSR'd references, e.g. form actions — must match the client's), and
+ * `codec` must match the client's (stored in the shared layer).
  */
 export function configureServerFunctionsServer({
   provideEvent,
   collectFlightData,
+  transformResult,
   transformDirectResult,
   endpoint,
   codec
 } = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
   if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
+  if (transformResult !== undefined) config.transformResult = transformResult;
   if (transformDirectResult !== undefined) config.transformDirectResult = transformDirectResult;
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
@@ -336,6 +342,11 @@ export async function handleServerFunctionRequest(request, options = {}) {
   const provide = options.provideEvent || provideEvent;
   const flightHook =
     options.collectFlightData !== undefined ? options.collectFlightData : config.collectFlightData;
+  // Same fallback pattern: a generic dispatcher calling
+  // handleServerFunctionRequest(request) with no options still gets the
+  // configured transform (frames installs itself here once, server-wide).
+  const transformResult =
+    options.transformResult !== undefined ? options.transformResult : config.transformResult;
   // single-flight is scripted-client opt-in: the caller sends the request
   // header, the server must have a hook to produce the data
   const collectsFlight = !!(flightHook && instance && request.headers.has(SINGLE_FLIGHT_HEADER));
@@ -349,8 +360,8 @@ export async function handleServerFunctionRequest(request, options = {}) {
       return serverFunction(...parsed);
     });
 
-    if (options.transformResult) {
-      result = await options.transformResult(event, result, { instance, request });
+    if (transformResult) {
+      result = await transformResult(event, result, { instance, request });
     }
 
     let status = 200;
@@ -411,8 +422,8 @@ export async function handleServerFunctionRequest(request, options = {}) {
     return encodeResult(result, headers, status, codec);
   } catch (x) {
     if (x instanceof Response || isResponseEnvelope(x)) {
-      if (options.transformResult) {
-        x = await options.transformResult(event, x, { instance, request, thrown: true });
+      if (transformResult) {
+        x = await transformResult(event, x, { instance, request, thrown: true });
       }
       let status = 200;
       let metadata;

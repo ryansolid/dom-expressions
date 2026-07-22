@@ -528,12 +528,26 @@ class FrameImpl {
         // server-rendered client content — a callback that returns nodes
         // replaces it (client render), one that returns undefined claims it
         // in place (hydration attach; the DOM is untouched).
-        const nodes = this.#invokeSlot(occurrence, callback, record, start);
+        // In an adopt frame, a MOUNT is the hydration attach — whether the
+        // constructor sync or a registration-flush drain (t=0 records
+        // buffered before adoption) triggered it. ctx.adopted lets
+        // consumers claim server-rendered DOM exactly then; stream re-calls
+        // (the mounted branch below) must render for real or replaced
+        // content is silently dropped (#547). Occurrences a post-boot
+        // stream introduces mount with EMPTY interiors (the producer ships
+        // bare marker pairs), so consumers' existing-content gate already
+        // excludes them from claiming.
+        const nodes = this.#invokeSlot(occurrence, callback, record, start, this.#options.adopt);
         if (nodes) this.#replaceRange(occurrence, start, nodes);
         this.#slotNodes.set(occurrence, nodes);
         this.#mountedSlots.add(occurrence);
-        // Record-less mounts are adoption: the interior carries the regions.
-        if (!record) this.#discoverRegions(occurrence, start);
+        // Discover regions the interior already carries between
+        // frame:<childId> markers. Adopted mounts NEED this whether or not
+        // a t=0 record armed them (the record omits used regions by
+        // design, so the ranges are only knowable from the markers — #547);
+        // fresh mounts already hold entries from #resolveArgs, which the
+        // discovery walk skips. Idempotent either way.
+        this.#discoverRegions(occurrence, start);
         this.#bindRegions(occurrence);
       } else if (record !== this.#slotArgs.get(occurrence)) {
         // A re-sent record differing only in {$ref} identity may carry the
@@ -569,7 +583,7 @@ class FrameImpl {
    * null when the callback returned undefined — "I claimed the existing DOM,
    * leave the range alone".
    */
-  #invokeSlot(occurrence, callback, record, start) {
+  #invokeSlot(occurrence, callback, record, start, adopted) {
     const cleanups = this.#slotCleanups.get(occurrence) ?? [];
     const ctx = {
       // Identity for hydration-claim scoping: consumers derive the same
@@ -579,6 +593,11 @@ class FrameImpl {
       // down rather than their own region id.
       frame: this.#options.claimScope ?? this.#options.id,
       key: occurrence,
+      // True ONLY for the hydration-attach sync of an adopted document
+      // range: the one invocation consumers may answer with a claim
+      // (`existing` IS the server-rendered output). Stream re-calls leave
+      // it unset — they must render for real (#547).
+      adopted: !!adopted,
       onCleanup: fn => cleanups.push(fn),
       existing: start ? rangeInterior(start, slotEnd(occurrence)) : []
     };
@@ -760,16 +779,39 @@ class FrameImpl {
    * Whether a re-sent slot record's args are VALUE-equal to the mounted
    * occurrence's: primitives and {$frame} ids structurally, {$ref}s by
    * resolving the incoming ref (current table) against the cached
-   * resolution from mount. Unresolvable or non-JSON-comparable values fall
-   * back to "changed" (re-call) — the conservative default.
+   * resolution from mount. Keys the stream ADDS count as unchanged only
+   * when they are {$frame} refs to regions the occurrence already holds —
+   * the t=0 record omits used regions, so the first post-adoption stream
+   * always re-introduces them (#547). Unresolvable or non-JSON-comparable
+   * values fall back to "changed" (re-call) — the conservative default.
    */
   #refArgsUnchanged(occurrence, record) {
     const old = this.#slotArgs.get(occurrence);
-    if (!old || old.kind !== "slot" || !record || record.kind !== "slot") return false;
-    const a = old.args || {};
+    if (!record || record.kind !== "slot") return false;
+    if (old && old.kind !== "slot") return false;
+    // A mounted occurrence with NO record is a record-less adoption (or a
+    // direct insert): its args baseline is empty, so a first stream record
+    // carrying only known {$frame} regions is "unchanged" too (#547).
+    const a = (old && old.args) || {};
     const b = record.args || {};
     const ka = Object.keys(a);
-    if (ka.length !== Object.keys(b).length) return false;
+    const kb = Object.keys(b);
+    if (kb.length < ka.length) return false;
+    // Keys the stream ADDS are unchanged when they are {$frame} refs whose
+    // ranges this occurrence already holds: the t=0 record omits USED
+    // regions by design (they shipped as page markup), so the first
+    // post-adoption stream always re-introduces them — re-calling for that
+    // would tear out live region ranges (#547). Anything else added is a
+    // real change.
+    if (kb.length !== ka.length) {
+      const regions = this.#slotRegions.get(occurrence);
+      for (const key of kb) {
+        if (key in a) continue;
+        const vb = b[key];
+        if (!vb || typeof vb !== "object" || typeof vb.$frame !== "string") return false;
+        if (!regions || !regions.has(vb.$frame)) return false;
+      }
+    }
     const cache = this.#slotResolvedRefs.get(occurrence);
     for (const key of ka) {
       const va = a[key];

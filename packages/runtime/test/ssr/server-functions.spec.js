@@ -594,6 +594,41 @@ describe("handler", () => {
     expect(decoded).toBe("inner+wrapped");
   });
 
+  it("applies a configured transformResult when the dispatcher passes no options (#546)", async () => {
+    registerServerFunction("wrap-config-0", async () => "inner");
+    configureServerFunctionsServer({
+      transformResult: (event, result, ctx) => `${result}+configured`
+    });
+    try {
+      // A generic middleware: handleServerFunctionRequest(request), nothing else.
+      const viaConfig = await dispatch(
+        new Request("http://localhost/_server", {
+          method: "POST",
+          headers: {
+            "X-Server-Function-Id": "wrap-config-0",
+            "X-Server-Function-Instance": "server-function:test"
+          }
+        })
+      );
+      expect(await extractBody(viaConfig)).toBe("inner+configured");
+
+      // Per-request option still wins over the configured default.
+      const overridden = await dispatch(
+        new Request("http://localhost/_server", {
+          method: "POST",
+          headers: {
+            "X-Server-Function-Id": "wrap-config-0",
+            "X-Server-Function-Instance": "server-function:test"
+          }
+        }),
+        { transformResult: (event, result) => `${result}+handler` }
+      );
+      expect(await extractBody(overridden)).toBe("inner+handler");
+    } finally {
+      configureServerFunctionsServer({ transformResult: null });
+    }
+  });
+
   it("sends metadata + payload via ResponseEnvelope", async () => {
     registerServerFunction("flight-0", async () => "action result");
     const response = await dispatch(
