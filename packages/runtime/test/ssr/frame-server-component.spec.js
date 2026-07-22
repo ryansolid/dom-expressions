@@ -562,3 +562,41 @@ describe("document-mode occlusion flip (case 3)", () => {
     });
   });
 });
+
+describe("document-mode occlusion flip — async region content", () => {
+  it("an occluded region with pending async content still ships once, patched when it settles", done => {
+    const { inlineServerComponentResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const wait = ms => new Promise(res => setTimeout(res, ms));
+    // Server content whose html resolves asynchronously (a hole that lands
+    // after the wrapper's render has already occluded it).
+    const AsyncBody = () => {
+      const p = wait(15).then(() => r.ssr`<p>late-occluded-text</p>`);
+      let settled, value;
+      p.then(v => ((settled = true), (value = v)));
+      return r.ssr`<div class="body">${() => {
+        if (!settled) {
+          const err = new Error("pending");
+          err._promise = p; // the test core's ssrHandleError escalation hook
+          throw err;
+        }
+        return value;
+      }}</div>`;
+    };
+    const serverComponent = props =>
+      r.ssr`<article>${[props.comment({ $key: "c1", children: AsyncBody() })]}</article>`;
+    const Inline = inlineServerComponentResult(serverComponent, { id: "aocc-0" });
+    const clientProps = {
+      comment: () => r.ssr`<div class="comment collapsed"><button>[+]</button></div>`
+    };
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps), { plugins: [ServerComponentPlugin] }).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        expect(html.split("late-occluded-text").length).toBe(2);
+        expect(html).toContain('"sc:region:aocc-0.comment#c1.children"');
+        done();
+      }
+    });
+  });
+});

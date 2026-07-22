@@ -378,14 +378,15 @@ export function createDocumentProjectionProps(clientProps, frameId) {
             }
             sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
             for (const region of unused) {
-              // Resolve the region's server content to html through the live
-              // render context. Async content inside an occluded region is
-              // out of scope for the flip (needs its own streaming story).
-              const res = sharedConfig.context.resolve(region.value);
-              if (res && res.h && res.h.length) continue;
+              // Resolve the region's server content through the live render
+              // context. Sync content serializes directly; async content
+              // serializes as a PROMISE of its final html — the hydration
+              // serializer holds the stream and patches the record when it
+              // settles (resolveRegionHtml re-pulls holes as their promises
+              // land, the resolveRootHoles shape).
               sharedConfig.context.serialize(
                 `sc:region:${region.childId}`,
-                res && res.t ? res.t[0] : String(res ?? "")
+                resolveRegionHtml(sharedConfig.context, region.value)
               );
             }
           }
@@ -418,6 +419,29 @@ export function inlineServerComponentResult(value, { id }) {
   // ServerComponentPlugin) instead of meeting an unserializable function.
   wrapped[SERVER_COMPONENT] = id;
   return wrapped;
+}
+
+/**
+ * Resolves server content to its final html, riding out async holes: waits
+ * each pass's promises, re-pulls the holes, splices — recursively, since a
+ * re-pulled hole can yield further holes. Returns the html directly when
+ * everything is sync (no promise wrapper on the common path).
+ */
+function resolveRegionHtml(ctx, node) {
+  const res = ctx.resolve(node);
+  if (!res || !res.t) return String(res ?? "");
+  if (!res.h || !res.h.length) return res.t[0];
+  return Promise.all(res.p).then(() => {
+    let out = Promise.resolve(res.t[0]);
+    for (let i = 0; i < res.h.length; i++) {
+      const hole = res.h[i];
+      const tail = res.t[i + 1];
+      out = out.then(acc =>
+        Promise.resolve(resolveRegionHtml(ctx, hole)).then(part => acc + part + tail)
+      );
+    }
+    return out;
+  });
 }
 
 /** Brands an inline-rendered server component with its function id. */
