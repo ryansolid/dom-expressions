@@ -522,3 +522,43 @@ describe("server-component hydration reference", () => {
     serializer.flush();
   });
 });
+
+describe("document-mode occlusion flip (case 3)", () => {
+  it("a region the wrapper never renders ships once — as records, not markup", done => {
+    const { inlineServerComponentResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const serverComponent = props =>
+      r.ssr`<article>${[
+        props.comment({ $key: "c1", cid: "c1", children: r.ssr`<p>occluded-text</p>` }),
+        props.comment({ $key: "c2", cid: "c2", children: r.ssr`<p>visible-text</p>` })
+      ]}</article>`;
+    const Inline = inlineServerComponentResult(serverComponent, { id: "occ-0" });
+    // The client wrapper renders c2's children but SKIPS c1's (collapsed by
+    // default) — evaluation is the usage signal.
+    const clientProps = {
+      comment: p =>
+        p.cid === "c1"
+          ? r.ssr`<div class="comment collapsed"><button>[+]</button></div>`
+          : r.ssr`<div class="comment"><button>[-]</button>${p.children}</div>`
+    };
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps), { plugins: [ServerComponentPlugin] }).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        // The occluded text is NOT in the markup — and appears exactly once
+        // overall, inside the serialized region record.
+        expect(html.split("occluded-text").length).toBe(2);
+        expect(html).toContain('"sc:region:occ-0.comment#c1.children"');
+        expect(html).toContain('"sc:slot:occ-0:comment#c1"');
+        // The record carries the region REF for the occluded arg + the
+        // primitive; the rendered occurrence stays record-free.
+        expect(html).toContain('$frame:"occ-0.comment#c1.children"');
+        expect(html).not.toContain('"sc:slot:occ-0:comment#c2"');
+        // The visible region renders inline as markup, once.
+        expect(html.split("visible-text").length).toBe(2);
+        expect(html).toContain("frame:occ-0.comment#c2.children:start");
+        done();
+      }
+    });
+  });
+});
