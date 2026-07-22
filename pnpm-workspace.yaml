@@ -6,13 +6,13 @@ allowBuilds:
   nx: true
   simple-git-hooks: true
 linkWorkspacePackages: true
-# The jsx-compiler platform binary packages don't exist on the registry until
+# The compiler platform binary packages don't exist on the registry until
 # the binaries workflow publishes them; link them to their in-repo sources so
 # installs resolve deterministically.
 overrides:
-  '@dom-expressions/jsx-compiler-darwin-x64': 'link:packages/jsx-compiler/npm/darwin-x64'
-  '@dom-expressions/jsx-compiler-darwin-arm64': 'link:packages/jsx-compiler/npm/darwin-arm64'
-  '@dom-expressions/jsx-compiler-linux-x64-gnu': 'link:packages/jsx-compiler/npm/linux-x64-gnu'
-  '@dom-expressions/jsx-compiler-linux-arm64-gnu': 'link:packages/jsx-compiler/npm/linux-arm64-gnu'
-  '@dom-expressions/jsx-compiler-win32-x64-msvc': 'link:packages/jsx-compiler/npm/win32-x64-msvc'
-  '@dom-expressions/jsx-compiler-wasm32-wasi': 'link:packages/jsx-compiler/npm/wasm32-wasi'
+  '@dom-expressions/compiler-darwin-x64': 'link:packages/compiler/npm/darwin-x64'
+  '@dom-expressions/compiler-darwin-arm64': 'link:packages/compiler/npm/darwin-arm64'
+  '@dom-expressions/compiler-linux-x64-gnu': 'link:packages/compiler/npm/linux-x64-gnu'
+  '@dom-expressions/compiler-linux-arm64-gnu': 'link:packages/compiler/npm/linux-arm64-gnu'
+  '@dom-expressions/compiler-win32-x64-msvc': 'link:packages/compiler/npm/win32-x64-msvc'
+  '@dom-expressions/compiler-wasm32-wasi': 'link:packages/compiler/npm/wasm32-wasi'

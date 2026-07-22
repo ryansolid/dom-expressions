@@ -1,5 +1,97 @@
 # dom-expressions
 
+## 0.50.0-next.25
+
+### Patch Changes
+
+- 6da0028: Element-claim contract for navigation-relevant elements (Wave B, dormant):
+  - New runtime hooks in the client module: `registerElementClaim(handler)`
+    subscribes a consumer (returns an unregister function) and
+    `claimElement(node)` invokes registered handlers. With no consumer
+    registered every emitted claim is a null check — apps without a routing
+    integration pay effectively nothing. The server module exports silent
+    no-ops so consumers can register isomorphically.
+  - Compiled DOM output (both the Rust compiler and the Babel plugin) now
+    claims `a[href]` and `form[action]` elements at creation — including under
+    spreads, where the tag is still statically known. Previously reference-free
+    static anchors gain a positional walk so the claim call has a target.
+  - Compiler-owned writes to `href`/`action` (binding effects and spread
+    assigns, which both land in the runtime's `setAttribute`) re-invoke the
+    registered handlers, so a consumer's per-element state stays fresh with no
+    observers; handlers must be idempotent.
+
+  This is groundwork for router integrations (e.g. link active/pending state
+  on plain `<a>` elements without a wrapper component); behavior is inert
+  until a consumer registers.
+
+- 314dc9f: Relax server-side method enforcement: declaring `GET` grants GET dispatch without revoking the default POST transport. A GET-declared function now accepts both methods — necessary because routers auto-declare GET on query-wrapped functions that may also be called directly over POST. The security-relevant direction is unchanged: GET requests to functions that never declared it still answer 405.
+- a6a0889: Type-level groundwork for typed-path navigation (Wave A):
+  - JSX `href` on `<a>`/`<area>` now accepts `SerializableAttributeValue` in
+    addition to `string` — the same treatment form `action` already has — so
+    URL-bearing objects (e.g. a router's typed path nodes) typecheck directly
+    as `href={paths.users(id)}`. SSR serialization of such values is the plain
+    `toString()` coercion, now pinned by test.
+  - The client-side navigation attribute contract (`link`, `state`, `noScroll`,
+    `replace`, `preload`) moved into the shared JSX types on
+    `AnchorHTMLAttributes`. These are inert markup on their own; routing
+    integrations that delegate anchor clicks read them at event time.
+  - New `Href` brand in the response module: a registered-symbol
+    (`Symbol.for("solid.Href")`) brand for URL-bearing values, with `isHref()`
+    guard. `redirect()` now accepts `string | Href`, coerces branded values via
+    `String()`, and throws a `TypeError` for unbranded objects instead of
+    silently emitting `[object Object]` in the `Location` header.
+
+- d10a197: Make server-rendered action urls fully self-describing for client interception:
+  - The server handler now honors url-encoded bound arguments (`?args=`) for instance-carrying POSTs whose body is a natural HTTP encoding (FormData, urlencoded), not just no-JS posts and GETs. A router intercepting a form whose `action` url came off the wire can post the form data to it verbatim and get the same `[boundArgs..., formData]` reconstruction the no-JS path performs. Codec-serialized bodies are unaffected — client stubs with bound arguments serialize the full argument array in the body and never put arguments in the url.
+  - `createServerReference(id, name, base?)` accepts an explicit base url, targeting calls at it verbatim (preserving `?args=`) instead of deriving from the configured endpoint, so integrations can reconstruct a callable from a server-rendered action url while keeping `prepareRequest` hooks, codec config, and single-flight headers uniform.
+
+- 3ea261e: Encode non-latin1 error messages safely in the `X-Server-Function-Error` header. Header values are latin1 ByteStrings, so a thrown error whose message contained CJK, emoji, or other non-latin1 characters made `Headers.set` throw and collapsed the whole call into a bare 500 (solidjs/solid-start#1874 / #2215 — the guard from Start's bespoke handler was lost when the core runtime took over this path). Plain printable-latin1 messages still ride the header verbatim (the historical wire format, byte-identical); anything else travels percent-encoded behind a `=?1?` marker, with CR/LF stripped and lone surrogates well-formed first, so the decoded message round-trips exactly — astral-plane characters included. `ERROR_HEADER`, `encodeErrorHeaderValue`, and `decodeErrorHeaderValue` are exported from the shared/server/client entries (tagged `@internal`) for integrations that surface the header themselves.
+
+## 0.50.0-next.24
+
+### Patch Changes
+
+- 571c6e6: `hydrate()` now installs `sharedConfig.boundaryScopes` and `sharedConfig.captureBoundaryScope` so the reactive library can capture the current root's `{ registry, gather }` pair when a boundary registers for a late resume (solidjs/solid#2917). Multiple hydrate() roots share one `sharedConfig`, but each call replaces the global registry/gather; a boundary resuming after another root has started must claim server DOM against the root it registered under, not whichever root hydrated last. Entries are keyed by the full boundary id (registration-time capture — no prefix parsing, since root id and counter path have no delimiter) and are read and removed by the resume path, which falls back to the live globals when no entry exists. Additive `sharedConfig` surface; no behavior change for single-root hydration.
+- 3f1a271: Dev-only source-name metadata for server functions, for dev tooling that inspects registered functions (e.g. a dev-toolbar server-function inspector) — today those surfaces can only label a function by its opaque hash id.
+  - **Compiler**: in development (`env: "development"`), `transformDirectives()` emits the extracted function's descriptive source name as a trailing argument to the generated runtime calls — `registerServerReference(id, fn, name)` in server output, `createServerReference(id, name)` in client output. Name resolution matches the existing dev-ID suffix: the function's own name, else the binding/variable name it is assigned to, else the export name; anonymous inline extractions emit nothing. Production output is byte-identical to before — no extra argument, no name leakage — and the argument is trailing/optional, so out-of-band consumers of the ABI (manifests, frameworks) are unaffected.
+  - **Runtime**: `registerServerReference` and `createServerReference` accept the optional trailing `name` (an `@internal` ABI parameter like the rest) and seed the reference's metadata channel with `{ name }` as a default — explicit `withMeta`/`GET` writes shallow-merge over it, so a user-provided `name` wins. `ServerFunctionMetadata` gains `readonly name?: string`: a dev-only human-readable label, not unique, not an identity key (use `id` for identity).
+
+- e2c11b0: Land the settled server-function extension surface: `GET(fn)`, the declaration-metadata channel (`withMeta`, `getServerFunctionMetadata`, `isServerFunction`), the `prepareRequest` client hook, and server-side method enforcement — and retire the legacy per-reference escape hatches (`.GET`, `.withOptions`).
+  - **`GET(fn)`** (exported from both halves) is the only per-function declaration API. The client half returns a callable that issues GET requests with arguments codec-encoded in the query string (the existing GET transport path) and brands `method: "GET"` on the metadata channel; the server half is identity-flavored — SSR calls stay in-process — branding the same metadata and recording the declared method for the function's id. Compiled function-level directives round-trip the wrapper call in both builds, so no compiler involvement.
+  - **The metadata channel** brands every reference (client proxy and server-side callable) with a metadata object under `Symbol.for("solid.ServerFunctionMetadata")` — the same registered-symbol trick as the `ResponseEnvelope` brand, so detection survives duplicated module instances. `getServerFunctionMetadata(fn)` reads the merged bag, `isServerFunction(fn)` is the structural guard, and **`withMeta(fn, meta)`** is the public write path: it attaches arbitrary user-declared transport metadata (shallow-merging later writes) and returns the reference, composing with `GET` in either order — `GET` itself is sugar over the same write. Routers detect capability from metadata instead of property sniffing.
+  - **`prepareRequest(init, { id, meta })`** on `configureServerFunctionsClient` is the session-dynamic transport hook — the client-side symmetric of the server handler hooks. It runs before every outgoing server-function fetch over the final `RequestInit` (transport headers included) and can return (or mutate and return) the init the transport will use; `meta` is the reference's declaration metadata, so per-function behavior keys on `withMeta` declarations (e.g. `requiresAuth`) instead of id comparisons. Single hook, not a chain — composition is userland.
+  - **Method enforcement**: `handleServerFunctionRequest` answers 405 (with an `Allow` header) when the request method contradicts the declaration — a POST to a GET-declared function, or a GET to a function that never declared it.
+  - **The shrunken reference contract** (beta — no compatibility shims): the callable, `url`, and now `id` are kept on both proxies; the `.GET` proxy getter and `.withOptions(init)` are removed. Session-dynamic uses of `withOptions` go through `prepareRequest`; the call-scoped slot is deliberately empty (single-flight opt-in is already automatic via `subscribeFlightData`).
+
+- b3daa7a: Promote single-flight mutations from a SolidStart policy to a generic, router-agnostic protocol in the server function runtime. Previously folding revalidated route data into a mutation response required the framework to hand-build the wire shape in a `transformResult` hook (Start rendered the page data-only and wrapped `{ ..., _$value }` in a `ResponseEnvelope`) while the router fished the value back out by magic key. Now core owns the enveloping, the wire format, and the client-side delivery; integrations own only data production and consumption — both black boxes to the protocol.
+
+  Server side: a first-class `collectFlightData(event, outcome)` hook, registered via `configureServerFunctionsServer({ collectFlightData })` or per-handler through `handleServerFunctionRequest` options. It runs after `transformResult` (which remains the response-metadata extension point), only for scripted calls that sent the `X-Single-Flight` request header, on returned results and thrown `Response`/`ResponseEnvelope` control-flow signals alike — a thrown redirect collects data for the destination route — never for plain thrown errors. The `outcome` carries enough context for any strategy without core assuming one (a data-only render, running route preloads, anything): the function `id`, the unwrapped `value`, the HTTP-metadata `response` (redirect `Location`, `X-Revalidate` keys), the untouched `request` (referrer and any custom headers the client integration sent ride through with no core-assigned meaning), and `thrown`. Whatever payload the hook returns is folded into the body as `{ value, data }` and the response tagged `X-Single-Flight`; returning undefined leaves the response byte-identical to a call without the hook.
+
+  Client side: `subscribeFlightData(consumer)` (universal — lives in the shared layer, exported from both entries) registers the integration's consumer. The transport decodes the standardized payload, awaits `consumer(data, { response })` — the response as envelope context: redirect location, revalidation keys, status — and returns `value` to the caller as if the call were plain. Redirect/error semantics mirror the old passthrough precedence: metadata-carrying responses are the consumer's to interpret (seed caches, navigate — its business), bare error-tagged envelopes throw the value after delivery. Without a registered consumer, single-flight responses pass through whole exactly as before, so existing integrations that decode manually keep working unchanged.
+
+  Wire format: rides the existing body negotiation and chunk framing; the only additions are the `X-Single-Flight` header (request leg: opt-in; response leg: payload marker, both exported as `SINGLE_FLIGHT_HEADER`) and the stable top-level field names `value` / `data` (`SingleFlightPayload`) — no `_$`-prefixed magic keys. The top level is reserved for the protocol, and `data` is any codec-serializable value, which keeps the channel open for future payloads (serialized server-component UI) riding the same mechanism.
+
+- 21807fd: Make subscribing the single-flight opt-in: while a flight-data consumer is registered (`subscribeFlightData`), the client transport sends the request-leg `X-Single-Flight` header itself on every non-GET call — integrations no longer wrap references in `withOptions({ headers })` per call, and a consumer-less app never asks the server to do collection work. GET-encoded calls stay plain: they are reads with cacheable URLs, and folding per-request flight data into them would defeat caching. The server-side gating is unchanged (the hook still only runs for scripted calls that sent the header), and manually sending the header without a consumer still yields the whole-response passthrough for integrations that decode themselves.
+
+## 0.50.0-next.23
+
+## 0.50.0-next.22
+
+### Patch Changes
+
+- e8a78a8: Add the server function runtime ABI under `src/server-functions/` — the platform-neutral halves of the transport hoisted from SolidStart, for bridging through `@solidjs/web/server-functions`:
+  - `shared.js`: the wire contract both peers must agree on — neutral header names (`X-Server-Function-Id`, `X-Server-Function-Instance`, `X-Server-Function-Format`, `X-Server-Function-Error`), body-format negotiation for values with a natural HTTP encoding, length-prefixed chunk framing over the JSON codec from `serializer.js` (async values stream on one connection), and `decodeResponse(response)` for integrations decoding responses the transport hands over whole. Codec configuration lives here in the universal layer so routers (including custom ones, in non-DOM environments) depend only on this module — never on the fetch transport or a renderer.
+  - `client.js`: the fetch transport. `createServerReference(id)` produces the client callable with the `url` / `GET` / `withOptions` surface; `configureServerFunctionsClient` sets the endpoint (default `/_server`) and codec options.
+  - `server.js`: registration (`registerServerReference`, `registerServerFunction`, `getServerFunction`), the SSR in-process callable (`createServerReference`, runs under a derived request event carrying `serverFunctionMeta`), and a web-standard `handleServerFunctionRequest(request, options) => Response` handler. Event provisioning is injected (`configureServerFunctionsServer({ provideEvent, endpoint })`, falling back to the AsyncLocalStorage a request scope parks on `globalThis[RequestContext]`) so the module stays free of node built-ins; `endpoint` mirrors the client config so SSR'd reference `url`s (e.g. form actions) respect a base path. `transformResult` and `handleNoJS` hooks are the extension points for framework policies (single-flight payloads, no-JS form conventions); platform adapters (h3, express) wrap the handler.
+
+  Protocol refinements over the SolidStart original: the `customBody` expando is gone in both directions — integrations decode passthrough responses with the exported `decodeResponse` instead of a monkey-patched lazy decoder, and `transformResult` implementations return a `ResponseEnvelope(response, value)` when they need to send HTTP metadata plus a structured payload. The eval-based "js" serialization mode was deliberately left behind — the framed JSON codec is the only wire format. The ABI naming follows RSC conventions: `registerServerReference(id, fn)` registers, `createServerReference` creates the callable proxy (from an id on the client, from a reference during SSR) — the old `cloneServerReference` name is gone. The hand-written type declarations document the full surface, with compiler-ABI and wire-detail exports tagged `@internal` so docs generators skip them (downstream `@solidjs/web` copies these d.ts files verbatim).
+
+  Also adds `src/response.js` — the response helpers (`redirect`, `reload`, `respond`) and the `ResponseEnvelope` class, as a standalone dependency-free module destined for `@solidjs/web`'s core entry rather than the server-functions subpath. They are more generic than the transport: client-only actions return them and the integration interprets the `Response` in memory, while server functions return (or throw) the same objects and the HTTP handler forwards their metadata (`Location`, `X-Revalidate`, statuses — all expressed through the standard Response API). `respond(value, init)` — `json()` from SolidStart/Solid Router, renamed for what it actually does: pair a value with the response metadata a naked return can't express. Progressive enhancement stays invisible: the carried response holds a plain JSON body so consumers without the client runtime (no-JS form posts, direct HTTP) get real JSON, while integrations read `value` with no reparse. Envelope detection uses a registered-symbol brand (`isResponseEnvelope`) rather than `instanceof`, so identity survives the core and server-functions entries bundling separate copies of the module. Revalidation keys are opaque strings; whatever keyed cache the integration brings assigns them meaning.
+
+- 201bf45: Deduplicate the `DOMElements` set literal: the array concatenated a categorized list with a full alphabetical list, shipping 286 entries where only 149 are unique — ~1 KB minified in any bundle that retains the set. Membership is byte-for-byte identical (consumers only do `.has()` checks); tree-shaken apps that never touch it still drop it entirely via the existing `/*#__PURE__*/` annotation, so this pays off for star-import, CDN, and non-tree-shaken consumers.
+- 96aa81d: Hydration-time behaviors reached from hot client paths — `insert()`'s initial-claim and swapped-region reclaim walk, `insertExpression`'s hydration gate, and `eventHandler`'s replay dedup — move behind a nullable runtime slot installed by `hydrate()`. Client-only bundles shake the implementations (~450 min / ~194 gzip bytes under esbuild-class bundlers; Rollup-based bundlers already proved these paths dead and are byte-identical). `installHydrationRuntime()` is exported for embedders that simulate hydration state without entering through `hydrate()`.
+- 174474c: `RequestContext` is now a registered symbol (`Symbol.for("solid.RequestContext")`). The AsyncLocalStorage a request scope parks on `globalThis` must be found by every copy of the module — downstream, the core server entry and the server-functions entry bundle separately, each carrying a copy of the code that reads it.
+
 ## 0.50.0-next.21
 
 ### Patch Changes

@@ -31,6 +31,13 @@ const $$SLOT = /*#__PURE__*/ Symbol("slot");
 // skip the `defineProperty` on subsequent updates.
 const $$HOST = /*#__PURE__*/ Symbol("host");
 
+// Brand for frame-insertable values (frame-client.js): `insert` recognizes
+// the symbol and calls the mount handler the value itself carries, so the
+// frame runtime never enters a bundle through client.js — apps that don't
+// import the frame entry pay zero bytes for it. Registered (Symbol.for)
+// rather than local so frame-client shares it without importing this module.
+const $$FRAME = /*#__PURE__*/ Symbol.for("dom-expressions.frame");
+
 // list of Element events that will be delegated
 const DelegatedEvents = /*#__PURE__*/ new Set([
   "beforeinput",
@@ -226,5 +233,6 @@ export {
   Namespaces,
   DOMElements,
   $$SLOT,
-  $$HOST
+  $$HOST,
+  $$FRAME
 };

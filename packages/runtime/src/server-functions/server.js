@@ -1,6 +1,6 @@
 // Server half of the server function runtime ABI. Compiled server output
-// calls `createServerReference(id, fn)` for every server function
-// (registering it for HTTP dispatch) and `cloneServerReference(ref)` where
+// calls `registerServerReference(id, fn)` for every server function
+// (registering it for HTTP dispatch) and `createServerReference(ref)` where
 // the function was referenced — during SSR the original function runs
 // in-process under a per-call request event.
 //
@@ -12,32 +12,62 @@ import { RequestContext, getRequestEvent } from "../server.js";
 import {
   BODY_FORMAT_HEADER,
   BodyFormat,
+  ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
+  SERVER_FUNCTION_METADATA,
+  SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
   deserializeString,
+  encodeErrorHeaderValue,
   extractBody,
   getHeadersAndBody,
   getServerFunctionsCodec,
-  serializeStream
+  isServerFunction,
+  serializeStream,
+  withMeta
 } from "./shared.js";
 
-export { FUNCTION_HEADER, INSTANCE_HEADER, decodeResponse } from "./shared.js";
+export {
+  ERROR_HEADER,
+  FUNCTION_HEADER,
+  INSTANCE_HEADER,
+  SINGLE_FLIGHT_HEADER,
+  decodeErrorHeaderValue,
+  decodeResponse,
+  encodeErrorHeaderValue,
+  getServerFunctionMetadata,
+  isServerFunction,
+  subscribeFlightData,
+  withMeta
+} from "./shared.js";
 
 const config = {
   provideEvent: undefined,
+  collectFlightData: undefined,
+  transformDirectResult: undefined,
   endpoint: "/_server"
 };
 
 /**
  * Configures the server runtime: `provideEvent(event, fn)` establishes the
  * request-event scope for a call (e.g. @solidjs/web/storage's
- * provideRequestEvent), `endpoint` is where the handler is mounted (used for
- * the `url` of SSR'd references, e.g. form actions — must match the client's),
- * and `codec` must match the client's (stored in the shared layer).
+ * provideRequestEvent), `collectFlightData` is the single-flight hook (see
+ * `handleServerFunctionRequest`), `endpoint` is where the handler is mounted
+ * (used for the `url` of SSR'd references, e.g. form actions — must match
+ * the client's), and `codec` must match the client's (stored in the shared
+ * layer).
  */
-export function configureServerFunctionsServer({ provideEvent, endpoint, codec } = {}) {
+export function configureServerFunctionsServer({
+  provideEvent,
+  collectFlightData,
+  transformDirectResult,
+  endpoint,
+  codec
+} = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
+  if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
+  if (transformDirectResult !== undefined) config.transformDirectResult = transformDirectResult;
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
 }
@@ -54,6 +84,11 @@ function provideEvent(event, fn) {
 }
 
 const REGISTRATIONS = new Map();
+// Declared-method bookkeeping keyed by function id (internal, not public
+// API): the server half of `GET` records entries here so the HTTP handler
+// can gate GET dispatch — a GET request to a function that never declared
+// it answers 405. Declaring GET grants GET without revoking POST.
+const METHODS = new Map();
 
 export function registerServerFunction(id, callback) {
   REGISTRATIONS.set(id, callback);
@@ -68,10 +103,15 @@ export function getServerFunction(id) {
   throw new Error("invalid server function: " + id);
 }
 
-/** Registers a compiled server function under its id. */
-export function createServerReference(id, fn) {
+/**
+ * Registers a compiled server function under its id. Development output
+ * passes the function's source name as the trailing argument; it rides the
+ * reference into `createServerReference`, which seeds the metadata channel
+ * with it.
+ */
+export function registerServerReference(id, fn, name) {
   registerServerFunction(id, fn);
-  return { id, fn };
+  return { id, fn, name };
 }
 
 /**
@@ -79,16 +119,22 @@ export function createServerReference(id, fn) {
  * runs the original function in-process, under a request event derived from
  * the current one (marked server-only, carrying the function's meta).
  */
-export function cloneServerReference({ id, fn }) {
+export function createServerReference({ id, fn, name }) {
   if (typeof fn !== "function")
     throw new Error("Export from a 'use server' module must be a function");
 
+  // the metadata lives in a closure (not on the user's function) so
+  // registering the raw implementation never mutates it. The compiler's
+  // dev-only source name seeds it as a default — explicit `withMeta`/`GET`
+  // writes shallow-merge over it like any other write.
+  const metadata = name === undefined ? {} : { name };
   return new Proxy(fn, {
-    get(target, prop, receiver) {
+    get(target, prop) {
+      if (prop === "id") return id;
       if (prop === "url") {
         return `${config.endpoint}?id=${encodeURIComponent(id)}`;
       }
-      if (prop === "GET") return receiver;
+      if (prop === SERVER_FUNCTION_METADATA) return metadata;
       return target[prop];
     },
     apply(target, thisArg, args) {
@@ -97,11 +143,48 @@ export function cloneServerReference({ id, fn }) {
       const evt = { ...ogEvt };
       evt.locals.serverFunctionMeta = { id };
       evt.serverOnly = true;
-      return provideEvent(evt, () => {
+      const result = provideEvent(evt, () => {
         return fn.apply(thisArg, args);
       });
+      // In-process mirror of the handler's transformResult: direct SSR calls
+      // pass their settled value through the configured policy (e.g. frames
+      // wrapping a function result as an inline-renderable server component).
+      const transform = config.transformDirectResult;
+      if (transform && result && typeof result.then === "function") {
+        return result.then(value => transform(value, { id, event: evt }));
+      }
+      return transform ? transform(result, { id, event: evt }) : result;
     }
   });
+}
+
+/**
+ * Declares a server function callable over HTTP GET. The server half is
+ * identity-flavored — SSR calls stay in-process — but it brands the
+ * declaration on the reference's metadata channel
+ * (`getServerFunctionMetadata(fn).method === "GET"`) and records the
+ * declared method for the function's id so `handleServerFunctionRequest`
+ * honors it: GET-declared functions accept GET requests in addition to the
+ * default POST transport (declaring GET grants, it does not revoke);
+ * functions that never declared GET answer GET requests with 405.
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getUser = GET(async (id: string) => {
+ *   "use server";
+ *   return db.users.find(id);
+ * });
+ * ```
+ */
+export function GET(fn) {
+  if (!isServerFunction(fn) || typeof fn.id !== "string") {
+    throw new Error("GET expects a server function reference");
+  }
+  METHODS.set(fn.id, "GET");
+  // the declaration itself is a metadata write like any other
+  return withMeta(fn, { method: "GET" });
 }
 
 /** Reads the calling server function's meta off the current request event. */
@@ -120,8 +203,14 @@ function resolveFunctionId(request, url) {
 
 async function parseArguments(request, url, instance, codec) {
   const parsed = [];
-  // bound arguments arrive on the url for GET calls and no-JS form posts
-  if (!instance || request.method === "GET") {
+  // Bound arguments arrive on the url for GET calls, no-JS form posts, and
+  // instance-carrying POSTs whose body is a natural HTTP encoding (FormData,
+  // urlencoded) — e.g. a router intercepting a form whose action url was
+  // rendered by the server. Codec-serialized bodies are the exception:
+  // client stubs with bound arguments serialize the full argument array in
+  // the body and never put arguments in the url.
+  const bodyFormat = request.method === "POST" ? request.headers.get(BODY_FORMAT_HEADER) : null;
+  if (!instance || request.method === "GET" || bodyFormat !== BodyFormat.Serialized) {
     const args = url.searchParams.get("args");
     if (args) {
       // framed codec output (from the client runtime) or plain JSON (from
@@ -135,14 +224,29 @@ async function parseArguments(request, url, instance, codec) {
     }
   }
   if (request.method === "POST" && request.body !== null) {
-    const format = request.headers.get(BODY_FORMAT_HEADER);
     const decoded = await extractBody(request.clone(), codec);
-    if (format === BodyFormat.Serialized) {
+    // Both argument-array encodings: codec-framed and plain JSON.
+    if (bodyFormat === BodyFormat.Serialized || bodyFormat === BodyFormat.Json) {
       return decoded;
     }
     parsed.push(decoded);
   }
   return parsed;
+}
+
+/**
+ * Runs the single-flight hook and standardizes its contribution: when the
+ * hook returns data, the body becomes the `{ value, data }` payload and the
+ * response is tagged with the single-flight header; when it returns
+ * undefined the response is byte-identical to a call without the hook.
+ * Data production is the hook's black box — core never sees how the
+ * integration computed it.
+ */
+async function foldFlightData(hook, event, headers, outcome) {
+  const data = await hook(event, outcome);
+  if (data === undefined) return outcome.value;
+  headers.set(SINGLE_FLIGHT_HEADER, "true");
+  return { value: outcome.value, data };
 }
 
 function serializedResponse(value, headers, codec) {
@@ -172,9 +276,19 @@ function encodeResult(value, headers, status, codec) {
  *   `{ request, locals: {} }`). Integrations supply their richer event.
  * - `provideEvent(event, fn)`: overrides the configured provider per call.
  * - `transformResult(event, result, context)`: observes/replaces the result
- *   before encoding — the extension point for single-flight payloads.
+ *   before encoding — the extension point for response metadata policies.
  *   Return a `ResponseEnvelope` (from ../response.js) to send HTTP
  *   metadata + payload.
+ * - `collectFlightData(event, outcome)`: overrides the configured
+ *   single-flight hook for this handler. Runs after `transformResult`,
+ *   for scripted calls that sent the single-flight request header, on
+ *   returned results and thrown Response/envelope signals alike (plain
+ *   thrown errors never collect). The outcome carries the unwrapped
+ *   `value`, the HTTP-metadata `response` (redirect location, revalidation
+ *   keys), the `request`, the function `id`, and `thrown`. Whatever data
+ *   payload it returns (undefined for none) is folded into the body as
+ *   `{ value, data }` under the single-flight response header — the
+ *   handler owns the enveloping, the hook owns the data.
  * - `handleNoJS(result, request, args)`: response for calls made without
  *   the client runtime (no instance header) — the extension point for
  *   no-JS form conventions. Defaults to the normal serialized response.
@@ -202,8 +316,29 @@ export async function handleServerFunctionRequest(request, options = {}) {
       { status: 404 }
     );
   }
+
+  // method enforcement: GET requests only dispatch to functions that
+  // declared GET (the server half of `GET` records them) — no crafted GET
+  // URLs against functions that never opted in. Declaring GET grants GET
+  // without revoking POST: the same function stays callable over the
+  // default transport (e.g. a query()-wrapped function also called
+  // directly).
+  if (request.method === "GET" && METHODS.get(functionId) !== "GET") {
+    return new Response(
+      process.env.NODE_ENV === "development"
+        ? `Method not allowed for server function: ${functionId}`
+        : null,
+      { status: 405, headers: { Allow: "POST" } }
+    );
+  }
+
   const event = options.createEvent ? options.createEvent(request) : { request, locals: {} };
   const provide = options.provideEvent || provideEvent;
+  const flightHook =
+    options.collectFlightData !== undefined ? options.collectFlightData : config.collectFlightData;
+  // single-flight is scripted-client opt-in: the caller sends the request
+  // header, the server must have a hook to produce the data
+  const collectsFlight = !!(flightHook && instance && request.headers.has(SINGLE_FLIGHT_HEADER));
 
   const parsed = await parseArguments(request, url, instance, codec);
 
@@ -219,6 +354,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
     }
 
     let status = 200;
+    let metadata;
     // envelope (from `respond()` or transformResult): HTTP metadata + value
     if (isResponseEnvelope(result)) {
       const { response, value } = result;
@@ -233,6 +369,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
       if (response && response.status && (response.status < 300 || response.status >= 400)) {
         status = response.status;
       }
+      metadata = response;
       result = value;
     } else if (result instanceof Response) {
       // raw responses pass through untouched
@@ -247,10 +384,21 @@ export async function handleServerFunctionRequest(request, options = {}) {
         if (result.status && (result.status < 300 || result.status >= 400)) {
           status = result.status;
         }
+        metadata = result;
         if (result.body == null) {
           result = null;
         }
       }
+    }
+
+    if (collectsFlight) {
+      result = await foldFlightData(flightHook, event, headers, {
+        id: functionId,
+        value: result,
+        response: metadata,
+        request,
+        thrown: false
+      });
     }
 
     // calls made without the client runtime (no-JS form posts)
@@ -267,6 +415,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
         x = await options.transformResult(event, x, { instance, request, thrown: true });
       }
       let status = 200;
+      let metadata;
       if (isResponseEnvelope(x)) {
         const { response, value } = x;
         if (response && response.headers) {
@@ -279,6 +428,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
         ) {
           status = response.status;
         }
+        metadata = response;
         x = value;
       } else if (x instanceof Response) {
         if (x.headers) {
@@ -287,11 +437,25 @@ export async function handleServerFunctionRequest(request, options = {}) {
         if (x.status && (!instance || x.status < 300 || x.status >= 400)) {
           status = x.status;
         }
+        metadata = x;
         if (x.body == null) {
           x = null;
         }
       }
-      headers.set("X-Error", "true");
+
+      // thrown control-flow signals collect too — a thrown redirect carries
+      // flight data for the destination route
+      if (collectsFlight) {
+        x = await foldFlightData(flightHook, event, headers, {
+          id: functionId,
+          value: x,
+          response: metadata,
+          request,
+          thrown: true
+        });
+      }
+
+      headers.set(ERROR_HEADER, "true");
       if (!instance) {
         if (options.handleNoJS) return options.handleNoJS(x, request, parsed, true);
         if (x instanceof Response) return x;
@@ -306,7 +470,10 @@ export async function handleServerFunctionRequest(request, options = {}) {
     }
 
     const error = x instanceof Error ? x.message : typeof x === "string" ? x : "true";
-    headers.set("X-Error", error.replace(/[\r\n]+/g, ""));
+    // header values are latin1 ByteStrings — Headers.set throws on anything
+    // above U+00FF, so non-latin1 messages ride percent-encoded (the client
+    // decodes symmetrically; the structured error still travels in the body)
+    headers.set(ERROR_HEADER, encodeErrorHeaderValue(error));
     return encodeResult(x, headers, 200, codec);
   }
 }

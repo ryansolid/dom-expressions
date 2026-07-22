@@ -1,6 +1,6 @@
 ---
 "@dom-expressions/babel-plugin-jsx": patch
-"@dom-expressions/jsx-compiler": patch
+"@dom-expressions/compiler": patch
 "@dom-expressions/runtime": patch
 ---
 

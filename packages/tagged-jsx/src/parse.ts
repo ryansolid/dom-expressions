@@ -56,6 +56,13 @@ export interface ElementNode {
   props: PropNode[];
   children: ChildNode[];
   template?: HTMLTemplateElement;
+  /**
+   * Element-claim contract target (`a[href]`, `form[action]`, or a spread
+   * that may carry those). Stamped at template build — before static props
+   * are filtered out — so clones can be claimed even when the attribute was
+   * baked into the template.
+   */
+  claim?: boolean;
 }
 
 export interface ComponentNode {

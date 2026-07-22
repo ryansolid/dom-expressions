@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/jsx-compiler": patch
+"@dom-expressions/compiler": patch
 ---
 
 Align the native JSX compiler's DOM output with babel-plugin-jsx across a set of behavioral gaps found by the new compiler parity suite:

@@ -27,8 +27,171 @@ export function getServerFunctionsCodec() {
   return codecConfig.codec;
 }
 
+// The single-flight consumer also lives in the universal layer: routers are
+// universal code, so the registration must be importable from any build
+// (the server side simply never delivers to it).
+const flightConfig = { consumer: undefined };
+
+/**
+ * Registers the consumer the client transport delivers single-flight data
+ * to: `consumer(data, { response })` — the integration-produced payload
+ * plus the response as envelope context (redirect location, revalidation
+ * keys, status). What the data means and what to do with it (seed caches,
+ * navigate, ...) is entirely the consumer's business. One active consumer
+ * at a time (a later registration replaces the current one); returns an
+ * unsubscribe function. With no consumer registered, single-flight
+ * responses pass through to the caller whole, exactly like other
+ * integration responses.
+ */
+export function subscribeFlightData(consumer) {
+  flightConfig.consumer = consumer;
+  return () => {
+    if (flightConfig.consumer === consumer) flightConfig.consumer = undefined;
+  };
+}
+
+/** The currently registered single-flight consumer. */
+export function getFlightDataConsumer() {
+  return flightConfig.consumer;
+}
+
+// The declaration-metadata channel. `GET(fn)` (and any future
+// declaration-static capability) brands references with a metadata object
+// under a registered symbol — surviving duplicated module instances, the
+// same trick as the ResponseEnvelope brand — and routers/integrations read
+// it back through the typed accessors instead of property sniffing. The
+// channel lives in the universal layer because detection is universal code:
+// the same accessor works on client proxies and server references alike.
+export const SERVER_FUNCTION_METADATA = Symbol.for("solid.ServerFunctionMetadata");
+
+/**
+ * Reads a server function reference's declaration metadata (e.g.
+ * `method: "GET"` for `GET(fn)` references). Returns undefined when `fn`
+ * is not a server function reference; plain references carry an empty
+ * metadata object.
+ */
+export function getServerFunctionMetadata(fn) {
+  if (typeof fn !== "function") return undefined;
+  return fn[SERVER_FUNCTION_METADATA] || undefined;
+}
+
+/**
+ * Whether `fn` is a server function reference (a client proxy or a
+ * server-side registered callable). Detection is by the registered-symbol
+ * metadata brand, so it holds across duplicated module instances.
+ */
+export function isServerFunction(fn) {
+  return typeof fn === "function" && !!fn[SERVER_FUNCTION_METADATA];
+}
+
+/**
+ * Attaches user-declared transport metadata to a server function reference
+ * (client proxy or server-registered callable) and returns the reference.
+ * Writes ride the same channel `GET` uses: later writes shallow-merge over
+ * earlier ones, and `getServerFunctionMetadata(fn)` reads the merged bag —
+ * so `withMeta` composes with `GET` in either order.
+ *
+ * The pattern is declare-on-function, react-in-hook: metadata declared
+ * here is what `prepareRequest` receives as `context.meta`, letting
+ * session-dynamic transport policy key on declarations instead of
+ * comparing function ids:
+ *
+ * ```ts
+ * export const chargeCard = withMeta(async (amount: number) => {
+ *   "use server";
+ *   // ...
+ * }, { requiresAuth: true });
+ *
+ * configureServerFunctionsClient({
+ *   prepareRequest(init, { meta }) {
+ *     if (meta?.requiresAuth) {
+ *       return {
+ *         ...init,
+ *         headers: { ...init.headers, Authorization: `Bearer ${session.token()}` }
+ *       };
+ *     }
+ *     return init;
+ *   }
+ * });
+ * ```
+ */
+export function withMeta(fn, meta) {
+  const metadata = getServerFunctionMetadata(fn);
+  if (!metadata) {
+    throw new Error("withMeta expects a server function reference");
+  }
+  Object.assign(metadata, meta);
+  return fn;
+}
+
 /** Header carrying the server function id. */
-export const FUNCTION_HEADER = "X-Server-Function";
+export const FUNCTION_HEADER = "X-Server-Function-Id";
+
+/**
+ * Response header marking a thrown server-function error. The value is the
+ * error's message (the structured error itself travels in the body); `"true"`
+ * for thrown control-flow responses and non-Error values.
+ */
+export const ERROR_HEADER = "X-Server-Function-Error";
+
+// HTTP header values are ByteStrings (latin1): Headers.set throws on code
+// points above U+00FF (or corrupts them, per platform), which used to turn a
+// thrown error with a CJK/emoji message into a bare 500 with nothing for the
+// client to decode (solidjs/solid-start#1874). Messages that cannot ride a
+// header verbatim travel percent-encoded behind this marker; verbatim
+// messages that happen to start with the marker are encoded too, so
+// `decodeErrorHeaderValue(encodeErrorHeaderValue(x)) === x` exactly —
+// astral-plane characters included.
+const ERROR_HEADER_MARKER = "=?1?";
+// Anything outside printable latin1 (controls, DEL, > U+00FF) forces the
+// encoded form; CR/LF never survive (header injection) and are stripped
+// before the check, matching SolidStart's original `toHeaderValue` guard.
+const NEEDS_ENCODING = /[^\x20-\x7e\xa0-\xff]/;
+
+/**
+ * Encodes an error message for the `ERROR_HEADER` value: plain printable
+ * latin1 rides verbatim (the fast path — ASCII messages are byte-identical
+ * on the wire), everything else is percent-encoded behind a marker.
+ */
+export function encodeErrorHeaderValue(value) {
+  let stripped = String(value).replace(/[\r\n]+/g, "");
+  // leading/trailing whitespace would be trimmed by Headers.set
+  if (
+    !NEEDS_ENCODING.test(stripped) &&
+    !stripped.startsWith(ERROR_HEADER_MARKER) &&
+    stripped === stripped.trim()
+  ) {
+    return stripped;
+  }
+  // encodeURIComponent throws on lone surrogates; well-form first (they
+  // cannot round-trip through UTF-8 anywhere in the protocol anyway)
+  if (typeof stripped.toWellFormed === "function") {
+    stripped = stripped.toWellFormed();
+  } else {
+    stripped = stripped.replace(
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+      "\uFFFD"
+    );
+  }
+  return ERROR_HEADER_MARKER + encodeURIComponent(stripped);
+}
+
+/**
+ * Decodes an `ERROR_HEADER` value produced by `encodeErrorHeaderValue`:
+ * marked values are percent-decoded, everything else passes through
+ * (including values from peers that never encode).
+ */
+export function decodeErrorHeaderValue(value) {
+  if (typeof value !== "string" || !value.startsWith(ERROR_HEADER_MARKER)) {
+    return value;
+  }
+  try {
+    return decodeURIComponent(value.slice(ERROR_HEADER_MARKER.length));
+  } catch {
+    // not produced by our encoder after all — hand it over untouched
+    return value;
+  }
+}
 
 /**
  * Header carrying a per-call instance id. Its presence tells the server a
@@ -38,6 +201,16 @@ export const INSTANCE_HEADER = "X-Server-Function-Instance";
 
 /** Header carrying the body format tag (a `BodyFormat` value). */
 export const BODY_FORMAT_HEADER = "X-Server-Function-Format";
+
+/**
+ * Header driving the single-flight protocol on both legs: on the request it
+ * opts the call into flight-data collection (the integration sends it on
+ * calls whose response should fold in data), on the response it marks a
+ * body carrying the standardized `{ value, data }` payload. How the data
+ * is produced (and what it means) is entirely the integration's business —
+ * core only owns the wire shape and the delivery.
+ */
+export const SINGLE_FLIGHT_HEADER = "X-Single-Flight";
 
 /** FormData key used when a lone File is sent as the argument. */
 export const FILE_FORM_KEY = "__server_function_file__";
@@ -50,7 +223,9 @@ export const BodyFormat = {
   Blob: "4",
   File: "5",
   ArrayBuffer: "6",
-  Uint8Array: "7"
+  Uint8Array: "7",
+  /** Plain `JSON.stringify(args)` — the fast path for JSON-safe arguments. */
+  Json: "8"
 };
 
 /**
@@ -131,6 +306,8 @@ export async function extractBody(source, codecOptions) {
   switch (true) {
     case format === BodyFormat.Serialized:
       return await deserializeStream(clone, codecOptions);
+    case format === BodyFormat.Json:
+      return JSON.parse(await clone.text());
     case format === BodyFormat.String:
       return await clone.text();
     case format === BodyFormat.File: {
@@ -163,7 +340,10 @@ export async function extractBody(source, codecOptions) {
  * how much data to buffer before parsing, so multiple chunks (async values
  * resolving over time) can share one connection.
  */
-function createChunk(data) {
+// Exported for other framed transports over the same wire convention (frame
+// streams frame their chunks identically — see frame-transport.js) so there
+// is exactly one framing implementation.
+export function createChunk(data) {
   const encodeData = new TextEncoder().encode(data);
   const bytes = encodeData.length;
   const baseHex = bytes.toString(16);
@@ -176,7 +356,7 @@ function createChunk(data) {
   return chunk;
 }
 
-class ChunkReader {
+export class ChunkReader {
   constructor(stream) {
     this.reader = stream.getReader();
     this.buffer = new Uint8Array(0);

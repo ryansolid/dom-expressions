@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/jsx-compiler": patch
+"@dom-expressions/compiler": patch
 ---
 
 Align the AST-native compiler's handling of JSX nested inside attribute values, event handlers, refs, spreads, and component props with the babel plugin. Nested JSX now lowers after the enclosing root finishes (matching babel's deferred re-traversal), so template declaration order matches babel output, setup statements inline into prop/spread getter bodies instead of wrapping in an IIFE (including in universal mode), and SSR temp variables hoist into the nearest enclosing closure rather than module scope — as a parameter when the closure is a zero-arg IIFE, mirroring babel.

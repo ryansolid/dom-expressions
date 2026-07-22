@@ -146,3 +146,100 @@ export function createJSONDeserializer(options) {
     return fromCrossJSON(node, { refs, ...resolved });
   };
 }
+
+/**
+ * Keyed streaming variant of the JSON codec, matching the hydration
+ * serializer's contract (`write(id, value)` / `flush()`) so the render core
+ * can drive either through the same serializer seam. Every write shares one
+ * parse-refs map, so a value referenced from multiple writes dedupes on the
+ * wire and decodes to a single instance; async values (promises, streams)
+ * keep emitting patch nodes after their initial keyed node.
+ *
+ * `onData` receives `{ key, node, initial }` records — passive data, no eval
+ * on the consumer (see `createJSONDataTable`). `onDone` fires once `flush()`
+ * has been called and every pending value has settled. Writes after flush
+ * are dropped, mirroring the hydration serializer.
+ */
+export function createJSONSerializer({
+  onData,
+  onDone,
+  onError,
+  plugins,
+  disabledFeatures,
+  depthLimit
+}) {
+  const resolved = resolveCodecOptions({ plugins, disabledFeatures, depthLimit });
+  const refs = new Map();
+  const cancels = new Set();
+  let pendingWrites = 0;
+  let flushed = false;
+  let done = false;
+  const maybeDone = () => {
+    if (flushed && pendingWrites === 0 && !done) {
+      done = true;
+      onDone && onDone();
+    }
+  };
+  return {
+    write(key, value) {
+      if (flushed) return;
+      pendingWrites++;
+      // Sync values settle inside the toCrossJSONStream call, before the
+      // cancel function exists — track with a flag instead of the handle.
+      let settled = false;
+      let cancel = null;
+      const stream = toCrossJSONStream(value, {
+        refs,
+        plugins: resolved.plugins,
+        disabledFeatures: resolved.disabledFeatures,
+        onParse(node, initial) {
+          onData({ key, node, initial });
+        },
+        onError,
+        onDone() {
+          settled = true;
+          if (cancel) cancels.delete(cancel);
+          pendingWrites--;
+          maybeDone();
+        }
+      });
+      if (!settled) {
+        cancel = stream;
+        cancels.add(cancel);
+      }
+    },
+    flush() {
+      flushed = true;
+      maybeDone();
+    },
+    close() {
+      flushed = true;
+      for (const cancel of cancels) cancel();
+      cancels.clear();
+    }
+  };
+}
+
+/**
+ * Keyed decode table for `createJSONSerializer` output. Feed every data
+ * record to `apply`: initial nodes land in the table under their key; later
+ * nodes patch pending values (promise/stream resolutions) through the shared
+ * deserializer refs. `resolve` reads a `{ $ref }` back out — the record ids
+ * double as the reference namespace.
+ */
+export function createJSONDataTable(options) {
+  const deserialize = createJSONDeserializer(options);
+  const table = new Map();
+  return {
+    apply(record) {
+      const value = deserialize(record.node);
+      if (record.initial) table.set(record.key, value);
+    },
+    get(key) {
+      return table.get(key);
+    },
+    resolve(ref) {
+      return table.get(ref.$ref);
+    }
+  };
+}

@@ -5,12 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@dom-expressions/jsx-compiler-darwin-x64': link:packages/jsx-compiler/npm/darwin-x64
-  '@dom-expressions/jsx-compiler-darwin-arm64': link:packages/jsx-compiler/npm/darwin-arm64
-  '@dom-expressions/jsx-compiler-linux-x64-gnu': link:packages/jsx-compiler/npm/linux-x64-gnu
-  '@dom-expressions/jsx-compiler-linux-arm64-gnu': link:packages/jsx-compiler/npm/linux-arm64-gnu
-  '@dom-expressions/jsx-compiler-win32-x64-msvc': link:packages/jsx-compiler/npm/win32-x64-msvc
-  '@dom-expressions/jsx-compiler-wasm32-wasi': link:packages/jsx-compiler/npm/wasm32-wasi
+  '@dom-expressions/compiler-darwin-x64': link:packages/compiler/npm/darwin-x64
+  '@dom-expressions/compiler-darwin-arm64': link:packages/compiler/npm/darwin-arm64
+  '@dom-expressions/compiler-linux-x64-gnu': link:packages/compiler/npm/linux-x64-gnu
+  '@dom-expressions/compiler-linux-arm64-gnu': link:packages/compiler/npm/linux-arm64-gnu
+  '@dom-expressions/compiler-win32-x64-msvc': link:packages/compiler/npm/win32-x64-msvc
+  '@dom-expressions/compiler-wasm32-wasi': link:packages/compiler/npm/wasm32-wasi
 
 importers:
 
@@ -132,13 +132,7 @@ importers:
         specifier: ^7.28.0
         version: 7.28.0
 
-  packages/hyperscript:
-    devDependencies:
-      '@dom-expressions/runtime':
-        specifier: workspace:*
-        version: link:../runtime
-
-  packages/jsx-compiler:
+  packages/compiler:
     devDependencies:
       '@emnapi/core':
         specifier: ^1.11.2
@@ -153,24 +147,30 @@ importers:
         specifier: ^1.1.6
         version: 1.1.6(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
     optionalDependencies:
-      '@dom-expressions/jsx-compiler-darwin-arm64':
+      '@dom-expressions/compiler-darwin-arm64':
         specifier: link:npm/darwin-arm64
         version: link:npm/darwin-arm64
-      '@dom-expressions/jsx-compiler-darwin-x64':
+      '@dom-expressions/compiler-darwin-x64':
         specifier: link:npm/darwin-x64
         version: link:npm/darwin-x64
-      '@dom-expressions/jsx-compiler-linux-arm64-gnu':
+      '@dom-expressions/compiler-linux-arm64-gnu':
         specifier: link:npm/linux-arm64-gnu
         version: link:npm/linux-arm64-gnu
-      '@dom-expressions/jsx-compiler-linux-x64-gnu':
+      '@dom-expressions/compiler-linux-x64-gnu':
         specifier: link:npm/linux-x64-gnu
         version: link:npm/linux-x64-gnu
-      '@dom-expressions/jsx-compiler-wasm32-wasi':
+      '@dom-expressions/compiler-wasm32-wasi':
         specifier: link:npm/wasm32-wasi
         version: link:npm/wasm32-wasi
-      '@dom-expressions/jsx-compiler-win32-x64-msvc':
+      '@dom-expressions/compiler-win32-x64-msvc':
         specifier: link:npm/win32-x64-msvc
         version: link:npm/win32-x64-msvc
+
+  packages/hyperscript:
+    devDependencies:
+      '@dom-expressions/runtime':
+        specifier: workspace:*
+        version: link:../runtime
 
   packages/runtime:
     dependencies:
@@ -1562,12 +1562,6 @@ packages:
     resolution: {integrity: sha512-7cmzIu+Vbupriudo7UudoMRH2OA3cTw67vva8MxeoAe5S7vPFI7z0vp0pMXiA25S8IUJefImQ90FeJjl8fjEaQ==}
     engines: {node: '>= 10'}
 
-  '@napi-rs/wasm-runtime@1.1.4':
-    resolution: {integrity: sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow==}
-    peerDependencies:
-      '@emnapi/core': ^1.7.1
-      '@emnapi/runtime': ^1.7.1
-
   '@napi-rs/wasm-runtime@1.1.6':
     resolution: {integrity: sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==}
     peerDependencies:
@@ -2122,9 +2116,6 @@ packages:
   '@tootallnate/once@2.0.0':
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
     engines: {node: '>= 10'}
-
-  '@tybys/wasm-util@0.10.1':
-    resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
@@ -5661,7 +5652,7 @@ snapshots:
 
   '@napi-rs/lzma-wasm32-wasi@1.4.5(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.1.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
+      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -5737,7 +5728,7 @@ snapshots:
 
   '@napi-rs/tar-wasm32-wasi@1.1.0(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.1.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
+      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -5774,18 +5765,11 @@ snapshots:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  '@napi-rs/wasm-runtime@1.1.4(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
+  '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
     dependencies:
       '@emnapi/core': 1.10.0
       '@emnapi/runtime': 1.10.0
-      '@tybys/wasm-util': 0.10.1
-    optional: true
-
-  '@napi-rs/wasm-runtime@1.1.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
-    dependencies:
-      '@emnapi/core': 1.11.2
-      '@emnapi/runtime': 1.11.2
-      '@tybys/wasm-util': 0.10.1
+      '@tybys/wasm-util': 0.10.3
     optional: true
 
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
@@ -5823,7 +5807,7 @@ snapshots:
 
   '@napi-rs/wasm-tools-wasm32-wasi@1.0.1(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.1.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
+      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -6010,12 +5994,12 @@ snapshots:
     dependencies:
       '@emnapi/core': 1.10.0
       '@emnapi/runtime': 1.10.0
-      '@napi-rs/wasm-runtime': 1.1.4(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
+      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
     optional: true
 
   '@rolldown/binding-wasm32-wasi@1.0.0-rc.3(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.1.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
+      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -6174,11 +6158,6 @@ snapshots:
   '@standard-schema/spec@1.1.0': {}
 
   '@tootallnate/once@2.0.0': {}
-
-  '@tybys/wasm-util@0.10.1':
-    dependencies:
-      tslib: 2.8.1
-    optional: true
 
   '@tybys/wasm-util@0.10.3':
     dependencies:

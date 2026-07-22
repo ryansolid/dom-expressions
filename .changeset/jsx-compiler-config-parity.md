@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/jsx-compiler": patch
+"@dom-expressions/compiler": patch
 ---
 
 Close the remaining configuration gaps between the AST-native compiler and the babel plugin:

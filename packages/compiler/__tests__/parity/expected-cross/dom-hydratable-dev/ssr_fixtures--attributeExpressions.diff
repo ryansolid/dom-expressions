@@ -1,0 +1,39 @@
+@@ -700,7 +700,10 @@
+     get children() {
+       return css();
+     }
+-  }), false);
++  }), true);
++  _$insert__r_dom(_g150$, _$scope__r_dom(() => {
++    return css();
++  }));
+   _$runHydrationEvents__r_dom();
+   return _g150$;
+ })(), (() => {
+@@ -776,19 +779,22 @@
+   return {
+     e: dynamicProperty(),
+     t: dynamicProperty(),
+-    a: dynamicProperty(),
+-    o: dynamicProperty()
++    a: dynamicContent(),
++    o: dynamicProperty(),
++    i: dynamicProperty()
+   };
+ }, ({
+   e: e,
+   t: t,
+   a: a,
+-  o: o
++  o: o,
++  i: i
+ }, _g80$) => {
+   _g158$.value = e ?? "";
+   _g159$.value = t ?? "";
+   _g160$.value = a ?? "";
+-  _g161$.value = o ?? "";
++  _g160$.value = o ?? "";
++  _g161$.value = i ?? "";
+ });
+ const template94 = _g157$;
+ var _g163$ = _$getNextElement__r_dom(_g53$);

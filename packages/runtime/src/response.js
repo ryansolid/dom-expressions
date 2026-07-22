@@ -34,6 +34,22 @@ export function isResponseEnvelope(value) {
   return !!(value && typeof value === "object" && value[ENVELOPE]);
 }
 
+// Brand for URL-bearing values (e.g. a router's typed path objects). Like
+// the envelope brand it's a registered symbol so identity survives
+// duplicated module instances; `toString()` stays the coercion mechanism
+// (attributes, Headers.set, template literals all call it) while the brand
+// is the identity mechanism — a bare `{ toString(): string }` is satisfied
+// by every object in the language, so without the brand the type would be
+// decorative and `redirect(someObject)` would silently put
+// "[object Object]" in a Location header.
+const HREF = Symbol.for("solid.Href");
+export { HREF };
+
+/** Whether `value` is an `Href`-branded URL-bearing value. */
+export function isHref(value) {
+  return !!(value && (typeof value === "object" || typeof value === "function") && value[HREF]);
+}
+
 function initWithRevalidate(init) {
   const { revalidate, ...responseInit } = init;
   const headers = new Headers(responseInit.headers);
@@ -46,13 +62,18 @@ function initWithRevalidate(init) {
  * cache keys the mutation invalidated.
  */
 export function redirect(url, init = 302) {
+  if (typeof url !== "string" && !isHref(url)) {
+    throw new TypeError(
+      "redirect() expects a string URL or an Href-branded value (Symbol.for('solid.Href'))."
+    );
+  }
   const { responseInit, headers } = initWithRevalidate(
     typeof init === "number" ? { status: init } : init
   );
   if (responseInit.status === undefined) {
     responseInit.status = 302;
   }
-  headers.set("Location", url);
+  headers.set("Location", String(url));
   return new Response(null, { ...responseInit, headers });
 }
 

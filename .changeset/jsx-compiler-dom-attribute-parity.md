@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/jsx-compiler": patch
+"@dom-expressions/compiler": patch
 ---
 
 Rewrite the native compiler's DOM attribute pipeline to match the Babel plugin's output:

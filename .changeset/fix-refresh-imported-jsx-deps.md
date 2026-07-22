@@ -1,0 +1,5 @@
+---
+"@dom-expressions/compiler": patch
+---
+
+Include imported bindings referenced only as plain JSX tags in the refresh transform's granular `dependencies`. The Babel plugin skips all plain JSX identifier tags in `getForeignBindings` — correct for same-module components (their `$$component` proxy gets a new identity on every re-execution, so counting them would remount everything on every edit) but wrong for imports: when an edit bubbles from the imported module to an importer, a component referencing the import only as a JSX tag had unchanged signature and dependency identities, so `patchComponent` skipped it and it kept rendering the stale module instance while sibling non-JSX references swapped to the new one (split-brain; a re-created context's old `Provider` staying mounted crashed readers with `ContextNotFoundError` and halted reactivity). Plain JSX tags now count as dependencies iff the identifier resolves to an imported binding — scope-aware, so component-local variables shadowing imports don't count, type-only imports are ignored, and member-expression tag roots (`<Foo.Bar/>`) still count unconditionally.

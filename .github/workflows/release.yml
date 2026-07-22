@@ -5,9 +5,9 @@ name: 'Release'
 # have this repo + this workflow file (release.yml) configured as its Trusted
 # Publisher on npmjs.com.
 #
-# Release order matters: run the "JSX Compiler Binaries" workflow with
+# Release order matters: run the "Compiler Binaries" workflow with
 # publish: true FIRST so the platform binary packages exist at the new
-# version — @dom-expressions/jsx-compiler pins them as optionalDependencies.
+# version — @dom-expressions/compiler pins them as optionalDependencies.
 # The preflight step below enforces this.
 
 # The push trigger exists only to register the workflow with GitHub (the
@@ -51,27 +51,27 @@ jobs:
 
       - name: Preflight — platform binary packages must already be published
         run: |
-          version=$(node -p "require('./packages/jsx-compiler/package.json').version")
+          version=$(node -p "require('./packages/compiler/package.json').version")
           echo "Checking platform packages at $version"
           missing=0
           for pkg in darwin-x64 darwin-arm64 linux-x64-gnu linux-arm64-gnu win32-x64-msvc wasm32-wasi; do
-            if npm view "@dom-expressions/jsx-compiler-$pkg@$version" version >/dev/null 2>&1; then
-              echo "ok      @dom-expressions/jsx-compiler-$pkg@$version"
+            if npm view "@dom-expressions/compiler-$pkg@$version" version >/dev/null 2>&1; then
+              echo "ok      @dom-expressions/compiler-$pkg@$version"
             else
-              echo "MISSING @dom-expressions/jsx-compiler-$pkg@$version"
+              echo "MISSING @dom-expressions/compiler-$pkg@$version"
               missing=1
             fi
           done
           if [ "$missing" = "1" ]; then
             echo ""
-            echo "Run the 'JSX Compiler Binaries' workflow with publish: true first."
+            echo "Run the 'Compiler Binaries' workflow with publish: true first."
             exit 1
           fi
 
-      # jsx-compiler is excluded: its main package ships no build artifacts
+      # compiler is excluded: its main package ships no build artifacts
       # (binaries live in the platform packages), so no Rust build is needed.
       - name: Build packages
-        run: pnpm --filter '!@dom-expressions/jsx-compiler' -r run build
+        run: pnpm --filter '!@dom-expressions/compiler' -r run build
 
       # Note: because every @dom-expressions/* name has only ever had
       # prerelease versions (the packages were renamed mid-prerelease),

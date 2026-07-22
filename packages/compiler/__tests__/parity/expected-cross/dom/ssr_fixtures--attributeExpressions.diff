@@ -1,0 +1,37 @@
+@@ -651,7 +651,8 @@
+     get children() {
+       return css();
+     }
+-  }), false);
++  }), true);
++  _$insert__r_dom(_g132$, css);
+   return _g132$;
+ })(), (() => {
+   var _g133$ = _g48$();
+@@ -714,19 +715,22 @@
+   return {
+     e: dynamicProperty(),
+     t: dynamicProperty(),
+-    a: dynamicProperty(),
+-    o: dynamicProperty()
++    a: dynamicContent(),
++    o: dynamicProperty(),
++    i: dynamicProperty()
+   };
+ }, ({
+   e: e,
+   t: t,
+   a: a,
+-  o: o
++  o: o,
++  i: i
+ }, _g73$) => {
+   _g139$.firstChild.value = e ?? "";
+   _g139$.firstChild.nextSibling.value = t ?? "";
+   _g139$.firstChild.nextSibling.nextSibling.value = a ?? "";
+-  _g139$.firstChild.nextSibling.nextSibling.nextSibling.value = o ?? "";
++  _g139$.firstChild.nextSibling.nextSibling.value = o ?? "";
++  _g139$.firstChild.nextSibling.nextSibling.nextSibling.value = i ?? "";
+ });
+ const template94 = _g139$;
+ var _g140$ = _g53$();

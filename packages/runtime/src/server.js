@@ -299,10 +299,90 @@ export function renderToStream(code, options = {}) {
     completed = true;
     if (firstFlushed) dispose();
   };
-  const serializer = createHydrationSerializer({
+  // FrameSink seam (design in frame-sink.js): semantic emission routes through
+  // a sink so the same render core can drive either document output (default)
+  // or a transport-agnostic frame-chunk stream. Methods close over stream
+  // state, so the document sink is assembled here rather than by a standalone
+  // factory. `options.sink` overrides individual methods (experimental —
+  // surface grows as seams extract; unlisted emission still writes document
+  // output directly).
+  const sink = {
+    // One serialized data record: a Seroval script addressing one or more ids
+    // (ids are embedded in the payload, not addressable here). Document
+    // behavior: accumulate as a task, flush inside a <script>.
+    data(payload) {
+      pushTask(payload);
+    },
+    // An async fragment resolved post-shell with its normalized HTML payload.
+    // Document behavior: <template id=key> plus, when the fragment carries
+    // streamed style links, a $dfs gate and onload-$dfc stylesheet links
+    // (inline styles apply as the parser sees them — no gating); eager
+    // (ungrouped, link-free) fragments self-activate with $df. Grouped
+    // fragments defer to reveal().
+    fragment(key, value, meta) {
+      const deferActivation = !!meta.revealGroup;
+      const styles = meta.styles;
+      for (let i = 0; i < styles.inline.length; i++) {
+        buffer.write(renderInlineStyle(styles.inline[i], nonce));
+      }
+      if (styles.links.length) {
+        emitTask(`$dfs("${key}",${styles.links.length},${deferActivation ? 1 : 0})`);
+        // Flush the $dfs gate before the links so their onload can't fire
+        // ahead of the pending-style registration.
+        writeTasks();
+        for (const url of styles.links) {
+          buffer.write(
+            `<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+          );
+        }
+        buffer.write(`<template id="${key}">${value}</template>`);
+      } else {
+        buffer.write(`<template id="${key}">${value}</template>`);
+        if (!deferActivation) {
+          emitTask(`$df("${key}")`);
+        }
+      }
+    },
+    // Reveal a set of fragments (registration order). Document behavior:
+    // $dfj task, or $dflj to materialize fallback content instead.
+    reveal(keys, meta) {
+      emitTask(`${meta.fallback ? "$dflj" : "$dfj"}(${JSON.stringify(keys)})`);
+    },
+    // A late-registered asset while streaming. Document behavior: style links
+    // are handled per-fragment (see fragment()); modules preload immediately;
+    // non-boundary inline styles write their <style> tag directly.
+    asset(type, value) {
+      if (type === "module") {
+        buffer.write(`<link rel="modulepreload" href="${value}">`);
+      } else if (type === "inline-style") {
+        buffer.write(renderInlineStyle(value, nonce));
+      }
+    },
+    // The resolved shell. `meta.assets` is the already-evaluated useAssets
+    // HTML (evaluation is core work — asset closures can serialize data, which
+    // must land in `meta.tasks`). Document behavior: head/script string
+    // surgery — assets and preload links spliced before </head>, accumulated
+    // tasks spliced at the <!--xs--> marker — then one write. Injection order
+    // (assets, preloads, scripts) is part of the byte-exact document output.
+    shell(shellHtml, meta) {
+      shellHtml = injectBeforeHead(shellHtml, meta.assets);
+      shellHtml = injectPreloadLinks(meta.preloads, shellHtml, nonce);
+      shellHtml = injectInlineStyles(meta.inlineStyles, shellHtml, nonce);
+      if (meta.tasks.length) shellHtml = injectScripts(shellHtml, meta.tasks, nonce);
+      buffer.write(shellHtml);
+    },
+    ...options.sink
+  };
+  // Serializer seam (companion to the sink seam): `options.serializer` is a
+  // factory with the hydration serializer's contract — `write(id, value)` +
+  // `flush()`, completion via onDone once everything pending settles. What
+  // flows through onData is a contract between the serializer and the sink
+  // (hydration scripts for the document sink, keyed codec records for the
+  // frame sink); the core never inspects it.
+  const serializer = (options.serializer || createHydrationSerializer)({
     scopeId: options.renderId,
     plugins: options.plugins,
-    onData: pushTask,
+    onData: payload => sink.data(payload),
     onDone,
     onError: options.onError
   });
@@ -380,10 +460,10 @@ export function renderToStream(code, options = {}) {
         const entry = tracking.registerInlineStyle(value);
         // Boundary-attributed inline styles flush with their fragment; a late
         // registration outside any boundary has no other emission point, so
-        // write the tag into the stream immediately.
+        // emit it immediately.
         if (firstFlushed && !tracking.currentBoundaryId && !entry.emitted) {
           entry.emitted = true;
-          buffer.write(renderInlineStyle(entry, nonce));
+          sink.asset("inline-style", entry);
         }
         return;
       }
@@ -397,9 +477,7 @@ export function renderToStream(code, options = {}) {
       }
       if (!tracking.emittedAssets.has(value)) {
         tracking.emittedAssets.add(value);
-        if (firstFlushed && type === "module") {
-          buffer.write(`<link rel="modulepreload" href="${value}">`);
-        }
+        if (firstFlushed) sink.asset(type, value);
       }
     },
     block(p) {
@@ -490,31 +568,10 @@ export function renderToStream(code, options = {}) {
             } else {
               serializeFragmentAssets(key, tracking.boundaryModules, context);
               const styles = collectStreamStyles(key, tracking, headStyles);
-              const deferActivation = !!revealGroup;
-              // Inline styles apply as soon as the parser sees them — emit
-              // before the template, no load gating needed.
-              for (let i = 0; i < styles.inline.length; i++) {
-                buffer.write(renderInlineStyle(styles.inline[i], nonce));
-              }
-              if (styles.links.length) {
-                emitTask(`$dfs("${key}",${styles.links.length},${deferActivation ? 1 : 0})`);
-                writeTasks();
-                for (const url of styles.links) {
-                  buffer.write(
-                    `<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
-                  );
-                }
-                buffer.write(
-                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
-                );
-              } else {
-                buffer.write(
-                  `<template id="${key}">${value !== undefined ? value : " "}</template>`
-                );
-                if (!deferActivation) {
-                  emitTask(`$df("${key}")`);
-                }
-              }
+              // The error rides the sink call: the document sink ignores it
+              // (its protocol rejects `<key>_fr` via item.resolve below), but
+              // transport sinks with no resume protocol need the signal.
+              sink.fragment(key, value !== undefined ? value : " ", { styles, revealGroup, error });
               item.resolve(error);
             }
           }
@@ -527,12 +584,12 @@ export function renderToStream(code, options = {}) {
       // cannot be changed by resolve timing.
       const keys = resolveRevealKeys(groupOrKeys, true, true);
       if (!keys) return;
-      emitTask(`$dfj(${JSON.stringify(keys)})`);
+      sink.reveal(keys, { fallback: false });
     },
     revealFallbacks(groupOrKeys) {
       const keys = resolveRevealKeys(groupOrKeys, false, false);
       if (!keys) return;
-      emitTask(`$dflj(${JSON.stringify(keys)})`);
+      sink.reveal(keys, { fallback: true });
     }
   };
   applyAssetTracking(context, tracking, manifest);
@@ -588,16 +645,21 @@ export function renderToStream(code, options = {}) {
     if (shellCompleted) return;
     if (!resolveRootHoles()) return;
     sharedConfig.context = context;
-    html = injectAssets(context.assets, html);
+    // Asset closures run before anything reads `tasks`: they can serialize
+    // data (via sink.data → tasks), which the shell snapshot must include.
+    const assetsHtml = resolveAssetsHtml(context.assets);
     headStyles = new Set();
     for (const url of tracking.emittedAssets) {
       if (url.endsWith(".css")) headStyles.add(url);
     }
-    html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
-    html = injectInlineStyles(tracking.inlineStyles, html, nonce);
+    // Same constraint: root _assets serialization feeds sink.data → tasks.
     serializeRootAssets();
-    if (tasks.length) html = injectScripts(html, tasks, nonce);
-    buffer.write(html);
+    sink.shell(html, {
+      assets: assetsHtml,
+      preloads: tracking.emittedAssets,
+      inlineStyles: tracking.inlineStyles,
+      tasks
+    });
     tasks = "";
     onCompleteShell &&
       onCompleteShell({
@@ -1151,13 +1213,24 @@ function allSettled(promises) {
   });
 }
 
-function injectAssets(assets, html) {
-  if (!assets || !assets.length) return html;
+function resolveAssetsHtml(assets) {
+  if (!assets || !assets.length) return "";
   let out = "";
   for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
+  return out;
+}
+
+function injectBeforeHead(html, content) {
+  if (!content) return html;
   const index = html.indexOf("</head>");
   if (index === -1) return html;
-  return html.slice(0, index) + out + html.slice(index);
+  return html.slice(0, index) + content + html.slice(index);
+}
+
+function injectAssets(assets, html) {
+  // Evaluation is unconditional (closures may have side effects) even when
+  // there is no </head> to splice into.
+  return injectBeforeHead(html, resolveAssetsHtml(assets));
 }
 
 function injectPreloadLinks(emittedAssets, html, nonce) {
@@ -1425,6 +1498,21 @@ export function getRequestEvent() {
 /** @deprecated use renderToStream which also returns a promise */
 export function renderToStringAsync(code, options = {}) {
   return new Promise(resolve => renderToStream(code, options).then(resolve));
+}
+
+// Element claims are a client-only concern (compiled DOM output claims
+// navigation-relevant elements for consumers like a router's link-state
+// layer), but consumers may register isomorphically — so these are silent
+// no-ops rather than loud stubs. Claims never fire during SSR.
+export function registerElementClaim() {
+  return noopCleanup;
+}
+function noopCleanup() {}
+export function claimElement(node) {
+  return node;
+}
+export function claimElementTree(root) {
+  return root;
 }
 
 // client-only APIs

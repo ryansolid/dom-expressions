@@ -7,17 +7,46 @@ import {
   untrack,
   getOwner,
   runWithOwner,
-  getNextChildId
+  getNextChildId,
+  createOwner,
+  createContext,
+  getContext,
+  setContext
 } from "@solidjs/signals";
 
 export { createRoot as root, getOwner, untrack, runWithOwner, merge as mergeProps, flatten };
 
+// Hydration-zone flag (mirrors solid's NoHydrateContext): under NoHydration,
+// ids keep flowing (owners consume normally) but keys stop EMITTING.
+const NoHydrateContext = createContext(false);
+
 export const sharedConfig = {
   getNextContextId() {
     const owner = getOwner();
-    return owner ? getNextChildId(owner) : undefined;
+    if (!owner) return undefined;
+    if (getContext(NoHydrateContext, owner)) return undefined;
+    return getNextChildId(owner);
   }
 };
+
+// Faithful mimics of solid's server components (see solid
+// packages/solid/src/server/hydration.ts) — the frame sink renders
+// server-owned output under NoHydration and re-enters client positions
+// through Hydration.
+export function NoHydration(props) {
+  return runWithOwner(createOwner(), () => {
+    setContext(NoHydrateContext, true);
+    return props.children;
+  });
+}
+
+export function Hydration(props) {
+  if (!getContext(NoHydrateContext)) return props.children;
+  return runWithOwner(createOwner({ id: props.id ?? "" }), () => {
+    setContext(NoHydrateContext, false);
+    return props.children;
+  });
+}
 
 export function ssrHandleError(err) {
   if (err && err._promise) return err._promise;
@@ -69,3 +98,8 @@ export const memo = (fn, transparent) =>
       ? fn
       : createMemo(() => fn(), { transparent: true })
     : createMemo(() => fn());
+
+// Hydration-key owner scoping (solid-web's rxcore implements this over
+// createOwner({ id })). The test core has no hydration id chain, so the
+// scope is a passthrough — document-mode tests assert markers, not keys.
+export const runWithHydrationScope = (id, fn) => fn();

@@ -22,7 +22,7 @@
     "report:coverage": "pnpm -r --parallel run report:coverage",
     "format": "prettier --write --cache \"**/*.[tj]s?(x)\"",
     "changeset": "changeset",
-    "version": "changeset version && pnpm --filter @dom-expressions/jsx-compiler run napi:version",
+    "version": "changeset version && pnpm --filter @dom-expressions/compiler run napi:version",
     "publish:release": "pnpm run build && changeset publish",
     "jsx-sync-types": "node packages/runtime/src/jsx-update.mjs",
     "jsx-customize-types": "node packages/runtime/src/jsx-customize.mjs",

@@ -62,6 +62,7 @@ export interface Runtime {
   spread<T>(node: Element, accessor: (() => T) | T, skipChildren?: boolean): void;
   createComponent(Comp: (props: any) => any, props: any): any;
   mergeProps(...sources: unknown[]): any;
+  claimElement<T extends Element>(node: T): T;
   SVGElements: Set<string>;
   VoidElements: Set<string>;
   RawTextElements: Set<string>;
