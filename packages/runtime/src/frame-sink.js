@@ -296,7 +296,15 @@ export function createDocumentProjectionProps(clientProps, frameId) {
           // Direct-insert position: the client's content renders inline,
           // wrapped in the range the adopting frame will claim.
           if (callArgs.length === 0 || callArgs[0] === undefined) {
-            return scoped(prop, () => range(prop, clientProps[prop]));
+            // Direct-insert positions are key-scoped like render props —
+            // there is no natural id parity across the boundary (the server
+            // resolves at proxy-read depth, the client at its own tree
+            // depth), so BOTH sides must evaluate inside the occurrence
+            // scope. The t=0 convention: pass direct-insert client content
+            // as a THUNK, which the adopting client evaluates inside the
+            // same scope (claimRender) — exactly the render-prop mechanism.
+            const value = clientProps[prop];
+            return scoped(prop, () => range(prop, typeof value === "function" ? value() : value));
           }
           const raw = callArgs[0];
           let occurrence;

@@ -206,13 +206,6 @@ async function fetchServerFunction(base, id, options, args, meta) {
   const handler = config.responseHandler;
   const context = handler && handler.capture ? handler.capture({ id, meta }) : undefined;
 
-  // Local-answer seam: an integration that already holds this call's result
-  // (e.g. a document-SSR'd server-component boundary at hydration time)
-  // short-circuits the network entirely.
-  if (handler && handler.intercept) {
-    const hit = handler.intercept({ id, meta, args, context });
-    if (hit !== undefined) return hit;
-  }
 
   const response = await initializeResponse(base, id, instance, options, args, meta);
 
@@ -283,7 +276,19 @@ export function createServerReference(id, name, base) {
   // its bound arguments in the query string, where the server reads them
   // for natural-encoding bodies. Default calls derive from the configured
   // endpoint (lazily — it may be configured after module scope runs).
-  const fn = (...args) => fetchServerFunction(base || config.endpoint, id, {}, args, metadata);
+  const fn = (...args) => {
+    // Local-answer seam, SYNCHRONOUS on purpose: an integration that already
+    // holds this call's result (e.g. a document-SSR'd server-component
+    // boundary at hydration time) answers without a promise — so async
+    // consumers (dynamic under a hydrating Loading) never observe a pending
+    // beat that would commit them to a fallback and discard SSR'd content.
+    const handler = config.responseHandler;
+    if (handler && handler.intercept) {
+      const hit = handler.intercept({ id, meta: metadata, args });
+      if (hit !== undefined) return hit;
+    }
+    return fetchServerFunction(base || config.endpoint, id, {}, args, metadata);
+  };
   fn[SERVER_FUNCTION_METADATA] = metadata;
 
   return new Proxy(fn, {
@@ -326,6 +331,11 @@ export function GET(fn) {
   // metadata (withMeta composes with GET in either order)
   const metadata = { ...getServerFunctionMetadata(fn) };
   const wrapped = async (...args) => {
+    const handler = config.responseHandler;
+    if (handler && handler.intercept) {
+      const hit = handler.intercept({ id, meta: metadata, args });
+      if (hit !== undefined) return hit;
+    }
     let base = `${config.endpoint}?id=${encodeURIComponent(id)}`;
     if (args.length) {
       // The handler's GET path accepts both encodings: plain JSON and the
