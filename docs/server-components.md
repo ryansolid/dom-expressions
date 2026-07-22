@@ -258,7 +258,19 @@ components claim their already-rendered markup and bind behavior onto it.
 This is where the single-copy rule pays off twice: the initial page has no
 hydration data blob for server content (the HTML *is* the data), and
 `<Loading>` boundaries stream on first load exactly as they do on
-navigation.
+navigation. Boot makes **zero requests** — the page itself is the payload:
+each boundary's markers are the record, wrappers claim their
+server-rendered nodes by hydration key, and occurrence args ride tiny
+records containing only values not already recoverable from the page.
+
+**Occlusion is handled, not leaked.** A wrapper that renders its server
+content conditionally — a comment thread collapsed by default — never
+renders that content at SSR, so it can't be in the HTML. The producer
+tracks exactly this (evaluating a position *is* the usage signal) and
+flips the transport for what went unrendered: the occluded content
+serializes once as a data record, and when the wrapper finally renders
+it, it mounts from the client's store with zero network. One copy,
+always — as markup when rendered, as data when not, never both.
 
 One hard rule makes this coherent: **hydration happens once, at load time,
 and never again.** After the client is alive, its state has diverged from
