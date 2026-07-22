@@ -79,6 +79,20 @@ export function createFrameSink(emit, frame) {
       // applies to its record table (createJSONDataTable). A plain string
       // (hydration script from createHydrationSerializer) still passes
       // through as a `payload` chunk for eval-style consumers.
+      //
+      // The DOCUMENT hydration protocol's bookkeeping — fragment-resume
+      // promises (`<id>_fr`) and ssrSource memo auto-serializations (bare
+      // hydration-id keys, pure digits under a frame render) — has no
+      // frame-side reader: the stream's own fragment/reveal chunks supersede
+      // it. Dropped (measured at 26% of a navigation payload). Deliberate
+      // serializations (codec `arg:` records, user keys) pass through.
+      if (
+        record &&
+        typeof record.key === "string" &&
+        (record.key.endsWith("_fr") || /^\d+$/.test(record.key))
+      ) {
+        return;
+      }
       if (typeof record === "string") {
         emit({ type: "data", id, version, payload: record });
       } else {
