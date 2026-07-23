@@ -6,14 +6,18 @@ rust-version = "1.95"
 publish = false
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["node"]
+node = ["dep:napi", "dep:napi-derive"]
 
 [dependencies]
 html5ever = "0.39.0"
 htmlize = { version = "1", features = ["unescape"] }
 markup5ever_rcdom = "0.39.0"
-napi = { version = "3.12", default-features = false, features = ["napi4"] }
-napi-derive = "3.6"
+napi = { version = "3.12", default-features = false, features = ["napi4"], optional = true }
+napi-derive = { version = "3.6", optional = true }
 oxc_allocator = "0.144"
 oxc_ast = "0.144"
 oxc_ast_visit = "0.144"

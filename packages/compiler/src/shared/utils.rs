@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::{Error, Result};
 use oxc_ast::ast::BinaryOperator;
 use oxc_ast::ast::{Expression, JSXChild, JSXElementName, JSXExpression};
 use oxc_span::Span;

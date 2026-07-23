@@ -7,7 +7,7 @@ use crate::shared::utils::{
     child_slot_allocates_ids, element_name, escape_html_text, escape_html_text_expression,
     is_component_name, static_jsx_expression, trim_jsx_text,
 };
-use napi::bindgen_prelude::*;
+use crate::error::{Error, Result};
 use oxc_allocator::CloneIn;
 use oxc_ast::ast::Expression;
 use oxc_ast::ast::{

@@ -14,7 +14,7 @@ impl<'a> AstDomTransform<'a, '_> {
     fn lower_root_element_with_setup(
         &mut self,
         element: &oxc_ast::ast::JSXElement<'a>,
-    ) -> napi::bindgen_prelude::Result<(Expression<'a>, std::vec::Vec<Statement<'a>>)> {
+    ) -> crate::error::Result<(Expression<'a>, std::vec::Vec<Statement<'a>>)> {
         let is_root = self.jsx_root_span.is_none();
         if is_root {
             self.jsx_root_span = Some(element.span);
@@ -29,7 +29,7 @@ impl<'a> AstDomTransform<'a, '_> {
     fn lower_root_fragment(
         &mut self,
         fragment: &oxc_ast::ast::JSXFragment<'a>,
-    ) -> napi::bindgen_prelude::Result<Expression<'a>> {
+    ) -> crate::error::Result<Expression<'a>> {
         let is_root = self.jsx_root_span.is_none();
         if is_root {
             self.jsx_root_span = Some(fragment.span);

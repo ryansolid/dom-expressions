@@ -2,7 +2,7 @@
 //! `shared/fragment.ts` (`transformFragmentChildren`): one traversal shared
 //! by every generate, with per-mode emission behind [`ModeLower`].
 
-use napi::bindgen_prelude::*;
+use crate::error::Result;
 use oxc_allocator::CloneIn;
 use oxc_ast::ast::{Expression, JSXChild, JSXExpression, JSXFragment};
 

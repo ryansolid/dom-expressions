@@ -2,7 +2,7 @@
 //! mirroring the Babel plugin's `transformComponent` (`shared/component.ts`):
 //! one traversal with per-mode emission behind [`ComponentLower`].
 
-use napi::bindgen_prelude::*;
+use crate::error::{Error, Result};
 use oxc_allocator::CloneIn;
 use oxc_ast::ast::{
     Expression, JSXAttributeItem, JSXAttributeValue, JSXElement, ObjectPropertyKind, Statement,

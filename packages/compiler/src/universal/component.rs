@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::Result;
 use oxc_ast::ast::Expression;
 use oxc_span::Span;
 

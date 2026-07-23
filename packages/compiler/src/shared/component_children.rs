@@ -3,7 +3,7 @@
 //! traversal shared by the client generates, with per-mode emission behind
 //! [`ModeLower`] / [`ComponentChildLower`].
 
-use napi::bindgen_prelude::*;
+use crate::error::Result;
 use oxc_allocator::CloneIn;
 use oxc_ast::ast::{Expression, JSXChild, JSXElement, JSXExpression, Statement};
 use oxc_span::GetSpan;
