@@ -320,6 +320,41 @@ mounts into an element; a slot is a range.**
   Solid binding's `documentBoundary`. Wire chunk schema unchanged except id
   rebasing semantics. All pre-1.0/experimental surface.
 
+## The two hard problems (deferred; producer-side)
+
+Neither blocks the shipping element-seams work (html-mode + synchronous
+occlusion). They are what make **template mode** and **full streaming
+occlusion** real, and they share a root: the frame producer today operates on
+*resolved HTML strings*, having already discarded the structural fact each one
+needs. Both are "preserve structure to the sink," not new mechanisms — a
+richer sink that sees structure instead of finished strings.
+
+1. **Knowing insertion status before flush (streaming occlusion).** The
+   occlusion choice is exclusive per slot: server-rendered ⇒ adopt from
+   markup; unrendered ⇒ serialize as data; never both (single-copy). Usage
+   tracking gives the signal *after* the wrapper reads the prop — fine
+   synchronously, but streaming may force a shell flush before an async
+   wrapper has decided. Bounded by the `double-data.ts` proof: the only
+   undecidable case is a slot **conditionally** read inside an async segment.
+   Sync reads and slots *statically forwarded* into a pending segment are
+   decidable at flush. For the residue the policy is locked — **serialize once
+   at flush and suppress any later server markup for that slot id** (or CSR
+   that instance) — trading one slot's adoption for a guaranteed
+   no-double-ship. *Implemented:* the synchronous path. *Unbuilt:* the
+   segment-scoped lock for the streaming case (the RFC's flagged open risk).
+
+2. **Identifying that the data is a template.** Structural dedup recovers a
+   template from a rendered DOM instance (or sends it once); it must recognize
+   "this output is instance N of template T." Not a compiler change (the
+   shared compiler can't distinguish frame from SSR at compile time). The
+   handle is the SSR template identity the output already carries: `.map(c =>
+   <Comment/>)` calls `ssr` with the same hoisted `_tmpl$` parts-array
+   reference each iteration. *Unbuilt:* the pipeline concatenates
+   `{parts, holes}` into a string before the sink sees it, so the sink never
+   sees template identity or the parts/holes split. Thread that through and
+   `template`/`block` (already spoken by the wire + consumer) light up;
+   otherwise every instance ships full `html` — correct, just not deduped.
+
 ## Open questions
 
 1. Element naming and the `display: contents` delivery mechanism (inline
@@ -330,3 +365,8 @@ mounts into an element; a slot is a range.**
    element-restricted parsing contexts; adoption-time marker integrity
    report.
 4. Whether the morph live-state deny-list is fixed or pluggable.
+5. Occlusion container: keep the hydration data record (`sc:region:…`), or
+   park occluded content in an inert `<template>` element like Astro-Solid —
+   keeping content entirely out of the data channel (stronger single-copy
+   surface, CSP-friendlier; frames already own the `<template id="pl-…">`
+   vocabulary).
