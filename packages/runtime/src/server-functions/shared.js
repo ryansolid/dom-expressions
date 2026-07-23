@@ -376,12 +376,17 @@ export class ChunkReader {
   }
 
   async next() {
-    if (this.buffer.length === 0) {
+    // A network read boundary can land anywhere — inside the 12-byte header
+    // just as easily as inside a payload — so buffer until the whole header
+    // is present before parsing it. Parsing a truncated header used to
+    // mis-read the length (or throw) whenever a proxy/TLS record split a
+    // frame, which no localhost test ever produces.
+    while (this.buffer.length < 12) {
       if (this.done) {
-        return { done: true, value: undefined };
+        if (this.buffer.length === 0) return { done: true, value: undefined };
+        throw new Error("Malformed server function stream.");
       }
       await this.readChunk();
-      return await this.next();
     }
     // `;0x00000000;` — the hex length names how many payload bytes to wait for
     const head = new TextDecoder().decode(this.buffer.subarray(1, 11));

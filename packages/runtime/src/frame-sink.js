@@ -312,6 +312,41 @@ function slotRange(occurrence) {
   return { t: `<!--slot:${occurrence}:start--><!--slot:${occurrence}:end-->` };
 }
 
+// Occurrence ids embed user data (`$key`), and they land in contexts with
+// hard character constraints: HTML comment markers (`-->` terminates the
+// comment — the Qwik marker-XSS class, GHSA-m6jq-g7gq-5w3c), unquoted `_hk`
+// attribute values (whitespace/quotes/`=`/`<`/`>`/backtick truncate or split
+// the attribute), and `#`, which is the occurrence separator `propOf` splits
+// on. Keys are percent-encoded onto a conservative alphabet at the single
+// point occurrences are minted; both proxies and the wire carry the encoded
+// form, and the client never decodes — occurrence identity only requires the
+// two sides to agree byte-for-byte. `%` itself encodes, so the mapping is
+// injective and distinct keys can never collide.
+const OCCURRENCE_UNSAFE = /[^A-Za-z0-9_.-]/g;
+function encodeOccurrenceKey(key) {
+  return String(key).replace(OCCURRENCE_UNSAFE, c => {
+    const code = c.codePointAt(0);
+    return "%" + (code < 16 ? "0" : "") + code.toString(16);
+  });
+}
+
+/**
+ * Mint the occurrence id for one render-prop call: `prop#<$key>` when the
+ * caller named the occurrence, positional `prop#<n>` otherwise. Shared by the
+ * stream and document proxies so identity is byte-identical across t=0
+ * adoption and every later stream.
+ */
+function occurrenceId(prop, raw, counts) {
+  const k = raw.$key;
+  // Numbers encode too: exponent forms ("1e+21") carry `+`.
+  if (typeof k === "string" || typeof k === "number") {
+    return `${prop}#${encodeOccurrenceKey(k)}`;
+  }
+  const n = counts[prop] || 0;
+  counts[prop] = n + 1;
+  return `${prop}#${n}`;
+}
+
 /**
  * Document-mode slot props — the t = 0 counterpart of
  * `createSlotProps`. During initial document SSR a server component
@@ -387,15 +422,7 @@ export function createDocumentSlotProps(clientProps, frameId) {
             });
           }
           const raw = callArgs[0];
-          let occurrence;
-          const k = raw.$key;
-          if (typeof k === "string" || typeof k === "number") {
-            occurrence = `${prop}#${k}`;
-          } else {
-            const n = counts[prop] || 0;
-            counts[prop] = n + 1;
-            occurrence = `${prop}#${n}`;
-          }
+          const occurrence = occurrenceId(prop, raw, counts);
           const slot = clientProps[prop];
           if (typeof slot !== "function") return range(occurrence, undefined);
           const resolved = {};
@@ -667,15 +694,7 @@ export function createSlotProps(sink, frame) {
           // positional per prop — the right default for most flows: a state
           // reset across different lists is usually correct, and equivalent
           // re-sends dedupe anyway. `$key` matters when a live list reorders.
-          let occurrence;
-          const k = raw.$key;
-          if (typeof k === "string" || typeof k === "number") {
-            occurrence = `${prop}#${k}`;
-          } else {
-            const n = counts[prop] || 0;
-            counts[prop] = n + 1;
-            occurrence = `${prop}#${n}`;
-          }
+          const occurrence = occurrenceId(prop, raw, counts);
           const args = {};
           for (const key of Object.keys(raw)) {
             const value = raw[key];

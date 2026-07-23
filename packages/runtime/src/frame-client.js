@@ -885,6 +885,7 @@ class FrameImpl {
     while (n && n !== end) {
       const id = slotStartId(n);
       if (id !== null) {
+        if ("_DX_DEV_") devCheckRange(n, id);
         if (!found.has(id)) found.set(id, n);
         n = afterRange(n, id);
         continue;
@@ -1016,6 +1017,15 @@ class FrameImpl {
     if (assets && assets.inlineStyles) applyInlineStyles(assets.inlineStyles);
     const content = this.#store[`seg:${name}`];
     const closing = rangeClose(tpl, placeholderId(name));
+    if ("_DX_DEV_" && !closing) {
+      console.error(
+        `Frame fragment placeholder "${name}" is missing its closing comment ` +
+          `(<!--${placeholderId(name)}-->); revealed content will be appended at the end of ` +
+          `its parent instead of in place. Likely an HTML-rewriting layer stripped the ` +
+          `comment, or invalid nesting split the placeholder range.`,
+        tpl
+      );
+    }
     const parent = tpl.parentNode;
     let n = tpl.nextSibling;
     while (n && n !== closing) {
@@ -1281,6 +1291,7 @@ function collectSlots(root, out) {
   while (n) {
     const id = slotStartId(n);
     if (id !== null) {
+      if ("_DX_DEV_") devCheckRange(n, id);
       if (!out.has(id)) out.set(id, n);
       n = afterRange(n, id);
       continue;
@@ -1458,6 +1469,32 @@ function afterRange(start, id) {
     n = n.nextSibling;
   }
   return null;
+}
+
+/**
+ * Dev-only range integrity check: a slot start marker whose end marker is not
+ * a later sibling means the range was corrupted between the producer and
+ * here. `afterRange` returning null is ambiguous (an end marker that IS the
+ * last sibling also has no `nextSibling`), so this re-scans for the marker
+ * itself and reports the two known corruption causes loudly instead of
+ * letting collection silently truncate at the broken range.
+ */
+function devCheckRange(start, id) {
+  if (!"_DX_DEV_") return;
+  const end = slotEnd(id);
+  let n = start.nextSibling;
+  while (n) {
+    if (n.nodeType === COMMENT_NODE && n.data === end) return;
+    n = n.nextSibling;
+  }
+  console.error(
+    `Frame slot range "${id}" is missing its end marker (<!--${end}-->) among its start ` +
+      `marker's siblings. Slots after it in this content cannot be discovered. Likely causes: ` +
+      `invalid HTML nesting split the range during parsing (e.g. a block element inside <p>), ` +
+      `or an HTML-rewriting layer (CDN/minifier/translator) removed or moved the comment — ` +
+      `serve frame documents with Cache-Control: no-transform.`,
+    start
+  );
 }
 
 /** The sibling after the `slot:<id>:end` marker in the incoming source. */

@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Fix `ChunkReader` mis-parsing framed streams when a network read boundary lands inside the 12-byte chunk header. The reader only refilled its buffer when it was completely empty, so a partial header (1–11 buffered bytes) was decoded as a truncated hex length — yielding empty/garbage values (`JSON.parse("")` downstream) or a spurious "Malformed server function stream" error. Any proxy, TLS record sizing, or compression layer can split frames this way; single-process/localhost transports rarely do, which is why it only surfaced in deployed environments. Affects both server-function responses (`deserializeStream`) and frame streams (`applyFrameResponse`). The reader now buffers until the full header is present before parsing, and a stream that ends mid-header or mid-payload is reported as malformed instead of silently yielding partial data. Regression-tested with an every-split-position sweep and byte-at-a-time delivery in `test/ssr/frame-wire.spec.js`.

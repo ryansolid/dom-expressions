@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Escape user-controlled `$key` values before they enter server-component slot markers. An occurrence key rides into HTML comment markers (`<!--slot:row#KEY:start-->`), the `#` prop/occurrence separator, and unquoted `_hk` attribute values, so an unescaped key could terminate a comment (`-->`), inject markup, or forge a prop boundary — the same class as Qwik's marker-injection advisory (GHSA-m6jq-g7gq-5w3c). Keys are now percent-encoded onto a conservative alphabet at the single point occurrences are minted, identically on the stream and document faces (t=0 adoption matches occurrences by byte-identical id), and the encoding is injective so distinct keys never collide. Plain alphanumeric keys are unaffected (`row#c1` stays `row#c1`). Also adds dev-mode integrity checks that report a corrupted slot/placeholder range loudly — naming the likely cause (invalid HTML nesting, or an HTML-rewriting CDN/minifier/translator stripping comments) and recommending `Cache-Control: no-transform` — instead of silently truncating discovery.
