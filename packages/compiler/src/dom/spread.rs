@@ -8,6 +8,7 @@ use crate::shared::ast::arrow_return_expression;
 use crate::shared::condition::{
     is_condition_shape, transform_condition_inline, zero_arg_call_thunk,
 };
+use crate::shared::constants::dom_with_state;
 use crate::shared::utils::{decode_html_entities, source_from_span};
 
 impl<'a> AstDomTransform<'a, '_> {
@@ -15,6 +16,7 @@ impl<'a> AstDomTransform<'a, '_> {
     pub(crate) fn spread_attribute_statement(
         &mut self,
         attributes: &[JSXAttributeItem<'a>],
+        tag_name: &str,
         element_id: &str,
         skip_children: bool,
     ) -> Result<Statement<'a>> {
@@ -70,7 +72,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     {
                         continue;
                     }
-                    running_props.push(self.spread_attribute_property(attr)?);
+                    running_props.push(self.spread_attribute_property(attr, tag_name)?);
                 }
             }
         }
@@ -108,13 +110,19 @@ impl<'a> AstDomTransform<'a, '_> {
     fn spread_attribute_property(
         &mut self,
         attr: &oxc_ast::ast::JSXAttribute<'a>,
+        tag_name: &str,
     ) -> Result<ObjectPropertyKind<'a>> {
         let name = match &attr.name {
             oxc_ast::ast::JSXAttributeName::Identifier(name) => name.name.to_string(),
             oxc_ast::ast::JSXAttributeName::NamespacedName(name)
                 if name.namespace.name == "prop" =>
             {
-                name.name.name.to_string()
+                let local_name = name.name.name.to_string();
+                if dom_with_state(tag_name, &local_name).is_some() {
+                    local_name
+                } else {
+                    format!("prop:{local_name}")
+                }
             }
             oxc_ast::ast::JSXAttributeName::NamespacedName(_) => {
                 return Err(Error::from_reason(

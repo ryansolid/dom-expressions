@@ -1,14 +1,4 @@
-@@ -651,7 +651,8 @@
-     get children() {
-       return css();
-     }
--  }), false);
-+  }), true);
-+  _$insert__r_dom(_g132$, css);
-   return _g132$;
- })(), (() => {
-   var _g133$ = _g48$();
-@@ -714,19 +715,22 @@
+@@ -714,19 +714,22 @@
    return {
      e: dynamicProperty(),
      t: dynamicProperty(),
