@@ -1,8 +1,0 @@
-@@ -560,6 +560,7 @@
- _g135$.firstChild.value = dynamicProperty() ?? "";
- _g135$.firstChild.nextSibling.value = dynamicProperty() ?? "";
- _$insert__r_dom(_g135$.firstChild.nextSibling, dynamicContent);
-+_g135$.firstChild.nextSibling.nextSibling.value = dynamicContent() ?? "";
- _g135$.firstChild.nextSibling.nextSibling.value = dynamicProperty() ?? "";
- _g135$.firstChild.nextSibling.nextSibling.nextSibling.value = dynamicProperty() ?? "";
- _$insert__r_dom(_g135$.firstChild.nextSibling.nextSibling.nextSibling.nextSibling, dynamicContent);

@@ -596,6 +596,12 @@ const a = <div {...props} prop:custom={value()} />;
 const a = <input {...props} prop:value={value()} />;
 const b = <input {...props} prop:defaultValue={defaultValue()} />;
 `,
+  "stateful property aliases use last value": `
+const a = <input value={first()} prop:value={last()} />;
+const b = <input prop:value={first()} value={last()} />;
+const c = <input defaultValue={first()} prop:defaultValue={last()} />;
+const d = <input prop:defaultValue={first()} defaultValue={last()} />;
+`,
   "duplicate refs": `
 const a = <div ref={r1} ref={r2}>{x()}</div>;
 `,
