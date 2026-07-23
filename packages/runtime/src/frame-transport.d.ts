@@ -96,10 +96,11 @@ export interface ServerComponentHandlerOptions<C = unknown> {
  * key a WeakMap of boundaries (dying with their call sites); ownerless calls
  * fall back to one boundary per function id.
  */
-export function createServerComponentHandler<C>(
-  options: ServerComponentHandlerOptions<C>
-): {
+export function createServerComponentHandler<C>(options: ServerComponentHandlerOptions<C>): {
   capture?(info: { id: string; meta: unknown }): unknown;
   intercept?(info: { id: string; meta: unknown; args: unknown[] }): C | undefined;
-  handle(response: Response, ctx: { id: string; meta: unknown; args: unknown[]; context: unknown }): C | undefined;
+  handle(
+    response: Response,
+    ctx: { id: string; meta: unknown; args: unknown[]; context: unknown }
+  ): C | undefined;
 };

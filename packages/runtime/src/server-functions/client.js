@@ -206,7 +206,6 @@ async function fetchServerFunction(base, id, options, args, meta) {
   const handler = config.responseHandler;
   const context = handler && handler.capture ? handler.capture({ id, meta }) : undefined;
 
-
   const response = await initializeResponse(base, id, instance, options, args, meta);
 
   // The integration seam sees the response first: a handler that claims it

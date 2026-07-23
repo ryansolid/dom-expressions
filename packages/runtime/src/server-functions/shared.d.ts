@@ -369,3 +369,20 @@ export function decodeResponse<T = unknown>(
   response: Response,
   codecOptions?: JSONCodecOptions
 ): Promise<T | undefined>;
+
+/**
+ * Frame one payload for the server-function wire: a `;0x<len32>;` length
+ * prefix followed by the utf-8 data. Both transports (server-function
+ * responses and frame streams) share this framing.
+ */
+export function createChunk(data: string): Uint8Array;
+
+/**
+ * Incremental decoder for `createChunk` framing over a byte stream: `next()`
+ * yields one complete payload string per call (async-iterator result shape),
+ * buffering partial frames internally until their length prefix is satisfied.
+ */
+export class ChunkReader {
+  constructor(stream: ReadableStream<Uint8Array>);
+  next(): Promise<{ done: boolean; value: string | undefined }>;
+}

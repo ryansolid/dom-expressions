@@ -1401,7 +1401,10 @@ describe("argument encoding fast path", () => {
     const original = globalThis.fetch;
     globalThis.fetch = (url, init) => {
       requests.push({ url: String(url), init });
-      return handleServerFunctionRequest(new Request(new URL(url, "http://localhost"), init), options);
+      return handleServerFunctionRequest(
+        new Request(new URL(url, "http://localhost"), init),
+        options
+      );
     };
     return () => {
       globalThis.fetch = original;

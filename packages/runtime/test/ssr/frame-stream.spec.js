@@ -285,7 +285,8 @@ describe("errored fragments surface as keyed error chunks", () => {
         { frame: { id: "fe", version: 1 } }
       ),
       c => {
-        if (c.type === "html") setTimeout(() => fragDone("<p>error fallback</p>", new Error("boom")));
+        if (c.type === "html")
+          setTimeout(() => fragDone("<p>error fallback</p>", new Error("boom")));
       }
     );
     const fragment = chunks.find(c => c.type === "fragment");

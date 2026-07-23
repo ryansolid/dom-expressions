@@ -61,7 +61,9 @@ describe("frame stream → client frame runtime", () => {
     const host = createFrameHost();
     createFrame(boundary, { host, id: "f0" });
     await streamInto(renderToFrameStream(Comp, { frame: { id: "f0" } }), host);
-    expect(boundary.innerHTML).toBe(normalize(documentHtml.replace(/ _hk=(?:"[^"]*"|[^ >]+)/g, "")));
+    expect(boundary.innerHTML).toBe(
+      normalize(documentHtml.replace(/ _hk=(?:"[^"]*"|[^ >]+)/g, ""))
+    );
   });
 
   it("reveals a produced async fragment through the real consumer", async () => {

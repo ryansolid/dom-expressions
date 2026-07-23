@@ -108,8 +108,13 @@ export function createServerComponentHandler({
       // let the integration rotate response-scoped state (data tables).
       const version = ++entry.version;
       if (onStream) onStream(entry.frameId, version, response);
-      applyFrameResponse(response, host, { as: entry.frameId, version }).catch(
-        err => host.apply({ type: "error", id: entry.frameId, version, error: { message: String(err && err.message) } })
+      applyFrameResponse(response, host, { as: entry.frameId, version }).catch(err =>
+        host.apply({
+          type: "error",
+          id: entry.frameId,
+          version,
+          error: { message: String(err && err.message) }
+        })
       );
       return entry.component;
     }

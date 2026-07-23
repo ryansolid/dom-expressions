@@ -28,7 +28,8 @@ afterEach(() => {
 });
 
 const html = value => ({ kind: "html", value });
-const register = handler => (unregister = registerElementClaim(handler ?? (el => claimed.push(el))));
+const register = handler =>
+  (unregister = registerElementClaim(handler ?? (el => claimed.push(el))));
 
 describe("claims on materialization", () => {
   it("root materialize claims anchors and forms, pre-insert nodes ARE the live nodes", () => {

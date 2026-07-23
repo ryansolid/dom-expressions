@@ -1834,7 +1834,12 @@ describe("segment state across versions", () => {
     createFrame(el, { id: "nav", host });
 
     // v1: shell + async fragment, revealed.
-    host.apply({ type: "html", id: "nav", version: 1, html: `<article><h1>One</h1>${ph("0")}</article>` });
+    host.apply({
+      type: "html",
+      id: "nav",
+      version: 1,
+      html: `<article><h1>One</h1>${ph("0")}</article>`
+    });
     host.apply({ type: "fragment", id: "nav", version: 1, key: "0", html: "<p>one-comments</p>" });
     host.apply({ type: "reveal", id: "nav", version: 1, keys: ["0"] });
     expect(el.textContent).toBe("Oneone-comments");

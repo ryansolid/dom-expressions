@@ -309,10 +309,16 @@ describe("renderServerComponent (slot emission)", () => {
         }
       }
     });
-    await streamInto(renderServerComponent(makeComp(["a", "b"]), { frame: { id: "ro", version: 1 } }), host);
+    await streamInto(
+      renderServerComponent(makeComp(["a", "b"]), { frame: { id: "ro", version: 1 } }),
+      host
+    );
     const [wrapA, wrapB] = boundary.querySelectorAll(".comment");
     wrapA.classList.add("collapsed"); // client state on entity "a"
-    await streamInto(renderServerComponent(makeComp(["b", "a"]), { frame: { id: "ro", version: 2 } }), host);
+    await streamInto(
+      renderServerComponent(makeComp(["b", "a"]), { frame: { id: "ro", version: 2 } }),
+      host
+    );
     const after = [...boundary.querySelectorAll(".comment")];
     // Entity "a" moved to second position — same node, state intact.
     expect(after[0]).toBe(wrapB);
@@ -343,10 +349,16 @@ describe("renderServerComponent (slot emission)", () => {
         }
       }
     });
-    await streamInto(renderServerComponent(makeComp(["a", "b"]), { frame: { id: "wl", version: 1 } }), host);
+    await streamInto(
+      renderServerComponent(makeComp(["a", "b"]), { frame: { id: "wl", version: 1 } }),
+      host
+    );
     const first = boundary.querySelectorAll("b")[0];
     first.dataset.mine = "yes";
-    await streamInto(renderServerComponent(makeComp(["b", "a"]), { frame: { id: "wl", version: 2 } }), host);
+    await streamInto(
+      renderServerComponent(makeComp(["b", "a"]), { frame: { id: "wl", version: 2 } }),
+      host
+    );
     // Content converges…
     expect([...boundary.querySelectorAll("b")].map(b => b.textContent)).toEqual(["b", "a"]);
     // …but entity "a"'s node did not travel: its state is gone.
@@ -576,7 +588,12 @@ describe("document-mode occlusion flip (case 3)", () => {
         // `title` duplicates rendered content — it must be EXCLUDED from the
         // t=0 record (recoverable from the page; re-sending would break the
         // single-copy invariant). `cid` is not rendered anywhere: it ships.
-        props.comment({ $key: "c2", cid: "c2", title: "visible-text", children: r.ssr`<p>visible-text</p>` })
+        props.comment({
+          $key: "c2",
+          cid: "c2",
+          title: "visible-text",
+          children: r.ssr`<p>visible-text</p>`
+        })
       ]}</article>`;
     const Inline = frameTransformDirectResult(serverComponent, { id: "occ-0" });
     // The client wrapper renders c2's children but SKIPS c1's (collapsed by

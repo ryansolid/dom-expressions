@@ -211,3 +211,12 @@ export function createFrameInsertable(options: FrameOptions): {
   readonly frame: Frame | null;
   dispose(): void;
 };
+
+/**
+ * Binds a frame to an EXISTING marker range — the document-SSR adoption
+ * path: the page already holds the server-rendered boundary between
+ * `frame:<id>:start`/`:end` comments; the frame constructed over it treats
+ * that content as its own (first stream morphs rather than materializes)
+ * and slots sync immediately, claiming their server-rendered DOM.
+ */
+export function adoptFrameRange(start: Comment, end: Comment, options?: FrameOptions): Frame;

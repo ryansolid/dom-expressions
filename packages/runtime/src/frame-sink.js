@@ -454,7 +454,8 @@ export function createDocumentSlotProps(clientProps, frameId) {
               if (isServerContent(value)) continue;
               const t = typeof value;
               if ((t === "string" || t === "number") && rendered !== null) {
-                const needle = t === "string" ? sharedConfig.context.escape(String(value)) : String(value);
+                const needle =
+                  t === "string" ? sharedConfig.context.escape(String(value)) : String(value);
                 if (needle !== "" && rendered.includes(needle)) continue;
               }
               args[key] = value;
