@@ -1,5 +1,11 @@
 # @dom-expressions/compiler
 
+## 0.50.0-next.29
+
+### Patch Changes
+
+- 471d86f: Match Babel when native elements have duplicate dynamic `children` attributes by compiling the last value instead of the first.
+
 ## 0.50.0-next.28
 
 ## 0.50.0-next.27
