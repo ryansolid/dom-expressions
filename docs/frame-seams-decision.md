@@ -194,17 +194,29 @@ mounts into an element; a slot is a range.**
   the client rebases the whole tree under its boundary id at application.
   Fixes cross-boundary contamination when one function feeds two boundaries
   (today `fnId.occurrence.key` collides in the shared host).
-- **t=0 slot args always ship; strings are never deduped.** The "recoverable
-  from the page" substring heuristic is removed: `cid={1}` must not read
-  `undefined` at boot because a "1" appeared in rendered text, and every
-  construct embedding the occurrence id into markup (`_hk`, region `data-fid`)
-  forced another strip-rule. The single-copy invariant covers *content*;
-  primitive/string args are scalars the client needs *as data* to re-invoke
-  its wrapper, so they ship unconditionally. Deduplication is a **template-
-  mode** concern only — when the payload is a template with typed holes, an
-  arg provably fills a known hole and can be recovered structurally; there is
-  no string-level recovery (no substring guessing, ever). Resolves the
-  reverse-templating open question: templates dedup, strings don't.
+- **The slot-args record is the server→client data channel; data always
+  ships, and is never recovered from the DOM.** The "recoverable from the
+  page" substring heuristic is removed. Its category error: treating rendered
+  HTML as a data store. It is not — the DOM is *presentation*, lossy and
+  partial. Not every arg is rendered (many drive client *logic*, not display:
+  `p.cid === "c1" ? collapsed : expanded`), and a rendered one may be
+  transformed before insertion (`toUpperCase()`, formatting), so the DOM form
+  is not the value. Dropping an arg because its string coincided with rendered
+  text silently corrupted the data channel (`cid={1}` read `undefined` at
+  boot), and every construct embedding the occurrence id into markup (`_hk`,
+  region `data-fid`) forced another strip-rule. This is exactly the
+  "[HTML] must not become the source of truth for reconstructing slot values"
+  principle from the RFC.
+
+  The consequence for dedup: **single-copy covers content, not data.** Server
+  HTML ships once as markup/regions; a scalar the client needs *as data* ships
+  once on the args channel — and a value that is *both* rendered as content and
+  passed as an arg legitimately appears in both (content once, data once).
+  There is **no value-recovery-from-page in any mode**, template included.
+  Template mode dedups static *structure* (markup sent once; each block still
+  carries its own dynamic values on the data channel), never the data itself.
+  This resolves the reverse-templating open question: we don't recover data
+  from the DOM — ever.
 - **Async server content in slot args**: supported via deferred region
   emission (emit the region's chunk when its holes settle — the store's
   readiness model already handles late arrival). The current throw is
