@@ -57,17 +57,13 @@ describe("ChunkReader network-boundary tolerance", () => {
   it("reads chunks when a read boundary splits a frame header", async () => {
     // Cut 5 bytes into the second chunk's 12-byte header.
     const cut = createChunk(PAYLOADS[0]).length + 5;
-    const reader = new ChunkReader(
-      streamFromReads([wire.subarray(0, cut), wire.subarray(cut)])
-    );
+    const reader = new ChunkReader(streamFromReads([wire.subarray(0, cut), wire.subarray(cut)]));
     expect(await drainAll(reader)).toEqual(PAYLOADS);
   });
 
   it("survives every possible two-read split position", async () => {
     for (let cut = 1; cut < wire.length; cut++) {
-      const reader = new ChunkReader(
-        streamFromReads([wire.subarray(0, cut), wire.subarray(cut)])
-      );
+      const reader = new ChunkReader(streamFromReads([wire.subarray(0, cut), wire.subarray(cut)]));
       let values;
       try {
         values = await drainAll(reader);

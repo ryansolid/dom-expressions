@@ -8,7 +8,7 @@
 // materializes — and re-claims elements whose `href`/`action` the policy-A
 // morph rewrites in place — against the same registry, read through the
 // registered-symbol seam (`Symbol.for`, importless like the FRAME brand).
-import { createFrame, adoptFrameRange } from "../../src/frame-client";
+import { createFrame } from "../../src/frame-client";
 import { registerElementClaim, claimElementTree } from "../../src/client";
 
 let boundary;
@@ -155,13 +155,13 @@ describe("claims across morphs (policy A)", () => {
 });
 
 describe("claims at adoption (document SSR)", () => {
-  it("adoptFrameRange sweeps the existing server-rendered content", () => {
+  it("adopting a frame element sweeps the existing server-rendered content", () => {
+    // The document producer emits the boundary AS an element (`<dx-frame>`);
+    // adoption binds a frame over it and sweeps its server-rendered interior.
     boundary.innerHTML =
-      "<!--frame:x:start-->" +
-      '<nav><a href="/top">top</a><a href="/new">new</a></nav><form action="/s"></form>' +
-      "<!--frame:x:end-->";
+      '<nav><a href="/top">top</a><a href="/new">new</a></nav><form action="/s"></form>';
     register();
-    adoptFrameRange(boundary.firstChild, boundary.lastChild, {});
+    createFrame(boundary, { adopt: true });
     expect(claimed.map(el => el.getAttribute("href") ?? el.getAttribute("action"))).toEqual([
       "/top",
       "/new",
@@ -189,8 +189,8 @@ describe("ownerScope", () => {
 
     const host = document.createElement("div");
     document.body.appendChild(host);
-    host.innerHTML = '<!--frame:y:start--><a href="/adopted">a</a><!--frame:y:end-->';
-    adoptFrameRange(host.firstChild, host.lastChild, { ownerScope });
+    host.innerHTML = '<a href="/adopted">a</a>';
+    createFrame(host, { adopt: true, ownerScope });
 
     expect(seen).toEqual([true, true, true]);
     frame.dispose();

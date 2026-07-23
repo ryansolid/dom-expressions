@@ -511,21 +511,39 @@ export function createDocumentSlotProps(clientProps, frameId) {
   });
 }
 
+// The boundary element vocabulary — the t=0 DOM contract with the client
+// consumer (frame-client.js `FRAME_TAG`/`FRAME_ID_ATTR`, which creates and
+// adopts the same element). The boundary is an element, not a comment range:
+// a first-class node the client adopts by attribute query and that `insert`
+// places natively (see docs/frame-seams-decision.md). Kept in sync with the
+// consumer by convention — the two don't share a module (server-only vs
+// client-only). `display:contents` keeps it layout-transparent.
+const FRAME_TAG = "dx-frame";
+const FRAME_ID_ATTR = "data-fid";
+
+/** Open tag for a boundary/region element with `id`. `id` is developer-owned
+ *  (a server-function id), but attribute-escaped defensively. */
+function frameElementOpen(id) {
+  const escaped = sharedConfig.context ? sharedConfig.context.escape(String(id), true) : String(id);
+  return `<${FRAME_TAG} ${FRAME_ID_ATTR}="${escaped}" style="display:contents">`;
+}
+const FRAME_ELEMENT_CLOSE = `</${FRAME_TAG}>`;
+
 /**
  * The in-process mirror of `frameTransformResult`, for DOCUMENT SSR:
  * install as `configureServerFunctionsServer({ transformDirectResult })`
  * and a server function whose direct (same-process) call resolves to a
- * function comes back as an inline-renderable server component — boundary
- * frame markers around it, document-mode slot props inside. HTTP
- * calls are untouched (`frameTransformResult` owns that leg).
+ * function comes back as an inline-renderable server component — the boundary
+ * ELEMENT around it, document-mode slot props inside. HTTP calls are
+ * untouched (`frameTransformResult` owns that leg).
  */
 export function frameTransformDirectResult(value, { id }) {
   if (typeof value !== "function") return value;
   const component = value;
   const wrapped = props => [
-    { t: `<!--frame:${id}:start-->` },
+    { t: frameElementOpen(id) },
     serverOwned(() => component(createDocumentSlotProps(props, id))),
-    { t: `<!--frame:${id}:end-->` }
+    { t: FRAME_ELEMENT_CLOSE }
   ];
   // Branded so the hydration serializer can write it as a reference (see
   // ServerComponentPlugin) instead of meeting an unserializable function.

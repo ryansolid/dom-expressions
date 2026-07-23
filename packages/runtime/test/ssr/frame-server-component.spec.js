@@ -478,8 +478,8 @@ describe("document-mode inline rendering (t=0)", () => {
       write: c => chunks.push(c),
       end: () => {
         const html = chunks.join("");
-        // Boundary + occurrence + region markers in the chunk dialect.
-        expect(html).toContain("<!--frame:hn/story-0:start-->");
+        // Boundary is an ELEMENT; occurrence + region are still markers.
+        expect(html).toContain('<dx-frame data-fid="hn/story-0" style="display:contents">');
         expect(html).toContain("<!--slot:comment#c1:start-->");
         expect(html).toContain("<!--frame:hn/story-0.comment#c1.children:start-->");
         expect(html).toContain("<!--slot:children:start-->");

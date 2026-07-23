@@ -1091,65 +1091,52 @@ export function createFrame(boundary, options) {
   return new FrameImpl(boundary, null, null, options);
 }
 
-/**
- * Binds a frame to an EXISTING marker range — the document-SSR adoption
- * path. The page already holds the server-rendered boundary between
- * `frame:<id>:start`/`:end` comments: the frame constructed over it treats
- * that content as its own (first stream morphs rather than materializes)
- * and slots sync immediately, claiming their server-rendered DOM via
- * `ctx.existing`.
- */
-export function adoptFrameRange(start, end, options) {
-  return new FrameImpl(null, start, end, { ...options, adopt: true });
-}
-
-// Well-known brand shared with client.js's `insert` (constants.js defines
-// the same registered symbol) — Symbol.for keeps the two modules importless
-// in both directions, which is what makes frames zero-cost for apps that
-// never import this entry.
-const FRAME = Symbol.for("dom-expressions.frame");
+// The boundary/region element vocabulary — the DOM contract the producer
+// (frame-sink.js) emits at t=0 and this consumer creates/adopts on the
+// client. A frame mounts INTO this element: server content is its children,
+// morphed in place. Making the boundary a first-class node is the whole
+// point of the element-seams decision — `insert`/`reconcileArrays`/Suspense
+// handle it natively with no brand (closing #550), and it cannot be split by
+// invalid nesting or stripped by a CDN the way a comment-marker range can
+// (see docs/frame-seams-decision.md). Kept in sync with the producer by
+// convention, like the `slot:`/`frame:` marker strings already are — the two
+// don't share a module (one is server-only, one client-only).
+export const FRAME_TAG = "dx-frame";
+export const FRAME_ID_ATTR = "data-fid";
 
 /**
- * A branded frame-insertable value: `insert()` recognizes the brand and
- * calls the mount handler this value carries, which establishes a comment
- * range at the insertion point and binds a frame to it (registered with
- * `options.host` under `options.id`, so streamed chunks route to it —
- * including any buffered before mount).
+ * Create a boundary/region element and bind a frame to it (element mode).
+ * Boundary identity belongs to the client, so the client creates the
+ * element: default `<dx-frame>` rendered `display:contents` — layout- and
+ * box-transparent, exactly like the comment range it replaces — or
+ * `options.as` for a semantic/parsing-context tag (`as: "tbody"` for a frame
+ * of table rows; the author then owns display). Registered with
+ * `options.host` under `options.id`, so streamed chunks route to it,
+ * including any buffered before mount.
  *
- * One static mount per value. Lifecycle belongs to the creator: server
- * updates flow through the frame's stream (policy A morphs in place), and
- * teardown is `value.dispose()` — the Solid binding registers it with its
- * owner (`onCleanup`), keeping the reactive-core dependency on that side.
+ * Returns the element (a real node `insert()` places with no brand, in any
+ * position — array, fragment, single) plus lifecycle. One frame per element;
+ * server updates flow through the stream (policy A morphs in place), and
+ * teardown is `dispose()` — the Solid binding ties it to its owner via
+ * `onCleanup`.
  */
-export function createFrameInsertable(options) {
-  let frame = null;
-  let start = null;
-  let end = null;
+export function createFrameElement(options) {
+  const el = document.createElement(options.as || FRAME_TAG);
+  // Inline (not a stylesheet or custom-element registration) so it holds
+  // before any bundle loads and needs nothing defined — an undefined custom
+  // element is inert HTMLUnknownElement, and `display:contents` makes it
+  // generate no box, so its children lay out in the frame's parent.
+  if (!options.as) el.style.display = "contents";
+  if (options.id !== undefined) el.setAttribute(FRAME_ID_ATTR, options.id);
+  const frame = new FrameImpl(el, null, null, options);
   return {
+    element: el,
     get frame() {
       return frame;
     },
     dispose() {
-      if (!frame) return;
       frame.dispose();
-      frame = null;
-      const parent = start.parentNode;
-      if (!parent) return;
-      let n = start;
-      while (n) {
-        const next = n.nextSibling;
-        parent.removeChild(n);
-        if (n === end) break;
-        n = next;
-      }
-    },
-    [FRAME](parent, marker) {
-      if (frame) return; // single-mount contract
-      start = document.createComment("frame:start");
-      end = document.createComment("frame:end");
-      parent.insertBefore(start, marker);
-      parent.insertBefore(end, marker);
-      frame = new FrameImpl(null, start, end, options);
+      el.remove();
     }
   };
 }

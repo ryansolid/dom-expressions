@@ -1,4 +1,4 @@
-import { ChildProperties, Namespaces, DelegatedEvents, $$SLOT, $$HOST, $$FRAME } from "./constants";
+import { ChildProperties, Namespaces, DelegatedEvents, $$SLOT, $$HOST } from "./constants";
 import {
   root,
   effect,
@@ -1187,16 +1187,6 @@ function insertExpression(parent, value, current, marker) {
       parent.appendChild(value);
     }
     if (marker) value[$$SLOT] = marker;
-  } else if (value[$$FRAME]) {
-    // Branded frame-insertable (frame-client.js): mount is delegated to the
-    // handler the value carries, so recognizing frames costs client.js no
-    // imports. One static mount per value — lifecycle belongs to the
-    // creator (dispose on the value), and updates flow through the frame's
-    // own stream (policy A), not through re-inserting a new value.
-    if (current) {
-      cleanChildren(parent, Array.isArray(current) ? current : [current], multi ? marker : null);
-    }
-    value[$$FRAME](parent, multi ? marker : null);
   } else if (Array.isArray(value)) {
     const currentArray = current && Array.isArray(current);
     if (value.length === 0) {
@@ -1215,9 +1205,6 @@ function insertExpression(parent, value, current, marker) {
 function normalize(value, current, multi, doNotUnwrap) {
   value = flatten(value, { skipNonRendered: true, doNotUnwrap });
   if (doNotUnwrap && typeof value === "function") return value;
-  // Branded frame-insertables mount as a self-contained range — never
-  // array-wrap them into the multi path (insertExpression delegates whole).
-  if (value != null && value[$$FRAME]) return value;
   if (multi && !Array.isArray(value)) value = [value != null ? value : ""];
   if (Array.isArray(value)) {
     for (let i = 0, len = value.length; i < len; i++) {

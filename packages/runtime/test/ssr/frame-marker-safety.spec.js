@@ -40,7 +40,7 @@ function collectDocument(component, clientProps, id) {
 
 describe("occurrence key marker safety (stream face)", () => {
   it("a key containing --> cannot break out of a slot comment marker", async () => {
-    const key = 'x--><script>alert(1)</script><!--y';
+    const key = "x--><script>alert(1)</script><!--y";
     const chunks = await collectStream(
       props => r.ssr`<div>${[props.row({ $key: key, cid: 1 })]}</div>`,
       { id: "f", version: 1 }
@@ -75,17 +75,15 @@ describe("occurrence key marker safety (stream face)", () => {
   });
 
   it("distinct keys never collide after encoding (injective)", async () => {
-    const one = await collectStream(
-      props => r.ssr`<div>${[props.row({ $key: "a#b" })]}</div>`,
-      { id: "f", version: 1 }
-    );
-    const two = await collectStream(
-      props => r.ssr`<div>${[props.row({ $key: "a%23b" })]}</div>`,
-      { id: "f", version: 1 }
-    );
-    expect(one.find(c => c.type === "slot").key).not.toBe(
-      two.find(c => c.type === "slot").key
-    );
+    const one = await collectStream(props => r.ssr`<div>${[props.row({ $key: "a#b" })]}</div>`, {
+      id: "f",
+      version: 1
+    });
+    const two = await collectStream(props => r.ssr`<div>${[props.row({ $key: "a%23b" })]}</div>`, {
+      id: "f",
+      version: 1
+    });
+    expect(one.find(c => c.type === "slot").key).not.toBe(two.find(c => c.type === "slot").key);
   });
 });
 

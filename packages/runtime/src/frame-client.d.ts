@@ -170,11 +170,18 @@ export interface FrameHostOptions {
 
 export function createFrameHost(options?: FrameHostOptions): FrameHost;
 
-/** Options for `createFrame` / `createFrameInsertable`. */
+/** Options for `createFrame` / `createFrameElement`. */
 export interface FrameOptions {
   /** Register with this host under `id`, receiving routed/buffered chunks. */
   host?: FrameHost;
   id?: string;
+  /**
+   * Tag for the boundary element `createFrameElement` creates. Defaults to
+   * `dx-frame` rendered `display:contents` (layout-transparent); set an
+   * explicit tag (`"tbody"`) for a semantic or parsing-context boundary, in
+   * which case the author owns its display.
+   */
+  as?: string;
   /** Client content keyed by prop name (occurrences resolve by prop). */
   slots?: Record<string, Slot>;
   /**
@@ -196,27 +203,30 @@ export interface FrameOptions {
   ownerScope?<T>(fn: () => T): T;
 }
 
-/** A frame rendering into an element boundary. */
+/**
+ * A frame rendering into an EXISTING element boundary. Pass `adopt: true` for
+ * the document-SSR path: the element already holds server-rendered content,
+ * so the first apply morphs against it and slots sync immediately (hydration
+ * attach), claiming their server-rendered DOM — a document boot needs no
+ * chunk.
+ */
 export function createFrame(boundary: Element, options?: FrameOptions): Frame;
 
-/**
- * A branded frame-insertable value: the client runtime's `insert` recognizes
- * it (registered `$$FRAME` symbol) and calls the mount handler the value
- * carries — a comment range is established at the insertion point and a
- * host-registered frame binds to it. One static mount per value; lifecycle
- * belongs to the creator via `dispose()` (register it with your owner's
- * cleanup).
- */
-export function createFrameInsertable(options: FrameOptions): {
-  readonly frame: Frame | null;
-  dispose(): void;
-};
+/** The default boundary/region element tag and its id attribute — the DOM
+ *  contract the producer emits at t=0 and the consumer creates/adopts. */
+export const FRAME_TAG: "dx-frame";
+export const FRAME_ID_ATTR: "data-fid";
 
 /**
- * Binds a frame to an EXISTING marker range — the document-SSR adoption
- * path: the page already holds the server-rendered boundary between
- * `frame:<id>:start`/`:end` comments; the frame constructed over it treats
- * that content as its own (first stream morphs rather than materializes)
- * and slots sync immediately, claiming their server-rendered DOM.
+ * Create a boundary/region ELEMENT and bind a host-registered frame to it.
+ * The frame mounts INTO the element (server content is its children, morphed
+ * in place). Because the boundary is a real node, `insert` places the
+ * returned `element` in any position — single, array, or fragment — with no
+ * special-casing. One frame per element; lifecycle belongs to the creator via
+ * `dispose()` (register it with your owner's cleanup).
  */
-export function adoptFrameRange(start: Comment, end: Comment, options?: FrameOptions): Frame;
+export function createFrameElement(options: FrameOptions): {
+  readonly element: Element;
+  readonly frame: Frame;
+  dispose(): void;
+};
