@@ -579,6 +579,9 @@ const a = <div innerHTML={"<b>bold</b>"} />;
   "duplicate attributes": `
 const a = <div class="one" class="two" title={t1()} title={t2()}>{x()}</div>;
 `,
+  "duplicate children attributes": `
+const a = <div children={a()} children={b()} />;
+`,
   "duplicate refs": `
 const a = <div ref={r1} ref={r2}>{x()}</div>;
 `,
