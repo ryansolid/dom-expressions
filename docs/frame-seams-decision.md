@@ -186,52 +186,67 @@ mounts into an element; a slot is a range.**
   eval-`payload` path stays document-SSR-only. One decoder on the client,
   CSP-clean.
 - **Payload modes**: `html` is the v1 producer output, but `template`/`block`
-  **stay reserved on the wire and in the client** — they are the landing spot
-  for the one dedup we keep (structural dedup; see the data-channel bullet
-  above). The consumer half is built and tested (`chunkToRecords`,
+  **stay reserved on the wire and in the client** — the landing spot for
+  structural dedup, whose mechanism is DOM template recovery (see the
+  data-channel bullet). The consumer half is built and tested (`chunkToRecords`,
   `#materialize`/`materializeBlock`, the block-waits-for-template readiness
-  gate); do **not** remove it. The gap is entirely producer/compiler-side (see
-  next bullet). Qwik v2's side-table experience is the cautionary note for
-  template mode: keep addressing in-band.
-- **Template-mode prerequisite — fragment-as-template identification
-  (compiler).** Structural dedup needs the producer to identify a repeated
-  unit — typically a JSX fragment (a `.map()` body, a server component's
-  returned JSX) — *as one template*: static markup plus typed hole positions,
-  so it ships the markup once (`template`) and streams per-instance values
-  (`block`). Today a fragment compiles to an **array of per-child templates**
-  (`transformFragmentChildren`: `length === 1 ? child : arrayExpression`), so
-  no fragment-level template identity reaches the frame sink and every
-  instance ships full `html`. Closing this is compiler work — adjacent to
-  issue #458 ("merge more sibling templates") and a natural target for the
-  Rust/Oxc compiler — not runtime work. Until it lands, template mode is
-  dormant-but-reserved: the wire and consumer already speak it.
+  gate); do **not** remove it. Qwik v2's side-table experience is the
+  cautionary note: keep addressing in-band.
+- **Structural dedup is DOM template recovery, not a compiler change.** A
+  repeated unit (a `.map()` body) renders once into the page; its static
+  *structure* is losslessly present there (an element shape *is* the element),
+  so further instances recover the template *skeleton* by cloning a rendered
+  instance rather than re-shipping markup — the `block` chunk carries only its
+  values, and its `template` is either sent once or recovered from the DOM.
+  This is "the page is the payload" applied to structure, and it is the same
+  faculty as t=0 adoption (the client claims rendered content from the DOM
+  instead of taking a second serialized copy). Crucially it is **not** a
+  compiler change: the shared compiler emits one output per JSX and cannot know
+  at compile time whether a subtree becomes a server component or ordinary
+  hydratable SSR (that is a runtime distinction), so any template-grouping
+  change would hit all SSR and reallocate `_hk` hydration keys — the reason
+  issue #458 ("merge more sibling templates") is not a path here. Template mode
+  is therefore dormant-but-reachable at the runtime/sink level; it is not
+  promised as a shipped feature, and nothing about it can weaken the invariant
+  below.
 - **Region/boundary ids**: all ids in a response are relative to its root;
   the client rebases the whole tree under its boundary id at application.
   Fixes cross-boundary contamination when one function feeds two boundaries
   (today `fnId.occurrence.key` collides in the shared host).
-- **The slot-args record is the server→client data channel; data always
-  ships, and is never recovered from the DOM.** The "recoverable from the
-  page" substring heuristic is removed. Its category error: treating rendered
-  HTML as a data store. It is not — the DOM is *presentation*, lossy and
-  partial. Not every arg is rendered (many drive client *logic*, not display:
-  `p.cid === "c1" ? collapsed : expanded`), and a rendered one may be
-  transformed before insertion (`toUpperCase()`, formatting), so the DOM form
-  is not the value. Dropping an arg because its string coincided with rendered
-  text silently corrupted the data channel (`cid={1}` read `undefined` at
-  boot), and every construct embedding the occurrence id into markup (`_hk`,
-  region `data-fid`) forced another strip-rule. This is exactly the
-  "[HTML] must not become the source of truth for reconstructing slot values"
-  principle from the RFC.
+- **The core invariant — single-copy — can never be broken; it is the whole
+  point.** Every piece of content ships exactly once (as HTML), every value the
+  client needs ships exactly once (as data on the args channel), and *nothing*
+  is ever shipped as both HTML-for-paint and serialized-data-for-hydration. The
+  RSC double-ship is what this architecture exists to kill; frames guarantee
+  single-copy today with `html`-mode chunks, independent of any payload mode.
+  Two faculties serve it, and the line between them is the whole subtlety:
 
-  The consequence for dedup: **single-copy covers content, not data.** Server
-  HTML ships once as markup/regions; a scalar the client needs *as data* ships
-  once on the args channel — and a value that is *both* rendered as content and
-  passed as an arg legitimately appears in both (content once, data once).
-  There is **no value-recovery-from-page in any mode**, template included.
-  Template mode dedups static *structure* (markup sent once; each block still
-  carries its own dynamic values on the data channel), never the data itself.
-  This resolves the reverse-templating open question: we don't recover data
-  from the DOM — ever.
+  - **Structure/templates ARE recovered from the DOM — this is crucial.** t=0
+    adoption is exactly this: the client claims the server-rendered content
+    from the page rather than taking a second serialized copy. Structural dedup
+    is the same faculty (clone a template skeleton from a rendered instance).
+    Structure is losslessly present in the DOM, so recovering it *is* how
+    single-copy holds.
+  - **Scalar data is NEVER recovered from the DOM.** The removed "recoverable
+    from the page" substring heuristic made the category error of treating
+    rendered HTML as a data store. It is not — the DOM is presentation, lossy
+    and partial: an arg may drive client *logic* and never render
+    (`p.cid === "c1" ? collapsed : expanded`), or render *transformed*
+    (`toUpperCase()`), so the DOM form is not the value. Dropping an arg because
+    its string coincided with rendered text silently corrupted the data channel
+    (`cid={1}` read `undefined` at boot) and forced a strip-rule for every
+    construct embedding the occurrence id into markup (`_hk`, region
+    `data-fid`). Data always ships. This is the RFC's own "[HTML] must not
+    become the source of truth for reconstructing slot *values*" principle.
+
+  So a value that is *both* rendered as content and passed as an arg
+  legitimately appears in both channels (content once, data once) — not a
+  double-ship, because the content and the datum are different things that
+  happen to share a value; unifying them would require the forbidden data
+  recovery. And repeated static *structure* within one HTML stream is not a
+  double-ship either — it is ordinary HTML (gzip handles it), and template mode,
+  if pursued, removes it by DOM recovery, not by re-shipping. Single-copy is
+  about representations, never about coincidental value or structure repetition.
 - **Async server content in slot args**: supported via deferred region
   emission (emit the region's chunk when its holes settle — the store's
   readiness model already handles late arrival). The current throw is
