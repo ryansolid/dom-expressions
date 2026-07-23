@@ -185,11 +185,26 @@ mounts into an element; a slot is a range.**
 - **Wire data dialect**: keyed JSON codec only for frame streams; the
   eval-`payload` path stays document-SSR-only. One decoder on the client,
   CSP-clean.
-- **Payload modes**: `html` only in v1; `template`/`block` come out of the
-  wire and the client (they're implemented but unused — carrying two
-  materialization paths is "support both" with no why). Qwik v2's side-table
-  experience is the cautionary note for when template mode returns: keep
-  addressing in-band.
+- **Payload modes**: `html` is the v1 producer output, but `template`/`block`
+  **stay reserved on the wire and in the client** — they are the landing spot
+  for the one dedup we keep (structural dedup; see the data-channel bullet
+  above). The consumer half is built and tested (`chunkToRecords`,
+  `#materialize`/`materializeBlock`, the block-waits-for-template readiness
+  gate); do **not** remove it. The gap is entirely producer/compiler-side (see
+  next bullet). Qwik v2's side-table experience is the cautionary note for
+  template mode: keep addressing in-band.
+- **Template-mode prerequisite — fragment-as-template identification
+  (compiler).** Structural dedup needs the producer to identify a repeated
+  unit — typically a JSX fragment (a `.map()` body, a server component's
+  returned JSX) — *as one template*: static markup plus typed hole positions,
+  so it ships the markup once (`template`) and streams per-instance values
+  (`block`). Today a fragment compiles to an **array of per-child templates**
+  (`transformFragmentChildren`: `length === 1 ? child : arrayExpression`), so
+  no fragment-level template identity reaches the frame sink and every
+  instance ships full `html`. Closing this is compiler work — adjacent to
+  issue #458 ("merge more sibling templates") and a natural target for the
+  Rust/Oxc compiler — not runtime work. Until it lands, template mode is
+  dormant-but-reserved: the wire and consumer already speak it.
 - **Region/boundary ids**: all ids in a response are relative to its root;
   the client rebases the whole tree under its boundary id at application.
   Fixes cross-boundary contamination when one function feeds two boundaries
