@@ -185,30 +185,20 @@ mounts into an element; a slot is a range.**
 - **Wire data dialect**: keyed JSON codec only for frame streams; the
   eval-`payload` path stays document-SSR-only. One decoder on the client,
   CSP-clean.
-- **Payload modes**: `html` is the v1 producer output, but `template`/`block`
-  **stay reserved on the wire and in the client** — the landing spot for
-  structural dedup, whose mechanism is DOM template recovery (see the
-  data-channel bullet). The consumer half is built and tested (`chunkToRecords`,
-  `#materialize`/`materializeBlock`, the block-waits-for-template readiness
-  gate); do **not** remove it. Qwik v2's side-table experience is the
-  cautionary note: keep addressing in-band.
-- **Structural dedup is DOM template recovery, not a compiler change.** A
-  repeated unit (a `.map()` body) renders once into the page; its static
-  *structure* is losslessly present there (an element shape *is* the element),
-  so further instances recover the template *skeleton* by cloning a rendered
-  instance rather than re-shipping markup — the `block` chunk carries only its
-  values, and its `template` is either sent once or recovered from the DOM.
-  This is "the page is the payload" applied to structure, and it is the same
-  faculty as t=0 adoption (the client claims rendered content from the DOM
-  instead of taking a second serialized copy). Crucially it is **not** a
-  compiler change: the shared compiler emits one output per JSX and cannot know
-  at compile time whether a subtree becomes a server component or ordinary
-  hydratable SSR (that is a runtime distinction), so any template-grouping
-  change would hit all SSR and reallocate `_hk` hydration keys — the reason
-  issue #458 ("merge more sibling templates") is not a path here. Template mode
-  is therefore dormant-but-reachable at the runtime/sink level; it is not
-  promised as a shipped feature, and nothing about it can weaken the invariant
-  below.
+- **Payload modes**: `html` only. The `template`/`block` payload mode (markup
+  compression — send structure once, values per instance) is **removed** from
+  the wire and the client (`chunkToRecords` cases, `#materialize`'s block leg,
+  `materializeBlock`, the readiness template-gate, the chunk types). It was
+  dead — the producer never emitted it — and it is farther than the one dedup
+  worth doing. The only content dedup is **free reference-equality at
+  serialization**: seroval already emits one copy and a `{$ref}` when the same
+  server-content *reference* is serialized twice (the codec shares one refs
+  map). That fires opportunistically (rare — calls are usually unique; never in
+  HN) and needs no new code. Structural *repetition* in markup is not deduped
+  at all — it is ordinary HTML (gzip's job), and compressing it via template
+  chunks or DOM-recovery skeletons is explicitly not pursued. (Adoption /
+  DOM recovery of *rendered* content at t=0 is a separate, kept faculty — the
+  client claims the page; it does not use `template`/`block` chunks.)
 - **Region/boundary ids**: all ids in a response are relative to its root;
   the client rebases the whole tree under its boundary id at application.
   Fixes cross-boundary contamination when one function feeds two boundaries
@@ -320,16 +310,14 @@ mounts into an element; a slot is a range.**
   Solid binding's `documentBoundary`. Wire chunk schema unchanged except id
   rebasing semantics. All pre-1.0/experimental surface.
 
-## The two hard problems (deferred; producer-side)
+## The producer-side problems (deferred)
 
 Neither blocks the shipping element-seams work (html-mode + synchronous
-occlusion). They are what make **template mode** and **full streaming
-occlusion** real, and they share a root: the frame producer today operates on
-*resolved HTML strings*, having already discarded the structural fact each one
-needs. Both are "preserve structure to the sink," not new mechanisms — a
-richer sink that sees structure instead of finished strings.
+occlusion). Only the first is genuinely hard; the second turned out to be
+already-the-mechanism once framed correctly (see the note under it).
 
-1. **Knowing insertion status before flush (streaming occlusion).** The
+1. **Knowing insertion status before flush (streaming occlusion) — the hard
+   one.** The
    occlusion choice is exclusive per slot: server-rendered ⇒ adopt from
    markup; unrendered ⇒ serialize as data; never both (single-copy). Usage
    tracking gives the signal *after* the wrapper reads the prop — fine
@@ -343,17 +331,33 @@ richer sink that sees structure instead of finished strings.
    no-double-ship. *Implemented:* the synchronous path. *Unbuilt:* the
    segment-scoped lock for the streaming case (the RFC's flagged open risk).
 
-2. **Identifying that the data is a template.** Structural dedup recovers a
-   template from a rendered DOM instance (or sends it once); it must recognize
-   "this output is instance N of template T." Not a compiler change (the
-   shared compiler can't distinguish frame from SSR at compile time). The
-   handle is the SSR template identity the output already carries: `.map(c =>
-   <Comment/>)` calls `ssr` with the same hoisted `_tmpl$` parts-array
-   reference each iteration. *Unbuilt:* the pipeline concatenates
-   `{parts, holes}` into a string before the sink sees it, so the sink never
-   sees template identity or the parts/holes split. Thread that through and
-   `template`/`block` (already spoken by the wire + consumer) light up;
-   otherwise every instance ships full `html` — correct, just not deduped.
+2. **Identifying that a prop is content vs data** (tractable — the mechanism
+   already exists). Per prop, at serialize time: content ⇒ ships as HTML (a
+   region), never serialized; scalar ⇒ serialized as the arg. No cross-instance
+   comparison — **every server→client call is unique** (no "previous instance"
+   to dedup against), so each prop stands on its own. We already intercept
+   every prop at the slot-props **Proxy getter** (that *is* the usage-tracking
+   machinery), so the classification happens right there by **shape**:
+
+   - `{t}`-shaped ⇒ an SSR template ⇒ content.
+   - an array whose every element is `{t}`-shaped ⇒ a **fragment** of
+     templates ⇒ content (one layer deeper). Top-level one-shot reactive
+     control flow reduces to this — `<For>` → an array of `{t}` items, `<Show>`
+     → a `{t}` or nothing.
+   - a **function** ⇒ content, because **a function cannot be serialized** —
+     the serialize branch is impossible for it, so it must be a thunk producing
+     content: resolve it once (one-shot), then classify what it produced (a
+     `<For>` thunk → the `{t}` array → HTML; a getter → its scalar → data).
+     This closes the lazy-control-flow case and fixes a latent bug (today a
+     function-valued arg falls into `serialize()` and breaks on seroval).
+   - everything else ⇒ scalar data.
+
+   This is what `isServerContent` does today, plus the function rule (the piece
+   to build). The `{t}` shape is ours to assume (symbol-brand for certainty if
+   ever wanted). It is a *type* check on our own output — categorically unlike
+   the removed substring heuristic, which read the rendered *page*. No compiler
+   involvement; single-copy holds by construction (content ⇒ HTML once, scalar
+   ⇒ data once).
 
 ## Open questions
 

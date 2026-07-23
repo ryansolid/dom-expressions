@@ -107,20 +107,6 @@ export function chunkToRecords(chunk) {
       // called with these (resolved) args. Data args are serializer refs;
       // server-content args are frame refs resolved to nested regions.
       return { [`slot:${chunk.key}`]: { kind: "slot", args: chunk.args } };
-    case "template":
-      // Static markup sent once, stored under `tpl:<key>`; block instances
-      // reference it so repeated structures never re-send their markup.
-      return { [`tpl:${chunk.key}`]: { kind: "template", html: chunk.html, fields: chunk.fields } };
-    case "block":
-      // A keyed instance carrying only its dynamic values, revealed like any
-      // other segment (`seg:<key>`), materialized from its template.
-      return {
-        [`seg:${chunk.key}`]: {
-          kind: "block",
-          template: `tpl:${chunk.template}`,
-          values: chunk.values
-        }
-      };
     case "complete":
       return { ":complete": true };
     case "error":
@@ -398,13 +384,13 @@ class FrameImpl {
       // every stream (`pl-0`, ...), so a new version's placeholder must not
       // be skipped because the OLD version's segment of the same name
       // already revealed — nor revealed instantly with the old version's
-      // content. Reveal bookkeeping and seg/tpl/error records reset; slot
+      // content. Reveal bookkeeping and seg/error records reset; slot
       // records stay (dedupe is what preserves occurrence state).
       this.#version = v;
       this.#revealed.clear();
       this.#fallbackShown.clear();
       for (const key of Object.keys(this.#store)) {
-        if (key.startsWith("seg:") || key.startsWith("tpl:") || key === ":error") {
+        if (key.startsWith("seg:") || key === ":error") {
           delete this.#store[key];
         }
       }
@@ -920,15 +906,7 @@ class FrameImpl {
 
   #segmentReady(name) {
     const content = this.#store[`seg:${name}`];
-    if (!content) return false;
-    if (content.kind === "block") {
-      // A block also depends on its template being present — so a block that
-      // arrives before its template is buffered until the template lands.
-      const template = this.#store[content.template];
-      if (!template || template.kind !== "template") return false;
-    } else if (content.kind !== "html") {
-      return false;
-    }
+    if (!content || content.kind !== "html") return false;
     // Reveal gate must be present and truthy.
     if (!this.#store[`seg:${name}:reveal`]) return false;
     // Style gate: the segment's streamed stylesheets must be loaded before it
@@ -1003,34 +981,12 @@ class FrameImpl {
     return true;
   }
 
-  /** Materialize a content record into nodes: HTML directly, or a block by
-   *  cloning its template and filling fields with the block's values. */
+  /** Materialize a content record into nodes (HTML fragments — the v1 and
+   *  only payload mode; see docs/frame-seams-decision.md on why structural
+   *  compression is not pursued). */
   #materialize(record) {
-    if (record.kind === "html") return parseFragment(record.value);
-    if (record.kind === "block") {
-      const template = this.#store[record.template];
-      // Readiness guarantees the template is present; guard defensively anyway.
-      if (!template || template.kind !== "template") return parseFragment("");
-      return materializeBlock(template, record.values);
-    }
-    return parseFragment("");
+    return record.kind === "html" ? parseFragment(record.value) : parseFragment("");
   }
-}
-
-/** Clone a template's markup and fill each `<!--field:<name>-->` marker with
- *  the matching value, positionally aligned to the template's `fields`. */
-function materializeBlock(template, values) {
-  const fragment = parseFragment(template.html);
-  for (let i = 0; i < template.fields.length; i++) {
-    const marker = `field:${template.fields[i]}`;
-    const value = values[i] == null ? "" : String(values[i]);
-    let hole = findComment(fragment, marker);
-    while (hole) {
-      hole.replaceWith(document.createTextNode(value));
-      hole = findComment(fragment, marker);
-    }
-  }
-  return fragment;
 }
 
 export function createFrame(boundary, options) {
@@ -1312,20 +1268,6 @@ function rangeInterior(start, endData) {
     n = n.nextSibling;
   }
   return nodes;
-}
-
-/** Depth-first search for a comment node with exact `data`. */
-function findComment(root, data) {
-  const children = root.childNodes;
-  for (let i = 0; i < children.length; i++) {
-    const node = children[i];
-    if (node.nodeType === COMMENT_NODE && node.data === data) return node;
-    if (node.nodeType === ELEMENT_NODE) {
-      const found = findComment(node, data);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 
 // --- Morph -----------------------------------------------------------------

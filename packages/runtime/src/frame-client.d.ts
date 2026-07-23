@@ -41,15 +41,6 @@ export type FrameChunk =
       inlineStyles?: { id: string; content?: string; attrs?: Record<string, string> }[];
     }
   | { type: "slot"; id: string; version: number; key: string; args: Record<string, unknown> }
-  | { type: "template"; id: string; version: number; key: string; html: string; fields: string[] }
-  | {
-      type: "block";
-      id: string;
-      version: number;
-      key: string;
-      template: string;
-      values: unknown[];
-    }
   | { type: "complete"; id: string; version: number }
   | { type: "error"; id: string; version: number; key?: string; error: unknown };
 

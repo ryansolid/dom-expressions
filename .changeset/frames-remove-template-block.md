@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Remove the `template`/`block` payload mode from the frame runtime (markup compression — send a static template once, then per-instance value chunks). It was dead: the producer only ever emitted `html`, so the consumer half (`chunkToRecords` template/block cases, `#materialize`'s block leg, `materializeBlock`, the block-waits-for-template readiness gate, the `tpl:` store keys, and the chunk types) never ran. Per the element-seams decision, structural compression of repeated markup is explicitly not pursued: repeated structure in one HTML stream is ordinary HTML (gzip's job), not a single-copy violation, and the only content deduplication worth doing is the **free reference-equality** the serializer already provides (seroval emits one copy and a `{$ref}` when the same server-content reference is serialized twice — opportunistic, rare, no new code). Adoption / DOM recovery of rendered content at t=0 is a separate, kept faculty and never used these chunks. Frames consumer drops 6331 → 6091 gz (494 below the pre-decision 6585). See `docs/frame-seams-decision.md`.

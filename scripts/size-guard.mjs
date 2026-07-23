@@ -54,12 +54,16 @@ const SCENARIOS = {
   // decision REMOVED weight: 6585 -> 6550 (boundary is an element; the
   // $$FRAME brand + its insert/normalize branches deleted from core) -> 6331
   // (regions are elements: the depth-stack region discovery, fragment-refill,
-  // and frame:-marker range helpers all deleted) — re-guarded DOWN at 6420.
+  // and frame:-marker range helpers all deleted) -> 6091 (template/block
+  // payload mode removed: chunkToRecords cases, materializeBlock, the
+  // block-template readiness gate — dead markup-compression the producer never
+  // emitted; the only content dedup is free seroval reference-equality) —
+  // re-guarded DOWN at 6180.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6420
+    6180
   ]
 };
 
