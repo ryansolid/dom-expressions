@@ -454,15 +454,18 @@ export function createDocumentSlotProps(clientProps, frameId) {
           const out = scoped(occurrence, () => range(occurrence, slot(resolved)));
           const unused = regions.filter(r => !r.used);
           if (sharedConfig.context) {
-            // Every occurrence re-arms with real args at adoption via a
-            // t=0 slot record — occluded args become region refs, and
-            // primitives ride along UNLESS their (escaped) value already
-            // appears in the occurrence's rendered output: those are
-            // recoverable from the page (reverse-templating's job, not yet
-            // built) and re-sending them would break the single-copy
-            // invariant. Exclusion errs toward the claim: a coincidental
-            // substring match just means that arg reads undefined at t=0.
-            const rendered = renderedHtmlOf(out);
+            // Every occurrence re-arms with real args at adoption via a t=0
+            // slot record — occluded args become region refs, and primitive
+            // args always ship. Deduplication of a value that ALSO appears in
+            // rendered content is a structural concern (template mode: an arg
+            // provably fills a known hole), never a substring guess: matching
+            // an arg's escaped value against the occurrence's rendered HTML
+            // silently dropped correct args whenever the value coincided with
+            // any rendered text (`cid={1}` with a "1" anywhere), and every
+            // construct that embeds the occurrence id into markup (`_hk`,
+            // region `data-fid`) forced another strip-rule. A primitive is a
+            // scalar the client needs AS DATA to re-invoke the wrapper; the
+            // single-copy invariant covers content, not scalar args.
             const args = {};
             let any = false;
             for (const key of Object.keys(raw)) {
@@ -477,12 +480,6 @@ export function createDocumentSlotProps(clientProps, frameId) {
                 continue;
               }
               if (isServerContent(value)) continue;
-              const t = typeof value;
-              if ((t === "string" || t === "number") && rendered !== null) {
-                const needle =
-                  t === "string" ? sharedConfig.context.escape(String(value)) : String(value);
-                if (needle !== "" && rendered.includes(needle)) continue;
-              }
               args[key] = value;
               any = true;
             }
@@ -547,33 +544,6 @@ export function frameTransformDirectResult(value, { id }) {
   // ServerComponentPlugin) instead of meeting an unserializable function.
   wrapped[SERVER_COMPONENT] = id;
   return wrapped;
-}
-
-/**
- * The occurrence's rendered output as html when synchronously available
- * (`null` when async holes are pending — exclusion then errs toward
- * including the arg, which is safe: the value was NOT rendered yet).
- */
-function renderedHtmlOf(out) {
-  try {
-    const res = sharedConfig.context.resolve(out);
-    // Markers, frame/region element tags, AND hydration keys stripped: the
-    // occurrence/region ids inside them would false-positive the
-    // recoverability check (an arg value "c1" matching its own
-    // `slot:comment#c1` marker, or a region element's `data-fid` embedding
-    // the occurrence id), and `_hk` attributes embed the occurrence key — so
-    // any `cid === $key` occurrence would match its own wrapper's hydration
-    // key and never arm its t=0 record (#547). Only element TEXT counts as
-    // recoverable-from-page. (This whole heuristic is slated for removal —
-    // t=0 args ship unconditionally — see docs/frame-seams-decision.md.)
-    if (res && res.t && (!res.h || !res.h.length)) {
-      return res.t[0]
-        .replace(/<!--[^>]*-->/g, "")
-        .replace(/<\/?dx-frame[^>]*>/g, "")
-        .replace(/ _hk=("[^"]*"|[^\s>]+)/g, "");
-    }
-  } catch (e) {}
-  return null;
 }
 
 /**

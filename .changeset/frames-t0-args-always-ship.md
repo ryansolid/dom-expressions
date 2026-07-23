@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Remove the "recoverable from the page" substring heuristic from t=0 server-component slot arming: primitive/string args now ship unconditionally in their t=0 slot record. Previously an arg was dropped whenever its escaped value appeared as a substring of the occurrence's rendered HTML, which silently corrupted correct args (`cid={1}` read `undefined` at boot whenever a "1" appeared in any rendered text) and required a new strip-rule for every construct that embeds the occurrence id into markup (`_hk` hydration keys, and — once regions became elements — their `data-fid`). The single-copy invariant covers *content* (server HTML, serialized data), not scalar args, which the client genuinely needs as data to re-invoke its wrapper on navigation; a scalar that coincides with rendered text is not content duplication. Deduplication is now strictly a template-mode concern (an arg provably filling a typed hole) — there is no string-level recovery. This deletes the `renderedHtmlOf` helper and trims the producer.

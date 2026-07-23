@@ -588,9 +588,11 @@ describe("document-mode occlusion flip (case 3)", () => {
     const serverComponent = props =>
       r.ssr`<article>${[
         props.comment({ $key: "c1", cid: "c1", children: r.ssr`<p>occluded-text</p>` }),
-        // `title` duplicates rendered content — it must be EXCLUDED from the
-        // t=0 record (recoverable from the page; re-sending would break the
-        // single-copy invariant). `cid` is not rendered anywhere: it ships.
+        // `title` coincides with rendered content, but a primitive arg is a
+        // scalar the client needs AS DATA to re-invoke the wrapper, so it
+        // ships regardless — the single-copy invariant covers content, not
+        // scalar args (value-from-page recovery is a template-mode concern,
+        // not a substring guess). `cid` ships too.
         props.comment({
           $key: "c2",
           cid: "c2",
@@ -620,14 +622,17 @@ describe("document-mode occlusion flip (case 3)", () => {
         // The record carries the region REF for the occluded arg + the
         // primitive.
         expect(html).toContain('$frame:"occ-0.comment#c1.children"');
-        // Rendered occurrences also re-arm at t=0 — but ONLY with values not
-        // recoverable from the page: `cid` ships, `title` (rendered into the
-        // content) is excluded, so nothing appears twice.
+        // Rendered occurrences re-arm at t=0 with ALL their primitive args —
+        // `cid` and `title` both ship as data (scalars the client needs to
+        // re-invoke). `title` coincides with rendered content, so
+        // "visible-text" appears twice: once as region CONTENT (the single
+        // copy of the content), once as the scalar arg value.
         expect(html).toContain('"sc:slot:occ-0:comment#c2"');
         expect(html).toContain('cid:"c2"');
-        expect(html).not.toContain("title:");
-        // The visible region renders inline as a region element, once.
-        expect(html.split("visible-text").length).toBe(2);
+        expect(html).toContain('title:"visible-text"');
+        // Region content renders inline once; the coinciding scalar arg is the
+        // second occurrence.
+        expect(html.split("visible-text").length).toBe(3);
         expect(html).toContain('<dx-frame data-fid="occ-0.comment#c2.children"');
         done();
       }
@@ -635,18 +640,20 @@ describe("document-mode occlusion flip (case 3)", () => {
   });
 });
 
-describe("document-mode t=0 arming vs hydration keys (#547)", () => {
-  it("a cid equal to $key still arms its record — _hk attributes are not recoverable content", done => {
+describe("document-mode t=0 arming: primitive args always ship", () => {
+  it("a cid equal to $key (and embedded in _hk / a region id) still arms its record", done => {
     const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
     const serverComponent = props =>
       r.ssr`<article>${[
         props.comment({ $key: "c1", cid: "c1", children: r.ssr`<p>body-text</p>` })
       ]}</article>`;
     const Inline = frameTransformDirectResult(serverComponent, { id: "hk-0" });
-    // Compiled-shape wrapper: the root element takes a hydration key, and
-    // that key EMBEDS the occurrence id ($key) — before the fix, the
-    // recoverability check matched cid against its own wrapper's _hk and
-    // never shipped the record, so adopted occurrences mounted un-armed.
+    // Compiled-shape wrapper: the root element takes a hydration key that
+    // EMBEDS the occurrence id ($key). The old recoverability heuristic
+    // matched cid against its own wrapper's _hk (and, once regions were
+    // elements, its region `data-fid`) and dropped the record, so adopted
+    // occurrences mounted un-armed (#547). With the heuristic gone, a
+    // primitive arg ships unconditionally — no markup coincidence can drop it.
     const clientProps = {
       comment: p => r.ssrElement("div", { class: "comment" }, [p.children], true)
     };
@@ -658,8 +665,7 @@ describe("document-mode t=0 arming vs hydration keys (#547)", () => {
         expect(html).toContain("_hk=sc-hk-0-comment#c1-");
         expect(html).toContain('"sc:slot:hk-0:comment#c1"');
         expect(html).toContain('cid:"c1"');
-        // Element TEXT still counts as recoverable: body-text renders, so
-        // it must not be re-shipped anywhere as data.
+        // body-text is region CONTENT (not an arg), so it ships once as markup.
         expect(html.split("body-text").length).toBe(2);
         done();
       }

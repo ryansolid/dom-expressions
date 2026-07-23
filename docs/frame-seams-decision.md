@@ -194,11 +194,17 @@ mounts into an element; a slot is a range.**
   the client rebases the whole tree under its boundary id at application.
   Fixes cross-boundary contamination when one function feeds two boundaries
   (today `fnId.occurrence.key` collides in the shared host).
-- **t=0 slot args always ship.** The "recoverable from the page" substring
-  heuristic is removed: `cid={1}` must not read `undefined` at boot because a
-  "1" appeared in rendered text. The single-copy invariant covers *content*;
-  primitive args are data. Reverse-templating may return only as a
-  structurally-guaranteed template-mode feature.
+- **t=0 slot args always ship; strings are never deduped.** The "recoverable
+  from the page" substring heuristic is removed: `cid={1}` must not read
+  `undefined` at boot because a "1" appeared in rendered text, and every
+  construct embedding the occurrence id into markup (`_hk`, region `data-fid`)
+  forced another strip-rule. The single-copy invariant covers *content*;
+  primitive/string args are scalars the client needs *as data* to re-invoke
+  its wrapper, so they ship unconditionally. Deduplication is a **template-
+  mode** concern only — when the payload is a template with typed holes, an
+  arg provably fills a known hole and can be recovered structurally; there is
+  no string-level recovery (no substring guessing, ever). Resolves the
+  reverse-templating open question: templates dedup, strings don't.
 - **Async server content in slot args**: supported via deferred region
   emission (emit the region's chunk when its holes settle — the store's
   readiness model already handles late arrival). The current throw is
