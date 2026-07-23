@@ -547,9 +547,9 @@ fn xmlns_attribute_value(element: &JSXElement<'_>) -> Option<String> {
     })
 }
 
-/// Matches the Babel plugin's `children`-attribute capture: a `children`
-/// attribute with a non-literal expression container value is treated as
-/// element children (insert), not as an attribute or property.
+/// Matches the Babel plugin's `children`-attribute capture: the last
+/// `children` attribute with a non-literal expression container value is
+/// treated as element children (insert), not as an attribute or property.
 pub(crate) fn children_attribute_container<'e, 'a>(
     element: &'e JSXElement<'a>,
 ) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
@@ -557,6 +557,7 @@ pub(crate) fn children_attribute_container<'e, 'a>(
         .opening_element
         .attributes
         .iter()
+        .rev()
         .find_map(|attr| children_attribute_container_from_item(attr))
 }
 
