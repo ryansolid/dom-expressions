@@ -478,15 +478,18 @@ describe("document-mode inline rendering (t=0)", () => {
       write: c => chunks.push(c),
       end: () => {
         const html = chunks.join("");
-        // Boundary is an ELEMENT; occurrence + region are still markers.
+        // Boundary and region are ELEMENTS; occurrence/direct-insert are
+        // still slot markers (client positions inside server content).
         expect(html).toContain('<dx-frame data-fid="hn/story-0" style="display:contents">');
         expect(html).toContain("<!--slot:comment#c1:start-->");
-        expect(html).toContain("<!--frame:hn/story-0.comment#c1.children:start-->");
+        expect(html).toContain(
+          '<dx-frame data-fid="hn/story-0.comment#c1.children" style="display:contents">'
+        );
         expect(html).toContain("<!--slot:children:start-->");
         // Client wrapper rendered INSIDE its occurrence range, server body
-        // INSIDE the nested region, draft inside the direct-insert range.
+        // INSIDE the nested region element, draft inside the direct-insert range.
         expect(html).toMatch(
-          /<!--slot:comment#c1:start--><div class="comment"><button>\[-\]<\/button><!--frame:hn\/story-0\.comment#c1\.children:start--><p>alpha-text<\/p><!--frame:hn\/story-0\.comment#c1\.children:end--><\/div><!--slot:comment#c1:end-->/
+          /<!--slot:comment#c1:start--><div class="comment"><button>\[-\]<\/button><dx-frame data-fid="hn\/story-0\.comment#c1\.children" style="display:contents"><p>alpha-text<\/p><\/dx-frame><\/div><!--slot:comment#c1:end-->/
         );
         // The single-occurrence invariant on the page itself.
         expect(html.split("alpha-text").length).toBe(2);
@@ -623,9 +626,9 @@ describe("document-mode occlusion flip (case 3)", () => {
         expect(html).toContain('"sc:slot:occ-0:comment#c2"');
         expect(html).toContain('cid:"c2"');
         expect(html).not.toContain("title:");
-        // The visible region renders inline as markup, once.
+        // The visible region renders inline as a region element, once.
         expect(html.split("visible-text").length).toBe(2);
-        expect(html).toContain("frame:occ-0.comment#c2.children:start");
+        expect(html).toContain('<dx-frame data-fid="occ-0.comment#c2.children"');
         done();
       }
     });

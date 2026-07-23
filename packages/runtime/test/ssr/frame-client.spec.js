@@ -801,9 +801,13 @@ describe("render-function slots", () => {
     const firstP = wrapper.querySelector("p");
     expect(wrapper.textContent).toContain("Client ida");
     expect(firstP.textContent).toBe("first");
-    // No wrapper element around the server content: it sits directly in the
-    // client output, between the region markers.
-    expect(firstP.parentElement).toBe(wrapper);
+    // The server content sits inside its region element — a `display:contents`
+    // frame element (layout-transparent, so visually still inline in the
+    // client output), whose parent is the client wrapper.
+    const region = firstP.parentElement;
+    expect(region.tagName).toBe("DX-FRAME");
+    expect(region.style.display).toBe("contents");
+    expect(region.parentElement).toBe(wrapper);
 
     host.apply({ type: "html", id: "child", version: 2, html: "<p>second</p>" });
 
@@ -1418,7 +1422,7 @@ describe("adoption -> first morph with nested regions (#547)", () => {
     "<article><h1>Row</h1>" +
     "<!--slot:row#r1:start-->" +
     '<div class="row"><button>[-]</button>' +
-    "<!--frame:f.row#r1.children:start--><em>body-1</em><!--frame:f.row#r1.children:end-->" +
+    '<dx-frame data-fid="f.row#r1.children" style="display:contents"><em>body-1</em></dx-frame>' +
     "</div>" +
     "<!--slot:row#r1:end-->" +
     "</article>";

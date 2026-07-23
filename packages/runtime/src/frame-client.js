@@ -696,27 +696,17 @@ class FrameImpl {
         cache[key] = resolved;
         props[key] = resolved;
       } else if (isFrameRef(value)) {
-        const fragment = document.createDocumentFragment();
+        // A nested server-content region: a single frame ELEMENT the wrapper
+        // places. On re-call the wrapper re-places the SAME element (the
+        // platform moves the subtree as one node — no marker range to walk,
+        // no fragment refill), and the bound frame's parent follows live.
         let entry = regions.get(value.$frame);
         if (!entry) {
-          const start = document.createComment(`frame:${value.$frame}:start`);
-          const end = document.createComment(`frame:${value.$frame}:end`);
-          entry = { childId: value.$frame, start, end, frame: undefined };
+          const element = makeFrameElement(value.$frame);
+          entry = { childId: value.$frame, element, frame: undefined };
           regions.set(value.$frame, entry);
-          fragment.append(start, end);
-        } else {
-          // Re-call: move the existing range (markers + content) into a
-          // fragment so the client re-places it; the bound frame's parent
-          // follows live.
-          let n = entry.start;
-          while (n) {
-            const next = n.nextSibling;
-            fragment.append(n);
-            if (n === entry.end) break;
-            n = next;
-          }
         }
-        props[key] = fragment;
+        props[key] = entry.element;
       } else {
         props[key] = value;
       }
@@ -727,14 +717,16 @@ class FrameImpl {
   /** Bind nested frames for a slot's regions once their markers are in the DOM. */
   /**
    * Marker-driven region discovery for the adopt path: a claimed
-   * occurrence's interior already holds its nested server-content regions
-   * between `frame:<childId>:start/:end` comments (the document producer
-   * emitted them), but no slot record exists at t = 0 to create the region
-   * entries `#resolveArgs` would. Seed entries from the OUTERMOST marker
-   * pairs found in the interior (deeper pairs belong to the regions' own
-   * occurrences and are discovered recursively when those claim);
-   * `#bindRegions` then constructs adopting frames over them, which run
-   * their own slot sync — this is what wires nested occurrences at boot.
+   * occurrence's interior already holds its nested server-content regions as
+   * frame ELEMENTS (the document producer emitted them), but no slot record
+   * exists at t = 0 to create the region entries `#resolveArgs` would. Seed
+   * entries from the OUTERMOST region elements in the interior (a region's
+   * own deeper regions belong to its occurrences and are discovered
+   * recursively when those claim); `#bindRegions` then constructs adopting
+   * frames over them, which run their own slot sync — this is what wires
+   * nested occurrences at boot. An element boundary makes discovery a scoped
+   * walk that stops at each region, replacing the flat-comment-list + depth-
+   * stack pairing a marker range needed.
    */
   #discoverRegions(slotKey, start) {
     if (!start) return;
@@ -743,52 +735,11 @@ class FrameImpl {
       regions = new Map();
       this.#slotRegions.set(slotKey, regions);
     }
-    // Flat, document-ordered comment list for the interior (top-level
-    // comments and element subtrees alike), then a depth stack pairs the
-    // OUTERMOST frame ranges.
-    const doc = start.ownerDocument;
     const endData = slotEnd(slotKey);
-    const comments = [];
     let n = start.nextSibling;
     while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
-      if (n.nodeType === COMMENT_NODE) comments.push(n);
-      else if (n.nodeType === 1) {
-        const walker = doc.createTreeWalker(n, 128 /* COMMENT */);
-        let c;
-        while ((c = walker.nextNode())) comments.push(c);
-      }
+      collectRegionElements(n, regions);
       n = n.nextSibling;
-    }
-    let depth = 0;
-    let openId = null;
-    let openStart = null;
-    for (const c of comments) {
-      const data = c.data;
-      if (!data.startsWith("frame:")) continue;
-      if (data.endsWith(":start")) {
-        const childId = data.slice(6, -6);
-        if (!childId) continue; // the insertable's unnamed boundary markers
-        if (depth === 0) {
-          openId = childId;
-          openStart = c;
-        }
-        depth++;
-      } else if (data.endsWith(":end")) {
-        const childId = data.slice(6, -4);
-        if (!childId) continue;
-        if (depth > 0) {
-          depth--;
-          if (depth === 0 && childId === openId && !regions.has(openId)) {
-            regions.set(openId, {
-              childId: openId,
-              start: openStart,
-              end: c,
-              frame: undefined,
-              adopt: true
-            });
-          }
-        }
-      }
     }
   }
 
@@ -854,16 +805,16 @@ class FrameImpl {
     const regions = this.#slotRegions.get(slotKey);
     if (!regions) return;
     for (const entry of regions.values()) {
-      if (!entry.frame && entry.start.parentNode) {
+      if (!entry.frame && entry.element.parentNode) {
         // parentNode (not isConnected) so regions also bind during detached
         // rendering. Host buffering flushes any queued childId chunks. The
         // region inherits this frame's slot resolution, so client slots
         // revealed in its streamed content are filled by the same callbacks
         // the client threaded down — no global registry.
-        entry.frame = new FrameImpl(null, entry.start, entry.end, {
+        entry.frame = new FrameImpl(entry.element, null, null, {
           id: entry.childId,
           host: this.#options.host,
-          // Regions discovered from adopted document markers already hold
+          // Regions discovered from adopted document elements already hold
           // their server-rendered content (adopt); streamed regions start
           // empty. Claim scoping threads the root boundary's id down.
           adopt: entry.adopt,
@@ -890,15 +841,10 @@ class FrameImpl {
         n = afterRange(n, id);
         continue;
       }
-      const regionId = frameRegionStartId(n);
-      if (regionId !== null) {
-        // Nested frame regions are child-owned: their interiors are opaque
-        // to this frame's discovery (the child discovers, with callbacks and
-        // records threaded down).
-        n = afterFrameRegion(n, regionId);
-        continue;
-      }
-      if (n.nodeType === ELEMENT_NODE) collectSlots(n, found);
+      // A nested frame/region element is child-owned: its interior is opaque
+      // to this frame's discovery (the child discovers, with callbacks and
+      // records threaded down). Don't descend into it.
+      if (n.nodeType === ELEMENT_NODE && !isFrameElement(n)) collectSlots(n, found);
       n = n.nextSibling;
     }
   }
@@ -1121,13 +1067,7 @@ export const FRAME_ID_ATTR = "data-fid";
  * `onCleanup`.
  */
 export function createFrameElement(options) {
-  const el = document.createElement(options.as || FRAME_TAG);
-  // Inline (not a stylesheet or custom-element registration) so it holds
-  // before any bundle loads and needs nothing defined — an undefined custom
-  // element is inert HTMLUnknownElement, and `display:contents` makes it
-  // generate no box, so its children lay out in the frame's parent.
-  if (!options.as) el.style.display = "contents";
-  if (options.id !== undefined) el.setAttribute(FRAME_ID_ATTR, options.id);
+  const el = makeFrameElement(options.id, options.as);
   const frame = new FrameImpl(el, null, null, options);
   return {
     element: el,
@@ -1139,6 +1079,27 @@ export function createFrameElement(options) {
       el.remove();
     }
   };
+}
+
+/**
+ * Create a bare boundary/region element (no frame bound yet). Default
+ * `<dx-frame>` is inlined as `display:contents` — not a stylesheet or
+ * custom-element registration — so it holds before any bundle loads and
+ * needs nothing defined: an undefined custom element is inert
+ * HTMLUnknownElement, and `display:contents` makes it generate no box, so its
+ * children lay out in the frame's parent. `as` gives a semantic/parsing-
+ * context tag whose display the author owns.
+ */
+function makeFrameElement(id, as) {
+  const el = document.createElement(as || FRAME_TAG);
+  if (!as) el.style.display = "contents";
+  if (id !== undefined) el.setAttribute(FRAME_ID_ATTR, id);
+  return el;
+}
+
+/** Whether `node` is a frame boundary/region element (carries our id attr). */
+function isFrameElement(node) {
+  return node.nodeType === ELEMENT_NODE && node.hasAttribute(FRAME_ID_ATTR);
 }
 
 /** Returns the segment name for a `seg:<name>` content key, else `null`. */
@@ -1283,34 +1244,30 @@ function collectSlots(root, out) {
       n = afterRange(n, id);
       continue;
     }
-    const regionId = frameRegionStartId(n);
-    if (regionId !== null) {
-      n = afterFrameRegion(n, regionId);
-      continue;
+    // Skip nested frame/region element interiors — child-owned (see
+    // #collectSlots).
+    if (n.nodeType === ELEMENT_NODE && !isFrameElement(n)) collectSlots(n, out);
+    n = n.nextSibling;
+  }
+}
+
+/**
+ * Collect the OUTERMOST frame region elements in `node`'s subtree into
+ * `regions` (keyed by childId, seeded for adoption). A region is opaque — its
+ * own deeper regions belong to its occurrences, discovered when they claim —
+ * so the walk stops descending at each region element. Client wrapper
+ * elements around a region are descended through.
+ */
+function collectRegionElements(node, regions) {
+  if (node.nodeType !== ELEMENT_NODE) return;
+  if (isFrameElement(node)) {
+    const childId = node.getAttribute(FRAME_ID_ATTR);
+    if (childId && !regions.has(childId)) {
+      regions.set(childId, { childId, element: node, frame: undefined, adopt: true });
     }
-    if (n.nodeType === ELEMENT_NODE) collectSlots(n, out);
-    n = n.nextSibling;
+    return;
   }
-}
-
-const FRAME_REGION_START = /^frame:(.+):start$/;
-
-/** If `node` is a `frame:<id>:start` comment, return its id; else `null`. */
-function frameRegionStartId(node) {
-  if (node.nodeType !== COMMENT_NODE) return null;
-  const m = FRAME_REGION_START.exec(node.data);
-  return m ? m[1] : null;
-}
-
-/** The sibling immediately after the `frame:<id>:end` marker for `start`. */
-function afterFrameRegion(start, id) {
-  const end = `frame:${id}:end`;
-  let n = start.nextSibling;
-  while (n) {
-    if (n.nodeType === COMMENT_NODE && n.data === end) return n.nextSibling;
-    n = n.nextSibling;
-  }
-  return null;
+  for (let c = node.firstChild; c; c = c.nextSibling) collectRegionElements(c, regions);
 }
 
 /**

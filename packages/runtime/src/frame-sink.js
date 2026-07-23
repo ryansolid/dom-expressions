@@ -443,11 +443,9 @@ export function createDocumentSlotProps(clientProps, frameId) {
               regions.push(region);
               resolved[key] = () => {
                 region.used = true;
-                return [
-                  { t: `<!--frame:${childId}:start-->` },
-                  value,
-                  { t: `<!--frame:${childId}:end-->` }
-                ];
+                // A region is a frame ELEMENT the client wrapper adopts —
+                // the same DOM contract as the boundary, one level down.
+                return [{ t: frameElementOpen(childId) }, value, { t: FRAME_ELEMENT_CLOSE }];
               };
             } else {
               resolved[key] = value;
@@ -559,14 +557,20 @@ export function frameTransformDirectResult(value, { id }) {
 function renderedHtmlOf(out) {
   try {
     const res = sharedConfig.context.resolve(out);
-    // Markers AND hydration keys stripped: the occurrence/region ids inside
-    // comments would false-positive the recoverability check (e.g. an arg
-    // value "c1" matching its own `slot:comment#c1` marker), and `_hk`
-    // attributes embed the occurrence key — so any `cid === $key` occurrence
-    // would match its own wrapper's hydration key and never arm its t=0
-    // record (#547). Only element TEXT counts as recoverable-from-page.
+    // Markers, frame/region element tags, AND hydration keys stripped: the
+    // occurrence/region ids inside them would false-positive the
+    // recoverability check (an arg value "c1" matching its own
+    // `slot:comment#c1` marker, or a region element's `data-fid` embedding
+    // the occurrence id), and `_hk` attributes embed the occurrence key — so
+    // any `cid === $key` occurrence would match its own wrapper's hydration
+    // key and never arm its t=0 record (#547). Only element TEXT counts as
+    // recoverable-from-page. (This whole heuristic is slated for removal —
+    // t=0 args ship unconditionally — see docs/frame-seams-decision.md.)
     if (res && res.t && (!res.h || !res.h.length)) {
-      return res.t[0].replace(/<!--[^>]*-->/g, "").replace(/ _hk=("[^"]*"|[^\s>]+)/g, "");
+      return res.t[0]
+        .replace(/<!--[^>]*-->/g, "")
+        .replace(/<\/?dx-frame[^>]*>/g, "")
+        .replace(/ _hk=("[^"]*"|[^\s>]+)/g, "");
     }
   } catch (e) {}
   return null;

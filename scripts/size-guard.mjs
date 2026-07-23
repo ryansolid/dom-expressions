@@ -50,12 +50,16 @@ const SCENARIOS = {
   // feature weight, re-guarded at 6250; 6460 after element-claim sweeps
   // (the router link-state contract: seam-read registry, sweep at every
   // materialization site, morph attribute re-claims, ownerScope) —
-  // deliberate feature weight, re-guarded at 6600.
+  // deliberate feature weight, re-guarded at 6600. Then the element-seams
+  // decision REMOVED weight: 6585 -> 6550 (boundary is an element; the
+  // $$FRAME brand + its insert/normalize branches deleted from core) -> 6331
+  // (regions are elements: the depth-stack region discovery, fragment-refill,
+  // and frame:-marker range helpers all deleted) — re-guarded DOWN at 6420.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6600
+    6420
   ]
 };
 
