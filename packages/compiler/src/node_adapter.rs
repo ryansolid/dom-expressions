@@ -12,6 +12,10 @@ pub use crate::lazy::TransformLazyOptions;
 pub use crate::refresh::TransformRefreshOptions;
 use crate::{CompileOptions, Generate, Renderer, Wrapper};
 
+const MISSING_MODULE_NAME: &str = "AST-native transform requires a `moduleName` option";
+const UNSUPPORTED_GENERATE: &str =
+    "The @dom-expressions/compiler backend implements DOM, SSR, universal, and dynamic modes only";
+
 /// The `"use server"` directive pass — a second, independent transform over
 /// the same parse infrastructure as the JSX pass. Applies to plain
 /// `.js`/`.ts` modules as well as JSX/TSX.
@@ -48,10 +52,15 @@ pub fn transform_refresh(
 #[napi]
 pub fn transform(code: String, options: Option<TransformOptions>) -> Result<TransformResult> {
     let options = options.unwrap_or_default();
-    if options.module_name.is_none() || !supported_generate(options.generate.as_deref()) {
-        if let Some(result) = legacy_preflight(&code, &options)? {
-            return Ok(result);
-        }
+    let validation_error = if options.module_name.is_none() {
+        Some(MISSING_MODULE_NAME)
+    } else if !supported_generate(options.generate.as_deref()) {
+        Some(UNSUPPORTED_GENERATE)
+    } else {
+        None
+    };
+    if let Some(validation_error) = validation_error {
+        return legacy_preflight(&code, &options, validation_error);
     }
     let options = core_options(options)?;
     let output = crate::compiler::compile_for_node_adapter(&code, &options)
@@ -65,17 +74,13 @@ pub fn transform(code: String, options: Option<TransformOptions>) -> Result<Tran
 fn core_options(options: TransformOptions) -> Result<CompileOptions> {
     let module_name = options
         .module_name
-        .ok_or_else(|| Error::from_reason("AST-native transform requires a `moduleName` option"))?;
+        .ok_or_else(|| Error::from_reason(MISSING_MODULE_NAME))?;
     let generate = match options.generate.as_deref().unwrap_or("dom") {
         "dom" => Generate::Dom,
         "ssr" => Generate::Ssr,
         "universal" => Generate::Universal,
         "dynamic" => Generate::Dynamic,
-        _ => {
-            return Err(Error::from_reason(
-                "The @dom-expressions/compiler backend implements DOM, SSR, universal, and dynamic modes only",
-            ));
-        }
+        _ => return Err(Error::from_reason(UNSUPPORTED_GENERATE)),
     };
     Ok(CompileOptions {
         filename: options.filename,
@@ -123,7 +128,11 @@ fn supported_generate(generate: Option<&str>) -> bool {
 /// Preserve the Node transform's established parse/skip/module/generate error
 /// ordering on the exceptional paths that cannot yet be represented by the
 /// typed Rust options.
-fn legacy_preflight(code: &str, options: &TransformOptions) -> Result<Option<TransformResult>> {
+fn legacy_preflight(
+    code: &str,
+    options: &TransformOptions,
+    validation_error: &'static str,
+) -> Result<TransformResult> {
     let source_type = crate::config::source_type_for_filename(options.filename.as_deref())?;
     let allocator = Allocator::default();
     let parsed = Parser::new(&allocator, code, source_type)
@@ -136,30 +145,14 @@ fn legacy_preflight(code: &str, options: &TransformOptions) -> Result<Option<Tra
         return Err(Error::from_reason(error));
     }
     if let Some(lib) = options.require_import_source.as_deref() {
-        let has_pragma = parsed.program.comments.iter().any(|comment| {
-            let text = comment.content_span().source_text(code);
-            let mut pieces = text.split("@jsxImportSource");
-            pieces.next();
-            matches!((pieces.next(), pieces.next()), (Some(rest), None) if rest.trim() == lib)
-        });
-        if !has_pragma {
-            return Ok(Some(TransformResult {
+        if !crate::compiler::has_jsx_import_source(&parsed.program, code, lib) {
+            return Ok(TransformResult {
                 code: code.to_owned(),
                 map: None,
-            }));
+            });
         }
     }
-    if options.module_name.is_none() {
-        return Err(Error::from_reason(
-            "AST-native transform requires a `moduleName` option",
-        ));
-    }
-    if !supported_generate(options.generate.as_deref()) {
-        return Err(Error::from_reason(
-            "The @dom-expressions/compiler backend implements DOM, SSR, universal, and dynamic modes only",
-        ));
-    }
-    Ok(None)
+    Err(Error::from_reason(validation_error))
 }
 
 fn wrapper(option: Option<Either<bool, String>>) -> Wrapper {
