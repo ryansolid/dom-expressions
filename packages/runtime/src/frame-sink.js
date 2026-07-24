@@ -80,7 +80,21 @@ export function createFrameSink(emit, frame) {
   // Fragments that streamed styles ahead of a grouped reveal; the group's
   // reveal chunk must tell the consumer to wait on them.
   const styledKeys = new Set();
+  // Fragment keys registered while a REGION (a `{$frame}` slot arg) resolves,
+  // mapped to that region's childId. A region is a nested frame the client
+  // owns end-to-end, so its Suspense fragment/reveal must route to the region,
+  // not this root frame — else the root store carries the region's segment
+  // state and the region's independent morph across responses desyncs from it.
+  // First write wins so a fragment inside a nested region is tagged with the
+  // innermost region (the region wrap runs before the enclosing one).
+  const regionKeys = new Map();
+  const frameOf = key => regionKeys.get(key) || id;
   return {
+    // Tag a fragment key to the region resolving around its registration, so
+    // its later fragment/reveal chunks address the region frame.
+    tagRegion(key, childId) {
+      if (!regionKeys.has(key)) regionKeys.set(key, childId);
+    },
     shell(html, meta = {}) {
       // Pre-flush assets (entry modules, hoisted boundary styles) are head
       // splices in the document sink; a frame carries them as an assets chunk
@@ -137,25 +151,26 @@ export function createFrameSink(emit, frame) {
       // meta.styles is the core's { links, inline } split: stylesheet URLs
       // gate the reveal (they load async); inline styles are CSS content that
       // applies on insertion, carried by value, no gating.
+      const fid = frameOf(key);
       const links = (meta.styles && meta.styles.links) || [];
       const inline = (meta.styles && meta.styles.inline) || [];
       if (links.length || inline.length) {
         if (links.length) styledKeys.add(key);
-        const chunk = { type: "assets", id, version, key };
+        const chunk = { type: "assets", id: fid, version, key };
         if (links.length) chunk.styles = links;
         if (inline.length) {
           chunk.inlineStyles = inline.map(e => ({ id: e.id, content: e.content, attrs: e.attrs }));
         }
         emit(chunk);
       }
-      emit({ type: "fragment", id, version, key, html: value });
+      emit({ type: "fragment", id: fid, version, key, html: value });
       // A fragment that ERRORED still reveals (its html is the fallback /
       // error template), but the failure is surfaced as a keyed error chunk
       // — the frame protocol has no `<key>_fr` rejection to ride.
       if (meta.error) {
         emit({
           type: "error",
-          id,
+          id: fid,
           version,
           key,
           error: { message: String((meta.error && meta.error.message) || meta.error) }
@@ -164,15 +179,28 @@ export function createFrameSink(emit, frame) {
       // An eagerly-revealed fragment (no reveal group) carries its own
       // reveal; grouped fragments wait for an explicit reveal() call.
       if (!meta.revealGroup) {
-        emit({ type: "reveal", id, version, keys: [key], waitForStyles: !!links.length });
+        emit({ type: "reveal", id: fid, version, keys: [key], waitForStyles: !!links.length });
       }
     },
     reveal(keys, meta = {}) {
-      let waitForStyles = false;
-      for (const key of keys) if (styledKeys.has(key)) waitForStyles = true;
-      const chunk = { type: "reveal", id, version, keys, waitForStyles };
-      if (meta.fallback) chunk.fallback = true;
-      emit(chunk);
+      // Keys in one reveal group can belong to different frames (a region's
+      // fragment shares a group with the root's). Split by frame so each
+      // reveal chunk addresses the frame that owns those placeholders, keeping
+      // registration order within each frame.
+      const byFrame = new Map();
+      for (const key of keys) {
+        const fid = frameOf(key);
+        let group = byFrame.get(fid);
+        if (!group) byFrame.set(fid, (group = []));
+        group.push(key);
+      }
+      for (const [fid, groupKeys] of byFrame) {
+        let waitForStyles = false;
+        for (const key of groupKeys) if (styledKeys.has(key)) waitForStyles = true;
+        const chunk = { type: "reveal", id: fid, version, keys: groupKeys, waitForStyles };
+        if (meta.fallback) chunk.fallback = true;
+        emit(chunk);
+      }
     },
     asset(type, url) {
       // Post-flush styles ride their fragment's assets chunk (fragment() gets
@@ -702,45 +730,66 @@ export function createSlotProps(sink, frame) {
           const args = {};
           for (const key of Object.keys(raw)) {
             if (key === "$key") continue; // occurrence identity, not client data
-            // A function cannot be serialized, so a function-valued arg must be
-            // a thunk producing content (or a getter producing a scalar):
-            // resolve it one-shot, then classify the result. This is how
-            // top-level one-shot reactive control flow (<For>/<Show>) reaches
-            // the content path when it arrives as a thunk/memo rather than an
-            // eager node. Bounded against a pathological self-returning fn.
-            let value = raw[key];
-            for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
-            const t = typeof value;
-            if (value == null || t === "string" || t === "number" || t === "boolean") {
-              args[key] = value;
-            } else if (isServerContent(value)) {
-              // Server JSX flows as a nested region, never as data — the
-              // no-double-serialize invariant (transport dispatch case 1):
-              // its html is the transfer; the client wraps the range without
-              // re-rendering it. Nested occurrence markers evaluated inside
-              // this content already emitted their slot chunks against this
-              // frame — the consumer threads record lookup up the frame tree.
-              const resolved = sharedConfig.context.resolve(value);
-              if (resolved.h.length) {
-                throw new Error(
-                  "Async server content in slot args is not supported yet (arg '" +
-                    key +
-                    "' of " +
-                    occurrence +
-                    "). Move the async read above the slot or into a fragment."
-                );
+            // Region ids derive from occurrence + arg name — stable across
+            // responses (allocation order isn't), so a later stream's region
+            // content routes to the same bound region and morphs in place, and
+            // keyed dedupe holds under reorders. Known before we resolve, so
+            // any Suspense boundary the arg renders can tag its fragment to it.
+            const childId = `${frame.id}.${occurrence}.${key}`;
+            const ctx = sharedConfig.context;
+            // A Suspense inside this arg registers its fragment as it renders —
+            // during the unwrap below (an eager component thunk) or the resolve
+            // (a deferred hole). Route those fragments to the region for the
+            // whole window: the arg may not classify as content, but only
+            // server content registers fragments, so a stray tag is inert.
+            const origRegister = ctx.registerFragment;
+            ctx.registerFragment = (fragKey, fragOptions) => {
+              sink.tagRegion(fragKey, childId);
+              return origRegister.call(ctx, fragKey, fragOptions);
+            };
+            try {
+              // A function cannot be serialized, so a function-valued arg must
+              // be a thunk producing content (or a getter producing a scalar):
+              // resolve it one-shot, then classify the result. This is how
+              // top-level one-shot reactive control flow (<For>/<Show>) reaches
+              // the content path when it arrives as a thunk/memo rather than an
+              // eager node. Bounded against a pathological self-returning fn.
+              let value = raw[key];
+              for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+              const t = typeof value;
+              if (value == null || t === "string" || t === "number" || t === "boolean") {
+                args[key] = value;
+              } else if (isServerContent(value)) {
+                // Server JSX flows as a nested region, never as data — the
+                // no-double-serialize invariant (transport dispatch case 1):
+                // its html is the transfer; the client wraps the range without
+                // re-rendering it. Nested occurrence markers evaluated inside
+                // this content already emitted their slot chunks against this
+                // frame — the consumer threads record lookup up the frame tree.
+                const resolved = ctx.resolve(value);
+                if (resolved.h.length) {
+                  // A Suspense boundary keeps its async out of `h` (it catches,
+                  // renders a fallback, and streams its fragment — now routed
+                  // to the region). A residual hole here is a BARE async read
+                  // with no boundary: nothing to show while it settles, and no
+                  // fragment to reveal into.
+                  throw new Error(
+                    "Async server content in a slot arg needs a boundary (arg '" +
+                      key +
+                      "' of " +
+                      occurrence +
+                      "). Wrap the async read in a <Suspense>, or move it above the slot."
+                  );
+                }
+                sink.region(childId, resolved.t[0]);
+                args[key] = { $frame: childId };
+              } else {
+                const ref = `arg:${occurrence}:${key}`;
+                ctx.serialize(ref, value);
+                args[key] = { $ref: ref };
               }
-              // Region ids derive from occurrence + arg name — stable across
-              // responses (allocation order isn't), so a later stream's
-              // region content routes to the same bound region and morphs in
-              // place, and keyed dedupe holds under reorders.
-              const childId = `${frame.id}.${occurrence}.${key}`;
-              sink.region(childId, resolved.t[0]);
-              args[key] = { $frame: childId };
-            } else {
-              const ref = `arg:${occurrence}:${key}`;
-              sharedConfig.context.serialize(ref, value);
-              args[key] = { $ref: ref };
+            } finally {
+              ctx.registerFragment = origRegister;
             }
           }
           sink.slot(occurrence, args);

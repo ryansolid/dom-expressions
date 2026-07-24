@@ -367,6 +367,27 @@ already-the-mechanism once framed correctly (see the note under it).
    single-copy holds by construction (content ⇒ HTML once, scalar ⇒ data
    once).
 
+3. **Async content inside a region — routed to the region (BUILT).** A region
+   (`{$frame}` slot arg) is a nested frame the client binds under its own
+   `childId` and owns end-to-end: its range, its morph, its reveal. So a
+   `<Suspense>` rendered *inside* region content must stream its `fragment` +
+   `reveal` addressed to the region, not the enclosing root frame. It wasn't:
+   the frame sink is single-id, so a region's deferred fill went out under the
+   root id. The initial reveal still *landed* (the consumer's placeholder DFS
+   descends into region subtrees), but the root store then carried segment
+   state belonging to the region — and the region morphs independently across
+   responses, so the two desync. Fixed on the producer: the response-face
+   getter wraps `ctx.registerFragment` for the window in which each arg
+   resolves, tagging every fragment key it registers to that arg's `childId`
+   (first write wins, so a fragment inside a *nested* region tags to the
+   innermost); `sink.fragment`/`sink.reveal` then address `regionKeys.get(key)
+   ?? id`, and a mixed reveal group splits per frame. Covered by
+   `frame-region-async.spec.js` (producer routing + a control that keeps a
+   root fragment on the root, and an end-to-end client reveal into the region's
+   own DOM). Only a **bare** async read in a slot arg (no boundary, so nothing
+   to show and no fragment to reveal into) still throws, pointing at
+   `<Suspense>`.
+
 ## Open questions
 
 Resolved during implementation: the element is `<dx-frame>` with an inline
