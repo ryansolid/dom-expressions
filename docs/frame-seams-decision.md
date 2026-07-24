@@ -398,6 +398,46 @@ already-the-mechanism once framed correctly.
    to show and no fragment to reveal into) still throws, pointing at
    `<Suspense>`.
 
+## Client-side reveal: boundary-driven (BUILT)
+
+The remaining client-side hole: a streamed segment reveals content containing a
+client fill that is async and has no `<Loading>` of its own. The imperative
+swap revealed the segment before the fill was ready, so the fill's readiness had
+nowhere to land — the frame's own `<Loading>` already latched (2.0 boundaries
+never revert), so the fill flashed **empty** inside painted content.
+
+Resolved by making the reveal itself a boundary. A streamed segment's `pl-KEY`
+placeholder **is** the client-side footprint of the server `<Loading>` that
+produced it, so the reveal reconstructs a client `<Loading>` right there:
+fallback = the placeholder's own template content, children = the segment
+content **plus its client fills, rendered inside the boundary**. An unboundaried
+async fill's `NotReadyError` then propagates *up to that reconstructed boundary*
+and is covered (the segment fallback holds until it settles); a fill with its
+own boundary contains itself. This is React's RSC model — server Suspense
+boundaries reconstructed on the client — and it costs exactly what React pays:
+**one boundary per revealed segment, and segments are author-placed `<Loading>`
+boundaries** (a single high one for most apps), not a per-chunk tax. The
+imperative HTML fast-path *inside* each boundary is untouched; a segment with no
+pending fill resolves instantly.
+
+The earlier "hold the fallback per segment" framing mispriced this as
+per-serialization-point (prohibitive) and nearly shipped a warn-only non-fix.
+The correction: reveal points are `<Loading>` boundaries, so the hold is
+per-`<Loading>` = React granularity. React itself has **no** backstop boundary
+(it requires author-placed ones exactly as we do; with none, it blanks the root
+or blocks the unit — our miss is a *localized* empty slot, gentler), and its
+coverage of a no-local-boundary fill is Suspense (the boundary waits for its
+whole subtree), never the transition — the transition is over the moment a
+fallback shows.
+
+Split across `@dom-expressions/runtime` (the `reveal` hook on `FrameOptions`;
+`#revealSegment` delegates, `#syncSlots` gained a scoped-fragment mode; imperative
+swap kept as the framework-agnostic default) and the framework binding (a client
+`createLoadingBoundary` reconstructed at each seam). Covered by
+`frame-reveal-boundary.spec.js` and, in the Solid binding, an end-to-end test
+that an unboundaried async fill revealed in a deferred segment holds the segment
+fallback then reveals — coverage, not orphan.
+
 ## Open questions
 
 Resolved during implementation: the element is `<dx-frame>` with an inline
