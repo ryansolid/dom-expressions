@@ -61,12 +61,14 @@ const SCENARIOS = {
   // re-guarded DOWN at 6180. Then +54 for the used-region t=0 props threading
   // (6140) and +64 for the morph live-state deny-list (<details>/<dialog>
   // `open` preservation + the `data-preserve` escape hatch) — deliberate
-  // feature weight, re-guarded at 6250.
+  // feature weight, re-guarded at 6250. Then the element-seams `as` escape
+  // hatch was dropped (fixed `<dx-frame>` tag, no author override) — 6191,
+  // re-guarded DOWN at 6220.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6250
+    6220
   ]
 };
 

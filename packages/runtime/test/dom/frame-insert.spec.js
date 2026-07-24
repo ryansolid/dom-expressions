@@ -74,15 +74,6 @@ describe("frame boundary element", () => {
     expect(h1.textContent).toBe("Two");
     dispose();
   });
-
-  it("honors `as` for a semantic/parsing-context tag (no display override)", () => {
-    const host = createFrameHost();
-    const { element, dispose } = createFrameElement({ host, id: "rows", as: "tbody" });
-    expect(element.tagName).toBe("TBODY");
-    // The author owns display for an `as` element — no contents override.
-    expect(element.style.display).toBe("");
-    dispose();
-  });
 });
 
 // #550: a frame boundary in an array / fragment position. Under the element

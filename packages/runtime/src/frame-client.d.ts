@@ -166,13 +166,6 @@ export interface FrameOptions {
   /** Register with this host under `id`, receiving routed/buffered chunks. */
   host?: FrameHost;
   id?: string;
-  /**
-   * Tag for the boundary element `createFrameElement` creates. Defaults to
-   * `dx-frame` rendered `display:contents` (layout-transparent); set an
-   * explicit tag (`"tbody"`) for a semantic or parsing-context boundary, in
-   * which case the author owns its display.
-   */
-  as?: string;
   /** Client content keyed by prop name (occurrences resolve by prop). */
   slots?: Record<string, Slot>;
   /**

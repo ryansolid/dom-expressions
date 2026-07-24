@@ -1036,11 +1036,9 @@ export const FRAME_ID_ATTR = "data-fid";
 /**
  * Create a boundary/region element and bind a frame to it (element mode).
  * Boundary identity belongs to the client, so the client creates the
- * element: default `<dx-frame>` rendered `display:contents` — layout- and
- * box-transparent, exactly like the comment range it replaces — or
- * `options.as` for a semantic/parsing-context tag (`as: "tbody"` for a frame
- * of table rows; the author then owns display). Registered with
- * `options.host` under `options.id`, so streamed chunks route to it,
+ * element: a `<dx-frame>` rendered `display:contents` — layout- and
+ * box-transparent, exactly like the comment range it replaces. Registered
+ * with `options.host` under `options.id`, so streamed chunks route to it,
  * including any buffered before mount.
  *
  * Returns the element (a real node `insert()` places with no brand, in any
@@ -1048,9 +1046,15 @@ export const FRAME_ID_ATTR = "data-fid";
  * server updates flow through the stream (policy A morphs in place), and
  * teardown is `dispose()` — the Solid binding ties it to its owner via
  * `onCleanup`.
+ *
+ * The tag is always `<dx-frame>`: a boundary can't sit inside table
+ * internals at t=0 (the parser foster-parents a non-table element out of a
+ * `<table>`), which is a documented, nameable limitation — own the whole
+ * table in the server component, or supply rows via a client slot — not an
+ * `as` escape hatch.
  */
 export function createFrameElement(options) {
-  const el = makeFrameElement(options.id, options.as);
+  const el = makeFrameElement(options.id);
   const frame = new FrameImpl(el, null, null, options);
   return {
     element: el,
@@ -1065,17 +1069,16 @@ export function createFrameElement(options) {
 }
 
 /**
- * Create a bare boundary/region element (no frame bound yet). Default
- * `<dx-frame>` is inlined as `display:contents` — not a stylesheet or
- * custom-element registration — so it holds before any bundle loads and
- * needs nothing defined: an undefined custom element is inert
- * HTMLUnknownElement, and `display:contents` makes it generate no box, so its
- * children lay out in the frame's parent. `as` gives a semantic/parsing-
- * context tag whose display the author owns.
+ * Create a bare boundary/region element (no frame bound yet). `<dx-frame>` is
+ * inlined as `display:contents` — not a stylesheet or custom-element
+ * registration — so it holds before any bundle loads and needs nothing
+ * defined: an undefined custom element is inert HTMLUnknownElement, and
+ * `display:contents` makes it generate no box, so its children lay out in the
+ * frame's parent.
  */
-function makeFrameElement(id, as) {
-  const el = document.createElement(as || FRAME_TAG);
-  if (!as) el.style.display = "contents";
+function makeFrameElement(id) {
+  const el = document.createElement(FRAME_TAG);
+  el.style.display = "contents";
   if (id !== undefined) el.setAttribute(FRAME_ID_ATTR, id);
   return el;
 }

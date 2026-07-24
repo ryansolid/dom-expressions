@@ -6,11 +6,11 @@
 > everything above the DOM representation (store, versioning, readiness, wire
 > chunks, occlusion) are unchanged. Trigger: issue #550 plus the hardening
 > review that followed it. The table-context consequences were reviewed and
-> accepted: frames can *be* table sections (`as`) but cannot interleave into
-> client-composed ones, while client positions inside server tables remain
-> unrestricted; the flipped assignment (elements at slots) was considered and
-> rejected — it lands the wrapper tax on the fine-grained, high-frequency
-> seam inside server-authored markup.
+> accepted: a boundary can't sit inside table internals (the parser
+> foster-parents a `<dx-frame>` out of a `<table>`), while client positions
+> inside server tables remain unrestricted; the flipped assignment (elements
+> at slots) was considered and rejected — it lands the wrapper tax on the
+> fine-grained, high-frequency seam inside server-authored markup.
 
 ## The question
 
@@ -133,11 +133,11 @@ mounts into an element; a slot is a range.**
 
 ### Boundary and region: one element concept
 
-- A frame mounts into a client-created element (custom element, name TBD —
-  `display: contents` by default, overridable via `as`/attrs at the call
-  site for semantics, styling, or parsing contexts: `as="tbody"` for a frame
-  of table rows). The client names it; the server never dictates it —
-  "boundary identity belongs to the client" becomes literal DOM.
+- A frame mounts into a client-created `<dx-frame>` element, always
+  `display: contents` (layout- and box-transparent, exactly like the comment
+  range it replaces). The client names it; the server never dictates it —
+  "boundary identity belongs to the client" becomes literal DOM. The tag is
+  fixed, not author-overridable: one seam representation, no modes.
 - t=0: the document face emits the element (with its frame id as an
   attribute) instead of a comment pair. Adoption is an attribute query, not a
   comment TreeWalk. The element is robust against minifiers, translators, and
@@ -154,11 +154,15 @@ mounts into an element; a slot is a range.**
   existed. #550 closes as *unrepresentable*, and the same holds for every
   mechanism we'd otherwise audit (Suspense off-screen moves, portals,
   transitions).
-- Constraint accepted and named: frame elements in element-restricted parsing
-  contexts need `as` to match the context (the Turbo tbody lesson), and a
-  frame that is "some rows inside a tbody the client also composes into" is
-  not representable — own the section instead. Producer can dev-warn when it
-  knows the enclosing tag.
+- Constraint accepted and named: a boundary can't sit inside table internals.
+  At t=0 the HTML parser foster-parents any non-table element (a `<dx-frame>`
+  included) out of a `<table>`/`<tbody>`/`<tr>`, so a server-component
+  boundary can't be *some rows inside a client-composed table* — own the whole
+  table in the server component, or supply the rows via a client slot (the
+  range seam has no such restriction). This is the Turbo `tbody` lesson,
+  accepted as a named limitation rather than papered over with an `as`
+  escape hatch — a second tag would be a mode, and modes are a smell. Producer
+  can dev-warn when it knows the enclosing tag.
 
 ### Slot: range, kept
 
@@ -304,7 +308,8 @@ mounts into an element; a slot is a range.**
 - **Behavioral**: `{p.children}` renders inside a visible (but
   `display: contents`) element — client wrapper CSS can see it; documented.
   Table-interior *slots* keep working (they're ranges); table-interior
-  *regions/boundaries* need `as` or restructuring.
+  *regions/boundaries* need restructuring (own the table, or feed rows through
+  a slot).
 - **Migration**: producer emission (`frameTransformDirectResult`, region
   emission, `slotRange` untouched), consumer mount paths, adoption, and the
   Solid binding's `documentBoundary`. Wire chunk schema unchanged except id
@@ -364,15 +369,19 @@ already-the-mechanism once framed correctly (see the note under it).
 
 ## Open questions
 
-1. Element naming and the `display: contents` delivery mechanism (inline
-   style attr vs a one-rule stylesheet in the document bootstrap; unknown
-   elements render inline until defined — Turbo's default-display lesson).
-2. `as`/attribute passthrough ergonomics on `dynamic()` and on region args.
-3. Dev diagnostics: producer-side warning for frame elements emitted into
+Resolved during implementation: the element is `<dx-frame>` with an inline
+`style="display:contents"` (not a bootstrap stylesheet — the inline rule holds
+before any bundle loads, and an undefined custom element is inert). The tag is
+fixed and not author-overridable; an `as`/tag-passthrough escape hatch was
+considered and dropped — it would be a second seam representation (a mode), and
+the table-interior case it addressed is a named limitation instead (own the
+table, or feed rows through a slot).
+
+1. Dev diagnostics: producer-side warning for frame elements emitted into
    element-restricted parsing contexts; adoption-time marker integrity
    report.
-4. Whether the morph live-state deny-list is fixed or pluggable.
-5. Occlusion container: keep the hydration data record (`sc:region:…`), or
+2. Whether the morph live-state deny-list is fixed or pluggable.
+3. Occlusion container: keep the hydration data record (`sc:region:…`), or
    park occluded content in an inert `<template>` element like Astro-Solid —
    keeping content entirely out of the data channel (stronger single-copy
    surface, CSP-friendlier; frames already own the `<template id="pl-…">`
