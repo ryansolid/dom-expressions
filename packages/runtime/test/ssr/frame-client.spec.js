@@ -383,6 +383,54 @@ describe("morph", () => {
     expect(div.textContent).toBe("Goodbye");
   });
 
+  it("preserves a user-toggled <details open> across a morph (browser-owned state)", () => {
+    const frame = withContent("<details><summary>s</summary><p>body v1</p></details>");
+    const details = boundary.firstElementChild;
+    // The user opens it — a browser-owned toggle the server never sees.
+    details.open = true;
+    expect(details.hasAttribute("open")).toBe(true);
+    // A navigation morph re-renders the details as the server default (closed).
+    frame.apply({
+      version: 2,
+      r: { "": html("<details><summary>s</summary><p>body v2</p></details>") }
+    });
+    // Same element, content morphed, but the user's open state survives.
+    expect(boundary.firstElementChild).toBe(details);
+    expect(details.open).toBe(true);
+    expect(details.querySelector("p").textContent).toBe("body v2");
+  });
+
+  it("does not force a user-closed <details> back open when the server renders it open", () => {
+    const frame = withContent("<details open><summary>s</summary><p>v1</p></details>");
+    const details = boundary.firstElementChild;
+    details.open = false; // user closes it
+    frame.apply({
+      version: 2,
+      r: { "": html("<details open><summary>s</summary><p>v2</p></details>") }
+    });
+    expect(details.open).toBe(false); // user wins
+    expect(details.querySelector("p").textContent).toBe("v2");
+  });
+
+  it("leaves a data-preserve element's attributes and subtree untouched", () => {
+    const frame = withContent('<div data-preserve class="widget"><span>init</span></div>');
+    const widget = boundary.firstElementChild;
+    const span = widget.firstElementChild;
+    // A third-party widget mutates the interior after mount.
+    span.textContent = "runtime-state";
+    widget.setAttribute("data-ready", "1");
+    // The morph tries to reset it to fresh server output.
+    frame.apply({
+      version: 2,
+      r: { "": html('<div data-preserve class="widget"><span>server</span></div>') }
+    });
+    // Frozen: same nodes, runtime state intact, server output ignored.
+    expect(boundary.firstElementChild).toBe(widget);
+    expect(widget.firstElementChild).toBe(span);
+    expect(span.textContent).toBe("runtime-state");
+    expect(widget.getAttribute("data-ready")).toBe("1");
+  });
+
   it("inserts and removes children without recreating siblings", () => {
     const frame = withContent("<ul><li>a</li></ul>");
     const ul = boundary.firstElementChild;

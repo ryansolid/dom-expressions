@@ -58,12 +58,15 @@ const SCENARIOS = {
   // payload mode removed: chunkToRecords cases, materializeBlock, the
   // block-template readiness gate — dead markup-compression the producer never
   // emitted; the only content dedup is free seroval reference-equality) —
-  // re-guarded DOWN at 6180.
+  // re-guarded DOWN at 6180. Then +54 for the used-region t=0 props threading
+  // (6140) and +64 for the morph live-state deny-list (<details>/<dialog>
+  // `open` preservation + the `data-preserve` escape hatch) — deliberate
+  // feature weight, re-guarded at 6250.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6180
+    6250
   ]
 };
 
@@ -121,8 +124,10 @@ for (const [name, [imp, ceiling]] of Object.entries(SCENARIOS)) {
   await check(name, entry, ceiling);
 }
 await check(
+  // 873 -> 945 gz after the live-state deny-list (`open` preservation +
+  // `data-preserve`); still ~360 under micromorph, so the public claim holds.
   `frames: morph slice (must undercut micromorph's ${MICROMORPH_GZ} gz)`,
   await morphSliceScenario(),
-  MICROMORPH_GZ - 400
+  MICROMORPH_GZ - 320
 );
 process.exit(failed ? 1 : 0);

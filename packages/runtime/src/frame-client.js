@@ -1332,12 +1332,28 @@ function compatible(a, b) {
   return a.nodeType === TEXT_NODE || a.nodeType === COMMENT_NODE;
 }
 
+// Live-state the server can't know: `open` on <details>/<dialog> IS the
+// user's toggle (unlike form value/checked, which are PROPERTIES that
+// decouple from their attributes after input, so an attribute-only morph
+// already leaves them alone). The morph makes attributes match server output
+// exactly, which would reset a user-opened <details> on every navigation —
+// so `open` is preserved: never removed, never set by the morph. A server
+// that must force it can rebuild the boundary (a genuine teardown), not a
+// morph. Popover/dialog "showing" is not an attribute (JS API), so nothing
+// to guard there.
+function preservesOpen(el) {
+  const t = el.tagName;
+  return t === "DETAILS" || t === "DIALOG";
+}
+
 function morphAttributes(oldEl, newEl, claim) {
   let reclaim = false;
   let changed = false;
+  const keepOpen = preservesOpen(oldEl);
   const oldAttrs = oldEl.attributes;
   for (let i = oldAttrs.length - 1; i >= 0; i--) {
     const name = oldAttrs[i].name;
+    if (keepOpen && name === "open") continue;
     if (!newEl.hasAttribute(name)) {
       oldEl.removeAttribute(name);
       changed = true;
@@ -1347,6 +1363,7 @@ function morphAttributes(oldEl, newEl, claim) {
   const newAttrs = newEl.attributes;
   for (let i = 0; i < newAttrs.length; i++) {
     const attr = newAttrs[i];
+    if (keepOpen && attr.name === "open") continue;
     if (oldEl.getAttribute(attr.name) !== attr.value) {
       oldEl.setAttribute(attr.name, attr.value);
       changed = true;
@@ -1366,6 +1383,12 @@ function morphAttributes(oldEl, newEl, claim) {
 /** Morph `oldNode` in place to match `newNode` (assumed `compatible`). */
 function morphNode(oldNode, newNode, claim) {
   if (oldNode.nodeType === ELEMENT_NODE) {
+    // Escape hatch (the claim contract's analogue): an element the author
+    // marks `data-preserve` keeps its live attributes AND subtree untouched
+    // by the morph — for server DOM that a third-party widget has taken over
+    // (a rich editor, a chart) or any state the deny-list above can't name.
+    // The element stays matched in position; only its interior is frozen.
+    if (oldNode.hasAttribute("data-preserve")) return;
     morphAttributes(oldNode, newNode, claim);
     reconcileChildren(oldNode, newNode, null, null, claim);
   } else if (oldNode.data !== newNode.data) {

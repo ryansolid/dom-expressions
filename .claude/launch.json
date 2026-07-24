@@ -1,6 +1,0 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    { "name": "hn-debug", "runtimeExecutable": "node", "runtimeArgs": ["/Users/ryan/Development/solid/examples/hackernews/server.mjs"], "port": 3003 }
-  ]
-}
