@@ -315,11 +315,12 @@ mounts into an element; a slot is a range.**
   Solid binding's `documentBoundary`. Wire chunk schema unchanged except id
   rebasing semantics. All pre-1.0/experimental surface.
 
-## The producer-side problems (deferred)
+## The producer-side problems
 
-Neither blocks the shipping element-seams work (html-mode + synchronous
-occlusion). Only the first is genuinely hard; the second turned out to be
-already-the-mechanism once framed correctly (see the note under it).
+Both are now built (see the per-point notes). Neither ever blocked the shipping
+element-seams work (html-mode + synchronous occlusion); the first was the
+genuinely hard one (the streaming-occlusion lock), the second turned out to be
+already-the-mechanism once framed correctly.
 
 1. **Knowing insertion status before flush (streaming occlusion) — the hard
    one.** The
@@ -333,8 +334,17 @@ already-the-mechanism once framed correctly (see the note under it).
    decidable at flush. For the residue the policy is locked — **serialize once
    at flush and suppress any later server markup for that slot id** (or CSR
    that instance) — trading one slot's adoption for a guaranteed
-   no-double-ship. *Implemented:* the synchronous path. *Unbuilt:* the
-   segment-scoped lock for the streaming case (the RFC's flagged open risk).
+   no-double-ship. *Built.* The usage flip already serializes a region unused
+   at the wrapper's synchronous return; each such region is now **locked**, so
+   a wrapper that places it behind an async boundary (its thunk called after
+   the flip) contributes *nothing* to markup rather than re-emitting the
+   content — identical to a region never placed, mounted on the client from the
+   `sc:region:` record. The decision is committed eagerly (at sync return, ≤ the
+   flush), which is the conservative side of the policy: never a double-ship,
+   at the cost of that one region adopting from data instead of markup.
+   `frame-fn-args.spec.js` covers the late-placement lock and the synchronous
+   control (still ships inline, never locked). Producer-only; consumer reuses
+   the existing occlusion mount, no client change.
 
 2. **Identifying that a prop is content vs data** (tractable — the mechanism
    already exists). Per prop, at serialize time: content ⇒ ships as HTML (a

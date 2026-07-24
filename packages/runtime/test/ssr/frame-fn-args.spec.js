@@ -39,6 +39,16 @@ function collectDocument(component, clientProps, id = "f") {
   });
 }
 
+// Flatten an SSR node (the `{t}` / array shapes) to its html string — enough
+// to inspect what a captured region thunk would emit.
+function ssrString(node) {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(ssrString).join("");
+  if (node.t !== undefined) return Array.isArray(node.t) ? node.t.map(ssrString).join("") : node.t;
+  return "";
+}
+
 describe("function-valued slot args — stream face", () => {
   it("a thunk producing JSX is content: ships as a region, not serialized", async () => {
     const chunks = await collectStream(
@@ -116,5 +126,49 @@ describe("function-valued slot args — document face (t=0)", () => {
     );
     expect(html).toContain('"sc:slot:f:row#0"');
     expect(html).toContain("n:7");
+  });
+
+  it("locks an occluded region so a late (async) placement cannot double-ship it", async () => {
+    // The usage flip runs synchronously right after the wrapper returns: a
+    // region the wrapper hasn't placed yet is deemed occluded and serialized
+    // once as data. But a wrapper that places the region behind an async
+    // boundary calls its thunk LATER — after the flip. Without a lock that late
+    // call re-emits the content as markup, so the same content ships BOTH as a
+    // data record and inline: a single-copy violation. The lock makes the late
+    // call contribute nothing (identical to a never-placed region — the client
+    // mounts it from the record).
+    let placeLate;
+    const html = await collectDocument(
+      props => r.ssr`<article>${[props.row({ body: () => r.ssr`<p>secret</p>` })]}</article>`,
+      {
+        // Capture the region thunk but don't place it synchronously (as if it
+        // were behind a Suspense that resolves after the shell flush).
+        row: resolved => {
+          placeLate = resolved.body;
+          return r.ssr`<div class="row">shown</div>`;
+        }
+      }
+    );
+    // Occluded at the sync boundary: shipped once as a region record.
+    expect(html).toContain('"sc:region:f.row#0.body"');
+    expect(html).not.toContain("<p>secret</p>");
+
+    // The late placement runs after the flip locked the region. It must not
+    // re-emit the content — no double-ship.
+    const lateHtml = ssrString(placeLate());
+    expect(lateHtml).not.toContain("secret");
+    expect(lateHtml).not.toContain("dx-frame");
+  });
+
+  it("a synchronously placed region still ships inline (the lock does not fire)", async () => {
+    // Control: the common case is unchanged — a region the wrapper places
+    // during its own render is used before the flip, never locked, ships as
+    // content, and is not also serialized.
+    const html = await collectDocument(
+      props => r.ssr`<article>${[props.row({ body: () => r.ssr`<p>shown</p>` })]}</article>`,
+      { row: resolved => r.ssr`<div class="row">${resolved.body}</div>` }
+    );
+    expect(html).toContain("<p>shown</p>");
+    expect(html).not.toContain('"sc:region:f.row#0.body"');
   });
 });

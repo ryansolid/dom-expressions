@@ -480,9 +480,20 @@ export function createDocumentSlotProps(clientProps, frameId) {
             const value = vals[key];
             if (isServerContent(value)) {
               const childId = `${frameId}.${occurrence}.${key}`;
-              const region = { key, childId, value, used: false };
+              const region = { key, childId, value, used: false, locked: false };
               regions.push(region);
               resolved[key] = () => {
+                // Streaming occlusion lock: the usage flip below runs at the
+                // wrapper's SYNCHRONOUS return, but a wrapper that places this
+                // region behind an async boundary (a Suspense that resolves
+                // after the shell flush) calls this thunk LATER — after the
+                // flip already deemed the region occluded and serialized its
+                // content once as a data record. Re-emitting it as markup now
+                // would double-ship the same content (data + markup), the one
+                // thing single-copy forbids. So a locked region contributes
+                // nothing — identical to a region the wrapper never placed; the
+                // client mounts it from the `sc:region:` record on placement.
+                if (region.locked) return [];
                 region.used = true;
                 // A region is a frame ELEMENT the client wrapper adopts —
                 // the same DOM contract as the boundary, one level down.
@@ -525,6 +536,11 @@ export function createDocumentSlotProps(clientProps, frameId) {
             }
             if (any) sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
             for (const region of unused) {
+              // Lock BEFORE returning: the content is now committed to the data
+              // channel, so any later async placement of this region must
+              // suppress its markup (see the thunk above) — that is what makes
+              // "serialize once at flush" a guarantee rather than a race.
+              region.locked = true;
               // Resolve the region's server content through the live render
               // context. Sync content serializes directly; async content
               // serializes as a PROMISE of its final html — the hydration
