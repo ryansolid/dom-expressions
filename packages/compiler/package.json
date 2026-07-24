@@ -30,7 +30,7 @@
     "bench": "pnpm run build && node scripts/bench.mjs",
     "lint": "cargo clippy --manifest-path ./Cargo.toml -- -D warnings",
     "test": "pnpm run test:rust && pnpm run build:debug && jest --no-cache",
-    "test:rust": "cargo test --manifest-path ./Cargo.toml && cargo test --manifest-path ./Cargo.toml --no-default-features --test host_independent_interface",
+    "test:rust": "cargo test --manifest-path ./Cargo.toml && cargo test --manifest-path ./Cargo.toml --no-default-features",
     "artifacts": "napi artifacts",
     "napi:version": "napi version && node ./sync-optional-deps.mjs",
     "create-npm-dirs": "napi create-npm-dirs"

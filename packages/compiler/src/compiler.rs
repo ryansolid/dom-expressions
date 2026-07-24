@@ -134,6 +134,10 @@ pub(crate) fn compile_for_node_adapter(
 fn compile_inner(source: &str, options: &CompileOptions) -> Result<CompileOutput, CompileError> {
     let source_type = source_type_for_filename(options.filename.as_deref())?;
     let allocator = Allocator::default();
+    // Babel has no ParenthesizedExpression node (parens are trivia), so the
+    // transform's expression matchers must never see one either. Preserving
+    // parens here can hide logical expressions from conditional wrapping and
+    // desynchronize generated output from Babel.
     let parsed = Parser::new(&allocator, source, source_type)
         .with_options(ParseOptions {
             preserve_parens: false,
