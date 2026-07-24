@@ -81,6 +81,7 @@ pub(crate) struct AstDomTransform<'a, 'source> {
     /// Babel keeps a raw `this` in the tag callee of the root element of each
     /// `transformJSX` call; only descendants use the `_self$` capture.
     pub(crate) jsx_root_span: Option<oxc_span::Span>,
+    pub(crate) semantic_trace: crate::semantic_trace::TraceRecorder,
 }
 
 pub(crate) struct DomTransformConfig {
@@ -161,6 +162,7 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             ref_index: 0,
             condition_index: 0,
             jsx_root_span: None,
+            semantic_trace: crate::semantic_trace::TraceRecorder::disabled(),
         }
     }
 
@@ -230,25 +232,24 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             .attributes
             .iter()
             .any(|attr| matches!(attr, oxc_ast::ast::JSXAttributeItem::SpreadAttribute(_)));
-        let element: &JSXElement<'a> =
+        let attribute_child =
             if !is_void_element(&tag_name) && !has_spread && element.children.is_empty() {
-                if let Some(container) = children_attribute_container(element) {
-                    let mut clone = element.clone_in(self.allocator);
-                    clone
-                        .children
-                        .push(oxc_ast::ast::JSXChild::ExpressionContainer(
-                            oxc_allocator::Box::new_in(
-                                container.clone_in(self.allocator),
-                                &self.allocator,
-                            ),
-                        ));
-                    self.allocator.alloc(clone)
-                } else {
-                    element
-                }
+                children_attribute_container(element)
             } else {
-                element
+                None
             };
+        let children_from_attribute = attribute_child.is_some();
+        let element: &JSXElement<'a> = if let Some(container) = attribute_child {
+            let mut clone = element.clone_in(self.allocator);
+            clone
+                .children
+                .push(oxc_ast::ast::JSXChild::ExpressionContainer(
+                    oxc_allocator::Box::new_in(container.clone_in(self.allocator), &self.allocator),
+                ));
+            self.allocator.alloc(clone)
+        } else {
+            element
+        };
 
         // XML partial handling (Babel parity): template-root SVG/MathML
         // elements other than <svg>/<math> themselves get wrapped in their
@@ -272,6 +273,7 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             &tag_name,
             &element_id,
             !element.children.is_empty(),
+            children_from_attribute,
             &mut template.html,
             &mut declarations,
             &mut operations,

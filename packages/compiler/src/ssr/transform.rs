@@ -1551,7 +1551,11 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     }
 
     pub(crate) fn lower_fragment(&mut self, fragment: &JSXFragment<'a>) -> Result<Expression<'a>> {
-        crate::shared::fragment::lower_fragment(self, fragment)
+        crate::shared::fragment::lower_fragment(
+            self,
+            fragment,
+            crate::semantic_trace::ExecutionSiteKind::JsxChild,
+        )
     }
 
     /// Babel's `createTemplate` wrap for dynamic fragment children:
@@ -2414,25 +2418,26 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         }
         let map = self.ast().expression_object(span, properties);
         let context_read = |transform: &Self| -> Expression<'a> {
-            Expression::StaticMemberExpression(transform.ast().alloc_static_member_expression(
-                span,
-                transform
-                    .ast()
-                    .expression_identifier(span, transform.ast().ident("_$sharedConfig")),
-                transform
-                    .ast()
-                    .identifier_name(span, transform.ast().ident("context")),
-                false,
-            ))
+            Expression::StaticMemberExpression(
+                transform.ast().alloc_static_member_expression(
+                    span,
+                    transform
+                        .ast()
+                        .expression_identifier(span, transform.ast().ident("_$sharedConfig")),
+                    transform
+                        .ast()
+                        .identifier_name(span, transform.ast().ident("context")),
+                    false,
+                ),
+            )
         };
-        let claims_read = Expression::StaticMemberExpression(
-            self.ast().alloc_static_member_expression(
+        let claims_read =
+            Expression::StaticMemberExpression(self.ast().alloc_static_member_expression(
                 span,
                 context_read(self),
                 self.ast().identifier_name(span, self.ast().ident("claims")),
                 false,
-            ),
-        );
+            ));
         let test = self.ast().expression_logical(
             span,
             context_read(self),

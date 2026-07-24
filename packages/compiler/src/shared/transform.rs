@@ -627,7 +627,11 @@ impl<'a> JsxTransform<'a> for AstDomTransform<'a, '_> {
         if is_root {
             self.jsx_root_span = Some(fragment.span);
         }
-        let mut result = lower_fragment(self, fragment);
+        let mut result = lower_fragment(
+            self,
+            fragment,
+            crate::semantic_trace::ExecutionSiteKind::JsxChild,
+        );
         if is_root {
             self.jsx_root_span = None;
             result = result.map(|value| finalize_root_capture(self, fragment.span, value));

@@ -41,6 +41,24 @@ impl<'a> crate::shared::component_children::ComponentChildLower<'a> for AstDomTr
 }
 
 impl<'a> ModeLower<'a> for AstDomTransform<'a, '_> {
+    fn trace_value(
+        &mut self,
+        span: Span,
+        kind: crate::semantic_trace::ExecutionSiteKind,
+        decision: crate::semantic_trace::ValueDecision,
+    ) {
+        self.semantic_trace.value(span, kind, decision);
+    }
+
+    fn trace_callback(
+        &mut self,
+        span: Span,
+        kind: crate::semantic_trace::ExecutionSiteKind,
+        decision: crate::semantic_trace::CallbackDecision,
+    ) {
+        self.semantic_trace.callback(span, kind, decision);
+    }
+
     fn wrap_conditionals_enabled(&self) -> bool {
         self.wrap_conditionals
     }

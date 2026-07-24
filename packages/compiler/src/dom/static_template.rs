@@ -1,5 +1,6 @@
 use crate::error::{Error, Result};
 use oxc_ast::ast::{JSXChild, JSXElement, JSXExpression};
+use oxc_span::GetSpan;
 
 use crate::dom::attrs::CloseTagContext;
 use crate::dom::element::AstDomTransform;
@@ -9,7 +10,7 @@ use crate::shared::utils::{
 };
 
 pub(crate) fn lower_static_native_template<'a>(
-    ctx: &AstDomTransform<'a, '_>,
+    ctx: &mut AstDomTransform<'a, '_>,
     element: &JSXElement<'a>,
     close_context: CloseTagContext,
 ) -> Result<Option<crate::dom::template::TemplateHtml>> {
@@ -77,6 +78,11 @@ pub(crate) fn lower_static_native_template<'a>(
                 let Some(value) = value else {
                     return Ok(None);
                 };
+                ctx.semantic_trace.value(
+                    container.expression.span(),
+                    crate::semantic_trace::ExecutionSiteKind::JsxChild,
+                    crate::semantic_trace::ValueDecision::Elided,
+                );
                 template.push_both(&escape_html_text_expression(&value));
             }
             JSXChild::Element(child) => {

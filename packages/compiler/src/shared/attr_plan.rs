@@ -8,7 +8,9 @@ use oxc_span::{GetSpan, SPAN, Span};
 
 use crate::shared::ast_builder::AstBuilder;
 use crate::shared::bindings::BindingTable;
-use crate::shared::utils::{StaticValue, decode_html_entities, format_number};
+use crate::shared::utils::{
+    StaticValue, decode_html_entities, format_number, is_literal_only_expression,
+};
 
 /// Planned attribute value, mirroring the states a Babel JSX attribute value
 /// moves through during preprocessing (`node.value` replaced by string
@@ -25,7 +27,11 @@ pub(crate) enum PlanValue<'a> {
 /// One planned attribute after Babel's preprocessing passes (dedupe, style
 /// merging/splitting, class array/object splitting, class combining).
 pub(crate) struct AttrPlan<'a> {
+    /// Span used by generated AST nodes and therefore by source maps.
     pub(crate) span: Span,
+    /// Original value span used only by semantic reporting. Keeping this
+    /// separate prevents tracing from changing generated source locations.
+    pub(crate) semantic_span: Option<Span>,
     pub(crate) key: String,
     pub(crate) value: PlanValue<'a>,
     /// Synthesized from `style={{...}}` splitting (Babel `_styleProperty`).
@@ -42,6 +48,9 @@ pub(crate) struct AttrPlan<'a> {
 /// alongside the plans so each generate can honor it.
 pub(crate) struct AttrPlanOutcome<'a> {
     pub(crate) plans: std::vec::Vec<AttrPlan<'a>>,
+    /// Non-literal source expressions folded away by style/class planning.
+    /// Literal-only leaves have no observable runtime execution to report.
+    pub(crate) elided_value_spans: std::vec::Vec<Span>,
     /// When set, the element's children are replaced with this single child
     /// (Babel: `path.node.children = [child]`).
     pub(crate) children_replacement: Option<JSXChild<'a>>,
@@ -330,7 +339,8 @@ impl<'a> AttrPlanner<'a, '_> {
         tag_name: &str,
     ) -> Result<AttrPlanOutcome<'a>> {
         let mut plans = std::vec::Vec::new();
-
+        let mut elided_value_spans = std::vec::Vec::new();
+        let mut relevant_object_value_spans = std::vec::Vec::new();
         for attr in attributes {
             let JSXAttributeItem::Attribute(attr) = attr else {
                 return Err(Error::from_reason(
@@ -368,11 +378,12 @@ impl<'a> AttrPlanner<'a, '_> {
             if key == "xmlns" && self.skip_xmlns_attribute {
                 continue;
             }
-            let (value, marker_static) = match &attr.value {
-                None => (PlanValue::None, false),
+            let (value, marker_static, semantic_span) = match &attr.value {
+                None => (PlanValue::None, false, None),
                 Some(JSXAttributeValue::StringLiteral(value)) => (
                     PlanValue::Literal(decode_html_entities(&value.value)),
                     false,
+                    None,
                 ),
                 Some(JSXAttributeValue::ExpressionContainer(container)) => {
                     let Some(expression) = container.expression.as_expression() else {
@@ -380,9 +391,32 @@ impl<'a> AttrPlanner<'a, '_> {
                         continue;
                     };
                     let marker = self.marker_between(container.span.start, expression.span().start);
+                    let semantic_span = expression.span();
+                    if key == "style" || key == "class" {
+                        if let Expression::ObjectExpression(object) = expression {
+                            if object.properties.iter().all(|property| {
+                                matches!(
+                                    property,
+                                    ObjectPropertyKind::ObjectProperty(property)
+                                        if !property.computed
+                                )
+                            }) {
+                                relevant_object_value_spans.extend(
+                                    object.properties.iter().filter_map(|property| {
+                                        let ObjectPropertyKind::ObjectProperty(property) = property
+                                        else {
+                                            return None;
+                                        };
+                                        (!is_literal_only_expression(&property.value))
+                                            .then(|| property.value.span())
+                                    }),
+                                );
+                            }
+                        }
+                    }
                     let mut value = expression.clone_in(self.allocator);
                     self.fold_confident(&mut value);
-                    (PlanValue::Expr(value), marker)
+                    (PlanValue::Expr(value), marker, Some(semantic_span))
                 }
                 Some(JSXAttributeValue::Element(_) | JSXAttributeValue::Fragment(_)) => {
                     return Err(Error::from_reason(
@@ -392,6 +426,7 @@ impl<'a> AttrPlanner<'a, '_> {
             };
             plans.push(AttrPlan {
                 span: attr.span,
+                semantic_span,
                 key,
                 value,
                 style_property: false,
@@ -406,15 +441,24 @@ impl<'a> AttrPlanner<'a, '_> {
             if !self.inline_styles {
                 self.wrap_styles_for_no_inline(&mut plans);
             }
-            self.merge_static_styles(&mut plans);
+            self.merge_static_styles(
+                &mut plans,
+                &relevant_object_value_spans,
+                &mut elided_value_spans,
+            );
             self.split_style_object(&mut plans);
             self.split_class_array(&mut plans);
-            self.split_class_list(&mut plans);
+            self.split_class_list(
+                &mut plans,
+                &relevant_object_value_spans,
+                &mut elided_value_spans,
+            );
             self.combine_class_attributes(&mut plans);
         }
 
         Ok(AttrPlanOutcome {
             plans,
+            elided_value_spans,
             children_replacement,
         })
     }
@@ -584,7 +628,12 @@ impl<'a> AttrPlanner<'a, '_> {
     /// Inline styles pass: string styles and confidently static object
     /// properties merge into one static `style` attribute appended at the
     /// end; the residual dynamic parts stay in place.
-    fn merge_static_styles(&self, plans: &mut std::vec::Vec<AttrPlan<'a>>) {
+    fn merge_static_styles(
+        &self,
+        plans: &mut std::vec::Vec<AttrPlan<'a>>,
+        relevant_value_spans: &[Span],
+        elided_value_spans: &mut std::vec::Vec<Span>,
+    ) {
         if !plans.iter().any(|plan| plan.key == "style") {
             return;
         }
@@ -637,10 +686,16 @@ impl<'a> AttrPlanner<'a, '_> {
                         match &property.value {
                             Expression::StringLiteral(value) => {
                                 inlined_style.push_str(&format!("{key}:{};", value.value.as_str()));
+                                if relevant_value_spans.contains(&value.span) {
+                                    elided_value_spans.push(value.span);
+                                }
                             }
                             Expression::NumericLiteral(value) => {
                                 inlined_style
                                     .push_str(&format!("{key}:{};", format_number(value.value)));
+                                if relevant_value_spans.contains(&value.span) {
+                                    elided_value_spans.push(value.span);
+                                }
                             }
                             Expression::NullLiteral(_) => {}
                             Expression::Identifier(identifier)
@@ -651,6 +706,9 @@ impl<'a> AttrPlanner<'a, '_> {
                                     .and_then(|value| value.as_template_string())
                                 {
                                     inlined_style.push_str(&format!("{key}:{evaluated};"));
+                                    if relevant_value_spans.contains(&value.span()) {
+                                        elided_value_spans.push(value.span());
+                                    }
                                 } else {
                                     retained.push(ObjectPropertyKind::ObjectProperty(
                                         property.clone_in(self.allocator),
@@ -675,6 +733,7 @@ impl<'a> AttrPlanner<'a, '_> {
         if !inlined_style.is_empty() {
             plans.push(AttrPlan {
                 span: SPAN,
+                semantic_span: None,
                 key: "style".to_string(),
                 value: PlanValue::Literal(inlined_style.trim_end_matches(';').to_string()),
                 style_property: false,
@@ -729,6 +788,7 @@ impl<'a> AttrPlanner<'a, '_> {
                 || self.marker_between(property.span.start, property.value.span().start);
             split_plans.push(AttrPlan {
                 span: property.span,
+                semantic_span: Some(property.value.span()),
                 key: format!("style:{key}"),
                 value: PlanValue::Expr(property.value.clone_in(self.allocator)),
                 style_property: true,
@@ -802,6 +862,7 @@ impl<'a> AttrPlanner<'a, '_> {
         }
 
         let object_expression = Expression::ObjectExpression(object.clone_in(self.allocator));
+        let object_span = object.span;
         let span = plans[index].span;
         let marker = plans[index].marker_static;
         plans[index].value = PlanValue::Literal(static_classes.join(" "));
@@ -809,6 +870,7 @@ impl<'a> AttrPlanner<'a, '_> {
             index + 1,
             AttrPlan {
                 span,
+                semantic_span: Some(object_span),
                 key: "class".to_string(),
                 value: PlanValue::Expr(object_expression),
                 style_property: false,
@@ -821,7 +883,12 @@ impl<'a> AttrPlanner<'a, '_> {
     /// ClassList optimization: the first fixed-shape `class={{...}}` object
     /// splits per property — confident truthy keys become static classes,
     /// confident falsy keys drop, the rest become `class:prop` toggles.
-    fn split_class_list(&self, plans: &mut std::vec::Vec<AttrPlan<'a>>) {
+    fn split_class_list(
+        &self,
+        plans: &mut std::vec::Vec<AttrPlan<'a>>,
+        relevant_value_spans: &[Span],
+        elided_value_spans: &mut std::vec::Vec<Span>,
+    ) {
         let Some(index) = plans.iter().position(|plan| {
             plan.key == "class"
                 && matches!(
@@ -860,9 +927,13 @@ impl<'a> AttrPlanner<'a, '_> {
                 || self.marker_between(property.span.start, property.value.span().start);
             match self.evaluate_confident(&property.value) {
                 Some(value) => {
+                    if relevant_value_spans.contains(&property.value.span()) {
+                        elided_value_spans.push(property.value.span());
+                    }
                     if value.truthy() {
                         split_plans.push(AttrPlan {
                             span: property.span,
+                            semantic_span: None,
                             key: "class".to_string(),
                             value: PlanValue::Literal(key),
                             style_property: false,
@@ -874,6 +945,7 @@ impl<'a> AttrPlanner<'a, '_> {
                 None => {
                     split_plans.push(AttrPlan {
                         span: property.span,
+                        semantic_span: Some(property.value.span()),
                         key: format!("class:{key}"),
                         value: PlanValue::Expr(property.value.clone_in(self.allocator)),
                         style_property: false,

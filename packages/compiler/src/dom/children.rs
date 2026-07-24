@@ -14,6 +14,7 @@ use oxc_ast::ast::{
     JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild, JSXElement, JSXExpression,
     Statement,
 };
+use oxc_span::GetSpan;
 
 impl<'a> AstDomTransform<'a, '_> {
     #[allow(clippy::too_many_arguments)]
@@ -228,6 +229,11 @@ impl<'a> AstDomTransform<'a, '_> {
                         continue;
                     }
                     if let Some(value) = self.static_jsx_expression_value(&container.expression) {
+                        self.semantic_trace.value(
+                            container.expression.span(),
+                            crate::semantic_trace::ExecutionSiteKind::JsxChild,
+                            crate::semantic_trace::ValueDecision::Elided,
+                        );
                         template.push_both(&escape_html_text_expression(&value));
                         if !in_text_run {
                             if filtered_index(child).is_some_and(|position| {
@@ -298,6 +304,15 @@ impl<'a> AstDomTransform<'a, '_> {
                         // shared predicate, and a non-dynamic hole inserts
                         // its expression untouched.
                         let dynamic = self.classify().is_dynamic_child_slot(dynamic_child);
+                        self.semantic_trace.value(
+                            container.expression.span(),
+                            crate::semantic_trace::ExecutionSiteKind::JsxChild,
+                            if dynamic {
+                                crate::semantic_trace::ValueDecision::ReactiveRerun
+                            } else {
+                                crate::semantic_trace::ValueDecision::EagerOnce
+                            },
+                        );
                         // JSX inside the hole stays raw for the deferred pass
                         // (Babel wraps the untransformed expression and its
                         // outer traversal lowers the JSX later).
@@ -351,6 +366,16 @@ impl<'a> AstDomTransform<'a, '_> {
                 JSXChild::Spread(spread) => {
                     in_text_run = false;
                     self.template_state.uses_insert = true;
+                    let dynamic = self.classify().is_dynamic(None, &spread.expression, false);
+                    self.semantic_trace.value(
+                        spread.expression.span(),
+                        crate::semantic_trace::ExecutionSiteKind::JsxChild,
+                        if dynamic {
+                            crate::semantic_trace::ValueDecision::ReactiveRerun
+                        } else {
+                            crate::semantic_trace::ValueDecision::EagerOnce
+                        },
+                    );
                     let value = spread_child_expression(self, spread.span, &spread.expression);
                     // Spread children always allocate ids; scope keyed off the
                     // same shared dynamic predicate as the ssr generate.
@@ -828,6 +853,7 @@ impl<'a> AstDomTransform<'a, '_> {
             &tag_name,
             &child_id,
             !child.children.is_empty(),
+            false,
             &mut child_template.html,
             &mut child_declarations,
             &mut child_operations,

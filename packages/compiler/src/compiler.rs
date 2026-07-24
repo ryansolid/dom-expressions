@@ -6,6 +6,8 @@ use oxc_span::SourceType;
 
 use crate::dom::element::{AstDomTransform, DomTransformConfig};
 use crate::error::CompileError;
+use crate::semantic_trace::SemanticTrace;
+use crate::semantic_trace::{ExecutionCensus, TraceRecorder};
 use crate::ssr::transform::AstSsrTransform;
 use crate::universal::transform::{
     AstUniversalTransform, DynamicDomConfig, UniversalWrapperConfig,
@@ -69,6 +71,9 @@ pub struct CompileOptions {
     pub omit_last_closing_tag: bool,
     pub built_ins: Vec<String>,
     pub renderers: Vec<Renderer>,
+    /// Collect experimental DOM-lowering execution facts without changing
+    /// generated code. Unsupported output modes return a configuration error.
+    pub semantic_trace: bool,
 }
 
 impl Default for CompileOptions {
@@ -97,6 +102,7 @@ impl Default for CompileOptions {
             omit_last_closing_tag: true,
             built_ins: Vec::new(),
             renderers: Vec::new(),
+            semantic_trace: false,
         }
     }
 }
@@ -106,6 +112,8 @@ impl Default for CompileOptions {
 pub struct CompileOutput {
     pub code: String,
     pub source_map: Option<String>,
+    /// Present only when `CompileOptions::semantic_trace` is enabled.
+    pub semantic_trace: Option<SemanticTrace>,
 }
 
 /// Compile one JavaScript or TypeScript module containing JSX.
@@ -132,6 +140,11 @@ pub(crate) fn compile_for_node_adapter(
 }
 
 fn compile_inner(source: &str, options: &CompileOptions) -> Result<CompileOutput, CompileError> {
+    if options.semantic_trace && options.generate != Generate::Dom {
+        return Err(CompileError::configuration(
+            "semantic tracing currently requires the DOM generate",
+        ));
+    }
     let source_type = source_type_for_filename(options.filename.as_deref())?;
     let allocator = Allocator::default();
     // Babel has no ParenthesizedExpression node (parens are trivia), so the
@@ -152,21 +165,34 @@ fn compile_inner(source: &str, options: &CompileOptions) -> Result<CompileOutput
     if let Some(lib) = options.require_import_source.as_deref()
         && !has_jsx_import_source(&parsed.program, source, lib)
     {
+        if options.semantic_trace {
+            return Err(CompileError::configuration(
+                "semantic tracing cannot claim coverage for a file skipped by requireImportSource",
+            ));
+        }
         return Ok(CompileOutput {
             code: source.to_string(),
             source_map: None,
+            semantic_trace: None,
         });
     }
 
     let mut program = parsed.program;
+    let mut semantic_trace = None;
     match options.generate {
         Generate::Dom => {
+            let census = options.semantic_trace.then(|| {
+                ExecutionCensus::from_program(&program, &options.built_ins, options.inline_styles)
+            });
             let mut transform = AstDomTransform::new(
                 &allocator,
                 source,
                 &options.module_name,
                 dom_transform_config(options, options.built_ins.clone()),
             );
+            if let Some(census) = census {
+                transform.semantic_trace = TraceRecorder::new(census);
+            }
             transform.visit_program(&mut program);
             if let Some(error) = transform.error.take() {
                 return Err(CompileError::transform(error));
@@ -174,6 +200,10 @@ fn compile_inner(source: &str, options: &CompileOptions) -> Result<CompileOutput
             transform
                 .prepend_helpers(&mut program)
                 .map_err(|error| CompileError::transform(error.to_string()))?;
+            semantic_trace = transform
+                .semantic_trace
+                .finish()
+                .map_err(CompileError::transform)?;
         }
         Generate::Dynamic => {
             if let Some(renderer) = dom_renderer(&options.renderers) {
@@ -255,6 +285,7 @@ fn compile_inner(source: &str, options: &CompileOptions) -> Result<CompileOutput
     Ok(CompileOutput {
         code: build.code,
         source_map: build.map.map(|map| map.to_json_string()),
+        semantic_trace,
     })
 }
 
@@ -356,6 +387,18 @@ fn dom_renderer(renderers: &[Renderer]) -> Option<&Renderer> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        CallbackDecision, ExecutionSite, ExecutionSiteKind, SourceSpan, TerminalDecision,
+        ValueDecision,
+    };
+
+    fn span(source: &str, needle: &str) -> SourceSpan {
+        let start = source.find(needle).expect("fixture token") as u32;
+        SourceSpan {
+            start,
+            end: start + needle.len() as u32,
+        }
+    }
 
     #[test]
     fn compiles_without_node_feature_types() {
@@ -379,5 +422,171 @@ mod tests {
         };
         let configuration = compile("const view = <div />;", &options).unwrap_err();
         assert_eq!(configuration.kind(), crate::CompileErrorKind::Configuration);
+    }
+
+    #[test]
+    fn returns_an_exact_total_dom_trace_without_changing_code() {
+        let source =
+            "const view = <div title={name()} onClick={handle} ref={node}>{count()}</div>;";
+        let plain = compile(source, &CompileOptions::default()).expect("plain compile");
+        let traced = compile(
+            source,
+            &CompileOptions {
+                semantic_trace: true,
+                ..CompileOptions::default()
+            },
+        )
+        .expect("traced compile");
+
+        assert_eq!(traced.code, plain.code);
+        assert_eq!(
+            traced.semantic_trace,
+            Some(SemanticTrace {
+                sites: vec![
+                    ExecutionSite {
+                        span: span(source, "name()"),
+                        kind: ExecutionSiteKind::NativeAttribute,
+                        decision: TerminalDecision::Value(ValueDecision::ReactiveRerun),
+                    },
+                    ExecutionSite {
+                        span: span(source, "handle"),
+                        kind: ExecutionSiteKind::EventHandler,
+                        decision: TerminalDecision::Callback(CallbackDecision::LaterEvent),
+                    },
+                    ExecutionSite {
+                        span: span(source, "node"),
+                        kind: ExecutionSiteKind::Ref,
+                        decision: TerminalDecision::Callback(CallbackDecision::RefApply),
+                    },
+                    ExecutionSite {
+                        span: span(source, "count()"),
+                        kind: ExecutionSiteKind::JsxChild,
+                        decision: TerminalDecision::Value(ValueDecision::ReactiveRerun),
+                    },
+                ],
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_trace_coverage_for_unsupported_and_bypassed_modes() {
+        let ssr = compile(
+            "const view = <div />;",
+            &CompileOptions {
+                generate: Generate::Ssr,
+                semantic_trace: true,
+                ..CompileOptions::default()
+            },
+        )
+        .unwrap_err();
+        assert_eq!(ssr.kind(), crate::CompileErrorKind::Configuration);
+
+        let bypassed = compile(
+            "const view = <div />;",
+            &CompileOptions {
+                semantic_trace: true,
+                require_import_source: Some("solid-js".into()),
+                ..CompileOptions::default()
+            },
+        )
+        .unwrap_err();
+        assert_eq!(bypassed.kind(), crate::CompileErrorKind::Configuration);
+    }
+
+    #[test]
+    fn resolves_every_site_in_the_dom_semantics_matrix() {
+        let cases = [
+            "const view = <div>{1}{value}{signal()}</div>;",
+            "const view = <div title={1} class={signal()} {...props} />;",
+            "const view = <Widget value={signal()} plain={value} {...props} ref={node} />;",
+            "const view = <Widget>{value}</Widget>;",
+            "const view = <Widget>{value}{signal()}</Widget>;",
+            "const view = <><div>{signal()}</div>{value}</>;",
+            "const view = <div children={signal()} />;",
+            "const view = <div>{/*@static*/ signal()}</div>;",
+            "const view = <div>{ok() ? left() : right()}</div>;",
+            "const view = <div title={first()} title={last()} />;",
+            "const view = <div children={ignored()}>{shown()}</div>;",
+            "const view = <div {...props} title={signal()} onClick={handle} ref={node} />;",
+            "const view = <textarea value={signal()} />;",
+            "const view = <div style={{ color: signal() }} class={{ active: signal() }} />;",
+            "const view = <div><span>{1}</span></div>;",
+            "const view = <div><span title={1}>{1}</span></div>;",
+        ];
+        for source in cases {
+            compile(
+                source,
+                &CompileOptions {
+                    semantic_trace: true,
+                    ..CompileOptions::default()
+                },
+            )
+            .unwrap_or_else(|error| panic!("{source}: {error}"));
+        }
+    }
+
+    #[test]
+    fn records_control_flow_callbacks_separately_from_component_children() {
+        let source = "const view = <For each={items()}>{item => <span>{item.name}</span>}</For>;";
+        let output = compile(
+            source,
+            &CompileOptions {
+                semantic_trace: true,
+                built_ins: vec!["For".into()],
+                ..CompileOptions::default()
+            },
+        )
+        .expect("control-flow trace");
+        assert_eq!(
+            output.semantic_trace,
+            Some(SemanticTrace {
+                sites: vec![
+                    ExecutionSite {
+                        span: span(source, "items()"),
+                        kind: ExecutionSiteKind::ComponentProperty,
+                        decision: TerminalDecision::Value(ValueDecision::CallerContext),
+                    },
+                    ExecutionSite {
+                        span: span(source, "item => <span>{item.name}</span>"),
+                        kind: ExecutionSiteKind::ControlFlowRender,
+                        decision: TerminalDecision::Callback(CallbackDecision::LaterRender),
+                    },
+                    ExecutionSite {
+                        span: span(source, "item.name"),
+                        kind: ExecutionSiteKind::JsxChild,
+                        decision: TerminalDecision::Value(ValueDecision::ReactiveRerun),
+                    },
+                ],
+            })
+        );
+    }
+
+    #[test]
+    fn uses_utf8_byte_spans_and_records_semantics_affecting_options() {
+        let source = "const label = '🔥'; const view = <div title={signal()} />;";
+        let output = compile(
+            source,
+            &CompileOptions {
+                semantic_trace: true,
+                effect_wrapper: Wrapper::Disabled,
+                hydratable: true,
+                dev: true,
+                ..CompileOptions::default()
+            },
+        )
+        .expect("option trace");
+        assert_eq!(
+            output.semantic_trace,
+            Some(SemanticTrace {
+                sites: vec![ExecutionSite {
+                    span: span(source, "signal()"),
+                    kind: ExecutionSiteKind::NativeAttribute,
+                    decision: TerminalDecision::Value(ValueDecision::EagerOnce),
+                }],
+            })
+        );
+        let byte_span = span(source, "signal()");
+        let character_start = source[..byte_span.start as usize].chars().count() as u32;
+        assert!(byte_span.start > character_start);
     }
 }

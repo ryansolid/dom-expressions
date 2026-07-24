@@ -56,8 +56,14 @@ let output = compile(
 ```
 
 Build with `--no-default-features` when embedding the compiler without its
-Node-API adapter. The existing Node `transform()` delegates to the same
-compiler core and keeps its current interface.
+Node-API adapter. Set `CompileOptions::semantic_trace` for DOM output to
+receive normalized, typed facts about how JSX source values and callbacks are
+lowered and executed. The facts are collected during the normal lowering pass;
+the existing Node `transform()` delegates to the same compiler core and keeps
+its current interface. An independent source census prevents the trace from
+silently omitting a lowering site. Trace production fails on missing or
+conflicting decisions and on output paths that cannot prove complete coverage.
+The trace API is experimental while its vocabulary is evaluated by tooling.
 
 > **Stability:** the Rust API is unstable while the compiler is pre-1.0. It
 > carries no semver commitment — options, output, and error types may change

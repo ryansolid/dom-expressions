@@ -18,6 +18,22 @@ use crate::shared::condition::{
 };
 
 pub(crate) trait ModeLower<'a>: ConditionBuilder<'a> {
+    fn trace_value(
+        &mut self,
+        _span: Span,
+        _kind: crate::semantic_trace::ExecutionSiteKind,
+        _decision: crate::semantic_trace::ValueDecision,
+    ) {
+    }
+
+    fn trace_callback(
+        &mut self,
+        _span: Span,
+        _kind: crate::semantic_trace::ExecutionSiteKind,
+        _decision: crate::semantic_trace::CallbackDecision,
+    ) {
+    }
+
     /// Whether `wrapConditionals` is enabled for this generate.
     fn wrap_conditionals_enabled(&self) -> bool;
 

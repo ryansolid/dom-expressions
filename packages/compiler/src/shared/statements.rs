@@ -34,7 +34,11 @@ impl<'a> AstDomTransform<'a, '_> {
         if is_root {
             self.jsx_root_span = Some(fragment.span);
         }
-        let result = lower_fragment(self, fragment);
+        let result = lower_fragment(
+            self,
+            fragment,
+            crate::semantic_trace::ExecutionSiteKind::JsxChild,
+        );
         if is_root {
             self.jsx_root_span = None;
         }
