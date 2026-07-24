@@ -488,11 +488,27 @@ export function installHydrationRuntime() {
 
 // Drop the `<!--!$-->` text-hole separators the server emits so adjacent
 // text nodes stay individually claimable; the array is compacted in place.
+// A pending boundary's placeholder scaffolding — `<template id="pl-X">` and
+// its `<!--pl-X-->` end marker — is excluded from the claim array but KEPT in
+// the DOM (the $df swap still needs it). While the boundary is pending its
+// fallback hydrates into the region between the two; counting the scaffolding
+// shifted every positional text claim, so the fallback's reactive text never
+// adopted the server node and updates appended beside it as permanent debris
+// (solidjs/solid#2936).
 function stripTextSeparators(nodes) {
   let j = 0;
   for (let i = 0; i < nodes.length; i++) {
-    if (nodes[i].nodeType === 8 && nodes[i].nodeValue === "!$") nodes[i].remove();
-    else nodes[j++] = nodes[i];
+    const node = nodes[i],
+      t = node.nodeType;
+    if (t === 8) {
+      const v = node.nodeValue;
+      if (v === "!$") {
+        node.remove();
+        continue;
+      }
+      if (v.startsWith("pl-")) continue;
+    } else if (t === 1 && node.localName === "template" && node.id.startsWith("pl-")) continue;
+    nodes[j++] = node;
   }
   nodes.length = j;
   return nodes;

@@ -844,6 +844,61 @@ describe("root-level module asset loading in hydrate()", () => {
   });
 });
 
+// A pending boundary's hole contains its placeholder scaffolding —
+// <template id="pl-X"> and the <!--pl-X--> end comment — around the
+// server-rendered FALLBACK. The scaffolding belongs to the $df swap, not the
+// fallback's content: counting it in the claim array shifted every positional
+// text claim, so the fallback's reactive text never adopted the server node
+// and post-hydration updates appended beside it as permanent debris
+// (solidjs/solid#2936).
+describe("hydrating a pending boundary's fallback (pl- scaffolding excluded from claims)", () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+
+  afterEach(() => {
+    container.innerHTML = "";
+  });
+
+  it("fallback text claims the server node and replaces it in place on update", () => {
+    globalThis._$HY = { events: [], completed: new WeakSet(), r: {}, done: false, fe() {} };
+    container.innerHTML = `<div _hk="0"><!--$--><template id="pl-1"></template>0<!--pl-1--><!--/--></div>`;
+    const serverText = container.firstChild.childNodes[2];
+    expect(serverText.nodeType).toBe(3);
+
+    const _tmpl$ = r.template(`<div><!--$--><!--/--></div>`);
+    const [count, setCount] = createSignal(0);
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$),
+        _el$2 = _el$.firstChild,
+        [_el$3, _co$] = r.getNextMarker(_el$2.nextSibling);
+      r.insert(_el$, count, _el$3, _co$);
+      return _el$;
+    }, container);
+
+    // The server "0" was adopted — scaffolding skipped, no fresh node.
+    expect(container.innerHTML).toBe(
+      `<div _hk="0"><!--$--><template id="pl-1"></template>0<!--pl-1--><!--/--></div>`
+    );
+    expect(container.firstChild.childNodes[2]).toBe(serverText);
+    expect(document.getElementById("pl-1")).not.toBeNull();
+
+    // Update while the boundary is still pending: replace in place between
+    // the template and the pl- end marker — never append after it.
+    setCount(1);
+    flush();
+    expect(container.firstChild.textContent).toBe("1");
+    expect(container.innerHTML).toBe(
+      `<div _hk="0"><!--$--><template id="pl-1"></template>1<!--pl-1--><!--/--></div>`
+    );
+
+    setCount(2);
+    flush();
+    expect(container.innerHTML).toBe(
+      `<div _hk="0"><!--$--><template id="pl-1"></template>2<!--pl-1--><!--/--></div>`
+    );
+  });
+});
+
 // sharedConfig.cleanupFragment is installed by hydrate() so surrounding
 // packages can discard placeholder + closing-comment ranges that wrap
 // lazy fragments. Each branch of the inner scan (plain removal, the
