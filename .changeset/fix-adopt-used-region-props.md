@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Fix a client-owned toggle being unable to hide/show a server-rendered region at t=0. A "used" region (a slot arg whose server content was rendered as markup at SSR) is omitted from the t=0 slot record by design — it shipped in the page — so on adoption the client wrapper received `props[arg] === undefined` and never took ownership of the already-rendered `<dx-frame>` region element. A wrapper that renders that region conditionally (e.g. a comment body behind a collapse toggle) therefore couldn't remove it until a stream re-call re-armed the arg, which is why such toggles worked after navigation but not on the initial page. Adoption now discovers the interior's region elements before invoking each slot callback and threads the EXISTING element into the callback's props (keyed by the arg name), so the wrapper's own reactivity owns it from boot and can hide/show it with no network. Regression-tested in `frame-client.spec.js` and validated end-to-end against `@solidjs/web`'s hackernews example (global collapse now hides comment bodies on first load).

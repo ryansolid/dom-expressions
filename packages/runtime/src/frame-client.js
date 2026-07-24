@@ -540,16 +540,21 @@ class FrameImpl {
         // stream introduces mount with EMPTY interiors (the producer ships
         // bare marker pairs), so consumers' existing-content gate already
         // excludes them from claiming.
+        // Discover the interior's region elements BEFORE invoking, on the
+        // adopt path: a used region is omitted from the t=0 record (it
+        // shipped as markup), so it is only knowable from the existing DOM —
+        // and #invokeSlot must thread it into the wrapper's props so the
+        // wrapper OWNS the already-rendered element (see #invokeSlot). A
+        // fresh mount has no interior regions yet; discovery is a no-op then,
+        // and #resolveArgs creates its entries during the invoke instead.
+        if (this.#options.adopt) this.#discoverRegions(occurrence, start);
         const nodes = this.#invokeSlot(occurrence, callback, record, start, this.#options.adopt);
         if (nodes) this.#replaceRange(occurrence, start, nodes);
         this.#slotNodes.set(occurrence, nodes);
         this.#mountedSlots.add(occurrence);
-        // Discover regions the interior already carries between
-        // frame:<childId> markers. Adopted mounts NEED this whether or not
-        // a t=0 record armed them (the record omits used regions by
-        // design, so the ranges are only knowable from the markers — #547);
-        // fresh mounts already hold entries from #resolveArgs, which the
-        // discovery walk skips. Idempotent either way.
+        // Re-scan after invoke: a fresh mount's regions come from
+        // #resolveArgs during the invoke, and the callback's output may have
+        // introduced more. Idempotent with the pre-invoke adopt discovery.
         this.#discoverRegions(occurrence, start);
         this.#bindRegions(occurrence);
       } else if (record !== this.#slotArgs.get(occurrence)) {
@@ -606,6 +611,23 @@ class FrameImpl {
     };
     const props =
       record && record.kind === "slot" ? this.#resolveArgs(occurrence, record.args) : {};
+    // Thread already-discovered regions into props (adopt path): a USED
+    // region is omitted from the t=0 record (it shipped as page markup), so
+    // without this the wrapper's `props.children` is undefined and its own
+    // reactivity never OWNS the already-rendered region element — a
+    // client-only toggle that conditionally renders it then can't hide/show
+    // it until a stream re-call re-arms the arg. Threading the EXISTING
+    // element (discovered from the interior before this invoke) makes the
+    // wrapper's conditional track it as `current`, so removal works at t=0.
+    // Keyed by the arg name (the childId's final segment); skips keys the
+    // record already resolved, so a re-call's #resolveArgs regions win.
+    const regions = this.#slotRegions.get(occurrence);
+    if (regions) {
+      for (const entry of regions.values()) {
+        const argKey = entry.childId.slice(entry.childId.lastIndexOf(".") + 1);
+        if (!(argKey in props)) props[argKey] = entry.element;
+      }
+    }
     const content = callback(props, ctx);
     this.#slotArgs.set(occurrence, record);
     if (cleanups.length) this.#slotCleanups.set(occurrence, cleanups);

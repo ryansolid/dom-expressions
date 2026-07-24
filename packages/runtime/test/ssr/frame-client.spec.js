@@ -1469,6 +1469,33 @@ describe("adoption -> first morph with nested regions (#547)", () => {
   const streamHtml =
     "<article><h1>Row v2</h1><!--slot:row#r1:start--><!--slot:row#r1:end--></article>";
 
+  it("threads a used region's EXISTING element into the wrapper's props at t=0 (client reactivity must own it)", () => {
+    // A used region is omitted from the t=0 record (it shipped as page
+    // markup), so a record-less adopt must still hand the wrapper the
+    // already-rendered region element as `props.children` — otherwise the
+    // wrapper's own conditional never owns it, and a client-only toggle that
+    // conditionally renders it can't hide/show it until a stream re-call
+    // (which is why the HN global-collapse toggle failed at t=0 but worked
+    // after navigation).
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    let received;
+    createFrame(boundary, {
+      id: "f",
+      host,
+      adopt: true,
+      slots: {
+        row: props => {
+          received = props.children;
+          return undefined; // claim in place
+        }
+      }
+    });
+    const existing = boundary.querySelector('dx-frame[data-fid="f.row#r1.children"]');
+    expect(existing).toBeTruthy();
+    expect(received).toBe(existing);
+  });
+
   it("an ARMED adopted occurrence (t=0 record drained pre-adoption) does not re-call when the stream adds its used region as {$frame}; the region morphs in place", () => {
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
