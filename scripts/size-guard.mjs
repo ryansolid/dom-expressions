@@ -63,12 +63,16 @@ const SCENARIOS = {
   // `open` preservation + the `data-preserve` escape hatch) — deliberate
   // feature weight, re-guarded at 6250. Then the element-seams `as` escape
   // hatch was dropped (fixed `<dx-frame>` tag, no author override) — 6191,
-  // re-guarded DOWN at 6220.
+  // re-guarded DOWN at 6220. Then +74 for the boundary-driven reveal hook (the
+  // per-`<Loading>` reveal: `#revealSegment` delegates to `options.reveal` so
+  // the binding can reconstruct a client `<Loading>` at the seam, and
+  // `#syncSlots` gained a scoped-fragment mode so a segment's fills render
+  // inside that boundary) — deliberate feature weight, re-guarded at 6290.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6220
+    6290
   ]
 };
 

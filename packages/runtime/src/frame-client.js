@@ -497,7 +497,13 @@ class FrameImpl {
     return this.#options.resolveSlotRecord?.(occurrence);
   }
 
-  #syncSlots() {
+  // `root`, when given, scopes discovery to a detached fragment instead of the
+  // frame's live content: a boundary-driven reveal renders a segment's fills
+  // INSIDE the reconstructed `<Loading>` (so their readiness gates the reveal),
+  // then the filled fragment is committed. Those occurrences mount here and are
+  // skipped by the next full sync; the unmount sweep is full-frame-only (a
+  // scoped fill only ADDS occurrences, never removes the frame's others).
+  #syncSlots(root) {
     if (!this.#slots && !this.#options.resolveSlot) return;
 
     // Range-driven discovery: find every server-owned slot occurrence in this
@@ -506,7 +512,8 @@ class FrameImpl {
     // "#" — so one callback services N occurrences from an iterated render
     // prop.
     const found = new Map();
-    this.#collectSlots(found);
+    if (root) collectSlots(root, found);
+    else this.#collectSlots(found);
 
     for (const [occurrence, start] of found) {
       const callback = this.#resolveSlot(propOf(occurrence));
@@ -577,9 +584,12 @@ class FrameImpl {
       }
     }
 
-    // Unmount occurrences whose range has disappeared from the server content.
-    for (const occurrence of [...this.#mountedSlots]) {
-      if (!found.has(occurrence)) this.#unmountSlot(occurrence);
+    // Unmount occurrences whose range has disappeared from the server content
+    // — full-frame syncs only; a scoped fragment fill never removes siblings.
+    if (!root) {
+      for (const occurrence of [...this.#mountedSlots]) {
+        if (!found.has(occurrence)) this.#unmountSlot(occurrence);
+      }
     }
   }
 
@@ -978,12 +988,44 @@ class FrameImpl {
       );
     }
     const parent = tpl.parentNode;
+    // Clear the current range interior (a materialized fallback, if #showFallback
+    // ran) — both paths below re-own this position.
     let n = tpl.nextSibling;
     while (n && n !== closing) {
       const next = n.nextSibling;
       parent.removeChild(n);
       n = next;
     }
+
+    if (this.#options.reveal) {
+      // Boundary-driven reveal (the ratified "per-`<Loading>`" model): the
+      // server `<Loading>` boundary's footprint on the client is this exact
+      // placeholder seam, so the binding reconstructs a client boundary here —
+      // fallback = the placeholder's own template content, children = the
+      // segment content plus its client fills, rendered INSIDE the boundary so
+      // their readiness gates it. An unboundaried async fill suspends up to
+      // THIS boundary and is covered, not orphaned; a fill with its own
+      // boundary contains itself. Cost is one boundary per revealed segment —
+      // and segments are `<Loading>` boundaries (few, author-placed), so this
+      // is React's granularity, not a per-chunk tax. `closing` stays as the
+      // boundary's insertion anchor; only the template is removed.
+      const fallbackFrag = tpl.content.cloneNode(true);
+      this.#claimTree(fallbackFrag);
+      this.#options.reveal({
+        before: closing,
+        fallback: [...fallbackFrag.childNodes],
+        content: () => {
+          const materialized = this.#materialize(content);
+          this.#syncSlots(materialized);
+          this.#claimTree(materialized);
+          return materialized;
+        }
+      });
+      tpl.remove();
+      this.#revealed.add(name);
+      return;
+    }
+
     const materialized = this.#materialize(content);
     this.#claimTree(materialized);
     parent.insertBefore(materialized, closing);

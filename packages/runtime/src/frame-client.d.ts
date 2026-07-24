@@ -185,6 +185,18 @@ export interface FrameOptions {
    * streamed chunks).
    */
   ownerScope?<T>(fn: () => T): T;
+  /**
+   * Boundary-driven segment reveal. When present, `#revealSegment` hands the
+   * placeholder seam to this hook instead of swapping imperatively: the binding
+   * reconstructs a client `<Loading>` there — `fallback` is the placeholder's
+   * own template content (shown while holding), `content()` materializes the
+   * segment and renders its client fills INSIDE the boundary so their readiness
+   * gates the reveal — and inserts it before `before`. An unboundaried async
+   * fill suspends up to that boundary and is covered instead of orphaned; one
+   * boundary per revealed segment, i.e. per author-placed `<Loading>`. Omit it
+   * for the framework-agnostic imperative swap (no reactive reveal).
+   */
+  reveal?(seam: { before: Node; fallback: Node[]; content: () => Node | DocumentFragment }): void;
 }
 
 /**
