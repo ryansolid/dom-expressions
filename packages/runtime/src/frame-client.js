@@ -791,9 +791,14 @@ class FrameImpl {
     const regions = this.#slotRegions.get(slotKey);
     if (!regions) return;
     for (const entry of regions.values()) {
-      if (!entry.frame && entry.element.parentNode) {
-        // parentNode (not isConnected) so regions also bind during detached
-        // rendering. Host buffering flushes any queued childId chunks. The
+      if (!entry.frame) {
+        // Bind eagerly — the region ELEMENT always exists (unlike the old
+        // marker range, which needed placement in a fragment/DOM to count).
+        // This is what makes an OCCLUDED region work: its element is created
+        // when args resolve but the wrapper doesn't place it until (e.g.)
+        // expand, so it must bind and fill (from buffered/streamed chunks)
+        // off-DOM, then reveal in place when the wrapper finally inserts the
+        // single node. Host buffering flushes any queued childId chunks. The
         // region inherits this frame's slot resolution, so client slots
         // revealed in its streamed content are filled by the same callbacks
         // the client threaded down — no global registry.

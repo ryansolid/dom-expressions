@@ -819,6 +819,46 @@ describe("render-function slots", () => {
     expect(wrapper.textContent).toContain("Client ida");
   });
 
+  it("an occluded region binds detached and fills before the wrapper places it", () => {
+    // The occlusion case (a collapsed wrapper that doesn't render its region):
+    // the region element is created when args resolve but is never placed, so
+    // it must bind and fill off-DOM from the streamed chunk — then reveal in
+    // place when the wrapper finally inserts the single node. A bare element
+    // has no parentNode, so binding cannot gate on placement.
+    const host = createFrameHost(createMockSerializer());
+    let region;
+    createFrame(boundary, {
+      id: "f",
+      host,
+      slots: {
+        // Capture the region element but DON'T place it (wrapper "collapsed").
+        row: props => {
+          region = props.children;
+          return document.createElement("span");
+        }
+      }
+    });
+    host.apply({
+      type: "html",
+      id: "f",
+      version: 1,
+      html: "<div><!--slot:row#0:start--><!--slot:row#0:end--></div>"
+    });
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 1,
+      key: "row#0",
+      args: { children: { $frame: "f.row#0.children" } }
+    });
+    // The region is a detached, empty element — never placed by the wrapper.
+    expect(region.tagName).toBe("DX-FRAME");
+    expect(region.parentNode).toBe(null);
+    // Its content streams in and fills the detached element (bound off-DOM).
+    host.apply({ type: "html", id: "f.row#0.children", version: 1, html: "<p>body</p>" });
+    expect(region.innerHTML).toBe("<p>body</p>");
+  });
+
   it("re-calls the render function on an args change, preserving the region", () => {
     const host = createFrameHost(createMockSerializer());
     createFrame(boundary, {

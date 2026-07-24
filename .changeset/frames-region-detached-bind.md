@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Fix occluded frame regions not mounting when a client wrapper reveals them after boot. A region element is created when a slot occurrence's args resolve, but a wrapper that renders its region conditionally (a comment collapsed by default) does not place that element until it expands — so the region must bind and fill from its buffered/streamed chunk while still detached, then reveal in place when the single node is finally inserted. `#bindRegions` gated on `entry.element.parentNode`, which a bare region element never has until placement, so occluded regions never bound and stayed empty on expand (surfaced end-to-end in `@solidjs/web`'s occlusion adoption test once regions became elements). Since a region is now a single element that always exists — unlike the old marker range, which needed a fragment/DOM parent to be meaningful — binding is eager and needs no placement gate. Regression-tested in `frame-client.spec.js` ("an occluded region binds detached and fills before the wrapper places it").

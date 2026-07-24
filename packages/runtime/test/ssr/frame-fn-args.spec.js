@@ -41,8 +41,8 @@ function collectDocument(component, clientProps, id = "f") {
 
 describe("function-valued slot args — stream face", () => {
   it("a thunk producing JSX is content: ships as a region, not serialized", async () => {
-    const chunks = await collectStream(props =>
-      r.ssr`<div>${[props.row({ body: () => r.ssr`<p>hi</p>` })]}</div>`
+    const chunks = await collectStream(
+      props => r.ssr`<div>${[props.row({ body: () => r.ssr`<p>hi</p>` })]}</div>`
     );
     const slot = chunks.find(c => c.type === "slot");
     // The arg resolved to content -> a frame ref, and its html rode a region
@@ -54,8 +54,9 @@ describe("function-valued slot args — stream face", () => {
   });
 
   it("a thunk producing an array of JSX (fragment / <For>) is content", async () => {
-    const chunks = await collectStream(props =>
-      r.ssr`<div>${[props.row({ items: () => [r.ssr`<li>a</li>`, r.ssr`<li>b</li>`] })]}</div>`
+    const chunks = await collectStream(
+      props =>
+        r.ssr`<div>${[props.row({ items: () => [r.ssr`<li>a</li>`, r.ssr`<li>b</li>`] })]}</div>`
     );
     const slot = chunks.find(c => c.type === "slot");
     const childId = slot.args.items.$frame;
@@ -65,8 +66,8 @@ describe("function-valued slot args — stream face", () => {
   });
 
   it("a getter producing a scalar is data: ships as the arg value", async () => {
-    const chunks = await collectStream(props =>
-      r.ssr`<div>${[props.row({ n: () => 5, label: () => "hi" })]}</div>`
+    const chunks = await collectStream(
+      props => r.ssr`<div>${[props.row({ n: () => 5, label: () => "hi" })]}</div>`
     );
     const slot = chunks.find(c => c.type === "slot");
     expect(slot.args.n).toBe(5);
@@ -76,8 +77,8 @@ describe("function-valued slot args — stream face", () => {
   });
 
   it("unwraps a nested thunk (thunk returning a thunk) before classifying", async () => {
-    const chunks = await collectStream(props =>
-      r.ssr`<div>${[props.row({ body: () => () => r.ssr`<p>deep</p>` })]}</div>`
+    const chunks = await collectStream(
+      props => r.ssr`<div>${[props.row({ body: () => () => r.ssr`<p>deep</p>` })]}</div>`
     );
     const slot = chunks.find(c => c.type === "slot");
     const region = chunks.find(c => c.type === "html" && c.id === slot.args.body.$frame);
