@@ -434,10 +434,23 @@ export function createDocumentSlotProps(clientProps, frameId) {
           // serialized once as hydration-data records (the occurrence's args
           // + the region html, keyed for the adopting frame's store) and the
           // client mounts it from there when the wrapper finally renders it.
-          const regions = [];
+          // Unwrap function-valued args once (a function can't be serialized,
+          // so it is a thunk producing content or a scalar): resolve one-shot,
+          // then both the region-detection here and the t=0 arming below see
+          // the same classified value. This is how top-level one-shot reactive
+          // control flow (<For>/<Show>) reaches the region path when it arrives
+          // as a thunk/memo. Bounded against a pathological self-returning fn.
+          const vals = {};
           for (const key of Object.keys(raw)) {
-            const value = raw[key];
-            if (key !== "$key" && isServerContent(value)) {
+            if (key === "$key") continue;
+            let value = raw[key];
+            for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+            vals[key] = value;
+          }
+          const regions = [];
+          for (const key of Object.keys(vals)) {
+            const value = vals[key];
+            if (isServerContent(value)) {
               const childId = `${frameId}.${occurrence}.${key}`;
               const region = { key, childId, value, used: false };
               regions.push(region);
@@ -468,9 +481,8 @@ export function createDocumentSlotProps(clientProps, frameId) {
             // single-copy invariant covers content, not scalar args.
             const args = {};
             let any = false;
-            for (const key of Object.keys(raw)) {
-              const value = raw[key];
-              if (key === "$key") continue;
+            for (const key of Object.keys(vals)) {
+              const value = vals[key];
               const region = regions.find(r => r.key === key);
               if (region) {
                 if (!region.used) {
@@ -689,7 +701,15 @@ export function createSlotProps(sink, frame) {
           const occurrence = occurrenceId(prop, raw, counts);
           const args = {};
           for (const key of Object.keys(raw)) {
-            const value = raw[key];
+            if (key === "$key") continue; // occurrence identity, not client data
+            // A function cannot be serialized, so a function-valued arg must be
+            // a thunk producing content (or a getter producing a scalar):
+            // resolve it one-shot, then classify the result. This is how
+            // top-level one-shot reactive control flow (<For>/<Show>) reaches
+            // the content path when it arrives as a thunk/memo rather than an
+            // eager node. Bounded against a pathological self-returning fn.
+            let value = raw[key];
+            for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
             const t = typeof value;
             if (value == null || t === "string" || t === "number" || t === "boolean") {
               args[key] = value;

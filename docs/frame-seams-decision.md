@@ -352,12 +352,15 @@ already-the-mechanism once framed correctly (see the note under it).
      function-valued arg falls into `serialize()` and breaks on seroval).
    - everything else ⇒ scalar data.
 
-   This is what `isServerContent` does today, plus the function rule (the piece
-   to build). The `{t}` shape is ours to assume (symbol-brand for certainty if
-   ever wanted). It is a *type* check on our own output — categorically unlike
-   the removed substring heuristic, which read the rendered *page*. No compiler
-   involvement; single-copy holds by construction (content ⇒ HTML once, scalar
-   ⇒ data once).
+   This is `isServerContent` plus the function rule, now implemented on both
+   proxy faces (`createSlotProps`, `createDocumentSlotProps`) with
+   `frame-fn-args.spec.js` covering thunks, `<For>`-shaped arrays, nested
+   thunks, getters-producing-scalars, and the occluded-thunk case. The `{t}`
+   shape is ours to assume (symbol-brand for certainty if ever wanted). It is a
+   *type* check on our own output — categorically unlike the removed substring
+   heuristic, which read the rendered *page*. No compiler involvement;
+   single-copy holds by construction (content ⇒ HTML once, scalar ⇒ data
+   once).
 
 ## Open questions
 
