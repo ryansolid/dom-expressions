@@ -68,11 +68,16 @@ const SCENARIOS = {
   // the binding can reconstruct a client `<Loading>` at the seam, and
   // `#syncSlots` gained a scoped-fragment mode so a segment's fills render
   // inside that boundary) — deliberate feature weight, re-guarded at 6290.
+  // Then +6 for the nested-region record-cleanup fix (`#removeSlotRecord`:
+  // region teardown releases its occurrences' records from the store that owns
+  // them — the root's, for a nested occurrence — so a navigate-away-and-back
+  // can't dedupe a re-introduced `{$frame}` region against a stranded t=0
+  // record and drop a doubly-nested reply's body) — re-guarded at 6330.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6290
+    6330
   ]
 };
 

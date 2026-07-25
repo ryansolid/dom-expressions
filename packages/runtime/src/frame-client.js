@@ -497,6 +497,23 @@ class FrameImpl {
     return this.#options.resolveSlotRecord?.(occurrence);
   }
 
+  /**
+   * Delete an occurrence's args record from the store that OWNS it. A nested
+   * occurrence's record lives on the frame whose props proxy emitted it — an
+   * ancestor keyed by the root stream — not on the region frame that mounts
+   * it, so removal threads up exactly like `#resolveSlotRecord`. Without this,
+   * tearing down a region (a comment navigated away from) leaves its nested
+   * occurrences' records stranded in the root store; on navigating back the
+   * stale record (a subset of the re-sent one — the t=0 shape omits used
+   * `{$frame}` regions) dedupes the re-introduced region away, and the wrapper
+   * re-mounts with no children (the doubly-nested reply's body vanishes).
+   */
+  #removeSlotRecord(occurrence) {
+    const key = `slot:${occurrence}`;
+    if (key in this.#store) delete this.#store[key];
+    else this.#options.removeSlotRecord?.(occurrence);
+  }
+
   // `root`, when given, scopes discovery to a detached fragment instead of the
   // frame's live content: a boundary-driven reveal renders a segment's fills
   // INSIDE the reconstructed `<Loading>` (so their readiness gates the reveal),
@@ -665,7 +682,7 @@ class FrameImpl {
     // record and caches — keyed churn must not accumulate forever.
     this.#slotArgs.delete(key);
     this.#slotResolvedRefs.delete(key);
-    delete this.#store[`slot:${key}`];
+    this.#removeSlotRecord(key);
     this.#runSlotCleanups(key);
     const regions = this.#slotRegions.get(key);
     if (regions) {
@@ -846,7 +863,8 @@ class FrameImpl {
           // boundary owner as the root's.
           ownerScope: this.#options.ownerScope,
           resolveSlot: prop => this.#resolveSlot(prop),
-          resolveSlotRecord: occurrence => this.#resolveSlotRecord(occurrence)
+          resolveSlotRecord: occurrence => this.#resolveSlotRecord(occurrence),
+          removeSlotRecord: occurrence => this.#removeSlotRecord(occurrence)
         });
       }
     }
@@ -893,6 +911,10 @@ class FrameImpl {
     if (this.#disposed) return;
     this.#disposed = true;
     for (const key of [...this.#slotCleanups.keys()]) this.#runSlotCleanups(key);
+    // Release this frame's occurrences' records from the store that owns them
+    // (an ancestor's, for a region frame's nested occurrences) so a torn-down
+    // region leaves nothing stale to dedupe a later re-navigation against.
+    for (const key of this.#mountedSlots) this.#removeSlotRecord(key);
     for (const regions of this.#slotRegions.values()) {
       for (const { frame } of regions.values()) frame?.dispose();
     }
