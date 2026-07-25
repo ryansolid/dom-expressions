@@ -1,8 +1,6 @@
 use napi::bindgen_prelude::*;
 use oxc_ast::ast::BinaryOperator;
-use oxc_ast::ast::{
-    Expression, JSXAttributeItem, JSXAttributeName, JSXChild, JSXElementName, JSXExpression,
-};
+use oxc_ast::ast::{Expression, JSXChild, JSXElementName, JSXExpression};
 use oxc_span::Span;
 
 use crate::shared::constants::void_elements;
@@ -33,46 +31,6 @@ pub(crate) fn element_name(name: &JSXElementName<'_>) -> Result<String> {
             "Only simple JSX element names are implemented in the AST-native milestone",
         )),
     }
-}
-
-/// Resolves duplicate attributes the way the Babel plugin does when no spread
-/// is present: the last occurrence of a name wins (earlier ones are dropped),
-/// except `ref` which may appear multiple times. Spreads disable deduping.
-pub(crate) fn dedupe_attributes<'a, 'b>(
-    attributes: &'b [JSXAttributeItem<'a>],
-) -> std::vec::Vec<&'b JSXAttributeItem<'a>> {
-    if attributes
-        .iter()
-        .any(|attr| matches!(attr, JSXAttributeItem::SpreadAttribute(_)))
-    {
-        return attributes.iter().collect();
-    }
-    let names: std::vec::Vec<Option<String>> = attributes
-        .iter()
-        .map(|attr| match attr {
-            JSXAttributeItem::Attribute(attr) => match &attr.name {
-                JSXAttributeName::Identifier(name) => Some(name.name.to_string()),
-                JSXAttributeName::NamespacedName(name) => {
-                    Some(format!("{}:{}", name.namespace.name, name.name.name))
-                }
-            },
-            JSXAttributeItem::SpreadAttribute(_) => None,
-        })
-        .collect();
-    attributes
-        .iter()
-        .enumerate()
-        .filter(|(index, _)| {
-            let Some(name) = &names[*index] else {
-                return true;
-            };
-            name == "ref"
-                || !names[index + 1..]
-                    .iter()
-                    .any(|later| later.as_deref() == Some(name))
-        })
-        .map(|(_, attr)| attr)
-        .collect()
 }
 
 pub(crate) fn is_component_name(name: &JSXElementName<'_>) -> bool {

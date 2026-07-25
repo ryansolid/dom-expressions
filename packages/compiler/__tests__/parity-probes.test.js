@@ -540,6 +540,10 @@ const a = <div contenteditable={ce()} dir="rtl" spellcheck={false}>{x()}</div>;
   "void elements with attributes": `
 const a = <div><br/><hr class={c()}/><input type="text" value={v()}/><meta charset="utf-8"/></div>;
 `,
+  "void elements discard children": `
+const a = <input>{value()}</input>;
+const b = <br>text</br>;
+`,
 
   // Round 4: generated-uid collisions with user code, whitespace idioms,
   // child-property/children conflicts, duplicate attributes, stateful DOM
@@ -581,6 +585,22 @@ const a = <div class="one" class="two" title={t1()} title={t2()}>{x()}</div>;
 `,
   "duplicate children attributes": `
 const a = <div children={a()} children={b()} />;
+`,
+  "children attribute before spread": `
+const a = <div children={fallback()} {...props} />;
+`,
+  "prop namespace after spread": `
+const a = <div {...props} prop:custom={value()} />;
+`,
+  "known prop namespace after spread": `
+const a = <input {...props} prop:value={value()} />;
+const b = <input {...props} prop:defaultValue={defaultValue()} />;
+`,
+  "stateful property aliases use last value": `
+const a = <input value={first()} prop:value={last()} />;
+const b = <input prop:value={first()} value={last()} />;
+const c = <input defaultValue={first()} prop:defaultValue={last()} />;
+const d = <input prop:defaultValue={first()} defaultValue={last()} />;
 `,
   "duplicate refs": `
 const a = <div ref={r1} ref={r2}>{x()}</div>;

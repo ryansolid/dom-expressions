@@ -8,7 +8,9 @@ use crate::dom::attrs::CloseTagContext;
 use crate::dom::template::DomTemplateState;
 use crate::shared::bindings::BindingTable;
 use crate::shared::component::lower_component_with_setup;
-use crate::shared::utils::{element_name, is_component_name, static_jsx_expression, StaticValue};
+use crate::shared::utils::{
+    element_name, is_component_name, is_void_element, static_jsx_expression, StaticValue,
+};
 
 pub(crate) struct AstDomTransform<'a, 'source> {
     pub(crate) allocator: &'a Allocator,
@@ -215,28 +217,36 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         let saved_hydratable_event = self.has_hydratable_event;
         self.has_hydratable_event = false;
 
-        // A non-literal `children` attribute participates in child insertion
-        // rather than attribute handling (Babel parity): when the element has
-        // no real children, the value becomes its child expression; when it
-        // does, the attribute is dropped.
-        let element: &JSXElement<'a> = if element.children.is_empty() {
-            if let Some(container) = children_attribute_container(element) {
-                let mut clone = element.clone_in(self.allocator);
-                clone
-                    .children
-                    .push(oxc_ast::ast::JSXChild::ExpressionContainer(
-                        oxc_allocator::Box::new_in(
-                            container.clone_in(self.allocator),
-                            self.allocator,
-                        ),
-                    ));
-                self.allocator.alloc(clone)
+        // Without spreads, a non-literal `children` attribute participates in
+        // child insertion rather than attribute handling (Babel parity): when
+        // the element has no real children, the value becomes its child
+        // expression; when it does, the attribute is dropped. With a spread,
+        // Babel leaves `children` in the merged props so source-order
+        // precedence is preserved by `spread()`.
+        let has_spread = element
+            .opening_element
+            .attributes
+            .iter()
+            .any(|attr| matches!(attr, oxc_ast::ast::JSXAttributeItem::SpreadAttribute(_)));
+        let element: &JSXElement<'a> =
+            if !is_void_element(&tag_name) && !has_spread && element.children.is_empty() {
+                if let Some(container) = children_attribute_container(element) {
+                    let mut clone = element.clone_in(self.allocator);
+                    clone
+                        .children
+                        .push(oxc_ast::ast::JSXChild::ExpressionContainer(
+                            oxc_allocator::Box::new_in(
+                                container.clone_in(self.allocator),
+                                self.allocator,
+                            ),
+                        ));
+                    self.allocator.alloc(clone)
+                } else {
+                    element
+                }
             } else {
                 element
-            }
-        } else {
-            element
-        };
+            };
 
         // XML partial handling (Babel parity): template-root SVG/MathML
         // elements other than <svg>/<math> themselves get wrapped in their
@@ -291,24 +301,26 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         }
 
         template.push_both(">");
-        if needs_text_placeholder && element.children.is_empty() {
-            // Dynamic `textContent` adds a single space text node the effect
-            // writes into — but only when the element has no children of its
-            // own (Babel's `!hasChildren` gate; with children the `firstChild`
-            // declaration still emits and the children compile normally).
-            // Attribute-driven, so like attributes it stays out of `closed`.
-            template.html.push(' ');
-        } else {
-            self.lower_dom_children(
-                element,
-                &tag_name,
-                &element_id,
-                CloseTagContext::root(),
-                &mut template,
-                &mut declarations,
-                &mut operations,
-                &mut dynamics,
-            )?;
+        if !is_void_element(&tag_name) {
+            if needs_text_placeholder && element.children.is_empty() {
+                // Dynamic `textContent` adds a single space text node the effect
+                // writes into — but only when the element has no children of its
+                // own (Babel's `!hasChildren` gate; with children the `firstChild`
+                // declaration still emits and the children compile normally).
+                // Attribute-driven, so like attributes it stays out of `closed`.
+                template.html.push(' ');
+            } else {
+                self.lower_dom_children(
+                    element,
+                    &tag_name,
+                    &element_id,
+                    CloseTagContext::root(),
+                    &mut template,
+                    &mut declarations,
+                    &mut operations,
+                    &mut dynamics,
+                )?;
+            }
         }
         // All dynamic attribute bindings collected across this template root
         // batch into one effect, appended after the other expressions.
