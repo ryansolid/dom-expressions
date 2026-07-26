@@ -26,6 +26,22 @@ pub(crate) trait JsxTransform<'a>: VisitMut<'a> {
     /// (spans are unreliable — synthesized nodes share them).
     fn push_iife_callee(&mut self, _addr: usize) {}
     fn pop_iife_callee(&mut self) {}
+    /// Records a function/arrow node whose body has already been driven
+    /// through `process_statements` — which ends with its own deferred pass,
+    /// so nothing raw is left inside. Keyed by node address (spans are
+    /// unreliable — synthesized nodes share them). No-ops unless
+    /// `body_lowering_settled` holds.
+    fn mark_body_lowered(&mut self, addr: usize);
+    fn is_body_lowered(&self, addr: usize) -> bool;
+    /// Whether a body finishing right now is genuinely fully lowered. False
+    /// while a JSX root is mid-lowering and the target defers its own passes
+    /// until the root settles (SSR): the body still has raw JSX waiting for
+    /// the outer pass, so marking it would drop that JSX silently. Targets
+    /// whose `process_statements` always runs its deferred pass are settled
+    /// unconditionally.
+    fn body_lowering_settled(&self) -> bool {
+        true
+    }
     /// Stack of enclosing function parents (Babel's `getFunctionParent`
     /// chain), used to place `_self$` captures.
     fn function_parents(&mut self) -> &mut std::vec::Vec<FunctionParentKind>;
@@ -161,6 +177,7 @@ pub(crate) fn visit_function_scope<'a, T: JsxTransform<'a>>(
             unshift_capture_into_body(target.arena(), body, capture);
         }
     }
+    target.mark_body_lowered(std::ptr::from_ref(&*function) as usize);
 }
 
 pub(crate) fn visit_arrow_function_scope<'a, T: JsxTransform<'a>>(
@@ -181,6 +198,7 @@ pub(crate) fn visit_arrow_function_scope<'a, T: JsxTransform<'a>>(
         ensure_arrow_block(target.arena(), arrow);
         unshift_capture_into_body(target.arena(), &mut arrow.body, capture);
     }
+    target.mark_body_lowered(std::ptr::from_ref(&*arrow) as usize);
 }
 
 /// Babel `ensureBlock`: `() => expr` becomes `() => { return expr; }`.
@@ -381,6 +399,16 @@ pub(crate) fn visit_expression<'a, T: JsxTransform<'a>>(
     walk_mut::walk_expression(target, expression);
 }
 
+/// Node address of a function/arrow expression, matching the key
+/// `visit_function_scope` / `visit_arrow_function_scope` mark bodies with.
+fn function_node_addr(expression: &Expression<'_>) -> Option<usize> {
+    match expression {
+        Expression::FunctionExpression(function) => Some(std::ptr::from_ref(&**function) as usize),
+        Expression::ArrowFunctionExpression(arrow) => Some(std::ptr::from_ref(&**arrow) as usize),
+        _ => None,
+    }
+}
+
 /// Babel's outer traversal re-enters each replaced JSX root and transforms
 /// any JSX still inside it — dynamic attribute values are stored raw by the
 /// element transforms and only lowered here, after the root's own templates
@@ -425,11 +453,13 @@ impl<'a, T: JsxTransform<'a>> VisitMut<'a> for DeferredJsxLowerer<'_, 'a, T> {
         // statement position there (`get data() { return <jsx/>; }`) inlines
         // its setup statements through `process_statements`, and targets that
         // track function scopes (SSR var hoisting) see the enter/exit events.
-        if matches!(
-            expression,
-            Expression::FunctionExpression(_) | Expression::ArrowFunctionExpression(_)
-        ) {
-            visit_expression(self.target, expression);
+        // Bodies `process_statements` already drove are skipped: it ends with
+        // its own container-end deferred pass, so nothing raw survives inside
+        // and re-entering makes compile time 3^depth in scope nesting.
+        if let Some(addr) = function_node_addr(expression) {
+            if !self.target.is_body_lowered(addr) {
+                visit_expression(self.target, expression);
+            }
             return;
         }
         walk_mut::walk_expression(self, expression);
@@ -544,6 +574,16 @@ macro_rules! impl_function_parent_accessors {
 
         fn pending_capture_name(&self) -> Option<String> {
             self.pending_this_capture.clone()
+        }
+
+        fn mark_body_lowered(&mut self, addr: usize) {
+            if self.body_lowering_settled() {
+                self.lowered_function_bodies.insert(addr);
+            }
+        }
+
+        fn is_body_lowered(&self, addr: usize) -> bool {
+            self.lowered_function_bodies.contains(&addr)
         }
     };
 }
@@ -689,6 +729,13 @@ impl<'a> JsxTransform<'a> for AstSsrTransform<'a, '_> {
 
     fn exit_function_bindings(&mut self) {
         self.bindings.exit_scope();
+    }
+
+    /// SSR runs both of its deferred passes only outside a JSX root, so a body
+    /// that finishes while one is mid-lowering still holds raw JSX for the
+    /// outer pass and must not be marked.
+    fn body_lowering_settled(&self) -> bool {
+        self.jsx_root_span.is_none()
     }
 
     impl_function_parent_accessors!();
@@ -851,6 +898,7 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
         } else {
             self.attach_var_scope_to_statements(&mut arrow.body.statements);
         }
+        self.mark_body_lowered(std::ptr::from_ref(&*arrow) as usize);
     }
 
     fn visit_function(
@@ -886,6 +934,7 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
         } else {
             self.pop_var_scope();
         }
+        self.mark_body_lowered(std::ptr::from_ref(&*function) as usize);
     }
 
     fn visit_block_statement(&mut self, block: &mut oxc_ast::ast::BlockStatement<'a>) {
