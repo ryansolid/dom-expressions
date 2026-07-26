@@ -12,6 +12,7 @@ export default {
   omitQuotes: true,
   omitAttributeSpacing: true,
   contextToCustomElements: false,
+  omitServerOnlyTemplates: true,
   staticMarker: "@once",
   effectWrapper: "effect",
   memoWrapper: "memo",
