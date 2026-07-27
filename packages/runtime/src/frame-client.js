@@ -176,7 +176,7 @@ export function createFrameHost(options = {}) {
         // chunks are dropped at buffering time).
         const records = {};
         let version;
-        for (const chunk of buffered) {
+        for (const chunk of buffered.chunks) {
           if (chunk.type === "data") {
             options.applyData && options.applyData(chunk);
             continue;
@@ -211,13 +211,22 @@ export function createFrameHost(options = {}) {
         return;
       }
       // Buffer until the frame registers, keeping only the newest version's
-      // chunks so a stale chunk can never land after the frame appears.
-      const buffered = pending.get(chunk.id) ?? [];
-      const maxVersion = buffered.reduce((m, c) => Math.max(m, c.version), chunk.version);
-      if (chunk.version < maxVersion) return;
-      const kept = buffered.filter(c => c.version >= chunk.version);
-      kept.push(chunk);
-      pending.set(chunk.id, kept);
+      // chunks so a stale chunk can never land after the frame appears. The
+      // buffer tracks its version explicitly so each chunk is O(1) — a
+      // document boot funnels every t=0 slot record through here before the
+      // boundary binds (thousands for a large page), and rescanning the
+      // buffer per chunk made that quadratic.
+      const buffered = pending.get(chunk.id);
+      if (!buffered) {
+        pending.set(chunk.id, { version: chunk.version, chunks: [chunk] });
+        return;
+      }
+      if (chunk.version < buffered.version) return;
+      if (chunk.version > buffered.version) {
+        buffered.version = chunk.version;
+        buffered.chunks.length = 0;
+      }
+      buffered.chunks.push(chunk);
     },
     get(id) {
       const set = frames.get(id);
@@ -315,9 +324,11 @@ class FrameImpl {
     // Hydration attach: an adopted document-SSR boot may never receive a
     // chunk, so sync slots against the existing DOM immediately — callbacks
     // claim (`ctx.existing`, return undefined) or replace the server-rendered
-    // client content in each range. Idempotent with any buffered-chunk flush
-    // that already ran during registration.
-    if (options.adopt) this.#syncSlots();
+    // client content in each range. A registration flush already ran this
+    // sync (every apply ends in #flush -> #syncSlots, and it sets #version),
+    // so only sync here when no buffered chunk arrived — the repeat walk over
+    // a large adopted tree is pure redundancy.
+    if (options.adopt && this.#version === undefined) this.#syncSlots();
   }
 
   /** The node content lives in (element itself, or the range markers' parent). */
@@ -578,8 +589,11 @@ class FrameImpl {
         this.#mountedSlots.add(occurrence);
         // Re-scan after invoke: a fresh mount's regions come from
         // #resolveArgs during the invoke, and the callback's output may have
-        // introduced more. Idempotent with the pre-invoke adopt discovery.
-        this.#discoverRegions(occurrence, start);
+        // introduced more. A claim on the adopt path (nodes === null) left
+        // the interior untouched, so the pre-invoke discovery already saw
+        // everything — skip the repeat walk (it is per-occurrence over a
+        // large adopted tree).
+        if (!this.#options.adopt || nodes) this.#discoverRegions(occurrence, start);
         this.#bindRegions(occurrence);
       } else if (record !== this.#slotArgs.get(occurrence)) {
         // A re-sent record differing only in {$ref} identity may carry the
