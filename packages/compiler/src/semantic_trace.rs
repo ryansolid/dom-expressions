@@ -111,9 +111,9 @@ impl ExecutionCensus {
         struct CensusVisitor<'a, 'bindings> {
             sites: BTreeSet<SiteKey>,
             ignored_literal_spans: BTreeSet<SourceSpan>,
+            component_child_fragments: BTreeSet<SourceSpan>,
             built_ins: HashSet<&'a str>,
             bindings: &'bindings BindingTable,
-            parent_component: bool,
             inline_styles: bool,
         }
 
@@ -211,6 +211,14 @@ impl ExecutionCensus {
                     }
                 });
                 (!conflicting).then_some(object)
+            }
+
+            fn mark_component_child_fragments(&mut self, children: &[JSXChild<'_>]) {
+                for child in children {
+                    if let JSXChild::Fragment(fragment) = child {
+                        self.component_child_fragments.insert(fragment.span.into());
+                    }
+                }
             }
 
             fn census_children(&mut self, children: &[JSXChild<'_>], component: bool) {
@@ -462,14 +470,20 @@ impl ExecutionCensus {
                     }
                 }
 
-                let previous = self.parent_component;
-                self.parent_component = component;
+                if component {
+                    self.mark_component_child_fragments(&element.children);
+                }
                 oxc_ast_visit::walk::walk_jsx_element(self, element);
-                self.parent_component = previous;
             }
 
             fn visit_jsx_fragment(&mut self, fragment: &JSXFragment<'b>) {
-                self.census_children(&fragment.children, self.parent_component);
+                let component = self
+                    .component_child_fragments
+                    .contains(&SourceSpan::from(fragment.span));
+                self.census_children(&fragment.children, component);
+                if component {
+                    self.mark_component_child_fragments(&fragment.children);
+                }
                 oxc_ast_visit::walk::walk_jsx_fragment(self, fragment);
             }
         }
@@ -477,9 +491,9 @@ impl ExecutionCensus {
         let mut visitor = CensusVisitor {
             sites: BTreeSet::new(),
             ignored_literal_spans: BTreeSet::new(),
+            component_child_fragments: BTreeSet::new(),
             built_ins: built_ins.iter().map(String::as_str).collect(),
             bindings: &bindings,
-            parent_component: false,
             inline_styles,
         };
         visitor.visit_program(program);
