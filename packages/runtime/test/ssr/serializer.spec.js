@@ -262,6 +262,85 @@ describe("JSON codec", () => {
   });
 });
 
+describe("error stack stripping", () => {
+  // jest runs with NODE_ENV=test, where the mask is active (anything but
+  // "development" counts as production for this policy)
+  function withNodeEnv(env, fn) {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = env;
+    try {
+      return fn();
+    } finally {
+      process.env.NODE_ENV = previous;
+    }
+  }
+
+  function createError() {
+    function throwsDeepInsideTheServer() {
+      throw new Error("boom");
+    }
+    try {
+      throwsDeepInsideTheServer();
+    } catch (error) {
+      return error;
+    }
+  }
+
+  function serializeNodes(value, options = {}) {
+    const nodes = [];
+    return new Promise((resolve, reject) => {
+      serializeJSON(value, {
+        ...options,
+        onParse: node => nodes.push(node),
+        onDone: () => resolve(nodes),
+        onError: reject
+      });
+    });
+  }
+
+  it("omits the stack from JSON codec output outside development", async () => {
+    const nodes = await serializeNodes(createError());
+    const payload = JSON.stringify(nodes);
+    expect(payload).toContain("boom");
+    expect(payload).not.toContain("throwsDeepInsideTheServer");
+    expect(payload).not.toContain("serializer.spec");
+  });
+
+  it("keeps the stack in development", async () => {
+    const nodes = await withNodeEnv("development", () => serializeNodes(createError()));
+    const payload = JSON.stringify(nodes);
+    expect(payload).toContain("boom");
+    expect(payload).toContain("throwsDeepInsideTheServer");
+  });
+
+  it("strips the stack even when disabledFeatures is overridden", async () => {
+    const nodes = await serializeNodes(createError(), { disabledFeatures: 0 });
+    expect(JSON.stringify(nodes)).not.toContain("throwsDeepInsideTheServer");
+  });
+
+  it("still decodes payloads that carry a stack", async () => {
+    const nodes = await withNodeEnv("development", () => serializeNodes(createError()));
+    const deserialize = createJSONDeserializer();
+    let decoded;
+    for (let i = 0; i < nodes.length; i++) {
+      const value = deserialize(JSON.parse(JSON.stringify(nodes[i])));
+      if (i === 0) decoded = value;
+    }
+    expect(decoded).toBeInstanceOf(Error);
+    expect(decoded.message).toBe("boom");
+    expect(decoded.stack).toContain("throwsDeepInsideTheServer");
+  });
+
+  it("omits the stack from hydration scripts outside development", () => {
+    const { serializer, scripts } = collect(createHydrationSerializer);
+    serializer.write("e", createError());
+    serializer.close();
+    const output = scripts.join(";");
+    expect(output).toContain("boom");
+    expect(output).not.toContain("throwsDeepInsideTheServer");
+  });
+});
+
 describe("getLocalHeaderScript", () => {
   it("emits the cross-reference bootstrap that hydration output relies on", () => {
     const header = getLocalHeaderScript("scope1");

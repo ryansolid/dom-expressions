@@ -23,6 +23,17 @@ import {
 // targets (AggregateError is ES2021, BigInt typed arrays are ES2020).
 const DEFAULT_DISABLED_FEATURES = Feature.AggregateError | Feature.BigIntTypedArray;
 
+// A serialized Error's `.stack` leaks server file paths, internal function
+// names and the shape of the deployment to anyone who can trigger a throw,
+// so it's stripped from everything serialized outside development — there
+// the paths are the developer's own and the stack is actually useful.
+// Serialize-side only and applied on top of any `disabledFeatures` override
+// (compat tuning shouldn't silently reopen the leak); the decode side stays
+// permissive so a payload that does carry a stack (e.g. from a development
+// peer) still deserializes. Read at call time so the policy tracks NODE_ENV.
+const serializeOnlyDisabledFeatures = () =>
+  process.env.NODE_ENV === "development" ? 0 : Feature.ErrorPrototypeStack;
+
 // Part of the hydration wire protocol since the streaming serializer landed
 // (#275): the bootstrap from `generateHydrationScript` creates it and the
 // client runtime reads resolved values out of it. Terse on purpose — it ships
@@ -68,7 +79,9 @@ export function createSerializer(options) {
     ...options,
     plugins: resolveSerializerPlugins(options.plugins),
     disabledFeatures:
-      options.disabledFeatures === undefined ? DEFAULT_DISABLED_FEATURES : options.disabledFeatures
+      (options.disabledFeatures === undefined
+        ? DEFAULT_DISABLED_FEATURES
+        : options.disabledFeatures) | serializeOnlyDisabledFeatures()
   });
 }
 
@@ -125,11 +138,13 @@ function resolveCodecOptions({ plugins, disabledFeatures, depthLimit } = {}) {
  * serialization.
  */
 export function serializeJSON(value, { onParse, onDone, onError, ...codecOptions }) {
+  const resolved = resolveCodecOptions(codecOptions);
   return toCrossJSONStream(value, {
     onParse,
     onDone,
     onError,
-    ...resolveCodecOptions(codecOptions)
+    ...resolved,
+    disabledFeatures: resolved.disabledFeatures | serializeOnlyDisabledFeatures()
   });
 }
 
@@ -191,7 +206,7 @@ export function createJSONSerializer({
       const stream = toCrossJSONStream(value, {
         refs,
         plugins: resolved.plugins,
-        disabledFeatures: resolved.disabledFeatures,
+        disabledFeatures: resolved.disabledFeatures | serializeOnlyDisabledFeatures(),
         onParse(node, initial) {
           onData({ key, node, initial });
         },

@@ -37,7 +37,9 @@ export interface WebSerializerOptions {
   scopeId?: string;
   /**
    * Seroval feature bitflags to exclude from output. Defaults to disabling
-   * post-ES2017 features (AggregateError, BigInt typed arrays).
+   * post-ES2017 features (AggregateError, BigInt typed arrays). Outside
+   * development, `Error.prototype.stack` is additionally stripped on top of
+   * any override — serialized stacks leak server paths to the client.
    */
   disabledFeatures?: number;
   /** Extra plugins, composed ahead of `DEFAULT_WEB_PLUGINS`. */
@@ -101,6 +103,10 @@ export interface JSONCodecOptions {
   /**
    * Seroval feature bitflags to exclude. Defaults to disabling `RegExp`
    * (payloads may come from an untrusted peer). Must match on both peers.
+   * Outside development, the encoding side additionally strips
+   * `Error.prototype.stack` on top of any override — serialized stacks leak
+   * server paths to the client. Decoding stays permissive, so payloads from
+   * a development peer still round-trip.
    */
   disabledFeatures?: number;
   /** Maximum parse/deserialize depth. Defaults to 64. Must match on both peers. */
