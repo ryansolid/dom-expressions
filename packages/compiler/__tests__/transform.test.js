@@ -832,4 +832,23 @@ describe("jsx-dom-expressions-compiler AST-native milestone", () => {
 
     expect(result.code).toContain('("Hello");');
   });
+
+  it.each(["dom", "ssr", "universal"])(
+    "lowers 12 nested component scopes without re-walking each body (%s)",
+    generate => {
+      let jsx = "<span>{x}</span>";
+      for (let i = 0; i < 12; i++) jsx = `<Box a={${i}}>${jsx}</Box>`;
+
+      const start = process.hrtime.bigint();
+      const result = transform(`const C = x => (${jsx});`, {
+        filename: "input.jsx",
+        moduleName: "r-dom",
+        generate
+      });
+      const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+
+      expect(result.code).toContain("Box");
+      expect(elapsedMs).toBeLessThan(100);
+    }
+  );
 });
