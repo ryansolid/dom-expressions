@@ -50,10 +50,18 @@ export function isHref(value) {
   return !!(value && (typeof value === "object" || typeof value === "function") && value[HREF]);
 }
 
+/**
+ * Response header naming the cache keys a mutation invalidated, comma
+ * separated. Set by the helpers below and read by the client transport and
+ * by integrations; core never inspects the keys, so how they are matched
+ * (prefixes, exact names, namespaces) is the integration's business.
+ */
+export const REVALIDATE_HEADER = "X-Revalidate";
+
 function initWithRevalidate(init) {
   const { revalidate, ...responseInit } = init;
   const headers = new Headers(responseInit.headers);
-  revalidate !== undefined && headers.set("X-Revalidate", revalidate.toString());
+  revalidate !== undefined && headers.set(REVALIDATE_HEADER, revalidate.toString());
   return { responseInit, headers };
 }
 

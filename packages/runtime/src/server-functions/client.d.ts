@@ -3,13 +3,16 @@ import { ServerFunction, ServerFunctionMetadata } from "./shared.js";
 
 export {
   ERROR_HEADER,
+  FLASH_COOKIE,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
+  clearFlashCookie,
   decodeErrorHeaderValue,
   decodeResponse,
   encodeErrorHeaderValue,
   getServerFunctionMetadata,
+  hasFlashCookie,
   isServerFunction,
   subscribeFlightData,
   withMeta

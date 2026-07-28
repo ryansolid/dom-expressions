@@ -37,13 +37,18 @@ import {
 import {
   GET as serverGET,
   configureServerFunctionsServer,
+  createNoJSHandler,
   createServerReference,
+  decodeFlashCookie,
+  encodeFlashCookie,
+  foldSetCookies,
   getServerFunction,
   getServerFunctionMeta,
   handleServerFunctionRequest,
   registerServerFunction,
   registerServerReference
 } from "../../src/server-functions/server";
+import { FLASH_COOKIE, clearFlashCookie, hasFlashCookie } from "../../src/server-functions/shared";
 import { RequestContext } from "../../src/server";
 
 // Minimal AsyncLocalStorage stand-in so request-event scoping works without
@@ -737,6 +742,188 @@ describe("handler", () => {
     );
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/?flash=value");
+  });
+});
+
+describe("cookie folding", () => {
+  const req = cookie => new Headers(cookie ? { cookie } : {});
+
+  it("passes the request cookies through when nothing was set", () => {
+    expect(foldSetCookies(req("a=1; b=2"), []).get("cookie")).toBe("a=1; b=2");
+  });
+
+  it("adds new cookies and overrides existing ones, later entries winning", () => {
+    const folded = foldSetCookies(req("session=old; keep=1"), [
+      "session=mid; Path=/",
+      "session=new; Path=/; HttpOnly",
+      "added=2; Path=/"
+    ]);
+    expect(folded.get("cookie")).toBe("session=new; keep=1; added=2");
+  });
+
+  it("honors deletions by Max-Age and by a past Expires", () => {
+    const folded = foldSetCookies(req("a=1; b=2; c=3"), [
+      "a=; Max-Age=0; Path=/",
+      "b=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/"
+    ]);
+    expect(folded.get("cookie")).toBe("c=3");
+  });
+
+  it("drops the header entirely when every cookie is deleted", () => {
+    expect(foldSetCookies(req("a=1"), ["a=; Max-Age=0"]).get("cookie")).toBe(null);
+  });
+
+  it("leaves the input headers untouched", () => {
+    const original = req("a=1");
+    foldSetCookies(original, ["a=2", "b=3"]);
+    expect(original.get("cookie")).toBe("a=1");
+  });
+});
+
+describe("flash cookie", () => {
+  const cookieOf = setCookie => setCookie.slice(0, setCookie.indexOf(";"));
+
+  it("round-trips a returned outcome", () => {
+    const setCookie = encodeFlashCookie("/_server?id=save", "saved", ["note"]);
+    expect(setCookie).toContain("HttpOnly");
+    expect(decodeFlashCookie(cookieOf(setCookie))).toEqual({
+      url: "/_server?id=save",
+      result: "saved",
+      error: undefined,
+      input: ["note"]
+    });
+  });
+
+  it("separates a thrown error from a returned one", () => {
+    const thrown = decodeFlashCookie(
+      cookieOf(encodeFlashCookie("/_server?id=x", new Error("nope"), [], true))
+    );
+    expect(thrown.result).toBeUndefined();
+    expect(thrown.error).toBeInstanceOf(Error);
+    expect(thrown.error.message).toBe("nope");
+
+    const returned = decodeFlashCookie(
+      cookieOf(encodeFlashCookie("/_server?id=x", new Error("nope"), []))
+    );
+    expect(returned.error).toBeUndefined();
+    expect(returned.result).toBeInstanceOf(Error);
+  });
+
+  it("revives FormData and URLSearchParams arguments, dropping files", () => {
+    const form = new FormData();
+    form.append("title", "hello");
+    form.append("upload", new Blob(["x"]), "x.txt");
+    const decoded = decodeFlashCookie(
+      cookieOf(encodeFlashCookie("/_server?id=x", "ok", [form, new URLSearchParams({ page: "2" })]))
+    );
+    expect(decoded.input[0]).toBeInstanceOf(FormData);
+    expect(decoded.input[0].get("title")).toBe("hello");
+    expect(decoded.input[0].get("upload")).toBe(null);
+    expect(decoded.input[1]).toBeInstanceOf(URLSearchParams);
+    expect(decoded.input[1].get("page")).toBe("2");
+  });
+
+  it("detects and clears without decoding", () => {
+    const header = cookieOf(encodeFlashCookie("/_server?id=x", "ok", []));
+    expect(hasFlashCookie(header)).toBe(true);
+    expect(hasFlashCookie("other=1")).toBe(false);
+    expect(hasFlashCookie(null)).toBe(false);
+    expect(clearFlashCookie()).toBe(`${FLASH_COOKIE}=; Max-Age=0; Path=/`);
+  });
+
+  it("survives a malformed cookie instead of taking down the render", () => {
+    const error = jest.spyOn(console, "error").mockImplementation(() => {});
+    expect(decodeFlashCookie(`${FLASH_COOKIE}=not-json`)).toBeUndefined();
+    expect(decodeFlashCookie("unrelated=1")).toBeUndefined();
+    error.mockRestore();
+  });
+});
+
+describe("no-JS form convention", () => {
+  const formPost = (id, init = {}) =>
+    new Request(`http://localhost/_server?id=${id}`, {
+      method: "POST",
+      body: "title=hello",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        referer: "http://localhost/notes",
+        ...init.headers
+      }
+    });
+
+  it("redirects a browser form post back with the outcome flashed", async () => {
+    registerServerFunction("nojs-form", async () => "saved");
+    const response = await handleServerFunctionRequest(formPost("nojs-form"));
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe("http://localhost/notes");
+    const flashed = decodeFlashCookie(response.headers.get("Set-Cookie").split(";")[0]);
+    expect(flashed.result).toBe("saved");
+    expect(flashed.url).toBe("/_server?id=nojs-form");
+  });
+
+  it("falls back to the app root when there is no usable referer", async () => {
+    registerServerFunction("nojs-noref", async () => "saved");
+    const request = new Request("http://localhost/_server?id=nojs-noref", {
+      method: "POST",
+      body: "a=1",
+      headers: { "content-type": "application/x-www-form-urlencoded" }
+    });
+    const response = await handleServerFunctionRequest(request);
+    expect(response.headers.get("Location")).toBe("http://localhost/");
+  });
+
+  it("leaves direct HTTP calls on the plain response", async () => {
+    registerServerFunction("nojs-direct", async () => "value");
+    const response = await handleServerFunctionRequest(
+      new Request("http://localhost/_server?id=nojs-direct", { method: "POST", body: "" })
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Location")).toBe(null);
+    expect(await decodeResponse(response)).toBe("value");
+  });
+
+  it("honors a thrown redirect's Location and status, and does not flash it", async () => {
+    registerServerFunction("nojs-redirect", async () => {
+      throw redirect("/notes/1", 301);
+    });
+    const response = await handleServerFunctionRequest(formPost("nojs-redirect"));
+    expect(response.status).toBe(301);
+    expect(response.headers.get("Location")).toBe("http://localhost/notes/1");
+    expect(response.headers.get("Set-Cookie")).toBe(null);
+  });
+
+  it("falls back to the configured base when there is no usable referer", async () => {
+    const response = createNoJSHandler({ base: "/app" })(
+      "saved",
+      new Request("http://localhost/_server?id=nojs-base", {
+        method: "POST",
+        body: "a=1",
+        headers: { "content-type": "application/x-www-form-urlencoded" }
+      }),
+      []
+    );
+    expect(response.headers.get("Location")).toBe("http://localhost/app");
+  });
+
+  it("applies to every instanceless call once configured server-wide", async () => {
+    registerServerFunction("nojs-configured", async () => "saved");
+    configureServerFunctionsServer({ handleNoJS: createNoJSHandler() });
+    try {
+      const response = await handleServerFunctionRequest(
+        new Request("http://localhost/_server?id=nojs-configured", { method: "POST", body: "" })
+      );
+      expect(response.status).toBe(303);
+    } finally {
+      configureServerFunctionsServer({ handleNoJS: null });
+    }
+  });
+
+  it("null opts out of the convention entirely", async () => {
+    registerServerFunction("nojs-optout", async () => "saved");
+    configureServerFunctionsServer({ handleNoJS: null });
+    const response = await handleServerFunctionRequest(formPost("nojs-optout"));
+    expect(response.status).toBe(200);
+    expect(await decodeResponse(response)).toBe("saved");
   });
 });
 

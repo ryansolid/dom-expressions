@@ -4,13 +4,16 @@ import { RequestEvent } from "../server.js";
 
 export {
   ERROR_HEADER,
+  FLASH_COOKIE,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
+  clearFlashCookie,
   decodeErrorHeaderValue,
   decodeResponse,
   encodeErrorHeaderValue,
   getServerFunctionMetadata,
+  hasFlashCookie,
   isServerFunction,
   subscribeFlightData,
   withMeta
@@ -22,6 +25,8 @@ export type {
   ServerFunctionMetadata,
   SingleFlightPayload
 } from "./shared.js";
+export { decodeFlashCookie, encodeFlashCookie } from "./flash.js";
+export type { FlashSubmission } from "./flash.js";
 import { ServerFunction } from "./shared.js";
 
 /**
@@ -85,6 +90,57 @@ export type CollectFlightDataHook = (
   outcome: ServerFunctionOutcome
 ) => unknown | Promise<unknown>;
 
+/**
+ * Request headers with `setCookies` folded into the `Cookie` header, as the
+ * browser would have applied them before its next request. Later entries
+ * win on conflict, and deletions are honored (`Max-Age` at or below zero,
+ * `Expires` in the past). The input headers are not modified.
+ *
+ * For work re-run on the server after a mutation — a
+ * `CollectFlightDataHook` gathering fresh data, typically. That pass starts
+ * from the request that triggered the mutation, whose cookies are
+ * pre-mutation by definition, so a read depending on a session the mutation
+ * just established would otherwise see the old state. Which responses
+ * contribute their `Set-Cookie`s, and in what order, is the caller's
+ * decision.
+ *
+ * @example
+ * ```ts
+ * const headers = foldSetCookies(event.request.headers, [
+ *   ...(event.response?.headers?.getSetCookie() ?? []),
+ *   ...(outcome.response?.headers?.getSetCookie() ?? [])
+ * ]);
+ * ```
+ */
+export function foldSetCookies(headers: Headers, setCookies: readonly string[]): Headers;
+
+/** Options for `createNoJSHandler`. */
+export interface NoJSHandlerOptions {
+  /** The app's mount path, for resolving a relative redirect `Location`. */
+  base?: string;
+}
+
+/**
+ * Builds the `handleNoJS` implementation for the no-JS form convention: a
+ * form posted without the client runtime has no way to receive a value, so
+ * the call redirects back to the referring page (or to the result's own
+ * `Location`, resolved against `base`) with the outcome riding a one-shot
+ * flash cookie. `303 See Other` turns the POST into a GET unless the result
+ * names a redirect status of its own. A result that is already a `Response`
+ * carries its meaning in its metadata and is not flashed.
+ *
+ * The render that follows reads the cookie with `decodeFlashCookie` and
+ * surfaces the outcome however it likes — that half is the integration's.
+ *
+ * The handler applies to every call it receives. `handleServerFunctionRequest`
+ * already uses it for browser form posts, so wire it explicitly only to set
+ * a `base`, or to extend the convention to direct HTTP calls by registering
+ * it through `configureServerFunctionsServer`.
+ */
+export function createNoJSHandler(
+  options?: NoJSHandlerOptions
+): (result: unknown, request: Request, args: unknown[], thrown?: boolean) => Response;
+
 /** Options for `configureServerFunctionsServer`. */
 export interface ServerFunctionsServerConfig {
   /**
@@ -119,6 +175,23 @@ export interface ServerFunctionsServerConfig {
    * calls during document SSR — e.g. frames' `frameTransformDirectResult`.
    */
   transformDirectResult?(value: unknown, options: { id: string }): unknown;
+  /**
+   * Server-wide response builder for calls made without the client runtime
+   * (see `handleNoJS` in `HandleServerFunctionRequestOptions`); a
+   * per-request option overrides it. Set it to `createNoJSHandler({ base })`
+   * to apply the convention to every non-scripted call rather than only to
+   * browser form posts, to a handler of your own to replace it, or to
+   * `null` to disable the built-in convention and answer form posts with
+   * the plain serialized response.
+   */
+  handleNoJS?:
+    | ((
+        result: unknown,
+        request: Request,
+        args: unknown[],
+        thrown?: boolean
+      ) => Response | Promise<Response>)
+    | null;
   /**
    * Endpoint the HTTP handler is mounted on, used for the `url` of SSR'd
    * references (e.g. form actions) — must match the client configuration.
@@ -285,11 +358,13 @@ export interface HandleServerFunctionOptions {
   collectFlightData?: CollectFlightDataHook;
   /**
    * Builds the response for calls made without the client runtime (no
-   * instance header — no-JS form posts, direct HTTP) — the extension
-   * point for conventions like redirect-with-flash-cookie. Receives the
+   * instance header — no-JS form posts, direct HTTP). Receives the
    * (transformed) result, the request, and the decoded arguments; `thrown`
-   * is set when the result was thrown rather than returned. Defaults to
-   * the normal serialized response.
+   * is set when the result was thrown rather than returned.
+   *
+   * Overrides the configured hook, which in turn overrides the built-in
+   * `createNoJSHandler()` applied to browser form posts. Other
+   * no-instance callers get the normal serialized response.
    */
   handleNoJS?(
     result: unknown,

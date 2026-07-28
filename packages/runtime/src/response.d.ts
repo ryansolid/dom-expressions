@@ -49,6 +49,16 @@ export interface Href {
  */
 export function isHref(value: unknown): value is Href;
 
+/**
+ * Response header naming the cache keys a mutation invalidated
+ * (`"X-Revalidate"`), comma separated. The response helpers below set it
+ * from their `revalidate` option; the client transport treats its presence
+ * as control flow, and integrations read it to invalidate their own cache.
+ * Core never inspects the keys, so how they are matched (prefixes, exact
+ * names, namespaces) is the integration's business.
+ */
+export const REVALIDATE_HEADER: string;
+
 /** `ResponseInit` accepted by the response helpers, plus `revalidate`. */
 export interface ResponseHelperInit extends ResponseInit {
   /**

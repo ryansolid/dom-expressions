@@ -5,10 +5,15 @@
 // in-process under a per-call request event.
 //
 // The HTTP handler is web-standard (Request -> Response); platform adapters
-// (h3, express, ...) and framework policies (single-flight collection,
-// no-JS form conventions) layer on through the exposed hooks.
+// (h3, express, ...) and framework policies layer on through the exposed
+// hooks. The line between them is the one the single-flight header already
+// draws: core owns the wire shapes both peers must agree on — the flight
+// envelope, the flash cookie, folding cookies for work re-run after a
+// mutation — and never what they carry. Which data a mutation invalidates,
+// and how an outcome reaches the UI, stay with the integration.
 import { isResponseEnvelope } from "../response.js";
 import { RequestContext, getRequestEvent } from "../server.js";
+import { encodeFlashCookie } from "./flash.js";
 import {
   BODY_FORMAT_HEADER,
   BodyFormat,
@@ -30,23 +35,28 @@ import {
 
 export {
   ERROR_HEADER,
+  FLASH_COOKIE,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
+  clearFlashCookie,
   decodeErrorHeaderValue,
   decodeResponse,
   encodeErrorHeaderValue,
   getServerFunctionMetadata,
+  hasFlashCookie,
   isServerFunction,
   subscribeFlightData,
   withMeta
 } from "./shared.js";
+export { decodeFlashCookie, encodeFlashCookie } from "./flash.js";
 
 const config = {
   provideEvent: undefined,
   collectFlightData: undefined,
   transformResult: undefined,
   transformDirectResult: undefined,
+  handleNoJS: undefined,
   endpoint: "/_server"
 };
 
@@ -67,6 +77,7 @@ export function configureServerFunctionsServer({
   collectFlightData,
   transformResult,
   transformDirectResult,
+  handleNoJS,
   endpoint,
   codec
 } = {}) {
@@ -74,6 +85,7 @@ export function configureServerFunctionsServer({
   if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
   if (transformResult !== undefined) config.transformResult = transformResult;
   if (transformDirectResult !== undefined) config.transformDirectResult = transformDirectResult;
+  if (handleNoJS !== undefined) config.handleNoJS = handleNoJS;
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
 }
@@ -255,6 +267,136 @@ async function foldFlightData(hook, event, headers, outcome) {
   return { value: outcome.value, data };
 }
 
+function parseSetCookie(setCookie) {
+  const [pair, ...attributes] = setCookie.split(";");
+  const eq = pair.indexOf("=");
+  if (eq < 0) return undefined;
+  const parsed = { name: pair.slice(0, eq).trim(), value: pair.slice(eq + 1).trim() };
+  for (const attribute of attributes) {
+    const attrEq = attribute.indexOf("=");
+    const key = (attrEq < 0 ? attribute : attribute.slice(0, attrEq)).trim().toLowerCase();
+    const value = attrEq < 0 ? "" : attribute.slice(attrEq + 1).trim();
+    if (key === "max-age") parsed.maxAge = Number(value);
+    else if (key === "expires") parsed.expires = new Date(value);
+  }
+  return parsed;
+}
+
+/**
+ * Request headers with a set of `Set-Cookie` values folded into the
+ * `Cookie` header, as the browser would have applied them before its next
+ * request. Later entries win on conflict, and deletions are honored
+ * (`Max-Age` at or below zero, `Expires` in the past).
+ *
+ * Work re-run on the server after a mutation — collecting single-flight
+ * data, for instance — starts from the request that triggered the mutation,
+ * whose cookies are by definition pre-mutation. Reads that depend on a
+ * session the mutation just established would otherwise see the old state.
+ * Which responses contribute (the request event's, the outcome's, both) is
+ * the caller's decision.
+ */
+export function foldSetCookies(headers, setCookies) {
+  const folded = new Headers(headers);
+  if (!setCookies.length) return folded;
+
+  const cookies = {};
+  for (const pair of folded.get("cookie")?.split(";") ?? []) {
+    const eq = pair.indexOf("=");
+    if (eq > -1) cookies[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+  }
+  for (const setCookie of setCookies) {
+    const parsed = parseSetCookie(setCookie);
+    if (!parsed) continue;
+    if (
+      (parsed.maxAge != null && parsed.maxAge <= 0) ||
+      (parsed.expires != null && parsed.expires.getTime() <= Date.now())
+    ) {
+      delete cookies[parsed.name];
+    } else {
+      cookies[parsed.name] = parsed.value;
+    }
+  }
+  folded.delete("cookie");
+  const serialized = Object.entries(cookies)
+    .map(([name, value]) => `${name}=${value}`)
+    .join("; ");
+  if (serialized) folded.set("cookie", serialized);
+  return folded;
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#redirection_messages
+const validRedirectStatuses = new Set([301, 302, 303, 307, 308]);
+
+/**
+ * Builds the `handleNoJS` implementation for the no-JS form convention: a
+ * form posted without the client runtime redirects back to the referring
+ * page (or to the result's own `Location`) with the outcome riding a
+ * one-shot flash cookie, for the render that follows to pick up.
+ *
+ * `base` is the app's mount path, used to resolve a relative `Location`.
+ * The handler is unconditional — every call it receives redirects — so
+ * wiring it explicitly opts every non-scripted call into the convention,
+ * including direct HTTP ones.
+ */
+export function createNoJSHandler({ base = "" } = {}) {
+  return function handleNoJS(result, request, args, thrown) {
+    const url = new URL(request.url);
+    // an unusable referer (no-referrer policy, garbage) still beats leaving
+    // the browser sitting on the server function endpoint
+    let back = new URL(base || "/", url.origin).toString();
+    try {
+      const referer = request.headers.get("referer");
+      if (referer) back = new URL(referer).toString();
+    } catch {}
+    // form post -> GET: 303 See Other unless the result names a redirect status
+    let status = 303;
+    let headers;
+    if (result instanceof Response) {
+      headers = new Headers(result.headers);
+      if (result.headers.has("Location")) {
+        headers.set(
+          "Location",
+          new URL(result.headers.get("Location"), url.origin + base).toString()
+        );
+        if (validRedirectStatuses.has(result.status)) status = result.status;
+      } else {
+        headers.set("Location", back);
+      }
+      // any body is dropped from the redirect we build — don't advertise it
+      headers.delete("Content-Type");
+      headers.delete("Content-Length");
+    } else {
+      headers = new Headers({ Location: back });
+    }
+    // Responses carry their meaning in their metadata; anything else flashes
+    // the outcome for the next render to read.
+    if (result && !(result instanceof Response)) {
+      headers.append(
+        "Set-Cookie",
+        encodeFlashCookie(url.pathname + url.search, result, args, thrown)
+      );
+    }
+    return new Response(null, { status, headers });
+  };
+}
+
+let defaultNoJSHandler;
+
+/**
+ * Whether a request is a browser form post — the case the redirect
+ * convention exists for. A real form sets its own content type and carries
+ * no `BODY_FORMAT_HEADER`, which only the client runtime sends. Direct HTTP
+ * callers (curl, a fetch from a script) fall outside it and keep the plain
+ * response: redirecting them would be nonsense.
+ */
+function isFormPost(request) {
+  if (request.method !== "POST" || request.headers.has(BODY_FORMAT_HEADER)) return false;
+  const type = request.headers.get("content-type") || "";
+  return (
+    type.startsWith("application/x-www-form-urlencoded") || type.startsWith("multipart/form-data")
+  );
+}
+
 function serializedResponse(value, headers, codec) {
   headers.set(BODY_FORMAT_HEADER, BodyFormat.Serialized);
   headers.set("Content-Type", "text/plain");
@@ -296,8 +438,11 @@ function encodeResult(value, headers, status, codec) {
  *   `{ value, data }` under the single-flight response header — the
  *   handler owns the enveloping, the hook owns the data.
  * - `handleNoJS(result, request, args)`: response for calls made without
- *   the client runtime (no instance header) — the extension point for
- *   no-JS form conventions. Defaults to the normal serialized response.
+ *   the client runtime (no instance header) — the override for the no-JS
+ *   form convention. Falls back to the configured hook, then to
+ *   `createNoJSHandler()` for browser form posts (redirect back with the
+ *   outcome in a flash cookie); other no-instance callers, such as direct
+ *   HTTP requests, get the normal serialized response.
  * - `codec`: overrides the configured codec options for this handler.
  */
 export async function handleServerFunctionRequest(request, options = {}) {
@@ -347,6 +492,17 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // configured transform (frames installs itself here once, server-wide).
   const transformResult =
     options.transformResult !== undefined ? options.transformResult : config.transformResult;
+  // Same fallback, then the built-in convention: an unconfigured app still
+  // gets working progressive enhancement for real form posts, while direct
+  // HTTP calls keep the plain response.
+  const handleNoJS =
+    options.handleNoJS !== undefined
+      ? options.handleNoJS
+      : config.handleNoJS !== undefined
+        ? config.handleNoJS
+        : isFormPost(request)
+          ? defaultNoJSHandler || (defaultNoJSHandler = createNoJSHandler())
+          : undefined;
   // single-flight is scripted-client opt-in: the caller sends the request
   // header, the server must have a hook to produce the data
   const collectsFlight = !!(flightHook && instance && request.headers.has(SINGLE_FLIGHT_HEADER));
@@ -371,7 +527,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
       const { response, value } = result;
       // consumers without the client runtime get the carried response
       // whole — e.g. respond()'s real JSON body (invisible PE)
-      if (!instance && !options.handleNoJS && response && response.body) {
+      if (!instance && !handleNoJS && response && response.body) {
         return response;
       }
       if (response && response.headers) {
@@ -414,7 +570,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
 
     // calls made without the client runtime (no-JS form posts)
     if (!instance) {
-      if (options.handleNoJS) return options.handleNoJS(result, request, parsed);
+      if (handleNoJS) return handleNoJS(result, request, parsed);
       if (result instanceof Response) return result;
       return encodeResult(result, headers, 200, codec);
     }
@@ -468,14 +624,17 @@ export async function handleServerFunctionRequest(request, options = {}) {
 
       headers.set(ERROR_HEADER, "true");
       if (!instance) {
-        if (options.handleNoJS) return options.handleNoJS(x, request, parsed, true);
+        // `x` was nulled when the thrown Response had no body, but the no-JS
+        // handler reads redirect metadata off the result — hand it the
+        // original Response, matching what the returned path passes.
+        if (handleNoJS) return handleNoJS(x ?? metadata, request, parsed, true);
         if (x instanceof Response) return x;
       }
       return encodeResult(x, headers, status, codec);
     }
 
     if (!instance) {
-      if (options.handleNoJS) return options.handleNoJS(x, request, parsed, true);
+      if (handleNoJS) return handleNoJS(x, request, parsed, true);
       const message = x instanceof Error ? x.message : String(x);
       return new Response(process.env.NODE_ENV === "development" ? message : null, { status: 500 });
     }

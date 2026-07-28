@@ -2,6 +2,7 @@
 // calls `createServerReference(id)` where a server function was referenced;
 // the function body never reaches this bundle. Hoisted from SolidStart's
 // fns/client.ts with neutral header names and a configurable endpoint.
+import { REVALIDATE_HEADER } from "../response.js";
 import {
   BODY_FORMAT_HEADER,
   BodyFormat,
@@ -19,15 +20,21 @@ import {
   withMeta
 } from "./shared.js";
 
+// The flash cookie's name, detection and clearing are re-exported here so
+// isomorphic integration code imports them from one specifier; the codec
+// that fills the cookie is server-only and stays behind the server entry.
 export {
   ERROR_HEADER,
+  FLASH_COOKIE,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
+  clearFlashCookie,
   decodeErrorHeaderValue,
   decodeResponse,
   encodeErrorHeaderValue,
   getServerFunctionMetadata,
+  hasFlashCookie,
   isServerFunction,
   subscribeFlightData,
   withMeta
@@ -231,7 +238,7 @@ async function fetchServerFunction(base, id, options, args, meta) {
       if (
         response.headers.has(ERROR_HEADER) &&
         !response.headers.has("Location") &&
-        !response.headers.has("X-Revalidate")
+        !response.headers.has(REVALIDATE_HEADER)
       ) {
         throw payload.value;
       }
@@ -245,7 +252,7 @@ async function fetchServerFunction(base, id, options, args, meta) {
   // `decodeResponse`.
   if (
     response.headers.has("Location") ||
-    response.headers.has("X-Revalidate") ||
+    response.headers.has(REVALIDATE_HEADER) ||
     response.headers.has(SINGLE_FLIGHT_HEADER)
   ) {
     return response;

@@ -215,6 +215,37 @@ export const SINGLE_FLIGHT_HEADER = "X-Single-Flight";
 /** FormData key used when a lone File is sent as the argument. */
 export const FILE_FORM_KEY = "__server_function_file__";
 
+/**
+ * Cookie carrying the outcome of a call made without the client runtime, so
+ * the page rendered after the redirect can show what happened.
+ *
+ * The name and its one-shot clearing live here rather than beside the codec
+ * (flash.js, server-only) because integrations consume the cookie eagerly
+ * from isomorphic code — the clear has to be appended before streaming
+ * flushes the response headers, and an unread outcome must not haunt a
+ * later request — and that must not drag the encode/decode machinery into
+ * client bundles.
+ */
+export const FLASH_COOKIE = "flash";
+
+const FLASH_MATCHER = new RegExp(`(?:^|;\\s*)${FLASH_COOKIE}=([^;]+)`);
+
+/** Whether a Cookie header carries a flash cookie (readable or not). */
+export function hasFlashCookie(cookieHeader) {
+  return !!cookieHeader && FLASH_MATCHER.test(cookieHeader);
+}
+
+/** The raw encoded flash payload out of a Cookie header, if present. */
+export function matchFlashCookie(cookieHeader) {
+  const match = cookieHeader && cookieHeader.match(FLASH_MATCHER);
+  return match ? match[1] : undefined;
+}
+
+/** The Set-Cookie value clearing the flash cookie after it has been read. */
+export function clearFlashCookie() {
+  return `${FLASH_COOKIE}=; Max-Age=0; Path=/`;
+}
+
 export const BodyFormat = {
   Serialized: "0",
   String: "1",
