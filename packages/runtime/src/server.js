@@ -137,7 +137,59 @@ function createAssetTracking() {
   };
 }
 
-function applyAssetTracking(context, tracking, manifest) {
+// Manifest contract guard. When `context.resolveAssets` answers null/undefined
+// or with no client js entries for a module the render asked about,
+// server-side lazy() has nothing to file into the hydration asset map
+// (`registerModule` is never reached on a miss), the client cannot preload
+// the module, and hydration fails far from the cause with a cryptic
+// `lazy() module "…" was not preloaded before hydration` error. The
+// resolution seam is the one choke point every consumer (solid's lazy,
+// frames) passes through and the only place the miss is still observable —
+// recording/serialization never sees the module at all. The warning is
+// unconditional (the server bundle has no dev build variant, and an
+// unanswered lookup for a rendered module is never benign in a hydrating
+// render). Known scoping:
+// - `noScripts` renders ship no hydration data (nothing can break), so the
+//   caller skips the guard entirely.
+// - `resolveAssetsSync` stays unguarded: sync probes (a lazy component's
+//   `moduleUrl` getter) legitimately probe modules that may not resolve and
+//   have graceful fallbacks.
+// - A NoHydration/islands zone could one day legitimately resolve modules
+//   absent from the client manifest (nothing hydrates there), but that scope
+//   is invisible at this seam and no supported integration produces it today
+//   (dev resolvers always answer; islands remain experimental). Revisit if
+//   that changes.
+function warnUnresolvedModuleAssets(moduleUrl, warned) {
+  if (warned.has(moduleUrl)) return;
+  warned.add(moduleUrl);
+  console.error(
+    `Asset manifest returned no client assets for module "${moduleUrl}". ` +
+      "If this module is a server-rendered lazy() component, its entry will be missing from " +
+      "the serialized hydration asset map, the client will be unable to preload it, and " +
+      'hydration will fail with \'lazy() module "…" was not preloaded before hydration\'. ' +
+      "This means the integration's asset resolver (dev manifest bridge or build client " +
+      "manifest) failed to answer for this module — check the integration's server logs, " +
+      "restart the dev server, or verify the module is included in the client build."
+  );
+}
+
+function guardResolvedAssets(moduleUrl, result, warned) {
+  if (result && typeof result.then === "function") {
+    return result.then(assets => {
+      if (!assets || !assets.js || !assets.js.length) warnUnresolvedModuleAssets(moduleUrl, warned);
+      return assets;
+    });
+  }
+  if (!result || !result.js || !result.js.length) warnUnresolvedModuleAssets(moduleUrl, warned);
+  return result;
+}
+
+function applyAssetTracking(context, tracking, manifest, noScripts) {
+  // Deduped per render: one warning per module, however many times it renders.
+  const warned = new Set();
+  const guard = noScripts
+    ? resolve => resolve
+    : resolve => moduleUrl => guardResolvedAssets(moduleUrl, resolve(moduleUrl), warned);
   Object.defineProperty(context, "_currentBoundaryId", {
     get() {
       return tracking.currentBoundaryId;
@@ -161,15 +213,15 @@ function applyAssetTracking(context, tracking, manifest) {
   // result shapes. Static manifests are sync by nature, so both context
   // paths point at the same lookup.
   if (typeof manifest === "function") {
-    context.resolveAssets = manifest;
+    context.resolveAssets = guard(manifest);
   } else if (manifest && typeof manifest.resolve === "function") {
-    context.resolveAssets = key => manifest.resolve(key);
+    context.resolveAssets = guard(key => manifest.resolve(key));
     if (typeof manifest.resolveSync === "function") {
       context.resolveAssetsSync = key => manifest.resolveSync(key);
     }
   } else if (manifest) {
     const resolve = moduleUrl => resolveAssets(moduleUrl, manifest);
-    context.resolveAssets = resolve;
+    context.resolveAssets = guard(resolve);
     context.resolveAssetsSync = resolve;
   }
 }
@@ -254,7 +306,7 @@ export function renderToString(code, options = {}) {
       tracking.emittedAssets.add(value);
     }
   };
-  applyAssetTracking(sharedConfig.context, tracking, manifest);
+  applyAssetTracking(sharedConfig.context, tracking, manifest, noScripts);
   registerEntryAssets(manifest);
   let html = root(
     d => {
@@ -609,7 +661,7 @@ export function renderToStream(code, options = {}) {
       sink.reveal(keys, { fallback: true });
     }
   };
-  applyAssetTracking(context, tracking, manifest);
+  applyAssetTracking(context, tracking, manifest, noScripts);
   registerEntryAssets(manifest);
 
   let html = root(

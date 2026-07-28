@@ -1100,13 +1100,21 @@ describe("manifest-driven asset resolution", () => {
   it("context.resolveAssets returns null for unknown module urls", () => {
     const manifest = { _base: "/", "a.tsx": { file: "a.js" } };
     let resolved;
-    r.renderToString(
-      () => {
-        resolved = sharedConfig.context.resolveAssets("unknown.tsx");
-        return r.ssr`<div>x</div>`;
-      },
-      { manifest }
-    );
+    // Null is still the answer callers see, but an unanswered lookup now also
+    // emits the unresolved-module-assets contract warning (see the dedicated
+    // describe block below).
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      r.renderToString(
+        () => {
+          resolved = sharedConfig.context.resolveAssets("unknown.tsx");
+          return r.ssr`<div>x</div>`;
+        },
+        { manifest }
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
     expect(resolved).toBeNull();
   });
 
@@ -1148,17 +1156,20 @@ describe("manifest-driven asset resolution", () => {
   });
 
   it("accepts a bare function as resolver shorthand (no sync path)", () => {
+    // Results flow through untouched (no manifest-object normalization) —
+    // the installed function is a thin contract-warning wrapper, so identity
+    // is checked behaviorally rather than with `toBe`.
     const resolver = key => ({ js: ["/" + key], css: [] });
-    let installed, sync;
+    let resolved, sync;
     r.renderToString(
       () => {
-        installed = sharedConfig.context.resolveAssets;
+        resolved = sharedConfig.context.resolveAssets("src/a.tsx");
         sync = sharedConfig.context.resolveAssetsSync;
         return r.ssr`<div>x</div>`;
       },
       { manifest: resolver }
     );
-    expect(installed).toBe(resolver);
+    expect(resolved).toEqual({ js: ["/src/a.tsx"], css: [] });
     expect(sync).toBeUndefined();
   });
 
@@ -1215,6 +1226,132 @@ describe("manifest-driven asset resolution", () => {
       );
       expect(resolved.js).toEqual(js);
     }
+  });
+});
+
+// A manifest answering null/undefined/empty-js for a module the render asked
+// about means server-side lazy() cannot file the module's hydration asset map
+// entry — the client can't preload it and hydration fails with a cryptic
+// "was not preloaded before hydration" error far from the cause. The
+// resolution seam warns loudly (console.error) so the failure is
+// self-reporting on the server, deduped per module per render.
+describe("unresolved module asset warnings", () => {
+  let errorSpy;
+  beforeEach(() => {
+    errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    errorSpy.mockRestore();
+  });
+
+  it("warns when a resolver manifest answers null for a requested module", () => {
+    r.renderToString(
+      () => {
+        sharedConfig.context.resolveAssets("src/routes/index.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { resolve: () => null } }
+    );
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0][0]).toContain('"src/routes/index.tsx"');
+    expect(errorSpy.mock.calls[0][0]).toContain("no client assets");
+  });
+
+  it("warns when an async resolver settles to null", async () => {
+    let pending;
+    r.renderToString(
+      () => {
+        pending = sharedConfig.context.resolveAssets("src/routes/index.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { resolve: () => Promise.resolve(null) } }
+    );
+    expect(await pending).toBeNull();
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0][0]).toContain('"src/routes/index.tsx"');
+  });
+
+  it("warns when the answer has no client js entries", () => {
+    r.renderToString(
+      () => {
+        sharedConfig.context.resolveAssets("src/only-css.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { resolve: () => ({ js: [], css: ["/src/a.css"] }) } }
+    );
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0][0]).toContain('"src/only-css.tsx"');
+  });
+
+  it("dedupes to one warning per module per render", () => {
+    r.renderToString(
+      () => {
+        sharedConfig.context.resolveAssets("src/routes/index.tsx");
+        sharedConfig.context.resolveAssets("src/routes/index.tsx");
+        sharedConfig.context.resolveAssets("src/routes/about.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { resolve: () => null } }
+    );
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+    const messages = errorSpy.mock.calls.map(c => c[0]).join("\n");
+    expect(messages).toContain('"src/routes/index.tsx"');
+    expect(messages).toContain('"src/routes/about.tsx"');
+  });
+
+  it("does not warn on the healthy path (sync and async resolvers, static manifests)", async () => {
+    let pending;
+    r.renderToString(
+      () => {
+        sharedConfig.context.resolveAssets("src/a.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { resolve: key => ({ js: ["/" + key], css: [] }) } }
+    );
+    r.renderToString(
+      () => {
+        pending = sharedConfig.context.resolveAssets("src/a.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { resolve: key => Promise.resolve({ js: ["/" + key], css: [] }) } }
+    );
+    await pending;
+    r.renderToString(
+      () => {
+        sharedConfig.context.resolveAssets("a.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { _base: "/", "a.tsx": { file: "a.js" } } }
+    );
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not warn for noScripts renders (no hydration data ships)", () => {
+    r.renderToString(
+      () => {
+        sharedConfig.context.resolveAssets("src/routes/index.tsx");
+        return r.ssr`<div>x</div>`;
+      },
+      { manifest: { resolve: () => null }, noScripts: true }
+    );
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("warns during renderToStream when the resolver misses", async () => {
+    await new Promise(resolve => {
+      r.renderToStream(
+        () => {
+          sharedConfig.context.resolveAssets("src/routes/index.tsx");
+          return r.ssr`<div>x</div>`;
+        },
+        { manifest: { resolve: () => null } }
+      ).pipe({
+        write() {},
+        end: resolve
+      });
+    });
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0][0]).toContain('"src/routes/index.tsx"');
   });
 });
 
