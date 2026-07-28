@@ -109,6 +109,7 @@
     "perf-reconcile-single-anchor-end-swap",
     "port-main-maintenance",
     "pr-511-ssr-dedupe-and-xlink-removal",
+    "predigest-flight-outcome",
     "preserve-foreign-root-nodes",
     "recursive-classvalue-type",
     "release-0-50-0-next-1",
@@ -150,6 +151,7 @@
     "unify-traversal-layer",
     "universal-render-dispose-cleans-nodes",
     "universal-static-init-props",
+    "warn-unresolved-module-assets",
     "wrap-dynamics-optional-chaining"
   ]
 }

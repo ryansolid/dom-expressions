@@ -1,5 +1,7 @@
 # @dom-expressions/compiler
 
+## 0.50.0-next.33
+
 ## 0.50.0-next.32
 
 ### Patch Changes

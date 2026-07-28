@@ -1,5 +1,15 @@
 # dom-expressions
 
+## 0.50.0-next.33
+
+### Patch Changes
+
+- b3c64b8: Pre-digest the single-flight outcome so `collectFlightData` hooks only supply the data strategy. The handler now computes the generic halves of collection before invoking the hook and hands them over on the outcome: `targetUrl` (the URL the client will show after the mutation — the redirect `Location` resolved against the request URL, or the referring page; undefined without a usable referer or for off-origin redirects), `revalidateKeys` (the outcome's `X-Revalidate` keys, split), and `foldedHeaders` (the request headers with the event's and the outcome's `Set-Cookie` effects applied, later winning). Raw body-carrying `Response` values no longer invoke the hook at all — they are the caller's verbatim payload, with no envelope to fold data into. Existing hooks keep working unchanged; the new fields are additive.
+
+  Adds `decodeResponsePayload` beside `decodeResponse`: decodes a transport response and splits the single-flight envelope into `{ value, flightData }`, so integrations handling manually opted-in calls stop reimplementing the payload shape.
+
+- 675c5c7: Warn loudly on the server when the asset manifest returns no client assets for a requested module. When `context.resolveAssets` answers null/undefined or with no js entries for a module the render asked about, server-side `lazy()` cannot file the module's hydration asset map entry, the client is unable to preload it, and hydration fails with a cryptic `lazy() module "…" was not preloaded before hydration` error far from the actual cause (an environmental manifest miss, e.g. a dev-manifest bridge that failed to answer). The resolution seam now emits a `console.error` naming the module key and what to check, deduped per module per render. `noScripts` renders (which ship no hydration data) and the `resolveAssetsSync` probe path (which has graceful fallbacks) are excluded.
+
 ## 0.50.0-next.32
 
 ### Patch Changes
