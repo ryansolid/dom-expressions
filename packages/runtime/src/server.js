@@ -166,7 +166,7 @@ function warnUnresolvedModuleAssets(moduleUrl, warned) {
     `Asset manifest returned no client assets for module "${moduleUrl}". ` +
       "If this module is a server-rendered lazy() component, its entry will be missing from " +
       "the serialized hydration asset map, the client will be unable to preload it, and " +
-      'hydration will fail with \'lazy() module "…" was not preloaded before hydration\'. ' +
+      "hydration will fail with 'lazy() module \"…\" was not preloaded before hydration'. " +
       "This means the integration's asset resolver (dev manifest bridge or build client " +
       "manifest) failed to answer for this module — check the integration's server logs, " +
       "restart the dev server, or verify the module is included in the client build."
