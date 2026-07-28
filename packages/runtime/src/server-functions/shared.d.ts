@@ -406,6 +406,19 @@ export function decodeResponse<T = unknown>(
 ): Promise<T | undefined>;
 
 /**
+ * `decodeResponse` plus the single-flight envelope split: when the response
+ * carries the single-flight header the decoded `{ value, data }` payload is
+ * unwrapped into `{ value, flightData }`; otherwise the decoded body (or
+ * undefined for body-less responses) rides as `{ value }`. Integrations
+ * that apply response metadata themselves use this so the payload shape
+ * stays core's own.
+ */
+export function decodeResponsePayload<T = unknown, D = unknown>(
+  response: Response,
+  codecOptions?: JSONCodecOptions
+): Promise<{ value: T | undefined; flightData?: D }>;
+
+/**
  * Frame one payload for the server-function wire: a `;0x<len32>;` length
  * prefix followed by the utf-8 data. Both transports (server-function
  * responses and frame streams) share this framing.

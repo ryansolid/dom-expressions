@@ -11,6 +11,7 @@ export {
   clearFlashCookie,
   decodeErrorHeaderValue,
   decodeResponse,
+  decodeResponsePayload,
   encodeErrorHeaderValue,
   getServerFunctionMetadata,
   hasFlashCookie,
@@ -68,6 +69,29 @@ export interface ServerFunctionOutcome {
   request: Request;
   /** Whether the result was thrown rather than returned. */
   thrown: boolean;
+  /**
+   * The URL the client will show after the mutation — the redirect
+   * `Location` when the outcome carries one (resolved against the request
+   * URL, as a browser would), the referring page otherwise. Undefined
+   * without a usable referer (a non-browser caller has no page to produce
+   * data for) and for redirects leaving the app's origin: produce no data
+   * when this is undefined.
+   */
+  targetUrl: string | undefined;
+  /**
+   * The outcome's `X-Revalidate` keys, split — the invalidation scope the
+   * mutation declared. Undefined when the outcome carries none (integrations
+   * typically collect everything for the target in that case).
+   */
+  revalidateKeys: string[] | undefined;
+  /**
+   * The request headers with the mutation's cookie effects applied: the
+   * event response's `Set-Cookie`s (set during the call), then the
+   * outcome's own (e.g. `redirect(to, { headers })`), later winning on
+   * conflict, deletions honored. Build the data-collection request from
+   * these so re-run reads observe post-mutation cookie state.
+   */
+  foldedHeaders: Headers;
 }
 
 /**
@@ -82,8 +106,12 @@ export interface ServerFunctionOutcome {
  * Runs after `transformResult`, only for scripted calls that sent
  * `SINGLE_FLIGHT_HEADER` on the request, on returned results and thrown
  * `Response`/`ResponseEnvelope` control-flow signals alike (plain thrown
- * errors never collect). The handler owns the enveloping: contributed data
- * ships as `{ value, data }` under the single-flight response header.
+ * errors never collect, and neither do raw body-carrying `Response` values
+ * — those are the caller's verbatim payload). The handler owns the
+ * enveloping: contributed data ships as `{ value, data }` under the
+ * single-flight response header. The generic halves of collection arrive
+ * pre-digested on the outcome (`targetUrl`, `revalidateKeys`,
+ * `foldedHeaders`); the hook supplies only the data strategy.
  */
 export type CollectFlightDataHook = (
   event: ServerFunctionEvent,

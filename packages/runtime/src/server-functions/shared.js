@@ -519,3 +519,19 @@ export async function decodeResponse(response, codecOptions) {
   if (!response.body) return undefined;
   return await extractBody(response, codecOptions === undefined ? codecConfig.codec : codecOptions);
 }
+
+/**
+ * `decodeResponse` plus the single-flight envelope split: when the response
+ * carries the single-flight header the decoded `{ value, data }` payload is
+ * unwrapped into `{ value, flightData }`; otherwise the decoded body (or
+ * undefined for body-less responses) rides as `{ value }`. Integrations
+ * that apply response metadata themselves use this so the payload shape
+ * stays core's own.
+ */
+export async function decodeResponsePayload(response, codecOptions) {
+  const decoded = await decodeResponse(response, codecOptions);
+  if (decoded !== undefined && response.headers.has(SINGLE_FLIGHT_HEADER)) {
+    return { value: decoded.value, flightData: decoded.data };
+  }
+  return { value: decoded };
+}

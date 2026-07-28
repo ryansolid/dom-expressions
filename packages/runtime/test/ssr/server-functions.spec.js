@@ -17,6 +17,7 @@ import {
   SINGLE_FLIGHT_HEADER,
   decodeErrorHeaderValue,
   decodeResponse,
+  decodeResponsePayload,
   deserializeStream,
   deserializeString,
   encodeErrorHeaderValue,
@@ -1081,6 +1082,114 @@ describe("single-flight", () => {
     expect(hook).not.toHaveBeenCalled();
     expect(response.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
     expect(response.headers.get("X-Server-Function-Error")).toBe("kaboom");
+  });
+
+  it("never collects for raw body-carrying Response values (verbatim payload)", async () => {
+    registerServerFunction(
+      "sf-raw-0",
+      async () => new Response(JSON.stringify({ raw: true }), { status: 201 })
+    );
+    const hook = jest.fn(() => ({ data: true }));
+    const response = await dispatch(flightRequest("sf-raw-0"), { collectFlightData: hook });
+    expect(hook).not.toHaveBeenCalled();
+    expect(response.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
+    expect(response.status).toBe(201);
+  });
+
+  describe("outcome pre-digestion", () => {
+    async function digest(id, fn, requestHeaders, options) {
+      registerServerFunction(id, fn);
+      const seen = {};
+      await dispatch(flightRequest(id, requestHeaders), {
+        ...options,
+        collectFlightData: (event, outcome) => {
+          seen.outcome = outcome;
+          return undefined;
+        }
+      });
+      return seen.outcome;
+    }
+
+    it("targets the referring page for plain results", async () => {
+      const outcome = await digest("sf-digest-0", async () => "ok", {
+        referer: "http://localhost/notes?tab=all"
+      });
+      expect(outcome.targetUrl).toBe("http://localhost/notes?tab=all");
+      expect(outcome.revalidateKeys).toBeUndefined();
+    });
+
+    it("targets the redirect Location, resolved against the request URL", async () => {
+      const outcome = await digest(
+        "sf-digest-1",
+        async () => {
+          throw redirect("/dashboard", { revalidate: ["notes", "session"] });
+        },
+        { referer: "http://localhost/notes" }
+      );
+      expect(outcome.targetUrl).toBe("http://localhost/dashboard");
+      expect(outcome.revalidateKeys).toEqual(["notes", "session"]);
+    });
+
+    it("has no target without a referer, with a garbage referer, or off-origin", async () => {
+      expect((await digest("sf-digest-2", async () => "ok")).targetUrl).toBeUndefined();
+      expect(
+        (await digest("sf-digest-3", async () => "ok", { referer: "not a url" })).targetUrl
+      ).toBeUndefined();
+      const offOrigin = await digest(
+        "sf-digest-4",
+        async () => {
+          throw redirect("https://elsewhere.example/login");
+        },
+        { referer: "http://localhost/notes" }
+      );
+      expect(offOrigin.targetUrl).toBeUndefined();
+    });
+
+    it("folds the event's and the outcome's cookies into foldedHeaders, outcome winning", async () => {
+      const outcome = await digest(
+        "sf-digest-5",
+        async () => {
+          throw redirect("/notes", {
+            headers: { "Set-Cookie": "session=outcome" }
+          });
+        },
+        { referer: "http://localhost/notes", cookie: "session=old; theme=dark" },
+        {
+          createEvent: request => ({
+            request,
+            locals: {},
+            response: { headers: new Headers({ "Set-Cookie": "session=event" }) }
+          })
+        }
+      );
+      expect(outcome.foldedHeaders.get("cookie")).toBe("session=outcome; theme=dark");
+      // the original request is untouched
+      expect(outcome.request.headers.get("cookie")).toBe("session=old; theme=dark");
+    });
+  });
+
+  describe("decodeResponsePayload", () => {
+    it("splits the single-flight envelope for manually opted-in callers", async () => {
+      registerServerFunction("sf-payload-0", async () => "mutated");
+      const folded = await dispatch(flightRequest("sf-payload-0"), {
+        collectFlightData: () => ({ "/notes": ["fresh"] })
+      });
+      expect(await decodeResponsePayload(folded)).toEqual({
+        value: "mutated",
+        flightData: { "/notes": ["fresh"] }
+      });
+
+      const plain = await dispatch(flightRequest("sf-payload-0"), {
+        collectFlightData: () => undefined
+      });
+      expect(await decodeResponsePayload(plain)).toEqual({ value: "mutated" });
+    });
+
+    it("treats body-less responses as undefined values", async () => {
+      expect(await decodeResponsePayload(new Response(null, { status: 302 }))).toEqual({
+        value: undefined
+      });
+    });
   });
 
   it("registers through configureServerFunctionsServer with per-handler override", async () => {

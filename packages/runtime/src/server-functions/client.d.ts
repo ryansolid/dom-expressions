@@ -10,6 +10,7 @@ export {
   clearFlashCookie,
   decodeErrorHeaderValue,
   decodeResponse,
+  decodeResponsePayload,
   encodeErrorHeaderValue,
   getServerFunctionMetadata,
   hasFlashCookie,

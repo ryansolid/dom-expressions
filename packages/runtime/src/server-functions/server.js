@@ -11,7 +11,7 @@
 // envelope, the flash cookie, folding cookies for work re-run after a
 // mutation — and never what they carry. Which data a mutation invalidates,
 // and how an outcome reaches the UI, stay with the integration.
-import { isResponseEnvelope } from "../response.js";
+import { REVALIDATE_HEADER, isResponseEnvelope } from "../response.js";
 import { RequestContext, getRequestEvent } from "../server.js";
 import { encodeFlashCookie } from "./flash.js";
 import {
@@ -42,6 +42,7 @@ export {
   clearFlashCookie,
   decodeErrorHeaderValue,
   decodeResponse,
+  decodeResponsePayload,
   encodeErrorHeaderValue,
   getServerFunctionMetadata,
   hasFlashCookie,
@@ -258,13 +259,52 @@ async function parseArguments(request, url, instance, codec) {
  * response is tagged with the single-flight header; when it returns
  * undefined the response is byte-identical to a call without the hook.
  * Data production is the hook's black box — core never sees how the
- * integration computed it.
+ * integration computed it, but the generic halves of the protocol are
+ * pre-digested onto the outcome (see `digestOutcome`) so integrations only
+ * supply the data strategy. A raw body-carrying `Response` value is the
+ * caller's verbatim payload — there is no envelope to fold data into, so
+ * the hook never runs for one.
  */
 async function foldFlightData(hook, event, headers, outcome) {
+  if (outcome.value instanceof Response && outcome.value.body) return outcome.value;
+  digestOutcome(event, outcome);
   const data = await hook(event, outcome);
   if (data === undefined) return outcome.value;
   headers.set(SINGLE_FLIGHT_HEADER, "true");
   return { value: outcome.value, data };
+}
+
+// The generic halves of flight-data collection, computed by core so every
+// integration doesn't re-derive them from raw headers:
+// - `revalidateKeys`: the outcome's `X-Revalidate` keys, split.
+// - `foldedHeaders`: the request headers with the mutation's cookie effects
+//   applied — the event response's `Set-Cookie`s (set during the call),
+//   then the outcome's own (e.g. `redirect(to, { headers })`, which never
+//   reach the event response but a browser round trip would have sent
+//   back), later winning on conflict. Re-run reads observe post-mutation
+//   cookie state, deletions included.
+// - `targetUrl`: the URL the client will show after the mutation — the
+//   redirect `Location` when the outcome carries one (resolved against the
+//   request URL, as a browser would), the referring page otherwise.
+//   Undefined without a usable referer (a non-browser caller has no page to
+//   produce data for) and for redirects leaving the app's origin.
+function digestOutcome(event, outcome) {
+  const { request, response } = outcome;
+  outcome.revalidateKeys = response?.headers.get(REVALIDATE_HEADER)?.split(",");
+  outcome.foldedHeaders = foldSetCookies(request.headers, [
+    ...(event.response?.headers?.getSetCookie() ?? []),
+    ...(response?.headers?.getSetCookie() ?? [])
+  ]);
+  try {
+    const referrer = request.headers.get("referer");
+    if (referrer) {
+      const location = response?.headers.get("Location");
+      const target = location ? new URL(location, request.url) : new URL(referrer);
+      if (target.origin === new URL(request.url).origin) outcome.targetUrl = target.toString();
+    }
+  } catch {
+    // unparseable referer — same as no referer
+  }
 }
 
 function parseSetCookie(setCookie) {
