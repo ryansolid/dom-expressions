@@ -109,9 +109,9 @@ export function style(
 export function getOwner(): unknown;
 export function mergeProps(...sources: unknown[]): unknown;
 export function dynamicProperty(props: unknown, key: string): unknown;
-export function applyRef(
-  r: ((element: Element) => void) | ((element: Element) => void)[],
-  element: Element
+export function applyRef<T extends Element = Element>(
+  r: ((element: NoInfer<T>) => void) | ((element: NoInfer<T>) => void)[],
+  element: T
 ): void;
 export function ref(
   fn: () => ((element: Element) => void) | ((element: Element) => void)[],
