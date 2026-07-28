@@ -73,11 +73,13 @@ const SCENARIOS = {
   // them — the root's, for a nested occurrence — so a navigate-away-and-back
   // can't dedupe a re-introduced `{$frame}` region against a stranded t=0
   // record and drop a doubly-nested reply's body) — re-guarded at 6330.
+  // Then +12 for linear document-boot absorption + stripping error stacks from
+  // serialized output outside development — re-guarded at 6350.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6330
+    6350
   ]
 };
 
