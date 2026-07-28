@@ -266,11 +266,17 @@ export function renderToString(code, options = {}) {
   serializeFragmentAssets("", tracking.boundaryModules, sharedConfig.context);
   sharedConfig.context.noHydrate = true;
   serializer.close();
-  html = injectAssets(sharedConfig.context.assets, html);
-  html = injectPreloadLinks(tracking.emittedAssets, html, nonce);
-  html = injectInlineStyles(tracking.inlineStyles, html, nonce);
-  if (scripts.length) html = injectScripts(html, scripts, options.nonce);
-  return html;
+  // Asset closures evaluate unconditionally (they can have side effects), even
+  // when there is no `</head>` for their output to land in.
+  const assetsHtml = resolveAssetsHtml(sharedConfig.context.assets);
+  return assembleDocument(
+    html,
+    assetsHtml,
+    tracking.emittedAssets,
+    tracking.inlineStyles,
+    scripts.length ? scripts : "",
+    nonce
+  );
 }
 
 export function renderToStream(code, options = {}) {
@@ -372,11 +378,16 @@ export function renderToStream(code, options = {}) {
     // tasks spliced at the <!--xs--> marker — then one write. Injection order
     // (assets, preloads, scripts) is part of the byte-exact document output.
     shell(shellHtml, meta) {
-      shellHtml = injectBeforeHead(shellHtml, meta.assets);
-      shellHtml = injectPreloadLinks(meta.preloads, shellHtml, nonce);
-      shellHtml = injectInlineStyles(meta.inlineStyles, shellHtml, nonce);
-      if (meta.tasks.length) shellHtml = injectScripts(shellHtml, meta.tasks, nonce);
-      buffer.write(shellHtml);
+      buffer.write(
+        assembleDocument(
+          shellHtml,
+          meta.assets,
+          meta.preloads,
+          meta.inlineStyles,
+          meta.tasks.length ? meta.tasks : "",
+          nonce
+        )
+      );
     },
     ...options.sink
   };
@@ -1265,32 +1276,63 @@ function resolveAssetsHtml(assets) {
   return out;
 }
 
-function injectBeforeHead(html, content) {
-  if (!content) return html;
-  const index = html.indexOf("</head>");
-  if (index === -1) return html;
-  return html.slice(0, index) + content + html.slice(index);
-}
-
-function injectAssets(assets, html) {
-  // Evaluation is unconditional (closures may have side effects) even when
-  // there is no </head> to splice into.
-  return injectBeforeHead(html, resolveAssetsHtml(assets));
-}
-
-function injectPreloadLinks(emittedAssets, html, nonce) {
-  if (!emittedAssets.size) return html;
-  let links = "";
-  for (const url of emittedAssets) {
-    if (url.endsWith(".css")) {
-      links += `<link rel="stylesheet" href="${url}">`;
-    } else {
-      links += `<link rel="modulepreload" href="${url}">`;
+// Single-pass document assembly. This replaced four sequential inject passes
+// (assets, preload links, inline styles, scripts), each of which searched for
+// its anchor and rebuilt the whole document — four full copies of the shell,
+// or of a 400KB SSR body. Head content is concatenated once and spliced with
+// the script tag in one construction. Order is preserved exactly: assets,
+// preload links, inline styles before `</head>`; accumulated tasks at the
+// `<!--xs-->` marker, appended when the marker is absent. Inline-style entries
+// are only marked emitted when there is a `</head>` to splice into.
+//
+// Scans stay strictly demand-driven, which the old passes got for free from
+// their early returns and a single pass has to reproduce deliberately: a
+// missing-needle indexOf flattens the string and walks every character, so on a
+// 400KB body one stray scan costs more than the render's own string work
+// (measured ~0.75ms). An anchor is only searched for when there is content that
+// needs it, keeping a body-only render a pure pass-through.
+function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts, nonce) {
+  const scriptTag = scripts ? `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>` : "";
+  if (
+    !assetsHtml &&
+    !(emittedAssets && emittedAssets.size) &&
+    !(inlineStyles && inlineStyles.size)
+  ) {
+    // Nothing head-bound: never look for `</head>`. Body-only renders (no
+    // assets, no preloads, no inline styles) stay a pure pass-through.
+    if (!scriptTag) return html;
+    const xs = html.indexOf("<!--xs-->");
+    return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
+  }
+  const headIdx = html.indexOf("</head>");
+  if (headIdx === -1) {
+    // No head to splice into: assets/preloads/styles are dropped and left
+    // unemitted, exactly as the individual helpers' `index === -1` returns did.
+    if (!scriptTag) return html;
+    const xs = html.indexOf("<!--xs-->");
+    return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
+  }
+  let head = assetsHtml || "";
+  if (emittedAssets && emittedAssets.size) {
+    for (const url of emittedAssets) {
+      head += url.endsWith(".css")
+        ? `<link rel="stylesheet" href="${url}">`
+        : `<link rel="modulepreload" href="${url}">`;
     }
   }
-  const index = html.indexOf("</head>");
-  if (index === -1) return html;
-  return html.slice(0, index) + links + html.slice(index);
+  if (inlineStyles && inlineStyles.size) {
+    for (const entry of inlineStyles.values()) {
+      if (entry.emitted) continue;
+      entry.emitted = true;
+      head += renderInlineStyle(entry, nonce);
+    }
+  }
+  if (!scriptTag) return html.slice(0, headIdx) + head + html.slice(headIdx);
+  const xsIdx = html.indexOf("<!--xs-->");
+  if (xsIdx === -1) return html.slice(0, headIdx) + head + html.slice(headIdx) + scriptTag;
+  return xsIdx < headIdx
+    ? html.slice(0, xsIdx) + scriptTag + html.slice(xsIdx, headIdx) + head + html.slice(headIdx)
+    : html.slice(0, headIdx) + head + html.slice(headIdx, xsIdx) + scriptTag + html.slice(xsIdx);
 }
 
 function serializeFragmentAssets(key, boundaryModules, context) {
@@ -1349,28 +1391,6 @@ function renderInlineStyle(entry, nonce) {
     entry.id,
     true
   )}"${attrs}>${escapeStyleContent(entry.content)}</style>`;
-}
-
-function injectInlineStyles(inlineStyles, html, nonce) {
-  if (!inlineStyles.size) return html;
-  const index = html.indexOf("</head>");
-  if (index === -1) return html;
-  let out = "";
-  for (const entry of inlineStyles.values()) {
-    if (entry.emitted) continue;
-    entry.emitted = true;
-    out += renderInlineStyle(entry, nonce);
-  }
-  return out ? html.slice(0, index) + out + html.slice(index) : html;
-}
-
-function injectScripts(html, scripts, nonce) {
-  const tag = `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>`;
-  const index = html.indexOf("<!--xs-->");
-  if (index > -1) {
-    return html.slice(0, index) + tag + html.slice(index);
-  }
-  return html + tag;
 }
 
 function waitForFragments(registry, key) {
