@@ -28,8 +28,11 @@ import {
   extractBody,
   getHeadersAndBody,
   getServerFunctionsCodec,
+  getStaticCacheKey,
   isServerFunction,
   serializeStream,
+  serializeString,
+  staticArtifactName,
   withMeta
 } from "./shared.js";
 
@@ -58,7 +61,8 @@ const config = {
   transformResult: undefined,
   transformDirectResult: undefined,
   handleNoJS: undefined,
-  endpoint: "/_server"
+  endpoint: "/_server",
+  staticCache: undefined
 };
 
 /**
@@ -72,6 +76,13 @@ const config = {
  * SSR calls, `endpoint` is where the handler is mounted (used for the `url`
  * of SSR'd references, e.g. form actions — must match the client's), and
  * `codec` must match the client's (stored in the shared layer).
+ *
+ * `staticCache` is the prerender capture seam for static server functions
+ * (see `staticFunction`): configured only by prerender tooling, its
+ * `set(entry)` receives one entry per settled static-declared call —
+ * `payload` is the framed codec string the production client will decode,
+ * `filename` the artifact name to write it under (`key` plus `.txt`).
+ * Without one, static declarations add zero capture overhead.
  */
 export function configureServerFunctionsServer({
   provideEvent,
@@ -80,7 +91,8 @@ export function configureServerFunctionsServer({
   transformDirectResult,
   handleNoJS,
   endpoint,
-  codec
+  codec,
+  staticCache
 } = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
   if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
@@ -89,6 +101,7 @@ export function configureServerFunctionsServer({
   if (handleNoJS !== undefined) config.handleNoJS = handleNoJS;
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
+  if (staticCache !== undefined) config.staticCache = staticCache;
 }
 
 function provideEvent(event, fn) {
@@ -108,6 +121,10 @@ const REGISTRATIONS = new Map();
 // can gate GET dispatch — a GET request to a function that never declared
 // it answers 405. Declaring GET grants GET without revoking POST.
 const METHODS = new Map();
+// Static-declared function ids (the server half of `staticFunction` records
+// them): capture only ever fires for these — a configured staticCache must
+// not start snapshotting ordinary calls.
+const STATICS = new Set();
 
 export function registerServerFunction(id, callback) {
   REGISTRATIONS.set(id, callback);
@@ -131,6 +148,42 @@ export function getServerFunction(id) {
 export function registerServerReference(id, fn, name) {
   registerServerFunction(id, fn);
   return { id, fn, name };
+}
+
+// Prerender capture for static-declared functions: serialize the settled
+// value exactly as the live wire would — the framed codec string the
+// production client decodes byte-for-byte — and hand it to the configured
+// cache writer under the call's static cache key. Only plain values can
+// ride a static file: thrown errors never reach here, and Response /
+// ResponseEnvelope results carry HTTP metadata an artifact cannot, so they
+// are skipped (loudly in development — a static declaration answering with
+// response metadata is worth surfacing during the build). Capture must
+// never break the call it observes: serialization is awaited because the
+// payload has to be complete before the writer sees it, but every failure
+// in here only warns.
+async function captureStaticResult(id, args, value) {
+  const cache = config.staticCache;
+  if (!cache || !STATICS.has(id)) return;
+  if (value instanceof Response || isResponseEnvelope(value)) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        `Static server function "${id}" produced a ` +
+          `${value instanceof Response ? "Response" : "ResponseEnvelope"} — HTTP metadata ` +
+          "cannot ride a static artifact, so the result was not captured."
+      );
+    }
+    return;
+  }
+  try {
+    const codec = getServerFunctionsCodec();
+    const payload = await serializeString(value, codec);
+    const key = await getStaticCacheKey(id, args, codec);
+    await cache.set({ id, key, filename: staticArtifactName(key), payload, args, value });
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`Failed to capture static artifact for server function "${id}":`, error);
+    }
+  }
 }
 
 /**
@@ -169,10 +222,23 @@ export function createServerReference({ id, fn, name }) {
       // pass their settled value through the configured policy (e.g. frames
       // wrapping a function result as an inline-renderable server component).
       const transform = config.transformDirectResult;
-      if (transform && result && typeof result.then === "function") {
-        return result.then(value => transform(value, { id, event: evt }));
+      // Prerender capture (the main path — prerendered pages call their
+      // static functions in-process). It observes the same value the caller
+      // receives and rejections bypass it entirely — thrown errors are
+      // never cached.
+      const capture = config.staticCache && STATICS.has(id);
+      if ((transform || capture) && result && typeof result.then === "function") {
+        return result.then(async value => {
+          if (transform) value = await transform(value, { id, event: evt });
+          if (capture) await captureStaticResult(id, args, value);
+          return value;
+        });
       }
-      return transform ? transform(result, { id, event: evt }) : result;
+      const value = transform ? transform(result, { id, event: evt }) : result;
+      // a synchronous result cannot wait on the write without changing the
+      // call's shape — the capture runs detached (internally guarded)
+      if (capture) captureStaticResult(id, args, value);
+      return value;
     }
   });
 }
@@ -204,6 +270,39 @@ export function GET(fn) {
   METHODS.set(fn.id, "GET");
   // the declaration itself is a metadata write like any other
   return withMeta(fn, { method: "GET" });
+}
+
+/**
+ * Declares a static server function: a read whose results are captured to
+ * static artifacts during build-time prerendering and served as plain
+ * files in production. The server half is identity-flavored like `GET`'s —
+ * SSR calls stay in-process — but it brands
+ * `{ method: "GET", static: true }` on the metadata channel, grants GET
+ * dispatch (static implies GET: development and build-time clients call
+ * over the live GET transport), and enrolls the id for prerender capture.
+ * With a `staticCache` configured (see `configureServerFunctionsServer`),
+ * every settled call that returned a plain value is serialized to the
+ * framed wire format and handed to the cache writer under its static
+ * cache key — from in-process SSR calls and HTTP GET dispatch alike.
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getDocs = staticFunction(async (slug: string) => {
+ *   "use server";
+ *   return loadDocs(slug);
+ * });
+ * ```
+ */
+export function staticFunction(fn) {
+  if (!isServerFunction(fn) || typeof fn.id !== "string") {
+    throw new Error("staticFunction expects a server function reference");
+  }
+  METHODS.set(fn.id, "GET");
+  STATICS.add(fn.id);
+  // the declaration itself is a metadata write like any other
+  return withMeta(fn, { method: "GET", static: true });
 }
 
 /** Reads the calling server function's meta off the current request event. */
@@ -558,6 +657,15 @@ export async function handleServerFunctionRequest(request, options = {}) {
 
     if (transformResult) {
       result = await transformResult(event, result, { instance, request });
+    }
+
+    // Prerender capture for HTTP-crawled builds: a GET dispatch to a
+    // static-declared function is exactly the call the production client
+    // will replay against the artifact, so its (transformed) result is what
+    // the artifact must hold. Response/envelope results are skipped inside
+    // the capture — HTTP metadata cannot ride a static file.
+    if (config.staticCache && request.method === "GET" && STATICS.has(functionId)) {
+      await captureStaticResult(functionId, parsed, result);
     }
 
     let status = 200;
