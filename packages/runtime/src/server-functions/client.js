@@ -16,6 +16,7 @@ import {
   getFlightDataConsumer,
   getHeadersAndBody,
   getServerFunctionMetadata,
+  isJSONSafe,
   isServerFunction,
   withMeta
 } from "./shared.js";
@@ -47,28 +48,6 @@ const config = {
   responseHandler: undefined,
   serializeArgs: undefined
 };
-
-/**
- * Whether the argument list survives a `JSON.stringify` round trip
- * faithfully: JSON primitives (finite numbers only), arrays, and plain
- * objects. Anything else — Dates, Maps, typed arrays, undefined, NaN,
- * class instances — needs the codec (see `enableRichArguments`).
- */
-function isJSONSafe(value) {
-  if (value === null) return true;
-  const t = typeof value;
-  if (t === "string" || t === "boolean") return true;
-  if (t === "number") return Number.isFinite(value);
-  if (t !== "object") return false;
-  if (Array.isArray(value)) {
-    for (const v of value) if (!isJSONSafe(v)) return false;
-    return true;
-  }
-  const proto = Object.getPrototypeOf(value);
-  if (proto !== Object.prototype && proto !== null) return false;
-  for (const k in value) if (!isJSONSafe(value[k])) return false;
-  return true;
-}
 
 function serializeArguments(args) {
   if (!config.serializeArgs) {
