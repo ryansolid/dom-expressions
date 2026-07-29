@@ -31,7 +31,7 @@ import { createJSONDataTable } from "../../src/serializer";
 import { createFrame, createFrameHost } from "../../src/frame-client";
 
 describe("frameTransformResult", () => {
-  const event = { locals: { serverFunctionMeta: { id: "story#0" } } };
+  const event = { locals: { serverFunctionInvocation: { id: "story#0" } } };
 
   it("passes non-function results through untouched", async () => {
     const value = { data: 1 };

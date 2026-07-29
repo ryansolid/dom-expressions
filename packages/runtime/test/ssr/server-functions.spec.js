@@ -44,7 +44,7 @@ import {
   encodeFlashCookie,
   foldSetCookies,
   getServerFunction,
-  getServerFunctionMeta,
+  getServerFunctionInvocation,
   handleServerFunctionRequest,
   registerServerFunction,
   registerServerReference
@@ -274,7 +274,7 @@ describe("registration", () => {
   it("runs server-side callables under a derived request event", async () => {
     const seen = {};
     const fn = async () => {
-      seen.meta = getServerFunctionMeta();
+      seen.invocation = getServerFunctionInvocation();
       return "ok";
     };
     const reference = registerServerReference("meta#0", fn);
@@ -283,7 +283,7 @@ describe("registration", () => {
     const event = { request: new Request("http://localhost/"), locals: {} };
     const result = await globalThis[RequestContext].run(event, () => callable());
     expect(result).toBe("ok");
-    expect(seen.meta).toEqual({ id: "meta#0" });
+    expect(seen.invocation).toEqual({ id: "meta#0" });
   });
 
   it("rejects server-side callables outside of a request", () => {
@@ -528,16 +528,16 @@ describe("handler", () => {
     });
   });
 
-  it("provides the request event and meta during handling", async () => {
+  it("provides the request event and invocation during handling", async () => {
     const seen = {};
     registerServerFunction("meta-1", async () => {
-      seen.meta = getServerFunctionMeta();
+      seen.invocation = getServerFunctionInvocation();
       return null;
     });
     const restore = connectTransport();
     try {
       await createClientReference("meta-1")();
-      expect(seen.meta).toEqual({ id: "meta-1" });
+      expect(seen.invocation).toEqual({ id: "meta-1" });
     } finally {
       restore();
     }

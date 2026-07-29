@@ -166,7 +166,7 @@ export function createServerReference({ id, fn, name }) {
       const ogEvt = getRequestEvent();
       if (!ogEvt) throw new Error("Cannot call server function outside of a request");
       const evt = { ...ogEvt };
-      evt.locals.serverFunctionMeta = { id };
+      evt.locals.serverFunctionInvocation = { id };
       evt.serverOnly = true;
       const result = provideEvent(evt, () => {
         return fn.apply(thisArg, args);
@@ -214,10 +214,15 @@ export function GET(fn) {
   return withMeta(fn, { method: "GET" });
 }
 
-/** Reads the calling server function's meta off the current request event. */
-export function getServerFunctionMeta() {
+/**
+ * Reads the in-flight server function invocation off the current request
+ * event. Distinct from `getServerFunctionMetadata(fn)`, which reads a
+ * reference's static declaration metadata — this describes the call
+ * currently executing.
+ */
+export function getServerFunctionInvocation() {
   const event = getRequestEvent();
-  return event && event.locals.serverFunctionMeta;
+  return event && event.locals.serverFunctionInvocation;
 }
 
 function resolveFunctionId(request, url) {
@@ -603,7 +608,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
   const headers = new Headers();
   try {
     let result = await provide(event, async () => {
-      event.locals.serverFunctionMeta = { id: functionId };
+      event.locals.serverFunctionInvocation = { id: functionId };
       return serverFunction(...parsed);
     });
 
