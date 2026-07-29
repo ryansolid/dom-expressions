@@ -148,9 +148,23 @@ export function generateHydrationScript(options?: {
   eventNames?: string[];
 }): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
+/** See the server entry's `ResponseStub` — the mutable response head on a request event. */
+export interface ResponseStub {
+  status?: number;
+  statusText?: string;
+  headers: Headers;
+}
 export interface RequestEvent {
   request: Request;
+  /** The response head under construction, when the integration's handler provides one. */
+  response?: ResponseStub;
   locals: Record<string | number | symbol, any>;
+  /**
+   * Set to `true` by the integration's handler once the response head has
+   * been sent (status/headers can no longer change); consumers must treat
+   * later writes as no-ops.
+   */
+  complete?: boolean;
 }
 export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;
