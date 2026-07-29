@@ -778,6 +778,7 @@ export function renderToStream(code, options = {}) {
     drainTurn = 0;
     progressed ? queue(attempt) : setTimeout(attempt);
   };
+  let cachedReadable;
   return {
     then(fn) {
       function complete() {
@@ -864,6 +865,19 @@ export function renderToStream(code, options = {}) {
       }
       flush();
       return p;
+    },
+    get readable() {
+      if (!cachedReadable) {
+        const t = new TransformStream();
+        // Deliberately NOT awaited: pipeTo settles only after the whole
+        // render has been written, and nothing drains the readable side
+        // until it is handed back — awaiting before returning would
+        // deadlock. pipeTo already encodes chunks (TextEncoder), so the
+        // readable side yields Uint8Array bytes, Response-body ready.
+        this.pipeTo(t.writable);
+        cachedReadable = t.readable;
+      }
+      return cachedReadable;
     }
   };
 }

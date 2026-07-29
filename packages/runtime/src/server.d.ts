@@ -97,6 +97,15 @@ export function renderToStream<T>(
   then: (fn: (html: string) => void) => void;
   pipe: (writable: { write: (v: string) => void; end: () => void }) => void;
   pipeTo: (writable: WritableStream) => Promise<void>;
+  /**
+   * Lazy `ReadableStream<Uint8Array>` view of the render — hand it straight
+   * to `new Response(stream.readable)`. First access starts the render
+   * piping through an internal `TransformStream` (chunks are UTF-8 encoded
+   * bytes, the same as `pipeTo` writes) and the stream is cached, so
+   * repeated access returns the same instance. Like `pipe`/`pipeTo`, this
+   * consumes the render: use exactly one of the three.
+   */
+  readonly readable: ReadableStream<Uint8Array>;
 };
 
 export function HydrationScript(props: { nonce?: string; eventNames?: string[] }): JSX.Element;
@@ -141,13 +150,44 @@ export function generateHydrationScript(options?: {
  */
 export declare const RequestContext: unique symbol;
 /**
+ * The mutable response head an integration's handler exposes on the request
+ * event: status/statusText/headers it will apply when sending the response.
+ * A scaffold, not a `Response` — application code (e.g. JSX response
+ * components) writes to it during render, and the handler reads it when the
+ * head goes out.
+ */
+export interface ResponseStub {
+  status?: number;
+  statusText?: string;
+  headers: Headers;
+}
+
+/**
  * The per-request context available on the server: the incoming `Request`
  * and a `locals` bag integrations and middleware can hang state on.
  * Frameworks typically extend this shape with richer fields.
  */
 export interface RequestEvent {
   request: Request;
+  /**
+   * The response head under construction, when the integration's handler
+   * provides one — SSR/streaming handlers expose it so rendering code can
+   * contribute status and headers before the head is sent. Core's
+   * server-function handler reads its `Set-Cookie` headers when folding
+   * single-flight cookies but never requires it.
+   */
+  response?: ResponseStub;
   locals: Record<string | number | symbol, any>;
+  /**
+   * Set to `true` by the integration's handler once the response head has
+   * been sent — status and headers can no longer change. Consumers that
+   * write response metadata during render (e.g. JSX response components)
+   * must treat writes (and cleanup-time retractions) after `complete` as
+   * no-ops. Core's server-function handler never sets it (it returns
+   * `Response` objects synchronously with respect to the head); it exists
+   * for SSR/streaming handlers.
+   */
+  complete?: boolean;
 }
 /**
  * The current request event, when called on the server inside a request
