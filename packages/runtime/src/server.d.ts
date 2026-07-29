@@ -151,10 +151,15 @@ export function generateHydrationScript(options?: {
 export declare const RequestContext: unique symbol;
 /**
  * The mutable response head an integration's handler exposes on the request
- * event: status/statusText/headers it will apply when sending the response.
- * A scaffold, not a `Response` — application code (e.g. JSX response
- * components) writes to it during render, and the handler reads it when the
- * head goes out.
+ * event as `event.response`: status/statusText/headers it will apply when
+ * sending the response. A scaffold, not a `Response` — application code
+ * (e.g. JSX response components) writes to it during render, and the
+ * handler reads it when the head goes out. Core does not declare the
+ * `response` property on `RequestEvent` itself: integrations that provide
+ * one declare it through module augmentation (as `@solidjs/router` does),
+ * and this type names the shape they agree on. Core's server-function
+ * handler reads its `Set-Cookie` headers when folding single-flight
+ * cookies but never requires it.
  */
 export interface ResponseStub {
   status?: number;
@@ -165,18 +170,11 @@ export interface ResponseStub {
 /**
  * The per-request context available on the server: the incoming `Request`
  * and a `locals` bag integrations and middleware can hang state on.
- * Frameworks typically extend this shape with richer fields.
+ * Frameworks typically extend this shape with richer fields (e.g. a
+ * `response` head — see `ResponseStub`).
  */
 export interface RequestEvent {
   request: Request;
-  /**
-   * The response head under construction, when the integration's handler
-   * provides one — SSR/streaming handlers expose it so rendering code can
-   * contribute status and headers before the head is sent. Core's
-   * server-function handler reads its `Set-Cookie` headers when folding
-   * single-flight cookies but never requires it.
-   */
-  response?: ResponseStub;
   locals: Record<string | number | symbol, any>;
   /**
    * Set to `true` by the integration's handler once the response head has

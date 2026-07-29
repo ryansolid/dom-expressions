@@ -148,7 +148,10 @@ export function generateHydrationScript(options?: {
   eventNames?: string[];
 }): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
-/** See the server entry's `ResponseStub` — the mutable response head on a request event. */
+/**
+ * See the server entry's `ResponseStub` — the shape of the mutable response
+ * head integrations expose as `event.response` via module augmentation.
+ */
 export interface ResponseStub {
   status?: number;
   statusText?: string;
@@ -156,8 +159,6 @@ export interface ResponseStub {
 }
 export interface RequestEvent {
   request: Request;
-  /** The response head under construction, when the integration's handler provides one. */
-  response?: ResponseStub;
   locals: Record<string | number | symbol, any>;
   /**
    * Set to `true` by the integration's handler once the response head has
