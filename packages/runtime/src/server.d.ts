@@ -103,7 +103,9 @@ export function renderToStream<T>(
    * piping through an internal `TransformStream` (chunks are UTF-8 encoded
    * bytes, the same as `pipeTo` writes) and the stream is cached, so
    * repeated access returns the same instance. Like `pipe`/`pipeTo`, this
-   * consumes the render: use exactly one of the three.
+   * consumes the render: use exactly one of the three — mixing distinct
+   * consumers (`readable` after `pipe`/`pipeTo`, or vice versa) throws an
+   * error naming the conflict.
    */
   readonly readable: ReadableStream<Uint8Array>;
 };

@@ -86,6 +86,76 @@ describe("renderToStream readable", () => {
     expect(stream.readable).toBe(first);
   });
 
+  it("throws when pipe/pipeTo follow a readable claim", async () => {
+    const viaPipe = r.renderToStream(Comp);
+    const readable = viaPipe.readable;
+    expect(() => viaPipe.pipe({ write() {}, end() {} })).toThrow(
+      "renderToStream result was already consumed via `readable`; cannot also consume it via `pipe`."
+    );
+
+    const viaPipeTo = r.renderToStream(Comp);
+    void viaPipeTo.readable;
+    expect(() => viaPipeTo.pipeTo(new WritableStream())).toThrow(
+      "renderToStream result was already consumed via `readable`; cannot also consume it via `pipeTo`."
+    );
+
+    // the original claim keeps working
+    expect(concatToString(await readAllBytes(readable))).toBe(fixture);
+  });
+
+  it("throws when readable follows a pipe/pipeTo claim", async () => {
+    const viaPipe = r.renderToStream(Comp);
+    viaPipe.pipe({ write() {}, end() {} });
+    expect(() => viaPipe.readable).toThrow(
+      "renderToStream result was already consumed via `pipe`; cannot also consume it via `readable`."
+    );
+
+    const viaPipeTo = r.renderToStream(Comp);
+    const piped = viaPipeTo.pipeTo(new WritableStream({ write() {} }));
+    expect(() => viaPipeTo.readable).toThrow(
+      "renderToStream result was already consumed via `pipeTo`; cannot also consume it via `readable`."
+    );
+    await piped;
+  });
+
+  it("survives cancellation of the readable", async () => {
+    const unhandled = [];
+    const onUnhandled = reason => unhandled.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      const stream = asyncComp().readable;
+      const reader = stream.getReader();
+      await reader.read();
+      await reader.cancel("client went away");
+      // Let the rest of the render (the late hole) settle against the
+      // cancelled stream.
+      await new Promise(resolve => setTimeout(resolve, 20));
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+    expect(unhandled).toEqual([]);
+  });
+
+  it("survives a failing pipeTo sink", async () => {
+    const unhandled = [];
+    const onUnhandled = reason => unhandled.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      const settled = await asyncComp().pipeTo(
+        new WritableStream({
+          write() {
+            throw new Error("sink failed");
+          }
+        })
+      );
+      expect(settled).toBeUndefined();
+      await new Promise(resolve => setTimeout(resolve, 20));
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+    expect(unhandled).toEqual([]);
+  });
+
   it("streams async content resolved after the shell", async () => {
     const html = concatToString(await readAllBytes(asyncComp().readable));
     expect(html).toContain("<div>");
