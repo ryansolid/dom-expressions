@@ -13,15 +13,10 @@ import {
   SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
   decodeResponse,
-  deserializeStream,
   getFlightDataConsumer,
   getHeadersAndBody,
   getServerFunctionMetadata,
-  getServerFunctionsCodec,
-  getStaticCacheKey,
-  isJSONSafe,
   isServerFunction,
-  staticArtifactName,
   withMeta
 } from "./shared.js";
 
@@ -61,11 +56,32 @@ export { REVALIDATE_HEADER } from "../response.js";
 
 const config = {
   endpoint: "/_server",
-  staticEndpoint: "/_server-static",
   prepareRequest: undefined,
   responseHandler: undefined,
   serializeArgs: undefined
 };
+
+/**
+ * Whether the argument list survives a `JSON.stringify` round trip
+ * faithfully: JSON primitives (finite numbers only), arrays, and plain
+ * objects. Anything else — Dates, Maps, typed arrays, undefined, NaN,
+ * class instances — needs the codec (see `enableRichArguments`).
+ */
+function isJSONSafe(value) {
+  if (value === null) return true;
+  const t = typeof value;
+  if (t === "string" || t === "boolean") return true;
+  if (t === "number") return Number.isFinite(value);
+  if (t !== "object") return false;
+  if (Array.isArray(value)) {
+    for (const v of value) if (!isJSONSafe(v)) return false;
+    return true;
+  }
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return false;
+  for (const k in value) if (!isJSONSafe(value[k])) return false;
+  return true;
+}
 
 function serializeArguments(args) {
   if (!config.serializeArgs) {
@@ -83,13 +99,11 @@ function serializeArguments(args) {
 
 /**
  * Configures the transport before any server function is called: the
- * endpoint the server handler is mounted on, the `staticEndpoint`
- * production `staticFunction` artifacts are served from (default
- * `/_server-static` — must match where the prerender build wrote them),
- * the codec options (extra plugins etc. — must match the server's; stored
- * in the shared layer so `decodeResponse` sees them too), and the
- * `prepareRequest` hook applied to every outgoing server-function fetch
- * (session-dynamic transport policy — bearer tokens, tracing headers).
+ * endpoint the server handler is mounted on, the codec options (extra
+ * plugins etc. — must match the server's; stored in the shared layer so
+ * `decodeResponse` sees them too), and the `prepareRequest` hook applied
+ * to every outgoing server-function fetch (session-dynamic transport
+ * policy — bearer tokens, tracing headers).
  *
  * `responseHandler` is the response-side integration seam — the client
  * mirror of the handler's `transformResult`. `handle(response, ctx)` sees
@@ -101,14 +115,12 @@ function serializeArguments(args) {
  */
 export function configureServerFunctionsClient({
   endpoint,
-  staticEndpoint,
   codec,
   prepareRequest,
   responseHandler,
   serializeArgs
 } = {}) {
   if (endpoint !== undefined) config.endpoint = endpoint;
-  if (staticEndpoint !== undefined) config.staticEndpoint = staticEndpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
   if (prepareRequest !== undefined) config.prepareRequest = prepareRequest;
   if (responseHandler !== undefined) config.responseHandler = responseHandler;
@@ -399,90 +411,6 @@ export function GET(fn) {
   });
   // the declaration itself is a metadata write like any other
   return withMeta(wrapped, { method: "GET" });
-}
-
-/**
- * Declares a static server function: a read whose results were captured to
- * static artifacts during build-time prerendering and are served as plain
- * files in production — no server function runs at request time. In
- * development the reference behaves exactly like a `GET(fn)` declaration
- * (a live GET request), so iteration never waits on an artifact build; in
- * production a call derives its cache key from the function id and
- * arguments, fetches `${staticEndpoint}/{key}.txt` as a plain asset (no
- * server-function headers, no `prepareRequest` — nothing answers but a
- * file server), and decodes the framed payload. A missing artifact
- * THROWS: the `(function, arguments)` pair was never executed during
- * prerendering, which is a build coverage error to surface loudly, not a
- * case to quietly fall back to a live call the deployment may not even
- * serve.
- *
- * The declaration is recorded on the metadata channel
- * (`getServerFunctionMetadata(fn).static === true`, `method: "GET"`) for
- * routers and integrations to read, and composes with `withMeta` in
- * either order.
- *
- * Wrap the reference at its declaration; the compiler round-trips the
- * call in both builds:
- *
- * ```ts
- * export const getDocs = staticFunction(async (slug: string) => {
- *   "use server";
- *   return loadDocs(slug);
- * });
- * ```
- */
-export function staticFunction(fn) {
-  if (!isServerFunction(fn)) {
-    throw new Error("staticFunction expects a server function reference");
-  }
-  const id = fn.id;
-  // the static callable inherits the source reference's declared metadata
-  // (withMeta composes with staticFunction in either order)
-  const metadata = { ...getServerFunctionMetadata(fn) };
-  const wrapped = async (...args) => {
-    const handler = config.responseHandler;
-    if (handler && handler.intercept) {
-      const hit = handler.intercept({ id, meta: metadata, args });
-      if (hit !== undefined) return hit;
-    }
-    // Development: identical to the GET wrapper — a live GET request —
-    // so no prerender pass stands between an edit and the next call.
-    if (process.env.NODE_ENV !== "production") {
-      let base = `${config.endpoint}?id=${encodeURIComponent(id)}`;
-      if (args.length) {
-        // The handler's GET path accepts both encodings: plain JSON and the
-        // codec's framed string (distinguished by the `;0x` frame prefix).
-        const encoded = isJSONSafe(args) ? JSON.stringify(args) : await serializeArguments(args);
-        base += `&args=${encodeURIComponent(encoded)}`;
-      }
-      return fetchServerFunction(base, id, { method: "GET" }, [], metadata);
-    }
-    // Production: a plain asset fetch. The key derivation mirrors the
-    // capturing server's exactly, and the artifact body is the framed
-    // codec string the live wire would have carried.
-    const codec = getServerFunctionsCodec();
-    const key = await getStaticCacheKey(id, args, codec);
-    const response = await fetch(`${config.staticEndpoint}/${staticArtifactName(key)}`);
-    if (!response.ok) {
-      throw new Error(
-        `Missing static artifact for server function "${id}" (key "${key}", ` +
-          `HTTP ${response.status}). This (function, arguments) pair was never ` +
-          "executed during prerendering — the prerender pass must cover every " +
-          "static call the client replays."
-      );
-    }
-    return await deserializeStream(response, codec);
-  };
-  wrapped[SERVER_FUNCTION_METADATA] = metadata;
-  wrapped.id = id;
-  // lazy like the base proxy's: the endpoint may be configured after the
-  // module-scope staticFunction(...) call runs
-  Object.defineProperty(wrapped, "url", {
-    get: () => `${config.endpoint}?id=${encodeURIComponent(id)}`,
-    configurable: true
-  });
-  // the declaration itself is a metadata write like any other
-  return withMeta(wrapped, { method: "GET", static: true });
 }
 
 // Only ever referenced by server-mode compiler output; present so a
