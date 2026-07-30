@@ -778,6 +778,65 @@ export function renderToStream(code, options = {}) {
     drainTurn = 0;
     progressed ? queue(attempt) : setTimeout(attempt);
   };
+  let cachedReadable;
+  // Which consumer has claimed the render. `pipe`/`pipeTo` hand the render
+  // to a sink and `readable` builds one internally — mixing them would
+  // silently split (and corrupt) the output, so the conflict throws instead.
+  let consumer;
+  const claimConsumer = name => {
+    if (consumer && consumer !== name) {
+      throw new Error(
+        `renderToStream result was already consumed via \`${consumer}\`; cannot also consume it via \`${name}\`. Use exactly one of \`pipe\`, \`pipeTo\`, or \`readable\`.`
+      );
+    }
+    consumer = name;
+  };
+  const pipeToImpl = w => {
+    let resolve;
+    const p = new Promise(r => (resolve = r));
+    function flush() {
+      allSettled(blockingPromises).then(() => {
+        scheduleFlush(() => {
+          doShell();
+          if (!shellCompleted) return flush();
+          const encoder = new TextEncoder();
+          const writer = w.getWriter();
+          // Writes are chained and awaited before the lock is released.
+          // `writer.write()` returns a promise, and releasing the lock (or
+          // closing) with one still in flight leaves that chunk's fate up to
+          // the host's stream implementation — Node queues it anyway, workerd
+          // drops it. The chunk at risk is the last one written, which for a
+          // streamed boundary is its `_fr` resolution; losing that leaves the
+          // client's boundary waiting on a promise that never resolves.
+          let pendingWrites = Promise.resolve();
+          writable = {
+            end() {
+              pendingWrites.then(() => {
+                writer.releaseLock();
+                w.close().catch(() => {});
+                resolve();
+              });
+            }
+          };
+          buffer = {
+            write(payload) {
+              pendingWrites = pendingWrites
+                .then(() => writer.write(encoder.encode(payload)))
+                .catch(() => {});
+            }
+          };
+          buffer.write(tmp);
+          firstFlushed = true;
+          if (completed) {
+            dispose();
+            writable.end();
+          } else flushEnd();
+        });
+      });
+    }
+    flush();
+    return p;
+  };
   return {
     then(fn) {
       function complete() {
@@ -802,6 +861,7 @@ export function renderToStream(code, options = {}) {
       flush();
     },
     pipe(w) {
+      claimConsumer("pipe");
       function flush() {
         allSettled(blockingPromises).then(() => {
           scheduleFlush(() => {
@@ -820,50 +880,22 @@ export function renderToStream(code, options = {}) {
       flush();
     },
     pipeTo(w) {
-      let resolve;
-      const p = new Promise(r => (resolve = r));
-      function flush() {
-        allSettled(blockingPromises).then(() => {
-          scheduleFlush(() => {
-            doShell();
-            if (!shellCompleted) return flush();
-            const encoder = new TextEncoder();
-            const writer = w.getWriter();
-            // Writes are chained and awaited before the lock is released.
-            // `writer.write()` returns a promise, and releasing the lock (or
-            // closing) with one still in flight leaves that chunk's fate up to
-            // the host's stream implementation — Node queues it anyway, workerd
-            // drops it. The chunk at risk is the last one written, which for a
-            // streamed boundary is its `_fr` resolution; losing that leaves the
-            // client's boundary waiting on a promise that never resolves.
-            let pendingWrites = Promise.resolve();
-            writable = {
-              end() {
-                pendingWrites.then(() => {
-                  writer.releaseLock();
-                  w.close().catch(() => {});
-                  resolve();
-                });
-              }
-            };
-            buffer = {
-              write(payload) {
-                pendingWrites = pendingWrites
-                  .then(() => writer.write(encoder.encode(payload)))
-                  .catch(() => {});
-              }
-            };
-            buffer.write(tmp);
-            firstFlushed = true;
-            if (completed) {
-              dispose();
-              writable.end();
-            } else flushEnd();
-          });
-        });
+      claimConsumer("pipeTo");
+      return pipeToImpl(w);
+    },
+    get readable() {
+      claimConsumer("readable");
+      if (!cachedReadable) {
+        const t = new TransformStream();
+        // Deliberately NOT awaited: the pipe settles only after the whole
+        // render has been written, and nothing drains the readable side
+        // until it is handed back — awaiting before returning would
+        // deadlock. The pipe already encodes chunks (TextEncoder), so the
+        // readable side yields Uint8Array bytes, Response-body ready.
+        pipeToImpl(t.writable);
+        cachedReadable = t.readable;
       }
-      flush();
-      return p;
+      return cachedReadable;
     }
   };
 }

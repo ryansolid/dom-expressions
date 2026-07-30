@@ -148,6 +148,21 @@ export function generateHydrationScript(options?: {
   eventNames?: string[];
 }): string;
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
+/**
+ * See the server entry's `ResponseStub` — the shape of the mutable response
+ * head integrations expose as `event.response` via module augmentation.
+ */
+export interface ResponseStub {
+  status?: number;
+  statusText?: string;
+  headers: Headers;
+  /**
+   * Set by the integration once the response head has been derived/sent
+   * from this stub (status/headers can no longer change); consumers must
+   * treat later writes and cleanup-time retractions as no-ops.
+   */
+  committed?: boolean;
+}
 export interface RequestEvent {
   request: Request;
   locals: Record<string | number | symbol, any>;

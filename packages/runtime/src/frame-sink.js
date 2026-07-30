@@ -87,6 +87,7 @@ import {
   frameAddress,
   serializeStream
 } from "./server-functions/shared.js";
+import { getEventServerFunctionInvocation } from "./server-functions/server.js";
 import { isResponseEnvelope } from "./response.js";
 import {
   FRAME_STREAM_HEADER,
@@ -896,8 +897,12 @@ export function frameTransformResult(event, result, context) {
   }
   if (typeof result !== "function") return result;
   if (context && context.collectsFlight) return init ? { response: init, value: result } : result;
-  const meta = event && event.locals && event.locals.serverFunctionMeta;
-  return serverComponentResponse(result, { frame: { id: (meta && meta.id) || "" } }, init);
+  const invocation = getEventServerFunctionInvocation(event);
+  return serverComponentResponse(
+    result,
+    { frame: { id: (invocation && invocation.id) || "" } },
+    init
+  );
 }
 
 /**
@@ -950,11 +955,13 @@ export async function frameTransformFlightResult(event, outcome, context) {
       }
     }
   }
-  const meta = event && event.locals && event.locals.serverFunctionMeta;
+  const invocation = getEventServerFunctionInvocation(event);
   // The called function's own markup keeps the function id as its address,
   // the same boundary a non-flight call targets.
   const primary =
-    typeof value === "function" ? { id: (meta && meta.id) || "", component: value } : undefined;
+    typeof value === "function"
+      ? { id: (invocation && invocation.id) || "", component: value }
+      : undefined;
   if (!primary && !regions.length) return undefined;
   return frameFlightResponse({
     primary,

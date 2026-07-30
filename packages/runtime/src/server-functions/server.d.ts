@@ -32,8 +32,9 @@ import { ServerFunction } from "./shared.js";
 
 /**
  * The request event a server function call runs under: the base
- * `RequestEvent` (request + locals) plus `serverOnly`, set when the call is
- * an in-process SSR invocation whose result never serializes to a client.
+ * `RequestEvent` (request + locals) with `serverOnly` added, set when the
+ * call is an in-process SSR invocation whose result never serializes to a
+ * client.
  */
 export interface ServerFunctionEvent extends RequestEvent {
   serverOnly?: boolean;
@@ -356,17 +357,33 @@ export function GET<A extends readonly any[], R>(
   fn: (...args: A) => R
 ): ServerFunction<A, Awaited<R>>;
 
-/** Identity of the currently executing server function. */
-export interface ServerFunctionMeta {
+/** Identity of the currently executing server function call. */
+export interface ServerFunctionInvocation {
   id: string;
 }
 
 /**
- * Reads the calling server function's meta (its id) off the current request
- * event — usable inside a server function body, e.g. to key caches or logs
- * by function. Returns undefined outside a server function call.
+ * Reads the in-flight server function invocation (its id) for the current
+ * request event — usable inside a server function body, e.g. to key caches
+ * or logs by function. Returns undefined outside a server function call.
+ * The state lives in a module-private WeakMap keyed by the per-call request
+ * event (never in `event.locals`, which derived events share with their
+ * outer event). Distinct from `getServerFunctionMetadata(fn)`, which reads
+ * a reference's static declaration metadata; this describes the call
+ * currently executing.
  */
-export function getServerFunctionMeta(): ServerFunctionMeta | undefined;
+export function getServerFunctionInvocation(): ServerFunctionInvocation | undefined;
+
+/**
+ * The event-keyed half of `getServerFunctionInvocation`, for callers handed
+ * an event outside its provideEvent scope (the handler's result transforms
+ * run after the scope has exited). Integration plumbing — application code
+ * reads the ambient accessor instead.
+ * @internal
+ */
+export function getEventServerFunctionInvocation(
+  event: RequestEvent | undefined
+): ServerFunctionInvocation | undefined;
 
 /**
  * Hooks layering framework policy onto `handleServerFunctionRequest`.

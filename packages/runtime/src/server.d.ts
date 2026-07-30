@@ -97,6 +97,17 @@ export function renderToStream<T>(
   then: (fn: (html: string) => void) => void;
   pipe: (writable: { write: (v: string) => void; end: () => void }) => void;
   pipeTo: (writable: WritableStream) => Promise<void>;
+  /**
+   * Lazy `ReadableStream<Uint8Array>` view of the render — hand it straight
+   * to `new Response(stream.readable)`. First access starts the render
+   * piping through an internal `TransformStream` (chunks are UTF-8 encoded
+   * bytes, the same as `pipeTo` writes) and the stream is cached, so
+   * repeated access returns the same instance. Like `pipe`/`pipeTo`, this
+   * consumes the render: use exactly one of the three — mixing distinct
+   * consumers (`readable` after `pipe`/`pipeTo`, or vice versa) throws an
+   * error naming the conflict.
+   */
+  readonly readable: ReadableStream<Uint8Array>;
 };
 
 export function HydrationScript(props: { nonce?: string; eventNames?: string[] }): JSX.Element;
@@ -141,9 +152,36 @@ export function generateHydrationScript(options?: {
  */
 export declare const RequestContext: unique symbol;
 /**
+ * The mutable response head an integration's handler exposes on the request
+ * event as `event.response`: status/statusText/headers it will apply when
+ * sending the response. A scaffold, not a `Response` — application code
+ * (e.g. JSX response components) writes to it during render, and the
+ * handler reads it when the head goes out. Core does not declare the
+ * `response` property on `RequestEvent` itself: integrations that provide
+ * one declare it through module augmentation (as `@solidjs/router` does),
+ * and this type names the shape they agree on. Core's server-function
+ * handler reads its `Set-Cookie` headers when folding single-flight
+ * cookies but never requires it.
+ */
+export interface ResponseStub {
+  status?: number;
+  statusText?: string;
+  headers: Headers;
+  /**
+   * Set by the integration once the response head has been derived/sent
+   * from this stub — status and headers can no longer change. Consumers
+   * that write response metadata during render (e.g. JSX response
+   * components) must treat later status/header writes and cleanup-time
+   * retractions as no-ops.
+   */
+  committed?: boolean;
+}
+
+/**
  * The per-request context available on the server: the incoming `Request`
  * and a `locals` bag integrations and middleware can hang state on.
- * Frameworks typically extend this shape with richer fields.
+ * Frameworks typically extend this shape with richer fields (e.g. a
+ * `response` head — see `ResponseStub`).
  */
 export interface RequestEvent {
   request: Request;
