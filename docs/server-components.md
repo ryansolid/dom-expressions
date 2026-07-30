@@ -29,11 +29,15 @@ Three sentences carry the whole design:
    `{props.children}`, it emits a marked range in the HTML, nothing more.
    The client decides what lives there, and whatever it puts there survives
    every server update.
-3. **The client owns boundaries.** A server component renders into a frame —
-   a region of the page addressed by a client-chosen id. Re-fetching into
-   the same id *morphs* the server content in place; it never remounts, so
+3. **A boundary is a call.** A server component renders into a frame
+   addressed by the call that produced it — the function and its arguments,
+   the same per-args rule a query cache keys values by. Re-fetching the
+   same call *morphs* the server content in place; it never remounts, so
    client state inside the boundary (focus, input values, toggles, video
-   playback) persists across navigations.
+   playback) survives refreshes and revalidations. Different arguments are
+   a different boundary: the call site swaps to it — re-materialized
+   instantly from retained state when that call has shown before — rather
+   than morphing one boundary across calls.
 
 ## Writing a server component
 
@@ -136,11 +140,11 @@ function StoryPage(props) {
   const [collapsedAll, setCollapsedAll] = createSignal(false);
 
   // The source is tracked: when props.storyId changes it re-calls the
-  // server function. The call resolves to a STABLE component for this
-  // boundary — every response for the same boundary resolves to the same
-  // reference — so dynamic's equals-gate sees nothing new and nothing
-  // remounts. The real update rides the stream: server content morphs in
-  // place underneath.
+  // server function. Every call for the same (function, args) resolves to
+  // the IDENTICAL component — a refetch passes dynamic's equals-gate, so
+  // nothing remounts and the stream morphs the boundary in place. A new
+  // storyId resolves that story's own boundary and the site swaps to it,
+  // seeded from retained content when the story has shown before.
   const Story = dynamic(() => getStory(props.storyId));
 
   return (
@@ -151,7 +155,7 @@ function StoryPage(props) {
         </CollapsibleComment>
       )}
     >
-      <ShareBar /* client-only, persists across every story */ />
+      <ShareBar /* client-only; remounts with the boundary when the story changes */ />
     </Story>
   );
 }
@@ -161,18 +165,22 @@ Things to notice:
 
 - **Navigation is just a prop change.** No router ceremony required at
   this layer: the parent (or a router) changes `storyId`, the source
-  re-fetches, the boundary morphs. And because the `dynamic()` lives
-  inside `StoryPage`, each instance of the page is its own boundary —
-  render two story panes and they're independent, with nothing declared.
+  re-calls, and the site shows that story's boundary. Two panes on
+  *different* stories are independent boundaries with nothing declared;
+  two panes on the *same* story share one logical stream that fans out to
+  both mounts, each with its own slots.
 - **`collapsedAll` never leaves the browser.** The request that fetches a
-  story carries the story id and nothing else. This client-only state
-  affects the current story and every future one this pane navigates to,
-  and the server cannot see it.
+  story carries the story id and nothing else. It lives *outside* the
+  boundary, so it survives every navigation; state *inside* a boundary
+  belongs to its call — story 1's collapse toggles never leak into
+  story 2's UI.
 - **First load composes with `<Loading>`; refetches don't re-fallback.**
   The initial call is a pending promise like any `lazy` component. A
-  refetch resolves to the same component reference, so the swap is
-  invisible to the tree — the only observable effect is the server content
-  updating.
+  same-args refetch resolves to the same component reference, so the swap
+  is invisible to the tree — the only observable effect is the server
+  content updating. An args change resolves under the same transition
+  machinery as any component swap, and lands instantly when cache and
+  retained content are warm.
 
 The trick making this zero-API is a transport policy, the mirror of the
 server's `frameTransformResult`: when the client's server-function runtime
@@ -182,22 +190,30 @@ That component does the mounting work at its one and only mount: create
 the boundary element (or claim the server-rendered one at hydration),
 register its props as the boundary's slots, dispose on cleanup.
 
-Boundary identity is **derived, never declared**, and it lives in two
-layers. On the wire, content is addressed by what the server naturally
-knows: the function and its arguments — one logical stream per (function,
-args). On the client, every call captures the reactive owner it was made
-under — per *call*, not per network fetch, so caching layers that dedupe
-requests don't hide it — and that owner binds the call site's boundary to
-the logical stream it asked for. The owner is stable across refetches of
-one source and unique per call site, so: a param navigation (same owner,
-new args) keeps the same component reference — nothing remounts — and
-rebinds the boundary to the new stream, morphing in place; two
-`dynamic()`s over one function get independent boundaries with nothing to
-spell; one component mounted in two places fans its stream out to both
-instances, each with its own slots. Imperative calls outside any reactive
-scope just warm content, binding nothing.
+Boundary identity is **derived, never declared**, and there is exactly one
+scheme: the call's intrinsic address — the function and its arguments, the
+one name both peers compute independently. One logical stream per
+(function, args) on the wire; one boundary component per address on the
+client. Everything else falls out mechanically. A repeat call — refetch,
+revalidation, preload, cache read — resolves the identical component, so
+equals-gated readers hold and the stream morphs the showing boundary in
+place. Different arguments resolve a different boundary, so a hover
+preload for another entity streams off-screen (buffered until something
+mounts it) rather than morphing what the page is showing. One component
+mounted in two places fans its stream out to both frames, each with its
+own slots. And because the host **retains an unmounted boundary's state**
+— the store is stashed when the last frame under an address unregisters
+and seeds the next mount — a call answered entirely from a client cache
+(no request, no stream) still renders what that call last showed,
+instantly. Freshness stays the data layer's business: a stale cache read
+refetches, and the stream morphs over the re-materialized content.
 (`applyFrameResponse(response, host, { as })` remains the low-level
 surface routers can drive directly.)
+
+This is deliberately the same rule a query cache uses to key values, so
+cached components and boundaries stay one-to-one by construction — a
+cached value never resolves a boundary that is showing some *other* call's
+content.
 
 ### The data layer is the same data layer
 
@@ -208,15 +224,21 @@ own:
 - **Wrap the section function in `query`** and route-level `preload` warms
   it on intent — the response's chunks buffer until a boundary mounts,
   then drain. The `dynamic()` read resolves through the same cached
-  in-flight call.
+  in-flight call, and a later fresh cache hit re-materializes the boundary
+  from retained state with no request at all — back/forward navigation
+  renders like a bfcache restore.
 - **`revalidate` is granular server-content refresh**: re-running the
   query streams a fresh version to every boundary bound to that logical
   stream.
-- **Single-flight mutations generalize for free**: content is addressed by
-  (function, args), which the server knows for every section a mutation
-  invalidates — so the action response carries frames for all affected
-  sections in one round trip, and the client routes each to its bound
-  boundaries. Sections nobody currently displays are just cache warms.
+- **Single-flight mutations generalize for free** (implemented): a
+  mutation's response carries the markup for every server-component call
+  it invalidated as regions addressed by (function, args) — the name the
+  server derives from its own collection pass and the client derives from
+  the calls it made — alongside the ordinary `{ value, data }` envelope,
+  whose component-valued entries ride as references resolving to the very
+  components those boundaries hold. One round trip settles the mutation's
+  value, the data, and the UI; sections nobody currently displays buffer
+  as cache warms.
 
 Preloading, deduping, invalidation, and mutation single-flight need no
 server-component-specific mechanism or API.
@@ -318,9 +340,15 @@ must not break:
    page rather than re-sent.)
 2. **Hydration is t = 0 only.** Never design a flow where the server renders
    a client component after the page is interactive.
-3. **Boundary identity belongs to the client.** A boundary is a client-named
-   frame id. Same id ⇒ morph in place ⇒ client state inside survives.
-   Different id ⇒ independent boundary. Choose ids like you choose keys.
+3. **Boundary identity is the call.** A boundary is named by its
+   (function, arguments) address, which both peers derive independently —
+   nobody declares ids, and a data layer's per-args cache keys agree with
+   the transport's boundaries by construction. Same call ⇒ same component
+   ⇒ morph in place ⇒ client state inside survives. Different arguments ⇒
+   independent boundary, swapped in at the call site. Boundary state
+   outlives any one mount: the host retains an unmounted boundary's store,
+   so a remount (a cache hit with no new stream) re-materializes what the
+   call last showed instead of rendering blank.
 4. **Occurrence identity belongs to keys.** Iterated client positions keyed
    by entity id keep their state across refetches; unkeyed positions are
    positional.
@@ -330,14 +358,16 @@ must not break:
 
 ### What a router does with this
 
-A router integration is thin by design: give each outlet a stable frame id;
-translate URL changes into server-function calls; let a `dynamic` source
-(or `applyFrameResponse(response, host, { as })` directly) stream the
-result into the outlet's id. Back/forward is a re-fetch
-into the same id — state inside the boundary survives because of invariant
-3, not because the router did anything. Scroll restoration, pending UI, and
-prefetching compose on top; none of them need to know how frames work
-inside.
+A router integration is thin by design: translate URL changes into
+server-function calls and let a `dynamic` source (or
+`applyFrameResponse(response, host, { as })` directly) read them — the
+router names nothing, because the calls themselves name the boundaries
+(invariant 3). Wrapping the section functions in the router's `query`
+gives the same calls cache identity and preload participation; back/forward
+that hits a fresh cache entry re-materializes the boundary from retained
+state with no request, and a stale hit refetches and morphs. Scroll
+restoration, pending UI, and prefetching compose on top; none of them need
+to know how frames work inside.
 
 **Link state rides the element-claim contract.** Compiled client output
 claims `a[href]`/`form[action]` per element at creation

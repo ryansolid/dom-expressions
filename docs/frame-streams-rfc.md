@@ -578,6 +578,23 @@ This mirrors the intended `insert`-range ownership: establishing the range,
 owner-scoped cleanup, and disposal all resolve to one lifecycle rather than a
 separate frame-tree bookkeeping layer.
 
+> **Implemented — boundary retention across unmounts.** Disposal is not
+> amnesia. When the last frame under an id unregisters, the host stashes a
+> snapshot of its store — taken before the dispose scrub, so slot records
+> survive; an element boundary whose markup arrived as document HTML (an
+> adopted t = 0 frame, store carrying no root record) snapshots its current
+> interior as the root instead — and the next frame to register under that
+> id seeds from the snapshot before draining any buffered chunks. This is
+> what keeps frames coherent under a caching data layer: a call answered
+> from cache produces no new stream, so a remounted boundary must be able
+> to re-materialize what the call last showed rather than render blank; a
+> newer stream (a stale-cache refetch, a buffered preload) then morphs over
+> the re-materialized state through the ordinary version policy. The
+> snapshot is consumed by the mount that seeds from it and re-stashed by
+> that mount's own unregister, so the retained set is bounded by boundaries
+> currently unmounted. The no-frame `unregister(id)` form is a purge and
+> drops the retained snapshot too.
+
 ## Data vs. Control-flow Serialization
 
 Frame streams split the existing stream into two conceptual layers:
