@@ -32,9 +32,9 @@ import { ServerFunction } from "./shared.js";
 
 /**
  * The request event a server function call runs under: the base
- * `RequestEvent` (request + locals, plus the optional `complete` flag) with
- * `serverOnly` added, set when the call is an in-process SSR invocation
- * whose result never serializes to a client.
+ * `RequestEvent` (request + locals) with `serverOnly` added, set when the
+ * call is an in-process SSR invocation whose result never serializes to a
+ * client.
  */
 export interface ServerFunctionEvent extends RequestEvent {
   serverOnly?: boolean;

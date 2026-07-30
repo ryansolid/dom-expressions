@@ -1,5 +1,0 @@
----
-"@dom-expressions/runtime": patch
----
-
-Add `complete?: boolean` to the `RequestEvent` contract, and export `ResponseStub` — the named shape of the mutable `{ status, statusText, headers }` response head integrations expose as `event.response` via module augmentation (as `@solidjs/router` does; core deliberately does not declare the property itself so augmentations stay conflict-free, but its server-function handler already reads the head's `Set-Cookie` headers when folding single-flight cookies). `complete` is set to `true` by the integration's handler once the response head has been sent — status and headers can no longer change — and consumers that write response metadata during render (e.g. JSX response components) must treat writes and cleanup-time retractions after `complete` as no-ops. Core never sets it in `handleServerFunctionRequest` (that handler returns `Response` objects synchronously with respect to the head); it exists for SSR/streaming handlers. Types + docs only — no runtime behavior change.

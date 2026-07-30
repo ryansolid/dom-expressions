@@ -156,16 +156,16 @@ export interface ResponseStub {
   status?: number;
   statusText?: string;
   headers: Headers;
+  /**
+   * Set by the integration once the response head has been derived/sent
+   * from this stub (status/headers can no longer change); consumers must
+   * treat later writes and cleanup-time retractions as no-ops.
+   */
+  committed?: boolean;
 }
 export interface RequestEvent {
   request: Request;
   locals: Record<string | number | symbol, any>;
-  /**
-   * Set to `true` by the integration's handler once the response head has
-   * been sent (status/headers can no longer change); consumers must treat
-   * later writes as no-ops.
-   */
-  complete?: boolean;
 }
 export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;

@@ -165,6 +165,14 @@ export interface ResponseStub {
   status?: number;
   statusText?: string;
   headers: Headers;
+  /**
+   * Set by the integration once the response head has been derived/sent
+   * from this stub — status and headers can no longer change. Consumers
+   * that write response metadata during render (e.g. JSX response
+   * components) must treat later status/header writes and cleanup-time
+   * retractions as no-ops.
+   */
+  committed?: boolean;
 }
 
 /**
@@ -176,16 +184,6 @@ export interface ResponseStub {
 export interface RequestEvent {
   request: Request;
   locals: Record<string | number | symbol, any>;
-  /**
-   * Set to `true` by the integration's handler once the response head has
-   * been sent — status and headers can no longer change. Consumers that
-   * write response metadata during render (e.g. JSX response components)
-   * must treat writes (and cleanup-time retractions) after `complete` as
-   * no-ops. Core's server-function handler never sets it (it returns
-   * `Response` objects synchronously with respect to the head); it exists
-   * for SSR/streaming handlers.
-   */
-  complete?: boolean;
 }
 /**
  * The current request event, when called on the server inside a request
