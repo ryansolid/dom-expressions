@@ -509,6 +509,13 @@ function encodeResult(value, headers, status, codec) {
  *   payload it returns (undefined for none) is folded into the body as
  *   `{ value, data }` under the single-flight response header — the
  *   handler owns the enveloping, the hook owns the data.
+ * - `transformFlightResult(event, outcome, context)`: overrides the
+ *   configured single-flight fold policy for this handler. When the flight
+ *   payload needs a body only a policy knows how to build (frames — an
+ *   invalidated entry is markup), it gets first refusal on the
+ *   `{ value, data }` outcome; returning a Response carries the outcome
+ *   (call headers and cookies copied on), returning undefined keeps the
+ *   plain serialized envelope.
  * - `handleNoJS(result, request, args)`: response for calls made without
  *   the client runtime (no instance header) — the override for the no-JS
  *   form convention. Falls back to the configured hook, then to

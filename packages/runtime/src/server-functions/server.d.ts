@@ -205,6 +205,20 @@ export interface ServerFunctionsServerConfig {
     }
   ): unknown | ResponseEnvelope | Promise<unknown | ResponseEnvelope>;
   /**
+   * `transformResult`'s counterpart for the single-flight fold: when a
+   * call's flight payload needs a body only a policy knows how to build
+   * (frames' `frameTransformFlightResult` — an invalidated entry is
+   * markup), this gets first refusal on the `{ value, data }` outcome.
+   * Return a `Response` to carry the outcome (call headers and cookies are
+   * copied onto it), or `undefined` to decline and keep the plain
+   * serialized envelope. A per-request option overrides it.
+   */
+  transformFlightResult?(
+    event: ServerFunctionEvent,
+    outcome: { value: unknown; data: unknown },
+    context: { id: string; args: unknown[]; instance: string | null; request: Request }
+  ): Response | undefined | Promise<Response | undefined>;
+  /**
    * The in-process mirror of `transformResult` for direct (same-server)
    * calls during document SSR — e.g. frames' `frameTransformDirectResult`.
    */
@@ -403,6 +417,15 @@ export interface HandleServerFunctionOptions {
    * `CollectFlightDataHook`).
    */
   collectFlightData?: CollectFlightDataHook;
+  /**
+   * Overrides the configured single-flight fold policy for this handler —
+   * same contract as the `transformFlightResult` config option.
+   */
+  transformFlightResult?(
+    event: ServerFunctionEvent,
+    outcome: { value: unknown; data: unknown },
+    context: { id: string; args: unknown[]; instance: string | null; request: Request }
+  ): Response | undefined | Promise<Response | undefined>;
   /**
    * Builds the response for calls made without the client runtime (no
    * instance header — no-JS form posts, direct HTTP). Receives the
