@@ -234,13 +234,53 @@ export interface ServerFunctionsServerConfig {
    * `decodeResponse` sees them too.
    */
   codec?: JSONCodecOptions;
+  /**
+   * The prerender artifact seam for static server functions (see
+   * `staticFunction`): `write(entry)` receives one entry per settled
+   * static-declared call. Configured only by prerender tooling — typically
+   * a writer dropping `entry.payload` into the client output directory
+   * under `entry.filename`; without one, static declarations add zero
+   * capture overhead and clients use the live GET transport. `null` clears
+   * a configured writer.
+   */
+  staticArtifacts?: StaticArtifactWriter | null;
+}
+
+/**
+ * One captured static server function result, handed to the configured
+ * `StaticArtifactWriter` during prerendering.
+ */
+export interface StaticArtifactEntry {
+  /** The build-stable id of the function that ran. */
+  id: string;
+  /** The static cache key (`getStaticCacheKey(id, args)`). */
+  key: string;
+  /** The artifact filename (`staticArtifactName(key)` — `{key}.txt`). */
+  filename: string;
+  /**
+   * The framed codec string — the exact bytes the production client will
+   * decode. Write it verbatim; it is not JSON.
+   */
+  payload: string;
+}
+
+/**
+ * The write-only artifact sink prerender tooling configures through
+ * `configureServerFunctionsServer({ staticArtifacts })`. The framework owns
+ * the storage: where artifacts land (the client output directory, keyed to
+ * the client's `staticEndpoint`), deduplication (the same `(id, args)`
+ * pair always yields the same filename — overwrites are idempotent), and
+ * flushing before the prerender process exits.
+ */
+export interface StaticArtifactWriter {
+  write(entry: StaticArtifactEntry): void | Promise<void>;
 }
 
 /**
  * Configures the server runtime. Call once at server startup, before
  * handling requests. Only needed when deviating from the defaults (custom
- * endpoint, codec plugins, an explicit event provider, or a single-flight
- * hook).
+ * endpoint, codec plugins, an explicit event provider, a single-flight
+ * hook, or a prerender static artifact writer).
  */
 export function configureServerFunctionsServer(config?: ServerFunctionsServerConfig): void;
 
@@ -330,6 +370,35 @@ export function createServerReference<T extends any[], R>(
  * ```
  */
 export function GET<A extends readonly any[], R>(
+  fn: (...args: A) => R
+): ServerFunction<A, Awaited<R>>;
+
+/**
+ * Declares a static server function: a read whose results are captured to
+ * static artifacts during build-time prerendering and served as plain
+ * files in production. The server half is identity-flavored like `GET`'s —
+ * SSR calls stay in-process — but it brands
+ * `{ method: "GET", static: true }` on the metadata channel
+ * (`getServerFunctionMetadata(fn)?.static === true`), grants GET dispatch
+ * (static implies GET: development and build-time clients call over the
+ * live GET transport), and enrolls the id for prerender capture. With a
+ * static artifact writer configured, every settled call that returned a
+ * plain value is serialized to the framed wire format and handed to the writer
+ * under its static cache key — from in-process SSR calls and HTTP GET
+ * dispatch alike; thrown errors, `Response`s and `ResponseEnvelope`s are
+ * never captured (HTTP metadata cannot ride a static file).
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getDocs = staticFunction(async (slug: string) => {
+ *   "use server";
+ *   return loadDocs(slug);
+ * });
+ * ```
+ */
+export function staticFunction<A extends readonly any[], R>(
   fn: (...args: A) => R
 ): ServerFunction<A, Awaited<R>>;
 

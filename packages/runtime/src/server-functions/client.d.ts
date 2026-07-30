@@ -69,6 +69,15 @@ export interface ServerFunctionsClientConfig {
    */
   endpoint?: string;
   /**
+   * Base path production `staticFunction` calls fetch their prerendered
+   * artifacts from (`{staticEndpoint}/{key}.txt`). Must match where the
+   * prerender build writes them — typically both pinned from one framework
+   * config value. Development calls never use it (they go over the live
+   * GET transport).
+   * @default "/_server-static"
+   */
+  staticEndpoint?: string;
+  /**
    * Codec options (extra plugins etc.) for encoding arguments and decoding
    * results — must match the server's. Stored in the shared layer, so
    * `decodeResponse` sees them too.
@@ -152,6 +161,37 @@ export function configureServerFunctionsClient(config?: ServerFunctionsClientCon
  * ```
  */
 export function GET<A extends readonly any[], R>(
+  fn: (...args: A) => R
+): ServerFunction<A, Awaited<R>>;
+
+/**
+ * Declares a static server function: a read whose results were captured to
+ * static artifacts during build-time prerendering and are served as plain
+ * files in production — no server function runs at request time. In
+ * development the reference behaves exactly like a `GET(fn)` declaration
+ * (a live GET request); in production a call derives its cache key from
+ * the function id and arguments, fetches `${staticEndpoint}/{key}.txt` as
+ * a plain asset (no server-function headers, no `prepareRequest`), and
+ * decodes the framed payload. A missing artifact throws an error naming
+ * the function and key — a `(function, arguments)` pair the prerender pass
+ * never executed is a build coverage error, not a fallback case.
+ *
+ * The declaration rides the metadata channel
+ * (`getServerFunctionMetadata(fn)?.static === true`, `method: "GET"`) for
+ * routers and integrations to detect, and composes with `withMeta` in
+ * either order.
+ *
+ * Wrap the reference at its declaration; the compiler round-trips the call
+ * in both builds:
+ *
+ * ```ts
+ * export const getDocs = staticFunction(async (slug: string) => {
+ *   "use server";
+ *   return loadDocs(slug);
+ * });
+ * ```
+ */
+export function staticFunction<A extends readonly any[], R>(
   fn: (...args: A) => R
 ): ServerFunction<A, Awaited<R>>;
 

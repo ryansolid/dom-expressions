@@ -22,6 +22,62 @@ export function configureServerFunctionsCodec(codec: JSONCodecOptions | undefine
 export function getServerFunctionsCodec(): JSONCodecOptions | undefined;
 
 /**
+ * Whether the argument list survives a `JSON.stringify` round trip
+ * faithfully: JSON primitives (finite numbers only), arrays, and plain
+ * objects. Anything else — Dates, Maps, typed arrays, undefined, NaN,
+ * class instances — needs the codec. The split the client's GET query
+ * encoding and the static cache-key derivation both make.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
+ */
+export function isJSONSafe(value: unknown): boolean;
+
+/**
+ * The canonical encoded-arguments string a static cache key hashes: `""`
+ * for no arguments, sorted-key JSON for JSON-safe argument lists, the
+ * codec's framed string for everything else. Deterministic for equal calls
+ * (object key order is normalized); the codec options must match the peer,
+ * like everywhere else in the protocol.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
+ */
+export function encodeArgumentsKey(
+  args: readonly unknown[],
+  codecOptions?: JSONCodecOptions
+): Promise<string>;
+
+/**
+ * The cache key for a static server function call: `{id}-{hash}`, where
+ * the hash covers the id and the canonical encoded arguments
+ * (`encodeArgumentsKey`). Derived independently by the prerendering server
+ * (naming captured artifacts) and the production client (fetching them),
+ * so it is fully deterministic across peers. Safe to use as a filename and
+ * as a URL path segment: characters that cannot ride either are normalized
+ * out of the readable id prefix, while the raw id still participates in
+ * the 128-bit SHA-256 hash.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
+ */
+export function getStaticCacheKey(
+  id: string,
+  args: readonly unknown[],
+  codecOptions?: JSONCodecOptions
+): Promise<string>;
+
+/**
+ * The artifact filename for a static cache key: `{key}.txt`. Artifacts
+ * store the framed codec string, which is not JSON — `.txt` matches the
+ * live wire's `text/plain`.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
+ */
+export function staticArtifactName(key: string): string;
+
+/**
  * Request header carrying the server function id (`"X-Server-Function-Id"`).
  * Integrations can read it to identify which function a request targets;
  * the id also arrives as the `id` query parameter for GET calls and no-JS
@@ -203,6 +259,13 @@ export interface ServerFunction<A extends readonly any[] = any[], T = any> {
 export interface ServerFunctionMetadata {
   /** The declared HTTP method. Undeclared references call over POST. */
   readonly method?: "GET" | "POST";
+  /**
+   * Whether the reference was declared static (`staticFunction(fn)`):
+   * results are captured to artifacts during build-time prerendering and
+   * fetched as static files by the production client. A static declaration
+   * implies `method: "GET"`.
+   */
+  readonly static?: boolean;
   /**
    * A human-readable label for the function, seeded by development builds
    * from the compiled function's source name (dev tooling — inspectors,
