@@ -600,6 +600,71 @@ describe("handler", () => {
     expect(decoded).toBe("inner+wrapped");
   });
 
+  it("hands transformResult the call's identity (id, parsed args) over either transport", async () => {
+    // The HTTP context mirrors transformDirectResult's: a policy keying
+    // state by the call (deriving a wire address, capturing a prerender
+    // artifact) reads the same id + args over either dispatch path.
+    const contexts = [];
+    const transformResult = (event, result, context) => {
+      contexts.push(context);
+      return result;
+    };
+
+    registerServerFunction("ctx-id-0", async (a, b) => a + b);
+    await dispatch(
+      new Request("http://localhost/_server", {
+        method: "POST",
+        headers: {
+          "X-Server-Function-Id": "ctx-id-0",
+          "X-Server-Function-Instance": "server-function:test",
+          "Content-Type": "application/json",
+          [BODY_FORMAT_HEADER]: BodyFormat.Json
+        },
+        body: JSON.stringify([1, 2])
+      }),
+      { transformResult }
+    );
+
+    serverGET(createServerReference(registerServerReference("ctx-id-1", async n => n * 2)));
+    await dispatch(
+      new Request(`http://localhost/_server?id=ctx-id-1&args=${encodeURIComponent("[7]")}`, {
+        method: "GET",
+        headers: { "X-Server-Function-Instance": "server-function:test" }
+      }),
+      { transformResult }
+    );
+
+    expect(contexts[0].id).toBe("ctx-id-0");
+    expect(contexts[0].args).toEqual([1, 2]);
+    expect(contexts[1].id).toBe("ctx-id-1");
+    expect(contexts[1].args).toEqual([7]);
+  });
+
+  it("hands transformResult the call's identity on the thrown path", async () => {
+    registerServerFunction("ctx-id-2", async () => {
+      throw redirect("/next");
+    });
+    let seen;
+    await dispatch(
+      new Request(`http://localhost/_server?args=${encodeURIComponent("[3]")}`, {
+        method: "POST",
+        headers: {
+          "X-Server-Function-Id": "ctx-id-2",
+          "X-Server-Function-Instance": "server-function:test"
+        }
+      }),
+      {
+        transformResult: (event, result, context) => {
+          seen = context;
+          return result;
+        }
+      }
+    );
+    expect(seen.id).toBe("ctx-id-2");
+    expect(seen.args).toEqual([3]);
+    expect(seen.thrown).toBe(true);
+  });
+
   it("applies a configured transformResult when the dispatcher passes no options (#546)", async () => {
     registerServerFunction("wrap-config-0", async () => "inner");
     configureServerFunctionsServer({

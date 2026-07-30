@@ -196,13 +196,22 @@ export interface ServerFunctionsServerConfig {
   transformResult?(
     event: ServerFunctionEvent,
     result: unknown,
-    context: { instance: string | null; request: Request; thrown?: boolean }
+    context: {
+      id: string;
+      args: unknown[];
+      instance: string | null;
+      request: Request;
+      thrown?: boolean;
+    }
   ): unknown | ResponseEnvelope | Promise<unknown | ResponseEnvelope>;
   /**
    * The in-process mirror of `transformResult` for direct (same-server)
    * calls during document SSR — e.g. frames' `frameTransformDirectResult`.
    */
-  transformDirectResult?(value: unknown, options: { id: string }): unknown;
+  transformDirectResult?(
+    value: unknown,
+    options: { id: string; args: unknown[]; event: ServerFunctionEvent }
+  ): unknown;
   /**
    * Server-wide response builder for calls made without the client runtime
    * (see `handleNoJS` in `HandleServerFunctionRequestOptions`); a
@@ -367,16 +376,26 @@ export interface HandleServerFunctionOptions {
    * extension point for response metadata policies (headers, statuses,
    * substituted results). Runs for returned and thrown results alike
    * (`context.thrown` distinguishes); `context.instance` is null for no-JS
-   * calls. Return the result unchanged to pass through, or a
-   * `ResponseEnvelope` (exposed through the core entry) to send HTTP
-   * metadata plus a structured payload. Runs before `collectFlightData`,
-   * so the flight hook sees the transformed outcome — use
-   * `collectFlightData`, not this, to fold data into the response.
+   * calls. The context carries the call's identity — the function `id` and
+   * the parsed `args` the implementation was invoked with — matching the
+   * direct-call mirror (`transformDirectResult`), so a policy keying state
+   * by the call works over either dispatch path. Return the result
+   * unchanged to pass through, or a `ResponseEnvelope` (exposed through
+   * the core entry) to send HTTP metadata plus a structured payload. Runs
+   * before `collectFlightData`, so the flight hook sees the transformed
+   * outcome — use `collectFlightData`, not this, to fold data into the
+   * response.
    */
   transformResult?(
     event: ServerFunctionEvent,
     result: unknown,
-    context: { instance: string | null; request: Request; thrown?: boolean }
+    context: {
+      id: string;
+      args: unknown[];
+      instance: string | null;
+      request: Request;
+      thrown?: boolean;
+    }
   ): unknown | ResponseEnvelope | Promise<unknown | ResponseEnvelope>;
   /**
    * Overrides the configured single-flight hook for this handler — same

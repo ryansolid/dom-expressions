@@ -495,8 +495,10 @@ function encodeResult(value, headers, status, codec) {
  * - `provideEvent(event, fn)`: overrides the configured provider per call.
  * - `transformResult(event, result, context)`: observes/replaces the result
  *   before encoding — the extension point for response metadata policies.
- *   Return a `ResponseEnvelope` (from ../response.js) to send HTTP
- *   metadata + payload.
+ *   The context carries the call's identity (`id`, parsed `args`) alongside
+ *   the transport fields, matching `transformDirectResult`'s. Return a
+ *   `ResponseEnvelope` (from ../response.js) to send HTTP metadata +
+ *   payload.
  * - `collectFlightData(event, outcome)`: overrides the configured
  *   single-flight hook for this handler. Runs after `transformResult`,
  *   for scripted calls that sent the single-flight request header, on
@@ -580,11 +582,23 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // single-flight is scripted-client opt-in: the caller sends the request
   // header, the server must have a hook to produce the data
   const collectsFlight = !!(flightHook && instance && request.headers.has(SINGLE_FLIGHT_HEADER));
-  // What the fold needs to build a body itself, and what a result transform
-  // needs to know to leave one for it.
-  const flightContext = { instance, request, collectsFlight, codec, transformFlightResult };
 
   const parsed = await parseArguments(request, url, instance, codec);
+
+  // What the fold needs to build a body itself, and what a result transform
+  // needs to know to leave one for it. The call's identity (`id`, parsed
+  // `args`) rides along, mirroring `transformDirectResult`'s context — a
+  // policy keying state by the call (deriving a wire address, capturing a
+  // prerender artifact) sees the same shape over either dispatch path.
+  const flightContext = {
+    id: functionId,
+    args: parsed,
+    instance,
+    request,
+    collectsFlight,
+    codec,
+    transformFlightResult
+  };
 
   const headers = new Headers();
   try {
@@ -665,7 +679,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
   } catch (x) {
     if (x instanceof Response || isResponseEnvelope(x)) {
       if (transformResult) {
-        x = await transformResult(event, x, { instance, request, thrown: true });
+        x = await transformResult(event, x, { ...flightContext, thrown: true });
       }
       let status = 200;
       let metadata;
