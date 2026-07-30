@@ -72,6 +72,14 @@ export interface SlotContext {
    */
   adopted?: boolean;
   /**
+   * Whether this occurrence is a render-prop CALL (the producer placed it
+   * with arguments — possibly empty — via a slot record) as opposed to a
+   * direct-insert position. Consumers cannot tell from the resolved props
+   * alone: an argless render prop and a direct insert both arrive as `{}`,
+   * but one is a function to invoke and the other a value to place.
+   */
+  invoked?: boolean;
+  /**
    * Register cleanup for when this occurrence's range is removed from the
    * server content, or the owning frame is disposed.
    */
@@ -83,6 +91,15 @@ export interface SlotContext {
    * in place (zero DOM mutation).
    */
   existing: ChildNode[];
+  /**
+   * The range's own marker comments, when the occurrence has a placed range.
+   * A framework binding whose slot content is reactive at the top level (a
+   * boundary accessor, changing route children) owns the interior instead of
+   * returning nodes: bind before `end` with the framework's insert primitive
+   * and return `undefined` — the frame leaves the range alone (server morphs
+   * already protect slot ranges).
+   */
+  range?: { start: Comment; end: Comment };
 }
 
 /**

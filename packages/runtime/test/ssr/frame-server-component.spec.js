@@ -327,12 +327,14 @@ describe("renderServerComponent (slot emission)", () => {
     expect(after[1].textContent).toBe("a");
   });
 
-  it("documented limitation: a server element wrapping each occurrence defeats reorder identity", async () => {
-    // Keyed occurrences must be SIBLINGS for reorder to follow $key — ranges
-    // relocate within one parent only. Wrapping each call site in its own
-    // server element puts ranges in different parents: content still
-    // converges, but client state does not follow the entity. Let the CLIENT
-    // own the per-item wrapper instead (the slot callback returns it).
+  it("reorder identity holds even with a server element wrapping each occurrence", async () => {
+    // Occurrence ids are unique within a frame's content, and the morph
+    // indexes the frame's slot ranges frame-WIDE — so a keyed occurrence
+    // relocates with its client interior even when each call site sits in
+    // its own server wrapper element (ranges in different parents). This
+    // was a documented limitation of sibling-scoped range matching; it also
+    // silently emptied a keyed LIST's surviving items when a deletion
+    // shifted every range into a different <li>.
     const makeComp = order => props =>
       r.ssr`<section>${order.map(
         id => r.ssr`<div class="row">${props.comment({ $key: id, label: id })}</div>`
@@ -361,9 +363,10 @@ describe("renderServerComponent (slot emission)", () => {
     );
     // Content converges…
     expect([...boundary.querySelectorAll("b")].map(b => b.textContent)).toEqual(["b", "a"]);
-    // …but entity "a"'s node did not travel: its state is gone.
+    // …and entity "a"'s node traveled with its range: state intact.
     const aNode = [...boundary.querySelectorAll("b")].find(b => b.textContent === "a");
-    expect(aNode.dataset.mine).toBeUndefined();
+    expect(aNode).toBe(first);
+    expect(aNode.dataset.mine).toBe("yes");
   });
 
   it("a changed primitive arg on the same key re-calls the occurrence", async () => {
@@ -561,15 +564,20 @@ describe("server-component hydration reference", () => {
       onDone: () => {
         const payload = scripts.join(";");
         // The reference, not the function: resolution is invocation-time
-        // through the bootstrap's memoized placeholder.
-        expect(payload).toContain('self._$SC.r("hn/story-0")');
+        // through the bootstrap's memoized placeholder. It carries the
+        // call's address so the client can register which call the
+        // document is showing (an argless call's address is the id).
+        expect(payload).toContain('self._$SC.r("hn/story-0","hn/story-0")');
         expect(payload).not.toContain("createDocumentSlotProps");
         // The bootstrap evaluates and memoizes stable identities.
         // eslint-disable-next-line no-eval
         (0, eval)(SERVER_COMPONENT_BOOTSTRAP);
-        const first = globalThis._$SC.r("hn/story-0");
+        const first = globalThis._$SC.r("hn/story-0", "hn/story-0");
         expect(typeof first).toBe("function");
         expect(globalThis._$SC.r("hn/story-0")).toBe(first);
+        // The address -> id record is kept for the client to register with
+        // the frame transport once it installs.
+        expect(globalThis._$SC.a["hn/story-0"]).toBe("hn/story-0");
         // The placeholder delegates to the installed implementation.
         globalThis._$SC.impl = (id, props) => `${id}:${props.x}`;
         expect(first({ x: 1 })).toBe("hn/story-0:1");

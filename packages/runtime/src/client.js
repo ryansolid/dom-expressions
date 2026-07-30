@@ -987,7 +987,21 @@ export function runHydrationEvents() {
 
 // Internal Functions
 function isHydrating(node) {
-  return sharedConfig.hydrating && (!node || node.isConnected);
+  if (!sharedConfig.hydrating) return false;
+  if (!node || node.isConnected) return true;
+  // Connectivity tells claimed SSR nodes apart from fresh template clones,
+  // but a claimed tree isn't always IN the document: a frame adoption whose
+  // slot fill resolved async claims its server-rendered range after a
+  // pending boundary displaced it (re-inserted on reveal). Such claim scopes
+  // declare their roots (sharedConfig.claimRoots); descent from one is as
+  // claimed as being connected. Fresh clones descend from neither.
+  const roots = sharedConfig.claimRoots;
+  if (roots) {
+    for (let i = 0; i < roots.length; i++) {
+      if (roots[i].contains(node)) return true;
+    }
+  }
+  return false;
 }
 
 function classListToObject(classList) {

@@ -126,16 +126,39 @@ export function createDocumentSlotProps(
  * as `configureServerFunctionsServer({ transformDirectResult })` and a
  * direct (same-process) server-function result that is a function comes back
  * as an inline-renderable server component (frame markers + document
- * slot props). Non-function results pass through.
+ * slot props), branded with its function id and the call's wire address.
+ * Non-function results pass through.
  */
-export function frameTransformDirectResult<T>(value: T, options: { id: string }): T;
+export function frameTransformDirectResult<T>(
+  value: T,
+  options: { id: string; args?: unknown[] }
+): T;
 
 /**
- * Seroval plugin for the hydration serializer: writes an inline server
- * component as a stable per-function-id placeholder reference
- * (`self._$SC.r(id)`) instead of meeting an unserializable function.
+ * The frame half of single-flight, as a `transformFlightResult` policy for
+ * `handleServerFunctionRequest`: when part of what a mutation invalidated is
+ * markup (a component-valued flight-data entry), the frame stream carries
+ * the whole payload — each component's content as a region addressed by its
+ * call, the `{ value, data }` envelope as `outcome` chunks with the
+ * component entries serialized as flight references. Returns `undefined`
+ * when nothing invalidated is markup (the response stays the plain
+ * single-flight envelope).
  */
-export const ServerComponentPlugin: unknown;
+export function frameTransformFlightResult(
+  event: unknown,
+  outcome: { value: unknown; data: unknown },
+  context?: unknown
+): Promise<Response | undefined>;
+
+// The brands and the codec plugin live with the transport (client bundles
+// resolve flight references against the live registry); re-exported here for
+// server integrations importing the document-SSR surface.
+export {
+  SERVER_COMPONENT,
+  SERVER_COMPONENT_ADDRESS,
+  SERVER_COMPONENT_SOURCE,
+  ServerComponentPlugin
+} from "./frame-transport.js";
 
 /**
  * Inline bootstrap for the document shell: installs the `self._$SC`

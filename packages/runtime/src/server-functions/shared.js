@@ -55,6 +55,82 @@ export function getFlightDataConsumer() {
   return flightConfig.consumer;
 }
 
+/**
+ * The wire address of a server-component call: its function id and the
+ * arguments it was called with.
+ *
+ * A mutation answering with fresh markup for something it invalidated has to
+ * name the region it is replacing, and both peers have to arrive at the same
+ * name independently — the client never told the server which boundaries it
+ * is showing. A call's identity is the one thing they always share: the
+ * client dispatched `(id, args)` and the server's collection pass calls
+ * `(id, args)` again. So the protocol derives the address itself rather than
+ * asking an integration to declare one, and a cache-backed router gets this
+ * without writing anything.
+ *
+ * This is an ADDRESS, not a boundary identity: which DOM boundary is
+ * currently showing a given call is a client-side lookup (see
+ * `createServerComponentHandler`), so a call site whose arguments change
+ * still morphs in place instead of remounting.
+ */
+export function frameAddress(id, args) {
+  return args && args.length ? id + ":" + hashArguments(args) : id;
+}
+
+// A structural digest, stable across peers: key order is normalized so two
+// equal argument lists always agree, and anything the codec would have to
+// think about (class instances, cycles) degrades to its shape rather than
+// throwing. Collisions cost a mis-routed region, not correctness — an
+// unaddressed region simply finds no boundary.
+function hashArguments(args) {
+  let hash = 0;
+  const text = stableString(args);
+  for (let i = 0; i < text.length; i++) {
+    hash = (hash << 5) - hash + text.charCodeAt(i);
+    hash |= 0;
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function stableString(value, seen) {
+  if (value === null || typeof value !== "object") {
+    return typeof value === "bigint" ? value + "n" : String(value);
+  }
+  // Realm-stable forms for the codec's rich argument types: `String(value)`
+  // for these is implementation-defined (a Date stringifies with the local
+  // timezone, differently in Node and a browser) and the two peers hash
+  // INDEPENDENTLY — the client from the args it dispatched, the server from
+  // the args its collection pass calls with. A digest that diverges routes
+  // the region nowhere, which degrades to a refetch invisibly.
+  if (value instanceof Date) return "Date:" + value.getTime();
+  seen || (seen = new Set());
+  if (seen.has(value)) return "~";
+  seen.add(value);
+  if (value instanceof Map) {
+    const entries = [];
+    for (const [k, v] of value) {
+      entries.push(stableString(k, seen) + "=>" + stableString(v, seen));
+    }
+    return "Map{" + entries.sort().join(",") + "}";
+  }
+  if (value instanceof Set) {
+    const members = [];
+    for (const v of value) members.push(stableString(v, seen));
+    return "Set{" + members.sort().join(",") + "}";
+  }
+  if (Array.isArray(value)) {
+    let out = "[";
+    for (let i = 0; i < value.length; i++) out += (i ? "," : "") + stableString(value[i], seen);
+    return out + "]";
+  }
+  const keys = Object.keys(value).sort();
+  let out = "{";
+  for (let i = 0; i < keys.length; i++) {
+    out += (i ? "," : "") + keys[i] + ":" + stableString(value[keys[i]], seen);
+  }
+  return out + "}";
+}
+
 // The declaration-metadata channel. `GET(fn)` (and any future
 // declaration-static capability) brands references with a metadata object
 // under a registered symbol — surviving duplicated module instances, the

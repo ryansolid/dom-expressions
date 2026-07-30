@@ -32,14 +32,14 @@
  * not active scripts (the reason the frame consumer must not reuse the $df*
  * helpers).
  */
-import { createPlugin } from "seroval";
 import {
   runWithHydrationScope,
   sharedConfig,
   getOwner,
   runWithOwner,
   NoHydration,
-  Hydration
+  Hydration,
+  runInServerComponentScope
 } from "rxcore";
 
 /**
@@ -61,11 +61,51 @@ function serverOwned(render) {
       })
     : render();
 }
+
+/**
+ * The server component's own render runs inside the core's context barrier
+ * (when the core provides one): user context does not cross a server
+ * component root. A refetch or mutation region renders standalone — no app
+ * tree above it — so a t=0 inline read that resolved an app-level provider
+ * would silently diverge on the next response; the barrier makes both
+ * renders agree by construction. Boundary plumbing (Loading / error /
+ * reveal coordination) still crosses — the back-and-forth between a server
+ * component's async content and the enclosing boundaries at t=0 is
+ * intentional. Client positions are unaffected: they re-enter the zone
+ * owner captured OUTSIDE the barrier (see createDocumentSlotProps), so the
+ * client's own components keep full app context during document SSR.
+ */
+function serverComponentScope(render) {
+  return runInServerComponentScope ? runInServerComponentScope(render) : render();
+}
 import { renderToStream } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
-import { createChunk } from "./server-functions/shared.js";
+import {
+  ChunkReader,
+  SINGLE_FLIGHT_HEADER,
+  createChunk,
+  frameAddress,
+  serializeStream
+} from "./server-functions/shared.js";
 import { isResponseEnvelope } from "./response.js";
-import { FRAME_STREAM_HEADER } from "./frame-transport.js";
+import {
+  FRAME_STREAM_HEADER,
+  SERVER_COMPONENT,
+  SERVER_COMPONENT_ADDRESS,
+  SERVER_COMPONENT_SOURCE,
+  flightCodec
+} from "./frame-transport.js";
+
+// The brands and the codec plugin live with the transport (the client half
+// resolves flight references against its live registry, so they must be
+// importable from client bundles); re-exported here because this module is
+// where server integrations import the document-SSR surface from.
+export {
+  SERVER_COMPONENT,
+  SERVER_COMPONENT_SOURCE,
+  SERVER_COMPONENT_ADDRESS,
+  ServerComponentPlugin
+} from "./frame-transport.js";
 
 /**
  * A sink emitting the transport-agnostic FrameChunk stream. `emit(chunk)` is
@@ -273,7 +313,7 @@ export function renderToFrameStream(code, options = {}) {
 export function renderServerComponent(component, options = {}) {
   return frameStream((sink, frame) => {
     const props = createSlotProps(sink, frame);
-    return () => component(props);
+    return () => serverComponentScope(() => component(props));
   }, options);
 }
 
@@ -588,17 +628,31 @@ const FRAME_ELEMENT_CLOSE = `</${FRAME_TAG}>`;
  * ELEMENT around it, document-mode slot props inside. HTTP calls are
  * untouched (`frameTransformResult` owns that leg).
  */
-export function frameTransformDirectResult(value, { id }) {
+export function frameTransformDirectResult(value, { id, args }) {
   if (typeof value !== "function") return value;
   const component = value;
   const wrapped = props => [
     { t: frameElementOpen(id) },
-    serverOwned(() => component(createDocumentSlotProps(props, id))),
+    // Slot props are created OUTSIDE the context barrier: their zone owner
+    // (captured at proxy creation) is what client positions re-enter, so
+    // the client's content keeps full app context while the component's
+    // own render is context-isolated.
+    serverOwned(() => {
+      const slotProps = createDocumentSlotProps(props, id);
+      return serverComponentScope(() => component(slotProps));
+    }),
     { t: FRAME_ELEMENT_CLOSE }
   ];
   // Branded so the hydration serializer can write it as a reference (see
   // ServerComponentPlugin) instead of meeting an unserializable function.
   wrapped[SERVER_COMPONENT] = id;
+  // The wrap is for rendering INLINE in a document. A direct call also
+  // happens where there is no document — collecting single-flight data, where
+  // the component becomes a region in a frame stream instead — so the
+  // original stays reachable for that producer to render on its own terms,
+  // under the address the calling client derived for the same call.
+  wrapped[SERVER_COMPONENT_SOURCE] = component;
+  wrapped[SERVER_COMPONENT_ADDRESS] = frameAddress(id, args);
   return wrapped;
 }
 
@@ -625,53 +679,21 @@ function resolveRegionHtml(ctx, node) {
   });
 }
 
-/** Brands an inline-rendered server component with its function id. */
-export const SERVER_COMPONENT = /*#__PURE__*/ Symbol.for("dom-expressions.server-component");
-
-/**
- * Seroval plugin for the document hydration serializer (`renderToStream`'s
- * `options.plugins`): an inline-rendered server component — the resolved
- * value of an async source like `dynamic(() => getStory(id))` — serializes
- * as a REFERENCE, `self._$SC.r("<function id>")`. The document shell's
- * inline bootstrap memoizes a stable placeholder component per id
- * (hydration data scripts run during parse, before the module bundle, so
- * resolution is invocation-time indirection); the frames client installs
- * the implementation that placeholder delegates to, and the transport's
- * document-adoption step returns the same placeholder so the first
- * navigation's equals-gate holds.
- */
-export const ServerComponentPlugin = /*#__PURE__*/ createPlugin({
-  tag: "dom-expressions/server-component",
-  test(value) {
-    return typeof value === "function" && SERVER_COMPONENT in value;
-  },
-  parse: {
-    sync(value, ctx) {
-      return { id: ctx.parse(value[SERVER_COMPONENT]) };
-    },
-    async async(value, ctx) {
-      return { id: await ctx.parse(value[SERVER_COMPONENT]) };
-    },
-    stream(value, ctx) {
-      return { id: ctx.parse(value[SERVER_COMPONENT]) };
-    }
-  },
-  serialize(node, ctx) {
-    return "self._$SC.r(" + ctx.serialize(node.id) + ")";
-  },
-  deserialize(node, ctx) {
-    return globalThis._$SC.r(ctx.deserialize(node.id));
-  }
-});
-
 /**
  * The inline bootstrap the document shell must include BEFORE any hydration
  * data script (e.g. in `<head>`): memoizes one stable placeholder component
  * per server-component reference. `_$SC.impl` is installed later by the
  * frames client runtime.
+ *
+ * A reference may carry the call's wire address (`_$SC.r(id, address)`).
+ * The placeholder stays per-function, but the address -> id record (`a`,
+ * plus the live `reg` hook once the client installs one) tells the frame
+ * transport which calls the document is showing — hydration data never
+ * travels through the transport, so this is its only path into the
+ * transport's addressing.
  */
 export const SERVER_COMPONENT_BOOTSTRAP =
-  "self._$SC={c:{},r(i){return this.c[i]||(this.c[i]=(p)=>self._$SC.impl(i,p))}};";
+  "self._$SC={c:{},a:{},r(i,a){a&&(this.a[a]=i,this.reg&&this.reg(a,i));return this.c[i]||(this.c[i]=(p)=>self._$SC.impl(i,p))}};";
 
 /**
  * The props proxy handed to a server component. Every prop resolves to a
@@ -857,8 +879,14 @@ export function serverComponentResponse(component, options = {}, init = {}) {
  * the same client boundary and policy A morphs in place). A `respond()`
  * envelope whose value is a function contributes its headers/status to the
  * frame Response. Everything else passes through untouched.
+ *
+ * A single-flight call is the exception: the component stays a component
+ * here, because the mutation's markup is only one part of the payload and
+ * the whole stream is assembled once flight data is in hand
+ * (`frameTransformFlightResult`). Building a Response now would commit to a
+ * body that can no longer take the invalidated regions or the outcome.
  */
-export function frameTransformResult(event, result) {
+export function frameTransformResult(event, result, context) {
   let init;
   if (isResponseEnvelope(result)) {
     const { response, value } = result;
@@ -867,6 +895,123 @@ export function frameTransformResult(event, result) {
     result = value;
   }
   if (typeof result !== "function") return result;
+  if (context && context.collectsFlight) return init ? { response: init, value: result } : result;
   const meta = event && event.locals && event.locals.serverFunctionMeta;
   return serverComponentResponse(result, { frame: { id: (meta && meta.id) || "" } }, init);
+}
+
+/**
+ * The frame half of single-flight, as a `transformFlightResult` policy: when
+ * some of what a mutation invalidated is *markup*, the frame stream carries
+ * the whole payload.
+ *
+ * A component-valued entry is not a different KIND of payload, just a
+ * different representation of one: it stays in the `{ value, data }`
+ * envelope like any other value — serialized as a flight reference (see
+ * `ServerComponentPlugin`) that resolves client-side to the very component
+ * the boundary showing that call holds, so the integration seeds its cache
+ * through its ordinary path and freshness falls out for free. Its CONTENT
+ * rides alongside as a region addressed by the call (`frameAddress` — the
+ * one name both peers derive independently), so markup travels as html
+ * exactly once and the envelope carries only a pointer to it.
+ *
+ * With nothing to frame this returns `undefined`, and the response is the
+ * plain single-flight envelope, byte for byte.
+ */
+export async function frameTransformFlightResult(event, outcome, context) {
+  const { value, data } = outcome;
+  const regions = [];
+  let serialized = data;
+  if (data && typeof data === "object") {
+    serialized = {};
+    // Collected entries arrive unresolved (an integration's cache stores the
+    // in-flight promise), and a value has to be in hand to know whether it is
+    // markup. So a mutation's payload settles before its response starts,
+    // where a data-only one streams as the codec produces it — the cost of
+    // knowing what kind of thing each entry is.
+    const keys = Object.keys(data);
+    const values = await Promise.all(keys.map(key => data[key]));
+    for (let i = 0; i < keys.length; i++) {
+      const entry = values[i];
+      // A component-valued entry is not a different KIND of payload, just a
+      // different representation of one: it stays in the map like any other
+      // value, serialized by reference (see `ServerComponentPlugin`) so the
+      // client seeds its cache with the boundary component and re-stamps
+      // freshness through the ordinary path. Its content rides alongside as a
+      // region addressed by the CALL — the address both peers derive
+      // independently — so markup ships once as html and the map carries only
+      // a pointer to it.
+      serialized[keys[i]] = entry;
+      if (typeof entry === "function") {
+        regions.push({
+          id: entry[SERVER_COMPONENT_ADDRESS] || keys[i],
+          component: entry[SERVER_COMPONENT_SOURCE] || entry
+        });
+      }
+    }
+  }
+  const meta = event && event.locals && event.locals.serverFunctionMeta;
+  // The called function's own markup keeps the function id as its address,
+  // the same boundary a non-flight call targets.
+  const primary =
+    typeof value === "function" ? { id: (meta && meta.id) || "", component: value } : undefined;
+  if (!primary && !regions.length) return undefined;
+  return frameFlightResponse({
+    primary,
+    regions,
+    outcome: {
+      // The mutation's own return value is markup or data, never both: when
+      // it is a component the client resolves it to that frame's component.
+      value: primary ? undefined : value,
+      data: serialized
+    },
+    codec: context && context.codec
+  });
+}
+
+/**
+ * A framed response carrying several frames and a single-flight outcome:
+ * each frame's chunks in order (the host routes and buffers by id), then the
+ * `{ value, data }` envelope as `outcome` chunks.
+ *
+ * Those chunks carry the codec's own nodes, one per chunk, so async values
+ * inside flight data settle progressively exactly as they do in a plain
+ * single-flight body — the consumer replays them into the same decoder.
+ */
+export function frameFlightResponse({ primary, regions = [], outcome, codec }, init = {}) {
+  const frames = primary ? [primary, ...regions] : regions;
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/x-frame-stream");
+  headers.set(FRAME_STREAM_HEADER, primary ? primary.id : "");
+  headers.set("X-Content-Raw", "1");
+  headers.set(SINGLE_FLIGHT_HEADER, "true");
+  const body = new ReadableStream({
+    async start(controller) {
+      const write = chunk => controller.enqueue(createChunk(JSON.stringify(chunk)));
+      try {
+        // Sequential: chunk order matters within a frame, not across them.
+        for (const { id, component } of frames) {
+          await new Promise(resolve => {
+            renderServerComponent(component, { frame: { id, version: 1 } }).pipe({
+              write,
+              end: resolve
+            });
+          });
+        }
+        if (outcome) {
+          // Component-valued entries serialize as flight references — the
+          // protocol injects its own plugin (see `flightCodec`), so nothing
+          // registers it.
+          const reader = new ChunkReader(serializeStream(outcome, flightCodec(codec)));
+          for (let node = await reader.next(); !node.done; node = await reader.next()) {
+            write({ type: "outcome", payload: node.value });
+          }
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    }
+  });
+  return new Response(body, { status: init.status || 200, headers });
 }

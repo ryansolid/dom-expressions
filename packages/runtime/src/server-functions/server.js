@@ -56,6 +56,7 @@ const config = {
   provideEvent: undefined,
   collectFlightData: undefined,
   transformResult: undefined,
+  transformFlightResult: undefined,
   transformDirectResult: undefined,
   handleNoJS: undefined,
   endpoint: "/_server"
@@ -68,15 +69,19 @@ const config = {
  * `handleServerFunctionRequest`), `transformResult` is the server-wide
  * default for the handler's result transform (per-request options override;
  * this is how frames installs `frameTransformResult` once for generic
- * dispatchers), `transformDirectResult` is its in-process mirror for direct
- * SSR calls, `endpoint` is where the handler is mounted (used for the `url`
- * of SSR'd references, e.g. form actions — must match the client's), and
- * `codec` must match the client's (stored in the shared layer).
+ * dispatchers), `transformFlightResult` is the same seam for the single-flight
+ * payload (frames installs `frameTransformFlightResult` to carry invalidated
+ * markup), `transformDirectResult` is `transformResult`'s in-process mirror
+ * for direct SSR calls, `endpoint` is where the handler is mounted (used for
+ * the `url` of SSR'd references, e.g. form actions — must match the
+ * client's), and `codec` must match the client's (stored in the shared
+ * layer).
  */
 export function configureServerFunctionsServer({
   provideEvent,
   collectFlightData,
   transformResult,
+  transformFlightResult,
   transformDirectResult,
   handleNoJS,
   endpoint,
@@ -85,6 +90,7 @@ export function configureServerFunctionsServer({
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
   if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
   if (transformResult !== undefined) config.transformResult = transformResult;
+  if (transformFlightResult !== undefined) config.transformFlightResult = transformFlightResult;
   if (transformDirectResult !== undefined) config.transformDirectResult = transformDirectResult;
   if (handleNoJS !== undefined) config.handleNoJS = handleNoJS;
   if (endpoint !== undefined) config.endpoint = endpoint;
@@ -168,11 +174,13 @@ export function createServerReference({ id, fn, name }) {
       // In-process mirror of the handler's transformResult: direct SSR calls
       // pass their settled value through the configured policy (e.g. frames
       // wrapping a function result as an inline-renderable server component).
+      // `args` rides along so a policy can derive the call's wire address
+      // (`frameAddress`) — the same one the client derives for the same call.
       const transform = config.transformDirectResult;
       if (transform && result && typeof result.then === "function") {
-        return result.then(value => transform(value, { id, event: evt }));
+        return result.then(value => transform(value, { id, args, event: evt }));
       }
-      return transform ? transform(result, { id, event: evt }) : result;
+      return transform ? transform(result, { id, args, event: evt }) : result;
     }
   });
 }
@@ -265,12 +273,34 @@ async function parseArguments(request, url, instance, codec) {
  * caller's verbatim payload — there is no envelope to fold data into, so
  * the hook never runs for one.
  */
-async function foldFlightData(hook, event, headers, outcome) {
+async function foldFlightData(hook, event, headers, outcome, context = {}) {
   if (outcome.value instanceof Response && outcome.value.body) return outcome.value;
   digestOutcome(event, outcome);
   const data = await hook(event, outcome);
   if (data === undefined) return outcome.value;
   headers.set(SINGLE_FLIGHT_HEADER, "true");
+  // A payload can be partly markup — an invalidated region the integration
+  // answered with a server component. That needs a body only the frame
+  // policy knows how to build, so it gets first refusal on the fold;
+  // declining (or not being installed) keeps the serialized envelope.
+  if (context.transformFlightResult) {
+    const transformed = await context.transformFlightResult(
+      event,
+      { value: outcome.value, data },
+      context
+    );
+    if (transformed !== undefined) {
+      // Headers accumulated during the call (the mutation's cookies, an
+      // envelope's metadata) belong on whatever body carries the outcome.
+      for (const cookie of headers.getSetCookie()) transformed.headers.append("Set-Cookie", cookie);
+      headers.forEach((value, key) => {
+        if (key !== "set-cookie" && !transformed.headers.has(key)) {
+          transformed.headers.set(key, value);
+        }
+      });
+      return transformed;
+    }
+  }
   return { value: outcome.value, data };
 }
 
@@ -532,6 +562,10 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // configured transform (frames installs itself here once, server-wide).
   const transformResult =
     options.transformResult !== undefined ? options.transformResult : config.transformResult;
+  const transformFlightResult =
+    options.transformFlightResult !== undefined
+      ? options.transformFlightResult
+      : config.transformFlightResult;
   // Same fallback, then the built-in convention: an unconfigured app still
   // gets working progressive enhancement for real form posts, while direct
   // HTTP calls keep the plain response.
@@ -546,6 +580,9 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // single-flight is scripted-client opt-in: the caller sends the request
   // header, the server must have a hook to produce the data
   const collectsFlight = !!(flightHook && instance && request.headers.has(SINGLE_FLIGHT_HEADER));
+  // What the fold needs to build a body itself, and what a result transform
+  // needs to know to leave one for it.
+  const flightContext = { instance, request, collectsFlight, codec, transformFlightResult };
 
   const parsed = await parseArguments(request, url, instance, codec);
 
@@ -557,7 +594,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
     });
 
     if (transformResult) {
-      result = await transformResult(event, result, { instance, request });
+      result = await transformResult(event, result, flightContext);
     }
 
     let status = 200;
@@ -599,13 +636,22 @@ export async function handleServerFunctionRequest(request, options = {}) {
     }
 
     if (collectsFlight) {
-      result = await foldFlightData(flightHook, event, headers, {
-        id: functionId,
-        value: result,
-        response: metadata,
-        request,
-        thrown: false
-      });
+      result = await foldFlightData(
+        flightHook,
+        event,
+        headers,
+        {
+          id: functionId,
+          value: result,
+          response: metadata,
+          request,
+          thrown: false
+        },
+        flightContext
+      );
+      // The fold built the body itself (markup in the payload) — it already
+      // carries the accumulated headers.
+      if (result instanceof Response && result.headers.has("X-Content-Raw")) return result;
     }
 
     // calls made without the client runtime (no-JS form posts)
@@ -653,13 +699,26 @@ export async function handleServerFunctionRequest(request, options = {}) {
       // thrown control-flow signals collect too — a thrown redirect carries
       // flight data for the destination route
       if (collectsFlight) {
-        x = await foldFlightData(flightHook, event, headers, {
-          id: functionId,
-          value: x,
-          response: metadata,
-          request,
-          thrown: true
-        });
+        x = await foldFlightData(
+          flightHook,
+          event,
+          headers,
+          {
+            id: functionId,
+            value: x,
+            response: metadata,
+            request,
+            thrown: true
+          },
+          flightContext
+        );
+        // A thrown redirect is the common single-flight mutation shape, so
+        // this is the path that carries markup for the destination — it still
+        // has to be flagged as thrown for the client to re-throw it.
+        if (x instanceof Response && x.headers.has("X-Content-Raw")) {
+          x.headers.set(ERROR_HEADER, "true");
+          return x;
+        }
       }
 
       headers.set(ERROR_HEADER, "true");

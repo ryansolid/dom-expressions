@@ -595,6 +595,71 @@ describe("client-anchor invariant", () => {
       "<!--slot:1:start--><span>B</span><!--slot:1:end--><!--slot:0:start--><span>A</span><!--slot:0:end-->"
     );
   });
+
+  it("relocates keyed slot ranges ACROSS parents (deleting a list item shifts the rest)", () => {
+    // The notes-list delete shape: three keyed occurrences, one per <li>.
+    // Removing the first item puts every remaining range under a DIFFERENT
+    // <li> in the new content — pairwise element matching sees only "new id
+    // here" and, without the frame-wide range index, adopted the incoming
+    // EMPTY marker pair while the live interior was destroyed with its old
+    // parent (and the record dedupe then never re-invoked the occurrence).
+    const frame = createFrame(boundary);
+    const li = id => `<li><!--slot:item#${id}:start--><!--slot:item#${id}:end--></li>`;
+    frame.apply({ version: 1, r: { "": html(`<ul>${li(0)}${li(1)}${li(2)}</ul>`) } });
+    const ul = boundary.firstElementChild;
+    const fill = (id, text) => {
+      const span = document.createElement("span");
+      span.textContent = text;
+      findComment(ul, `slot:item#${id}:start`).after(span);
+      return span;
+    };
+    const a = fill(0, "A");
+    const b = fill(1, "B");
+    const c = fill(2, "C");
+
+    // Item 0 deleted: item#1 now lives in the first <li>, item#2 in the second.
+    frame.apply({ version: 2, r: { "": html(`<ul>${li(1)}${li(2)}</ul>`) } });
+
+    expect(a.isConnected).toBe(false);
+    expect(ul.contains(b)).toBe(true);
+    expect(ul.contains(c)).toBe(true);
+    expect(b.previousSibling.data).toBe("slot:item#1:start");
+    expect(c.previousSibling.data).toBe("slot:item#2:start");
+    expect(ul.innerHTML).toBe(
+      "<li><!--slot:item#1:start--><span>B</span><!--slot:item#1:end--></li>" +
+        "<li><!--slot:item#2:start--><span>C</span><!--slot:item#2:end--></li>"
+    );
+  });
+
+  it("relocates a range whose old parent reconciles BEFORE its new position (stash path)", () => {
+    // The range's old container is processed (and its leftovers removed)
+    // before the sibling that now holds the range's position. The removal
+    // sweep must stash the range intact instead of severing it node by node.
+    const frame = createFrame(boundary);
+    frame.apply({
+      version: 1,
+      r: {
+        "": html("<div><section><!--slot:x:start--><!--slot:x:end--></section><p></p></div>")
+      }
+    });
+    const div = boundary.firstElementChild;
+    const clientNode = document.createElement("input");
+    clientNode.value = "typed";
+    findComment(div, "slot:x:start").after(clientNode);
+
+    frame.apply({
+      version: 2,
+      r: {
+        "": html("<div><section></section><p><!--slot:x:start--><!--slot:x:end--></p></div>")
+      }
+    });
+
+    expect(clientNode.isConnected).toBe(true);
+    expect(clientNode.value).toBe("typed");
+    expect(div.innerHTML).toBe(
+      "<section></section><p><!--slot:x:start--><input><!--slot:x:end--></p>"
+    );
+  });
 });
 
 describe("client slots", () => {
@@ -1844,6 +1909,118 @@ describe("frame lifecycle", () => {
     expect(host.get("inner")).toBeUndefined();
     expect(button.isConnected).toBe(false);
     expect(boundary.innerHTML).toBe("<article>no slot</article>");
+  });
+});
+
+describe("boundary retention across unmounts", () => {
+  // Boundary identity outlives any one mount: an integration's cache can
+  // resolve a call with the same component and NO new stream (a fresh query
+  // cache hit on back-navigation), so the host retains the last frame's
+  // snapshot and seeds the next mount from it — otherwise the remounted
+  // boundary rendered blank until something refetched.
+  it("re-materializes a streamed boundary on remount with no new chunks", () => {
+    const host = createFrameHost(createMockSerializer());
+    const first = document.createElement("div");
+    document.body.appendChild(first);
+    const frame = createFrame(first, { id: "back", host });
+    host.apply({ type: "html", id: "back", version: 1, html: "<p>top stories</p>" });
+    expect(first.innerHTML).toBe("<p>top stories</p>");
+
+    frame.dispose();
+    first.remove();
+
+    const second = document.createElement("div");
+    document.body.appendChild(second);
+    createFrame(second, { id: "back", host });
+    expect(second.innerHTML).toBe("<p>top stories</p>");
+  });
+
+  it("retained slot records re-invoke on remount (the dispose scrub does not reach the snapshot)", () => {
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    const slots = {
+      cta: props => {
+        calls.push(props.label);
+        const b = document.createElement("button");
+        b.textContent = props.label;
+        return b;
+      }
+    };
+    const first = document.createElement("div");
+    document.body.appendChild(first);
+    const frame = createFrame(first, { id: "slotted", host, slots });
+    // Record before range so the mount invokes once, with args.
+    host.apply({ type: "slot", id: "slotted", version: 1, key: "cta", args: { label: "go" } });
+    host.apply({
+      type: "html",
+      id: "slotted",
+      version: 1,
+      html: "<div><!--slot:cta:start--><!--slot:cta:end--></div>"
+    });
+    expect(first.querySelector("button").textContent).toBe("go");
+    expect(calls).toEqual(["go"]);
+
+    frame.dispose();
+    first.remove();
+
+    const second = document.createElement("div");
+    document.body.appendChild(second);
+    createFrame(second, { id: "slotted", host, slots });
+    expect(second.querySelector("button").textContent).toBe("go");
+    expect(calls).toEqual(["go", "go"]);
+  });
+
+  it("snapshots an adopted boundary's interior when its markup never traveled as chunks", () => {
+    const host = createFrameHost(createMockSerializer());
+    const el = document.createElement("div");
+    el.innerHTML = "<p>document ssr</p>";
+    document.body.appendChild(el);
+    const frame = createFrame(el, { id: "doc", host, adopt: true });
+    frame.dispose();
+    el.remove();
+
+    const second = document.createElement("div");
+    document.body.appendChild(second);
+    createFrame(second, { id: "doc", host });
+    expect(second.innerHTML).toBe("<p>document ssr</p>");
+  });
+
+  it("a newer buffered stream morphs over the retained state on remount", () => {
+    const host = createFrameHost(createMockSerializer());
+    const first = document.createElement("div");
+    document.body.appendChild(first);
+    const frame = createFrame(first, { id: "fresh", host });
+    host.apply({ type: "html", id: "fresh", version: 1, html: "<p>old</p>" });
+    frame.dispose();
+
+    // A refetch's stream arrives while nothing is mounted (buffered).
+    host.apply({ type: "html", id: "fresh", version: 2, html: "<p>new</p>" });
+
+    const second = document.createElement("div");
+    document.body.appendChild(second);
+    createFrame(second, { id: "fresh", host });
+    expect(second.innerHTML).toBe("<p>new</p>");
+  });
+
+  it("retention is consumed by the mount and re-stashed on its unmount", () => {
+    const host = createFrameHost(createMockSerializer());
+    const first = document.createElement("div");
+    document.body.appendChild(first);
+    const a = createFrame(first, { id: "cycle", host });
+    host.apply({ type: "html", id: "cycle", version: 1, html: "<p>one</p>" });
+    a.dispose();
+
+    const second = document.createElement("div");
+    document.body.appendChild(second);
+    const b = createFrame(second, { id: "cycle", host });
+    expect(second.innerHTML).toBe("<p>one</p>");
+    host.apply({ type: "html", id: "cycle", version: 2, html: "<p>two</p>" });
+    b.dispose();
+
+    const third = document.createElement("div");
+    document.body.appendChild(third);
+    createFrame(third, { id: "cycle", host });
+    expect(third.innerHTML).toBe("<p>two</p>");
   });
 });
 

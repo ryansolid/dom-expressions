@@ -434,3 +434,12 @@ export class ChunkReader {
   constructor(stream: ReadableStream<Uint8Array>);
   next(): Promise<{ done: boolean; value: string | undefined }>;
 }
+
+/**
+ * The intrinsic wire address of a server-component call: the function id,
+ * suffixed with a realm-stable hash of the arguments when there are any.
+ * Both peers derive it independently — the server names flight regions with
+ * it, the client routes them by it — so it must stay deterministic across
+ * realms and releases.
+ */
+export function frameAddress(id: string, args?: readonly unknown[]): string;

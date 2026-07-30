@@ -1,4 +1,11 @@
 import { FrameChunk, FrameHost } from "./frame-client.js";
+import { JSONCodecOptions } from "./serializer.js";
+
+// Structural mirror of server-functions/shared.js's FlightDataConsumer:
+// this file may only reference siblings that ship with it when integrations
+// copy the frames declaration set (solid-web's types build), and the
+// server-functions declarations are copied to a different root.
+type FlightConsumer = (data: unknown, context: { response: Response }) => void | Promise<void>;
 
 /**
  * Header tagging a Response as a frame stream; its value is the producing
@@ -23,9 +30,24 @@ export interface ApplyFrameResponseOptions {
    * Restamp every chunk of the response with this version (one response IS
    * one version). Versions belong to the client too: the producer cannot
    * know how many streams a boundary has consumed, so pass the Nth-response
-   * counter to make policy A's stale-guard real across navigations.
+   * counter to make policy A's stale-guard real across navigations. A
+   * single-flight response addresses several boundaries, each with its own
+   * history — pass a function and it is called once per frame in the
+   * response.
    */
-  version?: number;
+  version?: number | ((frameId: string) => number);
+  /**
+   * Remap any frame id other than the response's own root onto a local one
+   * — how a consumer resolves the addresses a single-flight response uses
+   * for the regions it refreshed.
+   */
+  route?(id: string): string;
+  /**
+   * Receives the payload text of each `outcome` chunk — the response-scoped
+   * single-flight envelope, the caller's result rather than anything the
+   * host renders.
+   */
+  onOutcome?(payload: string): void;
 }
 
 /**
@@ -48,6 +70,31 @@ export function applyFrameResponse(
   options?: ApplyFrameResponseOptions
 ): Promise<string>;
 
+/** Brands an inline-rendered server component with its function id. */
+export const SERVER_COMPONENT: unique symbol;
+
+/** The unwrapped server component behind an inline-render wrap. */
+export const SERVER_COMPONENT_SOURCE: unique symbol;
+
+/** The call's wire address (`frameAddress`), for regions to be emitted under. */
+export const SERVER_COMPONENT_ADDRESS: unique symbol;
+
+/**
+ * Seroval plugin for a server component crossing a serialization boundary:
+ * a branded component serializes as a REFERENCE — a per-function document
+ * placeholder in the hydration serializer, a live-registry lookup by call
+ * address in the JSON codec (single-flight envelopes) — its markup never
+ * rides as data.
+ */
+export const ServerComponentPlugin: unknown;
+
+/**
+ * The codec options for a single-flight envelope: `codec` plus
+ * `ServerComponentPlugin` (deduped by tag). Injected by the protocol on both
+ * legs; exported for integrations composing their own flight carriers.
+ */
+export function flightCodec(codec?: JSONCodecOptions): JSONCodecOptions;
+
 /** Options for `createServerComponentHandler`. */
 export interface ServerComponentHandlerOptions<C = unknown> {
   host: FrameHost;
@@ -57,12 +104,6 @@ export interface ServerComponentHandlerOptions<C = unknown> {
    * own frame instance under the boundary id (multi-mount fans out).
    */
   component(frameId: string): C;
-  /**
-   * Runs synchronously at each server-function call site (before any
-   * await); its return is the call's ambient identity — e.g. Solid's
-   * `getOwner`. Calls sharing a captured context share one boundary.
-   */
-  capture?(info: { id: string; meta: unknown }): unknown;
   /**
    * A new response is about to stream into a boundary: rotate
    * response-scoped state (codec data tables) here. `version` is the
@@ -83,6 +124,18 @@ export interface ServerComponentHandlerOptions<C = unknown> {
    * never observes a pending beat.
    */
   intercept?(info: { id: string; meta: unknown; args: unknown[] }): C | undefined;
+  /**
+   * Reads the registered single-flight consumer at delivery time. The
+   * consumer is module state in the server-function client's SHARED
+   * instance; pass a getter reading that instance when your bundling gives
+   * this module a private copy. Defaults to the local copy's reader.
+   */
+  consumer?(): FlightConsumer | undefined;
+  /**
+   * Reads the configured codec options at decode time — same instance-
+   * identity contract as `consumer`. Defaults to the local copy's reader.
+   */
+  codec?(): JSONCodecOptions | undefined;
 }
 
 /**
@@ -92,15 +145,26 @@ export interface ServerComponentHandlerOptions<C = unknown> {
  * (Solid's `dynamic`) never remounts across refetches — the response streams
  * into the boundary underneath as the only observable effect.
  *
- * Boundary identity is derived, never declared: contexts captured per call
- * key a WeakMap of boundaries (dying with their call sites); ownerless calls
- * fall back to one boundary per function id.
+ * Boundary identity is derived, never declared: every call keys by its
+ * intrinsic (function, arguments) address — the query cache's per-args rule,
+ * so cached components and boundaries stay one-to-one. Same-args calls
+ * resolve the identical component and morph in place; an args switch swaps
+ * boundaries, re-materialized from the host's retained state.
  */
 export function createServerComponentHandler<C>(options: ServerComponentHandlerOptions<C>): {
-  capture?(info: { id: string; meta: unknown }): unknown;
   intercept?(info: { id: string; meta: unknown; args: unknown[] }): C | undefined;
   handle(
     response: Response,
     ctx: { id: string; meta: unknown; args: unknown[]; context: unknown }
   ): C | undefined;
+  /**
+   * Declares that the document is showing a call: hydration-data references
+   * carry their call's address (`_$SC.r(id, address)`) but never travel
+   * through the transport, so the integration forwards those records here —
+   * they are how a post-load call for the same (function, arguments) finds
+   * its way back to the adopted boundary. `component` must be the exact
+   * reference the integration's cache holds for the call (the per-function
+   * placeholder), or readers' equals-gates fail into remounts.
+   */
+  showing(address: string, functionId: string, component: C): void;
 };

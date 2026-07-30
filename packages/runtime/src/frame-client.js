@@ -142,6 +142,17 @@ export function createFrameHost(options = {}) {
   // out to all of them.
   const frames = new Map();
   const pending = new Map();
+  // Resident stores for UNMOUNTED boundaries. Boundary identity belongs to
+  // the client and outlives any one mount: an integration's cache can
+  // resolve a call with the same component and NO new stream (a fresh query
+  // cache hit on back-navigation), so a remounted frame must be able to
+  // re-materialize from what the boundary last showed — otherwise it renders
+  // blank until something refetches. The last frame under an id stashes its
+  // snapshot here at unregister; the next mount consumes it (and re-stashes
+  // its own state when IT unmounts). Freshness stays the integration's call:
+  // a stale cache read still refetches, and the stream morphs over the
+  // re-materialized content like any other update.
+  const retained = new Map();
   const deliver = (frame, chunk) => {
     if (chunk.type === "data") {
       options.applyData && options.applyData(chunk);
@@ -163,6 +174,14 @@ export function createFrameHost(options = {}) {
           frame.apply({ version: sibling.version, r: sibling.store });
         }
         return;
+      }
+      // No live sibling: seed from the boundary's retained store (see above)
+      // before draining buffered chunks — the buffer, when present, holds a
+      // NEWER stream whose writes then morph over the re-materialized state.
+      const kept = retained.get(id);
+      if (kept) {
+        retained.delete(id);
+        frame.apply({ version: kept.version, r: kept.records });
       }
       const buffered = pending.get(id);
       if (buffered) {
@@ -189,12 +208,20 @@ export function createFrameHost(options = {}) {
     },
     /**
      * Remove a frame (or, with no frame argument, every frame) under an id;
-     * chunks still buffered for the id are dropped once none remain.
+     * chunks still buffered for the id are dropped once none remain. The
+     * last frame out stashes its snapshot for a later remount; the no-frame
+     * form is a purge and drops the retained store too.
      */
     unregister(id, frame) {
       const set = frames.get(id);
       if (set && frame) set.delete(frame);
       if (!set || !frame || !set.size) {
+        if (frame) {
+          const kept = frame.snapshot && frame.snapshot();
+          if (kept) retained.set(id, kept);
+        } else {
+          retained.delete(id);
+        }
         frames.delete(id);
         pending.delete(id);
       }
@@ -540,7 +567,7 @@ class FrameImpl {
     // "#" — so one callback services N occurrences from an iterated render
     // prop.
     const found = new Map();
-    if (root) collectSlots(root, found);
+    if (root) collectSlots(root.firstChild, null, found);
     else this.#collectSlots(found);
 
     for (const [occurrence, start] of found) {
@@ -634,6 +661,21 @@ class FrameImpl {
    */
   #invokeSlot(occurrence, callback, record, start, adopted) {
     const cleanups = this.#slotCleanups.get(occurrence) ?? [];
+    // One walk yields both the interior and the end marker. The end marker is
+    // part of the consumer contract (ctx.range): a framework binding that owns
+    // the range reactively (top-level dynamic slot content) needs an anchor to
+    // insert before — the markers are the only stable nodes in the range.
+    let existing = [];
+    let end = null;
+    if (start) {
+      const endData = slotEnd(occurrence);
+      let n = start.nextSibling;
+      while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
+        existing.push(n);
+        n = n.nextSibling;
+      }
+      end = n;
+    }
     const ctx = {
       // Identity for hydration-claim scoping: consumers derive the same
       // key prefix the document producer used for this occurrence. The
@@ -647,8 +689,19 @@ class FrameImpl {
       // (`existing` IS the server-rendered output). Stream re-calls leave
       // it unset — they must render for real (#547).
       adopted: !!adopted,
+      // Whether this occurrence is a render-prop CALL (the producer placed
+      // it with arguments — possibly empty — via a slot record) as opposed
+      // to a direct-insert position. Consumers cannot tell from the resolved
+      // props alone: an argless render prop and a direct insert both arrive
+      // as `{}`, but one is a function to invoke and the other a value to
+      // place.
+      invoked: !!(record && record.kind === "slot"),
       onCleanup: fn => cleanups.push(fn),
-      existing: start ? rangeInterior(start, slotEnd(occurrence)) : []
+      existing,
+      // The range's own markers, when it has them: consumers that bind the
+      // interior reactively insert before `end` and return undefined — the
+      // frame then never touches the interior (morphs protect slot ranges).
+      range: end ? { start, end } : undefined
     };
     const props =
       record && record.kind === "slot" ? this.#resolveArgs(occurrence, record.args) : {};
@@ -669,7 +722,14 @@ class FrameImpl {
         if (!(argKey in props)) props[argKey] = entry.element;
       }
     }
-    const content = callback(props, ctx);
+    // Run under the boundary's owner (when the creator provided one): slot
+    // content reads the mount point's context (routers, stores) and bounds
+    // its lifetime there. The t=0 adopt sync happens to run inside the
+    // adopting render, but stream-driven mounts and re-calls arrive from
+    // microtasks with no owner of their own — without the scope, a render
+    // prop touching context works on boot and throws on the first refresh.
+    const scope = this.#options.ownerScope;
+    const content = scope ? scope(() => callback(props, ctx)) : callback(props, ctx);
     this.#slotArgs.set(occurrence, record);
     if (cleanups.length) this.#slotCleanups.set(occurrence, cleanups);
     if (content == null) return null;
@@ -703,7 +763,6 @@ class FrameImpl {
       for (const { frame } of regions.values()) frame?.dispose();
       this.#slotRegions.delete(key);
     }
-    this.#slotArgs.delete(key);
   }
 
   #runSlotCleanups(key) {
@@ -886,43 +945,43 @@ class FrameImpl {
 
   /** Collect this frame's own top-level slot ranges (bounded to its content). */
   #collectSlots(found) {
-    let n = this.#firstContent();
-    const end = this.#end;
-    while (n && n !== end) {
-      const id = slotStartId(n);
-      if (id !== null) {
-        if ("_DX_DEV_") devCheckRange(n, id);
-        if (!found.has(id)) found.set(id, n);
-        n = afterRange(n, id);
-        continue;
-      }
-      // A nested frame/region element is child-owned: its interior is opaque
-      // to this frame's discovery (the child discovers, with callbacks and
-      // records threaded down). Don't descend into it.
-      if (n.nodeType === ELEMENT_NODE && !isFrameElement(n)) collectSlots(n, found);
-      n = n.nextSibling;
-    }
+    collectSlots(this.#firstContent(), this.#end, found);
   }
 
   /** Find a fragment placeholder `<template id="pl-NAME">` bounded to this
    *  frame's content, or null. */
   #findPlaceholder(name) {
-    const id = placeholderId(name);
-    let n = this.#firstContent();
-    const end = this.#end;
-    while (n && n !== end) {
-      if (isPlaceholderStart(n, id)) return n;
-      if (n.nodeType === ELEMENT_NODE) {
-        const found = findPlaceholder(n, id);
-        if (found) return found;
-      }
-      n = n.nextSibling;
+    return findPlaceholder(this.#firstContent(), this.#end, placeholderId(name));
+  }
+
+  /**
+   * The frame's resident state, for the host to retain across unmounts: a
+   * COPY of the record store — taken pre-teardown, so slot records survive
+   * the dispose scrub — plus, for an element boundary whose store never
+   * carried a root record (a document-adopted frame: its markup arrived as
+   * page HTML, not chunks), the current interior serialized as the root.
+   * A later mount seeded with this re-materializes the boundary even when
+   * the integration's cache resolves the call with no new stream. Returns
+   * null when there is nothing to re-materialize from.
+   */
+  snapshot() {
+    if (this.#disposed) return null;
+    const records = { ...this.#store };
+    if (!records[""] && this.#element && this.#hasContent) {
+      records[""] = { kind: "html", value: this.#element.innerHTML };
     }
-    return null;
+    if (!records[""] && this.#version === undefined) return null;
+    return { version: this.#version ?? 0, records };
   }
 
   dispose() {
     if (this.#disposed) return;
+    // Unregister FIRST: the host stashes this frame's snapshot for a later
+    // remount, and the teardown below (slot-record release, region disposal)
+    // must not run before the snapshot copies the store — nor mutate the
+    // copy after (it copies shallowly; teardown only deletes keys).
+    const { host, id } = this.#options;
+    if (host && id !== undefined) host.unregister(id, this);
     this.#disposed = true;
     for (const key of [...this.#slotCleanups.keys()]) this.#runSlotCleanups(key);
     // Release this frame's occurrences' records from the store that owns them
@@ -934,8 +993,6 @@ class FrameImpl {
     }
     this.#slotRegions.clear();
     this.#mountedSlots.clear();
-    const { host, id } = this.#options;
-    if (host && id !== undefined) host.unregister(id, this);
   }
 
   #applyRoot(html) {
@@ -952,7 +1009,16 @@ class FrameImpl {
       // Dormancy hoisted to once per apply: a null claim keeps the reconcile
       // inner loop at a register compare per node instead of a seam read.
       const claim = claimHandlers() ? this.#claimTree : null;
-      reconcileChildren(parent, fragment, this.#start, this.#end, claim);
+      // Frame-wide displaced-range index. Slot ranges are keyed by occurrence
+      // id, unique within this frame's content, and a keyed re-render can move
+      // an occurrence ACROSS PARENTS (deleting a list item shifts every range
+      // below it into a different <li>). The reconcile's sibling-scoped
+      // matching can't see those; without the index it adopted the incoming
+      // empty marker pair and the record dedupe then never re-invoked — the
+      // occurrence's live interior was silently destroyed.
+      const ranges = new Map();
+      this.#collectSlots(ranges);
+      reconcileChildren(parent, fragment, this.#start, this.#end, claim, ranges);
     }
   }
 
@@ -1279,13 +1345,13 @@ function rangeClose(start, id) {
   return null;
 }
 
-/** Depth-first search for a placeholder template with the given id. */
-function findPlaceholder(root, id) {
-  let n = root.firstChild;
-  while (n) {
+/** Depth-first search among the siblings `[n, end)` for a placeholder
+ *  template with the given id (descending through elements). */
+function findPlaceholder(n, end, id) {
+  while (n && n !== end) {
     if (isPlaceholderStart(n, id)) return n;
     if (n.nodeType === ELEMENT_NODE) {
-      const found = findPlaceholder(n, id);
+      const found = findPlaceholder(n.firstChild, null, id);
       if (found) return found;
     }
     n = n.nextSibling;
@@ -1294,13 +1360,14 @@ function findPlaceholder(root, id) {
 }
 
 /**
- * Collect this frame's own slot ranges (`slot:<key>:start`) into `out`, keyed
- * by slot id. Descends through server-owned elements but never into a range's
- * interior, so slots belonging to nested frames / client content are ignored.
+ * Collect slot ranges (`slot:<key>:start`) among the siblings `[n, end)` into
+ * `out`, keyed by slot id. Descends through server-owned elements but never
+ * into a range's interior or a nested frame/region element — those are
+ * child-owned (the child discovers, with callbacks and records threaded
+ * down), so slots belonging to nested frames / client content are ignored.
  */
-function collectSlots(root, out) {
-  let n = root.firstChild;
-  while (n) {
+function collectSlots(n, end, out) {
+  while (n && n !== end) {
     const id = slotStartId(n);
     if (id !== null) {
       if ("_DX_DEV_") devCheckRange(n, id);
@@ -1308,9 +1375,7 @@ function collectSlots(root, out) {
       n = afterRange(n, id);
       continue;
     }
-    // Skip nested frame/region element interiors — child-owned (see
-    // #collectSlots).
-    if (n.nodeType === ELEMENT_NODE && !isFrameElement(n)) collectSlots(n, out);
+    if (n.nodeType === ELEMENT_NODE && !isFrameElement(n)) collectSlots(n.firstChild, null, out);
     n = n.nextSibling;
   }
 }
@@ -1365,17 +1430,6 @@ function argsEquivalent(a, b) {
     return false;
   }
   return true;
-}
-
-/** The nodes strictly between a range's start marker and its end comment. */
-function rangeInterior(start, endData) {
-  const nodes = [];
-  let n = start.nextSibling;
-  while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
-    nodes.push(n);
-    n = n.nextSibling;
-  }
-  return nodes;
 }
 
 // --- Morph -----------------------------------------------------------------
@@ -1462,7 +1516,7 @@ function morphAttributes(oldEl, newEl, claim) {
 }
 
 /** Morph `oldNode` in place to match `newNode` (assumed `compatible`). */
-function morphNode(oldNode, newNode, claim) {
+function morphNode(oldNode, newNode, claim, ranges) {
   if (oldNode.nodeType === ELEMENT_NODE) {
     // Escape hatch (the claim contract's analogue): an element the author
     // marks `data-preserve` keeps its live attributes AND subtree untouched
@@ -1471,7 +1525,7 @@ function morphNode(oldNode, newNode, claim) {
     // The element stays matched in position; only its interior is frozen.
     if (oldNode.hasAttribute("data-preserve")) return;
     morphAttributes(oldNode, newNode, claim);
-    reconcileChildren(oldNode, newNode, null, null, claim);
+    reconcileChildren(oldNode, newNode, null, null, claim, ranges);
   } else if (oldNode.data !== newNode.data) {
     oldNode.data = newNode.data;
   }
@@ -1512,11 +1566,6 @@ function devCheckRange(start, id) {
       `serve frame documents with Cache-Control: no-transform.`,
     start
   );
-}
-
-/** The sibling after the `slot:<id>:end` marker in the incoming source. */
-function skipRange(start, id) {
-  return afterRange(start, id);
 }
 
 /** Find a `slot:<id>:start` comment among siblings in `[from, bound)`. */
@@ -1577,8 +1626,22 @@ function adoptRange(parent, start, id, ref, claim) {
  * boundEnd)` are reconciled and new nodes are inserted before `boundEnd` —
  * this is how a range-boundary frame reconciles between its markers without
  * touching the client content around them.
+ *
+ * `ranges` (threaded through the whole recursion from the frame's root apply)
+ * indexes the frame content's slot ranges by occurrence id as they stood
+ * BEFORE this morph. Occurrence ids are unique within a frame's content, so
+ * a range the new content places under a different parent (keyed list churn)
+ * is still THAT occurrence — the index is what lets the morph relocate it,
+ * live interior intact, where sibling-scoped matching sees only a new id.
  */
-function reconcileChildren(parent, source, boundStart = null, boundEnd = null, claim = null) {
+function reconcileChildren(
+  parent,
+  source,
+  boundStart = null,
+  boundEnd = null,
+  claim = null,
+  ranges = null
+) {
   let oldChild = boundStart ? boundStart.nextSibling : parent.firstChild;
   let newChild = source.firstChild;
 
@@ -1594,13 +1657,22 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
         // (this is what keeps focus/selection/media alive) and skip both
         // ranges.
         oldChild = afterRange(old, pid);
-        newChild = skipRange(newChild, pid);
+        newChild = afterRange(newChild, pid);
       } else {
-        const existing = findRangeStart(old, pid, boundEnd);
+        // Prefer the frame-wide index (relocations from ANY parent — a
+        // removal loop may have stashed the range as a fragment); fall back
+        // to the sibling scan when reconciling without one.
+        const displaced = ranges && ranges.get(pid);
+        const existing = displaced || findRangeStart(old, pid, boundEnd);
         if (existing) {
-          // Reorder: relocate the existing client-owned range into position.
-          moveRangeBefore(parent, existing, pid, old ?? boundEnd);
-          newChild = skipRange(newChild, pid);
+          if (ranges) ranges.delete(pid);
+          if (existing.nodeType === 11 /* DOCUMENT_FRAGMENT_NODE */) {
+            parent.insertBefore(existing, old ?? boundEnd);
+          } else {
+            // Reorder: relocate the existing client-owned range into position.
+            moveRangeBefore(parent, existing, pid, old ?? boundEnd);
+          }
+          newChild = afterRange(newChild, pid);
         } else {
           // New slot: adopt the server-sent placeholder range as-is.
           newChild = adoptRange(parent, newChild, pid, old ?? boundEnd, claim);
@@ -1624,7 +1696,7 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
       continue;
     }
     if (compatible(old, newChild)) {
-      morphNode(old, newChild, claim);
+      morphNode(old, newChild, claim, ranges);
       oldChild = old.nextSibling;
       newChild = nextNew;
       continue;
@@ -1642,7 +1714,7 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
       }
       if (ahead && ahead !== boundEnd) {
         parent.insertBefore(ahead, old);
-        morphNode(ahead, newChild, claim);
+        morphNode(ahead, newChild, claim, ranges);
         newChild = nextNew;
         continue;
       }
@@ -1656,7 +1728,38 @@ function reconcileChildren(parent, source, boundStart = null, boundEnd = null, c
 
   while (oldChild && oldChild !== boundEnd) {
     const next = oldChild.nextSibling;
+    // A leftover range still in the index hasn't been matched YET — its new
+    // position may live in a sibling this level hasn't reached, or deeper in
+    // a subtree still to morph. Removing it node-by-node would sever the
+    // siblings a later relocation walks, so stash the whole range (order
+    // intact) into the index instead. A range nobody ends up claiming just
+    // stays detached — exactly what removal meant.
+    const pid = ranges ? slotStartId(oldChild) : null;
+    if (pid !== null && ranges.get(pid) === oldChild) {
+      const frag = document.createDocumentFragment();
+      const after = stashRange(frag, oldChild, pid);
+      ranges.set(pid, frag);
+      oldChild = after;
+      continue;
+    }
     parent.removeChild(oldChild);
     oldChild = next;
   }
+}
+
+/**
+ * Detach the range `[start .. slot:<id>:end]` into `frag` preserving sibling
+ * order; returns the node that followed the range's end marker.
+ */
+function stashRange(frag, start, id) {
+  const end = slotEnd(id);
+  let n = start;
+  while (n) {
+    const next = n.nextSibling;
+    const isEnd = n.nodeType === COMMENT_NODE && n.data === end;
+    frag.appendChild(n);
+    if (isEnd) return next;
+    n = next;
+  }
+  return null;
 }

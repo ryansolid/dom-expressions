@@ -2,22 +2,29 @@ import { JSONCodecOptions } from "../serializer.js";
 import { ServerFunction, ServerFunctionMetadata } from "./shared.js";
 
 export {
+  ChunkReader,
   ERROR_HEADER,
   FLASH_COOKIE,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
   SINGLE_FLIGHT_HEADER,
   clearFlashCookie,
+  createChunk,
   decodeErrorHeaderValue,
   decodeResponse,
   decodeResponsePayload,
+  deserializeStream,
   encodeErrorHeaderValue,
+  frameAddress,
+  getFlightDataConsumer,
   getServerFunctionMetadata,
+  getServerFunctionsCodec,
   hasFlashCookie,
   isServerFunction,
   subscribeFlightData,
   withMeta
 } from "./shared.js";
+export { REVALIDATE_HEADER } from "../response.js";
 export type {
   FlightDataConsumer,
   FlightDataContext,

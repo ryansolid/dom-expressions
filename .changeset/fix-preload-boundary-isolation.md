@@ -1,0 +1,7 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Server-component boundary identity is now the call's intrinsic `(function, arguments)` address end to end — the same per-args rule an integration's query cache keys values by, so cached components and boundaries stay one-to-one. A repeat call for the same args resolves the identical component (refetches morph the showing boundary in place, cache hits pass the reader's equals-gate); different args resolve a different boundary, so a hover preload for other arguments streams off-screen (buffered until mounted) instead of morphing what the page is showing, and a call site switching arguments swaps boundaries rather than carrying one boundary's client state across calls. This replaces the context-capture (`capture`) keying, whose one-boundary-per-site model let a fresh cache hit for one args-variant resolve a component already mounted showing another — the equals-gate held and the page silently kept the wrong content.
+
+The frame host now retains an unmounted boundary's store (element boundaries whose markup arrived as document HTML snapshot their interior at unregister), and a remount seeds from it: a cache hit that resolves with no new stream re-materializes the boundary instantly instead of rendering blank, and a stale-cache refetch morphs over the re-materialized state. This fixes intermittently blank pages when navigating back and forth between two views inside the cache freshness window.
