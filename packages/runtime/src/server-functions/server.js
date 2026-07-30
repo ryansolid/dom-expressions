@@ -114,6 +114,13 @@ const REGISTRATIONS = new Map();
 // can gate GET dispatch — a GET request to a function that never declared
 // it answers 405. Declaring GET grants GET without revoking POST.
 const METHODS = new Map();
+// In-flight invocation state, keyed by the request event the call runs
+// under — the derived event a direct SSR call creates, or the handler's own
+// event for HTTP dispatch. Deliberately NOT `event.locals`: locals is
+// user/integration space, and derived events shallow-copy the event while
+// SHARING locals, so a locals write from a nested or concurrent call would
+// leak into (and overwrite) the outer scope's state.
+const INVOCATIONS = new WeakMap();
 
 export function registerServerFunction(id, callback) {
   REGISTRATIONS.set(id, callback);
@@ -166,7 +173,10 @@ export function createServerReference({ id, fn, name }) {
       const ogEvt = getRequestEvent();
       if (!ogEvt) throw new Error("Cannot call server function outside of a request");
       const evt = { ...ogEvt };
-      evt.locals.serverFunctionInvocation = { id };
+      // Keyed on the derived event (locals is shared with the outer event —
+      // see INVOCATIONS): the invocation is visible exactly within this
+      // call's provideEvent scope and evaporates with the derived event.
+      INVOCATIONS.set(evt, { id });
       evt.serverOnly = true;
       const result = provideEvent(evt, () => {
         return fn.apply(thisArg, args);
@@ -221,8 +231,18 @@ export function GET(fn) {
  * currently executing.
  */
 export function getServerFunctionInvocation() {
-  const event = getRequestEvent();
-  return event && event.locals.serverFunctionInvocation;
+  return getEventServerFunctionInvocation(getRequestEvent());
+}
+
+/**
+ * The event-keyed half of `getServerFunctionInvocation`, for callers handed
+ * an event outside its provideEvent scope (the handler's result transforms
+ * run after the scope has exited). Integration plumbing — application code
+ * reads the ambient accessor instead.
+ * @internal
+ */
+export function getEventServerFunctionInvocation(event) {
+  return event && INVOCATIONS.get(event);
 }
 
 function resolveFunctionId(request, url) {
@@ -608,7 +628,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
   const headers = new Headers();
   try {
     let result = await provide(event, async () => {
-      event.locals.serverFunctionInvocation = { id: functionId };
+      INVOCATIONS.set(event, { id: functionId });
       return serverFunction(...parsed);
     });
 

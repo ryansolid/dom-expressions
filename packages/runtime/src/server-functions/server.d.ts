@@ -349,13 +349,27 @@ export interface ServerFunctionInvocation {
 }
 
 /**
- * Reads the in-flight server function invocation (its id) off the current
+ * Reads the in-flight server function invocation (its id) for the current
  * request event — usable inside a server function body, e.g. to key caches
  * or logs by function. Returns undefined outside a server function call.
- * Distinct from `getServerFunctionMetadata(fn)`, which reads a reference's
- * static declaration metadata; this describes the call currently executing.
+ * The state lives in a module-private WeakMap keyed by the per-call request
+ * event (never in `event.locals`, which derived events share with their
+ * outer event). Distinct from `getServerFunctionMetadata(fn)`, which reads
+ * a reference's static declaration metadata; this describes the call
+ * currently executing.
  */
 export function getServerFunctionInvocation(): ServerFunctionInvocation | undefined;
+
+/**
+ * The event-keyed half of `getServerFunctionInvocation`, for callers handed
+ * an event outside its provideEvent scope (the handler's result transforms
+ * run after the scope has exited). Integration plumbing — application code
+ * reads the ambient accessor instead.
+ * @internal
+ */
+export function getEventServerFunctionInvocation(
+  event: RequestEvent | undefined
+): ServerFunctionInvocation | undefined;
 
 /**
  * Hooks layering framework policy onto `handleServerFunctionRequest`.

@@ -31,7 +31,24 @@ import { createJSONDataTable } from "../../src/serializer";
 import { createFrame, createFrameHost } from "../../src/frame-client";
 
 describe("frameTransformResult", () => {
-  const event = { locals: { serverFunctionInvocation: { id: "story#0" } } };
+  // The in-flight invocation rides a module-private WeakMap keyed by the
+  // handler's event — never `event.locals` — so seed one exactly the way
+  // the runtime does: a real dispatch keys the event it runs under.
+  const event = { locals: {} };
+  beforeAll(async () => {
+    registerServerFunction("story#0", async () => null);
+    const seeded = await handleServerFunctionRequest(
+      // The id resolves from the query param — the function header carries
+      // `id#instance` and would split the id's own `#`.
+      new Request("http://localhost/_server?id=story%230", { method: "POST" }),
+      {
+        createEvent: request => Object.assign(event, { request }),
+        provideEvent: (evt, fn) => fn()
+      }
+    );
+    expect(seeded.status).toBe(200);
+    expect(Object.keys(event.locals)).toEqual([]);
+  });
 
   it("passes non-function results through untouched", async () => {
     const value = { data: 1 };

@@ -286,6 +286,56 @@ describe("registration", () => {
     expect(seen.invocation).toEqual({ id: "meta#0" });
   });
 
+  it("keeps invocation state off locals and off the outer event", async () => {
+    const fn = async () => getServerFunctionInvocation();
+    const callable = createServerReference(registerServerReference("inv#0", fn));
+
+    const event = { request: new Request("http://localhost/"), locals: {} };
+    const seen = {};
+    const result = await globalThis[RequestContext].run(event, () => {
+      const p = callable();
+      // The call has returned to the outer scope: the ambient event is the
+      // original one again, and it never carried an invocation.
+      seen.afterCall = getServerFunctionInvocation();
+      return p;
+    });
+    expect(result).toEqual({ id: "inv#0" });
+    expect(seen.afterCall).toBeUndefined();
+    // locals is user/integration space — the invocation never lands there,
+    // under the new name or the old one.
+    expect(Object.keys(event.locals)).toEqual([]);
+    expect(event.locals.serverFunctionInvocation).toBeUndefined();
+    expect(event.locals.serverFunctionMeta).toBeUndefined();
+  });
+
+  it("scopes nested direct calls to their own invocation and restores the outer one", async () => {
+    const seen = [];
+    const inner = createServerReference(
+      registerServerReference("inv#inner", async () => {
+        seen.push(["inner", getServerFunctionInvocation()]);
+      })
+    );
+    const outer = createServerReference(
+      registerServerReference("inv#outer", async () => {
+        seen.push(["outer:before", getServerFunctionInvocation()]);
+        const p = inner();
+        // Synchronously after the nested call: the outer call's own
+        // invocation is back in scope, not the inner one's.
+        seen.push(["outer:after", getServerFunctionInvocation()]);
+        await p;
+      })
+    );
+
+    const event = { request: new Request("http://localhost/"), locals: {} };
+    await globalThis[RequestContext].run(event, () => outer());
+    expect(seen).toEqual([
+      ["outer:before", { id: "inv#outer" }],
+      ["inner", { id: "inv#inner" }],
+      ["outer:after", { id: "inv#outer" }]
+    ]);
+    expect(Object.keys(event.locals)).toEqual([]);
+  });
+
   it("rejects server-side callables outside of a request", () => {
     const callable = createServerReference(registerServerReference("outside#0", async () => {}));
     expect(() => callable()).toThrow("Cannot call server function outside of a request");
@@ -534,10 +584,15 @@ describe("handler", () => {
       seen.invocation = getServerFunctionInvocation();
       return null;
     });
-    const restore = connectTransport();
+    const restore = connectTransport({
+      createEvent: request => (seen.event = { request, locals: {} })
+    });
     try {
       await createClientReference("meta-1")();
       expect(seen.invocation).toEqual({ id: "meta-1" });
+      // The invocation rides a WeakMap keyed by the handler's event, never
+      // its locals bag.
+      expect(Object.keys(seen.event.locals)).toEqual([]);
     } finally {
       restore();
     }
