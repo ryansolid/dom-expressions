@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/runtime": minor
+"@dom-expressions/runtime": patch
 ---
 
 Single-flight mutations with server-component regions: when part of what a mutation invalidates is markup, the frame stream carries the whole payload in one round trip.
