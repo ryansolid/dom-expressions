@@ -829,16 +829,28 @@ export function renderToStream(code, options = {}) {
             if (!shellCompleted) return flush();
             const encoder = new TextEncoder();
             const writer = w.getWriter();
+            // Writes are chained and awaited before the lock is released.
+            // `writer.write()` returns a promise, and releasing the lock (or
+            // closing) with one still in flight leaves that chunk's fate up to
+            // the host's stream implementation — Node queues it anyway, workerd
+            // drops it. The chunk at risk is the last one written, which for a
+            // streamed boundary is its `_fr` resolution; losing that leaves the
+            // client's boundary waiting on a promise that never resolves.
+            let pendingWrites = Promise.resolve();
             writable = {
               end() {
-                writer.releaseLock();
-                w.close().catch(() => {});
-                resolve();
+                pendingWrites.then(() => {
+                  writer.releaseLock();
+                  w.close().catch(() => {});
+                  resolve();
+                });
               }
             };
             buffer = {
               write(payload) {
-                writer.write(encoder.encode(payload)).catch(() => {});
+                pendingWrites = pendingWrites
+                  .then(() => writer.write(encoder.encode(payload)))
+                  .catch(() => {});
               }
             };
             buffer.write(tmp);
