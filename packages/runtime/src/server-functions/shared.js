@@ -115,19 +115,16 @@ export async function encodeArgumentsKey(args, codec) {
   return await serializeString(args, codec);
 }
 
-// FNV-1a (32-bit) over UTF-16 code units, fixed-width hex output. Pure JS
-// and deterministic on both peers — WebCrypto digests are async plumbing
-// and overkill for a cache key. A collision here costs serving the wrong
-// artifact for one (id, args) pair; folding the raw id into the input (see
-// getStaticCacheKey) keeps cross-function mixups behind two coincidences
-// instead of one.
-function fnv1a(text) {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
+// A collision serves the wrong artifact rather than merely missing cache,
+// so a 32-bit non-cryptographic hash is not enough here. The key path is
+// already asynchronous (codec encoding can be), and SubtleCrypto is
+// available on both production peers. Keep 128 bits of SHA-256: compact
+// filenames with a collision margin far beyond any plausible prerender.
+async function hashStaticCall(text) {
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest, 0, 16), byte => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
 }
 
 /**
@@ -144,7 +141,7 @@ function fnv1a(text) {
  */
 export async function getStaticCacheKey(id, args, codec) {
   const encoded = await encodeArgumentsKey(args, codec);
-  return `${id.replace(/[^\w.-]/g, "_")}-${fnv1a(id + "\n" + encoded)}`;
+  return `${id.replace(/[^\w.-]/g, "_")}-${await hashStaticCall(id + "\n" + encoded)}`;
 }
 
 /**

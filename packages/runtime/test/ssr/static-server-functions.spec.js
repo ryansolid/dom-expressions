@@ -56,24 +56,24 @@ afterEach(() => {
   delete globalThis[RequestContext];
 });
 
-// A recording staticCache: the tests assert on exactly what the prerender
+// A recording static artifact writer: the tests assert on exactly what the prerender
 // writer would have been handed.
-function recordingCache() {
+function recordingArtifacts() {
   const entries = [];
   return {
     entries,
-    cache: {
-      set(entry) {
+    writer: {
+      write(entry) {
         entries.push(entry);
       }
     }
   };
 }
 
-function withStaticCache(cache, run) {
-  configureServerFunctionsServer({ staticCache: cache });
+function withStaticArtifacts(writer, run) {
+  configureServerFunctionsServer({ staticArtifacts: writer });
   return Promise.resolve(run()).finally(() => {
-    configureServerFunctionsServer({ staticCache: null });
+    configureServerFunctionsServer({ staticArtifacts: null });
   });
 }
 
@@ -87,7 +87,7 @@ describe("static cache keys", () => {
     const a = await getStaticCacheKey("fn-0", ["docs", 2]);
     const b = await getStaticCacheKey("fn-0", ["docs", 2]);
     expect(a).toBe(b);
-    expect(a).toMatch(/^fn-0-[0-9a-f]{8}$/);
+    expect(a).toMatch(/^fn-0-[0-9a-f]{32}$/);
   });
 
   it("is insensitive to object key insertion order", async () => {
@@ -129,7 +129,7 @@ describe("static cache keys", () => {
     // `#` starts a URL fragment and `/` a path segment — the readable
     // prefix is normalized while the raw id still feeds the hash
     const key = await getStaticCacheKey("src/actions.ts#getUser", []);
-    expect(key).toMatch(/^src_actions.ts_getUser-[0-9a-f]{8}$/);
+    expect(key).toMatch(/^src_actions.ts_getUser-[0-9a-f]{32}$/);
     // normalized-away distinctions stay distinct through the hash
     expect(await getStaticCacheKey("fn#0", [])).not.toBe(await getStaticCacheKey("fn/0", []));
   });
@@ -141,13 +141,13 @@ describe("static cache keys", () => {
 
 describe("server capture", () => {
   it("captures in-process SSR calls through the apply trap", async () => {
-    const { entries, cache } = recordingCache();
+    const { entries, writer } = recordingArtifacts();
     const declared = serverStatic(
       createServerReference(
         registerServerReference("static-ssr-0", async n => ({ n, when: new Date(0) }))
       )
     );
-    await withStaticCache(cache, async () => {
+    await withStaticArtifacts(writer, async () => {
       const result = await runInRequest(() => declared(7));
       expect(result).toEqual({ n: 7, when: new Date(0) });
     });
@@ -157,15 +157,33 @@ describe("server capture", () => {
     expect(entry.id).toBe("static-ssr-0");
     expect(entry.key).toBe(await getStaticCacheKey("static-ssr-0", [7]));
     expect(entry.filename).toBe(staticArtifactName(entry.key));
-    expect(entry.args).toEqual([7]);
-    expect(entry.value).toEqual({ n: 7, when: new Date(0) });
+    expect(Object.keys(entry).sort()).toEqual(["filename", "id", "key", "payload"]);
     // the payload is the framed wire format and round-trips to the value
     expect(entry.payload.startsWith(";0x")).toBe(true);
     expect(await deserializeString(entry.payload)).toEqual({ n: 7, when: new Date(0) });
   });
 
+  it("flushes a synchronous implementation before its call resolves", async () => {
+    let written = false;
+    const declared = serverStatic(
+      createServerReference(registerServerReference("static-sync-0", () => "value"))
+    );
+    await withStaticArtifacts(
+      {
+        async write() {
+          await Promise.resolve();
+          written = true;
+        }
+      },
+      async () => {
+        expect(await runInRequest(() => declared())).toBe("value");
+        expect(written).toBe(true);
+      }
+    );
+  });
+
   it("captures rich types and resolved async values in the payload", async () => {
-    const { entries, cache } = recordingCache();
+    const { entries, writer } = recordingArtifacts();
     const declared = serverStatic(
       createServerReference(
         registerServerReference("static-rich-0", async () => ({
@@ -174,7 +192,7 @@ describe("server capture", () => {
         }))
       )
     );
-    await withStaticCache(cache, () => runInRequest(() => declared()));
+    await withStaticArtifacts(writer, () => runInRequest(() => declared()));
 
     expect(entries).toHaveLength(1);
     const decoded = await deserializeString(entries[0].payload);
@@ -183,11 +201,11 @@ describe("server capture", () => {
   });
 
   it("captures HTTP GET dispatch after transformResult", async () => {
-    const { entries, cache } = recordingCache();
+    const { entries, writer } = recordingArtifacts();
     serverStatic(createServerReference(registerServerReference("static-http-0", async n => n * 2)));
     const encodedArgs = encodeURIComponent(JSON.stringify([21]));
     let response;
-    await withStaticCache(cache, async () => {
+    await withStaticArtifacts(writer, async () => {
       response = await handleServerFunctionRequest(
         new Request(`http://localhost/_server?id=static-http-0&args=${encodedArgs}`, {
           method: "GET",
@@ -202,13 +220,12 @@ describe("server capture", () => {
     // would have answered with
     expect(entries).toHaveLength(1);
     expect(entries[0].id).toBe("static-http-0");
-    expect(entries[0].args).toEqual([21]);
     expect(entries[0].key).toBe(await getStaticCacheKey("static-http-0", [21]));
     expect(await deserializeString(entries[0].payload)).toEqual({ doubled: 42 });
   });
 
   it("never captures thrown errors", async () => {
-    const { entries, cache } = recordingCache();
+    const { entries, writer } = recordingArtifacts();
     const declared = serverStatic(
       createServerReference(
         registerServerReference("static-throw-0", async () => {
@@ -216,7 +233,7 @@ describe("server capture", () => {
         })
       )
     );
-    await withStaticCache(cache, async () => {
+    await withStaticArtifacts(writer, async () => {
       await expect(runInRequest(() => declared())).rejects.toThrow("kaboom");
       const response = await handleServerFunctionRequest(
         new Request("http://localhost/_server?id=static-throw-0", {
@@ -230,7 +247,7 @@ describe("server capture", () => {
   });
 
   it("never captures Response or ResponseEnvelope results", async () => {
-    const { entries, cache } = recordingCache();
+    const { entries, writer } = recordingArtifacts();
     const rawResponse = serverStatic(
       createServerReference(
         registerServerReference("static-response-0", async () => new Response("verbatim"))
@@ -243,7 +260,7 @@ describe("server capture", () => {
         )
       )
     );
-    await withStaticCache(cache, async () => {
+    await withStaticArtifacts(writer, async () => {
       await runInRequest(() => rawResponse());
       await runInRequest(() => envelope());
       await handleServerFunctionRequest(
@@ -257,13 +274,13 @@ describe("server capture", () => {
   });
 
   it("never captures functions that did not declare static", async () => {
-    const { entries, cache } = recordingCache();
+    const { entries, writer } = recordingArtifacts();
     const plain = createServerReference(
       registerServerReference("static-undeclared-0", async () => "value")
     );
-    await withStaticCache(cache, async () => {
+    await withStaticArtifacts(writer, async () => {
       expect(await runInRequest(() => plain())).toBe("value");
-      // POST dispatch to a plain function under a configured cache
+      // POST dispatch to a plain function under a configured artifact writer
       const response = await handleServerFunctionRequest(
         new Request("http://localhost/_server", {
           method: "POST",
@@ -278,21 +295,21 @@ describe("server capture", () => {
     expect(entries).toHaveLength(0);
   });
 
-  it("captures nothing without a configured staticCache", async () => {
+  it("captures nothing without a configured static artifact writer", async () => {
     const declared = serverStatic(
       createServerReference(registerServerReference("static-nocache-0", async () => "value"))
     );
-    // no cache configured: the call resolves exactly as before
+    // no artifact writer configured: the call resolves exactly as before
     expect(await runInRequest(() => declared())).toBe("value");
   });
 
-  it("a failing cache write never breaks the call it observed", async () => {
+  it("a failing artifact write never breaks the call it observed", async () => {
     const declared = serverStatic(
       createServerReference(registerServerReference("static-failwrite-0", async () => "value"))
     );
-    await withStaticCache(
+    await withStaticArtifacts(
       {
-        set() {
+        write() {
           throw new Error("disk full");
         }
       },
@@ -323,7 +340,7 @@ describe("client production path", () => {
 
   it("fetches the captured artifact and resolves the decoded value", async () => {
     // capture on the server first — the client must replay the same bytes
-    const { entries, cache } = recordingCache();
+    const { entries, writer } = recordingArtifacts();
     const declared = serverStatic(
       createServerReference(
         registerServerReference("static-e2e-0", async (slug, opts) => ({
@@ -333,7 +350,7 @@ describe("client production path", () => {
         }))
       )
     );
-    await withStaticCache(cache, () => runInRequest(() => declared("intro", { page: 2 })));
+    await withStaticArtifacts(writer, () => runInRequest(() => declared("intro", { page: 2 })));
     expect(entries).toHaveLength(1);
 
     process.env.NODE_ENV = "production";

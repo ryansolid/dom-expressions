@@ -1,8 +1,8 @@
 # Static Server Functions
 
-*A usage-and-integration guide. For the request-time server function ABI
+_A usage-and-integration guide. For the request-time server function ABI
 these build on, see the doc comments in
-`packages/runtime/src/server-functions/`.*
+`packages/runtime/src/server-functions/`._
 
 ## The idea in one paragraph
 
@@ -60,7 +60,10 @@ and fully deterministic:
    `serializeString` output. The codec options must match across peers,
    like everywhere else in the protocol.
 2. `getStaticCacheKey(id, args, codec)` returns `{id}-{hash}` — the id
-   plus an FNV-1a hex hash of the id and the encoded arguments. The key
+   plus the first 128 bits of a SHA-256 hash over the id and encoded
+   arguments. A collision would serve the wrong artifact rather than
+   merely miss cache, so a short non-cryptographic hash is not sufficient.
+   The key
    doubles as a filename and a URL path segment, so characters that cannot
    ride either (`#` starts a URL fragment, `/` a path segment) are
    normalized out of the readable prefix; the raw id still participates in
@@ -72,7 +75,7 @@ and fully deterministic:
 An artifact stores the **framed codec string** — the exact bytes the live
 GET response body would have carried: length-prefixed chunks of serialized
 data, with async values (promises, streams) resolved and folded in at
-capture time. It is *not* JSON, which is why the extension is `.txt`
+capture time. It is _not_ JSON, which is why the extension is `.txt`
 (matching the live wire's `text/plain`) rather than a misleading `.json`.
 The production client decodes it with the same `deserializeStream` path it
 uses for live responses, so rich types (Dates, Maps, typed arrays) and
@@ -86,25 +89,26 @@ argument space of a function cannot be known statically, so the artifact
 set is by definition the set of calls the prerender pass exercised.
 Whatever static functions the rendered pages actually call run in-process
 (or over HTTP GET, for crawled prerenders), and each settled `(id, args)`
-pair produces one artifact through the `staticCache` seam:
+pair produces one artifact through the `staticArtifacts` seam:
 
 ```ts
 configureServerFunctionsServer({
-  staticCache: {
-    async set({ filename, payload }) {
+  staticArtifacts: {
+    async write({ filename, payload }) {
       await fs.writeFile(path.join(clientOutDir, "_server-static", filename), payload);
     }
   }
 });
 ```
 
-The entry also carries `id`, `key`, `args`, and the settled `value` for
-writers that want manifests or logging. Capture fires from both prerender
-call paths — the in-process apply trap and `handleServerFunctionRequest`
-GET dispatch — after result transforms, and only for plain values: thrown
-errors, raw `Response`s, and `ResponseEnvelope`s are skipped (HTTP metadata
-cannot ride a static file; development builds warn when it happens). A
-capture failure warns and never breaks the call it observed.
+The entry also carries `id` and `key` for manifests or logging. Decoded
+arguments and values stay private to the runtime; the writer receives only
+the completed artifact. Capture fires from both prerender call paths — the
+in-process apply trap and `handleServerFunctionRequest` GET dispatch —
+after result transforms, and only for plain values: thrown errors, raw
+`Response`s, and `ResponseEnvelope`s are skipped (HTTP metadata cannot ride
+a static file; development builds warn when it happens). A write failure
+warns and never breaks the call it observed.
 
 Integration obligations:
 
@@ -123,7 +127,7 @@ Integration obligations:
    yields the same filename; overwrites are idempotent.
 
 Dev servers and non-prerender deploys configure nothing: without a
-`staticCache` the capture branch never runs, and clients use the live GET
+`staticArtifacts` writer the capture branch never runs, and clients use the live GET
 transport.
 
 ## Production client behavior

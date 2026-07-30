@@ -62,7 +62,7 @@ const config = {
   transformDirectResult: undefined,
   handleNoJS: undefined,
   endpoint: "/_server",
-  staticCache: undefined
+  staticArtifacts: undefined
 };
 
 /**
@@ -77,9 +77,9 @@ const config = {
  * of SSR'd references, e.g. form actions — must match the client's), and
  * `codec` must match the client's (stored in the shared layer).
  *
- * `staticCache` is the prerender capture seam for static server functions
+ * `staticArtifacts` is the prerender capture seam for static server functions
  * (see `staticFunction`): configured only by prerender tooling, its
- * `set(entry)` receives one entry per settled static-declared call —
+ * `write(entry)` receives one entry per settled static-declared call —
  * `payload` is the framed codec string the production client will decode,
  * `filename` the artifact name to write it under (`key` plus `.txt`).
  * Without one, static declarations add zero capture overhead.
@@ -92,7 +92,7 @@ export function configureServerFunctionsServer({
   handleNoJS,
   endpoint,
   codec,
-  staticCache
+  staticArtifacts
 } = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
   if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
@@ -101,7 +101,7 @@ export function configureServerFunctionsServer({
   if (handleNoJS !== undefined) config.handleNoJS = handleNoJS;
   if (endpoint !== undefined) config.endpoint = endpoint;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
-  if (staticCache !== undefined) config.staticCache = staticCache;
+  if (staticArtifacts !== undefined) config.staticArtifacts = staticArtifacts;
 }
 
 function provideEvent(event, fn) {
@@ -122,7 +122,8 @@ const REGISTRATIONS = new Map();
 // it answers 405. Declaring GET grants GET without revoking POST.
 const METHODS = new Map();
 // Static-declared function ids (the server half of `staticFunction` records
-// them): capture only ever fires for these — a configured staticCache must
+// them): capture only ever fires for these — a configured static artifact
+// writer must
 // not start snapshotting ordinary calls.
 const STATICS = new Set();
 
@@ -162,8 +163,8 @@ export function registerServerReference(id, fn, name) {
 // payload has to be complete before the writer sees it, but every failure
 // in here only warns.
 async function captureStaticResult(id, args, value) {
-  const cache = config.staticCache;
-  if (!cache || !STATICS.has(id)) return;
+  const writer = config.staticArtifacts;
+  if (!writer || !STATICS.has(id)) return;
   if (value instanceof Response || isResponseEnvelope(value)) {
     if (process.env.NODE_ENV === "development") {
       console.warn(
@@ -178,7 +179,7 @@ async function captureStaticResult(id, args, value) {
     const codec = getServerFunctionsCodec();
     const payload = await serializeString(value, codec);
     const key = await getStaticCacheKey(id, args, codec);
-    await cache.set({ id, key, filename: staticArtifactName(key), payload, args, value });
+    await writer.write({ id, key, filename: staticArtifactName(key), payload });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.warn(`Failed to capture static artifact for server function "${id}":`, error);
@@ -226,18 +227,21 @@ export function createServerReference({ id, fn, name }) {
       // static functions in-process). It observes the same value the caller
       // receives and rejections bypass it entirely — thrown errors are
       // never cached.
-      const capture = config.staticCache && STATICS.has(id);
-      if ((transform || capture) && result && typeof result.then === "function") {
-        return result.then(async value => {
+      const capture = config.staticArtifacts && STATICS.has(id);
+      if (capture) {
+        // Server functions are publicly async callables. Always return the
+        // capture promise — even for a synchronous implementation — so a
+        // completed prerender call means its artifact has been flushed.
+        return Promise.resolve(result).then(async value => {
           if (transform) value = await transform(value, { id, event: evt });
-          if (capture) await captureStaticResult(id, args, value);
+          await captureStaticResult(id, args, value);
           return value;
         });
       }
+      if (transform && result && typeof result.then === "function") {
+        return result.then(value => transform(value, { id, event: evt }));
+      }
       const value = transform ? transform(result, { id, event: evt }) : result;
-      // a synchronous result cannot wait on the write without changing the
-      // call's shape — the capture runs detached (internally guarded)
-      if (capture) captureStaticResult(id, args, value);
       return value;
     }
   });
@@ -280,7 +284,8 @@ export function GET(fn) {
  * `{ method: "GET", static: true }` on the metadata channel, grants GET
  * dispatch (static implies GET: development and build-time clients call
  * over the live GET transport), and enrolls the id for prerender capture.
- * With a `staticCache` configured (see `configureServerFunctionsServer`),
+ * With a static artifact writer configured (see
+ * `configureServerFunctionsServer`),
  * every settled call that returned a plain value is serialized to the
  * framed wire format and handed to the cache writer under its static
  * cache key — from in-process SSR calls and HTTP GET dispatch alike.
@@ -664,7 +669,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
     // will replay against the artifact, so its (transformed) result is what
     // the artifact must hold. Response/envelope results are skipped inside
     // the capture — HTTP metadata cannot ride a static file.
-    if (config.staticCache && request.method === "GET" && STATICS.has(functionId)) {
+    if (config.staticArtifacts && request.method === "GET" && STATICS.has(functionId)) {
       await captureStaticResult(functionId, parsed, result);
     }
 

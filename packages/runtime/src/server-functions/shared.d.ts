@@ -39,6 +39,9 @@ export function isJSONSafe(value: unknown): boolean;
  * codec's framed string for everything else. Deterministic for equal calls
  * (object key order is normalized); the codec options must match the peer,
  * like everywhere else in the protocol.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
  */
 export function encodeArgumentsKey(
   args: readonly unknown[],
@@ -53,7 +56,10 @@ export function encodeArgumentsKey(
  * so it is fully deterministic across peers. Safe to use as a filename and
  * as a URL path segment: characters that cannot ride either are normalized
  * out of the readable id prefix, while the raw id still participates in
- * the hash.
+ * the 128-bit SHA-256 hash.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
  */
 export function getStaticCacheKey(
   id: string,
@@ -65,6 +71,9 @@ export function getStaticCacheKey(
  * The artifact filename for a static cache key: `{key}.txt`. Artifacts
  * store the framed codec string, which is not JSON — `.txt` matches the
  * live wire's `text/plain`.
+ *
+ * Transport building block; not meant for hand-written code.
+ * @internal
  */
 export function staticArtifactName(key: string): string;
 

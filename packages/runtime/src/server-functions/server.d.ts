@@ -235,22 +235,22 @@ export interface ServerFunctionsServerConfig {
    */
   codec?: JSONCodecOptions;
   /**
-   * The prerender capture seam for static server functions (see
-   * `staticFunction`): `set(entry)` receives one entry per settled
+   * The prerender artifact seam for static server functions (see
+   * `staticFunction`): `write(entry)` receives one entry per settled
    * static-declared call. Configured only by prerender tooling — typically
    * a writer dropping `entry.payload` into the client output directory
    * under `entry.filename`; without one, static declarations add zero
    * capture overhead and clients use the live GET transport. `null` clears
-   * a configured cache.
+   * a configured writer.
    */
-  staticCache?: StaticCache | null;
+  staticArtifacts?: StaticArtifactWriter | null;
 }
 
 /**
  * One captured static server function result, handed to the configured
- * `StaticCache` writer during prerendering.
+ * `StaticArtifactWriter` during prerendering.
  */
-export interface StaticCacheEntry {
+export interface StaticArtifactEntry {
   /** The build-stable id of the function that ran. */
   id: string;
   /** The static cache key (`getStaticCacheKey(id, args)`). */
@@ -262,29 +262,25 @@ export interface StaticCacheEntry {
    * decode. Write it verbatim; it is not JSON.
    */
   payload: string;
-  /** The decoded arguments the call ran with. */
-  args: unknown[];
-  /** The settled value the payload serializes (for the writer's own use). */
-  value: unknown;
 }
 
 /**
- * The write-only artifact cache prerender tooling configures through
- * `configureServerFunctionsServer({ staticCache })`. The framework owns
+ * The write-only artifact sink prerender tooling configures through
+ * `configureServerFunctionsServer({ staticArtifacts })`. The framework owns
  * the storage: where artifacts land (the client output directory, keyed to
  * the client's `staticEndpoint`), deduplication (the same `(id, args)`
  * pair always yields the same filename — overwrites are idempotent), and
  * flushing before the prerender process exits.
  */
-export interface StaticCache {
-  set(entry: StaticCacheEntry): void | Promise<void>;
+export interface StaticArtifactWriter {
+  write(entry: StaticArtifactEntry): void | Promise<void>;
 }
 
 /**
  * Configures the server runtime. Call once at server startup, before
  * handling requests. Only needed when deviating from the defaults (custom
  * endpoint, codec plugins, an explicit event provider, a single-flight
- * hook, or a prerender static cache).
+ * hook, or a prerender static artifact writer).
  */
 export function configureServerFunctionsServer(config?: ServerFunctionsServerConfig): void;
 
@@ -386,8 +382,8 @@ export function GET<A extends readonly any[], R>(
  * (`getServerFunctionMetadata(fn)?.static === true`), grants GET dispatch
  * (static implies GET: development and build-time clients call over the
  * live GET transport), and enrolls the id for prerender capture. With a
- * `staticCache` configured, every settled call that returned a plain value
- * is serialized to the framed wire format and handed to the cache writer
+ * static artifact writer configured, every settled call that returned a
+ * plain value is serialized to the framed wire format and handed to the writer
  * under its static cache key — from in-process SSR calls and HTTP GET
  * dispatch alike; thrown errors, `Response`s and `ResponseEnvelope`s are
  * never captured (HTTP metadata cannot ride a static file).
