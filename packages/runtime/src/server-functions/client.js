@@ -418,3 +418,11 @@ export function GET(fn) {
 export function registerServerReference() {
   throw new Error("registerServerReference must not be called in the client build");
 }
+
+// Client no-op mirror of the server entry's accessor: there is never a
+// server function call in flight on the client, so this answers undefined.
+// Present so `"use server"` modules that import it stay import-stable in
+// client builds before dead-code elimination.
+export function getServerFunctionInvocation() {
+  return undefined;
+}

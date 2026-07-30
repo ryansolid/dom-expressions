@@ -181,3 +181,20 @@ export function createServerReference(id: string, name?: string, base?: string):
  * @internal
  */
 export function registerServerReference(): never;
+
+/**
+ * Identity of the currently executing server function call — see the
+ * server entry. Named here so isomorphic code can import the type from
+ * either entry.
+ */
+export interface ServerFunctionInvocation {
+  id: string;
+}
+
+/**
+ * Client no-op mirror of the server entry's accessor: there is never a
+ * server function call in flight on the client, so this always returns
+ * undefined. Present so `"use server"` modules that import it stay
+ * import-stable in client builds before dead-code elimination.
+ */
+export function getServerFunctionInvocation(): ServerFunctionInvocation | undefined;
