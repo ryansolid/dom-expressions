@@ -334,3 +334,8 @@ const template93 = <div class={["todo", { active: isActive(), [props.name]: prop
 const template94 = <div class={["todo", { active: isActive() }, props.extra]} />;
 
 const template95 = <div class={["todo", "item", { todo: false, active: isActive() }]} />;
+
+// #2959: conditional attribute merged into a spread must stay a bare
+// expression — a client-only condition memo would allocate a hydration id
+// the ssr generate never does, drifting every id after it.
+const template96 = <svg {...spread} stroke-width={cond() ? width() : 2} fill={cond() && color()} />;

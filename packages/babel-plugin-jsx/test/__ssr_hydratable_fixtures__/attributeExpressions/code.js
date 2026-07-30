@@ -336,3 +336,7 @@ const template91 = <div>
 function MyVideo() {
   return <video src="test.mp4" muted />
 }
+
+// #2959: conditional attribute merged into a spread stays a bare expression
+// (parity with the dom generate — neither side allocates a hydration id).
+const template97 = <svg {...spread} stroke-width={cond() ? width() : 2} fill={cond() && color()} />;

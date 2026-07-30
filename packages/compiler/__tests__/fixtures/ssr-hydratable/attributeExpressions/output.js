@@ -546,3 +546,15 @@ function MyVideo() {
 	var _v$119 = _$ssrHydrationKey();
 	return _$ssr(_tmpl$51, _v$119);
 }
+// #2959: conditional attribute merged into a spread stays a bare expression
+// (parity with the dom generate — neither side allocates a hydration id).
+const template97 = _$ssrElement("svg", () => {
+	return _$mergeProps(spread, {
+		get ["stroke-width"]() {
+			return cond() ? width() : 2;
+		},
+		get fill() {
+			return cond() && color();
+		}
+	});
+}, undefined, true);

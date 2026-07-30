@@ -5,9 +5,7 @@ use oxc_span::Span;
 
 use crate::dom::element::AstDomTransform;
 use crate::shared::ast::arrow_return_expression;
-use crate::shared::condition::{
-    is_condition_shape, transform_condition_inline, zero_arg_call_thunk,
-};
+use crate::shared::condition::zero_arg_call_thunk;
 use crate::shared::constants::dom_with_state;
 use crate::shared::utils::{decode_html_entities, source_from_span};
 
@@ -177,13 +175,10 @@ impl<'a> AstDomTransform<'a, '_> {
                 });
                 let value = self.attribute_value_expression(container);
                 if dynamic {
-                    // Babel: logical/conditional getter bodies flow through
-                    // `transformCondition(..., inline)`.
-                    let value = if self.wrap_conditionals && is_condition_shape(&value) {
-                        transform_condition_inline(self, container.span, value)
-                    } else {
-                        value
-                    };
+                    // No condition memo in spread getters (#2959): attribute
+                    // values are primitives deduped by assignProp, and the ssr
+                    // generate emits the bare expression — a client-only memo
+                    // drifts hydration ids.
                     Ok(self.object_getter_property(attr.span, &name, value))
                 } else {
                     Ok(self.object_property(attr.span, &name, value))

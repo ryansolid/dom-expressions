@@ -150,20 +150,28 @@ var _v$18 = (() => {
 })();
 const template11a = _$ssr(_tmpl$, _v$18);
 const template12 = Comp({ get render() {
-	return state.dynamic ? good() : bad;
+	return _$memo(() => {
+		return !!state.dynamic;
+	})() ? good() : bad;
 } });
 const template12a = Comp({ get render() {
-	return state.dynamic ? good.good : bad;
+	return _$memo(() => {
+		return !!state.dynamic;
+	})() ? good.good : bad;
 } });
 // no dynamic predicate
 const template13 = Comp({ get render() {
 	return state.dynamic ? good : bad;
 } });
 const template14 = Comp({ get render() {
-	return state.dynamic && good();
+	return _$memo(() => {
+		return !!state.dynamic;
+	})() ? good() : state.dynamic;
 } });
 const template14a = Comp({ get render() {
-	return state.dynamic && good.good;
+	return _$memo(() => {
+		return !!state.dynamic;
+	})() ? good.good : state.dynamic;
 } });
 // no dynamic predicate
 const template15 = Comp({ get render() {
@@ -176,7 +184,9 @@ const template16a = Comp({ get render() {
 	return state.dynamic || good.good;
 } });
 const template17 = Comp({ get render() {
-	return state.dynamic ? Comp({}) : Comp({});
+	return _$memo(() => {
+		return !!state.dynamic;
+	})() ? Comp({}) : Comp({});
 } });
 const template18 = Comp({ get children() {
 	return _$memo(() => {
@@ -256,10 +266,18 @@ var _v$28 = () => {
 };
 const template30a = _$ssr(_tmpl$, _v$28);
 const template31 = Comp({ get value() {
-	return count() ? count() ? count() : count() : count();
+	return _$memo(() => {
+		return !!count();
+	})() ? _$memo(() => {
+		return !!count();
+	})() ? count() : count() : count();
 } });
 const template31a = Comp({ get value() {
-	return count.count ? count.count ? count.count : count.count : count.count;
+	return _$memo(() => {
+		return !!count.count;
+	})() ? _$memo(() => {
+		return !!count.count;
+	})() ? count.count : count.count : count.count;
 } });
 var _v$29 = () => {
 	return _$escape(something?.());

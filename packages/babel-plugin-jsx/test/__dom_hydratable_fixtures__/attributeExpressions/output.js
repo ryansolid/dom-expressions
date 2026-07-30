@@ -70,7 +70,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href=/>Welcome`),
   _tmpl$45 = /*#__PURE__*/ _$template(`<button type=button>`),
   _tmpl$46 = /*#__PURE__*/ _$template(`<div style=duplicate2>`),
   _tmpl$47 = /*#__PURE__*/ _$template(`<div class=todo>`),
-  _tmpl$48 = /*#__PURE__*/ _$template(`<div class="todo item">`);
+  _tmpl$48 = /*#__PURE__*/ _$template(`<div class="todo item">`),
+  _tmpl$49 = /*#__PURE__*/ _$template(`<svg>`);
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -791,4 +792,23 @@ _$effect(
   }
 );
 const template95 = _el$114;
+
+// #2959: conditional attribute merged into a spread must stay a bare
+// expression — a client-only condition memo would allocate a hydration id
+// the ssr generate never does, drifting every id after it.
+var _el$115 = _$getNextElement(_tmpl$49);
+_$spread(
+  _el$115,
+  _$mergeProps(spread, {
+    get ["stroke-width"]() {
+      return cond() ? width() : 2;
+    },
+    get fill() {
+      return cond() && color();
+    }
+  }),
+  false
+);
+_$runHydrationEvents();
+const template96 = _el$115;
 _$delegateEvents(["click", "input"]);

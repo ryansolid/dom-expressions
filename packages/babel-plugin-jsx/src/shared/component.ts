@@ -259,9 +259,13 @@ export default function transformComponent(
               checkTags: true
             })
           ) {
+            // No ssr gate: the condition memo must exist on BOTH generates —
+            // the server sync memo allocates an owner id just like the
+            // client's, so skipping it server-side drifts every hydration id
+            // the prop's branch content allocates (#2959, component flavor).
+            // Matches the children-conditional wrap above (transform.ts).
             if (
               config.wrapConditionals &&
-              config.generate !== "ssr" &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
             ) {

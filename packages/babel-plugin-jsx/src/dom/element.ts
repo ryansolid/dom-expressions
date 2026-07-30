@@ -28,7 +28,6 @@ import {
   escapeHTML,
   convertJSXIdentifier,
   isLockedDOMProperty,
-  transformCondition,
   trimWhitespace,
   inlineCallExpression,
   hasStaticMarker,
@@ -58,7 +57,6 @@ type DOMSetAttrOptions = {
 type SpreadOptions = {
   elem: babelTypes.Expression;
   hasChildren: boolean;
-  wrapConditionals: boolean;
 };
 type HubWithFileMetadata = {
   file?: {
@@ -496,8 +494,7 @@ function transformAttributes(
   if (attributes.some(attribute => t.isJSXSpreadAttribute(attribute.node))) {
     [attributes, spreadExpr] = processSpreads(path, attributes, {
       elem,
-      hasChildren,
-      wrapConditionals: config.wrapConditionals
+      hasChildren
     });
     path.get("openingElement").set(
       "attributes",
@@ -1564,7 +1561,7 @@ function contextToCustomElement(
 function processSpreads(
   path: BabelPath<babelTypes.JSXElement>,
   attributes: JSXAttributePath[],
-  { elem, hasChildren, wrapConditionals }: SpreadOptions
+  { elem, hasChildren }: SpreadOptions
 ): [JSXAttributePath[], babelTypes.ExpressionStatement] {
   const config = getConfig(path);
   const tagName = getTagName(path.node);
@@ -1613,23 +1610,17 @@ function processSpreads(
           ? t.identifier(normalized)
           : convertJSXIdentifier(node.name);
 
-        let expr: babelTypes.ArrowFunctionExpression & { body: babelTypes.Expression } =
-          wrapConditionals &&
-          expression &&
-          (t.isLogicalExpression(expression) || t.isConditionalExpression(expression))
-            ? transformCondition(attribute.get("value").get("expression"), true)
-            : (t.arrowFunctionExpression(
-                [],
-                expression as babelTypes.Expression
-              ) as babelTypes.ArrowFunctionExpression & {
-                body: babelTypes.Expression;
-              });
+        // No condition memo here (unlike children/component props): attribute
+        // values are primitives, assignProp dedupes writes against prevProps,
+        // and the ssr generate emits the bare expression — a client-only memo
+        // allocates a hydration id the server never did, drifting every id
+        // after it (#2959).
         runningObject.push(
           t.objectMethod(
             "get",
             id,
             [],
-            t.blockStatement([t.returnStatement(expr.body)]),
+            t.blockStatement([t.returnStatement(expression as babelTypes.Expression)]),
             !t.isValidIdentifier(normalized)
           )
         );

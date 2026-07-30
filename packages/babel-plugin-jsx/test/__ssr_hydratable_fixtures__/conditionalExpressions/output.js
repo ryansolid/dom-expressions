@@ -134,12 +134,12 @@ var _v$33 = _$ssrHydrationKey(),
 const template11a = _$ssr(_tmpl$, _v$33, _v$34);
 const template12 = Comp({
   get render() {
-    return state.dynamic ? good() : bad;
+    return _$memo(() => !!state.dynamic)() ? good() : bad;
   }
 });
 const template12a = Comp({
   get render() {
-    return state.dynamic ? good.goood : bad;
+    return _$memo(() => !!state.dynamic)() ? good.goood : bad;
   }
 });
 
@@ -151,12 +151,12 @@ const template13 = Comp({
 });
 const template14 = Comp({
   get render() {
-    return state.dynamic && good();
+    return _$memo(() => !!state.dynamic)() ? good() : state.dynamic;
   }
 });
 const template14a = Comp({
   get render() {
-    return state.dynamic && good.good;
+    return _$memo(() => !!state.dynamic)() ? good.good : state.dynamic;
   }
 });
 
@@ -178,7 +178,7 @@ const template16a = Comp({
 });
 const template17 = Comp({
   get render() {
-    return state.dynamic ? Comp({}) : Comp({});
+    return _$memo(() => !!state.dynamic)() ? Comp({}) : Comp({});
   }
 });
 const template18 = Comp({
@@ -257,12 +257,16 @@ var _v$53 = _$ssrHydrationKey(),
 const template30a = _$ssr(_tmpl$, _v$53, _v$54);
 const template31 = Comp({
   get value() {
-    return count() ? (count() ? count() : count()) : count();
+    return _$memo(() => !!count())() ? (_$memo(() => !!count())() ? count() : count()) : count();
   }
 });
 const template31a = Comp({
   get value() {
-    return count.count ? (count.count ? count.count : count.count) : count.count;
+    return _$memo(() => !!count.count)()
+      ? _$memo(() => !!count.count)()
+        ? count.count
+        : count.count
+      : count.count;
   }
 });
 var _v$55 = _$ssrHydrationKey(),

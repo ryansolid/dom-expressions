@@ -410,6 +410,9 @@ function processSpreads(
       if (dynamic) {
         const id = convertJSXIdentifier(node.name);
         const expression = (node.value as t.JSXExpressionContainer).expression as t.Expression;
+        // Unlike the dom generate (#2959), keep the condition memo here:
+        // universal has no hydration ids to drift, and custom-renderer prop
+        // values can be arbitrarily expensive — truthiness insulation pays.
         let expr: t.ArrowFunctionExpression & { body: t.Expression } =
           wrapConditionals &&
           (t.isLogicalExpression(expression) || t.isConditionalExpression(expression))

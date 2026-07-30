@@ -714,6 +714,9 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                             let container = container.expect("dynamic attr has container");
                             let mut value =
                                 jsx_expression_to_expression(&container.expression, self.allocator);
+                            // Unlike the dom generate (#2959), keep the condition
+                            // memo: universal has no hydration ids to drift, and
+                            // custom-renderer prop values can be expensive.
                             if self.wrap_conditionals && is_condition_shape(&value) {
                                 value = transform_condition_inline(self, container.span, value);
                             }
