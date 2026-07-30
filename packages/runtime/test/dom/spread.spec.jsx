@@ -446,6 +446,71 @@ describe("component with ref, omit, spread, and children", () => {
   });
 });
 
+describe("nullish value through spread (#2957)", () => {
+  it("renders empty for a spread carrying value: undefined", () => {
+    let input, disposer;
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <input ref={input} {...{ value: undefined, placeholder: "p" }} />;
+    });
+
+    expect(input.value).toBe("");
+    expect(input.getAttribute("placeholder")).toBe("p");
+    disposer();
+  });
+
+  it("renders empty when a merged literal value={undefined} overrides the spread", () => {
+    let input, disposer;
+    const props = { value: "from-spread" };
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <input ref={input} {...props} value={undefined} />;
+    });
+
+    expect(input.value).toBe("");
+    disposer();
+  });
+
+  it("clears the field when a reactive spread value flips to undefined", () => {
+    let input, disposer;
+    const [value, setValue] = createSignal("typed");
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <input
+        ref={input}
+        {...{
+          get value() {
+            return value();
+          }
+        }}
+      />;
+    });
+
+    expect(input.value).toBe("typed");
+    setValue(undefined);
+    flush();
+    expect(input.value).toBe("");
+    disposer();
+  });
+
+  it("treats textarea value and input defaultValue the same way", () => {
+    let textarea, input, disposer;
+
+    createRoot(dispose => {
+      disposer = dispose;
+      <textarea ref={textarea} {...{ value: undefined }} />;
+      <input ref={input} {...{ defaultValue: undefined }} />;
+    });
+
+    expect(textarea.value).toBe("");
+    expect(input.defaultValue).toBe("");
+    disposer();
+  });
+});
+
 describe("DOM with state props", () => {
   it("resyncs spread input value when the DOM drifts", () => {
     let input, disposer;

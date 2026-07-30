@@ -1053,6 +1053,13 @@ function assignProp(node, prop, value, prev, skipRef, nodeName) {
     else if (isHydrating(node)) return value; // TODO IS this correct?
     if (prop === "value" && nodeName === "SELECT")
       queueMicrotask(() => (node.value = value)) || (node.value = value);
+    else if (
+      (prop === "value" || prop === "defaultValue") &&
+      (nodeName === "INPUT" || nodeName === "TEXTAREA")
+    )
+      // Compiler parity: direct bindings emit `el.value = v ?? ""` for
+      // input/textarea — nullish must clear the field, not stringify (#2957).
+      node[prop] = value ?? "";
     else node[prop] = value;
   } else {
     const ns = hasNamespace && Namespaces[prop.split(":")[0]];
