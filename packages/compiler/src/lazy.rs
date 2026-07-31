@@ -6,6 +6,14 @@
 //! frozen contract: the bundler plugin's `resolveLazyModuleUrls` regex
 //! (`"__SOLID_LAZY_MODULE__:([^"]+)"`) rewrites it to a resolved
 //! project-relative path afterwards — that half stays in the plugin.
+//!
+//! The same pass recognizes `clientOnly(() => import("specifier"))` where
+//! `clientOnly` is a named import from `@solidjs/web`, so the server half
+//! can emit early modulepreload hints for the browser-only module. Because
+//! `clientOnly` already takes an options bag in second position, the
+//! placeholder is appended as a *third* argument, padding the options slot
+//! with `void 0` when the call site omits it — the runtime's `moduleUrl`
+//! parameter is positionally stable either way.
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -86,50 +94,74 @@ pub fn transform_lazy(
     })
 }
 
-/// `(call span, specifier)` for every eligible `lazy(...)` call. Eligibility
-/// mirrors the Babel plugin exactly:
-/// - callee is the bare identifier `lazy`,
+/// A matched call: where it is, the import specifier to encode, and whether
+/// the options slot needs a `void 0` filler before the placeholder
+/// (`clientOnly(fn)` with no options bag).
+struct Target {
+    span: Span,
+    specifier: String,
+    pad_options: bool,
+}
+
+/// A `Target` for every eligible `lazy(...)` / `clientOnly(...)` call.
+/// Eligibility mirrors the Babel plugin exactly:
+/// - callee is the bare identifier `lazy` (resp. `clientOnly`),
 /// - it resolves to a *named* import specifier whose declaration imports
-///   from `solid-js` (local shadowing wins; default/namespace imports and
-///   aliased locals don't match because the callee must be spelled `lazy`),
-/// - exactly one argument: a function/arrow whose body is directly
-///   `import("literal")` (or a block whose sole statement returns one).
-fn collect_targets(program: &Program<'_>) -> Vec<(Span, String)> {
+///   from `solid-js` (resp. `@solidjs/web`) — local shadowing wins;
+///   default/namespace imports and aliased locals don't match because the
+///   callee must be spelled with the canonical name,
+/// - the first argument is a function/arrow whose body is directly
+///   `import("literal")` (or a block whose sole statement returns one),
+/// - `lazy` takes exactly one argument; `clientOnly` takes one (options
+///   omitted — the placeholder needs a `void 0` filler) or two (the second
+///   being its options bag). More arguments mean the call is already
+///   annotated and is left untouched.
+fn collect_targets(program: &Program<'_>) -> Vec<Target> {
     let semantic = SemanticBuilder::new().build(program).semantic;
     let scoping = semantic.scoping();
 
-    // Locals bound by `import { ... } from "solid-js"` named specifiers.
-    let mut eligible: std::collections::HashSet<oxc_semantic::SymbolId> =
+    // Locals bound by named import specifiers, per recognized source.
+    let mut lazy_symbols: std::collections::HashSet<oxc_semantic::SymbolId> =
+        std::collections::HashSet::new();
+    let mut client_only_symbols: std::collections::HashSet<oxc_semantic::SymbolId> =
         std::collections::HashSet::new();
     for statement in &program.body {
         let Statement::ImportDeclaration(import) = statement else {
             continue;
         };
-        if import.source.value != "solid-js" {
-            continue;
-        }
+        let set = match import.source.value.as_str() {
+            "solid-js" => &mut lazy_symbols,
+            "@solidjs/web" => &mut client_only_symbols,
+            _ => continue,
+        };
         for specifier in import.specifiers.iter().flatten() {
             if let ImportDeclarationSpecifier::ImportSpecifier(specifier) = specifier {
                 if let Some(symbol_id) = specifier.local.symbol_id.get() {
-                    eligible.insert(symbol_id);
+                    set.insert(symbol_id);
                 }
             }
         }
     }
-    if eligible.is_empty() {
+    if lazy_symbols.is_empty() && client_only_symbols.is_empty() {
         return Vec::new();
     }
 
     struct Collector<'s> {
         scoping: &'s oxc_semantic::Scoping,
-        eligible: &'s std::collections::HashSet<oxc_semantic::SymbolId>,
-        targets: &'s mut Vec<(Span, String)>,
+        lazy_symbols: &'s std::collections::HashSet<oxc_semantic::SymbolId>,
+        client_only_symbols: &'s std::collections::HashSet<oxc_semantic::SymbolId>,
+        targets: &'s mut Vec<Target>,
     }
 
     impl<'b> Visit<'b> for Collector<'_> {
         fn visit_call_expression(&mut self, call: &CallExpression<'b>) {
-            if let Some(specifier) = eligible_specifier(self.scoping, self.eligible, call) {
-                self.targets.push((call.span, specifier));
+            if let Some(target) = eligible_target(
+                self.scoping,
+                self.lazy_symbols,
+                self.client_only_symbols,
+                call,
+            ) {
+                self.targets.push(target);
             }
             walk::walk_call_expression(self, call);
         }
@@ -138,24 +170,28 @@ fn collect_targets(program: &Program<'_>) -> Vec<(Span, String)> {
     let mut targets = Vec::new();
     let mut collector = Collector {
         scoping,
-        eligible: &eligible,
+        lazy_symbols: &lazy_symbols,
+        client_only_symbols: &client_only_symbols,
         targets: &mut targets,
     };
     collector.visit_program(program);
     targets
 }
 
-fn eligible_specifier(
+fn eligible_target(
     scoping: &oxc_semantic::Scoping,
-    eligible: &std::collections::HashSet<oxc_semantic::SymbolId>,
+    lazy_symbols: &std::collections::HashSet<oxc_semantic::SymbolId>,
+    client_only_symbols: &std::collections::HashSet<oxc_semantic::SymbolId>,
     call: &CallExpression<'_>,
-) -> Option<String> {
+) -> Option<Target> {
     let Expression::Identifier(callee) = &call.callee else {
         return None;
     };
-    if callee.name != "lazy" {
-        return None;
-    }
+    let (eligible, max_arguments) = match callee.name.as_str() {
+        "lazy" => (lazy_symbols, 1),
+        "clientOnly" => (client_only_symbols, 2),
+        _ => return None,
+    };
     let symbol = callee
         .reference_id
         .get()
@@ -163,12 +199,24 @@ fn eligible_specifier(
     if !eligible.contains(&symbol) {
         return None;
     }
-    // Babel: bail on 2+ arguments (already annotated) and on 0 arguments.
-    if call.arguments.len() != 1 {
+    // Babel: bail on more arguments than the bare form takes (already
+    // annotated) and on 0 arguments.
+    if call.arguments.is_empty() || call.arguments.len() > max_arguments {
+        return None;
+    }
+    // A spread in the options slot hides the real arity — leave it alone.
+    if call.arguments.len() == 2 && call.arguments[1].as_expression().is_none() {
         return None;
     }
     let argument = call.arguments[0].as_expression()?;
-    extract_dynamic_import_specifier(argument)
+    let specifier = extract_dynamic_import_specifier(argument)?;
+    Some(Target {
+        span: call.span,
+        specifier,
+        // The placeholder always lands in `clientOnly`'s third slot; a
+        // callsite without an options bag gets `void 0` filler.
+        pad_options: max_arguments == 2 && call.arguments.len() == 1,
+    })
 }
 
 /// The Babel plugin's `extractDynamicImportSpecifier`: matches
@@ -213,7 +261,7 @@ fn extract_dynamic_import_specifier(node: &Expression<'_>) -> Option<String> {
 
 struct Rewriter<'a> {
     allocator: &'a Allocator,
-    targets: Vec<(Span, String)>,
+    targets: Vec<Target>,
 }
 
 impl<'a> VisitMut<'a> for Rewriter<'a> {
@@ -221,11 +269,15 @@ impl<'a> VisitMut<'a> for Rewriter<'a> {
         if let Some(index) = self
             .targets
             .iter()
-            .position(|(span, _)| *span == call.span())
+            .position(|target| target.span == call.span())
         {
-            let (_, specifier) = self.targets.remove(index);
+            let target = self.targets.remove(index);
             let ast = AstBuilder::new(self.allocator);
-            let value = format!("{LAZY_PLACEHOLDER_PREFIX}{specifier}");
+            if target.pad_options {
+                call.arguments
+                    .push(Argument::from(ast.void_0(Span::new(0, 0))));
+            }
+            let value = format!("{LAZY_PLACEHOLDER_PREFIX}{}", target.specifier);
             call.arguments
                 .push(Argument::StringLiteral(ast.alloc_string_literal(
                     Span::new(0, 0),
