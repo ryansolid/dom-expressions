@@ -1,6 +1,16 @@
 import { ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner } from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
+import {
+  HEAD_ELIGIBLE_TAGS,
+  HEAD_ATTR_NAME,
+  classifyHeadTag,
+  evalHeadProps,
+  evalHeadValue,
+  resourceIdentity,
+  replaceableIdentity,
+  resolveHead
+} from "./head.js";
 
 // `mergeProps` comes from the framework like the client/universal entries —
 // prop-merge semantics (function sources, precedence) belong to the reactive
@@ -226,6 +236,289 @@ function applyAssetTracking(context, tracking, manifest, noScripts) {
   }
 }
 
+// ---- Head Management (useHead) ----
+//
+// Server half of the head registry (design: docs/head-management-rfc.md).
+// Replaceable tags are recorded at registration and evaluated at the flush of
+// their nearest enclosing flush boundary — the shell, or the owning suspense
+// fragment (attributed via the same `_currentBoundaryId` seam as boundary
+// asset tracking). Resource-class tags (preload/preconnect/… links,
+// `script[src]`) evaluate immediately and stream eagerly: their value is
+// earliness, so holding them for their boundary's flush would defeat them.
+
+function createHeadRegistry() {
+  return {
+    pending: [], // { boundary, tags: [raw descriptor (+ peeked link rel)] }
+    committed: [], // { seq, tags: [{ tag, props, identity }] } in commit order
+    seq: 0,
+    uniq: 0,
+    resources: new Set(), // resource identities already emitted
+    eagerHtml: "", // pre-shell resource markup, joined into the shell head
+    flushed: null, // Map<identity, signature> — post-shell resolution snapshot
+    shellFlushed: false
+  };
+}
+
+// Registration entry point (context.registerHeadTags). `emitResource` is the
+// post-shell eager write channel (null in renderToString, where everything is
+// pre-shell by construction).
+function registerHeadTags(registry, context, tracking, emitResource, nonce, tags) {
+  const boundary = context._currentBoundaryId || "";
+  let replaceable = null;
+  for (let i = 0; i < tags.length; i++) {
+    const desc = tags[i];
+    if (!desc || !HEAD_ELIGIBLE_TAGS.has(desc.tag)) {
+      if ("_DX_DEV_") console.warn(`useHead: ignoring non-head tag`, desc);
+      continue;
+    }
+    const cls = classifyHeadTag(desc);
+    if (cls.resource) {
+      emitHeadResource(registry, context, tracking, emitResource, nonce, desc, cls.rel);
+    } else {
+      (replaceable || (replaceable = [])).push(
+        cls.rel !== undefined
+          ? { tag: desc.tag, props: desc.props, key: desc.key, rel: cls.rel }
+          : desc
+      );
+    }
+  }
+  if (replaceable) registry.pending.push({ boundary, tags: replaceable });
+}
+
+// Resource-class tag: evaluate now, dedupe by full resource identity, emit at
+// the next flush opportunity. Plain stylesheet/modulepreload links (rel+href
+// only) route through `registerAsset` so they share one identity set with
+// manifest-driven asset emission — a user-authored preload must never
+// duplicate a manifest link — and, for stylesheets, participate in the
+// style-gated fragment reveal like tracked boundary CSS. Links carrying
+// qualifying attributes (media, crossorigin, …) are a different resource by
+// identity and emit through the head path with their attributes intact.
+function emitHeadResource(registry, context, tracking, emitResource, nonce, desc, rel) {
+  let props;
+  try {
+    props = evalHeadProps(desc.props || {}, rel !== undefined ? { rel } : undefined);
+  } catch (err) {
+    if ("_DX_DEV_") console.warn(`useHead: error evaluating resource tag props`, err);
+    return;
+  }
+  const identity = resourceIdentity(desc.tag, props);
+  if (registry.resources.has(identity)) return;
+  registry.resources.add(identity);
+  if (desc.tag === "link" && (rel === "stylesheet" || rel === "modulepreload")) {
+    let plain = true;
+    for (const name in props) {
+      if (name !== "rel" && name !== "href") {
+        plain = false;
+        break;
+      }
+    }
+    // The asset-tracking emitters decide stylesheet-vs-modulepreload by the
+    // `.css` suffix, so only suffix-conforming URLs can ride that path.
+    if (plain && props.href != null) {
+      const isCss = props.href.endsWith(".css");
+      if (rel === "stylesheet" ? isCss : !isCss) {
+        context.registerAsset(rel === "stylesheet" ? "style" : "module", props.href);
+        return;
+      }
+    }
+  }
+  const url = props.href || props.src;
+  if (url != null && tracking.emittedAssets.has(url)) return;
+  const markup = renderHeadTagMarkup(desc.tag, props, null, nonce);
+  if (emitResource) emitResource(markup);
+  else registry.eagerHtml += markup;
+}
+
+// Moves pending registrations for `boundary` into the committed list,
+// evaluating props getters exactly once (this is the evaluation-timing
+// contract: a deferred getter's collection window is its boundary's render).
+// The shell ("" with an `isPendingFragment` probe) commits everything that
+// does not belong to a still-pending fragment — including registrations from
+// boundaries that resolved before first flush and inlined into the shell.
+function commitHeadBoundary(registry, boundary, isPendingFragment) {
+  const keep = [];
+  const groups = [];
+  for (let i = 0; i < registry.pending.length; i++) {
+    const reg = registry.pending[i];
+    const mine =
+      boundary === ""
+        ? !(isPendingFragment && reg.boundary !== "" && isPendingFragment(reg.boundary))
+        : reg.boundary === boundary;
+    if (!mine) {
+      keep.push(reg);
+      continue;
+    }
+    const tags = [];
+    for (let j = 0; j < reg.tags.length; j++) {
+      const desc = reg.tags[j];
+      let props, key;
+      try {
+        props = evalHeadProps(
+          desc.props || {},
+          desc.rel !== undefined ? { rel: desc.rel } : undefined
+        );
+        key = evalHeadValue(desc.key);
+      } catch (err) {
+        if ("_DX_DEV_") console.warn(`useHead: error evaluating tag props`, err);
+        continue;
+      }
+      const identity = replaceableIdentity(desc.tag, props, key, "u:" + registry.uniq++);
+      if ((identity === "base" || identity === "charset") && registry.shellFlushed) {
+        // Shell-only: a charset that changes mid-stream or a base that
+        // changes after relative URLs resolved is incoherent by definition.
+        if ("_DX_DEV_")
+          console.warn(
+            `useHead: <${desc.tag}> (${identity}) registered after shell flush is ignored`
+          );
+        continue;
+      }
+      tags.push({ tag: desc.tag, props, identity });
+    }
+    if (tags.length) groups.push({ seq: registry.seq++, tags });
+  }
+  registry.pending = keep;
+  for (let i = 0; i < groups.length; i++) registry.committed.push(groups[i]);
+  return groups;
+}
+
+// Reassigns a resolved child fragment's pending registrations to the parent
+// that absorbed its payload (waitForFragments), so they evaluate and commit
+// at the parent's flush — the nearest boundary that actually flushes.
+function adoptHeadBoundary(registry, childKey, parentKey) {
+  for (let i = 0; i < registry.pending.length; i++) {
+    if (registry.pending[i].boundary === childKey) registry.pending[i].boundary = parentKey;
+  }
+}
+
+// An errored fragment reveals no content; retitling the document for it
+// would be wrong, so its registrations are dropped.
+function dropHeadBoundary(registry, boundary) {
+  registry.pending = registry.pending.filter(reg => reg.boundary !== boundary);
+}
+
+function headGroupSignature(winner) {
+  let sig = "" + winner.seq;
+  for (let i = 0; i < winner.tags.length; i++) {
+    const t = winner.tags[i];
+    sig += "|" + t.tag + JSON.stringify(t.props);
+  }
+  return sig;
+}
+
+// Shell flush: commit + resolve + render winning tags to markup. Returns
+// `{ prelude, html }` for document assembly — `prelude` (charset/base)
+// splices immediately after the `<head>` open tag to satisfy hard placement
+// constraints; `html` splices before `</head>`, resources first (earliness),
+// then replaceable tags by category: link/style, meta, others, script.
+function renderShellHead(registry, nonce, isPendingFragment) {
+  commitHeadBoundary(registry, "", isPendingFragment);
+  registry.shellFlushed = true;
+  const winners = resolveHead(registry.committed);
+  registry.flushed = new Map();
+  let prelude = "";
+  let links = "";
+  let metas = "";
+  let others = "";
+  let scripts = "";
+  for (const [identity, winner] of winners) {
+    registry.flushed.set(identity, headGroupSignature(winner));
+    for (let i = 0; i < winner.tags.length; i++) {
+      const t = winner.tags[i];
+      const markup = renderHeadTagMarkup(t.tag, t.props, identity, nonce);
+      if (identity === "charset" || identity === "base") prelude += markup;
+      else if (t.tag === "link" || t.tag === "style") links += markup;
+      else if (t.tag === "meta") metas += markup;
+      else if (t.tag === "script") scripts += markup;
+      else others += markup;
+    }
+  }
+  return { prelude, html: registry.eagerHtml + links + metas + others + scripts };
+}
+
+// Fragment flush: commit the boundary's registrations, re-resolve, and diff
+// against the flushed snapshot. Returns patch ops (or null) for the client
+// `$dh` helper: `["t", text]` retitle, `["r", identity]` remove owned tags,
+// `["a", identity, tag, attrs, children]` append. Only identities present in
+// the newly committed groups can change (the server never disposes), so the
+// diff walks just those.
+function flushHeadFragment(registry, boundary) {
+  const groups = commitHeadBoundary(registry, boundary);
+  if (!groups.length) return null;
+  const winners = resolveHead(registry.committed);
+  const affected = new Set();
+  for (let i = 0; i < groups.length; i++)
+    for (let j = 0; j < groups[i].tags.length; j++) affected.add(groups[i].tags[j].identity);
+  const ops = [];
+  for (const identity of affected) {
+    const winner = winners.get(identity);
+    const sig = headGroupSignature(winner);
+    if (registry.flushed.get(identity) === sig) continue;
+    const existed = registry.flushed.has(identity);
+    registry.flushed.set(identity, sig);
+    if (identity === "title") {
+      const children = winner.tags[0].props.children;
+      ops.push(["t", children == null ? "" : String(children)]);
+      continue;
+    }
+    if (existed) ops.push(["r", identity]);
+    for (let i = 0; i < winner.tags.length; i++) {
+      const t = winner.tags[i];
+      const attrs = {};
+      for (const name in t.props) {
+        if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
+        if (!HEAD_ATTR_NAME.test(name)) {
+          if ("_DX_DEV_") console.warn(`useHead: ignoring invalid attribute name "${name}"`);
+          continue;
+        }
+        const v = t.props[name];
+        if (v == null || v === false) continue;
+        attrs[name] = v === true ? "" : String(v);
+      }
+      const children = t.props.children;
+      ops.push(["a", identity, t.tag, attrs, children == null ? null : String(children)]);
+    }
+  }
+  return ops.length ? ops : null;
+}
+
+function renderHeadTagMarkup(tag, props, identity, nonce) {
+  let attrs = "";
+  for (const name in props) {
+    if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
+    if (!HEAD_ATTR_NAME.test(name)) {
+      if ("_DX_DEV_") console.warn(`useHead: ignoring invalid attribute name "${name}"`);
+      continue;
+    }
+    const v = props[name];
+    if (v == null || v === false) continue;
+    attrs += v === true ? ` ${name}` : ` ${name}="${escape(String(v), true)}"`;
+  }
+  if (identity != null) attrs += ` data-dh="${escape(identity, true)}"`;
+  if (nonce && (tag === "script" || tag === "style")) attrs += ` nonce="${nonce}"`;
+  if (tag === "meta" || tag === "link" || tag === "base") return `<${tag}${attrs}>`;
+  let body = props.children == null ? "" : String(props.children);
+  if (tag === "script") body = body.replace(/<\/(script)/gi, "<\\/$1");
+  else if (tag === "style") body = escapeStyleContent(body);
+  else body = escape(body);
+  return `<${tag}${attrs}>${body}</${tag}>`;
+}
+
+/**
+ * Registers head tags with the render's head registry. Replaceable tags
+ * (title/meta/canonical/…) resolve by last-committed group and stream as
+ * patches with their suspense boundary's reveal; resource tags (preload,
+ * stylesheets, `script[src]`) emit eagerly. See docs/head-management-rfc.md.
+ */
+export function useHead(tags) {
+  const ctx = sharedConfig.context;
+  if (!ctx || !ctx.registerHeadTags) {
+    if ("_DX_DEV_")
+      console.warn("useHead() called outside of a server render; registration ignored.");
+    return;
+  }
+  ctx.registerHeadTags(Array.isArray(tags) ? tags : [tags]);
+}
+
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
   /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
@@ -250,7 +543,25 @@ const VOID_ELEMENTS =
 // - $dfc(id): style completion callback; reveals when the fragment/group is unblocked.
 // - $dfg(id): group-style gate check; reveals a waiting group once all style counts hit zero.
 // - $dfj(ids): reveal a group in registration order, waiting if any member still has pending styles.
-const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e)))return 0;if(!(o=document.getElementById("pl-"+e)))return(_$HY.dq=_$HY.dq||{})[e]=1,0;for(;o&&(8!==o.nodeType||o.nodeValue!=="pl-"+e);)t=o.nextSibling,o.remove(),o=t;t=o.parentNode,_$HY.done?o.remove():o.replaceWith(n.content),n.remove(),_$HY.fe(e,t),$dfd();return 1}function $dfl(e,o,n){if(!(o=document.getElementById("pl-"+e)))return(_$HY.dlq=_$HY.dlq||{})[e]=1,0;if(o._$fl)return 1;for(n=o.nextSibling;n;){if(8===n.nodeType&&n.nodeValue==="pl-"+e){o.parentNode&&o.parentNode.insertBefore(o.content.cloneNode(!0),n),o._$fl=1,$dfd();return 1}n=n.nextSibling}return 0}function $dflj(e,i){for(i=0;i<e.length;i++)$dfl(e[i])}function $dfd(e,i){if(e=_$HY.dq){_$HY.dq=0;for(i in e)$df(i)}if(e=_$HY.dlq){_$HY.dlq=0;for(i in e)$dfl(i)}}function $dfs(e,c,d){(_$HY.sc=_$HY.sc||{})[e]=c,d&&((_$HY.sd=_$HY.sd||{})[e]=1)}function $dfg(e,g,i,k){if(!(g=_$HY.sg&&_$HY.sg[e]))return;for(i=0;i<g.length;i++)if(_$HY.sc&&_$HY.sc[g[i]]>0)return;for(i=0;i<g.length;i++)k=g[i],delete _$HY.sg[k],$df(k)}function $dfc(e){if(--_$HY.sc[e]<=0){delete _$HY.sc[e],_$HY.sg&&_$HY.sg[e]?$dfg(e):!(_$HY.sd&&_$HY.sd[e])&&$df(e);_$HY.sd&&delete _$HY.sd[e]}}function $dfj(e,i,n){for(i=0;i<e.length;i++)if(_$HY.sc&&_$HY.sc[e[i]]>0){for(n=0;n<e.length;n++)(_$HY.sg=_$HY.sg||{})[e[n]]=e;return}for(i=0;i<e.length;i++)$df(e[i])}`;
+const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e)))return 0;if(!(o=document.getElementById("pl-"+e)))return(_$HY.dq=_$HY.dq||{})[e]=1,0;for(;o&&(8!==o.nodeType||o.nodeValue!=="pl-"+e);)t=o.nextSibling,o.remove(),o=t;t=o.parentNode,_$HY.done?o.remove():o.replaceWith(n.content),n.remove(),_$HY.fe(e,t),_$HY.hp&&_$HY.hp[e]&&($dh(_$HY.hp[e]),delete _$HY.hp[e]),$dfd();return 1}function $dfl(e,o,n){if(!(o=document.getElementById("pl-"+e)))return(_$HY.dlq=_$HY.dlq||{})[e]=1,0;if(o._$fl)return 1;for(n=o.nextSibling;n;){if(8===n.nodeType&&n.nodeValue==="pl-"+e){o.parentNode&&o.parentNode.insertBefore(o.content.cloneNode(!0),n),o._$fl=1,$dfd();return 1}n=n.nextSibling}return 0}function $dflj(e,i){for(i=0;i<e.length;i++)$dfl(e[i])}function $dfd(e,i){if(e=_$HY.dq){_$HY.dq=0;for(i in e)$df(i)}if(e=_$HY.dlq){_$HY.dlq=0;for(i in e)$dfl(i)}}function $dfs(e,c,d){(_$HY.sc=_$HY.sc||{})[e]=c,d&&((_$HY.sd=_$HY.sd||{})[e]=1)}function $dfg(e,g,i,k){if(!(g=_$HY.sg&&_$HY.sg[e]))return;for(i=0;i<g.length;i++)if(_$HY.sc&&_$HY.sc[g[i]]>0)return;for(i=0;i<g.length;i++)k=g[i],delete _$HY.sg[k],$df(k)}function $dfc(e){if(--_$HY.sc[e]<=0){delete _$HY.sc[e],_$HY.sg&&_$HY.sg[e]?$dfg(e):!(_$HY.sd&&_$HY.sd[e])&&$df(e);_$HY.sd&&delete _$HY.sd[e]}}function $dfj(e,i,n){for(i=0;i<e.length;i++)if(_$HY.sc&&_$HY.sc[e[i]]>0){for(n=0;n<e.length;n++)(_$HY.sg=_$HY.sg||{})[e[n]]=e;return}for(i=0;i<e.length;i++)$df(e[i])}`;
+
+// Head patch runtime, emitted once alongside the first head-patch task:
+// - $dha(ops): apply patch ops to document.head — "t" sets the title (and
+//   marks the element so the client registry can claim it), "r" removes tags
+//   owned by an identity, "a" creates + appends a marked tag. Attribute
+//   values apply via setAttribute and bodies via textContent, so nothing in
+//   a payload is ever parsed as markup.
+// - $dhr(identity): remove owned tags (attribute-compared, no selector
+//   escaping — same reasoning as findAssetElement client-side).
+// - $dh(ops): route — once the client registry is live it installs _$HY.h
+//   and patches flow through it (registry state stays authoritative);
+//   before that, ops apply directly. The DOM itself (ownership-marked tags)
+//   is the bootstrap state the registry later adopts, so no separate queue
+//   is needed.
+// Patch application is triggered from $df when the owning fragment reveals
+// (see _$HY.hp in REPLACE_SCRIPT), so head updates and content reveal stay
+// atomic — including through style gates and deferred reveal groups.
+const HEAD_SCRIPT = `function $dha(o,i,e,n){for(i=0;i<o.length;i++)e=o[i],"t"==e[0]?((n=document.querySelector("title"))||(n=document.createElement("title"),document.head.appendChild(n)),n.textContent=e[1],n.setAttribute("data-dh","title")):"r"==e[0]?$dhr(e[1]):(n=document.createElement(e[2]),Object.keys(e[3]).forEach(function(a){n.setAttribute(a,e[3][a])}),null!=e[4]&&(n.textContent=e[4]),n.setAttribute("data-dh",e[1]),document.head.appendChild(n))}function $dhr(v,l,i){for(l=document.head.querySelectorAll("[data-dh]"),i=0;i<l.length;i++)l[i].getAttribute("data-dh")==v&&l[i].remove()}function $dh(o){_$HY.h?_$HY.h(o):$dha(o)}`;
 
 export function renderToString(code, options = {}) {
   const { renderId = "", nonce, noScripts, manifest } = options;
@@ -268,12 +579,17 @@ export function renderToString(code, options = {}) {
     onError: options.onError
   });
   const tracking = createAssetTracking();
+  const headRegistry = createHeadRegistry();
   sharedConfig.context = {
     assets: [],
     nonce,
     escape: escape,
     resolve: resolveSSRNode,
     ssr: ssr,
+    registerHeadTags(tags) {
+      // Sync render: everything is pre-shell, resources join the shell head.
+      registerHeadTags(headRegistry, sharedConfig.context, tracking, null, nonce, tags);
+    },
     serialize(id, p) {
       if (sharedConfig.context.noHydrate) return;
       if (
@@ -321,13 +637,15 @@ export function renderToString(code, options = {}) {
   // Asset closures evaluate unconditionally (they can have side effects), even
   // when there is no `</head>` for their output to land in.
   const assetsHtml = resolveAssetsHtml(sharedConfig.context.assets);
+  const head = renderShellHead(headRegistry, nonce, null);
   return assembleDocument(
     html,
     assetsHtml,
     tracking.emittedAssets,
     tracking.inlineStyles,
     scripts.length ? scripts : "",
-    nonce
+    nonce,
+    head
   );
 }
 
@@ -415,12 +733,16 @@ export function renderToStream(code, options = {}) {
     },
     // A late-registered asset while streaming. Document behavior: style links
     // are handled per-fragment (see fragment()); modules preload immediately;
-    // non-boundary inline styles write their <style> tag directly.
+    // non-boundary inline styles write their <style> tag directly. Head
+    // resource tags (useHead preload/preconnect/script[src]) arrive as
+    // already-rendered markup and write through eagerly.
     asset(type, value) {
       if (type === "module") {
         buffer.write(`<link rel="modulepreload" href="${value}">`);
       } else if (type === "inline-style") {
         buffer.write(renderInlineStyle(value, nonce));
+      } else if (type === "head-tag") {
+        buffer.write(value);
       }
     },
     // The resolved shell. `meta.assets` is the already-evaluated useAssets
@@ -437,7 +759,8 @@ export function renderToStream(code, options = {}) {
           meta.preloads,
           meta.inlineStyles,
           meta.tasks.length ? meta.tasks : "",
-          nonce
+          nonce,
+          meta.head
         )
       );
     },
@@ -519,11 +842,39 @@ export function renderToStream(code, options = {}) {
     }
   };
   const tracking = createAssetTracking();
+  const headRegistry = createHeadRegistry();
+  let headScriptFlushed = false;
+  // Head patch ops park on `_$HY.hp[key]` and apply when the owning
+  // fragment's `$df` reveal fires, so head updates stay atomic with content
+  // reveal — through style gates and reveal groups alike. `emitTask` (not a
+  // bare pushTask) because the ops are useless without $df's hook.
+  const emitHeadOps = (key, ops) => {
+    const payload = JSON.stringify(ops).replace(/</g, "\\u003C");
+    emitTask(
+      `${!headScriptFlushed ? HEAD_SCRIPT : ""}(_$HY.hp=_$HY.hp||{})[${JSON.stringify(key)}]=${payload}`
+    );
+    headScriptFlushed = true;
+  };
 
   sharedConfig.context = context = {
     async: true,
     assets: [],
     nonce,
+    registerHeadTags(tags) {
+      registerHeadTags(
+        headRegistry,
+        context,
+        tracking,
+        // Resource-class tags stream eagerly: before first flush they join
+        // the shell head; afterwards they write straight into the stream.
+        markup => {
+          if (firstFlushed) sink.asset("head-tag", markup);
+          else headRegistry.eagerHtml += markup;
+        },
+        nonce,
+        tags
+      );
+    },
     registerAsset(type, value) {
       if (type === "inline-style") {
         const entry = tracking.registerInlineStyle(value);
@@ -626,17 +977,31 @@ export function renderToStream(code, options = {}) {
             parent.children[key] = value !== undefined ? value : "";
             serializeFragmentAssets(key, tracking.boundaryModules, context);
             propagateBoundaryStyles(key, parentKey, tracking);
+            // The parent is the boundary that actually flushes; head
+            // registrations evaluate and commit there.
+            adoptHeadBoundary(headRegistry, key, parentKey);
             item.resolve();
             return;
           }
           if (!completed) {
+            if (error) dropHeadBoundary(headRegistry, key);
             if (!firstFlushed) {
+              // Head registrations stay pending: a boundary that inlines into
+              // the shell commits with the shell flush (its key is no longer
+              // a pending fragment, so renderShellHead picks them up).
               queue(() => (html = replacePlaceholder(html, key, value !== undefined ? value : "")));
               serializeFragmentAssets(key, tracking.boundaryModules, context);
               item.resolve(error);
             } else {
               serializeFragmentAssets(key, tracking.boundaryModules, context);
               const styles = collectStreamStyles(key, tracking, headStyles);
+              // Evaluate + commit + diff this boundary's head registrations
+              // now (collection window closed), parking ops for the
+              // fragment's $df so head update and reveal stay atomic. Must
+              // precede sink.fragment so the ops land in the same task batch
+              // as (and before) the activation call.
+              const headOps = error ? null : flushHeadFragment(headRegistry, key);
+              if (headOps) emitHeadOps(key, headOps);
               // The error rides the sink call: the document sink ignores it
               // (its protocol rejects `<key>_fr` via item.resolve below), but
               // transport sinks with no resume protocol need the signal.
@@ -723,11 +1088,15 @@ export function renderToStream(code, options = {}) {
     }
     // Same constraint: root _assets serialization feeds sink.data → tasks.
     serializeRootAssets();
+    // Shell head flush: commits every registration not owned by a
+    // still-pending fragment (those flush with their fragment later).
+    const head = renderShellHead(headRegistry, nonce, k => registry.has(k));
     sink.shell(html, {
       assets: assetsHtml,
       preloads: tracking.emittedAssets,
       inlineStyles: tracking.inlineStyles,
-      tasks
+      tasks,
+      head
     });
     tasks = "";
     onCompleteShell &&
@@ -1387,10 +1756,14 @@ function resolveAssetsHtml(assets) {
 // 400KB body one stray scan costs more than the render's own string work
 // (measured ~0.75ms). An anchor is only searched for when there is content that
 // needs it, keeping a body-only render a pure pass-through.
-function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts, nonce) {
+function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts, nonce, headTags) {
   const scriptTag = scripts ? `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>` : "";
+  const headTagsHtml = headTags ? headTags.html : "";
+  const headPrelude = headTags ? headTags.prelude : "";
   if (
     !assetsHtml &&
+    !headTagsHtml &&
+    !headPrelude &&
     !(emittedAssets && emittedAssets.size) &&
     !(inlineStyles && inlineStyles.size)
   ) {
@@ -1400,6 +1773,16 @@ function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts
     const xs = html.indexOf("<!--xs-->");
     return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
   }
+  // The prelude (charset/base) splices right after the `<head>` open tag —
+  // before any content the existing `</head>` splice could produce — so it is
+  // applied first, shifting `</head>` but nothing this function has indexed.
+  if (headPrelude) {
+    const open = html.match(/<head(?:\s[^>]*)?>/);
+    if (open) {
+      const at = open.index + open[0].length;
+      html = html.slice(0, at) + headPrelude + html.slice(at);
+    }
+  }
   const headIdx = html.indexOf("</head>");
   if (headIdx === -1) {
     // No head to splice into: assets/preloads/styles are dropped and left
@@ -1408,7 +1791,7 @@ function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts
     const xs = html.indexOf("<!--xs-->");
     return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
   }
-  let head = assetsHtml || "";
+  let head = headTagsHtml + (assetsHtml || "");
   if (emittedAssets && emittedAssets.size) {
     for (const url of emittedAssets) {
       head += url.endsWith(".css")

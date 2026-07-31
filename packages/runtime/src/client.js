@@ -13,6 +13,16 @@ import {
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
+import {
+  HEAD_ELIGIBLE_TAGS,
+  HEAD_ATTR_NAME,
+  classifyHeadTag,
+  evalHeadProps,
+  evalHeadValue,
+  resourceIdentity,
+  replaceableIdentity,
+  resolveHead
+} from "./head.js";
 export {
   DOMWithState,
   ChildProperties,
@@ -698,6 +708,305 @@ export function acquireAsset(descriptor) {
       entry.element && entry.element.remove();
     }, ASSET_REMOVAL_GRACE);
   };
+}
+
+// ---- Head Registry (useHead) ----
+//
+// Client half of the head registry (design: docs/head-management-rfc.md).
+// Registrations resolve by last-committed group per identity; the winning
+// set is applied to document.head with ownership marking (`data-dh`) so
+// static head content and third-party insertions are never clobbered.
+//
+// Server handoff: server-rendered winners carry the same ownership marker,
+// so the DOM itself is the bootstrap state — the registry claims marked
+// elements on its first post-hydration apply instead of recreating them.
+// Streamed patches route through `_$HY.h` once the registry is live; before
+// that the inline `$dh` runtime applies them directly (and marks them), so
+// no patch is lost regardless of bundle timing. During hydration DOM writes
+// are suppressed entirely — the server-flushed state stays authoritative
+// until hydration completes, preventing revert/redo flicker.
+
+let headRegistrations = null; // [{ seq, tags: [{ tag, props, identity }] }]
+let headSeq = 0;
+let headUid = 0;
+let headOwned = null; // Map<identity, Element[]> — DOM the registry wrote/claimed
+let headApplied = null; // Map<identity, signature> — skip no-op re-applies
+let headFallbackTitle = null;
+let headScheduled = false;
+const headMountedResources = new Set(); // hint identities mounted this session
+
+function initHeadRegistry() {
+  if (headRegistrations) return;
+  headRegistrations = [];
+  headOwned = new Map();
+  headApplied = new Map();
+  // A <title> without an ownership marker is user-authored shell markup: the
+  // fallback restored when every title registration has disposed. A marked
+  // one is server-registry output — there is no static fallback behind it.
+  const t = document.querySelector("title");
+  headFallbackTitle = t && !t.hasAttribute("data-dh") ? t.textContent : null;
+  if (globalThis._$HY) globalThis._$HY.h = applyServerHeadOps;
+}
+
+// Server patch ops arriving after the registry is live (a boundary streamed
+// in post-bundle-load). Identities the client owns are skipped — client
+// registrations are newer commits by definition; everything else applies
+// with the same semantics as the inline $dha runtime.
+function applyServerHeadOps(ops) {
+  for (let i = 0; i < ops.length; i++) {
+    const op = ops[i];
+    const identity = op[0] === "t" ? "title" : op[1];
+    if (headOwned.has(identity)) continue;
+    if (op[0] === "t") setHeadTitle(op[1]);
+    else if (op[0] === "r") {
+      const els = headMarkedElements(identity);
+      for (let j = 0; j < els.length; j++) els[j].remove();
+    } else {
+      const el = document.createElement(op[2]);
+      for (const name in op[3]) el.setAttribute(name, op[3][name]);
+      if (op[4] != null) el.textContent = op[4];
+      el.setAttribute("data-dh", identity);
+      document.head.appendChild(el);
+    }
+  }
+}
+
+// Attribute-compared lookup, same reasoning as findAssetElement: identity
+// values never need selector escaping.
+function headMarkedElements(identity) {
+  const nodes = document.head.querySelectorAll("[data-dh]");
+  const out = [];
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].getAttribute("data-dh") === identity) out.push(nodes[i]);
+  }
+  return out;
+}
+
+function setHeadTitle(text) {
+  let el = document.querySelector("title");
+  if (!el) {
+    el = document.createElement("title");
+    document.head.appendChild(el);
+  }
+  el.textContent = text;
+  el.setAttribute("data-dh", "title");
+  return el;
+}
+
+function scheduleHeadApply() {
+  if (headScheduled) return;
+  headScheduled = true;
+  queueMicrotask(flushHeadRegistry);
+}
+
+function flushHeadRegistry() {
+  if (sharedConfig.hydrating) {
+    // Collect, don't touch: server state stays authoritative until hydration
+    // completes. Macrotask (not microtask) retry so an async hydration path
+    // (module preloads) can make progress.
+    setTimeout(flushHeadRegistry, 0);
+    return;
+  }
+  headScheduled = false;
+  const winners = resolveHead(headRegistrations);
+  // Retractions: identities the registry owns that no longer resolve.
+  for (const [identity, els] of headOwned) {
+    if (winners.has(identity)) continue;
+    headOwned.delete(identity);
+    headApplied.delete(identity);
+    if (identity === "title") {
+      if (headFallbackTitle != null) setHeadTitle(headFallbackTitle).removeAttribute("data-dh");
+    } else {
+      for (let i = 0; i < els.length; i++) els[i].remove();
+    }
+  }
+  for (const [identity, winner] of winners) {
+    let sig = "";
+    for (let i = 0; i < winner.tags.length; i++)
+      sig += winner.tags[i].tag + JSON.stringify(winner.tags[i].props) + "|";
+    if (headApplied.get(identity) === sig) continue;
+    headApplied.set(identity, sig);
+    if (identity === "base" || identity === "charset") {
+      // Shell-only identities: not client-manageable (a charset or base that
+      // changes after load is incoherent). Server-rendered ones stand.
+      if ("_DX_DEV_")
+        console.warn(
+          `useHead: <${winner.tags[0].tag}> (${identity}) is shell-only and ignored on the client`
+        );
+      continue;
+    }
+    if (identity === "title") {
+      const children = winner.tags[0].props.children;
+      setHeadTitle(children == null ? "" : String(children));
+      headOwned.set(identity, []);
+      continue;
+    }
+    // Remove-and-rerender per identity (no attribute diffing — N is
+    // head-sized), except elements that match exactly are claimed in place:
+    // that is how server-rendered winners adopt without churn on first apply.
+    const existing = headMarkedElements(identity);
+    const els = [];
+    for (let i = 0; i < winner.tags.length; i++) {
+      els.push(renderHeadElement(winner.tags[i], identity, existing));
+    }
+    for (let i = 0; i < existing.length; i++) {
+      if (els.indexOf(existing[i]) === -1) existing[i].remove();
+    }
+    headOwned.set(identity, els);
+  }
+}
+
+function renderHeadElement(t, identity, existing) {
+  for (let i = 0; i < existing.length; i++) {
+    if (headElementMatches(existing[i], t)) return existing.splice(i, 1)[0];
+  }
+  const el = document.createElement(t.tag);
+  for (const name in t.props) {
+    if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
+    if (!HEAD_ATTR_NAME.test(name)) {
+      if ("_DX_DEV_") console.warn(`useHead: ignoring invalid attribute name "${name}"`);
+      continue;
+    }
+    const v = t.props[name];
+    if (v == null || v === false) continue;
+    el.setAttribute(name, v === true ? "" : String(v));
+  }
+  if (t.props.children != null) el.textContent = String(t.props.children);
+  el.setAttribute("data-dh", identity);
+  document.head.appendChild(el);
+  return el;
+}
+
+function headElementMatches(el, t) {
+  if (el.tagName.toLowerCase() !== t.tag) return false;
+  for (const name in t.props) {
+    if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
+    if (!HEAD_ATTR_NAME.test(name)) continue;
+    const v = t.props[name];
+    if (v == null || v === false) {
+      if (el.hasAttribute(name)) return false;
+    } else if (el.getAttribute(name) !== (v === true ? "" : String(v))) return false;
+  }
+  const children = t.props.children;
+  return (children == null ? "" : String(children)) === el.textContent;
+}
+
+// Resource-class tags apply immediately at registration (their value is
+// earliness), identity-deduped against server-emitted elements. Plain
+// stylesheet/modulepreload links share the ref-counted asset registry —
+// removal follows the owner with the same grace period as tracked boundary
+// CSS. Hints (preload/preconnect/…) and scripts mount once and are never
+// removed on disposal: retracting a hint is pointless churn, and an executed
+// script cannot be unexecuted.
+function acquireHeadResource(tag, props) {
+  if (tag === "link" && (props.rel === "stylesheet" || props.rel === "modulepreload")) {
+    const descriptor = {
+      type: props.rel === "stylesheet" ? "style" : "module",
+      href: props.href
+    };
+    let attrs = null;
+    for (const name in props) {
+      if (name === "rel" || name === "href") continue;
+      if (!HEAD_ATTR_NAME.test(name)) continue;
+      const v = props[name];
+      if (v == null || v === false) continue;
+      (attrs || (attrs = {}))[name] = v === true ? "" : String(v);
+    }
+    if (attrs) descriptor.attrs = attrs;
+    return acquireAsset(descriptor);
+  }
+  const identity = resourceIdentity(tag, props);
+  if (headMountedResources.has(identity)) return noopFn;
+  headMountedResources.add(identity);
+  const url = props.href || props.src;
+  let el = null;
+  if (url != null) {
+    // Adopt a server-emitted element for the same resource. `rel` values are
+    // constrained to the resource set, so embedding in a selector is safe.
+    if (tag === "link") el = findAssetElement(`link[rel="${props.rel}"]`, "href", url);
+    else if (tag === "script") el = findAssetElement("script[src]", "src", url);
+    else el = findAssetElement("style[href]", "href", url);
+  }
+  if (!el) {
+    el = document.createElement(tag);
+    for (const name in props) {
+      if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
+      if (!HEAD_ATTR_NAME.test(name)) continue;
+      const v = props[name];
+      if (v == null || v === false) continue;
+      el.setAttribute(name, v === true ? "" : String(v));
+    }
+    if (props.children != null) el.textContent = String(props.children);
+    document.head.appendChild(el);
+  }
+  return noopFn;
+}
+
+function noopFn() {}
+
+/**
+ * Registers head tags with the ambient head registry. An array is a group —
+ * one replacement set. Props values may be getters (reactive); updates keep
+ * the registration's original commit position. Disposal removes the
+ * registration and re-resolves (previous committed winner is restored).
+ * See docs/head-management-rfc.md.
+ */
+export function useHead(tags) {
+  const list = Array.isArray(tags) ? tags : [tags];
+  initHeadRegistry();
+  const reg = { seq: -1, tags: null };
+  const uid = ++headUid;
+  effect(
+    () => {
+      const replaceable = [];
+      const resources = [];
+      for (let i = 0; i < list.length; i++) {
+        const desc = list[i];
+        if (!desc || !HEAD_ELIGIBLE_TAGS.has(desc.tag)) {
+          if ("_DX_DEV_") console.warn(`useHead: ignoring non-head tag`, desc);
+          continue;
+        }
+        const cls = classifyHeadTag(desc);
+        const props = evalHeadProps(
+          desc.props || {},
+          cls.rel !== undefined ? { rel: cls.rel } : undefined
+        );
+        if (cls.resource) {
+          resources.push({ tag: desc.tag, props });
+        } else {
+          const key = evalHeadValue(desc.key);
+          replaceable.push({
+            tag: desc.tag,
+            props,
+            // Stable unique fallback per registration slot so reactive reruns
+            // update in place instead of forking identities.
+            identity: replaceableIdentity(desc.tag, props, key, "u:c" + uid + ":" + i)
+          });
+        }
+      }
+      return { replaceable, resources };
+    },
+    evaluated => {
+      const releases = [];
+      for (let i = 0; i < evaluated.resources.length; i++) {
+        releases.push(
+          acquireHeadResource(evaluated.resources[i].tag, evaluated.resources[i].props)
+        );
+      }
+      reg.tags = evaluated.replaceable;
+      // Commit order is assigned once; a reactive rerun re-enters at the same
+      // position (the cleanup below runs first, then this re-adds).
+      if (reg.seq < 0) reg.seq = ++headSeq;
+      if (headRegistrations.indexOf(reg) === -1) headRegistrations.push(reg);
+      scheduleHeadApply();
+      return () => {
+        const idx = headRegistrations.indexOf(reg);
+        if (idx > -1) headRegistrations.splice(idx, 1);
+        for (let i = 0; i < releases.length; i++) releases[i]();
+        scheduleHeadApply();
+      };
+    }
+  );
 }
 
 // Module asset loading for hydration. `mapping` pairs opaque keys with

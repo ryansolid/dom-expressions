@@ -131,8 +131,31 @@ export function applyRef(
   r: ((element: any) => void) | ((element: any) => void)[],
   element: any
 ): void;
+/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
 export function useAssets(fn: () => JSX.Element): void;
+/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
 export function getAssets(): string;
+/**
+ * A head tag descriptor. Props values may be getters (evaluated lazily on
+ * the server — at the owning flush boundary — and reactively on the client);
+ * `children` is the text body (title text, inline style/script content).
+ * `key` overrides the built-in dedupe identity (`title` is a hard singleton
+ * that `key` cannot fork).
+ */
+export type HeadTag = {
+  tag: "title" | "meta" | "link" | "style" | "script" | "base";
+  props: Record<string, any>;
+  key?: string | (() => string);
+};
+/**
+ * Registers head tags with the render's head registry. An array is a group —
+ * one replacement set; a single tag is a group of one. Replaceable tags
+ * (title/meta/canonical/…) resolve by last-committed group and stream as
+ * patches with their suspense boundary's reveal; resource tags (preload and
+ * friends, stylesheets, `script[src]`) emit eagerly and dedupe by identity.
+ * See docs/head-management-rfc.md.
+ */
+export function useHead(tag: HeadTag | HeadTag[]): void;
 export function getHydrationKey(): string | undefined;
 export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;

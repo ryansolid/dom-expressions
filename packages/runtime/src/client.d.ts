@@ -127,8 +127,28 @@ export function getHydrationKey(): string | undefined;
 export function getNextElement(template?: () => Element): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 export function getNextMarker(start: Node): [Node, Array<Node>];
+/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
 export function useAssets(fn: () => JSX.Element): void;
+/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
 export function getAssets(): string;
+/**
+ * A head tag descriptor. Props values may be getters (reactive on the
+ * client); `children` is the text body. `key` overrides the built-in dedupe
+ * identity (`title` is a hard singleton that `key` cannot fork).
+ */
+export type HeadTag = {
+  tag: "title" | "meta" | "link" | "style" | "script" | "base";
+  props: Record<string, any>;
+  key?: string | (() => string);
+};
+/**
+ * Registers head tags with the ambient head registry under the current
+ * owner. An array is a group — one replacement set. Resolution is
+ * last-committed group per identity; disposal restores the previous winner.
+ * During hydration the server-flushed head state stays authoritative until
+ * hydration completes. See docs/head-management-rfc.md.
+ */
+export function useHead(tag: HeadTag | HeadTag[]): void;
 export type AssetDescriptor =
   | { type: "style"; href: string; attrs?: Record<string, string> }
   | { type: "inline-style"; id: string; content?: string; attrs?: Record<string, string> }
