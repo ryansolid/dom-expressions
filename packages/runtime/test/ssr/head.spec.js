@@ -183,6 +183,19 @@ describe("renderToString head rendering", () => {
     expect(html).toContain('<link rel="stylesheet" href="/route.css">');
   });
 
+  it("treats query-stringed CSS URLs as stylesheets (dev-server ?t=/?url paths)", () => {
+    const html = r.renderToString(() => {
+      const ctx = sharedConfig.context;
+      r.useHead({ tag: "link", props: { rel: "stylesheet", href: "/src/foo.css?t=123" } });
+      // The raw tracked path must classify the same way.
+      ctx.registerAsset("style", "/src/bar.css?used");
+      return DOC();
+    });
+    expect(html).toContain('<link rel="stylesheet" href="/src/foo.css?t=123">');
+    expect(html).toContain('<link rel="stylesheet" href="/src/bar.css?used">');
+    expect(html).not.toContain("modulepreload");
+  });
+
   it("keeps qualifying attributes on attributed stylesheets", () => {
     const html = r.renderToString(() => {
       r.useHead({ tag: "link", props: { rel: "stylesheet", href: "/print.css", media: "print" } });

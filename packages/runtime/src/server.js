@@ -246,6 +246,14 @@ function applyAssetTracking(context, tracking, manifest, noScripts) {
 // `script[src]`) evaluate immediately and stream eagerly: their value is
 // earliness, so holding them for their boundary's flush would defeat them.
 
+// Stylesheet-vs-module classification for tracked asset URLs. Dev servers
+// commonly serve CSS with cache-busting queries (`/src/foo.css?t=…`), so the
+// suffix test runs against the path portion only.
+function isCssUrl(url) {
+  const q = url.search(/[?#]/);
+  return (q === -1 ? url : url.slice(0, q)).endsWith(".css");
+}
+
 function createHeadRegistry() {
   return {
     pending: [], // { boundary, tags: [raw descriptor (+ peeked link rel)] }
@@ -315,7 +323,7 @@ function emitHeadResource(registry, context, tracking, emitResource, nonce, desc
     // The asset-tracking emitters decide stylesheet-vs-modulepreload by the
     // `.css` suffix, so only suffix-conforming URLs can ride that path.
     if (plain && props.href != null) {
-      const isCss = props.href.endsWith(".css");
+      const isCss = isCssUrl(props.href);
       if (rel === "stylesheet" ? isCss : !isCss) {
         context.registerAsset(rel === "stylesheet" ? "style" : "module", props.href);
         return;
@@ -1084,7 +1092,7 @@ export function renderToStream(code, options = {}) {
     const assetsHtml = resolveAssetsHtml(context.assets);
     headStyles = new Set();
     for (const url of tracking.emittedAssets) {
-      if (url.endsWith(".css")) headStyles.add(url);
+      if (isCssUrl(url)) headStyles.add(url);
     }
     // Same constraint: root _assets serialization feeds sink.data → tasks.
     serializeRootAssets();
@@ -1794,7 +1802,7 @@ function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts
   let head = headTagsHtml + (assetsHtml || "");
   if (emittedAssets && emittedAssets.size) {
     for (const url of emittedAssets) {
-      head += url.endsWith(".css")
+      head += isCssUrl(url)
         ? `<link rel="stylesheet" href="${url}">`
         : `<link rel="modulepreload" href="${url}">`;
     }
