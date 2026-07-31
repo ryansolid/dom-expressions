@@ -31,6 +31,20 @@ export const RESOURCE_LINK_RELS = new Set([
 // changes cacheability. URL alone is not the identity.
 const RESOURCE_QUALIFIERS = ["as", "crossorigin", "type", "media", "imagesrcset", "imagesizes"];
 
+// Stylesheet attributes that are pure fetch metadata: they change how the
+// sheet is fetched, not whether it applies. A stylesheet whose extra
+// attributes all come from this set is exactly as render-critical as a plain
+// one and participates in boundary reveal gating. Condition-changing
+// attributes (media, title/alternate, disabled) exclude a sheet from gating —
+// holding a reveal on a sheet that may never apply would block content on a
+// low-priority fetch.
+export const STYLESHEET_FETCH_META = new Set([
+  "crossorigin",
+  "integrity",
+  "referrerpolicy",
+  "fetchpriority"
+]);
+
 export function evalHeadValue(v) {
   return typeof v === "function" ? v() : v;
 }

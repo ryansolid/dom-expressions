@@ -201,7 +201,14 @@ Resource-tag integration requirements:
   never duplicates a manifest-emitted link for the same URL.
 - A user-authored `rel=stylesheet` arriving with a streamed fragment
   should participate in the existing style-gated reveal (`$dfs`/`$dfc`),
-  same as tracked boundary CSS.
+  same as tracked boundary CSS. The gating rule is by what the sheet's
+  attributes *mean*: fetch metadata (`crossorigin`, `integrity`,
+  `referrerpolicy`, `fetchpriority`) doesn't change render-criticality,
+  so those sheets gate with their attributes intact; condition-changing
+  attributes (`media`, `title`/alternate, `disabled`) exclude a sheet
+  from gating — a `media` sheet still fetches (at low priority) and
+  fires `load` even when its query doesn't match, so gating a reveal on
+  it would hold content hostage to a fetch that may never apply.
 - On the client, resource tags apply immediately at registration
   (identity-deduped against server-emitted links); disposal does not
   remove preload/preconnect hints (pointless churn), but may remove

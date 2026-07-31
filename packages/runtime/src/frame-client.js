@@ -1181,8 +1181,8 @@ class FrameImpl {
     const assets = this.#store[`seg:${name}:assets`];
     if (assets && assets.styles) {
       let ready = true;
-      for (const href of assets.styles) {
-        if (!ensureStylesheet(href, this.#styleFlush)) ready = false;
+      for (const entry of assets.styles) {
+        if (!ensureStylesheet(entry, this.#styleFlush)) ready = false;
       }
       if (!ready) return false;
     }
@@ -1406,13 +1406,21 @@ function findHeadElement(selector, attr, value) {
  * Ensure a stylesheet link exists and report whether it has settled. A link
  * this loader created tracks waiters until load/error (error unblocks too —
  * same policy as the document runtime's $dfc onerror); a link that was
- * already in the document counts as settled.
+ * already in the document counts as settled. `entry` is a url string or an
+ * attributed record `{ href, attrs }` (fetch-metadata attributes carried by
+ * useHead stylesheets).
  */
-function ensureStylesheet(href, onSettle) {
+function ensureStylesheet(entry, onSettle) {
+  const href = typeof entry === "string" ? entry : entry.href;
   let link = findHeadElement('link[rel="stylesheet"]', "href", href);
   if (!link) {
     link = document.createElement("link");
     link.rel = "stylesheet";
+    // Fetch-metadata attributes (crossorigin, integrity, …) must be in place
+    // before the href assignment starts the request.
+    if (typeof entry !== "string" && entry.attrs) {
+      for (const name in entry.attrs) link.setAttribute(name, entry.attrs[name]);
+    }
     link.href = href;
     const waiters = new Set();
     link._$frWaiters = waiters;

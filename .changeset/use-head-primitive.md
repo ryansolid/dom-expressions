@@ -23,9 +23,13 @@ function useHead(tag: HeadTag | HeadTag[]): void;
   flush — the migration path for deferred CSS collectors.
 - Resource tags (`link rel=preload/preconnect/…`, stylesheets, `script[src]`)
   emit eagerly with identity dedupe (URL + qualifying attributes), sharing one
-  identity set with manifest-driven asset tracking. On the client, plain
-  stylesheets ride the ref-counted asset registry (removal follows the owner);
-  hints are never retracted.
+  identity set with manifest-driven asset tracking. Stylesheets whose extra
+  attributes are pure fetch metadata (`crossorigin`, `integrity`,
+  `referrerpolicy`, `fetchpriority`) — and query-stringed dev-server CSS URLs
+  — gate their suspense boundary's reveal like tracked boundary CSS;
+  condition-changing attributes (`media`, alternate, `disabled`) emit ungated.
+  On the client, stylesheets ride the ref-counted asset registry (removal
+  follows the owner); hints are never retracted.
 - `title` is a hard singleton with stack semantics: disposal restores the
   previous winner, then the static shell title.
 - `meta[charset]` and `base` splice into a head prelude immediately after the

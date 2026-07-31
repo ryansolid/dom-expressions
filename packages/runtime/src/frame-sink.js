@@ -198,7 +198,14 @@ export function createFrameSink(emit, frame) {
       if (links.length || inline.length) {
         if (links.length) styledKeys.add(key);
         const chunk = { type: "assets", id: fid, version, key };
-        if (links.length) chunk.styles = links;
+        // Link entries are urls or attributed gate entries; the wire form
+        // drops the document-sink markup (`attrHtml`) and keeps the
+        // setAttribute record.
+        if (links.length) {
+          chunk.styles = links.map(e =>
+            typeof e === "string" ? e : e.attrs ? { href: e.href, attrs: e.attrs } : e.href
+          );
+        }
         if (inline.length) {
           chunk.inlineStyles = inline.map(e => ({ id: e.id, content: e.content, attrs: e.attrs }));
         }

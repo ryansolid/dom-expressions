@@ -204,6 +204,24 @@ describe("renderToString head rendering", () => {
     expect(html).toContain('media="print"');
   });
 
+  it("emits fetch-metadata-attributed stylesheets into the head", () => {
+    const html = r.renderToString(() => {
+      r.useHead({
+        tag: "link",
+        props: {
+          rel: "stylesheet",
+          href: "https://cdn.example.com/x.css",
+          crossorigin: "anonymous",
+          integrity: "sha384-abc"
+        }
+      });
+      return DOC();
+    });
+    expect(html).toContain(
+      '<link rel="stylesheet" href="https://cdn.example.com/x.css" crossorigin="anonymous" integrity="sha384-abc">'
+    );
+  });
+
   it("passes body-only renders through untouched when nothing registers", () => {
     const html = r.renderToString(() => r.ssr`<div>plain</div>`);
     expect(html).toBe("<div>plain</div>");
@@ -388,6 +406,97 @@ describe("renderToStream head patches", () => {
     expect(linkIdx).toBeGreaterThan(-1);
     // Emitted as literal markup ahead of the fragment's template payload.
     expect(linkIdx).toBeLessThan(html.indexOf('<template id="rf">'));
+  });
+
+  it("gates fragment reveal on fetch-metadata-attributed stylesheets", async () => {
+    let done;
+    let ctx;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        ctx = sharedConfig.context;
+        done = ctx.registerFragment("gs");
+        setTimeout(() => {
+          ctx._currentBoundaryId = "gs";
+          ctx.registerHeadTags([
+            {
+              tag: "link",
+              props: {
+                rel: "stylesheet",
+                href: "https://cdn.example.com/x.css",
+                crossorigin: "anonymous",
+                integrity: "sha384-abc"
+              }
+            },
+            // Extensionless plain stylesheet: can't ride the tracked path's
+            // suffix classification, gates through the same descriptor path.
+            { tag: "link", props: { rel: "stylesheet", href: "/styles?theme=dark" } }
+          ]);
+          ctx._currentBoundaryId = null;
+          setTimeout(() => done("<span>done</span>"), 10);
+        }, 10);
+        return r.ssr`<html><head></head><body><div><template id="pl-gs"></template><!--pl-gs--></div></body></html>`;
+      })
+    );
+    expect(html).toContain('$dfs("gs",2');
+    expect(html).toContain(
+      '<link rel="stylesheet" href="https://cdn.example.com/x.css" crossorigin="anonymous" integrity="sha384-abc" onload="$dfc(\'gs\')" onerror="$dfc(\'gs\')">'
+    );
+    expect(html).toContain(
+      '<link rel="stylesheet" href="/styles?theme=dark" onload="$dfc(\'gs\')" onerror="$dfc(\'gs\')">'
+    );
+    // Gated links precede the fragment payload, nothing emitted twice.
+    expect(html.indexOf("cdn.example.com/x.css")).toBeLessThan(html.indexOf('<template id="gs">'));
+    expect(html.match(/cdn\.example\.com\/x\.css/g).length).toBe(1);
+  });
+
+  it("does not gate reveal on condition-changing stylesheets (media)", async () => {
+    let done;
+    let ctx;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        ctx = sharedConfig.context;
+        done = ctx.registerFragment("gm");
+        setTimeout(() => {
+          ctx._currentBoundaryId = "gm";
+          ctx.registerHeadTags([
+            { tag: "link", props: { rel: "stylesheet", href: "/print.css", media: "print" } }
+          ]);
+          ctx._currentBoundaryId = null;
+          setTimeout(() => done("<span>done</span>"), 10);
+        }, 10);
+        return r.ssr`<html><head></head><body><div><template id="pl-gm"></template><!--pl-gm--></div></body></html>`;
+      })
+    );
+    expect(html).toContain('<link rel="stylesheet" href="/print.css" media="print">');
+    expect(html).not.toContain('$dfs("gm"');
+    expect(html).not.toContain("onload");
+  });
+
+  it("emits pre-shell attributed stylesheets in the shell head without re-gating", async () => {
+    let done;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        done = ctx.registerFragment("ps");
+        ctx._currentBoundaryId = "ps";
+        r.useHead({
+          tag: "link",
+          props: { rel: "stylesheet", href: "/early.css", crossorigin: "anonymous" }
+        });
+        ctx._currentBoundaryId = null;
+        setTimeout(() => done("<span>done</span>"), 10);
+        return r.ssr`<html><head></head><body><div><template id="pl-ps"></template><!--pl-ps--></div></body></html>`;
+      })
+    );
+    // Registered pre-shell: the link is render-blocking in the shell head…
+    const linkIdx = html.indexOf(
+      '<link rel="stylesheet" href="/early.css" crossorigin="anonymous">'
+    );
+    expect(linkIdx).toBeGreaterThan(-1);
+    expect(linkIdx).toBeLessThan(html.indexOf("</head>"));
+    // …so the fragment neither gates on it nor re-emits it.
+    expect(html).not.toContain('$dfs("ps"');
+    expect(html.match(/\/early\.css/g).length).toBe(1);
   });
 
   it("ignores charset/base registered after the shell flushed", async () => {

@@ -9,7 +9,8 @@ import {
   evalHeadValue,
   resourceIdentity,
   replaceableIdentity,
-  resolveHead
+  resolveHead,
+  STYLESHEET_FETCH_META
 } from "./head.js";
 
 // `mergeProps` comes from the framework like the client/universal entries —
@@ -298,9 +299,16 @@ function registerHeadTags(registry, context, tracking, emitResource, nonce, tags
 // only) route through `registerAsset` so they share one identity set with
 // manifest-driven asset emission — a user-authored preload must never
 // duplicate a manifest link — and, for stylesheets, participate in the
-// style-gated fragment reveal like tracked boundary CSS. Links carrying
-// qualifying attributes (media, crossorigin, …) are a different resource by
-// identity and emit through the head path with their attributes intact.
+// style-gated fragment reveal like tracked boundary CSS.
+//
+// Other stylesheets split by what their extra attributes mean: fetch metadata
+// (crossorigin, integrity, …) doesn't change render-criticality, so those
+// sheets — and plain sheets whose URL fails the `.css` suffix test the
+// tracked path needs — carry their attributes through the boundary style set
+// and gate fragment reveal like tracked CSS. Condition-changing attributes
+// (media, alternate, disabled) take the ungated eager path: gating a reveal
+// on a sheet that may never apply would block content on a low-priority
+// fetch. Non-stylesheet resources (hints, scripts) always emit eagerly.
 function emitHeadResource(registry, context, tracking, emitResource, nonce, desc, rel) {
   let props;
   try {
@@ -314,11 +322,11 @@ function emitHeadResource(registry, context, tracking, emitResource, nonce, desc
   registry.resources.add(identity);
   if (desc.tag === "link" && (rel === "stylesheet" || rel === "modulepreload")) {
     let plain = true;
+    let gateable = rel === "stylesheet";
     for (const name in props) {
-      if (name !== "rel" && name !== "href") {
-        plain = false;
-        break;
-      }
+      if (name === "rel" || name === "href") continue;
+      plain = false;
+      if (!STYLESHEET_FETCH_META.has(name)) gateable = false;
     }
     // The asset-tracking emitters decide stylesheet-vs-modulepreload by the
     // `.css` suffix, so only suffix-conforming URLs can ride that path.
@@ -328,6 +336,26 @@ function emitHeadResource(registry, context, tracking, emitResource, nonce, desc
         context.registerAsset(rel === "stylesheet" ? "style" : "module", props.href);
         return;
       }
+    }
+    if (gateable && props.href != null) {
+      const attrHtml = renderHeadAttrHtml(props);
+      // `attrs` is the wire/DOM form (frame sink chunks, client adoption);
+      // `attrHtml` is the pre-escaped document-sink form. `attrHtml` also
+      // discriminates this shape from inline-style entries in the boundary
+      // style set.
+      const entry = { href: props.href, attrHtml, attrs: headAttrRecord(props, true) };
+      if (tracking.currentBoundaryId) {
+        let styles = tracking.boundaryStyles.get(tracking.currentBoundaryId);
+        if (!styles) tracking.boundaryStyles.set(tracking.currentBoundaryId, (styles = new Set()));
+        styles.add(entry);
+      }
+      const markup = `<link${attrHtml}>`;
+      if (emitResource) emitResource(markup, entry);
+      else {
+        registry.eagerHtml += markup;
+        entry.emitted = true;
+      }
+      return;
     }
   }
   const url = props.href || props.src;
@@ -489,7 +517,7 @@ function flushHeadFragment(registry, boundary) {
   return ops.length ? ops : null;
 }
 
-function renderHeadTagMarkup(tag, props, identity, nonce) {
+function renderHeadAttrHtml(props) {
   let attrs = "";
   for (const name in props) {
     if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
@@ -501,6 +529,27 @@ function renderHeadTagMarkup(tag, props, identity, nonce) {
     if (v == null || v === false) continue;
     attrs += v === true ? ` ${name}` : ` ${name}="${escape(String(v), true)}"`;
   }
+  return attrs;
+}
+
+// Plain name→string record of the same filtered attributes, for consumers
+// that apply via setAttribute (frame chunks, client adoption) rather than
+// markup. `skipRelHref` drops the attributes implied by the element shape.
+function headAttrRecord(props, skipRelHref) {
+  let attrs = null;
+  for (const name in props) {
+    if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
+    if (skipRelHref && (name === "rel" || name === "href")) continue;
+    if (!HEAD_ATTR_NAME.test(name)) continue;
+    const v = props[name];
+    if (v == null || v === false) continue;
+    (attrs || (attrs = {}))[name] = v === true ? "" : String(v);
+  }
+  return attrs;
+}
+
+function renderHeadTagMarkup(tag, props, identity, nonce) {
+  let attrs = renderHeadAttrHtml(props);
   if (identity != null) attrs += ` data-dh="${escape(identity, true)}"`;
   if (nonce && (tag === "script" || tag === "style")) attrs += ` nonce="${nonce}"`;
   if (tag === "meta" || tag === "link" || tag === "base") return `<${tag}${attrs}>`;
@@ -721,9 +770,11 @@ export function renderToStream(code, options = {}) {
         // Flush the $dfs gate before the links so their onload can't fire
         // ahead of the pending-style registration.
         writeTasks();
-        for (const url of styles.links) {
+        for (const entry of styles.links) {
           buffer.write(
-            `<link rel="stylesheet" href="${url}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+            typeof entry === "string"
+              ? `<link rel="stylesheet" href="${entry}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+              : `<link${entry.attrHtml} onload="$dfc('${key}')" onerror="$dfc('${key}')">`
           );
         }
         buffer.write(`<template id="${key}">${value}</template>`);
@@ -875,9 +926,17 @@ export function renderToStream(code, options = {}) {
         tracking,
         // Resource-class tags stream eagerly: before first flush they join
         // the shell head; afterwards they write straight into the stream.
-        markup => {
-          if (firstFlushed) sink.asset("head-tag", markup);
-          else headRegistry.eagerHtml += markup;
+        // Gate entries (reveal-gated stylesheets) emitted into the shell are
+        // marked so their fragment flush skips them; post-shell they stay
+        // parked on the boundary's style set and flush load-gated with the
+        // fragment instead of writing here.
+        (markup, gateEntry) => {
+          if (!firstFlushed) {
+            headRegistry.eagerHtml += markup;
+            if (gateEntry) gateEntry.emitted = true;
+          } else if (!gateEntry || !tracking.currentBoundaryId) {
+            sink.asset("head-tag", markup);
+          }
         },
         nonce,
         tags
@@ -1841,10 +1900,12 @@ function propagateBoundaryStyles(childKey, parentKey, tracking) {
   }
 }
 
-// Boundary style sets hold two kinds of entries: url strings (stylesheet
-// links, load-gated via $dfs) and inline style entry objects (emitted as
-// <style> tags, ready as soon as parsed). Splits them for the fragment
-// flush, consuming inline entries so they emit at most once.
+// Boundary style sets hold three kinds of entries: url strings (tracked
+// stylesheet links, load-gated via $dfs), gate entries (`{ href, attrHtml,
+// attrs }` — useHead stylesheets carrying fetch-metadata attributes, gated
+// the same way with attributes intact), and inline style entry objects
+// (emitted as <style> tags, ready as soon as parsed). Splits them for the
+// fragment flush, consuming object entries so they emit at most once.
 function collectStreamStyles(key, tracking, headStyles) {
   const styles = tracking.getBoundaryStyles(key);
   const links = [];
@@ -1853,7 +1914,12 @@ function collectStreamStyles(key, tracking, headStyles) {
   for (const entry of styles) {
     if (typeof entry === "string") {
       if (!headStyles || !headStyles.has(entry)) links.push(entry);
-    } else if (!entry.emitted) {
+    } else if (entry.emitted) {
+      continue;
+    } else if (entry.attrHtml !== undefined) {
+      entry.emitted = true;
+      links.push(entry);
+    } else {
       entry.emitted = true;
       inline.push(entry);
     }
