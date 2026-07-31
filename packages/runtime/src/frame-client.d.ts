@@ -122,6 +122,22 @@ export interface Frame {
   readonly error: unknown;
   /** Whether the named fragment has been revealed into the boundary. */
   isRevealed(segment: string): boolean;
+  /**
+   * Re-key this live frame to a different boundary id (the mount-preserving
+   * half of a call-site handoff): nothing tears down — the element, store,
+   * and slot state stay — while leaving the old id stashes a retention
+   * snapshot under it and joining the new id seeds/drains its retained
+   * store and buffered chunks. Version affinity resets: histories are per
+   * boundary id.
+   */
+  rebind(id: string): void;
+  /**
+   * Forget the version baseline without touching content — the next write
+   * is accepted whatever its number. Called by the host after seeding a
+   * registration from a retained snapshot, whose numbering belongs to a
+   * different stream space.
+   */
+  rebase(): void;
   /** Tear down: slot cleanups cascade, later chunks are ignored. Idempotent. */
   dispose(): void;
 }

@@ -36,6 +36,7 @@ import {
   frameTransformResult
 } from "../../src/frame-sink";
 import {
+  COMPONENT_HANDOFF,
   FRAME_STREAM_HEADER,
   createServerComponentHandler,
   flightCodec,
@@ -229,6 +230,127 @@ describe("per-args boundary identity", () => {
     // mounts the boundary showing the call it was cached for, never one the
     // site last streamed other args into.
     expect(fresh).not.toBe(top);
+  });
+});
+
+// The mount-preserving exception to per-args identity: a LIVE call site
+// switching arguments offers its previous component to the incoming one
+// (dynamic's contract), and `take` rebinds the mounted frame to the new call
+// instead of letting the reader remount — the element and its slot state
+// stay while the new call's stream morphs it. Preloads have no reader and
+// never offer anything, so their isolation is untouched.
+describe("call-site handoff", () => {
+  /** Poll a condition across macrotasks (streams apply asynchronously). */
+  async function settle(cond) {
+    for (let i = 0; i < 50 && !cond(); i++) await new Promise(r => setTimeout(r, 0));
+    expect(cond()).toBe(true);
+  }
+
+  function makeHandler() {
+    const host = createFrameHost();
+    const handler = createServerComponentHandler({
+      host,
+      // Mount lazily, like a framework component: minting must not register
+      // a frame (nothing is showing an address until something mounts it).
+      component: frameId => {
+        const comp = () => {
+          const el = document.createElement("div");
+          document.body.appendChild(el);
+          const frame = createFrame(el, { host, id: frameId });
+          return { el, frame };
+        };
+        return comp;
+      }
+    });
+    return { host, handler };
+  }
+
+  it("take() rebinds the live mount across args, and back again on return", async () => {
+    let payload = "top stories";
+    registerServerFunction("sf-sc-9", async () => () => r.ssr`<p>${payload}</p>`);
+    const { host, handler } = makeHandler();
+    const fetchPage = () =>
+      handleServerFunctionRequest(flightRequest("sf-sc-9"), {
+        provideEvent: (event, fn) => fn(),
+        transformResult: frameTransformResult
+      });
+
+    const Top = await handler.handle(await fetchPage(), {
+      id: "sf-sc-9",
+      args: ["top"],
+      context: null
+    });
+    const { el } = Top();
+    await settle(() => el.textContent === "top stories");
+
+    // The site switches args: a NEW component resolves (per-args identity),
+    // whose stream buffered off-screen. The reader offers its previous value…
+    payload = "new stories";
+    const Fresh = await handler.handle(await fetchPage(), {
+      id: "sf-sc-9",
+      args: ["new"],
+      context: null
+    });
+    expect(Fresh).not.toBe(Top);
+    expect(Fresh[COMPONENT_HANDOFF].take(Top)).toBe(true);
+    // …and the SAME element morphs to the new call's content: the mounted
+    // frame rebound, draining the buffered stream.
+    await settle(() => el.textContent === "new stories");
+    expect(host.get(frameAddress("sf-sc-9", ["new"]))).toBeDefined();
+    expect(host.get(frameAddress("sf-sc-9", ["top"]))).toBeUndefined();
+
+    // Returning to the original args resolves the SAME component the reader
+    // still holds; its take() brings the mount home (seeded from retention,
+    // morphed by the refetch stream).
+    payload = "top stories";
+    const TopAgain = await handler.handle(await fetchPage(), {
+      id: "sf-sc-9",
+      args: ["top"],
+      context: null
+    });
+    expect(TopAgain).toBe(Top);
+    expect(TopAgain[COMPONENT_HANDOFF].take(Top)).toBe(true);
+    await settle(() => el.textContent === "top stories");
+    expect(host.get(frameAddress("sf-sc-9", ["top"]))).toBeDefined();
+    expect(host.get(frameAddress("sf-sc-9", ["new"]))).toBeUndefined();
+  });
+
+  it("take() declines when nothing is mounted or the functions differ", async () => {
+    registerServerFunction("sf-sc-10", async () => () => r.ssr`<p>a</p>`);
+    registerServerFunction("sf-sc-11", async () => () => r.ssr`<p>b</p>`);
+    const { handler } = makeHandler();
+    const fetchPage = id =>
+      handleServerFunctionRequest(flightRequest(id), {
+        provideEvent: (event, fn) => fn(),
+        transformResult: frameTransformResult
+      });
+
+    const A1 = await handler.handle(await fetchPage("sf-sc-10"), {
+      id: "sf-sc-10",
+      args: [1],
+      context: null
+    });
+    const A2 = await handler.handle(await fetchPage("sf-sc-10"), {
+      id: "sf-sc-10",
+      args: [2],
+      context: null
+    });
+    const B = await handler.handle(await fetchPage("sf-sc-11"), {
+      id: "sf-sc-11",
+      args: [1],
+      context: null
+    });
+
+    // Never mounted: nothing to hand off — the reader swaps normally (and a
+    // fresh mount of A2 re-materializes from retention/buffer on its own).
+    expect(A2[COMPONENT_HANDOFF].take(A1)).toBe(false);
+    // Mount A1 now; a different FUNCTION's component never takes it.
+    A1();
+    expect(B[COMPONENT_HANDOFF].take(A1)).toBe(false);
+    // An unbranded previous value (plain client component) declines too.
+    expect(A2[COMPONENT_HANDOFF].take(() => {})).toBe(false);
+    // Same function, mounted: takes.
+    expect(A2[COMPONENT_HANDOFF].take(A1)).toBe(true);
   });
 });
 

@@ -80,6 +80,32 @@ export const SERVER_COMPONENT_SOURCE: unique symbol;
 export const SERVER_COMPONENT_ADDRESS: unique symbol;
 
 /**
+ * The handoff contract on components the transport resolves: `{ fnId,
+ * frameId, take(prev) }`. A reader whose source resolved a NEW component
+ * while a previous one is mounted offers the old one — `take` rebinds the
+ * live mount when both are boundaries of the same function (the element and
+ * its slot state stay; the incoming stream morphs it), and the reader keeps
+ * its previous value instead of remounting. `Symbol.for`, so frameworks can
+ * honor it without importing this module.
+ */
+export const COMPONENT_HANDOFF: unique symbol;
+
+/** The value under `COMPONENT_HANDOFF` on a transport-resolved component. */
+export interface ComponentHandoff {
+  /** The server function id both peers derive the boundary's calls from. */
+  fnId: string;
+  /** The frame id this component's fresh mounts register under. */
+  frameId: string;
+  /**
+   * Offer `prev` (the reader's current value) to this component. Returns
+   * true when the reader should KEEP prev — the mounted frame was rebound
+   * to this component's id (or already showed it); false means swap
+   * normally (different function, unbranded prev, or nothing mounted).
+   */
+  take(prev: unknown): boolean;
+}
+
+/**
  * Seroval plugin for a server component crossing a serialization boundary:
  * a branded component serializes as a REFERENCE — a per-function document
  * placeholder in the hydration serializer, a live-registry lookup by call

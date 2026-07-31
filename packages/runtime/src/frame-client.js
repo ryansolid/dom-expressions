@@ -182,6 +182,13 @@ export function createFrameHost(options = {}) {
       if (kept) {
         retained.delete(id);
         frame.apply({ version: kept.version, r: kept.records });
+        // The snapshot's version belongs to a PREVIOUS registration's stream
+        // (or, after a rebind, to a different id's numbering entirely), while
+        // everything from here on comes from this registration's own space.
+        // Rebase so the next live write establishes the baseline — without
+        // it, a retained version larger than the incoming stream's counter
+        // stale-drops genuinely fresh content.
+        frame.rebase && frame.rebase();
       }
       const buffered = pending.get(id);
       if (buffered) {
@@ -627,9 +634,12 @@ class FrameImpl {
         // SAME values (tables rotate per response, so the store-write
         // dedupe stays conservative). Value-compare the new refs against
         // the cached resolutions: all equal -> adopt the record without
-        // re-calling, occurrence state intact.
+        // re-calling, occurrence state intact. Region wire names still
+        // follow the record (rebind, not re-call) so this stream's region
+        // chunks reach the live frames.
         if (this.#refArgsUnchanged(occurrence, record)) {
           this.#slotArgs.set(occurrence, record);
+          this.#reconcileRegions(occurrence, record);
           continue;
         }
         // Args changed (incl. late args): re-call this occurrence only,
@@ -713,12 +723,11 @@ class FrameImpl {
     // it until a stream re-call re-arms the arg. Threading the EXISTING
     // element (discovered from the interior before this invoke) makes the
     // wrapper's conditional track it as `current`, so removal works at t=0.
-    // Keyed by the arg name (the childId's final segment); skips keys the
-    // record already resolved, so a re-call's #resolveArgs regions win.
+    // Skips keys the record already resolved, so a re-call's #resolveArgs
+    // regions win.
     const regions = this.#slotRegions.get(occurrence);
     if (regions) {
-      for (const entry of regions.values()) {
-        const argKey = entry.childId.slice(entry.childId.lastIndexOf(".") + 1);
+      for (const [argKey, entry] of regions) {
         if (!(argKey in props)) props[argKey] = entry.element;
       }
     }
@@ -781,6 +790,14 @@ class FrameImpl {
    *    returned fragment; the region's frame renders/reconciles between the
    *    markers.
    *  - anything else          -> passed through as a literal.
+   *
+   * Regions cache by ARG NAME, not wire id: `(occurrence, arg)` IS the
+   * region's identity, while its `$frame` childId is a per-stream wire name
+   * — different producers prefix it differently (the document and direct
+   * responses render under the function id, a single-flight region under
+   * the call's address). A re-sent ref whose only change is the wire name
+   * keeps the region — same element, same live interior — and the bound
+   * frame REBINDS to the new name so the incoming stream's chunks reach it.
    */
   #resolveArgs(slotKey, args) {
     const host = this.#options.host;
@@ -808,11 +825,13 @@ class FrameImpl {
         // places. On re-call the wrapper re-places the SAME element (the
         // platform moves the subtree as one node — no marker range to walk,
         // no fragment refill), and the bound frame's parent follows live.
-        let entry = regions.get(value.$frame);
+        let entry = regions.get(key);
         if (!entry) {
           const element = makeFrameElement(value.$frame);
           entry = { childId: value.$frame, element, frame: undefined };
-          regions.set(value.$frame, entry);
+          regions.set(key, entry);
+        } else if (entry.childId !== value.$frame) {
+          renameRegion(entry, value.$frame);
         }
         props[key] = entry.element;
       } else {
@@ -853,13 +872,16 @@ class FrameImpl {
 
   /**
    * Whether a re-sent slot record's args are VALUE-equal to the mounted
-   * occurrence's: primitives and {$frame} ids structurally, {$ref}s by
-   * resolving the incoming ref (current table) against the cached
-   * resolution from mount. Keys the stream ADDS count as unchanged only
-   * when they are {$frame} refs to regions the occurrence already holds —
-   * the t=0 record omits used regions, so the first post-adoption stream
-   * always re-introduces them (#547). Unresolvable or non-JSON-comparable
-   * values fall back to "changed" (re-call) — the conservative default.
+   * occurrence's: primitives structurally, {$frame} refs by position — the
+   * same arg of the same occurrence IS the same region whatever wire name
+   * this stream gave it (see #resolveArgs; `#reconcileRegions` follows the
+   * rename) — and {$ref}s by resolving the incoming ref (current table)
+   * against the cached resolution from mount. Keys the stream ADDS count as
+   * unchanged only when they are {$frame} refs to regions the occurrence
+   * already holds — the t=0 record omits used regions, so the first
+   * post-adoption stream always re-introduces them (#547). Unresolvable or
+   * non-JSON-comparable values fall back to "changed" (re-call) — the
+   * conservative default.
    */
   #refArgsUnchanged(occurrence, record) {
     const old = this.#slotArgs.get(occurrence);
@@ -885,7 +907,7 @@ class FrameImpl {
         if (key in a) continue;
         const vb = b[key];
         if (!vb || typeof vb !== "object" || typeof vb.$frame !== "string") return false;
-        if (!regions || !regions.has(vb.$frame)) return false;
+        if (!regions || !regions.has(key)) return false;
       }
     }
     const cache = this.#slotResolvedRefs.get(occurrence);
@@ -894,7 +916,7 @@ class FrameImpl {
       const vb = b[key];
       if (va === vb) continue;
       if (!va || !vb || typeof va !== "object" || typeof vb !== "object") return false;
-      if (typeof va.$frame === "string" && va.$frame === vb.$frame) continue;
+      if (typeof va.$frame === "string" && typeof vb.$frame === "string") continue;
       if (typeof va.$ref === "string" && typeof vb.$ref === "string" && cache && key in cache) {
         const host = this.#options.host;
         const next = host ? host.resolve(vb, this.#options.id) : undefined;
@@ -907,6 +929,26 @@ class FrameImpl {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Follow an adopted record's region wire names without re-calling: for
+   * each `{$frame}` arg whose childId differs from the cached entry's,
+   * rebind the live region frame to the new name — the stream that sent
+   * this record addresses the region's content by it. Runs only on the
+   * adopt-without-recall path; a re-call reconciles through #resolveArgs.
+   */
+  #reconcileRegions(occurrence, record) {
+    const args = record && record.args;
+    if (!args) return;
+    const regions = this.#slotRegions.get(occurrence);
+    if (!regions) return;
+    for (const key of Object.keys(args)) {
+      const value = args[key];
+      if (!isFrameRef(value)) continue;
+      const entry = regions.get(key);
+      if (entry && entry.childId !== value.$frame) renameRegion(entry, value.$frame);
+    }
   }
 
   #bindRegions(slotKey) {
@@ -972,6 +1014,55 @@ class FrameImpl {
     }
     if (!records[""] && this.#version === undefined) return null;
     return { version: this.#version ?? 0, records };
+  }
+
+  /**
+   * Re-key this live frame to a different boundary id — the mount-preserving
+   * half of a call-site handoff (see createServerComponentHandler's
+   * COMPONENT_HANDOFF). Nothing here tears down: the element stays in the
+   * document, slot occurrences stay mounted with their live client state, and
+   * the new id's content lands as writes into the SAME store, so the morph +
+   * record dedupe machinery decides per occurrence what survives — exactly as
+   * a refetch into an unmoved boundary would.
+   *
+   * Leaving the old id runs the normal retention protocol (the host stashes
+   * this frame's pre-rebind snapshot under it, so a later mount of the old
+   * call re-materializes what it showed), and joining the new id runs the
+   * normal registration protocol (seed from the new id's retained store when
+   * one exists, then drain chunks buffered for it — a stream already in
+   * flight for the new call). The version affinity resets because version
+   * histories are per boundary id: the new id's writes come from a different
+   * counter, and policy A's stale-guard must not drop them against the old
+   * stream's numbering. Segment bookkeeping resets with it, mirroring the
+   * version-bump branch of `apply` — fragment names restart per stream.
+   */
+  rebind(id) {
+    if (this.#disposed || id === this.#options.id) return;
+    const { host, id: oldId } = this.#options;
+    if (host && oldId !== undefined) host.unregister(oldId, this);
+    // Copy-on-rebind: the options object belongs to the creator.
+    this.#options = { ...this.#options, id };
+    if (this.#element && this.#element.nodeType === ELEMENT_NODE) {
+      this.#element.setAttribute(FRAME_ID_ATTR, id);
+    }
+    this.#version = undefined;
+    this.#revealed.clear();
+    this.#fallbackShown.clear();
+    for (const key of Object.keys(this.#store)) {
+      if (key.startsWith("seg:") || key === ":error") delete this.#store[key];
+    }
+    if (host) host.register(id, this);
+  }
+
+  /**
+   * Forget the version baseline without touching content: the store, DOM,
+   * and slot state stay, but the next write is accepted whatever its number.
+   * The host calls this after seeding a registration from a retained
+   * snapshot — versions are per stream space, and a snapshot's number must
+   * not out-rank the live space's counter.
+   */
+  rebase() {
+    this.#version = undefined;
   }
 
   dispose() {
@@ -1382,7 +1473,8 @@ function collectSlots(n, end, out) {
 
 /**
  * Collect the OUTERMOST frame region elements in `node`'s subtree into
- * `regions` (keyed by childId, seeded for adoption). A region is opaque — its
+ * `regions` (keyed by arg name — the childId's final segment, always the
+ * dot-free arg identifier — seeded for adoption). A region is opaque — its
  * own deeper regions belong to its occurrences, discovered when they claim —
  * so the walk stops descending at each region element. Client wrapper
  * elements around a region are descended through.
@@ -1391,12 +1483,28 @@ function collectRegionElements(node, regions) {
   if (node.nodeType !== ELEMENT_NODE) return;
   if (isFrameElement(node)) {
     const childId = node.getAttribute(FRAME_ID_ATTR);
-    if (childId && !regions.has(childId)) {
-      regions.set(childId, { childId, element: node, frame: undefined, adopt: true });
+    if (childId) {
+      const argKey = childId.slice(childId.lastIndexOf(".") + 1);
+      if (!regions.has(argKey)) {
+        regions.set(argKey, { childId, element: node, frame: undefined, adopt: true });
+      }
     }
     return;
   }
   for (let c = node.firstChild; c; c = c.nextSibling) collectRegionElements(c, regions);
+}
+
+/**
+ * Point a cached region entry at a new wire name: the identity (occurrence,
+ * arg) and the live element/interior stay, while the bound frame re-registers
+ * under the id the incoming stream addresses its content by. An entry not
+ * bound yet (discovery just seeded it) only updates its element's id — the
+ * eager bind that follows registers under the new name.
+ */
+function renameRegion(entry, childId) {
+  entry.childId = childId;
+  if (entry.frame) entry.frame.rebind(childId);
+  else entry.element.setAttribute(FRAME_ID_ATTR, childId);
 }
 
 /**

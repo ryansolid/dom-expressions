@@ -99,6 +99,17 @@ export const SERVER_COMPONENT_ADDRESS = /*#__PURE__*/ Symbol.for(
   "dom-expressions.server-component-address"
 );
 
+/**
+ * The handoff contract on components the transport resolves: `{ fnId,
+ * frameId, take(prev) }` (see `createServerComponentHandler`). A reader
+ * whose source resolved a NEW component while a previous one is mounted
+ * offers the old one — `take` rebinds the live mount when both are
+ * boundaries of the same function, and the reader keeps its previous value
+ * instead of remounting. `Symbol.for`, so consumers (a framework's
+ * `dynamic`) can honor it without importing this module.
+ */
+export const COMPONENT_HANDOFF = /*#__PURE__*/ Symbol.for("dom-expressions.component-handoff");
+
 // The live transport registry's resolver, installed by
 // createServerComponentHandler. Module state on the config pattern (one
 // active handler at a time, a later creation replaces the current one):
@@ -201,13 +212,29 @@ export function flightCodec(codec) {
  * repeat call for the same (function, args) resolves to the identical
  * component (refetches morph the showing boundary in place, cache hits pass
  * the reader's equals-gate), while different args resolve different
- * boundaries — a call site switching arguments SWAPS boundaries rather than
- * morphing one across calls, which is what keeps a cached value honest: the
- * boundary a cached component mounts shows the call it was cached for, not
- * whatever the site streamed last. The host retains an unmounted boundary's
- * state, so the swap re-materializes instantly and a stale-cache refetch
+ * boundaries — which is what keeps a cached value honest: the boundary a
+ * cached component mounts shows the call it was cached for, not whatever
+ * the site streamed last. The host retains an unmounted boundary's state,
+ * so a fresh mount re-materializes instantly and a stale-cache refetch
  * morphs over it. `component(frameId)` builds the framework's mountable
  * component for a boundary; it is invoked once per boundary and cached.
+ *
+ * A LIVE call site switching arguments is the one place per-args identity
+ * must not mean a remount: the reader's next resolution is a different
+ * component, but tearing the mounted boundary down would take its client
+ * slot state (an expanded sidebar item, focus, media) with it — state whose
+ * occurrences the new call's content still carries. So every component this
+ * handler resolves is branded with a HANDOFF contract (a well-known symbol,
+ * importless for consumers): the reader offers its previous value to the
+ * incoming component, and when both are boundaries of the SAME function
+ * with someone live to hand off, the mounted frame REBINDS to the incoming
+ * call's id instead — the element and its slot occurrences stay, the old
+ * call's state stashes into host retention under its own address (honesty
+ * for later cache reads), and the incoming stream (or the new address's
+ * retained state, on a cache hit with no stream) morphs it in place. The
+ * reader keeps its previous value, so nothing remounts. Preloads never
+ * offer a previous value — they have no reader — so hover fetches for other
+ * args still buffer off-screen exactly as before.
  */
 export function createServerComponentHandler({
   host,
@@ -230,20 +257,74 @@ export function createServerComponentHandler({
   // refresh. Entries are permanent for the session: a boundary never changes
   // which call it shows.
   const byAddress = new Map();
+  // Where a pinned call site's mount currently lives. A reader that accepted
+  // a handoff keeps its previous component (its "root") while the mounted
+  // frame walks address to address; this maps each root's frame id to the id
+  // its mount is currently bound to, path-compressed (one hop, retargeted on
+  // every handoff) so chains can't cycle. Entries clear when the mount comes
+  // home or goes unfindable.
+  const forwards = new Map();
+  /**
+   * Brand a resolved component with the handoff contract (see the factory
+   * doc). `take(prev)` is the whole protocol: called by a reader resolving
+   * THIS component while still holding `prev`, it answers whether the
+   * reader should keep prev — true when they are the same boundary, and
+   * true after REBINDING prev's live mount to this component's id (same
+   * function, someone mounted). False is "swap normally": different
+   * function, unbranded prev, or nothing live to hand off.
+   */
+  const brand = (comp, fnId, frameId) => {
+    // `component` is the integration's type — brand what can carry a
+    // property (functions, objects) and pass anything else through: an
+    // unbrandable component just never offers handoffs.
+    const brandable = typeof comp === "function" || (typeof comp === "object" && comp !== null);
+    if (brandable && !comp[COMPONENT_HANDOFF]) {
+      comp[COMPONENT_HANDOFF] = {
+        fnId,
+        frameId,
+        take(prev) {
+          const meta =
+            prev !== null &&
+            (typeof prev === "function" || typeof prev === "object") &&
+            prev[COMPONENT_HANDOFF];
+          if (!meta || meta.fnId !== fnId) return false;
+          const root = meta.frameId;
+          let cur = forwards.get(root) ?? root;
+          // A stale forward (the mount unmounted while away) falls back to
+          // the root itself — a mount living under the root is still ours.
+          if (cur !== root && !host.get(cur)) {
+            forwards.delete(root);
+            cur = root;
+          }
+          if (cur === frameId) return true;
+          let frame = host.get(cur);
+          if (!frame) return false;
+          while (frame) {
+            frame.rebind(frameId);
+            frame = host.get(cur);
+          }
+          if (frameId === root) forwards.delete(root);
+          else forwards.set(root, frameId);
+          return true;
+        }
+      };
+    }
+    return comp;
+  };
   /** The boundary showing an address, minted under the ADDRESS itself when
    *  none is — chunks for an unshown address buffer in the host under that
    *  id, so a later mount of the minted component drains them. */
-  const boundaryFor = address => {
+  const boundaryFor = (address, fnId) => {
     let entry = byAddress.get(address);
     if (!entry) {
-      entry = { frameId: address, component: component(address) };
+      entry = { frameId: address, component: brand(component(address), fnId, address) };
       byAddress.set(address, entry);
     }
     return entry;
   };
   /** Resolve a flight reference (see `ServerComponentPlugin`) to a
    *  component. Registered so repeat references stay identity-stable. */
-  const resolveAddress = (id, address) => boundaryFor(address).component;
+  const resolveAddress = (id, address) => boundaryFor(address, id).component;
   resolveServerComponent = resolveAddress;
   // Version history per frame id. A getter's boundary is the only frame in
   // its response, but a single-flight response carries several — each
@@ -265,7 +346,7 @@ export function createServerComponentHandler({
         // document boundary — even though no request ever left for it.
         if (hit !== undefined) {
           const address = frameAddress(info.id, info.args);
-          byAddress.set(address, { frameId: info.id, component: hit });
+          byAddress.set(address, { frameId: info.id, component: brand(hit, info.id, info.id) });
         }
         return hit;
       }),
@@ -289,10 +370,10 @@ export function createServerComponentHandler({
         // then on the address entry is the only way back to it.
         const adopted = documentComponent && documentComponent(ctx.id);
         if (adopted) {
-          entry = { frameId: ctx.id, component: adopted };
+          entry = { frameId: ctx.id, component: brand(adopted, ctx.id, ctx.id) };
           byAddress.set(address, entry);
         } else {
-          entry = boundaryFor(address);
+          entry = boundaryFor(address, ctx.id);
         }
       }
       // A single-flight response is a MUTATION's: it carries regions for the
@@ -327,7 +408,11 @@ export function createServerComponentHandler({
      */
     showing(address, functionId, component) {
       if (!byAddress.has(address)) {
-        byAddress.set(address, { frameId: functionId, component, address });
+        byAddress.set(address, {
+          frameId: functionId,
+          component: brand(component, functionId, functionId),
+          address
+        });
       }
     }
   };

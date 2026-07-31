@@ -2204,6 +2204,193 @@ describe("frame:applied document notification", () => {
   });
 });
 
+describe("call-site handoff (rebind)", () => {
+  // A live call site switching arguments must not remount: the reader keeps
+  // its component, and the mounted frame REBINDS to the new call's id — the
+  // element and its keyed slot state stay while the new id's stream (or
+  // retained state) morphs in place. This is the notes-demo search: filtering
+  // the sidebar list must not collapse notes still in view.
+  it("rebind keeps the element and keyed slot state; the new id's buffered stream morphs in place", () => {
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    const outputs = new Map();
+    const slots = {
+      item: (props, ctx) => {
+        calls.push(ctx.key);
+        const b = document.createElement("b");
+        b.textContent = props.title;
+        outputs.set(ctx.key, b);
+        return b;
+      }
+    };
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const frame = createFrame(el, { id: "list:all", host, slots });
+    host.apply({
+      type: "slot",
+      id: "list:all",
+      version: 1,
+      key: "item#1",
+      args: { title: "Meeting Notes" }
+    });
+    host.apply({
+      type: "slot",
+      id: "list:all",
+      version: 1,
+      key: "item#2",
+      args: { title: "Groceries" }
+    });
+    host.apply({
+      type: "html",
+      id: "list:all",
+      version: 1,
+      html:
+        "<ul><li><!--slot:item#1:start--><!--slot:item#1:end--></li>" +
+        "<li><!--slot:item#2:start--><!--slot:item#2:end--></li></ul>"
+    });
+    const kept = outputs.get("item#1");
+    expect(calls).toEqual(["item#1", "item#2"]);
+    // Live client state inside the kept occurrence's output.
+    kept.dataset.expanded = "true";
+
+    // The filtered call's stream arrives first (buffered — nothing shows that
+    // id yet), then the mount rebinds to it.
+    host.apply({
+      type: "slot",
+      id: "list:me",
+      version: 1,
+      key: "item#1",
+      args: { title: "Meeting Notes" }
+    });
+    host.apply({
+      type: "html",
+      id: "list:me",
+      version: 1,
+      html: "<ul><li><!--slot:item#1:start--><!--slot:item#1:end--></li></ul>"
+    });
+    frame.rebind("list:me");
+
+    // Same element, same live occurrence output (state intact), no re-invoke
+    // for the value-equal record; the filtered-out occurrence unmounted.
+    expect(host.get("list:me")).toBe(frame);
+    expect(host.get("list:all")).toBeUndefined();
+    expect(el.querySelector("b")).toBe(kept);
+    expect(kept.dataset.expanded).toBe("true");
+    expect(calls).toEqual(["item#1", "item#2"]);
+    expect(el.querySelectorAll("li").length).toBe(1);
+  });
+
+  it("leaving an id stashes retention under it; joining seeds from the new id's retained store", () => {
+    const host = createFrameHost(createMockSerializer());
+    // An earlier mount of the target call retained its state...
+    const before = document.createElement("div");
+    document.body.appendChild(before);
+    const earlier = createFrame(before, { id: "feed:new", host });
+    host.apply({ type: "html", id: "feed:new", version: 3, html: "<p>new stories</p>" });
+    earlier.dispose();
+    before.remove();
+
+    // ...and the live mount showing another call rebinds to it (a cache hit
+    // — no stream follows).
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const frame = createFrame(el, { id: "feed:top", host });
+    host.apply({ type: "html", id: "feed:top", version: 1, html: "<p>top stories</p>" });
+    frame.rebind("feed:new");
+    expect(el.innerHTML).toBe("<p>new stories</p>");
+
+    // The call it left re-materializes for a later mount, honesty intact.
+    const other = document.createElement("div");
+    document.body.appendChild(other);
+    createFrame(other, { id: "feed:top", host });
+    expect(other.innerHTML).toBe("<p>top stories</p>");
+  });
+
+  it("rebased seeding: a retained snapshot's higher version cannot stale-drop the new space's stream", () => {
+    const host = createFrameHost(createMockSerializer());
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const frame = createFrame(el, { id: "a", host });
+    // Several streams into `a` push its numbering past the target's counter.
+    host.apply({ type: "html", id: "a", version: 5, html: "<p>a5</p>" });
+    frame.rebind("b");
+    // The new space's FIRST stream is version 1 — smaller than the carried
+    // store's number, but a different space entirely. It must land.
+    host.apply({ type: "html", id: "b", version: 1, html: "<p>b1</p>" });
+    expect(el.innerHTML).toBe("<p>b1</p>");
+  });
+
+  it("region wire names follow a re-sent record without re-calling, and chunks reach the live region", () => {
+    // Region identity is (occurrence, arg); the `$frame` childId is a
+    // per-stream wire name — the document and direct responses prefix it
+    // with the function id, a single-flight region with the call's address.
+    // A record differing only in that prefix must keep the occurrence (no
+    // re-call, client state intact) while the bound region frame REBINDS to
+    // the new name so the incoming stream's content reaches it.
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    createFrame(el, {
+      id: "fn",
+      host,
+      slots: {
+        item: props => {
+          calls.push(props.title);
+          const div = document.createElement("div");
+          div.append(props.title, " ", props.children);
+          return div;
+        }
+      }
+    });
+    host.apply({
+      type: "slot",
+      id: "fn",
+      version: 1,
+      key: "item#1",
+      args: { title: host.serialize("Meeting Notes"), children: { $frame: "fn.item#1.children" } }
+    });
+    host.apply({
+      type: "html",
+      id: "fn",
+      version: 1,
+      html: "<ul><li><!--slot:item#1:start--><!--slot:item#1:end--></li></ul>"
+    });
+    host.apply({ type: "html", id: "fn.item#1.children", version: 1, html: "<p>excerpt</p>" });
+    const wrapper = el.querySelector("li > div");
+    const p = wrapper.querySelector("p");
+    expect(calls).toEqual(["Meeting Notes"]);
+
+    // A mutation's flight region re-sends the record under its address-
+    // prefixed names, value-equal otherwise.
+    host.apply({
+      type: "slot",
+      id: "fn",
+      version: 2,
+      key: "item#1",
+      args: {
+        title: host.serialize("Meeting Notes"),
+        children: { $frame: "fn:123.item#1.children" }
+      }
+    });
+    host.apply({
+      type: "html",
+      id: "fn",
+      version: 2,
+      html: "<ul><li><!--slot:item#1:start--><!--slot:item#1:end--></li></ul>"
+    });
+    // No re-call — the wrapper (and everything live inside it) survived.
+    expect(calls).toEqual(["Meeting Notes"]);
+    expect(el.querySelector("li > div")).toBe(wrapper);
+
+    // The region followed the rename: the new wire name's chunks morph its
+    // live element in place.
+    host.apply({ type: "html", id: "fn:123.item#1.children", version: 1, html: "<p>fresh</p>" });
+    expect(wrapper.querySelector("p")).toBe(p);
+    expect(p.textContent).toBe("fresh");
+  });
+});
+
 describe("coarse perf direction", () => {
   const N = 500;
   const listHTML = changedIndex => {
