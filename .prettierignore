@@ -1,5 +1,6 @@
 node_modules
 dist
+.worktrees
 lib
 coverage
 .pnpm-store

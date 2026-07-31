@@ -308,6 +308,7 @@ class FrameImpl {
   #mountedSlots = new Set();
   #slotCleanups = new Map();
   #slotArgs = new Map();
+  #slotUpdaters = new Map();
   #slotRegions = new Map();
   #slotResolvedRefs = new Map();
   #slotNodes = new Map();
@@ -642,6 +643,29 @@ class FrameImpl {
           this.#reconcileRegions(occurrence, record);
           continue;
         }
+        // Args changed, live binding (the mount registered ctx.onUpdate):
+        // push the re-resolved props into the LIVE occurrence instead of
+        // re-calling — the consumer's reactive props update in place, so
+        // client state on the occurrence (expansion, focus, animation)
+        // follows the entity across morphs. #resolveArgs reuses/renames the
+        // cached regions, so `{$frame}` args keep their live elements.
+        const update = this.#slotUpdaters.get(occurrence);
+        if (update) {
+          const props = this.#resolveArgs(occurrence, record.args);
+          // Keys the record omits but the occurrence holds as regions (t=0
+          // adoption ships used regions as markup): thread the live element,
+          // mirroring #invokeSlot, so the update can't blank them.
+          const regions = this.#slotRegions.get(occurrence);
+          if (regions) {
+            for (const [argKey, entry] of regions) {
+              if (!(argKey in props)) props[argKey] = entry.element;
+            }
+          }
+          this.#slotArgs.set(occurrence, record);
+          update(props);
+          this.#bindRegions(occurrence);
+          continue;
+        }
         // Args changed (incl. late args): re-call this occurrence only,
         // reusing its cached server-content regions. Same contract: an
         // undefined return keeps the current interior.
@@ -670,6 +694,10 @@ class FrameImpl {
    * leave the range alone".
    */
   #invokeSlot(occurrence, callback, record, start, adopted) {
+    // A (re-)call replaces the occurrence's binding wholesale: drop the old
+    // binding's updater so a stream args-change can't push props into a
+    // disposed instance. The new invocation re-registers if it wants updates.
+    this.#slotUpdaters.delete(occurrence);
     const cleanups = this.#slotCleanups.get(occurrence) ?? [];
     // One walk yields both the interior and the end marker. The end marker is
     // part of the consumer contract (ctx.range): a framework binding that owns
@@ -707,6 +735,11 @@ class FrameImpl {
       // place.
       invoked: !!(record && record.kind === "slot"),
       onCleanup: fn => cleanups.push(fn),
+      // Live-props opt-in: a binding that registers here receives re-resolved
+      // props when a re-sent record's args CHANGE, instead of being re-called
+      // — the occurrence's instance (and its client state) survives the
+      // change. Registration is per-invocation; a real re-call clears it.
+      onUpdate: fn => this.#slotUpdaters.set(occurrence, fn),
       existing,
       // The range's own markers, when it has them: consumers that bind the
       // interior reactively insert before `end` and return undefined — the
@@ -764,6 +797,7 @@ class FrameImpl {
     // Long-session hygiene: an occurrence gone from the stream releases its
     // record and caches — keyed churn must not accumulate forever.
     this.#slotArgs.delete(key);
+    this.#slotUpdaters.delete(key);
     this.#slotResolvedRefs.delete(key);
     this.#removeSlotRecord(key);
     this.#runSlotCleanups(key);

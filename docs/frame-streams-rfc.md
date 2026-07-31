@@ -146,7 +146,7 @@ client reconciler.
 - Full React Flight compatibility.
 - Solid authoring semantics (`"use server"`, `dynamic`) and compiler transforms.
 - Network/closure serialization of server functions.
-- Client-side slot slotting as the *first* milestone (the format reserves
+- Client-side slot slotting as the _first_ milestone (the format reserves
   room for it; see [Slot Model](#slot-model)).
 - A renderer-neutral runtime. v1 is **DOM-only**. Renderer neutrality is
   aspirational and must not gate v1 (see [Renderer Neutrality](#renderer-neutrality)).
@@ -242,7 +242,7 @@ consumeFrameStream(boundary, stream);
 
 - **Producer**: renders JSX into frame chunks — serialization records, assets,
   completion, and errors — without the normal document/script envelope. It
-  renders HTML *fragments*, not full documents; uses local `noHydrate` frame
+  renders HTML _fragments_, not full documents; uses local `noHydrate` frame
   ownership instead of a file-wide `hydratable: false` compile mode; reuses
   async/Suspense streaming, escaping, and asset tracking; and reports serialized
   records to a frame sink instead of flushing `<script>` tags.
@@ -318,7 +318,7 @@ flowchart TD
 
 ### Boundary is an insert range
 
-A frame boundary *is* an `insert` range. `insert(parent, accessor, marker, …)`
+A frame boundary _is_ an `insert` range. `insert(parent, accessor, marker, …)`
 already establishes the start/end markers, the resident `current` value, and the
 owner-scoped cleanup (`cleanChildren`) that a frame needs. So "boundary id,"
 "marker placement," and "frame cleanup" all resolve to one concrete thing — an
@@ -361,7 +361,7 @@ The format has two forms, and the distinction matters:
 - **Wire form** — the `FrameChunk` sequence below. This is what crosses the
   transport envelope: discrete, ordered-ish messages.
 - **Resident form** — a **key/value frame store**. This is the consumer's
-  authoritative state. Chunks are *writes* into a frame-scoped record table, not
+  authoritative state. Chunks are _writes_ into a frame-scoped record table, not
   events to replay.
 
 Implementation should bias toward the store model rather than an imperative
@@ -388,15 +388,30 @@ version have no live store to land in.
 ```ts
 // Wire form: chunks mutate the resident store.
 type FrameChunk =
-  | { type: "start";    id: string; version: number }
-  | { type: "html";     id: string; version: number; html: string }
-  | { type: "data";     id: string; version: number; key: string; payload: string }
+  | { type: "start"; id: string; version: number }
+  | { type: "html"; id: string; version: number; html: string }
+  | { type: "data"; id: string; version: number; key: string; payload: string }
   | { type: "fragment"; id: string; version: number; key: string; parent?: string; html: string }
-  | { type: "reveal";   id: string; version: number; keys: string[]; waitForStyles?: boolean }
-  | { type: "assets";   id: string; version: number; key: string; modules?: unknown; styles?: string[] }
-  | { type: "slot";     id: string; version: number; index: number; prop: string; kind: "jsx" | "render"; args?: string }
+  | { type: "reveal"; id: string; version: number; keys: string[]; waitForStyles?: boolean }
+  | {
+      type: "assets";
+      id: string;
+      version: number;
+      key: string;
+      modules?: unknown;
+      styles?: string[];
+    }
+  | {
+      type: "slot";
+      id: string;
+      version: number;
+      index: number;
+      prop: string;
+      kind: "jsx" | "render";
+      args?: string;
+    }
   | { type: "complete"; id: string; version: number }
-  | { type: "error";    id: string; version: number; error: unknown };
+  | { type: "error"; id: string; version: number; error: unknown };
 ```
 
 The exact shape can change. The requirement is that each async chunk carries
@@ -409,7 +424,10 @@ frame, and that slot/slot chunks follow the same rule.
 >
 > ```ts
 > // Resident form: a batch of record writes the frame merges + flushes.
-> interface FrameWrite { version: number; r: Record<string, unknown>; }
+> interface FrameWrite {
+>   version: number;
+>   r: Record<string, unknown>;
+> }
 >
 > // Wire form: the FrameChunk union above, addressed by id.
 > // One mapping keeps them aligned:
@@ -452,7 +470,7 @@ starts, late chunks from older invocations must be ignored.
 
 > **Implemented — version is a stale-guard, not a reset (policy A).** A version
 > bump does **not** wipe the resident store or reset applied/reveal state; it
-> only advances the current version so that writes tagged *older* than it are
+> only advances the current version so that writes tagged _older_ than it are
 > discarded. Newer writes apply in place, so the reconciler morphs server
 > content while client-owned slots/regions and their state survive — which is
 > what makes a client-side navigation (a new version on a persistent frame)
@@ -462,7 +480,7 @@ starts, late chunks from older invocations must be ignored.
 > it was removed. A genuine teardown is `dispose()`, not a version bump. Two
 > consequences to note: the store only grows across versions (stale server
 > records linger but cannot apply without their structural prerequisites), and
-> re-call still triggers on args-record *identity*, so a redundant resend of an
+> re-call still triggers on args-record _identity_, so a redundant resend of an
 > unchanged slot chunk would cause one spurious re-call (a value/version check
 > would remove that).
 
@@ -549,7 +567,7 @@ host.apply(chunk); // routed to the frame named by chunk.id
 Two properties make recursion work without the client hand-wiring the tree:
 
 - **Frames self-register** under their id, including nested frames created inside
-  a parent's client slot. So the client component tree declares *where* a nested
+  a parent's client slot. So the client component tree declares _where_ a nested
   frame lives; the server stream addresses it by id.
 - **Buffering is readiness, one level up.** A chunk addressed to a frame that has
   not registered yet (because its parent has not rendered the slot that creates
@@ -560,7 +578,7 @@ Two properties make recursion work without the client hand-wiring the tree:
   stale chunk can never land after a frame appears.
 
 This was proven in the spike with a deliberately out-of-order stream: the nested
-frame's chunk arrives *before* the chunk that renders the slot creating it, and
+frame's chunk arrives _before_ the chunk that renders the slot creating it, and
 the tree still materializes correctly, preserving client content across
 independent updates addressed to any level.
 
@@ -602,8 +620,8 @@ Frame streams split the existing stream into two conceptual layers:
 - **Data serialization** — keep Seroval and its keyed record model. Promise /
   stream / complex value support stays in the serializer layer, unchanged.
 
-- **Control-flow serialization** — replace *active* document scripts with
-  *passive* records. Document SSR serializes control flow as inline JavaScript
+- **Control-flow serialization** — replace _active_ document scripts with
+  _passive_ records. Document SSR serializes control flow as inline JavaScript
   (`_$HY.r[id] = ...`, `$df(id)`, `$dfj(ids)`, `$dfs(id, ...)`, `$dfc(id)`)
   because the main bundle may not have loaded and content must be placed before
   hydration. Frame streams serialize control flow as passive structured records
@@ -700,8 +718,8 @@ The spike built out the full slot model. Its shape, and the reasons behind it:
 
 - **Direct-insert** — the server passes no props; the marker is just a position
   the client fills with its own content (`props` is empty).
-- **Render function** — the server invokes it with args: *data* (`props.name`)
-  and *server-rendered content* (`props.children`). The client renders around
+- **Render function** — the server invokes it with args: _data_ (`props.name`)
+  and _server-rendered content_ (`props.children`). The client renders around
   them.
 
 The server chooses which by whether it emits a `slot` invocation chunk with
@@ -711,7 +729,7 @@ args. Both fill the same protected range.
 not resolved through a global client-reference manifest. They are threaded down
 the single tree: a frame's slot resolution walks its own slots, then its
 ancestors'. A server-content region therefore inherits the callbacks the client
-threaded in, so a client slot revealed *inside streamed region content* is
+threaded in, so a client slot revealed _inside streamed region content_ is
 filled by that inherited callback — no registry, no separate request. Client
 slots are placeholders the client fills (during SSR or on the client),
 symmetric to server components being placeholders the server fills; neither
@@ -720,20 +738,20 @@ sends data back to the server.
 **A callback can be invoked many times (iteration).** `items.map(c =>
 props.comment(c))` produces N positional occurrences of one callback. An
 occurrence id is the marker key (`comment#0`), and the callback is resolved by
-its *prop* (the part before `#`). Each occurrence has its own args, its own
+its _prop_ (the part before `#`). Each occurrence has its own args, its own
 server-content region, and its own re-call lifecycle; discovery is range-driven
 (find every occurrence, resolve its callback), so occurrences can appear
 dynamically as content streams in.
 
 **Two argument kinds cross the seam:**
 
-- *data* — serialized to a `{$ref}` and resolved on the client (see
+- _data_ — serialized to a `{$ref}` and resolved on the client (see
   [Shared Serialization Substrate](#shared-serialization-substrate)).
-- *server content* — a nested reconciled region delivered as a **marker range**
+- _server content_ — a nested reconciled region delivered as a **marker range**
   (no wrapper element). The client places it; server chunks addressed to that
   region reconcile into it in place. This is where the server/client/server
   recursion happens, and it keeps the server a single tree with no waterfall:
-  the `children` arg is *already-rendered* server content delivered proactively,
+  the `children` arg is _already-rendered_ server content delivered proactively,
   not a request.
 
 **Updates are re-call; server-content updates are not.** The frame models a data
@@ -741,11 +759,23 @@ update as re-calling the callback with new props (React re-renders; a reactive
 adapter like Solid instead updates proxied props without re-running). A re-call
 reuses the occurrence's cached server-content regions, so it delivers new props
 without recreating or disposing those regions. Crucially, streamed updates to a
-server-content region are addressed to *its* frame and reconcile in place with
+server-content region are addressed to _its_ frame and reconcile in place with
 **no** re-call of any ancestor callback — the "reconcile at the insertion point
 even while props stream" contract. Preserving per-callback client state across a
-*data* re-call is the adapter's job (Solid fine-grain / React hooks); the frame
+_data_ re-call is the adapter's job (Solid fine-grain / React hooks); the frame
 preserves server regions and client-owned DOM ranges, not closure state.
+
+> **Implemented — live slot props (`ctx.onUpdate`).** The "reactive adapter
+> updates proxied props without re-running" path above is now a first-class
+> contract. A binding registers `ctx.onUpdate(fn)` synchronously during its
+> invocation (one updater per occurrence; last registration wins). When a
+> re-sent record's args **change in value**, the frame re-resolves them
+> (renaming/reusing cached regions) and pushes the props into the live binding
+> instead of re-calling — the invocation's instance, its client state, and its
+> DOM identity survive the change, and reactive reads over the changed args
+> fire. A genuine re-call or unmount clears the registration. Consumers that
+> never register keep the re-call behavior described above, so the opt-in
+> degrades cleanly for adapters without fine-grained props.
 
 ### Identity
 
@@ -765,10 +795,10 @@ produces slot records equivalent to:
 
 ```ts
 [
-  { index: 0, prop: "header",   kind: "jsx" },
+  { index: 0, prop: "header", kind: "jsx" },
   { index: 1, prop: "children", kind: "render", args: [data] },
   { index: 2, prop: "children", kind: "render", args: [otherData] }
-]
+];
 ```
 
 On update, old slot `1` rematches new slot `1`. If server output
@@ -780,7 +810,7 @@ must not be required for the base model.
 > reconciler's first-class test cases must include a conditional/reordering
 > slot, not only text/attribute patching.
 
-> **Implemented.** The occurrence id in the marker *is* the identity, so the id
+> **Implemented.** The occurrence id in the marker _is_ the identity, so the id
 > scheme the producer chooses selects the behavior: index-style ids
 > (`comment#0`) with shifted args give positional (state-follows-position);
 > stable ids give keyed (state-follows-id). The reorder case is covered — moving
@@ -892,7 +922,7 @@ This is a rare per-slot escape hatch, not a global CSR fallback.
 > common the no-double-serialize invariant is theoretical.
 
 > **Proven (executable model, `src/double-data.ts`).** A flush-ordered policy
-> engine with a guard that *throws on any double emission* resolves a
+> engine with a guard that _throws on any double emission_ resolves a
 > representation per slot; a passing run is a proof the no-double invariant
 > holds for that scenario, across 200-slot mixed runs. The key refinement:
 > a slot **forwarded** into a pending segment (the render can prove at
@@ -902,7 +932,7 @@ This is a rare per-slot escape hatch, not a global CSR fallback.
 > escape hatch: serialize once at shell, suppress the later server HTML. So the
 > escape hatch is confined to conditional-async slot reads, not "any read
 > after flush." This bounds open question 2: its real-world frequency reduces to
-> how often a slot is *conditionally* (not statically) read inside an async
+> how often a slot is _conditionally_ (not statically) read inside an async
 > segment — a narrow, characterizable case — rather than threatening the
 > invariant broadly.
 
@@ -944,21 +974,21 @@ client-owned slot ranges.
 
 ### Correctness invariant: never detach a client-owned range
 
-The controlling invariant is **not** "patch server DOM in place" — it is *"a
-client-owned range is never removed from the tree."* In-place patching is only
+The controlling invariant is **not** "patch server DOM in place" — it is _"a
+client-owned range is never removed from the tree."_ In-place patching is only
 the means to that end. This matters because client state that is tied to DOM
-*connectedness* — focus, text selection, IME composition, media playback, CSS
+_connectedness_ — focus, text selection, IME composition, media playback, CSS
 transitions, `:focus-within`, popover/dialog state — is destroyed by any
-detach/reinsert, whereas a node *property* like `input.value` survives it. A
+detach/reinsert, whereas a node _property_ like `input.value` survives it. A
 prototype measured this in Chromium:
 
-| DOM operation on a focused input | focus kept | `.value` kept |
-| --- | --- | --- |
-| `insertBefore` / `appendChild` (move) | ✗ | ✓ |
-| `remove()` + re-insert | ✗ | ✓ |
-| `innerHTML` rebuild + reslot | ✗ | ✓ |
-| `moveBefore` (atomic move) | ✓ | ✓ |
-| patch siblings in place, node untouched | ✓ | ✓ |
+| DOM operation on a focused input        | focus kept | `.value` kept |
+| --------------------------------------- | ---------- | ------------- |
+| `insertBefore` / `appendChild` (move)   | ✗          | ✓             |
+| `remove()` + re-insert                  | ✗          | ✓             |
+| `innerHTML` rebuild + reslot            | ✗          | ✓             |
+| `moveBefore` (atomic move)              | ✓          | ✓             |
+| patch siblings in place, node untouched | ✓          | ✓             |
 
 Two consequences:
 
@@ -967,11 +997,11 @@ Two consequences:
   detaches every client range and so loses focus/selection/media. It is the same
   category error as a full `innerHTML` replace, only subtler because `.value`
   survives and hides the loss. The reconciler must patch server-owned DOM in
-  place *around* immovable client anchors.
+  place _around_ immovable client anchors.
 - **Pure insertion/removal of server siblings is safe.** Inserting or removing a
   server-owned sibling next to a client range does not detach the range, so the
   common "server text/markup churn around stable slots" case preserves
-  client state for free. Only a genuine *reorder* of a client range forces a
+  client state for free. Only a genuine _reorder_ of a client range forces a
   move.
 
 ### `moveBefore` is a progressive enhancement, not a dependency
@@ -993,30 +1023,30 @@ not IME/media/animation) elsewhere.
 A prototype compared this reconciler against the popular general-purpose
 morphers on identical inputs in Chromium (2000 server rows; the client-anchor
 case interleaves 20 client `<input>`s inside slot ranges and the server
-update carries *empty* slot markers):
+update carries _empty_ slot markers):
 
-| library | size (min+gz) | server diff (1 of 2000) | client-anchor case | client kept | focus |
-| --- | --- | --- | --- | --- | --- |
-| **frame reconciler** | **1.25 KB** | **2.4 ms** | **2.7 ms** | **20/20** | **✓** |
-| morphdom | 2.16 KB | 2.1 ms | 3.6 ms | 0/20 | ✗ |
-| micromorph | 1.29 KB | 5.5 ms | 8.5 ms | 0/20 | ✗ |
-| idiomorph | 3.25 KB | ~200 ms* | ~85 ms* | 0/20 | ✗ |
+| library              | size (min+gz) | server diff (1 of 2000) | client-anchor case | client kept | focus |
+| -------------------- | ------------- | ----------------------- | ------------------ | ----------- | ----- |
+| **frame reconciler** | **1.25 KB**   | **2.4 ms**              | **2.7 ms**         | **20/20**   | **✓** |
+| morphdom             | 2.16 KB       | 2.1 ms                  | 3.6 ms             | 0/20        | ✗     |
+| micromorph           | 1.29 KB       | 5.5 ms                  | 8.5 ms             | 0/20        | ✗     |
+| idiomorph            | 3.25 KB       | ~200 ms\*               | ~85 ms\*           | 0/20        | ✗     |
 
-<small>* idiomorph's id-set matching degrades badly on dense, id-less sibling
+<small>\* idiomorph's id-set matching degrades badly on dense, id-less sibling
 lists; id-annotated content fares far better. Not representative of all
 workloads.</small>
 
 The decisive column is correctness, not speed. Every general-purpose morpher
 faithfully diffs the live DOM toward the server target — and because the frame
-server update carries *empty* slot markers (the client owns that DOM; the
+server update carries _empty_ slot markers (the client owns that DOM; the
 server never re-sends it), each morpher **deletes the client-owned content and
 blows away focus**. Making them correct requires per-node
 `onBeforeNodeDiscarded` / `beforeNodeMorphed` callbacks that re-implement
 slot-range protection — i.e. rebuilding this reconciler on top of theirs,
 and still shipping their bytes. Meanwhile a purpose-built two-cursor reconciler
 that treats slot ranges as opaque protected units is the smallest of the
-set, is morphdom-class on raw server diffing, and is the fastest *and only
-correct* option on the slot-preserving case. Conclusion: do not adopt a
+set, is morphdom-class on raw server diffing, and is the fastest _and only
+correct_ option on the slot-preserving case. Conclusion: do not adopt a
 generic morpher; keep the specialized reconciler.
 
 ## Example Chunk Shapes
@@ -1030,9 +1060,9 @@ passive records.
 ```ts
 [
   { type: "start", id: "f0", version: 1 },
-  { type: "html",  id: "f0", version: 1, html: "<div>Hello</div>" },
-  { type: "end",   id: "f0", version: 1 }
-]
+  { type: "html", id: "f0", version: 1, html: "<div>Hello</div>" },
+  { type: "end", id: "f0", version: 1 }
+];
 ```
 
 ### 2. HTML plus serialized data
@@ -1043,10 +1073,10 @@ Seroval output in `<script>`.
 ```ts
 [
   { type: "start", id: "f1", version: 1 },
-  { type: "html",  id: "f1", version: 1, html: "<div><!-- user data reads elsewhere --></div>" },
-  { type: "data",  id: "f1", version: 1, key: "user", payload: "/* seroval output */" },
-  { type: "end",   id: "f1", version: 1 }
-]
+  { type: "html", id: "f1", version: 1, html: "<div><!-- user data reads elsewhere --></div>" },
+  { type: "data", id: "f1", version: 1, key: "user", payload: "/* seroval output */" },
+  { type: "end", id: "f1", version: 1 }
+];
 ```
 
 ### 3. Async fragment
@@ -1056,12 +1086,17 @@ plus `$df(...)`. A frame stream makes that placement explicit.
 
 ```ts
 [
-  { type: "start",    id: "f2", version: 1 },
-  { type: "html",     id: "f2", version: 1, html: "<section><h1>Profile</h1><!--frame-fragment:p1--></section>" },
+  { type: "start", id: "f2", version: 1 },
+  {
+    type: "html",
+    id: "f2",
+    version: 1,
+    html: "<section><h1>Profile</h1><!--frame-fragment:p1--></section>"
+  },
   { type: "fragment", id: "f2", version: 1, key: "p1", html: "<p>Loaded later</p>" },
-  { type: "reveal",   id: "f2", version: 1, keys: ["p1"] },
-  { type: "end",      id: "f2", version: 1 }
-]
+  { type: "reveal", id: "f2", version: 1, keys: ["p1"] },
+  { type: "end", id: "f2", version: 1 }
+];
 ```
 
 ### 4. Fragment assets and styles
@@ -1071,10 +1106,17 @@ passive data.
 
 ```ts
 [
-  { type: "assets",   id: "f3", version: 1, key: "p1", modules: { "/src/Profile.tsx": "/assets/Profile.js" }, styles: ["/assets/Profile.css"] },
+  {
+    type: "assets",
+    id: "f3",
+    version: 1,
+    key: "p1",
+    modules: { "/src/Profile.tsx": "/assets/Profile.js" },
+    styles: ["/assets/Profile.css"]
+  },
   { type: "fragment", id: "f3", version: 1, key: "p1", html: "<article>...</article>" },
-  { type: "reveal",   id: "f3", version: 1, keys: ["p1"], waitForStyles: true }
-]
+  { type: "reveal", id: "f3", version: 1, keys: ["p1"], waitForStyles: true }
+];
 ```
 
 ### 5. Reserved slot slot
@@ -1084,20 +1126,28 @@ Likely not in the first implementation; the format leaves room for it.
 ```ts
 [
   { type: "html", id: "f4", version: 1, html: "<div>Server shell<!--frame-slot:0--></div>" },
-  { type: "slot", id: "f4", version: 1, index: 0, prop: "children", kind: "render", args: "/* seroval payload for render prop args */" }
-]
+  {
+    type: "slot",
+    id: "f4",
+    version: 1,
+    index: 0,
+    prop: "children",
+    kind: "render",
+    args: "/* seroval payload for render prop args */"
+  }
+];
 ```
 
 ### 6. Stale version handling
 
 ```ts
 [
-  { type: "start",    id: "f5", version: 1 },
-  { type: "start",    id: "f5", version: 2 },
+  { type: "start", id: "f5", version: 1 },
+  { type: "start", id: "f5", version: 2 },
   { type: "fragment", id: "f5", version: 1, key: "late", html: "<p>Old</p>" },
-  { type: "html",     id: "f5", version: 2, html: "<p>Current</p>" },
-  { type: "end",      id: "f5", version: 2 }
-]
+  { type: "html", id: "f5", version: 2, html: "<p>Current</p>" },
+  { type: "end", id: "f5", version: 2 }
+];
 ```
 
 Expected: the `version: 1` fragment is discarded after `version: 2` starts.
@@ -1218,7 +1268,7 @@ space for each.
 ## Open Questions
 
 1. Is positional slot identity sufficient, or is a keyed slot helper
-   needed in v1 for common reordering cases? *Partly resolved:* the occurrence id
+   needed in v1 for common reordering cases? _Partly resolved:_ the occurrence id
    in the marker is the identity, so both are supported by the id scheme the
    producer chooses (index-style ids + shifted args = positional; stable ids =
    keyed) with no extra mechanism. The open part is the correctness stakes of the
@@ -1228,9 +1278,9 @@ space for each.
    Which should be the default authoring model remains open.
 2. Is the "uncertain before flush" slot escape hatch rare in real Solid
    Suspense usage, or common enough to undermine the no-double-serialize
-   invariant? *Bounded by proof:* an executable policy model
+   invariant? _Bounded by proof:_ an executable policy model
    (`src/double-data.ts`) shows the no-double invariant holds and that the escape
-   hatch is confined to *conditional* async reads — a slot statically
+   hatch is confined to _conditional_ async reads — a slot statically
    forwarded into a pending segment defers cleanly (HTML or serialize) with no
    occlusion. So the question reduces to the frequency of conditional (not
    statically forwarded) slot reads inside async segments, which needs real

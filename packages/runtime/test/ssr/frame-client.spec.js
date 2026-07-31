@@ -1063,6 +1063,220 @@ describe("render-function slots", () => {
   });
 });
 
+describe("live slot props (ctx.onUpdate)", () => {
+  it("an args change pushes re-resolved props into the updater instead of re-calling", () => {
+    const host = createFrameHost(createMockSerializer());
+    let calls = 0;
+    let updates = [];
+    let region;
+    createFrame(boundary, {
+      id: "outer",
+      host,
+      slots: {
+        children: (props, ctx) => {
+          calls++;
+          region = props.children;
+          ctx.onUpdate(next => updates.push(next));
+          const el = document.createElement("div");
+          el.append("Hello ", props.name, " ");
+          el.append(props.children);
+          return el;
+        }
+      }
+    });
+    host.apply({
+      type: "slot",
+      id: "outer",
+      version: 1,
+      key: "children",
+      args: { name: host.serialize("ida"), children: { $frame: "child" } }
+    });
+    host.apply({
+      type: "html",
+      id: "outer",
+      version: 1,
+      html: "<section><!--slot:children:start--><!--slot:children:end--></section>"
+    });
+    host.apply({ type: "html", id: "child", version: 1, html: "<p>content</p>" });
+    expect(calls).toBe(1);
+    const mounted = boundary.querySelector("section div");
+    const p = boundary.querySelector("section p");
+
+    // Args change -> NO re-call; the updater receives the re-resolved props,
+    // with the cached region element (same instance) threaded through.
+    host.apply({
+      type: "slot",
+      id: "outer",
+      version: 1,
+      key: "children",
+      args: { name: host.serialize("ada"), children: { $frame: "child" } }
+    });
+    expect(calls).toBe(1);
+    expect(updates.length).toBe(1);
+    expect(updates[0].name).toBe("ada");
+    expect(updates[0].children).toBe(region);
+    // The mount's DOM (frozen by the binding at invoke time) is untouched —
+    // reflecting the new props is the BINDING's job through its live reads.
+    expect(boundary.querySelector("section div")).toBe(mounted);
+    expect(boundary.textContent).toContain("Hello ida");
+
+    // The region's frame stayed live through the update: later chunks land.
+    host.apply({ type: "html", id: "child", version: 2, html: "<p>updated</p>" });
+    expect(boundary.querySelector("section p")).toBe(p);
+    expect(p.textContent).toBe("updated");
+  });
+
+  it("a value-identical re-send does not fire the updater", () => {
+    const host = createFrameHost(createMockSerializer());
+    let calls = 0;
+    let updates = 0;
+    createFrame(boundary, {
+      id: "f",
+      host,
+      slots: {
+        label: (props, ctx) => {
+          calls++;
+          ctx.onUpdate(() => updates++);
+          const b = document.createElement("b");
+          b.textContent = props.text;
+          return b;
+        }
+      }
+    });
+    // Record first, then the range: the mount resolves props from the record.
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 1,
+      key: "label",
+      args: { text: host.serialize("ida") }
+    });
+    host.apply({
+      type: "html",
+      id: "f",
+      version: 1,
+      html: "<p><!--slot:label:start--><!--slot:label:end--></p>"
+    });
+    expect(calls).toBe(1);
+    // Same values, new record (tables rotate per response): the unchanged
+    // fast path adopts the record — no re-call AND no update.
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 1,
+      key: "label",
+      args: { text: host.serialize("ida") }
+    });
+    expect(calls).toBe(1);
+    expect(updates).toBe(0);
+  });
+
+  it("region wire renames flow through the update path, and chunks reach the live region", () => {
+    const host = createFrameHost(createMockSerializer());
+    let region;
+    let updates = [];
+    createFrame(boundary, {
+      id: "outer",
+      host,
+      slots: {
+        row: (props, ctx) => {
+          region = props.children;
+          ctx.onUpdate(next => updates.push(next));
+          const el = document.createElement("div");
+          el.append(props.children);
+          return el;
+        }
+      }
+    });
+    host.apply({
+      type: "slot",
+      id: "outer",
+      version: 1,
+      key: "row#0",
+      args: { n: host.serialize(1), children: { $frame: "a.row#0.children" } }
+    });
+    host.apply({
+      type: "html",
+      id: "outer",
+      version: 1,
+      html: "<ul><!--slot:row#0:start--><!--slot:row#0:end--></ul>"
+    });
+    host.apply({ type: "html", id: "a.row#0.children", version: 1, html: "<p>one</p>" });
+    const p = boundary.querySelector("p");
+    expect(p.textContent).toBe("one");
+
+    // A later stream changes an arg AND addresses the region by a new wire
+    // name: the update path renames (rebinds) rather than recreating.
+    host.apply({
+      type: "slot",
+      id: "outer",
+      version: 1,
+      key: "row#0",
+      args: { n: host.serialize(2), children: { $frame: "b.row#0.children" } }
+    });
+    expect(updates.length).toBe(1);
+    expect(updates[0].n).toBe(2);
+    expect(updates[0].children).toBe(region);
+    host.apply({ type: "html", id: "b.row#0.children", version: 1, html: "<p>two</p>" });
+    expect(boundary.querySelector("p")).toBe(p);
+    expect(p.textContent).toBe("two");
+  });
+
+  it("unmount clears the updater; a returning occurrence re-invokes fresh", () => {
+    const host = createFrameHost(createMockSerializer());
+    let calls = 0;
+    let updates = 0;
+    createFrame(boundary, {
+      id: "f",
+      host,
+      slots: {
+        label: (props, ctx) => {
+          calls++;
+          ctx.onUpdate(() => updates++);
+          const b = document.createElement("b");
+          b.textContent = props.text;
+          return b;
+        }
+      }
+    });
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 1,
+      key: "label",
+      args: { text: host.serialize("a") }
+    });
+    host.apply({
+      type: "html",
+      id: "f",
+      version: 1,
+      html: "<p><!--slot:label:start--><!--slot:label:end--></p>"
+    });
+    expect(calls).toBe(1);
+
+    // The occurrence leaves the server content -> unmount purges the updater.
+    host.apply({ type: "html", id: "f", version: 2, html: "<p></p>" });
+    // It returns with different args: a fresh mount invocation resolving the
+    // new record, not a push into the disposed binding.
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 3,
+      key: "label",
+      args: { text: host.serialize("b") }
+    });
+    host.apply({
+      type: "html",
+      id: "f",
+      version: 3,
+      html: "<p><!--slot:label:start--><!--slot:label:end--></p>"
+    });
+    expect(calls).toBe(2);
+    expect(updates).toBe(0);
+    expect(boundary.querySelector("b").textContent).toBe("b");
+  });
+});
+
 describe("iterated callback slots", () => {
   const commentSlot = {
     comment: props => {

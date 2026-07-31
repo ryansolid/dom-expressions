@@ -85,6 +85,15 @@ export interface SlotContext {
    */
   onCleanup(fn: () => void): void;
   /**
+   * Live-props opt-in: a binding that registers here receives the
+   * re-resolved props when a re-sent record's args CHANGE in value, instead
+   * of the occurrence being re-called — the invocation's instance (and its
+   * client state) survives the change. Register synchronously during the
+   * invocation; one updater per occurrence (last registration wins). A
+   * genuine re-call or unmount clears it before/with the binding it served.
+   */
+  onUpdate(fn: (props: Record<string, unknown>) => void): void;
+  /**
    * The range's current interior — server-rendered client content on an
    * adopted document-SSR boot, or the previous output on a re-call. A
    * framework binding hydrates onto it and returns `undefined` to claim it
