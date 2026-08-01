@@ -232,12 +232,23 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             .attributes
             .iter()
             .any(|attr| matches!(attr, oxc_ast::ast::JSXAttributeItem::SpreadAttribute(_)));
+        // "Non-literal" is judged after constant folding, because that is the
+        // order Babel runs in: its fold rewrites every attribute value before
+        // the `children` capture ever sees it, so a value that folds to a
+        // string or number is a literal there and lowers as a `children`
+        // property write. Judging the raw AST here instead promoted the value
+        // AND left the attribute plan alive — the same value emitted twice,
+        // and two trace decisions colliding over one censused site.
         let attribute_child =
-            if !is_void_element(&tag_name) && !has_spread && element.children.is_empty() {
-                children_attribute_container(element)
-            } else {
-                None
-            };
+            (!is_void_element(&tag_name) && !has_spread && element.children.is_empty())
+                .then(|| children_attribute_container(element))
+                .flatten()
+                .filter(|container| {
+                    container
+                        .expression
+                        .as_expression()
+                        .is_none_or(|expression| self.evaluate_confident(expression).is_none())
+                });
         let children_from_attribute = attribute_child.is_some();
         let element: &JSXElement<'a> = if let Some(container) = attribute_child {
             let mut clone = element.clone_in(self.allocator);

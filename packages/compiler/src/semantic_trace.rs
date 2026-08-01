@@ -532,15 +532,54 @@ impl TraceRecorder {
         })
     }
 
+    /// Resolve a lowered attribute value's censused site, whatever kind the
+    /// census guessed for it.
+    ///
+    /// The census is syntactic and runs first, so it can only name a site
+    /// from the attribute's spelling: `on*` becomes an event handler, `ref` a
+    /// ref, an empty element's `children` a JSX child, anything else a native
+    /// attribute. Lowering knows what the value actually became, and when it
+    /// resolves the value as data — folded into the template, dropped, or
+    /// written once — the truthful record depends on which kind the census
+    /// chose:
+    ///
+    /// - a censused *value* site (native attribute, JSX child) is decided
+    ///   with `decision`;
+    /// - a censused *callback* site (event handler, ref) is withdrawn: the
+    ///   value became template text, so no callback exists at runtime to
+    ///   decide about, and a callback site cannot carry a value decision.
+    ///
+    /// A span the census never recorded is a no-op. Recording a hardcoded
+    /// [`ExecutionSiteKind::NativeAttribute`] here instead — as every caller
+    /// once did — failed the whole file for `on*`/`ref`/`children` spellings,
+    /// either as an unresolved site or as a category mismatch.
+    ///
+    /// A *promoted* `children` value must not come through here: child
+    /// insertion owns its decision, and the promotion (see
+    /// `children_attribute_container`) only captures values the constant fold
+    /// leaves alone, so the attribute pipeline never resolves those spans.
+    pub(crate) fn resolve_lowered_attribute(&mut self, span: Span, decision: ValueDecision) {
+        for kind in [
+            ExecutionSiteKind::NativeAttribute,
+            ExecutionSiteKind::JsxChild,
+        ] {
+            if self.has_site(span, kind) {
+                self.value(span, kind, decision);
+                return;
+            }
+        }
+        for kind in [ExecutionSiteKind::EventHandler, ExecutionSiteKind::Ref] {
+            self.retract(span, kind);
+        }
+    }
+
     /// Withdraw a censused site that lowering proved does not exist.
     ///
-    /// The census is syntactic and runs first, so it can only guess from an
-    /// attribute's name; lowering knows what the value actually became. The
-    /// two disagree in one place: an `on*` attribute whose value folds to a
-    /// constant is censused as an [`ExecutionSiteKind::EventHandler`] and then
-    /// written into the template as static text, so no handler exists at
-    /// runtime to decide about. Retracting is the truthful outcome — the site
-    /// is not reported, rather than reported with an invented decision.
+    /// Reached through [`Self::resolve_lowered_attribute`] when the census
+    /// named a callback site (an `on*` spelling, a `ref`) whose value
+    /// lowering then resolved as plain data. Retracting is the truthful
+    /// outcome — the site is not reported, rather than reported with an
+    /// invented decision.
     ///
     /// Retracting a site that was never censused, or one already decided, is a
     /// no-op; this only ever removes a site nothing has spoken for.

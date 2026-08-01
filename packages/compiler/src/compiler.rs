@@ -469,10 +469,76 @@ mod tests {
         .expect("tracing was requested");
 
         assert!(
-            trace.sites.iter().any(|site| site.kind
-                == ExecutionSiteKind::EventHandler
-                && site.decision == TerminalDecision::Callback(CallbackDecision::LaterEvent)),
+            trace
+                .sites
+                .iter()
+                .any(|site| site.kind == ExecutionSiteKind::EventHandler
+                    && site.decision == TerminalDecision::Callback(CallbackDecision::LaterEvent)),
             "an unfoldable handler is a later-event callback: {:?}",
+            trace.sites
+        );
+    }
+
+    /// The same census-vs-lowering disagreement, across every spelling the
+    /// census names specially and both lowering paths (the full emission for
+    /// template roots, the static fast path for nested elements).
+    ///
+    /// Each of these once failed the whole file — the folded `on*` and `ref`
+    /// as unresolved callback sites, the `children` forms and every nested
+    /// form as a category mismatch, because the recording hardcoded
+    /// NativeAttribute where the census had guessed another kind.
+    #[test]
+    fn every_folded_special_attribute_still_compiles_with_a_total_trace() {
+        for source in [
+            "const s = \"x\";\nconst view = <div onLy={s} />;",
+            "const r = \"x\";\nconst view = <div ref={r} />;",
+            "const c = \"x\";\nconst view = <div children={c} />;",
+            "const s = \"x\";\nconst view = <div><span onClick={s} /></div>;",
+            "const r = \"x\";\nconst view = <div><span ref={r} /></div>;",
+            "const c = \"x\";\nconst view = <div><span children={c} /></div>;",
+        ] {
+            let trace = compile(
+                source,
+                &CompileOptions {
+                    semantic_trace: true,
+                    ..CompileOptions::default()
+                },
+            )
+            .unwrap_or_else(|error| panic!("{source}: {error}"))
+            .semantic_trace
+            .expect("tracing was requested");
+            assert!(
+                !trace.sites.iter().any(|site| matches!(
+                    site.kind,
+                    ExecutionSiteKind::EventHandler | ExecutionSiteKind::Ref
+                )),
+                "{source}: a folded callback leaves no callback site: {:?}",
+                trace.sites
+            );
+        }
+    }
+
+    /// The dispatch decides by the censused kind, not by dropping sites: an
+    /// unfoldable ref is still a ref callback.
+    #[test]
+    fn an_unfoldable_ref_still_reports_its_site() {
+        let trace = compile(
+            "const view = <div ref={node} />;",
+            &CompileOptions {
+                semantic_trace: true,
+                ..CompileOptions::default()
+            },
+        )
+        .expect("compile with tracing")
+        .semantic_trace
+        .expect("tracing was requested");
+        assert!(
+            trace
+                .sites
+                .iter()
+                .any(|site| site.kind == ExecutionSiteKind::Ref
+                    && site.decision == TerminalDecision::Callback(CallbackDecision::RefApply)),
+            "an unfoldable ref is a ref-apply callback: {:?}",
             trace.sites
         );
     }

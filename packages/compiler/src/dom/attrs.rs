@@ -179,29 +179,15 @@ impl<'a> AstDomTransform<'a, '_> {
             if matches!(
                 disposition,
                 PlanDisposition::Skip | PlanDisposition::Inline(_)
-            ) && plan.key != "children"
-                && plan.key != "ref"
-            {
+            ) {
+                // Resolved as data — the census-kind dispatch decides value
+                // sites and withdraws callback sites, so a folded
+                // `on*`/`ref`/`children` no longer fails the file.
                 if let Some(span) = plan.semantic_span {
-                    if plan.key.starts_with("on") {
-                        // The census names an `on*` attribute an event handler
-                        // from its spelling alone. Reaching here means the
-                        // value folded to a constant and went into the
-                        // template as static text, so there is no handler at
-                        // runtime and no decision to record — withdraw the
-                        // site instead of leaving it unresolved, which failed
-                        // the whole file.
-                        self.semantic_trace.retract(
-                            span,
-                            crate::semantic_trace::ExecutionSiteKind::EventHandler,
-                        );
-                    } else {
-                        self.semantic_trace.value(
-                            span,
-                            crate::semantic_trace::ExecutionSiteKind::NativeAttribute,
-                            crate::semantic_trace::ValueDecision::Elided,
-                        );
-                    }
+                    self.semantic_trace.resolve_lowered_attribute(
+                        span,
+                        crate::semantic_trace::ValueDecision::Elided,
+                    );
                 }
             }
             match disposition {
@@ -330,6 +316,11 @@ impl<'a> AstDomTransform<'a, '_> {
             )
         {
             if let Some(span) = semantic_span {
+                // A shadowed `children` attribute (real children present) is
+                // censused as a native attribute and dropped here; a promoted
+                // one is censused as a JSX child and belongs to child
+                // insertion, which records its own decision — so only the
+                // former is resolved from the attribute side.
                 if self.semantic_trace.has_site(
                     span,
                     crate::semantic_trace::ExecutionSiteKind::NativeAttribute,
@@ -374,9 +365,11 @@ impl<'a> AstDomTransform<'a, '_> {
                 || ((plan.key == "class" || plan.key == "style")
                     && self.evaluate_confident(&raw).is_none()));
         if let Some(span) = semantic_span {
-            self.semantic_trace.value(
+            // Kind-dispatched for one runtime plan: a `children` attribute
+            // lowered as a property write is censused as a JSX child, and
+            // recording it as a native attribute mismatched the category.
+            self.semantic_trace.resolve_lowered_attribute(
                 span,
-                crate::semantic_trace::ExecutionSiteKind::NativeAttribute,
                 if dynamic {
                     crate::semantic_trace::ValueDecision::ReactiveRerun
                 } else {
@@ -674,12 +667,13 @@ impl<'a> AstDomTransform<'a, '_> {
                 semantic_spans.push(span);
             }
         }
+        // Kind-dispatched because this path sees every spelling — a folded
+        // `on*`/`ref`/`children` on a nested static element lands here, and a
+        // hardcoded NativeAttribute record mismatched the census and failed
+        // the file.
         for span in semantic_spans {
-            self.semantic_trace.value(
-                span,
-                crate::semantic_trace::ExecutionSiteKind::NativeAttribute,
-                crate::semantic_trace::ValueDecision::Elided,
-            );
+            self.semantic_trace
+                .resolve_lowered_attribute(span, crate::semantic_trace::ValueDecision::Elided);
         }
         for (key, value) in pending {
             match value {
