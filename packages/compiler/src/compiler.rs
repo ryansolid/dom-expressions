@@ -411,6 +411,72 @@ mod tests {
         assert!(output.code.contains("insert("));
     }
 
+    /// An `on*` value that folds to a constant becomes template text, so no
+    /// handler exists at runtime to decide about.
+    ///
+    /// The census names a site from the attribute's spelling, before lowering
+    /// has folded anything, so it called this one an event handler; nothing
+    /// then decided it, and an undecided censused site fails the compile. One
+    /// such attribute anywhere therefore made the whole file unanalysable
+    /// rather than merely untraced. The site is withdrawn instead.
+    #[test]
+    fn a_folded_event_handler_leaves_no_unresolved_site() {
+        let source =
+            "const handler = \"alert(1)\";\nconst view = <div onClick={handler}>{count()}</div>;";
+        let trace = compile(
+            source,
+            &CompileOptions {
+                semantic_trace: true,
+                ..CompileOptions::default()
+            },
+        )
+        .expect("a folded on* attribute must not fail the compile")
+        .semantic_trace
+        .expect("tracing was requested");
+
+        assert!(
+            !trace
+                .sites
+                .iter()
+                .any(|site| site.kind == ExecutionSiteKind::EventHandler),
+            "the folded handler is template text, so no handler site survives: {:?}",
+            trace.sites
+        );
+        // Retraction is surgical: the rest of the element still traces.
+        assert!(
+            trace
+                .sites
+                .iter()
+                .any(|site| site.kind == ExecutionSiteKind::JsxChild),
+            "unrelated sites must be unaffected: {:?}",
+            trace.sites
+        );
+    }
+
+    /// The counterpart: a handler the compiler cannot fold is still a real
+    /// listener, so the retraction must not swallow the ordinary case.
+    #[test]
+    fn an_unfoldable_event_handler_still_reports_its_site() {
+        let trace = compile(
+            "const view = <div onClick={props.handler} />;",
+            &CompileOptions {
+                semantic_trace: true,
+                ..CompileOptions::default()
+            },
+        )
+        .expect("compile with tracing")
+        .semantic_trace
+        .expect("tracing was requested");
+
+        assert!(
+            trace.sites.iter().any(|site| site.kind
+                == ExecutionSiteKind::EventHandler
+                && site.decision == TerminalDecision::Callback(CallbackDecision::LaterEvent)),
+            "an unfoldable handler is a later-event callback: {:?}",
+            trace.sites
+        );
+    }
+
     #[test]
     fn classifies_parse_and_configuration_errors() {
         let parse = compile("const view = <", &CompileOptions::default()).unwrap_err();

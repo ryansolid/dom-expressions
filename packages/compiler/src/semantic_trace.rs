@@ -532,6 +532,31 @@ impl TraceRecorder {
         })
     }
 
+    /// Withdraw a censused site that lowering proved does not exist.
+    ///
+    /// The census is syntactic and runs first, so it can only guess from an
+    /// attribute's name; lowering knows what the value actually became. The
+    /// two disagree in one place: an `on*` attribute whose value folds to a
+    /// constant is censused as an [`ExecutionSiteKind::EventHandler`] and then
+    /// written into the template as static text, so no handler exists at
+    /// runtime to decide about. Retracting is the truthful outcome — the site
+    /// is not reported, rather than reported with an invented decision.
+    ///
+    /// Retracting a site that was never censused, or one already decided, is a
+    /// no-op; this only ever removes a site nothing has spoken for.
+    pub(crate) fn retract(&mut self, span: Span, kind: ExecutionSiteKind) {
+        let key = SiteKey {
+            span: span.into(),
+            kind,
+        };
+        if self.decisions.contains_key(&key) {
+            return;
+        }
+        if let Some(census) = self.census.as_mut() {
+            census.sites.remove(&key);
+        }
+    }
+
     pub(crate) fn value(&mut self, span: Span, kind: ExecutionSiteKind, decision: ValueDecision) {
         self.resolve(span, kind, TerminalDecision::Value(decision));
     }
