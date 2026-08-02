@@ -1823,6 +1823,23 @@ describe("adoption -> first morph with nested regions (#547)", () => {
     expect(received).toBe(existing);
   });
 
+  it("does not bind a nested document boundary as one of the parent's regions", () => {
+    boundary.innerHTML =
+      "<article><!--slot:children:start-->" +
+      '<dx-frame data-fid="noteView"><p>Note</p></dx-frame>' +
+      "<!--slot:children:end--></article>";
+    const host = createFrameHost(createMockSerializer());
+
+    createFrame(boundary, {
+      id: "shell",
+      host,
+      adopt: true,
+      slots: { children: () => undefined }
+    });
+
+    expect(host.get("noteView")).toBeUndefined();
+  });
+
   it("an ARMED adopted occurrence (t=0 record drained pre-adoption) does not re-call when the stream adds its used region as {$frame}; the region morphs in place", () => {
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
@@ -2371,6 +2388,28 @@ describe("multi-mount fan-out and late-mount seeding", () => {
     host.apply({ type: "html", id: "m", version: 3, html: "<p>updated</p>" });
     expect(a.innerHTML).toBe("<p>updated</p>");
     expect(b.innerHTML).toBe("<p>updated</p>");
+  });
+
+  it("seeds every sibling when a cached handoff restores retained state", () => {
+    const host = createFrameHost(createMockSerializer());
+    const frameA = createFrame(a, { id: "story:1", host });
+    const frameB = createFrame(b, { id: "story:1", host });
+    host.apply({ type: "html", id: "story:1", version: 1, html: "<p>Story 1</p>" });
+
+    // A previous mount populated the target call's retained state. A warm
+    // cache hit later rebinds both live mounts without another stream.
+    const cached = document.createElement("div");
+    document.body.appendChild(cached);
+    const cachedFrame = createFrame(cached, { id: "story:2", host });
+    host.apply({ type: "html", id: "story:2", version: 1, html: "<p>Story 2</p>" });
+    cachedFrame.dispose();
+    cached.remove();
+
+    frameA.rebind("story:2");
+    frameB.rebind("story:2");
+
+    expect(a.innerHTML).toBe("<p>Story 2</p>");
+    expect(b.innerHTML).toBe("<p>Story 2</p>");
   });
 
   it("unregisters per frame: disposing one instance keeps the others live", () => {
