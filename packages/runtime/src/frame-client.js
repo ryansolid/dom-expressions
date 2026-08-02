@@ -170,9 +170,10 @@ export function createFrameHost(options = {}) {
       const sibling = set.size ? set.values().next().value : undefined;
       set.add(frame);
       if (sibling) {
-        if (sibling.version !== undefined) {
-          frame.apply({ version: sibling.version, r: sibling.store });
-        }
+        // A retained-state replay leaves a valid store with no version
+        // baseline. Seed from it too, then preserve that rebased state.
+        frame.apply({ version: sibling.version ?? 0, r: sibling.store });
+        if (sibling.version === undefined) frame.rebase && frame.rebase();
         return;
       }
       // No live sibling: seed from the boundary's retained store (see above)
@@ -897,9 +898,10 @@ class FrameImpl {
       this.#slotRegions.set(slotKey, regions);
     }
     const endData = slotEnd(slotKey);
+    const prefix = `${this.#options.id}.`;
     let n = start.nextSibling;
     while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
-      collectRegionElements(n, regions);
+      collectRegionElements(n, regions, prefix);
       n = n.nextSibling;
     }
   }
@@ -1521,11 +1523,12 @@ function collectSlots(n, end, out) {
  * so the walk stops descending at each region element. Client wrapper
  * elements around a region are descended through.
  */
-function collectRegionElements(node, regions) {
+function collectRegionElements(node, regions, prefix) {
   if (node.nodeType !== ELEMENT_NODE) return;
   if (isFrameElement(node)) {
     const childId = node.getAttribute(FRAME_ID_ATTR);
-    if (childId) {
+    // Bare ids belong to nested document boundaries, not this frame's regions.
+    if (childId && childId.startsWith(prefix)) {
       const argKey = childId.slice(childId.lastIndexOf(".") + 1);
       if (!regions.has(argKey)) {
         regions.set(argKey, { childId, element: node, frame: undefined, adopt: true });
@@ -1533,7 +1536,7 @@ function collectRegionElements(node, regions) {
     }
     return;
   }
-  for (let c = node.firstChild; c; c = c.nextSibling) collectRegionElements(c, regions);
+  for (let c = node.firstChild; c; c = c.nextSibling) collectRegionElements(c, regions, prefix);
 }
 
 /**
