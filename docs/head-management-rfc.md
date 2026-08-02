@@ -595,6 +595,25 @@ through the client registry, rather than as script patches. Deferred to the
 frame-streams work; the registry design keeps tag descriptors structured
 (not pre-rendered HTML) so this stays possible.
 
+**Embedded renders (host-owned documents).** When Solid renders a fragment
+for a host template to embed — the case `getAssets()` served — there is no
+`</head>` to splice into. The `onHead(head: string)` render option is the
+successor contract: when the output contains no `</head>`, everything
+head-bound at first flush (resolved winners with their ownership markers,
+eager resources, tracked asset links, inline styles) is delivered as one
+string — prelude first, its placement becoming the host's responsibility —
+for the host to splice into its own `<head>`. For `renderToString` it fires
+synchronously before return; for `renderToStream`, before the first chunk,
+so the host writes its head ahead of piping the stream. Post-shell head
+updates need nothing: patches and eager resources ride the body stream as
+script tasks and apply to `document.head` in the browser, and hydration
+claiming works because the `data-dh` markers ride whatever markup the host
+spliced. When the output does contain `</head>`, splicing is automatic and
+`onHead` is not called — one mode or the other, decided by the render
+output itself. Unlike `getAssets()`, which reads ambient render state after
+the fact (unsafe across concurrent renders), `onHead` is closure-bound to
+its render.
+
 ### Hydration and client
 
 - **During hydration: collect, don't touch.** Registrations rebuild the
@@ -693,6 +712,11 @@ The internal machinery `useAssets` never covered (bundler asset links,
 inline-style registration, hydration script placement) is unaffected. No
 public raw-HTML escape hatch is added preemptively; if a real case emerges
 that structured tags can't express, expose one then.
+
+`getAssets`'s embedded-render role (host owns the document and splices head
+content into its own template) is succeeded by the `onHead` render option
+(see "Embedded renders" under SSR), which is closure-bound to its render
+rather than reading ambient state, and carries `useHead` output.
 
 ## Existing infrastructure this builds on
 

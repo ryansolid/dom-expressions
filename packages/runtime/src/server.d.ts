@@ -66,6 +66,17 @@ export function renderToString<T>(
     plugins?: SerializerPlugin[];
     manifest?: AssetManifest | AssetResolver | AssetResolverFn;
     onError?: (err: any) => void;
+    /**
+     * Embedded-render contract for hosts that own the document. When the
+     * render output contains no `</head>`, everything head-bound (resolved
+     * `useHead` winners, eager resources, tracked asset links, inline
+     * styles) is delivered here as one HTML string — prelude (charset/base)
+     * first — for the host to splice into its own `<head>` template, instead
+     * of being dropped. Called synchronously before `renderToString`
+     * returns; not called when the output has a `</head>` (splicing is
+     * automatic then).
+     */
+    onHead?: (head: string) => void;
   }
 ): string;
 /** @deprecated use renderToStream which also returns a promise */
@@ -92,6 +103,17 @@ export function renderToStream<T>(
     onCompleteShell?: (info: { write: (v: string) => void }) => void;
     onCompleteAll?: (info: { write: (v: string) => void }) => void;
     onError?: (err: any) => void;
+    /**
+     * Embedded-render contract for hosts that own the document. When the
+     * shell contains no `</head>`, everything head-bound at first flush
+     * (resolved `useHead` winners, eager resources, tracked asset links,
+     * inline styles) is delivered here as one HTML string — prelude first —
+     * before the shell chunk is emitted, so the host can write its own
+     * `<head>` ahead of piping the stream. Post-shell head updates flow
+     * through the stream itself and apply in the browser. Not called when
+     * the shell has a `</head>` (splicing is automatic then).
+     */
+    onHead?: (head: string) => void;
   }
 ): {
   then: (fn: (html: string) => void) => void;
@@ -133,7 +155,12 @@ export function applyRef(
 ): void;
 /** @deprecated Use `useHead` — removed before `0.50.0` stable. */
 export function useAssets(fn: () => JSX.Element): void;
-/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
+/**
+ * @deprecated Use the `onHead` render option — removed before `0.50.0`
+ * stable. Reads ambient render state, so it is unsafe across concurrent
+ * renders; `onHead` is closure-bound to its render and also carries
+ * `useHead` output, which this does not.
+ */
 export function getAssets(): string;
 /**
  * A head tag descriptor. Props values may be getters (evaluated lazily on

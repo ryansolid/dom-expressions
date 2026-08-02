@@ -40,5 +40,16 @@ function useHead(tag: HeadTag | HeadTag[]): void;
   winners in place; streamed patches route through the registry once it is
   live, so head state never flickers regardless of chunk/bundle timing.
 
+Embedded renders (host-owned documents) get a first-class contract: the new
+`onHead(head: string)` option on `renderToString`/`renderToStream`. When the
+render output contains no `</head>`, everything head-bound (resolved `useHead`
+winners, eager resources, tracked asset links, inline styles) is delivered to
+the callback — prelude first — for the host to splice into its own template,
+instead of being silently dropped. For streams it fires before the first chunk;
+post-shell head updates ride the stream and apply in the browser. Unlike
+`getAssets()`, it is closure-bound to its render, so concurrent renders cannot
+leak head content across requests.
+
 `useAssets`, `getAssets`, and `Assets` are now deprecated and will be removed
-before `0.50.0` stable; migrate head injection to `useHead`.
+before `0.50.0` stable; migrate head injection to `useHead` and embedded head
+extraction to `onHead`.

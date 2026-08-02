@@ -237,6 +237,89 @@ describe("renderToString head rendering", () => {
   });
 });
 
+describe("onHead (embedded renders, host-owned document)", () => {
+  it("delivers head-bound output to onHead when the render has no </head>", () => {
+    let head;
+    const html = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        r.useHead([
+          { tag: "meta", props: { charset: "utf-8" } },
+          { tag: "title", props: { children: "Widget" } },
+          { tag: "link", props: { rel: "preload", href: "/hero.jpg", as: "image" } }
+        ]);
+        ctx.registerAsset("style", "/widget.css");
+        return r.ssr`<div>widget</div>`;
+      },
+      { onHead: h => (head = h) }
+    );
+    expect(html).toContain("<div>widget</div>");
+    // Body untouched: nothing head-bound leaked into the fragment.
+    expect(html).not.toContain("<title");
+    // Prelude first, then resources/winners/tracked assets.
+    expect(head.startsWith('<meta charset="utf-8"')).toBe(true);
+    expect(head).toContain('<title data-dh="title">Widget</title>');
+    expect(head).toContain('<link rel="preload" href="/hero.jpg" as="image">');
+    expect(head).toContain('<link rel="stylesheet" href="/widget.css">');
+  });
+
+  it("calls onHead with an empty string when nothing registered (mode signal)", () => {
+    let head;
+    r.renderToString(() => r.ssr`<div>plain</div>`, { onHead: h => (head = h) });
+    expect(head).toBe("");
+  });
+
+  it("does not call onHead when the render owns its document", () => {
+    let called = false;
+    const html = r.renderToString(
+      () => {
+        r.useHead({ tag: "title", props: { children: "Doc" } });
+        return DOC();
+      },
+      { onHead: () => (called = true) }
+    );
+    expect(called).toBe(false);
+    expect(html).toContain('<title data-dh="title">Doc</title>');
+  });
+
+  it("streams: delivers shell head before the first chunk; patches still ride the stream", async () => {
+    const sequence = [];
+    let done;
+    const stream = r.renderToStream(
+      () => {
+        const ctx = sharedConfig.context;
+        r.useHead({ tag: "title", props: { children: "Shell" } });
+        done = ctx.registerFragment("eh1");
+        ctx._currentBoundaryId = "eh1";
+        r.useHead({ tag: "title", props: { children: "Page" } });
+        ctx._currentBoundaryId = null;
+        setTimeout(() => done("<span>content</span>"), 10);
+        return r.ssr`<div><template id="pl-eh1"></template><!--pl-eh1--></div>`;
+      },
+      { onHead: h => sequence.push(["head", h]) }
+    );
+    const html = await new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          sequence.push(["chunk", v]);
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+    expect(html).toContain("<span>content</span>");
+    // Head delivered first, before any chunk hit the writer.
+    expect(sequence[0][0]).toBe("head");
+    expect(sequence[0][1]).toContain('<title data-dh="title">Shell</title>');
+    expect(sequence[1][0]).toBe("chunk");
+    // The boundary's retitle still parks on the fragment reveal via the stream.
+    expect(html).toContain('["eh1"]=[["t","Page"]]');
+  });
+});
+
 describe("renderToStream head patches", () => {
   it("parks boundary head ops on _$HY.hp for the fragment's $df reveal", async () => {
     let done;

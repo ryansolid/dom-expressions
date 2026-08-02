@@ -621,7 +621,7 @@ const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e))
 const HEAD_SCRIPT = `function $dha(o,i,e,n){for(i=0;i<o.length;i++)e=o[i],"t"==e[0]?((n=document.querySelector("title"))||(n=document.createElement("title"),document.head.appendChild(n)),n.textContent=e[1],n.setAttribute("data-dh","title")):"r"==e[0]?$dhr(e[1]):(n=document.createElement(e[2]),Object.keys(e[3]).forEach(function(a){n.setAttribute(a,e[3][a])}),null!=e[4]&&(n.textContent=e[4]),n.setAttribute("data-dh",e[1]),document.head.appendChild(n))}function $dhr(v,l,i){for(l=document.head.querySelectorAll("[data-dh]"),i=0;i<l.length;i++)l[i].getAttribute("data-dh")==v&&l[i].remove()}function $dh(o){_$HY.h?_$HY.h(o):$dha(o)}`;
 
 export function renderToString(code, options = {}) {
-  const { renderId = "", nonce, noScripts, manifest } = options;
+  const { renderId = "", nonce, noScripts, manifest, onHead } = options;
   let scripts = "";
   const serializer = createHydrationSerializer({
     scopeId: renderId,
@@ -702,12 +702,21 @@ export function renderToString(code, options = {}) {
     tracking.inlineStyles,
     scripts.length ? scripts : "",
     nonce,
-    head
+    head,
+    onHead
   );
 }
 
 export function renderToStream(code, options = {}) {
-  let { nonce, onCompleteShell, onCompleteAll, renderId = "", noScripts, manifest } = options;
+  let {
+    nonce,
+    onCompleteShell,
+    onCompleteAll,
+    renderId = "",
+    noScripts,
+    manifest,
+    onHead
+  } = options;
   let dispose;
   const blockingPromises = new Set();
   let headerEmitted = false;
@@ -810,6 +819,9 @@ export function renderToStream(code, options = {}) {
     // surgery — assets and preload links spliced before </head>, accumulated
     // tasks spliced at the <!--xs--> marker — then one write. Injection order
     // (assets, preloads, scripts) is part of the byte-exact document output.
+    // `onHead` fires synchronously inside assembly, before the shell chunk is
+    // written — the host receives its head content before any body output it
+    // could flush.
     shell(shellHtml, meta) {
       buffer.write(
         assembleDocument(
@@ -819,7 +831,8 @@ export function renderToStream(code, options = {}) {
           meta.inlineStyles,
           meta.tasks.length ? meta.tasks : "",
           nonce,
-          meta.head
+          meta.head,
+          onHead
         )
       );
     },
@@ -1815,7 +1828,8 @@ function resolveAssetsHtml(assets) {
 // the script tag in one construction. Order is preserved exactly: assets,
 // preload links, inline styles before `</head>`; accumulated tasks at the
 // `<!--xs-->` marker, appended when the marker is absent. Inline-style entries
-// are only marked emitted when there is a `</head>` to splice into.
+// are only marked emitted when something renders them — a `</head>` splice or
+// an `onHead` delivery.
 //
 // Scans stay strictly demand-driven, which the old passes got for free from
 // their early returns and a single pass has to reproduce deliberately: a
@@ -1823,11 +1837,28 @@ function resolveAssetsHtml(assets) {
 // 400KB body one stray scan costs more than the render's own string work
 // (measured ~0.75ms). An anchor is only searched for when there is content that
 // needs it, keeping a body-only render a pure pass-through.
-function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts, nonce, headTags) {
+//
+// `onHead` is the embedded-render contract (host owns the document): when the
+// output contains no `</head>`, everything head-bound is delivered to the
+// callback as one string — prelude first — instead of being dropped, and the
+// output passes through with only the script splice. When the output does
+// contain `</head>`, splicing is automatic and `onHead` is not called: one
+// mode or the other, decided by the render output itself.
+function assembleDocument(
+  html,
+  assetsHtml,
+  emittedAssets,
+  inlineStyles,
+  scripts,
+  nonce,
+  headTags,
+  onHead
+) {
   const scriptTag = scripts ? `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>` : "";
   const headTagsHtml = headTags ? headTags.html : "";
   const headPrelude = headTags ? headTags.prelude : "";
   if (
+    !onHead &&
     !assetsHtml &&
     !headTagsHtml &&
     !headPrelude &&
@@ -1836,6 +1867,8 @@ function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts
   ) {
     // Nothing head-bound: never look for `</head>`. Body-only renders (no
     // assets, no preloads, no inline styles) stay a pure pass-through.
+    // (An `onHead` caller opted into the scan — it must learn which mode
+    // this render is in even when there is nothing to deliver.)
     if (!scriptTag) return html;
     const xs = html.indexOf("<!--xs-->");
     return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
@@ -1852,13 +1885,39 @@ function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts
   }
   const headIdx = html.indexOf("</head>");
   if (headIdx === -1) {
-    // No head to splice into: assets/preloads/styles are dropped and left
-    // unemitted, exactly as the individual helpers' `index === -1` returns did.
+    if (onHead) {
+      // Embedded mode: hand the host everything it would have received via
+      // the `</head>` splice, prelude first (its placement constraints are
+      // the host template's responsibility from here).
+      onHead(
+        headPrelude +
+          headTagsHtml +
+          (assetsHtml || "") +
+          renderHeadAssets(emittedAssets, inlineStyles, nonce)
+      );
+    }
+    // No head to splice into: without `onHead`, assets/preloads/styles are
+    // dropped and left unemitted, exactly as the individual helpers'
+    // `index === -1` returns did.
     if (!scriptTag) return html;
     const xs = html.indexOf("<!--xs-->");
     return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
   }
-  let head = headTagsHtml + (assetsHtml || "");
+  const head =
+    headTagsHtml + (assetsHtml || "") + renderHeadAssets(emittedAssets, inlineStyles, nonce);
+  if (!scriptTag) return html.slice(0, headIdx) + head + html.slice(headIdx);
+  const xsIdx = html.indexOf("<!--xs-->");
+  if (xsIdx === -1) return html.slice(0, headIdx) + head + html.slice(headIdx) + scriptTag;
+  return xsIdx < headIdx
+    ? html.slice(0, xsIdx) + scriptTag + html.slice(xsIdx, headIdx) + head + html.slice(headIdx)
+    : html.slice(0, headIdx) + head + html.slice(headIdx, xsIdx) + scriptTag + html.slice(xsIdx);
+}
+
+// Tracked asset links (stylesheet/modulepreload by URL) and unconsumed inline
+// styles, rendered for a head splice or an `onHead` delivery. Inline-style
+// entries are consumed (marked emitted) by whichever path renders them first.
+function renderHeadAssets(emittedAssets, inlineStyles, nonce) {
+  let head = "";
   if (emittedAssets && emittedAssets.size) {
     for (const url of emittedAssets) {
       head += isCssUrl(url)
@@ -1873,12 +1932,7 @@ function assembleDocument(html, assetsHtml, emittedAssets, inlineStyles, scripts
       head += renderInlineStyle(entry, nonce);
     }
   }
-  if (!scriptTag) return html.slice(0, headIdx) + head + html.slice(headIdx);
-  const xsIdx = html.indexOf("<!--xs-->");
-  if (xsIdx === -1) return html.slice(0, headIdx) + head + html.slice(headIdx) + scriptTag;
-  return xsIdx < headIdx
-    ? html.slice(0, xsIdx) + scriptTag + html.slice(xsIdx, headIdx) + head + html.slice(headIdx)
-    : html.slice(0, headIdx) + head + html.slice(headIdx, xsIdx) + scriptTag + html.slice(xsIdx);
+  return head;
 }
 
 function serializeFragmentAssets(key, boundaryModules, context) {
