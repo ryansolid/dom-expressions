@@ -31,7 +31,14 @@ const SCENARIOS = {
     "{ render, template, insert, delegateEvents, className, style, setAttribute, addEvent, spread }",
     4480
   ],
-  "client: full surface": ["*", 7950],
+  // Ceiling history: guarded 7950 at landing; 7958 after the boundary-driven
+  // reveal round (+60: the revealed fragment's parent on the _$HY.fe hook);
+  // 9749 after useHead landed (+1791: the streaming-correct head manager —
+  // RFC stage 1's client half: registry, dedupe/diff, hydration adoption).
+  // Deliberate feature weight both times — and the compiled-JSX core scenario
+  // above stayed byte-stable, so apps using neither pay 0 — re-guarded at
+  // 9950.
+  "client: full surface": ["*", 9950],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
@@ -74,12 +81,22 @@ const SCENARIOS = {
   // can't dedupe a re-introduced `{$frame}` region against a stranded t=0
   // record and drop a doubly-nested reply's body) — re-guarded at 6330.
   // Then +12 for linear document-boot absorption + stripping error stacks from
-  // serialized output outside development — re-guarded at 6350.
+  // serialized output outside development — re-guarded at 6350. Then three
+  // deliberate feature rounds: +1545 for single-flight with frames (the
+  // flight response path: outcome-chunk envelope replay through the codec,
+  // ServerComponentPlugin + flightCodec, per-args intrinsic addressing with
+  // frameAddress/stableString realm-stable hashing, boundary retention
+  // across unmounts, keyed-range cross-parent relocation in the morph);
+  // +403 for the call-site handoff (COMPONENT_HANDOFF branding, take/rebind
+  // with forward tracking, frame rebind/rebase); +78 for live slot props
+  // (ctx.onUpdate: args changes update the mounted binding instead of
+  // re-calling); +40 for fetch-metadata stylesheet attribution on reveal —
+  // re-guarded at 8600.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    6350
+    8600
   ]
 };
 
@@ -138,9 +155,11 @@ for (const [name, [imp, ceiling]] of Object.entries(SCENARIOS)) {
 }
 await check(
   // 873 -> 945 gz after the live-state deny-list (`open` preservation +
-  // `data-preserve`); still ~360 under micromorph, so the public claim holds.
+  // `data-preserve`); -> 1067 after keyed slot ranges learned to relocate
+  // across parents during a morph (the single-flight round). Still ~230
+  // under micromorph, so the public claim holds — margin re-set to match.
   `frames: morph slice (must undercut micromorph's ${MICROMORPH_GZ} gz)`,
   await morphSliceScenario(),
-  MICROMORPH_GZ - 320
+  MICROMORPH_GZ - 210
 );
 process.exit(failed ? 1 : 0);
