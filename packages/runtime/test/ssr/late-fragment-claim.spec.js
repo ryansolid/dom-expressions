@@ -1,20 +1,14 @@
 /**
  * @jest-environment jsdom
  *
- * Late-arriving fragment swaps vs. completed hydration (#2964).
+ * Fragment reveal routing: mechanics inline, policy in the runtime.
  *
- * `_$HY.done` used to make $df discard a late fragment's content wholesale —
- * correct only when the client re-rendered the range from data. Boundaries
- * inside deferred claim scopes (frames slot fills, lazy route modules)
- * register against a pending `<id>_fr` AFTER global hydration completes, and
- * for server components the markup IS the content: discarding it left the
- * region permanently blank. The protocol now:
- *
- * - a claimant on record (`_$HY.fk[id]`) lets the swap proceed normally even
- *   after done,
- * - with no claimant the swap is HELD (placeholder, fallback, and template
- *   stay put; id noted in `_$HY.hq`) so a claimant that registers later can
- *   replay `$df(id)` and then claim the revealed content.
+ * The inline stream script owns only the parse-time swap mechanics ($dfr).
+ * Reveal POLICY — what to do with late arrivals after hydration completes,
+ * who may claim a fragment (#2964) — belongs to the hydration runtime: once
+ * it installs `_$HY.f`, every `$df(id)` the stream emits routes through it,
+ * and the runtime calls back into `$dfr(id)` for swaps it approves. One
+ * owner at any moment, mirroring the `$dh`/`_$HY.h` head-patch handoff.
  *
  * Exercised against the actual emitted stream scripts, like head-hydrate.
  */
@@ -58,8 +52,8 @@ function boot(markup) {
 
 const host = () => document.getElementById("host");
 
-describe("$df after _$HY.done (late fragments keep their content claimable)", () => {
-  it("baseline: before done, the swap replaces the fallback", async () => {
+describe("$df routing (inline mechanics, runtime policy)", () => {
+  it("no runtime installed: the swap replaces the fallback immediately", async () => {
     const { markup, scripts } = await renderLateFragmentStream();
     boot(markup);
     for (const s of scripts) window.eval(s);
@@ -70,42 +64,52 @@ describe("$df after _$HY.done (late fragments keep their content claimable)", ()
     expect(globalThis._$HY.fe).toHaveBeenCalledWith("ev1", host());
   });
 
-  it("done with a claimant on record (_$HY.fk): the swap proceeds", async () => {
+  it("runtime installed: $df routes to _$HY.f and nothing swaps on its own", async () => {
     const { markup, scripts } = await renderLateFragmentStream();
     boot(markup);
-    globalThis._$HY.done = true;
-    globalThis._$HY.fk = { ev1: 1 };
+    const policy = jest.fn(() => 0);
+    globalThis._$HY.f = policy;
     for (const s of scripts) window.eval(s);
 
-    expect(host().textContent).toBe("revealed");
-    expect(document.getElementById("pl-ev1")).toBe(null);
-    expect(globalThis._$HY.fe).toHaveBeenCalledWith("ev1", host());
-    expect(globalThis._$HY.hq).toBeUndefined();
-  });
-
-  it("done with no claimant: the swap is held intact, and a late claimant replays it", async () => {
-    const { markup, scripts } = await renderLateFragmentStream();
-    boot(markup);
-    globalThis._$HY.done = true;
-    for (const s of scripts) window.eval(s);
-
-    // Held, not discarded: fallback still showing, placeholder and content
-    // template both still present, id queued for a claimant.
+    // The decision was delegated: fallback, placeholder, and template all
+    // stay in place until the policy approves.
+    expect(policy).toHaveBeenCalledWith("ev1");
     expect(host().textContent).toBe("loading");
     expect(document.getElementById("pl-ev1")).not.toBe(null);
     expect(document.getElementById("ev1")).not.toBe(null);
-    expect(globalThis._$HY.hq).toEqual({ ev1: 1 });
     expect(globalThis._$HY.fe).not.toHaveBeenCalled();
+  });
 
-    // A claimant registers later (markFragmentClaim in the hydration
-    // runtime): mark, drop the hold, replay.
-    globalThis._$HY.fk = { ev1: 1 };
-    delete globalThis._$HY.hq.ev1;
-    window.$df("ev1");
+  it("an approved swap runs through $dfr regardless of _$HY.done", async () => {
+    const { markup, scripts } = await renderLateFragmentStream();
+    boot(markup);
+    // Policy that approves everything, standing in for the hydration
+    // runtime's claimed/held bookkeeping.
+    globalThis._$HY.f = id => window.$dfr(id);
+    globalThis._$HY.done = true;
+    for (const s of scripts) window.eval(s);
 
     expect(host().textContent).toBe("revealed");
     expect(document.getElementById("pl-ev1")).toBe(null);
     expect(document.getElementById("ev1")).toBe(null);
+    expect(globalThis._$HY.fe).toHaveBeenCalledWith("ev1", host());
+  });
+
+  it("a held swap replays later through $dfr", async () => {
+    const { markup, scripts } = await renderLateFragmentStream();
+    boot(markup);
+    const held = [];
+    globalThis._$HY.f = id => (held.push(id), 0);
+    for (const s of scripts) window.eval(s);
+
+    expect(host().textContent).toBe("loading");
+    expect(held).toEqual(["ev1"]);
+
+    // The runtime replays when a claimant registers: mechanics are intact,
+    // so the swap lands exactly as it would have at arrival time.
+    window.$dfr(held[0]);
+    expect(host().textContent).toBe("revealed");
+    expect(document.getElementById("pl-ev1")).toBe(null);
     expect(globalThis._$HY.fe).toHaveBeenCalledWith("ev1", host());
   });
 });

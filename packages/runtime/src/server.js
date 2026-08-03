@@ -579,39 +579,43 @@ export function useHead(tags) {
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js
 const VOID_ELEMENTS =
   /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
-// Fragment replacement helpers emitted into stream task scripts:
-// - $df(id): swap template payload into the `pl-*` marker range, then announce
-//   the reveal as `_$HY.fe(id, parent)` — the parent scopes consumers that need
-//   to look at what just landed (server-component boundaries adopt there) to
-//   the revealed fragment instead of the document. A marker that
-//   isn't in the live DOM yet (it sits inside a flushed-but-unactivated ancestor
-//   template held by a reveal group) queues the id in `_$HY.dq` for retry instead
-//   of dropping the swap. A missing content template means the swap already ran —
-//   that stays a plain no-op and is never queued.
-//   Late arrivals (after `_$HY.done`): global hydration can complete while a
-//   boundary inside a deferred claim scope (a frames slot fill, a lazy route
-//   module) is still waiting on this fragment — the markup IS its content, so
-//   discarding it leaves the region permanently blank (#2964). A claimant on
-//   record (`_$HY.fk[id]`, set by the hydration runtime when a boundary
-//   registers against a pending `<id>_fr`) lets the swap proceed as normal.
-//   With no claimant yet the swap is HELD — placeholder, fallback, and
-//   template all stay in place and the id is noted in `_$HY.hq` — so a
-//   claimant that registers later (module still loading) can replay `$df(id)`
-//   and claim the content. Only a range the client has already re-rendered
-//   (markers gone) is truly unclaimable, and that still lands in `_$HY.dq`.
+// Fragment replacement helpers emitted into stream task scripts.
+//
+// Mechanics vs. policy: the inline script owns the parse-time MECHANICS only
+// — it must work before any runtime loads (streamed content reveals with no
+// JS at all). All reveal POLICY (late-arrival holds, boundary claims) lives
+// in the hydration runtime: once it installs `_$HY.f`, every $df routes
+// through it and the runtime decides when the raw swap ($dfr) runs. One
+// owner at any moment, mirroring the `$dh`/`_$HY.h` head-patch handoff.
+//
+// - $df(id): route to the runtime's fragment policy (`_$HY.f`) when
+//   installed, else swap immediately via $dfr. The runtime installs `_$HY.f`
+//   before global hydration can complete, so an inline (pre-runtime) $df can
+//   never run after `_$HY.done` — the raw path needs no done check.
+// - $dfr(id): the raw swap — replace the `pl-*` marker range with the
+//   template payload, then announce the reveal as `_$HY.fe(id, parent)` —
+//   the parent scopes consumers that need to look at what just landed
+//   (server-component boundaries adopt there) to the revealed fragment
+//   instead of the document. A marker that isn't in the live DOM yet (it
+//   sits inside a flushed-but-unactivated ancestor template held by a reveal
+//   group) queues the id in `_$HY.dq` for retry instead of dropping the
+//   swap. A missing content template means the swap already ran — that stays
+//   a plain no-op and is never queued. The runtime's policy calls back into
+//   $dfr for swaps it approves, so the DOM mechanics exist exactly once.
 // - $dfl(id): materialize fallback from `pl-*` template content without resolving.
-//   Marker misses queue in `_$HY.dlq`, same reasoning as $df.
+//   Marker misses queue in `_$HY.dlq`, same reasoning as $dfr.
 // - $dflj(ids): materialize fallback content for every id in the list.
 // - $dfd(): drain both retry queues. Runs after every successful swap or fallback
 //   materialization — the only events that can bring queued markers into the live
 //   document. Content swaps ($df) drain before fallbacks ($dfl) so a settled
 //   fragment wins over its own pending fallback. Each pass snapshots the queue,
-//   so still-inert entries simply re-queue and wait for the next swap.
+//   so still-inert entries simply re-queue and wait for the next swap. Drains
+//   route through $df, so queued swaps stay subject to runtime policy.
 // - $dfs(id, count, defer): register pending stylesheet count for fragment `id`.
 // - $dfc(id): style completion callback; reveals when the fragment/group is unblocked.
 // - $dfg(id): group-style gate check; reveals a waiting group once all style counts hit zero.
 // - $dfj(ids): reveal a group in registration order, waiting if any member still has pending styles.
-const REPLACE_SCRIPT = `function $df(e,n,o,t){if(!(n=document.getElementById(e)))return 0;if(!(o=document.getElementById("pl-"+e)))return(_$HY.dq=_$HY.dq||{})[e]=1,0;if(_$HY.done&&!(_$HY.fk&&_$HY.fk[e]))return(_$HY.hq=_$HY.hq||{})[e]=1,0;for(;o&&(8!==o.nodeType||o.nodeValue!=="pl-"+e);)t=o.nextSibling,o.remove(),o=t;t=o.parentNode,o.replaceWith(n.content),n.remove(),_$HY.fe(e,t),_$HY.hp&&_$HY.hp[e]&&($dh(_$HY.hp[e]),delete _$HY.hp[e]),$dfd();return 1}function $dfl(e,o,n){if(!(o=document.getElementById("pl-"+e)))return(_$HY.dlq=_$HY.dlq||{})[e]=1,0;if(o._$fl)return 1;for(n=o.nextSibling;n;){if(8===n.nodeType&&n.nodeValue==="pl-"+e){o.parentNode&&o.parentNode.insertBefore(o.content.cloneNode(!0),n),o._$fl=1,$dfd();return 1}n=n.nextSibling}return 0}function $dflj(e,i){for(i=0;i<e.length;i++)$dfl(e[i])}function $dfd(e,i){if(e=_$HY.dq){_$HY.dq=0;for(i in e)$df(i)}if(e=_$HY.dlq){_$HY.dlq=0;for(i in e)$dfl(i)}}function $dfs(e,c,d){(_$HY.sc=_$HY.sc||{})[e]=c,d&&((_$HY.sd=_$HY.sd||{})[e]=1)}function $dfg(e,g,i,k){if(!(g=_$HY.sg&&_$HY.sg[e]))return;for(i=0;i<g.length;i++)if(_$HY.sc&&_$HY.sc[g[i]]>0)return;for(i=0;i<g.length;i++)k=g[i],delete _$HY.sg[k],$df(k)}function $dfc(e){if(--_$HY.sc[e]<=0){delete _$HY.sc[e],_$HY.sg&&_$HY.sg[e]?$dfg(e):!(_$HY.sd&&_$HY.sd[e])&&$df(e);_$HY.sd&&delete _$HY.sd[e]}}function $dfj(e,i,n){for(i=0;i<e.length;i++)if(_$HY.sc&&_$HY.sc[e[i]]>0){for(n=0;n<e.length;n++)(_$HY.sg=_$HY.sg||{})[e[n]]=e;return}for(i=0;i<e.length;i++)$df(e[i])}`;
+const REPLACE_SCRIPT = `function $df(e){return _$HY.f?_$HY.f(e):$dfr(e)}function $dfr(e,n,o,t){if(!(n=document.getElementById(e)))return 0;if(!(o=document.getElementById("pl-"+e)))return(_$HY.dq=_$HY.dq||{})[e]=1,0;for(;o&&(8!==o.nodeType||o.nodeValue!=="pl-"+e);)t=o.nextSibling,o.remove(),o=t;t=o.parentNode,o.replaceWith(n.content),n.remove(),_$HY.fe(e,t),_$HY.hp&&_$HY.hp[e]&&($dh(_$HY.hp[e]),delete _$HY.hp[e]),$dfd();return 1}function $dfl(e,o,n){if(!(o=document.getElementById("pl-"+e)))return(_$HY.dlq=_$HY.dlq||{})[e]=1,0;if(o._$fl)return 1;for(n=o.nextSibling;n;){if(8===n.nodeType&&n.nodeValue==="pl-"+e){o.parentNode&&o.parentNode.insertBefore(o.content.cloneNode(!0),n),o._$fl=1,$dfd();return 1}n=n.nextSibling}return 0}function $dflj(e,i){for(i=0;i<e.length;i++)$dfl(e[i])}function $dfd(e,i){if(e=_$HY.dq){_$HY.dq=0;for(i in e)$df(i)}if(e=_$HY.dlq){_$HY.dlq=0;for(i in e)$dfl(i)}}function $dfs(e,c,d){(_$HY.sc=_$HY.sc||{})[e]=c,d&&((_$HY.sd=_$HY.sd||{})[e]=1)}function $dfg(e,g,i,k){if(!(g=_$HY.sg&&_$HY.sg[e]))return;for(i=0;i<g.length;i++)if(_$HY.sc&&_$HY.sc[g[i]]>0)return;for(i=0;i<g.length;i++)k=g[i],delete _$HY.sg[k],$df(k)}function $dfc(e){if(--_$HY.sc[e]<=0){delete _$HY.sc[e],_$HY.sg&&_$HY.sg[e]?$dfg(e):!(_$HY.sd&&_$HY.sd[e])&&$df(e);_$HY.sd&&delete _$HY.sd[e]}}function $dfj(e,i,n){for(i=0;i<e.length;i++)if(_$HY.sc&&_$HY.sc[e[i]]>0){for(n=0;n<e.length;n++)(_$HY.sg=_$HY.sg||{})[e[n]]=e;return}for(i=0;i<e.length;i++)$df(e[i])}`;
 
 // Head patch runtime, emitted once alongside the first head-patch task:
 // - $dha(ops): apply patch ops to document.head — "t" sets the title (and
