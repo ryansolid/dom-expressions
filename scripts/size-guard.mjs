@@ -37,8 +37,9 @@ const SCENARIOS = {
   // RFC stage 1's client half: registry, dedupe/diff, hydration adoption).
   // Deliberate feature weight both times — and the compiled-JSX core scenario
   // above stayed byte-stable, so apps using neither pay 0 — re-guarded at
-  // 9950.
-  "client: full surface": ["*", 9950],
+  // 9950. Ratcheted to actual+20 (9749 measured): headroom is where slippage
+  // hides, so every future addition re-argues its bytes here.
+  "client: full surface": ["*", 9770],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
@@ -91,12 +92,16 @@ const SCENARIOS = {
   // with forward tracking, frame rebind/rebase); +78 for live slot props
   // (ctx.onUpdate: args changes update the mounted binding instead of
   // re-calling); +40 for fetch-metadata stylesheet attribution on reveal —
-  // re-guarded at 8600.
+  // re-guarded at 8600, then ratcheted to actual+20 (8432 measured after a
+  // consolidation survey found no removable duplication at the current
+  // architecture — the remaining reduction lever is unifying the document
+  // reveal scripts with the frame store's reveal machinery, a designed
+  // round of its own).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8600
+    8452
   ]
 };
 
