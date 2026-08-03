@@ -96,12 +96,16 @@ const SCENARIOS = {
   // consolidation survey found no removable duplication at the current
   // architecture — the remaining reduction lever is unifying the document
   // reveal scripts with the frame store's reveal machinery, a designed
-  // round of its own).
+  // round of its own). Then +53 for the end-of-morph displaced-range sweep
+  // (restoreDisplacedRanges: a range whose new position lives inside a
+  // wholesale-inserted parent was orphaned in the index while its occurrence
+  // stayed "mounted" — the notes search-clear empty-slot bug) — re-guarded
+  // at actual+20 (8505 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8452
+    8525
   ]
 };
 

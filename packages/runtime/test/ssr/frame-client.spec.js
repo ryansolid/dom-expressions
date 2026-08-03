@@ -660,6 +660,41 @@ describe("client-anchor invariant", () => {
       "<section></section><p><!--slot:x:start--><input><!--slot:x:end--></p>"
     );
   });
+
+  it("relocates a range into a WHOLESALE-INSERTED new parent (list grows back)", () => {
+    // The notes-list search-clear shape: a filtered list ("Me": items 0 and 2)
+    // grows back to the full list (items 0, 1, 2). The new third <li> has no
+    // old counterpart, so the reconcile inserts the parsed source element
+    // wholesale — carrying the source's own EMPTY item#2 marker pair — while
+    // the live item#2 range sits displaced in the frame-wide index. Without
+    // restoring it, the occurrence stays "mounted" over detached nodes and
+    // the slot renders empty with no later sync able to recover it.
+    const frame = createFrame(boundary);
+    const li = id => `<li><!--slot:item#${id}:start--><!--slot:item#${id}:end--></li>`;
+    frame.apply({ version: 1, r: { "": html(`<ul>${li(0)}${li(2)}</ul>`) } });
+    const ul = boundary.firstElementChild;
+    const fill = (id, text) => {
+      const span = document.createElement("span");
+      span.textContent = text;
+      findComment(ul, `slot:item#${id}:start`).after(span);
+      return span;
+    };
+    const a = fill(0, "A");
+    const c = fill(2, "C");
+
+    // Full list again: item#1 is genuinely new (bare markers), while item#2's
+    // live range must land inside the freshly inserted third <li>.
+    frame.apply({ version: 2, r: { "": html(`<ul>${li(0)}${li(1)}${li(2)}</ul>`) } });
+
+    expect(ul.contains(a)).toBe(true);
+    expect(ul.contains(c)).toBe(true);
+    expect(c.previousSibling.data).toBe("slot:item#2:start");
+    expect(ul.innerHTML).toBe(
+      "<li><!--slot:item#0:start--><span>A</span><!--slot:item#0:end--></li>" +
+        "<li><!--slot:item#1:start--><!--slot:item#1:end--></li>" +
+        "<li><!--slot:item#2:start--><span>C</span><!--slot:item#2:end--></li>"
+    );
+  });
 });
 
 describe("client slots", () => {

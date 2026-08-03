@@ -1146,6 +1146,10 @@ class FrameImpl {
       const ranges = new Map();
       this.#collectSlots(ranges);
       reconcileChildren(parent, fragment, this.#start, this.#end, claim, ranges);
+      // Anything still indexed either matched in place or was displaced into
+      // a subtree the reconcile inserted wholesale — restore those (see
+      // restoreDisplacedRanges).
+      if (ranges.size) restoreDisplacedRanges(this.#firstContent(), this.#end, ranges);
     }
   }
 
@@ -1897,6 +1901,39 @@ function reconcileChildren(
     }
     parent.removeChild(oldChild);
     oldChild = next;
+  }
+}
+
+/**
+ * End-of-morph sweep for displaced ranges the reconcile never reached. A
+ * wholesale-inserted source subtree (a new parent with no old counterpart)
+ * carries the source's own bare marker pairs for the slot occurrences it
+ * contains; sibling-scoped matching never sees inside it, so a live range for
+ * the same occurrence sits displaced in the frame-wide index. Swap each such
+ * pair for its live range. Without this the interior (and the client state
+ * mounted in it) is orphaned while the occurrence stays "mounted", so the
+ * slot renders empty and no later sync can recover it (the record dedupe
+ * sees an already-mounted occurrence). Entries whose id no longer appears in
+ * the new content just stay detached — exactly what removal meant.
+ */
+function restoreDisplacedRanges(first, end, ranges) {
+  // Same discovery rules as the index itself (descend server-owned elements,
+  // never range interiors or nested frames), collected before mutating.
+  const found = new Map();
+  collectSlots(first, end, found);
+  for (const [id, start] of found) {
+    const displaced = ranges.get(id);
+    // In-place matched ranges are still indexed AND still in the DOM: skip.
+    if (!displaced || displaced === start) continue;
+    ranges.delete(id);
+    const parent = start.parentNode;
+    if (displaced.nodeType === 11 /* DOCUMENT_FRAGMENT_NODE: stashed range */) {
+      parent.insertBefore(displaced, start);
+    } else {
+      moveRangeBefore(parent, displaced, id, start);
+    }
+    // Detach the fresh (bare) marker pair the source shipped.
+    stashRange(document.createDocumentFragment(), start, id);
   }
 }
 
