@@ -2559,6 +2559,40 @@ describe("call-site handoff (rebind)", () => {
     expect(other.innerHTML).toBe("<p>top stories</p>");
   });
 
+  it("repeated cache-hit round trips re-materialize from retention every time (#2965)", () => {
+    // The navigation wedge: rebinding back and forth between two calls whose
+    // components both resolve from cache — NO stream on the later trips — must
+    // show each id's own retained content on every trip. One frame per
+    // boundary is what keeps the retention protocol sound: the leaver's
+    // snapshot stashes under the old id, and registration under the new id
+    // seeds from ITS retained store.
+    const host = createFrameHost(createMockSerializer());
+    // A document-adopted boundary: server markup is already in the element,
+    // no root record in the store (snapshot falls back to innerHTML).
+    const el = document.createElement("div");
+    el.innerHTML = "<p>note 0</p>";
+    document.body.appendChild(el);
+    const frame = createFrame(el, { id: "note:0", host, adopt: true });
+
+    // First visit to note 1 streams (cache cold)...
+    frame.rebind("note:1");
+    host.apply({ type: "html", id: "note:1", version: 1, html: "<p>note 1</p>" });
+    expect(el.innerHTML).toBe("<p>note 1</p>");
+
+    // ...then every later trip is a warm cache hit: rebind only, no stream.
+    for (let trip = 0; trip < 4; trip++) {
+      frame.rebind("note:0");
+      expect(el.innerHTML).toBe("<p>note 0</p>");
+      frame.rebind("note:1");
+      expect(el.innerHTML).toBe("<p>note 1</p>");
+    }
+    // And it never wedges: the boundary still tracks its bound id.
+    frame.rebind("note:0");
+    expect(el.innerHTML).toBe("<p>note 0</p>");
+    expect(host.get("note:0")).toBe(frame);
+    expect(host.get("note:1")).toBeUndefined();
+  });
+
   it("rebased seeding: a retained snapshot's higher version cannot stale-drop the new space's stream", () => {
     const host = createFrameHost(createMockSerializer());
     const el = document.createElement("div");
