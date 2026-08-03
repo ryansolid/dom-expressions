@@ -1,5 +1,70 @@
 # dom-expressions
 
+## 0.50.0-next.35
+
+### Patch Changes
+
+- c4edd61: Fix cached server-component frame handoffs so nested document boundaries are not adopted as parent regions, and every live sibling is seeded from rebased retained state during cache-only rebinds.
+- a0674d4: Streamed fragments that settle after hydration completes are held for their claimant instead of discarded: `$df` now consults a claimant flag (`_$HY.fk`) when `_$HY.done` is set, and parks unclaimed swaps in a hold queue (`_$HY.hq`) that a late-registering boundary replays. Fixes server-component boundaries that resolve after the shell flush never mounting (solidjs/solid#2964).
+- 4b125e3: Restore displaced slot ranges into wholesale-inserted parents at end of morph. The frame-wide displaced-range index only applied where the reconcile descended into a matched parent; a new parent with no old counterpart is inserted wholesale from the parsed source, carrying bare marker pairs, so a live range for the same occurrence stayed orphaned in the index while the occurrence remained "mounted" over detached nodes — the slot rendered empty and no later sync could recover it (the record dedupe sees an already-mounted occurrence). An end-of-morph sweep now swaps each remaining indexed range into its bare marker pair in the final content. Fixes the notes-demo search shape: filtering a server-rendered list down and back up (typing then clearing a search) left the regrown rows blank.
+- 96a04d3: Add a call-site handoff to server component boundaries so a live mount survives argument changes
+
+  Per-args boundary identity resolves each `(function, arguments)` call to its own component, which made a live call site switching arguments (a search box filtering a server-rendered list) swap boundaries and destroy client slot state. Components minted by `createServerComponentHandler` are now branded with a `COMPONENT_HANDOFF` contract: when a reader offers its previous value and the incoming component is the same function under new arguments, `take()` rebinds the mounted frame to the new call — the element and its keyed slot ranges stay while the new call's stream morphs in place. Frames gained `rebind`/`rebase` for this, slot regions are keyed by argument name so wire renames follow without re-calling occurrences, and preloads — which have no reader — never take a mount, preserving isolation.
+
+- 779488f: Add live slot props to frames: a binding can register `ctx.onUpdate(fn)` during its invocation to receive re-resolved props when a re-sent slot record's args change in value, instead of the occurrence being re-called. The invocation's instance, client state, and DOM identity survive the change; cached `{$frame}` regions are reused/renamed through the existing machinery. Unregistered consumers keep the re-call behavior.
+- 1f601f6: Split streamed-fragment reveals into inline mechanics and runtime policy. The stream's inline script keeps only the parse-time swap mechanics (`$dfr`, so streaming still reveals with no JS at all); `$df` now routes through `_$HY.f` when the hydration runtime has installed it — the same one-owner handoff the head-patch runtime uses via `_$HY.h`. The `_$HY.fk`/`_$HY.hq` claimant flag tables and the inline `_$HY.done` policy branch are deleted: late-arrival holds and boundary claims are decided in one place (the runtime), which owns them by construction instead of negotiating through globals.
+- d27884c: Add `useHead`, a streaming-correct head-management primitive (stage 1 of the
+  head management RFC, `docs/head-management-rfc.md`).
+
+  ```ts
+  type HeadTag = {
+    tag: "title" | "meta" | "link" | "style" | "script" | "base";
+    props: Record<string, any>; // values may be getters (lazy on the server, reactive on the client)
+    key?: string | (() => string); // explicit identity override
+  };
+  function useHead(tag: HeadTag | HeadTag[]): void;
+  ```
+
+  - An array is a group — one replacement set; a single tag is a group of one.
+  - Replaceable tags (title, meta, canonical links, inline style/script bodies)
+    resolve by last-committed group per identity. On the server they render into
+    `<head>` at shell flush and stream as patch ops that apply atomically with
+    their suspense boundary's reveal (riding the `$df` activation, including
+    style gates). Props getters evaluate exactly once, at the owning boundary's
+    flush — the migration path for deferred CSS collectors.
+  - Resource tags (`link rel=preload/preconnect/…`, stylesheets, `script[src]`)
+    emit eagerly with identity dedupe (URL + qualifying attributes), sharing one
+    identity set with manifest-driven asset tracking. Stylesheets whose extra
+    attributes are pure fetch metadata (`crossorigin`, `integrity`,
+    `referrerpolicy`, `fetchpriority`) — and query-stringed dev-server CSS URLs
+    — gate their suspense boundary's reveal like tracked boundary CSS;
+    condition-changing attributes (`media`, alternate, `disabled`) emit ungated.
+    On the client, stylesheets ride the ref-counted asset registry (removal
+    follows the owner); hints are never retracted.
+  - `title` is a hard singleton with stack semantics: disposal restores the
+    previous winner, then the static shell title.
+  - `meta[charset]` and `base` splice into a head prelude immediately after the
+    `<head>` open tag and are shell-only.
+  - Client registrations are reactive, keep their commit position across
+    updates, and own their DOM via `data-dh` markers — static head content and
+    third-party tags are never clobbered. Hydration claims server-rendered
+    winners in place; streamed patches route through the registry once it is
+    live, so head state never flickers regardless of chunk/bundle timing.
+
+  Embedded renders (host-owned documents) get a first-class contract: the new
+  `onHead(head: string)` option on `renderToString`/`renderToStream`. When the
+  render output contains no `</head>`, everything head-bound (resolved `useHead`
+  winners, eager resources, tracked asset links, inline styles) is delivered to
+  the callback — prelude first — for the host to splice into its own template,
+  instead of being silently dropped. For streams it fires before the first chunk;
+  post-shell head updates ride the stream and apply in the browser. Unlike
+  `getAssets()`, it is closure-bound to its render, so concurrent renders cannot
+  leak head content across requests.
+
+  `useAssets`, `getAssets`, and `Assets` are now deprecated and will be removed
+  before `0.50.0` stable; migrate head injection to `useHead` and embedded head
+  extraction to `onHead`.
+
 ## 0.50.0-next.34
 
 ### Patch Changes
