@@ -733,6 +733,47 @@ export function renderToStream(code, options = {}) {
     onHead
   } = options;
   let dispose;
+  let dead = false;
+  // Client-disconnect teardown. A sink that throws from `write`/`end` (its
+  // transport is gone) or a consumer cancelling the readable view means
+  // nobody is listening anymore: stop touching the sink, mark the render
+  // completed so pending fragment resolutions stop emitting and
+  // serializing, and dispose in-flight reactive work. Containment matters
+  // because deferred writes (`writeTasks`, late fragment flushes) run from
+  // the microtask queue — an uncontained sink throw there escapes as an
+  // unhandled error and can take the host process down.
+  const abandon = () => {
+    if (dead) return;
+    dead = true;
+    completed = true;
+    buffer = { write() {} };
+    writable = { end() {} };
+    if (dispose) {
+      const d = dispose;
+      dispose = () => {};
+      d();
+    }
+  };
+  // Wrap an integrator-supplied `pipe` sink: contain sync throws from
+  // `write`/`end` and treat them as disconnection.
+  const guardSink = w => ({
+    write(payload) {
+      if (dead) return;
+      try {
+        w.write(payload);
+      } catch (_) {
+        abandon();
+      }
+    },
+    end() {
+      if (dead) return;
+      try {
+        w.end();
+      } catch (_) {
+        abandon();
+      }
+    }
+  });
   const blockingPromises = new Set();
   let headerEmitted = false;
   const pushTask = task => {
@@ -1261,6 +1302,7 @@ export function renderToStream(code, options = {}) {
     function flush() {
       allSettled(blockingPromises).then(() => {
         scheduleFlush(() => {
+          if (dead) return resolve();
           doShell();
           if (!shellCompleted) return flush();
           const encoder = new TextEncoder();
@@ -1273,9 +1315,25 @@ export function renderToStream(code, options = {}) {
           // streamed boundary is its `_fr` resolution; losing that leaves the
           // client's boundary waiting on a promise that never resolves.
           let pendingWrites = Promise.resolve();
+          let ended = false;
+          // The destination dying under us — a rejected write, or `closed`
+          // rejecting before our own end() (the consumer cancelled the
+          // readable view, or the writable errored) — is a client
+          // disconnect: wind the render down instead of computing fragments
+          // for a dead stream, and settle the pipeTo promise so callers
+          // don't hang. (`releaseLock()` in the normal end path also
+          // rejects `closed`; `ended` keeps that from reading as failure.)
+          const failed = () => {
+            if (!ended) {
+              abandon();
+              resolve();
+            }
+          };
+          writer.closed && writer.closed.catch(failed);
           writable = {
             end() {
               pendingWrites.then(() => {
+                ended = true;
                 writer.releaseLock();
                 w.close().catch(() => {});
                 resolve();
@@ -1286,7 +1344,7 @@ export function renderToStream(code, options = {}) {
             write(payload) {
               pendingWrites = pendingWrites
                 .then(() => writer.write(encoder.encode(payload)))
-                .catch(() => {});
+                .catch(failed);
             }
           };
           buffer.write(tmp);
@@ -1329,9 +1387,10 @@ export function renderToStream(code, options = {}) {
       function flush() {
         allSettled(blockingPromises).then(() => {
           scheduleFlush(() => {
+            if (dead) return;
             doShell();
             if (!shellCompleted) return flush();
-            buffer = writable = w;
+            buffer = writable = guardSink(w);
             buffer.write(tmp);
             firstFlushed = true;
             if (completed) {
