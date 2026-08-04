@@ -38,8 +38,12 @@ const SCENARIOS = {
   // Deliberate feature weight both times — and the compiled-JSX core scenario
   // above stayed byte-stable, so apps using neither pay 0 — re-guarded at
   // 9950. Ratcheted to actual+20 (9749 measured): headroom is where slippage
-  // hides, so every future addition re-argues its bytes here.
-  "client: full surface": ["*", 9770],
+  // hides, so every future addition re-argues its bytes here. Then +12 net
+  // for the head identity/grouping round (reactive group membership,
+  // media-qualified meta identity, replaceable icons — initially +95, shaved
+  // back by extracting the duplicated attribute-apply loop) — ratcheted to
+  // actual+20 (9761 measured).
+  "client: full surface": ["*", 9781],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
