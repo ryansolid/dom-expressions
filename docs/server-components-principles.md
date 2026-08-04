@@ -280,8 +280,8 @@ exists to undo another mechanism's consequences; deletes with its cause.
 | 6 | Slot-record identity dedupe (`argsEquivalent`) | A5 | Derived, simplified: with one record shape the conservative `$ref` special-casing shrinks. |
 | 7 | Prerequisite flush loop (`#flush`) | A6 | Derived — becomes THE reveal engine for document + frames (DR-4). |
 | 8 | `frame:applied` event | — | Derived (router affordance) — unchanged. |
-| 9 | Zero-allocation morph (`reconcileChildren`) | A7 | Derived, restructured: identity-first (DR-5). |
-| 10 | Displaced-range index + stash/restore | A7 | Absorbed: becomes the primary matching path, not a repair pass (DR-5). |
+| 9 | Zero-allocation morph (`reconcileChildren`) | A7 | **Done (Stage 4):** identity-first (DR-5) — the reconcile records every wholesale-inserted root as a graft site. |
+| 10 | Displaced-range index + stash/restore | A7 | **Done (Stage 4):** the index is the primary matching path; the O(frame) end-of-morph rescan (`restoreDisplacedRanges`) deleted into one walk over recorded graft sites (`flushGrafts`). |
 | 11 | Root materialize vs morph split | A4 | Derived — unchanged. |
 | 12 | Slot marker collection/parsing | A1 | Derived — unchanged. |
 | 13 | Occurrence mount/re-call/unmount (`#syncSlots`) | A4 | Derived — unchanged in role; simpler inputs (A5). |
@@ -422,13 +422,19 @@ The sink gets the same audit in Stage 2/3 implementation:
 ## 6. Size budget
 
 Derived from the mechanism set, not ratcheted from actuals. Current measured
-(min+gzip, CI-guarded): **8,208 B** full frames consumer, **1,067 B** morph
+(min+gzip, CI-guarded): **8,228 B** full frames consumer, **1,097 B** morph
 slice. Stage 2 delivered −402 B against the 8,610 B it started from: A5's
 consumer patches −98, the resident-store host −88, the identity split −216
-(handoff/forwards/route-map deleted, net of the binding wrapper). The #2968
-deferral (+105 inside those figures) stays until DR-4 orders record delivery
-by construction; the remaining distance to the ≤ 7,800 B budget is DR-4's
-reveal unification and DR-5's morph restructure.
+(handoff/forwards/route-map deleted, net of the binding wrapper). Stage 4
+(DR-5) cost +20 consumer / +30 slice: graft sites recorded at insertion are
+a *derived* mechanism (rows 9–10) — the by-construction guarantee costs the
+recording, against which the deleted rescan was slightly smaller but O(frame)
+per apply and scan-based ("roughly size-neutral" below was optimistic by 30 B;
+the slice stays under its ≤ 1,100 budget). The #2968 deferral (+105 inside
+these figures) stays until record delivery is ordered by construction; the
+remaining distance to the ≤ 7,800 B budget is row 20's `hy.r` occlusion drain
+and that deferral — both gated on the document sink emitting frame-shaped
+records (producer work deferred to the wire freeze).
 
 Deletions and simplifications from §4 (handoff stack, retention snapshots,
 `#refArgsUnchanged`, `hy.r` absorption, rename machinery, reveal-policy glue,
@@ -495,5 +501,13 @@ is compensatory by definition — fix the cause instead.
    (deletes when the document sink emits frame-shaped records — producer work
    deferred until the wire freeze forces it).
 4. **Stage 4 — DR-5** (identity-first morph).
+   **Done:** the reconcile records each wholesale-inserted subtree root at
+   insertion (through nested morph levels), and one post-reconcile walk
+   (`flushGrafts`) swaps bare marker pairs in those subtrees for live ranges
+   from the index — every place a range could be owed is on the list by
+   construction, so no full-frame repair scan and no reachable "detached
+   because the parent didn't match" state. `restoreDisplacedRanges` and its
+   frame-wide `collectSlots` rescan deleted; range placement unified in
+   `placeRange` (stashed fragment vs attached start).
 5. **Re-verify** (notes, hackernews, hackernews-spa end-to-end), set §6 budgets as
    the CI ceilings, close the issue sweep.

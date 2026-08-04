@@ -1119,11 +1119,14 @@ class FrameImpl {
       // occurrence's live interior was silently destroyed.
       const ranges = new Map();
       this.#collectSlots(ranges);
-      reconcileChildren(parent, fragment, this.#start, this.#end, claim, ranges);
-      // Anything still indexed either matched in place or was displaced into
-      // a subtree the reconcile inserted wholesale — restore those (see
-      // restoreDisplacedRanges).
-      if (ranges.size) restoreDisplacedRanges(this.#firstContent(), this.#end, ranges);
+      // Identity-first (DR-5): the reconcile resolves every incoming marker
+      // pair against this index — in its own pass, and through graft sites
+      // recorded as wholesale-inserted subtrees land — so a live range is
+      // never orphaned by position. Entries left over are occurrences the
+      // new content dropped: detached, exactly what removal meant.
+      const grafts = [];
+      reconcileChildren(parent, fragment, this.#start, this.#end, claim, ranges, grafts);
+      if (ranges.size) for (const root of grafts) flushGrafts(root, ranges);
     }
   }
 
@@ -1653,7 +1656,7 @@ function morphAttributes(oldEl, newEl, claim) {
 }
 
 /** Morph `oldNode` in place to match `newNode` (assumed `compatible`). */
-function morphNode(oldNode, newNode, claim, ranges) {
+function morphNode(oldNode, newNode, claim, ranges, grafts) {
   if (oldNode.nodeType === ELEMENT_NODE) {
     // Escape hatch (the claim contract's analogue): an element the author
     // marks `data-preserve` keeps its live attributes AND subtree untouched
@@ -1662,7 +1665,7 @@ function morphNode(oldNode, newNode, claim, ranges) {
     // The element stays matched in position; only its interior is frozen.
     if (oldNode.hasAttribute("data-preserve")) return;
     morphAttributes(oldNode, newNode, claim);
-    reconcileChildren(oldNode, newNode, null, null, claim, ranges);
+    reconcileChildren(oldNode, newNode, null, null, claim, ranges, grafts);
   } else if (oldNode.data !== newNode.data) {
     oldNode.data = newNode.data;
   }
@@ -1729,6 +1732,16 @@ function moveRangeBefore(parent, start, id, ref) {
   }
 }
 
+/** Place a live range — a stashed fragment or an attached start marker —
+ *  before `ref` within `parent`. */
+function placeRange(parent, range, id, ref) {
+  if (range.nodeType === 11 /* DOCUMENT_FRAGMENT_NODE: stashed range */) {
+    parent.insertBefore(range, ref);
+  } else {
+    moveRangeBefore(parent, range, id, ref);
+  }
+}
+
 /**
  * Move an incoming slot range from the source into `parent` before
  * `ref`, returning the source cursor just past the range's end marker.
@@ -1777,7 +1790,8 @@ function reconcileChildren(
   boundStart = null,
   boundEnd = null,
   claim = null,
-  ranges = null
+  ranges = null,
+  grafts = null
 ) {
   let oldChild = boundStart ? boundStart.nextSibling : parent.firstChild;
   let newChild = source.firstChild;
@@ -1803,12 +1817,8 @@ function reconcileChildren(
         const existing = displaced || findRangeStart(old, pid, boundEnd);
         if (existing) {
           if (ranges) ranges.delete(pid);
-          if (existing.nodeType === 11 /* DOCUMENT_FRAGMENT_NODE */) {
-            parent.insertBefore(existing, old ?? boundEnd);
-          } else {
-            // Reorder: relocate the existing client-owned range into position.
-            moveRangeBefore(parent, existing, pid, old ?? boundEnd);
-          }
+          // Relocate the existing client-owned range into position.
+          placeRange(parent, existing, pid, old ?? boundEnd);
           newChild = afterRange(newChild, pid);
         } else {
           // New slot: adopt the server-sent placeholder range as-is.
@@ -1821,6 +1831,7 @@ function reconcileChildren(
     if (!old) {
       parent.insertBefore(newChild, boundEnd);
       if (claim) claim(newChild);
+      if (grafts) grafts.push(newChild);
       newChild = nextNew;
       continue;
     }
@@ -1829,11 +1840,12 @@ function reconcileChildren(
       // disturbing the client-owned range.
       parent.insertBefore(newChild, old);
       if (claim) claim(newChild);
+      if (grafts) grafts.push(newChild);
       newChild = nextNew;
       continue;
     }
     if (compatible(old, newChild)) {
-      morphNode(old, newChild, claim, ranges);
+      morphNode(old, newChild, claim, ranges, grafts);
       oldChild = old.nextSibling;
       newChild = nextNew;
       continue;
@@ -1851,7 +1863,7 @@ function reconcileChildren(
       }
       if (ahead && ahead !== boundEnd) {
         parent.insertBefore(ahead, old);
-        morphNode(ahead, newChild, claim, ranges);
+        morphNode(ahead, newChild, claim, ranges, grafts);
         newChild = nextNew;
         continue;
       }
@@ -1860,6 +1872,7 @@ function reconcileChildren(
     // matching or removal.
     parent.insertBefore(newChild, old);
     if (claim) claim(newChild);
+    if (grafts) grafts.push(newChild);
     newChild = nextNew;
   }
 
@@ -1885,35 +1898,44 @@ function reconcileChildren(
 }
 
 /**
- * End-of-morph sweep for displaced ranges the reconcile never reached. A
- * wholesale-inserted source subtree (a new parent with no old counterpart)
- * carries the source's own bare marker pairs for the slot occurrences it
- * contains; sibling-scoped matching never sees inside it, so a live range for
- * the same occurrence sits displaced in the frame-wide index. Swap each such
- * pair for its live range. Without this the interior (and the client state
- * mounted in it) is orphaned while the occurrence stays "mounted", so the
- * slot renders empty and no later sync can recover it (the record dedupe
- * sees an already-mounted occurrence). Entries whose id no longer appears in
- * the new content just stay detached — exactly what removal meant.
+ * Identity-first grafting (DR-5): a wholesale-inserted source subtree (a
+ * new parent with no old counterpart) carries the source's own bare marker
+ * pairs for the slot occurrences it contains — but occurrence identity,
+ * not position, owns client ranges, so the reconcile records every such
+ * subtree root at insertion, and this walk swaps each bare pair whose
+ * occurrence still has a live range in the index (attached under a
+ * departed old parent, or stashed as a fragment by the removal loop) for
+ * that range — interior, and the client state mounted in it, intact.
+ * Recording-at-insert is what makes "a live range was detached because its
+ * parent didn't match" an unreachable state: every place a live range
+ * could be owed is on the list by construction, no full-frame repair scan
+ * to miss a case. The swap runs AFTER the reconcile — the range may still
+ * be attached at (or after) a sibling cursor mid-walk, and moving it out
+ * from under the cursor would corrupt the walk; by flush time every cursor
+ * is dead and the removal loop has stashed whatever it reached. Same
+ * traversal rules as the index (descend server-owned elements, never range
+ * interiors or nested frames — those are child-owned). Index entries no
+ * graft site claims just stay detached — exactly what removal meant.
  */
-function restoreDisplacedRanges(first, end, ranges) {
-  // Same discovery rules as the index itself (descend server-owned elements,
-  // never range interiors or nested frames), collected before mutating.
-  const found = new Map();
-  collectSlots(first, end, found);
-  for (const [id, start] of found) {
-    const displaced = ranges.get(id);
-    // In-place matched ranges are still indexed AND still in the DOM: skip.
-    if (!displaced || displaced === start) continue;
-    ranges.delete(id);
-    const parent = start.parentNode;
-    if (displaced.nodeType === 11 /* DOCUMENT_FRAGMENT_NODE: stashed range */) {
-      parent.insertBefore(displaced, start);
-    } else {
-      moveRangeBefore(parent, displaced, id, start);
+function flushGrafts(node, ranges) {
+  if (node.nodeType !== ELEMENT_NODE || isFrameElement(node)) return;
+  let n = node.firstChild;
+  while (n) {
+    const id = slotStartId(n);
+    if (id !== null) {
+      const next = afterRange(n, id);
+      const displaced = ranges.get(id);
+      if (displaced) {
+        ranges.delete(id);
+        placeRange(node, displaced, id, n);
+        // Detach the fresh (bare) marker pair the source shipped.
+        stashRange(document.createDocumentFragment(), n, id);
+      }
+      n = next;
+      continue;
     }
-    // Detach the fresh (bare) marker pair the source shipped.
-    stashRange(document.createDocumentFragment(), start, id);
+    flushGrafts(n, ranges);
+    n = n.nextSibling;
   }
 }
 

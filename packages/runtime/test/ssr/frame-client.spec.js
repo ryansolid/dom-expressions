@@ -695,6 +695,39 @@ describe("client-anchor invariant", () => {
         "<li><!--slot:item#2:start--><span>C</span><!--slot:item#2:end--></li>"
     );
   });
+
+  it("relocates a range DEEP inside a wholesale-inserted subtree (graft walk recurses)", () => {
+    // Same displacement as above, but the bare marker pair sits several
+    // elements down inside the inserted subtree — the graft walk must descend
+    // server-owned elements (with the index's traversal rules), not just scan
+    // the inserted root's direct children.
+    const frame = createFrame(boundary);
+    frame.apply({
+      version: 1,
+      r: { "": html("<div><p><!--slot:x:start--><!--slot:x:end--></p></div>") }
+    });
+    const div = boundary.firstElementChild;
+    const clientNode = document.createElement("input");
+    clientNode.value = "typed";
+    findComment(div, "slot:x:start").after(clientNode);
+
+    // The <p> is gone; a wholly new <section><article><p> wrapper carries the
+    // occurrence's bare pair two levels down.
+    frame.apply({
+      version: 2,
+      r: {
+        "": html(
+          "<div><section><article><p><!--slot:x:start--><!--slot:x:end--></p></article></section></div>"
+        )
+      }
+    });
+
+    expect(clientNode.isConnected).toBe(true);
+    expect(clientNode.value).toBe("typed");
+    expect(div.innerHTML).toBe(
+      "<section><article><p><!--slot:x:start--><input><!--slot:x:end--></p></article></section>"
+    );
+  });
 });
 
 describe("client slots", () => {

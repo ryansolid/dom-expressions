@@ -117,12 +117,21 @@ const SCENARIOS = {
   // route-map, documentComponent seam) in favor of per-function components
   // + per-address bindings (−216 net of the binding wrapper). Re-guarded at
   // actual+20 (8208 measured). The #2968 deferral stays until DR-4 (one
-  // reveal owner) makes record delivery ordered by construction.
+  // reveal owner) makes record delivery ordered by construction. Then +20
+  // for Stage 4, DR-5 identity-first grafting: the end-of-morph
+  // displaced-range sweep (an O(frame) rescan via collectSlots after every
+  // apply with leftovers) is replaced by graft sites recorded at insertion —
+  // the reconcile pushes each wholesale-inserted root, and one walk over
+  // those roots swaps bare pairs for live ranges. Recording-at-insert is
+  // the mechanism: every place a range could be owed is on the list by
+  // construction, so "a live range was detached because its parent didn't
+  // match" stops being a reachable state. Re-guarded at actual+20 (8228
+  // measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8228
+    8248
   ]
 };
 
@@ -182,10 +191,13 @@ for (const [name, [imp, ceiling]] of Object.entries(SCENARIOS)) {
 await check(
   // 873 -> 945 gz after the live-state deny-list (`open` preservation +
   // `data-preserve`); -> 1067 after keyed slot ranges learned to relocate
-  // across parents during a morph (the single-flight round). Still ~230
-  // under micromorph, so the public claim holds — margin re-set to match.
+  // across parents during a morph (the single-flight round); -> 1097 after
+  // DR-5 identity-first grafting (graft sites recorded at insertion replace
+  // the O(frame) end-of-morph rescan — see the full-consumer history above).
+  // Still ~200 under micromorph, so the public claim holds — margin re-set
+  // to match (actual+20).
   `frames: morph slice (must undercut micromorph's ${MICROMORPH_GZ} gz)`,
   await morphSliceScenario(),
-  MICROMORPH_GZ - 210
+  MICROMORPH_GZ - 184
 );
 process.exit(failed ? 1 : 0);
