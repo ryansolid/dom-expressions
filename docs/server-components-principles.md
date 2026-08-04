@@ -151,50 +151,79 @@ teardown is still disposal, never a version bump.
 
 ### DR-2: Async values at the slot border
 
-Slot args are **data, not holes** — the server never renders them, and it never
-*holds* for them: the stream, the record, and every sibling arg ship
-immediately, and a value that isn't ready yet crosses *as* pending. Suspension
-is **client-side, at the consumption read** — a prop read through the
-live-props proxy follows the normal async read path into the reading
-component's own nearest `Loading`, exactly as a promise prop behaves between
-two client components. The border is not special. This is initial SSR's shape
-applied to data: emit now, settle later, reveal at the read site.
+**Where a read renders determines where it suspends.** A read rendered into
+*markup* suspends on the server, into the fragment model — `Loading`,
+placeholders, deferred reveals — because that is where a placeholder exists
+by construction (DR-3). A read crossing as a *slot arg* never suspends the
+server: the stream, the record, and every sibling arg ship immediately, and a
+value that isn't ready yet crosses *as* pending. Suspension for data is
+**client-side, at the consumption read** — a prop read through the live-props
+proxy follows the normal async read path into the reading component's own
+nearest `Loading`, exactly as a promise prop behaves between two client
+components. Initial SSR's shape, applied to data: emit now, settle later,
+reveal at the read site.
 
-Two facts about the server runtime force the rest:
+**Data args are live bindings for the response window.** No node kind is
+special: from the graph's perspective an expression, a sync memo, an async
+memo, and a projection are all equally downstream of sources, so the border
+must not draw a liveness cliff between them. (An earlier draft's "only
+self-driving primitives stream" drew exactly that cliff — it described the
+server implementation's shape, not the model's, and is superseded.) The
+mechanism buys graph-consistent behavior without building a dependency graph
+into SSR mode:
 
-- **Server evaluation is resolve-until-first-success.** SSR mode has no live
-  dependency graph — server memos pull once and cache; nothing re-runs because
-  a dependency changed. The one re-run driver is *settlement*: the retry loop
-  that already resolves markup holes (catch not-ready, re-pull when the
-  blocking async settles). Everything evaluated at the border gets exactly
-  that semantic — retry to the first successful evaluation, then latch — the
-  same write-once timing markup has always had.
-- **Only self-driving primitives update after that.** Mid-response changes
-  originate solely from sources with their own engine: a generator yields, a
-  promise settles; a projection streams because its own generator commits,
-  not because a graph noticed. There is no change-propagation to subscribe
-  to, so ongoing liveness has exactly one spelling — pass the self-driving
-  primitive itself.
+- At record emission, each arg getter becomes an open **binding** —
+  `(record, arg, getter, last emitted state)`. Nothing holds; the record
+  ships with its mix of settled values and pending marks. The server side is
+  a binding ledger, not a boundary — the suspense boundary is the client
+  component's own `Loading` at the prop read.
+- The server has exactly one kind of update event: a **commit** — a generator
+  yields, a promise settles — already funneled through the settlement choke
+  points. Each commit bumps a global **epoch** and triggers one
+  equality-gated re-evaluation sweep over the open bindings; changed values
+  re-emit as ordinary live-props record updates. Between commits nothing
+  runs: correctness by re-evaluation instead of by tracking, over the
+  dumbest possible topology (sources → all bindings) — the right trade at
+  SSR scale, where response windows are short, commits few, getters cheap.
+- Server memos cache **per epoch** (one integer compare at pull; no
+  subscriptions), so derivations recompute lazily when a sweep pulls them.
+  Memos are pure by contract; re-running per epoch is the client contract
+  applied to the server.
+- **Lifecycle:** a binding opens at emission, updates on commits, and closes
+  at response completion or region teardown. Completion latches the last
+  value as final — principled, not truncation: the request-scoped graph is
+  disposed, so its last value *is* its final value. A binding that never
+  successfully evaluated **rejects** with a diagnosable error (the fragment
+  ledger's truncation pattern), so a client `Loading` errors instead of
+  hanging. Cross-request updates are owned by re-invocation (invalidate →
+  the address re-streams → live props update the mounted instance).
+  Unmounting the frame aborts the in-flight response, which disposes the
+  sources — no new teardown protocol.
+- Implementation notes settled in review: equality gating is *reference*
+  equality (a getter minting a fresh object re-emits per commit — exactly
+  what the client graph does with that getter; structural comparison would
+  be a silent divergence); sweeps coalesce per flush (a burst of yields in
+  one tick is one sweep, at most one emission per binding); a binding that
+  emitted and later throws not-ready re-enters pending as
+  pending-with-previous-value — the client async source already models
+  latest-vs-suspend; bindings ride the sink's existing response-window
+  context (it already holds projection taps and deferred holes), and a
+  superseded region closes its bindings mid-response.
 
-Classification is by the value's nature, decided *before* resolution (DR-3):
+Classification (by the value's nature, before resolution — DR-3) decides each
+binding's **wire shape**, never its liveness:
 
-1. **Expressions** — any computed arg (`value={proj.a + 1}`), including reads
-   through sync memos. Evaluated at serialization: a clean evaluation is a
-   plain value, done. A not-ready evaluation still ships the record *now*,
-   with that arg as a pending async value; the server retries in the
-   background (the markup-hole loop) and settles it at the first successful
-   evaluation; the client mounts and suspends only at that prop read. No
-   post-settle updates — the same read rendered as markup would be equally
-   write-once. Derived liveness is composed on the client, where a live graph
-   exists, from a passed primitive (cases 2–3).
+1. **Plain values** — including the results of expressions
+   (`value={proj.a + 1}`) and sync memos: the value itself; re-emissions
+   replace it, latest-wins. Pending-at-first-evaluation ships as a pending
+   async value and resolves on a later sweep.
 
-2. **Self-driving values passed whole** (promises, async iterables, async
-   memos): a pending record streams on, resolutions/yields ride later data
-   chunks (seroval's streaming serialization is already this shape). One flat
-   timeline, latest-wins by construction; revives as a client **async
-   source**; reads suspend at consumption. The receiving side already exists
-   (the signal-backed live-props proxy plus the async read path) — this tier
-   ships first.
+2. **Async values passed whole** (promises, async iterables, async memos):
+   a pending record streams on, resolutions/yields ride later data chunks
+   (seroval's streaming serialization is already this shape). Revives as a
+   client **async source**; reads suspend at consumption. The receiving side
+   already exists (the signal-backed live-props proxy plus the async read
+   path) — this tier ships first.
 
 3. **Containers passed whole** (projections and stores, or *parts* of them)
    cross as their **bounded async trace**: one snapshot, then patch batches,
@@ -204,12 +233,9 @@ Classification is by the value's nature, decided *before* resolution (DR-3):
      a reactive value's entire observable life fits inside the response
      window; a channel bounded by the response IS streaming serialization,
      and one that outlives it would require server sessions this
-     architecture does not have. At response completion the value settles at
-     its last state — principled, not truncation: the graph is disposed, so
-     its last value *is* its final value. Cross-request updates are owned by
-     re-invocation (invalidate → the address re-streams → live props update
-     the mounted instance). Unmounting the frame aborts the in-flight
-     response, which disposes the source — no new teardown protocol.
+     architecture does not have. The binding lifecycle above applies
+     unchanged — settle-at-completion, re-invocation for cross-request
+     updates, abort-on-unmount.
    - *Why patches and not snapshots:* seroval dedupe is identity-keyed and
      in-place mutation keeps identity while changing content, so
      snapshot-per-frame back-references pin *stale* serializations.
@@ -282,9 +308,12 @@ Rejected alternatives, for the record: **holding** (deferring the slot record,
 or the stream, on one arg — coarse, and contradicts case 1's granularity);
 **resolving passed primitives server-side to dead values** (two suspension
 sites for one kind of data, and updates the source produces later in the
-response would be dropped); **persistent channels** (duplicate re-invocation
-with worse lifetime semantics); **snapshot-per-frame dedupe** (stale
-back-references, above). Server-content async (`<Loading>` inside server JSX)
+response would be dropped); **write-once expressions** (settle at first
+successful evaluation, then latch — a liveness cliff between `value={memo()}`
+and `value={memo}` that no client border has; superseded by response-window
+bindings); **persistent channels** (duplicate re-invocation with worse
+lifetime semantics); **snapshot-per-frame dedupe** (stale back-references,
+above). Server-content async (`<Loading>` inside server JSX)
 is a different async and keeps the fragment model wholesale: one is markup the
 server owns, the other is data the client owns.
 
