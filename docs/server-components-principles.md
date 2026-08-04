@@ -194,6 +194,24 @@ suspends its stream on them. Classification is by the value's nature, decided
    no exception for reactive wrappers. A raw off-graph handle still means
    nothing; what crosses is the trace (data with time), never the handle.
 
+   **Only self-driving primitives stream.** In SSR mode there is no live
+   dependency graph: server `createMemo` is pull-once-and-cache (it
+   re-pulls through pending, then never recomputes), and nothing re-runs
+   because a dependency changed. Mid-response updates originate *only*
+   from self-driving sources — a generator yields, a promise settles; a
+   projection streams because its own generator commits, not because a
+   graph noticed. Therefore a derived expression in a slot arg
+   (`value={proj.a + 1}`) — or a sync memo between a projection and the
+   arg — has no update engine and snapshots at read *by construction*,
+   not by policy. This is what keeps the border implementable: no
+   dependency tracking through arbitrary server computation, and no
+   inferred doneness — each crossing primitive carries its own (a promise
+   settles, a generator returns, L1's response completion settles
+   whatever is still in flight; an expression is done when it is read).
+   Authors who want derived liveness compose it on the client, where a
+   live graph exists: pass the projection part, compute the derivation in
+   the client component.
+
    **Implementation tiers** (solidjs/solid#2966 — the report's repro *is*
    the projection crossing, so the container tier is committed work, not
    demand-gated):
