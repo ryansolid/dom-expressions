@@ -163,24 +163,36 @@ suspends its stream on them. Classification is by the value's nature, decided
    into its own nearest `Loading` at the consumption point. No server fallback, no
    fragment, no reveal machinery. This is exactly how a promise prop behaves between
    two client components; the border stops being special.
-2. **Reactive primitives** (async memos, projections, stores) are anchored to the
-   server's reactive graph and have exactly two coherent crossings:
-   - **Pass-through (preferred if viable):** a live channel preserving identity and
-     updates — one snapshot plus patch batches for projections, successive values
-     for async memos. Viability hinges on three questions the implementation must
-     answer before adopting it: revive identity (the same source passed to two slots
-     is one client object), server lifetime (a still-yielding response is a
-     subscription channel; bounded at response completion unless a deliberate
-     decision extends it), and disposal (replacing the frame disposes the server
-     source — requires a teardown signal for in-flight responses).
-   - **Hole treatment (the recourse):** the server resolves the read in its own
-     reactive context, exactly like a content hole — a pending record defers and
-     streams when the source settles, with the same non-blocking discipline as
-     deferred fragments (the stream continues; response *completion* waits, per L1).
-     The client receives a settled plain value and no updates.
-   There is no third option: "defer to client" is incoherent for a reactive value —
-   without the channel, a raw handle means nothing off-graph. If pass-through is
-   rejected, holes are not a design preference but the only recourse.
+2. **Reactive primitives** (async memos, projections, stores) cross as their
+   **bounded async trace** — decided, not preferred. The forcing fact: the
+   server reactive graph is request-scoped, so a reactive value's entire
+   observable life fits inside the response window. A live channel that
+   outlives the response would require server sessions this architecture
+   does not have; a channel bounded *by* the response is just streaming
+   serialization — the same shape as tier 1. So: an async memo serializes
+   as its successive values, a projection as one snapshot plus patch
+   batches, for as long as the response is open. The value revives as a
+   client async source with identity preserved (seroval reference dedupe:
+   one source passed to two slots is one client object), and **suspension
+   is client-side, at the consumption read** — same as tier 1, into the
+   reading component's own nearest `Loading`. At response completion the
+   value settles at its last state; that is principled, not truncation —
+   the request-scoped graph is disposed, so its last value *is* its final
+   value. Cross-request updates are owned by re-invocation (invalidate →
+   the address re-streams → live props update the mounted instance), the
+   system's one update model; a persistent channel would duplicate it with
+   worse lifetime semantics. Disposal: unmounting the frame aborts the
+   in-flight response, which disposes the request-scoped graph — no new
+   teardown protocol.
+   **Hole treatment is rejected.** Resolving args in the server's reactive
+   context would make the border special again: two suspension sites for
+   one kind of value (a bare promise suspends client-side, the same data
+   wrapped in a memo would suspend server-side), coarser granularity (the
+   whole slot record waits on one arg instead of one prop read), and
+   updates the source produces later in the response would be dropped. The
+   server never suspends on slot args — that is rule 1's discipline, with
+   no exception for reactive wrappers. A raw off-graph handle still means
+   nothing; what crosses is the trace (data with time), never the handle.
 3. **The serializer never crashes.** An unserializable reactive value is a
    diagnosable error naming the slot and the type, not `Seroval Error (step: 1)`
    (solidjs/solid#2966's presenting symptom).
