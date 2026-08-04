@@ -201,24 +201,32 @@ suspends its stream on them. Classification is by the value's nature, decided
       latest-wins by construction; the receiving side already exists (the
       signal-backed live-props proxy plus the async read path). Ships
       first.
-   2. *Containers* (projections and stores holding plain data): unlike
-      hydration — where the same component code runs on both sides and the
-      client's own `createStore` call is waiting to be seeded — no user
-      code runs on the client at this border, so the runtime must mint the
-      counterpart primitive: a typed record seeds `createStore(snapshot)`,
-      then op batches apply as `(path, op, value)` writes. No `PatchOp[]`
-      stream exists in the signals layer today (the report names one
-      aspirationally); the capture point is singular — every mutation,
-      including `reconcileState`'s commit writes and async-generator yield
-      commits, funnels through `storeSetter`/the store write traps — and
-      materializing ops there is producer work in the store layer.
-      Snapshot-per-frame with seroval dedupe is rejected: dedupe is
-      identity-keyed and in-place mutation keeps identity while changing
-      content, so back-references pin *stale* serializations. The wire
-      format aligned with in-place stores is the mutation log (immutable
-      updates make snapshots cheap; in-place updates make patches cheap) —
-      which is also the single-copy answer: snapshot once, deltas after.
-      Frame replacement disposes the source (the response abort above).
+   2. *Containers* (projections and stores holding plain data): the
+      producer half already ships in Solid's server signals — projection
+      hydration wraps the draft in a `PatchOp`-recording deep proxy
+      (set/delete/array-splice ops by path) and, for async-generator
+      projections, serializes a tapped async iterable that yields one full
+      snapshot then `patches.splice(0)` per yield; the client applies them
+      with `applyPatches`. It doesn't fire at the slot border only because
+      its gate is the hydration-owner record path (`ctx.serialize(owner.id,
+      …)`), which `NoHydration` — where server components render —
+      correctly blocks. The work is therefore routing plus the receiving
+      primitive: (a) slot-arg classification recognizes a projection and
+      requests its tap (snapshot + patch iterable) as a slot-record
+      capability, off the owner-id path; (b) unlike hydration — where the
+      client's own `createProjection` call is the patch target because the
+      same component code runs on both sides — no user code runs on the
+      client at this border, so the frames integration mints the
+      counterpart: `createStore(snapshot)` pumped by `applyPatches` from
+      the revived iterable, handed to the live-props read (fine-grained
+      client reads then work because it *is* a store). Snapshot-per-frame
+      with seroval dedupe is rejected: dedupe is identity-keyed and
+      in-place mutation keeps identity while changing content, so
+      back-references pin *stale* serializations. The wire format aligned
+      with in-place stores is the mutation log (immutable updates make
+      snapshots cheap; in-place updates make patches cheap) — which is
+      also the single-copy answer: snapshot once, deltas after. Frame
+      replacement disposes the source iterator (the response abort above).
    3. *Async at container paths* (promises/pending nodes stored IN a
       projection): two clocks interleave at one path — the mutation log (a
       path may be reassigned before its promise settles; a superseded
