@@ -167,15 +167,24 @@ reveal at the read site.
 no-boundary case already solved rather than a new hole. The frames client
 reconstructs a client `Loading` at the seam of every server `<Loading>` it
 reveals (`revealSeam`), precisely so a client fill that suspends top-level
-without a boundary of its own defers to the *server's* boundary instead of
-hanging or orphaning on the frame's latched outer boundary. A pending slot
-arg read at mount is just one more way top-level suspension arises, and it
-escalates by the same path: the author's server `Loading` covers unboundaried
-pending *data* exactly as it covers unboundaried fill *markup*. One boundary
-tree spans both owners; what differs across the border is who rendered the
-fallback, not where suspension resolves. DR-2 completes the picture that
-seam decision started — together they mean an author places boundaries by
-UX intent alone, never by which side a value happens to arrive from.
+without a boundary of its own defers to the *server's* boundary. The first
+design deferred such fills to the parent *client* boundary outside the slot
+instead, and was walked back: that boundary has already latched by reveal
+time, so the suspension either re-collapses settled UI around the slot or
+orphans entirely, and it answers with the wrong fallback — the server
+already rendered the fallback for exactly this footprint, so the client
+must hold *that*, at *that* granularity. (Pinned: the seam test asserts the
+segment fallback holds while the outer fallback must **not** re-engage;
+`boundaryScope` guards the ownership half — re-parenting a fill to the
+frame's outer owner would let it escape the seam boundary that exists to
+cover it.) A pending slot arg read at mount is just one more way top-level
+suspension arises, and it escalates by the same path: the author's server
+`Loading` covers unboundaried pending *data* exactly as it covers
+unboundaried fill *markup*. One boundary tree spans both owners; what
+differs across the border is who rendered the fallback, not where suspension
+resolves. DR-2 completes the picture that seam decision started — together
+they mean an author places boundaries by UX intent alone, never by which
+side a value happens to arrive from.
 
 **Data args are live bindings for the response window.** No node kind is
 special: from the graph's perspective an expression, a sync memo, an async
