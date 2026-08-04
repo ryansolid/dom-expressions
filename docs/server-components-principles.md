@@ -193,6 +193,43 @@ suspends its stream on them. Classification is by the value's nature, decided
    server never suspends on slot args — that is rule 1's discipline, with
    no exception for reactive wrappers. A raw off-graph handle still means
    nothing; what crosses is the trace (data with time), never the handle.
+
+   **Implementation tiers** (solidjs/solid#2966 — the report's repro *is*
+   the projection crossing, so the container tier is committed work, not
+   demand-gated):
+   1. *Values* (promises, async iterables, async memos): one flat timeline,
+      latest-wins by construction; the receiving side already exists (the
+      signal-backed live-props proxy plus the async read path). Ships
+      first.
+   2. *Containers* (projections and stores holding plain data): unlike
+      hydration — where the same component code runs on both sides and the
+      client's own `createStore` call is waiting to be seeded — no user
+      code runs on the client at this border, so the runtime must mint the
+      counterpart primitive: a typed record seeds `createStore(snapshot)`,
+      then op batches apply as `(path, op, value)` writes. No `PatchOp[]`
+      stream exists in the signals layer today (the report names one
+      aspirationally); the capture point is singular — every mutation,
+      including `reconcileState`'s commit writes and async-generator yield
+      commits, funnels through `storeSetter`/the store write traps — and
+      materializing ops there is producer work in the store layer.
+      Snapshot-per-frame with seroval dedupe is rejected: dedupe is
+      identity-keyed and in-place mutation keeps identity while changing
+      content, so back-references pin *stale* serializations. The wire
+      format aligned with in-place stores is the mutation log (immutable
+      updates make snapshots cheap; in-place updates make patches cheap) —
+      which is also the single-copy answer: snapshot once, deltas after.
+      Frame replacement disposes the source (the response abort above).
+   3. *Async at container paths* (promises/pending nodes stored IN a
+      projection): two clocks interleave at one path — the mutation log (a
+      path may be reassigned before its promise settles; a superseded
+      settlement must lose, so per-path latest-wins sequencing) and the
+      settlement events ("pending" is a node state, not a value: minted-
+      store reads of such paths must suspend through the async read path,
+      and the sink must serialize from the raw target so a pending node
+      cannot suspend the serializer). Excluded from the first container
+      round with a diagnosable error naming the path; the sequencing
+      discipline is designed into the container spec so tier 3 is an
+      extension, not a retrofit.
 3. **The serializer never crashes.** An unserializable reactive value is a
    diagnosable error naming the slot and the type, not `Seroval Error (step: 1)`
    (solidjs/solid#2966's presenting symptom).
