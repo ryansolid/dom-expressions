@@ -1,5 +1,5 @@
 ---
-"dom-expressions": patch
+"@dom-expressions/runtime": patch
 ---
 
 Record streamed-fragment reveals in the hydration ledger: `$dfr` marks

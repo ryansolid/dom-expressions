@@ -1,5 +1,59 @@
 # dom-expressions
 
+## 0.50.0-next.36
+
+### Minor Changes
+
+- 139f21c: Server components Stage 2 (identity split + one record shape, per docs/server-components-principles.md):
+  - **A5 — one record shape.** The t=0 document emits the same slot/region records a stream would: every invoked occurrence gets a record, and every region arg rides as its `{$frame}` address ref (used or occluded). The consumer's region-threading patches and the #547 `$frame`-addition leniency delete with the skew.
+  - **Resident-store host.** The frame host owns per-id stores as first-class residents: chunk writes land whether or not anything is mounted, and registering frames seed from the store. The unregistered-chunk buffer, retention snapshots, and sibling seeding all delete into that one shape; preloads warm stores by construction.
+  - **DR-1 — the identity split.** `createServerComponentHandler` mints ONE mount component per server function and resolves calls with per-address **bindings** (`COMPONENT_BINDING: { component, address }`, the address delivered as a second-argument accessor). An equals-gated reader keeps its instance across argument changes and delivers the new address; the instance re-binds its frame's pull to the new address's store. The `COMPONENT_HANDOFF` protocol, `forwards` map, `documentComponent` seam, and the flight `route` map are deleted.
+  - Region discovery membership is structural (dotted id inside this interior) instead of producer-prefix-matched, so address-keyed mounts adopt function-id-prefixed markup.
+  - Guards against a recycled occurrence name's up-threaded record removal deleting a newer stream's live record.
+
+  Net −402 B on the frames consumer bundle (8,610 → 8,208 min+gzip); size guard ratcheted to 8,228.
+
+### Patch Changes
+
+- 6e1f2d8: Treat a throwing stream sink or a cancelled readable as client disconnect. A `pipe` sink whose `write`/`end` throws (e.g. a web-stream adapter enqueueing after close) previously let the throw escape from deferred write machinery (`writeTasks`, late fragment flushes run from the microtask queue) as an unhandled error that could take the host process down. Sink invocations are now guarded: a throw stops all further sink calls, marks the render completed so pending fragment resolutions stop emitting and serializing, and disposes in-flight reactive work. `pipeTo` write rejections and a rejected writer `closed` (which is how cancelling `renderToStream(...).readable` surfaces) trigger the same teardown and settle the `pipeTo` promise, so an aborted request winds the render down instead of computing fragments for a dead stream.
+- 1b63135: Defer adopt-time classification of a recordless slot occurrence while document records may still arrive (solidjs/solid#2968). An invoked occurrence's args record rides the document as a data script, and nothing on the wire formally orders that script before the event that triggers adoption; when adoption won the race the occurrence resolved no record, classification fell through to "direct content", and the wrapper's render-prop callback was evaluated as a zero-argument accessor — a callback reading `props.x` halted the reactive system. Adopt frames now accept a `recordsPending`/`drainRecords` seam from the document integration: a recordless occurrence defers one macrotask (all currently parsed scripts run first), records are re-drained, and classification happens with the record present. Server-rendered DOM stays in place across the deferral. Interim by design — the unified record shape (principles doc A5, stage 2) removes the timing skew and this machinery with it.
+- 944f08e: Defer a recordless adopted occurrence while document records may still arrive, not one macrotask. A streamed document held open on async content (or slow dev-mode module timing) delivers records across many macrotasks; the previous one-shot defer classified the tail of them as direct content, evaluating render-prop callbacks as zero-arg accessors. The re-check now re-arms until `recordsPending` flips false — the same settlement contract the fragment ledger guarantees — and the wait is invisible on screen because an adopted occurrence's server-rendered interior is already in the DOM. (From #559; its remount seed-merge half is superseded by the identity split's resident stores, now pinned by a regression test.)
+- e7ddc12: Record streamed-fragment reveals in the hydration ledger: `$dfr` marks
+  `_$HY.v[id]` when it swaps content in, so the runtime can answer "which
+  declared fragments are still outstanding" from records — across the
+  pre-boot window — instead of scanning the document for `pl-*` templates.
+  Recording only; reveal policy stays with the hydration runtime's `_$HY.f`.
+- f875aa8: Head management: reactive group membership and identity refinements for `useHead`.
+  - `useHead` now accepts `() => HeadTag | HeadTag[]` — a reactive group whose
+    membership is re-read on change (client) or resolved at the owning
+    boundary's flush (server). This is the primitive component-level grouping
+    (Solid Meta's `<Head>`) builds on: a group can compose its tag list after
+    registration. Membership changes keep the registration's original commit
+    position. Resource tags inside a function-form group emit at their
+    boundary's flush rather than eagerly.
+  - `media` now qualifies replaceable meta identity: metas sharing a
+    `name`/`property`/`http-equiv` but differing by media query (e.g.
+    `theme-color` light/dark) coexist instead of colliding last-wins.
+  - `link[rel=icon]` and `link[rel=apple-touch-icon]` are now replaceable
+    instead of resource-class, with identity `rel + sizes + type` — deliberately
+    excluding `href`, so a swapped icon (per-route favicons, notification
+    badges) replaces its predecessor and disposal restores the previous one,
+    while size/type variants coexist as separate identities.
+
+- 7953cdc: Identity-first morph (server-components principles DR-5): the reconcile
+  records each wholesale-inserted subtree root as a graft site, and one
+  post-reconcile walk swaps bare slot marker pairs inside those subtrees for
+  the occurrence's live client-owned range from the frame-wide index —
+  interior, and the client state mounted in it, intact. Replaces the
+  end-of-morph `restoreDisplacedRanges` repair pass, which rescanned the whole
+  frame with `collectSlots` after every apply that left displaced entries.
+  Recording at insertion makes "a live range was detached because its parent
+  didn't match" unreachable by construction: every place a range could be owed
+  is on the list, at O(inserted) instead of O(frame). Range placement (stashed
+  fragment vs attached start marker) is unified in a single `placeRange`
+  helper shared by the reconcile's marker branch and the graft walk.
+- f61a07c: Move undefined into ref type
+
 ## 0.50.0-next.35
 
 ### Patch Changes
