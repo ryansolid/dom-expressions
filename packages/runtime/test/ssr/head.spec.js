@@ -90,6 +90,88 @@ describe("renderToString head rendering", () => {
     expect(html).toContain("/og.png");
   });
 
+  it("resolves function-form group membership at flush (composed after registration)", () => {
+    const html = r.renderToString(() => {
+      // The component-grouping pattern: the group registers before its
+      // members exist; children push during their own render.
+      const members = [];
+      r.useHead(() => members);
+      members.push({ tag: "meta", props: { property: "og:image", content: "/a.png" } });
+      members.push({ tag: "meta", props: { property: "og:image", content: "/b.png" } });
+      return DOC();
+    });
+    expect(html).toContain('content="/a.png"');
+    expect(html).toContain('content="/b.png"');
+  });
+
+  it("keeps a function-form group's commit position (registration order, not flush order)", () => {
+    const html = r.renderToString(() => {
+      const members = [];
+      r.useHead(() => members);
+      r.useHead({ tag: "title", props: { children: "Later" } });
+      members.push({ tag: "title", props: { children: "Group" } });
+      return DOC();
+    });
+    expect(html).toContain(">Later</title>");
+    expect(html).not.toContain(">Group</title>");
+  });
+
+  it("emits resource tags found in a function-form group at flush", () => {
+    const html = r.renderToString(() => {
+      const members = [];
+      r.useHead(() => members);
+      members.push({ tag: "link", props: { rel: "preload", href: "/hero.jpg", as: "image" } });
+      members.push({ tag: "meta", props: { name: "description", content: "d" } });
+      return DOC();
+    });
+    expect(html).toContain('<link rel="preload" href="/hero.jpg" as="image">');
+    expect(html).toContain('name="description"');
+  });
+
+  it("forks meta identity by media (theme-color light/dark coexist)", () => {
+    const html = r.renderToString(() => {
+      r.useHead({
+        tag: "meta",
+        props: { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#fff" }
+      });
+      r.useHead({
+        tag: "meta",
+        props: { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#000" }
+      });
+      // Same name + same media still dedupes last-wins.
+      r.useHead({
+        tag: "meta",
+        props: { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#111" }
+      });
+      return DOC();
+    });
+    expect(html).toContain('content="#fff"');
+    expect(html).not.toContain('content="#000"');
+    expect(html).toContain('content="#111"');
+    expect(html.match(/name="theme-color"/g).length).toBe(2);
+  });
+
+  it("treats icons as replaceable (identity excludes href): swapped href replaces", () => {
+    const html = r.renderToString(() => {
+      r.useHead({ tag: "link", props: { rel: "icon", href: "/favicon.ico" } });
+      r.useHead({ tag: "link", props: { rel: "icon", href: "/favicon-alert.ico" } });
+      // Variants with sizes/type are separate identities and coexist.
+      r.useHead({
+        tag: "link",
+        props: { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }
+      });
+      r.useHead({ tag: "link", props: { rel: "apple-touch-icon", href: "/apple.png" } });
+      return DOC();
+    });
+    expect(html).not.toContain("/favicon.ico");
+    expect(html).toContain('href="/favicon-alert.ico"');
+    expect(html).toContain('data-dh="link:icon"');
+    expect(html).toContain('href="/favicon.svg"');
+    expect(html).toContain('data-dh="link:icon:type=image/svg+xml"');
+    expect(html).toContain('href="/apple.png"');
+    expect(html).toContain('data-dh="link:apple-touch-icon"');
+  });
+
   it("splices charset and base into the prelude right after the head open tag", () => {
     const html = r.renderToString(() => {
       r.useHead({ tag: "meta", props: { name: "description", content: "d" } });

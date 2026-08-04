@@ -124,6 +124,13 @@ this architecture:
 
 - `htmlAttrs` / `bodyAttrs` management (unhead supports these; out of scope
   here, policy layers can address).
+- `noscript` in the head (unhead supports it). Its value is raw nested
+  markup (`<link>`/`<style>`/`<meta>` fallbacks), which conflicts with the
+  always-escape/`textContent` body model — supporting it would mean shipping
+  unescaped HTML through markup emission, patch payloads, and client apply.
+  And a JS-executing registry can never make a `noscript` take effect, so it
+  is inherently static shell content: author it directly in the document
+  template. Reactive/streamed `noscript` is an oxymoron by definition.
 - Title templates, SEO schema helpers, social-tag presets — policy layer.
 - A `precedence`-style manual priority attribute (possible future
   addition; explicit `key`s plus group commit order cover phase 1, and
@@ -158,9 +165,10 @@ Every registration carries:
 | `title` | replaceable | hard singleton (`key` cannot fork it — see below) |
 | `base` | replaceable, shell-only | singleton |
 | `meta[charset]` | replaceable, shell-only | singleton |
-| `meta` | replaceable | `name` \| `property` \| `http-equiv` |
+| `meta` | replaceable | `name` \| `property` \| `http-equiv`, qualified by `media` where present |
 | `link` (canonical, alternate, …) | replaceable | `rel` + `href` |
-| `link` (preload, modulepreload, prefetch, preconnect, dns-prefetch, icon, stylesheet) | resource | `rel` + URL + qualifying attrs (`as`, `crossorigin`, `type`, `media`, `imagesrcset`/`imagesizes` where present) |
+| `link` (icon, apple-touch-icon) | replaceable | `rel` + `sizes` + `type` — deliberately **excluding** `href`, so a swapped icon (per-route favicons, notification badges) replaces its predecessor while size/type variants coexist |
+| `link` (preload, modulepreload, prefetch, preconnect, dns-prefetch, stylesheet) | resource | `rel` + URL + qualifying attrs (`as`, `crossorigin`, `type`, `media`, `imagesrcset`/`imagesizes` where present) |
 | `style[href]` | resource | `href` + qualifying attrs |
 | `script[src]` | resource | `src` + qualifying attrs |
 | `style` / `script` (inline body, API-only) | replaceable | explicit `key`, else unique per registration (append) |
@@ -272,12 +280,22 @@ type HeadTag = {
   key?: string;               // explicit identity override
 };
 
-function useHead(tag: HeadTag | HeadTag[]): void;
+function useHead(tag: HeadTag | HeadTag[] | (() => HeadTag | HeadTag[])): void;
 ```
 
 - Registers under the current owner; disposed with it.
 - **An array is a group** — its tags form one replacement set. A single tag
   is a group of one. There is no other grouping mechanism at the API level.
+- **A function is a reactive group**: membership is re-read in the tracking
+  scope on the client, and resolved at the owning boundary's flush on the
+  server. This is what component-level grouping (Solid Meta's `<Head>`)
+  builds on — the group registers before its members exist and composes its
+  list as children render. Membership changes keep the registration's
+  original commit position, same as prop updates. Resource tags inside a
+  function-form group emit at that flush rather than eagerly (late
+  membership trades away earliness), and keyless inline `style`/`script`
+  in a dynamic group should carry explicit `key`s (the unique fallback is
+  slot-indexed and can swap identities when membership shifts).
 - `props` values may be getters, making tags reactive; `key` may also be a
   getter (reactive identity, as in the 2024 RFC).
 - Lazy evaluation at flush/apply time is a contract: this is the migration
@@ -325,6 +343,15 @@ lowers to:
   its children — including inside component calls (`<MyMeta />` ≡
   `MyMeta()`) — joins the group. Dynamic extent is not a novel contract
   here; it is ordinary component/context behavior.
+- A `Head` inside another `Head`'s extent forms its **own independent
+  group** (it provides its own context unconditionally). Nesting is not a
+  feature — it happens emergently when a component with an internal `Head`
+  is used inside a caller's group, and own-group semantics keep that
+  component's replacement set stable regardless of call site. A component
+  that wants to contribute tags *into* the caller's set renders bare tag
+  components instead; the two intents have distinct spellings. (No dev
+  warning on nesting: lexical and composed nesting are indistinguishable
+  at runtime, so a warning would flag legitimate composition.)
 - Every semantic that was hard to specify for a compile-time transform is
   native component behavior: registration on evaluation under the
   evaluating owner, lifetime following the owner, laziness through

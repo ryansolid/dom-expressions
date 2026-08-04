@@ -176,13 +176,15 @@ export type HeadTag = {
 };
 /**
  * Registers head tags with the render's head registry. An array is a group —
- * one replacement set; a single tag is a group of one. Replaceable tags
- * (title/meta/canonical/…) resolve by last-committed group and stream as
- * patches with their suspense boundary's reveal; resource tags (preload and
- * friends, stylesheets, `script[src]`) emit eagerly and dedupe by identity.
- * See docs/head-management-rfc.md.
+ * one replacement set; a single tag is a group of one; a function is a
+ * reactive group whose membership resolves at the owning flush boundary
+ * (resource tags inside it emit at that flush rather than eagerly).
+ * Replaceable tags (title/meta/canonical/…) resolve by last-committed group
+ * and stream as patches with their suspense boundary's reveal; resource tags
+ * (preload and friends, stylesheets, `script[src]`) emit eagerly and dedupe
+ * by identity. See docs/head-management-rfc.md.
  */
-export function useHead(tag: HeadTag | HeadTag[]): void;
+export function useHead(tag: HeadTag | HeadTag[] | (() => HeadTag | HeadTag[])): void;
 export function getHydrationKey(): string | undefined;
 export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;

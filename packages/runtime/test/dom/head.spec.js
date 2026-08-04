@@ -210,6 +210,133 @@ describe("useHead client registry", () => {
     await tick();
   });
 
+  it("re-reads reactive group membership (function form)", async () => {
+    let dispose, setTags;
+    createRoot(d => {
+      dispose = d;
+      const [tags, set] = createSignal([
+        { tag: "meta", props: { property: "og:image", content: "/a.png" } }
+      ]);
+      setTags = set;
+      r.useHead(() => tags());
+    });
+    await tick();
+    let imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png"]);
+
+    setTags([
+      { tag: "meta", props: { property: "og:image", content: "/a.png" } },
+      { tag: "meta", props: { property: "og:image", content: "/b.png" } }
+    ]);
+    flush();
+    await tick();
+    imgs = [...document.head.querySelectorAll('meta[property="og:image"]')];
+    expect(imgs.map(m => m.getAttribute("content"))).toEqual(["/a.png", "/b.png"]);
+
+    setTags([]);
+    flush();
+    await tick();
+    expect(document.head.querySelectorAll('meta[property="og:image"]').length).toBe(0);
+
+    dispose();
+    await tick();
+  });
+
+  it("keeps a reactive group's commit position across membership changes", async () => {
+    let dispose, setTags;
+    createRoot(d => {
+      dispose = d;
+      const [tags, set] = createSignal([{ tag: "title", props: { children: "Group" } }]);
+      setTags = set;
+      r.useHead(() => tags());
+      r.useHead({ tag: "title", props: { children: "Later" } });
+    });
+    await tick();
+    expect(document.title).toBe("Later");
+
+    // A membership change must not promote the group past later commits.
+    setTags([{ tag: "title", props: { children: "Group!" } }]);
+    flush();
+    await tick();
+    expect(document.title).toBe("Later");
+
+    dispose();
+    await tick();
+    expect(document.title).toBe("Static");
+  });
+
+  it("forks meta identity by media (theme-color light/dark coexist)", async () => {
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.useHead({
+        tag: "meta",
+        props: { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#fff" }
+      });
+      r.useHead({
+        tag: "meta",
+        props: { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#000" }
+      });
+      // Same name + same media still dedupes last-wins.
+      r.useHead({
+        tag: "meta",
+        props: { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#111" }
+      });
+    });
+    await tick();
+    const metas = [...document.head.querySelectorAll('meta[name="theme-color"]')];
+    expect(metas.map(m => m.getAttribute("content")).sort()).toEqual(["#111", "#fff"]);
+
+    dispose();
+    await tick();
+    expect(document.head.querySelectorAll('meta[name="theme-color"]').length).toBe(0);
+  });
+
+  it("treats icons as replaceable: a swapped href replaces, dispose restores", async () => {
+    let disposeBase, disposePage;
+    createRoot(d => {
+      disposeBase = d;
+      r.useHead({ tag: "link", props: { rel: "icon", href: "/favicon.ico" } });
+      createRoot(d2 => {
+        disposePage = d2;
+        r.useHead({ tag: "link", props: { rel: "icon", href: "/favicon-alert.ico" } });
+      });
+    });
+    await tick();
+    let icons = [...document.head.querySelectorAll('link[rel="icon"]')];
+    expect(icons.map(l => l.getAttribute("href"))).toEqual(["/favicon-alert.ico"]);
+
+    disposePage();
+    await tick();
+    icons = [...document.head.querySelectorAll('link[rel="icon"]')];
+    expect(icons.map(l => l.getAttribute("href"))).toEqual(["/favicon.ico"]);
+
+    disposeBase();
+    await tick();
+    expect(document.head.querySelectorAll('link[rel="icon"]').length).toBe(0);
+  });
+
+  it("keeps icon variants (sizes/type/rel) as separate identities", async () => {
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.useHead([
+        { tag: "link", props: { rel: "icon", href: "/favicon.ico", sizes: "32x32" } },
+        { tag: "link", props: { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" } },
+        { tag: "link", props: { rel: "apple-touch-icon", href: "/apple.png" } }
+      ]);
+    });
+    await tick();
+    expect(document.head.querySelectorAll('link[rel="icon"]').length).toBe(2);
+    expect(document.head.querySelectorAll('link[rel="apple-touch-icon"]').length).toBe(1);
+
+    dispose();
+    await tick();
+    expect(
+      document.head.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').length
+    ).toBe(0);
+  });
+
   it("leaves foreign head content alone", async () => {
     const foreign = document.createElement("meta");
     foreign.setAttribute("name", "third-party");

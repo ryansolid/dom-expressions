@@ -273,6 +273,23 @@ function createHeadRegistry() {
 // pre-shell by construction).
 function registerHeadTags(registry, context, tracking, emitResource, nonce, tags) {
   const boundary = context._currentBoundaryId || "";
+  if (typeof tags === "function") {
+    // Reactive group: membership resolves at the boundary's flush, the same
+    // moment as prop getters — component-level grouping composes its list
+    // after registration (children register during their own render), so the
+    // list cannot be read here. Resource tags inside a deferred group
+    // evaluate at that flush too (trading earliness for late membership) and
+    // take the plain eager path: parking a reveal-gate entry on a boundary
+    // that is mid-flush is an ordering hazard, so gating is skipped.
+    registry.pending.push({
+      boundary,
+      list: tags,
+      resource: (desc, rel) =>
+        emitHeadResource(registry, context, tracking, emitResource, nonce, desc, rel)
+    });
+    return;
+  }
+  if (!Array.isArray(tags)) tags = [tags];
   let replaceable = null;
   for (let i = 0; i < tags.length; i++) {
     const desc = tags[i];
@@ -384,9 +401,41 @@ function commitHeadBoundary(registry, boundary, isPendingFragment) {
       keep.push(reg);
       continue;
     }
+    let descs = reg.tags;
+    if (reg.list) {
+      // Deferred group membership (see registerHeadTags): resolve the list
+      // now, classify, and route resources through the registration-time
+      // emission channel.
+      let resolved;
+      try {
+        resolved = reg.list();
+      } catch (err) {
+        if ("_DX_DEV_") console.warn(`useHead: error evaluating head group membership`, err);
+        continue;
+      }
+      if (!Array.isArray(resolved)) resolved = [resolved];
+      descs = [];
+      for (let j = 0; j < resolved.length; j++) {
+        const desc = resolved[j];
+        if (!desc || !HEAD_ELIGIBLE_TAGS.has(desc.tag)) {
+          if ("_DX_DEV_") console.warn(`useHead: ignoring non-head tag`, desc);
+          continue;
+        }
+        const cls = classifyHeadTag(desc);
+        if (cls.resource) {
+          reg.resource(desc, cls.rel);
+        } else {
+          descs.push(
+            cls.rel !== undefined
+              ? { tag: desc.tag, props: desc.props, key: desc.key, rel: cls.rel }
+              : desc
+          );
+        }
+      }
+    }
     const tags = [];
-    for (let j = 0; j < reg.tags.length; j++) {
-      const desc = reg.tags[j];
+    for (let j = 0; j < descs.length; j++) {
+      const desc = descs[j];
       let props, key;
       try {
         props = evalHeadProps(
@@ -564,7 +613,9 @@ function renderHeadTagMarkup(tag, props, identity, nonce) {
  * Registers head tags with the render's head registry. Replaceable tags
  * (title/meta/canonical/…) resolve by last-committed group and stream as
  * patches with their suspense boundary's reveal; resource tags (preload,
- * stylesheets, `script[src]`) emit eagerly. See docs/head-management-rfc.md.
+ * stylesheets, `script[src]`) emit eagerly. A function argument is a
+ * reactive group whose membership resolves at the owning boundary's flush.
+ * See docs/head-management-rfc.md.
  */
 export function useHead(tags) {
   const ctx = sharedConfig.context;
@@ -573,7 +624,7 @@ export function useHead(tags) {
       console.warn("useHead() called outside of a server render; registration ignored.");
     return;
   }
-  ctx.registerHeadTags(Array.isArray(tags) ? tags : [tags]);
+  ctx.registerHeadTags(tags);
 }
 
 // Based on https://github.com/WebReflection/domtagger/blob/master/esm/sanitizer.js

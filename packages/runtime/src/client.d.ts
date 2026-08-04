@@ -143,12 +143,14 @@ export type HeadTag = {
 };
 /**
  * Registers head tags with the ambient head registry under the current
- * owner. An array is a group — one replacement set. Resolution is
- * last-committed group per identity; disposal restores the previous winner.
- * During hydration the server-flushed head state stays authoritative until
- * hydration completes. See docs/head-management-rfc.md.
+ * owner. An array is a group — one replacement set; a function is a
+ * reactive group whose membership is tracked and re-read on change.
+ * Resolution is last-committed group per identity (reactive updates keep
+ * the registration's original commit position); disposal restores the
+ * previous winner. During hydration the server-flushed head state stays
+ * authoritative until hydration completes. See docs/head-management-rfc.md.
  */
-export function useHead(tag: HeadTag | HeadTag[]): void;
+export function useHead(tag: HeadTag | HeadTag[] | (() => HeadTag | HeadTag[])): void;
 export type AssetDescriptor =
   | { type: "style"; href: string; attrs?: Record<string, string> }
   | { type: "inline-style"; id: string; content?: string; attrs?: Record<string, string> }

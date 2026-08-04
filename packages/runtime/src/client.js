@@ -946,18 +946,21 @@ function noopFn() {}
 
 /**
  * Registers head tags with the ambient head registry. An array is a group —
- * one replacement set. Props values may be getters (reactive); updates keep
+ * one replacement set; a function is a reactive group whose membership is
+ * re-read in the tracking scope (component-level grouping composes its list
+ * after registration). Props values may be getters (reactive); updates keep
  * the registration's original commit position. Disposal removes the
  * registration and re-resolves (previous committed winner is restored).
  * See docs/head-management-rfc.md.
  */
 export function useHead(tags) {
-  const list = Array.isArray(tags) ? tags : [tags];
   initHeadRegistry();
   const reg = { seq: -1, tags: null };
   const uid = ++headUid;
   effect(
     () => {
+      const resolved = typeof tags === "function" ? tags() : tags;
+      const list = Array.isArray(resolved) ? resolved : [resolved];
       const replaceable = [];
       const resources = [];
       for (let i = 0; i < list.length; i++) {

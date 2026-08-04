@@ -15,16 +15,22 @@ export const HEAD_ATTR_NAME = /^[a-zA-Z_][a-zA-Z0-9_:.-]*$/;
 // link rels whose value is earliness rather than "which one wins" — the
 // resource class. Identity-deduped by URL + qualifying attributes, emitted
 // eagerly, never replaced or retracted (except stylesheets, whose removal is
-// visible and follows the owner on the client).
+// visible and follows the owner on the client). Icons are deliberately NOT
+// here: an icon's value is which one wins (favicon swapping is a real
+// pattern), so they are replaceable.
 export const RESOURCE_LINK_RELS = new Set([
   "preload",
   "modulepreload",
   "prefetch",
   "preconnect",
   "dns-prefetch",
-  "icon",
   "stylesheet"
 ]);
+
+// Icon rels are replaceable with an identity that excludes `href`: a swapped
+// icon replaces its predecessor, while `sizes`/`type` variants (ico + svg +
+// apple-touch sizes) coexist as separate identities.
+const ICON_LINK_RELS = new Set(["icon", "apple-touch-icon"]);
 
 // Attributes that qualify a resource identity: the same href preloaded
 // `as="image"` and `as="fetch"` are different requests, and crossorigin
@@ -97,12 +103,25 @@ export function replaceableIdentity(tag, props, key, unique) {
   if (tag === "meta" && props.charset != null) return "charset";
   if (key != null) return tag + ":key:" + key;
   if (tag === "meta") {
-    if (props.name != null) return "meta:name:" + props.name;
-    if (props.property != null) return "meta:property:" + props.property;
-    if (props["http-equiv"] != null) return "meta:http-equiv:" + props["http-equiv"];
+    // `media` qualifies identity: multiple metas differing by media query
+    // (e.g. theme-color light/dark) are spec-blessed and must coexist —
+    // consistent with `media` qualifying resource identities.
+    const media = props.media != null ? ":media=" + props.media : "";
+    if (props.name != null) return "meta:name:" + props.name + media;
+    if (props.property != null) return "meta:property:" + props.property + media;
+    if (props["http-equiv"] != null) return "meta:http-equiv:" + props["http-equiv"] + media;
     return unique;
   }
-  if (tag === "link") return "link:" + (props.rel || "") + ":" + (props.href || "");
+  if (tag === "link") {
+    const rel = props.rel || "";
+    if (ICON_LINK_RELS.has(rel)) {
+      let id = "link:" + rel;
+      if (props.sizes != null) id += ":sizes=" + props.sizes;
+      if (props.type != null) id += ":type=" + props.type;
+      return id;
+    }
+    return "link:" + rel + ":" + (props.href || "");
+  }
   return unique; // inline style/script without a key: append-only
 }
 
