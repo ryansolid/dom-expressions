@@ -151,156 +151,142 @@ teardown is still disposal, never a version bump.
 
 ### DR-2: Async values at the slot border
 
-Slot args are **data, not holes** — the server never renders them, so it never
-suspends its stream on them. Classification is by the value's nature, decided
-*before* resolution (see DR-3):
+Slot args are **data, not holes** — the server never renders them, and it never
+*holds* for them: the stream, the record, and every sibling arg ship
+immediately, and a value that isn't ready yet crosses *as* pending. Suspension
+is **client-side, at the consumption read** — a prop read through the
+live-props proxy follows the normal async read path into the reading
+component's own nearest `Loading`, exactly as a promise prop behaves between
+two client components. The border is not special. This is initial SSR's shape
+applied to data: emit now, settle later, reveal at the read site.
 
-1. **Plain promises / async iterables** are self-contained values. The server
-   serializes a pending record and streams on; resolutions/yields ride later data
-   chunks (seroval's streaming serialization is already this shape). On the client
-   the record revives as an **async source**, and prop reads through the live-props
-   proxy follow the normal async read path — the *client component's* read suspends
-   into its own nearest `Loading` at the consumption point. No server fallback, no
-   fragment, no reveal machinery. This is exactly how a promise prop behaves between
-   two client components; the border stops being special.
-2. **Reactive primitives** (async memos, projections, stores) cross as their
-   **bounded async trace** — decided, not preferred. The forcing fact: the
-   server reactive graph is request-scoped, so a reactive value's entire
-   observable life fits inside the response window. A live channel that
-   outlives the response would require server sessions this architecture
-   does not have; a channel bounded *by* the response is just streaming
-   serialization — the same shape as tier 1. So: an async memo serializes
-   as its successive values, a projection as one snapshot plus patch
-   batches, for as long as the response is open. The value revives as a
-   client async source with identity preserved (seroval reference dedupe:
-   one source passed to two slots is one client object), and **suspension
-   is client-side, at the consumption read** — same as tier 1, into the
-   reading component's own nearest `Loading`. At response completion the
-   value settles at its last state; that is principled, not truncation —
-   the request-scoped graph is disposed, so its last value *is* its final
-   value. Cross-request updates are owned by re-invocation (invalidate →
-   the address re-streams → live props update the mounted instance), the
-   system's one update model; a persistent channel would duplicate it with
-   worse lifetime semantics. Disposal: unmounting the frame aborts the
-   in-flight response, which disposes the request-scoped graph — no new
-   teardown protocol.
-   **Hole treatment is rejected.** Resolving args in the server's reactive
-   context would make the border special again: two suspension sites for
-   one kind of value (a bare promise suspends client-side, the same data
-   wrapped in a memo would suspend server-side), coarser granularity (the
-   whole slot record waits on one arg instead of one prop read), and
-   updates the source produces later in the response would be dropped. The
-   server never suspends on slot args — that is rule 1's discipline, with
-   no exception for reactive wrappers. A raw off-graph handle still means
-   nothing; what crosses is the trace (data with time), never the handle.
+Two facts about the server runtime force the rest:
 
-   **Only self-driving primitives stream.** In SSR mode there is no live
-   dependency graph: server `createMemo` is pull-once-and-cache (it
-   re-pulls through pending, then never recomputes), and nothing re-runs
-   because a dependency changed. Mid-response updates originate *only*
-   from self-driving sources — a generator yields, a promise settles; a
-   projection streams because its own generator commits, not because a
-   graph noticed. Therefore a derived expression in a slot arg
-   (`value={proj.a + 1}`) — or a sync memo between a projection and the
-   arg — has no update engine and snapshots at read *by construction*,
-   not by policy. This is what keeps the border implementable: no
-   dependency tracking through arbitrary server computation, and no
-   inferred doneness — each crossing primitive carries its own (a promise
-   settles, a generator returns, L1's response completion settles
-   whatever is still in flight; an expression is done when it is read).
-   Authors who want derived liveness compose it on the client, where a
-   live graph exists: pass the projection part, compute the derivation in
-   the client component.
+- **Server evaluation is resolve-until-first-success.** SSR mode has no live
+  dependency graph — server memos pull once and cache; nothing re-runs because
+  a dependency changed. The one re-run driver is *settlement*: the retry loop
+  that already resolves markup holes (catch not-ready, re-pull when the
+  blocking async settles). Everything evaluated at the border gets exactly
+  that semantic — retry to the first successful evaluation, then latch — the
+  same write-once timing markup has always had.
+- **Only self-driving primitives update after that.** Mid-response changes
+  originate solely from sources with their own engine: a generator yields, a
+  promise settles; a projection streams because its own generator commits,
+  not because a graph noticed. There is no change-propagation to subscribe
+  to, so ongoing liveness has exactly one spelling — pass the self-driving
+  primitive itself.
 
-   **Implementation tiers** (solidjs/solid#2966 — the report's repro *is*
-   the projection crossing, so the container tier is committed work, not
-   demand-gated):
-   1. *Values* (promises, async iterables, async memos): one flat timeline,
-      latest-wins by construction; the receiving side already exists (the
-      signal-backed live-props proxy plus the async read path). Ships
-      first.
-   2. *Containers* (projections and stores holding plain data): the
-      producer half already ships in Solid's server signals — projection
-      hydration wraps the draft in a `PatchOp`-recording deep proxy
-      (set/delete/array-splice ops by path) and, for async-generator
-      projections, serializes a tapped async iterable that yields one full
-      snapshot then `patches.splice(0)` per yield; the client applies them
-      with `applyPatches`. It doesn't fire at the slot border only because
-      its gate is the hydration-owner record path (`ctx.serialize(owner.id,
-      …)`), which `NoHydration` — where server components render —
-      correctly blocks. The work is therefore routing plus the receiving
-      primitive: (a) slot-arg classification recognizes a projection and
-      requests its tap (snapshot + patch iterable) as a slot-record
-      capability, off the owner-id path; (b) unlike hydration — where the
-      client's own `createProjection` call is the patch target because the
-      same component code runs on both sides — no user code runs on the
-      client at this border, so the frames integration mints the
-      counterpart: `createStore(snapshot)` pumped by `applyPatches` from
-      the revived iterable, handed to the live-props read (fine-grained
-      client reads then work because it *is* a store). Snapshot-per-frame
-      with seroval dedupe is rejected: dedupe is identity-keyed and
-      in-place mutation keeps identity while changing content, so
-      back-references pin *stale* serializations. The wire format aligned
-      with in-place stores is the mutation log (immutable updates make
-      snapshots cheap; in-place updates make patches cheap) — which is
-      also the single-copy answer: snapshot once, deltas after. Frame
-      replacement disposes the source iterator (the response abort above).
-      **Hydration's trace, the frame store's envelope.** What is reused is
-      the PatchOp trace; what must not be reused is hydration's transport
-      identity (owner-keyed `ctx.serialize(owner.id, …)` records in the
-      document-lifetime table, matched by re-running client code). At the
-      border the trace rides the frame model: addressed as `(occurrence,
-      arg)` inside the slot record — a capability of the record, not a
-      registry entry — routed through data chunks to the minted store;
-      version-gated by the store's existing discipline (a superseding
-      stream for the address means pending patch batches from the old
-      version are *dropped*, never applied); lifetime-bound to region
-      teardown. And "serialize what is read" holds at the only granularity
-      the server can know: the client's reads happen after the server is
-      gone, so narrowing to them is impossible without SSR-ing the client
-      component or a demand-fetch waterfall against a disposed source —
-      instead, the projection itself is the author-declared read set, and
-      snapshot+deltas is that declaration's minimal encoding. "Ship less"
-      = "project less"; the primitive is the API for it. Single-copy is
-      preserved because the record is the only copy when the client is the
-      only consumer; render-AND-pass duplication is the authored, bounded
-      concession DR-3 rule 2 already names.
-      **Parts of a projection ship as what you pass.** A nested node of a
-      projection is itself a store proxy, so classification sees it; the
-      unit that crosses is the passed subtree, never its root — the wire
-      is an exposure contract (`{ first: state.items[0] }` must not leak
-      siblings/ancestors), which rules out the hydration-equivalent
-      root-reference design despite its free aliasing semantics. The
-      capture is unchanged (root-relative paths); each arg gets a
-      server-side filtered/rebased view of the one trace: ops strictly
-      below the arg's path strip the prefix; an op at or above it projects
-      the new value down as a sub-store root replacement (`[[], v]`); ops
-      elsewhere are dropped *before* the wire. A part whose ancestor is
-      deleted settles at its final projection. Contract corollaries: two
-      overlapping parts are two independent containers — share identity by
-      passing the common ancestor once (also the cheaper wire); and the
-      slot-record snapshot serializes the subtree through seroval directly
-      (hydration's JSON-clone freeze would sever shared references within
-      a record). Passing a part is "project less" ad hoc: it costs exactly
-      what it declares.
-   3. *Async at container paths* (promises/pending nodes stored IN a
-      projection): two clocks interleave at one path — the mutation log (a
-      path may be reassigned before its promise settles; a superseded
-      settlement must lose, so per-path latest-wins sequencing) and the
-      settlement events ("pending" is a node state, not a value: minted-
-      store reads of such paths must suspend through the async read path,
-      and the sink must serialize from the raw target so a pending node
-      cannot suspend the serializer). Excluded from the first container
-      round with a diagnosable error naming the path; the sequencing
-      discipline is designed into the container spec so tier 3 is an
-      extension, not a retrofit.
-3. **The serializer never crashes.** An unserializable reactive value is a
-   diagnosable error naming the slot and the type, not `Seroval Error (step: 1)`
-   (solidjs/solid#2966's presenting symptom).
+Classification is by the value's nature, decided *before* resolution (DR-3):
 
-Server-content async (`<Loading>` inside server JSX) is a different async and keeps
-the fragment model wholesale. The two never mix: one is markup the server owns, the
-other is data the client owns.
+1. **Expressions** — any computed arg (`value={proj.a + 1}`), including reads
+   through sync memos. Evaluated at serialization: a clean evaluation is a
+   plain value, done. A not-ready evaluation still ships the record *now*,
+   with that arg as a pending async value; the server retries in the
+   background (the markup-hole loop) and settles it at the first successful
+   evaluation; the client mounts and suspends only at that prop read. No
+   post-settle updates — the same read rendered as markup would be equally
+   write-once. Derived liveness is composed on the client, where a live graph
+   exists, from a passed primitive (cases 2–3).
+
+2. **Self-driving values passed whole** (promises, async iterables, async
+   memos): a pending record streams on, resolutions/yields ride later data
+   chunks (seroval's streaming serialization is already this shape). One flat
+   timeline, latest-wins by construction; revives as a client **async
+   source**; reads suspend at consumption. The receiving side already exists
+   (the signal-backed live-props proxy plus the async read path) — this tier
+   ships first.
+
+3. **Containers passed whole** (projections and stores, or *parts* of them)
+   cross as their **bounded async trace**: one snapshot, then patch batches,
+   for as long as the response is open. Committed work, not demand-gated —
+   solidjs/solid#2966's repro *is* this crossing.
+   - *Why a trace and not a channel:* the server graph is request-scoped, so
+     a reactive value's entire observable life fits inside the response
+     window; a channel bounded by the response IS streaming serialization,
+     and one that outlives it would require server sessions this
+     architecture does not have. At response completion the value settles at
+     its last state — principled, not truncation: the graph is disposed, so
+     its last value *is* its final value. Cross-request updates are owned by
+     re-invocation (invalidate → the address re-streams → live props update
+     the mounted instance). Unmounting the frame aborts the in-flight
+     response, which disposes the source — no new teardown protocol.
+   - *Why patches and not snapshots:* seroval dedupe is identity-keyed and
+     in-place mutation keeps identity while changing content, so
+     snapshot-per-frame back-references pin *stale* serializations.
+     Immutable updates make snapshots cheap; in-place updates make patches
+     cheap — Solid chose in-place, so the aligned wire format is the
+     mutation log, which is also the single-copy answer: snapshot once,
+     deltas after.
+   - *The producer already ships:* projection hydration wraps the draft in a
+     `PatchOp`-recording deep proxy (set/delete/array-splice ops by
+     root-relative path) and serializes a tapped async iterable — one full
+     snapshot, then `patches.splice(0)` per yield — consumed by
+     `applyPatches`. It doesn't fire at this border only because its gate is
+     the hydration-owner record path (`ctx.serialize(owner.id, …)`), which
+     `NoHydration` — where server components render — correctly blocks.
+   - *Hydration's trace, the frame store's envelope:* the trace is reused;
+     hydration's transport identity is not. At the border it is addressed as
+     `(occurrence, arg)` inside the slot record — a capability of the
+     record, not a registry entry — version-gated by the store's existing
+     discipline (a superseding stream's arrival means the old version's
+     pending patch batches are *dropped*, never applied), and lifetime-bound
+     to region teardown. The snapshot serializes through seroval directly
+     (hydration's JSON-clone freeze would sever shared references within a
+     record).
+   - *The receiver is minted:* unlike hydration — where the client's own
+     `createProjection` call is the patch target because the same component
+     code runs on both sides — no user code runs on the client here, so the
+     frames integration mints the counterpart: `createStore(snapshot)`
+     pumped by `applyPatches`, handed to the live-props read. Fine-grained
+     client reads work because it *is* a store.
+   - *Parts ship as what you pass.* A nested node of a projection is itself
+     a store proxy, so classification sees it; the unit that crosses is the
+     passed subtree, never its root — the wire is an exposure contract
+     (`{ first: state.items[0] }` must not leak siblings/ancestors), which
+     rules out the hydration-equivalent root-reference design despite its
+     free aliasing. Each arg gets a server-side filtered/rebased view of the
+     one root-relative trace: ops strictly below the arg's path strip the
+     prefix; an op at or above it projects the new value down as a sub-store
+     root replacement (`[[], v]`); ops elsewhere are dropped *before* the
+     wire. A part whose ancestor is deleted settles at its final projection.
+     Overlapping parts are independent containers — share identity by
+     passing the common ancestor once (also the cheaper wire).
+   - *"Serialize what is read" holds at the author's granularity:* the
+     client's reads happen after the server is gone, so narrowing to them is
+     impossible without SSR-ing the client component or a demand-fetch
+     waterfall against a disposed source. The projection (or passed part)
+     is the author-declared read set and snapshot+deltas its minimal
+     encoding — "ship less" = "project less," and passing a part is
+     projecting less ad hoc. Single-copy is preserved because the record is
+     the only copy when the client is the only consumer; render-AND-pass
+     duplication is the authored, bounded concession DR-3 rule 2 names.
+
+4. **Async at container paths** (promises/pending nodes stored IN a
+   projection): two clocks interleave at one path — the mutation log (a path
+   may be reassigned before its promise settles; a superseded settlement must
+   lose, so per-path latest-wins sequencing) and the settlement events
+   ("pending" is a node state, not a value: minted-store reads of such paths
+   must suspend through the async read path, and the sink must serialize from
+   the raw target so a pending node cannot suspend the serializer). Excluded
+   from the first container round with a diagnosable error naming the path;
+   the sequencing discipline is designed into the container spec so this is
+   an extension, not a retrofit.
+
+5. **The serializer never crashes.** An unserializable value is a diagnosable
+   error naming the slot and the type, not `Seroval Error (step: 1)`
+   (solidjs/solid#2966's presenting symptom). With cases 1–3 unwrapping
+   reactive values into their traces, this remains only as the guard for
+   genuinely unserializable *outputs*.
+
+Rejected alternatives, for the record: **holding** (deferring the slot record,
+or the stream, on one arg — coarse, and contradicts case 1's granularity);
+**resolving passed primitives server-side to dead values** (two suspension
+sites for one kind of data, and updates the source produces later in the
+response would be dropped); **persistent channels** (duplicate re-invocation
+with worse lifetime semantics); **snapshot-per-frame dedupe** (stale
+back-references, above). Server-content async (`<Loading>` inside server JSX)
+is a different async and keeps the fragment model wholesale: one is markup the
+server owns, the other is data the client owns.
 
 ### DR-3: Classification precedes resolution (template detection stays tractable)
 
