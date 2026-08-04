@@ -251,9 +251,9 @@ exists to undo another mechanism's consequences; deletes with its cause.
 | # | Mechanism (current location) | Axiom | Disposition |
 |---|---|---|---|
 | 1 | Chunk→record store writes (`chunkToRecords`) | A3 | Derived — unchanged. |
-| 2 | Multi-mount routing + pending buffer (frame host) | A3/A4 | Derived, simplified: fan-out becomes multiple mounts pulling one store; buffering remains for unregistered ids. |
-| 3 | Retention snapshots (`snapshot`, last-unregister-wins) | — | Compensatory (DR-1). Deletes: a warm store *is* retention. Lifetime policy in §5.1. |
-| 4 | HTTP pump (`applyFrameResponse`: `as`/`route`/restamp) | A3 | Derived, simplified: responses address stores, not mounted frames; the `as` remap of a *mount* disappears. |
+| 2 | Multi-mount routing + pending buffer (frame host) | A3/A4 | **Done (Stage 2):** resident per-id stores; writes land mounted or not, mounts seed from the store. The pending buffer and sibling seeding deleted into it. |
+| 3 | Retention snapshots (`snapshot`, last-unregister-wins) | — | **Done (Stage 2):** deleted — a warm store *is* retention. One residue: a last-unmount capture of a document-adopted interior (its content never rode chunks). Lifetime policy in §5.1. |
+| 4 | HTTP pump (`applyFrameResponse`: `as`/`route`/restamp) | A3 | **Done (Stage 2):** responses apply as their call's address; the `route` map deleted (region roots address stores directly). |
 | 5 | Version gating, policy A (stale-guard, not reset) | A3/A4 | Derived — unchanged, now explicitly per-address with client-stamped authority (§5.2). |
 | 6 | Slot-record identity dedupe (`argsEquivalent`) | A5 | Derived, simplified: with one record shape the conservative `$ref` special-casing shrinks. |
 | 7 | Prerequisite flush loop (`#flush`) | A6 | Derived — becomes THE reveal engine for document + frames (DR-4). |
@@ -265,9 +265,9 @@ exists to undo another mechanism's consequences; deletes with its cause.
 | 13 | Occurrence mount/re-call/unmount (`#syncSlots`) | A4 | Derived — unchanged in role; simpler inputs (A5). |
 | 14 | Invoke context (`ctx`: adopted/invoked/existing/…) | A5 | Derived, shrinks: the `adopted` fork exists because t = 0 records differ (A5 removes the difference). |
 | 15 | Live slot props (`ctx.onUpdate`, signal-backed proxy) | A4 | Derived — and generalized upward: the same "new binding, same instance" shape serves boundary rebinds (DR-1) and async arg updates (DR-2). |
-| 16 | `#refArgsUnchanged` value-compare | A5 | Compensatory (#547 cluster). Deletes with unified records. |
+| 16 | `#refArgsUnchanged` value-compare | A5 | **Done (Stage 2):** the #547 `$frame`-addition leniency deleted with unified records; the plain value-compare stays (it is the dedupe, not the patch). |
 | 17 | `$ref`/`$frame` arg resolution + per-stream tables | A1/A3 | Derived; table scoping revisited under per-address stores (§5.2). |
-| 18 | Region discovery from markup (`#discoverRegions`) | A5 | Compensatory as a *separate identity path*: with A5, used regions have records on every transport; discovery remains only as claim wiring, not identity recovery. |
+| 18 | Region discovery from markup (`#discoverRegions`) | A5 | **Done (Stage 2, first half):** with A5, used regions have records on every transport; discovery remains only as claim wiring — and membership is now structural (outermost dotted id in this interior), not producer-prefix-matched, so address-keyed mounts adopt fn-id-prefixed markup. |
 | 19 | Region bind/rebind/`renameRegion` (wire-id renames) | A3 | Compensatory: regions become store substructure keyed `(parent address, occurrence, arg)` (§5.3); wire-relative renames delete. |
 | 20 | `hy.r` occlusion absorption (adopt-time fake chunks) | A5/A6 | Compensatory. Deletes: occluded content is ordinary records in the one buffer, drained by the one consumer (DR-4). |
 | 21 | Segment reveal + placeholder discovery (`#revealSegment`) | A6 | Derived — and becomes the only implementation (DR-4). |
@@ -275,9 +275,9 @@ exists to undo another mechanism's consequences; deletes with its cause.
 | 23 | Boundary-driven reveal seam (`options.reveal`) | A6 | Derived — unchanged. |
 | 24 | Element claim sweeps (`CLAIM_SEAM`) | A2 | Derived — unchanged. |
 | 25 | `<dx-frame>` element boundary | A4 | Derived — unchanged. |
-| 26 | Dispose/rebind lifecycle (`FrameImpl.rebind`) | — | Rebind-by-wire-id deletes (DR-1); dispose stays (teardown is disposal). |
-| 27 | Address-keyed component registry (`byAddress` minting) | A3/A4 | Restructured: per-function components + per-site binding delivery replace per-args component minting (DR-1). |
-| 28 | `COMPONENT_HANDOFF` brand + `forwards` map | — | Compensatory (DR-1). Deletes. |
+| 26 | Dispose/rebind lifecycle (`FrameImpl.rebind`) | — | **Done (Stage 2):** rebind survives — but demoted from handoff protocol to delivery mechanics (the site's binding-follow effect calls it); dispose stays (teardown is disposal). |
+| 27 | Address-keyed component registry (`byAddress` minting) | A3/A4 | **Done (Stage 2):** per-function components + per-address bindings (`COMPONENT_BINDING`, address as a second-argument accessor); `byAddress` is now a pure binding cache. |
+| 28 | `COMPONENT_HANDOFF` brand + `forwards` map | — | **Done (Stage 2):** deleted. `dynamic` keeps its instance on component equality and delivers the address into per-site signals. |
 | 29 | `ServerComponentPlugin` + flight codec refs | A1 | Derived — unchanged (component references serialize as addresses, never markup-as-data). |
 | 30 | Single-flight application (`applyFlightResponse`) | A3 | Derived, simplified: regions address stores directly; no mount lookup, no per-frame `as`. |
 | 31 | `slotsFor`/`claimRender`/reactive insert (Solid) | A2 | Derived; the claim-scope tracking hole (#2967's second bug) is fixed by construction: claims wrap the insert *call*, reads stay tracked. |
@@ -394,8 +394,13 @@ The sink gets the same audit in Stage 2/3 implementation:
 ## 6. Size budget
 
 Derived from the mechanism set, not ratcheted from actuals. Current measured
-(min+gzip, CI-guarded): **8,610 B** full frames consumer (8,505 + 105 for the
-stage-1 interim #2968 deferral, which stage 2 deletes), **1,067 B** morph slice.
+(min+gzip, CI-guarded): **8,208 B** full frames consumer, **1,067 B** morph
+slice. Stage 2 delivered −402 B against the 8,610 B it started from: A5's
+consumer patches −98, the resident-store host −88, the identity split −216
+(handoff/forwards/route-map deleted, net of the binding wrapper). The #2968
+deferral (+105 inside those figures) stays until DR-4 orders record delivery
+by construction; the remaining distance to the ≤ 7,800 B budget is DR-4's
+reveal unification and DR-5's morph restructure.
 
 Deletions and simplifications from §4 (handoff stack, retention snapshots,
 `#refArgsUnchanged`, `hy.r` absorption, rename machinery, reveal-policy glue,
@@ -444,6 +449,13 @@ is compensatory by definition — fix the cause instead.
      A5 removes the timing skew that causes it.
 2. **Stage 2 — DR-1 + A5** (identity split + record shape) in dom-expressions and
    `@solidjs/web/frames`. Wire changes acceptable; the feature is experimental.
+   **Done:** A5 producer (t=0 records stream-identical, every region as a
+   `$frame` ref) + consumer patch deletions; resident-store host (buffer/
+   retention/sibling-seeding subsumed); identity split (per-function
+   components, `COMPONENT_BINDING` bindings, per-site delivery in `dynamic`,
+   `followBinding` → `rebind`; handoff/forwards/`documentComponent`/route-map
+   deleted). Verified end-to-end on notes + hackernews (navigation, search
+   state retention, single-flight save, rapid history, preload isolation).
 3. **Stage 3 — DR-4** (one reveal owner). Touches `server.js` inline scripts and
    Solid hydration; the largest single surgery.
 4. **Stage 4 — DR-5** (identity-first morph).

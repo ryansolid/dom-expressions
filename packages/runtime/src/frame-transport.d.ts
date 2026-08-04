@@ -37,12 +37,6 @@ export interface ApplyFrameResponseOptions {
    */
   version?: number | ((frameId: string) => number);
   /**
-   * Remap any frame id other than the response's own root onto a local one
-   * — how a consumer resolves the addresses a single-flight response uses
-   * for the regions it refreshed.
-   */
-  route?(id: string): string;
-  /**
    * Receives the payload text of each `outcome` chunk — the response-scoped
    * single-flight envelope, the caller's result rather than anything the
    * host renders.
@@ -80,29 +74,22 @@ export const SERVER_COMPONENT_SOURCE: unique symbol;
 export const SERVER_COMPONENT_ADDRESS: unique symbol;
 
 /**
- * The handoff contract on components the transport resolves: `{ fnId,
- * frameId, take(prev) }`. A reader whose source resolved a NEW component
- * while a previous one is mounted offers the old one — `take` rebinds the
- * live mount when both are boundaries of the same function (the element and
- * its slot state stay; the incoming stream morphs it), and the reader keeps
- * its previous value instead of remounting. `Symbol.for`, so frameworks can
- * honor it without importing this module.
+ * The binding brand on values the transport resolves: `{ component, address }`
+ * — the identity split (DR-1). `component` is the mount identity, one per
+ * server function; `address` names the call's content store. An equals-gated
+ * reader compares `component` across resolutions: same function means "same
+ * instance, new binding" — keep the mounted instance and deliver the new
+ * address into it; a different function swaps normally. `Symbol.for`, so
+ * frameworks can honor it without importing this module.
  */
-export const COMPONENT_HANDOFF: unique symbol;
+export const COMPONENT_BINDING: unique symbol;
 
-/** The value under `COMPONENT_HANDOFF` on a transport-resolved component. */
-export interface ComponentHandoff {
-  /** The server function id both peers derive the boundary's calls from. */
-  fnId: string;
-  /** The frame id this component's fresh mounts register under. */
-  frameId: string;
-  /**
-   * Offer `prev` (the reader's current value) to this component. Returns
-   * true when the reader should KEEP prev — the mounted frame was rebound
-   * to this component's id (or already showed it); false means swap
-   * normally (different function, unbranded prev, or nothing mounted).
-   */
-  take(prev: unknown): boolean;
+/** The value under `COMPONENT_BINDING` on a transport-resolved binding. */
+export interface ComponentBinding<C = unknown> {
+  /** The per-function mount component (the equals-gate identity). */
+  component: C;
+  /** The call's intrinsic (function, arguments) address — its store's key. */
+  address: string;
 }
 
 /**
@@ -125,24 +112,20 @@ export function flightCodec(codec?: JSONCodecOptions): JSONCodecOptions;
 export interface ServerComponentHandlerOptions<C = unknown> {
   host: FrameHost;
   /**
-   * Builds the framework's mountable component for a boundary. Invoked once
-   * per boundary and cached; every mount of the returned component is its
-   * own frame instance under the boundary id (multi-mount fans out).
+   * Builds the framework's mount component for a server FUNCTION. Invoked
+   * once per function and cached — this is the equals-gate identity every
+   * call of the function resolves through. The component is CALLED (by the
+   * binding wrapper or a gated reader), receiving its current address as a
+   * second argument (`() => string`); it should (re-)bind its frame's pull
+   * to that address's store. Multi-mount fans out per site.
    */
-  component(frameId: string): C;
+  component(fnId: string): C;
   /**
-   * A new response is about to stream into a boundary: rotate
+   * A new response is about to stream into an address: rotate
    * response-scoped state (codec data tables) here. `version` is the
    * client-owned stream counter the chunks will be stamped with.
    */
-  onStream?(frameId: string, version: number, response: Response): void;
-  /**
-   * Document-SSR adoption: given a boundary id the page already carries
-   * (server-rendered between `frame:<id>` markers), return the component
-   * that adopts that range — or `undefined` to stream normally. Consulted
-   * once per boundary, before any fetch.
-   */
-  documentComponent?(frameId: string): C | undefined;
+  onStream?(address: string, version: number, response: Response): void;
   /**
    * Answer a call SYNCHRONOUSLY before any request is made (t = 0 local
    * answers — e.g. a boundary the document already carries). Returning a
@@ -167,30 +150,31 @@ export interface ServerComponentHandlerOptions<C = unknown> {
 /**
  * The client mirror of `frameTransformResult`, shaped for the server-function
  * client's `responseHandler` seam: frame-stream responses resolve the call
- * with a **stable component** instead of data, so an equals-gated consumer
- * (Solid's `dynamic`) never remounts across refetches — the response streams
- * into the boundary underneath as the only observable effect.
+ * with a **binding** — a callable wrapper branded `COMPONENT_BINDING` — so
+ * an equals-gated consumer (Solid's `dynamic`) never remounts across
+ * refetches or argument changes; the response streams into the address's
+ * resident store as the only observable effect.
  *
- * Boundary identity is derived, never declared: every call keys by its
- * intrinsic (function, arguments) address — the query cache's per-args rule,
- * so cached components and boundaries stay one-to-one. Same-args calls
- * resolve the identical component and morph in place; an args switch swaps
- * boundaries, re-materialized from the host's retained state.
+ * The identity split (DR-1): stores are keyed per-ADDRESS — the call's
+ * intrinsic (function, arguments) name, one-to-one with a query cache's
+ * per-args entries — while mounts are per-SITE, rendering the per-function
+ * component and following delivered addresses. An address nothing is bound
+ * to warms its store (preload isolation is the default, not a rule).
  */
 export function createServerComponentHandler<C>(options: ServerComponentHandlerOptions<C>): {
-  intercept?(info: { id: string; meta: unknown; args: unknown[] }): C | undefined;
+  intercept?(info: { id: string; meta: unknown; args: unknown[] }): unknown;
   handle(
     response: Response,
     ctx: { id: string; meta: unknown; args: unknown[]; context: unknown }
-  ): C | undefined;
+  ): unknown;
   /**
    * Declares that the document is showing a call: hydration-data references
    * carry their call's address (`_$SC.r(id, address)`) but never travel
-   * through the transport, so the integration forwards those records here —
-   * they are how a post-load call for the same (function, arguments) finds
-   * its way back to the adopted boundary. `component` must be the exact
-   * reference the integration's cache holds for the call (the per-function
-   * placeholder), or readers' equals-gates fail into remounts.
+   * through the transport, so the integration forwards those records here.
+   * Mints the call's binding (a post-load refetch then resolves a value
+   * whose component matches what the document mounted) and brands the
+   * per-function component so cache-seeded readers deliver instead of
+   * remounting when their site later switches calls.
    */
-  showing(address: string, functionId: string, component: C): void;
+  showing(address: string, functionId: string): void;
 };

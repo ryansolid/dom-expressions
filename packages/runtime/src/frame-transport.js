@@ -55,10 +55,6 @@ export function isFrameStreamResponse(response) {
  * `options.onOutcome` receives the payload text of each `outcome` chunk —
  * the response-scoped single-flight envelope, which is the caller's result
  * rather than anything the host renders.
- *
- * `options.route` maps any other frame id onto a local one. Where `as`
- * renames the response's own root, this resolves the addresses a
- * single-flight response uses for the regions it refreshed.
  */
 export async function applyFrameResponse(response, host, options = {}) {
   const rootId = response.headers.get(FRAME_STREAM_HEADER) ?? "";
@@ -73,7 +69,6 @@ export async function applyFrameResponse(response, host, options = {}) {
       if (options.onOutcome) options.onOutcome(chunk.payload);
     } else {
       if (as !== undefined && chunk.id === rootId) chunk.id = as;
-      else if (options.route) chunk.id = options.route(chunk.id);
       if (perFrame) {
         let v = perFrame.get(chunk.id);
         if (v === undefined) perFrame.set(chunk.id, (v = version(chunk.id)));
@@ -100,15 +95,18 @@ export const SERVER_COMPONENT_ADDRESS = /*#__PURE__*/ Symbol.for(
 );
 
 /**
- * The handoff contract on components the transport resolves: `{ fnId,
- * frameId, take(prev) }` (see `createServerComponentHandler`). A reader
- * whose source resolved a NEW component while a previous one is mounted
- * offers the old one — `take` rebinds the live mount when both are
- * boundaries of the same function, and the reader keeps its previous value
- * instead of remounting. `Symbol.for`, so consumers (a framework's
- * `dynamic`) can honor it without importing this module.
+ * The binding brand on values the transport resolves: `{ component, address }`
+ * (see `createServerComponentHandler`). The identity split (DR-1,
+ * docs/server-components-principles.md): `component` is the MOUNT identity —
+ * one per server function, stable across every call — while `address` names
+ * the call's content store. An equals-gated reader (a framework's `dynamic`)
+ * compares `component` across resolutions: same function means "same
+ * instance, new binding" — it keeps its mounted instance and delivers the
+ * new address into it (the instance's frame re-binds its pull to that
+ * address's resident store) — and a different function swaps normally.
+ * `Symbol.for`, so consumers honor it without importing this module.
  */
-export const COMPONENT_HANDOFF = /*#__PURE__*/ Symbol.for("dom-expressions.component-handoff");
+export const COMPONENT_BINDING = /*#__PURE__*/ Symbol.for("dom-expressions.component-binding");
 
 // The live transport registry's resolver, installed by
 // createServerComponentHandler. Module state on the config pattern (one
@@ -202,45 +200,42 @@ export function flightCodec(codec) {
 /**
  * The client mirror of `frameTransformResult`, shaped for the server-function
  * client's `responseHandler` seam: frame-stream responses resolve the call
- * with a **stable component** instead of data, so an equals-gated consumer
- * (Solid's `dynamic`) never remounts across refetches — the response streams
- * into the boundary underneath as the only observable effect.
+ * with a **binding** instead of data — a callable wrapper branded
+ * `COMPONENT_BINDING: { component, address }` — so an equals-gated consumer
+ * (Solid's `dynamic`) never remounts across refetches OR argument changes;
+ * the response streams into the address's resident store as the only
+ * observable effect.
  *
- * Boundary identity is derived, never declared: every call keys by its
- * intrinsic address (function + arguments) — the same per-args rule an
- * integration's query cache keys values by, so the two stay one-to-one. A
- * repeat call for the same (function, args) resolves to the identical
- * component (refetches morph the showing boundary in place, cache hits pass
- * the reader's equals-gate), while different args resolve different
- * boundaries — which is what keeps a cached value honest: the boundary a
- * cached component mounts shows the call it was cached for, not whatever
- * the site streamed last. The host retains an unmounted boundary's state,
- * so a fresh mount re-materializes instantly and a stale-cache refetch
- * morphs over it. `component(frameId)` builds the framework's mountable
- * component for a boundary; it is invoked once per boundary and cached.
+ * The identity split (DR-1, docs/server-components-principles.md):
  *
- * A LIVE call site switching arguments is the one place per-args identity
- * must not mean a remount: the reader's next resolution is a different
- * component, but tearing the mounted boundary down would take its client
- * slot state (an expanded sidebar item, focus, media) with it — state whose
- * occurrences the new call's content still carries. So every component this
- * handler resolves is branded with a HANDOFF contract (a well-known symbol,
- * importless for consumers): the reader offers its previous value to the
- * incoming component, and when both are boundaries of the SAME function
- * with someone live to hand off, the mounted frame REBINDS to the incoming
- * call's id instead — the element and its slot occurrences stay, the old
- * call's state stashes into host retention under its own address (honesty
- * for later cache reads), and the incoming stream (or the new address's
- * retained state, on a cache hit with no stream) morphs it in place. The
- * reader keeps its previous value, so nothing remounts. Preloads never
- * offer a previous value — they have no reader — so hover fetches for other
- * args still buffer off-screen exactly as before.
+ * - The **store** is keyed per-ADDRESS — the call's intrinsic
+ *   `(function, arguments)` name, the same per-args rule an integration's
+ *   query cache keys values by, so the two stay one-to-one and a cached
+ *   binding is honest by construction (it names the content it was cached
+ *   for; a mount bound to a different address never observes it). Every
+ *   response applies AS its call's address; an address nothing is bound to
+ *   simply warms its store (a hover preload never touches the page).
+ * - The **mount** is keyed per-SITE. `component(fnId)` builds the
+ *   framework's mount component once per FUNCTION; every call of that
+ *   function resolves a binding wrapping that same component, so a live
+ *   site switching arguments passes its reader's equals-gate ("same
+ *   component") and receives the new address as a NEW BINDING into the same
+ *   instance — the semantics compiled components already have for props.
+ *   The instance re-binds its frame's pull to the new address's store:
+ *   warm store re-materializes instantly, in-flight stream morphs in.
+ *   Client slot state on occurrences whose ids persist survives; there is
+ *   no mount to steal, so no handoff protocol, no forwarding, and no
+ *   preload special-casing exist.
+ *
+ * The address reaches the mount as a second argument (`() => address`): an
+ * equals-gated reader calls the component itself with a live accessor it
+ * updates on delivery; calling the binding directly (a non-gated mount)
+ * passes the binding's own constant address.
  */
 export function createServerComponentHandler({
   host,
   component,
   onStream,
-  documentComponent,
   intercept,
   // The flight consumer and codec are module state in the server-function
   // client's SHARED instance; a bundler may give this module a private copy
@@ -250,89 +245,43 @@ export function createServerComponentHandler({
   consumer = getFlightDataConsumer,
   codec = getServerFunctionsCodec
 }) {
-  // The boundary for each call, keyed by the call's wire address — identity
-  // and routing in one map: `(function, args)` is the only name both peers
-  // derive independently, so it is how a repeat call finds its boundary AND
-  // how a mutation's regions reach the boundaries showing the calls they
-  // refresh. Entries are permanent for the session: a boundary never changes
-  // which call it shows.
-  const byAddress = new Map();
-  // Where a pinned call site's mount currently lives. A reader that accepted
-  // a handoff keeps its previous component (its "root") while the mounted
-  // frame walks address to address; this maps each root's frame id to the id
-  // its mount is currently bound to, path-compressed (one hop, retargeted on
-  // every handoff) so chains can't cycle. Entries clear when the mount comes
-  // home or goes unfindable.
-  const forwards = new Map();
-  /**
-   * Brand a resolved component with the handoff contract (see the factory
-   * doc). `take(prev)` is the whole protocol: called by a reader resolving
-   * THIS component while still holding `prev`, it answers whether the
-   * reader should keep prev — true when they are the same boundary, and
-   * true after REBINDING prev's live mount to this component's id (same
-   * function, someone mounted). False is "swap normally": different
-   * function, unbranded prev, or nothing live to hand off.
-   */
-  const brand = (comp, fnId, frameId) => {
-    // `component` is the integration's type — brand what can carry a
-    // property (functions, objects) and pass anything else through: an
-    // unbrandable component just never offers handoffs.
-    const brandable = typeof comp === "function" || (typeof comp === "object" && comp !== null);
-    if (brandable && !comp[COMPONENT_HANDOFF]) {
-      comp[COMPONENT_HANDOFF] = {
-        fnId,
-        frameId,
-        take(prev) {
-          const meta =
-            prev !== null &&
-            (typeof prev === "function" || typeof prev === "object") &&
-            prev[COMPONENT_HANDOFF];
-          if (!meta || meta.fnId !== fnId) return false;
-          const root = meta.frameId;
-          let cur = forwards.get(root) ?? root;
-          // A stale forward (the mount unmounted while away) falls back to
-          // the root itself — a mount living under the root is still ours.
-          if (cur !== root && !host.get(cur)) {
-            forwards.delete(root);
-            cur = root;
-          }
-          if (cur === frameId) return true;
-          let frame = host.get(cur);
-          if (!frame) return false;
-          while (frame) {
-            frame.rebind(frameId);
-            frame = host.get(cur);
-          }
-          if (frameId === root) forwards.delete(root);
-          else forwards.set(root, frameId);
-          return true;
-        }
-      };
-    }
+  // Mount components, one per FUNCTION (the equals-gate identity).
+  const byFn = new Map();
+  const componentFor = fnId => {
+    let comp = byFn.get(fnId);
+    if (comp === undefined) byFn.set(fnId, (comp = component(fnId)));
     return comp;
   };
-  /** The boundary showing an address, minted under the ADDRESS itself when
-   *  none is — chunks for an unshown address buffer in the host under that
-   *  id, so a later mount of the minted component drains them. */
-  const boundaryFor = (address, fnId) => {
-    let entry = byAddress.get(address);
-    if (!entry) {
-      entry = { frameId: address, component: brand(component(address), fnId, address) };
-      byAddress.set(address, entry);
+  // Bindings, one per ADDRESS — the stable resolution value for a call
+  // (repeat calls, cache reads, and flight references all resolve the
+  // identical object). Purely derived: (function component, address) —
+  // no routing state lives here.
+  const byAddress = new Map();
+  const bindingFor = (address, fnId) => {
+    let binding = byAddress.get(address);
+    if (!binding) {
+      const comp = componentFor(fnId);
+      // The address rides as a SECOND argument (an accessor): the binding is
+      // called, never compiled against, so the convention is free — and it
+      // leaves props untouched for the framework's own reactivity. A gated
+      // reader that kept its instance calls `component` itself with a LIVE
+      // accessor instead; this constant one serves direct mounts.
+      binding = props => comp(props, () => address);
+      binding[COMPONENT_BINDING] = { component: comp, address };
+      byAddress.set(address, binding);
     }
-    return entry;
+    return binding;
   };
-  /** Resolve a flight reference (see `ServerComponentPlugin`) to a
-   *  component. Registered so repeat references stay identity-stable. */
-  const resolveAddress = (id, address) => boundaryFor(address, id).component;
-  resolveServerComponent = resolveAddress;
-  // Version history per frame id. A getter's boundary is the only frame in
-  // its response, but a single-flight response carries several — each
-  // invalidated region is a boundary with its own stale-guard.
+  /** Resolve a flight reference (see `ServerComponentPlugin`) to the call's
+   *  binding. Registered so repeat references stay identity-stable. */
+  resolveServerComponent = (id, address) => bindingFor(address, id);
+  // Version history per address, client-stamped: the client is the only
+  // party that observes ordering across transports (a getter refetch, a
+  // mutation's regions, a preload), so stale-guarding is per-address here.
   const versions = new Map();
-  const bump = frameId => {
-    const version = (versions.get(frameId) || 0) + 1;
-    versions.set(frameId, version);
+  const bump = address => {
+    const version = (versions.get(address) || 0) + 1;
+    versions.set(address, version);
     return version;
   };
   return {
@@ -340,79 +289,60 @@ export function createServerComponentHandler({
       intercept &&
       (info => {
         const hit = intercept(info);
-        // A locally-answered call (t=0 document adoption) is showing all the
-        // same: record its address so a mutation can reach the adopted
-        // boundary — which streams under the function id, like every
-        // document boundary — even though no request ever left for it.
-        if (hit !== undefined) {
-          const address = frameAddress(info.id, info.args);
-          byAddress.set(address, { frameId: info.id, component: brand(hit, info.id, info.id) });
-        }
-        return hit;
+        // A locally-answered call (t=0 document adoption) resolves the
+        // call's binding like a network answer would — the reader mounts
+        // the same per-function component, and the record under the address
+        // is how later calls for the same (function, args) find the content.
+        if (hit === undefined) return undefined;
+        return bindingFor(frameAddress(info.id, info.args), info.id);
       }),
     handle(response, ctx) {
       if (!isFrameStreamResponse(response)) return undefined;
-      // The call's intrinsic address is its whole identity (see the factory
-      // doc): a repeat call — refetch, preload, cache read — resolves the
-      // boundary showing that exact (function, args) and its stream morphs
-      // in place; different args resolve a different boundary, so a preload
-      // for OTHER args streams off-screen (buffered until mounted) instead
-      // of morphing what the page is showing.
+      // The call's address names its store: a repeat call — refetch,
+      // preload, cache read — writes into the same store, morphing whatever
+      // mounts are bound to it; other args write elsewhere and mounted
+      // content is untouched (preload isolation is the default, not a rule).
       const address = frameAddress(ctx.id, ctx.args);
-      let entry = byAddress.get(address);
-      if (!entry) {
-        // A document-SSR boundary for this function adopts into the cache
-        // first: the initial navigation resolves to the SAME placeholder the
-        // hydration data produced, so the equals-gate holds and the stream
-        // morphs the adopted DOM instead of remounting. Document boundaries
-        // are addressed by function id (the logical wire address). The
-        // integration returns nothing once the boundary is claimed — from
-        // then on the address entry is the only way back to it.
-        const adopted = documentComponent && documentComponent(ctx.id);
-        if (adopted) {
-          entry = { frameId: ctx.id, component: brand(adopted, ctx.id, ctx.id) };
-          byAddress.set(address, entry);
-        } else {
-          entry = boundaryFor(address, ctx.id);
-        }
-      }
+      const binding = bindingFor(address, ctx.id);
       // A single-flight response is a MUTATION's: it carries regions for the
       // calls it invalidated, and the caller wants the mutation's value
       // rather than a component.
       if (response.headers.has(SINGLE_FLIGHT_HEADER)) {
-        return applyFlightResponse(response, entry);
+        return applyFlightResponse(response, address, binding);
       }
-      const version = bump(entry.frameId);
-      if (onStream) onStream(entry.frameId, version, response);
-      applyFrameResponse(response, host, { as: entry.frameId, version }).catch(err =>
+      const version = bump(address);
+      if (onStream) onStream(address, version, response);
+      applyFrameResponse(response, host, { as: address, version }).catch(err =>
         host.apply({
           type: "error",
-          id: entry.frameId,
+          id: address,
           version,
           error: { message: String(err && err.message) }
         })
       );
-      return entry.component;
+      return binding;
     },
 
     /**
      * Declares that the document is showing a call. Hydration-data values
      * never travel through the transport (the integration seeds its cache
-     * straight from the serialized state), so their address -> boundary
-     * records arrive through this seam instead — the t=0 reference carries
-     * the call's address (see ServerComponentPlugin.serialize), and the
-     * integration forwards it with the reference's placeholder. Without the
-     * record, the first post-load call for the same (function, arguments)
-     * cannot find its way back to the adopted boundary: it would mint a
-     * fresh component, failing the reader's equals-gate into a remount.
+     * straight from the serialized state), so the call's address arrives
+     * through this seam instead — the t=0 reference carries it (see
+     * ServerComponentPlugin.serialize). Minting the binding here keeps a
+     * post-load refetch of the same call resolving a value whose component
+     * matches what the document mounted; branding the document's per-
+     * function placeholder (the cache-seeded value readers hold at t=0)
+     * lets an equals-gated reader deliver instead of remounting when its
+     * site later switches calls.
      */
-    showing(address, functionId, component) {
-      if (!byAddress.has(address)) {
-        byAddress.set(address, {
-          frameId: functionId,
-          component: brand(component, functionId, functionId),
-          address
-        });
+    showing(address, functionId) {
+      bindingFor(address, functionId);
+      const comp = componentFor(functionId);
+      if (
+        (typeof comp === "function" || (typeof comp === "object" && comp !== null)) &&
+        !comp[COMPONENT_BINDING]
+      ) {
+        comp[COMPONENT_BINDING] = { component: comp, address };
       }
     }
   };
@@ -428,11 +358,16 @@ export function createServerComponentHandler({
    * caller gets the same value, so a mutation reads identically whether or
    * not any of what it invalidated was markup.
    */
-  async function applyFlightResponse(response, entry) {
+  async function applyFlightResponse(response, address, binding) {
     // The mutation's own markup (when it returned a component) belongs to
-    // this call site's boundary; every other frame keeps its wire address.
+    // this call's address; every other frame in the response already
+    // arrives under the address of the call it refreshes — mounts are bound
+    // to addresses, so region roots need no routing: a bound address morphs,
+    // an unbound one warms its store until something binds it (the
+    // envelope's reference to the same call resolves this handler's
+    // binding, so the content mounts wherever the seeded value is read).
     const rootId = response.headers.get(FRAME_STREAM_HEADER) ?? "";
-    const as = rootId ? entry.frameId : undefined;
+    const as = rootId ? address : undefined;
 
     // The envelope decodes progressively, exactly as a plain single-flight
     // body does: outcome chunks are the codec's own nodes, so replaying them
@@ -448,21 +383,6 @@ export function createServerComponentHandler({
 
     await applyFrameResponse(response, host, {
       as,
-      // Region ROOTS arrive under the address of the call they refresh; send
-      // each to the boundary showing it. Nested region ids (address-prefixed:
-      // `<address>.item#0.children`) pass through UNTOUCHED — the records in
-      // the root's chunks reference them by those very ids, and the consumer
-      // mounts region frames under the record ids, so rewriting the chunks
-      // (but never the records) would strand the content in the buffer while
-      // the mounted regions wait forever. An address nothing is showing
-      // routes as itself and the host buffers it — the envelope's reference
-      // to the same call (resolved by `resolveAddress`) mints a boundary
-      // under that id, so the content mounts wherever the seeded value is
-      // eventually read.
-      route: id => {
-        const local = byAddress.get(id);
-        return local ? local.frameId : id;
-      },
       // Every frame in the response gets its own bump, and the integration
       // rotates that frame's response-scoped state (data tables) — a region
       // is as much a new stream into a boundary as a navigation is.
@@ -496,7 +416,7 @@ export function createServerComponentHandler({
       throw envelope.value;
     }
     // A mutation that answered with markup for its own boundary resolves to
-    // the boundary's component, like a getter would.
-    return rootId ? entry.component : envelope.value;
+    // the call's binding, like a getter would.
+    return rootId ? binding : envelope.value;
   }
 }

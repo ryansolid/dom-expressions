@@ -554,35 +554,30 @@ export function createDocumentSlotProps(clientProps, frameId) {
           const out = scoped(occurrence, () => range(occurrence, slot(resolved)));
           const unused = regions.filter(r => !r.used);
           if (sharedConfig.context) {
-            // Every occurrence re-arms with real args at adoption via a t=0
-            // slot record — occluded args become region refs, and primitive
-            // args always ship. Deduplication of a value that ALSO appears in
-            // rendered content is a structural concern (template mode: an arg
-            // provably fills a known hole), never a substring guess: matching
-            // an arg's escaped value against the occurrence's rendered HTML
-            // silently dropped correct args whenever the value coincided with
-            // any rendered text (`cid={1}` with a "1" anywhere), and every
-            // construct that embeds the occurrence id into markup (`_hk`,
-            // region `data-fid`) forced another strip-rule. A primitive is a
-            // scalar the client needs AS DATA to re-invoke the wrapper; the
-            // single-copy invariant covers content, not scalar args.
+            // One record shape (A5, server-components-principles.md): the
+            // t=0 document emits the record a stream would — every invoked
+            // occurrence gets one, and EVERY region arg rides as its
+            // `{$frame}` address ref, used or not. The ref is addressing,
+            // not content: a used region's content ships once as page
+            // markup (the adopting client resolves the ref to the element
+            // already in the interior), an occluded one ships once as its
+            // `sc:region:` record. Primitive args always ship — a scalar
+            // the client needs AS DATA to re-invoke the wrapper is not a
+            // single-copy concern (value-from-page recovery is a
+            // template-mode question, never a substring guess: the old
+            // heuristic dropped correct args on any markup coincidence).
             const args = {};
-            let any = false;
             for (const key of Object.keys(vals)) {
               const value = vals[key];
               const region = regions.find(r => r.key === key);
               if (region) {
-                if (!region.used) {
-                  args[key] = { $frame: region.childId };
-                  any = true;
-                }
+                args[key] = { $frame: region.childId };
                 continue;
               }
               if (isServerContent(value)) continue;
               args[key] = value;
-              any = true;
             }
-            if (any) sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
+            sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
             for (const region of unused) {
               // Lock BEFORE returning: the content is now committed to the data
               // channel, so any later async placement of this region must
@@ -698,10 +693,12 @@ function resolveRegionHtml(ctx, node) {
  * plus the live `reg` hook once the client installs one) tells the frame
  * transport which calls the document is showing — hydration data never
  * travels through the transport, so this is its only path into the
- * transport's addressing.
+ * transport's addressing. Placeholders forward a caller-provided address
+ * binding (`b`, the frame transport's second-argument convention for mount
+ * components) through to `impl`.
  */
 export const SERVER_COMPONENT_BOOTSTRAP =
-  "self._$SC={c:{},a:{},r(i,a){a&&(this.a[a]=i,this.reg&&this.reg(a,i));return this.c[i]||(this.c[i]=(p)=>self._$SC.impl(i,p))}};";
+  "self._$SC={c:{},a:{},r(i,a){a&&(this.a[a]=i,this.reg&&this.reg(a,i));return this.c[i]||(this.c[i]=(p,b)=>self._$SC.impl(i,p,b))}};";
 
 /**
  * The props proxy handed to a server component. Every prop resolves to a

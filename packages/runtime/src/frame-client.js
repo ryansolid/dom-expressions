@@ -141,127 +141,104 @@ export function createFrameHost(options = {}) {
   // component mounted twice): ids map to SETS of frames and every chunk fans
   // out to all of them.
   const frames = new Map();
-  const pending = new Map();
-  // Resident stores for UNMOUNTED boundaries. Boundary identity belongs to
-  // the client and outlives any one mount: an integration's cache can
-  // resolve a call with the same component and NO new stream (a fresh query
-  // cache hit on back-navigation), so a remounted frame must be able to
-  // re-materialize from what the boundary last showed — otherwise it renders
-  // blank until something refetches. The last frame under an id stashes its
-  // snapshot here at unregister; the next mount consumes it (and re-stashes
-  // its own state when IT unmounts). Freshness stays the integration's call:
-  // a stale cache read still refetches, and the stream morphs over the
-  // re-materialized content like any other update.
-  const retained = new Map();
-  const deliver = (frame, chunk) => {
-    if (chunk.type === "data") {
-      options.applyData && options.applyData(chunk);
-      return;
+  // Resident stores, keyed by id — in the transport's usage an ADDRESS, the
+  // client-derived (function, args) name (A3: addresses key content, not
+  // mounts). The store is the single accumulation point for every non-data
+  // chunk: writes land whether or not anything is mounted (a preload warms
+  // the store; arrival never touches DOM), and a registering frame seeds
+  // from it wholesale. This one shape subsumes three older mechanisms — the
+  // unregistered-chunk buffer, per-boundary retention snapshots, and
+  // sibling-store seeding — because a resident store IS all three: it
+  // buffers (records persist until a mount reads them), it retains (unmount
+  // leaves the store warm for the next mount to re-materialize from, so a
+  // fresh cache hit with no new stream still shows content), and it is the
+  // one copy any number of sibling mounts share. Stores live for the
+  // session; eviction policy (data-layer coupling + LRU floor, principles
+  // §5.1) hangs off the purge form of `unregister`.
+  const stores = new Map();
+  const storeFor = id => {
+    let store = stores.get(id);
+    if (!store) stores.set(id, (store = { version: undefined, records: {} }));
+    return store;
+  };
+  // Mirrors FrameImpl.apply's version policy (policy A): stale writes drop,
+  // a newer version is a morph, not a reset — content and slot records
+  // carry over; per-response segment/error state clears (fragment names
+  // restart each stream).
+  const write = (store, version, records) => {
+    if (store.version !== undefined && version < store.version) return false;
+    if (store.version === undefined || version > store.version) {
+      store.version = version;
+      for (const key of Object.keys(store.records)) {
+        if (key.startsWith("seg:") || key === ":error") delete store.records[key];
+      }
     }
-    frame.apply({ version: chunk.version, r: chunkToRecords(chunk) });
+    Object.assign(store.records, records);
+    return true;
   };
   return {
     register(id, frame) {
       let set = frames.get(id);
       if (!set) frames.set(id, (set = new Set()));
-      // A boundary mounting after siblings already streamed seeds from a
-      // sibling's store — replay-equivalent without the host retaining
-      // chunks (records are plain data; each frame dedupes in its own store).
-      const sibling = set.size ? set.values().next().value : undefined;
       set.add(frame);
-      if (sibling) {
-        // A retained-state replay leaves a valid store with no version
-        // baseline. Seed from it too, then preserve that rebased state.
-        frame.apply({ version: sibling.version ?? 0, r: sibling.store });
-        if (sibling.version === undefined) frame.rebase && frame.rebase();
-        return;
-      }
-      // No live sibling: seed from the boundary's retained store (see above)
-      // before draining buffered chunks — the buffer, when present, holds a
-      // NEWER stream whose writes then morph over the re-materialized state.
-      const kept = retained.get(id);
-      if (kept) {
-        retained.delete(id);
-        frame.apply({ version: kept.version, r: kept.records });
-        // The snapshot's version belongs to a PREVIOUS registration's stream
-        // (or, after a rebind, to a different id's numbering entirely), while
-        // everything from here on comes from this registration's own space.
-        // Rebase so the next live write establishes the baseline — without
-        // it, a retained version larger than the incoming stream's counter
-        // stale-drops genuinely fresh content.
-        frame.rebase && frame.rebase();
-      }
-      const buffered = pending.get(id);
-      if (buffered) {
-        pending.delete(id);
-        // ONE store write for the whole buffer: per-chunk applies flush (and
-        // sync slots) between records, so the first record would mount every
+      const store = stores.get(id);
+      if (store && store.version !== undefined) {
+        // ONE apply for the whole seed: per-record applies flush (and sync
+        // slots) between records, so the first record would mount every
         // discovered occurrence — the rest record-less — and each later
-        // record would then look like an args CHANGE, re-calling with
-        // incomplete args and wiping adopted interiors (the #547 boot face).
-        // The buffer holds a single version by construction (stale-version
-        // chunks are dropped at buffering time).
-        const records = {};
-        let version;
-        for (const chunk of buffered.chunks) {
-          if (chunk.type === "data") {
-            options.applyData && options.applyData(chunk);
-            continue;
-          }
-          version = chunk.version;
-          Object.assign(records, chunkToRecords(chunk));
-        }
-        if (version !== undefined) frame.apply({ version, r: records });
+        // record would look like an args CHANGE, re-calling with incomplete
+        // args and wiping adopted interiors (the #547 boot face).
+        frame.apply({ version: store.version, r: store.records });
+        // The store's version belongs to whatever stream space last wrote it;
+        // everything from here on is this registration's own. Rebase so the
+        // next live write establishes the frame's baseline — the host's own
+        // version guard (above) is what keeps genuinely stale chunks out.
+        frame.rebase && frame.rebase();
       }
     },
     /**
-     * Remove a frame (or, with no frame argument, every frame) under an id;
-     * chunks still buffered for the id are dropped once none remain. The
-     * last frame out stashes its snapshot for a later remount; the no-frame
-     * form is a purge and drops the retained store too.
+     * Remove a frame (or, with no frame argument, every frame) under an id.
+     * The store stays resident — an unmounted boundary's content is exactly
+     * what a later mount of the same address re-materializes from. The
+     * no-frame form is a purge and drops the store too (the eviction seam).
      */
     unregister(id, frame) {
       const set = frames.get(id);
       if (set && frame) set.delete(frame);
       if (!set || !frame || !set.size) {
-        if (frame) {
-          const kept = frame.snapshot && frame.snapshot();
-          if (kept) retained.set(id, kept);
-        } else {
-          retained.delete(id);
-        }
         frames.delete(id);
-        pending.delete(id);
+        // A document-adopted boundary's content never rode chunks (it was
+        // page markup), so its store has no root record to re-materialize a
+        // later mount from. Capture the interior at last-unmount — a single
+        // copy, taken only when the store lacks a root. Runs pre-teardown:
+        // dispose unregisters before it touches the DOM.
+        if (frame && frame.contentHTML) {
+          const store = storeFor(id);
+          if (!store.records[""]) {
+            const html = frame.contentHTML();
+            if (html != null) {
+              store.records[""] = { kind: "html", value: html };
+              if (store.version === undefined) store.version = 0;
+            }
+          }
+        }
       }
+      if (!frame) stores.delete(id);
     },
     apply(chunk) {
-      // Data payloads are response-scoped; apply immediately, no frame needed.
+      // Data payloads are response-scoped; apply immediately, no store needed.
       if (chunk.type === "data") {
         options.applyData && options.applyData(chunk);
         return;
       }
+      // Write through to the resident store first: the store version-guards
+      // once for all mounts, and an unmounted address simply warms.
+      const records = chunkToRecords(chunk);
+      if (!write(storeFor(chunk.id), chunk.version, records)) return;
       const set = frames.get(chunk.id);
-      if (set && set.size) {
-        for (const frame of set) deliver(frame, chunk);
-        return;
+      if (set) {
+        for (const frame of set) frame.apply({ version: chunk.version, r: records });
       }
-      // Buffer until the frame registers, keeping only the newest version's
-      // chunks so a stale chunk can never land after the frame appears. The
-      // buffer tracks its version explicitly so each chunk is O(1) — a
-      // document boot funnels every t=0 slot record through here before the
-      // boundary binds (thousands for a large page), and rescanning the
-      // buffer per chunk made that quadratic.
-      const buffered = pending.get(chunk.id);
-      if (!buffered) {
-        pending.set(chunk.id, { version: chunk.version, chunks: [chunk] });
-        return;
-      }
-      if (chunk.version < buffered.version) return;
-      if (chunk.version > buffered.version) {
-        buffered.version = chunk.version;
-        buffered.chunks.length = 0;
-      }
-      buffered.chunks.push(chunk);
     },
     get(id) {
       const set = frames.get(id);
@@ -553,17 +530,22 @@ class FrameImpl {
    * Delete an occurrence's args record from the store that OWNS it. A nested
    * occurrence's record lives on the frame whose props proxy emitted it — an
    * ancestor keyed by the root stream — not on the region frame that mounts
-   * it, so removal threads up exactly like `#resolveSlotRecord`. Without this,
-   * tearing down a region (a comment navigated away from) leaves its nested
-   * occurrences' records stranded in the root store; on navigating back the
-   * stale record (a subset of the re-sent one — the t=0 shape omits used
-   * `{$frame}` regions) dedupes the re-introduced region away, and the wrapper
-   * re-mounts with no children (the doubly-nested reply's body vanishes).
+   * it, so removal threads up exactly like `#resolveSlotRecord`. This is
+   * store hygiene: tearing down a region (a comment navigated away from)
+   * must not strand its nested occurrences' records in the root store
+   * forever. One guard: occurrence NAMES are unique within a stream but
+   * recycled across streams (per-prop counters restart), so a new sync can
+   * mount its own `comment#0` before the sweep tears down an old region that
+   * also held a `comment#0`. If the owning frame currently has the
+   * occurrence mounted, the record under that name belongs to the LIVE
+   * occurrence — skip the delete (the old occurrence's record was already
+   * overwritten by the newer stream's).
    */
   #removeSlotRecord(occurrence) {
     const key = `slot:${occurrence}`;
-    if (key in this.#store) delete this.#store[key];
-    else this.#options.removeSlotRecord?.(occurrence);
+    if (key in this.#store) {
+      if (!this.#mountedSlots.has(occurrence)) delete this.#store[key];
+    } else this.#options.removeSlotRecord?.(occurrence);
   }
 
   // `root`, when given, scopes discovery to a detached fragment instead of the
@@ -646,12 +628,13 @@ class FrameImpl {
         // bare marker pairs), so consumers' existing-content gate already
         // excludes them from claiming.
         // Discover the interior's region elements BEFORE invoking, on the
-        // adopt path: a used region is omitted from the t=0 record (it
-        // shipped as markup), so it is only knowable from the existing DOM —
-        // and #invokeSlot must thread it into the wrapper's props so the
-        // wrapper OWNS the already-rendered element (see #invokeSlot). A
-        // fresh mount has no interior regions yet; discovery is a no-op then,
-        // and #resolveArgs creates its entries during the invoke instead.
+        // adopt path — claim wiring, not identity recovery (A5): the t=0
+        // record names every region arg by `{$frame}` address; discovery's
+        // job is locating the already-rendered ELEMENTS those addresses
+        // resolve to, so #resolveArgs hands the wrapper the adopted node
+        // instead of minting an empty one. A fresh mount has no interior
+        // regions yet; discovery is a no-op then, and #resolveArgs creates
+        // its entries during the invoke instead.
         if (this.#options.adopt) this.#discoverRegions(occurrence, start);
         const nodes = this.#invokeSlot(occurrence, callback, record, start, this.#options.adopt);
         if (nodes) this.#replaceRange(occurrence, start, nodes);
@@ -686,16 +669,10 @@ class FrameImpl {
         // cached regions, so `{$frame}` args keep their live elements.
         const update = this.#slotUpdaters.get(occurrence);
         if (update) {
+          // One record shape (A5): every transport's record carries ALL of
+          // the occurrence's region args as `{$frame}` refs, so the resolved
+          // props are complete — a key the record omits really was removed.
           const props = this.#resolveArgs(occurrence, record.args);
-          // Keys the record omits but the occurrence holds as regions (t=0
-          // adoption ships used regions as markup): thread the live element,
-          // mirroring #invokeSlot, so the update can't blank them.
-          const regions = this.#slotRegions.get(occurrence);
-          if (regions) {
-            for (const [argKey, entry] of regions) {
-              if (!(argKey in props)) props[argKey] = entry.element;
-            }
-          }
           this.#slotArgs.set(occurrence, record);
           update(props);
           this.#bindRegions(occurrence);
@@ -781,24 +758,14 @@ class FrameImpl {
       // frame then never touches the interior (morphs protect slot ranges).
       range: end ? { start, end } : undefined
     };
+    // One record shape (A5): the t=0 record carries used regions as
+    // `{$frame}` refs like any stream record would, and #resolveArgs
+    // resolves them to the elements #discoverRegions seeded from the
+    // adopted interior — the wrapper's own reactivity OWNS the
+    // already-rendered element from the first render (a client-only
+    // toggle can hide/show it at t=0, no re-arming stream needed).
     const props =
       record && record.kind === "slot" ? this.#resolveArgs(occurrence, record.args) : {};
-    // Thread already-discovered regions into props (adopt path): a USED
-    // region is omitted from the t=0 record (it shipped as page markup), so
-    // without this the wrapper's `props.children` is undefined and its own
-    // reactivity never OWNS the already-rendered region element — a
-    // client-only toggle that conditionally renders it then can't hide/show
-    // it until a stream re-call re-arms the arg. Threading the EXISTING
-    // element (discovered from the interior before this invoke) makes the
-    // wrapper's conditional track it as `current`, so removal works at t=0.
-    // Skips keys the record already resolved, so a re-call's #resolveArgs
-    // regions win.
-    const regions = this.#slotRegions.get(occurrence);
-    if (regions) {
-      for (const [argKey, entry] of regions) {
-        if (!(argKey in props)) props[argKey] = entry.element;
-      }
-    }
     // Run under the boundary's owner (when the creator provided one): slot
     // content reads the mount point's context (routers, stores) and bounds
     // its lifetime there. The t=0 adopt sync happens to run inside the
@@ -910,19 +877,16 @@ class FrameImpl {
     return props;
   }
 
-  /** Bind nested frames for a slot's regions once their markers are in the DOM. */
   /**
-   * Marker-driven region discovery for the adopt path: a claimed
-   * occurrence's interior already holds its nested server-content regions as
-   * frame ELEMENTS (the document producer emitted them), but no slot record
-   * exists at t = 0 to create the region entries `#resolveArgs` would. Seed
-   * entries from the OUTERMOST region elements in the interior (a region's
-   * own deeper regions belong to its occurrences and are discovered
-   * recursively when those claim); `#bindRegions` then constructs adopting
-   * frames over them, which run their own slot sync — this is what wires
-   * nested occurrences at boot. An element boundary makes discovery a scoped
-   * walk that stops at each region, replacing the flat-comment-list + depth-
-   * stack pairing a marker range needed.
+   * Element discovery for the adopt path — claim wiring only (A5): the t=0
+   * record names every region arg by `{$frame}` address, and this walk
+   * locates the already-rendered ELEMENTS those addresses resolve to,
+   * seeding entries (marked `adopt`) so `#resolveArgs` reuses the adopted
+   * node instead of minting an empty one. Seed from the OUTERMOST region
+   * elements in the interior (a region's own deeper regions belong to its
+   * occurrences and are discovered recursively when those claim);
+   * `#bindRegions` then constructs adopting frames over them, which run
+   * their own slot sync — this is what wires nested occurrences at boot.
    */
   #discoverRegions(slotKey, start) {
     if (!start) return;
@@ -932,10 +896,9 @@ class FrameImpl {
       this.#slotRegions.set(slotKey, regions);
     }
     const endData = slotEnd(slotKey);
-    const prefix = `${this.#options.id}.`;
     let n = start.nextSibling;
     while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
-      collectRegionElements(n, regions, prefix);
+      collectRegionElements(n, regions);
       n = n.nextSibling;
     }
   }
@@ -946,10 +909,9 @@ class FrameImpl {
    * same arg of the same occurrence IS the same region whatever wire name
    * this stream gave it (see #resolveArgs; `#reconcileRegions` follows the
    * rename) — and {$ref}s by resolving the incoming ref (current table)
-   * against the cached resolution from mount. Keys the stream ADDS count as
-   * unchanged only when they are {$frame} refs to regions the occurrence
-   * already holds — the t=0 record omits used regions, so the first
-   * post-adoption stream always re-introduces them (#547). Unresolvable or
+   * against the cached resolution from mount. One record shape (A5): every
+   * transport's record carries the occurrence's full key set, so an added
+   * or removed key is a REAL args change. Unresolvable or
    * non-JSON-comparable values fall back to "changed" (re-call) — the
    * conservative default.
    */
@@ -957,29 +919,11 @@ class FrameImpl {
     const old = this.#slotArgs.get(occurrence);
     if (!record || record.kind !== "slot") return false;
     if (old && old.kind !== "slot") return false;
-    // A mounted occurrence with NO record is a record-less adoption (or a
-    // direct insert): its args baseline is empty, so a first stream record
-    // carrying only known {$frame} regions is "unchanged" too (#547).
     const a = (old && old.args) || {};
     const b = record.args || {};
     const ka = Object.keys(a);
     const kb = Object.keys(b);
-    if (kb.length < ka.length) return false;
-    // Keys the stream ADDS are unchanged when they are {$frame} refs whose
-    // ranges this occurrence already holds: the t=0 record omits USED
-    // regions by design (they shipped as page markup), so the first
-    // post-adoption stream always re-introduces them — re-calling for that
-    // would tear out live region ranges (#547). Anything else added is a
-    // real change.
-    if (kb.length !== ka.length) {
-      const regions = this.#slotRegions.get(occurrence);
-      for (const key of kb) {
-        if (key in a) continue;
-        const vb = b[key];
-        if (!vb || typeof vb !== "object" || typeof vb.$frame !== "string") return false;
-        if (!regions || !regions.has(key)) return false;
-      }
-    }
+    if (kb.length !== ka.length) return false;
     const cache = this.#slotResolvedRefs.get(occurrence);
     for (const key of ka) {
       const va = a[key];
@@ -1067,44 +1011,37 @@ class FrameImpl {
   }
 
   /**
-   * The frame's resident state, for the host to retain across unmounts: a
-   * COPY of the record store — taken pre-teardown, so slot records survive
-   * the dispose scrub — plus, for an element boundary whose store never
-   * carried a root record (a document-adopted frame: its markup arrived as
-   * page HTML, not chunks), the current interior serialized as the root.
-   * A later mount seeded with this re-materializes the boundary even when
-   * the integration's cache resolves the call with no new stream. Returns
-   * null when there is nothing to re-materialize from.
+   * For the host's last-unmount capture (see host.unregister): an element
+   * boundary's current interior, needed exactly when its content never rode
+   * chunks — a document-adopted frame, whose markup arrived as page HTML —
+   * so the resident store lacks the root record a later mount would
+   * re-materialize from. Null when there is nothing to capture.
    */
-  snapshot() {
-    if (this.#disposed) return null;
-    const records = { ...this.#store };
-    if (!records[""] && this.#element && this.#hasContent) {
-      records[""] = { kind: "html", value: this.#element.innerHTML };
-    }
-    if (!records[""] && this.#version === undefined) return null;
-    return { version: this.#version ?? 0, records };
+  contentHTML() {
+    if (this.#disposed || !this.#element || !this.#hasContent) return null;
+    return this.#element.innerHTML;
   }
 
   /**
-   * Re-key this live frame to a different boundary id — the mount-preserving
-   * half of a call-site handoff (see createServerComponentHandler's
-   * COMPONENT_HANDOFF). Nothing here tears down: the element stays in the
-   * document, slot occurrences stay mounted with their live client state, and
-   * the new id's content lands as writes into the SAME store, so the morph +
-   * record dedupe machinery decides per occurrence what survives — exactly as
-   * a refetch into an unmoved boundary would.
+   * Re-bind this live mount's pull to a different address's store — the
+   * delivery mechanics of the identity split (DR-1): a site whose call
+   * switched arguments keeps its instance and the instance follows the new
+   * binding here. Nothing tears down: the element stays in the document,
+   * slot occurrences stay mounted with their live client state, and the new
+   * address's content lands as writes into the SAME store, so the morph +
+   * record dedupe machinery decides per occurrence what survives — exactly
+   * as a refetch into an unmoved boundary would.
    *
-   * Leaving the old id runs the normal retention protocol (the host stashes
-   * this frame's pre-rebind snapshot under it, so a later mount of the old
-   * call re-materializes what it showed), and joining the new id runs the
-   * normal registration protocol (seed from the new id's retained store when
-   * one exists, then drain chunks buffered for it — a stream already in
-   * flight for the new call). The version affinity resets because version
-   * histories are per boundary id: the new id's writes come from a different
-   * counter, and policy A's stale-guard must not drop them against the old
-   * stream's numbering. Segment bookkeeping resets with it, mirroring the
-   * version-bump branch of `apply` — fragment names restart per stream.
+   * Leaving the old address leaves its resident store warm (a later mount
+   * of the old call re-materializes what it showed), and joining the new
+   * one runs the normal registration protocol: seed from its resident store
+   * — content already there morphs in instantly; a stream in flight for the
+   * new call morphs over. The version affinity resets because version
+   * histories are per address: the new address's writes come from a
+   * different counter, and policy A's stale-guard must not drop them
+   * against the old stream's numbering. Segment bookkeeping resets with it,
+   * mirroring the version-bump branch of `apply` — fragment names restart
+   * per stream.
    */
   rebind(id) {
     if (this.#disposed || id === this.#options.id) return;
@@ -1127,9 +1064,9 @@ class FrameImpl {
   /**
    * Forget the version baseline without touching content: the store, DOM,
    * and slot state stay, but the next write is accepted whatever its number.
-   * The host calls this after seeding a registration from a retained
-   * snapshot — versions are per stream space, and a snapshot's number must
-   * not out-rank the live space's counter.
+   * The host calls this after seeding a registration from the resident
+   * store — the store's version belongs to whatever stream space last wrote
+   * it, and it must not out-rank the registering mount's live counter.
    */
   rebase() {
     this.#version = undefined;
@@ -1137,10 +1074,9 @@ class FrameImpl {
 
   dispose() {
     if (this.#disposed) return;
-    // Unregister FIRST: the host stashes this frame's snapshot for a later
-    // remount, and the teardown below (slot-record release, region disposal)
-    // must not run before the snapshot copies the store — nor mutate the
-    // copy after (it copies shallowly; teardown only deletes keys).
+    // Unregister FIRST: a last-unmount may capture this boundary's interior
+    // into the resident store (see host.unregister), and that must see the
+    // DOM before the teardown below releases records and regions.
     const { host, id } = this.#options;
     if (host && id !== undefined) host.unregister(id, this);
     this.#disposed = true;
@@ -1565,12 +1501,18 @@ function collectSlots(n, end, out) {
  * so the walk stops descending at each region element. Client wrapper
  * elements around a region are descended through.
  */
-function collectRegionElements(node, regions, prefix) {
+function collectRegionElements(node, regions) {
   if (node.nodeType !== ELEMENT_NODE) return;
   if (isFrameElement(node)) {
     const childId = node.getAttribute(FRAME_ID_ATTR);
-    // Bare ids belong to nested document boundaries, not this frame's regions.
-    if (childId && childId.startsWith(prefix)) {
+    // Region ids are dotted (`<producer frame>.<occurrence>.<arg>`); bare ids
+    // belong to nested document BOUNDARIES, which own their interiors (the
+    // walk stops at every frame element, so a nested boundary's own regions
+    // are never reachable from here). The producer prefix is wire-relative —
+    // a mount registered under a call ADDRESS still adopts markup produced
+    // under the function id — so region membership is structural
+    // (outermost-in-this-interior), not prefix-matched.
+    if (childId && childId.includes(".")) {
       const argKey = childId.slice(childId.lastIndexOf(".") + 1);
       if (!regions.has(argKey)) {
         regions.set(argKey, { childId, element: node, frame: undefined, adopt: true });
@@ -1578,7 +1520,7 @@ function collectRegionElements(node, regions, prefix) {
     }
     return;
   }
-  for (let c = node.firstChild; c; c = c.nextSibling) collectRegionElements(c, regions, prefix);
+  for (let c = node.firstChild; c; c = c.nextSibling) collectRegionElements(c, regions);
 }
 
 /**

@@ -36,7 +36,7 @@ import {
   frameTransformResult
 } from "../../src/frame-sink";
 import {
-  COMPONENT_HANDOFF,
+  COMPONENT_BINDING,
   FRAME_STREAM_HEADER,
   createServerComponentHandler,
   flightCodec,
@@ -233,13 +233,15 @@ describe("per-args boundary identity", () => {
   });
 });
 
-// The mount-preserving exception to per-args identity: a LIVE call site
-// switching arguments offers its previous component to the incoming one
-// (dynamic's contract), and `take` rebinds the mounted frame to the new call
-// instead of letting the reader remount — the element and its slot state
-// stay while the new call's stream morphs it. Preloads have no reader and
-// never offer anything, so their isolation is untouched.
-describe("call-site handoff", () => {
+// The identity split (DR-1): the MOUNT is the site's, keyed by function —
+// every call of a function resolves a binding wrapping the same per-function
+// component, so an equals-gated reader keeps its instance across argument
+// changes — while CONTENT is keyed per-address in resident stores. A site
+// following a delivered address re-binds its frame's pull; leaving an
+// address leaves its store warm for a later return. There is no mount to
+// steal, so no handoff protocol exists, and a preload for other args only
+// ever warms an unbound store.
+describe("binding delivery across argument changes", () => {
   /** Poll a condition across macrotasks (streams apply asynchronously). */
   async function settle(cond) {
     for (let i = 0; i < 50 && !cond(); i++) await new Promise(r => setTimeout(r, 0));
@@ -250,22 +252,20 @@ describe("call-site handoff", () => {
     const host = createFrameHost();
     const handler = createServerComponentHandler({
       host,
-      // Mount lazily, like a framework component: minting must not register
-      // a frame (nothing is showing an address until something mounts it).
-      component: frameId => {
-        const comp = () => {
-          const el = document.createElement("div");
-          document.body.appendChild(el);
-          const frame = createFrame(el, { host, id: frameId });
-          return { el, frame };
-        };
-        return comp;
+      // ONE mount component per function. Each call of it is a site: it
+      // mounts a frame bound to the delivered address, and hands back a
+      // rebind handle standing in for a framework's reactive follow.
+      component: () => (props, address) => {
+        const el = document.createElement("div");
+        document.body.appendChild(el);
+        const frame = createFrame(el, { host, id: address() });
+        return { el, follow: next => frame.rebind(next) };
       }
     });
     return { host, handler };
   }
 
-  it("take() rebinds the live mount across args, and back again on return", async () => {
+  it("keeps the instance across args: same component, new address, one element", async () => {
     let payload = "top stories";
     registerServerFunction("sf-sc-9", async () => () => r.ssr`<p>${payload}</p>`);
     const { host, handler } = makeHandler();
@@ -275,82 +275,82 @@ describe("call-site handoff", () => {
         transformResult: frameTransformResult
       });
 
-    const Top = await handler.handle(await fetchPage(), {
+    const top = await handler.handle(await fetchPage(), {
       id: "sf-sc-9",
       args: ["top"],
       context: null
     });
-    const { el } = Top();
+    const { el, follow } = top();
     await settle(() => el.textContent === "top stories");
 
-    // The site switches args: a NEW component resolves (per-args identity),
-    // whose stream buffered off-screen. The reader offers its previous value…
+    // The site switches args: a DIFFERENT binding resolves (per-address
+    // values) wrapping the SAME component (per-function mounts) — the
+    // reader's equals-gate keeps the instance and delivers the address.
     payload = "new stories";
-    const Fresh = await handler.handle(await fetchPage(), {
+    const fresh = await handler.handle(await fetchPage(), {
       id: "sf-sc-9",
       args: ["new"],
       context: null
     });
-    expect(Fresh).not.toBe(Top);
-    expect(Fresh[COMPONENT_HANDOFF].take(Top)).toBe(true);
-    // …and the SAME element morphs to the new call's content: the mounted
-    // frame rebound, draining the buffered stream.
+    expect(fresh).not.toBe(top);
+    expect(fresh[COMPONENT_BINDING].component).toBe(top[COMPONENT_BINDING].component);
+    // The instance follows the delivered address: the SAME element morphs
+    // to the new call's content (already resident — the response streamed
+    // into the store whether or not anything was bound).
+    follow(fresh[COMPONENT_BINDING].address);
     await settle(() => el.textContent === "new stories");
     expect(host.get(frameAddress("sf-sc-9", ["new"]))).toBeDefined();
     expect(host.get(frameAddress("sf-sc-9", ["top"]))).toBeUndefined();
 
-    // Returning to the original args resolves the SAME component the reader
-    // still holds; its take() brings the mount home (seeded from retention,
-    // morphed by the refetch stream).
+    // Returning to the original args resolves the SAME binding (identity-
+    // stable per address); following it home re-materializes from the old
+    // address's resident store, morphed by the refetch stream.
     payload = "top stories";
-    const TopAgain = await handler.handle(await fetchPage(), {
+    const topAgain = await handler.handle(await fetchPage(), {
       id: "sf-sc-9",
       args: ["top"],
       context: null
     });
-    expect(TopAgain).toBe(Top);
-    expect(TopAgain[COMPONENT_HANDOFF].take(Top)).toBe(true);
+    expect(topAgain).toBe(top);
+    follow(topAgain[COMPONENT_BINDING].address);
     await settle(() => el.textContent === "top stories");
     expect(host.get(frameAddress("sf-sc-9", ["top"]))).toBeDefined();
     expect(host.get(frameAddress("sf-sc-9", ["new"]))).toBeUndefined();
   });
 
-  it("take() declines when nothing is mounted or the functions differ", async () => {
-    registerServerFunction("sf-sc-10", async () => () => r.ssr`<p>a</p>`);
-    registerServerFunction("sf-sc-11", async () => () => r.ssr`<p>b</p>`);
-    const { handler } = makeHandler();
-    const fetchPage = id =>
-      handleServerFunctionRequest(flightRequest(id), {
+  it("a preload for other args warms its store without touching any mount", async () => {
+    let payload = "shown";
+    registerServerFunction("sf-sc-10", async () => () => r.ssr`<p>${payload}</p>`);
+    const { host, handler } = makeHandler();
+    const fetchPage = () =>
+      handleServerFunctionRequest(flightRequest("sf-sc-10"), {
         provideEvent: (event, fn) => fn(),
         transformResult: frameTransformResult
       });
 
-    const A1 = await handler.handle(await fetchPage("sf-sc-10"), {
+    const shown = await handler.handle(await fetchPage(), {
       id: "sf-sc-10",
-      args: [1],
+      args: ["shown"],
       context: null
     });
-    const A2 = await handler.handle(await fetchPage("sf-sc-10"), {
-      id: "sf-sc-10",
-      args: [2],
-      context: null
-    });
-    const B = await handler.handle(await fetchPage("sf-sc-11"), {
-      id: "sf-sc-11",
-      args: [1],
-      context: null
-    });
+    const { el } = shown();
+    await settle(() => el.textContent === "shown");
 
-    // Never mounted: nothing to hand off — the reader swaps normally (and a
-    // fresh mount of A2 re-materializes from retention/buffer on its own).
-    expect(A2[COMPONENT_HANDOFF].take(A1)).toBe(false);
-    // Mount A1 now; a different FUNCTION's component never takes it.
-    A1();
-    expect(B[COMPONENT_HANDOFF].take(A1)).toBe(false);
-    // An unbranded previous value (plain client component) declines too.
-    expect(A2[COMPONENT_HANDOFF].take(() => {})).toBe(false);
-    // Same function, mounted: takes.
-    expect(A2[COMPONENT_HANDOFF].take(A1)).toBe(true);
+    // A hover preload: nothing is bound to the preloaded address, so its
+    // stream write-throughs to the store and the page never changes.
+    payload = "preloaded";
+    const preloaded = await handler.handle(await fetchPage(), {
+      id: "sf-sc-10",
+      args: ["hovered"],
+      context: null
+    });
+    await new Promise(r => setTimeout(r, 0));
+    expect(el.textContent).toBe("shown");
+
+    // Mounting the preloaded binding later (real navigation) materializes
+    // instantly from the warm store.
+    const { el: el2 } = preloaded();
+    expect(el2.textContent).toBe("preloaded");
   });
 });
 
@@ -370,10 +370,12 @@ describe("consuming a single-flight frame response", () => {
     const host = createFrameHost();
     const handler = createServerComponentHandler({
       host,
-      component: frameId => {
+      // One mount component per function; each call is a site binding a
+      // frame to the delivered address.
+      component: () => (props, address) => {
         const el = document.createElement("div");
         document.body.appendChild(el);
-        createFrame(el, { host, id: frameId });
+        createFrame(el, { host, id: address() });
         return el;
       }
     });
@@ -382,7 +384,8 @@ describe("consuming a single-flight frame response", () => {
       provideEvent: (event, fn) => fn(),
       transformResult: frameTransformResult
     });
-    const el = await handler.handle(getter, { id: "sf-sc-4", args: [], context: null });
+    const binding = await handler.handle(getter, { id: "sf-sc-4", args: [], context: null });
+    const el = binding();
     // Give the getter's stream time to land before the mutation follows.
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(el.innerHTML).toContain("<li>one</li>");
@@ -401,11 +404,11 @@ describe("consuming a single-flight frame response", () => {
     expect(result).toBe("saved");
     expect(el.innerHTML).toContain("<li>two</li>");
     expect(el.innerHTML).not.toContain("<li>one</li>");
-    // The envelope's entry IS that boundary's component — identity-stable
-    // across the wire, so an integration seeding its cache with it re-stamps
+    // The envelope's entry IS that call's binding — identity-stable across
+    // the wire, so an integration seeding its cache with it re-stamps
     // freshness without failing any equals-gate.
     expect(seen).toHaveLength(1);
-    expect(seen[0]["notes[]"]).toBe(el);
+    expect(seen[0]["notes[]"]).toBe(binding);
   });
 
   it("mints a boundary for a region nothing is showing, draining its buffered chunks", async () => {
@@ -418,10 +421,10 @@ describe("consuming a single-flight frame response", () => {
     const host = createFrameHost();
     const handler = createServerComponentHandler({
       host,
-      component: frameId => {
+      component: () => (props, address) => {
         const el = document.createElement("div");
         document.body.appendChild(el);
-        createFrame(el, { host, id: frameId });
+        createFrame(el, { host, id: address() });
         return el;
       }
     });
@@ -436,31 +439,36 @@ describe("consuming a single-flight frame response", () => {
     expect(result).toBe("saved");
     expect(seen).toHaveLength(1);
     expect(seen[0]["count[]"]).toBe(3);
-    // No boundary was showing the call, so its chunks buffered in the host
-    // under the address and the envelope's reference minted a boundary
-    // there: wherever the integration's seeded value is eventually read, the
-    // content is already in hand — still one round trip.
-    const minted = seen[0]["notes[]"];
-    expect(minted.innerHTML).toContain("<li>fresh</li>");
+    // Nothing was bound to the call's address, so its chunks write-throughed
+    // to the resident store and the envelope's reference minted its binding:
+    // wherever the integration's seeded value is eventually read, mounting
+    // materializes from the warm store — still one round trip.
+    const el = seen[0]["notes[]"]();
+    expect(el.innerHTML).toContain("<li>fresh</li>");
   });
 
-  it("routes a region into a boundary answered locally at t=0", async () => {
+  it("reaches a boundary answered locally at t=0", async () => {
     registerServerFunction("sf-sc-6", async () => "saved");
 
     const host = createFrameHost();
     // The document already carries this boundary (SSR'd, then adopted).
     const adopted = document.createElement("div");
     document.body.appendChild(adopted);
-    createFrame(adopted, { host, id: "sf-doc" });
     const handler = createServerComponentHandler({
       host,
-      component: frameId => frameId,
-      intercept: () => adopted
+      component: () => (props, address) => {
+        createFrame(adopted, { host, id: address() });
+        return adopted;
+      },
+      // Answered locally: any non-undefined hit resolves the call's binding.
+      intercept: () => true
     });
 
-    // The t=0 call never leaves the browser, but the transport records where
-    // it is showing — document boundaries stream under the function id.
-    expect(handler.intercept({ id: "sf-doc", args: [] })).toBe(adopted);
+    // The t=0 call never leaves the browser; the resolved binding mounts the
+    // adopted element under the call's address (argless: the function id) —
+    // which is where a mutation's region for this call then lands.
+    const local = handler.intercept({ id: "sf-doc", args: [] });
+    expect(local()).toBe(adopted);
 
     const mutation = await dispatch("sf-sc-6", () => ({
       "doc[]": collected(() => r.ssr`<p>after</p>`, "sf-doc")

@@ -1936,6 +1936,84 @@ describe("adopt-time record race (#2968)", () => {
   });
 });
 
+describe("occurrence names recycled across streams", () => {
+  it("a torn-down region's up-threaded record removal must not delete a NEWER stream's live record under the same name", () => {
+    // Occurrence ids are unique within one stream (per-prop counters span the
+    // whole render, nesting included) but the counters restart per response —
+    // so stream A's `row#0` can be a NESTED occurrence (mounted by a region
+    // frame, record up-threaded to the root store) while stream B's `row#0`
+    // is a top-level one. Sync order on B: the root mounts its row#0 (new
+    // record already written), THEN the unmount sweep tears down A's region —
+    // whose occurrence teardown threads removeSlotRecord("row#0") up to the
+    // root. Deleting there would strand the LIVE mount recordless; the next
+    // sync re-calls it with empty props (the HN wrapper crashed reading
+    // props.children).
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    createFrame(boundary, {
+      id: "f",
+      host,
+      slots: {
+        row: props => {
+          calls.push(props.cid);
+          const b = document.createElement("b");
+          b.textContent = `row-${props.cid}`;
+          return b;
+        }
+      }
+    });
+
+    // Stream A: one top-level occurrence (row#1) whose region contains a
+    // NESTED occurrence row#0 — the nested record rides the ROOT store.
+    host.apply({ type: "slot", id: "f", version: 1, key: "row#0", args: { cid: "nested" } });
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 1,
+      key: "row#1",
+      args: { cid: "outer", children: { $frame: "f.row#1.children" } }
+    });
+    host.apply({
+      type: "html",
+      id: "f",
+      version: 1,
+      html: "<div><!--slot:row#1:start--><!--slot:row#1:end--></div>"
+    });
+    host.apply({
+      type: "html",
+      id: "f.row#1.children",
+      version: 1,
+      html: "<!--slot:row#0:start--><!--slot:row#0:end-->"
+    });
+    expect(calls).toEqual(["outer", "nested"]);
+
+    // Stream B: a single top-level row#0 — the name A used for its nested
+    // occurrence. The new record lands first (producer order), the html sync
+    // mounts it, and the sweep then disposes A's region.
+    host.apply({ type: "slot", id: "f", version: 2, key: "row#0", args: { cid: "fresh" } });
+    host.apply({
+      type: "html",
+      id: "f",
+      version: 2,
+      html: "<div><!--slot:row#0:start--><!--slot:row#0:end--></div>"
+    });
+    expect(calls).toEqual(["outer", "nested", "fresh"]);
+    expect(boundary.querySelector("b").textContent).toBe("row-fresh");
+
+    // The live mount's record survived the sweep: a later morph that does
+    // NOT re-send the record (records only ride when the producer re-calls)
+    // must sync against the retained args, not re-call recordless.
+    host.apply({
+      type: "html",
+      id: "f",
+      version: 2,
+      html: "<div><span>v2b</span><!--slot:row#0:start--><!--slot:row#0:end--></div>"
+    });
+    expect(calls).toEqual(["outer", "nested", "fresh"]);
+    expect(boundary.querySelector("b").textContent).toBe("row-fresh");
+  });
+});
+
 describe("adoption -> first morph with nested regions (#547)", () => {
   const adoptedDom =
     "<article><h1>Row</h1>" +
@@ -1948,16 +2026,24 @@ describe("adoption -> first morph with nested regions (#547)", () => {
   const streamHtml =
     "<article><h1>Row v2</h1><!--slot:row#r1:start--><!--slot:row#r1:end--></article>";
 
-  it("threads a used region's EXISTING element into the wrapper's props at t=0 (client reactivity must own it)", () => {
-    // A used region is omitted from the t=0 record (it shipped as page
-    // markup), so a record-less adopt must still hand the wrapper the
-    // already-rendered region element as `props.children` — otherwise the
-    // wrapper's own conditional never owns it, and a client-only toggle that
-    // conditionally renders it can't hide/show it until a stream re-call
-    // (which is why the HN global-collapse toggle failed at t=0 but worked
-    // after navigation).
+  it("resolves a used region's {$frame} ref to the EXISTING adopted element at t=0 (client reactivity must own it)", () => {
+    // One record shape (A5): the t=0 record names the used region by its
+    // `{$frame}` address like any stream record would; #discoverRegions
+    // locates the already-rendered element and #resolveArgs hands the
+    // wrapper THAT node as `props.children` — not a freshly minted empty
+    // one. The wrapper's own conditional owns it from the first render, so
+    // a client-only toggle can hide/show it at t=0 (the HN global-collapse
+    // toggle failed exactly here before the region rode the record).
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
+    // The documentBoundary drain: t=0 record, used region included as a ref.
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 0,
+      key: "row#r1",
+      args: { children: { $frame: "f.row#r1.children" } }
+    });
     let received;
     createFrame(boundary, {
       id: "f",
@@ -1992,12 +2078,19 @@ describe("adoption -> first morph with nested regions (#547)", () => {
     expect(host.get("noteView")).toBeUndefined();
   });
 
-  it("an ARMED adopted occurrence (t=0 record drained pre-adoption) does not re-call when the stream adds its used region as {$frame}; the region morphs in place", () => {
+  it("an ARMED adopted occurrence does not re-call on a value-equal stream record; the region morphs in place", () => {
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
-    // The documentBoundary drain: the t=0 record (used regions omitted by
-    // design) applies BEFORE the frame binds; the host buffers it.
-    host.apply({ type: "slot", id: "f", version: 0, key: "row#r1", args: { cid: "r1" } });
+    // The documentBoundary drain: the t=0 record applies BEFORE the frame
+    // binds; the host buffers it. One record shape (A5): the used region
+    // rides as its {$frame} ref — the same record a stream would send.
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 0,
+      key: "row#r1",
+      args: { cid: "r1", children: { $frame: "f.row#r1.children" } }
+    });
     const calls = [];
     createFrame(boundary, {
       id: "f",
@@ -2013,7 +2106,8 @@ describe("adoption -> first morph with nested regions (#547)", () => {
     expect(calls).toEqual([{ cid: "r1", adopted: true }]);
     const em = boundary.querySelector("em");
 
-    // First post-boot stream: same cid, plus the used region as {$frame}.
+    // First post-boot stream re-sends the SAME record (A5: both faces emit
+    // the full shape, so an unchanged occurrence's records are equal).
     host.apply({ type: "html", id: "f", version: 2, html: streamHtml });
     host.apply({
       type: "slot",
@@ -2067,9 +2161,22 @@ describe("adoption -> first morph with nested regions (#547)", () => {
     expect(boundary.querySelectorAll("b").length).toBe(2);
   });
 
-  it("a RECORD-LESS adopted occurrence treats a first record of only known {$frame} regions as unchanged", () => {
+  it("a record that ADDS keys is a real args change: re-call, with a claim-return keeping the interior", () => {
+    // One record shape (A5): every transport carries the occurrence's full
+    // key set, so an added key can only mean the wrapper was genuinely
+    // called with a new arg — the old "first stream re-introduces used
+    // regions, treat known {$frame} adds as unchanged" leniency (#547) is
+    // gone with its cause. The re-call contract still protects the DOM: an
+    // undefined return keeps the current interior.
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
+    host.apply({
+      type: "slot",
+      id: "f",
+      version: 0,
+      key: "row#r1",
+      args: { children: { $frame: "f.row#r1.children" } }
+    });
     const calls = [];
     createFrame(boundary, {
       id: "f",
@@ -2088,9 +2195,9 @@ describe("adoption -> first morph with nested regions (#547)", () => {
       id: "f",
       version: 2,
       key: "row#r1",
-      args: { children: { $frame: "f.row#r1.children" } }
+      args: { cid: "r1", children: { $frame: "f.row#r1.children" } }
     });
-    expect(calls.length).toBe(1);
+    expect(calls).toEqual([true, false]);
     expect(boundary.querySelector("em").textContent).toBe("body-1");
   });
 

@@ -638,6 +638,10 @@ describe("document-mode occlusion flip (case 3)", () => {
         expect(html).toContain('"sc:slot:occ-0:comment#c2"');
         expect(html).toContain('cid:"c2"');
         expect(html).toContain('title:"visible-text"');
+        // One record shape (A5): the USED region rides in the record too, as
+        // its address ref — same shape a stream would send. The ref is
+        // addressing only; the content stays page markup.
+        expect(html).toContain('$frame:"occ-0.comment#c2.children"');
         // Region content renders inline once; the coinciding scalar arg is the
         // second occurrence.
         expect(html.split("visible-text").length).toBe(3);
@@ -673,8 +677,32 @@ describe("document-mode t=0 arming: primitive args always ship", () => {
         expect(html).toContain("_hk=sc-hk-0-comment#c1-");
         expect(html).toContain('"sc:slot:hk-0:comment#c1"');
         expect(html).toContain('cid:"c1"');
+        // One record shape (A5): the used region's address ref rides along.
+        expect(html).toContain('$frame:"hk-0.comment#c1.children"');
         // body-text is region CONTENT (not an arg), so it ships once as markup.
         expect(html.split("body-text").length).toBe(2);
+        done();
+      }
+    });
+  });
+});
+
+describe("document-mode t=0 records: every invoked occurrence gets one (A5)", () => {
+  it("an argless render-prop call still emits its slot record", done => {
+    const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    // The stream face emits a slot chunk for every invocation, args or not —
+    // that is what lets the consumer classify "render-prop call" vs
+    // "direct-insert position" without guessing. The document face must
+    // match: an argless call's record is `{}`, not absence.
+    const serverComponent = props => r.ssr`<article>${[props.badge({ $key: "b1" })]}</article>`;
+    const Inline = frameTransformDirectResult(serverComponent, { id: "argless-0" });
+    const clientProps = { badge: () => r.ssr`<span class="badge">new</span>` };
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps), { plugins: [ServerComponentPlugin] }).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        expect(html).toContain('"sc:slot:argless-0:badge#b1"');
         done();
       }
     });
