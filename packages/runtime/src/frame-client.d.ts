@@ -239,6 +239,18 @@ export interface FrameOptions {
    * for the framework-agnostic imperative swap (no reactive reveal).
    */
   reveal?(seam: { before: Node; fallback: Node[]; content: () => Node | DocumentFragment }): void;
+  /**
+   * Document-face record-race guard (adopt path only — solidjs/solid#2968).
+   * Nothing on the wire formally orders an occurrence's args-record data
+   * script before the event that triggers adoption, so a recordless
+   * occurrence is ambiguous while this returns true: the frame defers its
+   * mount one macrotask (all currently parsed scripts run first), calls
+   * `drainRecords`, and classifies with whatever is then resolvable. Return
+   * false once the document can run no further data scripts.
+   */
+  recordsPending?(): boolean;
+  /** Re-absorb the document's arrived-by-now records (idempotent per key). */
+  drainRecords?(): void;
 }
 
 /**

@@ -1819,6 +1819,123 @@ describe("hydration attach (adopted SSR DOM)", () => {
   });
 });
 
+// solidjs/solid#2968: an invoked occurrence's args record rides the document
+// as a data script, and nothing on the wire FORMALLY orders that script before
+// whatever triggers adoption. If adoption wins the race, the occurrence has no
+// record, classification falls through to "direct content", and the wrapper's
+// render-prop callback is evaluated as a zero-argument accessor — a callback
+// that reads `props.x` halts the reactive system. While the document may still
+// deliver records, a recordless adopt-time occurrence must WAIT, not guess.
+describe("adopt-time record race (#2968)", () => {
+  const macrotask = () => new Promise(r => setTimeout(r));
+  const adoptedDom =
+    "<section><h1>About</h1>" +
+    "<!--slot:button#0:start--><button>Click me 10</button><!--slot:button#0:end-->" +
+    "</section>";
+
+  function frameWith(host, slots, documentFace) {
+    return createFrame(boundary, { id: "f", host, adopt: true, slots, ...documentFace });
+  }
+
+  it("defers a recordless occurrence and mounts invoked once the record drains", async () => {
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    let drained = 0;
+    frameWith(
+      host,
+      {
+        button: (props, ctx) => {
+          calls.push({ id: props.id, invoked: ctx.invoked, adopted: ctx.adopted });
+          return undefined; // claim the server-rendered button in place
+        }
+      },
+      {
+        recordsPending: () => true,
+        // The document integration's re-drain: the record's script has run by
+        // now (it precedes the swap on the wire); absorb it into the host.
+        drainRecords: () => {
+          drained++;
+          host.apply({ type: "slot", id: "f", version: 0, key: "button#0", args: { id: 10 } });
+        }
+      }
+    );
+
+    // The race moment: no record yet. The callback must NOT have been invoked
+    // argless — the server DOM stays in place untouched.
+    expect(calls).toEqual([]);
+    expect(boundary.querySelector("button").textContent).toBe("Click me 10");
+
+    await macrotask();
+
+    expect(drained).toBe(1);
+    expect(calls).toEqual([{ id: 10, invoked: true, adopted: true }]);
+    expect(boundary.querySelector("button").textContent).toBe("Click me 10");
+  });
+
+  it("mounts as direct content after the re-check finds no record (bounded wait)", async () => {
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    frameWith(
+      host,
+      {
+        button: (props, ctx) => {
+          calls.push({ props, invoked: ctx.invoked });
+          return undefined;
+        }
+      },
+      { recordsPending: () => true, drainRecords: () => {} }
+    );
+    expect(calls).toEqual([]);
+
+    await macrotask();
+
+    // One deferral only: nothing arrived, so this really is a direct-insert
+    // position — today's classification, one macrotask later.
+    expect(calls).toEqual([{ props: {}, invoked: false }]);
+  });
+
+  it("does not defer once the document has settled", () => {
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    const calls = [];
+    frameWith(
+      host,
+      {
+        button: (props, ctx) => {
+          calls.push(ctx.invoked);
+          return undefined;
+        }
+      },
+      { recordsPending: () => false, drainRecords: () => {} }
+    );
+    // Settled document, no record: a genuine direct-insert position, mounted
+    // synchronously exactly as before.
+    expect(calls).toEqual([false]);
+  });
+
+  it("mounts synchronously when the record was drained before adoption (fast path)", () => {
+    boundary.innerHTML = adoptedDom;
+    const host = createFrameHost(createMockSerializer());
+    // The normal ordering: the record script ran first, adoption's initial
+    // drain buffered it, registration flushes it into the store.
+    host.apply({ type: "slot", id: "f", version: 0, key: "button#0", args: { id: 10 } });
+    const calls = [];
+    frameWith(
+      host,
+      {
+        button: (props, ctx) => {
+          calls.push({ id: props.id, invoked: ctx.invoked });
+          return undefined;
+        }
+      },
+      { recordsPending: () => true, drainRecords: () => {} }
+    );
+    expect(calls).toEqual([{ id: 10, invoked: true }]);
+  });
+});
+
 describe("adoption -> first morph with nested regions (#547)", () => {
   const adoptedDom =
     "<article><h1>Row</h1>" +

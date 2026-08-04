@@ -314,6 +314,11 @@ class FrameImpl {
   #slotResolvedRefs = new Map();
   #slotNodes = new Map();
   #processedAssets = new Set();
+  // Occurrences whose adopt-time mount was deferred once for a still-arriving
+  // args record (#2968 — see #syncSlots). Membership means "the re-check
+  // already ran (or is scheduled); classify with whatever is known".
+  #deferredSlots = null;
+  #recordRefresh = null;
   #disposed = false;
   // Stable identity so a pending stylesheet holds at most one waiter per
   // frame across repeated readiness checks.
@@ -595,6 +600,35 @@ class FrameImpl {
         this.#runSlotCleanups(occurrence);
       }
       if (!this.#mountedSlots.has(occurrence)) {
+        // solidjs/solid#2968 (interim — A5 of the principles doc removes the
+        // skew): an invoked occurrence's args record rides the document as a
+        // data script, and nothing formally orders that script before the
+        // event that triggers adoption. Recordless here is therefore
+        // ambiguous while records may still arrive: a genuine direct-insert
+        // position, or an invoked occurrence whose record the parser hasn't
+        // reached. Guessing "content" evaluates the wrapper's render-prop
+        // callback as a zero-arg accessor — a props read halts the reactive
+        // system. So defer this occurrence ONE macrotask (all currently
+        // parsed scripts run first), re-drain the document's records, and
+        // classify then. Full syncs only: a scoped segment fill renders into
+        // a detached fragment a later full sync can't reach — and its records
+        // rode the same stream, ahead of its markup.
+        if (
+          record === undefined &&
+          !root &&
+          this.#options.adopt &&
+          !this.#deferredSlots?.has(occurrence) &&
+          this.#options.recordsPending?.()
+        ) {
+          (this.#deferredSlots ??= new Set()).add(occurrence);
+          this.#recordRefresh ??= setTimeout(() => {
+            this.#recordRefresh = null;
+            if (this.#disposed) return;
+            this.#options.drainRecords?.();
+            this.#syncSlots();
+          });
+          continue;
+        }
         // Direct-insert occurrences have no `slot:<id>` record and mount with
         // empty props; render-function occurrences mount with resolved props.
         // Mounting replaces the range interior: on a fresh stream it is
@@ -1110,6 +1144,10 @@ class FrameImpl {
     const { host, id } = this.#options;
     if (host && id !== undefined) host.unregister(id, this);
     this.#disposed = true;
+    if (this.#recordRefresh) {
+      clearTimeout(this.#recordRefresh);
+      this.#recordRefresh = null;
+    }
     for (const key of [...this.#slotCleanups.keys()]) this.#runSlotCleanups(key);
     // Release this frame's occurrences' records from the store that owns them
     // (an ancestor's, for a region frame's nested occurrences) so a torn-down

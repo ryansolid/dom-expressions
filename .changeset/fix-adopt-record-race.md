@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Defer adopt-time classification of a recordless slot occurrence while document records may still arrive (solidjs/solid#2968). An invoked occurrence's args record rides the document as a data script, and nothing on the wire formally orders that script before the event that triggers adoption; when adoption won the race the occurrence resolved no record, classification fell through to "direct content", and the wrapper's render-prop callback was evaluated as a zero-argument accessor — a callback reading `props.x` halted the reactive system. Adopt frames now accept a `recordsPending`/`drainRecords` seam from the document integration: a recordless occurrence defers one macrotask (all currently parsed scripts run first), records are re-drained, and classification happens with the record present. Server-rendered DOM stays in place across the deferral. Interim by design — the unified record shape (principles doc A5, stage 2) removes the timing skew and this machinery with it.

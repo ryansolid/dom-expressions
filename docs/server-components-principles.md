@@ -394,7 +394,8 @@ The sink gets the same audit in Stage 2/3 implementation:
 ## 6. Size budget
 
 Derived from the mechanism set, not ratcheted from actuals. Current measured
-(min+gzip, CI-guarded): **8,505 B** full frames consumer, **1,067 B** morph slice.
+(min+gzip, CI-guarded): **8,610 B** full frames consumer (8,505 + 105 for the
+stage-1 interim #2968 deferral, which stage 2 deletes), **1,067 B** morph slice.
 
 Deletions and simplifications from §4 (handoff stack, retention snapshots,
 `#refArgsUnchanged`, `hy.r` absorption, rename machinery, reveal-policy glue,

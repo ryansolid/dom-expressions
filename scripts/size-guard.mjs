@@ -100,12 +100,18 @@ const SCENARIOS = {
   // (restoreDisplacedRanges: a range whose new position lives inside a
   // wholesale-inserted parent was orphaned in the index while its occurrence
   // stayed "mounted" — the notes search-clear empty-slot bug) — re-guarded
-  // at actual+20 (8505 measured).
+  // at actual+20 (8505 measured). Then +105 for the adopt-time record-race
+  // deferral (solidjs/solid#2968: a recordless occurrence waits one
+  // macrotask + re-drain while document records may still arrive, instead of
+  // misclassifying an invoked slot as argless content) — EXPLICITLY
+  // compensatory interim machinery per docs/server-components-principles.md
+  // §8 stage 1; the A5 unified record shape (stage 2) removes the timing
+  // skew and these bytes with it. Guarded at actual+20 (8610 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8525
+    8630
   ]
 };
 
