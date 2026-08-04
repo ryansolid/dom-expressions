@@ -227,6 +227,26 @@ suspends its stream on them. Classification is by the value's nature, decided
       snapshots cheap; in-place updates make patches cheap) — which is
       also the single-copy answer: snapshot once, deltas after. Frame
       replacement disposes the source iterator (the response abort above).
+      **Hydration's trace, the frame store's envelope.** What is reused is
+      the PatchOp trace; what must not be reused is hydration's transport
+      identity (owner-keyed `ctx.serialize(owner.id, …)` records in the
+      document-lifetime table, matched by re-running client code). At the
+      border the trace rides the frame model: addressed as `(occurrence,
+      arg)` inside the slot record — a capability of the record, not a
+      registry entry — routed through data chunks to the minted store;
+      version-gated by the store's existing discipline (a superseding
+      stream for the address means pending patch batches from the old
+      version are *dropped*, never applied); lifetime-bound to region
+      teardown. And "serialize what is read" holds at the only granularity
+      the server can know: the client's reads happen after the server is
+      gone, so narrowing to them is impossible without SSR-ing the client
+      component or a demand-fetch waterfall against a disposed source —
+      instead, the projection itself is the author-declared read set, and
+      snapshot+deltas is that declaration's minimal encoding. "Ship less"
+      = "project less"; the primitive is the API for it. Single-copy is
+      preserved because the record is the only copy when the client is the
+      only consumer; render-AND-pass duplication is the authored, bounded
+      concession DR-3 rule 2 already names.
    3. *Async at container paths* (promises/pending nodes stored IN a
       projection): two clocks interleave at one path — the mutation log (a
       path may be reassigned before its promise settles; a superseded
