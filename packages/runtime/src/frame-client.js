@@ -176,22 +176,32 @@ export function createFrameHost(options = {}) {
         if (sibling.version === undefined) frame.rebase && frame.rebase();
         return;
       }
-      // No live sibling: seed from the boundary's retained store (see above)
-      // before draining buffered chunks — the buffer, when present, holds a
-      // NEWER stream whose writes then morph over the re-materialized state.
+      // No live sibling: seed from the boundary's retained store and any
+      // buffered newer stream as ONE write. Seeding the snapshot first and
+      // draining the buffer after — two applies with a flush between — let
+      // the first slot sync MOUNT occurrences with the SNAPSHOT's stale args
+      // (a preload's refetch buffers while nothing is mounted, so its fresh
+      // args are exactly what the buffer holds); consumers that latch props
+      // at mount (an editor seeding local state) then show the previous
+      // response forever, with the fresh args arriving only as a post-mount
+      // update. Merging per-key (buffer wins) makes the mount's first sync
+      // observe the newest known state — the snapshot only contributes keys
+      // the newer stream did not re-send.
       const kept = retained.get(id);
+      const buffered = pending.get(id);
+      const records = {};
+      // The snapshot's version belongs to a PREVIOUS registration's stream
+      // (or, after a rebind, to a different id's numbering entirely), while
+      // everything from here on comes from this registration's own space —
+      // so a pure-snapshot seed rebases (without it, a retained version
+      // larger than the incoming stream's counter stale-drops genuinely
+      // fresh content). A merged seed carries the BUFFER's version: that is
+      // the live stream's own numbering, the exact baseline later chunks of
+      // the same stream expect.
       if (kept) {
         retained.delete(id);
-        frame.apply({ version: kept.version, r: kept.records });
-        // The snapshot's version belongs to a PREVIOUS registration's stream
-        // (or, after a rebind, to a different id's numbering entirely), while
-        // everything from here on comes from this registration's own space.
-        // Rebase so the next live write establishes the baseline — without
-        // it, a retained version larger than the incoming stream's counter
-        // stale-drops genuinely fresh content.
-        frame.rebase && frame.rebase();
+        Object.assign(records, kept.records);
       }
-      const buffered = pending.get(id);
       if (buffered) {
         pending.delete(id);
         // ONE store write for the whole buffer: per-chunk applies flush (and
@@ -201,7 +211,6 @@ export function createFrameHost(options = {}) {
         // incomplete args and wiping adopted interiors (the #547 boot face).
         // The buffer holds a single version by construction (stale-version
         // chunks are dropped at buffering time).
-        const records = {};
         let version;
         for (const chunk of buffered.chunks) {
           if (chunk.type === "data") {
@@ -211,7 +220,16 @@ export function createFrameHost(options = {}) {
           version = chunk.version;
           Object.assign(records, chunkToRecords(chunk));
         }
-        if (version !== undefined) frame.apply({ version, r: records });
+        if (version !== undefined) {
+          frame.apply({ version, r: records });
+          return;
+        }
+        // A data-only buffer adds nothing to the store; fall through to the
+        // snapshot seed (if any) exactly as if the buffer were absent.
+      }
+      if (kept) {
+        frame.apply({ version: kept.version, r: records });
+        frame.rebase && frame.rebase();
       }
     },
     /**
