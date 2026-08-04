@@ -247,6 +247,24 @@ suspends its stream on them. Classification is by the value's nature, decided
       preserved because the record is the only copy when the client is the
       only consumer; render-AND-pass duplication is the authored, bounded
       concession DR-3 rule 2 already names.
+      **Parts of a projection ship as what you pass.** A nested node of a
+      projection is itself a store proxy, so classification sees it; the
+      unit that crosses is the passed subtree, never its root — the wire
+      is an exposure contract (`{ first: state.items[0] }` must not leak
+      siblings/ancestors), which rules out the hydration-equivalent
+      root-reference design despite its free aliasing semantics. The
+      capture is unchanged (root-relative paths); each arg gets a
+      server-side filtered/rebased view of the one trace: ops strictly
+      below the arg's path strip the prefix; an op at or above it projects
+      the new value down as a sub-store root replacement (`[[], v]`); ops
+      elsewhere are dropped *before* the wire. A part whose ancestor is
+      deleted settles at its final projection. Contract corollaries: two
+      overlapping parts are two independent containers — share identity by
+      passing the common ancestor once (also the cheaper wire); and the
+      slot-record snapshot serializes the subtree through seroval directly
+      (hydration's JSON-clone freeze would sever shared references within
+      a record). Passing a part is "project less" ad hoc: it costs exactly
+      what it declares.
    3. *Async at container paths* (promises/pending nodes stored IN a
       projection): two clocks interleave at one path — the mutation log (a
       path may be reassigned before its promise settles; a superseded
