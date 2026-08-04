@@ -96,6 +96,90 @@ describe("function-valued slot args — stream face", () => {
   });
 });
 
+describe("async slot args — value tier (DR-2)", () => {
+  it("a promise arg ships as a data ref and streams its resolution before complete", async () => {
+    let resolveIt;
+    const p = new Promise(r => (resolveIt = r));
+    const pending = collectStream(props => r.ssr`<div>${[props.row({ value: p })]}</div>`);
+    // The record must not wait for the promise: release it after a tick.
+    await Promise.resolve();
+    resolveIt("later");
+    const chunks = await pending;
+    const slot = chunks.find(c => c.type === "slot");
+    expect(slot.args.value.$ref).toBe("arg:row#0:value");
+    // Seroval streamed the resolution as data chunks keyed to the arg ref.
+    const dataChunks = chunks.filter(c => c.type === "data" && c.key === "arg:row#0:value");
+    expect(dataChunks.length).toBeGreaterThan(1); // initial pending node + resolution patch
+    expect(JSON.stringify(dataChunks.map(c => c.node))).toContain("later");
+    // Order: the slot record shipped before the resolution patch, complete after.
+    const slotIdx = chunks.indexOf(slot);
+    const patchIdx = chunks.indexOf(dataChunks[dataChunks.length - 1]);
+    const completeIdx = chunks.findIndex(c => c.type === "complete");
+    expect(slotIdx).toBeLessThan(patchIdx);
+    expect(patchIdx).toBeLessThan(completeIdx);
+  });
+
+  it("a not-ready thunk ships the record immediately and settles at first success", async () => {
+    // An async-memo-shaped arg: throws not-ready (error with a blocking
+    // promise, the ssrHandleError convention) until the source settles.
+    let release;
+    const source = new Promise(r => (release = r));
+    let ready = false;
+    source.then(() => (ready = true));
+    const memoLike = () => {
+      if (!ready) {
+        const err = new Error("not ready");
+        err._promise = source;
+        throw err;
+      }
+      return "settled!";
+    };
+    const pending = collectStream(
+      props => r.ssr`<div>${[props.row({ value: memoLike, plain: 1 })]}</div>`
+    );
+    await Promise.resolve();
+    release();
+    const chunks = await pending;
+    // The stream did not error and did not hold: the slot record shipped
+    // with the sibling arg intact and the not-ready arg as a pending ref.
+    expect(chunks.find(c => c.type === "error")).toBeUndefined();
+    const slot = chunks.find(c => c.type === "slot");
+    expect(slot.args.plain).toBe(1);
+    expect(slot.args.value.$ref).toBe("arg:row#0:value");
+    // The settled value rode the data channel before complete.
+    const dataChunks = chunks.filter(c => c.type === "data" && c.key === "arg:row#0:value");
+    expect(JSON.stringify(dataChunks.map(c => c.node))).toContain("settled!");
+    const completeIdx = chunks.findIndex(c => c.type === "complete");
+    expect(chunks.indexOf(dataChunks[dataChunks.length - 1])).toBeLessThan(completeIdx);
+  });
+
+  it("a thunk that stays not-ready until the source rejects settles the arg as rejected", async () => {
+    let reject;
+    const source = new Promise((_, rj) => (reject = rj));
+    // A real async memo re-throws the underlying error on the re-pull after
+    // its source rejects (not another not-ready).
+    let failed = null;
+    source.catch(e => (failed = e));
+    const memoLike = () => {
+      if (failed) throw failed;
+      const err = new Error("not ready");
+      err._promise = source;
+      throw err;
+    };
+    const pending = collectStream(props => r.ssr`<div>${[props.row({ value: memoLike })]}</div>`);
+    await Promise.resolve();
+    reject(new Error("boom"));
+    const chunks = await pending;
+    // No stream-level error; the arg's promise rejects through the data
+    // channel (seroval serializes rejections) and the stream completes.
+    const slot = chunks.find(c => c.type === "slot");
+    expect(slot.args.value.$ref).toBe("arg:row#0:value");
+    expect(chunks.findIndex(c => c.type === "complete")).toBe(chunks.length - 1);
+    const dataChunks = chunks.filter(c => c.type === "data" && c.key === "arg:row#0:value");
+    expect(JSON.stringify(dataChunks.map(c => c.node))).toContain("boom");
+  });
+});
+
 describe("function-valued slot args — document face (t=0)", () => {
   it("a thunk producing JSX renders inline as a region element when the wrapper uses it", async () => {
     const html = await collectDocument(

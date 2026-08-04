@@ -39,7 +39,8 @@ import {
   runWithOwner,
   NoHydration,
   Hydration,
-  runInServerComponentScope
+  runInServerComponentScope,
+  ssrHandleError
 } from "rxcore";
 
 /**
@@ -756,6 +757,54 @@ function isServerContent(value) {
   return false;
 }
 
+/**
+ * The arg-level markup-hole retry loop (DR-2 value tier): a slot arg whose
+ * evaluation threw not-ready ships as this pending promise, re-evaluated
+ * each time the blocking async settles until an evaluation succeeds — then
+ * the promise resolves with that value and seroval's streaming
+ * serialization patches the record's data ref. A retry that throws a real
+ * error rejects the promise (the client `Loading` covering the consumption
+ * read errors instead of hanging). Retries run under the evaluation's
+ * owner, like `buildAsyncWrap`'s markup holes, so context reads inside the
+ * getter keep resolving.
+ */
+function retryArgUntilSettled(fn, blocked, key, occurrence) {
+  const owner = getOwner();
+  return new Promise((resolve, reject) => {
+    const retry = () => {
+      try {
+        const run = () => {
+          let value = fn;
+          for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+          return value;
+        };
+        const value = owner ? runWithOwner(owner, run) : run();
+        if (isServerContent(value)) {
+          // DR-3 rule 1: async slot args are data-only. Markup emission is
+          // long past by the time this settles — there is no placeholder to
+          // fill retroactively.
+          reject(
+            new Error(
+              "Async slot arg resolved to JSX (arg '" +
+                key +
+                "' of " +
+                occurrence +
+                "). Async args must resolve to serializable values; render async content through a boundary instead."
+            )
+          );
+          return;
+        }
+        resolve(value);
+      } catch (err) {
+        const next = ssrHandleError && ssrHandleError(err);
+        if (next) next.then(retry, retry);
+        else reject(err);
+      }
+    };
+    blocked.then(retry, retry);
+  });
+}
+
 export function createSlotProps(sink, frame) {
   const counts = Object.create(null);
   const getters = new Map();
@@ -819,8 +868,22 @@ export function createSlotProps(sink, frame) {
               // top-level one-shot reactive control flow (<For>/<Show>) reaches
               // the content path when it arrives as a thunk/memo rather than an
               // eager node. Bounded against a pathological self-returning fn.
-              let value = raw[key];
-              for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+              let value;
+              try {
+                value = raw[key];
+                for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+              } catch (err) {
+                // DR-2 value tier: a not-ready evaluation (an async memo, or a
+                // getter reading one) never holds the record and never kills
+                // the stream — the arg ships NOW as a pending promise and the
+                // markup-hole retry loop runs at the arg level: re-evaluate
+                // when the blocking async settles, settle the promise at the
+                // first successful evaluation. The client suspends at the
+                // consumption read, not here.
+                const blocked = ssrHandleError && ssrHandleError(err);
+                if (!blocked) throw err;
+                value = retryArgUntilSettled(raw[key], blocked, key, occurrence);
+              }
               const t = typeof value;
               if (value == null || t === "string" || t === "number" || t === "boolean") {
                 args[key] = value;
