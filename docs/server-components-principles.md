@@ -229,6 +229,28 @@ registry, the held-fragment replay, and `boundaryMayArrive`-style heuristics all
 dissolve: "may this swap apply" becomes "is this write's owner bound," the same
 question every other store write answers.
 
+**Stage 3 refinement — the buffer is a ledger, not a frame instance.** Two
+constraints sharpen the implementation without weakening the axiom. First, the
+0 B non-consumer budget (§6): plain streaming apps use document fragments
+without importing frames, so the one consumer for *document* fragments must
+live in the hydration runtime, not the frames bundle — frame segments keep
+`#revealSegment` for frame transports (disjoint content, same model). Second,
+the record set that answers "what may the document still deliver?" already
+mostly exists: the serializer's `<id>_fr` writes are the DECLARATIONS, seroval's
+`.s` status marks are SETTLEMENT, and one added inline mark (`_$HY.v[id] = 1`
+in `$dfr`, recording — not policy) is REVEAL, valid across the pre-boot window.
+The hydration runtime owns the ledger (declared → settled → revealed, plus its
+post-boot claimed/held policy state) and publishes it as `_$HY.fr`
+(`{ pending, subscribe }`): the frames client's document adoption reads
+"may a boundary still arrive" and learns of reveals from the ledger — the
+`pl-*` document scans and the `_$HY.fe` monkey-patch delete. One scoped residue:
+a settled-but-unswapped fragment (style-gated, retry-queued, reveal-grouped,
+policy-held) reads as pending via its content template's continued presence —
+a per-id `getElementById` at query time, an id-table lookup rather than the
+tree scan this replaces. Pre-boot reveals stay inline mechanics ($dfr): before
+the runtime exists there is no second writer, so no policy question — one
+owner *at any moment* is the invariant, not one code location.
+
 ### DR-5: Identity-first reconciliation
 
 The morph is currently position-first (two-cursor sibling reconcile) with a
@@ -281,10 +303,10 @@ exists to undo another mechanism's consequences; deletes with its cause.
 | 29 | `ServerComponentPlugin` + flight codec refs | A1 | Derived — unchanged (component references serialize as addresses, never markup-as-data). |
 | 30 | Single-flight application (`applyFlightResponse`) | A3 | Derived, simplified: regions address stores directly; no mount lookup, no per-frame `as`. |
 | 31 | `slotsFor`/`claimRender`/reactive insert (Solid) | A2 | Derived; the claim-scope tracking hole (#2967's second bug) is fixed by construction: claims wrap the insert *call*, reads stay tracked. |
-| 32 | Document boot: boundary index/claim/wait (`documentBoundary`) | A2/A6 | Derived, simplified: "may a boundary still arrive" becomes a store question (is a pending segment recorded for it), not a `_$HY.done`/`documentStreaming` heuristic. |
+| 32 | Document boot: boundary index/claim/wait (`documentBoundary`) | A2/A6 | **Done (Stage 3):** "may a boundary still arrive" is the ledger's answer (`_$HY.fr.pending()`), reveal/exhaustion arrive by subscription; the `pl-*` document scans and `_$HY.fe` patch deleted. |
 | 33 | Per-stream seroval tables (Solid `tables`) | A3 | Derived; keyed by address root (§5.2). |
 | 34 | Boundary resume/scope capture (hydration.ts) | A2 | Derived — unchanged (multi-root hydrate is orthogonal). |
-| 35 | Fragment reveal policy + claim registry (`_$HY.f`, `claimFragment`, `hasPendingFragment`) | — | Compensatory glue between the two reveal owners. Deletes with DR-4. |
+| 35 | Fragment reveal policy + claim registry (`_$HY.f`, `claimFragment`, `hasPendingFragment`) | — | **Done (Stage 3):** restructured into the fragment ledger (declared/settled/revealed/claimed/held, one Map) that also answers row 32 and detects truncation (§5.5); the ad-hoc claim/held Sets deleted into it. `hasPendingFragment` (claimRender's range-scoped template check) stays — the range is its own record. |
 
 Score: 24 derived (several simplified), 8 compensatory deletions, 3 restructured.
 The deletions are precisely the mechanisms with the worst bug-per-line record.
@@ -354,9 +376,15 @@ DOM; nothing per-mount survives unmount.
   bound store's error state through the boundary seam; client boundaries decide UI.
 - **Truncation is detected, not inferred:** a response ending without its terminal
   record marks every still-pending key of that version as truncated — an error-class
-  store write (distinguishable from a server-sent error). The `_$HY.fe` seam this
-  requires gets implemented as part of DR-4's single consumer (closing the
-  solidjs/solid#2958 hole for both document and frame streams at once).
+  store write (distinguishable from a server-sent error). **Document side done
+  (Stage 3):** the parser finishing (DOMContentLoaded) is the transport's close;
+  any `_fr` declaration still unsettled then is marked rejected with a truncation
+  error, releasing its boundary through the normal rejection path and its
+  document-adoption waiters through the ledger (closes solidjs/solid#2958 for
+  documents). The sweep arms only when the runtime booted while the document was
+  still streaming — a late-loaded runtime can't tell a completed page from a
+  truncated one. Frame-stream truncation (pump ends without the root's `complete`
+  chunk) lands with the `:error` content-state records above, not before them.
 
 ### 5.6 Head and assets
 
@@ -458,6 +486,14 @@ is compensatory by definition — fix the cause instead.
    state retention, single-flight save, rapid history, preload isolation).
 3. **Stage 3 — DR-4** (one reveal owner). Touches `server.js` inline scripts and
    Solid hydration; the largest single surgery.
+   **Done** (as refined in DR-4 above): the fragment ledger in Solid's hydration
+   runtime (declared `_fr` records + seroval settlement + the inline `_$HY.v`
+   reveal mark) published as `_$HY.fr`; frames document adoption reads/subscribes
+   instead of scanning for `pl-*` templates and patching `_$HY.fe`; document
+   truncation detection (#2958). Remaining under this decision record: frame-side
+   truncation (with §5.5's `:error` records) and row 20's `hy.r` occlusion drain
+   (deletes when the document sink emits frame-shaped records — producer work
+   deferred until the wire freeze forces it).
 4. **Stage 4 — DR-5** (identity-first morph).
 5. **Re-verify** (notes, hackernews, hackernews-spa end-to-end), set §6 budgets as
    the CI ceilings, close the issue sweep.
