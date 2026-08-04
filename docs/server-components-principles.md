@@ -163,6 +163,20 @@ nearest `Loading`, exactly as a promise prop behaves between two client
 components. Initial SSR's shape, applied to data: emit now, settle later,
 reveal at the read site.
 
+"Nearest `Loading`" is a **border-blind search**, and that is what makes the
+no-boundary case already solved rather than a new hole. The frames client
+reconstructs a client `Loading` at the seam of every server `<Loading>` it
+reveals (`revealSeam`), precisely so a client fill that suspends top-level
+without a boundary of its own defers to the *server's* boundary instead of
+hanging or orphaning on the frame's latched outer boundary. A pending slot
+arg read at mount is just one more way top-level suspension arises, and it
+escalates by the same path: the author's server `Loading` covers unboundaried
+pending *data* exactly as it covers unboundaried fill *markup*. One boundary
+tree spans both owners; what differs across the border is who rendered the
+fallback, not where suspension resolves. DR-2 completes the picture that
+seam decision started — together they mean an author places boundaries by
+UX intent alone, never by which side a value happens to arrive from.
+
 **Data args are live bindings for the response window.** No node kind is
 special: from the graph's perspective an expression, a sync memo, an async
 memo, and a projection are all equally downstream of sources, so the border
