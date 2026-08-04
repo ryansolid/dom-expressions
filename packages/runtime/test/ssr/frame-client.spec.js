@@ -1906,10 +1906,11 @@ describe("adopt-time record race (#2968)", () => {
     expect(boundary.querySelector("button").textContent).toBe("Click me 10");
   });
 
-  it("mounts as direct content after the re-check finds no record (bounded wait)", async () => {
+  it("holds while records may still arrive; classifies as content once settled (PR #559)", async () => {
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
     const calls = [];
+    let pending = true;
     frameWith(
       host,
       {
@@ -1918,14 +1919,24 @@ describe("adopt-time record race (#2968)", () => {
           return undefined;
         }
       },
-      { recordsPending: () => true, drainRecords: () => {} }
+      { recordsPending: () => pending, drainRecords: () => {} }
     );
     expect(calls).toEqual([]);
 
+    // A streamed document held open on async content keeps records arriving
+    // across MANY macrotasks — a fixed single-beat wait classified the tail
+    // of them as content, calling render props as zero-arg accessors. While
+    // the document may still deliver, the occurrence stays deferred (its
+    // server-rendered interior is on screen the whole time).
     await macrotask();
+    await macrotask();
+    await macrotask();
+    expect(calls).toEqual([]);
 
-    // One deferral only: nothing arrived, so this really is a direct-insert
-    // position — today's classification, one macrotask later.
+    // The document settles with no record: a genuine direct-insert position,
+    // classified on the next re-check.
+    pending = false;
+    await macrotask();
     expect(calls).toEqual([{ props: {}, invoked: false }]);
   });
 
@@ -2523,6 +2534,45 @@ describe("boundary retention across unmounts", () => {
     document.body.appendChild(second);
     createFrame(second, { id: "fresh", host });
     expect(second.innerHTML).toBe("<p>new</p>");
+  });
+
+  it("a remount's FIRST slot invocation sees args refetched while unmounted (PR #559 repro)", () => {
+    // The editor-staleness shape from PR #559: a preload's refetch completes
+    // while nothing is mounted under the address, then the route remounts. The
+    // occurrence must mount with the refetched args in its FIRST invocation —
+    // a consumer that latches props at mount (an editor seeding a local draft
+    // from `initialBody`) must never observe the previous response's args.
+    // Under the identity split this holds by construction: the refetch wrote
+    // through to the resident store (newest version wins), and register()
+    // seeds the remount from the merged store in ONE apply — the two-phase
+    // snapshot-then-buffer seed the PR patched no longer exists.
+    const host = createFrameHost(createMockSerializer());
+    const html = "<div><!--slot:editor#0:start--><!--slot:editor#0:end--></div>";
+    const seen = [];
+    const slots = {
+      editor: props => {
+        seen.push(props.body);
+        return undefined;
+      }
+    };
+    const first = document.createElement("div");
+    document.body.appendChild(first);
+    const a = createFrame(first, { id: "note", host, slots });
+    host.apply({ type: "slot", id: "note", version: 1, key: "editor#0", args: { body: "one" } });
+    host.apply({ type: "html", id: "note", version: 1, html });
+    expect(seen).toEqual(["one"]);
+    a.dispose();
+
+    // The refetch lands while nothing is mounted: store-only writes.
+    host.apply({ type: "slot", id: "note", version: 2, key: "editor#0", args: { body: "two" } });
+    host.apply({ type: "html", id: "note", version: 2, html });
+
+    const second = document.createElement("div");
+    document.body.appendChild(second);
+    createFrame(second, { id: "note", host, slots });
+    // Exactly one invocation on the remount, and it saw the fresh args —
+    // never "one"-then-update.
+    expect(seen.slice(1)).toEqual(["two"]);
   });
 
   it("retention is consumed by the mount and re-stashed on its unmount", () => {

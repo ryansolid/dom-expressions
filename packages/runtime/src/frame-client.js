@@ -291,10 +291,8 @@ class FrameImpl {
   #slotResolvedRefs = new Map();
   #slotNodes = new Map();
   #processedAssets = new Set();
-  // Occurrences whose adopt-time mount was deferred once for a still-arriving
-  // args record (#2968 — see #syncSlots). Membership means "the re-check
-  // already ran (or is scheduled); classify with whatever is known".
-  #deferredSlots = null;
+  // The pending re-check for adopt-time occurrences deferred on a
+  // still-arriving args record (#2968 — see #syncSlots).
   #recordRefresh = null;
   #disposed = false;
   // Stable identity so a pending stylesheet holds at most one waiter per
@@ -590,19 +588,27 @@ class FrameImpl {
         // position, or an invoked occurrence whose record the parser hasn't
         // reached. Guessing "content" evaluates the wrapper's render-prop
         // callback as a zero-arg accessor — a props read halts the reactive
-        // system. So defer this occurrence ONE macrotask (all currently
-        // parsed scripts run first), re-drain the document's records, and
-        // classify then. Full syncs only: a scoped segment fill renders into
-        // a detached fragment a later full sync can't reach — and its records
-        // rode the same stream, ahead of its markup.
+        // system. So defer this occurrence, re-drain the document's records
+        // a macrotask later (all currently parsed scripts run first), and
+        // classify only once `recordsPending` says the document can deliver
+        // no more — NOT after a fixed single beat: a streamed document held
+        // open on async content (or slow dev-mode module timing) keeps
+        // records arriving across many macrotasks, and a one-shot defer
+        // classified the tail of them as content (PR #559). The wait is
+        // bounded by the same contract as everything else here:
+        // recordsPending flips false when the document completes with no
+        // fragment left to reveal (truncation included — the ledger rejects
+        // stragglers). Deferral is invisible on screen: an adopted
+        // occurrence's server-rendered interior is already in the DOM; the
+        // mount is the hydration attach. Full syncs only: a scoped segment
+        // fill renders into a detached fragment a later full sync can't
+        // reach — and its records rode the same stream, ahead of its markup.
         if (
           record === undefined &&
           !root &&
           this.#options.adopt &&
-          !this.#deferredSlots?.has(occurrence) &&
           this.#options.recordsPending?.()
         ) {
-          (this.#deferredSlots ??= new Set()).add(occurrence);
           this.#recordRefresh ??= setTimeout(() => {
             this.#recordRefresh = null;
             if (this.#disposed) return;
