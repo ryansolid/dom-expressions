@@ -1873,10 +1873,11 @@ describe("adopt-time record race (#2968)", () => {
     expect(boundary.querySelector("button").textContent).toBe("Click me 10");
   });
 
-  it("mounts as direct content after the re-check finds no record (bounded wait)", async () => {
+  it("holds while records may still arrive; classifies as content once settled", async () => {
     boundary.innerHTML = adoptedDom;
     const host = createFrameHost(createMockSerializer());
     const calls = [];
+    let pending = true;
     frameWith(
       host,
       {
@@ -1885,14 +1886,23 @@ describe("adopt-time record race (#2968)", () => {
           return undefined;
         }
       },
-      { recordsPending: () => true, drainRecords: () => {} }
+      { recordsPending: () => pending, drainRecords: () => {} }
     );
     expect(calls).toEqual([]);
 
+    // A streamed document held open on async content keeps records arriving
+    // across MANY macrotasks — a fixed single-beat wait classified the tail
+    // of them as content, calling render props as zero-arg accessors. While
+    // the document may still deliver, the occurrence stays deferred.
     await macrotask();
+    await macrotask();
+    await macrotask();
+    expect(calls).toEqual([]);
 
-    // One deferral only: nothing arrived, so this really is a direct-insert
-    // position — today's classification, one macrotask later.
+    // The document settles with no record: a genuine direct-insert position,
+    // classified on the next re-check.
+    pending = false;
+    await macrotask();
     expect(calls).toEqual([{ props: {}, invoked: false }]);
   });
 
