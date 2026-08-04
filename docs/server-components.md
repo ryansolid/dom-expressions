@@ -340,15 +340,21 @@ must not break:
    page rather than re-sent.)
 2. **Hydration is t = 0 only.** Never design a flow where the server renders
    a client component after the page is interactive.
-3. **Boundary identity is the call.** A boundary is named by its
-   (function, arguments) address, which both peers derive independently —
-   nobody declares ids, and a data layer's per-args cache keys agree with
-   the transport's boundaries by construction. Same call ⇒ same component
-   ⇒ morph in place ⇒ client state inside survives. Different arguments ⇒
-   independent boundary, swapped in at the call site. Boundary state
-   outlives any one mount: the host retains an unmounted boundary's store,
-   so a remount (a cache hit with no new stream) re-materializes what the
-   call last showed instead of rendering blank.
+3. **The call names the content; the site owns the mount.** Content is
+   keyed by its (function, arguments) address, which both peers derive
+   independently — nobody declares ids, and a data layer's per-args cache
+   keys agree with the transport's stores by construction. Arrival (any
+   transport) only ever writes the address's store; a consumption site owns
+   one mounted frame bound to one address at a time and pulls from it.
+   Same call ⇒ same store ⇒ morph in place ⇒ client state inside survives.
+   Different arguments at the same site ⇒ the mount rebinds and morphs to
+   the new address's store — warm stores re-materialize instantly (a cache
+   hit with no new stream renders what the call last showed instead of
+   blank). *(Revised by the derivation pass — see
+   [`server-components-principles.md`](server-components-principles.md),
+   DR-1. The earlier form, "boundary identity is the call," keyed the
+   mount per-args too and required handoff machinery to undo the
+   remounts.)*
 4. **Occurrence identity belongs to keys.** Iterated client positions keyed
    by entity id keep their state across refetches; unkeyed positions are
    positional.
