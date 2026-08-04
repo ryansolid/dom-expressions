@@ -511,3 +511,15 @@ is compensatory by definition — fix the cause instead.
    `placeRange` (stashed fragment vs attached start).
 5. **Re-verify** (notes, hackernews, hackernews-spa end-to-end), set §6 budgets as
    the CI ceilings, close the issue sweep.
+   **Done, with one residual:** all three examples verified end-to-end post-DR-5
+   (notes: search filter/clear with expansion state, single-flight save, viewer
+   intact through list morphs; hackernews: rapid top-level nav without blank
+   pages, comment threads through back/forward, pagination, hover-preload
+   isolation; hackernews-spa baseline: list/item round trip). Issue sweep:
+   #2958/#2964/#2965/#2967/#2968 closed; #2966 stays open by design (DR-2's
+   async-args tiers are the plan of record for it). CI ceilings are ratcheted
+   to actual+20 (8,248 / 1,117) rather than set to the §6 budgets — the
+   ≤ 7,800 consumer budget is unreachable until the two producer-gated
+   deletions land (row 20's `hy.r` occlusion drain and the #2968 deferral,
+   both waiting on document-sink frame-shaped records at the wire freeze),
+   so pinning it now would just fail CI without forcing the right work.
