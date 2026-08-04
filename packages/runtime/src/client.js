@@ -856,22 +856,30 @@ function flushHeadRegistry() {
   }
 }
 
-function renderHeadElement(t, identity, existing) {
-  for (let i = 0; i < existing.length; i++) {
-    if (headElementMatches(existing[i], t)) return existing.splice(i, 1)[0];
-  }
-  const el = document.createElement(t.tag);
-  for (const name in t.props) {
+// Shared filtered create: skips children/ref/on* and invalid names, drops
+// null/false values, sets the text body. Used by the replaceable render and
+// the resource mount.
+function createHeadElement(tag, props) {
+  const el = document.createElement(tag);
+  for (const name in props) {
     if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
     if (!HEAD_ATTR_NAME.test(name)) {
       if ("_DX_DEV_") console.warn(`useHead: ignoring invalid attribute name "${name}"`);
       continue;
     }
-    const v = t.props[name];
+    const v = props[name];
     if (v == null || v === false) continue;
     el.setAttribute(name, v === true ? "" : String(v));
   }
-  if (t.props.children != null) el.textContent = String(t.props.children);
+  if (props.children != null) el.textContent = String(props.children);
+  return el;
+}
+
+function renderHeadElement(t, identity, existing) {
+  for (let i = 0; i < existing.length; i++) {
+    if (headElementMatches(existing[i], t)) return existing.splice(i, 1)[0];
+  }
+  const el = createHeadElement(t.tag, t.props);
   el.setAttribute("data-dh", identity);
   document.head.appendChild(el);
   return el;
@@ -927,18 +935,7 @@ function acquireHeadResource(tag, props) {
     else if (tag === "script") el = findAssetElement("script[src]", "src", url);
     else el = findAssetElement("style[href]", "href", url);
   }
-  if (!el) {
-    el = document.createElement(tag);
-    for (const name in props) {
-      if (name === "children" || name === "ref" || name.slice(0, 2) === "on") continue;
-      if (!HEAD_ATTR_NAME.test(name)) continue;
-      const v = props[name];
-      if (v == null || v === false) continue;
-      el.setAttribute(name, v === true ? "" : String(v));
-    }
-    if (props.children != null) el.textContent = String(props.children);
-    document.head.appendChild(el);
-  }
+  if (!el) document.head.appendChild(createHeadElement(tag, props));
   return noopFn;
 }
 
@@ -959,8 +956,8 @@ export function useHead(tags) {
   const uid = ++headUid;
   effect(
     () => {
-      const resolved = typeof tags === "function" ? tags() : tags;
-      const list = Array.isArray(resolved) ? resolved : [resolved];
+      let list = typeof tags === "function" ? tags() : tags;
+      if (!Array.isArray(list)) list = [list];
       const replaceable = [];
       const resources = [];
       for (let i = 0; i < list.length; i++) {

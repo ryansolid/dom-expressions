@@ -27,11 +27,6 @@ export const RESOURCE_LINK_RELS = new Set([
   "stylesheet"
 ]);
 
-// Icon rels are replaceable with an identity that excludes `href`: a swapped
-// icon replaces its predecessor, while `sizes`/`type` variants (ico + svg +
-// apple-touch sizes) coexist as separate identities.
-const ICON_LINK_RELS = new Set(["icon", "apple-touch-icon"]);
-
 // Attributes that qualify a resource identity: the same href preloaded
 // `as="image"` and `as="fetch"` are different requests, and crossorigin
 // changes cacheability. URL alone is not the identity.
@@ -106,20 +101,25 @@ export function replaceableIdentity(tag, props, key, unique) {
     // `media` qualifies identity: multiple metas differing by media query
     // (e.g. theme-color light/dark) are spec-blessed and must coexist —
     // consistent with `media` qualifying resource identities.
-    const media = props.media != null ? ":media=" + props.media : "";
-    if (props.name != null) return "meta:name:" + props.name + media;
-    if (props.property != null) return "meta:property:" + props.property + media;
-    if (props["http-equiv"] != null) return "meta:http-equiv:" + props["http-equiv"] + media;
+    for (const ns of ["name", "property", "http-equiv"])
+      if (props[ns] != null)
+        return (
+          "meta:" + ns + ":" + props[ns] + (props.media != null ? ":media=" + props.media : "")
+        );
     return unique;
   }
   if (tag === "link") {
     const rel = props.rel || "";
-    if (ICON_LINK_RELS.has(rel)) {
-      let id = "link:" + rel;
-      if (props.sizes != null) id += ":sizes=" + props.sizes;
-      if (props.type != null) id += ":type=" + props.type;
-      return id;
-    }
+    // Icons are replaceable with an identity that EXCLUDES href — a swapped
+    // icon replaces its predecessor (favicon swapping) — while `sizes`/`type`
+    // variants (ico + svg + apple-touch sizes) coexist as separate identities.
+    if (rel === "icon" || rel === "apple-touch-icon")
+      return (
+        "link:" +
+        rel +
+        (props.sizes != null ? ":sizes=" + props.sizes : "") +
+        (props.type != null ? ":type=" + props.type : "")
+      );
     return "link:" + rel + ":" + (props.href || "");
   }
   return unique; // inline style/script without a key: append-only
