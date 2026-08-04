@@ -239,13 +239,13 @@ export namespace JSX {
   }
 
   type RefCallback<T> = (el: T) => void;
-  type Ref<T> = T | RefCallback<T> | Ref<T>[];
+  type Ref<T> = T | RefCallback<T> | undefined | Ref<T>[];
 
   interface IntrinsicAttributes {
-    ref?: Ref<unknown> | undefined;
+    ref?: Ref<unknown>;
   }
   interface CustomAttributes<T> {
-    ref?: Ref<T> | undefined;
+    ref?: Ref<T>;
     children?: Element | undefined;
     $ServerOnly?: boolean | undefined;
   }
