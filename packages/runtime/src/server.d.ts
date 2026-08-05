@@ -313,7 +313,10 @@ export type FetchMiddleware = (
  */
 export function composeMiddleware(
   middlewares: FetchMiddleware[]
-): (request: Request, next: (request?: Request) => Response | Promise<Response>) => Promise<Response>;
+): (
+  request: Request,
+  next: (request?: Request) => Response | Promise<Response>
+) => Promise<Response>;
 
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function untrack<T>(fn: () => T): T;

@@ -199,9 +199,7 @@ describe("createSSRResponse — stream results", () => {
     // the head went out 200 — the redirect can only happen client-side
     expect(response.status).toBe(200);
     const html = await response.text();
-    expect(html).toContain(
-      `<script nonce="n&quot;1">window.location="/next?a=1&b=2"</script>`
-    );
+    expect(html).toContain(`<script nonce="n&quot;1">window.location="/next?a=1&b=2"</script>`);
   });
 
   it("escapes  '<' in the script redirect target", async () => {
@@ -412,9 +410,7 @@ describe("wrapInvocation", () => {
         return run();
       }
     });
-    const callable = createServerReference(
-      registerServerReference("wrap#2", async n => n * 2)
-    );
+    const callable = createServerReference(registerServerReference("wrap#2", async n => n * 2));
     const event = { request: new Request("http://localhost/"), locals: {} };
     const result = await globalThis[RequestContext].run(event, () => callable(21));
     expect(result).toBe(42);
