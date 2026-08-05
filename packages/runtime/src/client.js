@@ -1184,26 +1184,8 @@ export function getNextMarker(start) {
   return [end, current];
 }
 
-// <head> is the tool-injection zone: dev servers prepend their client
-// script, HMR and extensions insert styles and scripts the server never
-// rendered. A positional claim that lands on such a foreign node would
-// adopt it as the component's element and drift EVERY subsequent sibling
-// claim by one — including insert anchors computed off the walked nodes.
-// So inside head (and only there — body walks stay strict, where skipping
-// would mask genuine mismatches) a hydration walk that knows its expected
-// tag scans forward to the first match, exactly like the compiler's own
-// html-level getNextMatch("head"/"body") tolerates a doctype or comment.
-// No match found returns the positional answer so the dev warning below
-// still names the real mismatch.
-function skipForeignHeadNodes(parent, node, expectedTag) {
-  if (!expectedTag || !parent || parent.localName !== "head" || !isHydrating()) return node;
-  let n = node;
-  while (n && n.localName !== expectedTag) n = n.nextSibling;
-  return n || node;
-}
-
 export function getFirstChild(node, expectedTag) {
-  const child = skipForeignHeadNodes(node, node.firstChild, expectedTag);
+  const child = node.firstChild;
   if ("_DX_DEV_" && isHydrating() && expectedTag && child?.localName !== expectedTag) {
     const isMissing = !child || child.nodeType !== 1;
     console.warn(
@@ -1216,7 +1198,7 @@ export function getFirstChild(node, expectedTag) {
 }
 
 export function getNextSibling(node, expectedTag) {
-  const sibling = skipForeignHeadNodes(node.parentNode, node.nextSibling, expectedTag);
+  const sibling = node.nextSibling;
   if ("_DX_DEV_" && isHydrating() && expectedTag && sibling?.localName !== expectedTag) {
     const parent = node.parentNode;
     const isMissing = !sibling || sibling.nodeType !== 1;
