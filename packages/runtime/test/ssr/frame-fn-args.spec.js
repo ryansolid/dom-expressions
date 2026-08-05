@@ -213,6 +213,210 @@ describe("async slot args — value tier (DR-2)", () => {
   });
 });
 
+describe("watched slot args — expression bindings (DR-2 case 1)", () => {
+  // The compiled form of `<props.slot thing={thing()} />` is a props object
+  // with a GETTER per dynamic expression — the same shape solid compiles for
+  // any component. These args are re-runnable: the producer opens a binding
+  // at emission and re-evaluates it at every commit the response observes,
+  // re-emitting the occurrence's record when the value changed. Eagerly
+  // evaluated call-expression args (`props.slot({ thing: thing() })`) stay
+  // write-once by JS semantics — nothing here changes that.
+
+  it("a not-ready compiled getter ships the record immediately and settles (getter form of the retry loop)", async () => {
+    // The getter twin of the not-ready thunk test above. `raw[key]` THROWS
+    // for a compiled getter (the thunk form merely returns the function), so
+    // the catch path must capture the getter without re-evaluating it.
+    let release;
+    const source = new Promise(r => (release = r));
+    let ready = false;
+    source.then(() => (ready = true));
+    const raw = {
+      plain: 1,
+      get value() {
+        if (!ready) {
+          const err = new Error("not ready");
+          err._promise = source;
+          throw err;
+        }
+        return "settled!";
+      }
+    };
+    const pending = collectStream(props => r.ssr`<div>${[props.row(raw)]}</div>`);
+    await Promise.resolve();
+    release();
+    const chunks = await pending;
+    expect(chunks.find(c => c.type === "error")).toBeUndefined();
+    const slot = chunks.find(c => c.type === "slot");
+    expect(slot.args.plain).toBe(1);
+    expect(slot.args.value.$ref).toBe("arg:row#0:value");
+    const dataChunks = chunks.filter(c => c.type === "data" && c.key === "arg:row#0:value");
+    expect(JSON.stringify(dataChunks.map(c => c.node))).toContain("settled!");
+    expect(chunks.findIndex(c => c.type === "complete")).toBe(chunks.length - 1);
+  });
+
+  it("a getter arg stays live within the response: a commit re-emits the record", async () => {
+    // The Q1 shape: the getter succeeds at emission, then its value changes
+    // when async work commits later in the same response. The commit (the
+    // serialized promise's resolution flushing through the sink) sweeps the
+    // ledger; the changed value re-emits the occurrence's record and the
+    // client's live props update in place.
+    let n = 1;
+    let resolveGate;
+    const gate = new Promise(r => (resolveGate = r));
+    const pending = collectStream(
+      props =>
+        r.ssr`<div>${[
+          props.row({
+            gate,
+            get n() {
+              return n;
+            }
+          })
+        ]}</div>`
+    );
+    await Promise.resolve();
+    n = 2;
+    resolveGate("done");
+    const chunks = await pending;
+    const slots = chunks.filter(c => c.type === "slot" && c.key === "row#0");
+    expect(slots.length).toBeGreaterThan(1);
+    expect(slots[0].args.n).toBe(1);
+    expect(slots[slots.length - 1].args.n).toBe(2);
+    // Re-emits precede completion — the final value is latched before complete.
+    expect(chunks.indexOf(slots[slots.length - 1])).toBeLessThan(
+      chunks.findIndex(c => c.type === "complete")
+    );
+  });
+
+  it("an unchanged getter does not re-emit: the sweep is equality-gated", async () => {
+    let resolveGate;
+    const gate = new Promise(r => (resolveGate = r));
+    const pending = collectStream(
+      props =>
+        r.ssr`<div>${[
+          props.row({
+            gate,
+            get n() {
+              return 5;
+            }
+          })
+        ]}</div>`
+    );
+    await Promise.resolve();
+    resolveGate("done");
+    const chunks = await pending;
+    const slots = chunks.filter(c => c.type === "slot" && c.key === "row#0");
+    expect(slots.length).toBe(1);
+    expect(slots[0].args.n).toBe(5);
+  });
+
+  it("a changed object value ships under a versioned ref and resolves through the data channel", async () => {
+    // Reference equality gates the sweep, and a ref key is write-once in the
+    // serializer — a changed object arg mints `arg:<occ>:<key>@<n>`.
+    const first = { x: 1 };
+    const second = { x: 2 };
+    let obj = first;
+    let resolveGate;
+    const gate = new Promise(r => (resolveGate = r));
+    const pending = collectStream(
+      props =>
+        r.ssr`<div>${[
+          props.row({
+            gate,
+            get obj() {
+              return obj;
+            }
+          })
+        ]}</div>`
+    );
+    await Promise.resolve();
+    obj = second;
+    resolveGate("done");
+    const chunks = await pending;
+    const slots = chunks.filter(c => c.type === "slot" && c.key === "row#0");
+    expect(slots[0].args.obj.$ref).toBe("arg:row#0:obj");
+    const lastRef = slots[slots.length - 1].args.obj.$ref;
+    expect(lastRef).toBe("arg:row#0:obj@1");
+    const dataChunks = chunks.filter(c => c.type === "data" && c.key === lastRef);
+    expect(JSON.stringify(dataChunks.map(c => c.node))).toContain("2");
+  });
+
+  it("a settled arg that turns not-ready re-enters pending with its previous value intact", async () => {
+    // Phase 0: the getter succeeds ("a"). Phase 1 (after the first commit):
+    // it throws not-ready on a new source — the binding re-enters pending
+    // under a versioned ref while the client keeps reading "a" (its live
+    // prop becomes a pending promise; latest-read semantics hold the
+    // previous value). Phase 2: the source settles and the versioned ref
+    // resolves with "b".
+    let phase = 0;
+    let releaseSecond;
+    const secondSource = new Promise(r => (releaseSecond = r));
+    secondSource.then(() => (phase = 2));
+    let resolveGate;
+    const gate = new Promise(r => (resolveGate = r));
+    const pending = collectStream(
+      props =>
+        r.ssr`<div>${[
+          props.row({
+            gate,
+            get value() {
+              if (phase === 0) return "a";
+              if (phase === 1) {
+                const err = new Error("not ready");
+                err._promise = secondSource;
+                throw err;
+              }
+              return "b";
+            }
+          })
+        ]}</div>`
+    );
+    await Promise.resolve();
+    phase = 1;
+    resolveGate("done"); // commit 1: sweep sees not-ready
+    await new Promise(r => setTimeout(r, 0));
+    releaseSecond(); // the versioned ref's retry succeeds with "b"
+    const chunks = await pending;
+    const slots = chunks.filter(c => c.type === "slot" && c.key === "row#0");
+    expect(slots[0].args.value).toBe("a");
+    const lastRef = slots[slots.length - 1].args.value.$ref;
+    expect(lastRef).toBe("arg:row#0:value@1");
+    const dataChunks = chunks.filter(c => c.type === "data" && c.key === lastRef);
+    expect(JSON.stringify(dataChunks.map(c => c.node))).toContain("b");
+    expect(chunks.findIndex(c => c.type === "complete")).toBe(chunks.length - 1);
+  });
+
+  it("an unstable getter re-emits at most once per commit — no self-triggered loop", async () => {
+    // A getter minting a fresh object each evaluation defeats the reference
+    // gate by construction. Sweep-minted refs are excluded from the commit
+    // funnel, so each REAL commit produces at most one re-emit and the
+    // stream still completes.
+    let calls = 0;
+    let resolveGate;
+    const gate = new Promise(r => (resolveGate = r));
+    const pending = collectStream(
+      props =>
+        r.ssr`<div>${[
+          props.row({
+            gate,
+            get obj() {
+              return { call: ++calls };
+            }
+          })
+        ]}</div>`
+    );
+    await Promise.resolve();
+    resolveGate("done");
+    const chunks = await pending;
+    expect(chunks.findIndex(c => c.type === "complete")).toBe(chunks.length - 1);
+    const slots = chunks.filter(c => c.type === "slot" && c.key === "row#0");
+    // Initial emission plus a bounded number of commit-driven re-emits
+    // (the gate resolution, the end-of-response latch) — not one per
+    // evaluation, and never unbounded.
+    expect(slots.length).toBeLessThanOrEqual(3);
+  });
+});
+
 describe("function-valued slot args — document face (t=0)", () => {
   it("a thunk producing JSX renders inline as a region element when the wrapper uses it", async () => {
     const html = await collectDocument(

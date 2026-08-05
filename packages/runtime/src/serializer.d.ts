@@ -175,6 +175,32 @@ export function serializeJSON(value: unknown, options: JSONSerializeOptions): ()
  */
 export function createJSONDeserializer(options?: JSONCodecOptions): <T>(node: SerovalNode) => T;
 
+/** Options for `createJSONSerializer`. */
+export interface JSONSerializerOptions extends JSONCodecOptions {
+  /**
+   * Receives each keyed record — `initial` is true for a key's first node
+   * (the written value itself); async values patch through later records
+   * under the same key. The decoding peer is `createJSONDataTable`.
+   */
+  onData: (record: { key: string; node: SerovalNode; initial: boolean }) => void;
+  onError?: (error: unknown) => void;
+  /** Fires once `flush()` has been called and every pending value settled. */
+  onDone?: () => void;
+}
+
+/**
+ * The keyed, streaming encoder of the eval-free JSON codec — the render
+ * stream's data serializer (frames default to it). Each `write(key, value)`
+ * shares one reference space, so cross-record identity holds; `flush()`
+ * marks the write set complete (writes after it are dropped, mirroring the
+ * hydration serializer); `close()` aborts pending async serialization.
+ */
+export function createJSONSerializer(options: JSONSerializerOptions): {
+  write(key: string, value: unknown): void;
+  flush(): void;
+  close(): void;
+};
+
 /**
  * A resident, response-scoped decode table over the keyed JSON codec: apply
  * each frame `data` chunk with `apply`, resolve `{ $ref }` slot args with

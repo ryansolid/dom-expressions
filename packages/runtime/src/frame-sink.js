@@ -164,6 +164,46 @@ export function createFrameSink(emit, frame) {
   // Fragments that streamed styles ahead of a grouped reveal; the group's
   // reveal chunk must tell the consumer to wait on them.
   const styledKeys = new Set();
+  // The binding ledger (DR-2 case 1): open bindings for re-runnable slot
+  // args — compiled getters, thunks, memos passed whole — re-evaluated at
+  // every commit the response observes. A commit is any settlement the sink
+  // sees flow through it: a data flush (a serialized promise resolving, an
+  // iterator yielding), a fragment resolving, a pending arg's retry
+  // succeeding. Sweeps coalesce per microtask and are equality-gated inside
+  // each binding, so a quiet ledger costs one comparison per binding per
+  // commit. Refs MINTED by sweeps are excluded from the funnel — their own
+  // flushes must not re-trigger the sweep that produced them, or a getter
+  // returning fresh object identities would loop the response forever; each
+  // real commit then drives at most one re-emit per binding.
+  const bindings = new Set();
+  const sweepMinted = new Set();
+  let sweepScheduled = false;
+  let closed = false;
+  // The commit epoch: bumped once per sweep batch, exposed so the reactive
+  // core can cache sync derivations per epoch (a memo pulled twice in one
+  // sweep computes once; a memo pulled across commits recomputes — the
+  // client contract applied to the server, without a subscriber graph).
+  let epoch = 0;
+  const sweep = () => {
+    epoch++;
+    for (const b of [...bindings]) {
+      try {
+        b.sweep();
+      } catch (_) {
+        // A sweep failure (a serializer already closed at the end-of-response
+        // latch) must not take the stream down: the binding's last emitted
+        // value stands.
+      }
+    }
+  };
+  const scheduleSweep = () => {
+    if (closed || sweepScheduled || !bindings.size) return;
+    sweepScheduled = true;
+    queueMicrotask(() => {
+      sweepScheduled = false;
+      if (!closed) sweep();
+    });
+  };
   // Fragment keys registered while a REGION (a `{$frame}` slot arg) resolves,
   // mapped to that region's childId. A region is a nested frame the client
   // owns end-to-end, so its Suspense fragment/reveal must route to the region,
@@ -218,6 +258,7 @@ export function createFrameSink(emit, frame) {
       }
       if (typeof record === "string") {
         emit({ type: "data", id, version, payload: record });
+        scheduleSweep();
       } else {
         emit({
           type: "data",
@@ -227,6 +268,7 @@ export function createFrameSink(emit, frame) {
           node: record.node,
           initial: record.initial
         });
+        if (!sweepMinted.has(record.key)) scheduleSweep();
       }
     },
     fragment(key, value, meta = {}) {
@@ -253,6 +295,9 @@ export function createFrameSink(emit, frame) {
         emit(chunk);
       }
       emit({ type: "fragment", id: fid, version, key, html: value });
+      // A fragment resolving is a settlement: values its async work produced
+      // are now visible to watched args.
+      scheduleSweep();
       // A fragment that ERRORED still reveals (its html is the fallback /
       // error template), but the failure is surfaced as a keyed error chunk
       // — the frame protocol has no `<key>_fr` rejection to ride.
@@ -300,6 +345,12 @@ export function createFrameSink(emit, frame) {
       emit({ type: "assets", id, version, key: "", modules: [url] });
     },
     end() {
+      // The end-of-response latch: one final synchronous sweep so a commit
+      // that landed in the last flush still ships before `complete` (the
+      // scheduled microtask would lose that race). Completion latches every
+      // binding's last value as final.
+      if (bindings.size) sweep();
+      closed = true;
       emit({ type: "complete", id, version });
     },
     error(errorId, error) {
@@ -316,6 +367,25 @@ export function createFrameSink(emit, frame) {
     // frame to the arg's marker range and the host routes/buffers by id.
     region(childId, html) {
       emit({ type: "html", id: childId, version, html });
+    },
+    // ---- the binding ledger (DR-2 case 1) ----
+    /** Open a watched-arg binding; it sweeps until the response completes. */
+    openBinding(b) {
+      bindings.add(b);
+    },
+    /** A real error is terminal for its binding — same as the retry loop. */
+    closeBinding(b) {
+      bindings.delete(b);
+    },
+    /** Exclude a sweep-minted data ref's flushes from the commit funnel. */
+    mintRef(ref) {
+      sweepMinted.add(ref);
+    },
+    /** An out-of-band commit signal (a pending arg's retry settling). */
+    commit: scheduleSweep,
+    /** The current commit epoch (see the ledger comment above). */
+    get epoch() {
+      return epoch;
     }
   };
 }
@@ -362,7 +432,24 @@ export function renderToFrameStream(code, options = {}) {
 export function renderServerComponent(component, options = {}) {
   return frameStream((sink, frame) => {
     const props = createSlotProps(sink, frame);
-    return () => serverComponentScope(() => component(props));
+    return () => {
+      // The out-of-band commit hook for the binding ledger. A server-owned
+      // render serializes nothing (the HTML is the data), so an async value
+      // settling INSIDE it — a promise memo resolving, an iterator memo
+      // yielding — produces no sink flush for the commit funnel to see. The
+      // reactive core pokes this hook at those settles (and pumps iterator
+      // memos only while it exists), so watched slot args reading them stay
+      // live for the response window.
+      const ctx = sharedConfig.context;
+      if (ctx) {
+        ctx.commit = sink.commit;
+        // Per-epoch memo caching (the ledger's derivation story): the core
+        // compares this at memo reads so sync derivations recompute across
+        // commits and stay cached within one.
+        ctx.commitEpoch = () => sink.epoch;
+      }
+      return serverComponentScope(() => component(props));
+    };
   }, options);
 }
 
@@ -757,6 +844,23 @@ function isServerContent(value) {
   return false;
 }
 
+/** Bounded thunk unwrap: resolve nested thunks/memos to their value. */
+function unwrapThunks(value) {
+  for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+  return value;
+}
+
+/** The DR-3 rule-1 rejection: async slot args are data-only. */
+function contentArgError(key, occurrence) {
+  return new Error(
+    "Async slot arg resolved to JSX (arg '" +
+      key +
+      "' of " +
+      occurrence +
+      "). Async args must resolve to serializable values; render async content through a boundary instead."
+  );
+}
+
 /**
  * The arg-level markup-hole retry loop (DR-2 value tier): a slot arg whose
  * evaluation threw not-ready ships as this pending promise, re-evaluated
@@ -766,34 +870,23 @@ function isServerContent(value) {
  * error rejects the promise (the client `Loading` covering the consumption
  * read errors instead of hanging). Retries run under the evaluation's
  * owner, like `buildAsyncWrap`'s markup holes, so context reads inside the
- * getter keep resolving.
+ * getter keep resolving. `onSettle` fires before the resolve — the watched
+ * binding (case 1) syncs its last-value there, and the settle doubles as a
+ * commit for the rest of the ledger.
  */
-function retryArgUntilSettled(fn, blocked, key, occurrence) {
+function retryArgUntilSettled(evaluate, blocked, key, occurrence, onSettle) {
   const owner = getOwner();
   return new Promise((resolve, reject) => {
     const retry = () => {
       try {
-        const run = () => {
-          let value = fn;
-          for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
-          return value;
-        };
-        const value = owner ? runWithOwner(owner, run) : run();
+        const value = owner ? runWithOwner(owner, evaluate) : evaluate();
         if (isServerContent(value)) {
-          // DR-3 rule 1: async slot args are data-only. Markup emission is
-          // long past by the time this settles — there is no placeholder to
-          // fill retroactively.
-          reject(
-            new Error(
-              "Async slot arg resolved to JSX (arg '" +
-                key +
-                "' of " +
-                occurrence +
-                "). Async args must resolve to serializable values; render async content through a boundary instead."
-            )
-          );
+          // DR-3 rule 1: markup emission is long past by the time this
+          // settles — there is no placeholder to fill retroactively.
+          reject(contentArgError(key, occurrence));
           return;
         }
+        if (onSettle) onSettle(value);
         resolve(value);
       } catch (err) {
         const next = ssrHandleError && ssrHandleError(err);
@@ -803,6 +896,83 @@ function retryArgUntilSettled(fn, blocked, key, occurrence) {
     };
     blocked.then(retry, retry);
   });
+}
+
+/**
+ * A watched-arg binding (DR-2 case 1): the ledger entry for one re-runnable
+ * slot arg. Opened after the occurrence's record emits; the sink sweeps it
+ * at every commit until the response completes. A sweep re-evaluates the
+ * arg under its render owner and, reference-equality gated, re-emits the
+ * occurrence's record:
+ *
+ *   - a changed scalar rides the record literally, same as at emission;
+ *   - a changed object mints a VERSIONED ref (`arg:<occ>:<key>@<n>` — data
+ *     refs are write-once in the codec) and serializes the new value;
+ *   - settled -> not-ready re-enters pending-with-previous: the versioned
+ *     ref ships pending and the retry loop settles it, while the client's
+ *     read suspends holding its latest value;
+ *   - a real error is terminal: the arg re-ships as a rejected ref (the
+ *     client read throws into its covering boundary, diagnosably) and the
+ *     binding closes, mirroring the retry loop's rejection semantics;
+ *   - a re-evaluation producing JSX is the DR-3 rule-1 violation, rejected
+ *     with the same diagnostic as the retry loop.
+ *
+ * Pending bindings don't sweep — the retry loop owns their progress and its
+ * settle re-arms the ledger (`state` is shared with the retry's onSettle).
+ * Record re-emissions clone the canonical args object so in-process
+ * consumers (tests, same-tab transports) never see later mutations through
+ * an already-delivered chunk.
+ */
+function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
+  const owner = getOwner();
+  let refVersion = 0;
+  const reEmit = value => {
+    const ref = `arg:${occurrence}:${key}@${++refVersion}`;
+    sink.mintRef(ref);
+    ctx.serialize(ref, value);
+    args[key] = { $ref: ref };
+    sink.slot(occurrence, { ...args });
+  };
+  const binding = {
+    sweep() {
+      if (!state.settled) return;
+      let value;
+      try {
+        value = owner ? runWithOwner(owner, evaluate) : evaluate();
+      } catch (err) {
+        const blocked = ssrHandleError && ssrHandleError(err);
+        if (!blocked) {
+          sink.closeBinding(binding);
+          reEmit(Promise.reject(err instanceof Error ? err : new Error(String(err))));
+          return;
+        }
+        state.settled = false;
+        reEmit(
+          retryArgUntilSettled(evaluate, blocked, key, occurrence, v => {
+            state.settled = true;
+            state.last = v;
+            sink.commit();
+          })
+        );
+        return;
+      }
+      if (value === state.last) return;
+      state.last = value;
+      if (isServerContent(value)) {
+        sink.closeBinding(binding);
+        reEmit(Promise.reject(contentArgError(key, occurrence)));
+        return;
+      }
+      const t = typeof value;
+      if (value == null || t === "string" || t === "number" || t === "boolean") {
+        args[key] = value;
+        sink.slot(occurrence, { ...args });
+      } else {
+        reEmit(value);
+      }
+    }
+  };
+  sink.openBinding(binding);
 }
 
 export function createSlotProps(sink, frame) {
@@ -842,6 +1012,9 @@ export function createSlotProps(sink, frame) {
           // re-sends dedupe anyway. `$key` matters when a live list reorders.
           const occurrence = occurrenceId(prop, raw, counts);
           const args = {};
+          // Watched-arg bindings to open AFTER the record emits (the ledger
+          // must never re-emit a record ahead of its first emission).
+          const opened = [];
           for (const key of Object.keys(raw)) {
             if (key === "$key") continue; // occurrence identity, not client data
             // Region ids derive from occurrence + arg name — stable across
@@ -868,10 +1041,33 @@ export function createSlotProps(sink, frame) {
               // top-level one-shot reactive control flow (<For>/<Show>) reaches
               // the content path when it arrives as a thunk/memo rather than an
               // eager node. Bounded against a pathological self-returning fn.
+              //
+              // The evaluator is captured from the property DESCRIPTOR, not
+              // the property read: compiled JSX props are getters (evaluation
+              // happens at the read itself, so a not-ready `raw[key]` inside
+              // the catch would throw again), while author thunks and memos
+              // arrive as function values. Either shape yields a re-runnable
+              // `evaluate` — the handle both the retry loop and the watched
+              // binding (case 1) re-run.
+              const desc = Object.getOwnPropertyDescriptor(raw, key);
+              let evaluate = null;
               let value;
+              // Shared with the retry loop's onSettle and the binding's
+              // sweeps: whether the arg has a successful value, and which.
+              let state = null;
               try {
-                value = raw[key];
-                for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+                if (desc.get) {
+                  const get = desc.get;
+                  evaluate = () => unwrapThunks(get.call(raw));
+                  value = evaluate();
+                } else {
+                  value = desc.value;
+                  if (typeof value === "function") {
+                    const fn = value;
+                    evaluate = () => unwrapThunks(fn);
+                    value = evaluate();
+                  }
+                }
               } catch (err) {
                 // DR-2 value tier: a not-ready evaluation (an async memo, or a
                 // getter reading one) never holds the record and never kills
@@ -882,11 +1078,21 @@ export function createSlotProps(sink, frame) {
                 // consumption read, not here.
                 const blocked = ssrHandleError && ssrHandleError(err);
                 if (!blocked) throw err;
-                value = retryArgUntilSettled(raw[key], blocked, key, occurrence);
+                state = { settled: false, last: undefined };
+                const pendingState = state;
+                value = retryArgUntilSettled(evaluate, blocked, key, occurrence, v => {
+                  pendingState.settled = true;
+                  pendingState.last = v;
+                  // The settle is a commit: other watched args may read the
+                  // same source. (This binding's own re-emission stays gated
+                  // on inequality with the value just recorded.)
+                  sink.commit();
+                });
               }
               const t = typeof value;
               if (value == null || t === "string" || t === "number" || t === "boolean") {
                 args[key] = value;
+                if (evaluate) state = { settled: true, last: value };
               } else if (isServerContent(value)) {
                 // Server JSX flows as a nested region, never as data — the
                 // no-double-serialize invariant (transport dispatch case 1):
@@ -915,12 +1121,26 @@ export function createSlotProps(sink, frame) {
                 const ref = `arg:${occurrence}:${key}`;
                 ctx.serialize(ref, value);
                 args[key] = { $ref: ref };
+                if (evaluate && !state) state = { settled: true, last: value };
               }
+              // A re-runnable arg that classified as DATA (settled or
+              // pending) is a watched binding — case 1's within-response
+              // liveness. Content args stay one-shot: a thunk producing JSX
+              // was the control-flow handoff into the region path, and
+              // regions have their own update story (DR-3).
+              if (evaluate && state) opened.push({ key, evaluate, state });
             } finally {
               ctx.registerFragment = origRegister;
             }
           }
-          sink.slot(occurrence, args);
+          // Deliver a CLONE and keep the canonical object for the ledger:
+          // re-emissions mutate `args` and clone again, so an in-process
+          // consumer's already-applied record never changes under it.
+          sink.slot(occurrence, { ...args });
+          const ctx = sharedConfig.context;
+          for (const b of opened) {
+            openArgBinding(sink, ctx, occurrence, b.key, b.evaluate, args, b.state);
+          }
           return slotRange(occurrence);
         };
         getters.set(prop, fn);

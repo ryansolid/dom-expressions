@@ -363,37 +363,78 @@ branches, dom-expressions + solid, verified end-to-end in the chat example):
   `for await` assimilation semantics (plus the latent post-gap sync-settle
   drop). The value tier's consumption path depends on that fix.
 
-Cases 1 (expression bindings / commit-epoch sweeps), 3 (container traces) and
-4 (async at container paths) remain design-settled, not yet implemented; case
-5's diagnosable-error guard exists for function args and unserializable
-outputs at the record path.
+**Status — case 1 (expression bindings) is implemented**
+(`dr2-expression-bindings` branches, stacked on the value tier, verified
+end-to-end through Solid's SSR compile). The watched tier is live: `<props.slot
+thing={thing()} />` — the compiled getter, the common authored form — now
+re-evaluates at every commit the response observes and re-emits the
+occurrence's record when the value changed, for the response window. What
+shipped, against the design above:
 
-**Be precise about what case 1's absence means, because the common authored
-form lives there.** `<props.slot thing={thing()} />` is a getter — an
-*expression* arg. Today it gets: pending-at-emission → retry per settle →
-resolve at FIRST success (the front half of case 1's lifecycle, shipped with
-the value tier's retry path) — then it **latches for the response window**.
-That latched half is the write-once model this section's rejected-alternatives
-list rejects: a later commit that changes the expression's value (a projection
-fed by a staggered settle, a multi-source memo's second answer) does not
-re-emit within the response. Cross-response liveness works (re-invocation →
-record update → live props); only within-response post-success re-evaluation
-is missing, and it is exactly the binding ledger + epoch sweep. The upgrade is
-wire-compatible: re-emission is already protocol, case 1 is server-side
-machinery only. What case 2 shipped as genuinely live is values passed
-WHOLE — self-driving through seroval — not evaluated expressions.
+- *The ledger rides the sink*, as designed: bindings open after the
+  occurrence's record emits, for every re-runnable arg that classified as
+  data — compiled getters (captured from the property DESCRIPTOR, which also
+  fixed a latent crash: a not-ready getter re-thrown from the classifier's
+  catch killed the stream), author thunks, memos passed whole. Eagerly
+  evaluated call-expression args (`props.slot({ thing: thing() })`) stay
+  write-once — JS evaluated them before the border, same as any client call.
+- *The commit funnel needs no dependency graph*, as designed, but its choke
+  points are two, not one: settlements the sink already SEES (a data flush —
+  a serialized promise resolving, an iterator yielding; a fragment
+  resolving; a pending arg's retry succeeding) schedule the sweep directly,
+  and settlements a server-owned render makes INVISIBLE (noHydrate
+  serializes nothing — the HTML is the data) reach it through a `ctx.commit`
+  hook the frame render installs and the reactive core pokes at its settle
+  sites. Sweeps coalesce per microtask, bump the epoch once per batch, and
+  are reference-equality gated per binding. Refs MINTED by sweeps are
+  excluded from the funnel, so a getter returning fresh identities re-emits
+  at most once per real commit instead of looping the response.
+- *Server memos cache per epoch*, as designed, with one precision the design
+  glossed: epoch recompute applies to **sync-valued** computes only (the
+  sync memo path and full memos whose last result was plain). Async memo
+  values advance through their own settle machinery — re-running them would
+  mint new promises/iterators. Iterator memos get their liveness from a
+  **ledger-gated pump**: in a server-owned render nothing consumes the
+  iterator past the first value (there is no serialization tap), so when —
+  and only when — `ctx.commit` exists, the core keeps pulling, advancing the
+  memo's value and committing per yield. The pump never HOLDS the response;
+  completion latches the last yielded value.
+- *Document SSR keeps the first-value lock, deliberately.* The tapped
+  (hydration-serialized) iterator path still never advances the memo's
+  value: markup rendered from V1 must keep reading V1 or a mid-stream
+  boundary retry bakes V2 into HTML the client claims against V1's replay.
+  Within-response liveness is exclusively the frame render's story, where no
+  hydration claim exists. This is the one place case 1 is narrower than "no
+  liveness cliff anywhere": the cliff at t=0 document SSR is hydration's
+  consistency requirement, not a missing engine.
+- *Re-emission is wire-only, as predicted:* re-emitted records ride the
+  existing slot-record protocol (changed scalars inline; changed objects
+  under write-once VERSIONED refs, `arg:<occ>:<key>@<n>`), the client's
+  live-props path applies them, and the value-tier async wrap already reads
+  a re-shipped pending ref as suspend-with-latest — settled → not-ready
+  re-enters pending-with-previous exactly as specified. The end-of-response
+  latch runs one final synchronous sweep before `complete`, so a commit in
+  the last flush still ships.
+- *Two lifecycle edges intentionally deferred:* a superseded region does not
+  yet close its bindings mid-response (the enclosing response's sweeps just
+  find them equality-stable), and a never-successful binding HOLDS
+  completion through its serialized pending ref (the value tier's existing
+  semantics) rather than rejecting at truncation — the diagnosable-reject
+  pattern remains the design for abort/timeout handling when that lands.
 
-The load-bearing distinction: **live today = values that announce their own
-changes** (a promise resolves itself, an iterator yields itself; seroval
-relays). **Latched today = values someone must watch** (memo re-reads,
-expression re-evaluation, store mutation) — all blocked on the same unbuilt
-engine, the binding ledger. This puts async MEMOS only half in case 2's
-shipped column despite the tier listing them: a memo is a function to the
-classifier, so whole or evaluated it takes the thunk path — settles at first
-success, then latches. Making a memo live at the border means the server
-observing its changes and re-emitting, i.e. case 1's machinery. An iterable
-ticks at the border only when passed AS the iterable (the chat example's
-`gen.progress`), never through a memo read.
+Cases 3 (container traces) and 4 (async at container paths) remain
+design-settled, not yet implemented; case 5's diagnosable-error guard exists
+for function args and unserializable outputs at the record path.
+
+The load-bearing distinction the value tier left ("live = self-announcing,
+latched = watched") is retired: watched values — memo reads, expression
+evaluation, state mutated by async settles — are live within the response
+window through the ledger, which was the missing engine. Async memos are now
+fully in the shipped column: whole or evaluated, first success ships and
+later commits re-emit. What remains latched is only what the design says
+must latch: values crossing at t=0 document SSR (hydration's first-value
+lock) and anything after the response window closes (cross-request updates
+are re-invocation's, by architecture).
 
 ### DR-3: Classification precedes resolution (template detection stays tractable)
 
