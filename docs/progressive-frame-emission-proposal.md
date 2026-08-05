@@ -162,6 +162,37 @@ this proposal; client-paced markup that accumulates = a list of per-cursor
 boundaries (exists today); the streamed generator is never the pagination
 tool.
 
+## API surface, consolidated (across the family)
+
+Three tiers, one consumption surface (`AsyncIterable` + the existing
+component/slot model); only the producer varies.
+
+1. **Streamed server component** (this proposal): `"use server"` async
+   generator yielding components. Client side unchanged — `dynamic()` over
+   the call, slot fills as props. Yields share one props contract
+   (occurrence identity persists across emissions); `return` completes;
+   `throw` is the stream error, applied markup stands. Generation state
+   (caret) is a userland DR-2 arg, not API.
+
+2. **Data generator server function** (promote the current accident to
+   contract): same authoring, yielding serializable data. Decision
+   recommended: the transform statically detects the generator export and
+   the stub **preserves the authored calling convention** — calling it
+   returns an `AsyncIterable` immediately (internally awaiting the fetch),
+   not `Promise<AsyncIterable>`. That makes `for await` direct, the memo
+   latest-yield read one hop, and `asyncArg(fn(...))` a natural slot arg.
+   Contract work: client `return()` aborts the response (break cancels
+   server work); documented limits — server-paced (no backpressure),
+   one-directional (no `next(value)` / `throw()` in), single cursor per
+   response value (cache-and-share has no replay semantics).
+
+3. **Pagination**: no new API. Cursor-shaped server components, one call
+   per page, `next` crossing the slot border as plain data, client appends
+   boundaries into its own list (`For` over cursors). Per-page address =
+   per-page caching, hover preload, away/back retention, nothing
+   re-ships. A helper is deliberately deferred until real apps repeat the
+   pattern — it's a small userland wrapper.
+
 ## Open questions for review
 
 - Is the yield-a-component contract right, or should yields be prop
