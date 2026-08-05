@@ -340,6 +340,34 @@ above). Server-content async (`<Loading>` inside server JSX)
 is a different async and keeps the fragment model wholesale: one is markup the
 server owns, the other is data the client owns.
 
+**Status — the value tier (case 2) is implemented** (`dr2-value-tier`
+branches, dom-expressions + solid, verified end-to-end in the chat example):
+
+- *Server:* the record never waits — promises and async iterables serialize
+  through the codec as pending data refs (seroval streams resolutions/yields);
+  a not-ready thunk ships via retry-until-settled and rejections ride the data
+  channel, never the stream face.
+- *Client:* the slot-props proxy routes an async-valued prop through a lazy
+  async memo under the occurrence's owner, so the read suspends into the
+  covering boundary and, for iterables, IS the latest yield thereafter. Fresh
+  call-driven mounts shell-gate (the covering `Loading` holds until the
+  frame's first apply — content or error), giving a t=0 fill's pending arg
+  read its boundary.
+- *Typing:* `Slot<P>` deliberately keeps the fill's props settled;
+  `asyncArg<T>(...): T` is the identity that types the async value at the
+  border (widening `Slot`'s parameter would leak async unions into every
+  fill's contextual typing).
+- *Found under it:* signals' iterate loop assumed protocol-strict iterators;
+  seroval's deserialized streams return buffered steps as bare
+  `IteratorResult`s, which crashed the graph — fixed on `next` with
+  `for await` assimilation semantics (plus the latent post-gap sync-settle
+  drop). The value tier's consumption path depends on that fix.
+
+Cases 1 (expression bindings / commit-epoch sweeps), 3 (container traces) and
+4 (async at container paths) remain design-settled, not yet implemented; case
+5's diagnosable-error guard exists for function args and unserializable
+outputs at the record path.
+
 ### DR-3: Classification precedes resolution (template detection stays tractable)
 
 Two rules keep the sink's content-vs-data decision and reverse templating decidable:
