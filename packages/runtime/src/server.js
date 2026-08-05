@@ -1269,8 +1269,11 @@ export function renderToStream(code, options = {}) {
   }
   function doShell() {
     if (shellCompleted) return;
-    if (!resolveRootHoles()) return;
+    // Async root holes can resume after another render replaced the global
+    // context. Restore this stream before re-pulling them so hydration data
+    // is serialized into the response that owns the rendered markup.
     sharedConfig.context = context;
+    if (!resolveRootHoles()) return;
     // Asset closures run before anything reads `tasks`: they can serialize
     // data (via sink.data → tasks), which the shell snapshot must include.
     const assetsHtml = resolveAssetsHtml(context.assets);
