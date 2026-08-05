@@ -94,7 +94,8 @@ import {
   SERVER_COMPONENT,
   SERVER_COMPONENT_ADDRESS,
   SERVER_COMPONENT_SOURCE,
-  flightCodec
+  flightCodec,
+  setServerComponentBootstrap
 } from "./frame-transport.js";
 
 // The brands and the codec plugin live with the transport (the client half
@@ -107,6 +108,47 @@ export {
   SERVER_COMPONENT_ADDRESS,
   ServerComponentPlugin
 } from "./frame-transport.js";
+
+/**
+ * The client-side `_$SC` registry as an idempotent expression: evaluates to
+ * the registry, creating it only if absent. Idempotence matters — the
+ * bootstrap travels with the FIRST serialized reference of each hydration
+ * script (see `ServerComponentPlugin.serialize`; loading this module
+ * installs the text there, keeping it out of client bundles), so several
+ * scripts in one document may each carry a copy and only the first may
+ * define it: a redefinition would wipe the `a` address records registered
+ * in between.
+ *
+ * `r(id, address?)` memoizes one stable placeholder component per server
+ * function (`_$SC.impl` is installed later by the frames client runtime) and
+ * files the call's address -> id record (`a`, plus the live `reg` hook once
+ * the client installs one). Placeholders forward a caller-provided address
+ * binding (`b`, the frame transport's second-argument convention for mount
+ * components) through to `impl`.
+ */
+const SERVER_COMPONENT_BOOTSTRAP_EXPR =
+  "(self._$SC||(self._$SC={c:{},a:{},r(i,a){a&&(this.a[a]=i,this.reg&&this.reg(a,i));return this.c[i]||(this.c[i]=(p,b)=>self._$SC.impl(i,p,b))}}))";
+
+// Serializer contexts (one per emitted script — see seroval's
+// crossSerializeStream) whose script already carries the bootstrap; later
+// references in the same script are bare registry reads.
+const bootstrappedScripts = new WeakSet();
+setServerComponentBootstrap(ctx => {
+  if (bootstrappedScripts.has(ctx)) return "self._$SC";
+  bootstrappedScripts.add(ctx);
+  return SERVER_COMPONENT_BOOTSTRAP_EXPR;
+});
+
+/**
+ * Statement form of the registry bootstrap, for a document shell that wants
+ * to install `_$SC` ahead of every data script (e.g. a plugin injecting it
+ * into `<head>`). No longer required — serialized references self-bootstrap
+ * — but kept for integrations still emitting it; the idempotent form makes
+ * the double-definition harmless. Never splice it before the authored
+ * `<head>` elements: a head-open script claims as the first walked child at
+ * hydration and drifts every positional claim after it.
+ */
+export const SERVER_COMPONENT_BOOTSTRAP = SERVER_COMPONENT_BOOTSTRAP_EXPR + ";";
 
 /**
  * A sink emitting the transport-agnostic FrameChunk stream. `emit(chunk)` is
@@ -681,24 +723,6 @@ function resolveRegionHtml(ctx, node) {
     return out;
   });
 }
-
-/**
- * The inline bootstrap the document shell must include BEFORE any hydration
- * data script (e.g. in `<head>`): memoizes one stable placeholder component
- * per server-component reference. `_$SC.impl` is installed later by the
- * frames client runtime.
- *
- * A reference may carry the call's wire address (`_$SC.r(id, address)`).
- * The placeholder stays per-function, but the address -> id record (`a`,
- * plus the live `reg` hook once the client installs one) tells the frame
- * transport which calls the document is showing — hydration data never
- * travels through the transport, so this is its only path into the
- * transport's addressing. Placeholders forward a caller-provided address
- * binding (`b`, the frame transport's second-argument convention for mount
- * components) through to `impl`.
- */
-export const SERVER_COMPONENT_BOOTSTRAP =
-  "self._$SC={c:{},a:{},r(i,a){a&&(this.a[a]=i,this.reg&&this.reg(a,i));return this.c[i]||(this.c[i]=(p,b)=>self._$SC.impl(i,p,b))}};";
 
 /**
  * The props proxy handed to a server component. Every prop resolves to a

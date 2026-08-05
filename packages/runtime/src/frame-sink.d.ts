@@ -161,8 +161,11 @@ export {
 } from "./frame-transport.js";
 
 /**
- * Inline bootstrap for the document shell: installs the `self._$SC`
- * placeholder registry the hydration references resolve through; the client
- * upgrades it via `installServerComponents()`.
+ * Statement form of the `self._$SC` placeholder-registry bootstrap
+ * (idempotent — first definition wins). No longer required in the document
+ * shell: each hydration script's first serialized server-component reference
+ * self-bootstraps the registry. Kept for integrations still installing it
+ * document-wide; the client upgrades the registry via
+ * `installServerComponents()`.
  */
 export const SERVER_COMPONENT_BOOTSTRAP: string;

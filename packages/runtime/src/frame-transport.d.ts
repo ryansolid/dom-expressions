@@ -102,6 +102,16 @@ export interface ComponentBinding<C = unknown> {
 export const ServerComponentPlugin: unknown;
 
 /**
+ * Installs the hydration-serializer registry prefix: given the emitted
+ * script's serializer context, returns the expression the next serialized
+ * reference reads the `_$SC` registry through (the self-bootstrapping form
+ * on a script's first reference, a bare read after). Loaded document-SSR
+ * modules install this (see frame-sink); client bundles never carry the
+ * bootstrap text.
+ */
+export function setServerComponentBootstrap(resolve: (ctx: unknown) => string): void;
+
+/**
  * The codec options for a single-flight envelope: `codec` plus
  * `ServerComponentPlugin` (deduped by tag). Injected by the protocol on both
  * legs; exported for integrations composing their own flight carriers.

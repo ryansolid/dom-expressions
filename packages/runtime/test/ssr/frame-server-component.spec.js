@@ -564,28 +564,69 @@ describe("server-component hydration reference", () => {
       onDone: () => {
         const payload = scripts.join(";");
         // The reference, not the function: resolution is invocation-time
-        // through the bootstrap's memoized placeholder. It carries the
+        // through the registry's memoized placeholder. It carries the
         // call's address so the client can register which call the
         // document is showing (an argless call's address is the id).
-        expect(payload).toContain('self._$SC.r("hn/story-0","hn/story-0")');
+        // The script's FIRST reference self-bootstraps the registry — the
+        // document shell needs no `_$SC` script of its own, so nothing sits
+        // ahead of the authored <head> elements to drift positional
+        // hydration claims.
+        expect(payload).toContain('(self._$SC||(self._$SC={');
+        expect(payload).toContain('.r("hn/story-0","hn/story-0")');
         expect(payload).not.toContain("createDocumentSlotProps");
-        // The bootstrap evaluates and memoizes stable identities.
+        // The payload evaluates with only the document's own preludes (the
+        // cross-reference header and `_$HY`) — no prior `_$SC` bootstrap —
+        // and memoizes stable identities.
+        const { getLocalHeaderScript } = require("../../src/serializer");
+        globalThis._$HY = { r: {} };
         // eslint-disable-next-line no-eval
-        (0, eval)(SERVER_COMPONENT_BOOTSTRAP);
+        (0, eval)(getLocalHeaderScript() + payload);
         const first = globalThis._$SC.r("hn/story-0", "hn/story-0");
         expect(typeof first).toBe("function");
         expect(globalThis._$SC.r("hn/story-0")).toBe(first);
         // The address -> id record is kept for the client to register with
         // the frame transport once it installs.
         expect(globalThis._$SC.a["hn/story-0"]).toBe("hn/story-0");
+        // The registry is first-definition-wins: a shell that still emits
+        // the statement-form bootstrap (older integrations) must not wipe
+        // the records filed since.
+        // eslint-disable-next-line no-eval
+        (0, eval)(SERVER_COMPONENT_BOOTSTRAP);
+        expect(globalThis._$SC.a["hn/story-0"]).toBe("hn/story-0");
+        expect(globalThis._$SC.r("hn/story-0")).toBe(first);
         // The placeholder delegates to the installed implementation.
         globalThis._$SC.impl = (id, props) => `${id}:${props.x}`;
         expect(first({ x: 1 })).toBe("hn/story-0:1");
         delete globalThis._$SC;
+        delete globalThis._$HY;
         done();
       }
     });
     serializer.write("0", Inline);
+    serializer.flush();
+  });
+
+  it("only the first reference in a script carries the registry", done => {
+    const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const { createHydrationSerializer } = require("../../src/serializer");
+
+    const A = frameTransformDirectResult(() => r.ssr`<b>a</b>`, { id: "sc/a" });
+    const B = frameTransformDirectResult(() => r.ssr`<b>b</b>`, { id: "sc/b" });
+    const scripts = [];
+    const serializer = createHydrationSerializer({
+      plugins: [ServerComponentPlugin],
+      onData: s => scripts.push(s),
+      onDone: () => {
+        const payload = scripts.join(";");
+        expect(payload).toContain('.r("sc/a","sc/a")');
+        expect(payload).toContain('.r("sc/b","sc/b")');
+        // One bootstrap serves both: later references are bare registry
+        // reads (the definition is ~150 bytes; the reads are 9).
+        expect(payload.match(/self\._\$SC=\{/g)).toHaveLength(1);
+        done();
+      }
+    });
+    serializer.write("0", { a: A, b: B });
     serializer.flush();
   });
 });

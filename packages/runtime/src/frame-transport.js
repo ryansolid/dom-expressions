@@ -116,6 +116,20 @@ export const COMPONENT_BINDING = /*#__PURE__*/ Symbol.for("dom-expressions.compo
 // seam never needs a global.
 let resolveServerComponent;
 
+// The registry bootstrap ships with the FIRST reference each script
+// serializes (see `serialize` below) — but the bootstrap text and its
+// first-use tracking are server-only weight, so the document-SSR module
+// (frame-sink) installs a prefix resolver at load rather than this module
+// carrying them: this module is shared with client bundles, whose only
+// interest in the plugin is `deserialize`. Unset (an integration
+// serializing eval-style without loading the document surface), references
+// emit as bare registry reads and the shell must install `_$SC` itself —
+// the pre-self-bootstrap contract.
+let serverComponentRegistryExpr;
+export function setServerComponentBootstrap(resolve) {
+  serverComponentRegistryExpr = resolve;
+}
+
 /**
  * Seroval plugin for a server component crossing a serialization boundary.
  * A branded component (see `frameTransformDirectResult`) serializes as a
@@ -166,7 +180,17 @@ export const ServerComponentPlugin = /*#__PURE__*/ createPlugin({
     // transport — that record is how a post-load call for the same
     // (function, arguments) finds its way back to the adopted boundary even
     // though the document's value never traveled through the transport.
-    return "self._$SC.r(" + ctx.serialize(node.id) + "," + ctx.serialize(node.address) + ")";
+    //
+    // The registry ships WITH the first reference each script serializes —
+    // demand-driven, so a document only carries the bootstrap when it
+    // actually serializes a server component, and ordering is correct by
+    // construction: inline scripts execute in document order, and every
+    // script that reads `_$SC` contains (or follows) a script that defined
+    // it. Nothing may sit ahead of the authored `<head>` elements — a
+    // head-open splice claims as the first walked child and drifts every
+    // positional hydration claim after it.
+    const registry = serverComponentRegistryExpr ? serverComponentRegistryExpr(ctx) : "self._$SC";
+    return registry + ".r(" + ctx.serialize(node.id) + "," + ctx.serialize(node.address) + ")";
   },
   deserialize(node, ctx) {
     const id = ctx.deserialize(node.id);
