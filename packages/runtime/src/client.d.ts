@@ -1,12 +1,23 @@
 import { JSX } from "./jsx.js";
+// Element/property classification tables consumed by the JSX compiler and
+// custom renderers. Compiler/tooling surface; not for hand-written code.
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const DOMWithState: Record<string, Record<string, 1 | 2>>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const ChildProperties: Set<string>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const DelegatedEvents: Set<string>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const DOMElements: Set<string>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const SVGElements: Set<string>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const MathMLElements: Set<string>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const VoidElements: Set<string>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const RawTextElements: Set<string>;
+/** Compiler/tooling table; not for hand-written code. @internal */
 export const Namespaces: Record<string, string>;
 
 type MountableElement = Element | Document | ShadowRoot | DocumentFragment | Node;
@@ -17,16 +28,30 @@ export function render(
   options?: { owner?: unknown }
 ): () => void;
 /**
+ * Compiler-emitted primitive; not for hand-written code.
  * @param flag
  * - `undefined` — clone the template as-is (uses `cloneNode`).
  * - `1` — use `document.importNode` instead of `cloneNode`.
  * - `2` — the template html is wrapped; the outer tag is stripped at clone time.
+ * @internal
  */
 export function template(html: string, flag?: 1 | 2): () => Element;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function scope<T extends () => any>(fn: T): T;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function effect<T>(fn: (prev?: T) => T, effect: (value: T, prev?: T) => void): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function memo<T>(fn: () => T, equal: boolean): () => T;
+/**
+ * Compiler-emitted primitive; not for hand-written code — import `untrack`
+ * from `solid-js` instead.
+ * @internal
+ */
 export function untrack<T>(fn: () => T): T;
+/**
+ * Compiler-emitted primitive; not for hand-written code.
+ * @internal
+ */
 export function insert<T>(
   parent: MountableElement,
   accessor: (() => T) | T,
@@ -43,20 +68,29 @@ export function insert<T>(
     schedule?: boolean;
   }
 ): JSX.Element;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): JSX.Element;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function delegateEvents(eventNames: string[]): void;
+/** Event-delegation plumbing (Portal/custom-root wiring). Integration plumbing. @internal */
 export function registerDelegatedRoot(root: MountableElement): void;
+/** Event-delegation plumbing (Portal/custom-root wiring). Integration plumbing. @internal */
 export function unregisterDelegatedRoot(root: MountableElement): void;
+/** Event-delegation plumbing (Portal/custom-root wiring). Integration plumbing. @internal */
 export function registerDelegatedContainer(
   container: MountableElement,
   owner?: MountableElement
 ): void;
+/** Event-delegation plumbing (Portal/custom-root wiring). Integration plumbing. @internal */
 export function unregisterDelegatedContainer(
   container: MountableElement,
   owner?: MountableElement
 ): void;
+/** Event-delegation plumbing (Portal/custom-root wiring). Integration plumbing. @internal */
 export function getDelegatedRoot(node: MountableElement): MountableElement | undefined;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function spread<T>(node: Element, accessor: T, skipChildren?: Boolean): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function assign(
   node: Element,
   props: any,
@@ -64,7 +98,9 @@ export function assign(
   prevProps?: any,
   skipRef?: Boolean
 ): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function setAttribute(node: Element, name: string, value: string): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function setAttributeNS(node: Element, namespace: string, name: string, value: string): void;
 /**
  * Register a consumer for compiler-emitted element claims. Compiled DOM
@@ -77,11 +113,16 @@ export function setAttributeNS(node: Element, namespace: string, name: string, v
  * cleanup through your own reactive system. Dormant until registered —
  * without a handler the emitted claims are null checks. Returns an
  * unregister function.
+ *
+ * Integration plumbing (routers register the consumer); not meant for
+ * application code.
+ * @internal
  */
 export function registerElementClaim(handler: (element: Element) => void): () => void;
 /**
  * Claim `node` for registered consumers (see `registerElementClaim`).
  * Emitted by the compiler at element creation; idempotent by contract.
+ * @internal
  */
 export function claimElement<T extends Element>(node: T): T;
 /**
@@ -90,29 +131,50 @@ export function claimElement<T extends Element>(node: T): T;
  * compiled output emits, for content that becomes live DOM without compiled
  * creation code (frame streams, adopted SSR ranges). Dormant without a
  * registered consumer.
+ *
+ * Integration plumbing; not meant for application code.
+ * @internal
  */
 export function claimElementTree<T extends Node>(root: T): T;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function className(node: Element, value: JSX.ClassValue, prev?: JSX.ClassValue): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function setProperty(node: Element, name: string, value: any): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function setStyleProperty(node: Element, name: string, value: any): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function addEvent(
   node: Element,
   name: string,
   handler: EventListener | EventListenerObject | (EventListenerObject & AddEventListenerOptions),
   delegate: boolean
 ): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function style(
   node: Element,
   value: { [k: string]: string },
   prev?: { [k: string]: string }
 ): void;
+/**
+ * Compiler-emitted primitive; not for hand-written code — import `getOwner`
+ * from `solid-js` instead.
+ * @internal
+ */
 export function getOwner(): unknown;
+/**
+ * Compiler-emitted prop-spread helper; not for hand-written code — import
+ * `merge` from `solid-js` instead.
+ * @internal
+ */
 export function mergeProps(...sources: unknown[]): unknown;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function dynamicProperty(props: unknown, key: string): unknown;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function applyRef<T extends Element = Element>(
   r: ((element: NoInfer<T>) => void) | ((element: NoInfer<T>) => void)[],
   element: T
 ): void;
+/** Compiler-emitted primitive; not for hand-written code. @internal */
 export function ref(
   fn: () => ((element: Element) => void) | ((element: Element) => void)[],
   element: Element
@@ -123,9 +185,13 @@ export function hydrate(
   node: MountableElement,
   options?: { renderId?: string; owner?: unknown }
 ): () => void;
+/** Hydration-walk primitive; not for hand-written code. @internal */
 export function getHydrationKey(): string | undefined;
+/** Hydration-walk primitive; not for hand-written code. @internal */
 export function getNextElement(template?: () => Element): Element;
+/** Hydration-walk primitive; not for hand-written code. @internal */
 export function getNextMatch(start: Node, elementName: string): Element;
+/** Hydration-walk primitive; not for hand-written code. @internal */
 export function getNextMarker(start: Node): [Node, Array<Node>];
 /** @deprecated Use `useHead` — removed before `0.50.0` stable. */
 export function useAssets(fn: () => JSX.Element): void;
@@ -189,6 +255,14 @@ export interface RequestEvent {
   request: Request;
   locals: Record<string | number | symbol, any>;
 }
+/**
+ * Registered symbol (`Symbol.for("solid.RequestContext")`) naming the global
+ * slot where `provideRequestEvent` parks the AsyncLocalStorage scoping
+ * request events. Integration plumbing — read the event through
+ * `getRequestEvent()` instead.
+ * @internal
+ */
 export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;
+/** Hydration-walk primitive; not for hand-written code. @internal */
 export function runHydrationEvents(): void;

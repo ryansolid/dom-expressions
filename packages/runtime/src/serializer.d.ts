@@ -1,8 +1,17 @@
+// Serialization surface (published as `@solidjs/web/serialization`): the
+// runtime's Seroval machinery, exposed for the runtime's own entries and
+// for integrations building transports on the same codec. This is
+// INTEGRATION-FACING plumbing, not application API — it is exempt from the
+// 2.0 stability guarantee and may change between releases. Application and
+// router code should configure `codec` on the server-function entries
+// instead of importing from here.
 import { Plugin, Serializer, SerovalNode } from "seroval";
 
 /**
  * Seroval's node shape — the intermediate representation `serializeJSON`
  * emits and `createJSONDeserializer` consumes. Safe to `JSON.stringify`.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export type { SerovalNode };
 
@@ -10,6 +19,8 @@ export type { SerovalNode };
  * A Seroval plugin usable with the web serializers — teaches the codec how
  * to encode/decode a custom value type. Supply matching plugins on both
  * peers of a transport.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export type SerializerPlugin = Plugin<any, any>;
 
@@ -18,6 +29,8 @@ export type SerializerPlugin = Plugin<any, any>;
  * Event, FormData, Headers, ReadableStream, Request, Response, URL, ...).
  * Applied by every serializer in this module; custom plugins compose ahead
  * of it via `resolveSerializerPlugins`.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export const DEFAULT_WEB_PLUGINS: readonly SerializerPlugin[];
 
@@ -26,10 +39,16 @@ export const DEFAULT_WEB_PLUGINS: readonly SerializerPlugin[];
  * first so they can shadow a default for values both would match. Returns a
  * fresh array; the defaults are never mutated. Useful when handing a full
  * plugin list to another serialization layer.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export function resolveSerializerPlugins(customPlugins?: SerializerPlugin[]): SerializerPlugin[];
 
-/** Options for `createSerializer`. */
+/**
+ * Options for `createSerializer`.
+ *
+ * Integration-facing; may change (see the entry banner).
+ */
 export interface WebSerializerOptions {
   /** Name of the global object the emitted scripts write resolved values into. */
   globalIdentifier: string;
@@ -58,6 +77,8 @@ export interface WebSerializerOptions {
  * evaluated — the script-injection form of serialization renderers build
  * on. For a JSON-based wire codec (no eval on the receiving side), use
  * `serializeJSON` / `createJSONDeserializer` instead.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export function createSerializer(options: WebSerializerOptions): Serializer;
 
@@ -96,6 +117,8 @@ export function getLocalHeaderScript(id?: string): string;
  * on the serializing and deserializing peer or payloads will not
  * round-trip — for server functions, set them once through the
  * client/server `codec` config option.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export interface JSONCodecOptions {
   /** Extra plugins, composed ahead of `DEFAULT_WEB_PLUGINS`. Must match on both peers. */
@@ -113,7 +136,11 @@ export interface JSONCodecOptions {
   depthLimit?: number;
 }
 
-/** Options for `serializeJSON`. */
+/**
+ * Options for `serializeJSON`.
+ *
+ * Integration-facing; may change (see the entry banner).
+ */
 export interface JSONSerializeOptions extends JSONCodecOptions {
   /**
    * Receives each serialized node; `initial` is true for the first chunk
@@ -132,6 +159,8 @@ export interface JSONSerializeOptions extends JSONCodecOptions {
  * the deserializing peer needs no script evaluation, so CSP-safe). Wire
  * framing of the nodes is the transport's concern. Returns a cancel
  * function that aborts pending async serialization.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export function serializeJSON(value: unknown, options: JSONSerializeOptions): () => void;
 
@@ -141,6 +170,8 @@ export function serializeJSON(value: unknown, options: JSONSerializeOptions): ()
  * from one stream must go through the same deserializer instance. The first
  * chunk's return value is the decoded source value; feeding later chunks
  * settles the async values referenced inside it.
+ *
+ * Integration-facing; may change (see the entry banner).
  */
 export function createJSONDeserializer(options?: JSONCodecOptions): <T>(node: SerovalNode) => T;
 
@@ -149,6 +180,10 @@ export function createJSONDeserializer(options?: JSONCodecOptions): <T>(node: Se
  * each frame `data` chunk with `apply`, resolve `{ $ref }` slot args with
  * `resolve`. The frames client host wires one per response
  * (`applyData: c => table.apply(c)`).
+ *
+ * Integration-facing; may change (see the entry banner). This serialization
+ * entry is the single home of the data table — the frames client consumes
+ * it internally rather than re-exporting it.
  */
 export interface JSONDataTable {
   apply(chunk: { key?: string; node?: unknown; initial?: boolean }): void;

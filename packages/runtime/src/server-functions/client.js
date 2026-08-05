@@ -49,6 +49,10 @@ export {
   getServerFunctionsCodec,
   hasFlashCookie,
   isServerFunction,
+  // the rich-args entry's codec write half: its bundled form (solid-web's
+  // server-functions/dist/rich-args.js) resolves shared.js imports here so
+  // the codec config it reads is the shared built instance
+  serializeString,
   subscribeFlightData,
   withMeta
 } from "./shared.js";
@@ -88,9 +92,9 @@ function serializeArguments(args) {
     throw new Error(
       "Server function arguments are sent as JSON by default and these " +
         "arguments are not JSON-serializable. Call enableRichArguments() " +
-        "(from the server-functions rich-args entry) once at startup to " +
-        "send Dates, Maps, Sets, typed arrays, etc. through the codec — or " +
-        "pass a single Blob/FormData/File argument, which has a native " +
+        '(from "@solidjs/web/server-functions/rich-args") once at startup ' +
+        "to send Dates, Maps, Sets, typed arrays, etc. through the codec — " +
+        "or pass a single Blob/FormData/File argument, which has a native " +
         "HTTP encoding."
     );
   }

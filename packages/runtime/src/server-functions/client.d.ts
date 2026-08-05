@@ -21,6 +21,7 @@ export {
   getServerFunctionsCodec,
   hasFlashCookie,
   isServerFunction,
+  serializeString,
   subscribeFlightData,
   withMeta
 } from "./shared.js";

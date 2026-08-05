@@ -18,6 +18,9 @@ export function configureServerFunctionsCodec(codec: JSONCodecOptions | undefine
  * `configureServerFunctionsCodec` or the client/server `codec` option), or
  * undefined when running on the defaults. Integrations pass this to
  * lower-level codec helpers so custom plugins configured by the app apply.
+ *
+ * Integration plumbing; not meant for hand-written application code.
+ * @internal
  */
 export function getServerFunctionsCodec(): JSONCodecOptions | undefined;
 
@@ -57,6 +60,9 @@ export const ERROR_HEADER: string;
  * travels percent-encoded behind a marker. `decodeErrorHeaderValue`
  * round-trips the message exactly, astral-plane characters included (lone
  * surrogates are replaced with U+FFFD — they cannot survive UTF-8 anyway).
+ *
+ * Transport wire detail; not meant for hand-written code.
+ * @internal
  */
 export function encodeErrorHeaderValue(value: string): string;
 
@@ -64,6 +70,10 @@ export function encodeErrorHeaderValue(value: string): string;
  * Decodes an `ERROR_HEADER` value produced by `encodeErrorHeaderValue`:
  * marked values are percent-decoded, everything else (including values from
  * peers that never encode) passes through untouched.
+ *
+ * Integration plumbing for readers of `ERROR_HEADER`; not meant for
+ * hand-written application code.
+ * @internal
  */
 export function decodeErrorHeaderValue(value: string): string;
 
@@ -412,6 +422,9 @@ export function decodeResponse<T = unknown>(
  * undefined for body-less responses) rides as `{ value }`. Integrations
  * that apply response metadata themselves use this so the payload shape
  * stays core's own.
+ *
+ * Integration plumbing; not meant for hand-written application code.
+ * @internal
  */
 export function decodeResponsePayload<T = unknown, D = unknown>(
   response: Response,
@@ -422,6 +435,9 @@ export function decodeResponsePayload<T = unknown, D = unknown>(
  * Frame one payload for the server-function wire: a `;0x<len32>;` length
  * prefix followed by the utf-8 data. Both transports (server-function
  * responses and frame streams) share this framing.
+ *
+ * Transport wire detail; not meant for hand-written code.
+ * @internal
  */
 export function createChunk(data: string): Uint8Array;
 
@@ -429,6 +445,9 @@ export function createChunk(data: string): Uint8Array;
  * Incremental decoder for `createChunk` framing over a byte stream: `next()`
  * yields one complete payload string per call (async-iterator result shape),
  * buffering partial frames internally until their length prefix is satisfied.
+ *
+ * Transport wire detail; not meant for hand-written code.
+ * @internal
  */
 export class ChunkReader {
   constructor(stream: ReadableStream<Uint8Array>);
@@ -441,5 +460,8 @@ export class ChunkReader {
  * Both peers derive it independently — the server names flight regions with
  * it, the client routes them by it — so it must stay deterministic across
  * realms and releases.
+ *
+ * Transport wire detail; not meant for hand-written code.
+ * @internal
  */
 export function frameAddress(id: string, args?: readonly unknown[]): string;

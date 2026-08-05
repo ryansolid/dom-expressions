@@ -527,21 +527,46 @@ function encodeResult(value, headers, status, codec) {
 /** Message a sanitized (production) server error carries on the wire. */
 export const GENERIC_SERVER_ERROR_MESSAGE = "Internal Server Error";
 
+// Build-variant dev flag. The `"_DX_DEV_"` string is replaced with a
+// boolean by the bundler packaging this runtime — @solidjs/web builds a dev
+// and a prod copy of its server-functions server entry and selects between
+// them through the `development` export condition, so Vite dev serves full
+// fidelity and every default resolution (plain node, production builds)
+// gets the sanitizing copy. The strict comparison keeps raw, unreplaced
+// source FAIL-SAFE: the bare string is not `true`, so a deep import that
+// bypassed the bundled entries sanitizes and omits diagnostic bodies like a
+// production build. Deliberately NOT process.env.NODE_ENV — the runtime is
+// a web-standard package and keys dev behavior on build variants, not
+// ambient node environment.
+let DEV = "_DX_DEV_" === true;
+
+/**
+ * Overrides the build-variant dev flag for this module instance — the seam
+ * for test harnesses and hand-rolled bundles whose packaging cannot replace
+ * `_DX_DEV_`. Applications never call this; select the dev build through
+ * the `development` export condition instead.
+ * @internal
+ */
+export function setServerFunctionsDev(dev) {
+  DEV = !!dev;
+}
+
 /**
  * Production error sanitization for a plain thrown value (not a
  * Response/envelope — those are intentional control flow, handled before
  * this). A raw `Error` (or thrown string/object) serialized to the client
  * would ship its `message` and every own-property verbatim over the wire —
  * an ORM/driver error's failing query, connection string, or bound params
- * included. So outside development it is replaced with a generic `Error`,
+ * included. So outside the dev build it is replaced with a generic `Error`,
  * preserving only that the client receives *an* `Error` (the protocol shape
  * consumers like the router's `submission.error` expect).
  *
- * Development keeps full fidelity (message, stack, own-props) for DX and the
- * dev toolbar inspector. The dev/prod line follows this file's existing
- * convention — `process.env.NODE_ENV === "development"` — so the fidelity is
- * opt-in to development and every other environment (production, test, CI,
- * unset) fails safe.
+ * The dev build keeps full fidelity (message, stack, own-props) for DX and
+ * the dev toolbar inspector. The dev/prod line is the build variant (the
+ * bundler-replaced `_DX_DEV_` flag behind the `development` export
+ * condition), so fidelity is opt-in to dev builds and every other
+ * resolution — production bundles, plain node, raw deep imports — fails
+ * safe.
  *
  * Escape hatch: a value branded with `markSafeError` (`Symbol.for(
  * "solid.SafeError")`) is intentional client-facing content and passes
@@ -550,7 +575,7 @@ export const GENERIC_SERVER_ERROR_MESSAGE = "Internal Server Error";
  * or brand the mapped error safe — so core never second-guesses them.
  */
 export function sanitizeServerError(value) {
-  if (process.env.NODE_ENV === "development") return value;
+  if (DEV) return value;
   if (isSafeError(value)) return value;
   return new Error(GENERIC_SERVER_ERROR_MESSAGE);
 }
@@ -611,20 +636,14 @@ export async function handleServerFunctionRequest(request, options = {}) {
   const functionId = resolveFunctionId(request, url);
 
   if (!functionId) {
-    return new Response(
-      process.env.NODE_ENV === "development" ? "Server function not found" : null,
-      { status: 404 }
-    );
+    return new Response(DEV ? "Server function not found" : null, { status: 404 });
   }
 
   let serverFunction;
   try {
     serverFunction = getServerFunction(functionId);
   } catch {
-    return new Response(
-      process.env.NODE_ENV === "development" ? `Unknown server function: ${functionId}` : null,
-      { status: 404 }
-    );
+    return new Response(DEV ? `Unknown server function: ${functionId}` : null, { status: 404 });
   }
 
   // method enforcement: GET requests only dispatch to functions that
@@ -634,12 +653,10 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // default transport (e.g. a query()-wrapped function also called
   // directly).
   if (request.method === "GET" && METHODS.get(functionId) !== "GET") {
-    return new Response(
-      process.env.NODE_ENV === "development"
-        ? `Method not allowed for server function: ${functionId}`
-        : null,
-      { status: 405, headers: { Allow: "POST" } }
-    );
+    return new Response(DEV ? `Method not allowed for server function: ${functionId}` : null, {
+      status: 405,
+      headers: { Allow: "POST" }
+    });
   }
 
   const event = options.createEvent ? options.createEvent(request) : { request, locals: {} };
@@ -851,7 +868,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
     if (!instance) {
       if (handleNoJS) return handleNoJS(safe, request, parsed, true);
       const message = safe instanceof Error ? safe.message : String(safe);
-      return new Response(process.env.NODE_ENV === "development" ? message : null, { status: 500 });
+      return new Response(DEV ? message : null, { status: 500 });
     }
 
     const error = safe instanceof Error ? safe.message : typeof safe === "string" ? safe : "true";

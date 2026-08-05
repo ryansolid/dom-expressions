@@ -1419,27 +1419,35 @@ export function renderToStream(code, options = {}) {
     return p;
   };
   return {
-    then(fn) {
-      function complete() {
-        dispose();
-        fn(tmp);
-      }
-      if (onCompleteAll) {
-        let ogComplete = onCompleteAll;
-        onCompleteAll = options => {
-          ogComplete(options);
-          complete();
-        };
-      } else onCompleteAll = complete;
-      function flush() {
-        allSettled(blockingPromises).then(() => {
-          scheduleFlush(() => {
-            if (!resolveRootHoles()) return flush();
-            queue(flushEnd);
+    // Proper thenable: `await renderToStream(...)` resolves with the full
+    // HTML once every boundary settles — the replacement for the removed
+    // renderToStringAsync. Render errors route through `onError` (the
+    // promise resolves with whatever HTML the render produced; it never
+    // rejects), matching the pipe/pipeTo contract.
+    then(onFulfilled, onRejected) {
+      const p = new Promise(resolve => {
+        function complete() {
+          dispose();
+          resolve(tmp);
+        }
+        if (onCompleteAll) {
+          let ogComplete = onCompleteAll;
+          onCompleteAll = options => {
+            ogComplete(options);
+            complete();
+          };
+        } else onCompleteAll = complete;
+        function flush() {
+          allSettled(blockingPromises).then(() => {
+            scheduleFlush(() => {
+              if (!resolveRootHoles()) return flush();
+              queue(flushEnd);
+            });
           });
-        });
-      }
-      flush();
+        }
+        flush();
+      });
+      return p.then(onFulfilled, onRejected);
     },
     pipe(w) {
       claimConsumer("pipe");
@@ -2298,11 +2306,6 @@ export function getRequestEvent() {
           "RequestEvent is missing. This is most likely due to accessing `getRequestEvent` non-managed async scope in a partially polyfilled environment. Try moving it above all `await` calls."
         )
     : undefined;
-}
-
-/** @deprecated use renderToStream which also returns a promise */
-export function renderToStringAsync(code, options = {}) {
-  return new Promise(resolve => renderToStream(code, options).then(resolve));
 }
 
 // --- HTTP response-head lifecycle ---------------------------------------

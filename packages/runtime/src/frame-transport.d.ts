@@ -1,3 +1,7 @@
+// EXPERIMENTAL — the frames/server-components surface ships as an
+// experimental preview, excluded from the 2.0 stability guarantee: API
+// shapes and the wire format may change between prereleases (RFC 11).
+// Every export in this module is @experimental.
 import { FrameChunk, FrameHost } from "./frame-client.js";
 import { JSONCodecOptions } from "./serializer.js";
 
@@ -11,13 +15,20 @@ type FlightConsumer = (data: unknown, context: { response: Response }) => void |
  * Header tagging a Response as a frame stream; its value is the producing
  * frame's id. Frame-owned wire contract — deliberately not a server-function
  * `BodyFormat` entry, since the body is frame chunks, not a serialized value.
+ * @experimental
  */
 export const FRAME_STREAM_HEADER: "X-Frame-Stream";
 
-/** Whether a fetch Response carries a frame stream. */
+/**
+ * Whether a fetch Response carries a frame stream.
+ * @experimental
+ */
 export function isFrameStreamResponse(response: Response): boolean;
 
-/** Options for `applyFrameResponse`. */
+/**
+ * Options for `applyFrameResponse`.
+ * @experimental
+ */
 export interface ApplyFrameResponseOptions {
   /**
    * Remap the producer's root frame id onto a local one — the id your
@@ -57,6 +68,7 @@ export interface ApplyFrameResponseOptions {
  *   await applyFrameResponse(response, host, { as: "story-pane" });
  * }
  * ```
+ * @experimental
  */
 export function applyFrameResponse(
   response: Response,
@@ -64,13 +76,22 @@ export function applyFrameResponse(
   options?: ApplyFrameResponseOptions
 ): Promise<string>;
 
-/** Brands an inline-rendered server component with its function id. */
+/**
+ * Brands an inline-rendered server component with its function id.
+ * @experimental
+ */
 export const SERVER_COMPONENT: unique symbol;
 
-/** The unwrapped server component behind an inline-render wrap. */
+/**
+ * The unwrapped server component behind an inline-render wrap.
+ * @experimental
+ */
 export const SERVER_COMPONENT_SOURCE: unique symbol;
 
-/** The call's wire address (`frameAddress`), for regions to be emitted under. */
+/**
+ * The call's wire address (`frameAddress`), for regions to be emitted under.
+ * @experimental
+ */
 export const SERVER_COMPONENT_ADDRESS: unique symbol;
 
 /**
@@ -81,10 +102,14 @@ export const SERVER_COMPONENT_ADDRESS: unique symbol;
  * instance, new binding" — keep the mounted instance and deliver the new
  * address into it; a different function swaps normally. `Symbol.for`, so
  * frameworks can honor it without importing this module.
+ * @experimental
  */
 export const COMPONENT_BINDING: unique symbol;
 
-/** The value under `COMPONENT_BINDING` on a transport-resolved binding. */
+/**
+ * The value under `COMPONENT_BINDING` on a transport-resolved binding.
+ * @experimental
+ */
 export interface ComponentBinding<C = unknown> {
   /** The per-function mount component (the equals-gate identity). */
   component: C;
@@ -98,6 +123,7 @@ export interface ComponentBinding<C = unknown> {
  * placeholder in the hydration serializer, a live-registry lookup by call
  * address in the JSON codec (single-flight envelopes) — its markup never
  * rides as data.
+ * @experimental
  */
 export const ServerComponentPlugin: unknown;
 
@@ -108,6 +134,7 @@ export const ServerComponentPlugin: unknown;
  * on a script's first reference, a bare read after). Loaded document-SSR
  * modules install this (see frame-sink); client bundles never carry the
  * bootstrap text.
+ * @experimental
  */
 export function setServerComponentBootstrap(resolve: (ctx: unknown) => string): void;
 
@@ -115,10 +142,14 @@ export function setServerComponentBootstrap(resolve: (ctx: unknown) => string): 
  * The codec options for a single-flight envelope: `codec` plus
  * `ServerComponentPlugin` (deduped by tag). Injected by the protocol on both
  * legs; exported for integrations composing their own flight carriers.
+ * @experimental
  */
 export function flightCodec(codec?: JSONCodecOptions): JSONCodecOptions;
 
-/** Options for `createServerComponentHandler`. */
+/**
+ * Options for `createServerComponentHandler`.
+ * @experimental
+ */
 export interface ServerComponentHandlerOptions<C = unknown> {
   host: FrameHost;
   /**
@@ -170,6 +201,7 @@ export interface ServerComponentHandlerOptions<C = unknown> {
  * per-args entries — while mounts are per-SITE, rendering the per-function
  * component and following delivered addresses. An address nothing is bound
  * to warms its store (preload isolation is the default, not a rule).
+ * @experimental
  */
 export function createServerComponentHandler<C>(options: ServerComponentHandlerOptions<C>): {
   intercept?(info: { id: string; meta: unknown; args: unknown[] }): unknown;

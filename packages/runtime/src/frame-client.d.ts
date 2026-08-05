@@ -6,9 +6,17 @@
  * inside the boundary are preserved across server updates — the
  * version is a stale-guard only ("policy A"): newer content morphs in
  * place, and teardown is `dispose()`, never a version bump.
+ *
+ * EXPERIMENTAL — the frames/server-components surface ships as an
+ * experimental preview, excluded from the 2.0 stability guarantee: API
+ * shapes and the wire format may change between prereleases (RFC 11).
+ * Every export in this module is `@experimental`.
  */
 
-/** One transport chunk of a frame stream, addressed by frame `id`. */
+/**
+ * One transport chunk of a frame stream, addressed by frame `id`.
+ * @experimental
+ */
 export type FrameChunk =
   | { type: "start"; id: string; version: number }
   | { type: "html"; id: string; version: number; html: string }
@@ -48,6 +56,7 @@ export type FrameChunk =
  * Maps a wire chunk onto resident-store record writes. `data` chunks map to
  * no records — they are response-scoped and the host applies them through
  * its data hook.
+ * @experimental
  */
 export function chunkToRecords(chunk: FrameChunk): Record<string, unknown>;
 
@@ -55,13 +64,17 @@ export function chunkToRecords(chunk: FrameChunk): Record<string, unknown>;
  * One store write applied to a frame: `r` maps record keys to values
  * (`chunkToRecords` produces these from wire chunks) and `version` is the
  * stream stamp — an older version than the frame's current one is ignored.
+ * @experimental
  */
 export interface FrameWrite {
   version: number;
   r: Record<string, unknown>;
 }
 
-/** Context passed to a slot callback. */
+/**
+ * Context passed to a slot callback.
+ * @experimental
+ */
 export interface SlotContext {
   /**
    * True only for the hydration-attach invocation of an adopted
@@ -117,9 +130,11 @@ export interface SlotContext {
  * resolved args (primitives literal, `{$ref}` data resolved through the
  * host, `{$frame}` regions as marker-range fragments). Return nodes to fill
  * the range, or `undefined` to claim `ctx.existing` untouched.
+ * @experimental
  */
 export type Slot = (props: Record<string, unknown>, ctx: SlotContext) => Node | Node[] | undefined;
 
+/** @experimental */
 export interface Frame {
   /** Merge a write into the store and flush (morph/reveal/slot sync). */
   apply(write: FrameWrite): void;
@@ -159,6 +174,7 @@ export interface Frame {
  * An id may have several frames (the same server component mounted more
  * than once): chunks fan out to all of them, and a frame registering after
  * delivery is seeded from a sibling's store.
+ * @experimental
  */
 export interface FrameHost {
   register(id: string, frame: Frame): void;
@@ -180,10 +196,14 @@ export interface FrameHost {
  * boundary (nested region frames dispatch too); use it to re-apply
  * client-owned decorations on server-owned markup (router affordance
  * reflection, e.g. `aria-current`) without a MutationObserver.
+ * @experimental
  */
 export const FRAME_APPLIED_EVENT: "frame:applied";
 
-/** Options for `createFrameHost`. */
+/**
+ * Options for `createFrameHost`.
+ * @experimental
+ */
 export interface FrameHostOptions {
   /**
    * Backs `{$ref}` slot args (typically a codec data table's `resolve`).
@@ -201,9 +221,13 @@ export interface FrameHostOptions {
   applyData?(chunk: Extract<FrameChunk, { type: "data" }>): void;
 }
 
+/** @experimental */
 export function createFrameHost(options?: FrameHostOptions): FrameHost;
 
-/** Options for `createFrame` / `createFrameElement`. */
+/**
+ * Options for `createFrame` / `createFrameElement`.
+ * @experimental
+ */
 export interface FrameOptions {
   /** Register with this host under `id`, receiving routed/buffered chunks. */
   host?: FrameHost;
@@ -259,12 +283,17 @@ export interface FrameOptions {
  * so the first apply morphs against it and slots sync immediately (hydration
  * attach), claiming their server-rendered DOM — a document boot needs no
  * chunk.
+ * @experimental
  */
 export function createFrame(boundary: Element, options?: FrameOptions): Frame;
 
-/** The default boundary/region element tag and its id attribute — the DOM
- *  contract the producer emits at t=0 and the consumer creates/adopts. */
+/**
+ * The default boundary/region element tag and its id attribute — the DOM
+ * contract the producer emits at t=0 and the consumer creates/adopts.
+ * @experimental
+ */
 export const FRAME_TAG: "dx-frame";
+/** @experimental */
 export const FRAME_ID_ATTR: "data-fid";
 
 /**
@@ -274,6 +303,7 @@ export const FRAME_ID_ATTR: "data-fid";
  * returned `element` in any position — single, array, or fragment — with no
  * special-casing. One frame per element; lifecycle belongs to the creator via
  * `dispose()` (register it with your owner's cleanup).
+ * @experimental
  */
 export function createFrameElement(options: FrameOptions): {
   readonly element: Element;

@@ -210,15 +210,22 @@ describe("custom serialization plugins", () => {
     expect(html).toContain("<div>test</div>");
   });
 
-  it("renderToStringAsync accepts plugins option", async () => {
+  it("awaiting renderToStream resolves the settled HTML (accepts plugins option)", async () => {
     const Comp = () => {
       sharedConfig.context.serialize("pt", new Point(15, 25));
       return r.ssr`<div>async</div>`;
     };
 
-    const html = await r.renderToStringAsync(Comp, { plugins: [PointPlugin] });
+    // The fully-settled-string form of the render — what renderToStringAsync
+    // was before its removal. `then` is a real thenable: awaiting works and
+    // the return value chains as a Promise.
+    const stream = r.renderToStream(Comp, { plugins: [PointPlugin] });
+    const chained = stream.then(html => html.length);
+    expect(typeof chained.then).toBe("function");
+    const html = await stream;
     expect(html).toContain("new Point(15,25)");
     expect(html).toContain("<div>async</div>");
+    expect(await chained).toBe(html.length);
   });
 
   it("renderToStream accepts plugins option", done => {

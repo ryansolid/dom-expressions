@@ -62,10 +62,11 @@ export declare const SAFE_ERROR: unique symbol;
  * of the server-function handler's production error sanitization.
  *
  * By default a plain `Error` thrown from a server function is sanitized to a
- * generic `Error` in production (`process.env.NODE_ENV !== "development"`):
+ * generic `Error` outside the dev build (the `development` export condition
+ * selects the full-fidelity copy; every other resolution sanitizes):
  * its `message`, `stack`, and own-properties are dropped so a driver/ORM
  * error can't leak a failing query or connection string over the wire.
- * Development keeps full fidelity. This is the escape hatch for errors whose
+ * Dev builds keep full fidelity. This is the escape hatch for errors whose
  * content is *intentional* client-facing information — brand them and their
  * message/properties travel intact in every environment.
  *

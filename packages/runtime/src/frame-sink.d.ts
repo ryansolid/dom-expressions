@@ -1,6 +1,13 @@
+// EXPERIMENTAL — the frames/server-components surface ships as an
+// experimental preview, excluded from the 2.0 stability guarantee: API
+// shapes and the wire format may change between prereleases (RFC 11).
+// Every export in this module is @experimental.
 import { FrameChunk } from "./frame-client.js";
 
-/** Addresses a frame stream: the boundary id and this response's version. */
+/**
+ * Addresses a frame stream: the boundary id and this response's version.
+ * @experimental
+ */
 export interface FrameAddress {
   id: string;
   version: number;
@@ -12,13 +19,17 @@ export interface FrameAddress {
  * method emits transport-agnostic chunks; `emit` is the envelope boundary.
  * @internal Compiler/renderer wiring — use `renderToFrameStream` or
  * `renderServerComponent` instead.
+ * @experimental
  */
 export function createFrameSink(
   emit: (chunk: FrameChunk) => void,
   frame: FrameAddress
 ): Record<string, (...args: any[]) => void>;
 
-/** Options shared by the frame producers. */
+/**
+ * Options shared by the frame producers.
+ * @experimental
+ */
 export interface FrameStreamOptions {
   /** Boundary address; defaults to `{ id: "", version: 1 }`. */
   frame?: { id?: string; version?: number };
@@ -26,7 +37,10 @@ export interface FrameStreamOptions {
   [key: string]: unknown;
 }
 
-/** A produced frame stream: pipe chunks, or await the collected array. */
+/**
+ * A produced frame stream: pipe chunks, or await the collected array.
+ * @experimental
+ */
 export interface FrameStream extends PromiseLike<FrameChunk[]> {
   pipe(writable: { write(chunk: FrameChunk): void; end?(): void }): void;
 }
@@ -37,6 +51,7 @@ export interface FrameStream extends PromiseLike<FrameChunk[]> {
  * by a chunk envelope (`start` up front, `complete` at stream end). Data
  * records default to the keyed JSON codec (decode with
  * `createJSONDataTable`).
+ * @experimental
  */
 export function renderToFrameStream(code: () => unknown, options?: FrameStreamOptions): FrameStream;
 
@@ -57,6 +72,7 @@ export function renderToFrameStream(code: () => unknown, options?: FrameStreamOp
  *
  * The props a *client* passes never reach the server — server inputs are the
  * function's arguments.
+ * @experimental
  */
 export function renderServerComponent(
   component: (props: Record<string, any>) => unknown,
@@ -70,6 +86,7 @@ export function renderServerComponent(
  * the live render context, so it must only be used during the frame's
  * render.
  * @internal Exposed for framework bindings composing their own producers.
+ * @experimental
  */
 export function createSlotProps(
   sink: ReturnType<typeof createFrameSink>,
@@ -82,6 +99,7 @@ export function createSlotProps(
  * the client and `X-Content-Raw` so the server-function handler forwards it
  * untouched. `init` (headers/status, e.g. from a `respond()` envelope)
  * merges in; the frame tags win on conflict.
+ * @experimental
  */
 export function serverComponentResponse(
   component: (props: Record<string, any>) => unknown,
@@ -103,6 +121,7 @@ export function serverComponentResponse(
  *   provideEvent
  * });
  * ```
+ * @experimental
  */
 export function frameTransformResult(event: unknown, result: unknown): unknown;
 
@@ -115,6 +134,7 @@ export function frameTransformResult(event: unknown, result: unknown): unknown;
  * positions (the one hydration-time exception), wrapped in the same marker
  * dialect the chunk producer emits so the adopting client binds slots and
  * regions onto the server-rendered ranges.
+ * @experimental
  */
 export function createDocumentSlotProps(
   clientProps: Record<string, unknown>,
@@ -128,6 +148,7 @@ export function createDocumentSlotProps(
  * as an inline-renderable server component (frame markers + document
  * slot props), branded with its function id and the call's wire address.
  * Non-function results pass through.
+ * @experimental
  */
 export function frameTransformDirectResult<T>(
   value: T,
@@ -143,6 +164,7 @@ export function frameTransformDirectResult<T>(
  * component entries serialized as flight references. Returns `undefined`
  * when nothing invalidated is markup (the response stays the plain
  * single-flight envelope).
+ * @experimental
  */
 export function frameTransformFlightResult(
   event: unknown,
@@ -167,5 +189,6 @@ export {
  * self-bootstraps the registry. Kept for integrations still installing it
  * document-wide; the client upgrades the registry via
  * `installServerComponents()`.
+ * @experimental
  */
 export const SERVER_COMPONENT_BOOTSTRAP: string;

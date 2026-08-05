@@ -522,11 +522,15 @@ export interface HandleServerFunctionOptions {
  * `Error`, string, or object) is different: serialized verbatim it would ship
  * its `message` and every own-property to the client — a driver/ORM error's
  * failing query, connection string, or bound parameters included. So outside
- * development (`process.env.NODE_ENV !== "development"`) a plain thrown value
- * is replaced with a generic `Error` before serialization; the client still
- * receives *an* `Error` (the shape `submission.error` etc. expect), just with
- * no leaked content. Development keeps full fidelity (message, stack,
- * own-props) for DX and the dev toolbar inspector.
+ * the dev build a plain thrown value is replaced with a generic `Error`
+ * before serialization; the client still receives *an* `Error` (the shape
+ * `submission.error` etc. expect), just with no leaked content. The dev
+ * build keeps full fidelity (message, stack, own-props) for DX and the dev
+ * toolbar inspector. Dev/prod is the BUILD VARIANT, not `NODE_ENV`:
+ * `@solidjs/web` publishes a dev copy of this entry behind the
+ * `development` export condition (what Vite dev resolves) and the default
+ * resolution sanitizes — as does importing the runtime source directly with
+ * no bundler signal (fail-safe).
  *
  * Escape hatch: brand the value with `markSafeError` (`Symbol.for(
  * "solid.SafeError")`) to send its content intact in every environment.
@@ -558,8 +562,17 @@ export const GENERIC_SERVER_ERROR_MESSAGE: string;
 /**
  * The production error-sanitization policy `handleServerFunctionRequest`
  * applies to a plain thrown value before serialization. Returns `value`
- * unchanged in development or when it is branded safe (`markSafeError`);
+ * unchanged in the dev build or when it is branded safe (`markSafeError`);
  * otherwise returns a generic `Error` carrying `GENERIC_SERVER_ERROR_MESSAGE`.
  * Exposed for frameworks composing their own dispatch around the same policy.
  */
 export function sanitizeServerError(value: unknown): unknown;
+
+/**
+ * Overrides the build-variant dev flag for this module instance — the seam
+ * for test harnesses and hand-rolled bundles whose packaging cannot replace
+ * `_DX_DEV_`. Applications never call this; select the dev build through
+ * the `development` export condition instead.
+ * @internal
+ */
+export function setServerFunctionsDev(dev: boolean): void;

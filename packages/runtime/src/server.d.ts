@@ -79,19 +79,6 @@ export function renderToString<T>(
     onHead?: (head: string) => void;
   }
 ): string;
-/** @deprecated use renderToStream which also returns a promise */
-export function renderToStringAsync<T>(
-  fn: () => T,
-  options?: {
-    timeoutMs?: number;
-    nonce?: string;
-    renderId?: string;
-    noScripts?: boolean;
-    plugins?: SerializerPlugin[];
-    manifest?: AssetManifest | AssetResolver | AssetResolverFn;
-    onError?: (err: any) => void;
-  }
-): Promise<string>;
 export function renderToStream<T>(
   fn: () => T,
   options?: {
@@ -116,7 +103,17 @@ export function renderToStream<T>(
     onHead?: (head: string) => void;
   }
 ): {
-  then: (fn: (html: string) => void) => void;
+  /**
+   * Awaiting the stream resolves with the complete HTML once every boundary
+   * settles — the fully-settled-string form of the render (`const html =
+   * await renderToStream(...)`). Render errors route through `onError` and
+   * the promise resolves with whatever HTML the render produced; it never
+   * rejects.
+   */
+  then<TResult1 = string, TResult2 = never>(
+    onfulfilled?: ((html: string) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+  ): Promise<TResult1 | TResult2>;
   pipe: (writable: { write: (v: string) => void; end: () => void }) => void;
   pipeTo: (writable: WritableStream) => Promise<void>;
   /**

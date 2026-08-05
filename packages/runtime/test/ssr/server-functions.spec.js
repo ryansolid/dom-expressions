@@ -52,7 +52,8 @@ import {
   handleServerFunctionRequest,
   registerServerFunction,
   registerServerReference,
-  sanitizeServerError
+  sanitizeServerError,
+  setServerFunctionsDev
 } from "../../src/server-functions/server";
 import { FLASH_COOKIE, clearFlashCookie, hasFlashCookie } from "../../src/server-functions/shared";
 import { RequestContext } from "../../src/server";
@@ -465,8 +466,7 @@ describe("handler", () => {
   });
 
   it("propagates thrown errors to the client (dev: full message)", async () => {
-    const prev = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    setServerFunctionsDev(true);
     registerServerFunction("boom-0", async () => {
       throw new Error("kaboom");
     });
@@ -475,22 +475,17 @@ describe("handler", () => {
       await expect(createClientReference("boom-0")()).rejects.toThrow("kaboom");
     } finally {
       restore();
-      process.env.NODE_ENV = prev;
+      setServerFunctionsDev(false);
     }
   });
 
   describe("error header encoding", () => {
-    // These assert real error content on the wire — i.e. development
-    // fidelity. Outside development the handler sanitizes plain errors (see
-    // the "production error sanitization" suite), so pin the mode here.
-    let prevNodeEnv;
-    beforeEach(() => {
-      prevNodeEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "development";
-    });
-    afterEach(() => {
-      process.env.NODE_ENV = prevNodeEnv;
-    });
+    // These assert real error content on the wire — i.e. dev-build
+    // fidelity. Outside the dev build the handler sanitizes plain errors
+    // (see the "production error sanitization" suite), so pin the mode here
+    // through the build-variant seam.
+    beforeEach(() => setServerFunctionsDev(true));
+    afterEach(() => setServerFunctionsDev(false));
 
     // Header values are latin1 ByteStrings: without the encoding guard,
     // Headers.set throws on messages with code points above U+00FF and the
@@ -599,18 +594,14 @@ describe("handler", () => {
   });
 
   describe("production error sanitization", () => {
-    // The handler sanitizes plain thrown values outside development so a
+    // The handler sanitizes plain thrown values outside the dev build so a
     // driver/ORM error can't leak its message or own-properties (a failing
     // query, a connection string) to the client. Intentional error content
     // travels as a thrown Response/envelope, or an Error branded safe.
-    let prevNodeEnv;
-    beforeEach(() => {
-      prevNodeEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "production";
-    });
-    afterEach(() => {
-      process.env.NODE_ENV = prevNodeEnv;
-    });
+    // Raw (unreplaced) source is the sanitizing default already; pin it
+    // explicitly so a dev-pinned sibling suite can't bleed in.
+    beforeEach(() => setServerFunctionsDev(false));
+    afterEach(() => setServerFunctionsDev(false));
 
     function errorRequest(id) {
       return new Request("http://localhost/_server", {
@@ -750,31 +741,34 @@ describe("handler", () => {
   });
 
   describe("sanitizeServerError policy", () => {
-    let prevNodeEnv;
-    beforeEach(() => (prevNodeEnv = process.env.NODE_ENV));
-    afterEach(() => (process.env.NODE_ENV = prevNodeEnv));
+    // The dev/prod line is the build variant (`_DX_DEV_` replaced by the
+    // bundler), not NODE_ENV — `setServerFunctionsDev` is the test seam for
+    // that replacement.
+    afterEach(() => setServerFunctionsDev(false));
 
-    it("dev keeps the thrown value verbatim (full fidelity)", () => {
-      process.env.NODE_ENV = "development";
+    it("dev build keeps the thrown value verbatim (full fidelity)", () => {
+      setServerFunctionsDev(true);
       const err = new Error("full detail");
       err.query = "SELECT 1";
       expect(sanitizeServerError(err)).toBe(err);
     });
 
-    it("non-development replaces a plain Error with a generic one", () => {
-      process.env.NODE_ENV = "production";
+    it("prod build replaces a plain Error with a generic one", () => {
+      setServerFunctionsDev(false);
       const out = sanitizeServerError(new Error("leaky"));
       expect(out).toBeInstanceOf(Error);
       expect(out.message).toBe(GENERIC_SERVER_ERROR_MESSAGE);
     });
 
-    it("fails safe when NODE_ENV is unset (sanitizes)", () => {
-      delete process.env.NODE_ENV;
+    it("fails safe with no build signal at all (raw source sanitizes)", () => {
+      // This suite runs the raw, unreplaced source — the deep-import case.
+      // The default (never having called setServerFunctionsDev(true) in
+      // this test) must sanitize.
       expect(sanitizeServerError(new Error("leaky")).message).toBe(GENERIC_SERVER_ERROR_MESSAGE);
     });
 
     it("passes a branded error through in production", () => {
-      process.env.NODE_ENV = "production";
+      setServerFunctionsDev(false);
       const err = markSafeError(new Error("intentional"));
       expect(isSafeError(err)).toBe(true);
       expect(sanitizeServerError(err)).toBe(err);
@@ -1403,12 +1397,11 @@ describe("single-flight", () => {
   });
 
   it("never collects for plain thrown errors", async () => {
-    // Pinned to development so the message assertion reads real content; the
-    // point of the test is that the flight hook is skipped and the response
-    // is still error-flagged. (Sanitization is covered in "production error
-    // sanitization".)
-    const prev = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    // Pinned to the dev build so the message assertion reads real content;
+    // the point of the test is that the flight hook is skipped and the
+    // response is still error-flagged. (Sanitization is covered in
+    // "production error sanitization".)
+    setServerFunctionsDev(true);
     registerServerFunction("sf-error-0", async () => {
       throw new Error("kaboom");
     });
@@ -1419,7 +1412,7 @@ describe("single-flight", () => {
       expect(response.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
       expect(response.headers.get("X-Server-Function-Error")).toBe("kaboom");
     } finally {
-      process.env.NODE_ENV = prev;
+      setServerFunctionsDev(false);
     }
   });
 
