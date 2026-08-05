@@ -139,10 +139,28 @@ morph makes "previously rendered stuff got edited" the designed-for path.
   yield-a-snapshot, a patch-op chunk type slots in later as a pure
   transport optimization with zero authoring change.
 
-**Pagination / infinite scroll**: explicitly out of scope (confirmed both
-sides of the review). Client-pulled and delta-shaped from the start —
-a different protocol over the same morph floor, deserving its own
-proposal if wanted.
+**Pagination / infinite scroll**: shares the *consumption surface*, never
+the producer. The generator form fails pagination on all three of its
+deltas from a local generator: the wire is server-paced (eager drain would
+fetch every page immediately, and the demand signal IS the feature),
+pull-pacing one response requires the bidirectional channel the stream
+doesn't have (a held connection per scroll session), and pausing a
+generator across separate requests means holding an unserializable
+generator frame — sticky server sessions, which the request-scoped
+architecture pointedly lacks (t=0 resume would also re-run from page 1).
+Pagination's producer is cursor-shaped calls — one request per pull:
+independently cacheable, preloadable, retryable, adoptable — optionally
+wrapped client-side in a lazy AsyncIterable adapter so both forms feed the
+same consumption type (noting the semantics differ: streaming reads
+latest-yield, pagination reduces into an accumulated list). Paginated
+*markup* needs no new protocol at all: it decomposes into one
+server-component call per page keyed by cursor, appended into a
+client-owned list — page N+1 is a NEW boundary, never a rewrite, so
+nothing re-ships and per-page caching/preload/retention fall out of the
+existing identity model. One sentence: server-paced markup that settles =
+this proposal; client-paced markup that accumulates = a list of per-cursor
+boundaries (exists today); the streamed generator is never the pagination
+tool.
 
 ## Open questions for review
 
