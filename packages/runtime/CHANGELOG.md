@@ -1,5 +1,12 @@
 # dom-expressions
 
+## 0.50.0-next.37
+
+### Patch Changes
+
+- f26d0fa: Restore a stream's render context before re-pulling pending root holes. An async root hole can resume after another render has replaced `sharedConfig.context` (module-global, shared across interleaved renders); re-pulling the hole first rendered the markup but silently dropped hydration records emitted during the retry — they serialized into the other render's completed context instead of the response that owns the resumed markup. (From #561.)
+- a297f34: Serialized server-component references self-bootstrap the `_$SC` registry. The registry previously had to be installed by the document shell ahead of every data script, and the integration doing that (vite-plugin-solid) spliced it directly after `<head>` — where the hydration walk claims it as the first walked child and drifts every positional claim in the head by one (metas claimed as title, title as link), silently in production where the dev structure warnings don't exist. Now the FIRST reference each hydration script serializes carries the registry as an idempotent expression (`(self._$SC||(self._$SC={...}))`), so ordering is correct by construction — every script that reads the registry contains or follows its definition — and nothing sits ahead of the authored head elements. Demand-driven: documents that never serialize a server component ship nothing. The bootstrap text and first-use tracking live in the server-only document-SSR module (installed into the shared transport at load), so client bundles don't grow; `SERVER_COMPONENT_BOOTSTRAP` stays exported (now idempotent, first definition wins) for integrations still installing it document-wide.
+
 ## 0.50.0-next.36
 
 ### Minor Changes

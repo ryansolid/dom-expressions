@@ -1,6 +1,6 @@
 {
   "name": "@dom-expressions/compiler-darwin-x64",
-  "version": "0.50.0-next.36",
+  "version": "0.50.0-next.37",
   "cpu": [
     "x64"
   ],
