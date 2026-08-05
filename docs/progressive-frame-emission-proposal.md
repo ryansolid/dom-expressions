@@ -71,12 +71,25 @@ Rules:
    the render loop: render yield → emit html → next. One `start`, one
    `complete`, one sink; per-yield renders share the frame id/version.
 2. **Fragment/segment keys across yields**: fragment names restart per
-   render pass (`pl-0`, ...). Within one response, a second yield's
-   segments must not collide with the first's revealed bookkeeping.
-   Options: (a) prefix segment keys per emission (`e2:pl-0`), or (b)
-   forbid `<Loading>` segments inside generator yields for v1 (each yield
-   is already a settle point — deferred segments inside a tick are a
-   degenerate case). **Recommend (b) for v1**, diagnosed loudly.
+   render pass (`pl-0`, ...), so emission 2's `pl-0` is a DIFFERENT
+   logical boundary than emission 1's — and emissions deliberately share
+   one frame id/version (that is what makes them morphs), so the store's
+   version fence cannot isolate a first yield's late-arriving fragment
+   from a second yield's markup: a stale reveal could clobber newer
+   content, and matching placeholders across morphs is occurrence
+   identity for pending regions. Options: (a) per-emission key prefixes +
+   an emission epoch fencing stale reveals + no-op'ing reveals whose
+   target range was morphed away — solvable, real protocol surface, weird
+   UX (a fallback appears, then the next emission morphs the region
+   mid-pending); or (b) forbid `<Loading>` segments inside generator
+   component markup for v1. **Recommend (b), diagnosed loudly**: a
+   generator IS a settlement mechanism — an async dependency inside a
+   yield either awaits before yielding (for-await backpressure) or ships
+   as a later yield, which is the API's entire point; Loading-in-yield
+   says "emit incomplete and patch later" at the wrong layer. Uniform
+   rule (also at the t=0 first-yield document render, where segments
+   would otherwise work) so the constraint is teachable; (a) stays on
+   the shelf for a consumer the yield-later shape can't express.
 3. **Document SSR** (`t=0`): what does a generator boundary render into
    the document?
    - v1 (cheap, defensible): consume to **first yield** for the inline
