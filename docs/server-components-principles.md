@@ -436,6 +436,28 @@ must latch: values crossing at t=0 document SSR (hydration's first-value
 lock) and anything after the response window closes (cross-request updates
 are re-invocation's, by architecture).
 
+**Ratified: liveness is exclusive to the slot border — markup holes settle
+once.** `<p>{iterMemo()}</p>` in server component markup renders the value
+the hole resolved with and never retro-updates; only slot args get the
+ledger. The line is ownership, not implementation budget: a slot arg crosses
+into the client's LIVE reactive graph — something exists on the other side
+to apply an update, and re-emitting a record is a value update. A flushed
+markup hole has no live consumer; "updating" it means re-rendering and
+re-shipping markup, which is not an update but a NEW RENDER — and markup
+that advances is deliberately an explicit authoring form (the
+progressive-emission proposal's generator components, one snapshot per
+yield), never an implicit property of reading an async value in JSX.
+Implicit markup liveness would hold responses open and re-ship HTML without
+any author intent visible in the code. The author story has no dead ends:
+ticking *data* passes the async value through a slot arg to a client fill;
+ticking *markup* is a generator component. One precision: within a frame
+response "first value" means **value at render time** — a fragment that
+renders late reads the memo's then-current value (the pump may have advanced
+it), which is client time-semantics (a later render reads later state).
+Document SSR alone pins the strict first value, because hydration's replay
+starts at V1 and the claimed markup must agree. Two consumers, two
+consistency contracts, each matching what is alive on the other end.
+
 ### DR-3: Classification precedes resolution (template detection stays tractable)
 
 Two rules keep the sink's content-vs-data decision and reverse templating decidable:
