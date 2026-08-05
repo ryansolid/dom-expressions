@@ -126,12 +126,17 @@ const SCENARIOS = {
   // the mechanism: every place a range could be owed is on the list by
   // construction, so "a live range was detached because its parent didn't
   // match" stops being a reachable state. Re-guarded at actual+20 (8228
-  // measured).
+  // measured). Then +12 for the error-apply notification: an `:error`
+  // record fires `onApply` (reason "error") once per stream, so a consumer
+  // gating on first apply — the shell-gate mount holding its covering
+  // boundary open until the frame has content — releases on a failed
+  // stream instead of holding a fallback forever. Re-guarded at actual+18
+  // (8260 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8248
+    8278
   ]
 };
 

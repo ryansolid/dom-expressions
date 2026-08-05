@@ -280,6 +280,7 @@ class FrameImpl {
   #store = Object.create(null);
   #appliedRootValue;
   #hasContent = false;
+  #errorNotified = false;
   #revealed = new Set();
   #fallbackShown = new Set();
   #slots;
@@ -416,6 +417,7 @@ class FrameImpl {
       this.#version = v;
       this.#revealed.clear();
       this.#fallbackShown.clear();
+      this.#errorNotified = false;
       for (const key of Object.keys(this.#store)) {
         if (key.startsWith("seg:") || key === ":error") {
           delete this.#store[key];
@@ -454,6 +456,17 @@ class FrameImpl {
       this.#applyRoot(root.value);
       this.#appliedRootValue = root.value;
       this.#applied(version, reason);
+    }
+
+    // An error record is an APPLY too: a consumer gating on first apply (a
+    // mount holding its covering boundary open until the frame has content)
+    // must release on a failed stream — surfacing the error state beats
+    // holding a fallback forever. Notified once per stream: later flushes
+    // (data, complete) don't re-fire, and a new version re-arms (its reset
+    // clears the record).
+    if (this.#store[":error"] && !this.#errorNotified) {
+      this.#errorNotified = true;
+      this.#applied(version, "error");
     }
 
     // Re-evaluate every segment on each flush. Because readiness is checked

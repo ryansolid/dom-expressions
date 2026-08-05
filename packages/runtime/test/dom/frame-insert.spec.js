@@ -74,6 +74,32 @@ describe("frame boundary element", () => {
     expect(h1.textContent).toBe("Two");
     dispose();
   });
+
+  it("an error record notifies onApply — a consumer gating on first apply releases", () => {
+    // A mount holding its covering boundary open until the frame has content
+    // (the shell-gate pattern) must release on a FAILED stream too: the
+    // error record is an apply. Once per record — later chunks of the same
+    // stream (`complete` re-runs the flush) must not re-fire — and a new
+    // version re-arms.
+    const applies = [];
+    const host = createFrameHost();
+    const { dispose } = createFrameElement({
+      host,
+      id: "boom",
+      onApply: info => applies.push(info.reason)
+    });
+    host.apply({ type: "error", id: "boom", version: 1, error: { message: "nope" } });
+    expect(applies).toEqual(["error"]);
+    host.apply({ type: "complete", id: "boom", version: 1 });
+    expect(applies).toEqual(["error"]);
+    // A newer version is a fresh response: content applies normally and a
+    // fresh error notifies again.
+    host.apply({ type: "html", id: "boom", version: 2, html: "<p>ok</p>" });
+    expect(applies).toEqual(["error", "materialize"]);
+    host.apply({ type: "error", id: "boom", version: 3, error: { message: "again" } });
+    expect(applies).toEqual(["error", "materialize", "error"]);
+    dispose();
+  });
 });
 
 // #550: a frame boundary in an array / fragment position. Under the element

@@ -241,7 +241,7 @@ export interface FrameOptions {
    */
   adopt?: boolean;
   /** Called after each apply flush (tests/telemetry). */
-  onApply?(info: { version: number; reason: "materialize" | "morph" | "reveal" }): void;
+  onApply?(info: { version: number; reason: "materialize" | "morph" | "reveal" | "error" }): void;
   /**
    * Wraps element-claim sweeps (`a[href]`/`form[action]` in materialized
    * server content — and only those) so claim consumers register their
