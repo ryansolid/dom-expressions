@@ -50,6 +50,50 @@ export interface Href {
 export function isHref(value: unknown): value is Href;
 
 /**
+ * Registered-symbol brand (`Symbol.for("solid.SafeError")`) marking a thrown
+ * value as safe to serialize to the client verbatim. Declared `unique
+ * symbol` type-side; the runtime value is the registered symbol, so
+ * separately bundled copies agree on identity.
+ */
+export declare const SAFE_ERROR: unique symbol;
+
+/**
+ * Marks `error` as safe to serialize to the client verbatim, opting it out
+ * of the server-function handler's production error sanitization.
+ *
+ * By default a plain `Error` thrown from a server function is sanitized to a
+ * generic `Error` in production (`process.env.NODE_ENV !== "development"`):
+ * its `message`, `stack`, and own-properties are dropped so a driver/ORM
+ * error can't leak a failing query or connection string over the wire.
+ * Development keeps full fidelity. This is the escape hatch for errors whose
+ * content is *intentional* client-facing information — brand them and their
+ * message/properties travel intact in every environment.
+ *
+ * The brand is a non-enumerable, symbol-keyed property, so it never itself
+ * serializes as an own-property. Sets the brand and returns the same value.
+ *
+ * @example
+ * ```ts
+ * import { markSafeError } from "@solidjs/web";
+ *
+ * async function transfer(amount: number) {
+ *   "use server";
+ *   if (amount > balance) {
+ *     // The user must see this message; opt out of sanitization.
+ *     throw markSafeError(new Error("Insufficient funds"));
+ *   }
+ * }
+ * ```
+ */
+export function markSafeError<E>(error: E): E;
+
+/**
+ * Whether `value` is branded safe to serialize (via `markSafeError`).
+ * Registered-symbol check, correct across duplicated module instances.
+ */
+export function isSafeError(value: unknown): value is Error;
+
+/**
  * Response header naming the cache keys a mutation invalidated
  * (`"X-Revalidate"`), comma separated. The response helpers below set it
  * from their `revalidate` option; the client transport treats its presence

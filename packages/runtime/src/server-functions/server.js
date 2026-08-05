@@ -11,7 +11,7 @@
 // envelope, the flash cookie, folding cookies for work re-run after a
 // mutation — and never what they carry. Which data a mutation invalidates,
 // and how an outcome reaches the UI, stay with the integration.
-import { REVALIDATE_HEADER, isResponseEnvelope } from "../response.js";
+import { REVALIDATE_HEADER, isResponseEnvelope, isSafeError } from "../response.js";
 import { RequestContext, getRequestEvent } from "../server.js";
 import { encodeFlashCookie } from "./flash.js";
 import {
@@ -524,6 +524,37 @@ function encodeResult(value, headers, status, codec) {
   return status === 200 ? response : new Response(response.body, { status, headers });
 }
 
+/** Message a sanitized (production) server error carries on the wire. */
+export const GENERIC_SERVER_ERROR_MESSAGE = "Internal Server Error";
+
+/**
+ * Production error sanitization for a plain thrown value (not a
+ * Response/envelope — those are intentional control flow, handled before
+ * this). A raw `Error` (or thrown string/object) serialized to the client
+ * would ship its `message` and every own-property verbatim over the wire —
+ * an ORM/driver error's failing query, connection string, or bound params
+ * included. So outside development it is replaced with a generic `Error`,
+ * preserving only that the client receives *an* `Error` (the protocol shape
+ * consumers like the router's `submission.error` expect).
+ *
+ * Development keeps full fidelity (message, stack, own-props) for DX and the
+ * dev toolbar inspector. The dev/prod line follows this file's existing
+ * convention — `process.env.NODE_ENV === "development"` — so the fidelity is
+ * opt-in to development and every other environment (production, test, CI,
+ * unset) fails safe.
+ *
+ * Escape hatch: a value branded with `markSafeError` (`Symbol.for(
+ * "solid.SafeError")`) is intentional client-facing content and passes
+ * through untouched. Framework `wrapInvocation`/`transformResult` overrides
+ * that map errors express intent the same way — throw a Response/envelope,
+ * or brand the mapped error safe — so core never second-guesses them.
+ */
+export function sanitizeServerError(value) {
+  if (process.env.NODE_ENV === "development") return value;
+  if (isSafeError(value)) return value;
+  return new Error(GENERIC_SERVER_ERROR_MESSAGE);
+}
+
 /**
  * Web-standard HTTP handler for server function calls. Mount it on the
  * endpoint the client transport targets (default `/_server`).
@@ -810,17 +841,24 @@ export async function handleServerFunctionRequest(request, options = {}) {
       return encodeResult(x, headers, status, codec);
     }
 
+    // Plain thrown value (not a Response/envelope): the security-sensitive
+    // path. Sanitized to a generic Error outside development unless branded
+    // safe, so a driver/ORM error's message and own-properties never reach
+    // the client (see sanitizeServerError). Both the wire body and the
+    // ERROR_HEADER message derive from the sanitized value.
+    const safe = sanitizeServerError(x);
+
     if (!instance) {
-      if (handleNoJS) return handleNoJS(x, request, parsed, true);
-      const message = x instanceof Error ? x.message : String(x);
+      if (handleNoJS) return handleNoJS(safe, request, parsed, true);
+      const message = safe instanceof Error ? safe.message : String(safe);
       return new Response(process.env.NODE_ENV === "development" ? message : null, { status: 500 });
     }
 
-    const error = x instanceof Error ? x.message : typeof x === "string" ? x : "true";
+    const error = safe instanceof Error ? safe.message : typeof safe === "string" ? safe : "true";
     // header values are latin1 ByteStrings — Headers.set throws on anything
     // above U+00FF, so non-latin1 messages ride percent-encoded (the client
     // decodes symmetrically; the structured error still travels in the body)
     headers.set(ERROR_HEADER, encodeErrorHeaderValue(error));
-    return encodeResult(x, headers, 200, codec);
+    return encodeResult(safe, headers, 200, codec);
   }
 }

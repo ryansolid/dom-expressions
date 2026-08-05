@@ -3,8 +3,11 @@
  */
 import {
   ResponseEnvelope,
+  SAFE_ERROR,
   isHref,
   isResponseEnvelope,
+  isSafeError,
+  markSafeError,
   redirect,
   reload,
   respond
@@ -37,6 +40,7 @@ import {
 } from "../../src/server-functions/client";
 import {
   GET as serverGET,
+  GENERIC_SERVER_ERROR_MESSAGE,
   configureServerFunctionsServer,
   createNoJSHandler,
   createServerReference,
@@ -47,7 +51,8 @@ import {
   getServerFunctionInvocation,
   handleServerFunctionRequest,
   registerServerFunction,
-  registerServerReference
+  registerServerReference,
+  sanitizeServerError
 } from "../../src/server-functions/server";
 import { FLASH_COOKIE, clearFlashCookie, hasFlashCookie } from "../../src/server-functions/shared";
 import { RequestContext } from "../../src/server";
@@ -459,7 +464,9 @@ describe("handler", () => {
     }
   });
 
-  it("propagates thrown errors to the client", async () => {
+  it("propagates thrown errors to the client (dev: full message)", async () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
     registerServerFunction("boom-0", async () => {
       throw new Error("kaboom");
     });
@@ -468,10 +475,23 @@ describe("handler", () => {
       await expect(createClientReference("boom-0")()).rejects.toThrow("kaboom");
     } finally {
       restore();
+      process.env.NODE_ENV = prev;
     }
   });
 
   describe("error header encoding", () => {
+    // These assert real error content on the wire — i.e. development
+    // fidelity. Outside development the handler sanitizes plain errors (see
+    // the "production error sanitization" suite), so pin the mode here.
+    let prevNodeEnv;
+    beforeEach(() => {
+      prevNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "development";
+    });
+    afterEach(() => {
+      process.env.NODE_ENV = prevNodeEnv;
+    });
+
     // Header values are latin1 ByteStrings: without the encoding guard,
     // Headers.set throws on messages with code points above U+00FF and the
     // whole call collapses into a bare 500 (solidjs/solid-start#1874).
@@ -575,6 +595,195 @@ describe("handler", () => {
       expect(decodeErrorHeaderValue("kaboom")).toBe("kaboom");
       expect(decodeErrorHeaderValue("true")).toBe("true");
       expect(decodeErrorHeaderValue("50%25 there")).toBe("50%25 there");
+    });
+  });
+
+  describe("production error sanitization", () => {
+    // The handler sanitizes plain thrown values outside development so a
+    // driver/ORM error can't leak its message or own-properties (a failing
+    // query, a connection string) to the client. Intentional error content
+    // travels as a thrown Response/envelope, or an Error branded safe.
+    let prevNodeEnv;
+    beforeEach(() => {
+      prevNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+    });
+    afterEach(() => {
+      process.env.NODE_ENV = prevNodeEnv;
+    });
+
+    function errorRequest(id) {
+      return new Request("http://localhost/_server", {
+        method: "POST",
+        headers: {
+          "X-Server-Function-Id": id,
+          "X-Server-Function-Instance": "server-function:test"
+        }
+      });
+    }
+
+    it("replaces a leaking Error's message and own-props with a generic Error", async () => {
+      registerServerFunction("prod-leak-0", async () => {
+        const err = new Error("connect ECONNREFUSED postgres://user:hunter2@10.0.0.5/prod");
+        err.query = "SELECT ssn FROM users WHERE id = 1";
+        err.code = "ECONNREFUSED";
+        throw err;
+      });
+      const response = await dispatch(errorRequest("prod-leak-0"));
+
+      // still flagged as an error on the wire...
+      expect(response.headers.get(ERROR_HEADER)).not.toBeNull();
+      // ...but the header no longer carries the real message
+      expect(decodeErrorHeaderValue(response.headers.get(ERROR_HEADER))).toBe(
+        GENERIC_SERVER_ERROR_MESSAGE
+      );
+      // ...and the serialized body is a generic Error: no message, no own-props
+      const decoded = await decodeResponse(response);
+      expect(decoded).toBeInstanceOf(Error);
+      expect(decoded.message).toBe(GENERIC_SERVER_ERROR_MESSAGE);
+      expect(decoded.message).not.toMatch(/hunter2|ECONNREFUSED|10\.0\.0\.5/);
+      expect(decoded.query).toBeUndefined();
+      expect(decoded.code).toBeUndefined();
+    });
+
+    it("still rejects the client call with an Error (generic content)", async () => {
+      registerServerFunction("prod-leak-client-0", async () => {
+        throw new Error("secret detail");
+      });
+      const restore = connectTransport();
+      try {
+        await expect(createClientReference("prod-leak-client-0")()).rejects.toThrow(
+          GENERIC_SERVER_ERROR_MESSAGE
+        );
+        await expect(createClientReference("prod-leak-client-0")()).rejects.not.toThrow(
+          "secret detail"
+        );
+      } finally {
+        restore();
+      }
+    });
+
+    it("sanitizes thrown non-Error values (strings, objects) too", async () => {
+      registerServerFunction("prod-leak-string-0", async () => {
+        throw "raw secret string";
+      });
+      const response = await dispatch(errorRequest("prod-leak-string-0"));
+      expect(decodeErrorHeaderValue(response.headers.get(ERROR_HEADER))).toBe(
+        GENERIC_SERVER_ERROR_MESSAGE
+      );
+      const decoded = await decodeResponse(response);
+      expect(decoded).toBeInstanceOf(Error);
+      expect(decoded.message).toBe(GENERIC_SERVER_ERROR_MESSAGE);
+    });
+
+    it("escape hatch: a markSafeError'd Error travels intact", async () => {
+      registerServerFunction("prod-safe-0", async () => {
+        const err = new Error("Insufficient funds");
+        err.balance = 10;
+        throw markSafeError(err);
+      });
+      const response = await dispatch(errorRequest("prod-safe-0"));
+
+      expect(decodeErrorHeaderValue(response.headers.get(ERROR_HEADER))).toBe("Insufficient funds");
+      const decoded = await decodeResponse(response);
+      expect(decoded).toBeInstanceOf(Error);
+      expect(decoded.message).toBe("Insufficient funds");
+      // intentional own-property survives...
+      expect(decoded.balance).toBe(10);
+      // ...but the safe brand itself never rides the wire as an own-prop
+      expect(Object.getOwnPropertySymbols(decoded)).not.toContain(SAFE_ERROR);
+      expect(decoded[SAFE_ERROR]).toBeUndefined();
+    });
+
+    it("thrown control-flow Responses are intentional and untouched", async () => {
+      registerServerFunction("prod-redirect-0", async () => {
+        throw redirect("/login");
+      });
+      const response = await dispatch(errorRequest("prod-redirect-0"));
+      // redirect metadata is forwarded verbatim; sanitization never applies
+      expect(response.headers.get("Location")).toBe("/login");
+    });
+
+    it("respond() envelopes thrown as errors keep their value", async () => {
+      registerServerFunction("prod-envelope-0", async () => {
+        throw respond({ reason: "quota" }, { status: 402 });
+      });
+      const response = await dispatch(errorRequest("prod-envelope-0"));
+      expect(response.headers.get(ERROR_HEADER)).not.toBeNull();
+      expect(await decodeResponse(response)).toEqual({ reason: "quota" });
+    });
+
+    it("override seam: wrapInvocation may brand its mapped error to pass through", async () => {
+      registerServerFunction("prod-wrap-0", async () => {
+        throw new Error("raw internal");
+      });
+      // A framework onError-style policy: map the raw error to a curated one
+      // and brand it intentional so core does not sanitize on top.
+      const wrapInvocation = async run => {
+        try {
+          return await run();
+        } catch {
+          throw markSafeError(new Error("Something went wrong (ref 42)"));
+        }
+      };
+      const response = await dispatch(errorRequest("prod-wrap-0"), { wrapInvocation });
+      const decoded = await decodeResponse(response);
+      expect(decoded.message).toBe("Something went wrong (ref 42)");
+    });
+
+    it("override seam: an unbranded mapped error is still sanitized (no leak)", async () => {
+      registerServerFunction("prod-wrap-1", async () => {
+        throw new Error("raw internal");
+      });
+      const wrapInvocation = async run => {
+        try {
+          return await run();
+        } catch {
+          // forgets to brand — core's default still contains it
+          throw new Error("mapped but unbranded");
+        }
+      };
+      const response = await dispatch(errorRequest("prod-wrap-1"), { wrapInvocation });
+      const decoded = await decodeResponse(response);
+      expect(decoded.message).toBe(GENERIC_SERVER_ERROR_MESSAGE);
+    });
+  });
+
+  describe("sanitizeServerError policy", () => {
+    let prevNodeEnv;
+    beforeEach(() => (prevNodeEnv = process.env.NODE_ENV));
+    afterEach(() => (process.env.NODE_ENV = prevNodeEnv));
+
+    it("dev keeps the thrown value verbatim (full fidelity)", () => {
+      process.env.NODE_ENV = "development";
+      const err = new Error("full detail");
+      err.query = "SELECT 1";
+      expect(sanitizeServerError(err)).toBe(err);
+    });
+
+    it("non-development replaces a plain Error with a generic one", () => {
+      process.env.NODE_ENV = "production";
+      const out = sanitizeServerError(new Error("leaky"));
+      expect(out).toBeInstanceOf(Error);
+      expect(out.message).toBe(GENERIC_SERVER_ERROR_MESSAGE);
+    });
+
+    it("fails safe when NODE_ENV is unset (sanitizes)", () => {
+      delete process.env.NODE_ENV;
+      expect(sanitizeServerError(new Error("leaky")).message).toBe(GENERIC_SERVER_ERROR_MESSAGE);
+    });
+
+    it("passes a branded error through in production", () => {
+      process.env.NODE_ENV = "production";
+      const err = markSafeError(new Error("intentional"));
+      expect(isSafeError(err)).toBe(true);
+      expect(sanitizeServerError(err)).toBe(err);
+    });
+
+    it("markSafeError brands without an enumerable own-property", () => {
+      const err = markSafeError(new Error("x"));
+      expect(Object.keys(err)).not.toContain(SAFE_ERROR.toString());
+      expect(Object.getOwnPropertyDescriptor(err, SAFE_ERROR).enumerable).toBe(false);
     });
   });
 
@@ -1194,14 +1403,24 @@ describe("single-flight", () => {
   });
 
   it("never collects for plain thrown errors", async () => {
+    // Pinned to development so the message assertion reads real content; the
+    // point of the test is that the flight hook is skipped and the response
+    // is still error-flagged. (Sanitization is covered in "production error
+    // sanitization".)
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
     registerServerFunction("sf-error-0", async () => {
       throw new Error("kaboom");
     });
     const hook = jest.fn(() => ({ data: true }));
-    const response = await dispatch(flightRequest("sf-error-0"), { collectFlightData: hook });
-    expect(hook).not.toHaveBeenCalled();
-    expect(response.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
-    expect(response.headers.get("X-Server-Function-Error")).toBe("kaboom");
+    try {
+      const response = await dispatch(flightRequest("sf-error-0"), { collectFlightData: hook });
+      expect(hook).not.toHaveBeenCalled();
+      expect(response.headers.has(SINGLE_FLIGHT_HEADER)).toBe(false);
+      expect(response.headers.get("X-Server-Function-Error")).toBe("kaboom");
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
   });
 
   it("never collects for raw body-carrying Response values (verbatim payload)", async () => {

@@ -50,6 +50,42 @@ export function isHref(value) {
   return !!(value && (typeof value === "object" || typeof value === "function") && value[HREF]);
 }
 
+// Brand marking a thrown value as safe to serialize to the client verbatim.
+// The server-function handler sanitizes plain thrown errors in production
+// (message/stack/own-properties are dropped) so a driver/ORM error can't
+// leak connection strings or queries over the wire; a value carrying this
+// brand opts out and travels intact. A registered symbol like the brands
+// above so identity survives duplicated module instances. It is symbol-keyed
+// and non-enumerable, so it never itself serializes as an own-property.
+const SAFE_ERROR = Symbol.for("solid.SafeError");
+export { SAFE_ERROR };
+
+/**
+ * Marks `error` as safe to serialize to the client verbatim, opting it out
+ * of production error sanitization (see `handleServerFunctionRequest`). Use
+ * for errors whose message/properties are intentional client-facing content.
+ * Returns the same value for convenient `throw markSafeError(new Error(...))`.
+ */
+export function markSafeError(error) {
+  if (error && (typeof error === "object" || typeof error === "function")) {
+    Object.defineProperty(error, SAFE_ERROR, {
+      value: true,
+      enumerable: false,
+      configurable: true
+    });
+  }
+  return error;
+}
+
+/** Whether `value` is branded safe to serialize (robust across module copies). */
+export function isSafeError(value) {
+  return !!(
+    value &&
+    (typeof value === "object" || typeof value === "function") &&
+    value[SAFE_ERROR]
+  );
+}
+
 /**
  * Response header naming the cache keys a mutation invalidated, comma
  * separated. Set by the helpers below and read by the client transport and
