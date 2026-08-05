@@ -178,6 +178,39 @@ describe("async slot args — value tier (DR-2)", () => {
     const dataChunks = chunks.filter(c => c.type === "data" && c.key === "arg:row#0:value");
     expect(JSON.stringify(dataChunks.map(c => c.node))).toContain("boom");
   });
+
+  it("an async-iterable arg ships as a data ref and streams every yield before complete", async () => {
+    // The token-stream shape: an async iterable passed WHOLE. The record
+    // must not wait on the iterator; each yield rides the data channel as a
+    // seroval enqueue patch, and the stream holds `complete` until the
+    // iterator finishes (the client's read follows the yields live).
+    const results = [];
+    const source = {
+      [Symbol.asyncIterator]: () => ({
+        next: () => new Promise(res => results.push(res))
+      })
+    };
+    const pending = collectStream(props => r.ssr`<div>${[props.row({ tokens: source })]}</div>`);
+    await Promise.resolve();
+    results.shift()({ value: "Hello", done: false });
+    await Promise.resolve();
+    results.shift()({ value: "Hello world", done: false });
+    await Promise.resolve();
+    results.shift()({ value: undefined, done: true });
+    const chunks = await pending;
+    const slot = chunks.find(c => c.type === "slot");
+    expect(slot.args.tokens.$ref).toBe("arg:row#0:tokens");
+    const dataChunks = chunks.filter(c => c.type === "data" && c.key === "arg:row#0:tokens");
+    const payload = JSON.stringify(dataChunks.map(c => c.node));
+    expect(payload).toContain("Hello");
+    expect(payload).toContain("Hello world");
+    // The initial pending node emits as the arg classifies (before the slot
+    // record — the ref must exist before the record naming it); the yields
+    // patch after, and complete ships after the last.
+    expect(chunks.indexOf(slot)).toBeLessThan(chunks.indexOf(dataChunks[dataChunks.length - 1]));
+    const completeIdx = chunks.findIndex(c => c.type === "complete");
+    expect(chunks.indexOf(dataChunks[dataChunks.length - 1])).toBeLessThan(completeIdx);
+  });
 });
 
 describe("function-valued slot args — document face (t=0)", () => {
