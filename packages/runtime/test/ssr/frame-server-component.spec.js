@@ -571,7 +571,7 @@ describe("server-component hydration reference", () => {
         // document shell needs no `_$SC` script of its own, so nothing sits
         // ahead of the authored <head> elements to drift positional
         // hydration claims.
-        expect(payload).toContain('(self._$SC||(self._$SC={');
+        expect(payload).toContain("(self._$SC||(self._$SC={");
         expect(payload).toContain('.r("hn/story-0","hn/story-0")');
         expect(payload).not.toContain("createDocumentSlotProps");
         // The payload evaluates with only the document's own preludes (the

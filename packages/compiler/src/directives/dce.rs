@@ -476,13 +476,33 @@ impl<'a> VisitMut<'a> for Remover<'_, 'a> {
                 statement @ (Statement::VariableDeclaration(_)
                 | Statement::LabeledStatement(_)) => !self.statement_fully_removed(statement),
                 Statement::ImportDeclaration(import) => {
+                    let declaration_is_type = import.import_kind.is_type();
                     if let Some(specifiers) = &mut import.specifiers {
                         let had = specifiers.len();
                         specifiers.retain(|specifier| !self.spans.contains(&specifier.span()));
-                        if specifiers.len() != had {
+                        let pruned = specifiers.len() != had;
+                        if pruned {
                             self.changed = true;
                         }
-                        !(had > 0 && specifiers.is_empty())
+                        // A pruned import whose surviving specifiers are all
+                        // type-only imports no runtime binding, but the
+                        // declaration would still emit — and a bare module
+                        // edge to a server module is exactly the leak this
+                        // shake guards against. The Babel implementation
+                        // counts VALUE specifiers when deciding whole-
+                        // declaration removal (solid-start #2273); mirror
+                        // it: the declaration goes with its last value
+                        // specifier. Imports the shake never touched stay
+                        // untouched.
+                        let type_only = declaration_is_type
+                            || specifiers.iter().all(|specifier| {
+                                matches!(
+                                    specifier,
+                                    oxc_ast::ast::ImportDeclarationSpecifier::ImportSpecifier(s)
+                                        if s.import_kind.is_type()
+                                )
+                            });
+                        !(had > 0 && (specifiers.is_empty() || (pruned && type_only)))
                     } else {
                         true
                     }
