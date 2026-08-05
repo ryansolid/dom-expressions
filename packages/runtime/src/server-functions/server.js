@@ -54,6 +54,7 @@ export { decodeFlashCookie, encodeFlashCookie } from "./flash.js";
 
 const config = {
   provideEvent: undefined,
+  wrapInvocation: undefined,
   collectFlightData: undefined,
   transformResult: undefined,
   transformFlightResult: undefined,
@@ -65,7 +66,10 @@ const config = {
 /**
  * Configures the server runtime: `provideEvent(event, fn)` establishes the
  * request-event scope for a call (e.g. @solidjs/web/storage's
- * provideRequestEvent), `collectFlightData` is the single-flight hook (see
+ * provideRequestEvent), `wrapInvocation(run, context)` wraps every server
+ * function execution — HTTP dispatch and direct SSR calls alike — with the
+ * invocation identity established (see `handleServerFunctionRequest`),
+ * `collectFlightData` is the single-flight hook (see
  * `handleServerFunctionRequest`), `transformResult` is the server-wide
  * default for the handler's result transform (per-request options override;
  * this is how frames installs `frameTransformResult` once for generic
@@ -79,6 +83,7 @@ const config = {
  */
 export function configureServerFunctionsServer({
   provideEvent,
+  wrapInvocation,
   collectFlightData,
   transformResult,
   transformFlightResult,
@@ -88,6 +93,7 @@ export function configureServerFunctionsServer({
   codec
 } = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
+  if (wrapInvocation !== undefined) config.wrapInvocation = wrapInvocation;
   if (collectFlightData !== undefined) config.collectFlightData = collectFlightData;
   if (transformResult !== undefined) config.transformResult = transformResult;
   if (transformFlightResult !== undefined) config.transformFlightResult = transformFlightResult;
@@ -179,7 +185,15 @@ export function createServerReference({ id, fn, name }) {
       INVOCATIONS.set(evt, { id });
       evt.serverOnly = true;
       const result = provideEvent(evt, () => {
-        return fn.apply(thisArg, args);
+        const run = () => fn.apply(thisArg, args);
+        // Per-invocation wrap (see configureServerFunctionsServer): direct
+        // SSR calls run through the same policy as HTTP dispatch, so
+        // per-function middleware built on it can't be bypassed by calling
+        // the function during a render. The wrapper must return run()'s
+        // value (this path stays synchronous for synchronous functions).
+        return config.wrapInvocation
+          ? config.wrapInvocation(run, { id, args, event: evt, direct: true })
+          : run();
       });
       // In-process mirror of the handler's transformResult: direct SSR calls
       // pass their settled value through the configured policy (e.g. frames
@@ -518,6 +532,16 @@ function encodeResult(value, headers, status, codec) {
  * - `createEvent(request)`: builds the request event (default: bare
  *   `{ request, locals: {} }`). Integrations supply their richer event.
  * - `provideEvent(event, fn)`: overrides the configured provider per call.
+ * - `wrapInvocation(run, context)`: wraps the function execution itself —
+ *   the per-invocation seam for framework policies (per-function
+ *   middleware, auth, logging, error mapping). Called inside the event
+ *   scope with the invocation identity already established
+ *   (`getServerFunctionInvocation()` answers before, during and after
+ *   `run()`); the context carries `{ id, args, event, request, direct }`.
+ *   Must return (or resolve to) `run()`'s result — replacing it replaces
+ *   the function's result. The configured hook (see
+ *   `configureServerFunctionsServer`) also wraps direct SSR calls, where
+ *   `context.direct` is `true` and `request` is absent.
  * - `transformResult(event, result, context)`: observes/replaces the result
  *   before encoding — the extension point for response metadata policies.
  *   The context carries the call's identity (`id`, parsed `args`) alongside
@@ -596,6 +620,8 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // configured transform (frames installs itself here once, server-wide).
   const transformResult =
     options.transformResult !== undefined ? options.transformResult : config.transformResult;
+  const wrapInvocation =
+    options.wrapInvocation !== undefined ? options.wrapInvocation : config.wrapInvocation;
   const transformFlightResult =
     options.transformFlightResult !== undefined
       ? options.transformFlightResult
@@ -635,8 +661,14 @@ export async function handleServerFunctionRequest(request, options = {}) {
   const headers = new Headers();
   try {
     let result = await provide(event, async () => {
+      // Identity is established BEFORE the wrapper runs, so
+      // getServerFunctionInvocation() answers throughout the wrap — code
+      // ahead of run() (auth, logging) included.
       INVOCATIONS.set(event, { id: functionId });
-      return serverFunction(...parsed);
+      const run = () => serverFunction(...parsed);
+      return wrapInvocation
+        ? wrapInvocation(run, { id: functionId, args: parsed, event, request, direct: false })
+        : run();
     });
 
     if (transformResult) {

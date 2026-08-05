@@ -247,6 +247,74 @@ export interface RequestEvent {
  */
 export function getRequestEvent(): RequestEvent | undefined;
 
+/** A fresh, uncommitted response head. */
+export function createResponseStub(): ResponseStub;
+
+/**
+ * The canonical request event for HTTP handlers: the incoming `Request`, a
+ * `locals` bag, and a `response` head stub the render writes to. `init`
+ * spreads over the defaults so frameworks can extend the shape.
+ */
+export function createRequestEvent<T extends object = {}>(
+  request: Request,
+  init?: T
+): RequestEvent & { response: ResponseStub } & T;
+
+/**
+ * The status an outgoing redirect should use for a response head carrying
+ * a `Location`: the stub's own status when it is a redirect status, 302
+ * otherwise.
+ */
+export function getExpectedRedirectStatus(response: ResponseStub): number;
+
+export interface SSRResponseOptions {
+  /** Base head; the stub's status/headers win over it. */
+  responseInit?: ResponseInit;
+  /** Nonce carried by the post-flush `<script>` redirect fallback. */
+  nonce?: string;
+  /** Rewrites each outgoing HTML chunk (entry script injection, ...). */
+  transformChunk?: (chunk: string) => string;
+}
+
+/**
+ * Derives the outgoing `Response` for an SSR render result, running the
+ * response-head lifecycle against `event.response`: commit at shell flush,
+ * pre-flush `Location` becomes a real redirect, post-flush `Location`
+ * appends a client-side script redirect before the stream closes.
+ * Synchronous for string results; resolves at shell flush for stream
+ * results.
+ */
+export function createSSRResponse(
+  result: string,
+  event: RequestEvent | undefined,
+  options?: SSRResponseOptions
+): Response;
+export function createSSRResponse(
+  result: { pipe(writable: { write: (v: string) => void; end: () => void }): void },
+  event: RequestEvent | undefined,
+  options?: SSRResponseOptions
+): Promise<Response>;
+
+/**
+ * Fetch-style middleware: return a `Response` to answer the request, or
+ * call `next()` (optionally with a substitute `Request`) to advance the
+ * chain and observe/replace the eventual response.
+ */
+export type FetchMiddleware = (
+  request: Request,
+  next: (request?: Request) => Promise<Response>
+) => Response | Promise<Response>;
+
+/**
+ * Composes fetch-style middleware into one function of the same shape;
+ * the terminal `next` dispatches to the actual handler. Runs in whatever
+ * scope the caller established (`provideRequestEvent`), so
+ * `getRequestEvent()` works exactly as in application code.
+ */
+export function composeMiddleware(
+  middlewares: FetchMiddleware[]
+): (request: Request, next: (request?: Request) => Response | Promise<Response>) => Promise<Response>;
+
 export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function untrack<T>(fn: () => T): T;
 

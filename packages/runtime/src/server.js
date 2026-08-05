@@ -2305,6 +2305,207 @@ export function renderToStringAsync(code, options = {}) {
   return new Promise(resolve => renderToStream(code, options).then(resolve));
 }
 
+// --- HTTP response-head lifecycle ---------------------------------------
+//
+// The protocol half of serving an SSR render over HTTP: a mutable response
+// head (`ResponseStub`) that render-time primitives write to (status,
+// headers, redirect Location), and the lifecycle that derives the outgoing
+// `Response` head from it at the moment it freezes on the wire. Handlers —
+// a framework's, a plugin's generated one, a hand-written entry — compose
+// these with `provideRequestEvent`; nothing here assumes a platform beyond
+// web-standard Request/Response.
+
+/** A fresh, uncommitted response head. */
+export function createResponseStub() {
+  return { status: undefined, statusText: undefined, headers: new Headers(), committed: false };
+}
+
+/**
+ * The canonical request event for HTTP handlers: the incoming `Request`, a
+ * `locals` bag, and a `response` head stub the render writes to (the
+ * primitives `httpStatus`/`httpHeader`, integrations' redirects). `init`
+ * spreads over the defaults, so a framework can extend the shape (or
+ * substitute its own structurally-compatible `response`) while every event
+ * still looks the same to code reading it.
+ */
+export function createRequestEvent(request, init) {
+  return { request, locals: {}, response: createResponseStub(), ...init };
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#redirection_messages
+const validRedirectStatuses = /*#__PURE__*/ new Set([301, 302, 303, 307, 308]);
+
+/**
+ * The status an outgoing redirect should use for a response head carrying a
+ * `Location`: the stub's own status when it is a redirect status, 302
+ * otherwise (the stub's status was set for the page render, not the
+ * redirect that preempts it).
+ */
+export function getExpectedRedirectStatus(response) {
+  if (response.status && validRedirectStatuses.has(response.status)) return response.status;
+  return 302;
+}
+
+// Merge the stub's headers over a base Headers. Set-Cookie is the one
+// header where multiple values must survive as separate entries, so it is
+// appended cookie-by-cookie rather than set.
+function mergeStubHeaders(target, stub) {
+  if (!stub) return target;
+  stub.headers.forEach((value, key) => {
+    if (key !== "set-cookie") target.set(key, value);
+  });
+  const setCookies = stub.headers.getSetCookie ? stub.headers.getSetCookie() : [];
+  for (const cookie of setCookies) target.append("set-cookie", cookie);
+  return target;
+}
+
+function deriveHead(stub, responseInit = {}) {
+  const headers = mergeStubHeaders(new Headers(responseInit.headers), stub);
+  const status = (stub && stub.status) || responseInit.status || 200;
+  const statusText = (stub && stub.statusText) || responseInit.statusText || undefined;
+  return { status, statusText, headers };
+}
+
+function escapeAttribute(value) {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+/**
+ * Derives the outgoing `Response` for an SSR render result, running the
+ * response-head lifecycle against `event.response`:
+ *
+ * - String results (sync/async renders) commit the stub and return a
+ *   `Response` synchronously; a `Location` on the stub becomes a real
+ *   redirect (`getExpectedRedirectStatus`) instead of an HTML response.
+ * - Stream results (`renderToStream(...)`) resolve at shell flush — the
+ *   moment the head freezes: the stub is committed there, its
+ *   status/headers merged over `options.responseInit`, and a pre-flush
+ *   `Location` short-circuits to a redirect with no body (the render is
+ *   abandoned; late writes are dropped). A `Location` set after the flush
+ *   can only be honored client-side, so stream completion appends
+ *   `<script>window.location=...</script>` (carrying `options.nonce` for
+ *   strict `script-src` CSPs) before closing.
+ *
+ * `options.transformChunk(chunk)` rewrites each outgoing HTML chunk (entry
+ * script injection, doctype prefixes, ...). The default `content-type` is
+ * `text/html; charset=utf-8` unless the stub or `responseInit` named one.
+ */
+export function createSSRResponse(result, event, options = {}) {
+  const stub = event && event.response;
+  const { responseInit, nonce, transformChunk } = options;
+
+  if (typeof result === "string") {
+    if (stub) stub.committed = true;
+    const head = deriveHead(stub, responseInit);
+    if (stub && stub.headers.get("Location")) {
+      return new Response(null, { status: getExpectedRedirectStatus(stub), headers: head.headers });
+    }
+    if (!head.headers.has("content-type")) {
+      head.headers.set("content-type", "text/html; charset=utf-8");
+    }
+    return new Response(transformChunk ? transformChunk(result) : result, {
+      status: head.status,
+      statusText: head.statusText,
+      headers: head.headers
+    });
+  }
+
+  const encoder = new TextEncoder();
+  return new Promise(resolve => {
+    let controller;
+    let closed = false;
+    let flushed = false;
+    // Enqueueing after the client disconnects throws; the render must
+    // never crash the server over a consumer that went away.
+    const enqueue = value => {
+      if (closed || !controller) return;
+      try {
+        controller.enqueue(encoder.encode(value));
+      } catch {
+        closed = true;
+      }
+    };
+    result.pipe({
+      write(chunk) {
+        if (!flushed) {
+          flushed = true;
+          if (stub) stub.committed = true;
+          const head = deriveHead(stub, responseInit);
+          if (stub && stub.headers.get("Location")) {
+            // Pre-flush redirect: the shell never reaches the wire.
+            closed = true;
+            resolve(
+              new Response(null, { status: getExpectedRedirectStatus(stub), headers: head.headers })
+            );
+            return;
+          }
+          if (!head.headers.has("content-type")) {
+            head.headers.set("content-type", "text/html; charset=utf-8");
+          }
+          resolve(
+            new Response(
+              new ReadableStream({
+                start(c) {
+                  controller = c;
+                },
+                cancel() {
+                  closed = true;
+                }
+              }),
+              { status: head.status, statusText: head.statusText, headers: head.headers }
+            )
+          );
+        }
+        enqueue(transformChunk ? transformChunk(chunk) : chunk);
+      },
+      end() {
+        if (closed || !controller) return;
+        // A Location that appears here was written after the head went out
+        // (a pre-flush one short-circuited above) — client-side is the only
+        // side that can still honor it.
+        const location = stub && stub.headers.get("Location");
+        if (location) {
+          const attr = nonce ? ` nonce="${escapeAttribute(nonce)}"` : "";
+          enqueue(
+            `<script${attr}>window.location=${JSON.stringify(location).replace(
+              /</g,
+              "\\u003c"
+            )}</script>`
+          );
+        }
+        closed = true;
+        try {
+          controller.close();
+        } catch {}
+      }
+    });
+  });
+}
+
+/**
+ * Composes fetch-style middleware — `(request, next) => Response` — into a
+ * single function of the same shape. `next()` advances the chain (an
+ * optional `Request` argument substitutes the request downstream) and the
+ * terminal `next` handed to the composed function dispatches to the actual
+ * handler. Middleware runs inside whatever scope the caller established
+ * (e.g. `provideRequestEvent`), so `getRequestEvent()` works exactly as it
+ * does in application code; nothing reaches the wire until the outermost
+ * middleware returns, so headers on the returned `Response` remain mutable
+ * through the whole unwind — streamed bodies included.
+ */
+export function composeMiddleware(middlewares) {
+  return function run(request, next) {
+    let index = -1;
+    function dispatch(i, req) {
+      if (i <= index) return Promise.reject(new Error("next() called multiple times"));
+      index = i;
+      if (i === middlewares.length) return Promise.resolve(next(req));
+      return Promise.resolve(middlewares[i](req, override => dispatch(i + 1, override || req)));
+    }
+    return dispatch(0, request);
+  };
+}
+
 // Element claims are a client-only concern (compiled DOM output claims
 // navigation-relevant elements for consumers like a router's link-state
 // layer), but consumers may register isomorphically — so these are silent

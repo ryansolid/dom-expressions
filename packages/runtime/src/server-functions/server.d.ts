@@ -120,6 +120,33 @@ export type CollectFlightDataHook = (
 ) => unknown | Promise<unknown>;
 
 /**
+ * Wraps a server function execution — the per-invocation seam for
+ * framework policies (per-function middleware, auth, logging, error
+ * mapping). Called inside the call's event scope with the invocation
+ * identity already established: `getServerFunctionInvocation()` answers
+ * before, during and after `run()`. Must return (or resolve to) `run()`'s
+ * result — replacing it replaces the function's result; throwing routes
+ * through the handler's normal error encoding.
+ *
+ * The context carries the call's identity (`id`, parsed `args`), its
+ * `event`, and how it arrived: `direct` is `true` for in-process SSR calls
+ * (where `request` is absent) and `false` for HTTP dispatch. On the direct
+ * path the wrapper must stay transparent for synchronous functions —
+ * return `run()`'s value, not an unconditional promise, unless it needs to
+ * be async.
+ */
+export type WrapInvocationHook = (
+  run: () => unknown,
+  context: {
+    id: string;
+    args: unknown[];
+    event: ServerFunctionEvent;
+    request?: Request;
+    direct: boolean;
+  }
+) => unknown;
+
+/**
  * Request headers with `setCookies` folded into the `Cookie` header, as the
  * browser would have applied them before its next request. Later entries
  * win on conflict, and deletions are honored (`Max-Age` at or below zero,
@@ -180,6 +207,14 @@ export interface ServerFunctionsServerConfig {
    * an established request scope parks on the global.
    */
   provideEvent?: <T>(event: ServerFunctionEvent, fn: () => T) => T;
+  /**
+   * Wraps every server function execution — HTTP dispatch and direct SSR
+   * calls alike — with the invocation identity already established (see
+   * `WrapInvocationHook`). The per-invocation seam for framework policies:
+   * per-function middleware, auth, logging, error mapping. A per-request
+   * option overrides it for HTTP dispatch.
+   */
+  wrapInvocation?: WrapInvocationHook;
   /**
    * The single-flight hook: produces the data payload folded into
    * responses of calls that opted in (see `CollectFlightDataHook`).
@@ -402,6 +437,13 @@ export interface HandleServerFunctionOptions {
    * contract as the `provideEvent` config option.
    */
   provideEvent?<T>(event: ServerFunctionEvent, fn: () => T): T;
+  /**
+   * Overrides the configured per-invocation wrap for this handler — same
+   * contract as the `wrapInvocation` config option (see
+   * `WrapInvocationHook`), except it only applies to HTTP dispatch (a
+   * per-request option can't see direct SSR calls).
+   */
+  wrapInvocation?: WrapInvocationHook;
   /**
    * Observes or replaces the function's result before encoding — the
    * extension point for response metadata policies (headers, statuses,
