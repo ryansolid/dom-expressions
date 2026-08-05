@@ -703,6 +703,28 @@ describe("cascading root holes in streaming shell", () => {
     expect(html).toContain("-end</span>");
   });
 
+  it("restores the stream context before retrying root holes", async () => {
+    const pending = asyncError();
+    let calls = 0;
+    const stream = r.renderToStream(
+      () =>
+        r.ssr`<div>${() => {
+          if (++calls === 1) throw pending.err;
+          sharedConfig.context.serialize("root-hole-data", "owned-by-stream");
+          return "resolved";
+        }}</div>`
+    );
+
+    // A completed render replaces the shared context while this stream waits.
+    r.renderToString(() => r.ssr`<p>other render</p>`);
+    pending.resolve();
+
+    const html = await streamToString(stream);
+    expect(html).toContain('_$HY.r["root-hole-data"]');
+    expect(html).toContain("owned-by-stream");
+    expect(html).toContain("<div>resolved</div>");
+  });
+
   it("shell includes content from nested async holes via pipeTo", async () => {
     const outer = asyncError();
     const inner = asyncError();
