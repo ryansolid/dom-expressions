@@ -368,6 +368,21 @@ Cases 1 (expression bindings / commit-epoch sweeps), 3 (container traces) and
 5's diagnosable-error guard exists for function args and unserializable
 outputs at the record path.
 
+**Be precise about what case 1's absence means, because the common authored
+form lives there.** `<props.slot thing={thing()} />` is a getter — an
+*expression* arg. Today it gets: pending-at-emission → retry per settle →
+resolve at FIRST success (the front half of case 1's lifecycle, shipped with
+the value tier's retry path) — then it **latches for the response window**.
+That latched half is the write-once model this section's rejected-alternatives
+list rejects: a later commit that changes the expression's value (a projection
+fed by a staggered settle, a multi-source memo's second answer) does not
+re-emit within the response. Cross-response liveness works (re-invocation →
+record update → live props); only within-response post-success re-evaluation
+is missing, and it is exactly the binding ledger + epoch sweep. The upgrade is
+wire-compatible: re-emission is already protocol, case 1 is server-side
+machinery only. What case 2 shipped as genuinely live is values passed
+WHOLE — self-driving through seroval — not evaluated expressions.
+
 ### DR-3: Classification precedes resolution (template detection stays tractable)
 
 Two rules keep the sink's content-vs-data decision and reverse templating decidable:
