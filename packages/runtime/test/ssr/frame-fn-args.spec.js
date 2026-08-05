@@ -386,6 +386,36 @@ describe("watched slot args — expression bindings (DR-2 case 1)", () => {
     expect(chunks.findIndex(c => c.type === "complete")).toBe(chunks.length - 1);
   });
 
+  it("a re-rendered occurrence supersedes its bindings: one live binding per arg position", async () => {
+    // The same $key'd occurrence rendered twice in one response (and, by
+    // design, a generator component's next yield) must not leave BOTH
+    // renders' bindings sweeping — the stale closure would double-emit per
+    // commit. Replace-on-reopen: the second render's binding supersedes the
+    // first's; a commit then re-emits the record once, from the live one.
+    let n = 1;
+    let resolveGate;
+    const gate = new Promise(r => (resolveGate = r));
+    const rawArgs = () => ({
+      $key: "a",
+      gate,
+      get n() {
+        return n;
+      }
+    });
+    const pending = collectStream(
+      props => r.ssr`<div>${[props.row(rawArgs())]}<span>${[props.row(rawArgs())]}</span></div>`
+    );
+    await Promise.resolve();
+    n = 2;
+    resolveGate("done");
+    const chunks = await pending;
+    const slots = chunks.filter(c => c.type === "slot" && c.key === "row#a");
+    // Two emission-time records (one per render of the occurrence), then
+    // exactly ONE commit-driven re-emit — not one per surviving binding.
+    expect(slots.length).toBe(3);
+    expect(slots[2].args.n).toBe(2);
+  });
+
   it("an unstable getter re-emits at most once per commit — no self-triggered loop", async () => {
     // A getter minting a fresh object each evaluation defeats the reference
     // gate by construction. Sweep-minted refs are excluded from the commit

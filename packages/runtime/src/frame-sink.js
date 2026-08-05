@@ -175,8 +175,16 @@ export function createFrameSink(emit, frame) {
   // flushes must not re-trigger the sweep that produced them, or a getter
   // returning fresh object identities would loop the response forever; each
   // real commit then drives at most one re-emit per binding.
-  const bindings = new Set();
+  //
+  // Keyed by `(occurrence, arg)`, replace-on-reopen: one live binding per
+  // arg position. A re-render of the same occurrence within one response —
+  // the same `$key` rendered twice, or (designed, not yet built) a
+  // generator component's next yield — SUPERSEDES the previous render's
+  // binding: the stale closure stops sweeping the moment the fresh one
+  // opens, instead of both re-emitting per commit.
+  const bindings = new Map();
   const sweepMinted = new Set();
+  const argRefVersions = new Map();
   let sweepScheduled = false;
   let closed = false;
   // The commit epoch: bumped once per sweep batch, exposed so the reactive
@@ -186,7 +194,7 @@ export function createFrameSink(emit, frame) {
   let epoch = 0;
   const sweep = () => {
     epoch++;
-    for (const b of [...bindings]) {
+    for (const b of [...bindings.values()]) {
       try {
         b.sweep();
       } catch (_) {
@@ -369,17 +377,32 @@ export function createFrameSink(emit, frame) {
       emit({ type: "html", id: childId, version, html });
     },
     // ---- the binding ledger (DR-2 case 1) ----
-    /** Open a watched-arg binding; it sweeps until the response completes. */
-    openBinding(b) {
-      bindings.add(b);
+    /**
+     * Open a watched-arg binding under its `(occurrence, arg)` key; it
+     * sweeps until the response completes or a re-render of the same
+     * position supersedes it.
+     */
+    openBinding(key, b) {
+      bindings.set(key, b);
     },
     /** A real error is terminal for its binding — same as the retry loop. */
-    closeBinding(b) {
-      bindings.delete(b);
+    closeBinding(key) {
+      bindings.delete(key);
     },
     /** Exclude a sweep-minted data ref's flushes from the commit funnel. */
     mintRef(ref) {
       sweepMinted.add(ref);
+    },
+    /**
+     * Allocate the next versioned-ref number for an arg position. Owned by
+     * the sink (not the binding) because data refs are write-once in the
+     * codec and positions outlive bindings: a superseding render's fresh
+     * binding must continue the position's sequence, never restart it.
+     */
+    nextArgRef(ledgerKey) {
+      const n = (argRefVersions.get(ledgerKey) || 0) + 1;
+      argRefVersions.set(ledgerKey, n);
+      return n;
     },
     /** An out-of-band commit signal (a pending arg's retry settling). */
     commit: scheduleSweep,
@@ -925,9 +948,9 @@ function retryArgUntilSettled(evaluate, blocked, key, occurrence, onSettle) {
  */
 function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
   const owner = getOwner();
-  let refVersion = 0;
+  const ledgerKey = `${occurrence}:${key}`;
   const reEmit = value => {
-    const ref = `arg:${occurrence}:${key}@${++refVersion}`;
+    const ref = `arg:${occurrence}:${key}@${sink.nextArgRef(ledgerKey)}`;
     sink.mintRef(ref);
     ctx.serialize(ref, value);
     args[key] = { $ref: ref };
@@ -942,7 +965,7 @@ function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
       } catch (err) {
         const blocked = ssrHandleError && ssrHandleError(err);
         if (!blocked) {
-          sink.closeBinding(binding);
+          sink.closeBinding(ledgerKey);
           reEmit(Promise.reject(err instanceof Error ? err : new Error(String(err))));
           return;
         }
@@ -959,7 +982,7 @@ function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
       if (value === state.last) return;
       state.last = value;
       if (isServerContent(value)) {
-        sink.closeBinding(binding);
+        sink.closeBinding(ledgerKey);
         reEmit(Promise.reject(contentArgError(key, occurrence)));
         return;
       }
@@ -972,7 +995,7 @@ function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
       }
     }
   };
-  sink.openBinding(binding);
+  sink.openBinding(ledgerKey, binding);
 }
 
 export function createSlotProps(sink, frame) {

@@ -105,6 +105,39 @@ Rules:
    response with the same per-emission semantics. A hover preload warms
    the store progressively — no special casing expected, but must be
    covered by tests.
+5. **Slot args across yields — supersession** (settled in review,
+   2026-08-05, alongside the liveness-border ratification in
+   `server-components-principles.md`). Each yield re-renders, which
+   re-invokes render props. Three mechanical requirements, one word:
+   a yield SUPERSEDES the previous render pass.
+   - *Positional occurrence counters reset per emission*, so yield 2's
+     `props.status` call re-addresses `status#0` — the same position —
+     instead of minting `status#1`. `$key`'d occurrences are stable by
+     construction. (Occurrence identity is positional per prop per render
+     pass, which is why the reset works here and does NOT generalize to
+     fragment keys — see item 2.)
+   - *Superseded bindings close on reopen.* The ledger (DR-2 case 1,
+     shipped) is keyed by `(occurrence, arg)` with replace-on-reopen —
+     already the shipped behavior, hardened for exactly this: the previous
+     yield's watched bindings stop sweeping the moment the next yield's
+     open, so stale closures from a dead render scope never double-emit.
+     Versioned-ref allocation is sink-owned per position, so a
+     superseding binding continues the ref sequence rather than
+     colliding with write-once keys.
+   - *Re-sent records dedupe / changed args flow through live props* —
+     the existing wire rules, unchanged.
+
+   **Why this dissolves the mode-switch worry**: with supersession, the
+   generator introduces NO second data semantic. Slot args have one
+   contract in both authoring forms — live for the response window via
+   the ledger (a background settle between yields still updates the
+   client immediately) — and yields only add re-snapshot points on top.
+   Markup likewise has one contract everywhere, the ratified liveness
+   border: it advances only by new renders; a plain component has one, a
+   generator has one per yield. The generator is not a mode. It is the
+   author taking ownership of markup PACING — the one thing the liveness
+   border says only an explicit form may own. In a sentence: **yields own
+   markup; the border owns data — in every mode.**
 
 ## Costs to name
 
