@@ -383,6 +383,18 @@ wire-compatible: re-emission is already protocol, case 1 is server-side
 machinery only. What case 2 shipped as genuinely live is values passed
 WHOLE — self-driving through seroval — not evaluated expressions.
 
+The load-bearing distinction: **live today = values that announce their own
+changes** (a promise resolves itself, an iterator yields itself; seroval
+relays). **Latched today = values someone must watch** (memo re-reads,
+expression re-evaluation, store mutation) — all blocked on the same unbuilt
+engine, the binding ledger. This puts async MEMOS only half in case 2's
+shipped column despite the tier listing them: a memo is a function to the
+classifier, so whole or evaluated it takes the thunk path — settles at first
+success, then latches. Making a memo live at the border means the server
+observing its changes and re-emitting, i.e. case 1's machinery. An iterable
+ticks at the border only when passed AS the iterable (the chat example's
+`gen.progress`), never through a memo read.
+
 ### DR-3: Classification precedes resolution (template detection stays tractable)
 
 Two rules keep the sink's content-vs-data decision and reverse templating decidable:
