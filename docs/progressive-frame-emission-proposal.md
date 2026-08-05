@@ -104,6 +104,46 @@ Rules:
   any streamed fragment; abort handling must cancel the generator —
   `return()` on client disconnect).
 
+## Reviewed alternatives (from review discussion, 2026-08-05)
+
+**Append-only / commit-complete-blocks emission** (devagr): rejected as the
+emission model. Mid-stream markdown is unstable — new tokens *revise* prior
+markup (`**bold` closing, a paragraph becoming a list item, a code fence
+rewriting the parse) — so an append-only protocol cannot express the
+correction, and waiting to commit completed blocks is both worse UX and
+unsafe (a block's completeness is only known when the next block starts).
+This instability is the argument FOR snapshot yields: each yield re-parses
+the full accumulated source, ambiguity resolution is free, and the client
+morph makes "previously rendered stuff got edited" the designed-for path.
+
+**Server-side diff → patch ops on the wire** (devagr): a legitimate future
+*transport*, not a competing design. Points established in review:
+
+- The client's DOM operations would not change: the DR-5 identity-first
+  morph already computes the minimal patch client-side against the real
+  DOM. Server diffing only moves where the diff runs and what crosses the
+  wire.
+- No VDOM needed even then — the server would diff consecutive *renders*
+  (strings/structure), not maintain a retained tree; nothing re-renders
+  client-side.
+- The real cost is the address space, not the diff: wire patch ops need
+  stable references into a DOM containing client-owned slot ranges the
+  server must never touch, plus versioned resync for recovery. Snapshots
+  are self-healing (every emission is the whole truth; mid-stream joiners
+  need no replay).
+- The wire gap is smaller than the O(n²) suggests: streamed brotli
+  backreferences the repeated prefix across chunks, so emission N+1 costs
+  roughly its novel bytes. Measure before optimizing.
+- Precedent if it's ever earned: DR-2 case 3 ratified "snapshot once,
+  deltas after" for container data. Because the authoring contract is
+  yield-a-snapshot, a patch-op chunk type slots in later as a pure
+  transport optimization with zero authoring change.
+
+**Pagination / infinite scroll**: explicitly out of scope (confirmed both
+sides of the review). Client-pulled and delta-shaped from the start —
+a different protocol over the same morph floor, deserving its own
+proposal if wanted.
+
 ## Open questions for review
 
 - Is the yield-a-component contract right, or should yields be prop
