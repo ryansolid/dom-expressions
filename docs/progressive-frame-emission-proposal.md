@@ -175,16 +175,30 @@ component/slot model); only the producer varies.
    (caret) is a userland DR-2 arg, not API.
 
 2. **Data generator server function** (promote the current accident to
-   contract): same authoring, yielding serializable data. Decision
-   recommended: the transform statically detects the generator export and
-   the stub **preserves the authored calling convention** — calling it
-   returns an `AsyncIterable` immediately (internally awaiting the fetch),
-   not `Promise<AsyncIterable>`. That makes `for await` direct, the memo
-   latest-yield read one hop, and `asyncArg(fn(...))` a natural slot arg.
-   Contract work: client `return()` aborts the response (break cancels
-   server work); documented limits — server-paced (no backpressure),
-   one-directional (no `next(value)` / `throw()` in), single cursor per
-   response value (cache-and-share has no replay semantics).
+   contract): same authoring, yielding serializable data. Not a decision
+   but a rule: **types match nakedly** — the client imports the authored
+   declaration, so the call types as `AsyncGenerator<T, R, N>`,
+   synchronously returned, and the stub must BE that. Consequences:
+   - The client wrapper is generator-shaped, not merely iterable-shaped:
+     `next()` pulls from the stream (protocol-strict promises), `return()`
+     resolves locally AND aborts the response (cancellation wiring is
+     type-mandated), `throw()` settles locally and aborts — no wire can
+     deliver an exception into the paused server frame.
+   - Where types satisfy but semantics diverge, the transform diagnoses at
+     build time: `TNext` must be `void`/`undefined` (a `next(value)`
+     consumer type-checks but receives `undefined` forever — same spirit
+     as the serializable-args rule). `throw()` never reaching the server
+     generator's `catch` is documented.
+   - `TReturn` crosses fine (seroval's stream-return node); `for await`
+     drops it, manual `.next()` sees it — matches local semantics.
+   - Remaining documented limits: server-paced (no backpressure), single
+     cursor per response value (cache-and-share has no replay).
+   This also makes `for await` direct, the memo latest-yield read one hop,
+   and `asyncArg(fn(...))` a natural slot arg.
+   The same rule flows upstream to tier 1: `dynamic()`'s accepted source
+   type widens to include async-iterables-of-components so the authored
+   generator signature passes through unchanged — the consumer adapts to
+   the authored type, never the reverse.
 
 3. **Pagination**: no new API. Cursor-shaped server components, one call
    per page, `next` crossing the slot border as plain data, client appends
