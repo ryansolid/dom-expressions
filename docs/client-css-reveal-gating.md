@@ -233,19 +233,25 @@ same graceful degradation as other optional rxcore members
    native `blocking="render"` attribute to make the hold spec-guaranteed
    rather than heuristic. The reactive gate is scoped to where the page is
    already painted: transitions and boundary reveals.
-2. **`blocking` prop as the override vocabulary.** The native mechanism
-   itself cannot help post-paint (it only affects initial document
-   render — our gating decisions happen off-screen in the reactive graph),
-   but its vocabulary is the right author-facing switch: an explicit
-   `blocking="render"` prop opts a tag *into* gating (overriding the
-   gateability classification, e.g. a `media`-qualified sheet the author
-   knows applies), an explicit `blocking={false}` opts *out*. The
-   attribute passes through to the DOM, where it natively matters in the
-   pre-first-paint window and is inert after.
 
 ## Open questions
 
-1. **`solid-element` / universal renderers**: no rxcore `waitAsset` → warm
+1. **Explicit per-tag override — undecided; not needed for v1.** The
+   candidate vocabulary is HTML's native `blocking` prop: explicit
+   `blocking="render"` opts a tag *into* gating past the classification
+   (e.g. a `media`-qualified sheet the author knows applies), explicit
+   `false` opts out. In favor: native vocabulary over an invented option,
+   and the attribute passes through to the DOM where it genuinely works
+   pre-paint. Against: API surface ahead of demonstrated need (the
+   gateability classification may be sufficient); the borrowed word shifts
+   meaning (native = "block *document* render", ours = "block *this
+   reveal*"); and the opt-out half (`blocking={false}`) is not native HTML
+   anyway (absence is the native opt-out). Adding it later is fully
+   compatible — v1 ships on classification alone unless ruled otherwise.
+   (Independent of this: warm links inserted pre-paint are stamped
+   `blocking="render"` per resolved question 1 — that is mechanism, not
+   author API.)
+2. **`solid-element` / universal renderers**: no rxcore `waitAsset` → warm
    still helps (fetch earliness), gate silently disabled. Acceptable?
    (Matches how other optional seams degrade.)
 
