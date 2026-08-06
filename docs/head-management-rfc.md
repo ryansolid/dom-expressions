@@ -900,3 +900,12 @@ tags into an eager append-only class, or guarantees hydration
 convergence by replaying the server's commit order. Dedupe semantics are
 deliberately boring — proven last-wins with explicit keys — with the more
 ambitious positional model documented above should experience demand it.
+
+### References
+
+- Katja ("katywings"),
+  [The state of CSS in Vite and Solid](https://gist.github.com/katywings/26969473d295ca6e7cd4debc5138f715)
+  (Feb 2026) — the originating design discussion for the
+  ambient-vs-directly-mounted CSS lifecycle split this design assumes:
+  ambient, bundler-injected imports are never lifecycle-managed, while
+  URL-imported / directly-mounted stylesheet links follow their owners.

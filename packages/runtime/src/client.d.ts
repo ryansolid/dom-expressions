@@ -225,6 +225,15 @@ export interface ExclusiveAssetDescriptor<T> {
   get(): T;
   set(value: T): void;
 }
+/**
+ * @internal Ref-counted client asset ownership: acquire adopts or mounts the
+ * asset, the returned release follows the owner (with a grace period for
+ * back-and-forth navigation). Internal machinery, not a public CSS-lifecycle
+ * API — per the head-management RFC (docs/head-management-rfc.md), ambient
+ * bundler-injected CSS is never lifecycle-managed, and the head registry
+ * owns the lifecycle of directly-mounted stylesheets outright. This keeps
+ * its non-head roles (exclusive slots, owner-following DOM ownership).
+ */
 export function acquireAsset(descriptor: AssetDescriptor): () => void;
 export function HydrationScript(props?: { nonce?: string; eventNames?: string[] }): JSX.Element;
 export function generateHydrationScript(options?: {

@@ -405,5 +405,9 @@ export function ref(
 ): void;
 /** @deprecated not supported on the server side */
 export function setStyleProperty(node: Element, name: string, value: any): void;
-/** @deprecated not supported on the server side — register assets through the render context instead */
+/**
+ * @internal See client.d.ts — head-management RFC policy: ambient CSS is
+ * unmanaged; the head registry owns directly-mounted stylesheet lifecycle.
+ * @deprecated not supported on the server side — register assets through the render context instead
+ */
 export function acquireAsset(descriptor: unknown): () => void;
