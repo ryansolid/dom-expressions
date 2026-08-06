@@ -849,3 +849,178 @@ describe("Loading discovery readiness probe", () => {
     expect(calls).toBe(1); // resolved exactly once, at flush
   });
 });
+
+// Outside a Loading pass there is no retryable catch to suspend, but a
+// streaming render has something better: the shell's blocking set. A pending
+// head prop at root holds the shell — the implicit-blocker semantics
+// root-level async content and effects already have — and the post-settle
+// flush evaluation commits the real value. Only genuine errors keep the
+// warn-and-drop path (solid #2975 follow-up).
+describe("root-level pending head props hold the streaming shell", () => {
+  const pendingRead = source =>
+    Object.assign(new Error("pending read"), { _promise: source });
+
+  it("holds the shell until the source settles and commits the settled value", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    let settled = false;
+    let resolveSource;
+    const source = new Promise(r => (resolveSource = r));
+    const nre = pendingRead(source);
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        r.useHead({
+          tag: "title",
+          props: {
+            children: () => {
+              if (!settled) throw nre;
+              return "Settled";
+            }
+          }
+        });
+        setTimeout(() => {
+          settled = true;
+          resolveSource();
+        }, 10);
+        return DOC();
+      })
+    );
+    expect(html).toContain('<title data-dh="title">Settled</title>');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("keeps holding through chained pendings", async () => {
+    let phase = 0;
+    let resolveA, resolveB;
+    const a = new Promise(r => (resolveA = r));
+    const b = new Promise(r => (resolveB = r));
+    const nreA = pendingRead(a);
+    const nreB = pendingRead(b);
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        r.useHead({
+          tag: "title",
+          props: {
+            children: () => {
+              if (phase === 0) throw nreA;
+              if (phase === 1) throw nreB;
+              return "Chained";
+            }
+          }
+        });
+        setTimeout(() => {
+          phase = 1;
+          resolveA();
+          setTimeout(() => {
+            phase = 2;
+            resolveB();
+          }, 10);
+        }, 10);
+        return DOC();
+      })
+    );
+    expect(html).toContain(">Chained</title>");
+  });
+
+  it("a real error after settle keeps warn-and-drop", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    let settled = false;
+    let resolveSource;
+    const source = new Promise(r => (resolveSource = r));
+    const nre = pendingRead(source);
+    const boom = new Error("boom");
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        r.useHead({
+          tag: "title",
+          props: {
+            children: () => {
+              if (!settled) throw nre;
+              throw boom;
+            }
+          }
+        });
+        setTimeout(() => {
+          settled = true;
+          resolveSource();
+        }, 10);
+        return DOC();
+      })
+    );
+    expect(html).not.toContain("<title");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("error evaluating tag props"), boom);
+    warn.mockRestore();
+  });
+
+  it("a source that settles rejected keeps warn-and-drop", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    let rejectSource;
+    const source = new Promise((_, rej) => (rejectSource = rej));
+    const nre = pendingRead(source);
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        r.useHead({
+          tag: "title",
+          props: {
+            children: () => {
+              throw nre;
+            }
+          }
+        });
+        setTimeout(() => rejectSource(new Error("source failed")), 10);
+        return DOC();
+      })
+    );
+    expect(html).not.toContain("<title");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("holds the shell for pending resource props and emits once settled", async () => {
+    let settled = false;
+    let resolveSource;
+    const source = new Promise(r => (resolveSource = r));
+    const nre = pendingRead(source);
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        r.useHead({
+          tag: "script",
+          props: {
+            src: () => {
+              if (!settled) throw nre;
+              return "/settled.js";
+            }
+          }
+        });
+        setTimeout(() => {
+          settled = true;
+          resolveSource();
+        }, 10);
+        return DOC();
+      })
+    );
+    expect(html.match(/src="\/settled\.js"/g).length).toBe(1);
+    expect(html.indexOf('src="/settled.js"')).toBeLessThan(html.indexOf("</head>"));
+  });
+
+  it("renderToString (no block seam) keeps warn-and-drop for pending reads", () => {
+    // Covered in the Loading-probe suite too; pinned here as the contrast
+    // case for the streaming shell-hold.
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const nre = pendingRead(Promise.resolve());
+    const html = r.renderToString(() => {
+      r.useHead({
+        tag: "title",
+        props: {
+          children: () => {
+            throw nre;
+          }
+        }
+      });
+      return DOC();
+    });
+    expect(html).not.toContain("<title");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});

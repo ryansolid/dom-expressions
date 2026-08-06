@@ -290,26 +290,38 @@ function registerHeadTags(registry, context, tracking, emitResource, nonce, tags
     return;
   }
   if (!Array.isArray(tags)) tags = [tags];
-  // Readiness probe, gated to Loading discovery passes (`_loadingPhase` is
-  // set by the reactive library's boundary runner — the only render phase
-  // with a retryable NotReady catch). Head props are lazy descriptors that
-  // nothing reads during render, so an async value (`<title>{data()}</title>`)
-  // would otherwise never suspend its enclosing boundary: the tag commits at
-  // flush, where the pending read throws and the tag is warn-dropped. Probing
-  // here rethrows NotReady into the discovery pass so the boundary suspends
-  // like any other async content; the boundary retries once settled and the
-  // re-registration sees ready values. The probe result is discarded — flush
-  // evaluation stays authoritative, so boundary-scoped getters (the CSS
-  // collector window) evaluate twice with the flush value winning. The flag
-  // must be read from `sharedConfig.context`: Loading runs under an
-  // `Object.create`d buffered context, so an own property there is invisible
-  // from the base context captured by the render entry point. Outside a
-  // Loading pass a NotReady has no retryable catch at component-argument
-  // position (compiled SSR evaluates components eagerly as template
-  // arguments), so probing would start a never-settling retry loop in
-  // whatever wider scope re-renders (#2809's shape) — those registrations
-  // keep the flush-time warn-and-drop path.
-  const probe = sharedConfig.context && sharedConfig.context._loadingPhase;
+  // Readiness probe. Head props are lazy descriptors that nothing reads
+  // during render, so an async value (`<title>{data()}</title>`) would
+  // otherwise never suspend anything: the tag commits at flush, where the
+  // pending read throws and the tag is warn-dropped. The probe evaluates the
+  // descriptor at registration and answers a pending read per render phase:
+  //
+  // - Loading discovery pass (`_loadingPhase`, set by the reactive library's
+  //   boundary runner — the only render phase with a retryable NotReady
+  //   catch): rethrow so the boundary suspends like any other async content;
+  //   the boundary retries once settled and re-registers with ready values.
+  //   A rethrow is only safe here — at bare component-argument position
+  //   (compiled SSR evaluates components eagerly as template arguments) a
+  //   NotReady escaping would re-render a wider scope that recreates the
+  //   async source: a never-settling retry loop (#2809's shape).
+  // - Outside a Loading pass, under a streaming render (`context.block`
+  //   exists) and with NO boundary attribution: hold the shell on the pending
+  //   source — the same implicit-blocker semantics root-level async content
+  //   and effects already have — and let the (now post-settle) flush
+  //   evaluation commit the tag. Boundary-attributed tags are excluded: they
+  //   flush with their own fragment (holding the shell for them is wrong),
+  //   and their getters carry the single-eval collector-window contract.
+  // - renderToString (no block seam): no probe; a sync render has nothing to
+  //   wait with, so pending reads keep the flush-time warn-and-drop path.
+  //
+  // The probe result is discarded — flush evaluation stays authoritative, so
+  // boundary-scoped getters (the CSS collector window) evaluate twice with
+  // the flush value winning. `_loadingPhase` must be read from
+  // `sharedConfig.context`: Loading runs under an `Object.create`d buffered
+  // context, so an own property there is invisible from the base context
+  // captured by the render entry point.
+  const loadingPhase = sharedConfig.context && sharedConfig.context._loadingPhase;
+  const blockable = !loadingPhase && !boundary && typeof context.block === "function";
   let replaceable = null;
   for (let i = 0; i < tags.length; i++) {
     const desc = tags[i];
@@ -318,16 +330,23 @@ function registerHeadTags(registry, context, tracking, emitResource, nonce, tags
       continue;
     }
     const cls = classifyHeadTag(desc);
-    if (probe && !cls.resource) {
-      try {
+    if ((loadingPhase || blockable) && !cls.resource) {
+      const readProbe = () => {
         evalHeadProps(desc.props || {}, cls.rel !== undefined ? { rel: cls.rel } : undefined);
         evalHeadValue(desc.key);
+      };
+      try {
+        readProbe();
       } catch (err) {
-        // NotReady (ssrHandleError answers its promise): abort the pass so
-        // the boundary suspends; nothing from this pass is registered.
-        // Other errors route through ssrHandleError's handler chain like
-        // any render error.
-        if (ssrHandleError(err)) throw err;
+        if (loadingPhase) {
+          // NotReady (ssrHandleError answers its promise): abort the pass so
+          // the boundary suspends; nothing from this pass is registered.
+          // Other errors route through ssrHandleError's handler chain like
+          // any render error.
+          if (ssrHandleError(err)) throw err;
+        } else {
+          holdShellOnPending(context, err, readProbe);
+        }
       }
     }
     if (cls.resource) {
@@ -341,6 +360,35 @@ function registerHeadTags(registry, context, tracking, emitResource, nonce, tags
     }
   }
   if (replaceable) registry.pending.push({ boundary, tags: replaceable });
+}
+
+// Root-level async head props (no enclosing Loading) hold the shell instead
+// of warn-dropping — the implicit-blocker semantics every other root-level
+// async already has. For plain tags the descriptor stays lazy: flush
+// evaluation (post-settle, since the shell waited) is authoritative, and the
+// retry only re-probes to keep holding through chained pendings — a real
+// error after settle falls out quietly and keeps the flush-time warn-and-drop
+// path. Resource tags pass their re-emission as the reprobe (it handles its
+// own errors internally). The probe-mode ssrHandleError is side-effect-free,
+// so a source that settles rejected ends the chain the same way. Post-shell,
+// `context.block` is a no-op and the chain dies harmlessly (a late unbounded
+// registration has nothing left to hold). Returns whether the shell was held.
+function holdShellOnPending(context, err, reprobe) {
+  const p = ssrHandleError(err, true);
+  if (!p) return false;
+  const retry = () => {
+    try {
+      reprobe();
+    } catch (next) {
+      // A reprobe still pending on the source we just waited out can never
+      // make progress (the settled value is what it is) — re-holding would
+      // spin the blocking set forever. Fall out to the flush-time handling.
+      const nextSource = ssrHandleError(next, true);
+      if (nextSource && nextSource !== p) holdShellOnPending(context, next, reprobe);
+    }
+  };
+  context.block(p.then(retry, retry));
+  return true;
 }
 
 // Resource-class tag: evaluate now, dedupe by full resource identity, emit at
@@ -366,8 +414,21 @@ function emitHeadResource(registry, context, tracking, emitResource, nonce, desc
     // In a Loading discovery pass a pending read suspends the boundary
     // (see the readiness probe in registerHeadTags); the retry re-emits
     // with ready values and identity dedupe absorbs any repeats.
-    if (sharedConfig.context && sharedConfig.context._loadingPhase && ssrHandleError(err))
-      throw err;
+    const loadingPhase = sharedConfig.context && sharedConfig.context._loadingPhase;
+    if (loadingPhase && ssrHandleError(err)) throw err;
+    // At root (no boundary attribution) under a streaming render a pending
+    // read holds the shell and re-enters once settled: this catch runs again
+    // and either re-holds (still pending) or warns (real error); identity
+    // dedupe absorbs repeats.
+    if (
+      !loadingPhase &&
+      !context._currentBoundaryId &&
+      typeof context.block === "function" &&
+      holdShellOnPending(context, err, () =>
+        emitHeadResource(registry, context, tracking, emitResource, nonce, desc, rel)
+      )
+    )
+      return;
     if ("_DX_DEV_") console.warn(`useHead: error evaluating resource tag props`, err);
     return;
   }
