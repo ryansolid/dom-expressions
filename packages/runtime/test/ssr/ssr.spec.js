@@ -11,7 +11,7 @@ globalThis.TextEncoder = function () {
 
 const fixture = `<div _hk=0 id="main" data-id="12" aria-role="button" class="selected" checked style="color:red" ><h1 custom-attr="1" disabled title="Hello John" style="background-color:red" class="selected"><a href="/">Welcome</a></h1></div>`;
 const fixture2 = `<span _hk=0 class="Hello John"> Hello &lt;div/> </span>`;
-const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"_hk\")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));[\"click\",\"input\"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs--><link rel=\"modulepreload\" href=\"chunk.js\"></span>`;
+const fixture3 = `<span> Hello &lt;div/><script nonce=\"1a2s3d4f5g\">window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"_hk\")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));[\"click\",\"input\"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs--></span>`;
 const fixture4 = `<span > Hello &lt;div/> </span>`;
 
 const Comp1 = () => {
@@ -80,8 +80,7 @@ const Comp2 = () => {
 const Comp3 = () => {
   const greeting = "Hello",
     name = "<div/>";
-  r.useAssets(() => r.ssr`<link rel="modulepreload" href="chunk.js">`);
-  return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)}${r.HydrationScript()}${r.getAssets()}</span>`;
+  return r.ssr`<span> ${r.escape(greeting)} ${r.escape(name)}${r.HydrationScript()}</span>`;
 };
 
 const Comp4 = () => {
@@ -1574,18 +1573,6 @@ describe("ssrElement child-property handling", () => {
       r.ssrElement("form", { action: { toString: () => "/actions/save" } })
     );
     expect(form).toContain('action="/actions/save"');
-  });
-});
-
-// injectAssets inserts useAssets-registered output above </head>. Without a
-// head tag it is a no-op; with one it should splice in the output.
-describe("useAssets injection path", () => {
-  it("injects useAssets output just before </head>", () => {
-    const html = r.renderToString(() => {
-      r.useAssets(() => r.ssr`<meta name="rendered" content="1">`);
-      return r.ssr`<html><head></head><body><div>x</div></body></html>`;
-    });
-    expect(html).toContain('<meta name="rendered" content="1"></head>');
   });
 });
 

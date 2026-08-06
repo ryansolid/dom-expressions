@@ -746,7 +746,6 @@ export function renderToString(code, options = {}) {
   const tracking = createAssetTracking();
   const headRegistry = createHeadRegistry();
   sharedConfig.context = {
-    assets: [],
     nonce,
     escape: escape,
     resolve: resolveSSRNode,
@@ -799,13 +798,9 @@ export function renderToString(code, options = {}) {
   serializeFragmentAssets("", tracking.boundaryModules, sharedConfig.context);
   sharedConfig.context.noHydrate = true;
   serializer.close();
-  // Asset closures evaluate unconditionally (they can have side effects), even
-  // when there is no `</head>` for their output to land in.
-  const assetsHtml = resolveAssetsHtml(sharedConfig.context.assets);
   const head = renderShellHead(headRegistry, nonce, null);
   return assembleDocument(
     html,
-    assetsHtml,
     tracking.emittedAssets,
     tracking.inlineStyles,
     scripts.length ? scripts : "",
@@ -962,20 +957,16 @@ export function renderToStream(code, options = {}) {
         buffer.write(value);
       }
     },
-    // The resolved shell. `meta.assets` is the already-evaluated useAssets
-    // HTML (evaluation is core work — asset closures can serialize data, which
-    // must land in `meta.tasks`). Document behavior: head/script string
-    // surgery — assets and preload links spliced before </head>, accumulated
-    // tasks spliced at the <!--xs--> marker — then one write. Injection order
-    // (assets, preloads, scripts) is part of the byte-exact document output.
-    // `onHead` fires synchronously inside assembly, before the shell chunk is
-    // written — the host receives its head content before any body output it
-    // could flush.
+    // The resolved shell. Document behavior: head/script string surgery —
+    // preload links spliced before </head>, accumulated tasks spliced at the
+    // <!--xs--> marker — then one write. Injection order (preloads, scripts)
+    // is part of the byte-exact document output. `onHead` fires synchronously
+    // inside assembly, before the shell chunk is written — the host receives
+    // its head content before any body output it could flush.
     shell(shellHtml, meta) {
       buffer.write(
         assembleDocument(
           shellHtml,
-          meta.assets,
           meta.preloads,
           meta.inlineStyles,
           meta.tasks.length ? meta.tasks : "",
@@ -1079,7 +1070,6 @@ export function renderToStream(code, options = {}) {
 
   sharedConfig.context = context = {
     async: true,
-    assets: [],
     nonce,
     registerHeadTags(tags) {
       registerHeadTags(
@@ -1311,20 +1301,17 @@ export function renderToStream(code, options = {}) {
     // is serialized into the response that owns the rendered markup.
     sharedConfig.context = context;
     if (!resolveRootHoles()) return;
-    // Asset closures run before anything reads `tasks`: they can serialize
-    // data (via sink.data → tasks), which the shell snapshot must include.
-    const assetsHtml = resolveAssetsHtml(context.assets);
     headStyles = new Set();
     for (const url of tracking.emittedAssets) {
       if (isCssUrl(url)) headStyles.add(url);
     }
-    // Same constraint: root _assets serialization feeds sink.data → tasks.
+    // Root _assets serialization feeds sink.data → tasks, so it must run
+    // before anything reads `tasks` for the shell snapshot.
     serializeRootAssets();
     // Shell head flush: commits every registration not owned by a
     // still-pending fragment (those flush with their fragment later).
     const head = renderShellHead(headRegistry, nonce, k => registry.has(k));
     sink.shell(html, {
-      assets: assetsHtml,
       preloads: tracking.emittedAssets,
       inlineStyles: tracking.inlineStyles,
       tasks,
@@ -1956,22 +1943,6 @@ export function applyRef(r, element) {
   Array.isArray(r) ? r.flat(Infinity).forEach(f => f && f(element)) : r(element);
 }
 
-export function useAssets(fn) {
-  sharedConfig.context.assets.push(() => resolveSSRSync(escape(fn())));
-}
-
-export function getAssets() {
-  const assets = sharedConfig.context.assets;
-  let out = "";
-  for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
-  return out;
-}
-
-// consider deprecating
-export function Assets(props) {
-  useAssets(() => props.children);
-}
-
 export function generateHydrationScript({ eventNames = ["click", "input"], nonce } = {}) {
   return `<script${
     nonce ? ` nonce="${nonce}"` : ""
@@ -1992,19 +1963,12 @@ function allSettled(promises) {
   });
 }
 
-function resolveAssetsHtml(assets) {
-  if (!assets || !assets.length) return "";
-  let out = "";
-  for (let i = 0, len = assets.length; i < len; i++) out += assets[i]();
-  return out;
-}
-
 // Single-pass document assembly. This replaced four sequential inject passes
 // (assets, preload links, inline styles, scripts), each of which searched for
 // its anchor and rebuilt the whole document — four full copies of the shell,
 // or of a 400KB SSR body. Head content is concatenated once and spliced with
-// the script tag in one construction. Order is preserved exactly: assets,
-// preload links, inline styles before `</head>`; accumulated tasks at the
+// the script tag in one construction. Order is preserved exactly: preload
+// links, inline styles before `</head>`; accumulated tasks at the
 // `<!--xs-->` marker, appended when the marker is absent. Inline-style entries
 // are only marked emitted when something renders them — a `</head>` splice or
 // an `onHead` delivery.
@@ -2022,22 +1986,12 @@ function resolveAssetsHtml(assets) {
 // output passes through with only the script splice. When the output does
 // contain `</head>`, splicing is automatic and `onHead` is not called: one
 // mode or the other, decided by the render output itself.
-function assembleDocument(
-  html,
-  assetsHtml,
-  emittedAssets,
-  inlineStyles,
-  scripts,
-  nonce,
-  headTags,
-  onHead
-) {
+function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, headTags, onHead) {
   const scriptTag = scripts ? `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>` : "";
   const headTagsHtml = headTags ? headTags.html : "";
   const headPrelude = headTags ? headTags.prelude : "";
   if (
     !onHead &&
-    !assetsHtml &&
     !headTagsHtml &&
     !headPrelude &&
     !(emittedAssets && emittedAssets.size) &&
@@ -2067,12 +2021,7 @@ function assembleDocument(
       // Embedded mode: hand the host everything it would have received via
       // the `</head>` splice, prelude first (its placement constraints are
       // the host template's responsibility from here).
-      onHead(
-        headPrelude +
-          headTagsHtml +
-          (assetsHtml || "") +
-          renderHeadAssets(emittedAssets, inlineStyles, nonce)
-      );
+      onHead(headPrelude + headTagsHtml + renderHeadAssets(emittedAssets, inlineStyles, nonce));
     }
     // No head to splice into: without `onHead`, assets/preloads/styles are
     // dropped and left unemitted, exactly as the individual helpers'
@@ -2081,8 +2030,7 @@ function assembleDocument(
     const xs = html.indexOf("<!--xs-->");
     return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
   }
-  const head =
-    headTagsHtml + (assetsHtml || "") + renderHeadAssets(emittedAssets, inlineStyles, nonce);
+  const head = headTagsHtml + renderHeadAssets(emittedAssets, inlineStyles, nonce);
   if (!scriptTag) return html.slice(0, headIdx) + head + html.slice(headIdx);
   const xsIdx = html.indexOf("<!--xs-->");
   if (xsIdx === -1) return html.slice(0, headIdx) + head + html.slice(headIdx) + scriptTag;

@@ -193,10 +193,6 @@ export function getNextElement(template?: () => Element): Element;
 export function getNextMatch(start: Node, elementName: string): Element;
 /** Hydration-walk primitive; not for hand-written code. @internal */
 export function getNextMarker(start: Node): [Node, Array<Node>];
-/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
-export function useAssets(fn: () => JSX.Element): void;
-/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
-export function getAssets(): string;
 /**
  * A head tag descriptor. Props values may be getters (reactive on the
  * client); `children` is the text body. `key` overrides the built-in dedupe
@@ -235,7 +231,6 @@ export function generateHydrationScript(options?: {
   nonce?: string;
   eventNames?: string[];
 }): string;
-export function Assets(props: { children?: JSX.Element }): JSX.Element;
 /**
  * See the server entry's `ResponseStub` — the shape of the mutable response
  * head integrations expose as `event.response` via module augmentation.

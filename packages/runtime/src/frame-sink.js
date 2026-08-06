@@ -181,9 +181,7 @@ export function createFrameSink(emit, frame) {
     shell(html, meta = {}) {
       // Pre-flush assets (entry modules, hoisted boundary styles) are head
       // splices in the document sink; a frame carries them as an assets chunk
-      // ahead of the shell html. `meta.assets` (evaluated useAssets HTML) is
-      // document-head material with no frame representation — frames are
-      // boundary content, not documents — so it is dropped.
+      // ahead of the shell html.
       if (meta.preloads && meta.preloads.size) {
         const styles = [];
         const modules = [];

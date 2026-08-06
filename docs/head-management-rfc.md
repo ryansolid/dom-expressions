@@ -723,9 +723,9 @@ for `a[href]`/`form[action]`.
 
 ## What this replaces
 
-`useAssets`, `Assets`, and `getAssets` are deprecated when `useHead` lands
-and removed before `0.50.0` stable. Known downstream consumers and their
-migrations:
+`useAssets`, `Assets`, and `getAssets` are removed (done in `0.50.0-next`,
+along with the `context.assets` evaluation pipeline they fed). Known
+downstream consumers and their migrations:
 
 | Consumer | Usage | Migration |
 | --- | --- | --- |

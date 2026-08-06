@@ -150,15 +150,6 @@ export function applyRef(
   r: ((element: any) => void) | ((element: any) => void)[],
   element: any
 ): void;
-/** @deprecated Use `useHead` — removed before `0.50.0` stable. */
-export function useAssets(fn: () => JSX.Element): void;
-/**
- * @deprecated Use the `onHead` render option — removed before `0.50.0`
- * stable. Reads ambient render state, so it is unsafe across concurrent
- * renders; `onHead` is closure-bound to its render and also carries
- * `useHead` output, which this does not.
- */
-export function getAssets(): string;
 /**
  * A head tag descriptor. Props values may be getters (evaluated lazily on
  * the server — at the owning flush boundary — and reactively on the client);
@@ -315,7 +306,6 @@ export function composeMiddleware(
   next: (request?: Request) => Response | Promise<Response>
 ) => Promise<Response>;
 
-export function Assets(props: { children?: JSX.Element }): JSX.Element;
 export function untrack<T>(fn: () => T): T;
 
 // client-only APIs

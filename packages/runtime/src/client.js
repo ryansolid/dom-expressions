@@ -47,9 +47,6 @@ export {
   getOwner,
   createComponent,
   mergeProps,
-  voidFn as useAssets,
-  voidFn as getAssets,
-  voidFn as Assets,
   voidFn as generateHydrationScript,
   voidFn as HydrationScript,
   voidFn as getRequestEvent
