@@ -35,6 +35,7 @@ All runtime modules (`client.js`, `server.js`, `universal.js`) import from `"rxc
 
 - `root`, `effect`, `memo`, `getOwner`, `createComponent`, `sharedConfig`, `untrack`, `mergeProps`, `flatten`
 - Server-only: `ssrHandleError`, `runWithOwner`
+- Client-only, optional: `waitAsset` (stylesheet reveal gate, docs/client-css-reveal-gating.md — absent means the gate is disabled, warm-at-discovery still works)
 
 ## Runtime Modules
 
