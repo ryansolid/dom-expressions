@@ -94,13 +94,19 @@ to `rel="stylesheet"` at acquire.** Two candidate mechanisms:
 - (a) Mount the real `<link rel="stylesheet">` at warm. Precedent: the
   server streams fragment CSS into the document before reveal, so
   early-applying CSS is already accepted behavior on the SSR path. But a
-  client transition can *abort*: an aborted navigation would leave the new
-  route's sheet applied to the still-visible old content (style leakage),
-  and removal-on-abort churns.
+  warmed branch can be **superseded before it commits**: transitions never
+  abort in the 2.0 model (they always settle; a failed action rejects its
+  promise but the transition still completes, and overlapping navigations
+  entangle rather than cancel), yet the *branch* rendered under one can be
+  replaced — navigate A→B before A reveals and A's owner is disposed, its
+  pending effect applies cancelled as zombies. A's `acquireAsset` then
+  never runs, so a real stylesheet mounted at warm time is left applied
+  with no owner, forever (style leakage into whatever is on screen).
 - (b) Mount `rel="preload" as="style"` at warm; at acquire, flip `rel` to
-  `stylesheet` (applies instantly from cache, no second fetch). No leakage
-  on abort (a preload is inert), and the preload's `load` event drives the
-  gate. Costs one attribute flip.
+  `stylesheet` (applies instantly from cache, no second fetch). A warmed
+  branch that never commits leaks only an inert preload (harmless, and
+  the fetch is cached for whenever the route is revisited), and the
+  preload's `load` event drives the gate. Costs one attribute flip.
 
 (b) is recommended. Note the flip must preserve fetch-identity qualifiers
 (`crossorigin`, `integrity`) or the preload cache is bypassed — reuse
@@ -201,8 +207,9 @@ same graceful degradation as other optional rxcore members
      non-gateable sheets don't gate, title/meta apply un-gated.
    - solid `packages/solid-web/test/client`: transition over a route swap
      with a `useHead` stylesheet — reveal order asserted against mocked
-     link load events; `Loading` fallback hold on initial mount; abort
-     leaves no applied sheet (preload inertness).
+     link load events; `Loading` fallback hold on initial mount; a branch
+     superseded before commit leaves no applied sheet (preload inertness,
+     zombie-cancelled apply never acquires).
    - Hydration parity: adopted server-emitted links count as loaded, no
      re-fetch, no gate stall.
 5. **Size/perf pass** (required): client.js rides the `@solidjs/web`
