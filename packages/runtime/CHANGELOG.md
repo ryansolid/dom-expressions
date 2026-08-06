@@ -1,5 +1,68 @@
 # dom-expressions
 
+## 0.50.0-next.38
+
+### Patch Changes
+
+- 434e3d3: Mark `acquireAsset` `@internal` in the client and server type declarations. Per the head-management RFC's policy, ambient bundler-injected CSS is never lifecycle-managed and the head registry owns the lifecycle of directly-mounted stylesheets outright, so `acquireAsset` is internal machinery for its non-head roles (exclusive slots, owner-following DOM ownership) rather than a public CSS-lifecycle API. It stays exported; only the typedoc surface changes.
+- c8fc722: Client-side CSS reveal gating for `useHead` stylesheets (FOUC parity with SSR streaming — docs/client-css-reveal-gating.md). A gateable stylesheet registered during a transition or `Loading` discovery pass now starts fetching at discovery (overlapping the data wait instead of serializing after it) and reads as not-ready until it has loaded or errored, so the reveal holds exactly like the server's `$dfs` gate. Gateability reuses the server's classification: extra attributes must be pure fetch metadata (`crossorigin`, `integrity`, `referrerpolicy`, `fetchpriority`); condition-changing attributes (`media`, `title`, `disabled`) exclude a sheet from gating. Cached and adopted server-emitted sheets acquire synchronously with zero wait, and a registration's replaceable tags (title/meta) never wait on CSS.
+
+  Mechanics: stylesheets warm as inert `rel="preload" as="style"` links and flip to `rel="stylesheet"` at commit (fetch-identity qualifiers ride the preload, so the flip hits the preload cache) — a branch superseded before it commits leaks only an inert preload, never an applied sheet. Warm links inserted while the document is still render-blocked are stamped with the native `blocking="render"` attribute. Errored sheets release the gate (parity with the server gate's `onerror`).
+
+  New surface:
+  - `warmAsset(descriptor)` (`@internal`, client): idempotent, refcount-free warm half of `acquireAsset`; returns the registry entry with `loadState: "pending" | "loaded" | "errored"` and `loadPromise` (resolves on load or error, never rejects).
+  - Optional `waitAsset(promise)` rxcore seam: throws the core's not-ready error while the promise is unsettled so tracked contexts hold and retry on settle. Cores that don't provide it degrade gracefully — the gate is disabled, warm-at-discovery still works.
+
+- 4003774: The document face gets the value tier's inline half (DR-2, t=0 — where the server is the consumer). An async value passed whole as a slot arg used to reach the inline fill RAW during document SSR: nothing suspended, the t=0 markup shipped an empty hole where the settled value belongs, and the adopted client — which settles correctly from the record — contradicted the page bytes (a hydration mismatch instead of a covered pending read). The document slot props now wrap async-valued args so the fill's read suspends: the read throws not-ready through rxcore's new `ssrAsyncValue` into the engine's hole machinery, the covering boundary holds, and the re-pull delivers the settled value in markup — finer than the not-ready thunk case's whole-section defer, since the throw happens in the fill's own hole. The record is untouched: the async value itself still ships there, its resolution streaming through the document's data scripts.
+
+  Async iterables have one cursor and two consumers, so they tap: the inline read settles on the FIRST yield (markup is the V1 snapshot; later yields belong to the adopted client) and the record ships a replay wrapper that re-yields it before delegating, so the client still receives the complete sequence.
+
+  Cores without `ssrAsyncValue` fall back to the previous raw-value behavior.
+
+- 5de9e48: An `:error` record now fires the frame's `onApply` hook (reason `"error"`, once per stream; a new version re-arms). A consumer gating on first apply — a mount holding its covering loading boundary open until the frame has content — releases on a failed stream instead of holding the fallback forever.
+- 04532ad: `useHead`: suspend on pending props during a Loading discovery pass instead
+  of dropping the tag (solid #2975).
+
+  Head props are lazy descriptors that nothing reads during render, so an
+  async value (`<title>{data()}</title>`) never suspended its enclosing
+  boundary — the pending read surfaced only at flush, where the tag was
+  warn-dropped and the fallback never showed. Registration now probes the
+  descriptor's prop/key getters when the reactive library marks a Loading
+  discovery pass (`_loadingPhase` on the hydration context — the only render
+  phase with a retryable NotReady catch) and rethrows a NotReady so the
+  boundary suspends like any other async content; the retry re-registers with
+  ready values and the resolved tag rides the boundary's stream as a head
+  patch. The probe's result is discarded — flush evaluation stays
+  authoritative — and registrations outside a Loading pass keep the
+  flush-time warn-and-drop path (rethrowing there has no retryable catch and
+  would loop a wider re-rendering scope). Pending resource-tag props under a
+  Loading pass suspend the same way; identity dedupe absorbs the retry's
+  re-emission.
+
+- 42a04a5: useHead: root-level pending head props hold the streaming shell instead of warn-dropping. A pending prop read outside a Loading pass now registers the source with the shell's blocking set (the implicit-blocker semantics root-level async content and effects already have), and the post-settle flush commits the tag. Boundary-attributed tags keep flushing with their fragment, renderToString keeps warn-and-drop, and real errors stay on the existing handling path. Requires rxcore's `ssrHandleError` to support a side-effect-free probe mode (second argument).
+- 5e79412: RC API-freeze pass over the server/web surface. `renderToStringAsync` is removed — `renderToStream` is a proper thenable now (`then(onFulfilled, onRejected)` returns a real `Promise`), so the fully-settled-string form of a render is `const html = await renderToStream(code, options)`; render errors still route through `onError` and the promise resolves with whatever HTML the render produced (it never rejects). The rich-arguments hint thrown for non-JSON-serializable arguments now names the shipped entry (`@solidjs/web/server-functions/rich-args`), and the server-function client entry re-exports `serializeString` so bundled rich-args entries resolve their codec against the shared client instance. Surface markings for the freeze: the serializer module carries an integration-facing banner and per-export "may change" notes (it is exempt from the 2.0 stability guarantee); compiler-output-only primitives, hydration walkers, event-delegation plumbing, and element-claim plumbing on the client entry are `@internal`; the server-function wire plumbing (`ChunkReader`, `createChunk`, `frameAddress`, `decodeResponsePayload`, `encode`/`decodeErrorHeaderValue`, `getServerFunctionsCodec`) is `@internal`; and every frames export (`frame-client`, `frame-transport`, `frame-sink`) is tagged `@experimental` with a per-file banner — the frames/server-components preview is excluded from the RC stability guarantee.
+- 61f9721: Remove `useAssets`, `Assets`, and `getAssets`, completing the head-management
+  RFC's replacement plan. `useHead` is the head-injection surface (structured
+  tags, streaming, dedupe, hydration adoption — everything the raw-HTML path
+  lacked), and `getAssets`'s embedded-render role is served by the `onHead`
+  render option, which is closure-bound to its render instead of reading
+  ambient state. The `context.assets` evaluation pipeline they fed (shell-time
+  closure evaluation, the `assets` argument through document assembly and the
+  sink shell meta) is deleted with them; tracked asset links, inline-style
+  registration, and hydration script placement are unaffected.
+- 41381d2: HTTP response-head lifecycle and middleware composition for SSR handlers, plus a per-invocation wrap seam for server functions.
+  - `createRequestEvent(request, init?)` builds the canonical stub-backed request event (`request`, `locals`, a `ResponseStub` `response` the render's primitives write to).
+  - `createSSRResponse(result, event, options?)` derives the outgoing `Response` from a render result, freezing the head at shell flush: the stub commits there, a pre-flush `Location` becomes a real redirect (`getExpectedRedirectStatus`, also exported), and a post-flush `Location` appends a nonce-aware `<script>window.location=...</script>` fallback before the stream closes. `options.transformChunk` rewrites outgoing chunks.
+  - `composeMiddleware(middlewares)` composes fetch-style `(request, next) => Response` middleware; runs inside the caller's request scope so `getRequestEvent()` works as in application code, and nothing reaches the wire until the outermost middleware returns.
+  - `configureServerFunctionsServer({ wrapInvocation })` / `handleServerFunctionRequest(..., { wrapInvocation })`: wraps every server function execution (HTTP dispatch and direct SSR calls) with the invocation identity established — the seam for per-function middleware, auth, logging and error mapping.
+
+- 4e769fd: Sanitize plain thrown server-function errors by default in production. A server function that threw a plain `Error` (not a `Response`/envelope) previously serialized its `message` and every own-property to the client verbatim over the wire protocol — a driver/ORM error's failing query, connection string, or bound parameters included — identically in dev and prod. `handleServerFunctionRequest` now replaces a plain thrown value with a generic `Error` outside the dev build; dev keeps full fidelity (message, stack, own-props) for DX. The client still receives an `Error` (the shape `submission.error` expects), just with no leaked content. The dev/prod line is the BUILD VARIANT, not `NODE_ENV`: the gate reads the bundler-replaced `_DX_DEV_` flag through a strict comparison (`"_DX_DEV_" === true`), so a bundler that replaces the flag selects the mode (`@solidjs/web` publishes a dev copy of its server-functions server entry behind the `development` export condition), and raw, unreplaced source — deep imports, no build signal — fails safe and sanitizes. The handler's dev-only diagnostic bodies (unknown function, method not allowed, no-JS 500 message) ride the same flag. An `@internal` `setServerFunctionsDev(dev)` seam exists for test harnesses and hand-rolled bundles whose packaging cannot replace the flag. Intentional error content still flows: thrown `Response`/envelopes (`redirect`/`reload`/`respond`) are untouched, and a new `markSafeError(error)` escape hatch (registered-symbol brand `Symbol.for("solid.SafeError")`, non-enumerable so it never rides the wire) opts a value out of sanitization. `wrapInvocation`/`transformResult` overrides that map errors express intent the same way — throw a Response/envelope or brand the mapped error safe — so a framework onError policy keeps working but must brand its result to preserve a custom client-facing message in production.
+- 0f41c61: Watched slot args (DR-2 case 1): expression bindings are live for the response window. The frame sink now keeps a binding ledger — every re-runnable slot arg that classifies as data (a compiled getter, the common `<props.slot thing={thing()} />` form; an author thunk; a memo passed whole) opens a binding after its record emits. Every commit the response observes (a data flush, a fragment resolving, a pending arg's retry settling, or the reactive core's `ctx.commit` poke for settles a server-owned render never serializes) schedules one coalesced, reference-equality-gated sweep; changed values re-emit the occurrence's record over the existing live-props wire — changed scalars inline, changed objects under write-once versioned refs (`arg:<occ>:<key>@<n>`), settled→not-ready re-entering pending-with-previous through the retry loop. Sweep-minted refs are excluded from the commit funnel, so a getter returning fresh identities re-emits at most once per real commit instead of looping. `end()` runs a final synchronous sweep so a last-flush commit ships before `complete`, and the sink exposes a commit epoch (`ctx.commitEpoch`) the reactive core uses for per-epoch memo caching. Eagerly evaluated call-expression args stay write-once — JS evaluated them before the border.
+
+  The ledger is keyed by `(occurrence, arg)` with replace-on-reopen: a re-render of the same occurrence within one response — the same `$key` rendered twice today; a generator component's next yield once that proposal lands — supersedes the previous render's bindings instead of leaving both sweeping (which double-emitted per commit). Versioned-ref allocation is sink-owned per position, so a superseding binding continues its position's ref sequence rather than colliding with write-once keys.
+
+  Also fixes a latent crash the ledger work surfaced: a not-ready COMPILED GETTER arg (evaluation throws at the property read itself, unlike a thunk) was re-read inside the classifier's catch, threw out of it, and killed the stream with an error chunk. Evaluators are now captured from the property descriptor, so getter args take the same ship-pending-and-retry path thunks always did.
+
 ## 0.50.0-next.37
 
 ### Patch Changes

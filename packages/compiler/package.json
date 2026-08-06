@@ -1,7 +1,7 @@
 {
   "name": "@dom-expressions/compiler",
   "description": "A JSX to DOM Expressions compiler implemented with Oxc",
-  "version": "0.50.0-next.37",
+  "version": "0.50.0-next.38",
   "author": "Ryan Carniato",
   "license": "MIT",
   "repository": {
@@ -61,11 +61,11 @@
     "@napi-rs/wasm-runtime": "^1.1.6"
   },
   "optionalDependencies": {
-    "@dom-expressions/compiler-darwin-x64": "0.50.0-next.37",
-    "@dom-expressions/compiler-darwin-arm64": "0.50.0-next.37",
-    "@dom-expressions/compiler-linux-x64-gnu": "0.50.0-next.37",
-    "@dom-expressions/compiler-linux-arm64-gnu": "0.50.0-next.37",
-    "@dom-expressions/compiler-win32-x64-msvc": "0.50.0-next.37",
-    "@dom-expressions/compiler-wasm32-wasi": "0.50.0-next.37"
+    "@dom-expressions/compiler-darwin-x64": "0.50.0-next.38",
+    "@dom-expressions/compiler-darwin-arm64": "0.50.0-next.38",
+    "@dom-expressions/compiler-linux-x64-gnu": "0.50.0-next.38",
+    "@dom-expressions/compiler-linux-arm64-gnu": "0.50.0-next.38",
+    "@dom-expressions/compiler-win32-x64-msvc": "0.50.0-next.38",
+    "@dom-expressions/compiler-wasm32-wasi": "0.50.0-next.38"
   }
 }

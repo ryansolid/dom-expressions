@@ -1,6 +1,6 @@
 {
   "name": "@dom-expressions/compiler-win32-x64-msvc",
-  "version": "0.50.0-next.37",
+  "version": "0.50.0-next.38",
   "cpu": [
     "x64"
   ],
