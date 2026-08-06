@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/runtime": minor
+"@dom-expressions/runtime": patch
 ---
 
 Server components Stage 2 (identity split + one record shape, per docs/server-components-principles.md):

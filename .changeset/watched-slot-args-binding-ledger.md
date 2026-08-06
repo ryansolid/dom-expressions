@@ -1,5 +1,5 @@
 ---
-"@dom-expressions/runtime": minor
+"@dom-expressions/runtime": patch
 ---
 
 Watched slot args (DR-2 case 1): expression bindings are live for the response window. The frame sink now keeps a binding ledger — every re-runnable slot arg that classifies as data (a compiled getter, the common `<props.slot thing={thing()} />` form; an author thunk; a memo passed whole) opens a binding after its record emits. Every commit the response observes (a data flush, a fragment resolving, a pending arg's retry settling, or the reactive core's `ctx.commit` poke for settles a server-owned render never serializes) schedules one coalesced, reference-equality-gated sweep; changed values re-emit the occurrence's record over the existing live-props wire — changed scalars inline, changed objects under write-once versioned refs (`arg:<occ>:<key>@<n>`), settled→not-ready re-entering pending-with-previous through the retry loop. Sweep-minted refs are excluded from the commit funnel, so a getter returning fresh identities re-emits at most once per real commit instead of looping. `end()` runs a final synchronous sweep so a last-flush commit ships before `complete`, and the sink exposes a commit epoch (`ctx.commitEpoch`) the reactive core uses for per-epoch memo caching. Eagerly evaluated call-expression args stay write-once — JS evaluated them before the border.
