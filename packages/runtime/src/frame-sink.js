@@ -40,7 +40,8 @@ import {
   NoHydration,
   Hydration,
   runInServerComponentScope,
-  ssrHandleError
+  ssrHandleError,
+  ssrAsyncValue
 } from "rxcore";
 
 /**
@@ -574,6 +575,49 @@ function occurrenceId(prop, raw, counts) {
   return `${prop}#${n}`;
 }
 
+/** An async value in the DR-2 value-tier sense: passed whole, rides the data
+ *  channel, and the consumer's READ settles. */
+function isAsyncValue(v) {
+  return (
+    !!v &&
+    typeof v === "object" &&
+    (typeof v.then === "function" || typeof v[Symbol.asyncIterator] === "function")
+  );
+}
+
+/**
+ * One cursor, two consumers (document face): pull the iterable's first step
+ * for the inline read, and mint a replay wrapper for the record — it
+ * re-yields that step before delegating to the live cursor, so the adopted
+ * client sees the complete sequence. The same tap shape the reactive core
+ * uses to share an iterator between a memo's value and its serialization.
+ */
+function tapFirstYield(iterable) {
+  const iter = iterable[Symbol.asyncIterator]();
+  // Normalized: protocol-loose producers may return a bare IteratorResult
+  // when a value is already buffered (seroval's deserialized streams do).
+  const firstStep = Promise.resolve(iter.next());
+  return {
+    first: firstStep.then(r => (r.done ? undefined : r.value)),
+    rest: {
+      [Symbol.asyncIterator]() {
+        let replayed = false;
+        return {
+          next: () => {
+            if (!replayed) {
+              replayed = true;
+              return firstStep;
+            }
+            return iter.next();
+          },
+          return: v => (iter.return ? iter.return(v) : Promise.resolve({ done: true, value: v })),
+          throw: e => (iter.throw ? iter.throw(e) : Promise.reject(e))
+        };
+      }
+    }
+  };
+}
+
 /**
  * Document-mode slot props — the t = 0 counterpart of
  * `createSlotProps`. During initial document SSR a server component
@@ -698,6 +742,36 @@ export function createDocumentSlotProps(clientProps, frameId) {
                 // the same DOM contract as the boundary, one level down.
                 return [{ t: frameElementOpen(childId) }, value, { t: FRAME_ELEMENT_CLOSE }];
               };
+            } else if (ssrAsyncValue && isAsyncValue(value)) {
+              // DR-2 value tier, document face: the inline fill's read of an
+              // async arg must SUSPEND (throw not-ready into the engine's
+              // hole machinery, which re-pulls on settle), not read the raw
+              // promise — a raw read renders empty markup the adopted client
+              // then contradicts (it reads the record's settled value): a
+              // hydration mismatch instead of a covered pending state. The
+              // record is untouched — the async value itself still ships
+              // there and the document's data scripts stream its resolution,
+              // exactly as before.
+              //
+              // An async ITERABLE has one cursor and two consumers (this
+              // read wants the first yield; the record's serialization wants
+              // every yield), so it is tapped: the read settles on the first
+              // yield — markup is the V1 snapshot, later yields are the
+              // adopted client's story — and the record ships a replay
+              // wrapper that re-yields it before delegating, so the client
+              // still sees the full sequence.
+              let readable = value;
+              if (typeof value.then !== "function") {
+                const { first, rest } = tapFirstYield(value);
+                readable = first;
+                vals[key] = rest;
+              }
+              const read = ssrAsyncValue(readable);
+              Object.defineProperty(resolved, key, {
+                get: read,
+                enumerable: true,
+                configurable: true
+              });
             } else {
               resolved[key] = value;
             }

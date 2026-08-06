@@ -750,6 +750,68 @@ describe("document-mode t=0 records: every invoked occurrence gets one (A5)", ()
   });
 });
 
+describe("document-mode async slot args (DR-2 value tier, document face)", () => {
+  it("a promise arg suspends the inline read; settled markup and the record's data both ship", done => {
+    const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const stats = new Promise(res => setTimeout(() => res(42), 10));
+    const serverComponent = props =>
+      r.ssr`<section>${[props.status({ $key: "s", stats })]}</section>`;
+    const Inline = frameTransformDirectResult(serverComponent, { id: "aarg-0" });
+    // The inline fill READS the async arg (a hole thunk, like compiled JSX):
+    // the read must throw not-ready into the hole machinery — never see the
+    // raw promise — so the markup carries the settled value.
+    const clientProps = {
+      status: p => r.ssr`<b>tokens:${() => p.stats}</b>`
+    };
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps), { plugins: [ServerComponentPlugin] }).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        // The settled value in MARKUP: the read suspended and the re-pull
+        // delivered — not an empty hole over a raw promise read.
+        expect(html).toContain("tokens:42");
+        // The record still ships the async value itself (untouched half).
+        expect(html).toContain('"sc:slot:aarg-0:status#s"');
+        done();
+      }
+    });
+  });
+
+  it("an async-iterable arg: the inline read is the FIRST yield; the record replays the full sequence", done => {
+    const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");
+    const wait = ms => new Promise(res => setTimeout(res, ms));
+    async function* seq() {
+      await wait(5);
+      yield "one-yield";
+      await wait(5);
+      yield "two-yield";
+    }
+    const serverComponent = props =>
+      r.ssr`<section>${[props.status({ $key: "s", tick: seq() })]}</section>`;
+    const Inline = frameTransformDirectResult(serverComponent, { id: "aiter-0" });
+    const clientProps = {
+      status: p => r.ssr`<b>tick:${() => p.tick}</b>`
+    };
+    const chunks = [];
+    r.renderToStream(() => Inline(clientProps), { plugins: [ServerComponentPlugin] }).pipe({
+      write: c => chunks.push(c),
+      end: () => {
+        const html = chunks.join("");
+        // One cursor, two consumers: the read settled on the first yield
+        // (markup is the V1 snapshot)...
+        expect(html).toContain("tick:one-yield");
+        expect(html).not.toContain("tick:two-yield");
+        // ...and the record's replay wrapper still streamed the complete
+        // sequence through the data channel (both yields serialized).
+        expect(html).toContain("one-yield");
+        expect(html).toContain("two-yield");
+        done();
+      }
+    });
+  });
+});
+
 describe("document-mode occlusion flip — async region content", () => {
   it("an occluded region with pending async content still ships once, patched when it settles", done => {
     const { frameTransformDirectResult, ServerComponentPlugin } = require("../../src/frame-sink");

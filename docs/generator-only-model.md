@@ -571,17 +571,18 @@ post-adoption-morph answer. t=0 is a shared constraint with a shared
 shape, so it doesn't move the §9 lean — but any ratified design must
 implement this section, not just the call-driven story.
 
-**Current state, for honesty** (probed, not just code-read —
+**Current state** (probed, then completed —
 `document-face-arg-tiers.spec.tsx` in the solid-web server suite):
-not-ready args already work at t=0, coarsely — the throw propagates into
-the server component's own `<Loading>`, the section defers as a fragment,
-and the retry delivers the settled value in markup (the "holding"
-alternative DR-2 rejected for the stream face, functional here). The gap
-is the value tier: the document-mode slot props hand the inline fill an
-async value RAW (no async-read wrap, so nothing suspends and the t=0
-markup ships an empty hole) while the record serializes correctly for the
-adopted client — a hydration mismatch. The Case 1 ledger does not run on
-the document sink — defensible as "the document is a snapshot," but it
-makes the ledger's liveness contract call-driven-only and the principles
-doc now says so. Implementation gaps recorded there, not design
-decisions.
+not-ready args already worked at t=0, coarsely — the throw propagates
+into the server component's own `<Loading>`, the section defers as a
+fragment, and the retry delivers the settled value in markup (the
+"holding" alternative DR-2 rejected for the stream face, functional
+here). The value tier's document half is now plumbed: an async value
+passed whole suspends at the inline read (rxcore's `ssrAsyncValue` wraps
+it in a server async memo, so the fill's hole throws not-ready and the
+engine re-pulls on settle), iterables tap their first yield for the read
+while the record replays the full sequence — markup is the V1 snapshot,
+the data channel stays live, exactly this section's shape. The Case 1
+ledger still does not run on the document sink — deliberate: "the
+document is a snapshot," within-response liveness is the frame render's
+story, and the principles doc says so.

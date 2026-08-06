@@ -113,3 +113,35 @@ export const memo = (fn, transparent) =>
 // createOwner({ id })). The test core has no hydration id chain, so the
 // scope is a passthrough — document-mode tests assert markers, not keys.
 export const runWithHydrationScope = (id, fn) => fn();
+
+// DR-2 value tier, document face (mirrors solid's rxcore, which wraps the
+// value in a full async-aware memo): the read throws not-ready until the
+// promise settles, then reads as the settled value. The frame sink pre-taps
+// iterables down to a promise of their first yield, so this only sees
+// thenables. Not-ready rides the test core's `_promise` convention
+// (ssrHandleError above), which the engine's hole machinery re-pulls on.
+export function ssrAsyncValue(value) {
+  let settled = false;
+  let errored = false;
+  let result;
+  const promise = Promise.resolve(value).then(
+    v => {
+      settled = true;
+      result = v;
+    },
+    e => {
+      settled = true;
+      errored = true;
+      result = e;
+    }
+  );
+  return () => {
+    if (!settled) {
+      const err = new Error("async value not ready");
+      err._promise = promise;
+      throw err;
+    }
+    if (errored) throw result;
+    return result;
+  };
+}

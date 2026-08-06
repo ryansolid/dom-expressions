@@ -363,39 +363,50 @@ branches, dom-expressions + solid, verified end-to-end in the chat example):
   `for await` assimilation semantics (plus the latent post-gap sync-settle
   drop). The value tier's consumption path depends on that fix.
 
-**Known gap — the document face (t=0) has no value tier.** Everything
-above is the call-driven story; `createDocumentSlotProps` (the t=0 face,
-where the *server* is the consumer and the fill renders inline into the
-document) predates DR-2. Probed empirically
-(`document-face-arg-tiers.spec.tsx`, solid-web server suite):
+**Status — the document face (t=0) has the value tier.** Everything
+above was built call-driven-first; `createDocumentSlotProps` (the t=0
+face, where the *server* is the consumer and the fill renders inline into
+the document) predates DR-2, so its behavior was probed empirically and
+then completed (`document-face-arg-tiers.spec.tsx`, solid-web server
+suite; the shim-backed twins in the runtime's own
+`frame-server-component.spec.js`):
 
-- **Not-ready args are handled — coarsely.** A thunk/getter throwing
-  not-ready at the unwrap, or an eager call suspending in the component's
-  render, propagates into the server component's own `<Loading>`: the
-  section defers as a fragment and the retry delivers the settled value
-  in markup. This is the "holding" alternative DR-2 rejected for the
-  stream face's granularity — the whole section holds instead of pending
-  marks per arg — but at t=0 it is functional, orphan-free, and
-  consistent with "markup is the snapshot." (One artifact: the retry
-  re-invokes the slot, so the occurrence renumbers — markers and record
-  stay consistent with each other.) Pinned as passing behavior.
-- **Async values passed whole are the gap.** `resolved[key] = value`
-  hands the promise/iterable to the inline fill RAW — no equivalent of
-  the client's async-read wrap — so nothing suspends: the t=0 markup
-  ships an empty hole where the settled value belongs, while the record
-  serializes the value correctly (seroval streams the resolution through
-  the document's data scripts, so the ADOPTED client settles fine). A
-  hydration mismatch instead of a covered pending read. Marked
-  `test.fails` until fixed.
+- **Not-ready args were already handled — coarsely.** A thunk/getter
+  throwing not-ready at the unwrap, or an eager call suspending in the
+  component's render, propagates into the server component's own
+  `<Loading>`: the section defers as a fragment and the retry delivers
+  the settled value in markup. This is the "holding" alternative DR-2
+  rejected for the stream face's granularity — the whole section holds
+  instead of pending marks per arg — but at t=0 it is functional,
+  orphan-free, and consistent with "markup is the snapshot." (One
+  artifact: the retry re-invokes the slot, so the occurrence renumbers —
+  markers and record stay consistent with each other.) Pinned as passing.
+- **Async values passed whole now suspend at the inline read.** The
+  document face wraps them in a full async-aware memo (rxcore's
+  `ssrAsyncValue`, implemented over the reactive core's server memo): the
+  read throws not-ready into the engine's hole machinery — the covering
+  boundary holds, the re-pull delivers the settled value in markup — and
+  since the throw happens in the *fill's own* template hole, the holding
+  is finer than the thunk case's whole-section defer. The record is
+  untouched: the async value itself still ships there, its resolution
+  streaming through the document's data scripts, so page markup and the
+  adopted client's read now agree (previously the markup shipped an
+  empty hole over a raw promise read — a hydration mismatch).
+- **Async iterables tap their first yield** — one cursor, two consumers:
+  the inline read settles on the first yield (markup is the V1 snapshot;
+  later yields are the adopted client's story, per §10 of
+  generator-only-model.md) and the record ships a replay wrapper that
+  re-yields it before delegating, so the client still receives the
+  complete sequence. This is the first-value lock's semantics arrived at
+  from the transport side.
 
-The fix is one half, not two: wrap the *inline* read so an async-valued
-arg suspends into the document's existing streaming machinery (the same
-boundary that already holds the coarse not-ready case), keeping the
-record serialization exactly as it is. Neither demo exercises this (the
-chat example only creates replies from client interaction; the notes t=0
-path passes no async args) — the probe spec is the missing
-document-adoption × arg-tiers matrix row's server half. To implement
-alongside the DR-2 merge, not after it.
+Mode invariance holds at the border: the same authored crossing behaves
+identically whether the mount is call-driven or the initial document.
+The Case 1 ledger still does not run on the document sink — deliberate
+("the document is a snapshot"; within-response liveness is exclusively
+the frame render's story) — and the matrix's document-adoption suite now
+carries the arg-tier rows on both halves (the inline server render and
+the adopted client's record read).
 
 **Status — case 1 (expression bindings) is implemented**
 (`dr2-expression-bindings` branches, stacked on the value tier, verified
