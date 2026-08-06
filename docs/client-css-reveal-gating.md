@@ -172,10 +172,16 @@ Behavior that falls out with **zero additional mechanism**:
 - **`Loading` boundary (initial mount)**: NotReady during discovery holds
   the fallback until the sheet loads — consistent with how async data
   behaves in the same position.
-- **Initial CSR render outside any boundary**: root-level async semantics
-  apply (content waits like any root async). If that is judged too strong
-  for bare CSR first paint, the gate can be conditioned on
-  "inside a transition or boundary" — **open question 1**.
+- **Initial CSR render outside any boundary**: **no reactive gate**
+  (ruled 2026-08-06). Before first paint the browser's paint-hold covers
+  the window: an in-flight head stylesheet holds first paint, so there is
+  no flicker to prevent and blocking the root render would only duplicate
+  the platform. Since script-inserted sheets are not *formally*
+  render-blocking (paint-hold is browser behavior, not spec), warm links
+  inserted while the document is still render-blocked are stamped with the
+  native `blocking="render"` attribute, which makes the hold contractual.
+  The reactive gate applies only where the page is already painted and the
+  platform has no mechanism: transitions and boundary reveals.
 - **Cached sheet**: `loadPromise` already settled → `waitAsset` no-ops →
   no wait, no retry, no extra frames.
 
@@ -218,17 +224,28 @@ same graceful degradation as other optional rxcore members
    nothing. Measure `signals: + createStore` and web-runtime budgets
    before/after; expected cost is small but nonzero (~300–500 B min).
 
+## Resolved questions (ruled 2026-08-06)
+
+1. **Bare CSR first paint: no reactive gate.** Browsers paint-hold on
+   in-flight head stylesheets before first paint, so the platform already
+   covers the initial-render window; gating there would duplicate it. Warm
+   links inserted while the document is still render-blocked carry the
+   native `blocking="render"` attribute to make the hold spec-guaranteed
+   rather than heuristic. The reactive gate is scoped to where the page is
+   already painted: transitions and boundary reveals.
+2. **`blocking` prop as the override vocabulary.** The native mechanism
+   itself cannot help post-paint (it only affects initial document
+   render — our gating decisions happen off-screen in the reactive graph),
+   but its vocabulary is the right author-facing switch: an explicit
+   `blocking="render"` prop opts a tag *into* gating (overriding the
+   gateability classification, e.g. a `media`-qualified sheet the author
+   knows applies), an explicit `blocking={false}` opts *out*. The
+   attribute passes through to the DOM, where it natively matters in the
+   pre-first-paint window and is inert after.
+
 ## Open questions
 
-1. **Bare CSR first paint**: should a root-level gateable sheet block
-   initial render (consistent with root async semantics) or apply
-   fire-and-forget (today's behavior, FOUC on first paint only)? Lean:
-   consistent-blocking, since bundler-managed CSS covers the common CSR
-   case and `useHead` CSS at first paint is rare.
-2. **Explicit opt-out**: honor an explicit `blocking` prop (HTML's native
-   `blocking="render"` vocabulary) as a per-tag override in both
-   directions? Cheap to add; decide during implementation.
-3. **`solid-element` / universal renderers**: no rxcore `waitAsset` → warm
+1. **`solid-element` / universal renderers**: no rxcore `waitAsset` → warm
    still helps (fetch earliness), gate silently disabled. Acceptable?
    (Matches how other optional seams degrade.)
 
