@@ -298,6 +298,21 @@ function useHead(tag: HeadTag | HeadTag[] | (() => HeadTag | HeadTag[])): void;
   slot-indexed and can swap identities when membership shifts).
 - `props` values may be getters, making tags reactive; `key` may also be a
   getter (reactive identity, as in the 2024 RFC).
+- **Getters must be plain reads — they must not allocate reactive owners.**
+  Getters evaluate at different owner positions on the two sides: the
+  client evaluates them inside registry-owned computations (whose id-owner
+  chain resolves to the registering component), the server at flush time
+  under no component owner at all. A getter that creates an id-consuming
+  computation — `createMemo`, solid's `children()` helper, anything that
+  calls `getNextChildId` — therefore consumes a hydration id slot on the
+  client that the server never consumed, and every id allocated after the
+  `useHead` call desyncs (observed downstream as a `<Title>` hydration
+  error in the meta layer). Owner-allocating work belongs at component
+  position, eagerly, on both sides — e.g.
+  `const body = createMemo(() => flattenChildren(props.children))` in the
+  component body, then `props: { children: () => body() }` — which
+  allocates identically in the server and client render and leaves the
+  getter as a pure read.
 - Lazy evaluation at flush/apply time is a contract: this is the migration
   path for CSS-in-JS collectors that today rely on `useAssets`'
   deferred-closure semantics

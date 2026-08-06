@@ -197,6 +197,13 @@ export function getNextMarker(start: Node): [Node, Array<Node>];
  * A head tag descriptor. Props values may be getters (reactive on the
  * client); `children` is the text body. `key` overrides the built-in dedupe
  * identity (`title` is a hard singleton that `key` cannot fork).
+ *
+ * Getters must be plain reads: they evaluate inside registry-owned
+ * computations here and at flush time on the server, so a getter that
+ * allocates a reactive owner (`createMemo`, a `children()` helper) consumes
+ * a hydration id slot on one side only and desyncs every id allocated after
+ * the `useHead` call. Create such helpers eagerly at component position and
+ * read them from the getter. See docs/head-management-rfc.md.
  */
 export type HeadTag = {
   tag: "title" | "meta" | "link" | "style" | "script" | "base";
