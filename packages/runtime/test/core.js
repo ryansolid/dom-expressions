@@ -14,6 +14,26 @@ import {
   setContext
 } from "@solidjs/signals";
 
+// Client asset reveal gate (docs/client-css-reveal-gating.md): reading an
+// unsettled asset promise throws the core's NotReadyError so tracked
+// contexts (transitions, boundary reveals) hold and retry when it settles;
+// no-op once settled. Implemented over the core's async-source machinery —
+// one async node per promise, shared across readers. The node must be
+// created OUTSIDE the calling compute (`runWithOwner(null)`): waitAsset is
+// called from compute phases, and anything owned by the computing node is
+// disposed when it re-runs — the gate would die with the retry it triggers.
+const assetGates = new Map();
+export function waitAsset(promise) {
+  let gate = assetGates.get(promise);
+  if (!gate) {
+    runWithOwner(null, () => {
+      gate = createMemo(() => promise);
+    });
+    assetGates.set(promise, gate);
+  }
+  gate();
+}
+
 export { createRoot as root, getOwner, untrack, runWithOwner, merge as mergeProps, flatten };
 
 // Hydration-zone flag (mirrors solid's NoHydrateContext): under NoHydration,

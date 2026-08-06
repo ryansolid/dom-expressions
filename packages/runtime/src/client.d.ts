@@ -235,6 +235,26 @@ export interface ExclusiveAssetDescriptor<T> {
  * its non-head roles (exclusive slots, owner-following DOM ownership).
  */
 export function acquireAsset(descriptor: AssetDescriptor): () => void;
+/**
+ * Registry entry returned by `warmAsset`. Stylesheet entries carry load
+ * tracking for the client reveal gate (docs/client-css-reveal-gating.md):
+ * `loadPromise` resolves on load OR error (never rejects) — an errored
+ * sheet releases the gate, parity with the server gate.
+ */
+export interface AssetEntry {
+  loadState?: "pending" | "loaded" | "errored";
+  loadPromise?: Promise<void>;
+}
+/**
+ * @internal Warm half of `acquireAsset`: idempotent and refcount-free,
+ * callable from a compute phase so the fetch starts at discovery and
+ * overlaps a transition's data wait. Stylesheets warm as
+ * `rel="preload" as="style"` and are flipped live by `acquireAsset` at
+ * commit — a branch superseded before it commits leaks only an inert
+ * preload, never an applied sheet. Only link-backed descriptors warm;
+ * inline styles and exclusive slots return `undefined`.
+ */
+export function warmAsset(descriptor: AssetDescriptor): AssetEntry | undefined;
 export function HydrationScript(props?: { nonce?: string; eventNames?: string[] }): JSX.Element;
 export function generateHydrationScript(options?: {
   nonce?: string;
