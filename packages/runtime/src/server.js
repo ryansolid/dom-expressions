@@ -290,6 +290,26 @@ function registerHeadTags(registry, context, tracking, emitResource, nonce, tags
     return;
   }
   if (!Array.isArray(tags)) tags = [tags];
+  // Readiness probe, gated to Loading discovery passes (`_loadingPhase` is
+  // set by the reactive library's boundary runner — the only render phase
+  // with a retryable NotReady catch). Head props are lazy descriptors that
+  // nothing reads during render, so an async value (`<title>{data()}</title>`)
+  // would otherwise never suspend its enclosing boundary: the tag commits at
+  // flush, where the pending read throws and the tag is warn-dropped. Probing
+  // here rethrows NotReady into the discovery pass so the boundary suspends
+  // like any other async content; the boundary retries once settled and the
+  // re-registration sees ready values. The probe result is discarded — flush
+  // evaluation stays authoritative, so boundary-scoped getters (the CSS
+  // collector window) evaluate twice with the flush value winning. The flag
+  // must be read from `sharedConfig.context`: Loading runs under an
+  // `Object.create`d buffered context, so an own property there is invisible
+  // from the base context captured by the render entry point. Outside a
+  // Loading pass a NotReady has no retryable catch at component-argument
+  // position (compiled SSR evaluates components eagerly as template
+  // arguments), so probing would start a never-settling retry loop in
+  // whatever wider scope re-renders (#2809's shape) — those registrations
+  // keep the flush-time warn-and-drop path.
+  const probe = sharedConfig.context && sharedConfig.context._loadingPhase;
   let replaceable = null;
   for (let i = 0; i < tags.length; i++) {
     const desc = tags[i];
@@ -298,6 +318,18 @@ function registerHeadTags(registry, context, tracking, emitResource, nonce, tags
       continue;
     }
     const cls = classifyHeadTag(desc);
+    if (probe && !cls.resource) {
+      try {
+        evalHeadProps(desc.props || {}, cls.rel !== undefined ? { rel: cls.rel } : undefined);
+        evalHeadValue(desc.key);
+      } catch (err) {
+        // NotReady (ssrHandleError answers its promise): abort the pass so
+        // the boundary suspends; nothing from this pass is registered.
+        // Other errors route through ssrHandleError's handler chain like
+        // any render error.
+        if (ssrHandleError(err)) throw err;
+      }
+    }
     if (cls.resource) {
       emitHeadResource(registry, context, tracking, emitResource, nonce, desc, cls.rel);
     } else {
@@ -331,6 +363,11 @@ function emitHeadResource(registry, context, tracking, emitResource, nonce, desc
   try {
     props = evalHeadProps(desc.props || {}, rel !== undefined ? { rel } : undefined);
   } catch (err) {
+    // In a Loading discovery pass a pending read suspends the boundary
+    // (see the readiness probe in registerHeadTags); the retry re-emits
+    // with ready values and identity dedupe absorbs any repeats.
+    if (sharedConfig.context && sharedConfig.context._loadingPhase && ssrHandleError(err))
+      throw err;
     if ("_DX_DEV_") console.warn(`useHead: error evaluating resource tag props`, err);
     return;
   }
