@@ -857,8 +857,7 @@ describe("Loading discovery readiness probe", () => {
 // flush evaluation commits the real value. Only genuine errors keep the
 // warn-and-drop path (solid #2975 follow-up).
 describe("root-level pending head props hold the streaming shell", () => {
-  const pendingRead = source =>
-    Object.assign(new Error("pending read"), { _promise: source });
+  const pendingRead = source => Object.assign(new Error("pending read"), { _promise: source });
 
   it("holds the shell until the source settles and commits the settled value", async () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
@@ -957,22 +956,34 @@ describe("root-level pending head props hold the streaming shell", () => {
     let rejectSource;
     const source = new Promise((_, rej) => (rejectSource = rej));
     const nre = pendingRead(source);
+    const failure = new Error("source failed");
+    let failed = false;
     const html = await pipeToString(
       r.renderToStream(() => {
         r.useHead({
           tag: "title",
           props: {
             children: () => {
-              throw nre;
+              // Reactive-library semantics: a pending read throws NotReady;
+              // once the source settles rejected, re-reads throw the settled
+              // error (a real error — the shell stops waiting).
+              if (!failed) throw nre;
+              throw failure;
             }
           }
         });
-        setTimeout(() => rejectSource(new Error("source failed")), 10);
+        setTimeout(() => {
+          failed = true;
+          rejectSource(failure);
+        }, 10);
         return DOC();
       })
     );
     expect(html).not.toContain("<title");
-    expect(warn).toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("error evaluating tag props"),
+      failure
+    );
     warn.mockRestore();
   });
 
