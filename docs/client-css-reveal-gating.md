@@ -323,3 +323,16 @@ design above:
    freshly warmed links because a stale resource-timing entry from an
    earlier fetch of the same URL would mislabel an in-flight request as
    settled.
+5. **Hydration id neutrality is load-bearing.** Server `useHead` creates
+   zero owners (pure registration into the render context), so the client
+   half must consume zero hydration id slots or every id allocated after a
+   `useHead` call desyncs from the server's. The per-resource computations
+   are id-neutral because the rxcore `effect` is transparent unless
+   `scope: true` is passed (the same contract `insert()`'s inner effects
+   rely on to keep content ids at a fixed depth), and the seam's gate node
+   is created detached from any id-carrying owner. This holds across the
+   gated flush, settle retries, and membership reruns that recreate the
+   per-resource computations — pinned by the "consumes no hydration id
+   slots" test in `test/dom/head.spec.js`. A conforming `waitAsset`
+   implementation must preserve this: any node it creates must not consume
+   a child id from the calling owner chain.

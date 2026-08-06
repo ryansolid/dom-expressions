@@ -12,7 +12,14 @@
  * first registration and stays for the whole file.
  */
 import * as r from "../../src/client";
-import { createRoot, createSignal, flush } from "@solidjs/signals";
+import {
+  createRoot,
+  createSignal,
+  flush,
+  createOwner,
+  runWithOwner,
+  peekNextChildId
+} from "@solidjs/signals";
 
 // Registry applies on a microtask.
 const tick = () => Promise.resolve();
@@ -609,5 +616,63 @@ describe("useHead stylesheet reveal gating", () => {
     dispose();
     await tick();
     link.remove();
+  });
+
+  it("consumes no hydration id slots (server/client id alignment)", async () => {
+    // Server useHead creates zero owners (pure registration into the render
+    // context), so the client half must be id-neutral too or every id
+    // allocated after a useHead call desyncs from the server's. The group
+    // effect and the per-resource gating computations are transparent
+    // (rxcore `effect` without `scope`) — they inherit the enclosing owner's
+    // id without consuming a child slot — and the seam's gate node is
+    // created detached. Pin that: the owner's child counter must not move
+    // across registration, the gated flush, a settle retry, or a reactive
+    // membership rerun that recreates the per-resource computations.
+    let dispose, setTags, owner;
+    let before, after;
+    createRoot(d => {
+      dispose = d;
+      owner = createOwner({ id: "h0" });
+      runWithOwner(owner, () => {
+        const [tags, set] = createSignal([
+          { tag: "title", props: { children: "Id Neutral" } },
+          { tag: "link", props: { rel: "stylesheet", href: "/gate-ids.css" } },
+          { tag: "link", props: { rel: "preload", href: "/gate-ids.png", as: "image" } },
+          { tag: "link", props: { rel: "modulepreload", href: "/gate-ids.js" } }
+        ]);
+        setTags = set;
+        before = peekNextChildId(owner);
+        r.useHead(() => tags());
+        after = peekNextChildId(owner);
+      });
+    });
+    expect(after).toBe(before);
+    // The per-resource computation really ran under this owner (not vacuous).
+    const link = findLink("/gate-ids.css");
+    expect(link.getAttribute("rel")).toBe("preload");
+    expect(peekNextChildId(owner)).toBe(before);
+
+    // Settle retry (gate release) allocates nothing.
+    link.dispatchEvent(new Event("load"));
+    await tick();
+    expect(link.getAttribute("rel")).toBe("stylesheet");
+    expect(peekNextChildId(owner)).toBe(before);
+
+    // Membership rerun disposes and recreates the per-resource computations.
+    setTags([
+      { tag: "title", props: { children: "Id Neutral!" } },
+      { tag: "link", props: { rel: "stylesheet", href: "/gate-ids.css" } }
+    ]);
+    flush();
+    await tick();
+    expect(peekNextChildId(owner)).toBe(before);
+
+    dispose();
+    await tick();
+    link.remove();
+    const hint = findLink("/gate-ids.png");
+    hint && hint.remove();
+    const mod = findLink("/gate-ids.js");
+    mod && mod.remove();
   });
 });
