@@ -501,3 +501,82 @@ generator-only the branches were potential dead weight; under the reactive
 pole they are the foundation the hole ledger extends. The merge plan
 resumes as sequenced (freeze → matrix → DR-2), with live holes as the next
 stage on top.
+
+## 10. The t=0 face: document SSR, where the server is the consumer
+
+Everything above tells the call-driven story — a client mount consuming a
+frame stream. At t=0 the server is the consumer too: the document render
+invokes the server component inline (`frameTransformDirectResult`,
+document-mode slot props) and the client *adopts* the result at hydration.
+This section records how liveness translates there, because the constraint
+is hard and it binds BOTH poles equally.
+
+**The constraint: flushed markup is immutable.** SSR schedules flushes;
+once a chunk is written, no server-side mechanism rewrites those bytes.
+Live *data* survives t=0 anyway, because it never depended on markup: an
+async slot arg serializes into the document's data scripts, seroval keeps
+patching records over the still-open document stream, and the adopted
+client's read settles from the record. Live *elements* cannot work that
+way — a hole's markup is already in the browser as V1 bytes.
+
+**The story: markup is the snapshot, liveness is client-applied.** The
+morph can't happen in the document, so it happens in the adopted client,
+fed by the channel the data already uses:
+
+- The document renders each hole's V1 value as markup — write-once,
+  unchanged.
+- Subsequent re-emissions ride the still-open document stream as
+  html-valued data records. The precedent already ships: `sc:region:`
+  records serialize a *promise* of their html and the hydration serializer
+  patches the record when it settles. A live hole generalizes that from
+  "promise of one html" to "stream of html snapshots."
+- The adopting client claims V1 markup, then reconciles against the
+  record's latest state: patches that landed before hydration apply as a
+  catch-up morph immediately after the claim (the same move a rebind makes
+  when an in-flight stream morphs in); patches after hydration morph live,
+  identical to a late frame chunk.
+
+The claim itself always targets V1 — the markup that shipped — with later
+versions applied as post-claim morphs, never folded into the claim. This
+is the first-value lock's reasoning wearing its t=0 face: hydration's
+replay must match the bytes on the page.
+
+**The hydration complexity is reabsorbing the deduped templates.** This is
+where single-copy bites back. The page markup never shipped as data (the
+claim IS the transfer), so the adopted frame's store has no html record to
+morph against — the V1 DOM itself is the baseline, and adoption must
+reconstruct the morph substrate from page bytes: hole positions from
+markers, slot ranges from their comment fences, region boundaries from
+their frame elements. One requirement falls out: hole markers must be
+EMITTED in document renders of server components. The "runtime-gated, no
+document-SSR byte changes" rule from §7 therefore carries a qualifier —
+a document render of a server component is a frame-flavored render (it
+already flows through `frameTransformDirectResult`), so it arms markers;
+plain app SSR outside a server component has no holes and stays
+byte-identical.
+
+**Document lifetime is policy, not mechanism.** The document response
+closes when its work settles. A hole whose source finishes (the in-flight
+LLM generation) holds the document stream open exactly as long as a
+call-driven response would, then latches at completion. A genuinely
+non-terminating source needs the transport-indifference handoff (a
+follow-up stream or SSE resume under the same address) — the §9 extension,
+now with a t=0 face. The default without a handoff is: latch at document
+completion.
+
+**This does not differentiate the poles.** A generator component mid-yield
+at document flush has the identical problem: flushed markup is its V1
+yield, and later yields need exactly the same data-channel-patches +
+post-adoption-morph answer. t=0 is a shared constraint with a shared
+shape, so it doesn't move the §9 lean — but any ratified design must
+implement this section, not just the call-driven story.
+
+**Current state, for honesty:** none of the DR-2 machinery is plumbed into
+the document face today. The document-mode slot props hand the inline fill
+its args RAW (a promise arrives as a promise — no async-read wrap, so the
+t=0 render of the fill reads it wrong), and the thunk-unwrap loop has no
+not-ready catch (no pending-with-retry equivalent). The Case 1 ledger does
+not run on the document sink — defensible as "the document is a snapshot,"
+but it makes the ledger's liveness contract call-driven-only and the
+principles doc now says so. These are implementation gaps recorded in
+server-components-principles.md, not design decisions.
