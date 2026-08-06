@@ -156,6 +156,14 @@ export function applyRef(
  * `children` is the text body (title text, inline style/script content).
  * `key` overrides the built-in dedupe identity (`title` is a hard singleton
  * that `key` cannot fork).
+ *
+ * Getters must be plain reads: they evaluate at flush time here (under no
+ * component owner) and inside registry-owned computations on the client, so
+ * a getter that allocates a reactive owner (`createMemo`, a `children()`
+ * helper) consumes a hydration id slot on one side only and desyncs every
+ * id allocated after the `useHead` call. Create such helpers eagerly at
+ * component position and read them from the getter. See
+ * docs/head-management-rfc.md.
  */
 export type HeadTag = {
   tag: "title" | "meta" | "link" | "style" | "script" | "base";

@@ -9,7 +9,13 @@ import {
   untrack,
   runWithOwner,
   mergeProps,
-  flatten
+  flatten,
+  // Optional seam (docs/client-css-reveal-gating.md): throws the core's
+  // NotReadyError bound to the promise while it is unsettled so tracked
+  // contexts (transitions, boundary reveals) hold and retry on settle;
+  // no-op once settled. Cores that don't provide it degrade gracefully —
+  // the reveal gate is disabled, warm-at-discovery still works.
+  waitAsset
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
@@ -21,7 +27,8 @@ import {
   evalHeadValue,
   resourceIdentity,
   replaceableIdentity,
-  resolveHead
+  resolveHead,
+  STYLESHEET_FETCH_META
 } from "./head.js";
 export {
   DOMWithState,
@@ -633,6 +640,10 @@ function findAssetElement(selector, attr, value) {
   return null;
 }
 
+function setAssetAttrs(el, attrs) {
+  for (const name in attrs) el.setAttribute(name, attrs[name]);
+}
+
 function mountAssetElement(descriptor) {
   let el;
   if (descriptor.type === "inline-style") {
@@ -651,11 +662,102 @@ function mountAssetElement(descriptor) {
       el.href = descriptor.href;
     }
   }
-  if (descriptor.attrs) {
-    for (const name in descriptor.attrs) el.setAttribute(name, descriptor.attrs[name]);
-  }
+  if (descriptor.attrs) setAssetAttrs(el, descriptor.attrs);
   if (!el.isConnected) document.head.appendChild(el);
   return el;
+}
+
+// Load tracking for the reveal gate (docs/client-css-reveal-gating.md).
+// `loadPromise` resolves on load OR error and never rejects — an errored
+// sheet releases the gate, parity with the server gate's `onerror="$dfc"`;
+// there is deliberately no timeout, same as the server. `adopted` elements
+// (server-emitted or hand-authored, found in the document rather than
+// created here) may have finished loading before we could listen: an applied
+// stylesheet exposes `.sheet`, and a finished fetch — even a failed one —
+// leaves a resource-timing entry. Both are checked before falling back to
+// listeners. The resource-timing probe is restricted to adopted elements
+// because a stale entry from an earlier fetch of the same URL would
+// otherwise mislabel a fresh in-flight request as settled.
+const assetLoadSettled = /*#__PURE__*/ Promise.resolve();
+function trackAssetLoad(entry, adopted) {
+  if (entry.loadPromise) return;
+  const el = entry.element;
+  let settled = el.sheet != null;
+  if (!settled && adopted && typeof performance !== "undefined" && performance.getEntriesByName) {
+    settled = performance.getEntriesByName(el.href).length > 0;
+  }
+  if (settled) {
+    entry.loadState = "loaded";
+    entry.loadPromise = assetLoadSettled;
+    return;
+  }
+  entry.loadState = "pending";
+  entry.loadPromise = new Promise(resolve => {
+    const settle = state => {
+      entry.loadState = state;
+      resolve();
+    };
+    el.addEventListener("load", () => settle("loaded"), { once: true });
+    el.addEventListener("error", () => settle("errored"), { once: true });
+  });
+}
+
+// Warm half of `acquireAsset` (docs/client-css-reveal-gating.md): idempotent
+// and refcount-free, callable from a compute phase so the fetch starts at
+// discovery and overlaps a transition's data wait instead of serializing
+// after it. Stylesheets warm as `rel="preload" as="style"` — a branch
+// superseded before commit leaks only an inert preload (and a warm cache
+// entry), never an applied sheet; `acquireAsset` adopts the element and
+// flips the preload live. Fetch-identity qualifiers (crossorigin,
+// integrity) ride `descriptor.attrs` onto the preload so the flip hits the
+// preload cache instead of refetching. Returns the registry entry carrying
+// `loadState`/`loadPromise` for the reveal gate. Only link-backed types
+// warm: inline styles apply the moment they mount (warming would apply a
+// branch's CSS before it commits) and exclusive slots have nothing to
+// fetch.
+export function warmAsset(descriptor) {
+  if (descriptor.policy === "exclusive" || descriptor.type === "inline-style") return;
+  const key = assetEntryKey(descriptor);
+  let entry = assetRegistry.get(key);
+  if (!entry) {
+    entry = { count: 0, element: null, timer: null };
+    assetRegistry.set(key, entry);
+  }
+  let adopted = true;
+  if (!entry.element || !entry.element.isConnected) {
+    const rel = descriptor.type === "module" ? "modulepreload" : "stylesheet";
+    let el = findAssetElement(`link[rel="${rel}"]`, "href", descriptor.href);
+    if (!el && descriptor.type === "style") {
+      // A hand-authored preload for the same sheet (shell markup): the fetch
+      // is already in flight or done — adopt it instead of double-mounting.
+      el = findAssetElement('link[rel="preload"][as="style"]', "href", descriptor.href);
+    }
+    if (!el) {
+      adopted = false;
+      el = document.createElement("link");
+      if (descriptor.type === "style") {
+        el.setAttribute("rel", "preload");
+        el.setAttribute("as", "style");
+      } else {
+        el.setAttribute("rel", "modulepreload");
+      }
+      el.setAttribute("href", descriptor.href);
+      // Pre-paint (the document still allows render-blocking elements):
+      // stamp the native attribute so the browser's paint-hold on the
+      // in-flight sheet is contractual rather than heuristic — script-
+      // inserted links are not formally render-blocking without it.
+      if (!document.body) el.setAttribute("blocking", "render");
+    }
+    // Fetch-identity qualifiers must be set before the append starts the
+    // fetch, or a crossorigin/integrity sheet fetches without them.
+    if (descriptor.attrs) setAssetAttrs(el, descriptor.attrs);
+    if (!el.isConnected) document.head.appendChild(el);
+    entry.element = el;
+    entry.loadState = undefined;
+    entry.loadPromise = undefined;
+  }
+  if (descriptor.type === "style") trackAssetLoad(entry, adopted);
+  return entry;
 }
 
 export function acquireAsset(descriptor) {
@@ -694,7 +796,15 @@ export function acquireAsset(descriptor) {
     entry.timer = null;
   }
   entry.count++;
-  if (!entry.element || !entry.element.isConnected) entry.element = mountAssetElement(descriptor);
+  if (!entry.element || !entry.element.isConnected) {
+    entry.element = mountAssetElement(descriptor);
+  } else if (descriptor.type === "style" && entry.element.getAttribute("rel") === "preload") {
+    // Warmed (or adopted hand-authored) preload: flip it live. The element
+    // keeps its fetch-identity qualifiers, so the sheet applies straight
+    // from the preload cache — no second fetch.
+    entry.element.removeAttribute("as");
+    entry.element.setAttribute("rel", "stylesheet");
+  }
   let released = false;
   return () => {
     if (released) return;
@@ -896,32 +1006,13 @@ function headElementMatches(el, t) {
   return (children == null ? "" : String(children)) === el.textContent;
 }
 
-// Resource-class tags apply immediately at registration (their value is
-// earliness), identity-deduped against server-emitted elements. Plain
-// stylesheet/modulepreload links share the ref-counted asset registry —
-// removal follows the owner with the same grace period as tracked boundary
-// CSS. Hints (preload/preconnect/…) and scripts mount once and are never
-// removed on disposal: retracting a hint is pointless churn, and an executed
-// script cannot be unexecuted.
-function acquireHeadResource(tag, props) {
-  if (tag === "link" && (props.rel === "stylesheet" || props.rel === "modulepreload")) {
-    const descriptor = {
-      type: props.rel === "stylesheet" ? "style" : "module",
-      href: props.href
-    };
-    let attrs = null;
-    for (const name in props) {
-      if (name === "rel" || name === "href") continue;
-      if (!HEAD_ATTR_NAME.test(name)) continue;
-      const v = props[name];
-      if (v == null || v === false) continue;
-      (attrs || (attrs = {}))[name] = v === true ? "" : String(v);
-    }
-    if (attrs) descriptor.attrs = attrs;
-    return acquireAsset(descriptor);
-  }
+// Mount-once resources: hints (preload/preconnect/…) and scripts mount
+// identity-deduped against server-emitted elements and are never removed on
+// disposal — retracting a hint is pointless churn, and an executed script
+// cannot be unexecuted.
+function mountHeadResource(tag, props) {
   const identity = resourceIdentity(tag, props);
-  if (headMountedResources.has(identity)) return noopFn;
+  if (headMountedResources.has(identity)) return;
   headMountedResources.add(identity);
   const url = props.href || props.src;
   let el = null;
@@ -933,10 +1024,56 @@ function acquireHeadResource(tag, props) {
     else el = findAssetElement("style[href]", "href", url);
   }
   if (!el) document.head.appendChild(createHeadElement(tag, props));
-  return noopFn;
 }
 
-function noopFn() {}
+// Stylesheet/modulepreload links ride the ref-counted asset registry —
+// removal follows the owner with the same grace period as tracked boundary
+// CSS — through a per-resource child computation (the client analog of the
+// server's `$dfs` gate, docs/client-css-reveal-gating.md): the compute warms
+// the asset so the fetch starts at discovery and overlaps a transition's
+// data wait, then a gateable stylesheet reads as not-ready until it has
+// loaded (or errored) — the transition/boundary machinery holds the reveal
+// and retries on settle with no mechanism of its own here. Ownership is
+// taken at commit, so a branch superseded before it commits never acquires
+// (and never applies) the sheet. Kept out of the group compute so a
+// registration's replaceable tags (title/meta) never wait on CSS.
+//
+// `warmAsset` mutates document.head from a compute phase — a deliberate
+// exception to compute purity: it is idempotent, registry-keyed, and the
+// document head is outside the reactive graph.
+function gateHeadResource(props) {
+  const descriptor = {
+    type: props.rel === "stylesheet" ? "style" : "module",
+    href: props.href
+  };
+  // Gateability (shared classification with the server): extra attributes —
+  // valid or not — must all be pure fetch metadata. Condition-changing
+  // attributes (media, title/alternate, disabled) exclude a sheet: holding
+  // a reveal on a sheet that may never apply is worse than FOUC.
+  let gateable = props.rel === "stylesheet" && props.href != null;
+  let attrs = null;
+  for (const name in props) {
+    if (name === "rel" || name === "href") continue;
+    if (!STYLESHEET_FETCH_META.has(name)) gateable = false;
+    if (!HEAD_ATTR_NAME.test(name)) continue;
+    const v = props[name];
+    if (v == null || v === false) continue;
+    (attrs || (attrs = {}))[name] = v === true ? "" : String(v);
+  }
+  if (attrs) descriptor.attrs = attrs;
+  effect(
+    () => {
+      const entry = warmAsset(descriptor);
+      // Settledness is checked here, not inside the seam: a loaded (or
+      // errored) sheet must acquire synchronously — cached sheets add zero
+      // wait, adopted server-emitted sheets never stall — and even a
+      // settled promise costs a microtask through the async machinery.
+      if (gateable && entry.loadState === "pending" && typeof waitAsset === "function")
+        waitAsset(entry.loadPromise);
+    },
+    () => acquireAsset(descriptor)
+  );
+}
 
 /**
  * Registers head tags with the ambient head registry. An array is a group —
@@ -969,7 +1106,25 @@ export function useHead(tags) {
           cls.rel !== undefined ? { rel: cls.rel } : undefined
         );
         if (cls.resource) {
-          resources.push({ tag: desc.tag, props });
+          if (
+            desc.tag === "link" &&
+            (props.rel === "stylesheet" || props.rel === "modulepreload")
+          ) {
+            // Owner-followed + reveal-gated, in a per-resource child
+            // computation (recreated on membership reruns; warm is
+            // idempotent and ownership is refcounted with a grace period,
+            // so recreation is cheap and correct).
+            gateHeadResource(props);
+          } else if (desc.tag === "link") {
+            // Hints (preload/preconnect/…) are inert: mounting at discovery
+            // *is* the warm — fetch earliness with no side effect for a
+            // branch that never commits (a leaked hint retracts nothing).
+            mountHeadResource(desc.tag, props);
+          } else {
+            // Scripts execute and inline styles apply the moment they mount
+            // — commit-time only, never warmed.
+            resources.push({ tag: desc.tag, props });
+          }
         } else {
           const key = evalHeadValue(desc.key);
           replaceable.push({
@@ -984,11 +1139,8 @@ export function useHead(tags) {
       return { replaceable, resources };
     },
     evaluated => {
-      const releases = [];
       for (let i = 0; i < evaluated.resources.length; i++) {
-        releases.push(
-          acquireHeadResource(evaluated.resources[i].tag, evaluated.resources[i].props)
-        );
+        mountHeadResource(evaluated.resources[i].tag, evaluated.resources[i].props);
       }
       reg.tags = evaluated.replaceable;
       // Commit order is assigned once; a reactive rerun re-enters at the same
@@ -999,7 +1151,6 @@ export function useHead(tags) {
       return () => {
         const idx = headRegistrations.indexOf(reg);
         if (idx > -1) headRegistrations.splice(idx, 1);
-        for (let i = 0; i < releases.length; i++) releases[i]();
         scheduleHeadApply();
       };
     }

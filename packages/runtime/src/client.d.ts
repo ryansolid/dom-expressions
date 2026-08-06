@@ -197,6 +197,13 @@ export function getNextMarker(start: Node): [Node, Array<Node>];
  * A head tag descriptor. Props values may be getters (reactive on the
  * client); `children` is the text body. `key` overrides the built-in dedupe
  * identity (`title` is a hard singleton that `key` cannot fork).
+ *
+ * Getters must be plain reads: they evaluate inside registry-owned
+ * computations here and at flush time on the server, so a getter that
+ * allocates a reactive owner (`createMemo`, a `children()` helper) consumes
+ * a hydration id slot on one side only and desyncs every id allocated after
+ * the `useHead` call. Create such helpers eagerly at component position and
+ * read them from the getter. See docs/head-management-rfc.md.
  */
 export type HeadTag = {
   tag: "title" | "meta" | "link" | "style" | "script" | "base";
@@ -235,6 +242,26 @@ export interface ExclusiveAssetDescriptor<T> {
  * its non-head roles (exclusive slots, owner-following DOM ownership).
  */
 export function acquireAsset(descriptor: AssetDescriptor): () => void;
+/**
+ * Registry entry returned by `warmAsset`. Stylesheet entries carry load
+ * tracking for the client reveal gate (docs/client-css-reveal-gating.md):
+ * `loadPromise` resolves on load OR error (never rejects) — an errored
+ * sheet releases the gate, parity with the server gate.
+ */
+export interface AssetEntry {
+  loadState?: "pending" | "loaded" | "errored";
+  loadPromise?: Promise<void>;
+}
+/**
+ * @internal Warm half of `acquireAsset`: idempotent and refcount-free,
+ * callable from a compute phase so the fetch starts at discovery and
+ * overlaps a transition's data wait. Stylesheets warm as
+ * `rel="preload" as="style"` and are flipped live by `acquireAsset` at
+ * commit — a branch superseded before it commits leaks only an inert
+ * preload, never an applied sheet. Only link-backed descriptors warm;
+ * inline styles and exclusive slots return `undefined`.
+ */
+export function warmAsset(descriptor: AssetDescriptor): AssetEntry | undefined;
 export function HydrationScript(props?: { nonce?: string; eventNames?: string[] }): JSX.Element;
 export function generateHydrationScript(options?: {
   nonce?: string;

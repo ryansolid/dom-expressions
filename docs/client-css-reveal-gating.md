@@ -1,10 +1,14 @@
 # Design: Client-Side CSS Reveal Gating (FOUC parity with SSR streaming)
 
-> **Status: design/plan — nothing here is implemented.** Written against
+> **Status: dom-expressions half implemented** (asset-registry load state,
+> `warmAsset`/preload-flip, per-resource gating computations in `useHead`,
+> the `waitAsset` call site, and the client test suite — see
+> "Implementation notes" at the end). The solid half — exporting `waitAsset`
+> from `@solidjs/web`'s rxcore bridge — is still pending; until then the
+> gate degrades to warm-only under the real core. Originally written against
 > `dom-expressions` `next` (post-`130a06e1`) and `solid` `next`
 > (post-`b6071ba6`). Companion to `docs/head-management-rfc.md` (the head
-> registry this extends). Self-contained: intended to be handed to a fresh
-> agent/worktree.
+> registry this extends).
 
 ## Problem
 
@@ -282,3 +286,53 @@ earliness) still works.
   from a compute phase. It is idempotent and commutative (registry-keyed),
   and the DOM head is outside the reactive graph, but it is a deliberate
   exception to compute-phase purity — document it at the call site.
+
+## Implementation notes (dom-expressions half, 2026-08-06)
+
+Findings from the implementation that refine — but do not change — the
+design above:
+
+1. **Settledness is checked in the registry, not the seam.** The
+   per-resource compute reads `entry.loadState` and only calls
+   `waitAsset` when it is `"pending"`. Even a settled promise costs a
+   microtask through the core's async machinery (thenable resolution is
+   never synchronous), which would violate "cached sheets add zero wait"
+   and "adopted server-emitted sheets never stall". This also means the
+   seam is only ever invoked for genuinely unsettled promises, so a
+   conforming implementation may unconditionally gate.
+2. **Seam implementers: create the gate node outside the calling
+   compute.** `waitAsset` is called from compute phases. Anything owned
+   by the computing node (including a `createRoot` opened inside it) is
+   disposed when that node re-runs — a gate node created lazily inside
+   the reader's compute is destroyed by the very retry it triggers, and
+   the retry then re-blocks forever. The test-core implementation
+   (`packages/runtime/test/core.js`) uses `runWithOwner(null, …)` around
+   the per-promise async node; `@solidjs/web`'s implementation must do
+   the equivalent.
+3. **Scripts are never warmed.** For `script[src]` (and inline
+   style/script resources), mounting *is* executing/applying — there is
+   no fetch-only warm state — so they stay commit-time. Link hints
+   (preload/preconnect/prefetch/dns-prefetch) are inert and mount at
+   discovery; that mount is their warm.
+4. **Hand-authored preloads are adopted.** A shell-markup
+   `<link rel="preload" as="style">` for the same href is adopted at warm
+   (fetch already in flight) and flipped at commit, instead of
+   double-mounting. Adopted elements whose load events may have already
+   fired are detected via `link.sheet` and, for adopted elements only, a
+   `performance.getEntriesByName(href)` probe — the probe is not used for
+   freshly warmed links because a stale resource-timing entry from an
+   earlier fetch of the same URL would mislabel an in-flight request as
+   settled.
+5. **Hydration id neutrality is load-bearing.** Server `useHead` creates
+   zero owners (pure registration into the render context), so the client
+   half must consume zero hydration id slots or every id allocated after a
+   `useHead` call desyncs from the server's. The per-resource computations
+   are id-neutral because the rxcore `effect` is transparent unless
+   `scope: true` is passed (the same contract `insert()`'s inner effects
+   rely on to keep content ids at a fixed depth), and the seam's gate node
+   is created detached from any id-carrying owner. This holds across the
+   gated flush, settle retries, and membership reruns that recreate the
+   per-resource computations — pinned by the "consumes no hydration id
+   slots" test in `test/dom/head.spec.js`. A conforming `waitAsset`
+   implementation must preserve this: any node it creates must not consume
+   a child id from the calling owner chain.
