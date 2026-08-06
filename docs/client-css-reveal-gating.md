@@ -236,21 +236,23 @@ same graceful degradation as other optional rxcore members
 
 ## Open questions
 
-1. **Explicit per-tag override — undecided; not needed for v1.** The
-   candidate vocabulary is HTML's native `blocking` prop: explicit
-   `blocking="render"` opts a tag *into* gating past the classification
-   (e.g. a `media`-qualified sheet the author knows applies), explicit
-   `false` opts out. In favor: native vocabulary over an invented option,
-   and the attribute passes through to the DOM where it genuinely works
-   pre-paint. Against: API surface ahead of demonstrated need (the
-   gateability classification may be sufficient); the borrowed word shifts
-   meaning (native = "block *document* render", ours = "block *this
-   reveal*"); and the opt-out half (`blocking={false}`) is not native HTML
-   anyway (absence is the native opt-out). Adding it later is fully
-   compatible — v1 ships on classification alone unless ruled otherwise.
-   (Independent of this: warm links inserted pre-paint are stamped
-   `blocking="render"` per resolved question 1 — that is mechanism, not
-   author API.)
+1. **Explicit per-tag override — likely not needed at all; v1 ships
+   without one.** The gateability classification may simply be
+   sufficient; do not add API surface ahead of demonstrated need. If an
+   override ever proves necessary, HTML's native `blocking` prop looks
+   convenient but adopting it would be signing a contract we cannot
+   honor: the native semantics are "block *document* render" (pre-paint
+   only), ours would be "block *this reveal*" (post-paint, off-screen in
+   the reactive graph), and honoring the attribute invites the full spec
+   expectations plus whatever the platform evolves it to mean. The most
+   we should consider is treating an author-supplied `blocking="render"`
+   as a *hint* the classifier may weigh (e.g. toward gating a
+   `media`-qualified sheet) — never as a semantic commitment, and only
+   once a real need shows up. Adding any of this later is fully
+   compatible. (Independent of this: warm links inserted pre-paint are
+   stamped `blocking="render"` per resolved question 1 — that is
+   mechanism, not author API, and author-supplied attributes pass through
+   verbatim like any other prop regardless.)
 2. **`solid-element` / universal renderers**: no rxcore `waitAsset` → warm
    still helps (fetch earliness), gate silently disabled. Acceptable?
    (Matches how other optional seams degrade.)
