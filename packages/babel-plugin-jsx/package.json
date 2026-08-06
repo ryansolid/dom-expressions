@@ -32,7 +32,7 @@
     "@babel/core": "^7.20.12"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
+    "@babel/core": "^7.29.6",
     "@dom-expressions/runtime": "workspace:*",
     "@rollup/plugin-babel": "7.0.0",
     "@types/babel__core": "^7.20.5",
