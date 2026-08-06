@@ -1,14 +1,19 @@
 # Design: Client-Side CSS Reveal Gating (FOUC parity with SSR streaming)
 
-> **Status: dom-expressions half implemented** (asset-registry load state,
-> `warmAsset`/preload-flip, per-resource gating computations in `useHead`,
-> the `waitAsset` call site, and the client test suite — see
-> "Implementation notes" at the end). The solid half — exporting `waitAsset`
-> from `@solidjs/web`'s rxcore bridge — is still pending; until then the
-> gate degrades to warm-only under the real core. Originally written against
-> `dom-expressions` `next` (post-`130a06e1`) and `solid` `next`
-> (post-`b6071ba6`). Companion to `docs/head-management-rfc.md` (the head
-> registry this extends).
+> **Status: implemented, both halves.** dom-expressions: asset-registry load
+> state, `warmAsset`/preload-flip, per-resource gating computations in
+> `useHead`, the `waitAsset` call site, and the client test suite — see
+> "Implementation notes" at the end. solid: `waitAsset` exported from
+> `@solidjs/web`'s rxcore bridge (one detached async memo per promise,
+> WeakMap-shared; NOT `sync` — the core rejects thenable returns from sync
+> nodes) with seam contract tests (`test/wait-asset.spec.tsx`) and
+> end-to-end integration tests through the real core
+> (`test/use-head-css-gating-client.spec.tsx`: route swap holds the
+> committed view until the new sheet loads, Loading holds initial mount,
+> superseded branches leave only an inert preload, adopted server links
+> reveal with no stall). Originally written against `dom-expressions` `next`
+> (post-`130a06e1`) and `solid` `next` (post-`b6071ba6`). Companion to
+> `docs/head-management-rfc.md` (the head registry this extends).
 
 ## Problem
 
