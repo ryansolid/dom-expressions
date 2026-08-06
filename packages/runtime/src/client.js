@@ -640,6 +640,10 @@ function findAssetElement(selector, attr, value) {
   return null;
 }
 
+function setAssetAttrs(el, attrs) {
+  for (const name in attrs) el.setAttribute(name, attrs[name]);
+}
+
 function mountAssetElement(descriptor) {
   let el;
   if (descriptor.type === "inline-style") {
@@ -658,9 +662,7 @@ function mountAssetElement(descriptor) {
       el.href = descriptor.href;
     }
   }
-  if (descriptor.attrs) {
-    for (const name in descriptor.attrs) el.setAttribute(name, descriptor.attrs[name]);
-  }
+  if (descriptor.attrs) setAssetAttrs(el, descriptor.attrs);
   if (!el.isConnected) document.head.appendChild(el);
   return el;
 }
@@ -730,11 +732,7 @@ export function warmAsset(descriptor) {
       // is already in flight or done — adopt it instead of double-mounting.
       el = findAssetElement('link[rel="preload"][as="style"]', "href", descriptor.href);
     }
-    if (el) {
-      if (descriptor.attrs) {
-        for (const name in descriptor.attrs) el.setAttribute(name, descriptor.attrs[name]);
-      }
-    } else {
+    if (!el) {
       adopted = false;
       el = document.createElement("link");
       if (descriptor.type === "style") {
@@ -744,16 +742,16 @@ export function warmAsset(descriptor) {
         el.setAttribute("rel", "modulepreload");
       }
       el.setAttribute("href", descriptor.href);
-      if (descriptor.attrs) {
-        for (const name in descriptor.attrs) el.setAttribute(name, descriptor.attrs[name]);
-      }
       // Pre-paint (the document still allows render-blocking elements):
       // stamp the native attribute so the browser's paint-hold on the
       // in-flight sheet is contractual rather than heuristic — script-
       // inserted links are not formally render-blocking without it.
       if (!document.body) el.setAttribute("blocking", "render");
-      document.head.appendChild(el);
     }
+    // Fetch-identity qualifiers must be set before the append starts the
+    // fetch, or a crossorigin/integrity sheet fetches without them.
+    if (descriptor.attrs) setAssetAttrs(el, descriptor.attrs);
+    if (!el.isConnected) document.head.appendChild(el);
     entry.element = el;
     entry.loadState = undefined;
     entry.loadPromise = undefined;
@@ -1028,23 +1026,6 @@ function mountHeadResource(tag, props) {
   if (!el) document.head.appendChild(createHeadElement(tag, props));
 }
 
-function buildHeadAssetDescriptor(props) {
-  const descriptor = {
-    type: props.rel === "stylesheet" ? "style" : "module",
-    href: props.href
-  };
-  let attrs = null;
-  for (const name in props) {
-    if (name === "rel" || name === "href") continue;
-    if (!HEAD_ATTR_NAME.test(name)) continue;
-    const v = props[name];
-    if (v == null || v === false) continue;
-    (attrs || (attrs = {}))[name] = v === true ? "" : String(v);
-  }
-  if (attrs) descriptor.attrs = attrs;
-  return descriptor;
-}
-
 // Stylesheet/modulepreload links ride the ref-counted asset registry —
 // removal follows the owner with the same grace period as tracked boundary
 // CSS — through a per-resource child computation (the client analog of the
@@ -1061,21 +1042,25 @@ function buildHeadAssetDescriptor(props) {
 // exception to compute purity: it is idempotent, registry-keyed, and the
 // document head is outside the reactive graph.
 function gateHeadResource(props) {
-  const descriptor = buildHeadAssetDescriptor(props);
-  // Gateability (shared classification with the server): extra attributes
-  // must all be pure fetch metadata. Condition-changing attributes (media,
-  // title/alternate, disabled) exclude a sheet — holding a reveal on a
-  // sheet that may never apply is worse than FOUC.
+  const descriptor = {
+    type: props.rel === "stylesheet" ? "style" : "module",
+    href: props.href
+  };
+  // Gateability (shared classification with the server): extra attributes —
+  // valid or not — must all be pure fetch metadata. Condition-changing
+  // attributes (media, title/alternate, disabled) exclude a sheet: holding
+  // a reveal on a sheet that may never apply is worse than FOUC.
   let gateable = props.rel === "stylesheet" && props.href != null;
-  if (gateable) {
-    for (const name in props) {
-      if (name === "rel" || name === "href") continue;
-      if (!STYLESHEET_FETCH_META.has(name)) {
-        gateable = false;
-        break;
-      }
-    }
+  let attrs = null;
+  for (const name in props) {
+    if (name === "rel" || name === "href") continue;
+    if (!STYLESHEET_FETCH_META.has(name)) gateable = false;
+    if (!HEAD_ATTR_NAME.test(name)) continue;
+    const v = props[name];
+    if (v == null || v === false) continue;
+    (attrs || (attrs = {}))[name] = v === true ? "" : String(v);
   }
+  if (attrs) descriptor.attrs = attrs;
   effect(
     () => {
       const entry = warmAsset(descriptor);
