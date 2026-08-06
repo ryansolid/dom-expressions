@@ -363,31 +363,39 @@ branches, dom-expressions + solid, verified end-to-end in the chat example):
   `for await` assimilation semantics (plus the latent post-gap sync-settle
   drop). The value tier's consumption path depends on that fix.
 
-**Known gap — the document face (t=0) is not plumbed.** Everything above
-is the call-driven story; `createDocumentSlotProps` (the t=0 face, where
-the *server* is the consumer and the fill renders inline into the
-document) predates DR-2 and has neither half:
+**Known gap — the document face (t=0) has no value tier.** Everything
+above is the call-driven story; `createDocumentSlotProps` (the t=0 face,
+where the *server* is the consumer and the fill renders inline into the
+document) predates DR-2. Probed empirically
+(`document-face-arg-tiers.spec.tsx`, solid-web server suite):
 
-- The inline fill receives its args RAW — `resolved[key] = value` hands a
-  promise/iterable straight to the fill, with no equivalent of the
-  client's async-read wrap, so the t=0 render reads the async value
-  itself (wrong markup) while post-hydration reads settle properly: a
-  hydration mismatch instead of a covered pending state.
-- The thunk-unwrap loop has no not-ready catch — no
-  ship-pending-and-retry; a pending getter arg throws raw out of the slot
-  invocation.
+- **Not-ready args are handled — coarsely.** A thunk/getter throwing
+  not-ready at the unwrap, or an eager call suspending in the component's
+  render, propagates into the server component's own `<Loading>`: the
+  section defers as a fragment and the retry delivers the settled value
+  in markup. This is the "holding" alternative DR-2 rejected for the
+  stream face's granularity — the whole section holds instead of pending
+  marks per arg — but at t=0 it is functional, orphan-free, and
+  consistent with "markup is the snapshot." (One artifact: the retry
+  re-invokes the slot, so the occurrence renumbers — markers and record
+  stay consistent with each other.) Pinned as passing behavior.
+- **Async values passed whole are the gap.** `resolved[key] = value`
+  hands the promise/iterable to the inline fill RAW — no equivalent of
+  the client's async-read wrap — so nothing suspends: the t=0 markup
+  ships an empty hole where the settled value belongs, while the record
+  serializes the value correctly (seroval streams the resolution through
+  the document's data scripts, so the ADOPTED client settles fine). A
+  hydration mismatch instead of a covered pending read. Marked
+  `test.fails` until fixed.
 
-The design answer is symmetric with everything else at t=0 (see
-generator-only-model.md §10): serialize the async value into the record
-as-is (seroval already streams resolution through the document's data
-scripts, so the adopted client settles correctly), and wrap the *inline*
-read so it suspends into the document's own streaming machinery —
-markup snapshots at flush, data stays live through the channel. Neither
-demo exercises this (the chat example only creates replies from client
-interaction; the notes t=0 path passes no async args), and the lifecycle
-matrix's document-adoption specs don't cross the arg tiers — the missing
-matrix row is document-adoption × arg tiers. To implement alongside the
-DR-2 merge, not after it.
+The fix is one half, not two: wrap the *inline* read so an async-valued
+arg suspends into the document's existing streaming machinery (the same
+boundary that already holds the coarse not-ready case), keeping the
+record serialization exactly as it is. Neither demo exercises this (the
+chat example only creates replies from client interaction; the notes t=0
+path passes no async args) — the probe spec is the missing
+document-adoption × arg-tiers matrix row's server half. To implement
+alongside the DR-2 merge, not after it.
 
 **Status — case 1 (expression bindings) is implemented**
 (`dr2-expression-bindings` branches, stacked on the value tier, verified

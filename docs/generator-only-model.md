@@ -571,12 +571,17 @@ post-adoption-morph answer. t=0 is a shared constraint with a shared
 shape, so it doesn't move the §9 lean — but any ratified design must
 implement this section, not just the call-driven story.
 
-**Current state, for honesty:** none of the DR-2 machinery is plumbed into
-the document face today. The document-mode slot props hand the inline fill
-its args RAW (a promise arrives as a promise — no async-read wrap, so the
-t=0 render of the fill reads it wrong), and the thunk-unwrap loop has no
-not-ready catch (no pending-with-retry equivalent). The Case 1 ledger does
-not run on the document sink — defensible as "the document is a snapshot,"
-but it makes the ledger's liveness contract call-driven-only and the
-principles doc now says so. These are implementation gaps recorded in
-server-components-principles.md, not design decisions.
+**Current state, for honesty** (probed, not just code-read —
+`document-face-arg-tiers.spec.tsx` in the solid-web server suite):
+not-ready args already work at t=0, coarsely — the throw propagates into
+the server component's own `<Loading>`, the section defers as a fragment,
+and the retry delivers the settled value in markup (the "holding"
+alternative DR-2 rejected for the stream face, functional here). The gap
+is the value tier: the document-mode slot props hand the inline fill an
+async value RAW (no async-read wrap, so nothing suspends and the t=0
+markup ships an empty hole) while the record serializes correctly for the
+adopted client — a hydration mismatch. The Case 1 ledger does not run on
+the document sink — defensible as "the document is a snapshot," but it
+makes the ledger's liveness contract call-driven-only and the principles
+doc now says so. Implementation gaps recorded there, not design
+decisions.
