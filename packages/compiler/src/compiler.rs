@@ -694,6 +694,104 @@ mod tests {
     }
 
     #[test]
+    fn traces_fragment_returned_from_component_child_iife() {
+        let source = r#"
+            const view = (
+                <Layer>
+                    {(() => {
+                        return (
+                            <>
+                                {renderActiveLayer(computed().points)}
+                                {condition ? renderActiveLayer(otherPoints) : null}
+                            </>
+                        );
+                    })()}
+                </Layer>
+            );
+        "#;
+
+        compile(
+            source,
+            &CompileOptions {
+                semantic_trace: true,
+                ..CompileOptions::default()
+            },
+        )
+        .expect("semantic tracing should cover fragments returned from component child IIFEs");
+    }
+
+    #[test]
+    fn fragment_sites_follow_their_lowering_context() {
+        for (source, needle, expected_kind) in [
+            (
+                "const view = <div>{(() => <><>{nativeChild()}</></>)()}</div>;",
+                "nativeChild()",
+                ExecutionSiteKind::JsxChild,
+            ),
+            (
+                "const view = <Layer><><>{componentChild()}</></></Layer>;",
+                "componentChild()",
+                ExecutionSiteKind::ComponentChild,
+            ),
+            (
+                "const view = <For each={items()}>{item => <>{renderItem(item())}</>}</For>;",
+                "renderItem(item())",
+                ExecutionSiteKind::JsxChild,
+            ),
+            (
+                "const view = () => <><>{arrowResult()}</></>;",
+                "arrowResult()",
+                ExecutionSiteKind::JsxChild,
+            ),
+            (
+                "const view = <Layer content={<><Widget detail={<>{property()}</>} /></>} />;",
+                "property()",
+                ExecutionSiteKind::JsxChild,
+            ),
+        ] {
+            let output = compile(
+                source,
+                &CompileOptions {
+                    semantic_trace: true,
+                    ..CompileOptions::default()
+                },
+            )
+            .unwrap_or_else(|error| panic!("{source}: {error}"));
+            let trace = output.semantic_trace.expect("semantic trace");
+            let site = trace
+                .sites
+                .iter()
+                .find(|site| site.span == span(source, needle))
+                .unwrap_or_else(|| panic!("missing {needle} site for {source}"));
+            assert_eq!(site.kind, expected_kind, "wrong site kind for {source}");
+        }
+    }
+
+    #[test]
+    fn nested_fragments_compile_across_dom_ssr_and_universal() {
+        let sources = [
+            "const view = <div>{(() => <><>{nativeChild()}</></>)()}</div>;",
+            "const view = <Layer><><>{componentChild()}</></></Layer>;",
+            "const view = <Layer>{(() => <>{iifeResult()}</>)()}</Layer>;",
+            "const view = () => <><>{arrowResult()}</></>;",
+            "const view = <Layer content={<><Widget detail={<>{property()}</>} /></>} />;",
+        ];
+
+        for generate in [Generate::Dom, Generate::Ssr, Generate::Universal] {
+            for source in sources {
+                compile(
+                    source,
+                    &CompileOptions {
+                        generate,
+                        ..CompileOptions::default()
+                    },
+                )
+                .unwrap_or_else(|error| panic!("{generate:?}: {source}: {error}"));
+            }
+        }
+    }
+
+    #[test]
     fn uses_utf8_byte_spans_and_records_semantics_affecting_options() {
         let source = "const label = '🔥'; const view = <div title={signal()} />;";
         let output = compile(
