@@ -253,9 +253,22 @@ same graceful degradation as other optional rxcore members
    stamped `blocking="render"` per resolved question 1 — that is
    mechanism, not author API, and author-supplied attributes pass through
    verbatim like any other prop regardless.)
-2. **`solid-element` / universal renderers**: no rxcore `waitAsset` → warm
-   still helps (fetch earliness), gate silently disabled. Acceptable?
-   (Matches how other optional seams degrade.)
+
+## Scope note: universal renderers
+
+Universal renderers have none of this surface and need none of it —
+`useHead`, the asset registry, and `loadModuleAssets` are DOM-runtime
+(`client.js`) exports; `universal.js` is just `createRenderer` over
+user-supplied node ops. This scoping is principled, not incidental:
+hybrid rendering means an app mixing a custom renderer with DOM uses the
+DOM runtime for the parts that touch the document — which is where heads,
+stylesheets, and therefore FOUC live. A renderer targeting something that
+is not a document has no `<head>` and no stylesheet loading for us to
+own. `solid-element` rides the DOM runtime with `@solidjs/web`'s rxcore
+and inherits the gate automatically. The only degradation case is a
+custom rxcore without `waitAsset`, which follows the standard
+optional-seam convention: absent → gate silently disabled, warm (fetch
+earliness) still works.
 
 ## Risks
 
