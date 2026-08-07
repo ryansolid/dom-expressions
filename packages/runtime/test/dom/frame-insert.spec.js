@@ -179,4 +179,42 @@ describe("frame boundary element in array / fragment positions (#550)", () => {
     expect(element.nextSibling).toBe(marker);
     dispose();
   });
+
+  // Root affinity is per stream (solidjs/solid#2977 follow-up): an address
+  // switch may deliver a shell byte-identical to the one on screen —
+  // slot-driven content ships its differences as records, not markup — and
+  // consumers gate on `onApply` to learn the new call ANSWERED. The stale
+  // skip must not swallow the new stream's morph, and the interim flushes
+  // must not re-apply the previous stream's root as if the new one answered.
+  it("rebind re-applies an identical shell and never answers with the stale root", () => {
+    const host = createFrameHost();
+    const applies = [];
+    const { element, dispose, frame } = createFrameElement({
+      host,
+      id: "addr-a",
+      onApply: e => applies.push(e.reason)
+    });
+    createRoot(() => {
+      r.insert(container, () => element, null);
+    });
+    const shell = "<div><h1>Shell</h1></div>";
+    host.apply({ type: "html", id: "addr-a", version: 1, html: shell });
+    expect(element.innerHTML).toBe(shell);
+    const before = applies.length;
+    frame.rebind("addr-b");
+    // The old content stays on screen while the new call streams.
+    expect(element.innerHTML).toBe(shell);
+    // A non-root write for the new address (its start chunk) must not
+    // re-apply the previous stream's root — that would answer the switch
+    // with the OLD call's content.
+    host.apply({ type: "start", id: "addr-b", version: 1 });
+    expect(applies.length).toBe(before);
+    // The new call's shell is byte-identical: it must still count as this
+    // address's apply (before the fix, the value-skip starved onApply and
+    // a switch gate waiting on it held forever).
+    host.apply({ type: "html", id: "addr-b", version: 1, html: shell });
+    expect(applies.length).toBe(before + 1);
+    expect(element.innerHTML).toBe(shell);
+    dispose();
+  });
 });
