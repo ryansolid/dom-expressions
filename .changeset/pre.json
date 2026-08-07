@@ -17,6 +17,7 @@
     "add-sld-dom-expressions",
     "add-wasm-compiler",
     "adopted-region-first-morph",
+    "ambient-gather-frame-opacity",
     "apply-ref-element-type",
     "asset-registry-inline-styles",
     "auto-install-wasm-compiler",
