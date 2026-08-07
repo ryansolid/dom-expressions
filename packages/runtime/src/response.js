@@ -96,7 +96,22 @@ export const REVALIDATE_HEADER = "X-Revalidate";
 
 function initWithRevalidate(init) {
   const { revalidate, ...responseInit } = init;
-  const headers = new Headers(responseInit.headers);
+  // Copy preserving multiple Set-Cookie values: Headers-to-Headers copying
+  // through the constructor folds them into one comma-joined entry on some
+  // runtimes (a folded Set-Cookie is corrupt). Plain-object inits cannot
+  // carry duplicates and pass through as-is.
+  let headers;
+  if (responseInit.headers && responseInit.headers.getSetCookie) {
+    headers = new Headers();
+    responseInit.headers.forEach((value, key) => {
+      if (key !== "set-cookie") headers.append(key, value);
+    });
+    for (const cookie of responseInit.headers.getSetCookie()) {
+      headers.append("Set-Cookie", cookie);
+    }
+  } else {
+    headers = new Headers(responseInit.headers);
+  }
   revalidate !== undefined && headers.set(REVALIDATE_HEADER, revalidate.toString());
   return { responseInit, headers };
 }

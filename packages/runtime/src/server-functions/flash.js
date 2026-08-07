@@ -14,7 +14,8 @@
 // The payload is plain JSON rather than the wire codec: it has to survive a
 // 4 KB cookie, and both halves here are synchronous while the codec is not.
 
-import { FLASH_COOKIE, matchFlashCookie } from "./shared.js";
+import { FLASH_COOKIE } from "./shared.js";
+import { parseCookieHeader, serializeCookie } from "../cookies.js";
 
 // Form payloads have no JSON encoding, so entries are captured as pair
 // arrays under a marker key ($f / $u) and revived to real FormData /
@@ -55,7 +56,7 @@ export function encodeFlashCookie(url, result, input, thrown) {
     thrown: !!thrown,
     input: input.map(encodeInputValue)
   };
-  return `${FLASH_COOKIE}=${encodeURIComponent(JSON.stringify(payload))}; Secure; HttpOnly; Path=/`;
+  return serializeCookie(FLASH_COOKIE, JSON.stringify(payload), { secure: true, httpOnly: true });
 }
 
 /**
@@ -64,10 +65,10 @@ export function encodeFlashCookie(url, result, input, thrown) {
  * down the render, and it is cleared either way.
  */
 export function decodeFlashCookie(cookieHeader) {
-  const match = matchFlashCookie(cookieHeader);
+  const match = parseCookieHeader(cookieHeader)[FLASH_COOKIE];
   if (!match) return;
   try {
-    const payload = JSON.parse(decodeURIComponent(match));
+    const payload = JSON.parse(match);
     if (!payload || !payload.result) return;
     const result = payload.error ? new Error(payload.result) : payload.result;
     return {

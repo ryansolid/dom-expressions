@@ -1,0 +1,360 @@
+/**
+ * @jest-environment node
+ *
+ * Request-event cookie helpers (`getCookie`/`setCookie`/`deleteCookie`),
+ * the cookie wire format (`parseCookieHeader`/`serializeCookie`), and the
+ * multi-`Set-Cookie` guarantee: every path that materializes a response
+ * stub (or merges response headers) must carry multiple `Set-Cookie`
+ * values as separate entries — `getSetCookie()` + append, never `get`/
+ * `set` folding — so cookies survive identically on Node/undici, workerd
+ * and Deno. Node environment for real Request/Response/Headers globals.
+ */
+import * as r from "../../src/server";
+import { parseCookieHeader, serializeCookie } from "../../src/cookies";
+import { redirect, respond } from "../../src/response";
+import {
+  handleServerFunctionRequest,
+  registerServerFunction
+} from "../../src/server-functions/server";
+import { FLASH_COOKIE } from "../../src/server-functions/shared";
+import { RequestContext } from "../../src/server";
+
+class FakeStorage {
+  constructor() {
+    this.store = undefined;
+  }
+  getStore() {
+    return this.store;
+  }
+  run(value, fn) {
+    const prev = this.store;
+    this.store = value;
+    try {
+      return fn();
+    } finally {
+      this.store = prev;
+    }
+  }
+}
+
+beforeEach(() => {
+  globalThis[RequestContext] = new FakeStorage();
+});
+
+afterEach(() => {
+  delete globalThis[RequestContext];
+});
+
+function eventWithCookies(cookieHeader) {
+  const headers = cookieHeader ? { cookie: cookieHeader } : undefined;
+  return r.createRequestEvent(new Request("http://localhost/", { headers }));
+}
+
+describe("serializeCookie", () => {
+  it("defaults Path to / and nothing else", () => {
+    expect(serializeCookie("a", "b")).toBe("a=b; Path=/");
+  });
+
+  it("emits every attribute the caller asked for", () => {
+    const expires = new Date("2027-01-01T00:00:00Z");
+    expect(
+      serializeCookie("session", "abc", {
+        path: "/app",
+        domain: "example.com",
+        maxAge: 3600.9,
+        expires,
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax"
+      })
+    ).toBe(
+      `session=abc; Path=/app; Domain=example.com; Max-Age=3600; Expires=${expires.toUTCString()}; HttpOnly; Secure; SameSite=Lax`
+    );
+  });
+
+  it("normalizes sameSite casing", () => {
+    expect(serializeCookie("a", "b", { sameSite: "none" })).toBe("a=b; Path=/; SameSite=None");
+    expect(serializeCookie("a", "b", { sameSite: "Strict" })).toBe("a=b; Path=/; SameSite=Strict");
+  });
+
+  it("percent-encodes name and value so any string round-trips", () => {
+    const value = "sp ace;semi=eq,comma✓";
+    const serialized = serializeCookie("na;me", value);
+    const pair = serialized.split(";")[0];
+    expect(pair).not.toContain(" ");
+    expect(parseCookieHeader(pair)["na;me"]).toBe(value);
+  });
+});
+
+describe("parseCookieHeader", () => {
+  it("parses multiple pairs and trims whitespace", () => {
+    expect(parseCookieHeader("a=1; b=2;c=3")).toEqual({ a: "1", b: "2", c: "3" });
+  });
+
+  it("answers an empty map for null/empty input", () => {
+    expect(parseCookieHeader(null)).toEqual({});
+    expect(parseCookieHeader("")).toEqual({});
+  });
+
+  it("skips segments without an =", () => {
+    expect(parseCookieHeader("garbage; a=1")).toEqual({ a: "1" });
+  });
+
+  it("unquotes quoted values", () => {
+    expect(parseCookieHeader('a="quoted value"')).toEqual({ a: "quoted value" });
+  });
+
+  it("keeps raw text when decoding throws", () => {
+    expect(parseCookieHeader("a=%zz")).toEqual({ a: "%zz" });
+  });
+});
+
+describe("getCookie", () => {
+  it("reads from an explicit event", () => {
+    const event = eventWithCookies("session=abc; theme=dark");
+    expect(r.getCookie(event, "session")).toBe("abc");
+    expect(r.getCookie(event, "theme")).toBe("dark");
+    expect(r.getCookie(event, "missing")).toBeUndefined();
+  });
+
+  it("decodes percent-encoded values", () => {
+    const event = eventWithCookies("name=sp%20ace%3B%E2%9C%93");
+    expect(r.getCookie(event, "name")).toBe("sp ace;✓");
+  });
+
+  it("resolves the ambient event", () => {
+    const event = eventWithCookies("session=ambient");
+    const value = globalThis[RequestContext].run(event, () => r.getCookie("session"));
+    expect(value).toBe("ambient");
+  });
+
+  it("answers undefined outside a request scope", () => {
+    expect(r.getCookie("session")).toBeUndefined();
+  });
+
+  it("is a request-only view: a setCookie in the same request does not read back", () => {
+    const event = eventWithCookies("a=1");
+    r.setCookie(event, "a", "2");
+    expect(r.getCookie(event, "a")).toBe("1");
+  });
+});
+
+describe("setCookie / deleteCookie", () => {
+  it("appends Set-Cookie onto the explicit event's response stub", () => {
+    const event = eventWithCookies();
+    r.setCookie(event, "session", "abc", { httpOnly: true });
+    expect(event.response.headers.getSetCookie()).toEqual(["session=abc; Path=/; HttpOnly"]);
+  });
+
+  it("keeps multiple cookies as separate entries", () => {
+    const event = eventWithCookies();
+    r.setCookie(event, "a", "1");
+    r.setCookie(event, "b", "2");
+    expect(event.response.headers.getSetCookie()).toEqual(["a=1; Path=/", "b=2; Path=/"]);
+  });
+
+  it("resolves the ambient event", () => {
+    const event = eventWithCookies();
+    globalThis[RequestContext].run(event, () => r.setCookie("session", "ambient"));
+    expect(event.response.headers.getSetCookie()).toEqual(["session=ambient; Path=/"]);
+  });
+
+  it("deleteCookie expires with an empty value honoring path/domain", () => {
+    const event = eventWithCookies();
+    r.deleteCookie(event, "session", { path: "/app", domain: "example.com" });
+    expect(event.response.headers.getSetCookie()).toEqual([
+      "session=; Path=/app; Domain=example.com; Max-Age=0"
+    ]);
+  });
+
+  // Raw source is the dev build (`"_DX_DEV_"` is a truthy string until a
+  // bundler replaces it), so the never-silent policy surfaces as throws
+  // here; the production build reports through console.error and no-ops.
+  it("throws (dev) when the response head is already committed", () => {
+    const event = eventWithCookies();
+    event.response.committed = true;
+    expect(() => r.setCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+    expect(event.response.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("throws (dev) outside a request scope", () => {
+    expect(() => r.setCookie("orphan", "1")).toThrow(/no request event response/);
+  });
+
+  it("throws (dev) when the event carries no response stub", () => {
+    const bare = { request: new Request("http://localhost/"), locals: {} };
+    expect(() => r.setCookie(bare, "orphan", "1")).toThrow(/no request event response/);
+  });
+});
+
+describe("createSSRResponse carries multiple Set-Cookie values", () => {
+  it("string result: stub cookies and base-init cookies all survive individually", async () => {
+    const event = eventWithCookies();
+    r.setCookie(event, "a", "1");
+    r.setCookie(event, "b", "2");
+    const base = new Headers();
+    base.append("Set-Cookie", "c=3; Path=/");
+    const response = r.createSSRResponse("<p/>", event, { responseInit: { headers: base } });
+    expect(response.headers.getSetCookie()).toEqual(["c=3; Path=/", "a=1; Path=/", "b=2; Path=/"]);
+    expect(event.response.committed).toBe(true);
+  });
+
+  it("redirect result: cookies ride the redirect head", () => {
+    const event = eventWithCookies();
+    r.setCookie(event, "session", "fresh");
+    event.response.headers.set("Location", "/next");
+    const response = r.createSSRResponse("<p>never sent</p>", event);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/next");
+    expect(response.headers.getSetCookie()).toEqual(["session=fresh; Path=/"]);
+  });
+
+  it("stream result: cookies set before the shell flush reach the head", async () => {
+    const event = eventWithCookies();
+    r.setCookie(event, "a", "1");
+    r.setCookie(event, "b", "2");
+    const response = await r.createSSRResponse(
+      r.renderToStream(() => r.ssr`<p>sync</p>`),
+      event
+    );
+    expect(response.headers.getSetCookie()).toEqual(["a=1; Path=/", "b=2; Path=/"]);
+    expect(event.response.committed).toBe(true);
+  });
+
+  it("committed stub rejects late writes (dev)", () => {
+    const event = eventWithCookies();
+    r.createSSRResponse("<p/>", event);
+    expect(() => r.setCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+  });
+});
+
+describe("handleServerFunctionRequest folds the event response stub", () => {
+  const INSTANCE_HEADERS = {
+    "X-Server-Function-Instance": "server-function:test"
+  };
+
+  function dispatch(id, event, extraHeaders = {}, options = {}) {
+    return handleServerFunctionRequest(
+      new Request(`http://localhost/_server?id=${encodeURIComponent(id)}`, {
+        method: "POST",
+        headers: { ...INSTANCE_HEADERS, ...extraHeaders }
+      }),
+      { createEvent: () => event, ...options }
+    );
+  }
+
+  it("setCookie during the call reaches the wire, and the stub commits", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-set-0", async () => {
+      r.setCookie(event, "session", "abc", { httpOnly: true });
+      r.setCookie(event, "theme", "dark");
+      return 1;
+    });
+    const response = await dispatch("cookie-set-0", event);
+    expect(response.headers.getSetCookie()).toEqual([
+      "session=abc; Path=/; HttpOnly",
+      "theme=dark; Path=/"
+    ]);
+    expect(event.response.committed).toBe(true);
+    expect(() => r.setCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+  });
+
+  it("ambient setCookie works under the handler's event scope", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-ambient-0", async () => {
+      r.setCookie("session", "ambient");
+      return 1;
+    });
+    const response = await dispatch(
+      "cookie-ambient-0",
+      event,
+      {},
+      {
+        provideEvent: (evt, fn) => globalThis[RequestContext].run(evt, fn)
+      }
+    );
+    expect(response.headers.getSetCookie()).toEqual(["session=ambient; Path=/"]);
+  });
+
+  it("stub cookies append alongside a respond() envelope's own", async () => {
+    const envelopeHeaders = new Headers();
+    envelopeHeaders.append("Set-Cookie", "e1=1; Path=/");
+    envelopeHeaders.append("Set-Cookie", "e2=2; Path=/");
+    const event = eventWithCookies();
+    registerServerFunction("cookie-envelope-0", async () => {
+      r.setCookie(event, "stub", "s");
+      return respond({ ok: true }, { headers: envelopeHeaders });
+    });
+    const response = await dispatch("cookie-envelope-0", event);
+    expect(response.headers.getSetCookie()).toEqual([
+      "e1=1; Path=/",
+      "e2=2; Path=/",
+      "stub=s; Path=/"
+    ]);
+  });
+
+  it("stub cookies ride a thrown redirect", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-redirect-0", async () => {
+      r.setCookie(event, "session", "fresh");
+      throw redirect("/next");
+    });
+    const response = await dispatch("cookie-redirect-0", event);
+    expect(response.headers.get("Location")).toBe("/next");
+    expect(response.headers.getSetCookie()).toEqual(["session=fresh; Path=/"]);
+  });
+
+  it("stub cookies merge onto a returned raw Response without folding its own", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-raw-0", async () => {
+      r.setCookie(event, "stub", "s");
+      const headers = new Headers();
+      headers.append("Set-Cookie", "own1=1; Path=/");
+      headers.append("Set-Cookie", "own2=2; Path=/");
+      return new Response("body", { headers });
+    });
+    const response = await dispatch("cookie-raw-0", event);
+    expect(response.headers.getSetCookie()).toEqual([
+      "own1=1; Path=/",
+      "own2=2; Path=/",
+      "stub=s; Path=/"
+    ]);
+  });
+
+  it("stub cookies ride the no-JS form redirect next to the flash cookie", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-nojs-0", async () => {
+      r.setCookie(event, "session", "fresh");
+      return "saved";
+    });
+    const response = await handleServerFunctionRequest(
+      new Request("http://localhost/_server?id=cookie-nojs-0", {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          referer: "http://localhost/page"
+        },
+        body: "x=1"
+      }),
+      { createEvent: () => event }
+    );
+    expect(response.status).toBe(303);
+    const cookies = response.headers.getSetCookie();
+    expect(cookies).toHaveLength(2);
+    expect(cookies.some(c => c.startsWith(`${FLASH_COOKIE}=`))).toBe(true);
+    expect(cookies).toContain("session=fresh; Path=/");
+  });
+
+  it("stub headers fill gaps without overriding the call's own metadata", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-headers-0", async () => {
+      event.response.headers.set("X-Custom", "stub");
+      event.response.headers.set("Content-Type", "text/never");
+      return 1;
+    });
+    const response = await dispatch("cookie-headers-0", event);
+    expect(response.headers.get("X-Custom")).toBe("stub");
+    // the encoder's own content type wins over the stub's
+    expect(response.headers.get("Content-Type")).toBe("text/plain");
+  });
+});

@@ -1256,9 +1256,23 @@ export function createSlotProps(sink, frame) {
  * it. `init` (headers/status, e.g. from a `respond()` envelope) merges in;
  * the frame tags win on conflict.
  */
+// Copy a response-init's headers preserving multiple `Set-Cookie` values:
+// Headers-to-Headers copying through the constructor folds them into one
+// comma-joined entry on some runtimes (a folded Set-Cookie is corrupt).
+// Plain-object inits cannot carry duplicates and pass through as-is.
+function copyInitHeaders(init) {
+  if (!init || !init.getSetCookie) return new Headers(init);
+  const headers = new Headers();
+  init.forEach((value, key) => {
+    if (key !== "set-cookie") headers.append(key, value);
+  });
+  for (const cookie of init.getSetCookie()) headers.append("Set-Cookie", cookie);
+  return headers;
+}
+
 export function serverComponentResponse(component, options = {}, init = {}) {
   const { id = "", version = 1 } = options.frame || {};
-  const headers = new Headers(init.headers);
+  const headers = copyInitHeaders(init.headers);
   headers.set("Content-Type", "application/x-frame-stream");
   headers.set(FRAME_STREAM_HEADER, id);
   headers.set("X-Content-Raw", "1");
@@ -1393,7 +1407,7 @@ export async function frameTransformFlightResult(event, outcome, context) {
  */
 export function frameFlightResponse({ primary, regions = [], outcome, codec }, init = {}) {
   const frames = primary ? [primary, ...regions] : regions;
-  const headers = new Headers(init.headers);
+  const headers = copyInitHeaders(init.headers);
   headers.set("Content-Type", "application/x-frame-stream");
   headers.set(FRAME_STREAM_HEADER, primary ? primary.id : "");
   headers.set("X-Content-Raw", "1");

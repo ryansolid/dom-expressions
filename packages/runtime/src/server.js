@@ -1,6 +1,8 @@
 import { ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner } from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
+import { parseCookieHeader, serializeCookie } from "./cookies.js";
+export { parseCookieHeader, serializeCookie } from "./cookies.js";
 import {
   HEAD_ELIGIBLE_TAGS,
   HEAD_ATTR_NAME,
@@ -2405,6 +2407,103 @@ export function createRequestEvent(request, init) {
   return { request, locals: {}, response: createResponseStub(), ...init };
 }
 
+// --- Cookies ---
+//
+// Request-event cookie helpers, riding the same ambient resolution as the
+// framework's `httpStatus`/`httpHeader` primitives: called with a name
+// they read the event off `getRequestEvent()`, called with an explicit
+// event they work against exactly that event (middleware, handlers —
+// anywhere outside the ambient scope). Reads are a request-only view (the
+// `Cookie` header as the client sent it — a `setCookie` in the same
+// request does not read back); writes append `Set-Cookie` values onto the
+// event's response stub, which every stub materialization path folds onto
+// the wire cookie-by-cookie.
+
+// The first argument discriminates the overloads: an ambient call starts
+// with the cookie name (a string), an explicit call with the event.
+function resolveEventOverload(eventOrName, rest) {
+  if (typeof eventOrName === "string") {
+    rest.unshift(eventOrName);
+    return getRequestEvent();
+  }
+  return eventOrName;
+}
+
+/**
+ * Reads a cookie from the request event's `Cookie` header — the value the
+ * client sent, `decodeURIComponent`-decoded, or `undefined` when absent.
+ * `getCookie(name)` resolves the ambient event (`getRequestEvent()`);
+ * `getCookie(event, name)` reads from an explicit one. A request-only
+ * view: a `setCookie` during the same request is not merged back in.
+ */
+export function getCookie(eventOrName, name) {
+  const rest = name === undefined ? [] : [name];
+  const event = resolveEventOverload(eventOrName, rest);
+  if (!event || !event.request) return undefined;
+  return parseCookieHeader(event.request.headers.get("cookie"))[rest[0]];
+}
+
+// A lost write is never silent: in the dev build it throws at the call
+// site, otherwise it reports and no-ops (a late cookie must not crash a
+// production request that is already on the wire).
+function reportLostCookieWrite(reason) {
+  const message = `Cookie write dropped: ${reason}`;
+  if ("_DX_DEV_") throw new Error(message);
+  console.error(message);
+}
+
+/**
+ * Appends a `Set-Cookie` for `name`/`value` onto the request event's
+ * response stub (`serializeCookie` formats it — `path` defaults to `/`,
+ * everything else is explicit via `options`). `setCookie(name, value,
+ * options?)` resolves the ambient event; `setCookie(event, name, value,
+ * options?)` writes to an explicit one.
+ *
+ * Committed-aware: once the response head is on the wire
+ * (`response.committed`) the cookie can no longer reach the client, so
+ * the write throws in the dev build and reports + no-ops otherwise —
+ * never a silent drop. The same applies when no event (or no response
+ * stub) is reachable.
+ */
+export function setCookie(eventOrName, nameOrValue, valueOrOptions, maybeOptions) {
+  const rest = [nameOrValue, valueOrOptions, maybeOptions];
+  const event = resolveEventOverload(eventOrName, rest);
+  const [name, value, options] = rest;
+  const response = event && event.response;
+  if (!response || !response.headers) {
+    return reportLostCookieWrite(
+      `setCookie(${JSON.stringify(name)}) found no request event response to write to. ` +
+        "Call it during request handling, or pass the event explicitly."
+    );
+  }
+  if (response.committed) {
+    return reportLostCookieWrite(
+      `setCookie(${JSON.stringify(name)}) ran after the response head was sent. ` +
+        "Set cookies before the shell flushes (or before the handler returns)."
+    );
+  }
+  response.headers.append("Set-Cookie", serializeCookie(name, value, options));
+}
+
+/**
+ * Expires a cookie: a `Set-Cookie` with an empty value and `Max-Age=0`,
+ * honoring the `path`/`domain` the cookie was set under (they are part of
+ * the cookie's identity — a delete must match them). Same overloads and
+ * committed semantics as `setCookie`.
+ */
+export function deleteCookie(eventOrName, nameOrOptions, maybeOptions) {
+  const rest = [nameOrOptions, maybeOptions];
+  const event = resolveEventOverload(eventOrName, rest);
+  const [name, options] = rest;
+  // An undefined ambient event flows through to setCookie's explicit
+  // overload, whose missing-response report covers it.
+  setCookie(event, name, "", {
+    path: options && options.path,
+    domain: options && options.domain,
+    maxAge: 0
+  });
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#redirection_messages
 const validRedirectStatuses = /*#__PURE__*/ new Set([301, 302, 303, 307, 308]);
 
@@ -2432,8 +2531,22 @@ function mergeStubHeaders(target, stub) {
   return target;
 }
 
+// Copy a base-headers init preserving multiple `Set-Cookie` values:
+// Headers-to-Headers copying through the constructor folds them into one
+// comma-joined entry on some runtimes (a folded Set-Cookie is corrupt).
+// Plain-object inits cannot carry duplicates and pass through as-is.
+function copyInitHeaders(init) {
+  if (!init || !init.getSetCookie) return new Headers(init);
+  const headers = new Headers();
+  init.forEach((value, key) => {
+    if (key !== "set-cookie") headers.append(key, value);
+  });
+  for (const cookie of init.getSetCookie()) headers.append("Set-Cookie", cookie);
+  return headers;
+}
+
 function deriveHead(stub, responseInit = {}) {
-  const headers = mergeStubHeaders(new Headers(responseInit.headers), stub);
+  const headers = mergeStubHeaders(copyInitHeaders(responseInit.headers), stub);
   const status = (stub && stub.status) || responseInit.status || 200;
   const statusText = (stub && stub.statusText) || responseInit.statusText || undefined;
   return { status, statusText, headers };

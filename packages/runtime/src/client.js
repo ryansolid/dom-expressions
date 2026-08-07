@@ -56,7 +56,13 @@ export {
   mergeProps,
   voidFn as generateHydrationScript,
   voidFn as HydrationScript,
-  voidFn as getRequestEvent
+  voidFn as getRequestEvent,
+  // Server-only cookie helpers (see server.js): on the client the request
+  // event does not exist — reads answer undefined, writes no-op, matching
+  // getRequestEvent's stub.
+  voidFn as getCookie,
+  voidFn as setCookie,
+  voidFn as deleteCookie
 };
 
 export function render(code, element, init, options = {}) {

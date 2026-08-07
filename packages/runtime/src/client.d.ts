@@ -295,5 +295,15 @@ export interface RequestEvent {
  */
 export declare const RequestContext: unique symbol;
 export function getRequestEvent(): RequestEvent | undefined;
+/**
+ * Server-only cookie helpers (see the server entry): on the client the
+ * request event does not exist — reads answer `undefined`, writes no-op.
+ */
+export function getCookie(name: string): string | undefined;
+export function getCookie(event: RequestEvent, name: string): string | undefined;
+export function setCookie(name: string, value: string, options?: object): void;
+export function setCookie(event: RequestEvent, name: string, value: string, options?: object): void;
+export function deleteCookie(name: string, options?: object): void;
+export function deleteCookie(event: RequestEvent, name: string, options?: object): void;
 /** Hydration-walk primitive; not for hand-written code. @internal */
 export function runHydrationEvents(): void;

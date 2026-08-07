@@ -515,6 +515,14 @@ export interface HandleServerFunctionOptions {
  * (default `/_server`); platform adapters (h3, express, ...) convert their
  * request shape to a web `Request` around it.
  *
+ * When the event carries a `response` head stub (`event.response`, see the
+ * server entry's `ResponseStub`), the handler folds it onto every outgoing
+ * response as the head freezes — its `Set-Cookie` values (`setCookie`
+ * during the call) append cookie-by-cookie alongside the result's own,
+ * other stub headers fill gaps (the call's response metadata wins) — and
+ * marks the stub `committed`, so later cookie/header writes report instead
+ * of silently missing the wire.
+ *
  * ## Thrown-error sanitization (security default)
  *
  * A thrown `Response`/envelope (`redirect`/`reload`/`respond`) is intentional
