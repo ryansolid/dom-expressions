@@ -1794,8 +1794,24 @@ function gatherHydratable(element, root) {
   for (let i = 0; i < templates.length; i++) {
     const node = templates[i];
     const key = node.getAttribute("_hk");
-    if ((!root || key.startsWith(root)) && !sharedConfig.registry.has(key))
-      sharedConfig.registry.set(key, node);
+    if (root) {
+      // A prefix-scoped gather (a boundary's late resume) names exactly what
+      // it owns — collect wherever the keys sit, frame interiors included.
+      // Keys are namespaced by their producer chain, so a nested frame's
+      // content can never match a foreign prefix.
+      if (!key.startsWith(root)) continue;
+    } else {
+      // The ambient sweep claims only what this hydration root itself walks.
+      // Frame regions ("data-fid" — the frame runtime's element brand, an
+      // importless duplicate like FRAME_ID_ATTR in frame-client/frame-sink)
+      // are another layer's property: their fills claim through scoped
+      // registries on their own schedule (a lazy route module may adopt long
+      // after this root completes), so collecting them here only sets up the
+      // completion sweep to report legitimately-late claims as unclaimed.
+      const frame = node.closest("[data-fid]");
+      if (frame && frame !== element && element.contains(frame)) continue;
+    }
+    if (!sharedConfig.registry.has(key)) sharedConfig.registry.set(key, node);
   }
 }
 

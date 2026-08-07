@@ -471,6 +471,61 @@ describe("Phase 1: Hydration error diagnostics", () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  // Frame regions (`data-fid`) are another layer's property: their fills
+  // claim through scoped registries on their own schedule — a lazy route
+  // module can adopt long after the document root completes. The ambient
+  // gather must not collect their interiors, or the completion sweep
+  // reports those legitimately-late claims as unclaimed markup.
+  it("the ambient gather leaves frame-region interiors to their own claim scopes", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const _tmpl$ = r.template("<div>Content</div>");
+    container.innerHTML =
+      '<div _hk="0">Mine</div>' +
+      '<dx-frame data-fid="f1"><section _hk="sc-f1-slot#0-0">Frame owned</section></dx-frame>';
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(document.querySelector('[_hk="sc-f1-slot#0-0"]').isConnected).toBe(true);
+    sharedConfig.verifyHydration();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  // A boundary's late resume gathers by prefix — it names exactly what it
+  // owns, so it collects wherever the keys sit, frame interiors included
+  // (a deferred segment inside an adopted slot fill lands there).
+  it("a prefix-scoped gather still collects inside frame regions", () => {
+    container.innerHTML = "";
+    r.hydrate(() => {}, container);
+    container.innerHTML =
+      '<dx-frame data-fid="f1"><section _hk="1902-0">Deferred content</section></dx-frame>';
+    sharedConfig.gather("1902");
+    expect(sharedConfig.registry.has("1902-0")).toBe(true);
+  });
+
+  // The frame element as the hydration root: its interior is exactly what
+  // this root walks, so the opacity rule must not apply to itself.
+  it("hydrating directly on a frame element claims its interior", () => {
+    const frame = document.createElement("dx-frame");
+    frame.setAttribute("data-fid", "f2");
+    frame.innerHTML = '<div _hk="0">Inside</div>';
+    container.innerHTML = "";
+    container.appendChild(frame);
+    const inner = frame.firstChild;
+    const _tmpl$ = r.template("<div>Inside</div>");
+
+    r.hydrate(() => {
+      const _el$ = r.getNextElement(_tmpl$);
+      expect(_el$).toBe(inner);
+      r.insert(frame, _el$, undefined, [...frame.childNodes]);
+    }, frame);
+
+    expect(frame.firstChild).toBe(inner);
+  });
 });
 
 /**
