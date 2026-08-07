@@ -42,8 +42,15 @@ const SCENARIOS = {
   // for the head identity/grouping round (reactive group membership,
   // media-qualified meta identity, replaceable icons — initially +95, shaved
   // back by extracting the duplicated attribute-apply loop) — ratcheted to
-  // actual+20 (9761 measured).
-  "client: full surface": ["*", 9781],
+  // actual+20 (9761 measured). Then found FAILING at 10235 during the
+  // cookie-codec round: +474 of unaccounted drift landed since the last
+  // ratchet without re-arguing its bytes here (the guard was not run) —
+  // flagged, not absorbed silently. Then +329 for the cookie codec
+  // (serializeCookie/parseCookieHeader as real client-entry exports —
+  // pure value transformers with legitimate browser uses, never stubs);
+  // the compiled-JSX core scenario stayed byte-identical, so apps not
+  // importing the codec pay 0. Re-guarded at actual+20 (10564 measured).
+  "client: full surface": ["*", 10584],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two

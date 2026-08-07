@@ -1,8 +1,20 @@
-// Cookie wire format: the parser and serializer behind the request-event
-// cookie helpers (`getCookie`/`setCookie`/`deleteCookie` in server.js).
+// Cookie wire format: the platform-gap primitives. The web platform hands
+// code whole `Cookie`/`Set-Cookie` headers but no codec for the pairs
+// inside them — this module is that codec, and it is ALL of core's cookie
+// surface: core owns the exchange (the request's headers in, the response
+// stub's headers out) and the codec, nothing ambient. The blessed patterns:
+//
+//   parseCookieHeader(event.request.headers.get("cookie"))
+//   event.response.headers.append("set-cookie", serializeCookie(name, value, options))
+//
 // Dependency-free and isomorphic — nothing here touches an event or the
-// platform — so the server entry, the server-functions machinery, and
-// tests all share one implementation of the format.
+// platform — and exported from BOTH entries: a pure value transformer has
+// legitimate browser uses too (`document.cookie = serializeCookie(...)`,
+// parsing `document.cookie`), and a no-op stub would hand back silent
+// garbage. No client-runtime module imports it internally (the flash
+// codec's client half keeps its raw-payload regex matcher), so it enters a
+// client bundle exactly when user code calls it and tree-shakes away
+// otherwise (guarded in scripts/size-guard.mjs).
 //
 // Encoding contract: names and values travel `encodeURIComponent`-encoded
 // and the parser decodes both, so any string round-trips. No signing, no
@@ -15,6 +27,9 @@
  * when decoding throws — cookies set by other producers are not
  * necessarily percent-encoded); a quoted value keeps its content, per the
  * RFC 6265 grammar. `null`/empty input parses to an empty map.
+ *
+ * The read half of the platform gap — the blessed request-cookie read is
+ * `parseCookieHeader(event.request.headers.get("cookie"))`.
  */
 export function parseCookieHeader(header) {
   const cookies = {};
@@ -48,6 +63,11 @@ function decodeSafe(text) {
  * `maxAge` (seconds, truncated to an integer), `expires` (a `Date`),
  * `httpOnly`, `secure`, `sameSite` (`"lax" | "strict" | "none"`, any
  * case).
+ *
+ * The write half of the platform gap — the blessed response-cookie write
+ * is `event.response.headers.append("set-cookie", serializeCookie(name,
+ * value, options))`, which every head materialization path carries to the
+ * wire entry-by-entry.
  */
 export function serializeCookie(name, value, options = {}) {
   let cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;

@@ -517,7 +517,7 @@ export interface HandleServerFunctionOptions {
  *
  * When the event carries a `response` head stub (`event.response`, see the
  * server entry's `ResponseStub`), the handler folds it onto every outgoing
- * response as the head freezes — its `Set-Cookie` values (`setCookie`
+ * response as the head freezes — its `Set-Cookie` values (cookies appended
  * during the call) append cookie-by-cookie alongside the result's own,
  * other stub headers fill gaps (the call's response metadata wins; the
  * protocol-owned family — the error/format/single-flight tags, `Location`,

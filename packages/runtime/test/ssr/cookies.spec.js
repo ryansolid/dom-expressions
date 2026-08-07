@@ -1,16 +1,21 @@
 /**
  * @jest-environment node
  *
- * Request-event cookie helpers (`getCookie`/`setCookie`/`deleteCookie`),
- * the cookie wire format (`parseCookieHeader`/`serializeCookie`), and the
+ * The cookie codec (`parseCookieHeader`/`serializeCookie` — the
+ * platform-gap primitives, core's whole cookie surface), the committed
+ * response stub's write loudness (`commitResponseStub`: a post-commit
+ * header write throws in the dev build on every commit path), and the
  * multi-`Set-Cookie` guarantee: every path that materializes a response
  * stub (or merges response headers) must carry multiple `Set-Cookie`
  * values as separate entries — `getSetCookie()` + append, never `get`/
  * `set` folding — so cookies survive identically on Node/undici, workerd
- * and Deno. Node environment for real Request/Response/Headers globals.
+ * and Deno. Cookie writes throughout use the blessed pattern:
+ * `event.response.headers.append("set-cookie", serializeCookie(...))`.
+ * Node environment for real Request/Response/Headers globals.
  */
 import * as r from "../../src/server";
-import { parseCookieHeader, serializeCookie } from "../../src/cookies";
+import { parseCookieHeader, serializeCookie } from "../../src/server";
+import * as codec from "../../src/cookies";
 import { redirect, respond } from "../../src/response";
 import {
   handleServerFunctionRequest,
@@ -49,6 +54,18 @@ function eventWithCookies(cookieHeader) {
   const headers = cookieHeader ? { cookie: cookieHeader } : undefined;
   return r.createRequestEvent(new Request("http://localhost/", { headers }));
 }
+
+// The blessed write pattern, spelled once.
+function appendCookie(event, name, value, options) {
+  event.response.headers.append("set-cookie", serializeCookie(name, value, options));
+}
+
+describe("codec exports", () => {
+  it("the server entry re-exports the one real implementation", () => {
+    expect(parseCookieHeader).toBe(codec.parseCookieHeader);
+    expect(serializeCookie).toBe(codec.serializeCookie);
+  });
+});
 
 describe("serializeCookie", () => {
   it("defaults Path to / and nothing else", () => {
@@ -107,91 +124,70 @@ describe("parseCookieHeader", () => {
   it("keeps raw text when decoding throws", () => {
     expect(parseCookieHeader("a=%zz")).toEqual({ a: "%zz" });
   });
-});
 
-describe("getCookie", () => {
-  it("reads from an explicit event", () => {
-    const event = eventWithCookies("session=abc; theme=dark");
-    expect(r.getCookie(event, "session")).toBe("abc");
-    expect(r.getCookie(event, "theme")).toBe("dark");
-    expect(r.getCookie(event, "missing")).toBeUndefined();
-  });
-
-  it("decodes percent-encoded values", () => {
-    const event = eventWithCookies("name=sp%20ace%3B%E2%9C%93");
-    expect(r.getCookie(event, "name")).toBe("sp ace;✓");
-  });
-
-  it("resolves the ambient event", () => {
-    const event = eventWithCookies("session=ambient");
-    const value = globalThis[RequestContext].run(event, () => r.getCookie("session"));
-    expect(value).toBe("ambient");
-  });
-
-  it("answers undefined outside a request scope", () => {
-    expect(r.getCookie("session")).toBeUndefined();
-  });
-
-  it("is a request-only view: a setCookie in the same request does not read back", () => {
-    const event = eventWithCookies("a=1");
-    r.setCookie(event, "a", "2");
-    expect(r.getCookie(event, "a")).toBe("1");
+  it("reads the blessed pattern off a request event", () => {
+    const event = eventWithCookies("session=abc; name=sp%20ace%3B%E2%9C%93");
+    const cookies = parseCookieHeader(event.request.headers.get("cookie"));
+    expect(cookies.session).toBe("abc");
+    expect(cookies.name).toBe("sp ace;✓");
+    expect(cookies.missing).toBeUndefined();
   });
 });
 
-describe("setCookie / deleteCookie", () => {
-  it("appends Set-Cookie onto the explicit event's response stub", () => {
+// Raw source is the dev build (`"_DX_DEV_"` is a truthy string until a
+// bundler replaces it), so the never-silent policy surfaces as throws
+// here; the production build reports through console.error and no-ops.
+describe("commitResponseStub write loudness", () => {
+  it("commits the stub and fails post-commit set/append/delete loudly (dev)", () => {
     const event = eventWithCookies();
-    r.setCookie(event, "session", "abc", { httpOnly: true });
-    expect(event.response.headers.getSetCookie()).toEqual(["session=abc; Path=/; HttpOnly"]);
-  });
-
-  it("keeps multiple cookies as separate entries", () => {
-    const event = eventWithCookies();
-    r.setCookie(event, "a", "1");
-    r.setCookie(event, "b", "2");
-    expect(event.response.headers.getSetCookie()).toEqual(["a=1; Path=/", "b=2; Path=/"]);
-  });
-
-  it("resolves the ambient event", () => {
-    const event = eventWithCookies();
-    globalThis[RequestContext].run(event, () => r.setCookie("session", "ambient"));
-    expect(event.response.headers.getSetCookie()).toEqual(["session=ambient; Path=/"]);
-  });
-
-  it("deleteCookie expires with an empty value honoring path/domain", () => {
-    const event = eventWithCookies();
-    r.deleteCookie(event, "session", { path: "/app", domain: "example.com" });
-    expect(event.response.headers.getSetCookie()).toEqual([
-      "session=; Path=/app; Domain=example.com; Max-Age=0"
-    ]);
-  });
-
-  // Raw source is the dev build (`"_DX_DEV_"` is a truthy string until a
-  // bundler replaces it), so the never-silent policy surfaces as throws
-  // here; the production build reports through console.error and no-ops.
-  it("throws (dev) when the response head is already committed", () => {
-    const event = eventWithCookies();
-    event.response.committed = true;
-    expect(() => r.setCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+    r.commitResponseStub(event.response);
+    expect(event.response.committed).toBe(true);
+    expect(() => event.response.headers.set("x-late", "1")).toThrow(
+      /after the response head was sent/
+    );
+    expect(() => appendCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+    expect(() => event.response.headers.delete("x-late")).toThrow(
+      /after the response head was sent/
+    );
     expect(event.response.headers.getSetCookie()).toEqual([]);
   });
 
-  it("throws (dev) outside a request scope", () => {
-    expect(() => r.setCookie("orphan", "1")).toThrow(/no request event response/);
+  it("keeps the Headers identity and its reads intact", () => {
+    const event = eventWithCookies();
+    const headers = event.response.headers;
+    appendCookie(event, "a", "1");
+    r.commitResponseStub(event.response);
+    expect(event.response.headers).toBe(headers);
+    expect(headers).toBeInstanceOf(Headers);
+    expect(headers.getSetCookie()).toEqual(["a=1; Path=/"]);
+    expect(headers.get("set-cookie")).toContain("a=1");
   });
 
-  it("throws (dev) when the event carries no response stub", () => {
-    const bare = { request: new Request("http://localhost/"), locals: {} };
-    expect(() => r.setCookie(bare, "orphan", "1")).toThrow(/no request event response/);
+  it("is idempotent: an already-committed stub is left alone", () => {
+    const stub = r.createResponseStub();
+    r.commitResponseStub(stub);
+    const patched = stub.headers.set;
+    r.commitResponseStub(stub);
+    expect(stub.headers.set).toBe(patched);
+  });
+
+  it("allowLateLocation permits exactly the post-commit Location set", () => {
+    const stub = r.createResponseStub();
+    r.commitResponseStub(stub, { allowLateLocation: true });
+    stub.headers.set("Location", "/next");
+    expect(stub.headers.get("Location")).toBe("/next");
+    expect(() => stub.headers.set("x-other", "1")).toThrow(/after the response head was sent/);
+    expect(() => stub.headers.append("set-cookie", "a=1")).toThrow(
+      /after the response head was sent/
+    );
   });
 });
 
 describe("createSSRResponse carries multiple Set-Cookie values", () => {
   it("string result: stub cookies and base-init cookies all survive individually", async () => {
     const event = eventWithCookies();
-    r.setCookie(event, "a", "1");
-    r.setCookie(event, "b", "2");
+    appendCookie(event, "a", "1");
+    appendCookie(event, "b", "2");
     const base = new Headers();
     base.append("Set-Cookie", "c=3; Path=/");
     const response = r.createSSRResponse("<p/>", event, { responseInit: { headers: base } });
@@ -201,7 +197,7 @@ describe("createSSRResponse carries multiple Set-Cookie values", () => {
 
   it("redirect result: cookies ride the redirect head", () => {
     const event = eventWithCookies();
-    r.setCookie(event, "session", "fresh");
+    appendCookie(event, "session", "fresh");
     event.response.headers.set("Location", "/next");
     const response = r.createSSRResponse("<p>never sent</p>", event);
     expect(response.status).toBe(302);
@@ -211,8 +207,8 @@ describe("createSSRResponse carries multiple Set-Cookie values", () => {
 
   it("stream result: cookies set before the shell flush reach the head", async () => {
     const event = eventWithCookies();
-    r.setCookie(event, "a", "1");
-    r.setCookie(event, "b", "2");
+    appendCookie(event, "a", "1");
+    appendCookie(event, "b", "2");
     const response = await r.createSSRResponse(
       r.renderToStream(() => r.ssr`<p>sync</p>`),
       event
@@ -221,10 +217,25 @@ describe("createSSRResponse carries multiple Set-Cookie values", () => {
     expect(event.response.committed).toBe(true);
   });
 
-  it("committed stub rejects late writes (dev)", () => {
+  it("string commit rejects late header writes (dev)", () => {
     const event = eventWithCookies();
     r.createSSRResponse("<p/>", event);
-    expect(() => r.setCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+    expect(() => appendCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+  });
+
+  it("shell-flush commit rejects late header writes (dev) but honors late Location", async () => {
+    const event = eventWithCookies();
+    const response = await r.createSSRResponse(
+      r.renderToStream(() => r.ssr`<p>sync</p>`),
+      event
+    );
+    expect(event.response.committed).toBe(true);
+    expect(() => appendCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+    // the stream path's documented exception: a post-flush Location is
+    // honored client-side through the completion script
+    event.response.headers.set("Location", "/next");
+    expect(event.response.headers.get("Location")).toBe("/next");
+    expect(response.headers.getSetCookie()).toEqual([]);
   });
 });
 
@@ -243,11 +254,11 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
     );
   }
 
-  it("setCookie during the call reaches the wire, and the stub commits", async () => {
+  it("cookies appended during the call reach the wire, and the commit seam rejects late writes (dev)", async () => {
     const event = eventWithCookies();
     registerServerFunction("cookie-set-0", async () => {
-      r.setCookie(event, "session", "abc", { httpOnly: true });
-      r.setCookie(event, "theme", "dark");
+      appendCookie(event, "session", "abc", { httpOnly: true });
+      appendCookie(event, "theme", "dark");
       return 1;
     });
     const response = await dispatch("cookie-set-0", event);
@@ -256,24 +267,10 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
       "theme=dark; Path=/"
     ]);
     expect(event.response.committed).toBe(true);
-    expect(() => r.setCookie(event, "late", "1")).toThrow(/after the response head was sent/);
-  });
-
-  it("ambient setCookie works under the handler's event scope", async () => {
-    const event = eventWithCookies();
-    registerServerFunction("cookie-ambient-0", async () => {
-      r.setCookie("session", "ambient");
-      return 1;
-    });
-    const response = await dispatch(
-      "cookie-ambient-0",
-      event,
-      {},
-      {
-        provideEvent: (evt, fn) => globalThis[RequestContext].run(evt, fn)
-      }
+    expect(() => appendCookie(event, "late", "1")).toThrow(/after the response head was sent/);
+    expect(() => event.response.headers.set("x-late", "1")).toThrow(
+      /after the response head was sent/
     );
-    expect(response.headers.getSetCookie()).toEqual(["session=ambient; Path=/"]);
   });
 
   it("stub cookies append alongside a respond() envelope's own", async () => {
@@ -282,7 +279,7 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
     envelopeHeaders.append("Set-Cookie", "e2=2; Path=/");
     const event = eventWithCookies();
     registerServerFunction("cookie-envelope-0", async () => {
-      r.setCookie(event, "stub", "s");
+      appendCookie(event, "stub", "s");
       return respond({ ok: true }, { headers: envelopeHeaders });
     });
     const response = await dispatch("cookie-envelope-0", event);
@@ -296,7 +293,7 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
   it("stub cookies ride a thrown redirect", async () => {
     const event = eventWithCookies();
     registerServerFunction("cookie-redirect-0", async () => {
-      r.setCookie(event, "session", "fresh");
+      appendCookie(event, "session", "fresh");
       throw redirect("/next");
     });
     const response = await dispatch("cookie-redirect-0", event);
@@ -307,7 +304,7 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
   it("stub cookies merge onto a returned raw Response without folding its own", async () => {
     const event = eventWithCookies();
     registerServerFunction("cookie-raw-0", async () => {
-      r.setCookie(event, "stub", "s");
+      appendCookie(event, "stub", "s");
       const headers = new Headers();
       headers.append("Set-Cookie", "own1=1; Path=/");
       headers.append("Set-Cookie", "own2=2; Path=/");
@@ -324,7 +321,7 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
   it("stub cookies ride the no-JS form redirect next to the flash cookie", async () => {
     const event = eventWithCookies();
     registerServerFunction("cookie-nojs-0", async () => {
-      r.setCookie(event, "session", "fresh");
+      appendCookie(event, "session", "fresh");
       return "saved";
     });
     const response = await handleServerFunctionRequest(
@@ -371,7 +368,7 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
     const event = eventWithCookies();
     registerServerFunction("cookie-nojs-ct-0", async () => {
       event.response.headers.set("Content-Type", "text/never");
-      r.setCookie(event, "session", "fresh");
+      appendCookie(event, "session", "fresh");
       return "saved";
     });
     const response = await handleServerFunctionRequest(

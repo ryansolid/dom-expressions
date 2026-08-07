@@ -1,6 +1,13 @@
-// Cookie wire format: the parser and serializer behind the request-event
-// cookie helpers (`getCookie`/`setCookie`/`deleteCookie` in server.js).
-// Dependency-free and isomorphic; integrity/confidentiality layers
+// Cookie wire format: the platform-gap primitives, and ALL of core's
+// cookie surface — core owns the exchange (the request's headers in, the
+// response stub's headers out) and the codec, nothing ambient. Blessed
+// patterns:
+//
+//   parseCookieHeader(event.request.headers.get("cookie"))
+//   event.response.headers.append("set-cookie", serializeCookie(name, value, options))
+//
+// Dependency-free and isomorphic (exported from both entries — real
+// implementation, never a stub); integrity/confidentiality layers
 // (sessions) belong to the caller, on top of these primitives.
 
 /**
@@ -29,6 +36,9 @@ export interface CookieOptions {
  * values are `decodeURIComponent`-decoded (falling back to the raw text
  * when decoding throws); a quoted value keeps its content. `null`/empty
  * input parses to an empty map.
+ *
+ * The read half of the platform gap — the blessed request-cookie read is
+ * `parseCookieHeader(event.request.headers.get("cookie"))`.
  */
 export function parseCookieHeader(header: string | null | undefined): Record<string, string>;
 
@@ -37,5 +47,10 @@ export function parseCookieHeader(header: string | null | undefined): Record<str
  * are `encodeURIComponent`-encoded (the parser decodes symmetrically);
  * `path` defaults to `/` and every other attribute is emitted exactly
  * when the caller asked for it.
+ *
+ * The write half of the platform gap — the blessed response-cookie write
+ * is `event.response.headers.append("set-cookie", serializeCookie(name,
+ * value, options))`, which every head materialization path carries to the
+ * wire entry-by-entry.
  */
 export function serializeCookie(name: string, value: string, options?: CookieOptions): string;

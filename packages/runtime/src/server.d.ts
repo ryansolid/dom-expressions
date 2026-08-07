@@ -1,6 +1,5 @@
 import { JSX } from "./jsx.js";
 import { SerializerPlugin } from "./serializer.js";
-import { CookieOptions } from "./cookies.js";
 export const DOMWithState: Record<string, Record<string, 1 | 2>>;
 export const ChildProperties: Set<string>;
 export const DelegatedEvents: Set<string>;
@@ -210,20 +209,23 @@ export declare const RequestContext: unique symbol;
  * one declare it through module augmentation (as `@solidjs/router` does),
  * and this type names the shape they agree on. Core's server-function
  * handler folds it onto the outgoing response when present — its
- * `Set-Cookie` values (e.g. `setCookie` during the call) append
- * cookie-by-cookie, other headers fill gaps — and reads it when folding
- * single-flight cookies, but never requires it.
+ * `Set-Cookie` values (cookies appended during the call via
+ * `serializeCookie`) append cookie-by-cookie, other headers fill gaps —
+ * and reads it when folding single-flight cookies, but never requires it.
  */
 export interface ResponseStub {
   status?: number;
   statusText?: string;
   headers: Headers;
   /**
-   * Set by the integration once the response head has been derived/sent
-   * from this stub — status and headers can no longer change. Consumers
-   * that write response metadata during render (e.g. JSX response
-   * components) must treat later status/header writes and cleanup-time
-   * retractions as no-ops.
+   * Set once the response head has been derived/sent from this stub —
+   * status and headers can no longer change. Flip it through
+   * `commitResponseStub`, which also instruments the stub's `headers` so
+   * a post-commit write fails loudly (dev build throws, production
+   * reports + no-ops) instead of silently missing the wire. `status`/
+   * `statusText` stay plain fields: consumers that write response
+   * metadata during render (e.g. JSX response components) must still
+   * treat later status writes and cleanup-time retractions as no-ops.
    */
   committed?: boolean;
 }
@@ -266,51 +268,35 @@ export function createRequestEvent<T extends object = {}>(
  */
 export function getExpectedRedirectStatus(response: ResponseStub): number;
 
+/**
+ * Flips a response stub to `committed` — the moment its head freezes on
+ * the wire — and instruments the stub's `headers` mutating methods
+ * (`set`/`append`/`delete`, patched in place; the `Headers` identity and
+ * reads are untouched) so a post-commit write fails loudly instead of
+ * silently missing the wire: it throws in the dev build and reports +
+ * no-ops otherwise. Every head materialization path commits through here
+ * (`createSSRResponse`, the server-function handler's commit seam);
+ * integrations deriving their own heads should too.
+ *
+ * `allowLateLocation` is the stream path's documented exception: a
+ * `Location` set after the shell flushed is still honored client-side
+ * (stream completion appends a `window.location` script), so that one
+ * write stays permitted there.
+ */
+export function commitResponseStub(
+  stub: ResponseStub,
+  options?: { allowLateLocation?: boolean }
+): ResponseStub;
+
+/**
+ * The cookie codec (the platform-gap primitives — see cookies.d.ts): ALL
+ * of core's cookie surface. The blessed patterns are
+ * `parseCookieHeader(event.request.headers.get("cookie"))` for reads and
+ * `event.response.headers.append("set-cookie", serializeCookie(name,
+ * value, options))` for writes.
+ */
 export { parseCookieHeader, serializeCookie } from "./cookies.js";
 export type { CookieOptions } from "./cookies.js";
-
-/**
- * Reads a cookie from the request event's `Cookie` header — the value the
- * client sent, decoded, or `undefined` when absent. `getCookie(name)`
- * resolves the ambient event (`getRequestEvent()`); `getCookie(event,
- * name)` reads from an explicit one. A request-only view: a `setCookie`
- * during the same request is not merged back in.
- */
-export function getCookie(name: string): string | undefined;
-export function getCookie(event: RequestEvent, name: string): string | undefined;
-
-/**
- * Appends a `Set-Cookie` for `name`/`value` onto the request event's
- * response stub (`path` defaults to `/`, everything else is explicit via
- * `options`). `setCookie(name, value, options?)` resolves the ambient
- * event; `setCookie(event, name, value, options?)` writes to an explicit
- * one.
- *
- * Committed-aware: once the response head is on the wire
- * (`response.committed`) the cookie can no longer reach the client, so the
- * write throws in the dev build and reports + no-ops otherwise — never a
- * silent drop. The same applies when no event (or no response stub) is
- * reachable.
- */
-export function setCookie(name: string, value: string, options?: CookieOptions): void;
-export function setCookie(
-  event: RequestEvent,
-  name: string,
-  value: string,
-  options?: CookieOptions
-): void;
-
-/**
- * Expires a cookie: a `Set-Cookie` with an empty value and `Max-Age=0`,
- * honoring the `path`/`domain` the cookie was set under. Same overloads
- * and committed semantics as `setCookie`.
- */
-export function deleteCookie(name: string, options?: Pick<CookieOptions, "path" | "domain">): void;
-export function deleteCookie(
-  event: RequestEvent,
-  name: string,
-  options?: Pick<CookieOptions, "path" | "domain">
-): void;
 
 export interface SSRResponseOptions {
   /** Base head; the stub's status/headers win over it. */

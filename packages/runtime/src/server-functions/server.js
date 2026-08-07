@@ -12,7 +12,7 @@
 // mutation — and never what they carry. Which data a mutation invalidates,
 // and how an outcome reaches the UI, stay with the integration.
 import { REVALIDATE_HEADER, isResponseEnvelope, isSafeError } from "../response.js";
-import { RequestContext, getRequestEvent } from "../server.js";
+import { RequestContext, commitResponseStub, getRequestEvent } from "../server.js";
 import { encodeFlashCookie } from "./flash.js";
 import {
   BODY_FORMAT_HEADER,
@@ -477,9 +477,10 @@ function fillsStubGap(key, headers, response) {
 }
 
 // The event's response stub collects header writes made during the call
-// (`setCookie`, middleware): fold them onto the outgoing response as its
-// head freezes, and mark the stub committed — later writes can no longer
-// reach the client and report as such (see `setCookie`). Cookies append
+// (cookie appends, middleware): fold them onto the outgoing response as
+// its head freezes, and commit the stub — later writes can no longer reach
+// the client, so they fail loudly (`commitResponseStub` instruments the
+// stub's headers: dev throws, prod reports + no-ops). Cookies append
 // alongside the call's own; other stub headers only fill gaps (the call's
 // response metadata wins, and the protocol-owned family never fills — see
 // `fillsStubGap`). Responses with immutable headers (`Response.redirect`,
@@ -487,8 +488,8 @@ function fillsStubGap(key, headers, response) {
 function commitEventResponse(event, response) {
   const stub = event && event.response;
   if (!stub || !stub.headers) return response;
-  stub.committed = true;
   const cookies = stub.headers.getSetCookie ? stub.headers.getSetCookie() : [];
+  commitResponseStub(stub);
   let hasGaps = false;
   stub.headers.forEach((value, key) => {
     if (fillsStubGap(key, response.headers, response)) hasGaps = true;
@@ -795,8 +796,8 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // The whole dispatch funnels through one seam so every outgoing response
   // — encoded results, raw passthroughs, no-JS redirects, error bodies —
   // gets the event's response stub folded on and the stub marked committed
-  // (see `commitEventResponse`). This is how `setCookie` during a server
-  // function reaches the wire.
+  // (see `commitEventResponse`). This is how cookies appended onto
+  // `event.response.headers` during a server function reach the wire.
   const dispatch = async () => {
     try {
       let result = await provide(event, async () => {

@@ -56,14 +56,16 @@ export {
   mergeProps,
   voidFn as generateHydrationScript,
   voidFn as HydrationScript,
-  voidFn as getRequestEvent,
-  // Server-only cookie helpers (see server.js): on the client the request
-  // event does not exist — reads answer undefined, writes no-op, matching
-  // getRequestEvent's stub.
-  voidFn as getCookie,
-  voidFn as setCookie,
-  voidFn as deleteCookie
+  voidFn as getRequestEvent
 };
+
+// The cookie codec (the platform-gap primitives — see cookies.js): the
+// REAL implementation, not a stub — a pure value transformer has
+// legitimate browser uses (`document.cookie`), and a no-op returning fake
+// values would be silent garbage. Nothing in the client runtime imports
+// it, so it costs a bundle exactly what user code asks for and
+// tree-shakes away otherwise (guarded in scripts/size-guard.mjs).
+export { parseCookieHeader, serializeCookie } from "./cookies.js";
 
 export function render(code, element, init, options = {}) {
   if ("_DX_DEV_" && !element) {

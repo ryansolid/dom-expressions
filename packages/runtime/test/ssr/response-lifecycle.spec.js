@@ -153,16 +153,21 @@ describe("createSSRResponse — string results", () => {
 });
 
 describe("createSSRResponse — stream results", () => {
-  it("freezes the head at shell flush; post-flush header writes never reach the wire", async () => {
+  it("freezes the head at shell flush; post-flush header writes fail loudly and never reach the wire", async () => {
     const event = r.createRequestEvent(new Request("http://localhost/"));
     event.response.status = 404;
     event.response.headers.set("x-pre", "shell");
     const seen = {};
     const response = await r.createSSRResponse(
       asyncStream(() => {
-        // runs after the shell flushed — the head is out
+        // runs after the shell flushed — the head is out, so the write is
+        // a loud failure (dev build throws; production reports + no-ops)
         seen.committedAtLate = event.response.committed;
-        event.response.headers.set("x-post", "late");
+        try {
+          event.response.headers.set("x-post", "late");
+        } catch (error) {
+          seen.lateWriteError = error;
+        }
       }),
       event
     );
@@ -172,6 +177,8 @@ describe("createSSRResponse — stream results", () => {
     const html = await response.text();
     expect(html).toContain("late");
     expect(seen.committedAtLate).toBe(true);
+    expect(seen.lateWriteError).toBeInstanceOf(Error);
+    expect(seen.lateWriteError.message).toMatch(/after the response head was sent/);
     expect(response.headers.get("x-post")).toBe(null);
   });
 

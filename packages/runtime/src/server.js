@@ -1,7 +1,9 @@
 import { ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner } from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
-import { parseCookieHeader, serializeCookie } from "./cookies.js";
+// The cookie codec (the platform-gap primitives — see cookies.js for the
+// blessed read/write patterns). Re-exported, never wrapped: core owns the
+// exchange and the codec, nothing ambient.
 export { parseCookieHeader, serializeCookie } from "./cookies.js";
 import {
   HEAD_ELIGIBLE_TAGS,
@@ -2407,101 +2409,57 @@ export function createRequestEvent(request, init) {
   return { request, locals: {}, response: createResponseStub(), ...init };
 }
 
-// --- Cookies ---
+// --- Committed-stub write loudness ---
 //
-// Request-event cookie helpers, riding the same ambient resolution as the
-// framework's `httpStatus`/`httpHeader` primitives: called with a name
-// they read the event off `getRequestEvent()`, called with an explicit
-// event they work against exactly that event (middleware, handlers —
-// anywhere outside the ambient scope). Reads are a request-only view (the
-// `Cookie` header as the client sent it — a `setCookie` in the same
-// request does not read back); writes append `Set-Cookie` values onto the
-// event's response stub, which every stub materialization path folds onto
-// the wire cookie-by-cookie.
-
-// The first argument discriminates the overloads: an ambient call starts
-// with the cookie name (a string), an explicit call with the event.
-function resolveEventOverload(eventOrName, rest) {
-  if (typeof eventOrName === "string") {
-    rest.unshift(eventOrName);
-    return getRequestEvent();
-  }
-  return eventOrName;
-}
-
-/**
- * Reads a cookie from the request event's `Cookie` header — the value the
- * client sent, `decodeURIComponent`-decoded, or `undefined` when absent.
- * `getCookie(name)` resolves the ambient event (`getRequestEvent()`);
- * `getCookie(event, name)` reads from an explicit one. A request-only
- * view: a `setCookie` during the same request is not merged back in.
- */
-export function getCookie(eventOrName, name) {
-  const rest = name === undefined ? [] : [name];
-  const event = resolveEventOverload(eventOrName, rest);
-  if (!event || !event.request) return undefined;
-  return parseCookieHeader(event.request.headers.get("cookie"))[rest[0]];
-}
-
-// A lost write is never silent: in the dev build it throws at the call
-// site, otherwise it reports and no-ops (a late cookie must not crash a
+// Once the response head is on the wire, a header write on the stub can no
+// longer reach the client — and that must never be silent. The enforcement
+// lives on the stub itself so it covers EVERY writer uniformly (direct
+// `event.response.headers` mutation included, not just code polite enough
+// to check `committed` first): the moment a stub commits, its `headers`'
+// mutating methods fail loudly — throw in the dev build, report through
+// console.error and no-op otherwise (a late write must not crash a
 // production request that is already on the wire).
-function reportLostCookieWrite(reason) {
-  const message = `Cookie write dropped: ${reason}`;
+
+function reportLostHeaderWrite(method, name) {
+  const message =
+    `Response header write dropped: headers.${method}(${JSON.stringify(String(name))}) ` +
+    "ran after the response head was sent. Write headers before the shell flushes " +
+    "(or before the handler returns).";
   if ("_DX_DEV_") throw new Error(message);
   console.error(message);
 }
 
 /**
- * Appends a `Set-Cookie` for `name`/`value` onto the request event's
- * response stub (`serializeCookie` formats it — `path` defaults to `/`,
- * everything else is explicit via `options`). `setCookie(name, value,
- * options?)` resolves the ambient event; `setCookie(event, name, value,
- * options?)` writes to an explicit one.
+ * Flips a response stub to `committed` — the moment its head freezes on
+ * the wire — and instruments the stub's `headers` mutating methods
+ * (`set`/`append`/`delete`, patched in place: the `Headers` instance keeps
+ * its identity, reads are untouched) so a post-commit write fails loudly
+ * instead of silently missing the wire: it throws in the dev build and
+ * reports + no-ops otherwise. Every head materialization path commits
+ * through here — `createSSRResponse` (string results and the stream's
+ * shell flush) and the server-function handler's commit seam — so the
+ * guarantee holds for every writer, not just core's own primitives.
  *
- * Committed-aware: once the response head is on the wire
- * (`response.committed`) the cookie can no longer reach the client, so
- * the write throws in the dev build and reports + no-ops otherwise —
- * never a silent drop. The same applies when no event (or no response
- * stub) is reachable.
+ * `allowLateLocation` is the stream path's documented exception: a
+ * `Location` set after the shell flushed cannot ride the head but IS still
+ * honored — stream completion appends a `window.location` script — so
+ * that one write stays permitted there.
  */
-export function setCookie(eventOrName, nameOrValue, valueOrOptions, maybeOptions) {
-  const rest = [nameOrValue, valueOrOptions, maybeOptions];
-  const event = resolveEventOverload(eventOrName, rest);
-  const [name, value, options] = rest;
-  const response = event && event.response;
-  if (!response || !response.headers) {
-    return reportLostCookieWrite(
-      `setCookie(${JSON.stringify(name)}) found no request event response to write to. ` +
-        "Call it during request handling, or pass the event explicitly."
-    );
+export function commitResponseStub(stub, { allowLateLocation = false } = {}) {
+  if (!stub || stub.committed) return stub;
+  stub.committed = true;
+  const headers = stub.headers;
+  if (!headers || typeof headers.set !== "function") return stub;
+  for (const method of ["set", "append", "delete"]) {
+    const original = headers[method].bind(headers);
+    headers[method] = function (name, ...rest) {
+      if (allowLateLocation && method === "set" && String(name).toLowerCase() === "location") {
+        return original(name, ...rest);
+      }
+      reportLostHeaderWrite(method, name);
+    };
   }
-  if (response.committed) {
-    return reportLostCookieWrite(
-      `setCookie(${JSON.stringify(name)}) ran after the response head was sent. ` +
-        "Set cookies before the shell flushes (or before the handler returns)."
-    );
-  }
-  response.headers.append("Set-Cookie", serializeCookie(name, value, options));
-}
-
-/**
- * Expires a cookie: a `Set-Cookie` with an empty value and `Max-Age=0`,
- * honoring the `path`/`domain` the cookie was set under (they are part of
- * the cookie's identity — a delete must match them). Same overloads and
- * committed semantics as `setCookie`.
- */
-export function deleteCookie(eventOrName, nameOrOptions, maybeOptions) {
-  const rest = [nameOrOptions, maybeOptions];
-  const event = resolveEventOverload(eventOrName, rest);
-  const [name, options] = rest;
-  // An undefined ambient event flows through to setCookie's explicit
-  // overload, whose missing-response report covers it.
-  setCookie(event, name, "", {
-    path: options && options.path,
-    domain: options && options.domain,
-    maxAge: 0
-  });
+  return stub;
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#redirection_messages
@@ -2564,10 +2522,11 @@ function escapeAttribute(value) {
  *   `Response` synchronously; a `Location` on the stub becomes a real
  *   redirect (`getExpectedRedirectStatus`) instead of an HTML response.
  * - Stream results (`renderToStream(...)`) resolve at shell flush — the
- *   moment the head freezes: the stub is committed there, its
+ *   moment the head freezes: the stub is committed there (post-commit
+ *   header writes fail loudly — see `commitResponseStub`), its
  *   status/headers merged over `options.responseInit`, and a pre-flush
  *   `Location` short-circuits to a redirect with no body (the render is
- *   abandoned; late writes are dropped). A `Location` set after the flush
+ *   abandoned). A `Location` set after the flush
  *   can only be honored client-side, so stream completion appends
  *   `<script>window.location=...</script>` (carrying `options.nonce` for
  *   strict `script-src` CSPs) before closing.
@@ -2581,7 +2540,7 @@ export function createSSRResponse(result, event, options = {}) {
   const { responseInit, nonce, transformChunk } = options;
 
   if (typeof result === "string") {
-    if (stub) stub.committed = true;
+    if (stub) commitResponseStub(stub);
     const head = deriveHead(stub, responseInit);
     if (stub && stub.headers.get("Location")) {
       return new Response(null, { status: getExpectedRedirectStatus(stub), headers: head.headers });
@@ -2615,7 +2574,9 @@ export function createSSRResponse(result, event, options = {}) {
       write(chunk) {
         if (!flushed) {
           flushed = true;
-          if (stub) stub.committed = true;
+          // Late-Location stays writable: this path honors it client-side
+          // through the completion script below.
+          if (stub) commitResponseStub(stub, { allowLateLocation: true });
           const head = deriveHead(stub, responseInit);
           if (stub && stub.headers.get("Location")) {
             // Pre-flush redirect: the shell never reaches the wire.
