@@ -837,3 +837,79 @@ is compensatory by definition — fix the cause instead.
    deletions land (row 20's `hy.r` occlusion drain and the #2968 deferral,
    both waiting on document-sink frame-shaped records at the wire freeze),
    so pinning it now would just fail CI without forcing the right work.
+
+## 9. Roadmap after DR-2 (revised 2026-08-07)
+
+§8's stages are the derivation-architecture build and are complete. This
+section is the forward roadmap from the DR-2 merge onward; its stage
+numbers are the working vocabulary and are distinct from §8's.
+
+The reactive pole is **ratified** (2026-08-07; the lean and its reasoning
+are recorded in `generator-only-model.md` §9). Live markup holes — the
+binding ledger generalized from `(occurrence, arg)` slot bindings to
+insert positions — are the plan of record; the generator-only model is
+retired as a pole and survives only as potential authoring sugar.
+
+1. **Stage 1 — Close out DR-2.** **Done.** The value tier on both faces
+   (call-driven; document face via the `ssrAsyncValue` rxcore seam), the
+   Case 1 binding ledger with commit-epoch sweeps and server memo
+   liveness, `asyncArg` border typing, the arg-tier matrix rows, and the
+   chat example. Merged to `next` and released.
+2. **Stage 2 — Ratify the pole.** **Done** (decision, not build): the
+   reactive pole, ratified 2026-08-07.
+3. **Stage 3 — Live holes, call-driven face.** **Next — and the ship
+   line.** After this stage the model is announceable: the complete
+   reactive story for everything after load, standard SSR semantics at
+   load. Ship-gating scope (cutting any of these reopens the
+   half-a-face incoherence Stage 1 existed to prevent):
+   - Ledger generalization: insert-position holes registered as
+     bindings; re-evaluation on commits; changed holes re-emit their
+     HTML as fragment updates the client morphs in place.
+   - Content holes first (runtime addressing only — no compiler change).
+     First milestone: the chat demo slice — the markdown memo feeding a
+     live hole, token streaming *inside* a paragraph, no client
+     component.
+   - Attribute holes in ship scope. Within one face, a frozen
+     `class={sig()}` beside ticking `{sig()}` text is a first-hour
+     incoherence; markers cannot live inside tags, so this is the
+     hydration-key-style runtime pattern (element-addressed, not
+     marker-addressed).
+   - Lifetime and error semantics: stream end latches the hole; a
+     mid-window throw escalates to the owning boundary; supersession
+     (a re-rendered occurrence retires its holes) — one liveness rule
+     shared with the arg ledger.
+   - The t=0 latch, documented and deterministic: holes flushed in a
+     document render show their V1 snapshot and latch (first-value
+     lock); any later refetch morphs the region through the existing
+     path. Correct-but-static is the acceptable degraded mode at t=0;
+     catch-up liveness is Stage 4's upgrade, not a Stage 3 repair.
+   - Matrix rows and docs land with each piece.
+4. **Stage 4 — Liveness at t=0.** The §10 design made real: hole markers
+   armed in frame-flavored document renders; adoption reconstructs the
+   morph substrate from page bytes; catch-up morphs replay data records
+   that landed before hydration; latch-at-completion lifetime policy.
+5. **Stage 5 — Container tier (DR-2 case 3).** Stores/projections as
+   bounded async traces — designed (DR-2), unbuilt. Uniformly rejected
+   with a diagnostic until built (a whole-tier line, which is the clean
+   kind). Reorderable if a real consumer (notes, SolidStart) demands it.
+6. **Stage 6 — Generalized claims: the micro-affordance rung.** Promoted
+   from unlisted (2026-08-07, out of the Datastar comparison). The
+   router's claim sweep — behavior attached by attribute over any
+   server-materialized subtree, re-firing when a morph touches the
+   element — opened to user-defined claims, plus a shipped set of
+   micro-affordance components (bind/show/toggle/indicator tier). Kills
+   "the first affordance costs a full component ceremony" without
+   adopting attribute-expression strings. Sequenced here because it
+   rides the same morph-surviving substrate Stage 3 builds.
+7. **Stage 7 — Connection-shaped transport.** Promoted from parked: the
+   sink-lifetime separation means SSE/socket transports turn the same
+   authored component non-terminating (generator-only-model.md §9,
+   "transport-indifference"). Includes making the discipline
+   enforceable, not just documented: the live graph is a re-derivable
+   projection of durable state — reconnection is re-invocation, and dev
+   should surface violations.
+
+Still parked, deliberately: generator authoring sugar (the ledger's
+supersession is already generator-ready); per-hole diff emission as a
+wire optimization (contained by hole scope; adopted only where
+measurement earns it).

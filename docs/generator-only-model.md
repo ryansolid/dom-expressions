@@ -443,7 +443,13 @@ async-crossing surface (`asyncArg`, the async-read wrap) and the ledger
 *engine* (commit funnel, epoch memos) — mergeable as designed if the hybrid
 stands, deletable without archaeology if generator-only wins.
 
-## 9. Current lean (recorded 2026-08-05, not ratified)
+## 9. Current lean (recorded 2026-08-05; ratified 2026-08-07)
+
+> **Ratified 2026-08-07** by the project owner: the reactive pole is the
+> plan of record. The forward roadmap (live holes call-driven, then t=0
+> liveness, containers, generalized claims, connection-shaped transport)
+> is maintained in `server-components-principles.md` §9. The lean's
+> reasoning is preserved below as recorded.
 
 The reactive pole, for the reasons §7 establishes: efficiency and
 waterfall-freedom by construction rather than by optimization; the shortest
