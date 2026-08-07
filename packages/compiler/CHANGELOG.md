@@ -1,5 +1,7 @@
 # @dom-expressions/compiler
 
+## 0.50.0-next.40
+
 ## 0.50.0-next.39
 
 ## 0.50.0-next.38
