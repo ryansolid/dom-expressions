@@ -27,10 +27,18 @@ describe("server component authored in JSX", () => {
   it("renders JSX markup, dynamic values, slots, and render props end to end", async () => {
     // What a server function would build and return: server data closed
     // over, client positions expressed as props.
+    // Slots with args render as JSX — render callbacks included: the
+    // compiled, getter-wrapped form a `use server` author actually writes
+    // (a call would evaluate its args eagerly in the component body).
+    // Argless slots are plain prop access.
     const makeServerComp = (title, comments) => props => (
       <article class="story">
         <h1>{title}</h1>
-        <ul>{comments.map(text => props.comment({ text }))}</ul>
+        <ul>
+          {comments.map(text => (
+            <props.comment text={text} />
+          ))}
+        </ul>
         <footer>{props.children}</footer>
       </article>
     );
@@ -104,7 +112,9 @@ describe("server component authored in JSX", () => {
     // and nothing else.
     const comp = props => (
       <div $key="c1">
-        <span>{props.label({ $key: "c1", text: "hi" })}</span>
+        <span>
+          <props.label $key="c1" text="hi" />
+        </span>
       </div>
     );
     const host = createFrameHost();

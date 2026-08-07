@@ -37,7 +37,7 @@ export async function report(id: string) {
       <article>
         <Head data={head} />
         <Rows rows={rows} />
-        {props.chart({ points: summarize(rows) })}
+        <props.chart points={summarize(rows)} />
       </article>
     );                                        // settled
   };
