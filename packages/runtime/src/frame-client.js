@@ -169,9 +169,7 @@ export function createFrameHost(options = {}) {
     if (store.version !== undefined && version < store.version) return false;
     if (store.version === undefined || version > store.version) {
       store.version = version;
-      for (const key of Object.keys(store.records)) {
-        if (key.startsWith("seg:") || key === ":error") delete store.records[key];
-      }
+      clearStreamRecords(store.records);
     }
     Object.assign(store.records, records);
     return true;
@@ -313,10 +311,14 @@ class FrameImpl {
   #claimTree = (node, direct) => {
     const handlers = claimHandlers();
     if (!handlers) return;
-    const run = () => (direct ? claimNode(handlers, node) : claimTree(handlers, node));
-    const scope = this.#options.ownerScope;
-    scope ? scope(run) : run();
+    this.#scoped(() => (direct ? claimNode(handlers, node) : claimTree(handlers, node)));
   };
+
+  /** Run `fn` under the creator's `ownerScope` (when provided). */
+  #scoped(fn) {
+    const scope = this.#options.ownerScope;
+    return scope ? scope(fn) : fn();
+  }
 
   constructor(element, start, end, options = {}) {
     this.#element = element;
@@ -415,17 +417,10 @@ class FrameImpl {
       // content. Reveal bookkeeping and seg/error records reset; slot
       // records stay (dedupe is what preserves occurrence state).
       this.#version = v;
-      this.#revealed.clear();
-      this.#fallbackShown.clear();
-      this.#errorNotified = false;
-      for (const key of Object.keys(this.#store)) {
-        if (key.startsWith("seg:") || key === ":error") {
-          delete this.#store[key];
-        }
-      }
+      this.#resetStreamState();
     }
 
-    for (const key of Object.keys(write.r)) {
+    for (const key in write.r) {
       const incoming = write.r[key];
       // Slot-record dedupe: streams re-send their slot chunks, and re-call
       // triggers on record identity — so an equivalent re-sent record keeps
@@ -444,6 +439,20 @@ class FrameImpl {
       this.#store[key] = incoming;
     }
     this.#flush();
+  }
+
+  /**
+   * Per-stream bookkeeping reset (the version-bump/rebind branch): reveal and
+   * fallback state, the once-per-stream error notification, and the seg/error
+   * records — fragment names restart in every stream. `root` additionally
+   * drops the root record (rebind's case: a flush between the rebind and the
+   * new stream's html must find no stale shell to re-apply).
+   */
+  #resetStreamState(root) {
+    this.#revealed.clear();
+    this.#fallbackShown.clear();
+    this.#errorNotified = false;
+    clearStreamRecords(this.#store, root);
   }
 
   #flush() {
@@ -479,7 +488,7 @@ class FrameImpl {
     let progressed = true;
     while (progressed) {
       progressed = false;
-      for (const key of Object.keys(this.#store)) {
+      for (const key in this.#store) {
         const name = segmentName(key);
         if (name === null || this.#revealed.has(name)) continue;
         if (this.#segmentReady(name)) {
@@ -490,7 +499,7 @@ class FrameImpl {
       }
       // Fallback gates materialize placeholder-template content into the
       // range ($dfl semantics) while the segment itself stays pending.
-      for (const key of Object.keys(this.#store)) {
+      for (const key in this.#store) {
         const m = /^seg:([^:]+):fallback$/.exec(key);
         if (!m) continue;
         const name = m[1];
@@ -507,7 +516,7 @@ class FrameImpl {
     // behavior's analogue: <link rel="modulepreload"> so lazy components
     // inside the frame don't waterfall). Styles are handled by the reveal
     // gate; this pass is modules only, once per record.
-    for (const key of Object.keys(this.#store)) {
+    for (const key in this.#store) {
       if (this.#processedAssets.has(key) || !key.endsWith(":assets")) continue;
       this.#processedAssets.add(key);
       const record = this.#store[key];
@@ -581,6 +590,21 @@ class FrameImpl {
       const callback = this.#resolveSlot(propOf(occurrence));
       if (!callback) continue; // no client impl for this prop up the tree
       const record = this.#resolveSlotRecord(occurrence);
+      // A record whose data refs have not ARRIVED yet is not applicable: the
+      // producer emits the slot chunk before the `data` chunks carrying its
+      // ref'd values (an async arg's promise is created by its data chunk),
+      // and `#resolveArgs` cannot tell "not here yet" from a real value — it
+      // resolves the miss to `undefined` and hands that to the consumer as
+      // the arg. On a live occurrence that lands immediately: the update
+      // pushes `undefined` into the mounted fill (blanking it), commits the
+      // record, and no later flush re-resolves it — `data` chunks don't
+      // re-sync and the committed record no longer differs. So wait: the
+      // stream's own html/complete chunk flushes again a moment later, by
+      // which time the table has the value and the SAME record applies with
+      // real args (an async one then suspends and holds, as the value tier
+      // intends). A fresh mount is skipped for the same reason — mounting
+      // with a fabricated `undefined` is what makes it visible.
+      if (record && record.kind === "slot" && this.#refsUnresolved(record.args)) continue;
       // A mount whose output the morph destroyed (its range was recreated
       // inside a different server parent — ranges only relocate among
       // siblings) is a zombie: remount fresh so content stays correct, even
@@ -736,15 +760,7 @@ class FrameImpl {
     // insert before — the markers are the only stable nodes in the range.
     let existing = [];
     let end = null;
-    if (start) {
-      const endData = slotEnd(occurrence);
-      let n = start.nextSibling;
-      while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
-        existing.push(n);
-        n = n.nextSibling;
-      }
-      end = n;
-    }
+    if (start) end = eachInRange(start, occurrence, n => existing.push(n));
     const ctx = {
       // Identity for hydration-claim scoping: consumers derive the same
       // key prefix the document producer used for this occurrence. The
@@ -791,8 +807,7 @@ class FrameImpl {
     // adopting render, but stream-driven mounts and re-calls arrive from
     // microtasks with no owner of their own — without the scope, a render
     // prop touching context works on boot and throws on the first refresh.
-    const scope = this.#options.ownerScope;
-    const content = scope ? scope(() => callback(props, ctx)) : callback(props, ctx);
+    const content = this.#scoped(() => callback(props, ctx));
     this.#slotArgs.set(occurrence, record);
     if (cleanups.length) this.#slotCleanups.set(occurrence, cleanups);
     if (content == null) return null;
@@ -801,15 +816,9 @@ class FrameImpl {
 
   /** Replace the nodes between a slot range's start marker and its end marker. */
   #replaceRange(key, start, nodes) {
-    const end = slotEnd(key);
     const parent = start.parentNode;
-    let n = start.nextSibling;
-    while (n && !(n.nodeType === COMMENT_NODE && n.data === end)) {
-      const next = n.nextSibling;
-      parent.removeChild(n);
-      n = next;
-    }
-    for (const node of nodes) parent.insertBefore(node, n);
+    const end = eachInRange(start, key, n => parent.removeChild(n));
+    for (const node of nodes) parent.insertBefore(node, end);
   }
 
   #unmountSlot(key) {
@@ -824,7 +833,7 @@ class FrameImpl {
     this.#runSlotCleanups(key);
     const regions = this.#slotRegions.get(key);
     if (regions) {
-      for (const { frame } of regions.values()) frame?.dispose();
+      disposeRegions(regions);
       this.#slotRegions.delete(key);
     }
   }
@@ -854,15 +863,34 @@ class FrameImpl {
    * keeps the region — same element, same live interior — and the bound
    * frame REBINDS to the new name so the incoming stream's chunks reach it.
    */
+  /**
+   * Whether any of a record's DATA refs is still unknown to the response's
+   * table — the record arrived ahead of the `data` chunks carrying its
+   * values. Only `{$ref}` args can be pending this way: `{$frame}` regions
+   * are addressing (resolved structurally) and primitives ship inline, so a
+   * ref that resolves to `undefined` means "not delivered yet", never a real
+   * value. See the call site in #syncSlots for why applying early is wrong.
+   */
+  #refsUnresolved(args) {
+    const { host, id } = this.#options;
+    if (host)
+      for (const key in args) {
+        if (isDataRef(args[key]) && host.resolve(args[key], id) === undefined) return true;
+      }
+    return false;
+  }
+
+  #regionsFor(slotKey) {
+    let regions = this.#slotRegions.get(slotKey);
+    if (!regions) this.#slotRegions.set(slotKey, (regions = new Map()));
+    return regions;
+  }
+
   #resolveArgs(slotKey, args) {
     const host = this.#options.host;
-    let regions = this.#slotRegions.get(slotKey);
-    if (!regions) {
-      regions = new Map();
-      this.#slotRegions.set(slotKey, regions);
-    }
+    const regions = this.#regionsFor(slotKey);
     const props = {};
-    for (const key of Object.keys(args)) {
+    for (const key in args) {
       const value = args[key];
       if (isDataRef(value)) {
         // The frame's id rides along so multi-stream hosts can route the
@@ -909,17 +937,8 @@ class FrameImpl {
    */
   #discoverRegions(slotKey, start) {
     if (!start) return;
-    let regions = this.#slotRegions.get(slotKey);
-    if (!regions) {
-      regions = new Map();
-      this.#slotRegions.set(slotKey, regions);
-    }
-    const endData = slotEnd(slotKey);
-    let n = start.nextSibling;
-    while (n && !(n.nodeType === COMMENT_NODE && n.data === endData)) {
-      collectRegionElements(n, regions);
-      n = n.nextSibling;
-    }
+    const regions = this.#regionsFor(slotKey);
+    eachInRange(start, slotKey, n => collectRegionElements(n, regions));
   }
 
   /**
@@ -948,11 +967,19 @@ class FrameImpl {
       const va = a[key];
       const vb = b[key];
       if (va === vb) continue;
-      if (!va || !vb || typeof va !== "object" || typeof vb !== "object") return false;
-      if (typeof va.$frame === "string" && typeof vb.$frame === "string") continue;
-      if (typeof va.$ref === "string" && typeof vb.$ref === "string" && cache && key in cache) {
+      if (isFrameRef(va) && isFrameRef(vb)) continue;
+      if (isDataRef(va) && isDataRef(vb) && cache && key in cache) {
         const host = this.#options.host;
         const next = host ? host.resolve(vb, this.#options.id) : undefined;
+        // An async value (DR-2's value tier: the arg is passed WHOLE and the
+        // consumer's READ settles) is never serialization-comparable — every
+        // promise stringifies to `{}`, so two DIFFERENT pending values read
+        // as equal and the occurrence keeps the PREVIOUS response's value
+        // forever. Identity is the only sound test, and `va === vb` above
+        // already made it: from here, an async value on either side is a
+        // CHANGE, and the live update re-suspends on the new one (holding
+        // the settled value meanwhile, which is the point of the tier).
+        if (isAsyncLike(next) || isAsyncLike(cache[key])) return false;
         try {
           if (JSON.stringify(next) === JSON.stringify(cache[key])) continue;
         } catch (e) {
@@ -976,7 +1003,7 @@ class FrameImpl {
     if (!args) return;
     const regions = this.#slotRegions.get(occurrence);
     if (!regions) return;
-    for (const key of Object.keys(args)) {
+    for (const key in args) {
       const value = args[key];
       if (!isFrameRef(value)) continue;
       const entry = regions.get(key);
@@ -1083,13 +1110,11 @@ class FrameImpl {
     // answer the gate with the PREVIOUS call's content. The DOM keeps
     // showing the old content either way (async-holds-latest owns that);
     // a warm re-registration re-seeds its own root record and still
-    // answers synchronously.
+    // answers synchronously. The reset also re-arms the once-per-stream
+    // error notification: the record it fired for left with the old stream,
+    // and the NEW address's error must reach the gate too.
     this.#appliedRootValue = undefined;
-    this.#revealed.clear();
-    this.#fallbackShown.clear();
-    for (const key of Object.keys(this.#store)) {
-      if (key.startsWith("seg:") || key === ":error" || key === "") delete this.#store[key];
-    }
+    this.#resetStreamState(true);
     if (host) host.register(id, this);
   }
 
@@ -1121,9 +1146,7 @@ class FrameImpl {
     // (an ancestor's, for a region frame's nested occurrences) so a torn-down
     // region leaves nothing stale to dedupe a later re-navigation against.
     for (const key of this.#mountedSlots) this.#removeSlotRecord(key);
-    for (const regions of this.#slotRegions.values()) {
-      for (const { frame } of regions.values()) frame?.dispose();
-    }
+    for (const regions of this.#slotRegions.values()) disposeRegions(regions);
     this.#slotRegions.clear();
     this.#mountedSlots.clear();
   }
@@ -1164,13 +1187,7 @@ class FrameImpl {
 
   /** Remove the frame's current content (bounded to its range). */
   #clearContent() {
-    const parent = this.#parent();
-    let n = this.#firstContent();
-    while (n && n !== this.#end) {
-      const next = n.nextSibling;
-      parent.removeChild(n);
-      n = next;
-    }
+    removeUntil(this.#parent(), this.#firstContent(), this.#end);
   }
 
   /** Sweep-claim the frame's existing content (the adoption path). */
@@ -1196,9 +1213,7 @@ class FrameImpl {
     const assets = this.#store[`seg:${name}:assets`];
     if (assets && assets.styles) {
       let ready = true;
-      for (const entry of assets.styles) {
-        if (!ensureStylesheet(entry, this.#styleFlush)) ready = false;
-      }
+      for (const entry of assets.styles) ready = ensureStylesheet(entry, this.#styleFlush) && ready;
       if (!ready) return false;
     }
     // Structural prerequisite: the placeholder must exist in this frame's range.
@@ -1232,12 +1247,7 @@ class FrameImpl {
     const parent = tpl.parentNode;
     // Clear the current range interior (a materialized fallback, if #showFallback
     // ran) — both paths below re-own this position.
-    let n = tpl.nextSibling;
-    while (n && n !== closing) {
-      const next = n.nextSibling;
-      parent.removeChild(n);
-      n = next;
-    }
+    removeUntil(parent, tpl.nextSibling, closing);
 
     if (this.#options.reveal) {
       // Boundary-driven reveal (the ratified "per-`<Loading>`" model): the
@@ -1342,9 +1352,7 @@ export function createFrameElement(options) {
   const frame = new FrameImpl(el, null, null, options);
   return {
     element: el,
-    get frame() {
-      return frame;
-    },
+    frame,
     dispose() {
       frame.dispose();
       el.remove();
@@ -1378,6 +1386,12 @@ function segmentName(key) {
   return m ? m[1] : null;
 }
 
+/** An async value in the DR-2 value-tier sense: passed whole, the consumer's
+ *  READ settles. Never serialization-comparable — see #refArgsUnchanged. */
+function isAsyncLike(v) {
+  return !!v && (typeof v.then === "function" || typeof v[Symbol.asyncIterator] === "function");
+}
+
 /** The prop name for a slot occurrence id: `comment#0` -> `comment`, `x` -> `x`. */
 function propOf(occurrence) {
   const hash = occurrence.indexOf("#");
@@ -1385,11 +1399,25 @@ function propOf(occurrence) {
 }
 
 function isDataRef(value) {
-  return typeof value === "object" && value !== null && typeof value.$ref === "string";
+  return !!value && typeof value.$ref === "string";
 }
 
 function isFrameRef(value) {
-  return typeof value === "object" && value !== null && typeof value.$frame === "string";
+  return !!value && typeof value.$frame === "string";
+}
+
+/** Dispose every bound frame in a slot's region-entry map. */
+function disposeRegions(regions) {
+  for (const { frame } of regions.values()) frame?.dispose();
+}
+
+/** Remove siblings from `n` (inclusive) up to `stop` (exclusive). */
+function removeUntil(parent, n, stop) {
+  while (n && n !== stop) {
+    const next = n.nextSibling;
+    parent.removeChild(n);
+    n = next;
+  }
 }
 
 /** Parse an HTML string into a document fragment, preserving comments. */
@@ -1410,9 +1438,8 @@ function parseFragment(html) {
 
 /** Attribute-compared head lookup so href/id values never need escaping. */
 function findHeadElement(selector, attr, value) {
-  const nodes = document.head.querySelectorAll(selector);
-  for (let i = 0; i < nodes.length; i++) {
-    if (nodes[i].getAttribute(attr) === value) return nodes[i];
+  for (const node of document.head.querySelectorAll(selector)) {
+    if (node.getAttribute(attr) === value) return node;
   }
   return null;
 }
@@ -1478,9 +1505,7 @@ function applyInlineStyles(inlineStyles) {
 
 /** Whether `node` is the `<template id="pl-KEY">` placeholder start marker. */
 function isPlaceholderStart(node, id) {
-  return (
-    node.nodeType === ELEMENT_NODE && node.tagName === "TEMPLATE" && node.getAttribute("id") === id
-  );
+  return node.tagName === "TEMPLATE" && node.id === id;
 }
 
 /** The `<!--pl-KEY-->` comment closing a placeholder range, or null. */
@@ -1572,6 +1597,35 @@ function renameRegion(entry, childId) {
 }
 
 /**
+ * Walk a slot range's interior — every node between `start` and the range's
+ * end marker — calling `cb` on each. The next sibling is captured before the
+ * callback runs, so callbacks may detach the node. Returns the end marker
+ * (null if the range is truncated).
+ */
+function eachInRange(start, key, cb) {
+  const end = slotEnd(key);
+  let n = start.nextSibling;
+  while (n && !(n.nodeType === COMMENT_NODE && n.data === end)) {
+    const next = n.nextSibling;
+    cb(n);
+    n = next;
+  }
+  return n;
+}
+
+/**
+ * Delete the per-stream records from a store: seg/error state is
+ * response-scoped (fragment names restart in every stream), while slot
+ * records persist (dedupe is what preserves occurrence state). `root` also
+ * drops the root html record — rebind's case only.
+ */
+function clearStreamRecords(records, root) {
+  for (const key in records) {
+    if (key.startsWith("seg:") || key === ":error" || (root && key === "")) delete records[key];
+  }
+}
+
+/**
  * Whether two slot-args objects are equivalent for re-call purposes:
  * primitives by value, `{$frame}` region refs by id (region content updates
  * flow through the region's own chunks — a re-call is never needed for
@@ -1589,16 +1643,7 @@ function argsEquivalent(a, b) {
     const va = a[key];
     const vb = b[key];
     if (va === vb) continue;
-    if (
-      va &&
-      vb &&
-      typeof va === "object" &&
-      typeof vb === "object" &&
-      typeof va.$frame === "string" &&
-      va.$frame === vb.$frame
-    ) {
-      continue;
-    }
+    if (isFrameRef(va) && va.$frame === vb?.$frame) continue;
     return false;
   }
   return true;

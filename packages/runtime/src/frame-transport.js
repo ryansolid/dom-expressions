@@ -362,10 +362,7 @@ export function createServerComponentHandler({
     showing(address, functionId) {
       bindingFor(address, functionId);
       const comp = componentFor(functionId);
-      if (
-        (typeof comp === "function" || (typeof comp === "object" && comp !== null)) &&
-        !comp[COMPONENT_BINDING]
-      ) {
+      if (comp && (typeof comp === "function" || typeof comp === "object") && !comp[COMPONENT_BINDING]) {
         comp[COMPONENT_BINDING] = { component: comp, address };
       }
     }

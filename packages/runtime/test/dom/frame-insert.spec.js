@@ -218,3 +218,104 @@ describe("frame boundary element in array / fragment positions (#550)", () => {
     dispose();
   });
 });
+
+// A slot record's `{$ref}` args are carried by SEPARATE `data` chunks, and the
+// producer emits the slot chunk first. The frame must not treat "the ref has
+// not arrived" as "the arg is undefined".
+describe("slot records whose data refs arrive late", () => {
+  let container;
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+  });
+  afterEach(() => container.remove());
+
+  const markers = key => `<!--slot:${key}:start--><!--slot:${key}:end-->`;
+
+  it("holds a record until its data refs resolve, then applies it with real args", () => {
+    const table = new Map();
+    const host = createFrameHost({ resolve: ref => table.get(ref.$ref) });
+    const seen = [];
+    const { element, dispose } = createFrameElement({
+      host,
+      id: "late",
+      slots: {
+        text: props => {
+          seen.push(props.value);
+          return undefined; // claim the range in place
+        }
+      }
+    });
+    createRoot(() => {
+      r.insert(container, () => element, null);
+    });
+
+    // Producer order: the slot chunk, then the html, then the ref's data.
+    host.apply({
+      type: "slot",
+      id: "late",
+      version: 1,
+      key: "text#0",
+      args: { value: { $ref: "v" } }
+    });
+    host.apply({ type: "html", id: "late", version: 1, html: markers("text#0") });
+    // Not applied: invoking here would hand the fill a fabricated `undefined`
+    // (and commit the record, so nothing would ever re-resolve it).
+    expect(seen).toEqual([]);
+
+    table.set("v", "ready");
+    host.apply({ type: "complete", id: "late", version: 1 });
+    expect(seen).toEqual(["ready"]);
+    dispose();
+  });
+
+  it("a re-sent ref resolving to a different async value is a CHANGE", () => {
+    // Every promise serializes to `{}`, so the value-compare that lets an
+    // equivalent re-sent ref keep its occurrence must never be applied to the
+    // async (value-tier) case — two DIFFERENT pending values would read as
+    // equal and the occurrence would keep the previous response's value.
+    const table = new Map();
+    const host = createFrameHost({ resolve: ref => table.get(ref.$ref) });
+    const mounted = [];
+    const updated = [];
+    const { element, dispose } = createFrameElement({
+      host,
+      id: "reask",
+      slots: {
+        text: (props, ctx) => {
+          mounted.push(props.value);
+          ctx.onUpdate(next => updated.push(next.value));
+          return undefined;
+        }
+      }
+    });
+    createRoot(() => {
+      r.insert(container, () => element, null);
+    });
+
+    const first = Promise.resolve("a");
+    table.set("v", first);
+    host.apply({
+      type: "slot",
+      id: "reask",
+      version: 1,
+      key: "text#0",
+      args: { value: { $ref: "v" } }
+    });
+    host.apply({ type: "html", id: "reask", version: 1, html: markers("text#0") });
+    expect(mounted).toEqual([first]);
+
+    // A later response re-sends the same ref NAME carrying a new promise.
+    const second = Promise.resolve("b");
+    table.set("v", second);
+    host.apply({
+      type: "slot",
+      id: "reask",
+      version: 2,
+      key: "text#0",
+      args: { value: { $ref: "v" } }
+    });
+    expect(updated).toEqual([second]);
+    dispose();
+  });
+});
