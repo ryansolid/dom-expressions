@@ -581,6 +581,21 @@ class FrameImpl {
       const callback = this.#resolveSlot(propOf(occurrence));
       if (!callback) continue; // no client impl for this prop up the tree
       const record = this.#resolveSlotRecord(occurrence);
+      // A record whose data refs have not ARRIVED yet is not applicable: the
+      // producer emits the slot chunk before the `data` chunks carrying its
+      // ref'd values (an async arg's promise is created by its data chunk),
+      // and `#resolveArgs` cannot tell "not here yet" from a real value — it
+      // resolves the miss to `undefined` and hands that to the consumer as
+      // the arg. On a live occurrence that lands immediately: the update
+      // pushes `undefined` into the mounted fill (blanking it), commits the
+      // record, and no later flush re-resolves it — `data` chunks don't
+      // re-sync and the committed record no longer differs. So wait: the
+      // stream's own html/complete chunk flushes again a moment later, by
+      // which time the table has the value and the SAME record applies with
+      // real args (an async one then suspends and holds, as the value tier
+      // intends). A fresh mount is skipped for the same reason — mounting
+      // with a fabricated `undefined` is what makes it visible.
+      if (record && record.kind === "slot" && this.#refsUnresolved(record.args)) continue;
       // A mount whose output the morph destroyed (its range was recreated
       // inside a different server parent — ranges only relocate among
       // siblings) is a zombie: remount fresh so content stays correct, even
@@ -854,6 +869,24 @@ class FrameImpl {
    * keeps the region — same element, same live interior — and the bound
    * frame REBINDS to the new name so the incoming stream's chunks reach it.
    */
+  /**
+   * Whether any of a record's DATA refs is still unknown to the response's
+   * table — the record arrived ahead of the `data` chunks carrying its
+   * values. Only `{$ref}` args can be pending this way: `{$frame}` regions
+   * are addressing (resolved structurally) and primitives ship inline, so a
+   * ref that resolves to `undefined` means "not delivered yet", never a real
+   * value. See the call site in #syncSlots for why applying early is wrong.
+   */
+  #refsUnresolved(args) {
+    const host = this.#options.host;
+    if (!host || !args) return false;
+    for (const key of Object.keys(args)) {
+      const value = args[key];
+      if (isDataRef(value) && host.resolve(value, this.#options.id) === undefined) return true;
+    }
+    return false;
+  }
+
   #resolveArgs(slotKey, args) {
     const host = this.#options.host;
     let regions = this.#slotRegions.get(slotKey);
@@ -953,6 +986,15 @@ class FrameImpl {
       if (typeof va.$ref === "string" && typeof vb.$ref === "string" && cache && key in cache) {
         const host = this.#options.host;
         const next = host ? host.resolve(vb, this.#options.id) : undefined;
+        // An async value (DR-2's value tier: the arg is passed WHOLE and the
+        // consumer's READ settles) is never serialization-comparable — every
+        // promise stringifies to `{}`, so two DIFFERENT pending values read
+        // as equal and the occurrence keeps the PREVIOUS response's value
+        // forever. Identity is the only sound test, and `va === vb` above
+        // already made it: from here, an async value on either side is a
+        // CHANGE, and the live update re-suspends on the new one (holding
+        // the settled value meanwhile, which is the point of the tier).
+        if (isAsyncLike(next) || isAsyncLike(cache[key])) return false;
         try {
           if (JSON.stringify(next) === JSON.stringify(cache[key])) continue;
         } catch (e) {
@@ -1376,6 +1418,16 @@ function isFrameElement(node) {
 function segmentName(key) {
   const m = /^seg:([^:]+)$/.exec(key);
   return m ? m[1] : null;
+}
+
+/** An async value in the DR-2 value-tier sense: passed whole, the consumer's
+ *  READ settles. Never serialization-comparable — see #refArgsUnchanged. */
+function isAsyncLike(v) {
+  return (
+    v !== null &&
+    typeof v === "object" &&
+    (typeof v.then === "function" || typeof v[Symbol.asyncIterator] === "function")
+  );
 }
 
 /** The prop name for a slot occurrence id: `comment#0` -> `comment`, `x` -> `x`. */
