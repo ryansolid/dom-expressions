@@ -43,9 +43,22 @@ const SCENARIOS = {
   // media-qualified meta identity, replaceable icons — initially +95, shaved
   // back by extracting the duplicated attribute-apply loop) — ratcheted to
   // actual+20 (9761 measured). Then found FAILING at 10235 during the
-  // cookie-codec round: +474 of unaccounted drift landed since the last
-  // ratchet without re-arguing its bytes here (the guard was not run) —
-  // flagged, not absorbed silently. Then +329 for the cookie codec
+  // cookie-codec round: +474 landed since the last ratchet without the
+  // guard being re-run — flagged then, attributed since by per-commit
+  // bisect: +463 for client CSS reveal gating (52b5032e, the FOUC-parity
+  // round: warm at discovery, gate gateable sheets on load, own at
+  // commit), −14 back from its own size pass (46c8f8ae, attr-apply
+  // dedupe); +25 for the ambient hydration gather treating frame regions
+  // as opaque (6a405f7a); +11 for the ambient cookie-helper stubs
+  // (9004d444 — cut again one round later, see below); −11 for the
+  // useAssets/Assets/getAssets removal (61f97217). All deliberate
+  // feature/correctness weight or since reversed; no accidental
+  // server-graph pull-in (the client entry's import graph is
+  // constants/reconcile/head/cookies, none of which reach server code).
+  // The compiled-JSX core scenario moved +13 in the same window: the
+  // waitAsset specifier on the external rxcore import, which esbuild
+  // retains per-entry regardless of use — the cost of a new core seam,
+  // not a leak. Then +329 for the cookie codec
   // (serializeCookie/parseCookieHeader as real client-entry exports —
   // pure value transformers with legitimate browser uses, never stubs);
   // the compiled-JSX core scenario stayed byte-identical, so apps not
