@@ -1072,10 +1072,23 @@ class FrameImpl {
       this.#element.setAttribute(FRAME_ID_ATTR, id);
     }
     this.#version = undefined;
+    // Root affinity is per stream, like the version: the new address's html
+    // may be byte-identical to the old one's (slot-driven content ships its
+    // differences as records, not markup), and the value-skip must not
+    // swallow the new stream's morph — consumers gate on `onApply` to learn
+    // the new call ANSWERED, so an identical shell still has to apply as
+    // this address's. The old root RECORD leaves with it: a flush between
+    // this rebind and the new stream's html (its start chunk, a slot write)
+    // must find no root to re-apply, or the stale shell would morph and
+    // answer the gate with the PREVIOUS call's content. The DOM keeps
+    // showing the old content either way (async-holds-latest owns that);
+    // a warm re-registration re-seeds its own root record and still
+    // answers synchronously.
+    this.#appliedRootValue = undefined;
     this.#revealed.clear();
     this.#fallbackShown.clear();
     for (const key of Object.keys(this.#store)) {
-      if (key.startsWith("seg:") || key === ":error") delete this.#store[key];
+      if (key.startsWith("seg:") || key === ":error" || key === "") delete this.#store[key];
     }
     if (host) host.register(id, this);
   }
