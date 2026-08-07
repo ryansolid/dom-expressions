@@ -40,6 +40,14 @@ const serializeOnlyDisabledFeatures = () =>
 // in every SSR payload.
 const HYDRATION_GLOBAL = "_$HY.r";
 
+// Seroval's plugin-authoring API, re-exported so custom plugins are built
+// against the SAME seroval instance/version the runtime serializes with. A
+// plugin from the author's own seroval dependency edge would not fail the
+// build — it would emit nodes the peer can't interpret, and an
+// `OpaqueReference` from another copy fails seroval's instanceof check and
+// silently serializes as a plain value (solid-start #1474 is the case study).
+export { createPlugin, OpaqueReference } from "seroval";
+
 /**
  * Baseline plugin set for serializing web-platform values. Shared by the
  * hydration serializer and any consumer building its own serializer (e.g.

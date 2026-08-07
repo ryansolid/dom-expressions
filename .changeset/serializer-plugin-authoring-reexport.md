@@ -1,0 +1,7 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+The serializer entry re-exports seroval's plugin-authoring API: `createPlugin` and `OpaqueReference`, from the runtime's own seroval instance so custom plugins are version-pinned by construction — a plugin built against the author's own `seroval` dependency edge would not fail the build, it would emit nodes the other peer can't interpret, and an `OpaqueReference` from another copy fails seroval's instanceof check and silently serializes as a plain value (solid-start #1474 is the case study). Unlike the rest of the entry, plugin authoring is application-facing: it is the supported way to feed the serializers' `plugins` options and the server-function entries' `codec.plugins`.
+
+The authoring types (`SerializerPlugin<Value, Info>` — now generic, bare use unchanged — the parse/serialize/deserialize contexts, `PluginData`, `PluginInfo`, and the `createPlugin`/`OpaqueReference` signatures) are declared by hand in serializer.d.ts rather than type-re-exported: seroval's published d.ts use extensionless ESM-relative imports that `moduleResolution: "nodenext"` cannot follow, so a bare re-export silently degrades the whole surface to `any` under skipLibCheck. Deliberately narrower than Start's serialization subpath, which also re-exported seroval's granular context/`Plugin` type names: `createPlugin`'s generics carry full inference, and `SerializerPlugin` remains the one exported plugin type.

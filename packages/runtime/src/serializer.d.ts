@@ -5,7 +5,7 @@
 // 2.0 stability guarantee and may change between releases. Application and
 // router code should configure `codec` on the server-function entries
 // instead of importing from here.
-import { Plugin, Serializer, SerovalNode } from "seroval";
+import { Serializer, SerovalNode } from "seroval";
 
 /**
  * Seroval's node shape — the intermediate representation `serializeJSON`
@@ -15,14 +15,120 @@ import { Plugin, Serializer, SerovalNode } from "seroval";
  */
 export type { SerovalNode };
 
+// ---- Plugin authoring ----
+//
+// Unlike the rest of this entry, plugin authoring is APPLICATION-FACING —
+// it is the supported way to feed the serializers' `plugins` options and
+// the server-function entries' `codec.plugins`. The values re-export
+// seroval's own (`createPlugin`, `OpaqueReference` — see serializer.js);
+// the TYPES are declared here by hand, like everything else in this file,
+// because seroval's published d.ts use extensionless ESM-relative imports
+// that `moduleResolution: "nodenext"` cannot follow — a bare type
+// re-export would silently degrade the whole authoring surface to `any`
+// under skipLibCheck. The declarations mirror seroval ~1.5 exactly; the
+// `~` pin is what makes mirroring safe.
+
+/** Per-plugin bookkeeping seroval hands each plugin callback. */
+export interface PluginData {
+  id: number;
+}
+
+/**
+ * The shape of a plugin's parsed payload: a map of `SerovalNode`s produced
+ * by the parse contexts, consumed by `serialize`/`deserialize`.
+ */
+export type PluginInfo = { [key: string]: SerovalNode };
+
+/** Parse context for `parse.sync`: turns child values into nodes. */
+export interface SyncParsePluginContext {
+  parse<T>(current: T): SerovalNode;
+}
+
+/** Parse context for `parse.async`: like sync, but child parses await. */
+export interface AsyncParsePluginContext {
+  parse<T>(current: T): Promise<SerovalNode>;
+}
+
+/**
+ * Parse context for `parse.stream`: sync parsing plus the streaming
+ * lifecycle (pending-state tracking, late node emission, cleanup).
+ */
+export interface StreamParsePluginContext {
+  parse<T>(current: T): SerovalNode;
+  parseWithError<T>(current: T): SerovalNode | undefined;
+  isAlive(): boolean;
+  pushPendingState(): void;
+  popPendingState(): void;
+  onParse(node: SerovalNode): void;
+  onError(error: unknown): void;
+  addCleanup(callback: () => void): void;
+}
+
+/** Serialize context: renders child nodes to JS source. */
+export interface SerializePluginContext {
+  serialize(node: SerovalNode): string;
+}
+
+/** Deserialize context: revives child nodes to runtime values. */
+export interface DeserializePluginContext {
+  deserialize<T>(node: SerovalNode): T;
+}
+
 /**
  * A Seroval plugin usable with the web serializers — teaches the codec how
- * to encode/decode a custom value type. Supply matching plugins on both
- * peers of a transport.
+ * to encode/decode a custom value type (`Value` is the value it matches,
+ * `Info` its parsed payload). Supply matching plugins on both peers of a
+ * transport. Bare `SerializerPlugin` (both parameters defaulted to `any`)
+ * is the list-element type every `plugins` option accepts.
  *
  * Integration-facing; may change (see the entry banner).
  */
-export type SerializerPlugin = Plugin<any, any>;
+export interface SerializerPlugin<Value = any, Info extends PluginInfo = any> {
+  /** A unique string identifying the plugin — namespace it (`"app/Thing"`). */
+  tag: string;
+  /** Dependency plugins, resolved ahead of this one. */
+  extends?: SerializerPlugin[];
+  /** Whether `value` is this plugin's to encode. */
+  test(value: unknown): boolean;
+  /** Parsing modes — provide the ones the transports you target use. */
+  parse: {
+    sync?: (value: Value, ctx: SyncParsePluginContext, data: PluginData) => Info;
+    async?: (value: Value, ctx: AsyncParsePluginContext, data: PluginData) => Promise<Info>;
+    stream?: (value: Value, ctx: StreamParsePluginContext, data: PluginData) => Info;
+  };
+  /** Renders the parsed payload as JS source (script-injection form). */
+  serialize(node: Info, ctx: SerializePluginContext, data: PluginData): string;
+  /** Revives the parsed payload back into the runtime value. */
+  deserialize(node: Info, ctx: DeserializePluginContext, data: PluginData): Value;
+}
+
+/**
+ * Builds a `SerializerPlugin` — seroval's `createPlugin`, re-exported so
+ * plugin authors stay on the exact seroval instance/version the runtime
+ * serializes with. Import it from HERE, not from your own `seroval`
+ * dependency: a plugin built against a different copy/version would not
+ * fail the build — it would emit nodes the other peer can't interpret.
+ *
+ * Application-facing (see the plugin-authoring banner above).
+ */
+export function createPlugin<Value, Info extends PluginInfo>(
+  plugin: SerializerPlugin<Value, Info>
+): SerializerPlugin<Value, Info>;
+
+/**
+ * Seroval's `OpaqueReference`, re-exported from the runtime's own instance
+ * (an `OpaqueReference` from another seroval copy fails the serializer's
+ * instanceof check and serializes as a plain value): wraps a value so it
+ * crosses the wire as its `replacement` (default `undefined`) while
+ * staying readable in-process through `.value`.
+ *
+ * Application-facing (see the plugin-authoring banner above).
+ */
+export class OpaqueReference<V, R = undefined> {
+  readonly value: V;
+  readonly replacement?: R;
+  constructor(value: V, replacement?: R);
+}
 
 /**
  * Baseline plugin set for serializing web-platform values (AbortSignal,

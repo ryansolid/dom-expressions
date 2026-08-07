@@ -252,6 +252,96 @@ describe("createSSRResponse — stream results", () => {
   });
 });
 
+describe("commitEventResponse", () => {
+  it("folds a fresh stub: cookies append entry-by-entry, gaps fill, the response's own metadata wins", () => {
+    const event = r.createRequestEvent(new Request("http://localhost/"));
+    event.response.status = 418;
+    event.response.headers.append("set-cookie", "a=1");
+    event.response.headers.append("set-cookie", "b=2");
+    event.response.headers.set("x-fill", "stub");
+    event.response.headers.set("x-owned", "stub");
+    const response = r.commitEventResponse(
+      new Response("{}", {
+        status: 201,
+        headers: { "content-type": "application/json", "x-owned": "response" }
+      }),
+      event
+    );
+    expect(response.headers.getSetCookie()).toEqual(["a=1", "b=2"]);
+    expect(response.headers.get("x-fill")).toBe("stub");
+    // gap-fill only — the response answered this header itself
+    expect(response.headers.get("x-owned")).toBe("response");
+    // the status is never taken from the stub
+    expect(response.status).toBe(201);
+    expect(event.response.committed).toBe(true);
+  });
+
+  it("never gap-fills the protocol-owned family or body metadata onto a bodiless response", () => {
+    const event = r.createRequestEvent(new Request("http://localhost/"));
+    event.response.headers.set("Location", "/elsewhere");
+    event.response.headers.set("X-Server-Function-Error", "true");
+    event.response.headers.set("content-type", "text/html");
+    event.response.headers.append("set-cookie", "keep=1");
+    const response = r.commitEventResponse(new Response(null, { status: 204 }), event);
+    // a stray stub Location must not turn this body into a redirect signal
+    expect(response.headers.get("location")).toBe(null);
+    expect(response.headers.get("x-server-function-error")).toBe(null);
+    // bodiless response — don't advertise a body that isn't there
+    expect(response.headers.get("content-type")).toBe(null);
+    // cookies still ride along
+    expect(response.headers.getSetCookie()).toEqual(["keep=1"]);
+    expect(event.response.committed).toBe(true);
+  });
+
+  it("rebuilds around immutable headers (Response.redirect)", () => {
+    const event = r.createRequestEvent(new Request("http://localhost/"));
+    event.response.headers.append("set-cookie", "session=s1");
+    const redirect = Response.redirect("http://localhost/next", 303);
+    const response = r.commitEventResponse(redirect, event);
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("http://localhost/next");
+    expect(response.headers.getSetCookie()).toEqual(["session=s1"]);
+  });
+
+  it("passes a committed stub's response through untouched — page responses do not double-fold", async () => {
+    const event = r.createRequestEvent(new Request("http://localhost/"));
+    event.response.headers.append("set-cookie", "once=1");
+    const page = r.createSSRResponse("<p/>", event);
+    expect(event.response.committed).toBe(true);
+    const refolded = r.commitEventResponse(page, event);
+    expect(refolded).toBe(page);
+    expect(refolded.headers.getSetCookie()).toEqual(["once=1"]);
+  });
+
+  it("commits the stub so a post-fold header write fails loudly", () => {
+    const event = r.createRequestEvent(new Request("http://localhost/"));
+    r.commitEventResponse(new Response("ok"), event);
+    expect(event.response.committed).toBe(true);
+    // dev build throws (production reports + no-ops)
+    expect(() => event.response.headers.set("x-late", "write")).toThrow(
+      /after the response head was sent/
+    );
+  });
+
+  it("defaults to the ambient request event", () => {
+    const event = r.createRequestEvent(new Request("http://localhost/"));
+    event.response.headers.append("set-cookie", "ambient=1");
+    const response = globalThis[RequestContext].run(event, () =>
+      r.commitEventResponse(new Response("ok"))
+    );
+    expect(response.headers.getSetCookie()).toEqual(["ambient=1"]);
+    expect(event.response.committed).toBe(true);
+  });
+
+  it("is a pass-through for events without a stub (the handler's bare shape)", () => {
+    const bare = new Response("ok");
+    const stubless = { request: new Request("http://localhost/"), locals: {} };
+    expect(r.commitEventResponse(bare, stubless)).toBe(bare);
+    // same through the ambient default
+    expect(globalThis[RequestContext].run(stubless, () => r.commitEventResponse(bare))).toBe(bare);
+  });
+});
+
 describe("composeMiddleware", () => {
   const respond = body => new Response(body);
 

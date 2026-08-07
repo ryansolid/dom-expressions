@@ -1,6 +1,15 @@
 import { ChildProperties } from "./constants";
 import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner } from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
+// Wire-protocol header names for the commit fold's gap-fill denylist
+// (`commitEventResponse`): shared constants, not copies, so the fold can
+// never drift from what the server-function handler actually sends.
+import { REVALIDATE_HEADER } from "./response.js";
+import {
+  BODY_FORMAT_HEADER,
+  ERROR_HEADER,
+  SINGLE_FLIGHT_HEADER
+} from "./server-functions/shared.js";
 // The cookie codec (the platform-gap primitives — see cookies.js for the
 // blessed read/write patterns). Re-exported, never wrapped: core owns the
 // exchange and the codec, nothing ambient.
@@ -2501,6 +2510,81 @@ function copyInitHeaders(init) {
   });
   for (const cookie of init.getSetCookie()) headers.append("Set-Cookie", cookie);
   return headers;
+}
+
+// Stub gap-fill exclusions: the wire-protocol family the handlers themselves
+// own must reflect THIS response's encoding, never a write parked on the
+// stub — a stray stub `Location` would turn a success body into a redirect
+// signal, a stale error/format/single-flight tag would misdescribe the
+// body to the client transport, and `X-Revalidate` keys belong to the
+// outcome that declared them. Header names via the shared wire constants;
+// lowercased once because `Headers` iteration keys are lowercase.
+const STUB_GAP_FILL_EXCLUDED = /*#__PURE__*/ new Set(
+  [ERROR_HEADER, BODY_FORMAT_HEADER, SINGLE_FLIGHT_HEADER, REVALIDATE_HEADER, "Location"].map(
+    header => header.toLowerCase()
+  )
+);
+
+// Whether a stub header may gap-fill onto the outgoing response: not a
+// cookie (those append), not protocol-owned, not body metadata on a
+// bodiless response (the no-JS handler deliberately strips Content-Type/
+// Length from the redirects it builds — don't re-advertise a body that
+// isn't there), and not already answered by the response itself.
+function fillsStubGap(key, headers, response) {
+  if (key === "set-cookie" || STUB_GAP_FILL_EXCLUDED.has(key)) return false;
+  if (response.body === null && (key === "content-type" || key === "content-length")) return false;
+  return !headers.has(key);
+}
+
+/**
+ * Handler-lifecycle plumbing — the exit for a `Response` that did NOT go
+ * through `createSSRResponse` (a middleware early return, an API result,
+ * the server-function handler's own responses): folds the request event's
+ * response stub onto the outgoing response as its head freezes, and
+ * commits the stub — later writes can no longer reach the client, so they
+ * fail loudly (`commitResponseStub` instruments the stub's headers: dev
+ * throws, prod reports + no-ops). Cookies append entry-by-entry alongside
+ * the response's own; other stub headers only fill gaps (the response's
+ * metadata wins, the protocol-owned family never fills — see
+ * `fillsStubGap`); the status is never taken from the stub. Responses with
+ * immutable headers (`Response.redirect`, integration-provided) are
+ * rebuilt around merged copies.
+ *
+ * An already-committed stub passes the response through untouched, so
+ * applying this unconditionally at the handler edge is safe: page results
+ * come back from `createSSRResponse` committed (their stub already folded
+ * into the head) and must not double-fold. `event` defaults to the ambient
+ * `getRequestEvent()`. Application middleware never calls this — the
+ * handler edge does, once, after the middleware chain fully unwinds.
+ */
+export function commitEventResponse(response, event = getRequestEvent()) {
+  const stub = event && event.response;
+  if (!stub || !stub.headers || stub.committed) return response;
+  const cookies = stub.headers.getSetCookie ? stub.headers.getSetCookie() : [];
+  commitResponseStub(stub);
+  let hasGaps = false;
+  stub.headers.forEach((value, key) => {
+    if (fillsStubGap(key, response.headers, response)) hasGaps = true;
+  });
+  if (!cookies.length && !hasGaps) return response;
+  try {
+    for (const cookie of cookies) response.headers.append("Set-Cookie", cookie);
+    stub.headers.forEach((value, key) => {
+      if (fillsStubGap(key, response.headers, response)) response.headers.set(key, value);
+    });
+    return response;
+  } catch {
+    const headers = copyInitHeaders(response.headers);
+    for (const cookie of cookies) headers.append("Set-Cookie", cookie);
+    stub.headers.forEach((value, key) => {
+      if (fillsStubGap(key, headers, response)) headers.set(key, value);
+    });
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    });
+  }
 }
 
 function deriveHead(stub, responseInit = {}) {

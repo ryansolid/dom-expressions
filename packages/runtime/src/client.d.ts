@@ -1,4 +1,5 @@
 import { JSX } from "./jsx.js";
+import type { RequestEventLocals } from "./server.js";
 // Element/property classification tables consumed by the JSX compiler and
 // custom renderers. Compiler/tooling surface; not for hand-written code.
 /** Compiler/tooling table; not for hand-written code. @internal */
@@ -282,9 +283,16 @@ export interface ResponseStub {
    */
   committed?: boolean;
 }
+/**
+ * See the server entry's `RequestEventLocals` — the augmentable type of
+ * `RequestEvent.locals`. Re-exported (not re-declared) so both entries
+ * share ONE interface identity and a single augmentation reaches every
+ * `locals`, whichever entry typed the event.
+ */
+export type { RequestEventLocals } from "./server.js";
 export interface RequestEvent {
   request: Request;
-  locals: Record<string | number | symbol, any>;
+  locals: RequestEventLocals;
 }
 /**
  * Registered symbol (`Symbol.for("solid.RequestContext")`) naming the global

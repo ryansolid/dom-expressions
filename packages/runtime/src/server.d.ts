@@ -231,14 +231,39 @@ export interface ResponseStub {
 }
 
 /**
+ * The type of `RequestEvent.locals` — a module-augmentable interface so
+ * applications can type the state their middleware hangs on the event.
+ * Augment it through the package that re-exports the event (interface
+ * identity flows through the re-export chain):
+ *
+ * ```ts
+ * declare module "@solidjs/web" {
+ *   interface RequestEventLocals {
+ *     user: User;
+ *   }
+ * }
+ * ```
+ *
+ * The index signature keeps un-augmented usage permissive — `locals` is a
+ * free-form bag by default — so augmentation adds precision for the keys
+ * it names without gating existing code. The flip side: unaugmented keys
+ * read as `any` rather than erroring, a deliberate trade (a strict-only
+ * `locals` would break every untyped write that works today).
+ */
+export interface RequestEventLocals {
+  [key: string | number | symbol]: any;
+}
+
+/**
  * The per-request context available on the server: the incoming `Request`
- * and a `locals` bag integrations and middleware can hang state on.
- * Frameworks typically extend this shape with richer fields (e.g. a
- * `response` head — see `ResponseStub`).
+ * and a `locals` bag integrations and middleware can hang state on (typed
+ * through the augmentable `RequestEventLocals`). Frameworks typically
+ * extend this shape with richer fields (e.g. a `response` head — see
+ * `ResponseStub`).
  */
 export interface RequestEvent {
   request: Request;
-  locals: Record<string | number | symbol, any>;
+  locals: RequestEventLocals;
 }
 /**
  * The current request event, when called on the server inside a request
@@ -287,6 +312,28 @@ export function commitResponseStub(
   stub: ResponseStub,
   options?: { allowLateLocation?: boolean }
 ): ResponseStub;
+
+/**
+ * Handler-lifecycle plumbing — a response's exit through the request
+ * event's response-stub lifecycle: page results leave through
+ * `createSSRResponse`, any other `Response` (a middleware early return, an
+ * API result) leaves through `commitEventResponse`; application middleware
+ * never calls this. Folds the event's stub onto the outgoing response —
+ * `Set-Cookie` appends entry-by-entry alongside the response's own, other
+ * stub headers fill gaps only (never the wire-protocol family the handlers
+ * own, never `Content-Type`/`Content-Length` on a bodiless response), the
+ * status is never taken from the stub — then commits the stub
+ * (`commitResponseStub`: post-commit writes fail loudly). Responses with
+ * immutable headers are rebuilt around merged copies.
+ *
+ * Idempotent at handler edges: an already-committed stub passes the
+ * response through untouched, so a handler may apply this unconditionally
+ * after its middleware chain unwinds — page responses from
+ * `createSSRResponse` come back committed and do not double-fold.
+ *
+ * `event` defaults to the ambient `getRequestEvent()`.
+ */
+export function commitEventResponse(response: Response, event?: RequestEvent): Response;
 
 /**
  * The cookie codec (the platform-gap primitives — see cookies.d.ts): ALL

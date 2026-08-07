@@ -12,7 +12,7 @@
 // mutation — and never what they carry. Which data a mutation invalidates,
 // and how an outcome reaches the UI, stay with the integration.
 import { REVALIDATE_HEADER, isResponseEnvelope, isSafeError } from "../response.js";
-import { RequestContext, commitResponseStub, getRequestEvent } from "../server.js";
+import { RequestContext, commitEventResponse, getRequestEvent } from "../server.js";
 import { encodeFlashCookie } from "./flash.js";
 import {
   BODY_FORMAT_HEADER,
@@ -452,69 +452,10 @@ function mergeResponseHeaders(target, source) {
   }
 }
 
-// Stub gap-fill exclusions: the wire-protocol family this handler itself
-// owns must reflect THIS response's encoding, never a write parked on the
-// stub — a stray stub `Location` would turn a success body into a redirect
-// signal, a stale error/format/single-flight tag would misdescribe the
-// body to the client transport, and `X-Revalidate` keys belong to the
-// outcome that declared them. Header names via the shared wire constants;
-// lowercased once because `Headers` iteration keys are lowercase.
-const STUB_GAP_FILL_EXCLUDED = new Set(
-  [ERROR_HEADER, BODY_FORMAT_HEADER, SINGLE_FLIGHT_HEADER, REVALIDATE_HEADER, "Location"].map(
-    header => header.toLowerCase()
-  )
-);
-
-// Whether a stub header may gap-fill onto the outgoing response: not a
-// cookie (those append), not protocol-owned, not body metadata on a
-// bodiless response (the no-JS handler deliberately strips Content-Type/
-// Length from the redirects it builds — don't re-advertise a body that
-// isn't there), and not already answered by the response itself.
-function fillsStubGap(key, headers, response) {
-  if (key === "set-cookie" || STUB_GAP_FILL_EXCLUDED.has(key)) return false;
-  if (response.body === null && (key === "content-type" || key === "content-length")) return false;
-  return !headers.has(key);
-}
-
-// The event's response stub collects header writes made during the call
-// (cookie appends, middleware): fold them onto the outgoing response as
-// its head freezes, and commit the stub — later writes can no longer reach
-// the client, so they fail loudly (`commitResponseStub` instruments the
-// stub's headers: dev throws, prod reports + no-ops). Cookies append
-// alongside the call's own; other stub headers only fill gaps (the call's
-// response metadata wins, and the protocol-owned family never fills — see
-// `fillsStubGap`). Responses with immutable headers (`Response.redirect`,
-// integration-provided) are rebuilt around merged copies.
-function commitEventResponse(event, response) {
-  const stub = event && event.response;
-  if (!stub || !stub.headers) return response;
-  const cookies = stub.headers.getSetCookie ? stub.headers.getSetCookie() : [];
-  commitResponseStub(stub);
-  let hasGaps = false;
-  stub.headers.forEach((value, key) => {
-    if (fillsStubGap(key, response.headers, response)) hasGaps = true;
-  });
-  if (!cookies.length && !hasGaps) return response;
-  try {
-    for (const cookie of cookies) response.headers.append("Set-Cookie", cookie);
-    stub.headers.forEach((value, key) => {
-      if (fillsStubGap(key, response.headers, response)) response.headers.set(key, value);
-    });
-    return response;
-  } catch {
-    const headers = new Headers();
-    mergeResponseHeaders(headers, response.headers);
-    for (const cookie of cookies) headers.append("Set-Cookie", cookie);
-    stub.headers.forEach((value, key) => {
-      if (fillsStubGap(key, headers, response)) headers.set(key, value);
-    });
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers
-    });
-  }
-}
+// The commit seam moved to `commitEventResponse` in ../server.js — one
+// public implementation shared with integrations' handler edges (a
+// middleware early return leaves through the same fold this handler's
+// responses do), so the gap-fill/denylist semantics cannot drift.
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#redirection_messages
 const validRedirectStatuses = new Set([301, 302, 303, 307, 308]);
@@ -971,5 +912,5 @@ export async function handleServerFunctionRequest(request, options = {}) {
       return encodeResult(safe, headers, 200, codec);
     }
   };
-  return commitEventResponse(event, await dispatch());
+  return commitEventResponse(await dispatch(), event);
 }
