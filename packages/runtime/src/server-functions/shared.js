@@ -451,14 +451,11 @@ export async function extractBody(source, codecOptions) {
 // streams frame their chunks identically — see frame-transport.js) so there
 // is exactly one framing implementation.
 export function createChunk(data) {
-  const encodeData = new TextEncoder().encode(data);
+  const encoder = new TextEncoder();
+  const encodeData = encoder.encode(data);
   const bytes = encodeData.length;
-  const baseHex = bytes.toString(16);
-  const totalHex = "00000000".substring(0, 8 - baseHex.length) + baseHex; // 32-bit
-  const head = new TextEncoder().encode(`;0x${totalHex};`);
-
   const chunk = new Uint8Array(12 + bytes);
-  chunk.set(head);
+  chunk.set(encoder.encode(`;0x${bytes.toString(16).padStart(8, "0")};`)); // 32-bit
   chunk.set(encodeData, 12);
   return chunk;
 }
@@ -496,8 +493,8 @@ export class ChunkReader {
       await this.readChunk();
     }
     // `;0x00000000;` — the hex length names how many payload bytes to wait for
-    const head = new TextDecoder().decode(this.buffer.subarray(1, 11));
-    const bytes = Number.parseInt(head, 16);
+    const decoder = new TextDecoder();
+    const bytes = Number.parseInt(decoder.decode(this.buffer.subarray(1, 11)), 16);
     if (Number.isNaN(bytes)) {
       throw new Error("Malformed server function stream.");
     }
@@ -507,7 +504,7 @@ export class ChunkReader {
       }
       await this.readChunk();
     }
-    const partial = new TextDecoder().decode(this.buffer.subarray(12, 12 + bytes));
+    const partial = decoder.decode(this.buffer.subarray(12, 12 + bytes));
     this.buffer = this.buffer.subarray(12 + bytes);
     return { done: false, value: partial };
   }

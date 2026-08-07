@@ -151,7 +151,17 @@ const SCENARIOS = {
   // gating on first apply — the shell-gate mount holding its covering
   // boundary open until the frame has content — releases on a failed
   // stream instead of holding a fallback forever. Re-guarded at actual+18
-  // (8260 measured).
+  // (8260 measured). Then two #2977-adjacent fixes (+~100 raw: #564 resets
+  // root affinity on rebind so an identical shell still answers the switch;
+  // #565 gates slot application on its data refs' ARRIVAL and compares
+  // async ref values by identity) paid for by a size pass in the same
+  // round: the seg/error store-clear extracted from its three copies
+  // (write/apply/rebind — which also fixed rebind never re-arming the
+  // error-apply notification), the range-walk and remove-until loops
+  // deduped into helpers, get-or-create/regions-dispose/owner-scope
+  // helpers, Object.keys loops as for-in, ref predicates simplified, and
+  // the shared chunk framing de-duplicating its TextEncoder/Decoder
+  // instances. 8263 measured — back under the same ceiling, no bump.
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
