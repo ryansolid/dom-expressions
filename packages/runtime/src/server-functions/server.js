@@ -452,13 +452,38 @@ function mergeResponseHeaders(target, source) {
   }
 }
 
+// Stub gap-fill exclusions: the wire-protocol family this handler itself
+// owns must reflect THIS response's encoding, never a write parked on the
+// stub — a stray stub `Location` would turn a success body into a redirect
+// signal, a stale error/format/single-flight tag would misdescribe the
+// body to the client transport, and `X-Revalidate` keys belong to the
+// outcome that declared them. Header names via the shared wire constants;
+// lowercased once because `Headers` iteration keys are lowercase.
+const STUB_GAP_FILL_EXCLUDED = new Set(
+  [ERROR_HEADER, BODY_FORMAT_HEADER, SINGLE_FLIGHT_HEADER, REVALIDATE_HEADER, "Location"].map(
+    header => header.toLowerCase()
+  )
+);
+
+// Whether a stub header may gap-fill onto the outgoing response: not a
+// cookie (those append), not protocol-owned, not body metadata on a
+// bodiless response (the no-JS handler deliberately strips Content-Type/
+// Length from the redirects it builds — don't re-advertise a body that
+// isn't there), and not already answered by the response itself.
+function fillsStubGap(key, headers, response) {
+  if (key === "set-cookie" || STUB_GAP_FILL_EXCLUDED.has(key)) return false;
+  if (response.body === null && (key === "content-type" || key === "content-length")) return false;
+  return !headers.has(key);
+}
+
 // The event's response stub collects header writes made during the call
 // (`setCookie`, middleware): fold them onto the outgoing response as its
 // head freezes, and mark the stub committed — later writes can no longer
 // reach the client and report as such (see `setCookie`). Cookies append
 // alongside the call's own; other stub headers only fill gaps (the call's
-// response metadata wins). Responses with immutable headers (`Response.
-// redirect`, integration-provided) are rebuilt around merged copies.
+// response metadata wins, and the protocol-owned family never fills — see
+// `fillsStubGap`). Responses with immutable headers (`Response.redirect`,
+// integration-provided) are rebuilt around merged copies.
 function commitEventResponse(event, response) {
   const stub = event && event.response;
   if (!stub || !stub.headers) return response;
@@ -466,13 +491,13 @@ function commitEventResponse(event, response) {
   const cookies = stub.headers.getSetCookie ? stub.headers.getSetCookie() : [];
   let hasGaps = false;
   stub.headers.forEach((value, key) => {
-    if (key !== "set-cookie" && !response.headers.has(key)) hasGaps = true;
+    if (fillsStubGap(key, response.headers, response)) hasGaps = true;
   });
   if (!cookies.length && !hasGaps) return response;
   try {
     for (const cookie of cookies) response.headers.append("Set-Cookie", cookie);
     stub.headers.forEach((value, key) => {
-      if (key !== "set-cookie" && !response.headers.has(key)) response.headers.set(key, value);
+      if (fillsStubGap(key, response.headers, response)) response.headers.set(key, value);
     });
     return response;
   } catch {
@@ -480,7 +505,7 @@ function commitEventResponse(event, response) {
     mergeResponseHeaders(headers, response.headers);
     for (const cookie of cookies) headers.append("Set-Cookie", cookie);
     stub.headers.forEach((value, key) => {
-      if (key !== "set-cookie" && !headers.has(key)) headers.set(key, value);
+      if (fillsStubGap(key, headers, response)) headers.set(key, value);
     });
     return new Response(response.body, {
       status: response.status,

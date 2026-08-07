@@ -345,6 +345,55 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
     expect(cookies).toContain("session=fresh; Path=/");
   });
 
+  it("protocol-owned stub headers never gap-fill onto a response", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-protocol-0", async () => {
+      // A misbehaving write (or stale middleware state) parking
+      // protocol-owned names on the stub must not leak onto the wire: a
+      // stray Location would turn this success into a redirect signal.
+      event.response.headers.set("X-Server-Function-Error", "phantom");
+      event.response.headers.set("X-Server-Function-Format", "9");
+      event.response.headers.set("X-Single-Flight", "true");
+      event.response.headers.set("X-Revalidate", "everything");
+      event.response.headers.set("Location", "/hijack");
+      return 1;
+    });
+    const response = await dispatch("cookie-protocol-0", event);
+    expect(response.headers.get("X-Server-Function-Error")).toBeNull();
+    expect(response.headers.get("X-Single-Flight")).toBeNull();
+    expect(response.headers.get("X-Revalidate")).toBeNull();
+    expect(response.headers.get("Location")).toBeNull();
+    // the encoder's own format tag, not the stub's
+    expect(response.headers.get("X-Server-Function-Format")).toBe("0");
+  });
+
+  it("does not re-advertise body metadata on the bodiless no-JS redirect", async () => {
+    const event = eventWithCookies();
+    registerServerFunction("cookie-nojs-ct-0", async () => {
+      event.response.headers.set("Content-Type", "text/never");
+      r.setCookie(event, "session", "fresh");
+      return "saved";
+    });
+    const response = await handleServerFunctionRequest(
+      new Request("http://localhost/_server?id=cookie-nojs-ct-0", {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          referer: "http://localhost/page"
+        },
+        body: "x=1"
+      }),
+      { createEvent: () => event }
+    );
+    // the no-JS handler builds a bodiless redirect and strips body
+    // metadata; the stub's Content-Type must not gap-fill it back
+    expect(response.status).toBe(303);
+    expect(response.body).toBeNull();
+    expect(response.headers.get("Content-Type")).toBeNull();
+    // cookies still ride
+    expect(response.headers.getSetCookie()).toContain("session=fresh; Path=/");
+  });
+
   it("stub headers fill gaps without overriding the call's own metadata", async () => {
     const event = eventWithCookies();
     registerServerFunction("cookie-headers-0", async () => {

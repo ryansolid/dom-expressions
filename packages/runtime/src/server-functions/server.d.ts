@@ -519,9 +519,11 @@ export interface HandleServerFunctionOptions {
  * server entry's `ResponseStub`), the handler folds it onto every outgoing
  * response as the head freezes — its `Set-Cookie` values (`setCookie`
  * during the call) append cookie-by-cookie alongside the result's own,
- * other stub headers fill gaps (the call's response metadata wins) — and
- * marks the stub `committed`, so later cookie/header writes report instead
- * of silently missing the wire.
+ * other stub headers fill gaps (the call's response metadata wins; the
+ * protocol-owned family — the error/format/single-flight tags, `Location`,
+ * `X-Revalidate` — never fills, and neither does `Content-Type`/`Content-
+ * Length` onto a bodiless response) — and marks the stub `committed`, so
+ * later cookie/header writes report instead of silently missing the wire.
  *
  * ## Thrown-error sanitization (security default)
  *
