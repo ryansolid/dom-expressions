@@ -162,11 +162,22 @@ const SCENARIOS = {
   // helpers, Object.keys loops as for-in, ref predicates simplified, and
   // the shared chunk framing de-duplicating its TextEncoder/Decoder
   // instances. 8263 measured — back under the same ceiling, no bump.
+  // Then +17 for the freeze-pass serializer authoring re-export
+  // (`createPlugin`/`OpaqueReference` from the runtime's own seroval
+  // instance — deliberate, changeset-ed public API: plugins version-pinned
+  // by construction, solid-start #1474). The bytes are the re-export
+  // statement itself, not implementation: seroval is external here, and
+  // esbuild preserves an external module's re-export linkage whether or
+  // not the consumer imports the names (import-then-export measures the
+  // same), so every serializer consumer pays the plumbing while the
+  // implementation stays in seroval. Arrived unratcheted because size.yml
+  // triggers on pull_request only and the freeze-pass landed by direct
+  // push to next. Re-guarded at actual+20 (8280 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8278
+    8300
   ]
 };
 
