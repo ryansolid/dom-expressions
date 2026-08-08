@@ -1,0 +1,5 @@
+---
+"@dom-expressions/runtime": patch
+---
+
+Make `ResponseEnvelope` tree-shakable in bundles that never construct or brand-check one. The class carried its registered-symbol brand via a bare top-level `ResponseEnvelope.prototype[ENVELOPE] = true` — a module side effect that pinned the class (and constructor) into every bundle including `response.js`, even client bundles where nothing on the retained graph ever touches an envelope (a bare CSR app importing `render`, the frames consumer whose transport only calls `isResponseEnvelope`). The declaration and the brand assignment now live inside one PURE-annotated factory expression (the same convention solid's `MockPromise` uses — a `static {}` block would not shake, since bundlers treat static blocks as side-effectful), so the whole thing drops when the binding is unreferenced. Measured: −122 min / −52 gz on the frames full-consumer scenario; behavior is unchanged wherever envelopes are actually used, and the brand check remains robust across duplicated module instances.

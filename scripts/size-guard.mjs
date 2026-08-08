@@ -173,11 +173,16 @@ const SCENARIOS = {
   // implementation stays in seroval. Arrived unratcheted because size.yml
   // triggers on pull_request only and the freeze-pass landed by direct
   // push to next. Re-guarded at actual+20 (8280 measured).
+  // Then -52: ResponseEnvelope moved into a PURE-annotated factory so the
+  // class (retained solely by its top-level prototype-brand assignment)
+  // shakes out of consumers that never construct or brand-check one — the
+  // transport only calls isResponseEnvelope. Re-guarded at actual+20
+  // (8228 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8300
+    8248
   ]
 };
 
