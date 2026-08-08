@@ -77,15 +77,17 @@ describe("live content holes — marking (stream face)", () => {
     expect(holesOf(chunks)).toHaveLength(0);
   });
 
-  it("an in-tag hole (attribute position) is not range-marked", async () => {
+  it("an in-tag hole (attribute position) is element-addressed, never range-marked", async () => {
     // `<div class={sig()}>` compiles the hole between `class="` and `"` —
     // inside the tag, where no comment can sit. The attr slice addresses
-    // these by element; slice 1 must simply not corrupt the tag.
+    // the ELEMENT instead: a `data-lha` injected at the tag open, no
+    // markers, tag structure intact.
     const chunks = await collectStream(() =>
       r.ssr(['<div class="', '">x</div>'], () => r.escape("a", true))
     );
     const shell = shellOf(chunks);
-    expect(shell.html).toBe('<div class="a">x</div>');
+    expect(shell.html).toBe('<div data-lha="0" class="a">x</div>');
+    expect(shell.html).not.toContain("lh:");
   });
 
   it("slot positions are never marked: a slot is a client-owned constant", async () => {
@@ -354,10 +356,7 @@ describe("live content holes — lifetime and error semantics (stream face)", ()
     const innerEmits = holes.filter(h => h.key === `lh:${innerId}`);
     // The outer re-emitted for both commits; its html is marker-free
     // (sweeps are mint-suppressed) — the inner range is superseded.
-    expect(outerEmits.map(h => h.html)).toEqual([
-      "<div><em>b</em></div>",
-      "<div><em>c</em></div>"
-    ]);
+    expect(outerEmits.map(h => h.html)).toEqual(["<div><em>b</em></div>", "<div><em>c</em></div>"]);
     for (const h of outerEmits) expect(h.html).not.toContain("lh:");
     // The inner binding retired with the first parent re-emission: at most
     // its same-commit sweep (registration order runs it first) — never one
@@ -404,6 +403,142 @@ describe("live content holes — lifetime and error semantics (stream face)", ()
     expect(errors[0].error).toBe("sweep failed");
     // The stream still completed: a hole failure is not a stream failure.
     expect(chunks.some(c => c.type === "complete")).toBe(true);
+  });
+
+  it("attr holes: a tag with in-tag thunk holes is element-addressed and re-emits on commit", async () => {
+    // `<div class={sig()}>` — the in-tag hole can't carry comment markers,
+    // so the engine injects a runtime address (`data-lha`) into the tag and
+    // opens an element-keyed binding: commits re-run the tag's holes,
+    // rebuild its attribute text, and ship changes as `attr` chunks.
+    let cls = "a";
+    let resolveGate;
+    const gate = new Promise(res => (resolveGate = res));
+    const pending = collectStream(props =>
+      r.ssr(
+        ['<section><div class="', '">x</div><!--x--></section>'],
+        () => r.escape(cls, true),
+        [props.row({ gate })]
+      )
+    );
+    await Promise.resolve();
+    cls = "b";
+    resolveGate("done");
+    const chunks = await pending;
+    const shell = shellOf(chunks);
+    const [, addr] = shell.html.match(/<div data-lha="(\d+)" class="a">/) || [];
+    expect(addr).toBeDefined();
+    const attrs = chunks.filter(c => c.type === "attr");
+    expect(attrs).toHaveLength(1);
+    expect(attrs[0].key).toBe(addr);
+    expect(attrs[0].attrs).toBe(' class="b"');
+  });
+
+  it("attr holes: a group spanning elements yields per-element bindings, equality-gated", async () => {
+    // The compiler batches contiguous dynamic attrs into ONE ssrGroup even
+    // across elements. Each element still gets its own address and binding —
+    // a commit that changes one element's expression re-emits that element
+    // only.
+    let clsA = "a1";
+    const styleB = "color:red";
+    const clsC = "c1";
+    let resolveGate;
+    const gate = new Promise(res => (resolveGate = res));
+    const group = r.ssrGroup(
+      () => [r.ssrClassName(clsA), r.ssrStyle(styleB), r.ssrClassName(clsC)],
+      3
+    );
+    const pending = collectStream(props =>
+      r.ssr(
+        ['<section><div class="', '" style="', '">x</div><em class="', '">y</em><!--x--></section>'],
+        group,
+        group,
+        group,
+        [props.row({ gate })]
+      )
+    );
+    await Promise.resolve();
+    clsA = "a2";
+    resolveGate("done");
+    const chunks = await pending;
+    const shell = shellOf(chunks);
+    const divMatch = shell.html.match(/<div data-lha="(\d+)" class="a1" style="color:red">/);
+    const emMatch = shell.html.match(/<em data-lha="(\d+)" class="c1">/);
+    expect(divMatch).toBeTruthy();
+    expect(emMatch).toBeTruthy();
+    const attrs = chunks.filter(c => c.type === "attr");
+    // Only the div changed; the em's rebuild equality-gated.
+    expect(attrs).toHaveLength(1);
+    expect(attrs[0].key).toBe(divMatch[1]);
+    expect(attrs[0].attrs).toBe(' class="a2" style="color:red"');
+  });
+
+  it("attr holes: a toggled ssrAttribute ships its removal explicitly", async () => {
+    let on = true;
+    let resolveGate;
+    const gate = new Promise(res => (resolveGate = res));
+    const pending = collectStream(props =>
+      r.ssr(
+        ["<section><button", ">x</button><!--x--></section>"],
+        () => r.ssrAttribute("disabled", on),
+        [props.row({ gate })]
+      )
+    );
+    await Promise.resolve();
+    on = false;
+    resolveGate("done");
+    const chunks = await pending;
+    const shell = shellOf(chunks);
+    const [, addr] = shell.html.match(/<button data-lha="(\d+)" disabled>/) || [];
+    expect(addr).toBeDefined();
+    const attrs = chunks.filter(c => c.type === "attr");
+    expect(attrs).toHaveLength(1);
+    expect(attrs[0].attrs).toBe("");
+    expect(attrs[0].removed).toEqual(["disabled"]);
+  });
+
+  it("attr holes: the document face injects nothing", async () => {
+    const html = await collectDocument(() =>
+      r.ssr(['<div class="', '">x</div>'], () => r.escape("v1", true))
+    );
+    expect(html).toContain('<div class="v1">x</div>');
+    expect(html).not.toContain("data-lha");
+  });
+
+  it("client: an attr chunk patches the addressed element in place", async () => {
+    const boundary = document.createElement("div");
+    document.body.appendChild(boundary);
+    const table = createJSONDataTable();
+    const host = createFrameHost({
+      applyData: c => table.apply(c),
+      resolve: ref => table.resolve(ref)
+    });
+    createFrame(boundary, { host, id: "f", slots: {} });
+    try {
+      host.apply({
+        type: "html",
+        id: "f",
+        version: 1,
+        html: '<div data-lha="0" class="a" disabled="">x</div>'
+      });
+      const el = boundary.querySelector("div[data-lha]");
+      expect(el.className).toBe("a");
+      host.apply({
+        type: "attr",
+        id: "f",
+        version: 1,
+        key: "0",
+        attrs: ' class="b &quot;q&quot;"',
+        removed: ["disabled"]
+      });
+      // Same element, patched in place: class updated (entities decoded),
+      // the removed name gone, the address preserved.
+      expect(boundary.querySelector("div[data-lha]")).toBe(el);
+      expect(el.getAttribute("class")).toBe('b "q"');
+      expect(el.hasAttribute("disabled")).toBe(false);
+      expect(el.getAttribute("data-lha")).toBe("0");
+    } finally {
+      boundary.remove();
+    }
   });
 
   it("client: a hole-keyed error stores under the hole's records and warns once", async () => {

@@ -382,6 +382,15 @@ export function createFrameSink(emit, frame) {
     hole(key, html) {
       emit({ type: "hole", id, version, key, html });
     },
+    // A live attr-hole re-emission: the addressed element's rebuilt
+    // attribute text, plus the names that vanished since the last emission
+    // (the server holds the previous text — the client never tracks name
+    // history).
+    attr(key, attrs, removed) {
+      const chunk = { type: "attr", id, version, key, attrs };
+      if (removed && removed.length) chunk.removed = removed;
+      emit(chunk);
+    },
     // ---- the binding ledger (DR-2 case 1) ----
     /**
      * Open a watched-arg binding under its `(occurrence, arg)` key; it

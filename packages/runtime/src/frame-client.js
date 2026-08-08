@@ -112,6 +112,13 @@ export function chunkToRecords(chunk) {
       // range (`<!--lh:N-->…<!--lh:/N-->`). Response-scoped like segments —
       // hole ids restart per render — so these clear on version bumps.
       return { [`hole:${chunk.key}`]: { kind: "html", value: chunk.html } };
+    case "attr":
+      // A live attr-hole re-emission: rebuilt attribute text for the
+      // element addressed `data-lha="key"`, with explicit removals.
+      // Response-scoped like hole records (addresses restart per render).
+      return {
+        [`attr:${chunk.key}`]: { kind: "attrs", value: chunk.attrs, removed: chunk.removed }
+      };
     case "complete":
       return { ":complete": true };
     case "error":
@@ -122,7 +129,8 @@ export function chunkToRecords(chunk) {
       // fragment). Unkeyed errors are stream-level — `frame.error` reads
       // that record.
       if (!chunk.key) return { ":error": chunk.error };
-      if (chunk.key.startsWith("lh:")) return { [`hole:${chunk.key}:error`]: chunk.error };
+      if (chunk.key.startsWith("lh:") || chunk.key.startsWith("lha:"))
+        return { [`hole:${chunk.key}:error`]: chunk.error };
       return { [`seg:${chunk.key}:error`]: chunk.error };
     default:
       return {};
@@ -295,6 +303,8 @@ class FrameImpl {
   // Per mount, not per store — a fresh mount seeding from a warm resident
   // store must replay hole records over the re-materialized shell.
   #appliedHoles = new Map();
+  // Attr-hole apply dedupe: element address -> last applied text+removals.
+  #appliedAttrs = new Map();
   // Hole-error diagnostics already surfaced (one console line per record).
   #warnedHoleErrors = new Set();
   #slots;
@@ -468,6 +478,7 @@ class FrameImpl {
     this.#revealed.clear();
     this.#fallbackShown.clear();
     this.#appliedHoles.clear();
+    this.#appliedAttrs.clear();
     this.#warnedHoleErrors.clear();
     this.#errorNotified = false;
     clearStreamRecords(this.#store, root);
@@ -543,6 +554,21 @@ class FrameImpl {
       if (this.#appliedHoles.get(marker) === record.value) continue;
       if (this.#applyHole(marker, record.value)) {
         this.#appliedHoles.set(marker, record.value);
+        this.#applied(version, "morph");
+      }
+    }
+
+    // Attr-hole re-emissions patch their addressed elements in place —
+    // same pending/retry semantics as the range morphs above.
+    for (const key in this.#store) {
+      if (!key.startsWith("attr:")) continue;
+      const record = this.#store[key];
+      if (!record || record.kind !== "attrs") continue;
+      const addr = key.slice(5);
+      const stampKey = record.value + "\u0000" + (record.removed ? record.removed.join() : "");
+      if (this.#appliedAttrs.get(addr) === stampKey) continue;
+      if (this.#applyAttrs(addr, record.value, record.removed)) {
+        this.#appliedAttrs.set(addr, stampKey);
         this.#applied(version, "morph");
       }
     }
@@ -1265,6 +1291,31 @@ class FrameImpl {
     return true;
   }
 
+  /**
+   * Apply a live attr-hole re-emission: find the element addressed
+   * `data-lha="addr"` in this frame's range, parse the rebuilt attribute
+   * text through a scratch element (native entity decoding), and patch —
+   * set what's present, remove what the server says vanished. Returns
+   * false when the element isn't in the DOM yet (pending; later flushes
+   * retry).
+   */
+  #applyAttrs(addr, text, removed) {
+    if (!this.#hasContent) return false;
+    const el = findAddressedElement(this.#firstContent(), this.#end, addr);
+    if (!el) return false;
+    const tpl = el.ownerDocument.createElement("template");
+    tpl.innerHTML = `<i${text}></i>`;
+    const parsed = tpl.content.firstChild;
+    if (parsed) {
+      for (let i = 0; i < parsed.attributes.length; i++) {
+        const { name, value } = parsed.attributes[i];
+        if (el.getAttribute(name) !== value) el.setAttribute(name, value);
+      }
+    }
+    if (removed) for (const name of removed) el.removeAttribute(name);
+    return true;
+  }
+
   /** Remove the frame's current content (bounded to its range). */
   #clearContent() {
     removeUntil(this.#parent(), this.#firstContent(), this.#end);
@@ -1621,6 +1672,28 @@ function findHoleComment(n, end, data) {
   return null;
 }
 
+/**
+ * Depth-first search among the siblings `[n, end)` for the element
+ * addressed `data-lha="addr"`. Same descent rule as findHoleComment:
+ * through elements (including regions — one address counter per response)
+ * but never into nested boundary frames, whose addresses are a different
+ * stream's namespace.
+ */
+function findAddressedElement(n, end, addr) {
+  while (n && n !== end) {
+    if (n.nodeType === ELEMENT_NODE) {
+      const fid = isFrameElement(n) ? n.getAttribute(FRAME_ID_ATTR) : null;
+      if (fid === null || fid.includes(".")) {
+        if (n.getAttribute("data-lha") === addr) return n;
+        const found = findAddressedElement(n.firstChild, null, addr);
+        if (found) return found;
+      }
+    }
+    n = n.nextSibling;
+  }
+  return null;
+}
+
 /** Depth-first search among the siblings `[n, end)` for a placeholder
  *  template with the given id (descending through elements). */
 function findPlaceholder(n, end, id) {
@@ -1727,6 +1800,7 @@ function clearStreamRecords(records, root) {
     if (
       key.startsWith("seg:") ||
       key.startsWith("hole:") ||
+      key.startsWith("attr:") ||
       key === ":error" ||
       (root && key === "")
     ) {

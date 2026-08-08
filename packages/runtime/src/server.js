@@ -1847,28 +1847,65 @@ function ssrGroupSlot(fn, idx) {
 // between t[i] and t[i+1]; it is a content position iff the markup up to
 // that point leaves us outside an open tag. The scan is quote-aware so a
 // `>` inside a quoted attribute value doesn't close the tag.
+//
+// The same scan feeds the attr-hole slice with per-SEGMENT tag geometry:
+//   - `openOff[i]`: offset within t[i] just after the tag NAME of the last
+//     tag-open still open at the segment's end (the address-injection
+//     point), or -1 — tag names are template-static, so this is exact;
+//   - `closeOff[i]`: offset within t[i] of the `>` closing the tag that was
+//     open coming INTO the segment (where an attr capture ends), or -1.
 const holePositionCache = new WeakMap();
 function holeContentPositions(t) {
-  let pos = holePositionCache.get(t);
-  if (pos) return pos;
-  pos = [];
+  let cached = holePositionCache.get(t);
+  if (cached) return cached;
+  const pos = [];
+  const openOff = [];
+  const closeOff = [];
   let inTag = false;
   let quote = "";
-  for (let i = 0; i < t.length - 1; i++) {
+  // The open tag's name-end, carried across segments while it stays open:
+  // { seg, off } or null.
+  let curOpen = null;
+  let scanningName = false;
+  for (let i = 0; i < t.length; i++) {
     const seg = t[i];
+    let close = -1;
+    const openAtStart = inTag;
+    let reopened = false;
     for (let j = 0; j < seg.length; j++) {
       const ch = seg[j];
       if (quote) {
         if (ch === quote) quote = "";
       } else if (inTag) {
+        if (scanningName && (ch === " " || ch === "\t" || ch === "\n" || ch === ">" || ch === "/")) {
+          scanningName = false;
+          curOpen = { seg: i, off: j };
+        }
         if (ch === '"' || ch === "'") quote = ch;
-        else if (ch === ">") inTag = false;
-      } else if (ch === "<") inTag = true;
+        else if (ch === ">") {
+          inTag = false;
+          if (openAtStart && !reopened && close === -1) close = j;
+          curOpen = null;
+        }
+      } else if (ch === "<") {
+        inTag = true;
+        scanningName = true;
+        reopened = true;
+        curOpen = null;
+      }
     }
-    pos.push(!inTag);
+    if (inTag && scanningName) {
+      // Tag name runs to the segment's end (`<div` + hole next).
+      scanningName = false;
+      curOpen = { seg: i, off: seg.length };
+    }
+    closeOff.push(close);
+    openOff.push(inTag && curOpen && curOpen.seg === i ? curOpen.off : -1);
+    if (i < t.length - 1) pos.push(!inTag);
   }
-  holePositionCache.set(t, pos);
-  return pos;
+  cached = { pos, openOff, closeOff };
+  holePositionCache.set(t, cached);
+  return cached;
 }
 
 /**
@@ -2142,9 +2179,97 @@ export function createLiveHoles(sink) {
       t[t.length - 1] += close;
       sink.openBinding(key, b);
       return { t, h: res.h, p: res.p };
+    },
+    /** The shared id counter — `ssr()` mints an attr address at injection
+     *  time, before its capture completes. */
+    mint() {
+      return nextId++;
+    },
+    /**
+     * Register an element's attr-hole capture (built by `ssr()`'s in-tag
+     * scan): the tag's attribute area as alternating static strings and
+     * re-runnable parts (`{ f }` thunks, `{ g, i }` group positions). Sweeps
+     * rebuild the text, equality-gate against the baseline, and ship
+     * changes as an element-keyed `attr` chunk. Names that vanish between
+     * rebuilds ride an explicit `removed` list — the server holds the
+     * previous text, so the client never tracks name history.
+     */
+    attr(cap) {
+      const owner = getOwner();
+      const b = {
+        key: "lha:" + cap.id,
+        children: [],
+        last: cap.base,
+        closed: false,
+        sweep() {
+          if (b.closed) return;
+          const prevSweeping = engine.sweeping;
+          engine.sweeping = true;
+          engine.gateHit = false;
+          const sweepOwnersBefore = stamp();
+          let html = "";
+          try {
+            let group = null;
+            let groupVal = null;
+            const run = () => {
+              for (const part of cap.parts) {
+                if (typeof part === "string") {
+                  html += part;
+                  continue;
+                }
+                let v;
+                if (part.g) {
+                  if (group !== part.g) {
+                    group = part.g;
+                    groupVal = part.g();
+                  }
+                  v = groupVal[part.i];
+                } else {
+                  v = part.f();
+                }
+                const vt = typeof v;
+                if (vt === "string" || vt === "number") html += v;
+              }
+            };
+            owner ? runWithOwner(owner, run) : run();
+          } catch (err) {
+            // NotReady holds for a later commit (the end-latch sweep is the
+            // floor); a real error is terminal, same rule as content holes.
+            if (ssrHandleError(err, true)) return;
+            b.closed = true;
+            sink.closeBinding(b.key);
+            sink.error("lha:" + cap.id, String((err && err.message) || err));
+            return;
+          } finally {
+            engine.sweeping = prevSweeping;
+          }
+          if (engine.gateHit || stamp() !== sweepOwnersBefore) {
+            b.closed = true;
+            sink.closeBinding(b.key);
+            return;
+          }
+          if (html === b.last) return;
+          const before = attrNames(b.last);
+          const after = attrNames(html);
+          const removed = before.filter(n => !after.includes(n));
+          b.last = html;
+          sink.attr(String(cap.id), html, removed);
+        }
+      };
+      sink.openBinding(b.key, b);
     }
   };
   return engine;
+}
+
+// Attribute NAMES in a rebuilt attr text. Values are attribute-escaped
+// (no raw quotes), so a quote-aware token scan is exact.
+function attrNames(text) {
+  const names = [];
+  const re = /(?:^|\s)([^\s=/>"']+)(?:="[^"]*")?/g;
+  let m;
+  while ((m = re.exec(text))) names.push(m[1]);
+  return names;
 }
 
 // rendering
@@ -2166,15 +2291,64 @@ export function ssr(t) {
   // Array on sync success, `{ fn, p }` on escalation, null otherwise.
   let lastGroupVal = null;
   let lastGroupIdx = 0;
+  // ---- attr holes (live frame renders only; hp/lastOpen/cap stay null
+  // otherwise and every hook below is a single falsy check) ----
+  // In-tag holes can't carry comment markers, so a tag containing them is
+  // ELEMENT-addressed: at its first in-tag thunk the engine mints an id,
+  // ` data-lha="N"` splices into the accumulated output at the tag-open
+  // point (known exactly — tag names are template-static), and a capture
+  // collects the tag's attribute area as alternating statics and
+  // re-runnable parts until the tag's `>`. The registered binding rebuilds
+  // that text on commits and re-emits changes element-keyed.
+  const live = sharedConfig.context && sharedConfig.context.liveHoles;
+  const hp = live ? holeContentPositions(t) : null;
+  // The still-open tag's insert point: { r: result-or-null, seg, off }.
+  let lastOpen = null;
+  let cap = null;
+  if (live && hp.openOff[0] >= 0) lastOpen = { r: null, seg: -1, off: hp.openOff[0] };
+  // Try to open a capture at an in-tag thunk. Returns true when capturing
+  // (started or already active). Declines when the tag-open buffer is no
+  // longer the current tail (an earlier hole of this tag escalated — the
+  // tag latches) or interception is off for this evaluation.
+  const captureStart = () => {
+    if (cap) return true;
+    if (!lastOpen || live.suppressed || live.sweeping) return false;
+    if (lastOpen.r !== result || (result !== null && lastOpen.seg !== result.t.length - 1)) {
+      return false;
+    }
+    const id = live.mint();
+    const inject = ` data-lha="${id}"`;
+    let prefix;
+    if (result === null) {
+      s = s.slice(0, lastOpen.off) + inject + s.slice(lastOpen.off);
+      prefix = s.slice(lastOpen.off + inject.length);
+    } else {
+      const seg = result.t[lastOpen.seg];
+      result.t[lastOpen.seg] = seg.slice(0, lastOpen.off) + inject + seg.slice(lastOpen.off);
+      prefix = result.t[lastOpen.seg].slice(lastOpen.off + inject.length);
+    }
+    cap = { id, parts: [prefix], base: prefix };
+    return true;
+  };
   for (let i = 1; i < len; i++) {
     const hole = arguments[i];
     const ht = typeof hole;
     if (ht === "string") {
       if (result === null) s += hole;
       else result.t[result.t.length - 1] += hole;
+      // In-tag eager strings (hydration keys, precomputed statics) are
+      // constants for the response: they join the rebuild text verbatim.
+      if (cap) {
+        cap.parts.push(hole);
+        cap.base += hole;
+      }
     } else if (ht === "number") {
       if (result === null) s += hole;
       else result.t[result.t.length - 1] += hole;
+      if (cap) {
+        cap.parts.push("" + hole);
+        cap.base += hole;
+      }
     } else if (hole == null || ht === "boolean") {
       // skip
     } else if (ht === "function" && hole.$g) {
@@ -2198,7 +2372,15 @@ export function ssr(t) {
         if (Array.isArray(lastGroupVal)) {
           value = lastGroupVal[lastGroupIdx++];
           hasValue = true;
+          // A group can span elements; each element captures only its own
+          // positions (by dequeue index — group order is positional).
+          if (live && !hp.pos[i - 1] && captureStart()) {
+            cap.parts.push({ g: hole, i: lastGroupIdx - 1 });
+          }
         } else {
+          // Group escalation: the tag (if one is being captured) went
+          // async mid-attrs — it latches.
+          cap = null;
           result.h.push(ssrGroupSlot(lastGroupVal.fn, lastGroupIdx++));
           result.p.push(lastGroupVal.p);
           result.t.push("");
@@ -2212,6 +2394,7 @@ export function ssr(t) {
         if (vt === "string" || vt === "number") {
           if (result === null) s += value;
           else result.t[result.t.length - 1] += value;
+          if (cap && !hp.pos[i - 1]) cap.base += value;
         } else if (value == null || vt === "boolean") {
           // skip
         } else if (result !== null) {
@@ -2233,9 +2416,8 @@ export function ssr(t) {
       // engine (mark + ledger binding). In-tag positions must never be
       // intercepted — a comment cannot sit inside a tag — including by the
       // nested resolve, hence the suppression around that route.
-      const live = sharedConfig.context && sharedConfig.context.liveHoles;
       let liveNode = null;
-      if (live && holeContentPositions(t)[i - 1] && (liveNode = live.content(hole)) !== null) {
+      if (live && hp.pos[i - 1] && (liveNode = live.content(hole)) !== null) {
         if (typeof liveNode === "string") {
           if (result === null) s += liveNode;
           else result.t[result.t.length - 1] += liveNode;
@@ -2247,16 +2429,39 @@ export function ssr(t) {
           resolveSSRNode(liveNode, result);
         }
       } else if (result !== null) {
+        const inTag = live && !hp.pos[i - 1];
+        const capturing = inTag && captureStart();
+        const li = capturing ? result.t.length - 1 : 0;
+        const before = capturing ? result.t[li].length : 0;
         if (live) live.suppressed++;
         try {
           resolveSSRNode(hole, result);
         } finally {
           if (live) live.suppressed--;
         }
+        if (capturing) {
+          if (result.t.length - 1 === li) {
+            cap.base += result.t[li].slice(before);
+            cap.parts.push({ f: hole });
+          } else {
+            // The hole escalated mid-attrs: the tag latches.
+            cap = null;
+          }
+        }
       } else {
+        // Capture opens BEFORE the value resolves — the prefix slice must
+        // stop at the hole position, not swallow its first value.
+        const capturing = live && !hp.pos[i - 1] && captureStart();
         const r = tryResolveFunctionHole(hole);
-        if (typeof r === "string") s += r;
-        else {
+        if (typeof r === "string") {
+          s += r;
+          if (capturing) {
+            cap.base += r;
+            cap.parts.push({ f: hole });
+          }
+        } else {
+          // The hole escalated mid-attrs: the tag latches.
+          if (capturing) cap = null;
           result = { t: [s], h: [], p: [] };
           s = "";
           appendResolvedNode(result, r);
@@ -2277,6 +2482,29 @@ export function ssr(t) {
       }
     }
     const next = t[i];
+    if (live) {
+      // Segment bookkeeping: close the active capture at the tag's `>`
+      // (register its binding), then note a new tag-open insert point.
+      if (cap) {
+        const co = hp.closeOff[i];
+        if (co >= 0) {
+          const tail = next.slice(0, co);
+          cap.parts.push(tail);
+          cap.base += tail;
+          live.attr(cap);
+          cap = null;
+        } else {
+          cap.parts.push(next);
+          cap.base += next;
+        }
+      }
+      if (hp.openOff[i] >= 0) {
+        lastOpen =
+          result === null
+            ? { r: null, seg: -1, off: s.length + hp.openOff[i] }
+            : { r: result, seg: result.t.length - 1, off: result.t[result.t.length - 1].length + hp.openOff[i] };
+      }
+    }
     if (result === null) s += next;
     else result.t[result.t.length - 1] += next;
   }
