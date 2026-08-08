@@ -1785,6 +1785,271 @@ function ssrGroupSlot(fn, idx) {
   };
 }
 
+// ---- live markup holes (Stage 3): the DR-2 binding ledger generalized ----
+//
+// In a live frame render (the call-driven face), thunk-compiled content
+// holes are wrapped in identified comment pairs (`<!--lh:N-->…<!--lh:/N-->`)
+// and open ledger bindings: commits the response observes re-run the thunk,
+// equality-gate the resolved HTML, and re-emit changed holes as keyed
+// `hole` chunks the client morphs in place. Enabled per render context
+// (`sharedConfig.context.liveHoles`); document SSR never sets it, so
+// document bytes are untouched (the t=0 first-value lock).
+//
+// What is deliberately NOT live here: eagerly-compiled holes (the compiler
+// already made the static/dynamic split — statics arrive as values, not
+// thunks); in-tag (attribute-position) holes, which cannot carry comment
+// markers and are the attribute slice's element-addressed work; group
+// (`$g`) slots, which mix attribute and content positions; and interiors
+// of a sweep's re-evaluation (a re-emitted hole is morphed wholesale, so
+// nested re-minting would only leak bindings).
+
+// Per-template classification of hole positions, cached by template
+// identity (a WeakMap — tagged-template arrays are frozen). Hole i sits
+// between t[i] and t[i+1]; it is a content position iff the markup up to
+// that point leaves us outside an open tag. The scan is quote-aware so a
+// `>` inside a quoted attribute value doesn't close the tag.
+const holePositionCache = new WeakMap();
+function holeContentPositions(t) {
+  let pos = holePositionCache.get(t);
+  if (pos) return pos;
+  pos = [];
+  let inTag = false;
+  let quote = "";
+  for (let i = 0; i < t.length - 1; i++) {
+    const seg = t[i];
+    for (let j = 0; j < seg.length; j++) {
+      const ch = seg[j];
+      if (quote) {
+        if (ch === quote) quote = "";
+      } else if (inTag) {
+        if (ch === '"' || ch === "'") quote = ch;
+        else if (ch === ">") inTag = false;
+      } else if (ch === "<") inTag = true;
+    }
+    pos.push(!inTag);
+  }
+  holePositionCache.set(t, pos);
+  return pos;
+}
+
+/**
+ * The live-hole engine for one frame response. Constructed by the frame
+ * renderer (frame-sink) and published on the render context; `ssr()` and
+ * `resolveSSRNode` route content holes through `content()` while it is
+ * present. Bindings live in the sink's DR-2 ledger — same sweeps, same
+ * equality gating, same end-of-response latch as watched slot args.
+ */
+export function createLiveHoles(sink) {
+  let nextId = 0;
+  // Resolve a hole thunk's value to a `{ t, h, p }` result. NotReady
+  // escalations are absorbed into h/p (the caller decides pending
+  // semantics); real errors propagate.
+  function resolveHoleValue(hole) {
+    const result = { t: [""], h: [], p: [] };
+    try {
+      resolveSSRNode(hole(), result);
+    } catch (err) {
+      const wrap = buildAsyncWrap(err, hole);
+      if (!wrap) throw err;
+      result.h.push(wrap.fn);
+      result.p.push(wrap.p);
+      result.t.push("");
+    }
+    return result;
+  }
+  // Supersession: a hole that re-emits replaces its previous output
+  // wholesale, so bindings minted inside that output retire with it.
+  function closeChildren(b) {
+    for (const c of b.children) {
+      c.closed = true;
+      sink.closeBinding(c.key);
+      closeChildren(c);
+    }
+    b.children.length = 0;
+  }
+  // A first render that escalated has no baseline for the equality gate.
+  // When its retry chain settles, re-evaluate once (mint-suppressed) to
+  // capture what actually shipped, then go live.
+  function armBaseline(b, ps, hole, owner) {
+    Promise.all(ps).then(() => {
+      if (b.closed) return;
+      const prevSweeping = engine.sweeping;
+      engine.sweeping = true;
+      engine.gateHit = false;
+      let res;
+      try {
+        res = owner ? runWithOwner(owner, () => resolveHoleValue(hole)) : resolveHoleValue(hole);
+      } catch (_) {
+        b.closed = true;
+        sink.closeBinding(b.key);
+        return;
+      } finally {
+        engine.sweeping = prevSweeping;
+      }
+      // An escalated first render whose settled value contains called slots:
+      // the records shipped through the retry path; the hole latches.
+      if (engine.gateHit) {
+        b.closed = true;
+        sink.closeBinding(b.key);
+        return;
+      }
+      if (res.h.length) return armBaseline(b, res.p, hole, owner);
+      b.last = res.t[0];
+      b.live = true;
+    });
+  }
+  const engine = {
+    // In-tag routing from `ssr()` suppresses interception for the duration
+    // of one synchronous resolve; sweeps suppress nested minting.
+    suppressed: 0,
+    sweeping: false,
+    parent: null,
+    // The slot-record gate: records (slot/region emissions) are emit-once —
+    // occurrence identity is positional — so a hole whose evaluation emits
+    // them cannot be safely re-run. First renders bump `recordStamp` (the
+    // enclosing hole latches instead of binding); sweep evaluations set
+    // `gateHit` (the sweep aborts and closes the binding).
+    recordStamp: 0,
+    gateHit: false,
+    /**
+     * Intercept a thunk content hole: mint an id, wrap the resolved output
+     * in its marker pair, and open the ledger binding. Returns a string
+     * (sync resolve), a marker-wrapped `{ t, h, p }` template (NotReady
+     * escalation — markers ride the template so the retry's splice lands
+     * inside them), or null when interception is off for this evaluation.
+     */
+    content(hole) {
+      if (engine.suppressed || engine.sweeping) return null;
+      // Slot positions are client-owned constants — the server can never
+      // re-render one, so a live binding over one would be permanently
+      // inert and its markers pure tax. A tagged slot getter defers to the
+      // normal path before evaluation…
+      if (hole.$lhSkip) return null;
+      const stampBefore = engine.recordStamp;
+      let value;
+      let escalated = null;
+      try {
+        value = hole();
+      } catch (err) {
+        const wrap = buildAsyncWrap(err, hole);
+        // Real error at first render: existing content semantics are
+        // "contribute nothing" — no marker, no binding.
+        if (!wrap) return "";
+        escalated = wrap;
+      }
+      if (
+        !escalated &&
+        ((typeof value === "function" && value.$lhSkip) ||
+          (value !== null && typeof value === "object" && value.$slot))
+      ) {
+        // …and a slot-tagged value resolves unmarked (suppressed, so a
+        // wrapped getter isn't re-intercepted one level down).
+        const r = { t: [""], h: [], p: [] };
+        engine.suppressed++;
+        try {
+          resolveSSRNode(value, r);
+        } finally {
+          engine.suppressed--;
+        }
+        return r.h.length ? r : r.t[0];
+      }
+      const owner = getOwner();
+      const id = nextId++;
+      const key = "lh:" + id;
+      const open = `<!--lh:${id}-->`;
+      const close = `<!--lh:/${id}-->`;
+      const b = {
+        key,
+        children: [],
+        last: null,
+        live: false,
+        closed: false,
+        sweep() {
+          if (!b.live || b.closed) return;
+          const prevSweeping = engine.sweeping;
+          engine.sweeping = true;
+          engine.gateHit = false;
+          let res;
+          try {
+            res = owner
+              ? runWithOwner(owner, () => resolveHoleValue(hole))
+              : resolveHoleValue(hole);
+          } catch (err) {
+            // A real error is terminal for the hole — the last emitted
+            // markup stands and the failure surfaces as a keyed error.
+            b.closed = true;
+            sink.closeBinding(key);
+            sink.error(key, { message: String((err && err.message) || err) });
+            return;
+          } finally {
+            engine.sweeping = prevSweeping;
+          }
+          // The re-evaluation reached a called slot (possible only when the
+          // first render escalated before its slot calls): records are
+          // emit-once, so the hole is not re-runnable — latch it.
+          if (engine.gateHit) {
+            b.closed = true;
+            sink.closeBinding(key);
+            return;
+          }
+          if (res.h.length) {
+            // Pending-with-previous: hold the last value; the retry chain
+            // settling is itself a commit, which re-sweeps this binding.
+            b.live = false;
+            Promise.all(res.p).then(() => {
+              if (b.closed) return;
+              b.live = true;
+              sink.commit();
+            });
+            return;
+          }
+          const html = res.t[0];
+          if (html === b.last) return;
+          b.last = html;
+          closeChildren(b);
+          sink.hole(key, html);
+        }
+      };
+      if (engine.parent) engine.parent.children.push(b);
+      const prevParent = engine.parent;
+      engine.parent = b;
+      let res;
+      if (escalated) {
+        res = { t: ["", ""], h: [escalated.fn], p: [escalated.p] };
+      } else {
+        res = { t: [""], h: [], p: [] };
+        try {
+          resolveSSRNode(value, res);
+        } catch (_) {
+          engine.parent = prevParent;
+          return "";
+        }
+      }
+      engine.parent = prevParent;
+      // The record gate: this evaluation emitted slot/region records, which
+      // are emit-once — re-running the thunk would mint fresh occurrences
+      // and re-serialize their args. The hole latches: no marker, no
+      // binding; its interior holes stay live on their own bindings.
+      if (engine.recordStamp !== stampBefore) {
+        return res.h.length ? res : res.t[0];
+      }
+      if (!res.h.length) {
+        b.last = res.t[0];
+        b.live = true;
+        sink.openBinding(key, b);
+        return open + res.t[0] + close;
+      }
+      const t = res.t.slice();
+      t[0] = open + t[0];
+      t[t.length - 1] += close;
+      sink.openBinding(key, b);
+      armBaseline(b, res.p, hole, owner);
+      return { t, h: res.h, p: res.p };
+    }
+  };
+  return engine;
+}
+
 // rendering
 export function ssr(t) {
   // Inlined hole resolution — uses `arguments` instead of a `(t, ...nodes)`
@@ -1866,16 +2131,42 @@ export function ssr(t) {
           }
         }
       }
+    } else if (ht === "function") {
+      // Live frame renders route thunk content holes through the live-hole
+      // engine (mark + ledger binding). In-tag positions must never be
+      // intercepted — a comment cannot sit inside a tag — including by the
+      // nested resolve, hence the suppression around that route.
+      const live = sharedConfig.context && sharedConfig.context.liveHoles;
+      let liveNode = null;
+      if (live && holeContentPositions(t)[i - 1] && (liveNode = live.content(hole)) !== null) {
+        if (typeof liveNode === "string") {
+          if (result === null) s += liveNode;
+          else result.t[result.t.length - 1] += liveNode;
+        } else {
+          if (result === null) {
+            result = { t: [s], h: [], p: [] };
+            s = "";
+          }
+          resolveSSRNode(liveNode, result);
+        }
+      } else if (result !== null) {
+        if (live) live.suppressed++;
+        try {
+          resolveSSRNode(hole, result);
+        } finally {
+          if (live) live.suppressed--;
+        }
+      } else {
+        const r = tryResolveFunctionHole(hole);
+        if (typeof r === "string") s += r;
+        else {
+          result = { t: [s], h: [], p: [] };
+          s = "";
+          appendResolvedNode(result, r);
+        }
+      }
     } else if (result !== null) {
       resolveSSRNode(hole, result);
-    } else if (ht === "function") {
-      const r = tryResolveFunctionHole(hole);
-      if (typeof r === "string") s += r;
-      else {
-        result = { t: [s], h: [], p: [] };
-        s = "";
-        appendResolvedNode(result, r);
-      }
     } else {
       const r = tryResolveString(hole);
       if (typeof r === "string") {
@@ -2425,14 +2716,24 @@ function resolveSSRNode(
       result.t[result.t.length - 1] += node.t;
     } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, node);
   } else if (t === "function") {
-    try {
-      resolveSSRNode(node(), result);
-    } catch (err) {
-      const wrap = buildAsyncWrap(err, node);
-      if (wrap) {
-        result.h.push(wrap.fn);
-        result.p.push(wrap.p);
-        result.t.push("");
+    // Function nodes reaching the tree resolver are content by construction
+    // (in-tag holes route here only under `ssr()`'s suppression window), so
+    // a live render intercepts them as live holes.
+    const live = sharedConfig.context && sharedConfig.context.liveHoles;
+    let liveNode = null;
+    if (live && (liveNode = live.content(node)) !== null) {
+      if (typeof liveNode === "string") result.t[result.t.length - 1] += liveNode;
+      else resolveSSRNode(liveNode, result);
+    } else {
+      try {
+        resolveSSRNode(node(), result);
+      } catch (err) {
+        const wrap = buildAsyncWrap(err, node);
+        if (wrap) {
+          result.h.push(wrap.fn);
+          result.p.push(wrap.p);
+          result.t.push("");
+        }
       }
     }
   }

@@ -80,7 +80,7 @@ function serverOwned(render) {
 function serverComponentScope(render) {
   return runInServerComponentScope ? runInServerComponentScope(render) : render();
 }
-import { renderToStream } from "./server.js";
+import { renderToStream, createLiveHoles } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
 import {
   ChunkReader,
@@ -377,6 +377,11 @@ export function createFrameSink(emit, frame) {
     region(childId, html) {
       emit({ type: "html", id: childId, version, html });
     },
+    // A live-hole re-emission (Stage 3): the hole's re-resolved HTML, keyed
+    // by its marker id — the consumer morphs the marked range in place.
+    hole(key, html) {
+      emit({ type: "hole", id, version, key, html });
+    },
     // ---- the binding ledger (DR-2 case 1) ----
     /**
      * Open a watched-arg binding under its `(occurrence, arg)` key; it
@@ -471,6 +476,11 @@ export function renderServerComponent(component, options = {}) {
         // compares this at memo reads so sync derivations recompute across
         // commits and stay cached within one.
         ctx.commitEpoch = () => sink.epoch;
+        // Live markup holes (Stage 3): thunk content holes in this render
+        // mark their ranges and open ledger bindings — the call-driven face
+        // is live for the response window. The document face never sets
+        // this (t=0 latches to the V1 snapshot).
+        ctx.liveHoles = createLiveHoles(sink);
       }
       return serverComponentScope(() => component(props));
     };
@@ -535,9 +545,12 @@ function frameStream(makeCode, options) {
   };
 }
 
-/** The slot marker range for an occurrence, as a pre-rendered SSR value. */
+/** The slot marker range for an occurrence, as a pre-rendered SSR value.
+ * `$slot` opts the range out of live-hole marking: a slot is a client-owned
+ * position — the server can never re-render it, so a live binding over one
+ * would be permanently inert and its markers pure tax. */
 function slotRange(occurrence) {
-  return { t: `<!--slot:${occurrence}:start--><!--slot:${occurrence}:end-->` };
+  return { t: `<!--slot:${occurrence}:start--><!--slot:${occurrence}:end-->`, $slot: true };
 }
 
 // Occurrence ids embed user data (`$key`), and they land in contexts with
@@ -1098,6 +1111,20 @@ export function createSlotProps(sink, frame) {
           if (callArgs.length === 0 || callArgs[0] === undefined) {
             return slotRange(prop);
           }
+          // Slot records are emit-once: occurrence identity is positional
+          // (`counts`), so a live-hole re-evaluation reaching a called slot
+          // would mint new occurrences and re-serialize args — the double-
+          // data disease. First render stamps the engine so the enclosing
+          // hole latches instead of binding; a sweep that gets here anyway
+          // (the escalated-first-render case) aborts and closes the binding.
+          const live = sharedConfig.context && sharedConfig.context.liveHoles;
+          if (live) {
+            if (live.sweeping) {
+              live.gateHit = true;
+              return { t: "", $slot: true };
+            }
+            live.recordStamp++;
+          }
           const raw = callArgs[0];
           // Occurrence identity (RFC open question 1): a primitive `$key` arg
           // names the occurrence, so client state follows the entity across
@@ -1240,6 +1267,10 @@ export function createSlotProps(sink, frame) {
           }
           return slotRange(occurrence);
         };
+        // A slot getter placed directly as a child (`{props.children}`) is a
+        // function-shaped hole; the tag opts it out of live-hole marking the
+        // same way `$slot` opts out its returned range.
+        fn.$lhSkip = true;
         getters.set(prop, fn);
       }
       return fn;
