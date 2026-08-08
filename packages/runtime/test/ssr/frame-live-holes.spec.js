@@ -316,3 +316,125 @@ describe("live content holes — the ledger (stream face)", () => {
     expect(chunks.indexOf(holes[1])).toBeLessThan(completeIdx);
   });
 });
+
+describe("live content holes — lifetime and error semantics (stream face)", () => {
+  it("supersession: a parent re-emission retires its interior holes", async () => {
+    // Nested live holes: the outer thunk's html CONTAINS the inner's
+    // content, so any inner change also changes the outer — the outer's
+    // wholesale re-emission supersedes the inner binding (its markers are
+    // gone from the morphed range; mint-suppressed sweeps produce no new
+    // ones). After the first re-emission, updates collapse to the parent
+    // key: no inner-keyed chunk ever follows a parent re-emit.
+    let inner = "a";
+    const gates = [];
+    const mkGate = () => new Promise(res => gates.push(res));
+    const g1 = mkGate();
+    const g2 = mkGate();
+    const pending = collectStream(props =>
+      r.ssr(
+        ["<section>", "<!--x-->", "</section>"],
+        () => r.ssr(["<div><em>", "</em></div>"], () => r.escape(inner)),
+        [props.row({ g1, g2 })]
+      )
+    );
+    await Promise.resolve();
+    inner = "b";
+    gates[0]("one");
+    await new Promise(res => setTimeout(res, 0));
+    inner = "c";
+    gates[1]("two");
+    const chunks = await pending;
+    const shell = shellOf(chunks);
+    // Two bindings minted at first render: outer wraps inner.
+    const ids = [...shell.html.matchAll(/<!--lh:(\d+)-->/g)].map(m => m[1]);
+    expect(ids).toHaveLength(2);
+    const [outerId, innerId] = ids;
+    const holes = holesOf(chunks);
+    const outerEmits = holes.filter(h => h.key === `lh:${outerId}`);
+    const innerEmits = holes.filter(h => h.key === `lh:${innerId}`);
+    // The outer re-emitted for both commits; its html is marker-free
+    // (sweeps are mint-suppressed) — the inner range is superseded.
+    expect(outerEmits.map(h => h.html)).toEqual([
+      "<div><em>b</em></div>",
+      "<div><em>c</em></div>"
+    ]);
+    for (const h of outerEmits) expect(h.html).not.toContain("lh:");
+    // The inner binding retired with the first parent re-emission: at most
+    // its same-commit sweep (registration order runs it first) — never one
+    // after the parent's chunk shipped.
+    const firstOuterIdx = chunks.indexOf(outerEmits[0]);
+    for (const h of innerEmits) expect(chunks.indexOf(h)).toBeLessThan(firstOuterIdx);
+  });
+
+  it("a real error on sweep is terminal: the hole latches and a keyed error ships", async () => {
+    let n = 1;
+    let boom = false;
+    const gates = [];
+    const mkGate = () => new Promise(res => gates.push(res));
+    const g1 = mkGate();
+    const g2 = mkGate();
+    const pending = collectStream(props =>
+      r.ssr(
+        ["<section>", "<!--x-->", "</section>"],
+        () => {
+          if (boom) throw new Error("sweep failed");
+          return r.escape(String(n));
+        },
+        [props.row({ g1, g2 })]
+      )
+    );
+    await Promise.resolve();
+    boom = true;
+    gates[0]("one");
+    await new Promise(res => setTimeout(res, 0));
+    // A later commit finds the binding closed: no resurrection, no throw.
+    boom = false;
+    n = 3;
+    gates[1]("two");
+    const chunks = await pending;
+    const shell = shellOf(chunks);
+    const [, id] = shell.html.match(/<!--lh:(\d+)-->1<!--lh:\/\1-->/) || [];
+    expect(id).toBeDefined();
+    // No hole chunk ever shipped — the marked range latched at "1".
+    expect(holesOf(chunks)).toHaveLength(0);
+    // The failure surfaced as a hole-keyed error chunk, message normalized
+    // to a string (same shape as the stream-level error path).
+    const errors = chunks.filter(c => c.type === "error" && c.key === `lh:${id}`);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].error).toBe("sweep failed");
+    // The stream still completed: a hole failure is not a stream failure.
+    expect(chunks.some(c => c.type === "complete")).toBe(true);
+  });
+
+  it("client: a hole-keyed error stores under the hole's records and warns once", async () => {
+    const boundary = document.createElement("div");
+    document.body.appendChild(boundary);
+    const table = createJSONDataTable();
+    const host = createFrameHost({
+      applyData: c => table.apply(c),
+      resolve: ref => table.resolve(ref)
+    });
+    createFrame(boundary, { host, id: "f", slots: {} });
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      host.apply({
+        type: "html",
+        id: "f",
+        version: 1,
+        html: "<section><!--lh:0-->1<!--lh:/0--></section>"
+      });
+      expect(boundary.querySelector("section").textContent).toBe("1");
+      host.apply({ type: "error", id: "f", version: 1, key: "lh:0", error: "sweep failed" });
+      host.apply({ type: "complete", id: "f", version: 1 });
+      // The DOM latched — the error did not clear or replace the range.
+      expect(boundary.querySelector("section").textContent).toBe("1");
+      // One diagnostic naming the hole; re-flushes don't repeat it.
+      const holeWarnings = spy.mock.calls.filter(args => String(args[0]).includes("lh:0"));
+      expect(holeWarnings).toHaveLength(1);
+      expect(String(holeWarnings[0].join(" "))).toContain("sweep failed");
+    } finally {
+      spy.mockRestore();
+      boundary.remove();
+    }
+  });
+});

@@ -1,12 +1,5 @@
 import { ChildProperties } from "./constants";
-import {
-  sharedConfig,
-  root,
-  ssrHandleError,
-  getOwner,
-  runWithOwner,
-  creationStamp
-} from "rxcore";
+import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner, creationStamp } from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
 // Wire-protocol header names for the commit fold's gap-fill denylist
 // (`commitEventResponse`): shared constants, not copies, so the fold can
@@ -1997,33 +1990,6 @@ export function createLiveHoles(sink) {
       if (hole.$lhSkip) return null;
       const recordsBefore = engine.recordStamp;
       const ownersBefore = stamp();
-      let value;
-      let escalated = null;
-      try {
-        value = hole();
-      } catch (err) {
-        const wrap = buildAsyncWrap(err, hole);
-        // Real error at first render: existing content semantics are
-        // "contribute nothing" — no marker, no binding.
-        if (!wrap) return "";
-        escalated = wrap;
-      }
-      if (
-        !escalated &&
-        ((typeof value === "function" && value.$lhSkip) ||
-          (value !== null && typeof value === "object" && value.$slot))
-      ) {
-        // …and a slot-tagged value resolves unmarked (suppressed, so a
-        // wrapped getter isn't re-intercepted one level down).
-        const r = { t: [""], h: [], p: [] };
-        engine.suppressed++;
-        try {
-          resolveSSRNode(value, r);
-        } finally {
-          engine.suppressed--;
-        }
-        return r.h.length ? r : r.t[0];
-      }
       const owner = getOwner();
       const b = {
         key: null,
@@ -2046,7 +2012,7 @@ export function createLiveHoles(sink) {
             // markup stands and the failure surfaces as a keyed error.
             b.closed = true;
             sink.closeBinding(b.key);
-            sink.error(b.key, { message: String((err && err.message) || err) });
+            sink.error(b.key, String((err && err.message) || err));
             return;
           } finally {
             engine.sweeping = prevSweeping;
@@ -2080,7 +2046,45 @@ export function createLiveHoles(sink) {
       };
       if (engine.parent) engine.parent.children.push(b);
       const prevParent = engine.parent;
+      // The parent frame spans EVALUATION as well as resolve: `ssr()`
+      // resolves its holes at construction time, so a nested template's
+      // interior holes mint during `hole()` itself — they must land in
+      // `b.children` for supersession (a re-emission of this hole replaces
+      // the ranges those children mark, so their bindings retire with it).
       engine.parent = b;
+      let value;
+      let escalated = null;
+      try {
+        value = hole();
+      } catch (err) {
+        const wrap = buildAsyncWrap(err, hole);
+        if (!wrap) {
+          // Real error at first render: existing content semantics are
+          // "contribute nothing" — no marker, no binding. Interior holes
+          // minted before the throw rode markup discarded with it.
+          engine.parent = prevParent;
+          closeChildren(b);
+          return "";
+        }
+        escalated = wrap;
+      }
+      if (
+        !escalated &&
+        ((typeof value === "function" && value.$lhSkip) ||
+          (value !== null && typeof value === "object" && value.$slot))
+      ) {
+        // …and a slot-tagged value resolves unmarked (suppressed, so a
+        // wrapped getter isn't re-intercepted one level down).
+        engine.parent = prevParent;
+        const r = { t: [""], h: [], p: [] };
+        engine.suppressed++;
+        try {
+          resolveSSRNode(value, r);
+        } finally {
+          engine.suppressed--;
+        }
+        return r.h.length ? r : r.t[0];
+      }
       let res;
       if (escalated) {
         // The retry chain resolves mint-suppressed (`$lhSuppress`, which
@@ -2088,6 +2092,9 @@ export function createLiveHoles(sink) {
         // re-runs the whole thunk, so letting its interior mint would
         // duplicate bindings on every attempt. The binding link
         // (`$lhBinding`) lets the retry's resolving splice arm the baseline.
+        // Interior mints from the failed first attempt rode discarded html
+        // and the suppressed retry never re-mints them — retire them now.
+        closeChildren(b);
         escalated.fn.$lhSuppress = true;
         escalated.fn.$lhBinding = b;
         res = { t: ["", ""], h: [escalated.fn], p: [escalated.p] };
@@ -2097,6 +2104,7 @@ export function createLiveHoles(sink) {
           resolveSSRNode(value, res);
         } catch (_) {
           engine.parent = prevParent;
+          closeChildren(b);
           return "";
         }
       }

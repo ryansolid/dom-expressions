@@ -115,10 +115,15 @@ export function chunkToRecords(chunk) {
     case "complete":
       return { ":complete": true };
     case "error":
-      // Keyed errors are segment-scoped (an errored fragment); unkeyed ones
-      // are stream-level. Both surface through the store — `frame.error`
-      // reads the stream-level record.
-      return chunk.key ? { [`seg:${chunk.key}:error`]: chunk.error } : { ":error": chunk.error };
+      // Keyed errors scope to what the key names: a hole key (`lh:N`) is a
+      // failed live-hole sweep — terminal for the hole, whose range latched
+      // at its last markup (response-scoped like the hole records, so these
+      // clear on version bumps). Other keys are segment-scoped (an errored
+      // fragment). Unkeyed errors are stream-level — `frame.error` reads
+      // that record.
+      if (!chunk.key) return { ":error": chunk.error };
+      if (chunk.key.startsWith("lh:")) return { [`hole:${chunk.key}:error`]: chunk.error };
+      return { [`seg:${chunk.key}:error`]: chunk.error };
     default:
       return {};
   }
@@ -290,6 +295,8 @@ class FrameImpl {
   // Per mount, not per store — a fresh mount seeding from a warm resident
   // store must replay hole records over the re-materialized shell.
   #appliedHoles = new Map();
+  // Hole-error diagnostics already surfaced (one console line per record).
+  #warnedHoleErrors = new Set();
   #slots;
   #mountedSlots = new Set();
   #slotCleanups = new Map();
@@ -461,6 +468,7 @@ class FrameImpl {
     this.#revealed.clear();
     this.#fallbackShown.clear();
     this.#appliedHoles.clear();
+    this.#warnedHoleErrors.clear();
     this.#errorNotified = false;
     clearStreamRecords(this.#store, root);
   }
@@ -537,6 +545,21 @@ class FrameImpl {
         this.#appliedHoles.set(marker, record.value);
         this.#applied(version, "morph");
       }
+    }
+
+    // A hole-keyed error is terminal server-side: the range latched at its
+    // last markup, and — unlike a rejected arg ref — there is no client
+    // read to throw into, so surface the failure as a one-time diagnostic
+    // rather than letting it vanish.
+    for (const key in this.#store) {
+      if (!key.startsWith("hole:") || !key.endsWith(":error")) continue;
+      if (this.#warnedHoleErrors.has(key)) continue;
+      this.#warnedHoleErrors.add(key);
+      console.error(
+        `Live hole "${key.slice(5, -6)}" failed on the server and latched at its last value: ${
+          this.#store[key]
+        }`
+      );
     }
 
     // Module assets preload as soon as their record lands (the document
