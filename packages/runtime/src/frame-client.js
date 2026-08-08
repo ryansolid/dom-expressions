@@ -107,6 +107,11 @@ export function chunkToRecords(chunk) {
       // called with these (resolved) args. Data args are serializer refs;
       // server-content args are frame refs resolved to nested regions.
       return { [`slot:${chunk.key}`]: { kind: "slot", args: chunk.args } };
+    case "hole":
+      // A live-hole re-emission: the re-resolved HTML for a marked content
+      // range (`<!--lh:N-->…<!--lh:/N-->`). Response-scoped like segments —
+      // hole ids restart per render — so these clear on version bumps.
+      return { [`hole:${chunk.key}`]: { kind: "html", value: chunk.html } };
     case "complete":
       return { ":complete": true };
     case "error":
@@ -281,6 +286,10 @@ class FrameImpl {
   #errorNotified = false;
   #revealed = new Set();
   #fallbackShown = new Set();
+  // Live-hole apply dedupe: marker key -> last html this MOUNT morphed in.
+  // Per mount, not per store — a fresh mount seeding from a warm resident
+  // store must replay hole records over the re-materialized shell.
+  #appliedHoles = new Map();
   #slots;
   #mountedSlots = new Set();
   #slotCleanups = new Map();
@@ -451,6 +460,7 @@ class FrameImpl {
   #resetStreamState(root) {
     this.#revealed.clear();
     this.#fallbackShown.clear();
+    this.#appliedHoles.clear();
     this.#errorNotified = false;
     clearStreamRecords(this.#store, root);
   }
@@ -509,6 +519,23 @@ class FrameImpl {
           this.#applied(version, "reveal");
           progressed = true;
         }
+      }
+    }
+
+    // Live-hole re-emissions morph their marked ranges in place. After the
+    // segment loop, so a hole inside a segment revealed THIS flush is
+    // findable now. A record whose markers aren't in the DOM yet (its
+    // containing content still arriving) simply stays pending — any later
+    // flush retries, store-model style.
+    for (const key in this.#store) {
+      if (!key.startsWith("hole:")) continue;
+      const record = this.#store[key];
+      if (!record || record.kind !== "html") continue;
+      const marker = key.slice(5);
+      if (this.#appliedHoles.get(marker) === record.value) continue;
+      if (this.#applyHole(marker, record.value)) {
+        this.#appliedHoles.set(marker, record.value);
+        this.#applied(version, "morph");
       }
     }
 
@@ -1185,6 +1212,36 @@ class FrameImpl {
     }
   }
 
+  /**
+   * Morph a live hole's marked range (`<!--lh:N-->…<!--lh:/N-->`, marker =
+   * `lh:N`) to its re-emitted html — the client half of the Stage 3 hole
+   * ledger. The same range-anchored reconcile as the root morph, so
+   * interior element identity (focus, media, third-party widget state)
+   * survives value ticks. Live holes never contain slot ranges or nested
+   * regions (the server's record gate latches such holes), so no
+   * displaced-range index is needed. Returns whether the markers were
+   * found and the morph ran.
+   */
+  #applyHole(marker, html) {
+    if (!this.#hasContent) return false;
+    const open = findHoleComment(this.#firstContent(), this.#end, marker);
+    if (!open) return false;
+    const close = rangeClose(open, "lh:/" + marker.slice(3));
+    if (!close) {
+      if ("_DX_DEV_") {
+        console.error(
+          `Live hole "${marker}" is missing its closing comment (<!--lh:/${marker.slice(3)}-->); ` +
+            `its update was dropped. Likely an HTML-rewriting layer stripped the comment.`,
+          open
+        );
+      }
+      return false;
+    }
+    const claim = claimHandlers() ? this.#claimTree : null;
+    reconcileChildren(open.parentNode, parseFragment(html), open, close, claim);
+    return true;
+  }
+
   /** Remove the frame's current content (bounded to its range). */
   #clearContent() {
     removeUntil(this.#parent(), this.#firstContent(), this.#end);
@@ -1518,6 +1575,29 @@ function rangeClose(start, id) {
   return null;
 }
 
+/**
+ * Depth-first search among the siblings `[n, end)` for a live-hole open
+ * comment (`<!--lh:N-->`, data = `lh:N`). Descends through elements —
+ * including region elements, whose holes belong to the stream that produced
+ * them (one hole-id counter per response) — but never into nested boundary
+ * frames (bare ids): those are separate streams with their own hole
+ * namespaces, so the same marker id there is a different hole.
+ */
+function findHoleComment(n, end, data) {
+  while (n && n !== end) {
+    if (n.nodeType === COMMENT_NODE && n.data === data) return n;
+    if (n.nodeType === ELEMENT_NODE) {
+      const fid = isFrameElement(n) ? n.getAttribute(FRAME_ID_ATTR) : null;
+      if (fid === null || fid.includes(".")) {
+        const found = findHoleComment(n.firstChild, null, data);
+        if (found) return found;
+      }
+    }
+    n = n.nextSibling;
+  }
+  return null;
+}
+
 /** Depth-first search among the siblings `[n, end)` for a placeholder
  *  template with the given id (descending through elements). */
 function findPlaceholder(n, end, id) {
@@ -1614,14 +1694,21 @@ function eachInRange(start, key, cb) {
 }
 
 /**
- * Delete the per-stream records from a store: seg/error state is
- * response-scoped (fragment names restart in every stream), while slot
- * records persist (dedupe is what preserves occurrence state). `root` also
- * drops the root html record — rebind's case only.
+ * Delete the per-stream records from a store: seg/hole/error state is
+ * response-scoped (fragment names and hole ids restart in every stream),
+ * while slot records persist (dedupe is what preserves occurrence state).
+ * `root` also drops the root html record — rebind's case only.
  */
 function clearStreamRecords(records, root) {
   for (const key in records) {
-    if (key.startsWith("seg:") || key === ":error" || (root && key === "")) delete records[key];
+    if (
+      key.startsWith("seg:") ||
+      key.startsWith("hole:") ||
+      key === ":error" ||
+      (root && key === "")
+    ) {
+      delete records[key];
+    }
   }
 }
 

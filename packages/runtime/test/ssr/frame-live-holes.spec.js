@@ -23,6 +23,12 @@ import {
   frameTransformDirectResult,
   ServerComponentPlugin
 } from "../../src/frame-sink";
+import { createJSONDataTable } from "../../src/serializer";
+import { createFrame, createFrameHost } from "../../src/frame-client";
+
+globalThis.TextEncoder = function () {
+  return { encode: v => v };
+};
 
 function collectStream(component, frame = { id: "f", version: 1 }) {
   return new Promise(resolve => {
@@ -126,6 +132,101 @@ describe("live content holes — marking (stream face)", () => {
     );
     expect(html).toContain("v1");
     expect(html).not.toContain("lh:");
+  });
+});
+
+describe("live content holes — client morph", () => {
+  let boundary;
+  beforeEach(() => {
+    boundary = document.createElement("div");
+    document.body.appendChild(boundary);
+  });
+  afterEach(() => boundary.remove());
+
+  function streamInto(stream, host) {
+    return new Promise(resolve => {
+      stream.pipe({ write: c => host.apply(c), end: resolve });
+    });
+  }
+
+  function tableHost() {
+    const table = createJSONDataTable();
+    return createFrameHost({ applyData: c => table.apply(c), resolve: ref => table.resolve(ref) });
+  }
+
+  const slots = { row: () => document.createElement("span") };
+
+  it("a hole re-emission morphs the marked range in place", async () => {
+    let n = 1;
+    let resolveGate;
+    const gate = new Promise(res => (resolveGate = res));
+    const ServerComp = props =>
+      r.ssr(["<section><p>", "</p><!--x-->", "</section>"], () => r.escape(String(n)), [
+        props.row({ gate })
+      ]);
+    const host = tableHost();
+    createFrame(boundary, { host, id: "f", slots });
+    const pending = streamInto(renderServerComponent(ServerComp, { frame: { id: "f" } }), host);
+    await new Promise(res => setTimeout(res, 0));
+    // The shell applied with V1 between the markers.
+    expect(boundary.querySelector("p").textContent).toBe("1");
+    n = 2;
+    resolveGate("done");
+    await pending;
+    // The commit's re-emission morphed the range; markers persist for the
+    // next update.
+    const p = boundary.querySelector("p");
+    expect(p.textContent).toBe("2");
+    expect(p.innerHTML).toMatch(/<!--lh:(\d+)-->2<!--lh:\/\1-->/);
+  });
+
+  it("interior element identity survives a hole morph", async () => {
+    let label = "first";
+    let resolveGate;
+    const gate = new Promise(res => (resolveGate = res));
+    const ServerComp = props =>
+      r.ssr(["<div>", "<!--x-->", "</div>"], () => r.ssr(["<em>", "</em>"], r.escape(label)), [
+        props.row({ gate })
+      ]);
+    const host = tableHost();
+    createFrame(boundary, { host, id: "f", slots });
+    const pending = streamInto(renderServerComponent(ServerComp, { frame: { id: "f" } }), host);
+    await new Promise(res => setTimeout(res, 0));
+    const em = boundary.querySelector("em");
+    expect(em.textContent).toBe("first");
+    label = "second";
+    resolveGate("done");
+    await pending;
+    // The reconcile morphs the element, not replaces it — same node.
+    expect(boundary.querySelector("em")).toBe(em);
+    expect(em.textContent).toBe("second");
+  });
+
+  it("a remount replays the latest hole value over the warm store's shell", async () => {
+    let n = 1;
+    let resolveGate;
+    const gate = new Promise(res => (resolveGate = res));
+    const ServerComp = props =>
+      r.ssr(["<section><p>", "</p><!--x-->", "</section>"], () => r.escape(String(n)), [
+        props.row({ gate })
+      ]);
+    const host = tableHost();
+    const first = createFrame(boundary, { host, id: "f", slots });
+    const pending = streamInto(renderServerComponent(ServerComp, { frame: { id: "f" } }), host);
+    await new Promise(res => setTimeout(res, 0));
+    n = 2;
+    resolveGate("done");
+    await pending;
+    expect(boundary.querySelector("p").textContent).toBe("2");
+    first.dispose();
+    // A fresh mount seeds from the resident store: the root record holds
+    // the V1 shell, and the hole record replays the latched final value —
+    // retention shows what the last stream showed, not its first flush.
+    const boundary2 = document.createElement("div");
+    document.body.appendChild(boundary2);
+    createFrame(boundary2, { host, id: "f", slots });
+    expect(boundary2.querySelector("p").textContent).toBe("2");
+    boundary2.remove();
   });
 });
 
