@@ -857,33 +857,55 @@ retired as a pole and survives only as potential authoring sugar.
    chat example. Merged to `next` and released.
 2. **Stage 2 — Ratify the pole.** **Done** (decision, not build): the
    reactive pole, ratified 2026-08-07.
-3. **Stage 3 — Live holes, call-driven face.** **Next — and the ship
-   line.** After this stage the model is announceable: the complete
-   reactive story for everything after load, standard SSR semantics at
-   load. Ship-gating scope (cutting any of these reopens the
-   half-a-face incoherence Stage 1 existed to prevent):
-   - Ledger generalization: insert-position holes registered as
-     bindings; re-evaluation on commits; changed holes re-emit their
-     HTML as fragment updates the client morphs in place.
-   - Content holes first (runtime addressing only — no compiler change).
-     First milestone: the chat demo slice — the markdown memo feeding a
-     live hole, token streaming *inside* a paragraph, no client
-     component.
-   - Attribute holes in ship scope. Within one face, a frozen
-     `class={sig()}` beside ticking `{sig()}` text is a first-hour
-     incoherence; markers cannot live inside tags, so this is the
-     hydration-key-style runtime pattern (element-addressed, not
-     marker-addressed).
-   - Lifetime and error semantics: stream end latches the hole; a
-     mid-window throw escalates to the owning boundary; supersession
-     (a re-rendered occurrence retires its holes) — one liveness rule
-     shared with the arg ledger.
-   - The t=0 latch, documented and deterministic: holes flushed in a
-     document render show their V1 snapshot and latch (first-value
-     lock); any later refetch morphs the region through the existing
-     path. Correct-but-static is the acceptable degraded mode at t=0;
-     catch-up liveness is Stage 4's upgrade, not a Stage 3 repair.
-   - Matrix rows and docs land with each piece.
+3. **Stage 3 — Live holes, call-driven face.** **Built (2026-08-08, the
+   `live-holes` branches) — the ship line.** After this stage the model
+   is announceable: the complete reactive story for everything after
+   load, standard SSR semantics at load. What shipped, per the scope:
+   - Ledger generalization: **done.** Thunk-compiled content holes in
+     live frame renders wrap in identified comment pairs
+     (`<!--lh:N-->…<!--lh:/N-->`) and open ledger bindings; commits
+     re-run them, equality-gate the resolved HTML (marker-stripped
+     baselines), and re-emit changes as keyed `hole` chunks the client
+     morphs in place. Convergence is commit-driven and impurity-gated:
+     an evaluation that emits records or creates reactive scopes latches
+     (the record gate and the rxcore creation stamp), retry chains
+     resolve mint-suppressed (`$lhSuppress` through `buildAsyncWrap`),
+     and boundary/slot machinery is `$lhSkip`-tagged out.
+   - Content holes + the chat slice: **done.** The chat demo streams
+     markdown token-by-token through a `<Loading>`-wrapped iterable-fed
+     `innerHTML` hole, no client component; `ctx.hold()` keeps the
+     response window open for bounded async traces.
+   - Attribute holes: **done.** Markers can't sit inside tags, so a tag
+     with in-tag thunk holes is element-addressed: `ssr()`'s position
+     scan (extended with per-segment tag geometry) splices
+     ` data-lha="N"` at the tag open and captures the attribute area as
+     re-runnable parts — including positions dequeued from
+     cross-element `ssrGroup` batches, split per element. Rebuilds ship
+     as element-keyed `attr` chunks with explicit `removed` name lists
+     (the server holds the previous text; the client tracks no name
+     history) and the client patches the addressed element in place.
+     Mid-attr escalations latch the tag.
+   - Lifetime and error semantics: **done, one scoped deviation.**
+     Stream end latches (the end-latch sweep is the floor); supersession
+     spans evaluation (`ssr()` resolves interior holes at construction,
+     so nested mints land in the parent's retire list — a parent
+     re-emission retires the child ranges it replaces); a mid-window
+     throw is terminal — the hole latches at its last markup and the
+     failure ships as a hole-keyed error chunk, surfaced client-side as
+     a one-time diagnostic. The deviation: "escalates to the owning
+     boundary" is deferred — true escalation means boundary-region
+     re-emission (server) or a frame error-throw surface (client), and
+     the latter does not exist for ANY error tier yet (stream-level
+     `:error` only releases gates today). The hole-keyed error record is
+     the hook that surface will consume when it lands.
+   - The t=0 latch: **done and pinned** — document renders mark nothing
+     and inject nothing; bytes are untouched (first-value lock).
+     Correct-but-static is the accepted degraded mode at t=0; catch-up
+     liveness is Stage 4's upgrade, not a Stage 3 repair.
+   - Matrix rows and docs: **done** — engine cells in dom-expressions
+     `frame-live-holes.spec.js`, integration cells in solid-web
+     (`frame-live-holes*.spec.tsx`), rows in the lifecycle matrix's
+     "Live markup holes" section.
 4. **Stage 4 — Liveness at t=0.** The §10 design made real: hole markers
    armed in frame-flavored document renders; adoption reconstructs the
    morph substrate from page bytes; catch-up morphs replay data records

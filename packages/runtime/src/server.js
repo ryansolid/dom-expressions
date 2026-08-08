@@ -1877,7 +1877,10 @@ function holeContentPositions(t) {
       if (quote) {
         if (ch === quote) quote = "";
       } else if (inTag) {
-        if (scanningName && (ch === " " || ch === "\t" || ch === "\n" || ch === ">" || ch === "/")) {
+        if (
+          scanningName &&
+          (ch === " " || ch === "\t" || ch === "\n" || ch === ">" || ch === "/")
+        ) {
           scanningName = false;
           curOpen = { seg: i, off: j };
         }
@@ -2502,7 +2505,11 @@ export function ssr(t) {
         lastOpen =
           result === null
             ? { r: null, seg: -1, off: s.length + hp.openOff[i] }
-            : { r: result, seg: result.t.length - 1, off: result.t[result.t.length - 1].length + hp.openOff[i] };
+            : {
+                r: result,
+                seg: result.t.length - 1,
+                off: result.t[result.t.length - 1].length + hp.openOff[i]
+              };
       }
     }
     if (result === null) s += next;

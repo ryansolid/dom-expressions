@@ -414,11 +414,9 @@ describe("live content holes — lifetime and error semantics (stream face)", ()
     let resolveGate;
     const gate = new Promise(res => (resolveGate = res));
     const pending = collectStream(props =>
-      r.ssr(
-        ['<section><div class="', '">x</div><!--x--></section>'],
-        () => r.escape(cls, true),
-        [props.row({ gate })]
-      )
+      r.ssr(['<section><div class="', '">x</div><!--x--></section>'], () => r.escape(cls, true), [
+        props.row({ gate })
+      ])
     );
     await Promise.resolve();
     cls = "b";
@@ -449,7 +447,12 @@ describe("live content holes — lifetime and error semantics (stream face)", ()
     );
     const pending = collectStream(props =>
       r.ssr(
-        ['<section><div class="', '" style="', '">x</div><em class="', '">y</em><!--x--></section>'],
+        [
+          '<section><div class="',
+          '" style="',
+          '">x</div><em class="',
+          '">y</em><!--x--></section>'
+        ],
         group,
         group,
         group,
