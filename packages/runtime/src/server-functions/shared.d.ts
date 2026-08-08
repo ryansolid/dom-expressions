@@ -356,6 +356,11 @@ export const BodyFormat: {
   readonly File: "5";
   readonly ArrayBuffer: "6";
   readonly Uint8Array: "7";
+  /**
+   * Plain `JSON.stringify` — the fast path for JSON-safe payloads on both
+   * legs: argument lists on the request, results on the response.
+   */
+  readonly Json: "8";
 };
 
 /**
@@ -363,6 +368,16 @@ export const BodyFormat: {
  * @internal
  */
 export type BodyFormatValue = (typeof BodyFormat)[keyof typeof BodyFormat];
+
+/**
+ * Whether a value survives a `JSON.stringify` round trip faithfully: JSON
+ * primitives (finite numbers only), arrays, and plain objects. Anything
+ * else — Dates, Maps, typed arrays, undefined (bare or as a property),
+ * NaN, class instances — needs the codec. Both peers negotiate the wire
+ * format with this guard: the client for argument lists, the server for
+ * results.
+ */
+export function isJSONSafe(value: unknown): boolean;
 
 /**
  * Picks a direct HTTP encoding (headers + BodyInit) for values that have

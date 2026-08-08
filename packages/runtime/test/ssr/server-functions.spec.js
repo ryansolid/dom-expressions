@@ -189,6 +189,211 @@ describe("framed codec streams", () => {
   });
 });
 
+describe("response format negotiation", () => {
+  // The response mirror of the argument fast path: the server answers
+  // JSON-safe results as plain JSON (BodyFormat.Json) and void results with
+  // no body at all, so a plain-data app never wakes the codec on either leg
+  // — the client's decode half loads lazily on the first Serialized body
+  // (shared.js loadSerializer). Negotiated per response: nothing here is a
+  // mode, so JSON and Serialized results interleave freely on one page.
+  function dispatch(request, options) {
+    return handleServerFunctionRequest(request, options);
+  }
+
+  function connectTransport(options) {
+    const original = globalThis.fetch;
+    const posts = [];
+    globalThis.fetch = (url, init) => {
+      posts.push(String(url));
+      return dispatch(new Request(new URL(url, "http://localhost"), init), options);
+    };
+    return { restore: () => (globalThis.fetch = original), posts };
+  }
+
+  function scriptedRequest(id) {
+    return new Request("http://localhost/_server", {
+      method: "POST",
+      headers: {
+        "X-Server-Function-Id": id,
+        "X-Server-Function-Instance": "server-function:test"
+      }
+    });
+  }
+
+  it("answers JSON-safe results as plain JSON", async () => {
+    const value = { ok: true, items: ["a", 1, null], nested: { deep: false } };
+    registerServerFunction("fmt-json-0", async () => value);
+    const response = await dispatch(scriptedRequest("fmt-json-0"));
+    expect(response.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Json);
+    expect(response.headers.get("Content-Type")).toBe("application/json");
+    // decodable with bare JSON.parse — nothing codec-shaped on the wire
+    expect(JSON.parse(await response.clone().text())).toEqual(value);
+    expect(await decodeResponse(response)).toEqual(value);
+  });
+
+  it("answers void results with no body at all", async () => {
+    registerServerFunction("fmt-void-0", async () => {});
+    const response = await dispatch(scriptedRequest("fmt-void-0"));
+    expect(response.body).toBeNull();
+    expect(response.headers.has(BODY_FORMAT_HEADER)).toBe(false);
+    expect(await decodeResponse(response)).toBeUndefined();
+
+    // and the full client roundtrip resolves undefined
+    const { restore } = connectTransport();
+    try {
+      await expect(createClientReference("fmt-void-0")()).resolves.toBeUndefined();
+    } finally {
+      restore();
+    }
+  });
+
+  it("keeps the codec for results needing typed reconstruction", async () => {
+    registerServerFunction("fmt-rich-0", async () => ({ when: new Date(0) }));
+    const response = await dispatch(scriptedRequest("fmt-rich-0"));
+    expect(response.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Serialized);
+    const decoded = await decodeResponse(response);
+    expect(decoded.when).toBeInstanceOf(Date);
+    expect(decoded.when.getTime()).toBe(0);
+  });
+
+  it("values JSON would corrupt stay on the codec (undefined properties, NaN)", async () => {
+    registerServerFunction("fmt-faithful-0", async () => ({ present: 1, missing: undefined }));
+    const withUndefined = await dispatch(scriptedRequest("fmt-faithful-0"));
+    expect(withUndefined.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Serialized);
+    const decoded = await decodeResponse(withUndefined);
+    expect("missing" in decoded).toBe(true);
+    expect(decoded.missing).toBeUndefined();
+
+    registerServerFunction("fmt-faithful-1", async () => ({ ratio: NaN }));
+    const withNaN = await dispatch(scriptedRequest("fmt-faithful-1"));
+    expect(withNaN.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Serialized);
+    expect(Number.isNaN((await decodeResponse(withNaN)).ratio)).toBe(true);
+  });
+
+  it("negotiates per response: JSON and Serialized results interleave on one page", async () => {
+    registerServerFunction("fmt-mixed-json-0", async () => ({ plain: true }));
+    registerServerFunction("fmt-mixed-rich-0", async () => ({ when: new Date(7) }));
+    const { restore } = connectTransport();
+    try {
+      const plain = await createClientReference("fmt-mixed-json-0")();
+      expect(plain).toEqual({ plain: true });
+      const rich = await createClientReference("fmt-mixed-rich-0")();
+      expect(rich.when).toBeInstanceOf(Date);
+      expect(rich.when.getTime()).toBe(7);
+      // and back again — negotiation carries no state between calls
+      expect(await createClientReference("fmt-mixed-json-0")()).toEqual({ plain: true });
+    } finally {
+      restore();
+    }
+  });
+
+  it("thrown errors keep the codec and the error flag (typed reconstruction)", async () => {
+    setServerFunctionsDev(true);
+    registerServerFunction("fmt-error-0", async () => {
+      throw new Error("nope");
+    });
+    try {
+      const response = await dispatch(scriptedRequest("fmt-error-0"));
+      expect(response.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Serialized);
+      expect(response.headers.get(ERROR_HEADER)).toBe("nope");
+
+      const { restore } = connectTransport();
+      try {
+        const rejection = await createClientReference("fmt-error-0")().catch(x => x);
+        expect(rejection).toBeInstanceOf(Error);
+        expect(rejection.message).toBe("nope");
+      } finally {
+        restore();
+      }
+    } finally {
+      setServerFunctionsDev(false);
+    }
+  });
+
+  it("a markSafeError'd error survives production sanitization on the wire", async () => {
+    // default build state is prod (fail-safe raw source): the brand is the
+    // pass-through, and the rich path carries the typed Error
+    registerServerFunction("fmt-safe-error-0", async () => {
+      throw markSafeError(new Error("Card declined"));
+    });
+    const { restore } = connectTransport();
+    try {
+      const rejection = await createClientReference("fmt-safe-error-0")().catch(x => x);
+      expect(rejection).toBeInstanceOf(Error);
+      expect(rejection.message).toBe("Card declined");
+    } finally {
+      restore();
+    }
+  });
+
+  describe("single-flight envelopes", () => {
+    function flightOptions(data) {
+      return { collectFlightData: () => data };
+    }
+
+    it("rides the JSON format when contents are JSON-safe (one POST, refreshed data)", async () => {
+      registerServerFunction("fmt-sf-json-0", async () => ({ ok: true }));
+      const { restore, posts } = connectTransport(flightOptions({ "/notes": ["fresh"] }));
+      const delivered = [];
+      const unsubscribe = subscribeFlightData((data, { response }) => {
+        delivered.push({ data, format: response.headers.get(BODY_FORMAT_HEADER) });
+      });
+      try {
+        const value = await createClientReference("fmt-sf-json-0")();
+        expect(value).toEqual({ ok: true });
+        // one round trip carried both the value and the refreshed data
+        expect(posts).toHaveLength(1);
+        expect(delivered).toEqual([{ data: { "/notes": ["fresh"] }, format: BodyFormat.Json }]);
+      } finally {
+        unsubscribe();
+        restore();
+      }
+    });
+
+    it("omits a void mutation's value key so the envelope stays JSON", async () => {
+      registerServerFunction("fmt-sf-void-0", async () => {});
+      const folded = await dispatch(
+        new Request("http://localhost/_server", {
+          method: "POST",
+          headers: {
+            "X-Server-Function-Id": "fmt-sf-void-0",
+            "X-Server-Function-Instance": "server-function:test",
+            [SINGLE_FLIGHT_HEADER]: "true"
+          }
+        }),
+        flightOptions({ "/notes": ["fresh"] })
+      );
+      expect(folded.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Json);
+      expect(JSON.parse(await folded.clone().text())).toEqual({ data: { "/notes": ["fresh"] } });
+      // both payload readers see the same undefined value
+      expect(await decodeResponsePayload(folded)).toEqual({
+        value: undefined,
+        flightData: { "/notes": ["fresh"] }
+      });
+    });
+
+    it("keeps the codec when flight contents are rich (one POST, typed data)", async () => {
+      registerServerFunction("fmt-sf-rich-0", async () => ({ ok: true }));
+      const { restore, posts } = connectTransport(flightOptions({ "/notes": [new Date(0)] }));
+      const delivered = [];
+      const unsubscribe = subscribeFlightData((data, { response }) => {
+        delivered.push({ data, format: response.headers.get(BODY_FORMAT_HEADER) });
+      });
+      try {
+        const value = await createClientReference("fmt-sf-rich-0")();
+        expect(value).toEqual({ ok: true });
+        expect(posts).toHaveLength(1);
+        expect(delivered).toHaveLength(1);
+        expect(delivered[0].format).toBe(BodyFormat.Serialized);
+        expect(delivered[0].data["/notes"][0]).toBeInstanceOf(Date);
+      } finally {
+        unsubscribe();
+        restore();
+      }
+    });
+  });
+});
+
 describe("response helpers", () => {
   it("redirect carries location, status and revalidation keys", () => {
     const response = redirect("/login");

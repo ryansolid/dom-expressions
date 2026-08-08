@@ -29,6 +29,7 @@ import {
   extractBody,
   getHeadersAndBody,
   getServerFunctionsCodec,
+  isJSONSafe,
   isServerFunction,
   provideServerFunctionRPC,
   serializeStream,
@@ -357,7 +358,13 @@ async function foldFlightData(hook, event, headers, outcome, context = {}) {
       return transformed;
     }
   }
-  return { value: outcome.value, data };
+  // A void mutation's envelope omits the `value` key rather than carrying
+  // `value: undefined`: both decode paths read `payload.value` as undefined
+  // either way, but only the key-less shape is JSON-safe — and a mutation
+  // returning nothing with JSON-safe flight data is THE common
+  // single-flight response, which should ride the JSON fast path (see
+  // encodeResult), not wake the codec.
+  return outcome.value === undefined ? { data } : { value: outcome.value, data };
 }
 
 // The generic halves of flight-data collection, computed by core so every
@@ -563,6 +570,25 @@ function encodeResult(value, headers, status, codec) {
       headers.set(key, val);
     }
     return new Response(direct.body, { status, headers });
+  }
+  // The response mirror of the client's argument negotiation: results
+  // without a natural HTTP encoding still avoid the codec when JSON can
+  // carry them faithfully. A void result sends no body at all (the client's
+  // decode answers undefined for body-less responses), and a JSON-safe one
+  // — plain data, single-flight `{ value, data }` envelopes included —
+  // rides `BodyFormat.Json`, which the client's extractBody already decodes
+  // with bare JSON.parse. Only values that NEED typed reconstruction
+  // (Dates, Maps, streams, promises, Errors — thrown errors always land
+  // here) reach the streaming codec, and only their arrival makes the
+  // client load its decode half (see shared.js loadSerializer). Negotiated
+  // per response: mixed pages simply carry both formats.
+  if (value === undefined) {
+    return new Response(null, { status, headers });
+  }
+  if (isJSONSafe(value)) {
+    headers.set(BODY_FORMAT_HEADER, BodyFormat.Json);
+    headers.set("Content-Type", "application/json");
+    return new Response(JSON.stringify(value), { status, headers });
   }
   const response = serializedResponse(value, headers, codec);
   return status === 200 ? response : new Response(response.body, { status, headers });

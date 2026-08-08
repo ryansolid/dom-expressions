@@ -4,12 +4,30 @@
 //
 // Two layers live here:
 // - body negotiation: single arguments with a natural HTTP encoding (string,
-//   FormData, Blob, ...) skip the serializer entirely; everything else goes
-//   through the JSON codec from ../serializer.js.
+//   FormData, Blob, ...) skip the serializer entirely, and JSON-safe values
+//   ride plain JSON; everything else goes through the JSON codec from
+//   ../serializer.js.
 // - chunk framing: length-prefixed chunks so the receiver knows how much to
 //   buffer before parsing, which lets async values (promises, streams)
 //   arrive incrementally on one connection.
-import { createJSONDeserializer, serializeJSON } from "../serializer.js";
+
+// The codec loads on demand, the moment a Serialized body actually has to
+// be encoded or decoded — never at module scope. This module is in the
+// eager graph of every bundle containing a server function reference (the
+// transport imports it for headers and framing), and a static serializer
+// import made every such bundle ship seroval + the web plugin set
+// (~5.5 KB gz) even when all its calls carry JSON-safe data and the peer
+// answers in kind (the server's JSON fast path in server.js). Plain-data
+// apps never resolve the import; the first rich value — a Date result, a
+// stream, a typed error — pulls the codec in one fetch and it stays
+// (import() is cached per specifier, so there is deliberately no memo
+// variable here — and the bare `await import` + immediate destructure at
+// each use site is what lets the consumer's bundler tree-shake the lazy
+// chunk down to the codec halves actually reached, instead of retaining
+// the whole serializer surface behind an opaque namespace). Bundlers split
+// the import into its own chunk; solid-web's packaging resolves it to the
+// public `@solidjs/web/serialization` entry, the same instance custom
+// codec plugins are authored against.
 
 // The codec-free universal pieces moved out to their own layers so a
 // router's eager graph can read them without this module (whose serializer
@@ -247,9 +265,38 @@ export const BodyFormat = {
   File: "5",
   ArrayBuffer: "6",
   Uint8Array: "7",
-  /** Plain `JSON.stringify(args)` — the fast path for JSON-safe arguments. */
+  /**
+   * Plain `JSON.stringify` — the fast path for JSON-safe payloads on both
+   * legs: argument lists on the request, results (single-flight envelopes
+   * included) on the response.
+   */
   Json: "8"
 };
+
+/**
+ * Whether a value survives a `JSON.stringify` round trip faithfully: JSON
+ * primitives (finite numbers only), arrays, and plain objects. Anything
+ * else — Dates, Maps, typed arrays, undefined (bare or as a property),
+ * NaN, class instances — needs the codec. Both peers negotiate with this
+ * same guard: the client for argument lists (see client.js), the server
+ * for results (see server.js encodeResult) — so the codec rides the wire
+ * exactly when a value actually needs it.
+ */
+export function isJSONSafe(value) {
+  if (value === null) return true;
+  const t = typeof value;
+  if (t === "string" || t === "boolean") return true;
+  if (t === "number") return Number.isFinite(value);
+  if (t !== "object") return false;
+  if (Array.isArray(value)) {
+    for (const v of value) if (!isJSONSafe(v)) return false;
+    return true;
+  }
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return false;
+  for (const k in value) if (!isJSONSafe(value[k])) return false;
+  return true;
+}
 
 /**
  * Picks a direct HTTP encoding for values that have one. Returns undefined
@@ -443,7 +490,11 @@ export class ChunkReader {
  */
 export function serializeStream(value, codecOptions) {
   return new ReadableStream({
-    start(controller) {
+    // async on purpose: the codec is late-loaded (see the loading notes at
+    // the top of this module), and a ReadableStream start may return a
+    // promise — reads wait for it, so the stream's contract is unchanged
+    async start(controller) {
+      const { serializeJSON } = await import("../serializer.js");
       serializeJSON(value, {
         ...codecOptions,
         onParse(node) {
@@ -478,6 +529,10 @@ export async function deserializeStream(source, codecOptions) {
   const reader = new ChunkReader(source.body);
   const result = await reader.next();
   if (!result.done) {
+    // The codec's decode half loads here — when a Serialized body has
+    // actually arrived — so a client whose responses all ride the JSON fast
+    // path never pays for it (see the loading notes at the top).
+    const { createJSONDeserializer } = await import("../serializer.js");
     // Cross-references between chunks resolve through state inside the
     // deserializer, so one instance handles the whole stream.
     const deserializeChunk = createJSONDeserializer(codecOptions);

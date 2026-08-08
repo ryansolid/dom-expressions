@@ -220,6 +220,25 @@ const prodDefines = {
   }
 };
 
+// The codec is late-loaded (server-functions/shared.js loadSerializer):
+// every real consumer pipeline code-splits that dynamic import into its own
+// lazy chunk (solid-web's packaging resolves it to the external
+// @solidjs/web/serialization entry), so the EAGER slice these scenarios
+// measure excludes it. esbuild's single-file mode can't split — it inlines
+// the import as an __esm wrapper, which both mis-charges the eager number
+// and defeats tree-shaking inside the wrapped module — so dynamic imports
+// of the serializer go external here; static imports (a scenario that
+// deliberately includes the codec) still bundle.
+const lazyCodecSplit = {
+  name: "dx-lazy-codec-split",
+  setup(b) {
+    b.onResolve({ filter: /serializer\.js$/ }, args => {
+      if (args.kind === "dynamic-import") return { path: args.path, external: true };
+      return null;
+    });
+  }
+};
+
 let failed = false;
 async function check(name, entry, ceiling, forbid) {
   const result = await build({
@@ -230,7 +249,7 @@ async function check(name, entry, ceiling, forbid) {
     write: false,
     logLevel: "silent",
     external: ["rxcore", "seroval", "seroval-plugins", "seroval-plugins/web"],
-    plugins: [prodDefines]
+    plugins: [prodDefines, lazyCodecSplit]
   });
   const out = result.outputFiles[0].contents;
   const text = result.outputFiles[0].text;
@@ -280,6 +299,31 @@ await check(
      clearFlashCookie
    } from ${JSON.stringify(CLIENT)};`,
   421,
+  ["seroval", "seroval-plugins"]
+);
+// The server-function client's EAGER cost: exactly what compiled client
+// output pulls in for a `'use server'` reference — the fetch transport,
+// header/framing glue, and the JSON fast path. This is the JSON-fast-path
+// contract (the response mirror of the argument path): the server answers
+// JSON-safe results as plain JSON and void results body-less, so the codec
+// (seroval + the web plugin set, ~5.5 KB gz on top of this number) loads
+// only when a Serialized body actually arrives — through shared.js's
+// dynamic import, split out of the eager graph by every consumer pipeline
+// (modeled by lazyCodecSplit above). The forbidden markers fail the build
+// if the codec re-enters this slice statically. Ceiling at actual+20
+// (2634 measured at landing: the fetch transport with its single-flight
+// and response-seam branches, GET's query encoding, the body negotiation
+// table, and the chunk framing/ChunkReader — which stays eager because the
+// STREAMING shape of a Serialized response is transport framing; only the
+// codec behind it is lazy).
+await check(
+  "server-functions client: eager transport (reference + GET, lazy codec)",
+  `export {
+     createServerReference,
+     GET,
+     configureServerFunctionsClient
+   } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
+  2654,
   ["seroval", "seroval-plugins"]
 );
 await check(

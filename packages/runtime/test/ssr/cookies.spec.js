@@ -360,8 +360,8 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
     expect(response.headers.get("X-Single-Flight")).toBeNull();
     expect(response.headers.get("X-Revalidate")).toBeNull();
     expect(response.headers.get("Location")).toBeNull();
-    // the encoder's own format tag, not the stub's
-    expect(response.headers.get("X-Server-Function-Format")).toBe("0");
+    // the encoder's own format tag (Json — `1` is JSON-safe), not the stub's
+    expect(response.headers.get("X-Server-Function-Format")).toBe("8");
   });
 
   it("does not re-advertise body metadata on the bodiless no-JS redirect", async () => {
@@ -400,7 +400,7 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
     });
     const response = await dispatch("cookie-headers-0", event);
     expect(response.headers.get("X-Custom")).toBe("stub");
-    // the encoder's own content type wins over the stub's
-    expect(response.headers.get("Content-Type")).toBe("text/plain");
+    // the encoder's own content type (Json fast path) wins over the stub's
+    expect(response.headers.get("Content-Type")).toBe("application/json");
   });
 });
