@@ -23,12 +23,14 @@ import {
   SERVER_FUNCTION_METADATA,
   SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
+  decodeResponse,
   deserializeString,
   encodeErrorHeaderValue,
   extractBody,
   getHeadersAndBody,
   getServerFunctionsCodec,
   isServerFunction,
+  provideServerFunctionRPC,
   serializeStream,
   withMeta
 } from "./shared.js";
@@ -128,7 +130,21 @@ const METHODS = new Map();
 // leak into (and overwrite) the outer scope's state.
 const INVOCATIONS = new WeakMap();
 
+// Server mirror of the client transport's late-bound RPC registration (see
+// client.js provideRPC and registry.js): the server half's `GET` records the
+// declared method for HTTP dispatch, so a router's query() wrapping a
+// reference during SSR must reach the SAME declaration bookkeeping — read
+// through the seam, filled the moment compiled server output registers or
+// references a function.
+let rpcProvided = false;
+function provideRPC() {
+  if (rpcProvided) return;
+  rpcProvided = true;
+  provideServerFunctionRPC({ GET, decodeResponse });
+}
+
 export function registerServerFunction(id, callback) {
+  provideRPC();
   REGISTRATIONS.set(id, callback);
   return callback;
 }
@@ -160,6 +176,7 @@ export function registerServerReference(id, fn, name) {
 export function createServerReference({ id, fn, name }) {
   if (typeof fn !== "function")
     throw new Error("Export from a 'use server' module must be a function");
+  provideRPC();
 
   // the metadata lives in a closure (not on the user's function) so
   // registering the raw implementation never mutates it. The compiler's

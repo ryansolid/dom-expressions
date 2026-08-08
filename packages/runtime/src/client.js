@@ -66,6 +66,20 @@ export {
 // it, so it costs a bundle exactly what user code asks for and
 // tree-shakes away otherwise (guarded in scripts/size-guard.mjs).
 export { parseCookieHeader, serializeCookie } from "./cookies.js";
+// The flash cookie's isomorphic half (name/detection/clearing — cookie
+// utilities, see cookies.js) and the codec-free server-function layer
+// (detection + the late-bound RPC seam, see server-functions/registry.js).
+// Exported from the CORE entries so integrations consuming them eagerly
+// (routers) never import the server-functions entry — whose client half is
+// the transport + codec — from their eager graph. Everything here is a few
+// lines over registered symbols; the transport tree-shakes away with the
+// references that would register it (guarded in scripts/size-guard.mjs).
+export { clearFlashCookie, hasFlashCookie } from "./cookies.js";
+export {
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  isServerFunction
+} from "./server-functions/registry.js";
 
 export function render(code, element, init, options = {}) {
   if ("_DX_DEV_" && !element) {

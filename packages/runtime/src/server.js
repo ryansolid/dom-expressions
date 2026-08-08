@@ -14,6 +14,16 @@ import {
 // blessed read/write patterns). Re-exported, never wrapped: core owns the
 // exchange and the codec, nothing ambient.
 export { parseCookieHeader, serializeCookie } from "./cookies.js";
+// The flash cookie's isomorphic half and the codec-free server-function
+// layer (detection + the late-bound RPC seam) — mirrors of the client
+// entry's exports, so integration code reading them stays universal (see
+// the client entry and server-functions/registry.js for the reasoning).
+export { clearFlashCookie, hasFlashCookie } from "./cookies.js";
+export {
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  isServerFunction
+} from "./server-functions/registry.js";
 import {
   HEAD_ELIGIBLE_TAGS,
   HEAD_ATTR_NAME,

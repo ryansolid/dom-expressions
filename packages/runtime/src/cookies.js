@@ -11,10 +11,11 @@
 // platform — and exported from BOTH entries: a pure value transformer has
 // legitimate browser uses too (`document.cookie = serializeCookie(...)`,
 // parsing `document.cookie`), and a no-op stub would hand back silent
-// garbage. No client-runtime module imports it internally (the flash
-// codec's client half keeps its raw-payload regex matcher), so it enters a
-// client bundle exactly when user code calls it and tree-shakes away
-// otherwise (guarded in scripts/size-guard.mjs).
+// garbage. The pair codec below stays free of internal client-runtime
+// importers, so it enters a client bundle exactly when user code calls it
+// and tree-shakes away otherwise (guarded in scripts/size-guard.mjs); the
+// flash-cookie helpers at the bottom are the one internal consumer surface
+// — regex-matcher based on purpose, so they never retain the pair codec.
 //
 // Encoding contract: names and values travel `encodeURIComponent`-encoded
 // and the parser decodes both, so any string round-trips. No signing, no
@@ -82,4 +83,37 @@ export function serializeCookie(name, value, options = {}) {
     cookie += `; SameSite=${sameSite === "none" ? "None" : sameSite === "strict" ? "Strict" : "Lax"}`;
   }
   return cookie;
+}
+
+// ---- the flash cookie's isomorphic half ----
+//
+// Cookie carrying the outcome of a server function call made without the
+// client runtime (a no-JS form post), so the page rendered after the
+// redirect can show what happened. The name, detection and one-shot
+// clearing are cookie utilities and live HERE — integrations (routers)
+// consume the cookie eagerly per request from their isomorphic core (the
+// clear must be appended before streaming flushes the response headers,
+// and an unread outcome must not haunt a later request), and that consumer
+// must not touch the server-functions package at all: its client entry is
+// the transport + codec, which a router-only app never ships. The codec
+// that fills and decodes the cookie is server-only and stays behind the
+// server-functions server entry (server-functions/flash.js).
+export const FLASH_COOKIE = "flash";
+
+const FLASH_MATCHER = new RegExp(`(?:^|;\\s*)${FLASH_COOKIE}=([^;]+)`);
+
+/** Whether a Cookie header carries a flash cookie (readable or not). */
+export function hasFlashCookie(cookieHeader) {
+  return !!cookieHeader && FLASH_MATCHER.test(cookieHeader);
+}
+
+/** The raw encoded flash payload out of a Cookie header, if present. */
+export function matchFlashCookie(cookieHeader) {
+  const match = cookieHeader && cookieHeader.match(FLASH_MATCHER);
+  return match ? match[1] : undefined;
+}
+
+/** The Set-Cookie value clearing the flash cookie after it has been read. */
+export function clearFlashCookie() {
+  return `${FLASH_COOKIE}=; Max-Age=0; Path=/`;
 }

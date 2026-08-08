@@ -284,6 +284,46 @@ export function withMeta<F extends (...args: any[]) => any>(fn: F, meta: ServerF
 export const SERVER_FUNCTION_METADATA: unique symbol;
 
 /**
+ * The transport surface integrations consume through the late-bound RPC
+ * seam (server-functions/registry.js) — filled by the transport halves when
+ * the first server function reference is created (code that only exists in
+ * a bundle when a `"use server"` function was actually compiled in), read
+ * by routers so they never import the transport/codec statically.
+ */
+export interface ServerFunctionRPC {
+  /**
+   * The build's `GET` declaration wrapper (client fetch transport or
+   * server in-process dispatch — see the respective entries).
+   */
+  GET<A extends readonly any[], R>(fn: (...args: A) => R): ServerFunction<A, Awaited<R>>;
+  /**
+   * `decodeResponse` bound to the configured codec: decodes a server
+   * function response body the transport handed over whole (redirects,
+   * revalidation). Resolves undefined for empty bodies and bodies without
+   * a recognized encoding (e.g. a raw user Response).
+   */
+  decodeResponse<T = unknown>(response: Response): Promise<T | undefined>;
+}
+
+/**
+ * Fills the RPC seam. Called by the transport halves when the first server
+ * function reference is created; first write wins.
+ * @internal
+ */
+export function provideServerFunctionRPC(rpc: ServerFunctionRPC): void;
+
+/**
+ * The registered RPC surface, or undefined when no server function exists
+ * in this build's graph. Integration plumbing (routers): gate every use of
+ * the transport/codec behind this read instead of importing it — an app
+ * with no server functions then ships none of it, while a reference in the
+ * bundle guarantees the seam is filled before integration code can hold
+ * that reference (compiled output creates references at module scope).
+ * @internal
+ */
+export function getServerFunctionRPC(): ServerFunctionRPC | undefined;
+
+/**
  * Header carrying the body format tag (a `BodyFormat` value) —
  * `"X-Server-Function-Format"`.
  *

@@ -11,6 +11,22 @@
 //   arrive incrementally on one connection.
 import { createJSONDeserializer, serializeJSON } from "../serializer.js";
 
+// The codec-free universal pieces moved out to their own layers so a
+// router's eager graph can read them without this module (whose serializer
+// import IS the codec): the declaration-metadata channel and the late-bound
+// RPC seam live in registry.js, the flash cookie's isomorphic half beside
+// the cookie codec in ../cookies.js. Re-exported here so every existing
+// import site of the shared wire layer keeps working.
+export {
+  SERVER_FUNCTION_METADATA,
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  isServerFunction,
+  provideServerFunctionRPC,
+  withMeta
+} from "./registry.js";
+export { FLASH_COOKIE, clearFlashCookie, hasFlashCookie, matchFlashCookie } from "../cookies.js";
+
 // Codec options must match across peers, and decoding happens in more
 // places than the fetch transport (routers decode integration responses
 // themselves), so the config lives here in the universal layer — the
@@ -131,75 +147,6 @@ function stableString(value, seen) {
   return out + "}";
 }
 
-// The declaration-metadata channel. `GET(fn)` (and any future
-// declaration-static capability) brands references with a metadata object
-// under a registered symbol — surviving duplicated module instances, the
-// same trick as the ResponseEnvelope brand — and routers/integrations read
-// it back through the typed accessors instead of property sniffing. The
-// channel lives in the universal layer because detection is universal code:
-// the same accessor works on client proxies and server references alike.
-export const SERVER_FUNCTION_METADATA = Symbol.for("solid.ServerFunctionMetadata");
-
-/**
- * Reads a server function reference's declaration metadata (e.g.
- * `method: "GET"` for `GET(fn)` references). Returns undefined when `fn`
- * is not a server function reference; plain references carry an empty
- * metadata object.
- */
-export function getServerFunctionMetadata(fn) {
-  if (typeof fn !== "function") return undefined;
-  return fn[SERVER_FUNCTION_METADATA] || undefined;
-}
-
-/**
- * Whether `fn` is a server function reference (a client proxy or a
- * server-side registered callable). Detection is by the registered-symbol
- * metadata brand, so it holds across duplicated module instances.
- */
-export function isServerFunction(fn) {
-  return typeof fn === "function" && !!fn[SERVER_FUNCTION_METADATA];
-}
-
-/**
- * Attaches user-declared transport metadata to a server function reference
- * (client proxy or server-registered callable) and returns the reference.
- * Writes ride the same channel `GET` uses: later writes shallow-merge over
- * earlier ones, and `getServerFunctionMetadata(fn)` reads the merged bag —
- * so `withMeta` composes with `GET` in either order.
- *
- * The pattern is declare-on-function, react-in-hook: metadata declared
- * here is what `prepareRequest` receives as `context.meta`, letting
- * session-dynamic transport policy key on declarations instead of
- * comparing function ids:
- *
- * ```ts
- * export const chargeCard = withMeta(async (amount: number) => {
- *   "use server";
- *   // ...
- * }, { requiresAuth: true });
- *
- * configureServerFunctionsClient({
- *   prepareRequest(init, { meta }) {
- *     if (meta?.requiresAuth) {
- *       return {
- *         ...init,
- *         headers: { ...init.headers, Authorization: `Bearer ${session.token()}` }
- *       };
- *     }
- *     return init;
- *   }
- * });
- * ```
- */
-export function withMeta(fn, meta) {
-  const metadata = getServerFunctionMetadata(fn);
-  if (!metadata) {
-    throw new Error("withMeta expects a server function reference");
-  }
-  Object.assign(metadata, meta);
-  return fn;
-}
-
 /** Header carrying the server function id. */
 export const FUNCTION_HEADER = "X-Server-Function-Id";
 
@@ -290,37 +237,6 @@ export const SINGLE_FLIGHT_HEADER = "X-Single-Flight";
 
 /** FormData key used when a lone File is sent as the argument. */
 export const FILE_FORM_KEY = "__server_function_file__";
-
-/**
- * Cookie carrying the outcome of a call made without the client runtime, so
- * the page rendered after the redirect can show what happened.
- *
- * The name and its one-shot clearing live here rather than beside the codec
- * (flash.js, server-only) because integrations consume the cookie eagerly
- * from isomorphic code — the clear has to be appended before streaming
- * flushes the response headers, and an unread outcome must not haunt a
- * later request — and that must not drag the encode/decode machinery into
- * client bundles.
- */
-export const FLASH_COOKIE = "flash";
-
-const FLASH_MATCHER = new RegExp(`(?:^|;\\s*)${FLASH_COOKIE}=([^;]+)`);
-
-/** Whether a Cookie header carries a flash cookie (readable or not). */
-export function hasFlashCookie(cookieHeader) {
-  return !!cookieHeader && FLASH_MATCHER.test(cookieHeader);
-}
-
-/** The raw encoded flash payload out of a Cookie header, if present. */
-export function matchFlashCookie(cookieHeader) {
-  const match = cookieHeader && cookieHeader.match(FLASH_MATCHER);
-  return match ? match[1] : undefined;
-}
-
-/** The Set-Cookie value clearing the flash cookie after it has been read. */
-export function clearFlashCookie() {
-  return `${FLASH_COOKIE}=; Max-Age=0; Path=/`;
-}
 
 export const BodyFormat = {
   Serialized: "0",

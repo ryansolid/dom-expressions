@@ -7,15 +7,16 @@
 //
 // Server-only on both halves: the encode runs in the handler, the decode
 // runs during the render of the request that follows. Only the cookie's
-// name, detection and clearing are isomorphic — those live in shared.js so
+// name, detection and clearing are isomorphic — those live beside the
+// cookie codec (../cookies.js, exported from the core entries) so
 // integrations can consume the cookie from code that also ships to the
-// browser without pulling this module in with it.
+// browser without pulling this module — or the server-functions package at
+// all — in with it.
 //
 // The payload is plain JSON rather than the wire codec: it has to survive a
 // 4 KB cookie, and both halves here are synchronous while the codec is not.
 
-import { FLASH_COOKIE } from "./shared.js";
-import { parseCookieHeader, serializeCookie } from "../cookies.js";
+import { FLASH_COOKIE, parseCookieHeader, serializeCookie } from "../cookies.js";
 
 // Form payloads have no JSON encoding, so entries are captured as pair
 // arrays under a marker key ($f / $u) and revived to real FormData /

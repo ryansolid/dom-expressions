@@ -17,6 +17,7 @@ import {
   getHeadersAndBody,
   getServerFunctionMetadata,
   isServerFunction,
+  provideServerFunctionRPC,
   withMeta
 } from "./shared.js";
 
@@ -132,6 +133,22 @@ export function configureServerFunctionsClient({
 }
 
 let INSTANCE = 0;
+
+// Fills the late-bound RPC seam (registry.js) with this transport's
+// surface. Called from createServerReference/GET — the code compiled
+// `'use server'` output invokes at module scope — NOT at this module's own
+// scope: routers import codec-free helpers from the same built entry, and a
+// top-level registration would be an unshakeable side effect pinning `GET`,
+// `decodeResponse` and the codec behind them into every such bundle. Hung
+// off the reference constructors, the whole transport (seroval included)
+// tree-shakes away unless a reference actually exists — and when one does,
+// the seam is filled before any integration code can hold it.
+let rpcProvided = false;
+function provideRPC() {
+  if (rpcProvided) return;
+  rpcProvided = true;
+  provideServerFunctionRPC({ GET, decodeResponse });
+}
 
 async function createRequest(base, id, instance, options, meta) {
   const headers = {
@@ -330,6 +347,7 @@ async function fetchServerFunction(base, id, options, args, meta, callArgs = arg
  * `withMeta`/`GET` writes shallow-merge over it like any other write.
  */
 export function createServerReference(id, name, base) {
+  provideRPC();
   const metadata = name === undefined ? {} : { name };
   // An explicit base targets that url verbatim — integrations reconstructing
   // a callable from a server-rendered action url (`?id=...&args=...`) keep
@@ -386,6 +404,7 @@ export function GET(fn) {
   if (!isServerFunction(fn)) {
     throw new Error("GET expects a server function reference");
   }
+  provideRPC();
   const id = fn.id;
   // the GET-transport callable inherits the source reference's declared
   // metadata (withMeta composes with GET in either order)

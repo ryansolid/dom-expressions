@@ -311,5 +311,27 @@ export function getRequestEvent(): RequestEvent | undefined;
  */
 export { parseCookieHeader, serializeCookie } from "./cookies.js";
 export type { CookieOptions } from "./cookies.js";
+/**
+ * The flash cookie's isomorphic half (name/detection/clearing — cookie
+ * utilities living beside the cookie codec) and the codec-free
+ * server-function layer (reference detection + the late-bound RPC seam).
+ * On the core entries so integrations consuming them eagerly (routers)
+ * never import the server-functions entry — whose client half is the
+ * transport + codec — from their eager graph. Declared through
+ * server-functions/shared.d.ts, the declaration home published-types
+ * layouts ship.
+ */
+export {
+  clearFlashCookie,
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  hasFlashCookie,
+  isServerFunction
+} from "./server-functions/shared.js";
+export type {
+  ServerFunction,
+  ServerFunctionMetadata,
+  ServerFunctionRPC
+} from "./server-functions/shared.js";
 /** Hydration-walk primitive; not for hand-written code. @internal */
 export function runHydrationEvents(): void;

@@ -63,7 +63,17 @@ const SCENARIOS = {
   // pure value transformers with legitimate browser uses, never stubs);
   // the compiled-JSX core scenario stayed byte-identical, so apps not
   // importing the codec pay 0. Re-guarded at actual+20 (10564 measured).
-  "client: full surface": ["*", 10584],
+  // Then +187 for the server-function decoupling round: the core entry
+  // gained the codec-free server-function layer (metadata channel +
+  // late-bound RPC seam, server-functions/registry.js) and the flash
+  // cookie's isomorphic half (now beside the cookie codec in cookies.js) —
+  // the exports that let a router's eager graph drop its static
+  // @solidjs/web/server-functions import and with it seroval + the
+  // transport (~9 KB gz in a zero-server-function app). The compiled-JSX
+  // core scenario stayed byte-identical, and the router-eager-subset
+  // scenario below pins the slice apps actually pay. Re-guarded at
+  // actual+20 (10751 measured).
+  "client: full surface": ["*", 10771],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
@@ -211,7 +221,7 @@ const prodDefines = {
 };
 
 let failed = false;
-async function check(name, entry, ceiling) {
+async function check(name, entry, ceiling, forbid) {
   const result = await build({
     stdin: { contents: entry, resolveDir: ROOT, loader: "js" },
     bundle: true,
@@ -223,8 +233,16 @@ async function check(name, entry, ceiling) {
     plugins: [prodDefines]
   });
   const out = result.outputFiles[0].contents;
+  const text = result.outputFiles[0].text;
   const gz = gzipSync(out, { level: 9 }).length;
-  const ok = gz <= ceiling;
+  let ok = gz <= ceiling;
+  // Externals are free here but NOT in an app bundle — a scenario that must
+  // never reach a heavy external (the codec) asserts its absence by name.
+  const leaked = forbid && forbid.filter(marker => text.includes(marker));
+  if (leaked && leaked.length) {
+    ok = false;
+    console.log(`FAIL ${name}: forbidden import(s) reached the bundle: ${leaked.join(", ")}`);
+  }
   failed ||= !ok;
   console.log(
     `${ok ? "OK  " : "FAIL"} ${name}: ${out.length} min / ${gz} gz (ceiling ${ceiling})`
@@ -239,6 +257,31 @@ for (const [name, [imp, ceiling]] of Object.entries(SCENARIOS)) {
       : `export ${imp} from ${JSON.stringify(CLIENT)};`;
   await check(name, entry, ceiling);
 }
+
+// The router eager subset: what a router-only app's EAGER graph reads off
+// the core client entry — server-function detection, the late-bound RPC
+// seam, and the flash cookie's isomorphic half. This is the codec-decoupling
+// contract (the ~9 KB gz seroval + plugin + transport pull-in that every
+// zero-server-function app used to pay through @solidjs/router's query.js /
+// routing.js): these names must never reach the serializer or the fetch
+// transport — the transport registers itself into the seam from
+// createServerReference/GET, which only compiled `'use server'` output
+// calls. Ceiling at actual+20 (401 measured at landing — flash matcher,
+// metadata channel, seam read, plus the per-entry external rxcore import
+// esbuild retains regardless of use); the forbidden markers fail the build
+// if any seroval external re-enters this slice.
+await check(
+  "client: router eager subset (server-fn detection + RPC seam + flash helpers, NO codec)",
+  `export {
+     isServerFunction,
+     getServerFunctionMetadata,
+     getServerFunctionRPC,
+     hasFlashCookie,
+     clearFlashCookie
+   } from ${JSON.stringify(CLIENT)};`,
+  421,
+  ["seroval", "seroval-plugins"]
+);
 await check(
   // 873 -> 945 gz after the live-state deny-list (`open` preservation +
   // `data-preserve`); -> 1067 after keyed slot ranges learned to relocate
