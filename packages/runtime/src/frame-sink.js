@@ -1308,16 +1308,32 @@ export function serverComponentResponse(component, options = {}, init = {}) {
   headers.set(FRAME_STREAM_HEADER, id);
   headers.set("X-Content-Raw", "1");
   const stream = renderServerComponent(component, { ...options, frame: { id, version } });
+  // A client disconnect closes the Response's controller from the outside
+  // (`cancel`), but the render keeps producing — its in-flight generation
+  // (iterable holds, boundary retries) settles on its own schedule. Writes
+  // after that point must drop, not throw: an ERR_INVALID_STATE escaping
+  // through a serializer flush is an unhandled process-level error.
+  let closed = false;
   const body = new ReadableStream({
     start(controller) {
       stream.pipe({
         write(chunk) {
-          controller.enqueue(createChunk(JSON.stringify(chunk)));
+          if (closed) return;
+          try {
+            controller.enqueue(createChunk(JSON.stringify(chunk)));
+          } catch (_) {
+            closed = true;
+          }
         },
         end() {
+          if (closed) return;
+          closed = true;
           controller.close();
         }
       });
+    },
+    cancel() {
+      closed = true;
     }
   });
   return new Response(body, { status: init.status || 200, headers });
@@ -1443,9 +1459,19 @@ export function frameFlightResponse({ primary, regions = [], outcome, codec }, i
   headers.set(FRAME_STREAM_HEADER, primary ? primary.id : "");
   headers.set("X-Content-Raw", "1");
   headers.set(SINGLE_FLIGHT_HEADER, "true");
+  // Same disconnect guard as serverComponentResponse: post-cancel writes
+  // drop instead of throwing through a serializer flush.
+  let closed = false;
   const body = new ReadableStream({
     async start(controller) {
-      const write = chunk => controller.enqueue(createChunk(JSON.stringify(chunk)));
+      const write = chunk => {
+        if (closed) return;
+        try {
+          controller.enqueue(createChunk(JSON.stringify(chunk)));
+        } catch (_) {
+          closed = true;
+        }
+      };
       try {
         // Sequential: chunk order matters within a frame, not across them.
         for (const { id, component } of frames) {
@@ -1465,10 +1491,19 @@ export function frameFlightResponse({ primary, regions = [], outcome, codec }, i
             write({ type: "outcome", payload: node.value });
           }
         }
-        controller.close();
+        if (!closed) {
+          closed = true;
+          controller.close();
+        }
       } catch (err) {
-        controller.error(err);
+        if (!closed) {
+          closed = true;
+          controller.error(err);
+        }
       }
+    },
+    cancel() {
+      closed = true;
     }
   });
   return new Response(body, { status: init.status || 200, headers });

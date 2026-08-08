@@ -105,7 +105,18 @@ export function ssrScope(fn) {
   };
 }
 
+// Reactive-scope creation stamp (mirrors the framework impl, which counts
+// owner creations): the live-hole engine diffs this around an evaluation to
+// detect render-once work — a hole that creates components/memos is not
+// safely re-runnable and latches. The test core counts its own creation
+// sites (component invocations and compiled memo wrappers).
+let creations = 0;
+export function creationStamp() {
+  return creations;
+}
+
 export function createComponent(Comp, props) {
+  creations++;
   if (Comp.prototype && Comp.prototype.isClassComponent) {
     return untrack(() => {
       const comp = new Comp(props);
@@ -122,12 +133,11 @@ export const effect = (fn, effectFn, options) =>
     options ? { ...options, transparent: !options.scope } : { transparent: true }
   );
 
-export const memo = (fn, transparent) =>
-  transparent
-    ? fn.$r
-      ? fn
-      : createMemo(() => fn(), { transparent: true })
-    : createMemo(() => fn());
+export const memo = (fn, transparent) => {
+  if (transparent && fn.$r) return fn;
+  creations++;
+  return transparent ? createMemo(() => fn(), { transparent: true }) : createMemo(() => fn());
+};
 
 // Hydration-key owner scoping (solid-web's rxcore implements this over
 // createOwner({ id })). The test core has no hydration id chain, so the

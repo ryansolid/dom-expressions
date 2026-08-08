@@ -1,5 +1,12 @@
 import { ChildProperties } from "./constants";
-import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner } from "rxcore";
+import {
+  sharedConfig,
+  root,
+  ssrHandleError,
+  getOwner,
+  runWithOwner,
+  creationStamp
+} from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
 // Wire-protocol header names for the commit fold's gap-fill denylist
 // (`commitEventResponse`): shared constants, not copies, so the fold can
@@ -1115,8 +1122,15 @@ export function renderToStream(code, options = {}) {
     // would be lost and lazy hydration would fail for root-level lazy modules.
     serializeFragmentAssets("", tracking.boundaryModules, context);
   };
+  // Response-window holds (`ctx.hold`): live work with a knowable end that
+  // isn't a fragment or a serialized promise — a server-consumed async
+  // iterable feeding live holes / watched args (a bounded async trace, per
+  // DR-2) — keeps the response open until it completes. Holds gate only the
+  // END of the response (serializer flush → complete); shell and fragment
+  // flushing proceed normally around them.
+  let holds = 0;
   const flushEnd = () => {
-    if (!registry.size) {
+    if (!registry.size && !holds) {
       serializeRootAssets();
       queue(() => queue(() => serializer.flush())); // double queue because of elsewhere
     }
@@ -1233,6 +1247,19 @@ export function renderToStream(code, options = {}) {
     },
     block(p) {
       if (!firstFlushed) blockingPromises.add(p);
+    },
+    // Take a response-window hold (see `holds` above). Returns the release;
+    // releasing when no other holds or fragments remain lets the response
+    // end. Idempotent, so error and completion paths can both release.
+    hold() {
+      holds++;
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        holds--;
+        if (!holds) queue(flushEnd);
+      };
     },
     replace(id, payloadFn) {
       if (firstFlushed) return;
@@ -1703,9 +1730,28 @@ function buildAsyncWrap(err, node) {
   // re-suspension chain overflowed the stack (SSR stack-overflow diagnosis).
   if (node.$rw) return { fn: node, p };
   const owner = getOwner();
-  if (!owner) return { fn: node, p };
+  // A live hole's retry chain stays mint-suppressed end to end, and a
+  // machinery-owned node's (`$lhSkip` — boundary outputs, slot getters)
+  // stays opted out: every escalation re-wrap crosses this site, so
+  // propagating the tags here covers all of them (ssr()'s inline path, the
+  // tree resolver, group slots). An UNTAGGED node escalating inside an open
+  // suppression window is interior to some suppressed resolve — its retry
+  // is part of that chain, so it suppresses too (without this, a partial
+  // interior escalation would mint on its later re-pull).
+  const live = sharedConfig.context && sharedConfig.context.liveHoles;
+  const suppress = node.$lhSuppress || (live && (live.suppressed || live.sweeping));
+  if (!owner) {
+    // No wrapper to carry tags — the node itself continues as the retry fn,
+    // so the suppression latch lands on it directly ($lhSkip/$lhBinding
+    // already live there).
+    if (suppress) node.$lhSuppress = true;
+    return { fn: node, p };
+  }
   const fn = () => runWithOwner(owner, node);
   fn.$rw = true;
+  if (suppress) fn.$lhSuppress = true;
+  if (node.$lhSkip) fn.$lhSkip = true;
+  if (node.$lhBinding) fn.$lhBinding = node.$lhBinding;
   return { fn, p };
 }
 
@@ -1836,11 +1882,23 @@ function holeContentPositions(t) {
  * The live-hole engine for one frame response. Constructed by the frame
  * renderer (frame-sink) and published on the render context; `ssr()` and
  * `resolveSSRNode` route content holes through `content()` while it is
- * present. Bindings live in the sink's DR-2 ledger — same sweeps, same
- * equality gating, same end-of-response latch as watched slot args.
+ * present. Bindings live in the sink's DR-2 ledger — same commit-driven
+ * sweeps, same equality gating, same end-of-response latch as watched slot
+ * args.
+ *
+ * Every state transition is commit-driven: the engine never chains its own
+ * promises, so it cannot amplify commits or starve the event loop — a
+ * pending re-evaluation simply waits for the next commit (async settles
+ * commit through the render core, and the response's end-latch sweep is
+ * always the last one).
  */
 export function createLiveHoles(sink) {
   let nextId = 0;
+  const stamp = typeof creationStamp === "function" ? creationStamp : () => 0;
+  // Baselines compare marker-free: a first render's html carries nested
+  // holes' markers, while sweep re-evaluations are mint-suppressed and
+  // produce none — the equality gate must not read that as a change.
+  const stripMarkers = html => html.replace(/<!--lh:\/?\d+-->/g, "");
   // Resolve a hole thunk's value to a `{ t, h, p }` result. NotReady
   // escalations are absorbed into h/p (the caller decides pending
   // semantics); real errors propagate.
@@ -1859,73 +1917,86 @@ export function createLiveHoles(sink) {
   }
   // Supersession: a hole that re-emits replaces its previous output
   // wholesale, so bindings minted inside that output retire with it.
+  // (A latched interior entry has no key — it never opened — but its own
+  // children might have.)
   function closeChildren(b) {
     for (const c of b.children) {
       c.closed = true;
-      sink.closeBinding(c.key);
+      if (c.key) sink.closeBinding(c.key);
       closeChildren(c);
     }
     b.children.length = 0;
   }
-  // A first render that escalated has no baseline for the equality gate.
-  // When its retry chain settles, re-evaluate once (mint-suppressed) to
-  // capture what actually shipped, then go live.
-  function armBaseline(b, ps, hole, owner) {
-    Promise.all(ps).then(() => {
-      if (b.closed) return;
-      const prevSweeping = engine.sweeping;
-      engine.sweeping = true;
-      engine.gateHit = false;
-      let res;
-      try {
-        res = owner ? runWithOwner(owner, () => resolveHoleValue(hole)) : resolveHoleValue(hole);
-      } catch (_) {
-        b.closed = true;
-        sink.closeBinding(b.key);
-        return;
-      } finally {
-        engine.sweeping = prevSweeping;
-      }
-      // An escalated first render whose settled value contains called slots:
-      // the records shipped through the retry path; the hole latches.
-      if (engine.gateHit) {
-        b.closed = true;
-        sink.closeBinding(b.key);
-        return;
-      }
-      if (res.h.length) return armBaseline(b, res.p, hole, owner);
-      b.last = res.t[0];
-      b.live = true;
-    });
-  }
   const engine = {
-    // In-tag routing from `ssr()` suppresses interception for the duration
-    // of one synchronous resolve; sweeps suppress nested minting.
+    // In-tag routing from `ssr()` and retry-chain resolution (`$lhSuppress`)
+    // suppress interception for the duration of one synchronous resolve;
+    // sweeps suppress nested minting.
     suppressed: 0,
     sweeping: false,
     parent: null,
-    // The slot-record gate: records (slot/region emissions) are emit-once —
-    // occurrence identity is positional — so a hole whose evaluation emits
-    // them cannot be safely re-run. First renders bump `recordStamp` (the
-    // enclosing hole latches instead of binding); sweep evaluations set
-    // `gateHit` (the sweep aborts and closes the binding).
+    // The impurity gates. Slot/region records are emit-once (occurrence
+    // identity is positional), and reactive scopes are render-once (a memo
+    // re-created per sweep re-subscribes its sources — for an async
+    // iterable that is a fresh consumer and a fresh commit pump EVERY
+    // sweep, a multiplying feedback loop): an evaluation that does either
+    // is not re-runnable. First renders diff `recordStamp` / the rxcore
+    // creation stamp and latch the hole; sweep evaluations diff them and
+    // close the binding.
     recordStamp: 0,
     gateHit: false,
     /**
-     * Intercept a thunk content hole: mint an id, wrap the resolved output
-     * in its marker pair, and open the ledger binding. Returns a string
-     * (sync resolve), a marker-wrapped `{ t, h, p }` template (NotReady
-     * escalation — markers ride the template so the retry's splice lands
-     * inside them), or null when interception is off for this evaluation.
+     * Intercept a thunk content hole: resolve it, and — when the evaluation
+     * proves re-runnable — mint an id, wrap the output in its marker pair,
+     * and open the ledger binding. Returns a string (sync resolve), a
+     * marker-wrapped `{ t, h, p }` template (NotReady escalation — markers
+     * ride the template so the retry's splice lands inside them), an
+     * UNMARKED string/template (latched: slot positions, impure
+     * evaluations), or null when interception is off for this evaluation.
      */
     content(hole) {
+      // A retry fn of an escalated hole re-enters here on its re-pull —
+      // through `ctx.ssr(pending.t, ...pending.h)` (boundary resume) or the
+      // tree resolver (root holes). Its markers already ride the pending
+      // template, so it resolves mint-free under a suppression window
+      // (re-wraps keep the chain tagged through `buildAsyncWrap`). A sync
+      // resolve here is the exact html that splices between the markers, so
+      // capture it as the binding's baseline: emission is baseline-gated,
+      // so what the client already has never re-ships. Never capture from a
+      // sweep — a sweep's value doesn't ship, and a baseline the client
+      // never saw would swallow a needed emission.
+      if (hole.$lhSuppress) {
+        const r = { t: [""], h: [], p: [] };
+        engine.suppressed++;
+        try {
+          try {
+            resolveSSRNode(hole(), r);
+          } catch (err) {
+            const wrap = buildAsyncWrap(err, hole);
+            // Real error: contribute nothing, matching the resolver's
+            // existing function-node semantics (ssrHandleError already ran).
+            if (wrap) {
+              r.h.push(wrap.fn);
+              r.p.push(wrap.p);
+              r.t.push("");
+            }
+          }
+        } finally {
+          engine.suppressed--;
+        }
+        const b = hole.$lhBinding;
+        if (b && !b.closed && !r.h.length && !engine.sweeping) {
+          b.last = stripMarkers(r.t[0]);
+        }
+        return r.h.length ? r : r.t[0];
+      }
       if (engine.suppressed || engine.sweeping) return null;
       // Slot positions are client-owned constants — the server can never
       // re-render one, so a live binding over one would be permanently
       // inert and its markers pure tax. A tagged slot getter defers to the
       // normal path before evaluation…
       if (hole.$lhSkip) return null;
-      const stampBefore = engine.recordStamp;
+      const recordsBefore = engine.recordStamp;
+      const ownersBefore = stamp();
       let value;
       let escalated = null;
       try {
@@ -1954,21 +2025,17 @@ export function createLiveHoles(sink) {
         return r.h.length ? r : r.t[0];
       }
       const owner = getOwner();
-      const id = nextId++;
-      const key = "lh:" + id;
-      const open = `<!--lh:${id}-->`;
-      const close = `<!--lh:/${id}-->`;
       const b = {
-        key,
+        key: null,
         children: [],
         last: null,
-        live: false,
         closed: false,
         sweep() {
-          if (!b.live || b.closed) return;
+          if (b.closed) return;
           const prevSweeping = engine.sweeping;
           engine.sweeping = true;
           engine.gateHit = false;
+          const sweepOwnersBefore = stamp();
           let res;
           try {
             res = owner
@@ -1978,36 +2045,37 @@ export function createLiveHoles(sink) {
             // A real error is terminal for the hole — the last emitted
             // markup stands and the failure surfaces as a keyed error.
             b.closed = true;
-            sink.closeBinding(key);
-            sink.error(key, { message: String((err && err.message) || err) });
+            sink.closeBinding(b.key);
+            sink.error(b.key, { message: String((err && err.message) || err) });
             return;
           } finally {
             engine.sweeping = prevSweeping;
           }
-          // The re-evaluation reached a called slot (possible only when the
-          // first render escalated before its slot calls): records are
-          // emit-once, so the hole is not re-runnable — latch it.
-          if (engine.gateHit) {
+          // An impure re-evaluation (slot records or reactive-scope
+          // creation — reachable only when the first render escalated
+          // before its impure part ran): the hole is not re-runnable.
+          // Close and latch what the retry path shipped.
+          if (engine.gateHit || stamp() !== sweepOwnersBefore) {
             b.closed = true;
-            sink.closeBinding(key);
+            sink.closeBinding(b.key);
             return;
           }
-          if (res.h.length) {
-            // Pending-with-previous: hold the last value; the retry chain
-            // settling is itself a commit, which re-sweeps this binding.
-            b.live = false;
-            Promise.all(res.p).then(() => {
-              if (b.closed) return;
-              b.live = true;
-              sink.commit();
-            });
-            return;
-          }
+          // Still pending: hold the last value and wait — the settle that
+          // resolves this is itself a commit, which re-sweeps. No promise
+          // chain here, by design (see the engine header).
+          if (res.h.length) return;
+          // Baseline-gated emission. An escalated binding with no baseline
+          // yet (b.last === null) defers: its markers haven't shipped — the
+          // retry splice in flight carries the client's first value and arms
+          // the baseline when it resolves (the capture in `content()`), and
+          // a later sweep is guaranteed (every commit sweeps; sink.end's
+          // latch sweep is the floor), so nothing is lost — an emission now
+          // would just re-ship what the splice is about to deliver.
           const html = res.t[0];
-          if (html === b.last) return;
+          if (b.last === null || html === b.last) return;
           b.last = html;
           closeChildren(b);
-          sink.hole(key, html);
+          sink.hole(b.key, html);
         }
       };
       if (engine.parent) engine.parent.children.push(b);
@@ -2015,6 +2083,13 @@ export function createLiveHoles(sink) {
       engine.parent = b;
       let res;
       if (escalated) {
+        // The retry chain resolves mint-suppressed (`$lhSuppress`, which
+        // `resolveSSRNode` honors and propagates through re-wraps): a retry
+        // re-runs the whole thunk, so letting its interior mint would
+        // duplicate bindings on every attempt. The binding link
+        // (`$lhBinding`) lets the retry's resolving splice arm the baseline.
+        escalated.fn.$lhSuppress = true;
+        escalated.fn.$lhBinding = b;
         res = { t: ["", ""], h: [escalated.fn], p: [escalated.p] };
       } else {
         res = { t: [""], h: [], p: [] };
@@ -2026,24 +2101,38 @@ export function createLiveHoles(sink) {
         }
       }
       engine.parent = prevParent;
-      // The record gate: this evaluation emitted slot/region records, which
-      // are emit-once — re-running the thunk would mint fresh occurrences
-      // and re-serialize their args. The hole latches: no marker, no
-      // binding; its interior holes stay live on their own bindings.
-      if (engine.recordStamp !== stampBefore) {
+      // The impurity gate (see the engine fields): this evaluation emitted
+      // records or created reactive scopes, so re-running it would duplicate
+      // them. The hole latches: no marker, no binding. Interior holes minted
+      // during this resolve stay live on their own bindings — which is the
+      // intended granularity: component-position thunks latch, and the
+      // expression holes inside the components they created are the live
+      // ones (render-once, updated fine-grained — the client model's shape).
+      if (engine.recordStamp !== recordsBefore || stamp() !== ownersBefore) {
         return res.h.length ? res : res.t[0];
       }
+      const id = nextId++;
+      const key = (b.key = "lh:" + id);
+      const open = `<!--lh:${id}-->`;
+      const close = `<!--lh:/${id}-->`;
       if (!res.h.length) {
-        b.last = res.t[0];
-        b.live = true;
+        b.last = stripMarkers(res.t[0]);
         sink.openBinding(key, b);
         return open + res.t[0] + close;
       }
+      // Escalated mint: markers ride the template so the retry's splice
+      // lands inside them. The baseline arms when the retry chain sync-
+      // resolves through `content()`'s suppress branch — that resolve IS
+      // the spliced html, so the capture can never latch a value the client
+      // didn't get. On the capture-less edge paths b.last stays null and
+      // the first resolved sweep emits unconditionally — safe redundancy:
+      // the client's hole apply is placeholder-guarded, so an emission
+      // racing the fragment reveal defers rather than destroying the
+      // pending range.
       const t = res.t.slice();
       t[0] = open + t[0];
       t[t.length - 1] += close;
       sink.openBinding(key, b);
-      armBaseline(b, res.p, hole, owner);
       return { t, h: res.h, p: res.p };
     }
   };
@@ -2718,7 +2807,10 @@ function resolveSSRNode(
   } else if (t === "function") {
     // Function nodes reaching the tree resolver are content by construction
     // (in-tag holes route here only under `ssr()`'s suppression window), so
-    // a live render intercepts them as live holes.
+    // a live render routes them through the engine. The engine owns all
+    // suppression decisions — retry-chain tags (`$lhSuppress`, resolved
+    // mint-free with baseline capture), machinery opt-outs (`$lhSkip`), and
+    // open windows all defer here via a null return.
     const live = sharedConfig.context && sharedConfig.context.liveHoles;
     let liveNode = null;
     if (live && (liveNode = live.content(node)) !== null) {
