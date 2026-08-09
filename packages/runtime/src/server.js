@@ -1,5 +1,13 @@
 import { ChildProperties } from "./constants";
-import { sharedConfig, root, ssrHandleError, getOwner, runWithOwner, creationStamp } from "rxcore";
+import {
+  sharedConfig,
+  root,
+  ssrHandleError,
+  getOwner,
+  runWithOwner,
+  creationStamp,
+  inServerComponentScope
+} from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
 // Wire-protocol header names for the commit fold's gap-fill denylist
 // (`commitEventResponse`): shared constants, not copies, so the fold can
@@ -1125,7 +1133,20 @@ export function renderToStream(code, options = {}) {
   const flushEnd = () => {
     if (!registry.size && !holds) {
       serializeRootAssets();
-      queue(() => queue(() => serializer.flush())); // double queue because of elsewhere
+      queue(() =>
+        queue(() => {
+          // The document face's live-hole latch (Stage 4): one final sweep
+          // ships last values and the channel stream closes — BEFORE the
+          // serializer flush, or the open stream would hold the response
+          // forever (and post-flush writes are silently dropped).
+          if (context.live.end) {
+            const end = context.live.end;
+            context.live.end = null;
+            end();
+          }
+          serializer.flush();
+        })
+      ); // double queue because of elsewhere
     }
   };
   const registry = new Map();
@@ -1190,6 +1211,13 @@ export function renderToStream(code, options = {}) {
   sharedConfig.context = context = {
     async: true,
     nonce,
+    // The document face's live-hole carrier (Stage 4). Components render
+    // under per-component context CLONES (spread copies), so a mutation on
+    // the clone a server component armed under never reaches this root
+    // object — but a mutation on this shared slot does: clones copy the
+    // REFERENCE. Arming (frame-sink's armDocumentLiveHoles) dedupes through
+    // it, and flushEnd reads `live.end` off the root to close the channel.
+    live: {},
     registerHeadTags(tags) {
       registerHeadTags(
         headRegistry,
@@ -1831,8 +1859,10 @@ function ssrGroupSlot(fn, idx) {
 // and open ledger bindings: commits the response observes re-run the thunk,
 // equality-gate the resolved HTML, and re-emit changed holes as keyed
 // `hole` chunks the client morphs in place. Enabled per render context
-// (`sharedConfig.context.liveHoles`); document SSR never sets it, so
-// document bytes are untouched (the t=0 first-value lock).
+// (`sharedConfig.context.liveHoles`). The document face (Stage 4) arms one
+// engine per render, scope-gated to server-component interiors — plain
+// document content never sets it locally and its bytes stay untouched (the
+// t=0 first-value lock survives outside the barrier).
 //
 // What is deliberately NOT live here: eagerly-compiled holes (the compiler
 // already made the static/dynamic split — statics arrive as values, not
@@ -1925,9 +1955,15 @@ function holeContentPositions(t) {
  * commit through the render core, and the response's end-latch sweep is
  * always the last one).
  */
-export function createLiveHoles(sink) {
+export function createLiveHoles(sink, scoped) {
   let nextId = 0;
   const stamp = typeof creationStamp === "function" ? creationStamp : () => 0;
+  // The document-face arming gate: one engine serves the whole render, but
+  // only holes minted inside a server component's scope may mark and bind —
+  // plain document content keeps its t=0 latch and its exact bytes. Stream
+  // renders pass nothing (the entire response is the component).
+  const inScope =
+    scoped && typeof inServerComponentScope === "function" ? inServerComponentScope : null;
   // Baselines compare marker-free: a first render's html carries nested
   // holes' markers, while sweep re-evaluations are mint-suppressed and
   // produce none — the equality gate must not read that as a change.
@@ -2028,6 +2064,9 @@ export function createLiveHoles(sink) {
       // inert and its markers pure tax. A tagged slot getter defers to the
       // normal path before evaluation…
       if (hole.$lhSkip) return null;
+      // Outside the arming scope (document face, non-component content):
+      // resolve on the normal path, unmarked and unbound.
+      if (inScope && !inScope()) return null;
       const recordsBefore = engine.recordStamp;
       const ownersBefore = stamp();
       const owner = getOwner();
@@ -2188,6 +2227,13 @@ export function createLiveHoles(sink) {
     mint() {
       return nextId++;
     },
+    /** Whether interception may arm at the current evaluation point —
+     *  `ssr()` asks before opening an attr capture (the `data-lha`
+     *  injection must not touch out-of-scope bytes; content holes are
+     *  gated inside `content()` itself). */
+    active() {
+      return !inScope || inScope();
+    },
     /**
      * Register an element's attr-hole capture (built by `ssr()`'s in-tag
      * scan): the tag's attribute area as alternating static strings and
@@ -2315,7 +2361,7 @@ export function ssr(t) {
   // tag latches) or interception is off for this evaluation.
   const captureStart = () => {
     if (cap) return true;
-    if (!lastOpen || live.suppressed || live.sweeping) return false;
+    if (!lastOpen || live.suppressed || live.sweeping || !live.active()) return false;
     if (lastOpen.r !== result || (result !== null && lastOpen.seg !== result.t.length - 1)) {
       return false;
     }

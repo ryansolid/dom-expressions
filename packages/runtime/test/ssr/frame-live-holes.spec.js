@@ -14,8 +14,11 @@
  *     thunk) — same rule as client reactivity;
  *   - in-tag (attribute-position) holes — the attr slice addresses them
  *     by element, not by range (markers can't sit inside a tag);
- *   - the document face (t=0): holes latch to their V1 snapshot — the
- *     first-value lock. Liveness at t=0 is Stage 4.
+ *   - hostless document renders (no streaming serializer / no
+ *     ReadableStream): holes latch to their V1 snapshot — the first-value
+ *     lock. The ARMED document face (Stage 4, one engine per document
+ *     gated to server-component scope, ops over an `sc:live` channel
+ *     record) is pinned by frame-live-holes-document.spec.js.
  */
 import * as r from "../../src/server";
 import {
@@ -128,7 +131,11 @@ describe("live content holes — marking (stream face)", () => {
     expect(rowSlots[0].key).toBe("row#0");
   });
 
-  it("the document face does not mark holes: t=0 latches to the V1 snapshot", async () => {
+  it("the document face degrades to the t=0 latch when no channel host exists", async () => {
+    // Stage 4 arms the document face through an `sc:live` ReadableStream
+    // record (frame-live-holes-document.spec.js pins that contract, in the
+    // node environment). This spec runs under jsdom-without-streams — the
+    // hostless fallback: no channel means no marking, V1 latches.
     const html = await collectDocument(() =>
       r.ssr(["<section>", "</section>"], () => r.escape("v1"))
     );
@@ -499,7 +506,11 @@ describe("live content holes — lifetime and error semantics (stream face)", ()
     expect(attrs[0].removed).toEqual(["disabled"]);
   });
 
-  it("attr holes: the document face injects nothing", async () => {
+  it("attr holes: the hostless document fallback injects nothing", async () => {
+    // Same degradation as the content-hole case above: without a channel
+    // host (no ReadableStream in this environment) the document face
+    // latches and its bytes stay untouched. The armed document contract
+    // (data-lha inside the barrier) is frame-live-holes-document.spec.js.
     const html = await collectDocument(() =>
       r.ssr(['<div class="', '">x</div>'], () => r.escape("v1", true))
     );

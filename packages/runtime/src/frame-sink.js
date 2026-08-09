@@ -871,6 +871,130 @@ function frameElementOpen(id) {
 const FRAME_ELEMENT_CLOSE = `</${FRAME_TAG}>`;
 
 /**
+ * The document face's live-hole plumbing (Stage 4): one engine per document
+ * render, armed lazily by the first server component that renders inline.
+ *
+ * The engine is the same Stage 3 ledger the stream face runs — what changes
+ * is the sink (ops ride ONE `sc:live` hydration record whose value is a
+ * ReadableStream the data scripts keep feeding) and the arming scope (the
+ * engine gates minting on the server-component context barrier, so plain
+ * document content keeps its t=0 latch and its exact bytes). The record
+ * serializes EAGERLY at arming: nothing re-notifies an adopted boundary
+ * about a late `_$HY.r` key, so the channel must exist in the data scripts
+ * before adoption drains — an empty closed stream costs a few bytes on
+ * documents whose holes never re-emit.
+ *
+ * The commit funnel is the adapter's own microtask sweep: the reactive core
+ * pokes `ctx.commit` at async settles (and pumps iterator memos only while
+ * it exists), exactly as on the stream face. `ctx.live.end` is the response
+ * latch — `flushEnd` runs it before the serializer flush: one final sweep
+ * ships last values, then the channel closes (an open stream would hold the
+ * response forever).
+ *
+ * CONTEXT GEOMETRY: components render under per-component context CLONES,
+ * so the ctx a server component arms under is usually not the root object
+ * the renderer's flush loop reads. Everything read DOWNWARD (`liveHoles`,
+ * `commit` — consumed by the subtree under the arm point) rides the clone:
+ * descendants spread-copy it. Everything read at the ROOT (the end latch,
+ * and the once-per-document arming dedupe — a second component elsewhere
+ * arms under a sibling clone that never saw the first) rides `ctx.live`,
+ * the shared slot the root context creates and every clone carries by
+ * reference.
+ */
+function armDocumentLiveHoles(ctx) {
+  if (!ctx || ctx.liveHoles !== undefined) return;
+  const live = ctx.live;
+  // A second server component under a fresh clone: adopt the document's
+  // already-armed engine (or its already-decided latch).
+  if (live && live.holes !== undefined) {
+    ctx.liveHoles = live.holes;
+    if (live.holes) {
+      ctx.commit = live.commit;
+      ctx.commitEpoch = live.commitEpoch;
+    }
+    return;
+  }
+  // Sync renders (no streaming serializer / no shared slot), noScripts
+  // documents (no data channel), and hostless environments latch at t=0:
+  // mark nothing. `null` records the decision (the arming checks are
+  // `!== undefined`).
+  if (!live || !ctx.async || ctx.noHydrate || !ctx.serialize || typeof ReadableStream !== "function") {
+    ctx.liveHoles = null;
+    if (live) live.holes = null;
+    return;
+  }
+  const bindings = new Map();
+  let epoch = 0;
+  let sweepScheduled = false;
+  let closed = false;
+  const sweep = () => {
+    epoch++;
+    for (const b of [...bindings.values()]) {
+      try {
+        b.sweep();
+      } catch (_) {
+        // A sweep failure must not take the document down: the binding's
+        // last emitted value stands.
+      }
+    }
+  };
+  const scheduleSweep = () => {
+    if (closed || sweepScheduled || !bindings.size) return;
+    sweepScheduled = true;
+    queueMicrotask(() => {
+      sweepScheduled = false;
+      if (!closed) sweep();
+    });
+  };
+  let channel;
+  ctx.serialize(
+    "sc:live",
+    new ReadableStream({
+      start(c) {
+        channel = c;
+      }
+    })
+  );
+  const push = op => {
+    if (!closed) channel.enqueue(op);
+  };
+  ctx.liveHoles = live.holes = createLiveHoles(
+    {
+      openBinding(key, b) {
+        bindings.set(key, b);
+      },
+      closeBinding(key) {
+        bindings.delete(key);
+      },
+      hole(key, html) {
+        push({ type: "hole", key, html });
+      },
+      attr(key, attrs, removed) {
+        const op = { type: "attr", key, attrs };
+        if (removed && removed.length) op.removed = removed;
+        push(op);
+      },
+      error(key, error) {
+        push({ type: "error", key, error });
+      },
+      commit: scheduleSweep,
+      get epoch() {
+        return epoch;
+      }
+    },
+    /* scoped */ true
+  );
+  ctx.commit = live.commit = scheduleSweep;
+  ctx.commitEpoch = live.commitEpoch = () => epoch;
+  live.end = () => {
+    if (closed) return;
+    if (bindings.size) sweep();
+    closed = true;
+    channel.close();
+  };
+}
+
+/**
  * The in-process mirror of `frameTransformResult`, for DOCUMENT SSR:
  * install as `configureServerFunctionsServer({ transformDirectResult })`
  * and a server function whose direct (same-process) call resolves to a
@@ -888,6 +1012,7 @@ export function frameTransformDirectResult(value, { id, args }) {
     // the client's content keeps full app context while the component's
     // own render is context-isolated.
     serverOwned(() => {
+      armDocumentLiveHoles(sharedConfig.context);
       const slotProps = createDocumentSlotProps(props, id);
       return serverComponentScope(() => component(slotProps));
     }),

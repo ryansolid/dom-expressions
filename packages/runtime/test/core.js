@@ -71,11 +71,20 @@ export function Hydration(props) {
 // Context barrier for server-component render roots. The real
 // implementation (solid's runInServerComponentScope) rebuilds the scope
 // owner's context record so user context never crosses a server component —
-// that requires the core's own owner internals, so like runWithHydrationScope
-// the test core passes through; barrier semantics are covered against the
-// real core (solid-web's server suite).
+// that requires the core's own owner internals, so the test core only
+// mirrors the piece the runtime reads: the barrier MEMBERSHIP marker
+// (`inServerComponentScope`, the document face's live-hole arming gate).
+// Severing semantics are covered against the real core (solid-web's
+// server suite).
+const ServerComponentScopeContext = createContext(false);
 export function runInServerComponentScope(fn) {
-  return fn();
+  return runWithOwner(createOwner(), () => {
+    setContext(ServerComponentScopeContext, true);
+    return fn();
+  });
+}
+export function inServerComponentScope() {
+  return getContext(ServerComponentScopeContext) === true;
 }
 
 export function ssrHandleError(err) {
