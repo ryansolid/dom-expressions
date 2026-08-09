@@ -938,6 +938,22 @@ export function renderToStream(code, options = {}) {
       d();
     }
   };
+  // A retry pass that throws a REAL error (not NotReady) can have nothing on
+  // the stack to catch it: the initial render pass throws synchronously out
+  // of renderToStream for the caller's try/catch, but retries run from flush
+  // microtasks and boundary resume loops, where an escaped throw becomes an
+  // unhandled rejection and takes the host process down. This is the render's
+  // one containment channel for those: report through onError (falling back
+  // to console.error so the failure is never silent), then wind the render
+  // down exactly like a disconnect — the REQUEST fails, the process survives.
+  // Exposed to the reactive library's boundary resume loop as
+  // `context.failRender` (see the ssrLoadingBoundary finalizeError path).
+  const failRender = err => {
+    try {
+      options.onError ? options.onError(err) : console.error(err);
+    } catch (_) {}
+    abandon();
+  };
   // Wrap an integrator-supplied `pipe` sink: contain sync throws from
   // `write`/`end` and treat them as disconnection.
   const guardSink = w => ({
@@ -1342,6 +1358,11 @@ export function renderToStream(code, options = {}) {
     }
   };
   applyAssetTracking(context, tracking, manifest, noScripts);
+  // Internal containment seam, not part of the context contract (see
+  // failRender above): the boundary resume loop lives in the reactive
+  // library and has no other channel to fail the request from an async
+  // retry.
+  context.failRender = failRender;
   registerEntryAssets(manifest);
 
   let html = root(
@@ -1486,7 +1507,15 @@ export function renderToStream(code, options = {}) {
       allSettled(blockingPromises).then(() => {
         scheduleFlush(() => {
           if (dead) return resolve();
-          doShell();
+          // Root-hole retries and shell assembly run inside this microtask —
+          // a real error here (see failRender) must fail the request, not
+          // reject an unhandled promise.
+          try {
+            doShell();
+          } catch (err) {
+            failRender(err);
+            return resolve();
+          }
           if (!shellCompleted) return flush();
           const encoder = new TextEncoder();
           const writer = w.getWriter();
@@ -1568,11 +1597,19 @@ export function renderToStream(code, options = {}) {
               // blockers, so flushEnd must not run ahead of them (their
               // source may not be serialized, so the serializer alone
               // wouldn't wait).
-              if (
-                !resolveRootHoles() ||
-                !headShellReady(headRegistry, p => blockingPromises.add(p))
-              )
-                return flush();
+              try {
+                if (
+                  !resolveRootHoles() ||
+                  !headShellReady(headRegistry, p => blockingPromises.add(p))
+                )
+                  return flush();
+              } catch (err) {
+                // Contain retry-pass errors (see failRender); the thenable
+                // contract already routes render errors through onError and
+                // resolves with whatever HTML the render produced.
+                failRender(err);
+                return resolve(tmp);
+              }
               queue(flushEnd);
             });
           });
@@ -1587,7 +1624,18 @@ export function renderToStream(code, options = {}) {
         allSettled(blockingPromises).then(() => {
           scheduleFlush(() => {
             if (dead) return;
-            doShell();
+            try {
+              doShell();
+            } catch (err) {
+              // Contain retry-pass errors (see failRender) and end the sink:
+              // it is still alive — the RENDER died — and leaving it open
+              // would hang the response.
+              failRender(err);
+              try {
+                w.end();
+              } catch (_) {}
+              return;
+            }
             if (!shellCompleted) return flush();
             buffer = writable = guardSink(w);
             buffer.write(tmp);
@@ -1645,8 +1693,20 @@ export function ssrGroup(fn, n) {
 function buildAsyncWrap(err, node) {
   const p = ssrHandleError(err);
   if (!p) return null;
+  // A hole that suspends AGAIN on a retry pass arrives here already wrapped
+  // (the $rw brand below). Reuse that wrapper: it restores the owner captured
+  // at the ORIGINAL suspension — the one closest to the hole, which is also
+  // the innermost (winning) restore the old nested form ended at. Wrapping it
+  // again under whatever owner is ambient during the retry stacked one more
+  // runWithOwner closure per pass, so a hole that re-suspended N times cost
+  // O(N) stack frames per invocation and O(N²) over the render — a long
+  // re-suspension chain overflowed the stack (SSR stack-overflow diagnosis).
+  if (node.$rw) return { fn: node, p };
   const owner = getOwner();
-  return { fn: owner ? () => runWithOwner(owner, node) : node, p };
+  if (!owner) return { fn: node, p };
+  const fn = () => runWithOwner(owner, node);
+  fn.$rw = true;
+  return { fn, p };
 }
 
 // Cold-path helper for the first hit of a group. Isolates `try/catch`
