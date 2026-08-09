@@ -188,11 +188,25 @@ const SCENARIOS = {
   // shakes out of consumers that never construct or brand-check one — the
   // transport only calls isResponseEnvelope. Re-guarded at actual+20
   // (8228 measured).
+  // Then +353 for Stage 3 live markup holes, the client half (the reactive
+  // pole's morph substrate: `hole`/`attr` chunk codec cases, one flush pass
+  // applying range morphs between `<!--lh:N-->` pairs via the same
+  // range-anchored reconcile as the root morph and attr patches on
+  // `data-lha`-addressed elements, a shared frame-skipping DFS finder, and
+  // per-mount identity-dedupe so warm stores replay over re-materialized
+  // shells). Initially +522; shaved by collapsing three store passes into
+  // one with a single applied-record map (three fields to one), unifying
+  // the two DFS finders behind a predicate, parsing attr text through the
+  // existing parseFragment, dev-gating the hole-error diagnostic, and
+  // regexing the error-prefix and store-clear dispatches. What remains is
+  // the mechanism itself — apps not using frames still pay 0 (the
+  // compiled-JSX core scenario stayed byte-stable). Re-guarded at
+  // actual+20 (8581 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
-    8248
+    8601
   ]
 };
 

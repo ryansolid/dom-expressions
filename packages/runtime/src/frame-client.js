@@ -129,9 +129,9 @@ export function chunkToRecords(chunk) {
       // fragment). Unkeyed errors are stream-level — `frame.error` reads
       // that record.
       if (!chunk.key) return { ":error": chunk.error };
-      if (chunk.key.startsWith("lh:") || chunk.key.startsWith("lha:"))
-        return { [`hole:${chunk.key}:error`]: chunk.error };
-      return { [`seg:${chunk.key}:error`]: chunk.error };
+      return {
+        [`${/^lha?:/.test(chunk.key) ? "hole" : "seg"}:${chunk.key}:error`]: chunk.error
+      };
     default:
       return {};
   }
@@ -299,14 +299,11 @@ class FrameImpl {
   #errorNotified = false;
   #revealed = new Set();
   #fallbackShown = new Set();
-  // Live-hole apply dedupe: marker key -> last html this MOUNT morphed in.
-  // Per mount, not per store — a fresh mount seeding from a warm resident
+  // Live-hole apply dedupe: store key -> the record this MOUNT applied
+  // (range morphs, attr patches, and error diagnostics share it). Per
+  // mount, not per store — a fresh mount seeding from a warm resident
   // store must replay hole records over the re-materialized shell.
   #appliedHoles = new Map();
-  // Attr-hole apply dedupe: element address -> last applied text+removals.
-  #appliedAttrs = new Map();
-  // Hole-error diagnostics already surfaced (one console line per record).
-  #warnedHoleErrors = new Set();
   #slots;
   #mountedSlots = new Set();
   #slotCleanups = new Map();
@@ -478,8 +475,6 @@ class FrameImpl {
     this.#revealed.clear();
     this.#fallbackShown.clear();
     this.#appliedHoles.clear();
-    this.#appliedAttrs.clear();
-    this.#warnedHoleErrors.clear();
     this.#errorNotified = false;
     clearStreamRecords(this.#store, root);
   }
@@ -541,51 +536,34 @@ class FrameImpl {
       }
     }
 
-    // Live-hole re-emissions morph their marked ranges in place. After the
+    // Live-hole records, one pass: range morphs (`hole:`), element attr
+    // patches (`attr:`), and hole-keyed error diagnostics. After the
     // segment loop, so a hole inside a segment revealed THIS flush is
-    // findable now. A record whose markers aren't in the DOM yet (its
-    // containing content still arriving) simply stays pending — any later
-    // flush retries, store-model style.
+    // findable now; a record whose target isn't in the DOM yet simply
+    // stays pending — any later flush retries, store-model style. Dedupe
+    // is by record identity (every chunk mints a fresh record; a fresh
+    // mount's empty map replays the warm store). A hole error is terminal
+    // server-side — the range latched at its last markup, and unlike a
+    // rejected arg ref there is no client read to throw into, so it
+    // surfaces as a one-time diagnostic.
     for (const key in this.#store) {
-      if (!key.startsWith("hole:")) continue;
       const record = this.#store[key];
-      if (!record || record.kind !== "html") continue;
-      const marker = key.slice(5);
-      if (this.#appliedHoles.get(marker) === record.value) continue;
-      if (this.#applyHole(marker, record.value)) {
-        this.#appliedHoles.set(marker, record.value);
-        this.#applied(version, "morph");
+      if (!record || this.#appliedHoles.get(key) === record) continue;
+      if (key.startsWith("hole:")) {
+        if (key.endsWith(":error")) {
+          this.#appliedHoles.set(key, record);
+          if ("_DX_DEV_")
+            console.error(`Live hole ${key.slice(5, -6)} failed on the server; latched:`, record);
+        } else if (this.#applyHole(key.slice(5), record.value)) {
+          this.#appliedHoles.set(key, record);
+          this.#applied(version, "morph");
+        }
+      } else if (key.startsWith("attr:")) {
+        if (this.#applyAttrs(key.slice(5), record.value, record.removed)) {
+          this.#appliedHoles.set(key, record);
+          this.#applied(version, "morph");
+        }
       }
-    }
-
-    // Attr-hole re-emissions patch their addressed elements in place —
-    // same pending/retry semantics as the range morphs above.
-    for (const key in this.#store) {
-      if (!key.startsWith("attr:")) continue;
-      const record = this.#store[key];
-      if (!record || record.kind !== "attrs") continue;
-      const addr = key.slice(5);
-      const stampKey = record.value + "\u0000" + (record.removed ? record.removed.join() : "");
-      if (this.#appliedAttrs.get(addr) === stampKey) continue;
-      if (this.#applyAttrs(addr, record.value, record.removed)) {
-        this.#appliedAttrs.set(addr, stampKey);
-        this.#applied(version, "morph");
-      }
-    }
-
-    // A hole-keyed error is terminal server-side: the range latched at its
-    // last markup, and — unlike a rejected arg ref — there is no client
-    // read to throw into, so surface the failure as a one-time diagnostic
-    // rather than letting it vanish.
-    for (const key in this.#store) {
-      if (!key.startsWith("hole:") || !key.endsWith(":error")) continue;
-      if (this.#warnedHoleErrors.has(key)) continue;
-      this.#warnedHoleErrors.add(key);
-      console.error(
-        `Live hole "${key.slice(5, -6)}" failed on the server and latched at its last value: ${
-          this.#store[key]
-        }`
-      );
     }
 
     // Module assets preload as soon as their record lands (the document
@@ -1273,14 +1251,18 @@ class FrameImpl {
    */
   #applyHole(marker, html) {
     if (!this.#hasContent) return false;
-    const open = findHoleComment(this.#firstContent(), this.#end, marker);
+    const open = findLiveTarget(
+      this.#firstContent(),
+      this.#end,
+      n => n.nodeType === COMMENT_NODE && n.data === marker
+    );
     if (!open) return false;
     const close = rangeClose(open, "lh:/" + marker.slice(3));
     if (!close) {
       if ("_DX_DEV_") {
         console.error(
-          `Live hole "${marker}" is missing its closing comment (<!--lh:/${marker.slice(3)}-->); ` +
-            `its update was dropped. Likely an HTML-rewriting layer stripped the comment.`,
+          `Live hole "${marker}" is missing its closing comment; update dropped. ` +
+            `Likely an HTML-rewriting layer stripped it.`,
           open
         );
       }
@@ -1301,11 +1283,13 @@ class FrameImpl {
    */
   #applyAttrs(addr, text, removed) {
     if (!this.#hasContent) return false;
-    const el = findAddressedElement(this.#firstContent(), this.#end, addr);
+    const el = findLiveTarget(
+      this.#firstContent(),
+      this.#end,
+      n => n.nodeType === ELEMENT_NODE && n.getAttribute("data-lha") === addr
+    );
     if (!el) return false;
-    const tpl = el.ownerDocument.createElement("template");
-    tpl.innerHTML = `<i${text}></i>`;
-    const parsed = tpl.content.firstChild;
+    const parsed = parseFragment(`<i${text}></i>`).firstChild;
     if (parsed) {
       for (let i = 0; i < parsed.attributes.length; i++) {
         const { name, value } = parsed.attributes[i];
@@ -1650,45 +1634,23 @@ function rangeClose(start, id) {
 }
 
 /**
- * Depth-first search among the siblings `[n, end)` for a live-hole open
- * comment (`<!--lh:N-->`, data = `lh:N`). Descends through elements —
- * including region elements, whose holes belong to the stream that produced
- * them (one hole-id counter per response) — but never into nested boundary
- * frames (bare ids): those are separate streams with their own hole
- * namespaces, so the same marker id there is a different hole.
+ * Depth-first search among the siblings `[n, end)` for a live-hole target —
+ * an open comment (`<!--lh:N-->`) or an addressed element (`data-lha`),
+ * matched by `test`. Descends through elements — including region elements,
+ * whose holes belong to the stream that produced them (one id counter per
+ * response) — but never into nested boundary frames (bare ids): those are
+ * separate streams with their own hole/address namespaces.
  */
-function findHoleComment(n, end, data) {
-  while (n && n !== end) {
-    if (n.nodeType === COMMENT_NODE && n.data === data) return n;
-    if (n.nodeType === ELEMENT_NODE) {
-      const fid = isFrameElement(n) ? n.getAttribute(FRAME_ID_ATTR) : null;
-      if (fid === null || fid.includes(".")) {
-        const found = findHoleComment(n.firstChild, null, data);
-        if (found) return found;
-      }
-    }
-    n = n.nextSibling;
-  }
-  return null;
-}
-
-/**
- * Depth-first search among the siblings `[n, end)` for the element
- * addressed `data-lha="addr"`. Same descent rule as findHoleComment:
- * through elements (including regions — one address counter per response)
- * but never into nested boundary frames, whose addresses are a different
- * stream's namespace.
- */
-function findAddressedElement(n, end, addr) {
+function findLiveTarget(n, end, test) {
   while (n && n !== end) {
     if (n.nodeType === ELEMENT_NODE) {
       const fid = isFrameElement(n) ? n.getAttribute(FRAME_ID_ATTR) : null;
       if (fid === null || fid.includes(".")) {
-        if (n.getAttribute("data-lha") === addr) return n;
-        const found = findAddressedElement(n.firstChild, null, addr);
+        if (test(n)) return n;
+        const found = findLiveTarget(n.firstChild, null, test);
         if (found) return found;
       }
-    }
+    } else if (test(n)) return n;
     n = n.nextSibling;
   }
   return null;
@@ -1797,13 +1759,7 @@ function eachInRange(start, key, cb) {
  */
 function clearStreamRecords(records, root) {
   for (const key in records) {
-    if (
-      key.startsWith("seg:") ||
-      key.startsWith("hole:") ||
-      key.startsWith("attr:") ||
-      key === ":error" ||
-      (root && key === "")
-    ) {
+    if (/^(seg|hole|attr):/.test(key) || key === ":error" || (root && key === "")) {
       delete records[key];
     }
   }
