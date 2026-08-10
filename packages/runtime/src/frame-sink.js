@@ -82,6 +82,7 @@ function serverComponentScope(render) {
 }
 import { renderToStream, createLiveHoles } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
+import { envelopeContainerTraces, isContainerTraced } from "./frame-container-plugin.js";
 import {
   ChunkReader,
   SINGLE_FLIGHT_HEADER,
@@ -831,7 +832,18 @@ export function createDocumentSlotProps(clientProps, frameId) {
           const regions = [];
           for (const key of Object.keys(vals)) {
             const value = vals[key];
-            if (isServerContent(value)) {
+            if (isContainerTraced(value)) {
+              // Container tier (DR-2 case 3): a traced container is DATA
+              // however object-shaped it is, and the check comes FIRST — the
+              // classifiers below read properties, and a pending projection
+              // proxy throws not-ready at any string-key get (isAsyncValue's
+              // `.then` probe would detonate here). The fill reads the proxy
+              // itself: settled reads pass through; a pending read throws
+              // not-ready into the hole machinery — a per-arg suspend, the
+              // value tier's own behavior. The record ships the proxy, which
+              // the serializer's trace plugin carries as snapshot + patches.
+              resolved[key] = value;
+            } else if (isServerContent(value)) {
               const childId = `${frameId}.${occurrence}.${key}`;
               const region = { key, childId, value, used: false, locked: false };
               regions.push(region);
@@ -911,8 +923,12 @@ export function createDocumentSlotProps(clientProps, frameId) {
                 args[key] = { $frame: region.childId };
                 continue;
               }
-              if (isServerContent(value)) continue;
-              args[key] = value;
+              // Container check first for exactness: a store whose STATE has
+              // a `t` key would satisfy isServerContent's shape probe.
+              if (!isContainerTraced(value) && isServerContent(value)) continue;
+              // Containers (at any depth) ride the record as trace envelopes;
+              // everything else passes through by reference.
+              args[key] = envelopeContainerTraces(value);
             }
             // A CLONE serializes; `args` stays canonical for the ledger
             // below — re-emissions mutate it and clone again, so the
@@ -953,7 +969,7 @@ export function createDocumentSlotProps(clientProps, frameId) {
                   evals[key],
                   states[key],
                   value => {
-                    args[key] = value;
+                    args[key] = envelopeContainerTraces(value);
                     liveArgs.slot(frameId, occurrence, { ...args });
                   }
                 );
@@ -1493,7 +1509,10 @@ export function createSlotProps(sink, frame) {
               if (value == null || t === "string" || t === "number" || t === "boolean") {
                 args[key] = value;
                 if (evaluate) state = { settled: true, last: value };
-              } else if (isServerContent(value)) {
+              } else if (!isContainerTraced(value) && isServerContent(value)) {
+                // Containers fall through to the data path below (their
+                // serialization is the trace plugin's), and the guard keeps a
+                // store whose state has a `t` key out of the content path.
                 // Server JSX flows as a nested region, never as data — the
                 // no-double-serialize invariant (transport dispatch case 1):
                 // its html is the transfer; the client wraps the range without
@@ -1519,7 +1538,9 @@ export function createSlotProps(sink, frame) {
                 args[key] = { $frame: childId };
               } else {
                 const ref = `arg:${occurrence}:${key}`;
-                ctx.serialize(ref, value);
+                // Containers (at any depth) swap for their trace envelopes
+                // before the value meets seroval — see envelopeContainerTraces.
+                ctx.serialize(ref, envelopeContainerTraces(value));
                 args[key] = { $ref: ref };
                 if (evaluate && !state) state = { settled: true, last: value };
               }
@@ -1548,7 +1569,7 @@ export function createSlotProps(sink, frame) {
               } else {
                 const ref = `arg:${occurrence}:${key}@${sink.nextArgRef(ledgerKey)}`;
                 sink.mintRef(ref);
-                ctx.serialize(ref, value);
+                ctx.serialize(ref, envelopeContainerTraces(value));
                 args[key] = { $ref: ref };
               }
               sink.slot(occurrence, { ...args });

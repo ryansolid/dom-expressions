@@ -148,7 +148,9 @@ export function chunkToRecords(chunk) {
  *   serialize?: (value: unknown) => { $ref: string },
  *   resolve?: (ref: { $ref: string }) => unknown,
  *   applyData?: (chunk: object) => void,
- *   prepareData?: () => Promise<unknown>
+ *   prepareData?: () => Promise<unknown>,
+ *   revive?: (value: unknown) => unknown,
+ *   isContainer?: (value: unknown) => boolean
  * }} [options]
  *   `serialize`/`resolve` back slot data refs (response-scoped table);
  *   `applyData` receives each `data` chunk whole — keyed codec records
@@ -271,6 +273,8 @@ export function createFrameHost(options = {}) {
     resolve(ref, frameId) {
       return options.resolve ? options.resolve(ref, frameId) : undefined;
     },
+    revive: options.revive,
+    isContainer: options.isContainer,
     prepareData: options.prepareData
   };
 }
@@ -977,7 +981,11 @@ class FrameImpl {
         }
         props[key] = entry.element;
       } else {
-        props[key] = value;
+        // Literal args may carry protocol markers the integration knows how
+        // to revive (document-face container traces arrive as inline
+        // literals rather than `{$ref}`s — see reviveContainerTraces). The
+        // host hook keeps this module protocol-agnostic.
+        props[key] = host && host.revive ? host.revive(value) : value;
       }
     }
     return props;
@@ -1030,6 +1038,16 @@ class FrameImpl {
       if (isDataRef(va) && isDataRef(vb) && cache && key in cache) {
         const host = this.#options.host;
         const next = host ? host.resolve(vb, this.#options.id) : undefined;
+        // A live CONTAINER (DR-2's container tier) must be identity-compared
+        // BEFORE any probe: a pending container's property reads throw
+        // not-ready, so the async probe below (or the stringify) would
+        // detonate it. Same table -> same materialized instance (adopt
+        // silently); a re-serialized trace materializes a NEW container and
+        // that IS a change (a fresh generation the live update pushes).
+        if (host && host.isContainer && (host.isContainer(next) || host.isContainer(cache[key]))) {
+          if (next === cache[key]) continue;
+          return false;
+        }
         // An async value (DR-2's value tier: the arg is passed WHOLE and the
         // consumer's READ settles) is never serialization-comparable — every
         // promise stringifies to `{}`, so two DIFFERENT pending values read

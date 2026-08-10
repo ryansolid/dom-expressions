@@ -222,14 +222,15 @@ export const ServerComponentPlugin = {
  * crosses the codec, and both legs of that path are frame-owned code (the
  * flight transform serializing it, this transport decoding it), so the
  * protocol injects the plugin itself — nothing to register anywhere.
+ * (Container traces need no injection here: the trace plugin rides the
+ * codec's DEFAULT plugin set — see serializer-decode.js — which keeps its
+ * weight in the lazy codec chunk instead of this eager module.)
  */
 export function flightCodec(codec) {
   const plugins = (codec && codec.plugins) || [];
   // Tag equality, not instance equality: the two peers (and separately
   // bundled copies of this module) each carry their own plugin object.
-  for (const plugin of plugins) {
-    if (plugin && plugin.tag === "dom-expressions/server-component") return codec;
-  }
+  if (plugins.some(plugin => plugin && plugin.tag === ServerComponentPlugin.tag)) return codec;
   return { ...codec, plugins: [...plugins, ServerComponentPlugin] };
 }
 

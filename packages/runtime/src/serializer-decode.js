@@ -12,6 +12,7 @@ import {
   URLPlugin,
   URLSearchParamsPlugin
 } from "seroval-plugins/web";
+import { ContainerTracePlugin } from "./frame-container-plugin.js";
 
 // The DECODE half of the serialization surface, split out so lazy client
 // consumers (the frames data tables, `deserializeStream`) load only what
@@ -45,7 +46,15 @@ export const DEFAULT_WEB_PLUGINS = Object.freeze([
   RequestPlugin,
   ResponsePlugin,
   URLSearchParamsPlugin,
-  URLPlugin
+  URLPlugin,
+  // The container tier's trace plugin (DR-2 case 3) is protocol, not an
+  // integration choice: every face that could meet a traced container —
+  // the hydration serializer, the frames codec, flight payloads, the
+  // decode tables — resolves its plugin set through here, so carrying it
+  // in the default set is what makes containers "nothing to wire". Inert
+  // without a peer: it matches only sink-made envelopes (server) and
+  // materializes only once the reactive core installs its hook (client).
+  ContainerTracePlugin
 ]);
 
 /**

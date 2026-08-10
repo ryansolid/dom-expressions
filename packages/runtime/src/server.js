@@ -837,6 +837,10 @@ export function renderToString(code, options = {}) {
   let scripts = "";
   const serializer = createHydrationSerializer({
     scopeId: renderId,
+    // The container trace plugin rides the DEFAULT plugin set (see
+    // serializer-decode.js). In a sync render its value is its ERROR: no
+    // stream exists for a container's later yields, and its message beats
+    // a bare crash on the pending proxy's property walk.
     plugins: options.plugins,
     onData(script) {
       if (noScripts) return;
@@ -1106,6 +1110,10 @@ export function renderToStream(code, options = {}) {
   // frame sink); the core never inspects it.
   const serializer = (options.serializer || createHydrationSerializer)({
     scopeId: options.renderId,
+    // Containers (projections) serialize as traces on BOTH faces — the
+    // document's hydration serializer and the frame sink's codec resolve
+    // their plugin sets through the codec defaults, which carry the trace
+    // plugin (inert until the reactive core installs its resolver).
     plugins: options.plugins,
     onData: payload => sink.data(payload),
     onDone,

@@ -309,6 +309,54 @@ binding's **wire shape**, never its liveness:
      projecting less ad hoc. Single-copy is preserved because the record is
      the only copy when the client is the only consumer; render-AND-pass
      duplication is the authored, bounded concession DR-3 rule 2 names.
+   - ***Build record (2026-08-10).*** Shipped as designed. The identity
+     rationale that settled the wire format, recorded: granular patches
+     carry **framework-owned identity** (root-relative paths recorded at
+     write time by the producer's own proxy — never computed by diffing),
+     which is what rules out the snapshot-plus-reconcile alternative:
+     reconciliation needs domain keys the framework cannot assume, while
+     the mutation log needs none. The letter was refined in four places
+     the build discovered:
+     - *The trace is multi-consumer.* Hydration's single-consumer tap became
+       a shared pump: one source iterator drives an append-only patch log,
+       and every `subscribe()` (hydration resume, each slot crossing) replays
+       from its own cursor — snapshots captured only at stable points (no
+       in-flight `next()`), so undrained writes can't double-apply.
+     - *The receiver is a minted projection, not a bare store.* The client
+       materializes the trace through `createProjection` under its own root:
+       the container REFERENCE is available synchronously, reads INTO it
+       suspend until the snapshot (the fill's own `<Loading>` covers them,
+       same contract as the value tier), patch batches apply through
+       `applyPatches`, and the result is readonly — writes stay
+       producer-owned by construction.
+     - *The envelope.* Seroval's own classification runs before plugin
+       tests — it reads `.constructor` (detonating a pending proxy) and
+       claims arrays outright — so raw containers can't be intercepted
+       reliably. The sink swaps each traced container, at any depth of an
+       argument, for a module-private `{ [TRACE] }` envelope (copy-on-write
+       walk) and the plugin matches THAT. On the document face the record
+       carries a `{ $tr, $ta }` marker literal instead, revived at arg-read
+       and memoized per trace — one live container, however many references.
+     - *Classification is trap-safe on BOTH faces, containers first.* The
+       server probes by WeakMap (`isContainerTraced`) before any content or
+       async probe; the client mirrors it by WeakSet
+       (`isMaterializedContainer`) in the props proxy and the record-dedupe
+       compare — where containers compare by identity only (same
+       materialized instance adopts silently; a re-serialized trace is a new
+       generation, a live-props change). The matrix surfaced this as a real
+       gap: `.then` probes and serialization compares detonate pending
+       containers.
+
+     Scope lines, recorded: this round crosses **whole containers**
+     (settled plain stores still ship as plain data — the trace registry
+     only claims async projections). *Parts* (nested-node exposure with
+     filtered/rebased traces, above) and *case 4* (async at container
+     paths) remain the designed extensions; a part of a PENDING projection
+     is not yet classifiable and must not be passed. And the write
+     discipline stands as documented but **unenforced**: raw reactive
+     writes during server render are wrong for ordinary SSR already
+     (the markup may have flushed); enforcement is parked with case 4's
+     diagnostics, not a Stage 5 deliverable.
 
 4. **Async at container paths** (promises/pending nodes stored IN a
    projection): two clocks interleave at one path — the mutation log (a path
@@ -467,9 +515,11 @@ shipped, against the design above:
   semantics) rather than rejecting at truncation — the diagnosable-reject
   pattern remains the design for abort/timeout handling when that lands.
 
-Cases 3 (container traces) and 4 (async at container paths) remain
-design-settled, not yet implemented; case 5's diagnosable-error guard exists
-for function args and unserializable outputs at the record path.
+Case 3 (container traces) is built — whole containers on both faces, per
+its build record above. Case 4 (async at container paths) and the parts
+extension remain design-settled, not yet implemented; case 5's
+diagnosable-error guard exists for function args and unserializable
+outputs at the record path.
 
 The load-bearing distinction the value tier left ("live = self-announcing,
 latched = watched") is retired: watched values — memo reads, expression
@@ -478,11 +528,20 @@ window through the ledger, which was the missing engine. Async memos are now
 fully in the shipped column: whole or evaluated, first success ships and
 later commits re-emit. What remains latched is only what the design says
 must latch: values crossing at t=0 document SSR (hydration's first-value
-lock) and anything after the response window closes (cross-request updates
-are re-invocation's, by architecture).
+lock — since upgraded by Stage 4's `sc:live` channel, which makes the
+document face live within its own response window; see §9) and anything
+after the response window closes (cross-request updates are
+re-invocation's, by architecture).
 
 **Ratified: liveness is exclusive to the slot border — markup holes settle
-once.** `<p>{iterMemo()}</p>` in server component markup renders the value
+once.** *[Superseded 2026-08-07 by the reactive pole (§9): live markup
+holes generalize the ledger to insert positions, built as Stage 3
+(call-driven) and Stage 4 (t=0). What survives of this record is its
+boundary conditions — the explicit-authoring concern is answered by holes
+being commit-driven and impurity-gated rather than implicit re-renders,
+and the "value at render time" / document first-value-lock analysis below
+carried forward into Stage 3/4's latch semantics.]* `<p>{iterMemo()}</p>`
+in server component markup renders the value
 the hole resolved with and never retro-updates; only slot args get the
 ledger. The line is ownership, not implementation budget: a slot arg crosses
 into the client's LIVE reactive graph — something exists on the other side
@@ -906,14 +965,25 @@ retired as a pole and survives only as potential authoring sugar.
      `frame-live-holes.spec.js`, integration cells in solid-web
      (`frame-live-holes*.spec.tsx`), rows in the lifecycle matrix's
      "Live markup holes" section.
-4. **Stage 4 — Liveness at t=0.** The §10 design made real: hole markers
-   armed in frame-flavored document renders; adoption reconstructs the
-   morph substrate from page bytes; catch-up morphs replay data records
-   that landed before hydration; latch-at-completion lifetime policy.
-5. **Stage 5 — Container tier (DR-2 case 3).** Stores/projections as
-   bounded async traces — designed (DR-2), unbuilt. Uniformly rejected
-   with a diagnostic until built (a whole-tier line, which is the clean
-   kind). Reorderable if a real consumer (notes, SolidStart) demands it.
+4. **Stage 4 — Liveness at t=0.** **Built (2026-08-09, the
+   `document-liveness` branches).** The t=0 design made real: hole
+   markers and `data-lha` addresses armed in document renders inside
+   server component scope (plain document content keeps its exact
+   bytes — the scope barrier); ops ride ONE `sc:live` channel record,
+   serialized eagerly; adoption reconstructs the morph substrate from
+   page bytes; catch-up replays ops that landed before a boundary
+   adopted (geometry-routed); document ops go quiet when a call-driven
+   version supersedes them; the end latch ships last values and closes
+   the channel before flush. Case-1 getter args are live at t=0 too:
+   document arg bindings re-emit fid-tagged `slot` ops on the same
+   channel. Fill interiors are mint-suppressed (client-owned; the
+   record is their liveness story).
+5. **Stage 5 — Container tier (DR-2 case 3).** **Built (2026-08-10, the
+   `container-traces` branches).** Projections cross the slot border as
+   bounded async traces on both faces; the client materializes them
+   into live read-only projections. See the case-3 build record in DR-2
+   for what shipped and the scope lines (whole containers this round;
+   parts and case 4 remain the designed extensions).
 6. **Stage 6 — Generalized claims: the micro-affordance rung.** Promoted
    from unlisted (2026-08-07, out of the Datastar comparison). The
    router's claim sweep — behavior attached by attribute over any

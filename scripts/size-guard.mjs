@@ -205,11 +205,23 @@ const SCENARIOS = {
   // the mechanism itself — apps not using frames still pay 0 (the
   // compiled-JSX core scenario stayed byte-stable). Re-guarded at
   // actual+20 (8581 measured).
+  // Then +245 for Stage 5, the container tier's client halves: the
+  // ContainerTracePlugin (trace deserialize/materialize memo + the
+  // envelope parse faces) now rides the codec's DEFAULT plugin set — so
+  // it lands in THIS scenario through the deliberate static
+  // createJSONDataTable import — plus the host's `isContainer` hook and
+  // the record-dedupe's identity-only container compare in frame-client.
+  // The placement is the shave: an early draft injected the plugin from
+  // frame-transport (statically, +238 on the EAGER graph); moving it into
+  // the codec defaults keeps real consumers' eager slices at zero (the
+  // codec loads lazily there) and this codec-inclusive scenario is the
+  // one place that still charges it. Re-guarded at actual+20 (8826
+  // measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
-    8601
+    8846
   ]
 };
 

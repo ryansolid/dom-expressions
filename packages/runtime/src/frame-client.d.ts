@@ -186,6 +186,10 @@ export interface FrameHost {
   serialize(value: unknown): { $ref: string };
   /** `frameId` is the resolving frame's id — route to its stream's table. */
   resolve(ref: { $ref: string }, frameId?: string): unknown;
+  /** See FrameHostOptions.revive. */
+  revive?(value: unknown): unknown;
+  /** See FrameHostOptions.isContainer. */
+  isContainer?(value: unknown): boolean;
 }
 
 /**
@@ -226,6 +230,21 @@ export interface FrameHostOptions {
    * client graph for responses that never carry serialized data.
    */
   prepareData?(): Promise<unknown>;
+  /**
+   * Revive protocol markers inside LITERAL slot args (values that are
+   * neither `{$ref}` nor `{$frame}`) at arg-resolution time. Document-face
+   * container traces ride this way — inline in the record, revived by the
+   * integration (`reviveContainerTraces`) into live local containers.
+   */
+  revive?(value: unknown): unknown;
+  /**
+   * Whether a resolved arg value is a LIVE CONTAINER (a materialized trace —
+   * see `isMaterializedContainer`). The record-dedupe compare must know: a
+   * pending container's property reads throw not-ready, so async probes and
+   * serialization compares would detonate it. Containers compare by
+   * identity only.
+   */
+  isContainer?(value: unknown): boolean;
 }
 
 /** @experimental */
