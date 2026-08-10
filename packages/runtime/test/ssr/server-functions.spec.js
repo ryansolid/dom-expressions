@@ -270,6 +270,76 @@ describe("response format negotiation", () => {
     expect(Number.isNaN((await decodeResponse(withNaN)).ratio)).toBe(true);
   });
 
+  // Negotiation-guard regressions (ryansolid/dom-expressions#566): the JSON
+  // fast path's isJSONSafe used to recurse without cycle detection, so a
+  // cyclic result RangeError'd during ENCODING and dispatch's catch reported
+  // it as the function throwing — a phantom error over a call whose side
+  // effects had already committed.
+  it("cyclic results ride the codec and round-trip — not a phantom function error", async () => {
+    registerServerFunction("fmt-cycle-0", async () => {
+      const a = { name: "a" };
+      a.self = a;
+      return a;
+    });
+    const response = await dispatch(scriptedRequest("fmt-cycle-0"));
+    // the call SUCCEEDED: no error flag, the codec carries the cycle
+    expect(response.headers.get(ERROR_HEADER)).toBeNull();
+    expect(response.status).toBe(200);
+    expect(response.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Serialized);
+    const decoded = await decodeResponse(response);
+    expect(decoded.name).toBe("a");
+    expect(decoded.self).toBe(decoded);
+
+    // and end to end through the client transport
+    const { restore } = connectTransport();
+    try {
+      const value = await createClientReference("fmt-cycle-0")();
+      expect(value.name).toBe("a");
+      expect(value.self).toBe(value);
+    } finally {
+      restore();
+    }
+  });
+
+  it("deep JSON-safe nesting stays on the JSON fast path (stringify handles it)", async () => {
+    // ~8k levels overflowed the old recursive guard even though
+    // JSON.stringify carries it fine — and the codec CANNOT take it (its
+    // depth limit protects the decoding peer), so the guard itself must
+    // survive and answer true.
+    registerServerFunction("fmt-deep-0", async () => {
+      const root = {};
+      let cursor = root;
+      for (let i = 0; i < 8000; i++) cursor = cursor.next = {};
+      cursor.leaf = true;
+      return root;
+    });
+    const response = await dispatch(scriptedRequest("fmt-deep-0"));
+    expect(response.headers.get(ERROR_HEADER)).toBeNull();
+    expect(response.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Json);
+    let depth = 0;
+    let cursor = JSON.parse(await response.text());
+    while (cursor.next) {
+      cursor = cursor.next;
+      depth++;
+    }
+    expect(depth).toBe(8000);
+    expect(cursor.leaf).toBe(true);
+  });
+
+  it("acyclic shared references still count as JSON-safe (no codec for aliasing)", async () => {
+    // cycle detection is ancestor-based: a diamond (same object referenced
+    // twice, no cycle) keeps riding plain JSON exactly as before — flipping
+    // it to the codec would pull seroval into plain-data apps
+    const shared = { theme: "dark" };
+    registerServerFunction("fmt-diamond-0", async () => ({ a: shared, b: shared }));
+    const response = await dispatch(scriptedRequest("fmt-diamond-0"));
+    expect(response.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Json);
+    expect(JSON.parse(await response.text())).toEqual({
+      a: { theme: "dark" },
+      b: { theme: "dark" }
+    });
+  });
+
   it("negotiates per response: JSON and Serialized results interleave on one page", async () => {
     registerServerFunction("fmt-mixed-json-0", async () => ({ plain: true }));
     registerServerFunction("fmt-mixed-rich-0", async () => ({ when: new Date(7) }));
@@ -370,6 +440,32 @@ describe("response format negotiation", () => {
         value: undefined,
         flightData: { "/notes": ["fresh"] }
       });
+    });
+
+    it("cyclic flight data keeps the envelope on the codec and round-trips", async () => {
+      // same #566 guard, envelope surface: integration-produced data with a
+      // back-reference used to RangeError while encoding `{ value, data }`
+      registerServerFunction("fmt-sf-cycle-0", async () => ({ ok: true }));
+      const node = { key: "/graph" };
+      node.parent = node;
+      const { restore, posts } = connectTransport(flightOptions({ "/graph": node }));
+      const delivered = [];
+      const unsubscribe = subscribeFlightData((data, { response }) => {
+        delivered.push({ data, format: response.headers.get(BODY_FORMAT_HEADER) });
+      });
+      try {
+        const value = await createClientReference("fmt-sf-cycle-0")();
+        expect(value).toEqual({ ok: true });
+        expect(posts).toHaveLength(1);
+        expect(delivered).toHaveLength(1);
+        expect(delivered[0].format).toBe(BodyFormat.Serialized);
+        const graph = delivered[0].data["/graph"];
+        expect(graph.key).toBe("/graph");
+        expect(graph.parent).toBe(graph);
+      } finally {
+        unsubscribe();
+        restore();
+      }
     });
 
     it("keeps the codec when flight contents are rich (one POST, typed data)", async () => {
@@ -2274,6 +2370,27 @@ describe("argument encoding fast path", () => {
     }
   });
 
+  it("cyclic args reject with codec guidance, not a RangeError, and never dispatch", async () => {
+    // #566's client-side variant (pre-existing, from the argument fast
+    // path): isJSONSafe used to blow the stack on a cyclic argument BEFORE
+    // the serializeArguments fallback could engage — the caller saw a
+    // RangeError instead of the actionable enableRichArguments guidance.
+    // NOTE: declared before any test enables rich arguments (the config is
+    // module-level and sticks for the rest of the file).
+    registerServerReference("cyclic-args-0", async a => a.self === a);
+    const callable = createClientReference("cyclic-args-0");
+    const restore = connectTransport({ provideEvent });
+    try {
+      requests.length = 0;
+      const cyclic = { name: "a" };
+      cyclic.self = cyclic;
+      await expect(callable(cyclic)).rejects.toThrow(/not JSON-serializable/);
+      expect(requests).toHaveLength(0);
+    } finally {
+      restore();
+    }
+  });
+
   it("non-JSON-safe args throw with guidance until rich arguments are enabled", async () => {
     registerServerReference("rich-args-0", async d => d instanceof Date && d.getTime());
     const callable = createClientReference("rich-args-0");
@@ -2286,6 +2403,26 @@ describe("argument encoding fast path", () => {
       const { enableRichArguments } = await import("../../src/server-functions/rich-args");
       enableRichArguments();
       await expect(callable(new Date(1234))).resolves.toBe(1234);
+      expect(requests[0].init.headers[BODY_FORMAT_HEADER]).toBe(BodyFormat.Serialized);
+      expect(requests[0].init.body.startsWith(";0x")).toBe(true);
+    } finally {
+      restore();
+    }
+  });
+
+  it("cyclic args ride the codec once rich arguments are enabled", async () => {
+    // the server decodes the framed body with the codec, so the cycle
+    // arrives intact — the function observes the back-reference itself
+    registerServerReference("cyclic-args-1", async a => a.name === "a" && a.self === a);
+    const callable = createClientReference("cyclic-args-1");
+    const restore = connectTransport({ provideEvent });
+    try {
+      const { enableRichArguments } = await import("../../src/server-functions/rich-args");
+      enableRichArguments();
+      requests.length = 0;
+      const cyclic = { name: "a" };
+      cyclic.self = cyclic;
+      await expect(callable(cyclic)).resolves.toBe(true);
       expect(requests[0].init.headers[BODY_FORMAT_HEADER]).toBe(BodyFormat.Serialized);
       expect(requests[0].init.body.startsWith(";0x")).toBe(true);
     } finally {

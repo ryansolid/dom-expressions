@@ -585,10 +585,23 @@ function encodeResult(value, headers, status, codec) {
   if (value === undefined) {
     return new Response(null, { status, headers });
   }
-  if (isJSONSafe(value)) {
-    headers.set(BODY_FORMAT_HEADER, BodyFormat.Json);
-    headers.set("Content-Type", "application/json");
-    return new Response(JSON.stringify(value), { status, headers });
+  // By the time a result is being encoded the function has already run —
+  // side effects committed — so a failure HERE must never escape into
+  // dispatch's catch, where it would be sanitized and reported as the
+  // function itself throwing (a phantom error over a call that succeeded).
+  // isJSONSafe no longer throws on cycles/depth (they answer "not safe"),
+  // so this catch is belt and braces for what negotiation can still hit —
+  // a throwing getter, an engine limit on an extreme shape — and it falls
+  // through to the codec, which owns structured encoding errors.
+  try {
+    if (isJSONSafe(value)) {
+      headers.set(BODY_FORMAT_HEADER, BodyFormat.Json);
+      headers.set("Content-Type", "application/json");
+      return new Response(JSON.stringify(value), { status, headers });
+    }
+  } catch {
+    // fall through — serializedResponse overwrites the format headers the
+    // JSON attempt may have set before stringify threw
   }
   const response = serializedResponse(value, headers, codec);
   return status === 200 ? response : new Response(response.body, { status, headers });

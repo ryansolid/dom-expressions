@@ -373,9 +373,10 @@ export type BodyFormatValue = (typeof BodyFormat)[keyof typeof BodyFormat];
  * Whether a value survives a `JSON.stringify` round trip faithfully: JSON
  * primitives (finite numbers only), arrays, and plain objects. Anything
  * else — Dates, Maps, typed arrays, undefined (bare or as a property),
- * NaN, class instances — needs the codec. Both peers negotiate the wire
- * format with this guard: the client for argument lists, the server for
- * results.
+ * NaN, class instances, cyclic structures — needs the codec. Never throws:
+ * cycles and pathological depth answer `false`. Both peers negotiate the
+ * wire format with this guard: the client for argument lists, the server
+ * for results.
  */
 export function isJSONSafe(value: unknown): boolean;
 

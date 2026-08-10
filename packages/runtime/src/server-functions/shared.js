@@ -273,28 +273,69 @@ export const BodyFormat = {
   Json: "8"
 };
 
+// Nesting deeper than this is not JSON-safe. The guard itself walks an
+// explicit stack so any depth is CHECKABLE, but claiming safety means
+// JSON.stringify must then deliver, and stringify recursion is
+// engine-dependent at extreme depth — past this ceiling the value goes to
+// the codec, whose own depth limit produces a structured error instead of
+// a RangeError that dispatch would misread as the function failing.
+const JSON_SAFE_DEPTH_LIMIT = 10000;
+
+// Sentinel frame on the traversal stack: "all children of the entry below
+// are done — pop it from the ancestor path". Module-private, so it can
+// never collide with user data.
+const EXIT = {};
+
 /**
  * Whether a value survives a `JSON.stringify` round trip faithfully: JSON
  * primitives (finite numbers only), arrays, and plain objects. Anything
  * else — Dates, Maps, typed arrays, undefined (bare or as a property),
- * NaN, class instances — needs the codec. Both peers negotiate with this
- * same guard: the client for argument lists (see client.js), the server
- * for results (see server.js encodeResult) — so the codec rides the wire
- * exactly when a value actually needs it.
+ * NaN, class instances, cyclic structures — needs the codec. Both peers
+ * negotiate with this same guard: the client for argument lists (see
+ * client.js), the server for results (see server.js encodeResult) — so
+ * the codec rides the wire exactly when a value actually needs it.
+ *
+ * Traversal is iterative on an explicit stack with an ancestor set: the
+ * old recursive walk overflowed on cycles (forever) and on deep nesting
+ * stringify itself handles fine (~8k levels — the guard's frames are
+ * heavier than the stringifier's), and that RangeError escaped into
+ * dispatch's catch as a phantom function error. Cycle detection is
+ * ancestor-based on purpose: a value referenced twice WITHOUT a cycle is
+ * still JSON-safe (stringify duplicates it, as the fast path always has)
+ * — a seen-forever set would start waking the codec for plain data that
+ * merely aliases.
  */
 export function isJSONSafe(value) {
-  if (value === null) return true;
-  const t = typeof value;
-  if (t === "string" || t === "boolean") return true;
-  if (t === "number") return Number.isFinite(value);
-  if (t !== "object") return false;
-  if (Array.isArray(value)) {
-    for (const v of value) if (!isJSONSafe(v)) return false;
-    return true;
+  const stack = [value];
+  const ancestors = new Set();
+  while (stack.length) {
+    const v = stack.pop();
+    if (v === EXIT) {
+      ancestors.delete(stack.pop());
+      continue;
+    }
+    if (v === null) continue;
+    const t = typeof v;
+    if (t === "string" || t === "boolean") continue;
+    if (t === "number") {
+      if (!Number.isFinite(v)) return false;
+      continue;
+    }
+    if (t !== "object") return false;
+    // a value on its own ancestor path is a cycle — JSON.stringify throws
+    if (ancestors.has(v) || ancestors.size >= JSON_SAFE_DEPTH_LIMIT) return false;
+    ancestors.add(v);
+    stack.push(v, EXIT);
+    if (Array.isArray(v)) {
+      // index iteration on purpose: a sparse array's holes read undefined
+      // (unsafe — stringify corrupts them to null), which for-in would skip
+      for (let i = 0; i < v.length; i++) stack.push(v[i]);
+    } else {
+      const proto = Object.getPrototypeOf(v);
+      if (proto !== Object.prototype && proto !== null) return false;
+      for (const k in v) stack.push(v[k]);
+    }
   }
-  const proto = Object.getPrototypeOf(value);
-  if (proto !== Object.prototype && proto !== null) return false;
-  for (const k in value) if (!isJSONSafe(value[k])) return false;
   return true;
 }
 

@@ -184,23 +184,31 @@ async function initializeResponse(base, id, instance, options, args, meta) {
   }
   // JSON-safe argument lists go as plain JSON — no codec on the wire, and
   // (because nothing else here references the serializer) no serialize-half
-  // of the codec in the bundle.
-  if (isJSONSafe(args)) {
-    return createRequest(
-      base,
-      id,
-      instance,
-      {
-        ...options,
-        body: JSON.stringify(args),
-        headers: {
-          ...options.headers,
-          "Content-Type": "application/json",
-          [BODY_FORMAT_HEADER]: BodyFormat.Json
-        }
-      },
-      meta
-    );
+  // of the codec in the bundle. The try mirrors the server's encodeResult:
+  // isJSONSafe answers "not safe" for cycles/depth instead of throwing, so
+  // this only catches what negotiation can still hit (a throwing getter,
+  // an engine limit) — falling through to the codec below, never rejecting
+  // the call over the format choice itself.
+  try {
+    if (isJSONSafe(args)) {
+      return createRequest(
+        base,
+        id,
+        instance,
+        {
+          ...options,
+          body: JSON.stringify(args),
+          headers: {
+            ...options.headers,
+            "Content-Type": "application/json",
+            [BODY_FORMAT_HEADER]: BodyFormat.Json
+          }
+        },
+        meta
+      );
+    }
+  } catch {
+    // fall through to the codec
   }
   // Bound calls ending in a natural HTTP encoding — `action.with(id)`
   // posting FormData/URLSearchParams — reuse the server-rendered form-post
@@ -210,28 +218,32 @@ async function initializeResponse(base, id, instance, options, args, meta) {
   // produces, so bound form actions need no codec. `undefined` coerces to
   // null exactly as it does in a rendered action url (JSON has none).
   if (args.length > 1) {
-    const trailing = getHeadersAndBody(args[args.length - 1]);
-    const leading = args.slice(0, -1).map(arg => (arg === undefined ? null : arg));
-    if (trailing && isJSONSafe(leading)) {
-      const target =
-        base +
-        (base.includes("?") ? "&" : "?") +
-        "args=" +
-        encodeURIComponent(JSON.stringify(leading));
-      return createRequest(
-        target,
-        id,
-        instance,
-        {
-          ...options,
-          body: trailing.body,
-          headers: {
-            ...options.headers,
-            ...trailing.headers
-          }
-        },
-        meta
-      );
+    try {
+      const trailing = getHeadersAndBody(args[args.length - 1]);
+      const leading = args.slice(0, -1).map(arg => (arg === undefined ? null : arg));
+      if (trailing && isJSONSafe(leading)) {
+        const target =
+          base +
+          (base.includes("?") ? "&" : "?") +
+          "args=" +
+          encodeURIComponent(JSON.stringify(leading));
+        return createRequest(
+          target,
+          id,
+          instance,
+          {
+            ...options,
+            body: trailing.body,
+            headers: {
+              ...options.headers,
+              ...trailing.headers
+            }
+          },
+          meta
+        );
+      }
+    } catch {
+      // same contract as above — negotiation failures fall to the codec
     }
   }
   // Everything else needs the codec, which is opt-in (enableRichArguments).

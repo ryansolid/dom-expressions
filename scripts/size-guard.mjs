@@ -315,7 +315,14 @@ await check(
 // and response-seam branches, GET's query encoding, the body negotiation
 // table, and the chunk framing/ChunkReader — which stays eager because the
 // STREAMING shape of a Serialized response is transport framing; only the
-// codec behind it is lazy).
+// codec behind it is lazy). Then +95 for the negotiation-guard correctness
+// round (#566): isJSONSafe rewritten iterative with ancestor-set cycle
+// detection and a depth ceiling (a cyclic value used to RangeError DURING
+// encoding and get misreported as the function throwing; deep nesting
+// stringify handles fine overflowed the guard's recursion — and it can't
+// punt to the codec, whose depth limit protects the decoding peer), plus
+// the argument leg's try/catch fallthrough to the codec. Re-guarded at
+// actual+20 (2729 measured).
 await check(
   "server-functions client: eager transport (reference + GET, lazy codec)",
   `export {
@@ -323,7 +330,7 @@ await check(
      GET,
      configureServerFunctionsClient
    } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
-  2654,
+  2749,
   ["seroval", "seroval-plugins"]
 );
 await check(
