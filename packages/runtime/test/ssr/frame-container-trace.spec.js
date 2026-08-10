@@ -94,7 +94,8 @@ describe("container traces — classification", () => {
       {},
       {
         get(_, key) {
-          if (typeof key !== "symbol") throw new Error(`read of '${String(key)}' during classification`);
+          if (typeof key !== "symbol")
+            throw new Error(`read of '${String(key)}' during classification`);
           return undefined;
         }
       }
@@ -248,9 +249,7 @@ describe("container traces — plugin registration", () => {
   it("the trace plugin rides the codec's DEFAULT plugin set (every face, nothing to wire)", () => {
     expect(DEFAULT_WEB_PLUGINS.map(p => p.tag)).toContain(ContainerTracePlugin.tag);
     // And the composed sets keep it whatever the caller passes.
-    expect(resolveSerializerPlugins(undefined).map(p => p.tag)).toContain(
-      ContainerTracePlugin.tag
-    );
+    expect(resolveSerializerPlugins(undefined).map(p => p.tag)).toContain(ContainerTracePlugin.tag);
     expect(resolveSerializerPlugins([ServerComponentPlugin]).map(p => p.tag)).toContain(
       ContainerTracePlugin.tag
     );

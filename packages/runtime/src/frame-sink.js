@@ -41,8 +41,19 @@ import {
   Hydration,
   runInServerComponentScope,
   ssrHandleError,
-  ssrAsyncValue
+  ssrAsyncValue,
+  creationStamp
 } from "rxcore";
+
+// The reactive-scope creation stamp (same gate the live-holes engine uses,
+// see server.js): an arg expression whose evaluation CREATES reactive scopes
+// (a projection, a memo minted inline) is not idempotently re-runnable —
+// each ledger sweep would mint a fresh scope with a fresh identity and
+// re-emit forever (a per-eval projection re-ships a new trace per commit and
+// its pump never ends: the hung-stream disease). Such args latch: they ship
+// their first value and the scope they minted carries its own liveness.
+// Cores without the stamp fall back to "never moved" (bindings stay open).
+const scopeStamp = typeof creationStamp === "function" ? creationStamp : () => 0;
 
 /**
  * Render server-owned output under NoHydration semantics (mimicking solid's
@@ -793,6 +804,9 @@ export function createDocumentSlotProps(clientProps, frameId) {
           // iterables (the rest-wrapper below), and comparing a
           // re-evaluation against the wrapper would re-emit spuriously.
           const states = {};
+          // Keys whose evaluation minted reactive scopes (scopeStamp moved):
+          // not re-runnable, so no watched binding opens for them below.
+          const minted = {};
           for (const key of Object.keys(raw)) {
             if (key === "$key") continue;
             const desc = Object.getOwnPropertyDescriptor(raw, key);
@@ -810,6 +824,7 @@ export function createDocumentSlotProps(clientProps, frameId) {
             }
             if (evaluate) {
               evals[key] = evaluate;
+              const stampBefore = scopeStamp();
               try {
                 value = evaluate();
                 states[key] = { settled: true, last: value };
@@ -826,6 +841,7 @@ export function createDocumentSlotProps(clientProps, frameId) {
                   if (liveArgs) liveArgs.commit();
                 });
               }
+              if (scopeStamp() !== stampBefore) minted[key] = true;
             }
             vals[key] = value;
           }
@@ -960,6 +976,7 @@ export function createDocumentSlotProps(clientProps, frameId) {
             if (liveArgs) {
               for (const key of Object.keys(evals)) {
                 if (regions.some(r => r.key === key)) continue;
+                if (minted[key]) continue; // scope-minting eval: latched
                 const ledgerKey = `${frameId}:${occurrence}:${key}`;
                 openArgBinding(
                   liveArgs,
@@ -1333,6 +1350,12 @@ function retryArgUntilSettled(evaluate, blocked, key, occurrence, onSettle) {
  *     closes, mirroring the retry loop's rejection semantics;
  *   - a re-evaluation producing JSX is the DR-3 rule-1 violation, rejected
  *     with the same diagnostic as the retry loop.
+ *   - a re-evaluation that CREATES reactive scopes (scopeStamp moved —
+ *     e.g. a projection minted inline in the arg expression) closes the
+ *     binding and discards the minted duplicate: the expression is not
+ *     idempotently re-runnable, and the scope its first render shipped
+ *     carries its own liveness. The same latch the live-holes engine
+ *     applies to owner-creating holes.
  *
  * Pending bindings don't sweep — the retry loop owns their progress and its
  * settle re-arms the ledger (`state` is shared with the retry's onSettle).
@@ -1346,6 +1369,7 @@ function openArgBinding(sink, ledgerKey, occurrence, key, evaluate, state, emit)
     sweep() {
       if (!state.settled) return;
       let value;
+      const stampBefore = scopeStamp();
       try {
         value = owner ? runWithOwner(owner, evaluate) : evaluate();
       } catch (err) {
@@ -1353,6 +1377,13 @@ function openArgBinding(sink, ledgerKey, occurrence, key, evaluate, state, emit)
         if (!blocked) {
           sink.closeBinding(ledgerKey);
           emit(Promise.reject(err instanceof Error ? err : new Error(String(err))));
+          return;
+        }
+        if (scopeStamp() !== stampBefore) {
+          // The re-evaluation minted reactive scopes before blocking: arming
+          // the retry loop would mint MORE per retry. Latch on the value
+          // already shipped instead.
+          sink.closeBinding(ledgerKey);
           return;
         }
         state.settled = false;
@@ -1363,6 +1394,14 @@ function openArgBinding(sink, ledgerKey, occurrence, key, evaluate, state, emit)
             sink.commit();
           })
         );
+        return;
+      }
+      if (scopeStamp() !== stampBefore) {
+        // Scope-minting evaluation (first render pre-dated the gate, or the
+        // expression turned impure): the minted value is a DUPLICATE scope,
+        // not an update — discard it and latch, exactly as the live-holes
+        // engine latches owner-creating holes.
+        sink.closeBinding(ledgerKey);
         return;
       }
       if (value === state.last) return;
@@ -1471,6 +1510,7 @@ export function createSlotProps(sink, frame) {
               // Shared with the retry loop's onSettle and the binding's
               // sweeps: whether the arg has a successful value, and which.
               let state = null;
+              const stampBefore = scopeStamp();
               try {
                 if (desc.get) {
                   const get = desc.get;
@@ -1505,6 +1545,10 @@ export function createSlotProps(sink, frame) {
                   sink.commit();
                 });
               }
+              // Snapshot BEFORE classification: resolve/serialize below may
+              // create scopes of their own, which say nothing about the
+              // expression's re-runnability.
+              const mintedEval = scopeStamp() !== stampBefore;
               const t = typeof value;
               if (value == null || t === "string" || t === "number" || t === "boolean") {
                 args[key] = value;
@@ -1548,8 +1592,9 @@ export function createSlotProps(sink, frame) {
               // pending) is a watched binding — case 1's within-response
               // liveness. Content args stay one-shot: a thunk producing JSX
               // was the control-flow handoff into the region path, and
-              // regions have their own update story (DR-3).
-              if (evaluate && state) opened.push({ key, evaluate, state });
+              // regions have their own update story (DR-3). An eval that
+              // minted reactive scopes latches instead (see scopeStamp).
+              if (evaluate && state && !mintedEval) opened.push({ key, evaluate, state });
             } finally {
               ctx.registerFragment = origRegister;
             }

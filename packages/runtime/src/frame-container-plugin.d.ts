@@ -21,9 +21,7 @@ export interface ContainerTraceMarker {
 }
 
 /** Server half: install the reactive core's trace resolver. */
-export function setContainerTraceResolver(
-  fn: (value: unknown) => ContainerTrace | undefined
-): void;
+export function setContainerTraceResolver(fn: (value: unknown) => ContainerTrace | undefined): void;
 
 /** Client half: install the reactive core's trace materializer. */
 export function setContainerTraceMaterializer(fn: (marker: ContainerTraceMarker) => unknown): void;
