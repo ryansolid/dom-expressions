@@ -58,9 +58,7 @@ describe("document face — marking under the component barrier", () => {
   });
 
   it("an in-tag hole inside a server component is element-addressed (data-lha)", async () => {
-    const Inline = inline(() =>
-      r.ssr(['<div class="', '">x</div>'], () => r.escape("v1", true))
-    );
+    const Inline = inline(() => r.ssr(['<div class="', '">x</div>'], () => r.escape("v1", true)));
     const html = await renderDocument(() => Inline({}));
     expect(html).toMatch(/<div data-lha="\d+" class="v1">x<\/div>/);
   });
@@ -75,9 +73,7 @@ describe("document face — marking under the component barrier", () => {
   });
 
   it("a document with no server component ships neither markers nor the channel: byte-identical to pre-Stage-4", async () => {
-    const html = await renderDocument(() =>
-      r.ssr(["<main>", "</main>"], () => r.escape("plain"))
-    );
+    const html = await renderDocument(() => r.ssr(["<main>", "</main>"], () => r.escape("plain")));
     expect(html).toContain("<main>plain</main>");
     expect(html).not.toContain("lh:");
     expect(html).not.toContain("sc:live");
@@ -155,6 +151,91 @@ describe("document face — the sc:live channel", () => {
     // The op ships the rebuilt attribute text.
     expect(html).toContain("attr");
     expect(html).toContain('class=\\"b\\"');
+  });
+
+  it("a getter slot arg re-emits the occurrence's record as a fid-tagged slot op on commit", async () => {
+    // The natural authored shape — `arg={expr()}`, a compiled getter — is
+    // the SAME shape as a markup hole and must be exactly as live at t=0:
+    // the document arg ledger sweeps it on commits and re-ships the whole
+    // record as a `slot` op on the sc:live channel (values inline; slot
+    // ops are store-keyed, so they carry the producing frame's id).
+    let text = "v1";
+    let ctx;
+    let release;
+    const Inline = inline(props => {
+      ctx = sharedConfig.context;
+      release = ctx.hold();
+      return props.status({
+        get text() {
+          return text;
+        }
+      });
+    });
+    const done = renderDocument(() =>
+      Inline({ status: p => r.ssr(["<b>", "</b>"], () => r.escape(String(p.text))) })
+    );
+    await new Promise(res => setTimeout(res, 0));
+    text = "v2";
+    ctx.commit();
+    await new Promise(res => setTimeout(res, 0));
+    release();
+    const html = await done;
+    // Markup and the initial record read v1 (the hydration truth) …
+    expect(html).toContain("<b>v1</b>");
+    expect(html).toContain("sc:slot:f:status");
+    // … and exactly one op carried v2, tagged with the frame id.
+    expect(html.split("v2").length).toBe(2);
+    expect(html).toContain("fid");
+  });
+
+  it("an unchanged getter arg stays quiet under commits", async () => {
+    let ctx;
+    let release;
+    const Inline = inline(props => {
+      ctx = sharedConfig.context;
+      release = ctx.hold();
+      return props.status({
+        get text() {
+          return "same";
+        }
+      });
+    });
+    const done = renderDocument(() =>
+      Inline({ status: p => r.ssr(["<b>", "</b>"], () => r.escape(String(p.text))) })
+    );
+    await new Promise(res => setTimeout(res, 0));
+    ctx.commit();
+    await new Promise(res => setTimeout(res, 0));
+    release();
+    const html = await done;
+    // Two copies total: the markup and the initial record. No op re-shipped it.
+    expect(html.split("same").length).toBe(3);
+  });
+
+  it("the end latch ships the last arg value", async () => {
+    let text = "a1";
+    let ctx;
+    let release;
+    const Inline = inline(props => {
+      ctx = sharedConfig.context;
+      release = ctx.hold();
+      return props.status({
+        get text() {
+          return text;
+        }
+      });
+    });
+    const done = renderDocument(() =>
+      Inline({ status: p => r.ssr(["<b>", "</b>"], () => r.escape(String(p.text))) })
+    );
+    await new Promise(res => setTimeout(res, 0));
+    // No commit lands before the hold releases: the end-of-response sweep
+    // is the floor for args exactly as it is for holes.
+    text = "a2";
+    release();
+    const html = await done;
+    expect(html).toContain("a2");
+    expect(html.split("a2").length).toBe(2);
   });
 
   it("the end latch ships the last value exactly once", async () => {

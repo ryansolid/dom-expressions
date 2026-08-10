@@ -727,18 +727,50 @@ export function createDocumentSlotProps(clientProps, frameId) {
           // serialized once as hydration-data records (the occurrence's args
           // + the region html, keyed for the adopting frame's store) and the
           // client mounts it from there when the wrapper finally renders it.
-          // Unwrap function-valued args once (a function can't be serialized,
-          // so it is a thunk producing content or a scalar): resolve one-shot,
-          // then both the region-detection here and the t=0 arming below see
-          // the same classified value. This is how top-level one-shot reactive
-          // control flow (<For>/<Show>) reaches the region path when it arrives
-          // as a thunk/memo. Bounded against a pathological self-returning fn.
+          // Unwrap function-valued args (a function can't be serialized, so
+          // it is a thunk producing content or a getter producing data),
+          // then classify the result — region detection and the t=0 arming
+          // below see the same classified value. This is how top-level
+          // one-shot reactive control flow (<For>/<Show>) reaches the region
+          // path when it arrives as a thunk/memo.
+          //
+          // The evaluator is captured from the property DESCRIPTOR exactly
+          // as on the stream face (createSlotProps): compiled JSX props are
+          // getters — the SAME authored shape as a markup hole — and that
+          // re-runnable handle is what the case-1 ledger sweeps, so an
+          // expression arg stays as live at t=0 as it is on a call-driven
+          // stream. A not-ready first evaluation still throws through to
+          // the fragment model (coarse holding: the inline fill's MARKUP
+          // needs the settled value); the ledger takes over once emitted.
           const vals = {};
+          const evals = {};
+          // Pre-tap values, the ledger's equality baseline: `vals` entries
+          // get REPLACED for tapped iterables (the rest-wrapper below), and
+          // comparing a re-evaluation against the wrapper would re-emit
+          // spuriously on the first sweep.
+          const lasts = {};
           for (const key of Object.keys(raw)) {
             if (key === "$key") continue;
-            let value = raw[key];
-            for (let d = 0; typeof value === "function" && d < 16; d++) value = value();
+            const desc = Object.getOwnPropertyDescriptor(raw, key);
+            let evaluate = null;
+            let value;
+            if (desc.get) {
+              const get = desc.get;
+              evaluate = () => unwrapThunks(get.call(raw));
+              value = evaluate();
+            } else {
+              value = desc.value;
+              if (typeof value === "function") {
+                const fn = value;
+                evaluate = () => unwrapThunks(fn);
+                value = evaluate();
+              }
+            }
             vals[key] = value;
+            if (evaluate) {
+              evals[key] = evaluate;
+              lasts[key] = value;
+            }
           }
           const regions = [];
           for (const key of Object.keys(vals)) {
@@ -824,7 +856,10 @@ export function createDocumentSlotProps(clientProps, frameId) {
               if (isServerContent(value)) continue;
               args[key] = value;
             }
-            sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, args);
+            // A CLONE serializes; `args` stays canonical for the ledger
+            // below — re-emissions mutate it and clone again, so the
+            // initial record can never change under a consumer.
+            sharedConfig.context.serialize(`sc:slot:${frameId}:${occurrence}`, { ...args });
             for (const region of unused) {
               // Lock BEFORE returning: the content is now committed to the data
               // channel, so any later async placement of this region must
@@ -842,9 +877,30 @@ export function createDocumentSlotProps(clientProps, frameId) {
                 resolveRegionHtml(sharedConfig.context, region.value)
               );
             }
+            // The document arg ledger (DR-2 case 1 at t=0): every
+            // re-runnable arg that classified as DATA opens a watched
+            // binding AFTER its record emitted, mirroring the stream face —
+            // the same authored getter shape stays live on both faces. Only
+            // on an armed document (live.args): the hostless fallback
+            // latches, like everything else at t=0.
+            const live = sharedConfig.context.live;
+            if (live && live.args) {
+              for (const key of Object.keys(evals)) {
+                if (regions.some(r => r.key === key)) continue;
+                openDocumentArgBinding(live.args, frameId, occurrence, key, evals[key], args, {
+                  settled: true,
+                  last: lasts[key]
+                });
+              }
+            }
           }
           return out;
         };
+        // A slot getter placed directly as a child (`{props.children}`) is a
+        // function-shaped hole; the tag opts it out of live-hole marking the
+        // same way it does on the stream face (the impurity gates would
+        // latch it anyway — this makes it exact rather than incidental).
+        fn.$lhSkip = true;
         getters.set(prop, fn);
       }
       return fn;
@@ -918,7 +974,13 @@ function armDocumentLiveHoles(ctx) {
   // documents (no data channel), and hostless environments latch at t=0:
   // mark nothing. `null` records the decision (the arming checks are
   // `!== undefined`).
-  if (!live || !ctx.async || ctx.noHydrate || !ctx.serialize || typeof ReadableStream !== "function") {
+  if (
+    !live ||
+    !ctx.async ||
+    ctx.noHydrate ||
+    !ctx.serialize ||
+    typeof ReadableStream !== "function"
+  ) {
     ctx.liveHoles = null;
     if (live) live.holes = null;
     return;
@@ -986,6 +1048,25 @@ function armDocumentLiveHoles(ctx) {
   );
   ctx.commit = live.commit = scheduleSweep;
   ctx.commitEpoch = live.commitEpoch = () => epoch;
+  // The document ARG ledger (DR-2 case 1 at t=0): slot-props invocations
+  // open watched-arg bindings into the same sweep set as the holes, and a
+  // re-emission ships the occurrence's whole record as a `slot` op on the
+  // same channel — values ride inline (the hydration serializer carries
+  // objects and promises natively; no versioned-ref indirection like the
+  // codec's). Store-keyed rather than geometry-routed, so ops carry the
+  // producing frame's id and only the owning boundary applies them.
+  live.args = {
+    open(key, b) {
+      bindings.set(key, b);
+    },
+    close(key) {
+      bindings.delete(key);
+    },
+    slot(fid, occurrence, args) {
+      push({ type: "slot", fid, key: occurrence, args });
+    },
+    commit: scheduleSweep
+  };
   live.end = () => {
     if (closed) return;
     if (bindings.size) sweep();
@@ -1217,6 +1298,58 @@ function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
     }
   };
   sink.openBinding(ledgerKey, binding);
+}
+
+/**
+ * The document-face twin of `openArgBinding` (DR-2 case 1 at t=0): same
+ * sweep semantics — re-evaluate under the render owner, equality-gate,
+ * re-emit the occurrence's record; pending re-enters through the retry
+ * loop; real errors and JSX re-evaluations are terminal — but the record
+ * ships as a `slot` op on the document's `sc:live` channel, values INLINE.
+ * The hydration serializer carries objects and promises natively per chunk,
+ * so there is no versioned-ref indirection: a pending re-entry is a promise
+ * value the serializer streams, exactly like a t=0 region.
+ */
+function openDocumentArgBinding(sink, fid, occurrence, key, evaluate, args, state) {
+  const owner = getOwner();
+  const ledgerKey = `${fid}:${occurrence}:${key}`;
+  const reEmit = value => {
+    args[key] = value;
+    sink.slot(fid, occurrence, { ...args });
+  };
+  sink.open(ledgerKey, {
+    sweep() {
+      if (!state.settled) return;
+      let value;
+      try {
+        value = owner ? runWithOwner(owner, evaluate) : evaluate();
+      } catch (err) {
+        const blocked = ssrHandleError && ssrHandleError(err);
+        if (!blocked) {
+          sink.close(ledgerKey);
+          reEmit(Promise.reject(err instanceof Error ? err : new Error(String(err))));
+          return;
+        }
+        state.settled = false;
+        reEmit(
+          retryArgUntilSettled(evaluate, blocked, key, occurrence, v => {
+            state.settled = true;
+            state.last = v;
+            sink.commit();
+          })
+        );
+        return;
+      }
+      if (value === state.last) return;
+      state.last = value;
+      if (isServerContent(value)) {
+        sink.close(ledgerKey);
+        reEmit(Promise.reject(contentArgError(key, occurrence)));
+        return;
+      }
+      reEmit(value);
+    }
+  });
 }
 
 export function createSlotProps(sink, frame) {
