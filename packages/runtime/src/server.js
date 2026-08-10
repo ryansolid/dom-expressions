@@ -3074,13 +3074,24 @@ function resolveSSRNode(
     result.t[result.t.length - 1] += node;
   } else if (node == null || t === "boolean") {
   } else if (Array.isArray(node)) {
-    let prevNonObj = false;
-    for (let i = 0, len = node.length; i < len; i++) {
-      const item = node[i];
-      const itemNonObj = item !== null && typeof item !== "object";
-      if (!top && prevNonObj && itemNonObj) result.t[result.t.length - 1] += `<!--!$-->`;
-      prevNonObj = itemNonObj;
-      resolveSSRNode(item, result);
+    // A `$slot`-tagged array is a slot RANGE reaching the walker as a plain
+    // child (the document face — fills nest under component wrappers rather
+    // than arriving as a hole's value): its interior is client-owned DOM
+    // the adopting frame claims, so it resolves mint-suppressed exactly
+    // like the hole-valued slot shapes above — no markers, no bindings.
+    const slotLive = node.$slot && sharedConfig.context && sharedConfig.context.liveHoles;
+    if (slotLive) slotLive.suppressed++;
+    try {
+      let prevNonObj = false;
+      for (let i = 0, len = node.length; i < len; i++) {
+        const item = node[i];
+        const itemNonObj = item !== null && typeof item !== "object";
+        if (!top && prevNonObj && itemNonObj) result.t[result.t.length - 1] += `<!--!$-->`;
+        prevNonObj = itemNonObj;
+        resolveSSRNode(item, result);
+      }
+    } finally {
+      if (slotLive) slotLive.suppressed--;
     }
   } else if (t === "object") {
     if (node.h) {

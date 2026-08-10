@@ -652,14 +652,49 @@ function tapFirstYield(iterable) {
  * in place. Occurrence identity (`$key`/positional) matches the chunk
  * producer exactly; nothing here is serialized — the page IS the payload.
  */
+/**
+ * Mint-suppress a slot FILL's render (document face): fill content is
+ * client-owned DOM the adopting frame claims, so nothing inside it may
+ * grow live-hole markers, `data-lha` addresses, or bindings — a server op
+ * morphing inside a claimed fill would replace nodes the client's reactive
+ * bindings hold. Compiled templates resolve their holes AT RENDER (`ssr()`
+ * call time), so the window wraps the render itself; async escalations
+ * inside it stay suppressed through `buildAsyncWrap`'s tag propagation,
+ * and walk-time holes (bare-thunk fills) are covered by the `$slot` tag on
+ * the range. Fill liveness is the RECORD's story: arg re-emissions update
+ * the adopted occurrence's props.
+ */
+function suppressedFill(render) {
+  const live = sharedConfig.context && sharedConfig.context.liveHoles;
+  if (!live) return render();
+  live.suppressed++;
+  try {
+    return render();
+  } finally {
+    live.suppressed--;
+  }
+}
+
 export function createDocumentSlotProps(clientProps, frameId) {
   const counts = Object.create(null);
   const getters = new Map();
-  const range = (occurrence, content) => [
-    { t: `<!--slot:${occurrence}:start-->` },
-    content,
-    { t: `<!--slot:${occurrence}:end-->` }
-  ];
+  // `$slot`-tagged like the stream face's slotRange: the engine resolves a
+  // slot-tagged value MINT-SUPPRESSED, so fill content — client-owned DOM
+  // the adopting frame claims — never grows live-hole markers or bindings.
+  // (A server hole op morphing inside a claimed fill would replace nodes
+  // the client's reactive bindings hold.) Fill liveness is the RECORD's
+  // story: arg re-emissions update the adopted occurrence's props. One
+  // known coarsening: a region (server JSX arg) placed by the fill resolves
+  // inside this suppressed span, so its interior holes keep the t=0 latch.
+  const range = (occurrence, content) => {
+    const r = [
+      { t: `<!--slot:${occurrence}:start-->` },
+      content,
+      { t: `<!--slot:${occurrence}:end-->` }
+    ];
+    r.$slot = true;
+    return r;
+  };
   // Client content renders under a per-occurrence hydration-key OWNER
   // scope, so the adopting client re-renders each slot under the SAME
   // scope and solid's registry claims the server-rendered nodes by key —
@@ -709,10 +744,12 @@ export function createDocumentSlotProps(clientProps, frameId) {
             // INSIDE scoped(): compiled component props are getters, so the
             // client's JSX evaluates lazily at access under the same keys —
             // plain JSX, no thunk convention.
-            return scoped(prop, () => {
-              const value = clientProps[prop];
-              return range(prop, typeof value === "function" ? value() : value);
-            });
+            return suppressedFill(() =>
+              scoped(prop, () => {
+                const value = clientProps[prop];
+                return range(prop, typeof value === "function" ? value() : value);
+              })
+            );
           }
           const raw = callArgs[0];
           const occurrence = occurrenceId(prop, raw, counts);
@@ -739,16 +776,23 @@ export function createDocumentSlotProps(clientProps, frameId) {
           // getters — the SAME authored shape as a markup hole — and that
           // re-runnable handle is what the case-1 ledger sweeps, so an
           // expression arg stays as live at t=0 as it is on a call-driven
-          // stream. A not-ready first evaluation still throws through to
-          // the fragment model (coarse holding: the inline fill's MARKUP
-          // needs the settled value); the ledger takes over once emitted.
+          // stream. A NOT-READY first evaluation is pending per-arg, never
+          // a hold on the whole occurrence: the retry-loop promise takes
+          // the value's place and flows down the value-tier path — the
+          // inline fill's read suspends into the fill's OWN boundary (the
+          // client read's semantics exactly), the record ships the promise
+          // (the hydration serializer patches it on settle), and the
+          // binding opens unsettled, re-armed by the retry's onSettle.
+          const liveArgs = sharedConfig.context &&
+            sharedConfig.context.live &&
+            sharedConfig.context.live.args;
           const vals = {};
           const evals = {};
-          // Pre-tap values, the ledger's equality baseline: `vals` entries
-          // get REPLACED for tapped iterables (the rest-wrapper below), and
-          // comparing a re-evaluation against the wrapper would re-emit
-          // spuriously on the first sweep.
-          const lasts = {};
+          // Per-key ledger state: `settled` + the equality baseline. Kept
+          // as the PRE-TAP value — `vals` entries get replaced for tapped
+          // iterables (the rest-wrapper below), and comparing a
+          // re-evaluation against the wrapper would re-emit spuriously.
+          const states = {};
           for (const key of Object.keys(raw)) {
             if (key === "$key") continue;
             const desc = Object.getOwnPropertyDescriptor(raw, key);
@@ -757,20 +801,33 @@ export function createDocumentSlotProps(clientProps, frameId) {
             if (desc.get) {
               const get = desc.get;
               evaluate = () => unwrapThunks(get.call(raw));
-              value = evaluate();
             } else {
               value = desc.value;
               if (typeof value === "function") {
                 const fn = value;
                 evaluate = () => unwrapThunks(fn);
+              }
+            }
+            if (evaluate) {
+              evals[key] = evaluate;
+              try {
                 value = evaluate();
+                states[key] = { settled: true, last: value };
+              } catch (err) {
+                const blocked = ssrHandleError && ssrHandleError(err);
+                if (!blocked) throw err;
+                const state = (states[key] = { settled: false, last: undefined });
+                value = retryArgUntilSettled(evaluate, blocked, key, occurrence, v => {
+                  state.settled = true;
+                  state.last = v;
+                  // The settle is a commit: other bindings may read the
+                  // same source. (This binding's own re-emission stays
+                  // gated on inequality with the value just recorded.)
+                  if (liveArgs) liveArgs.commit();
+                });
               }
             }
             vals[key] = value;
-            if (evaluate) {
-              evals[key] = evaluate;
-              lasts[key] = value;
-            }
           }
           const regions = [];
           for (const key of Object.keys(vals)) {
@@ -830,7 +887,9 @@ export function createDocumentSlotProps(clientProps, frameId) {
               resolved[key] = value;
             }
           }
-          const out = scoped(occurrence, () => range(occurrence, slot(resolved)));
+          const out = suppressedFill(() =>
+            scoped(occurrence, () => range(occurrence, slot(resolved)))
+          );
           const unused = regions.filter(r => !r.used);
           if (sharedConfig.context) {
             // One record shape (A5, server-components-principles.md): the
@@ -883,14 +942,18 @@ export function createDocumentSlotProps(clientProps, frameId) {
             // the same authored getter shape stays live on both faces. Only
             // on an armed document (live.args): the hostless fallback
             // latches, like everything else at t=0.
-            const live = sharedConfig.context.live;
-            if (live && live.args) {
+            if (liveArgs) {
               for (const key of Object.keys(evals)) {
                 if (regions.some(r => r.key === key)) continue;
-                openDocumentArgBinding(live.args, frameId, occurrence, key, evals[key], args, {
-                  settled: true,
-                  last: lasts[key]
-                });
+                openDocumentArgBinding(
+                  liveArgs,
+                  frameId,
+                  occurrence,
+                  key,
+                  evals[key],
+                  args,
+                  states[key]
+                );
               }
             }
           }
