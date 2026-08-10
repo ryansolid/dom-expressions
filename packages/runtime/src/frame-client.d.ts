@@ -219,6 +219,13 @@ export interface FrameHostOptions {
    * `applyData: c => table.apply(c)` (see `createJSONDataTable`).
    */
   applyData?(chunk: Extract<FrameChunk, { type: "data" }>): void;
+  /**
+   * A lazily-loaded deserializer's load, awaited by the transport before it
+   * delivers a `data` chunk — `applyData`/`resolve` can assume the codec is
+   * resident once data has arrived. Keeps codec weight out of the eager
+   * client graph for responses that never carry serialized data.
+   */
+  prepareData?(): Promise<unknown>;
 }
 
 /** @experimental */

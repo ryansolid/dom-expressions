@@ -1,0 +1,5 @@
+---
+"dom-expressions": patch
+---
+
+Frames client, size audit pass: (1) the frame host grows a `prepareData` hook — a host whose deserializer loads lazily exposes the load, and `applyFrameResponse` awaits it before delivering a `data` chunk; the sequential chunk loop queues every later chunk (the records referencing that data included) behind the load, so ordering is the only contract and nothing else observes the wait. This lets consumers keep seroval out of their eager graph entirely. (2) `ServerComponentPlugin` is now a plain descriptor instead of a `createPlugin` call: that helper is the identity function (it exists for type inference only), and seroval ships without `sideEffects: false`, so the one named import retained the whole library in the transport's eager graph. (3) The document-face arg binding is unified with the stream-face `openArgBinding` — one sweep core (owner re-eval, equality gate, pending re-entry, terminal errors, content guard) with a per-face `emit` strategy; `live.args` exposes the same `openBinding`/`closeBinding`/`commit` sink surface as the stream sink.

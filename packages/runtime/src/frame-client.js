@@ -147,12 +147,16 @@ export function chunkToRecords(chunk) {
  * @param {{
  *   serialize?: (value: unknown) => { $ref: string },
  *   resolve?: (ref: { $ref: string }) => unknown,
- *   applyData?: (chunk: object) => void
+ *   applyData?: (chunk: object) => void,
+ *   prepareData?: () => Promise<unknown>
  * }} [options]
  *   `serialize`/`resolve` back slot data refs (response-scoped table);
  *   `applyData` receives each `data` chunk whole — keyed codec records
  *   ({ key, node, initial }, apply via createJSONDataTable) or eval-style
- *   `payload` scripts, depending on the producer's serializer.
+ *   `payload` scripts, depending on the producer's serializer. A host whose
+ *   deserializer loads lazily exposes the load as `prepareData`: the
+ *   transport awaits it before delivering a `data` chunk, so `applyData`
+ *   and `resolve` can assume the codec is resident once data has arrived.
  */
 export function createFrameHost(options = {}) {
   // One logical stream may feed several mounted boundaries (the same server
@@ -266,7 +270,8 @@ export function createFrameHost(options = {}) {
     },
     resolve(ref, frameId) {
       return options.resolve ? options.resolve(ref, frameId) : undefined;
-    }
+    },
+    prepareData: options.prepareData
   };
 }
 

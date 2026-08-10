@@ -783,9 +783,8 @@ export function createDocumentSlotProps(clientProps, frameId) {
           // client read's semantics exactly), the record ships the promise
           // (the hydration serializer patches it on settle), and the
           // binding opens unsettled, re-armed by the retry's onSettle.
-          const liveArgs = sharedConfig.context &&
-            sharedConfig.context.live &&
-            sharedConfig.context.live.args;
+          const liveArgs =
+            sharedConfig.context && sharedConfig.context.live && sharedConfig.context.live.args;
           const vals = {};
           const evals = {};
           // Per-key ledger state: `settled` + the equality baseline. Kept
@@ -945,15 +944,11 @@ export function createDocumentSlotProps(clientProps, frameId) {
             if (liveArgs) {
               for (const key of Object.keys(evals)) {
                 if (regions.some(r => r.key === key)) continue;
-                openDocumentArgBinding(
-                  liveArgs,
-                  frameId,
-                  occurrence,
-                  key,
-                  evals[key],
-                  args,
-                  states[key]
-                );
+                const ledgerKey = `${frameId}:${occurrence}:${key}`;
+                openArgBinding(liveArgs, ledgerKey, occurrence, key, evals[key], states[key], value => {
+                  args[key] = value;
+                  liveArgs.slot(frameId, occurrence, { ...args });
+                });
               }
             }
           }
@@ -1118,11 +1113,14 @@ function armDocumentLiveHoles(ctx) {
   // objects and promises natively; no versioned-ref indirection like the
   // codec's). Store-keyed rather than geometry-routed, so ops carry the
   // producing frame's id and only the owning boundary applies them.
+  // The arg-binding sink for the document face: same `openBinding`/
+  // `closeBinding`/`commit` surface as the stream sink, so `openArgBinding`
+  // serves both faces (only the emit strategy differs at the call sites).
   live.args = {
-    open(key, b) {
+    openBinding(key, b) {
       bindings.set(key, b);
     },
-    close(key) {
+    closeBinding(key) {
       bindings.delete(key);
     },
     slot(fid, occurrence, args) {
@@ -1288,20 +1286,27 @@ function retryArgUntilSettled(evaluate, blocked, key, occurrence, onSettle) {
 
 /**
  * A watched-arg binding (DR-2 case 1): the ledger entry for one re-runnable
- * slot arg. Opened after the occurrence's record emits; the sink sweeps it
- * at every commit until the response completes. A sweep re-evaluates the
- * arg under its render owner and, reference-equality gated, re-emits the
- * occurrence's record:
+ * slot arg, shared by BOTH faces. Opened after the occurrence's record
+ * emits; the sink sweeps it at every commit until the response completes. A
+ * sweep re-evaluates the arg under its render owner and, reference-equality
+ * gated, re-emits the occurrence's record through `emit` — the per-face
+ * transport strategy:
  *
- *   - a changed scalar rides the record literally, same as at emission;
- *   - a changed object mints a VERSIONED ref (`arg:<occ>:<key>@<n>` — data
- *     refs are write-once in the codec) and serializes the new value;
- *   - settled -> not-ready re-enters pending-with-previous: the versioned
- *     ref ships pending and the retry loop settles it, while the client's
- *     read suspends holding its latest value;
- *   - a real error is terminal: the arg re-ships as a rejected ref (the
- *     client read throws into its covering boundary, diagnosably) and the
- *     binding closes, mirroring the retry loop's rejection semantics;
+ *   - stream face: scalars ride the record literally; objects mint a
+ *     VERSIONED ref (`arg:<occ>:<key>@<n>` — data refs are write-once in
+ *     the codec) and serialize the new value;
+ *   - document face: values ride INLINE in a fid-tagged `slot` op on the
+ *     `sc:live` channel — the hydration serializer carries objects and
+ *     promises natively per chunk, so there is no ref indirection.
+ *
+ * Shared semantics regardless of face:
+ *
+ *   - settled -> not-ready re-enters pending-with-previous: the emitted
+ *     pending promise is settled by the retry loop while the client's read
+ *     suspends holding its latest value;
+ *   - a real error is terminal: the arg re-ships rejected (the client read
+ *     throws into its covering boundary, diagnosably) and the binding
+ *     closes, mirroring the retry loop's rejection semantics;
  *   - a re-evaluation producing JSX is the DR-3 rule-1 violation, rejected
  *     with the same diagnostic as the retry loop.
  *
@@ -1311,17 +1316,9 @@ function retryArgUntilSettled(evaluate, blocked, key, occurrence, onSettle) {
  * consumers (tests, same-tab transports) never see later mutations through
  * an already-delivered chunk.
  */
-function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
+function openArgBinding(sink, ledgerKey, occurrence, key, evaluate, state, emit) {
   const owner = getOwner();
-  const ledgerKey = `${occurrence}:${key}`;
-  const reEmit = value => {
-    const ref = `arg:${occurrence}:${key}@${sink.nextArgRef(ledgerKey)}`;
-    sink.mintRef(ref);
-    ctx.serialize(ref, value);
-    args[key] = { $ref: ref };
-    sink.slot(occurrence, { ...args });
-  };
-  const binding = {
+  sink.openBinding(ledgerKey, {
     sweep() {
       if (!state.settled) return;
       let value;
@@ -1331,11 +1328,11 @@ function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
         const blocked = ssrHandleError && ssrHandleError(err);
         if (!blocked) {
           sink.closeBinding(ledgerKey);
-          reEmit(Promise.reject(err instanceof Error ? err : new Error(String(err))));
+          emit(Promise.reject(err instanceof Error ? err : new Error(String(err))));
           return;
         }
         state.settled = false;
-        reEmit(
+        emit(
           retryArgUntilSettled(evaluate, blocked, key, occurrence, v => {
             state.settled = true;
             state.last = v;
@@ -1348,69 +1345,10 @@ function openArgBinding(sink, ctx, occurrence, key, evaluate, args, state) {
       state.last = value;
       if (isServerContent(value)) {
         sink.closeBinding(ledgerKey);
-        reEmit(Promise.reject(contentArgError(key, occurrence)));
+        emit(Promise.reject(contentArgError(key, occurrence)));
         return;
       }
-      const t = typeof value;
-      if (value == null || t === "string" || t === "number" || t === "boolean") {
-        args[key] = value;
-        sink.slot(occurrence, { ...args });
-      } else {
-        reEmit(value);
-      }
-    }
-  };
-  sink.openBinding(ledgerKey, binding);
-}
-
-/**
- * The document-face twin of `openArgBinding` (DR-2 case 1 at t=0): same
- * sweep semantics — re-evaluate under the render owner, equality-gate,
- * re-emit the occurrence's record; pending re-enters through the retry
- * loop; real errors and JSX re-evaluations are terminal — but the record
- * ships as a `slot` op on the document's `sc:live` channel, values INLINE.
- * The hydration serializer carries objects and promises natively per chunk,
- * so there is no versioned-ref indirection: a pending re-entry is a promise
- * value the serializer streams, exactly like a t=0 region.
- */
-function openDocumentArgBinding(sink, fid, occurrence, key, evaluate, args, state) {
-  const owner = getOwner();
-  const ledgerKey = `${fid}:${occurrence}:${key}`;
-  const reEmit = value => {
-    args[key] = value;
-    sink.slot(fid, occurrence, { ...args });
-  };
-  sink.open(ledgerKey, {
-    sweep() {
-      if (!state.settled) return;
-      let value;
-      try {
-        value = owner ? runWithOwner(owner, evaluate) : evaluate();
-      } catch (err) {
-        const blocked = ssrHandleError && ssrHandleError(err);
-        if (!blocked) {
-          sink.close(ledgerKey);
-          reEmit(Promise.reject(err instanceof Error ? err : new Error(String(err))));
-          return;
-        }
-        state.settled = false;
-        reEmit(
-          retryArgUntilSettled(evaluate, blocked, key, occurrence, v => {
-            state.settled = true;
-            state.last = v;
-            sink.commit();
-          })
-        );
-        return;
-      }
-      if (value === state.last) return;
-      state.last = value;
-      if (isServerContent(value)) {
-        sink.close(ledgerKey);
-        reEmit(Promise.reject(contentArgError(key, occurrence)));
-        return;
-      }
-      reEmit(value);
+      emit(value);
     }
   });
 }
@@ -1593,7 +1531,20 @@ export function createSlotProps(sink, frame) {
           sink.slot(occurrence, { ...args });
           const ctx = sharedConfig.context;
           for (const b of opened) {
-            openArgBinding(sink, ctx, occurrence, b.key, b.evaluate, args, b.state);
+            const key = b.key;
+            const ledgerKey = `${occurrence}:${key}`;
+            openArgBinding(sink, ledgerKey, occurrence, key, b.evaluate, b.state, value => {
+              const t = typeof value;
+              if (value == null || t === "string" || t === "number" || t === "boolean") {
+                args[key] = value;
+              } else {
+                const ref = `arg:${occurrence}:${key}@${sink.nextArgRef(ledgerKey)}`;
+                sink.mintRef(ref);
+                ctx.serialize(ref, value);
+                args[key] = { $ref: ref };
+              }
+              sink.slot(occurrence, { ...args });
+            });
           }
           return slotRange(occurrence);
         };

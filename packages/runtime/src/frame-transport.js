@@ -9,7 +9,6 @@
  * half (`serverComponentResponse` / `frameTransformResult`) lives in
  * frame-sink.js; this module stays importable from client bundles.
  */
-import { createPlugin } from "seroval";
 import {
   ChunkReader,
   ERROR_HEADER,
@@ -74,6 +73,13 @@ export async function applyFrameResponse(response, host, options = {}) {
         if (v === undefined) perFrame.set(chunk.id, (v = version(chunk.id)));
         chunk.version = v;
       } else if (version !== undefined) chunk.version = version;
+      // Codec-free until a `data` chunk actually arrives: a host whose
+      // deserializer loads lazily (`prepareData`) gets awaited here, and
+      // because the loop is sequential every later chunk — the records
+      // referencing this data included — queues behind the load. Chunk
+      // ORDER is the only contract downstream (network jitter already
+      // stretches time between chunks), so nothing else observes the wait.
+      if (chunk.type === "data" && host.prepareData) await host.prepareData();
       host.apply(chunk);
     }
     result = await reader.next();
@@ -158,7 +164,13 @@ function parseServerComponent(value, ctx) {
   };
 }
 
-export const ServerComponentPlugin = /*#__PURE__*/ createPlugin({
+// A plain descriptor, NOT wrapped in seroval's `createPlugin`: that helper
+// is the identity function (it exists for type inference only), and seroval
+// ships without `sideEffects: false` — one named import retains the entire
+// library in this module's eager graph, defeating the lazy-codec split the
+// transports are built around. The JSDoc cast keeps the type contract.
+/** @type {import("seroval").Plugin<Function, { id: any, address: any }>} */
+export const ServerComponentPlugin = {
   tag: "dom-expressions/server-component",
   test(value) {
     return typeof value === "function" && SERVER_COMPONENT in value;
@@ -202,7 +214,7 @@ export const ServerComponentPlugin = /*#__PURE__*/ createPlugin({
     // document registry's per-function placeholder.
     return globalThis._$SC.r(id);
   }
-});
+};
 
 /**
  * The codec options for a single-flight envelope: the configured codec plus
