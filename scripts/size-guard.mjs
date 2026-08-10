@@ -23,7 +23,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CLIENT = resolve(ROOT, "packages/runtime/src/client.js");
 const FRAME_CLIENT = resolve(ROOT, "packages/runtime/src/frame-client.js");
 const FRAME_TRANSPORT = resolve(ROOT, "packages/runtime/src/frame-transport.js");
-const SERIALIZER = resolve(ROOT, "packages/runtime/src/serializer.js");
+// The decode module: what the frames client's codec glue actually loads
+// (the full serializer.js is the encode side + re-exports; importing the
+// table through it would charge the re-export indirection to this slice).
+const SERIALIZER_DECODE = resolve(ROOT, "packages/runtime/src/serializer-decode.js");
 
 // name -> [entry (import statements or subset against CLIENT), gzip ceiling]
 const SCENARIOS = {
@@ -205,7 +208,7 @@ const SCENARIOS = {
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
-     export { createJSONDataTable } from ${JSON.stringify(SERIALIZER)};`,
+     export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
     8601
   ]
 };
@@ -246,7 +249,7 @@ const prodDefines = {
 const lazyCodecSplit = {
   name: "dx-lazy-codec-split",
   setup(b) {
-    b.onResolve({ filter: /serializer\.js$/ }, args => {
+    b.onResolve({ filter: /serializer(-decode)?\.js$/ }, args => {
       if (args.kind === "dynamic-import") return { path: args.path, external: true };
       return null;
     });

@@ -945,10 +945,18 @@ export function createDocumentSlotProps(clientProps, frameId) {
               for (const key of Object.keys(evals)) {
                 if (regions.some(r => r.key === key)) continue;
                 const ledgerKey = `${frameId}:${occurrence}:${key}`;
-                openArgBinding(liveArgs, ledgerKey, occurrence, key, evals[key], states[key], value => {
-                  args[key] = value;
-                  liveArgs.slot(frameId, occurrence, { ...args });
-                });
+                openArgBinding(
+                  liveArgs,
+                  ledgerKey,
+                  occurrence,
+                  key,
+                  evals[key],
+                  states[key],
+                  value => {
+                    args[key] = value;
+                    liveArgs.slot(frameId, occurrence, { ...args });
+                  }
+                );
               }
             }
           }

@@ -1,23 +1,18 @@
-import {
-  Feature,
-  Serializer,
-  fromCrossJSON,
-  getCrossReferenceHeader,
-  toCrossJSONStream
-} from "seroval";
-import {
-  AbortSignalPlugin,
-  CustomEventPlugin,
-  DOMExceptionPlugin,
-  EventPlugin,
-  FormDataPlugin,
-  HeadersPlugin,
-  ReadableStreamPlugin,
-  RequestPlugin,
-  ResponsePlugin,
-  URLPlugin,
-  URLSearchParamsPlugin
-} from "seroval-plugins/web";
+import { Feature, Serializer, getCrossReferenceHeader, toCrossJSONStream } from "seroval";
+import { resolveCodecOptions, resolveSerializerPlugins } from "./serializer-decode.js";
+
+// The decode half (plugin set, JSON codec defaults, `createJSONDeserializer`,
+// `createJSONDataTable`) lives in serializer-decode.js so lazy client
+// consumers can load it without this module's encode machinery; re-exported
+// here so this remains the FULL serialization surface (the public
+// `@solidjs/web/serialization` entry and every existing import are
+// unchanged).
+export {
+  DEFAULT_WEB_PLUGINS,
+  createJSONDataTable,
+  createJSONDeserializer,
+  resolveSerializerPlugins
+} from "./serializer-decode.js";
 
 // Features excluded from emitted scripts so output stays runnable on ~ES2017
 // targets (AggregateError is ES2021, BigInt typed arrays are ES2020).
@@ -47,35 +42,6 @@ const HYDRATION_GLOBAL = "_$HY.r";
 // `OpaqueReference` from another copy fails seroval's instanceof check and
 // silently serializes as a plain value (solid-start #1474 is the case study).
 export { createPlugin, OpaqueReference } from "seroval";
-
-/**
- * Baseline plugin set for serializing web-platform values. Shared by the
- * hydration serializer and any consumer building its own serializer (e.g.
- * server function transports).
- */
-export const DEFAULT_WEB_PLUGINS = Object.freeze([
-  AbortSignalPlugin,
-  // BlobPlugin,
-  CustomEventPlugin,
-  DOMExceptionPlugin,
-  EventPlugin,
-  // FilePlugin,
-  FormDataPlugin,
-  HeadersPlugin,
-  ReadableStreamPlugin,
-  RequestPlugin,
-  ResponsePlugin,
-  URLSearchParamsPlugin,
-  URLPlugin
-]);
-
-/**
- * Composes user plugins with the default web set. Custom plugins come first
- * so they can shadow a default for values both would match.
- */
-export function resolveSerializerPlugins(customPlugins) {
-  return customPlugins ? [...customPlugins, ...DEFAULT_WEB_PLUGINS] : [...DEFAULT_WEB_PLUGINS];
-}
 
 /**
  * Creates a streaming Seroval serializer preconfigured with the web plugin
@@ -121,23 +87,6 @@ export function getLocalHeaderScript(id) {
 // concern; this layer only guarantees both sides agree on plugins and
 // feature policy.
 
-// Codec payloads may come from an untrusted peer, so the defaults protect
-// the decoding side: RegExp is disabled (ReDoS via deserialized patterns)
-// and parse depth is capped well below Seroval's own limit.
-const JSON_CODEC_DISABLED_FEATURES = Feature.RegExp;
-const JSON_CODEC_DEPTH_LIMIT = 64;
-
-// Single source of truth for codec defaults — encode and decode must agree
-// on plugins and feature policy or payloads won't roundtrip.
-function resolveCodecOptions({ plugins, disabledFeatures, depthLimit } = {}) {
-  return {
-    plugins: resolveSerializerPlugins(plugins),
-    disabledFeatures:
-      disabledFeatures === undefined ? JSON_CODEC_DISABLED_FEATURES : disabledFeatures,
-    depthLimit: depthLimit === undefined ? JSON_CODEC_DEPTH_LIMIT : depthLimit
-  };
-}
-
 /**
  * Serializes `value` as SerovalNode chunks delivered through
  * `onParse(node, initial)`. Async values (promises, streams) produce
@@ -154,20 +103,6 @@ export function serializeJSON(value, { onParse, onDone, onError, ...codecOptions
     ...resolved,
     disabledFeatures: resolved.disabledFeatures | serializeOnlyDisabledFeatures()
   });
-}
-
-/**
- * Creates the decoding counterpart of `serializeJSON`. The returned function
- * deserializes one SerovalNode chunk at a time; cross-references between
- * chunks resolve through a map shared across calls, so all chunks from one
- * stream must go through the same deserializer instance.
- */
-export function createJSONDeserializer(options) {
-  const refs = new Map();
-  const resolved = resolveCodecOptions(options);
-  return function deserializeJSONChunk(node) {
-    return fromCrossJSON(node, { refs, ...resolved });
-  };
 }
 
 /**
@@ -243,26 +178,3 @@ export function createJSONSerializer({
   };
 }
 
-/**
- * Keyed decode table for `createJSONSerializer` output. Feed every data
- * record to `apply`: initial nodes land in the table under their key; later
- * nodes patch pending values (promise/stream resolutions) through the shared
- * deserializer refs. `resolve` reads a `{ $ref }` back out — the record ids
- * double as the reference namespace.
- */
-export function createJSONDataTable(options) {
-  const deserialize = createJSONDeserializer(options);
-  const table = new Map();
-  return {
-    apply(record) {
-      const value = deserialize(record.node);
-      if (record.initial) table.set(record.key, value);
-    },
-    get(key) {
-      return table.get(key);
-    },
-    resolve(ref) {
-      return table.get(ref.$ref);
-    }
-  };
-}

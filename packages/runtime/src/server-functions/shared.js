@@ -572,8 +572,10 @@ export async function deserializeStream(source, codecOptions) {
   if (!result.done) {
     // The codec's decode half loads here — when a Serialized body has
     // actually arrived — so a client whose responses all ride the JSON fast
-    // path never pays for it (see the loading notes at the top).
-    const { createJSONDeserializer } = await import("../serializer.js");
+    // path never pays for it (see the loading notes at the top). The
+    // decode-only module: reading a payload never needs the encode half
+    // (that loads separately, when rich arguments serialize).
+    const { createJSONDeserializer } = await import("../serializer-decode.js");
     // Cross-references between chunks resolve through state inside the
     // deserializer, so one instance handles the whole stream.
     const deserializeChunk = createJSONDeserializer(codecOptions);

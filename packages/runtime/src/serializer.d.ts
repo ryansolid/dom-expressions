@@ -5,15 +5,20 @@
 // 2.0 stability guarantee and may change between releases. Application and
 // router code should configure `codec` on the server-function entries
 // instead of importing from here.
-import { Serializer, SerovalNode } from "seroval";
+import { Serializer } from "seroval";
+import {
+  JSONCodecOptions,
+  PluginInfo,
+  SerializerPlugin,
+  SerovalNode
+} from "./serializer-decode.js";
 
-/**
- * Seroval's node shape — the intermediate representation `serializeJSON`
- * emits and `createJSONDeserializer` consumes. Safe to `JSON.stringify`.
- *
- * Integration-facing; may change (see the entry banner).
- */
-export type { SerovalNode };
+// The decode half — `SerovalNode`, the plugin TYPES, `DEFAULT_WEB_PLUGINS`,
+// `resolveSerializerPlugins`, `JSONCodecOptions`, `createJSONDeserializer`,
+// `createJSONDataTable` — is declared in serializer-decode.d.ts (published
+// as `@solidjs/web/serialization/decode`, the module lazy client consumers
+// load) and re-exported here so this remains the full surface.
+export * from "./serializer-decode.js";
 
 // ---- Plugin authoring ----
 //
@@ -21,86 +26,8 @@ export type { SerovalNode };
 // it is the supported way to feed the serializers' `plugins` options and
 // the server-function entries' `codec.plugins`. The values re-export
 // seroval's own (`createPlugin`, `OpaqueReference` — see serializer.js);
-// the TYPES are declared here by hand, like everything else in this file,
-// because seroval's published d.ts use extensionless ESM-relative imports
-// that `moduleResolution: "nodenext"` cannot follow — a bare type
-// re-export would silently degrade the whole authoring surface to `any`
-// under skipLibCheck. The declarations mirror seroval ~1.5 exactly; the
-// `~` pin is what makes mirroring safe.
-
-/** Per-plugin bookkeeping seroval hands each plugin callback. */
-export interface PluginData {
-  id: number;
-}
-
-/**
- * The shape of a plugin's parsed payload: a map of `SerovalNode`s produced
- * by the parse contexts, consumed by `serialize`/`deserialize`.
- */
-export type PluginInfo = { [key: string]: SerovalNode };
-
-/** Parse context for `parse.sync`: turns child values into nodes. */
-export interface SyncParsePluginContext {
-  parse<T>(current: T): SerovalNode;
-}
-
-/** Parse context for `parse.async`: like sync, but child parses await. */
-export interface AsyncParsePluginContext {
-  parse<T>(current: T): Promise<SerovalNode>;
-}
-
-/**
- * Parse context for `parse.stream`: sync parsing plus the streaming
- * lifecycle (pending-state tracking, late node emission, cleanup).
- */
-export interface StreamParsePluginContext {
-  parse<T>(current: T): SerovalNode;
-  parseWithError<T>(current: T): SerovalNode | undefined;
-  isAlive(): boolean;
-  pushPendingState(): void;
-  popPendingState(): void;
-  onParse(node: SerovalNode): void;
-  onError(error: unknown): void;
-  addCleanup(callback: () => void): void;
-}
-
-/** Serialize context: renders child nodes to JS source. */
-export interface SerializePluginContext {
-  serialize(node: SerovalNode): string;
-}
-
-/** Deserialize context: revives child nodes to runtime values. */
-export interface DeserializePluginContext {
-  deserialize<T>(node: SerovalNode): T;
-}
-
-/**
- * A Seroval plugin usable with the web serializers — teaches the codec how
- * to encode/decode a custom value type (`Value` is the value it matches,
- * `Info` its parsed payload). Supply matching plugins on both peers of a
- * transport. Bare `SerializerPlugin` (both parameters defaulted to `any`)
- * is the list-element type every `plugins` option accepts.
- *
- * Integration-facing; may change (see the entry banner).
- */
-export interface SerializerPlugin<Value = any, Info extends PluginInfo = any> {
-  /** A unique string identifying the plugin — namespace it (`"app/Thing"`). */
-  tag: string;
-  /** Dependency plugins, resolved ahead of this one. */
-  extends?: SerializerPlugin[];
-  /** Whether `value` is this plugin's to encode. */
-  test(value: unknown): boolean;
-  /** Parsing modes — provide the ones the transports you target use. */
-  parse: {
-    sync?: (value: Value, ctx: SyncParsePluginContext, data: PluginData) => Info;
-    async?: (value: Value, ctx: AsyncParsePluginContext, data: PluginData) => Promise<Info>;
-    stream?: (value: Value, ctx: StreamParsePluginContext, data: PluginData) => Info;
-  };
-  /** Renders the parsed payload as JS source (script-injection form). */
-  serialize(node: Info, ctx: SerializePluginContext, data: PluginData): string;
-  /** Revives the parsed payload back into the runtime value. */
-  deserialize(node: Info, ctx: DeserializePluginContext, data: PluginData): Value;
-}
+// the plugin TYPES live in serializer-decode.d.ts (hand-declared there —
+// see its banner for why).
 
 /**
  * Builds a `SerializerPlugin` — seroval's `createPlugin`, re-exported so
@@ -129,26 +56,6 @@ export class OpaqueReference<V, R = undefined> {
   readonly replacement?: R;
   constructor(value: V, replacement?: R);
 }
-
-/**
- * Baseline plugin set for serializing web-platform values (AbortSignal,
- * Event, FormData, Headers, ReadableStream, Request, Response, URL, ...).
- * Applied by every serializer in this module; custom plugins compose ahead
- * of it via `resolveSerializerPlugins`.
- *
- * Integration-facing; may change (see the entry banner).
- */
-export const DEFAULT_WEB_PLUGINS: readonly SerializerPlugin[];
-
-/**
- * Composes custom plugins with `DEFAULT_WEB_PLUGINS`. Custom plugins come
- * first so they can shadow a default for values both would match. Returns a
- * fresh array; the defaults are never mutated. Useful when handing a full
- * plugin list to another serialization layer.
- *
- * Integration-facing; may change (see the entry banner).
- */
-export function resolveSerializerPlugins(customPlugins?: SerializerPlugin[]): SerializerPlugin[];
 
 /**
  * Options for `createSerializer`.
@@ -217,30 +124,8 @@ export function createHydrationSerializer(options: HydrationSerializerOptions): 
 export function getLocalHeaderScript(id?: string): string;
 
 // ---- JSON codec (server function transports) ----
-
-/**
- * Options shared by both halves of the JSON codec. All of them must match
- * on the serializing and deserializing peer or payloads will not
- * round-trip — for server functions, set them once through the
- * client/server `codec` config option.
- *
- * Integration-facing; may change (see the entry banner).
- */
-export interface JSONCodecOptions {
-  /** Extra plugins, composed ahead of `DEFAULT_WEB_PLUGINS`. Must match on both peers. */
-  plugins?: SerializerPlugin[];
-  /**
-   * Seroval feature bitflags to exclude. Defaults to disabling `RegExp`
-   * (payloads may come from an untrusted peer). Must match on both peers.
-   * Outside development, the encoding side additionally strips
-   * `Error.prototype.stack` on top of any override — serialized stacks leak
-   * server paths to the client. Decoding stays permissive, so payloads from
-   * a development peer still round-trip.
-   */
-  disabledFeatures?: number;
-  /** Maximum parse/deserialize depth. Defaults to 64. Must match on both peers. */
-  depthLimit?: number;
-}
+// (`JSONCodecOptions` and the decode half are declared in
+// serializer-decode.d.ts and re-exported above.)
 
 /**
  * Options for `serializeJSON`.
@@ -270,17 +155,6 @@ export interface JSONSerializeOptions extends JSONCodecOptions {
  */
 export function serializeJSON(value: unknown, options: JSONSerializeOptions): () => void;
 
-/**
- * Creates the decoding counterpart of `serializeJSON`. Cross-references
- * between chunks resolve through state shared across calls, so all chunks
- * from one stream must go through the same deserializer instance. The first
- * chunk's return value is the decoded source value; feeding later chunks
- * settles the async values referenced inside it.
- *
- * Integration-facing; may change (see the entry banner).
- */
-export function createJSONDeserializer(options?: JSONCodecOptions): <T>(node: SerovalNode) => T;
-
 /** Options for `createJSONSerializer`. */
 export interface JSONSerializerOptions extends JSONCodecOptions {
   /**
@@ -306,19 +180,3 @@ export function createJSONSerializer(options: JSONSerializerOptions): {
   flush(): void;
   close(): void;
 };
-
-/**
- * A resident, response-scoped decode table over the keyed JSON codec: apply
- * each frame `data` chunk with `apply`, resolve `{ $ref }` slot args with
- * `resolve`. The frames client host wires one per response
- * (`applyData: c => table.apply(c)`).
- *
- * Integration-facing; may change (see the entry banner). This serialization
- * entry is the single home of the data table — the frames client consumes
- * it internally rather than re-exporting it.
- */
-export interface JSONDataTable {
-  apply(chunk: { key?: string; node?: unknown; initial?: boolean }): void;
-  resolve<T = unknown>(ref: { $ref: string }): T;
-}
-export function createJSONDataTable(options?: JSONCodecOptions): JSONDataTable;
