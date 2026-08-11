@@ -22,19 +22,40 @@
 // (serializer-decode.js), so every serializer face carries it with nothing
 // for integrations to wire, and its weight stays in the lazy codec graph.
 
-/** @type {((value: unknown) => ({ subscribe(): AsyncIterable<any>, array: boolean } | undefined)) | undefined} */
-let resolveTrace;
-/** @type {((marker: { $tr: AsyncIterable<any>, $ta?: number }) => unknown) | undefined} */
-let materializeTrace;
+// Hook state is shared ACROSS MODULE COPIES, like the TRACE symbol below:
+// integration bundles carry this module once per entry (the frames client
+// installs the materializer on its copy; the LAZY CODEC chunk's copy is the
+// one whose plugin deserializes stream data), and module-local state would
+// leave the codec copy hookless — deserialize falls back to the inert
+// marker, the arg reads as a plain object, and the meter just renders
+// nothing (chat example, 2026-08-10). One registered global carries the
+// hooks and the materialization memo, so every copy is the same protocol
+// endpoint.
+/**
+ * @type {{
+ *   resolveTrace?: (value: unknown) => ({ subscribe(): AsyncIterable<any>, array: boolean } | undefined),
+ *   materializeTrace?: (marker: { $tr: AsyncIterable<any>, $ta?: number }) => unknown,
+ *   materialized: WeakMap<object, unknown>,
+ *   materializedValues: WeakSet<object>
+ * }}
+ */
+const state =
+  globalThis[Symbol.for("dom-expressions.container-trace-state")] ||
+  (globalThis[Symbol.for("dom-expressions.container-trace-state")] = {
+    resolveTrace: undefined,
+    materializeTrace: undefined,
+    materialized: new WeakMap(),
+    materializedValues: new WeakSet()
+  });
 
 /** Server half: install the reactive core's trace resolver. */
 export function setContainerTraceResolver(fn) {
-  resolveTrace = fn;
+  state.resolveTrace = fn;
 }
 
 /** Client half: install the reactive core's trace materializer. */
 export function setContainerTraceMaterializer(fn) {
-  materializeTrace = fn;
+  state.materializeTrace = fn;
 }
 
 /**
@@ -44,7 +65,12 @@ export function setContainerTraceMaterializer(fn) {
  * proxy whose property reads throw not-ready.
  */
 export function isContainerTraced(value) {
-  return !!(resolveTrace && typeof value === "object" && value !== null && resolveTrace(value));
+  return !!(
+    state.resolveTrace &&
+    typeof value === "object" &&
+    value !== null &&
+    state.resolveTrace(value)
+  );
 }
 
 // The envelope: what actually crosses the serializer. Seroval consults
@@ -53,9 +79,13 @@ export function isContainerTraced(value) {
 // array-rooted container would serialize as a dead snapshot) — so a raw
 // container can never be intercepted reliably. The sink swaps each traced
 // container for a plain `{ [TRACE]: trace }` object before the value enters
-// the serializer; the plugin matches THAT. The symbol is module-private:
-// envelopes exist only between envelopeContainerTraces and the plugin.
-const TRACE = Symbol("container-trace");
+// the serializer; the plugin matches THAT. A REGISTERED symbol, not a
+// module-private one: the envelope is a protocol between module copies —
+// integration bundles carry this module once per entry (a frames entry
+// mints the envelope, the document entry's serializer tests it), and a
+// per-instance Symbol() would silently never match across copies (the
+// envelope then serializes as `{}`: an empty object, no error anywhere).
+const TRACE = Symbol.for("dom-expressions.container-trace");
 
 /**
  * Replace traced containers ANYWHERE in a value (a container can sit at any
@@ -67,8 +97,8 @@ const TRACE = Symbol("container-trace");
  * owns. No-op until the resolver is installed.
  */
 export function envelopeContainerTraces(value) {
-  if (!resolveTrace || value == null || typeof value !== "object") return value;
-  const trace = resolveTrace(value);
+  if (!state.resolveTrace || value == null || typeof value !== "object") return value;
+  const trace = state.resolveTrace(value);
   if (trace) return { [TRACE]: trace };
   if (Array.isArray(value)) {
     let out = value;
@@ -96,21 +126,17 @@ export function envelopeContainerTraces(value) {
 }
 
 // One live container per trace, however many places reference it: seroval's
-// refs already dedupe the NODE within a stream, and this memo makes the
-// materialization idempotent across independent revival sites (an eval-face
-// marker read by two occurrences, a codec node re-resolved per record).
-const materialized = new WeakMap();
-// The client-face mirror of the server's WeakMap probe (isContainerTraced):
-// every value this module has materialized, so consumers can recognize a
-// live container WITHOUT touching its properties.
-const materializedValues = new WeakSet();
-
+// refs already dedupe the NODE within a stream, and the shared memo (on
+// `state`, cross-copy like the hooks) makes the materialization idempotent
+// across independent revival sites (an eval-face marker read by two
+// occurrences, a codec node re-resolved per record — possibly by DIFFERENT
+// copies of this module).
 function materialize(marker) {
-  let value = materialized.get(marker.$tr);
+  let value = state.materialized.get(marker.$tr);
   if (value === undefined) {
-    value = materializeTrace(marker);
-    materialized.set(marker.$tr, value);
-    if (value !== null && typeof value === "object") materializedValues.add(value);
+    value = state.materializeTrace(marker);
+    state.materialized.set(marker.$tr, value);
+    if (value !== null && typeof value === "object") state.materializedValues.add(value);
   }
   return value;
 }
@@ -123,7 +149,7 @@ function materialize(marker) {
  * triggers the proxy's traps.
  */
 export function isMaterializedContainer(value) {
-  return value !== null && typeof value === "object" && materializedValues.has(value);
+  return value !== null && typeof value === "object" && state.materializedValues.has(value);
 }
 
 /**
@@ -148,7 +174,7 @@ export function isContainerTraceMarker(value) {
  * per-record decoded copies. No-op until the materializer is installed.
  */
 export function reviveContainerTraces(value) {
-  if (!materializeTrace || value == null || typeof value !== "object") return value;
+  if (!state.materializeTrace || value == null || typeof value !== "object") return value;
   if (isContainerTraceMarker(value)) return materialize(value);
   // Plain containers only — anything exotic was either produced by the
   // codec plugin (already materialized) or is an app value not ours to walk.
@@ -205,6 +231,6 @@ export const ContainerTracePlugin = {
     // frames client installs the materializer at module load, before any
     // response can decode), so the value leaves the table already live. The
     // marker fallback keeps a hookless decode inert instead of broken.
-    return materializeTrace ? materialize(marker) : marker;
+    return state.materializeTrace ? materialize(marker) : marker;
   }
 };
