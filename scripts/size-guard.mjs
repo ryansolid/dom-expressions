@@ -83,7 +83,11 @@ const SCENARIOS = {
   // cross-copy global (the Symbol.for key + shared-state indirection).
   // Both compacted first (-19 from the initial landing); what remains is
   // the checks themselves. Re-guarded at actual+20 (10784 measured).
-  "client: full surface": ["*", 10804],
+  // Then +6 for the multi-root hydrate/islands fix: per-root
+  // registry/gather re-install across the deferred _assets preload render
+  // and renderId-scoped root asset map names. Re-guarded at actual+20
+  // (10810 measured).
+  "client: full surface": ["*", 10830],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
