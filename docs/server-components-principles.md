@@ -1001,6 +1001,29 @@ retired as a pole and survives only as potential authoring sugar.
    projection of durable state — reconnection is re-invocation, and dev
    should surface violations.
 
+Ordering note (2026-08-11): 6-before-7 above is substrate sequencing
+(claims ride Stage 3's morph-surviving substrate), not priority. The
+recorded priority lean is the reverse — new-API surface is
+bottom-of-bucket, so if the next stretch picks one up, Stage 7's
+transport work likely goes first.
+
+**Parked here (2026-08-11), state of the world for whoever resumes:**
+Stages 1–5 are built, merged to `next` in both repos, and released
+(dom-expressions `0.50.0-next.41`; the paired solid release verified
+against it — full suites plus browser passes over the chat and notes
+examples). Nothing is in flight: no unmerged branches, no uncommitted
+work; the `container-traces` worktree branches (`solid-dr2/`,
+`dom-expressions-dr2/` siblings of the main checkouts) are fully folded
+into `next` and exist only as workspaces. Development pairing
+convention: solid's `pnpm-workspace.yaml` gains a
+`'@dom-expressions/runtime': link:../dom-expressions-dr2/packages/runtime`
+override marked DO NOT COMMIT; commits that touch the lockfile drop the
+link, run `pnpm install --lockfile-only`, commit, then restore it.
+Release-order invariant: dom-expressions publishes before solid bumps
+its pins; solid's turbo cache can report a suite green without running
+it — force-execute `packages/solid-web` and `packages/solid` tests when
+verifying a release.
+
 Still parked, deliberately: generator authoring sugar (the ledger's
 supersession is already generator-ready); per-hole diff emission as a
 wire optimization (contained by hole scope; adopted only where
