@@ -1004,4 +1004,15 @@ retired as a pole and survives only as potential authoring sugar.
 Still parked, deliberately: generator authoring sugar (the ledger's
 supersession is already generator-ready); per-hole diff emission as a
 wire optimization (contained by hole scope; adopted only where
-measurement earns it).
+measurement earns it). The chat demo's honest form sharpened the diff
+case (2026-08-10): one hole over a growing reply re-ships the whole
+rendered message per yield — O(n²) bytes over a generation for a few
+words of new information each time. The first rung is NOT general
+diffing (markup holes have no patch recorder; a wire diff would have to
+be computed — the same line that parked the generator model's
+server-side diffing): streamed text is append-mostly, and the hole
+binding already retains its last emission for the equality gate, so a
+prefix check yields an `append` op that ships just the tail, falling
+back to full re-emission + morph whenever the prefix breaks (a code
+fence closing retroactively). Additive to the chunk protocol; adopt
+when measurement earns it.
