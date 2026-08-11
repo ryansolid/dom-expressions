@@ -1,5 +1,5 @@
 import { JSX } from "./jsx.js";
-import { SerializerPlugin } from "./serializer.js";
+import { SerializerPlugin } from "./serializer-decode.js";
 export const DOMWithState: Record<string, Record<string, 1 | 2>>;
 export const ChildProperties: Set<string>;
 export const DelegatedEvents: Set<string>;

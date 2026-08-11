@@ -1,4 +1,4 @@
-import { JSONCodecOptions } from "../serializer.js";
+import { JSONCodecOptions } from "../serializer-decode.js";
 
 export type { JSONCodecOptions };
 

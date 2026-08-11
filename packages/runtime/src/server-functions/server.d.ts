@@ -1,5 +1,5 @@
 import { ResponseEnvelope } from "../response.js";
-import { JSONCodecOptions } from "../serializer.js";
+import { JSONCodecOptions } from "../serializer-decode.js";
 import { RequestEvent } from "../server.js";
 
 export {

@@ -6,24 +6,35 @@
 // never ships to a browser that only reads. The full serializer.d.ts
 // re-exports everything here; see its banner for the stability contract
 // (integration-facing, exempt from the 2.0 stability guarantee).
-import { SerovalNode } from "seroval";
-
-/**
- * Seroval's node shape — the intermediate representation `serializeJSON`
- * emits and `createJSONDeserializer` consumes. Safe to `JSON.stringify`.
- *
- * Integration-facing; may change (see the entry banner).
- */
-export type { SerovalNode };
-
 // ---- Plugin types ----
 //
 // Declared here by hand (seroval's published d.ts use extensionless
 // ESM-relative imports that `moduleResolution: "nodenext"` cannot follow —
 // a bare type re-export would silently degrade the surface to `any` under
-// skipLibCheck). The declarations mirror seroval ~1.5 exactly; the `~` pin
-// is what makes mirroring safe. Plugin AUTHORING (`createPlugin`,
+// skipLibCheck, and an import would make every entry whose types reach
+// this module — the MAIN client entry included, via the server-function
+// seam's `JSONCodecOptions` — unimportable from a strict Node16 CJS
+// consumer). The declarations mirror seroval ~1.5 exactly; the `~` pin is
+// what makes mirroring safe. Plugin AUTHORING (`createPlugin`,
 // `OpaqueReference`) lives on the full serialization entry.
+
+/**
+ * Seroval's node shape — the intermediate representation `serializeJSON`
+ * emits and `createJSONDeserializer` consumes. Safe to `JSON.stringify`.
+ * Declared by hand like the plugin types below (same rationale): the
+ * observable envelope — a numeric type tag, an optional reference id —
+ * with the rest owned by the codec. Real seroval nodes satisfy it; treat
+ * it as an opaque token.
+ *
+ * Integration-facing; may change (see the entry banner).
+ */
+export interface SerovalNode {
+  /** Node type tag (seroval-internal enum). */
+  t: number;
+  /** Reference id, when the node participates in cross-referencing. */
+  i?: number | undefined;
+  [key: string]: unknown;
+}
 
 /** Per-plugin bookkeeping seroval hands each plugin callback. */
 export interface PluginData {

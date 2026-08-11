@@ -3,7 +3,7 @@
 // shapes and the wire format may change between prereleases (RFC 11).
 // Every export in this module is @experimental.
 import { FrameChunk, FrameHost } from "./frame-client.js";
-import { JSONCodecOptions } from "./serializer.js";
+import { JSONCodecOptions } from "./serializer-decode.js";
 
 // Structural mirror of server-functions/shared.js's FlightDataConsumer:
 // this file may only reference siblings that ship with it when integrations

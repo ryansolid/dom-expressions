@@ -5,7 +5,7 @@
 // 2.0 stability guarantee and may change between releases. Application and
 // router code should configure `codec` on the server-function entries
 // instead of importing from here.
-import { Serializer } from "seroval";
+import type { Serializer } from "seroval";
 import {
   JSONCodecOptions,
   PluginInfo,
