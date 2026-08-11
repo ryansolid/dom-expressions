@@ -198,18 +198,18 @@ sourcemap fidelity through the client DCE pass.
 ## Performance
 
 Compared against `@dom-expressions/babel-plugin-jsx` compiling identical
-sources under identical options (Apple Silicon, release build, in-process,
-median of 7 iterations after warmup — run `pnpm bench` in this package to
-reproduce on your machine):
+sources under identical options (Apple M5, 10 cores, 32 GB RAM, Node 26,
+release build, in-process, median of 7 iterations after warmup — run
+`pnpm bench` in this package to reproduce on your machine):
 
 | Workload                                        | babel-plugin-jsx | compiler | Speedup |
 | ----------------------------------------------- | ---------------: | -----------: | ------: |
-| Fixture corpus (88 files, 174 KB, all 10 modes) |           151 ms |       8.4 ms |     18x |
-| 129 KB single module                            |           230 ms |       4.6 ms |     50x |
-| 1 MB single module                              |        10,164 ms |        39 ms |    258x |
+| Fixture corpus (88 files, 175 KB, all 10 modes) |           440 ms |        19 ms |     23x |
+| 129 KB single module                            |           545 ms |       9.4 ms |     58x |
+| 1 MB single module                              |        24,975 ms |        70 ms |    355x |
 
-Native throughput stays flat at ~20–27 MB/s as input grows, while Babel's
-per-file cost grows super-linearly — so the gap widens with file size.
+Native throughput stays roughly flat at ~9–14 MB/s as input grows, while
+Babel's per-file cost grows super-linearly — so the gap widens with file size.
 
 ## Current Scope
 
