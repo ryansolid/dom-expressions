@@ -1659,15 +1659,9 @@ function insertExpression(parent, value, current, marker) {
     // there and leave the server's beside the new content as permanent
     // residue. Claimed nodes are connected (or under a declared claim
     // root); phantom renders are neither, and keep `current` as-is.
-    if (value && value !== current) {
-      const nodes = Array.isArray(value) ? value : value.nodeType ? [value] : null;
-      if (nodes) {
-        for (let i = 0; i < nodes.length; i++) {
-          const n = nodes[i];
-          if (n && n.nodeType && !isHydrating(n)) return current;
-        }
-      }
-    }
+    if (value && value !== current)
+      for (const n of Array.isArray(value) ? value : [value])
+        if (n && n.nodeType && !isHydrating(n)) return current;
     return value;
   }
   if (value === current) return value;

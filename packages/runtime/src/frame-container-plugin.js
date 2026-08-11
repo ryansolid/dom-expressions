@@ -39,11 +39,10 @@
  *   materializedValues: WeakSet<object>
  * }}
  */
+const STATE = Symbol.for("dom-expressions.container-trace-state");
 const state =
-  globalThis[Symbol.for("dom-expressions.container-trace-state")] ||
-  (globalThis[Symbol.for("dom-expressions.container-trace-state")] = {
-    resolveTrace: undefined,
-    materializeTrace: undefined,
+  globalThis[STATE] ||
+  (globalThis[STATE] = {
     materialized: new WeakMap(),
     materializedValues: new WeakSet()
   });
@@ -65,12 +64,8 @@ export function setContainerTraceMaterializer(fn) {
  * proxy whose property reads throw not-ready.
  */
 export function isContainerTraced(value) {
-  return !!(
-    state.resolveTrace &&
-    typeof value === "object" &&
-    value !== null &&
-    state.resolveTrace(value)
-  );
+  const resolve = state.resolveTrace;
+  return !!(resolve && value && typeof value === "object" && resolve(value));
 }
 
 // The envelope: what actually crosses the serializer. Seroval consults

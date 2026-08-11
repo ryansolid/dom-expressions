@@ -76,7 +76,14 @@ const SCENARIOS = {
   // core scenario stayed byte-identical, and the router-eager-subset
   // scenario below pins the slice apps actually pay. Re-guarded at
   // actual+20 (10751 measured).
-  "client: full surface": ["*", 10771],
+  // Then +33 for two correctness fixes from live chat-demo vetting:
+  // hydrating inserts keep `current` honest (the phantom-fallback node
+  // scan in insertExpression, plus its callers consuming the return) and
+  // the container-trace plugin's hook state moving to a registered
+  // cross-copy global (the Symbol.for key + shared-state indirection).
+  // Both compacted first (-19 from the initial landing); what remains is
+  // the checks themselves. Re-guarded at actual+20 (10784 measured).
+  "client: full surface": ["*", 10804],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
@@ -217,11 +224,16 @@ const SCENARIOS = {
   // codec loads lazily there) and this codec-inclusive scenario is the
   // one place that still charges it. Re-guarded at actual+20 (8826
   // measured).
+  // Then +13 for the same two live-vetting fixes as the full-surface
+  // scenario (hydrating-insert current honesty; container-trace state on
+  // a registered cross-copy global — this scenario carries the plugin
+  // through the codec defaults, so the shared-state indirection lands
+  // here too). Re-guarded at actual+20 (8859 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
-    8846
+    8879
   ]
 };
 
