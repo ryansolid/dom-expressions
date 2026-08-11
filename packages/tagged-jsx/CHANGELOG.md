@@ -1,5 +1,7 @@
 # tagged-jsx-dom-expressions
 
+## 0.50.0-next.41
+
 ## 0.50.0-next.40
 
 ## 0.50.0-next.39
