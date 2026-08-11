@@ -75,6 +75,7 @@
     "fix-late-slot-data-refs",
     "fix-module-preload-rejection",
     "fix-morph-displaced-range-wholesale-insert",
+    "fix-multi-root-hydrate-islands",
     "fix-native-delegated-member-events",
     "fix-native-insert-markers",
     "fix-nested-region-renav-drop",
