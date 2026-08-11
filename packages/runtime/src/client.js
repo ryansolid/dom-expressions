@@ -1266,14 +1266,35 @@ export function hydrate(code, element, options = {}) {
       }
     };
   }
-  const rootMapping = globalThis._$HY.r && globalThis._$HY.r["_assets"];
+  // Root module maps serialize under a renderId-scoped name — island
+  // integrations run one render per island into the same document, and a
+  // single page-global "_assets" name would leave only the last island's map
+  // alive. The bare name remains as fallback for the OTHER islands shape: a
+  // single document render (renderId "") whose islands re-enter through
+  // Hydration ids — every island's modules live in that one root map, and
+  // each hydrate() root preloads it (loadModuleAssets dedupes the fetches).
+  const hyr = globalThis._$HY.r;
+  const rootMapping = hyr && (hyr[options.renderId + "_assets"] || hyr["_assets"]);
   if (rootMapping && typeof rootMapping === "object") {
     const p = loadModuleAssets(rootMapping);
     if (p) {
       gatherHydratable(element, options.renderId);
+      // This root's render is deferred behind the preload, but sharedConfig
+      // is shared and LIVE: another hydrate() root can run its synchronous
+      // prologue before this .then fires — islands entry-clients start
+      // several roots in one tick — replacing registry/gather, and the first
+      // deferred root to finish clears `hydrating` for everyone after it.
+      // Re-install this root's scope around its deferred render so it claims
+      // exactly what it gathered (the same per-root pairing a late boundary
+      // resume gets from captureBoundaryScope).
+      const registry = sharedConfig.registry;
+      const gather = sharedConfig.gather;
       let disposer;
       p.then(
         () => {
+          sharedConfig.registry = registry;
+          sharedConfig.gather = gather;
+          sharedConfig.hydrating = true;
           try {
             disposer = render(code, element, [...element.childNodes], options);
           } finally {

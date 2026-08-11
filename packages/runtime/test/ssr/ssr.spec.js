@@ -970,6 +970,36 @@ describe("root-level module asset serialization", () => {
     expect(html).toContain("/assets/Lazy-abc.js");
   });
 
+  // Island integrations run one renderToString per island into the same
+  // document. The root module map's registry name must carry the renderId,
+  // or each island's write would clobber the previous one's — a single
+  // page-global "_assets" leaves only the last island hydratable.
+  it("renderToString scopes the root module map name by renderId", () => {
+    const htmlA = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerModule("i00", "/assets/IslandA-abc.js");
+        return r.ssr`<div>island a</div>`;
+      },
+      { renderId: "i0" }
+    );
+    const htmlB = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerModule("i10", "/assets/IslandB-def.js");
+        return r.ssr`<div>island b</div>`;
+      },
+      { renderId: "i1" }
+    );
+    expect(htmlA).toContain("i0_assets");
+    expect(htmlA).toContain("/assets/IslandA-abc.js");
+    expect(htmlB).toContain("i1_assets");
+    expect(htmlB).toContain("/assets/IslandB-def.js");
+    // Neither render writes the other's name or the bare page-global.
+    expect(htmlA).not.toContain("i1_assets");
+    expect(htmlB).not.toContain("i0_assets");
+  });
+
   it("renderToStream serializes root-level modules in hydration data", async () => {
     const html = await new Promise(resolve => {
       const chunks = [];

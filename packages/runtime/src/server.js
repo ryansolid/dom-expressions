@@ -903,7 +903,7 @@ export function renderToString(code, options = {}) {
     },
     { id: renderId }
   );
-  serializeFragmentAssets("", tracking.boundaryModules, sharedConfig.context);
+  serializeFragmentAssets("", tracking.boundaryModules, sharedConfig.context, renderId);
   sharedConfig.context.noHydrate = true;
   serializer.close();
   const head = renderShellHead(headRegistry, nonce, null);
@@ -1129,7 +1129,7 @@ export function renderToStream(code, options = {}) {
     // otherwise call serializer.flush() before doShell() writes root _assets.
     // Seroval silently drops writes after flush, so the root module mapping
     // would be lost and lazy hydration would fail for root-level lazy modules.
-    serializeFragmentAssets("", tracking.boundaryModules, context);
+    serializeFragmentAssets("", tracking.boundaryModules, context, renderId);
   };
   // Response-window holds (`ctx.hold`): live work with a knowable end that
   // isn't a fragment or a serialized promise — a server-consumed async
@@ -2906,10 +2906,19 @@ function renderHeadAssets(emittedAssets, inlineStyles, nonce) {
   return head;
 }
 
-function serializeFragmentAssets(key, boundaryModules, context) {
+// `name` diverges from `key` only for the root map: root modules are FILED
+// under the "" boundary sentinel, but the bare "_assets" registry name is a
+// page-global — island integrations run one renderToString per island into
+// the same document, and each render's root write would clobber the previous
+// island's map before any client code reads it. The render's id namespaces
+// the name (`<renderId>_assets`), pairing each root map with the hydrate()
+// call that owns it; whole-document renders (renderId "") keep the bare name.
+// Boundary maps need no scoping: their keys are hydration ids, which already
+// carry the renderId prefix.
+function serializeFragmentAssets(key, boundaryModules, context, name = key) {
   const map = boundaryModules.get(key);
   if (!map || !Object.keys(map).length) return;
-  context.serialize(key + "_assets", map);
+  context.serialize(name + "_assets", map);
 }
 
 function propagateBoundaryStyles(childKey, parentKey, tracking) {
