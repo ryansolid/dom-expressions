@@ -580,8 +580,7 @@ export function insert(parent, accessor, marker, initial, options) {
           normalize(value, current, multi)
         ),
         inner => {
-          insertExpression(parent, inner, current, marker);
-          current = inner;
+          current = insertExpression(parent, inner, current, marker);
           host && tagHost(current, host);
         },
         prev !== undefined && !(options && options.schedule)
@@ -592,8 +591,7 @@ export function insert(parent, accessor, marker, initial, options) {
     },
     value => {
       if (value === INNER_OWNED) return;
-      insertExpression(parent, value, current, marker);
-      current = value;
+      current = insertExpression(parent, value, current, marker);
       host && tagHost(current, host);
     },
     // Only the OUTER effect takes the scope — the inner unwrapping effect
@@ -1650,8 +1648,29 @@ function eventHandler(e, container, state) {
 }
 
 function insertExpression(parent, value, current, marker) {
-  if (hydrationRt !== null && isHydrating(parent)) return;
-  if (value === current) return;
+  if (hydrationRt !== null && isHydrating(parent)) {
+    // A hydrating render is a claim pass, not a mutation pass — but the
+    // caller's `current` bookkeeping must stay HONEST about what the DOM
+    // holds. A render whose nodes never entered the DOM (a boundary's
+    // client fallback while the range shows the server's settled content —
+    // the adopted-fill shape: markup settled server-side, the slot arg
+    // settles locally a beat later) must not displace the tracked range:
+    // the next real insert would reconcile against nodes that were never
+    // there and leave the server's beside the new content as permanent
+    // residue. Claimed nodes are connected (or under a declared claim
+    // root); phantom renders are neither, and keep `current` as-is.
+    if (value && value !== current) {
+      const nodes = Array.isArray(value) ? value : value.nodeType ? [value] : null;
+      if (nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          if (n && n.nodeType && !isHydrating(n)) return current;
+        }
+      }
+    }
+    return value;
+  }
+  if (value === current) return value;
   const t = typeof value,
     multi = marker !== undefined;
 
@@ -1700,6 +1719,7 @@ function insertExpression(parent, value, current, marker) {
       appendNodes(parent, value);
     }
   } else if ("_DX_DEV_") console.warn(`Unrecognized value. Skipped inserting`, value);
+  return value;
 }
 
 function normalize(value, current, multi, doNotUnwrap) {
