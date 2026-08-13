@@ -191,7 +191,8 @@ fn compile_inner(source: &str, options: &CompileOptions) -> Result<CompileOutput
                 dom_transform_config(options, options.built_ins.clone()),
             );
             if let Some(census) = census {
-                transform.semantic_trace = TraceRecorder::new(census);
+                transform.semantic_trace =
+                    TraceRecorder::new(census, matches!(options.effect_wrapper, Wrapper::Default));
             }
             transform.visit_program(&mut program);
             if let Some(error) = transform.error.take() {
@@ -388,8 +389,8 @@ fn dom_renderer(renderers: &[Renderer]) -> Option<&Renderer> {
 mod tests {
     use super::*;
     use crate::{
-        CallbackDecision, ExecutionSite, ExecutionSiteKind, SourceSpan, TerminalDecision,
-        ValueDecision,
+        CallbackDecision, ExecutionSite, ExecutionSiteKind, OwnershipDecision, OwnershipSite,
+        SourceSpan, TerminalDecision, ValueDecision,
     };
 
     fn span(source: &str, needle: &str) -> SourceSpan {
@@ -596,6 +597,16 @@ mod tests {
                         decision: TerminalDecision::Value(ValueDecision::ReactiveRerun),
                     },
                 ],
+                ownership_sites: vec![
+                    OwnershipSite {
+                        span: span(source, "name()"),
+                        decision: OwnershipDecision::Owned,
+                    },
+                    OwnershipSite {
+                        span: span(source, "count()"),
+                        decision: OwnershipDecision::Owned,
+                    },
+                ],
             })
         );
     }
@@ -689,6 +700,10 @@ mod tests {
                         decision: TerminalDecision::Value(ValueDecision::ReactiveRerun),
                     },
                 ],
+                ownership_sites: vec![OwnershipSite {
+                    span: span(source, "item.name"),
+                    decision: OwnershipDecision::Owned,
+                }],
             })
         );
     }
@@ -813,6 +828,7 @@ mod tests {
                     kind: ExecutionSiteKind::NativeAttribute,
                     decision: TerminalDecision::Value(ValueDecision::EagerOnce),
                 }],
+                ownership_sites: vec![],
             })
         );
         let byte_span = span(source, "signal()");

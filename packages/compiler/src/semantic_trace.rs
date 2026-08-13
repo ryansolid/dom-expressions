@@ -81,11 +81,28 @@ pub struct ExecutionSite {
     pub decision: TerminalDecision,
 }
 
+/// Reactive owner state established by compiler-generated lowering around a
+/// source region. The trace reports only states the compiler proves; absence
+/// means the surrounding runtime or caller determines ownership.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum OwnershipDecision {
+    Owned,
+    Unowned,
+    Leaf,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct OwnershipSite {
+    pub span: SourceSpan,
+    pub decision: OwnershipDecision,
+}
+
 /// Experimental facts about how JSX source values and callbacks are lowered
 /// and executed in DOM mode.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct SemanticTrace {
     pub sites: Vec<ExecutionSite>,
+    pub ownership_sites: Vec<OwnershipSite>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -508,6 +525,7 @@ impl ExecutionCensus {
 pub(crate) struct TraceRecorder {
     census: Option<ExecutionCensus>,
     decisions: BTreeMap<SiteKey, TerminalDecision>,
+    default_effect_wrapper: bool,
     error: Option<String>,
 }
 
@@ -516,9 +534,10 @@ impl TraceRecorder {
         Self::default()
     }
 
-    pub(crate) fn new(census: ExecutionCensus) -> Self {
+    pub(crate) fn new(census: ExecutionCensus, default_effect_wrapper: bool) -> Self {
         Self {
             census: Some(census),
+            default_effect_wrapper,
             ..Self::default()
         }
     }
@@ -679,8 +698,28 @@ impl TraceRecorder {
                 kind: site.kind,
                 decision: self.decisions[&site],
             })
-            .collect();
-        Ok(Some(SemanticTrace { sites }))
+            .collect::<Vec<_>>();
+        let ownership_sites = if self.default_effect_wrapper {
+            sites
+                .iter()
+                .filter_map(|site| {
+                    matches!(
+                        site.decision,
+                        TerminalDecision::Value(ValueDecision::ReactiveRerun)
+                    )
+                    .then_some(OwnershipSite {
+                        span: site.span,
+                        decision: OwnershipDecision::Owned,
+                    })
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        Ok(Some(SemanticTrace {
+            sites,
+            ownership_sites,
+        }))
     }
 }
 
@@ -702,13 +741,13 @@ mod tests {
 
     #[test]
     fn finish_rejects_an_unresolved_site() {
-        let recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild));
+        let recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
         assert!(recorder.finish().unwrap_err().contains("unresolved"));
     }
 
     #[test]
     fn finish_rejects_conflicting_decisions() {
-        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild));
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
         recorder.value(
             Span::new(1, 2),
             ExecutionSiteKind::JsxChild,
@@ -724,12 +763,40 @@ mod tests {
 
     #[test]
     fn finish_rejects_uncensused_decisions() {
-        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild));
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
         recorder.value(
             Span::new(3, 4),
             ExecutionSiteKind::JsxChild,
             ValueDecision::EagerOnce,
         );
         assert!(recorder.finish().unwrap_err().contains("uncensused"));
+    }
+
+    #[test]
+    fn default_effect_reruns_prove_owned_regions() {
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
+        recorder.value(
+            Span::new(1, 2),
+            ExecutionSiteKind::JsxChild,
+            ValueDecision::ReactiveRerun,
+        );
+        assert_eq!(
+            recorder.finish().unwrap().unwrap().ownership_sites,
+            vec![OwnershipSite {
+                span: SourceSpan { start: 1, end: 2 },
+                decision: OwnershipDecision::Owned,
+            }]
+        );
+    }
+
+    #[test]
+    fn custom_effect_reruns_make_no_owner_claim() {
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), false);
+        recorder.value(
+            Span::new(1, 2),
+            ExecutionSiteKind::JsxChild,
+            ValueDecision::ReactiveRerun,
+        );
+        assert!(recorder.finish().unwrap().unwrap().ownership_sites.is_empty());
     }
 }
