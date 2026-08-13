@@ -989,10 +989,10 @@ retired as a pole and survives only as potential authoring sugar.
    router's claim sweep — behavior attached by attribute over any
    server-materialized subtree, re-firing when a morph touches the
    element — opened to user-defined claims, plus a shipped set of
-   micro-affordance components (bind/show/toggle/indicator tier). Kills
-   "the first affordance costs a full component ceremony" without
-   adopting attribute-expression strings. Sequenced here because it
-   rides the same morph-surviving substrate Stage 3 builds.
+   micro-affordances. Kills "the first affordance costs a full
+   component ceremony" without adopting attribute-expression strings.
+   Sequenced here because it rides the same morph-surviving substrate
+   Stage 3 builds. Design sketch expanded 2026-08-13 — see §9.1.
 7. **Stage 7 — Connection-shaped transport.** Promoted from parked: the
    sink-lifetime separation means SSE/socket transports turn the same
    authored component non-terminating (generator-only-model.md §9,
@@ -1039,3 +1039,116 @@ prefix check yields an `append` op that ships just the tail, falling
 back to full re-emission + morph whenever the prefix breaks (a code
 fence closing retroactively). Additive to the chunk protocol; adopt
 when measurement earns it.
+
+### 9.1 Stage 6 sketch — generalized claims and the affordance tier (2026-08-13)
+
+Recorded from the design conversation before parking, so the shape
+survives the break. Nothing here is built.
+
+**The problem, precisely.** In the current model the smallest unit of
+client behavior is a component fill: a copy button on a code block
+costs a slot prop on the server component, an authored client
+component, and wiring at every call site. Worse than ceremony, there is
+an expressiveness hole: a live markup hole cannot mint components as it
+grows (the owner-creation latch, by design), so content streaming
+through a hole — every code block in a chat reply — has *no path to
+client behavior at all* today.
+
+**The substrate exists.** The element-claim seam in the client runtime
+(`registerElementClaim`, `claimElement`, `claimElementTree`,
+`CLAIM_SEAM`): compiled DOM output claims elements at creation;
+everything that materializes *serialized* server content — frame
+streams, adopted SSR ranges, morph grafts — sweeps the subtree through
+the same registry, re-firing when a morph touches an element. Dormant
+by design (a null check when no consumer is registered), idempotent,
+importless across bundled copies. Today it has one consumer (the
+router's link layer) and a hard-coded selector (`a[href],
+form[action]`). Stage 6 is that seam, opened.
+
+**Three moves:**
+
+1. *Open registration.* Consumer-declared claims keyed by an attribute
+   namespace (not arbitrary selectors — the sweep stays one
+   `querySelectorAll` over a fixed pattern). A server component writes
+   `<button data-copy>`; a registered claim owns that attribute and
+   attaches behavior when the element materializes, under the current
+   reactive owner for cleanup. Attribute values are declarative
+   arguments (`data-confirm="Delete this note?"`) — never code.
+2. *The lifecycle contract, stated.* Claims fire at creation, at
+   materialization of serialized content, and again when a morph
+   replaces the element; handlers are idempotent (element-keyed dedupe
+   per consumer). Identity-first morph does most state preservation for
+   free — matched elements are the same DOM nodes — so only
+   wholesale-replaced ranges re-claim fresh.
+3. *A shipped affordance tier* — prebuilt claims (each ~10 lines,
+   tree-shakeable entry) so the first affordance costs one attribute.
+
+**The authoring split.** `ref` is the client-side answer: an arbitrary
+closure attached in JSX. That form cannot cross the slot border (a
+closure does not serialize; inside a hole there is no owner to hold
+it). A claim attribute is the serializable *name* of behavior
+registered ahead of time on the client — behavior where all you have is
+markup. Same job, two transports, mirroring every other split in this
+design. (Solid 2.0 removed `use:` directives; there is no directive
+form to unify with — `ref` and claims are the complete pair.)
+
+**Candidate tier** (filter: leans on semantics already in the markup,
+needs zero expressions, or one of our examples already hand-wrote it):
+
+| Affordance | Goes on | Does |
+|---|---|---|
+| `data-toggle="#target"` | button | toggle class/`open` on target; menus, collapse |
+| `data-copy` | button | clipboard-write nearest `<pre>`/target text |
+| `data-confirm="msg"` | form, a | native `confirm()` gate before submit/navigate |
+| `data-indicator` | form, button | busy class + disabled while action/navigation in flight |
+| `data-autosubmit="300"` | input, select | debounced `requestSubmit()` of owning form |
+| `data-bind="param"` | input | two-way sync with a URL query param (router-aware) |
+| `data-scroll="bottom"` | container | follow appended/morphed content while reader at bottom |
+| `data-focus` | element | focus on materialize; preserve focus/caret across morphs |
+
+Four of these were already paid for by hand: the chat transcript's
+`ResizeObserver` pinning (`data-scroll`), the notes save/delete flows
+(`data-indicator`, `data-confirm`), the notes search field
+(`data-bind` + `data-autosubmit` — currently a client component whose
+whole job is "input writes a query param, debounced"). The composition
+is the pitch: `data-bind` plus a server component keyed by that param
+is live search with zero client components.
+
+**Positioning.** The tier is htmx's affordance lineage
+(request-lifecycle dressing: confirm/indicator/trigger), not
+Datastar's (a client reactive system in attributes —
+`data-signals`/`data-show`/`data-on` with expressions). We refuse the
+Datastar layer not because it is bad but because Solid already has a
+strictly better version: signals and JSX, typed, compiled, DCE'd.
+What we take from Datastar is architectural — morph-surviving
+attachment as a first-class contract, which htmx historically bolts
+on. One line: htmx's affordance tier, on Datastar's morph-survival
+discipline, under Solid's rule that expressions live in JSX. The
+escape hatch up from the tier is a component, never an attribute
+expression.
+
+**The state contract.** Affordances trigger actions and reflect
+transport or DOM-local state: submit, navigate, confirm, busy,
+open/closed, focus, scroll, a URL param. They never read or write
+signals or stores — the moment behavior needs client reactive state,
+that is the component threshold. This is what keeps the tier
+native-alignable.
+
+**Native alignment rule.** The htmx-adjacent platform proposals
+(Triptych's button `action`/`method`, invoker `command`/`commandfor`
+— shipping, `popover` — shipped, `<details name>` — shipped) are
+attribute-shaped, expression-free, form/anchor-semantic: the same
+dialect. Each affordance is therefore written as a forward-polyfill —
+where a native attribute exists or is proposed, adopt its vocabulary
+(prefer enhancing `commandfor` over inventing toggle syntax) so markup
+written today degrades toward the platform, not away from it. The
+claims substrate makes the exit graceful: "the browser does this now"
+is deleting one registration. The exchange itself (partial
+replacement, Triptych's biggest ask) is *not* affordance-tier — frame
+streams and morphs already own it and do more.
+
+**Open questions:** exact attribute namespace and sweep cost; packaging
+(which entry ships the tier so it stays tree-shakeable); the re-claim
+dedupe contract (element-keyed WeakSet per consumer is the obvious
+shape); how `data-bind` discovers the router without a hard
+dependency.
