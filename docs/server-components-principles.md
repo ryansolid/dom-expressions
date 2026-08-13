@@ -1134,6 +1134,24 @@ signals or stores — the moment behavior needs client reactive state,
 that is the component threshold. This is what keeps the tier
 native-alignable.
 
+**Tier policy option (2026-08-13): spec'd-only built-ins.** Possibly
+the only *shipped* affordances are ones the platform has spec'd or
+formally proposed — `command`/`commandfor` enhancement, `popover`,
+`<details name>`, Triptych's forms — and Solid never mints attribute
+vocabulary at all: everything invented in the table above ships as
+documented `registerClaim` recipes, not package API. Buys: dissolves
+naming entirely; shrinks freeze exposure to ~zero (the shipped set is
+defined by an external process; deprecation is the browser shipping);
+makes the primitive the product. Costs: the two flagship compositions
+(`data-bind` live search, `data-scroll` stream-following) have no
+platform equivalent on any horizon and drop from one attribute to
+copy-a-recipe; and "spec'd" needs a line drawn — strict reading ships
+almost nothing today, loose reading tracks moving drafts. Spectrum to
+decide at build time, not before stable (the substrate is identical
+across all three): (a) spec'd-only + recipes, (b) spec'd built-ins +
+a blessed-recipes package that is explicitly non-contract, (c) the
+invented tier. Packaging posture only.
+
 **Native alignment rule.** The htmx-adjacent platform proposals
 (Triptych's button `action`/`method`, invoker `command`/`commandfor`
 — shipping, `popover` — shipped, `<details name>` — shipped) are
