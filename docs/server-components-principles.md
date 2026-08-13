@@ -1147,6 +1147,22 @@ is deleting one registration. The exchange itself (partial
 replacement, Triptych's biggest ask) is *not* affordance-tier — frame
 streams and morphs already own it and do more.
 
+**RC-freeze compatibility (2026-08-13).** The claim trio is frozen
+public API — `@solidjs/web`'s client entry wholesale re-exports the
+runtime client, so `registerElementClaim`/`claimElement`/
+`claimElementTree` and their semantics (handlers observe the
+navigation-relevant set: `a[href]`, `form[action]`) are in the RC
+contract, with the router's `setupLinkClaims` as a live consumer. The
+generalization is additive *only if* one line holds: attribute-keyed
+claims route through their own per-attribute handler lists — the
+existing `registerElementClaim` broadcast channel must NOT widen to
+observe attribute-claimed elements, or every frozen-API consumer
+starts receiving element kinds the contract never promised. Likewise
+the `CLAIM_SEAM` registered symbol (a flat handler array shared across
+separately bundled — potentially differently versioned — runtime
+copies) keeps its shape; attribute-keyed registration hangs off a
+second registered symbol.
+
 **Open questions:** exact attribute namespace and sweep cost; packaging
 (which entry ships the tier so it stays tree-shakeable); the re-claim
 dedupe contract (element-keyed WeakSet per consumer is the obvious
