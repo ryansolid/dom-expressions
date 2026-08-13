@@ -1163,6 +1163,31 @@ separately bundled — potentially differently versioned — runtime
 copies) keeps its shape; attribute-keyed registration hangs off a
 second registered symbol.
 
+**Decide before stable (2026-08-13; the seam is movable during RC,
+frozen after).** Two decisions harden at stable; everything else in
+this sketch is provably additive later:
+
+1. *The navigation element set.* `a[href], form[action]` is baked into
+   the frozen channel's semantics — consumer filters are written
+   against it — and it is currently incomplete as a navigation
+   contract: `area[href]` navigates, `button[formaction]` re-targets a
+   form. Widening after stable changes what every registered handler
+   receives (the self-inflicted version of the "channel never widens"
+   hazard). Settle the set during RC, or document it as closed and
+   final.
+2. *The seam global's shape.* `CLAIM_SEAM` holds a bare array shared
+   across separately bundled — potentially differently versioned —
+   runtime copies, so stable's shape is the wire format forever.
+   Either reshape to an extensible object now, or commit to attribute
+   claims living on a second registered symbol (zero RC churn — the
+   recorded lean).
+
+Explicitly additive later, no RC action: attribute-keyed registration
+(new function, own routing), the affordance tier (new entry), a
+trailing metadata parameter on handlers (creation vs sweep vs
+morph-touch phase), and `claimElement`/`claimElementTree` (compiler
+output contract, version-paired, unchanged regardless).
+
 **Open questions:** exact attribute namespace and sweep cost; packaging
 (which entry ships the tier so it stays tree-shakeable); the re-claim
 dedupe contract (element-keyed WeakSet per consumer is the obvious
