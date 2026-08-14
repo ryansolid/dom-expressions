@@ -1372,6 +1372,76 @@ form[action]`). Stage 7 is that seam, opened.
 3. *A shipped affordance tier* — prebuilt claims (each ~10 lines,
    tree-shakeable entry) so the first affordance costs one attribute.
 
+**API sketch (2026-08-13, names provisional).** The primitive: register
+a behavior against an attribute, once, on the client:
+
+```tsx
+import { registerClaim } from "@solidjs/web";
+import { onCleanup } from "solid-js";
+
+registerClaim("data-copy", el => {
+  const onClick = () =>
+    navigator.clipboard.writeText(el.closest("pre")?.textContent ?? "");
+  el.addEventListener("click", onClick);
+  onCleanup(() => el.removeEventListener("click", onClick));
+});
+```
+
+Server markup opts in by writing the attribute — no slot declared, no
+fill wired, no client component:
+
+```tsx
+// inside a "use server" component — or markdown post-processing
+<pre>
+  <button data-copy aria-label="Copy">⧉</button>
+  <code>{highlighted}</code>
+</pre>
+```
+
+The handler runs when the element materializes (initial adoption, frame
+streams, morphs) and again on the new element when a morph replaces it.
+Arguments are attribute values — declarative data, never code:
+
+```tsx
+registerClaim("data-confirm", el => {
+  el.addEventListener("submit", e => {
+    if (!confirm(el.getAttribute("data-confirm")!)) e.preventDefault();
+  });
+});
+
+// server side: <form action={deleteNote} data-confirm="Delete this note?">
+```
+
+The shipped tier is nothing more than a set of these, each a
+`registerClaim` call in a tree-shakeable entry:
+
+```tsx
+import { toggle, indicator, copy } from "@solidjs/web/affordances";
+
+// then server markup anywhere:
+<button data-toggle="#sidebar">☰</button>
+<form action={save}><button data-indicator>Save</button></form>
+```
+
+And because sweeps run under the frame boundary's client owner, a
+user-defined claim can resolve mount context — the capability form (see
+the revised state contract below): the attribute names an operation,
+the nearest provider supplies its meaning and authority:
+
+```tsx
+const Actions = createContext<Record<string, () => void>>();
+
+registerClaim("data-action", el => {
+  const actions = useContext(Actions);
+  const click = () => actions?.[el.getAttribute("data-action")!]?.();
+  el.addEventListener("click", click);
+  onCleanup(() => el.removeEventListener("click", click));
+});
+
+// server: <button data-action="retry">Retry</button>
+// client: <Actions.Provider value={{ retry: () => refetch() }}>…</Actions.Provider>
+```
+
 **The authoring split.** `ref` is the client-side answer: an arbitrary
 closure attached in JSX. That form cannot cross the slot border (a
 closure does not serialize; inside a hole there is no owner to hold
