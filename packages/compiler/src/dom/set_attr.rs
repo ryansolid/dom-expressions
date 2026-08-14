@@ -70,7 +70,7 @@ impl<'a> AstDomTransform<'a, '_> {
                 vec![
                     elem,
                     self.ast()
-                        .expression_string_literal(span, self.ast().atom(&name), None),
+                        .expression_string_literal(span, self.ast().str(&name), None),
                     value,
                 ],
             );
@@ -92,7 +92,7 @@ impl<'a> AstDomTransform<'a, '_> {
                 toggle,
                 vec![
                     self.ast()
-                        .expression_string_literal(span, self.ast().atom(&name), None),
+                        .expression_string_literal(span, self.ast().str(&name), None),
                     value,
                 ],
             );
@@ -125,7 +125,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     vec![
                         elem,
                         self.ast()
-                            .expression_string_literal(span, self.ast().atom("data"), None),
+                            .expression_string_literal(span, self.ast().str("data"), None),
                         value,
                     ],
                 );
@@ -145,7 +145,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     vec![
                         elem,
                         self.ast()
-                            .expression_string_literal(span, self.ast().atom(&name), None),
+                            .expression_string_literal(span, self.ast().str(&name), None),
                         value,
                     ],
                 );
@@ -188,7 +188,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     value,
                     LogicalOperator::Coalesce,
                     self.ast()
-                        .expression_string_literal(span, self.ast().atom(""), None),
+                        .expression_string_literal(span, self.ast().str(""), None),
                 );
                 return self.member_assignment_expression(span, elem, &name, value);
             }
@@ -206,9 +206,9 @@ impl<'a> AstDomTransform<'a, '_> {
                 vec![
                     elem,
                     self.ast()
-                        .expression_string_literal(span, self.ast().atom(ns), None),
+                        .expression_string_literal(span, self.ast().str(ns), None),
                     self.ast()
-                        .expression_string_literal(span, self.ast().atom(&name), None),
+                        .expression_string_literal(span, self.ast().str(&name), None),
                     value,
                 ],
             );
@@ -221,7 +221,7 @@ impl<'a> AstDomTransform<'a, '_> {
             vec![
                 elem,
                 self.ast()
-                    .expression_string_literal(span, self.ast().atom(&name), None),
+                    .expression_string_literal(span, self.ast().str(&name), None),
                 value,
             ],
         )

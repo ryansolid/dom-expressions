@@ -9,7 +9,7 @@ export const App = _$$component(_REGISTRY, "App", () => <ul data-x="dq" data-y="
         <>{/* fragment comment */}</>
       </li>)}
   </ul>, {
- location: "src/sig-jsx.jsx:1:19",
+	location: "src/sig-jsx.jsx:1:19",
 	signature: "721844ff",
 	dependencies: () => ({
 		items,

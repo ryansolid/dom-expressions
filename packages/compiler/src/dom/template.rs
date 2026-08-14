@@ -1,11 +1,8 @@
 use napi::bindgen_prelude::*;
 use oxc_allocator::Vec as ArenaVec;
-use oxc_ast::{
-    ast::{
-        ArrayExpressionElement, Expression, ObjectPropertyKind, Program, Statement,
-        TemplateElementValue, VariableDeclarationKind,
-    },
-    AstBuilder, NONE,
+use oxc_ast::ast::{
+    ArrayExpressionElement, Expression, ObjectPropertyKind, Program, Statement,
+    TemplateElementValue, VariableDeclarationKind,
 };
 use oxc_span::Span;
 use oxc_syntax::number::NumberBase;
@@ -15,6 +12,7 @@ use crate::shared::ast::{
     arrow_iife, arrow_return_expression, expression_to_argument, import_named,
     object_getter_property, object_property, variable_statement,
 };
+use crate::shared::ast_builder::AstBuilder;
 pub(crate) struct DomTemplateState {
     pub(crate) templates: std::vec::Vec<DomTemplate>,
     pub(crate) uses_template: bool,
@@ -234,7 +232,9 @@ impl<'a> AstDomTransform<'a, '_> {
                 if let Some(result) =
                     crate::shared::validate::is_invalid_markup(&template.closed_html)
                 {
-                    eprintln!("\nThe HTML provided is malformed and will yield unexpected output when evaluated by a browser.\n");
+                    eprintln!(
+                        "\nThe HTML provided is malformed and will yield unexpected output when evaluated by a browser.\n"
+                    );
                     eprintln!("User HTML:\n {}", result.html);
                     eprintln!("Browser HTML:\n {}", result.browser);
                     eprintln!("Original HTML:\n {}", template.closed_html);
@@ -249,7 +249,7 @@ impl<'a> AstDomTransform<'a, '_> {
         if self.template_state.uses_delegate_events {
             statements.push(self.delegate_events_statement());
         }
-        let mut body = ArenaVec::new_in(self.allocator);
+        let mut body = ArenaVec::new_in(&self.allocator);
         body.extend(statements);
         program.body = body;
         Ok(())
@@ -356,7 +356,7 @@ impl<'a> AstDomTransform<'a, '_> {
         let args = self
             .ast()
             .vec_from_iter(args.into_iter().map(expression_to_argument));
-        self.ast().expression_call(span, callee, NONE, args, false)
+        self.ast().expression_call(span, callee, None, args, false)
     }
 
     pub(crate) fn identifier_expression(&self, span: Span, name: &str) -> Expression<'a> {
@@ -483,8 +483,8 @@ impl<'a> AstDomTransform<'a, '_> {
             span,
             VariableDeclarationKind::Var,
             self.ast()
-                .binding_pattern_array_pattern(span, elements, oxc_ast::NONE),
-            oxc_ast::NONE,
+                .binding_pattern_array_pattern(span, elements, None),
+            None,
             Some(init),
             false,
         );
@@ -546,11 +546,18 @@ impl<'a> AstDomTransform<'a, '_> {
     }
 
     fn template_literal_expression(&self, span: Span, value: &str) -> Expression<'a> {
-        let element = self.ast().template_element(
+        // `TemplateElementValue::raw` is lexical source text. Newer Oxc
+        // codegen emits it verbatim, so escape template delimiters while
+        // retaining the original cooked HTML value.
+        let raw = value
+            .replace('\\', "\\\\")
+            .replace('`', "\\`")
+            .replace("${", "\\${");
+        let element = self.ast().template_element_with_lone_surrogates(
             span,
             TemplateElementValue {
-                raw: self.ast().atom(value),
-                cooked: Some(self.ast().atom(value)),
+                raw: self.ast().str(&raw),
+                cooked: Some(self.ast().str(value)),
             },
             true,
             true,
@@ -566,7 +573,7 @@ impl<'a> AstDomTransform<'a, '_> {
             .vec_from_iter(self.template_state.delegated_events.iter().map(|event| {
                 ArrayExpressionElement::StringLiteral(self.ast().alloc_string_literal(
                     span,
-                    self.ast().atom(event),
+                    self.ast().str(event),
                     None,
                 ))
             }));

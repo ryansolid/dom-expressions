@@ -16,17 +16,15 @@
 //! and statement ordering.
 
 use oxc_allocator::{Allocator, Vec as ArenaVec};
-use oxc_ast::{
-    ast::{
-        BindingPattern, Declaration, ExportDefaultDeclarationKind, Expression, FunctionType,
-        ImportOrExportKind, Program, Statement, VariableDeclarationKind,
-    },
-    AstBuilder, NONE,
+use oxc_ast::ast::{
+    BindingPattern, Declaration, ExportDefaultDeclarationKind, Expression, FunctionType,
+    ImportOrExportKind, Program, Statement, VariableDeclarationKind,
 };
-use oxc_ast_visit::{walk_mut, VisitMut};
+use oxc_ast_visit::{VisitMut, walk_mut};
 use oxc_span::Span;
 
 use crate::shared::ast::{expression_to_argument, variable_statement};
+use crate::shared::ast_builder::AstBuilder;
 
 const SPAN: Span = Span::new(0, 0);
 
@@ -257,21 +255,21 @@ impl<'a> DirectivesTransform<'a> {
         let specifier = match kind {
             ImportKind::Named => ast.import_declaration_specifier_import_specifier(
                 SPAN,
-                ast.module_export_name_identifier_name(SPAN, ast.atom(&name)),
-                ast.binding_identifier(SPAN, ast.atom(&local)),
+                ast.module_export_name_identifier_name(SPAN, ast.ident(&name)),
+                ast.binding_identifier(SPAN, ast.ident(&local)),
                 ImportOrExportKind::Value,
             ),
             ImportKind::Default => ast.import_declaration_specifier_import_default_specifier(
                 SPAN,
-                ast.binding_identifier(SPAN, ast.atom(&local)),
+                ast.binding_identifier(SPAN, ast.ident(&local)),
             ),
         };
         let import = Statement::ImportDeclaration(ast.alloc_import_declaration(
             SPAN,
             Some(ast.vec1(specifier)),
-            ast.string_literal(SPAN, ast.atom(&source), None),
+            ast.string_literal(SPAN, ast.str(&source), None),
             None,
-            NONE,
+            None,
             ImportOrExportKind::Value,
         ));
         self.prepended_imports.insert(0, import);
@@ -283,12 +281,12 @@ impl<'a> DirectivesTransform<'a> {
 
     fn identifier(&self, name: &str) -> Expression<'a> {
         let ast = self.ast();
-        ast.expression_identifier(SPAN, ast.atom(name))
+        ast.expression_identifier(SPAN, ast.ident(name))
     }
 
     fn string(&self, value: &str) -> Expression<'a> {
         let ast = self.ast();
-        ast.expression_string_literal(SPAN, ast.atom(value), None)
+        ast.expression_string_literal(SPAN, ast.str(value), None)
     }
 
     /// Dev-only trailing `name` argument for the reference calls —
@@ -308,7 +306,7 @@ impl<'a> DirectivesTransform<'a> {
         for arg in args {
             arguments.push(expression_to_argument(arg));
         }
-        ast.expression_call(SPAN, self.identifier(callee), NONE, arguments, false)
+        ast.expression_call(SPAN, self.identifier(callee), None, arguments, false)
     }
 
     fn const_statement(&self, name: &str, init: Expression<'a>) -> Statement<'a> {
@@ -346,17 +344,14 @@ impl<'a> DirectivesTransform<'a> {
         let ast = self.ast();
         let specifier = ast.export_specifier(
             SPAN,
-            ast.module_export_name_identifier_reference(SPAN, ast.atom(local)),
-            ast.module_export_name_identifier_name(SPAN, ast.atom(exported)),
+            ast.module_export_name_identifier_reference(SPAN, ast.ident(local)),
+            ast.module_export_name_identifier_name(SPAN, ast.ident(exported)),
             ImportOrExportKind::Value,
         );
         Statement::ExportNamedDeclaration(ast.alloc_export_named_declaration(
             SPAN,
-            None,
             ast.vec1(specifier),
-            None,
             ImportOrExportKind::Value,
-            NONE,
         ))
     }
 
@@ -389,15 +384,14 @@ impl<'a> DirectivesTransform<'a> {
                 Statement::FunctionDeclaration(function) if function.id.is_some() => {
                     hoisted.push(self.function_declaration_to_const(function));
                 }
-                Statement::ExportNamedDeclaration(export)
+                Statement::ExportDeclaration(export)
                     if matches!(
                         &export.declaration,
-                        Some(Declaration::FunctionDeclaration(function)) if function.id.is_some()
+                        Declaration::FunctionDeclaration(function) if function.id.is_some()
                     ) =>
                 {
                     let export = export.unbox();
-                    let Some(Declaration::FunctionDeclaration(function)) = export.declaration
-                    else {
+                    let Declaration::FunctionDeclaration(function) = export.declaration else {
                         unreachable!("shape checked above");
                     };
                     let name = function.id.as_ref().unwrap().name.to_string();
@@ -519,8 +513,8 @@ impl<'a> DirectivesTransform<'a> {
                 declarators.push(ast.variable_declarator(
                     SPAN,
                     VariableDeclarationKind::Const,
-                    ast.binding_pattern_binding_identifier(SPAN, ast.atom(&local)),
-                    NONE,
+                    ast.binding_pattern_binding_identifier(SPAN, ast.ident(&local)),
+                    None,
                     Some(self.call(&create_local, create_args)),
                     false,
                 ));
@@ -533,8 +527,8 @@ impl<'a> DirectivesTransform<'a> {
                 // literal exported name.
                 specifiers.push(ast.export_specifier(
                     SPAN,
-                    ast.module_export_name_identifier_reference(SPAN, ast.atom(&local)),
-                    ast.module_export_name_string_literal(SPAN, ast.atom(exported), None),
+                    ast.module_export_name_identifier_reference(SPAN, ast.ident(&local)),
+                    ast.module_export_name_string_literal(SPAN, ast.str(exported), None),
                     ImportOrExportKind::Value,
                 ));
             }
@@ -553,14 +547,7 @@ impl<'a> DirectivesTransform<'a> {
         }
         if !specifiers.is_empty() {
             program.body.push(Statement::ExportNamedDeclaration(
-                ast.alloc_export_named_declaration(
-                    SPAN,
-                    None,
-                    specifiers,
-                    None,
-                    ImportOrExportKind::Value,
-                    NONE,
-                ),
+                ast.alloc_export_named_declaration(SPAN, specifiers, ImportOrExportKind::Value),
             ));
         }
     }
@@ -622,8 +609,7 @@ impl<'a> DirectivesTransform<'a> {
                 if let Some(name_argument) = self.dev_name_argument(name) {
                     create_args.push(name_argument);
                 }
-                let replaced =
-                    std::mem::replace(expression, self.call(&create_local, create_args));
+                let replaced = std::mem::replace(expression, self.call(&create_local, create_args));
                 // The function subtree is discarded on the client: whatever
                 // it referenced may now be orphaned, and only those bindings
                 // are eligible for the post-transform shake.
@@ -655,15 +641,14 @@ impl<'a> VisitMut<'a> for Bubbler<'_, 'a> {
                 Statement::FunctionDeclaration(function) if function.id.is_some() => {
                     hoisted.push(self.transform.function_declaration_to_const(function));
                 }
-                Statement::ExportNamedDeclaration(export)
+                Statement::ExportDeclaration(export)
                     if matches!(
                         &export.declaration,
-                        Some(Declaration::FunctionDeclaration(function)) if function.id.is_some()
+                        Declaration::FunctionDeclaration(function) if function.id.is_some()
                     ) =>
                 {
                     let export = export.unbox();
-                    let Some(Declaration::FunctionDeclaration(function)) = export.declaration
-                    else {
+                    let Declaration::FunctionDeclaration(function) = export.declaration else {
                         unreachable!("shape checked above");
                     };
                     let name = function.id.as_ref().unwrap().name.to_string();
@@ -736,9 +721,12 @@ impl<'a> FunctionLevelVisitor<'_, 'a> {
     /// walked — Babel's `replaceWith` short-circuits the old subtree).
     fn maybe_transform_expression(&mut self, expression: &mut Expression<'a>) -> bool {
         let (has_directive, own_name) = match expression {
-            Expression::ArrowFunctionExpression(arrow) if !arrow.expression => {
-                (self.body_has_directive(&arrow.body), None)
-            }
+            Expression::ArrowFunctionExpression(arrow) if !arrow.is_expression() => (
+                arrow
+                    .get_function_body()
+                    .is_some_and(|body| self.body_has_directive(body)),
+                None,
+            ),
             Expression::FunctionExpression(function) => (
                 function
                     .body
@@ -752,7 +740,11 @@ impl<'a> FunctionLevelVisitor<'_, 'a> {
             return false;
         }
         match expression {
-            Expression::ArrowFunctionExpression(arrow) => self.clean_directives(&mut arrow.body),
+            Expression::ArrowFunctionExpression(arrow) => {
+                if let Some(body) = arrow.get_function_body_mut() {
+                    self.clean_directives(body);
+                }
+            }
             Expression::FunctionExpression(function) => {
                 if let Some(body) = function.body.as_mut() {
                     self.clean_directives(body);
@@ -857,8 +849,8 @@ fn collect_top_level_bindings(
     for (statement_index, statement) in program.body.iter().enumerate() {
         let declaration = match statement {
             Statement::VariableDeclaration(declaration) => declaration,
-            Statement::ExportNamedDeclaration(export) => match &export.declaration {
-                Some(Declaration::VariableDeclaration(declaration)) => declaration,
+            Statement::ExportDeclaration(export) => match &export.declaration {
+                Declaration::VariableDeclaration(declaration) => declaration,
                 _ => continue,
             },
             _ => continue,
@@ -884,8 +876,8 @@ fn binding_declarator<'p, 'a>(
 ) -> Option<&'p oxc_ast::ast::VariableDeclarator<'a>> {
     let declaration = match &program.body[key.statement] {
         Statement::VariableDeclaration(declaration) => declaration,
-        Statement::ExportNamedDeclaration(export) => match &export.declaration {
-            Some(Declaration::VariableDeclaration(declaration)) => declaration,
+        Statement::ExportDeclaration(export) => match &export.declaration {
+            Declaration::VariableDeclaration(declaration) => declaration,
             _ => return None,
         },
         _ => return None,
@@ -970,16 +962,15 @@ fn collect_exported_bindings(
     for statement in &program.body {
         match statement {
             Statement::ExportDefaultDeclaration(export) => {
-                if let Some(expression) = export.declaration.as_expression() {
-                    if let Expression::Identifier(identifier) = unwrap_expression(expression) {
-                        if let Some(key) = trace_binding(program, bindings, &identifier.name) {
-                            push("default".to_string(), key);
-                        }
-                    }
+                if let Some(expression) = export.declaration.as_expression()
+                    && let Expression::Identifier(identifier) = unwrap_expression(expression)
+                    && let Some(key) = trace_binding(program, bindings, &identifier.name)
+                {
+                    push("default".to_string(), key);
                 }
             }
             Statement::ExportNamedDeclaration(export) => {
-                if export.source.is_some() || export.export_kind == ImportOrExportKind::Type {
+                if export.export_kind == ImportOrExportKind::Type {
                     continue;
                 }
                 // Babel visits specifiers before the declaration.
@@ -1000,12 +991,14 @@ fn collect_exported_bindings(
                         push(exported_name, key);
                     }
                 }
-                if let Some(Declaration::VariableDeclaration(declaration)) = &export.declaration {
+            }
+            Statement::ExportDeclaration(export) => {
+                if let Declaration::VariableDeclaration(declaration) = &export.declaration {
                     for declarator in &declaration.declarations {
-                        if let BindingPattern::BindingIdentifier(id) = &declarator.id {
-                            if let Some(key) = trace_binding(program, bindings, &id.name) {
-                                push(id.name.to_string(), key);
-                            }
+                        if let BindingPattern::BindingIdentifier(id) = &declarator.id
+                            && let Some(key) = trace_binding(program, bindings, &id.name)
+                        {
+                            push(id.name.to_string(), key);
                         }
                     }
                 }
@@ -1022,10 +1015,10 @@ fn collect_exported_bindings(
 fn binding_descriptive_name(program: &Program<'_>, key: BindingKey) -> Option<String> {
     let declarator = binding_declarator(program, key)?;
     let init = unwrap_expression(declarator.init.as_ref()?);
-    if let Expression::FunctionExpression(function) = init {
-        if let Some(id) = &function.id {
-            return Some(id.name.to_string());
-        }
+    if let Expression::FunctionExpression(function) = init
+        && let Some(id) = &function.id
+    {
+        return Some(id.name.to_string());
     }
     if !is_valid_function(init) {
         return None;
@@ -1044,8 +1037,8 @@ fn binding_init_function_slot<'p, 'a>(
 ) -> Option<&'p mut Expression<'a>> {
     let declaration = match &mut program.body[key.statement] {
         Statement::VariableDeclaration(declaration) => declaration,
-        Statement::ExportNamedDeclaration(export) => match &mut export.declaration {
-            Some(Declaration::VariableDeclaration(declaration)) => declaration,
+        Statement::ExportDeclaration(export) => match &mut export.declaration {
+            Declaration::VariableDeclaration(declaration) => declaration,
             _ => return None,
         },
         _ => return None,

@@ -34,7 +34,7 @@ var _v$4 = _$escape(
 	state.children
 );
 const template11 = _$ssr(_tmpl$2, _v$4);
-const template12 = Module({ children: state.children });
+const template12 = Module({ children: /*@static*/ state.children });
 var _v$5 = _$escape(children);
 const template13 = _$ssr(_tmpl$2, _v$5);
 const template14 = Module({ children });

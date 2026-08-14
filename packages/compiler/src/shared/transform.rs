@@ -1,8 +1,8 @@
 use napi::bindgen_prelude::*;
 use oxc_allocator::Vec as ArenaVec;
 use oxc_ast::ast::{ClassElement, Expression, JSXElement, JSXFragment, Program, Statement};
-use oxc_ast_visit::{walk_mut, VisitMut};
-use oxc_span::Span;
+use oxc_ast_visit::{VisitMut, walk_mut};
+use oxc_span::{GetSpan, Span};
 
 use crate::dom::element::AstDomTransform;
 use crate::shared::fragment::lower_fragment;
@@ -84,7 +84,7 @@ pub(crate) fn wrap_result_with_capture<'a>(
     capture: Statement<'a>,
     result: Expression<'a>,
 ) -> Expression<'a> {
-    let ast = oxc_ast::AstBuilder::new(allocator);
+    let ast = crate::shared::ast_builder::AstBuilder::new(allocator);
     let mut statements = ast.vec();
     statements.push(capture);
     statements.push(ast.statement_return(span, Some(result)));
@@ -92,19 +92,11 @@ pub(crate) fn wrap_result_with_capture<'a>(
         span,
         oxc_ast::ast::FormalParameterKind::ArrowFormalParameters,
         ast.vec(),
-        oxc_ast::NONE,
+        None,
     );
     let body = ast.function_body(span, ast.vec(), statements);
-    let arrow = ast.expression_arrow_function(
-        span,
-        false,
-        false,
-        oxc_ast::NONE,
-        params,
-        oxc_ast::NONE,
-        body,
-    );
-    ast.expression_call(span, arrow, oxc_ast::NONE, ast.vec(), false)
+    let arrow = ast.expression_arrow_function(span, false, false, None, params, None, body);
+    ast.expression_call(span, arrow, None, ast.vec(), false)
 }
 
 /// Applies the stack-empty capture rule at a JSX root's completion: when the
@@ -130,7 +122,7 @@ fn unshift_capture_into_body<'a>(
     body: &mut oxc_ast::ast::FunctionBody<'a>,
     capture: Statement<'a>,
 ) {
-    let ast = oxc_ast::AstBuilder::new(allocator);
+    let ast = crate::shared::ast_builder::AstBuilder::new(allocator);
     let mut statements = ast.vec();
     statements.push(capture);
     statements.extend(body.statements.drain(..));
@@ -172,10 +164,10 @@ pub(crate) fn visit_function_scope<'a, T: JsxTransform<'a>>(
     target.enter_function_bindings();
     walk_mut::walk_function(target, function, flags);
     target.exit_function_bindings();
-    if let Some(capture) = exit_function_scope(target, kind, function.span, pending_at_entry) {
-        if let Some(body) = function.body.as_mut() {
-            unshift_capture_into_body(target.arena(), body, capture);
-        }
+    if let Some(capture) = exit_function_scope(target, kind, function.span, pending_at_entry)
+        && let Some(body) = function.body.as_mut()
+    {
+        unshift_capture_into_body(target.arena(), body, capture);
     }
     target.mark_body_lowered(std::ptr::from_ref(&*function) as usize);
 }
@@ -184,10 +176,14 @@ pub(crate) fn visit_arrow_function_scope<'a, T: JsxTransform<'a>>(
     target: &mut T,
     arrow: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
 ) {
+    let expression_body = arrow.is_expression();
     let pending_at_entry = target.pending_capture_name();
     target.function_parents().push(FunctionParentKind::Arrow);
     target.enter_function_bindings();
     walk_mut::walk_arrow_function_expression(target, arrow);
+    if expression_body && let Some(expression) = arrow.get_expression_mut() {
+        lower_deferred_jsx_expression(target, expression);
+    }
     target.exit_function_bindings();
     if let Some(capture) = exit_function_scope(
         target,
@@ -196,7 +192,10 @@ pub(crate) fn visit_arrow_function_scope<'a, T: JsxTransform<'a>>(
         pending_at_entry,
     ) {
         ensure_arrow_block(target.arena(), arrow);
-        unshift_capture_into_body(target.arena(), &mut arrow.body, capture);
+        let body = arrow
+            .get_function_body_mut()
+            .expect("ensure_arrow_block creates a function body");
+        unshift_capture_into_body(target.arena(), body, capture);
     }
     target.mark_body_lowered(std::ptr::from_ref(&*arrow) as usize);
 }
@@ -206,24 +205,22 @@ fn ensure_arrow_block<'a>(
     allocator: &'a oxc_allocator::Allocator,
     arrow: &mut oxc_ast::ast::ArrowFunctionExpression<'a>,
 ) {
-    if !arrow.expression {
+    if !arrow.is_expression() {
         return;
     }
-    let ast = oxc_ast::AstBuilder::new(allocator);
-    let Some(Statement::ExpressionStatement(expression_statement)) =
-        arrow.body.statements.first_mut()
-    else {
-        return;
-    };
-    let span = expression_statement.span;
+    let ast = crate::shared::ast_builder::AstBuilder::new(allocator);
+    let expression = arrow
+        .get_expression_mut()
+        .expect("expression arrow has an expression body");
+    let span = expression.span();
     let placeholder = ast.expression_null_literal(span);
-    let value = std::mem::replace(&mut expression_statement.expression, placeholder);
-    arrow.expression = false;
-    arrow.body.statements.clear();
-    arrow
-        .body
-        .statements
-        .push(ast.statement_return(span, Some(value)));
+    let value = std::mem::replace(expression, placeholder);
+    let body = ast.function_body(
+        span,
+        ast.vec(),
+        ast.vec1(ast.statement_return(span, Some(value))),
+    );
+    arrow.body = ast.arrow_function_body_block(body);
 }
 
 /// Babel `Scope.push`'s IIFE fast path fires for an anonymous function
@@ -329,7 +326,7 @@ fn replace_jsx_name_this<'a, T: JsxTransform<'a>>(
             let identifier = capture_ident(target, span);
             *name = JSXElementName::IdentifierReference(oxc_allocator::Box::new_in(
                 identifier,
-                target.arena(),
+                &target.arena(),
             ));
         }
         JSXElementName::MemberExpression(member) => {
@@ -343,7 +340,7 @@ fn replace_jsx_name_this<'a, T: JsxTransform<'a>>(
                         let span = this.span;
                         let identifier = capture_ident(target, span);
                         *object = JSXMemberExpressionObject::IdentifierReference(
-                            oxc_allocator::Box::new_in(identifier, target.arena()),
+                            oxc_allocator::Box::new_in(identifier, &target.arena()),
                         );
                         break;
                     }
@@ -477,6 +474,17 @@ pub(crate) fn lower_deferred_jsx_statements<'a, T: JsxTransform<'a>>(
     for statement in statements {
         lowerer.visit_statement(statement);
     }
+}
+
+fn lower_deferred_jsx_expression<'a, T: JsxTransform<'a>>(
+    target: &mut T,
+    expression: &mut Expression<'a>,
+) {
+    let mut lowerer = DeferredJsxLowerer {
+        target,
+        marker: std::marker::PhantomData,
+    };
+    lowerer.visit_expression(expression);
 }
 
 pub(crate) fn visit_class_element<'a, T: JsxTransform<'a>>(
@@ -873,7 +881,7 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
         self.push_var_scope(crate::ssr::transform::VarScopeKind::Params);
         self.visit_formal_parameters(&mut arrow.params);
         self.pop_var_scope();
-        let expression_body = arrow.expression;
+        let expression_body = arrow.is_expression();
         self.push_var_scope(if expression_body {
             // Babel's scope for an expression body is the arrow itself —
             // eligible for the anonymous-IIFE parameter fast path.
@@ -881,7 +889,22 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
         } else {
             crate::ssr::transform::VarScopeKind::FunctionBody
         });
-        self.visit_function_body(&mut arrow.body);
+        if expression_body {
+            self.visit_expression(
+                arrow
+                    .get_expression_mut()
+                    .expect("expression arrow has an expression body"),
+            );
+            if let Some(expression) = arrow.get_expression_mut() {
+                lower_deferred_jsx_expression(self, expression);
+            }
+        } else {
+            self.visit_function_body(
+                arrow
+                    .get_function_body_mut()
+                    .expect("block arrow has a function body"),
+            );
+        }
         self.exit_function_bindings();
         if let Some(capture) = exit_function_scope(
             self,
@@ -890,13 +913,19 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
             pending_at_entry,
         ) {
             ensure_arrow_block(self.allocator, arrow);
-            unshift_capture_into_body(self.allocator, &mut arrow.body, capture);
+            let body = arrow
+                .get_function_body_mut()
+                .expect("ensure_arrow_block creates a function body");
+            unshift_capture_into_body(self.allocator, body, capture);
         }
         if expression_body {
             let vars = self.pop_var_scope();
             self.attach_scope_vars_to_arrow(arrow, vars);
         } else {
-            self.attach_var_scope_to_statements(&mut arrow.body.statements);
+            let body = arrow
+                .get_function_body_mut()
+                .expect("block arrow has a function body");
+            self.attach_var_scope_to_statements(&mut body.statements);
         }
         self.mark_body_lowered(std::ptr::from_ref(&*arrow) as usize);
     }
@@ -924,10 +953,10 @@ impl<'a> VisitMut<'a> for AstSsrTransform<'a, '_> {
             self.visit_function_body(body);
         }
         self.exit_function_bindings();
-        if let Some(capture) = exit_function_scope(self, kind, function.span, pending_at_entry) {
-            if let Some(body) = function.body.as_mut() {
-                unshift_capture_into_body(self.allocator, body, capture);
-            }
+        if let Some(capture) = exit_function_scope(self, kind, function.span, pending_at_entry)
+            && let Some(body) = function.body.as_mut()
+        {
+            unshift_capture_into_body(self.allocator, body, capture);
         }
         if let Some(body) = function.body.as_mut() {
             self.attach_var_scope_to_statements(&mut body.statements);

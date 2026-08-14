@@ -157,7 +157,7 @@ impl<'a> AstDomTransform<'a, '_> {
         let callee = self.static_member_expression(span, element_id, "addEventListener");
         let event_name_expression =
             self.ast()
-                .expression_string_literal(span, self.ast().atom(event_name), None);
+                .expression_string_literal(span, self.ast().str(event_name), None);
         self.ast().statement_expression(
             span,
             self.call_expression(span, callee, vec![event_name_expression, handler]),
@@ -176,7 +176,7 @@ impl<'a> AstDomTransform<'a, '_> {
         let mut args = vec![
             self.identifier_expression(span, element_id),
             self.ast()
-                .expression_string_literal(span, self.ast().atom(event_name), None),
+                .expression_string_literal(span, self.ast().str(event_name), None),
             handler,
         ];
         if delegated {
@@ -212,8 +212,8 @@ impl<'a> AstDomTransform<'a, '_> {
             self.ast().vec(),
             self.ast()
                 .binding_pattern_binding_identifier(span, self.ast().ident(event_name)),
-            oxc_ast::NONE,
-            oxc_ast::NONE,
+            None,
+            None,
             false,
             None,
             false,
@@ -223,7 +223,7 @@ impl<'a> AstDomTransform<'a, '_> {
             span,
             oxc_ast::ast::FormalParameterKind::ArrowFormalParameters,
             self.ast().vec1(event_param),
-            oxc_ast::NONE,
+            None,
         );
         let call = self.call_expression(
             span,
@@ -236,15 +236,8 @@ impl<'a> AstDomTransform<'a, '_> {
             self.ast()
                 .vec1(self.ast().statement_return(span, Some(call))),
         );
-        self.ast().expression_arrow_function(
-            span,
-            false,
-            false,
-            oxc_ast::NONE,
-            params,
-            oxc_ast::NONE,
-            body,
-        )
+        self.ast()
+            .expression_arrow_function(span, false, false, None, params, None, body)
     }
 
     fn static_member_assignment_target(

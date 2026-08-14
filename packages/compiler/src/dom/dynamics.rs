@@ -4,7 +4,7 @@ use oxc_span::Span;
 
 use crate::dom::element::AstDomTransform;
 use crate::dom::set_attr::SetAttrOptions;
-use crate::shared::constants::{dom_with_state, DomPropertyState};
+use crate::shared::constants::{DomPropertyState, dom_with_state};
 use crate::shared::utils::get_numbered_id;
 
 /// One deferred dynamic attribute binding, mirroring Babel's
@@ -224,15 +224,15 @@ impl<'a> AstDomTransform<'a, '_> {
                 false,
             )
         }));
-        let object_pattern =
-            self.ast()
-                .binding_pattern_object_pattern(span, properties, oxc_ast::NONE);
+        let object_pattern = self
+            .ast()
+            .binding_pattern_object_pattern(span, properties, None);
         let first = self.ast().formal_parameter(
             span,
             self.ast().vec(),
             object_pattern,
-            oxc_ast::NONE,
-            oxc_ast::NONE,
+            None,
+            None,
             false,
             None,
             false,
@@ -243,8 +243,8 @@ impl<'a> AstDomTransform<'a, '_> {
             self.ast().vec(),
             self.ast()
                 .binding_pattern_binding_identifier(span, self.ast().ident(prev_name)),
-            oxc_ast::NONE,
-            oxc_ast::NONE,
+            None,
+            None,
             false,
             None,
             false,
@@ -257,18 +257,11 @@ impl<'a> AstDomTransform<'a, '_> {
             span,
             oxc_ast::ast::FormalParameterKind::ArrowFormalParameters,
             params,
-            oxc_ast::NONE,
+            None,
         );
         let body = self.ast().function_body(span, self.ast().vec(), statements);
-        self.ast().expression_arrow_function(
-            span,
-            false,
-            false,
-            oxc_ast::NONE,
-            params,
-            oxc_ast::NONE,
-            body,
-        )
+        self.ast()
+            .expression_arrow_function(span, false, false, None, params, None, body)
     }
 }
 

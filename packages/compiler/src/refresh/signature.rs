@@ -579,12 +579,7 @@ impl<'s> Printer<'s> {
             }
         }
         self.push(" => ");
-        if arrow.expression {
-            let Some(Statement::ExpressionStatement(stmt)) = arrow.body.statements.first() else {
-                self.push("{}");
-                return;
-            };
-            let body = &stmt.expression;
+        if let Some(body) = arrow.get_expression() {
             // Object-literal bodies (and anything starting with `{`) need
             // parens; sequences fall out of the P_ASSIGN context.
             if starts_with_object(body) {
@@ -595,7 +590,10 @@ impl<'s> Printer<'s> {
                 self.print_expr(body, P_ASSIGN, false);
             }
         } else {
-            self.print_block_body(&arrow.body);
+            let body = arrow
+                .get_function_body()
+                .expect("non-expression arrow has a function body");
+            self.print_block_body(body);
         }
     }
 
@@ -619,7 +617,7 @@ impl<'s> Printer<'s> {
             self.push(" ");
             self.push(id.name.as_str());
         }
-        if let Some(super_class) = &class.super_class {
+        if let Some(super_class) = class.heritage_expression() {
             self.push(" extends ");
             self.print_expr(super_class, P_LHS, false);
         }
@@ -919,11 +917,8 @@ impl<'s> Printer<'s> {
                 }
                 self.print_template(&tagged.quasi);
             }
-            Expression::MetaProperty(meta) => {
-                self.push(meta.meta.name.as_str());
-                self.push(".");
-                self.push(meta.property.name.as_str());
-            }
+            Expression::ImportMeta(_) => self.push("import.meta"),
+            Expression::NewTarget(_) => self.push("new.target"),
             Expression::ArrayExpression(array) => self.print_array(array),
             Expression::ObjectExpression(object) => self.print_object(object),
             Expression::FunctionExpression(function) => self.print_function(function, false),
@@ -1387,11 +1382,11 @@ impl<'s> Printer<'s> {
             }
             let _ = is_arrow;
         }
-        if property.shorthand {
-            if let Some(name) = property.key.static_name() {
-                self.push(&name);
-                return;
-            }
+        if property.shorthand
+            && let Some(name) = property.key.static_name()
+        {
+            self.push(&name);
+            return;
         }
         self.print_property_key(&property.key, property.computed);
         self.push(": ");

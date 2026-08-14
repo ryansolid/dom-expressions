@@ -62,8 +62,8 @@ impl<'c> Classify<'c> {
         expression: &Expression<'_>,
         check_tags: bool,
     ) -> bool {
-        let marker_static = leading_from
-            .is_some_and(|from| self.marker_between(from, expression.span().start));
+        let marker_static =
+            leading_from.is_some_and(|from| self.marker_between(from, expression.span().start));
         let dynamic =
             !marker_static && is_dynamic_with_namespaces(expression, check_tags, self.bindings);
         #[cfg(test)]
@@ -78,11 +78,12 @@ impl<'c> Classify<'c> {
     /// classify the same source identically.
     pub(crate) fn is_dynamic_child_slot(&self, child: &JSXChild<'_>) -> bool {
         match child {
-            JSXChild::ExpressionContainer(container) => {
-                container.expression.as_expression().is_some_and(|expression| {
+            JSXChild::ExpressionContainer(container) => container
+                .expression
+                .as_expression()
+                .is_some_and(|expression| {
                     self.is_dynamic(Some(container.span.start), expression, false)
-                })
-            }
+                }),
             JSXChild::Spread(spread) => self.is_dynamic(None, &spread.expression, false),
             _ => false,
         }
@@ -136,19 +137,18 @@ fn is_dynamic_with_namespaces(
 ) -> bool {
     match value {
         Expression::StaticMemberExpression(member) => {
-            if let Expression::Identifier(object) = &member.object {
-                if bindings.is_namespace_import(&object.name) {
-                    return false;
-                }
+            if let Expression::Identifier(object) = &member.object
+                && bindings.is_namespace_import(&object.name)
+            {
+                return false;
             }
         }
         Expression::ComputedMemberExpression(member) => {
-            if let Expression::Identifier(object) = &member.object {
-                if bindings.is_namespace_import(&object.name)
-                    && !is_dynamic_deep(&member.expression, check_tags)
-                {
-                    return false;
-                }
+            if let Expression::Identifier(object) = &member.object
+                && bindings.is_namespace_import(&object.name)
+                && !is_dynamic_deep(&member.expression, check_tags)
+            {
+                return false;
             }
         }
         _ => {}
@@ -305,7 +305,7 @@ pub(crate) mod trace {
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::trace::{capture, Question};
+    use super::trace::{Question, capture};
     use crate::config::TransformOptions;
 
     const MODES: [&str; 3] = ["dom", "ssr", "universal"];
@@ -319,8 +319,7 @@ mod tests {
             built_ins: Some(vec!["For".into(), "Show".into()]),
             ..Default::default()
         };
-        let (result, decisions) =
-            capture(|| crate::transform(source.to_string(), Some(options)));
+        let (result, decisions) = capture(|| crate::transform(source.to_string(), Some(options)));
         result.unwrap_or_else(|error| panic!("{generate} failed on {source:?}: {error}"));
         let mut answers: BTreeMap<Question, Vec<bool>> = BTreeMap::new();
         for (question, dynamic) in decisions {

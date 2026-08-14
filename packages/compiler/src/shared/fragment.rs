@@ -8,7 +8,7 @@ use oxc_ast::ast::{Expression, JSXChild, JSXExpression, JSXFragment};
 
 use crate::shared::array::expression_to_array_element;
 use crate::shared::ast::arrow_return_expression;
-use crate::shared::mode_lower::{dynamic_child_thunk, mode_ast, ModeLower};
+use crate::shared::mode_lower::{ModeLower, dynamic_child_thunk, mode_ast};
 use crate::shared::utils::{decode_html_entities, trim_jsx_text};
 
 pub(crate) fn lower_fragment<'a, C: ModeLower<'a>>(
@@ -23,11 +23,7 @@ pub(crate) fn lower_fragment<'a, C: ModeLower<'a>>(
             JSXChild::Text(text) => {
                 let value = decode_html_entities(&trim_jsx_text(&text.value));
                 if !value.is_empty() {
-                    values.push(ast.expression_string_literal(
-                        text.span,
-                        ast.atom(&value),
-                        None,
-                    ));
+                    values.push(ast.expression_string_literal(text.span, ast.str(&value), None));
                 }
             }
             JSXChild::ExpressionContainer(container) => {
@@ -40,10 +36,7 @@ pub(crate) fn lower_fragment<'a, C: ModeLower<'a>>(
                 // position; marker comments and namespace-import members
                 // short-circuit inside the shared predicate. JSX inside the
                 // hole stays raw for the deferred pass.
-                let expression = container
-                    .expression
-                    .clone_in(allocator)
-                    .into_expression();
+                let expression = container.expression.clone_in(allocator).into_expression();
                 let dynamic =
                     ctx.classify()
                         .is_dynamic(Some(container.span.start), &expression, false);

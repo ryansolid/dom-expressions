@@ -15,20 +15,20 @@
 //! with `void 0` when the call site omits it — the runtime's `moduleUrl`
 //! parameter is positionally stable either way.
 
+use crate::shared::ast_builder::AstBuilder;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
     Argument, CallExpression, Expression, ImportDeclarationSpecifier, Program, Statement,
 };
-use oxc_ast::AstBuilder;
-use oxc_ast_visit::{walk, walk_mut, Visit, VisitMut};
+use oxc_ast_visit::{Visit, VisitMut, walk, walk_mut};
 use oxc_codegen::{Codegen, CodegenOptions};
 use oxc_parser::{ParseOptions, Parser};
 use oxc_semantic::SemanticBuilder;
 use oxc_span::{GetSpan, Span};
 
-use crate::config::{source_type_for_filename, TransformResult};
+use crate::config::{TransformResult, source_type_for_filename};
 
 pub const LAZY_PLACEHOLDER_PREFIX: &str = "__SOLID_LAZY_MODULE__:";
 
@@ -59,8 +59,8 @@ pub fn transform_lazy(
             ..ParseOptions::default()
         })
         .parse();
-    if let Some(error) = parsed.errors.into_iter().next() {
-        return Err(Error::from_reason(error.to_string()));
+    if let Some(error) = crate::shared::parser::first_parser_error(parsed.diagnostics) {
+        return Err(Error::from_reason(error));
     }
 
     let mut program = parsed.program;
@@ -135,10 +135,10 @@ fn collect_targets(program: &Program<'_>) -> Vec<Target> {
             _ => continue,
         };
         for specifier in import.specifiers.iter().flatten() {
-            if let ImportDeclarationSpecifier::ImportSpecifier(specifier) = specifier {
-                if let Some(symbol_id) = specifier.local.symbol_id.get() {
-                    set.insert(symbol_id);
-                }
+            if let ImportDeclarationSpecifier::ImportSpecifier(specifier) = specifier
+                && let Some(symbol_id) = specifier.local.symbol_id.get()
+            {
+                set.insert(symbol_id);
             }
         }
     }
@@ -223,19 +223,12 @@ fn eligible_target(
 /// `() => import("x")`, `() => { return import("x"); }`, and the
 /// `function` equivalents, returning the literal specifier.
 fn extract_dynamic_import_specifier(node: &Expression<'_>) -> Option<String> {
-    let body = match node {
-        Expression::ArrowFunctionExpression(arrow) => &arrow.body,
-        Expression::FunctionExpression(function) => function.body.as_ref()?,
-        _ => return None,
-    };
     let import = match node {
-        Expression::ArrowFunctionExpression(arrow) if arrow.expression => {
-            match body.statements.first()? {
-                Statement::ExpressionStatement(statement) => &statement.expression,
-                _ => return None,
-            }
+        Expression::ArrowFunctionExpression(arrow) if arrow.is_expression() => {
+            arrow.get_expression()?
         }
-        _ => {
+        Expression::ArrowFunctionExpression(arrow) => {
+            let body = arrow.get_function_body()?;
             if body.statements.len() != 1 {
                 return None;
             }
@@ -244,6 +237,17 @@ fn extract_dynamic_import_specifier(node: &Expression<'_>) -> Option<String> {
                 _ => return None,
             }
         }
+        Expression::FunctionExpression(function) => {
+            let body = function.body.as_ref()?;
+            if body.statements.len() != 1 {
+                return None;
+            }
+            match body.statements.first()? {
+                Statement::ReturnStatement(statement) => statement.argument.as_ref()?,
+                _ => return None,
+            }
+        }
+        _ => return None,
     };
     let Expression::ImportExpression(import) = import else {
         return None;
@@ -281,7 +285,7 @@ impl<'a> VisitMut<'a> for Rewriter<'a> {
             call.arguments
                 .push(Argument::StringLiteral(ast.alloc_string_literal(
                     Span::new(0, 0),
-                    ast.atom(&value),
+                    ast.str(&value),
                     None,
                 )));
         }

@@ -4,11 +4,12 @@
 //! [`ConditionBuilder`].
 
 use oxc_allocator::{Allocator, CloneIn};
-use oxc_ast::{ast::Expression, AstBuilder, NONE};
+use oxc_ast::ast::Expression;
 use oxc_span::{GetSpan, Span};
 use oxc_syntax::operator::{BinaryOperator, LogicalOperator, UnaryOperator};
 
 use crate::shared::ast::{arrow_return_expression, expression_to_argument, variable_statement};
+use crate::shared::ast_builder::AstBuilder;
 use crate::shared::classify::Classify;
 
 pub(crate) trait ConditionBuilder<'a> {
@@ -52,7 +53,7 @@ impl<'a> TransformedCondition<'a> {
                 statements.push(memo_statement);
                 statements.push(ast.statement_return(span, Some(getter)));
                 let iife = crate::shared::ast::arrow_iife(allocator, span, statements);
-                ast.expression_call(span, iife, NONE, ast.vec(), false)
+                ast.expression_call(span, iife, None, ast.vec(), false)
             }
             TransformedCondition::Arrow(arrow) => arrow,
         }
@@ -184,7 +185,7 @@ pub(crate) fn memo_wrap_thunk<'a, C: ConditionBuilder<'a>>(
     ast.expression_call(
         span,
         ast.expression_identifier(span, ast.ident(&memo_local)),
-        NONE,
+        None,
         ast.vec1(expression_to_argument(thunk)),
         false,
     )
@@ -207,7 +208,7 @@ fn call_expression_no_args<'a>(
     callee: Expression<'a>,
 ) -> Expression<'a> {
     let ast = AstBuilder::new(allocator);
-    ast.expression_call(span, callee, NONE, ast.vec(), false)
+    ast.expression_call(span, callee, None, ast.vec(), false)
 }
 
 /// Builds the `id()` (hoisted) or `memo(() => cond)()` (inline) test call and

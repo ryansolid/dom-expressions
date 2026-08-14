@@ -91,7 +91,7 @@ pub fn transform_directives(
         _ => {
             return Err(Error::from_reason(
                 "transformDirectives requires a `mode` option of \"server\" or \"client\"",
-            ))
+            ));
         }
     };
     let env = match options.env.as_deref() {
@@ -100,7 +100,7 @@ pub fn transform_directives(
         _ => {
             return Err(Error::from_reason(
                 "transformDirectives `env` option must be \"production\" or \"development\"",
-            ))
+            ));
         }
     };
     let Some(filename) = options.filename.as_deref() else {
@@ -121,8 +121,8 @@ pub fn transform_directives(
             ..ParseOptions::default()
         })
         .parse();
-    if let Some(error) = parsed.errors.into_iter().next() {
-        return Err(Error::from_reason(error.to_string()));
+    if let Some(error) = crate::shared::parser::first_parser_error(parsed.diagnostics) {
+        return Err(Error::from_reason(error));
     }
 
     let hash = xxhash::xxhash32_hex(&relative_id(options.root.as_deref(), filename));
@@ -168,22 +168,23 @@ pub fn transform_directives(
 
     let source_map = options.source_map.unwrap_or(false);
     let codegen = |program: &oxc_ast::ast::Program<'_>| {
-        Codegen::new()
+        let build = Codegen::new()
             .with_options(CodegenOptions {
                 source_map_path: source_map.then(|| std::path::PathBuf::from(filename)),
                 ..CodegenOptions::default()
             })
-            .build(program)
+            .build(program);
+        (build.code, build.map.map(|map| map.to_json_string()))
     };
 
-    let build = codegen(&program);
+    let (build_code, build_map) = codegen(&program);
     let (code, map) = if needs_dce {
         // Babel's `removeUnusedVariables` fixpoint. This port re-parses
         // printed output between passes, so when it runs the source map is
         // regenerated relative to the pre-DCE output (a known limitation of
         // this milestone).
         let cleaned =
-            dce::remove_unused_variables(build.code, source_type, orphans, env == Env::Development);
+            dce::remove_unused_variables(build_code, source_type, orphans, env == Env::Development);
         if source_map {
             let allocator = Allocator::default();
             let reparsed = Parser::new(&allocator, &cleaned, source_type)
@@ -192,18 +193,17 @@ pub fn transform_directives(
                     ..ParseOptions::default()
                 })
                 .parse();
-            let build = codegen(&reparsed.program);
-            (build.code, build.map)
+            codegen(&reparsed.program)
         } else {
             (cleaned, None)
         }
     } else {
-        (build.code, build.map)
+        (build_code, build_map)
     };
 
     Ok(TransformDirectivesResult {
         code,
-        map: map.map(|map| map.to_json_string()),
+        map,
         valid,
         functions,
     })

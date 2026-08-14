@@ -9,7 +9,7 @@ use crate::dom::template::DomTemplateState;
 use crate::shared::bindings::BindingTable;
 use crate::shared::component::lower_component_with_setup;
 use crate::shared::utils::{
-    element_name, is_component_name, is_void_element, static_jsx_expression, StaticValue,
+    StaticValue, element_name, is_component_name, is_void_element, static_jsx_expression,
 };
 
 pub(crate) struct AstDomTransform<'a, 'source> {
@@ -203,7 +203,7 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             return Ok((
                 Expression::JSXElement(oxc_allocator::Box::new_in(
                     oxc_allocator::CloneIn::clone_in(element, self.allocator),
-                    self.allocator,
+                    &self.allocator,
                 )),
                 std::vec::Vec::new(),
             ));
@@ -239,7 +239,7 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
                         .push(oxc_ast::ast::JSXChild::ExpressionContainer(
                             oxc_allocator::Box::new_in(
                                 container.clone_in(self.allocator),
-                                self.allocator,
+                                &self.allocator,
                             ),
                         ));
                     self.allocator.alloc(clone)

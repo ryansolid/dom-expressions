@@ -2,7 +2,7 @@ use oxc_ast::ast::{
     BindingPattern, ImportDeclarationSpecifier, Statement, VariableDeclarationKind,
 };
 
-use crate::shared::utils::{static_expression, StaticValue};
+use crate::shared::utils::{StaticValue, static_expression};
 
 /// How a binding scope closes. Function-like scopes drop everything declared
 /// inside them; block scopes keep hoisted (`var`) declarations by moving them
@@ -250,11 +250,11 @@ impl BindingTable {
     pub(crate) fn collect(&mut self, statement: &Statement<'_>) {
         match statement {
             // Babel's scope registers exported declarations like plain ones.
-            Statement::ExportNamedDeclaration(export) => match &export.declaration {
-                Some(oxc_ast::ast::Declaration::VariableDeclaration(declaration)) => {
+            Statement::ExportDeclaration(export) => match &export.declaration {
+                oxc_ast::ast::Declaration::VariableDeclaration(declaration) => {
                     self.collect_variable_declaration(declaration);
                 }
-                Some(oxc_ast::ast::Declaration::FunctionDeclaration(function)) => {
+                oxc_ast::ast::Declaration::FunctionDeclaration(function) => {
                     if let Some(id) = &function.id {
                         let name = id.name.to_string();
                         self.declare(
@@ -437,8 +437,8 @@ impl ShadowScanner<'_> {
 fn collect_lexical_names(statements: &[Statement<'_>], names: &mut std::vec::Vec<String>) {
     for statement in statements {
         let statement = match statement {
-            Statement::ExportNamedDeclaration(export) => match &export.declaration {
-                Some(oxc_ast::ast::Declaration::VariableDeclaration(declaration)) => {
+            Statement::ExportDeclaration(export) => match &export.declaration {
+                oxc_ast::ast::Declaration::VariableDeclaration(declaration) => {
                     if declaration.kind != VariableDeclarationKind::Var {
                         for declarator in &declaration.declarations {
                             collect_binding_names(&declarator.id, names);
@@ -446,13 +446,13 @@ fn collect_lexical_names(statements: &[Statement<'_>], names: &mut std::vec::Vec
                     }
                     continue;
                 }
-                Some(oxc_ast::ast::Declaration::FunctionDeclaration(function)) => {
+                oxc_ast::ast::Declaration::FunctionDeclaration(function) => {
                     if let Some(id) = &function.id {
                         names.push(id.name.to_string());
                     }
                     continue;
                 }
-                Some(oxc_ast::ast::Declaration::ClassDeclaration(class)) => {
+                oxc_ast::ast::Declaration::ClassDeclaration(class) => {
                     if let Some(id) = &class.id {
                         names.push(id.name.to_string());
                     }
@@ -525,11 +525,10 @@ fn collect_var_names_from_statement(statement: &Statement<'_>, names: &mut std::
         Statement::ForStatement(statement) => {
             if let Some(oxc_ast::ast::ForStatementInit::VariableDeclaration(declaration)) =
                 &statement.init
+                && declaration.kind == VariableDeclarationKind::Var
             {
-                if declaration.kind == VariableDeclarationKind::Var {
-                    for declarator in &declaration.declarations {
-                        collect_binding_names(&declarator.id, names);
-                    }
+                for declarator in &declaration.declarations {
+                    collect_binding_names(&declarator.id, names);
                 }
             }
             collect_var_names_from_statement(&statement.body, names);
@@ -573,11 +572,11 @@ fn collect_var_names_from_for_target(
     target: &oxc_ast::ast::ForStatementLeft<'_>,
     names: &mut std::vec::Vec<String>,
 ) {
-    if let oxc_ast::ast::ForStatementLeft::VariableDeclaration(declaration) = target {
-        if declaration.kind == VariableDeclarationKind::Var {
-            for declarator in &declaration.declarations {
-                collect_binding_names(&declarator.id, names);
-            }
+    if let oxc_ast::ast::ForStatementLeft::VariableDeclaration(declaration) = target
+        && declaration.kind == VariableDeclarationKind::Var
+    {
+        for declarator in &declaration.declarations {
+            collect_binding_names(&declarator.id, names);
         }
     }
 }
@@ -631,10 +630,10 @@ impl<'b> oxc_ast_visit::Visit<'b> for ShadowScanner<'_> {
         arrow: &oxc_ast::ast::ArrowFunctionExpression<'b>,
     ) {
         let mut frame = self.params_frame(&arrow.params);
-        if !arrow.expression {
+        if let Some(body) = arrow.get_function_body() {
             let mut body_names = std::vec::Vec::new();
-            collect_var_names(&arrow.body.statements, &mut body_names);
-            collect_lexical_names(&arrow.body.statements, &mut body_names);
+            collect_var_names(&body.statements, &mut body_names);
+            collect_lexical_names(&body.statements, &mut body_names);
             frame.extend(self.frame_from_names(body_names));
         }
         self.scopes.push(frame);

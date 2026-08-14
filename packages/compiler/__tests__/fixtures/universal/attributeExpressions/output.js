@@ -62,9 +62,9 @@ _$effect(() => row.label, (_v$, _$p) => {
 });
 const template2 = _el$4;
 var _el$8 = _$createElement("div", {
-	id: state.id,
-	style: (	/*@static*/ { "background-color": state.color }),
-	textContent: state.content
+	id: /*@static*/ state.id,
+	style: /*@static*/ { "background-color": state.color },
+	textContent: /*@static*/ state.content
 });
 _$effect(() => state.name, (_v$, _$p) => {
 	_$setProp(_el$8, "name", _v$, _$p);

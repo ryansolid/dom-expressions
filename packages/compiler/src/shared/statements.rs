@@ -45,7 +45,7 @@ impl<'a> AstDomTransform<'a, '_> {
         self.statement_depth += 1;
         self.bindings
             .enter_scope(crate::shared::bindings::BindingScopeKind::Block);
-        let mut body = ArenaVec::new_in(self.allocator);
+        let mut body = ArenaVec::new_in(&self.allocator);
         for mut statement in statements.drain(..) {
             if self.error.is_some() {
                 body.push(statement);
@@ -59,11 +59,11 @@ impl<'a> AstDomTransform<'a, '_> {
                 // the capture precedes the setup statements that use it.
                 // `getStatementParent().insertBefore` targets the JSX's own
                 // statement wherever it nests, so no depth gate applies.
-                if self.in_class_method_scope() {
-                    if let Some(capture) = self.take_this_capture_statement(statement.span()) {
-                        body.push(capture);
-                        self.clear_this_capture_context();
-                    }
+                if self.in_class_method_scope()
+                    && let Some(capture) = self.take_this_capture_statement(statement.span())
+                {
+                    body.push(capture);
+                    self.clear_this_capture_context();
                 }
                 body.extend(setup);
                 self.bindings.collect(&statement);
@@ -73,11 +73,11 @@ impl<'a> AstDomTransform<'a, '_> {
 
             if let Some(setup) = self.lower_return_jsx(&mut statement) {
                 self.lower_deferred_statement_jsx(&mut statement);
-                if self.in_class_method_scope() {
-                    if let Some(capture) = self.take_this_capture_statement(statement.span()) {
-                        body.push(capture);
-                        self.clear_this_capture_context();
-                    }
+                if self.in_class_method_scope()
+                    && let Some(capture) = self.take_this_capture_statement(statement.span())
+                {
+                    body.push(capture);
+                    self.clear_this_capture_context();
                 }
                 body.extend(setup);
                 body.push(statement);
@@ -87,11 +87,11 @@ impl<'a> AstDomTransform<'a, '_> {
             self.visit_statement(&mut statement);
             self.lower_deferred_statement_jsx(&mut statement);
             self.bindings.collect(&statement);
-            if self.in_class_method_scope() {
-                if let Some(capture) = self.take_this_capture_statement(statement.span()) {
-                    body.push(capture);
-                    self.clear_this_capture_context();
-                }
+            if self.in_class_method_scope()
+                && let Some(capture) = self.take_this_capture_statement(statement.span())
+            {
+                body.push(capture);
+                self.clear_this_capture_context();
             }
             body.push(statement);
         }
@@ -138,8 +138,8 @@ impl<'a> AstDomTransform<'a, '_> {
         // declaration inserts before the export statement).
         let declaration = match statement {
             Statement::VariableDeclaration(declaration) => declaration,
-            Statement::ExportNamedDeclaration(export) => match &mut export.declaration {
-                Some(oxc_ast::ast::Declaration::VariableDeclaration(declaration)) => declaration,
+            Statement::ExportDeclaration(export) => match &mut export.declaration {
+                oxc_ast::ast::Declaration::VariableDeclaration(declaration) => declaration,
                 _ => return None,
             },
             _ => return None,
@@ -353,15 +353,14 @@ impl<'a> AstDomTransform<'a, '_> {
                     Expression::JSXFragment(fragment)
                 }
             },
-            Expression::ArrowFunctionExpression(mut arrow) if arrow.expression => {
-                if arrow.body.statements.len() != 1 {
-                    return Expression::ArrowFunctionExpression(arrow);
-                }
-                let Some(Statement::ExpressionStatement(statement)) = arrow.body.statements.pop()
-                else {
-                    return Expression::ArrowFunctionExpression(arrow);
-                };
-                let mut expression = statement.unbox().expression;
+            Expression::ArrowFunctionExpression(mut arrow) if arrow.is_expression() => {
+                let placeholder = self.ast().expression_null_literal(span);
+                let mut expression = std::mem::replace(
+                    arrow
+                        .get_expression_mut()
+                        .expect("expression arrow has an expression body"),
+                    placeholder,
+                );
                 if matches!(
                     expression,
                     Expression::JSXElement(_) | Expression::JSXFragment(_)
@@ -377,32 +376,43 @@ impl<'a> AstDomTransform<'a, '_> {
                                 // top of the arrow body, above the setup IIFE.
                                 if let Some(capture) = self.take_this_capture_statement(span) {
                                     self.clear_this_capture_context();
-                                    arrow.expression = false;
                                     let mut statements = self.ast().vec();
                                     statements.push(capture);
                                     let value = self.setup_iife(span, setup, replacement);
                                     statements.push(self.ast().statement_return(span, Some(value)));
-                                    arrow.body.statements = statements;
+                                    arrow.body = self.ast().arrow_function_body_block(
+                                        self.ast().function_body(
+                                            span,
+                                            self.ast().vec(),
+                                            statements,
+                                        ),
+                                    );
                                 } else {
-                                    arrow.expression = false;
                                     let mut statements = self.ast().vec();
                                     statements.extend(setup);
                                     statements
                                         .push(self.ast().statement_return(span, Some(replacement)));
-                                    arrow.body.statements = statements;
+                                    arrow.body = self.ast().arrow_function_body_block(
+                                        self.ast().function_body(
+                                            span,
+                                            self.ast().vec(),
+                                            statements,
+                                        ),
+                                    );
                                 }
                                 Expression::ArrowFunctionExpression(arrow)
                             }
                             Err(error) => {
                                 self.error = Some(error.to_string());
+                                arrow.body = self.ast().arrow_function_body_expression(
+                                    Expression::JSXElement(element),
+                                );
                                 Expression::ArrowFunctionExpression(arrow)
                             }
                         }
                     }
                     expression => {
-                        arrow.body.statements = self
-                            .ast()
-                            .vec1(self.ast().statement_expression(span, expression));
+                        arrow.body = self.ast().arrow_function_body_expression(expression);
                         Expression::ArrowFunctionExpression(arrow)
                     }
                 }

@@ -40,7 +40,7 @@ pub(crate) fn component_ref_property<'a, C: RefPropertyContext<'a>>(
     setup: &mut std::vec::Vec<Statement<'a>>,
 ) -> Option<ObjectPropertyKind<'a>> {
     let allocator = ctx.allocator();
-    let ast = oxc_ast::AstBuilder::new(allocator);
+    let ast = crate::shared::ast_builder::AstBuilder::new(allocator);
     let object_property =
         |value| crate::shared::ast::object_property(allocator, span, "ref", value);
     let identifier = |name: &str| ast.expression_identifier(span, ast.ident(name));
@@ -48,7 +48,7 @@ pub(crate) fn component_ref_property<'a, C: RefPropertyContext<'a>>(
         ast.expression_call(
             span,
             identifier("_$applyRef"),
-            oxc_ast::NONE,
+            None,
             ast.vec_from_array([
                 crate::shared::ast::expression_to_argument(ref_identifier),
                 crate::shared::ast::expression_to_argument(identifier("r$")),
@@ -139,7 +139,7 @@ pub(crate) fn callable_test<'a>(
     span: Span,
     value: Expression<'a>,
 ) -> Expression<'a> {
-    let ast = oxc_ast::AstBuilder::new(allocator);
+    let ast = crate::shared::ast_builder::AstBuilder::new(allocator);
     let typeof_ref = ast.expression_binary(
         span,
         ast.expression_unary(
@@ -148,7 +148,7 @@ pub(crate) fn callable_test<'a>(
             value.clone_in(allocator),
         ),
         oxc_ast::ast::BinaryOperator::StrictEquality,
-        ast.expression_string_literal(span, ast.atom("function"), None),
+        ast.expression_string_literal(span, ast.str("function"), None),
     );
     let is_array_callee = Expression::StaticMemberExpression(ast.alloc_static_member_expression(
         span,
@@ -159,7 +159,7 @@ pub(crate) fn callable_test<'a>(
     let array_is_array = ast.expression_call(
         span,
         is_array_callee,
-        oxc_ast::NONE,
+        None,
         ast.vec1(crate::shared::ast::expression_to_argument(value)),
         false,
     );
@@ -179,11 +179,11 @@ pub(crate) fn assignment_fallback<'a>(
     value: &Expression<'a>,
     assignment_value: Expression<'a>,
 ) -> Option<Expression<'a>> {
-    let ast = oxc_ast::AstBuilder::new(allocator);
+    let ast = crate::shared::ast_builder::AstBuilder::new(allocator);
     let static_member_target = |member: &oxc_ast::ast::StaticMemberExpression<'a>| {
         oxc_ast::ast::AssignmentTarget::StaticMemberExpression(oxc_allocator::Box::new_in(
             member.clone_in(allocator),
-            allocator,
+            &allocator,
         ))
     };
     match value {

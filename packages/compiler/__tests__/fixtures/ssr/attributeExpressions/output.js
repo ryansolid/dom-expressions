@@ -354,8 +354,8 @@ const propsSpread = {
 	something: color(),
 	style: {
 		"background-color": color(),
-		color: color(),
-		"margin-right": props.right
+		color: /* @static*/ color(),
+		"margin-right": /* @static */ props.right
 	}
 };
 const template80 = _$ssrElement("div", propsSpread, undefined, false);
@@ -364,19 +364,19 @@ const template82 = _$ssrElement("div", _$mergeProps(propsSpread, {
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), undefined, false);
 const template83 = _$ssrElement("div", _$mergeProps(propsSpread, {
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), undefined, false);
 const template84 = _$ssrElement("div", _$mergeProps(propsSpread1, propsSpread2, propsSpread3, {
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), undefined, false);
 // STATIC PROPERTY OF OBJECT ACCESS
 // https://github.com/ryansolid/dom-expressions/issues/252#issuecomment-1572220563

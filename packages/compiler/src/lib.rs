@@ -14,8 +14,8 @@ use oxc_ast_visit::VisitMut;
 use oxc_codegen::{Codegen, CodegenOptions};
 use oxc_parser::{ParseOptions, Parser};
 
-use config::source_type_for_filename;
 use config::RendererOption;
+use config::source_type_for_filename;
 pub use config::{TransformOptions, TransformResult};
 pub use directives::{
     DirectiveImportOption, ServerFunctionMeta, TransformDirectivesOptions,
@@ -76,8 +76,8 @@ pub fn transform(code: String, options: Option<TransformOptions>) -> Result<Tran
         })
         .parse();
 
-    if let Some(error) = parsed.errors.into_iter().next() {
-        return Err(Error::from_reason(error.to_string()));
+    if let Some(error) = crate::shared::parser::first_parser_error(parsed.diagnostics) {
+        return Err(Error::from_reason(error));
     }
 
     // Babel's `requireImportSource` preprocess: skip files without a
