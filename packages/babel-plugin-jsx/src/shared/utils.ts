@@ -698,6 +698,24 @@ export function getAttributeNamed(
     });
 }
 
+/**
+ * `$key` on an intrinsic element is entity identity — the element-level
+ * spelling of the slot-call `$key` — and it is SERVER MARKUP identity: only
+ * frame content is morph-managed, so only SSR output carries it. SSR compiles
+ * it away into the `_key` attribute the morph matches keyed elements by (the
+ * `_hk` family — framework-owned marks, not user-visible `data-*` space); a
+ * DOM compile of the same source (a hydratable twin) strips it — client-owned
+ * DOM is never morphed, and a literal `$key` attribute is never intended
+ * output. Components are untouched everywhere: there `$key` is slot
+ * occurrence identity, a prop the runtime owns.
+ */
+export function renameElementKey(path: JSXElementPath, ssr: boolean): void {
+  const attr = getAttributeNamed(path, "$key");
+  if (!attr) return;
+  if (ssr) renameAttribute(attr, "_key");
+  else attr.remove();
+}
+
 function renameAttribute(attr: NodePath<t.JSXAttribute>, name: string): void {
   const original = attr.node.name;
   const [ns, propName] = name.split(":");

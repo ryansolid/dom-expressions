@@ -348,6 +348,21 @@ impl<'a> AttrPlanner<'a, '_> {
             if key == "_hk" {
                 continue;
             }
+            // `$key` on an intrinsic element is server markup identity (the
+            // element-level spelling of the slot-call `$key`): SSR compiles
+            // it to the `_key` attribute the frame morph matches keyed
+            // elements by; a DOM compile of the same source strips it —
+            // client-owned DOM is never morphed, and a literal `$key`
+            // attribute is never intended output. (Babel: `renameElementKey`
+            // in shared/utils.ts.)
+            let key = if key == "$key" {
+                if !self.is_ssr {
+                    continue;
+                }
+                "_key".to_string()
+            } else {
+                key
+            };
             // The `xmlns` attribute on template-root XML elements only
             // signals the namespace; it is dropped from the template.
             if key == "xmlns" && self.skip_xmlns_attribute {

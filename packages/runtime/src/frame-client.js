@@ -1842,7 +1842,8 @@ function isSlotMarker(node) {
 }
 
 // Identity-first at the element level (DR-5's last rung): server markup can
-// carry entity identity as `data-key`, and a keyed element matches ONLY the
+// carry entity identity as `_key` (the `_hk` family — framework-owned marks,
+// compiled from `$key` in server JSX), and a keyed element matches ONLY the
 // element with the same key — never positionally. With mismatched keys
 // incompatible, the reconcile's existing relocation lookahead moves the
 // keyed node into place, so live element state the morph deliberately
@@ -1856,7 +1857,7 @@ function isSlotMarker(node) {
 function compatible(a, b) {
   if (a.nodeType !== b.nodeType) return false;
   if (a.nodeType === ELEMENT_NODE)
-    return a.nodeName === b.nodeName && a.getAttribute("data-key") === b.getAttribute("data-key");
+    return a.nodeName === b.nodeName && a.getAttribute("_key") === b.getAttribute("_key");
   return a.nodeType === TEXT_NODE || a.nodeType === COMMENT_NODE;
 }
 

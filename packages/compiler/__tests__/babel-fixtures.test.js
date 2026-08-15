@@ -22,6 +22,7 @@ const fixtureParity = {
   fragments: parityLevel.subset,
   insertChildren: parityLevel.subset,
   jsxAttributeValues: parityLevel.subset,
+  keyedElements: parityLevel.subset,
   multipleClassAttributes: parityLevel.subset,
   namespaceElements: parityLevel.subset,
   simpleElements: parityLevel.subset,
@@ -120,6 +121,8 @@ function supportedSubset(fixture) {
     case "adjacentSlots":
       return source;
     case "jsxAttributeValues":
+      return source;
+    case "keyedElements":
       return source;
     case "simpleElements":
       return source;

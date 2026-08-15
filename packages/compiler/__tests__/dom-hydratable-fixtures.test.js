@@ -21,6 +21,7 @@ const fixtureParity = {
   fragments: "subset",
   insertChildren: "subset",
   jsxAttributeValues: "subset",
+  keyedElements: "subset",
   simpleElements: "subset",
   textInterpolation: "subset"
 };

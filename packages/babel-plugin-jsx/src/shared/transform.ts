@@ -14,7 +14,8 @@ import {
   getStaticExpression,
   escapeHTML,
   getConfig,
-  transformSpecialCaseAttributes
+  transformSpecialCaseAttributes,
+  renameElementKey
 } from "./utils";
 import { DOMWithState } from "@dom-expressions/runtime/src/constants";
 import transformComponent from "./component";
@@ -299,10 +300,12 @@ export function transformElement(
   );
 
   if (tagRenderer?.name === "dom" || getConfig(path).generate === "dom") {
+    renameElementKey(path, false);
     return transformElementDOM(path, info);
   }
 
   if (getConfig(path).generate === "ssr") {
+    renameElementKey(path, true);
     return transformElementSSR(path, info);
   }
 

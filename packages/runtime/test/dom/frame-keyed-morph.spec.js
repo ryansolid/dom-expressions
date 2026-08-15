@@ -3,7 +3,7 @@
  */
 // Keyed element matching in the morph — the element-level completion of
 // identity-first (DR-5). Server markup can carry entity identity as a
-// `data-key` attribute; the child reconcile matches keyed elements by key
+// `_key` attribute; the child reconcile matches keyed elements by key
 // (moving the existing node into position) instead of by position. Without
 // it, live element state the morph deliberately preserves — value/checked
 // (properties decoupled from attributes), `open` on <details>, focus —
@@ -32,9 +32,9 @@ function mount(id) {
   };
 }
 
-const li = (key, text) => `<li data-key="${key}">${text}</li>`;
+const li = (key, text) => `<li _key="${key}">${text}</li>`;
 
-describe("keyed element matching (data-key)", () => {
+describe("keyed element matching (_key)", () => {
   afterEach(() => (document.body.textContent = ""));
 
   it("a reorder moves the keyed element instead of rewriting positions", () => {
@@ -67,8 +67,8 @@ describe("keyed element matching (data-key)", () => {
       version: 1,
       html:
         `<ul>` +
-        `<li data-key="1"><input value="" /></li>` +
-        `<li data-key="2"><details data-key-note="none"><summary>two</summary></details></li>` +
+        `<li _key="1"><input value="" /></li>` +
+        `<li _key="2"><details><summary>two</summary></details></li>` +
         `</ul>`
     });
     // User state the server can't know: typed input value (a property,
@@ -84,16 +84,16 @@ describe("keyed element matching (data-key)", () => {
       version: 2,
       html:
         `<ul>` +
-        `<li data-key="2"><details data-key-note="none"><summary>two</summary></details></li>` +
-        `<li data-key="1"><input value="" /></li>` +
+        `<li _key="2"><details><summary>two</summary></details></li>` +
+        `<li _key="1"><input value="" /></li>` +
         `</ul>`
     });
     const rows = element.querySelectorAll("li");
     // State belongs to the entity, not the position.
-    expect(rows[0].getAttribute("data-key")).toBe("2");
+    expect(rows[0].getAttribute("_key")).toBe("2");
     expect(rows[0].querySelector("details")).toBe(details);
     expect(details.open).toBe(true);
-    expect(rows[1].getAttribute("data-key")).toBe("1");
+    expect(rows[1].getAttribute("_key")).toBe("1");
     expect(rows[1].querySelector("input")).toBe(input);
     expect(input.value).toBe("draft text");
     dispose();
@@ -144,7 +144,7 @@ describe("keyed element matching (data-key)", () => {
   it("a keyed wrapper carries its slot range along when it moves", () => {
     const { host, element, dispose } = mount("k5");
     const row = (key, slot) =>
-      `<li data-key="${key}"><!--slot:${slot}:start--><!--slot:${slot}:end--></li>`;
+      `<li _key="${key}"><!--slot:${slot}:start--><!--slot:${slot}:end--></li>`;
     host.apply({
       type: "html",
       id: "k5",

@@ -248,6 +248,15 @@ export namespace JSX {
     ref?: Ref<T>;
     children?: Element | undefined;
     $ServerOnly?: boolean | undefined;
+    /**
+     * Entity identity for server markup (SSR-only): compiles to the `_key`
+     * attribute the frame morph matches keyed elements by, so live element
+     * state (form values, `open`, focus) follows the entity across
+     * reordering morphs. Sibling-scoped, like client keyed rendering.
+     * Stripped from DOM compiles; on components, `$key` is slot occurrence
+     * identity instead.
+     */
+    $key?: string | number | undefined;
   }
   interface ExplicitProperties {}
   type PropAttributes = {
