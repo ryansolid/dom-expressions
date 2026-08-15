@@ -1841,9 +1841,22 @@ function isSlotMarker(node) {
   return SLOT_START.test(data) || SLOT_END.test(data);
 }
 
+// Identity-first at the element level (DR-5's last rung): server markup can
+// carry entity identity as `data-key`, and a keyed element matches ONLY the
+// element with the same key — never positionally. With mismatched keys
+// incompatible, the reconcile's existing relocation lookahead moves the
+// keyed node into place, so live element state the morph deliberately
+// preserves (value/checked properties, `open`, focus) follows the ENTITY
+// across reorders instead of latching to the position. Sibling-scoped by
+// design: an author key is only unique among siblings (the same id can
+// appear under two parents in one frame), so wider matching would
+// misattribute horizontally — matching client `For` semantics, where a
+// cross-parent move is a teardown. Unkeyed elements (both null) keep
+// positional matching untouched.
 function compatible(a, b) {
   if (a.nodeType !== b.nodeType) return false;
-  if (a.nodeType === ELEMENT_NODE) return a.nodeName === b.nodeName;
+  if (a.nodeType === ELEMENT_NODE)
+    return a.nodeName === b.nodeName && a.getAttribute("data-key") === b.getAttribute("data-key");
   return a.nodeType === TEXT_NODE || a.nodeType === COMMENT_NODE;
 }
 
