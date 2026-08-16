@@ -1390,10 +1390,26 @@ projecting the frame's prediction map onto elements, so
 re-assert-after-morph falls out of claim re-firing rather than being a
 bespoke pass. Stage 6 consumes the claim engine internally; Stage 7
 remains the *public opening* of that engine and is not a dependency.
-One open line this creates: precedence when a user claim and an
-overlay write the same attribute — likely namespace discipline (claims
-attach behavior, overlays own server-shaped visual state; overlays
-apply last), decided at the prototype.
+
+**Claims predict too (2026-08-16).** A claimed element is exactly the
+code most likely to initiate a mutation (a `data-toggle` button firing
+an action), so claims need optimism — and giving it to them closes the
+model instead of complicating it: **one overlay ledger, two address
+forms.** By name (`frame.predict(ref, patch)`) for code holding the
+frame handle; by element-in-hand for claims (the claim scope exposes
+`predict(patch)` against the element it received — no name needed).
+The element form is not sugar: claims exist precisely for content
+nobody could name ahead of time (code blocks streamed through a
+markdown hole), where a `_ref` requirement would exclude the claim's
+home turf. Re-assertion is the sweep in both cases, keyed differently:
+named entries re-resolve through the index; claim entries re-assert
+because the claim re-fires on the replacement element after a morph.
+Both share transaction scoping and record-as-undo. The consequence is
+the discipline line, now crisp and dev-enforceable: **claims never
+write server-shaped attributes imperatively — a claim that wants to
+perturb markup makes a prediction.** With one applier there is one
+ordering and one rollback semantics, and the former claim/overlay
+precedence question reduces to warning on direct writes.
 
 **Open wobbles (expected to surface in the prototype).**
 
@@ -1403,12 +1419,14 @@ apply last), decided at the prototype.
 - Text/children predictions: `textContent` in a patch covers the
   simple case; whether a prediction may replace an element's children
   wholesale (and how that interacts with the morph) is undecided.
-- Raw-element discipline: `refs` hands back real elements, so
-  imperative writes that bypass `predict` are *possible* — does v1
-  document the discipline, wrap the element, or dev-warn on mutation
-  of server-owned attributes?
-- Claim/overlay precedence on a shared attribute (see the claims
-  relation above).
+- Raw-element discipline: `refs` and claim callbacks hand back real
+  elements, so imperative writes that bypass `predict` are *possible*
+  — does v1 document the discipline, wrap the element, or dev-warn on
+  mutation of server-owned attributes? (The claims-predict resolution
+  reduces the old precedence question to exactly this warning.)
+- Claim-scope surface: how the element-addressed `predict` reaches the
+  claim callback (second argument, ambient during sweep, or on a scope
+  object) — decided at the prototype.
 - Naming throughout (`predict`, `refs`, `$ref`) is provisional.
 
 **Why the transactional draft died (supersession record,
