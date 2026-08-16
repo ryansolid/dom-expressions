@@ -1295,13 +1295,16 @@ interface Frame {
 }
 ```
 
-Acquisition is **ref-only**. Type the returned component —
-`ServerComponent<{ item: Slot<ItemProps>; empty?: Slot }>` — whose
-generic enforces that every authored prop is a `Slot` (server inputs
-remain arguments to the outer server function). `dynamic()` then
-infers a client-only `ref?: Ref<Frame>` mount attribute for that type;
-`ref` is consumed by the server-binding branch, never enters
-`slotsFor`, and has no server meaning. There is **no ambient
+Acquisition is **ref-only**, and the `ref` lives on the
+frame-returned component itself: the server function's returned
+component is typed `ServerComponent<{ item: Slot<ItemProps>; empty?:
+Slot }>` — the generic enforces that every authored prop is a `Slot`
+(server inputs remain arguments to the outer server function) — and
+that type carries a client-only `ref?: Ref<Frame>` attribute, so
+`<View ref={frame}>` is written on the component at its mount site.
+`dynamic()` is merely how that component came to exist; `ref` is
+consumed by the server-binding branch, never enters `slotsFor`, and
+has no server meaning. There is **no ambient
 `useFrame()` context**: with nested frames, "the nearest frame" is
 ambiguous in exactly the cases that matter, and the mounting client
 component always exists — a boundary is mounted by `dynamic()`, which
