@@ -984,15 +984,20 @@ retired as a pole and survives only as potential authoring sugar.
    into live read-only projections. See the case-3 build record in DR-2
    for what shipped and the scope lines (whole containers this round;
    parts and case 4 remain the designed extensions).
-6. **Stage 6 — Transactional frame writes.** **Next design/build
-   target (promoted 2026-08-14).** A frame is the DOM analogue of the
-   derived form of `createOptimisticStore`: its resident records are
-   the readonly authoritative source; a sanctioned DOM-like write is
-   a transaction-local prediction; settlement always reconciles by
-   morphing the current authoritative records. No inverse DOM patch
-   log and no plain/writable-source form. The frame interface is what
-   declares both ownership (only DOM this frame could morph) and
-   transactional semantics. API deliberately undecided — see §9.1.
+6. **Stage 6 — Predictions: entity overlays + optimistic entries.**
+   **Next design/build target (model revised 2026-08-16; supersedes
+   the 2026-08-14 transactional-draft seed).** The frame stays a
+   derived, readonly projection; the client speaks about it through
+   two transaction-scoped forms, both riding existing machinery:
+   **overlays** (`frame.predict(key, patch)` — JSX-attribute-shaped
+   predictions against `$key`-identified elements, re-applied over
+   every authoritative apply, evaporating at settlement) and
+   **entries** (client-rendered content portaled into a
+   server-sanctioned `$seam` container, lifetime from an optimistic
+   store). No walkable draft, no DOM-write API: structural prediction
+   is composition (client children at a server address), not
+   mutation. Substrate shipped 2026-08-15: keyed element matching in
+   the morph (`$key` → `_key`). See §9.1.
 7. **Stage 7 — Generalized claims: the micro-affordance rung.** Promoted
    from unlisted (2026-08-07, out of the Datastar comparison). The
    router's claim sweep — behavior attached by attribute over any
@@ -1053,10 +1058,12 @@ back to full re-emission + morph whenever the prefix breaks (a code
 fence closing retroactively). Additive to the chunk protocol; adopt
 when measurement earns it.
 
-### 9.1 Stage 6 design seed — transactional frame writes (2026-08-14)
+### 9.1 Stage 6 design — predictions: entity overlays + optimistic entries (revised 2026-08-16)
 
-Recorded before the API pass. The model and invariants are settled
-enough to preserve; names and public surface are intentionally not.
+Revision of the 2026-08-14 seed. The model and invariants below
+survive unchanged; the API surface was reworked 2026-08-15/16 and the
+walkable transactional draft is **retired** (the supersession record
+at the end of this section explains why). Names remain provisional.
 
 **The correspondence.** A frame is always a derived, readonly
 projection:
@@ -1065,21 +1072,35 @@ projection:
 derived optimistic store          frame
 ────────────────────────          ─────
 authoritative derived source      resident frame records
-transaction-local store write     sanctioned DOM-like write
+transaction-local prediction      overlay / entry
 source recompute                  authoritative frame write
-store reconciliation              frame morph
+store reconciliation              frame morph + prediction re-apply
 ```
 
 Unlike `createOptimisticStore`, the frame has no plain form to support.
-There is no locally writable authoritative base: an optimistic node
+There is no locally writable authoritative base: an optimistic entry
 becomes durable only when server output independently contains it. On
 settlement the frame therefore *always* reconciles from its current
 records — success keeps the prediction because those records advanced;
 failure removes it because they did not.
 
+**Optimism is the write's type, not a safety feature.** Under
+single-writer discipline the server owns frame markup, so a client
+statement about that markup is definitionally a *prediction* — a claim
+about what the server will soon say. Transaction scoping is what keeps
+the frame derived under that discipline: predictions are held state
+composed over the record, so any authoritative apply (including one
+triggered by a *different* concurrent transaction) re-derives
+`record + still-active predictions` instead of client writes stomping
+server truth or being stomped by it. Datastar asks authors to manually
+undo client state on failure; here rollback and re-application are the
+same operation — recompute the derivation with one input removed.
+There is no inverse-patch log; the authoritative record *is* the
+rollback state.
+
 **Same transaction wave.** This is not an action-only mode. Every Solid
 2.0 write already enters the transaction machinery; an async action
-merely keeps that transaction open. A frame operation registers in the
+merely keeps that transaction open. A prediction registers in the
 current batch like an optimistic store write, is visible immediately,
 and is adopted into the action transition when that batch becomes one.
 A synchronous transaction with no authoritative frame update settles
@@ -1091,243 +1112,274 @@ Frames become a third optimistic participant beside signals and stores:
 transaction
 ├── optimistic signals
 ├── optimistic stores
-└── optimistic frame operations
+└── frame predictions (overlays + entries)
 ```
 
-Concurrent transactions clear independently. When A settles while B
-is still active, the frame morphs the latest authoritative records,
-drops A's operations, and reapplies B's. This retains per-lane intent,
-not inverse DOM patches. The implementation may materialize a
-temporary authoritative DOM draft while frame writes are active (see
-streaming below); that mirror is derived cache, not the source of
-truth.
+Concurrent transactions clear independently. When A settles while B is
+still active, the frame morphs the latest authoritative records, drops
+A's predictions, and re-applies B's. This retains per-lane intent, not
+inverse DOM patches.
 
 **Morph is the correction.** A speculative append illustrates both
 outcomes:
 
 ```text
-success: base + optimistic <li>
+success: base + optimistic entry <li>
          → response records contain the <li>
-         → settlement morph
+         → settlement: entry retires; authoritative <li> is present
          → <li> remains
 
-failure: base + optimistic <li>
+failure: base + optimistic entry <li>
          → records remain the old list
-         → settlement morph
+         → settlement: entry retires
          → <li> disappears
 ```
 
-The frame already retains the logical backup: its resident root/hole
-records. A sanctioned mutation changes only live DOM, never those
-records. An initially document-adopted frame may not yet have a root
-record; capture its current authoritative interior lazily before its
-first speculative write (the runtime already performs the equivalent
-capture at last unmount for retention). Restoration is still a morph,
-not an inverse rollback.
+The frame's resident root/hole records remain the only durable truth.
+An overlay never touches them — it is composed over them at apply
+time — and an entry lives in a client-owned range the morph does not
+manage. Restoration is re-derivation, not an inverse rollback.
 
-**Walkable transactional draft.** The current API lean is a DOM-shaped
-draft callback, analogous to an optimistic store setter:
+**Form 1 — entity overlays (`predict`).** Granular optimism ("while
+this action is pending, `todo:42` is checked and disabled") is a keyed
+patch against server markup:
 
-```ts
-frame.update(root => {
-  const list = root.querySelector("[data-todos]");
-  list?.appendChild(renderOptimisticTodo(todo));
-  list?.firstElementChild?.setAttribute("data-pending", "");
+```tsx
+const toggle = action(async (todo: Todo) => {
+  frame.predict(todo.id, { checked: !todo.completed, disabled: true });
+  await toggleTodo(todo.id);
 });
 ```
 
-The root and its nodes expose only the morphable DOM vocabulary:
-`firstChild`/`nextSibling`/`children`, selector reads, attributes, text,
-and structural child operations. Mutators such as `setAttribute`,
-`appendChild`, and `removeChild` are transactional writes; arbitrary
-live browser properties the server morpher does not own are not
-silently included. Retaining a replayable draft recipe avoids stale
-live-node handles and path-encoded operation logs: after an
-authoritative change the recipe walks the *new* draft again. Recipes
-therefore mutate only the supplied draft and are deterministic;
-commands, random ids, and other effects happen outside and are
-captured as input.
+The patch vocabulary is JSX attribute semantics — `class`/`classList`,
+`style` objects, `checked`/`value` as properties, `textContent` for
+text — applied by the same binding code client JSX uses. **No third
+vocabulary:** an author who can write a Solid attribute expression can
+write a prediction; anything expressible as a JSX attribute is
+expressible as a patch, and nothing else is. Targets are elements
+carrying entity identity in server markup:
 
-**Purview is the reason for an interface.** Direct DOM mutation gives
-the frame no knowledge or guarantee. A frame write may target only the
-server-owned tree that frame's reconciler could legally morph. It must
-reject client slot interiors, nested frames, and preserved subtrees;
-live-hole interiors belong to their corresponding morph scope. The
-interface can then:
+```tsx
+// inside the "use server" component
+<li $key={todo.id} class={todo.completed ? "completed" : ""}>…</li>
+```
 
-- validate target ownership;
-- mark the affected authoritative record dirty, so byte-identical
-  server HTML still remorphs over diverged live DOM;
-- claim an inserted subtree under the frame's client owner/context;
-- associate claim/resource cleanup with removal and frame disposal;
-- replay other transactions' still-live operations after a morph.
+`$key` compiles to the `_key` attribute (SSR-only; DOM compiles strip
+it; on a component `$key` remains slot occurrence identity). Overlays
+re-apply after every authoritative apply to the frame — morph, hole
+update, attribute record — so server updates land *under* still-active
+predictions rather than erasing them. The live properties the
+attribute morpher deliberately preserves (`checked`, `value`, `open`)
+are exactly what overlays own while pending.
 
-Optimistic nodes may carry claims. Insertion through the frame runs the
-normal claim sweep; a node preserved by the authoritative morph keeps
-its behavior, a replacement is claimed, and a removal disposes its
-element scope. Generalized claims (Stage 7) make this open-ended, but
-the frame-write model does not require them.
+**Shipped substrate (2026-08-15, `keyed-morph`).** Keyed element
+matching landed in the morph: `compatible()` requires equal `_key` on
+elements, so the existing relocation lookahead moves a keyed node into
+position instead of rewriting positions. Live element state — typed
+`value`, `checked`, `open`, focus — now follows the *entity* across
+reordering morphs; previously it silently latched to the position (the
+notes-sidebar "edited note jumps to top" misattribution).
+Sibling-scoped, matching client `For` semantics: an author key is only
+unique among siblings, and a cross-parent move is a teardown. This fix
+ships independently of Stage 6 — it corrects a live defect — and is
+also the precondition for overlays: a prediction keyed to `todo:42` is
+only coherent if the morph tracks which element *is* `todo:42`.
+
+**Form 2 — optimistic entries (portal into a seam).** The
+transactional DOM draft died here, and its retirement is this
+revision's main event. A structural prediction (the optimistic `<li>`)
+has no derivation source, but draft-authoring it in server-markup
+shape means hand-maintaining a client fork of the server component's
+render — one that silently rots as the server markup evolves. And once
+the client must render the content anyway, a real client render is
+strictly stronger than a static recipe: it can be live (pending
+styling, a retry button), it composes with overlays, and it needs no
+replay discipline. Structural prediction is therefore **composition,
+not mutation**: the server sanctions an insertion point; the client
+portals real client-owned content into it.
+
+```tsx
+// server: one bare seam where entries land
+<ul class="todo-list">
+  {/* authoritative rows */}
+  <div $seam />
+</ul>
+
+// client
+const [pending, setPending] = createOptimisticStore<Todo[]>([]);
+
+const addTodo = action(async (title: string) => {
+  setPending(p => p.push({ id: tempId(), title, completed: false }));
+  await createTodo(title);
+});
+
+<Portal mount={frame.mount}>
+  <For each={pending}>{todo => <TodoRow todo={todo} pending />}</For>
+</Portal>;
+```
+
+`$seam` compiles to a container the frame registers and exposes as
+`frame.mount`; the morph treats its interior as client-owned (the same
+foreign-range skip client slot fills already rely on). Entry lifetime
+comes entirely from the optimistic store: it empties at settlement,
+the portal content unmounts, and the authoritative row — if the
+mutation succeeded — is already in the morphed record.
+**Retire-and-replace is the default:** the optimistic node and the
+authoritative node are different elements, and the swap is accepted.
+Keyed adoption (a temp-key protocol transferring the live optimistic
+node into authoritative ownership for perfect DOM continuity) is a
+designed escalation, deliberately deferred — it is the expensive tier
+and nothing in the acceptance gate requires it. A named seam
+(`$seam="archive"`, resolved off the handle) is the disambiguator when
+one frame needs multiple entry points; the bare form covers the common
+case.
 
 **In-flight streaming — same rule as derived optimistic stores.**
 Authoritative updates do not wait for optimism:
 
 ```text
 latest root/hole/attribute records
-+ all still-active transaction recipes
++ all still-active predictions
 = visible target DOM
 ```
 
-Every incoming chunk first advances the authoritative representation,
-then active recipes reapply and the result morphs into live DOM. It
-must never morph raw incoming HTML over the live optimistic tree and
-leave the layers conflated. Preserve today's direct fast path while no
-frame transactions exist; on the first write, lazily materialize a
-walkable authoritative draft, route root/hole/attribute updates into
-it while any lane remains, and discard it after the final settlement.
-This pays temporary duplicate DOM only for active optimism. The spike
-must decide whether one whole-frame draft is required or operations
-can safely index the existing root/hole morph scopes without making
-cross-scope queries incoherent.
+Every incoming chunk first advances the authoritative records, the
+morph applies them (skipping entry seam interiors as foreign ranges),
+and overlays re-assert on the result. No whole-frame draft
+materialization is required — the layers never conflate because
+overlays are patches over elements the morph owns, and entries live in
+ranges the morph never enters. This is the structural payoff of
+retiring the draft: the streaming path keeps today's direct apply.
 
-**Package boundary.** `dom-expressions` should know constrained DOM
-ownership, dirty-record/remorph mechanics, and claim sweeps — not Solid
-transactions. `solid-web` binds frame operations to Solid's current
-transaction and mount context. Today's single-flight response naturally
-applies authoritative records before transaction settlement. Stage 8's
-separate connection will need a causal token/watermark so an
-acknowledged mutation does not settle before its frame version arrives.
+**Package boundary.** `dom-expressions` knows `_key` matching
+(shipped), seam registration, foreign-range skipping, and overlay
+re-assertion inside its apply pipeline — not Solid transactions.
+`solid-web` binds predictions to Solid's transaction machinery and
+provides the `Portal`/optimistic-store composition. Today's
+single-flight response naturally applies authoritative records before
+transaction settlement. Stage 8's separate connection will need a
+causal token/watermark so an acknowledged mutation does not settle
+before its frame version arrives.
 
-**Decided (2026-08-14): predictions are address-scoped.** A transaction
-recipe belongs to the content address captured at write time, not the
-mount site — the DR-1 answer. Rebinding a mount to a new address never
-carries the old call's prediction (markup predicted for one render must
-not graft onto a different render); rebinding back while the
-transaction is still active restores it. Two mounts of one address show
-the same prediction, and since both authoritative records and recipes
-now live in the host's address-resident store, there is ONE derived
-draft per address that every mount morphs to — the per-mount
-"whose draft wins" question dissolves. The consequence is the tier's
-honest boundary line: **predictions do not span addresses.** An
-optimistic toggle written against `getTodos("all")` does not appear in
-`getTodos("active")`, though the server would reflect it in both — the
-frame layer holds markup, not data, so a prediction is a statement
-about one render. When optimism must span multiple server renders, it
-is data-shaped and belongs in a client store/projection. (TodoMVC
-probes this line: client-side filter claims over one address keep one
-prediction covering everything; per-filter addresses hit the boundary
-exactly where it should be.) Site-local state — focus, selection, an
-open menu — was never frame-write state; it stays with claims and
+**Decided (2026-08-14, survives the revision): predictions are
+address-scoped.** A prediction belongs to the content address captured
+at write time, not the mount site — the DR-1 answer. Rebinding a mount
+to a new address never carries the old call's prediction (markup
+predicted for one render must not graft onto a different render);
+rebinding back while the transaction is still active restores it. Two
+mounts of one address show the same prediction, and since both
+authoritative records and predictions live in the host's
+address-resident store, there is ONE derived view per address that
+every mount morphs to — the per-mount "whose prediction wins" question
+dissolves. The consequence is the tier's honest boundary line:
+**predictions do not span addresses.** An optimistic toggle written
+against `getTodos("all")` does not appear in `getTodos("active")`,
+though the server would reflect it in both — the frame layer holds
+markup, not data, so a prediction is a statement about one render.
+When optimism must span multiple server renders, it is data-shaped and
+belongs in a client store/projection. (TodoMVC probes this line:
+client-side filter claims over one address keep one prediction
+covering everything; per-filter addresses hit the boundary exactly
+where it should be.) Site-local state — focus, selection, an open
+menu — was never prediction state; it stays with claims and
 components.
 
-**Current API lean (still provisional).** Type the *returned component*:
+**Surface (2026-08-16 lean).** One handle, two verbs, one door:
 
 ```ts
-ServerComponent<{ item: Slot<ItemProps>; empty?: Slot }>
+interface Frame {
+  /** entity-keyed overlay; transaction-scoped; $key scope = this frame */
+  predict(key: string | number, patch: JSXAttributes): void;
+  /** the frame's $seam container — Portal target for optimistic entries */
+  mount: Node;
+}
 ```
 
-Its generic enforces that every authored prop is a `Slot` (server
-inputs remain arguments to the outer server function). `dynamic()`
-then infers a client-only `ref?: Ref<FrameRef>` mount attribute for
-that type. `<View ref={frame}>` supplies the exact per-mount frame;
+Acquisition is **ref-only**. Type the returned component —
+`ServerComponent<{ item: Slot<ItemProps>; empty?: Slot }>` — whose
+generic enforces that every authored prop is a `Slot` (server inputs
+remain arguments to the outer server function). `dynamic()` then
+infers a client-only `ref?: Ref<Frame>` mount attribute for that type;
 `ref` is consumed by the server-binding branch, never enters
-`slotsFor`, and has no server meaning. The `FrameRef` currently leans
-toward `update(draft => ...)`, not a bag of controller methods.
+`slotsFor`, and has no server meaning. There is **no ambient
+`useFrame()` context**: with nested frames, "the nearest frame" is
+ambiguous in exactly the cases that matter, and the mounting client
+component always exists — a boundary is mounted by `dynamic()`, which
+is client code; even the t=0 document is the client app SSR'd — so
+the handle is always acquirable where the mount is written and travels
+by closure, prop, or user-defined context from there. `Portal`
+placement is orthogonal to ownership: the portal is authored in client
+code (ownership and cleanup with the client owner) while `mount`
+points inside the frame's DOM (placement) — the same split `Portal`
+has always had.
 
-**Open questions before/during the prototype (no answer implied yet):**
+**Scope contracts.**
 
-- Is `update(draft => ...)` the only write form, or should the
-  `FrameRef` itself expose direct walkable/mutating nodes? Direct
-  methods require replay-safe target identity; the draft callback
-  avoids stale handles but imposes deterministic-recipe discipline.
-- What exact DOM subset is writable? In particular, TodoMVC forces the
-  `checked`/`value` question: those are live properties the current
-  attribute morpher intentionally preserves. Are controlled property
-  writes part of a frame draft, a claim/client-component concern, or
-  an explicit opt-in authority handoff?
-- Are optimistic insertions retained as actual nodes, recreated by the
-  recipe, or represented by semantic operations? How do claims and
-  element-scoped cleanup behave when a replay creates a fresh source
-  node but the morph preserves the live one? (Replay re-runs recipes,
-  so a recipe minting a node per run re-claims per run — tolerable
-  exactly because claims are idempotent-by-contract. The determinism
-  discipline itself is unenforceable in JS; documented contract for
-  the spike, dev-mode double-run detection only if people trip on it.)
-- What ordinary-element identity, if any, is needed beyond today's
-  tag/position morph (client-generated idempotency keys are the natural
-  optimistic-add case)?
-- What does a recipe do when its selector/target disappeared in newer
-  authoritative output — no-op, abort that operation, or dev error?
-- Does a whole-frame authoritative draft include the latest live-hole
-  and attribute records, and how are slot ranges/nested frames modeled
-  as opaque units without duplicating their client interiors?
-- How do settlement and forced remorph interact with error records,
-  truncation/transport abort, rebinding, and document adoption?
-- Does the existing experimental `Frame` surface grow this capability,
-  or is it kept behind a higher-level `solid-web` mount interface?
+- `$key` values must be unique within one frame's markup (dev-mode
+  check). The frame is the prediction scope; that is design pressure
+  in the right direction — a server component rendering one collection
+  is the natural unit — and prefixed keys or a component split resolve
+  genuine collisions.
+- Predictions do not cross into nested server component (region)
+  interiors: a region's markup belongs to its own address, and a
+  root-frame handle predicting into a child region is unsupported.
+  **Region handles are a real need, not a cut** — the HN comment tree
+  (optimistic reply into a nested, server-composed thread region) is
+  their acceptance gate — but they are explicitly out of TodoMVC's
+  scope, which stays flat.
 
-**Two-tier optimism — the ergonomics resolution (2026-08-14).** The
-draft recipe is imperative, and the right response to that is a scope
-split, not a description layer. The write model is already aligned —
-`setTodos(t => { t.push(...) })` is an imperative mutation against a
-draft, reconciled on settle; `frame.update(draft => ...)` is the same
-shape at the markup tier — and Solid's declarativeness has never lived
-in writes, only in derivations. So the real question is which optimism
-has a derivation form. Answer: most of it. Granular attribute/property
-optimism ("while this action is pending, `todo:42` is checked and
-marked pending") is an **entity-keyed overlay**: a context-held
-reactive map projected onto whatever element carries the entity
-attribute, by a claim. That form is declarative (derived state, no
-recipe/replay), morph-proof by construction (the morph strips, the
-re-claim reasserts), **address-spanning** (data-shaped — it appears in
-every render showing the entity, dissolving the address boundary for
-exactly the granular case where it stung), and it naturally owns live
-properties (`checked`/`value`) the morpher deliberately won't. It is a
-Stage 7 + context capability, not Stage 6 machinery. Stage 6 then
-shrinks to what is genuinely imperative: **structural prediction** —
-an optimistic `<li>` has no derivation source; inventing markup is an
-imperative act in any framework. Recipe node-authoring can still read
-declaratively: client JSX compiles to `template` and yields real
-nodes, so `list.appendChild(<TodoRow todo={draft} />)` works — with
-the constraint that recipe nodes are STATIC (no live bindings: a
-binding needs an owner and fights replay; liveness on an optimistic
-node belongs to the overlay tier, which composes — the recipe inserts
-`<li data-entity="todo:temp-1">`, the claim projects its state).
+**Open wobbles (expected to surface in the prototype).**
 
-The children parallel (can't declaratively layer props onto resolved
-children the way React's `cloneElement` can) is precedent FOR this
-split, not against it: React soft-deprecated `cloneElement` — the
-declarative overlay onto opaque resolved output was the footgun, not
-the gap — and Solid's answer has always been layering *before*
-resolution (props, context, compile time). Claims are that move for
-server markup: the entity attribute is authored into the markup before
-it resolves. The draft recipe is the acknowledged imperative floor
-beneath them, the same role the `children()` helper plays today.
+- Leaf-keying ergonomics: how much `$key` annotation does a realistic
+  component need before overlays can express its pending states?
+- Text/children predictions: `textContent` in a patch covers the
+  simple case; whether a prediction may replace an element's children
+  wholesale (and how that interacts with the morph) is undecided.
+- Read surface: v1 has none (no selector reads over the frame). Does
+  anything in TodoMVC force one?
+- Naming throughout (`predict`, `mount`, `$seam`) is provisional.
 
-**Acceptance gate — Server Component TodoMVC.** Port the existing
-`examples/todos` beside itself, preserving its delays, ~33% write
-failure, per-item retry, bulk actions, filters, and overlapping
-transitions. The existing app is the derived
+**Why the transactional draft died (supersession record,
+2026-08-15/16).** The 2026-08-14 seed's `frame.update(draft => ...)`
+earned its keep only for structural prediction — the two-tier
+resolution had already moved everything granular into entity overlays.
+But a draft-authored node must *mirror what the server will render* to
+be a coherent prediction, which means hand-maintaining a client fork
+of server markup that silently rots as the server component evolves;
+and the recipe/replay discipline (deterministic recipes, stale-handle
+avoidance, draft materialization while lanes are active, the
+walkable-DOM subset) existed only to serve that case. Composition
+dissolves it: the client renders its own placeholder with its own
+tools — live bindings and all, since it has a real owner — the server
+sanctions where it lands, and settlement is subtraction rather than
+replay. What the seed got right is retained above: the derived frame,
+transaction scoping, morph-as-correction, address-scoped predictions,
+and the two-tier insight that granular optimism has a derivation form.
+What it got wrong was putting a DOM-write API on a surface whose whole
+design premise is that the client does not write server markup.
+
+**Acceptance gate — Server Component TodoMVC (revised 2026-08-16).**
+Port the existing `examples/todos` beside itself, preserving its
+delays, ~33% write failure, per-item retry, bulk actions, filters, and
+overlapping transitions. The existing app is the derived
 `createOptimisticStore` reference implementation; the port replaces
-its authoritative data/render with server-component markup and frame
-draft writes. First prove Stage 6 with one delegated client parent
-(`click`/`change` over the frame); then use a provisional generalized
-claim to test the intended final ergonomics without making Stage 7 a
-dependency. Do not publish the API until add/remove/toggle success and
+its authoritative data/render with server-component markup plus
+predictions. The pass condition: **every optimistic behavior lands in
+`predict`, one seam portal, or data-shaped client state — zero
+imperative DOM writes, zero vocabulary beyond JSX attributes.**
+Toggle/pending/disabled/error markup are overlays; add is an entry;
+counters and filter state are data-shaped (slot args / client
+signals). Do not publish the API until add/remove/toggle success and
 failure, checkbox correction, concurrent and bulk mutations,
-retry/error markup, focus, claims, and clean hydration all work. The
-decision criterion is not merely correctness — two measurements:
-(1) if the port relocates the current store's simplicity into
-operation-specific DOM machinery, the abstraction fails; (2) the
-**tier ratio** — count which optimism lands in entity overlays versus
-draft recipes. If toggle/pending/disabled/error are all overlays and
-only add/remove/clear-completed touch the draft, the imperative
-surface is a rarely-touched floor (like `children()`) and the
-ergonomics question is answered; if everything ends up in recipes,
-the indictment stands.
+retry/error markup, state retention across reordering morphs (the
+`_key` substrate: focus, typed values), and clean hydration all work.
+The decision criterion beyond correctness is simplicity parity: if the
+port relocates the current store's simplicity into prediction
+bookkeeping, the abstraction fails.
 
-**Non-negotiable invariant:** the frame itself remains derived. The
-write interface may temporarily perturb its rendered projection, but
-only an authoritative frame record can make that output durable.
+**Non-negotiable invariant:** the frame itself remains derived.
+Predictions may temporarily perturb its rendered projection, but only
+an authoritative frame record can make that output durable.
 
 ### 9.2 Stage 7 sketch — generalized claims and the affordance tier (2026-08-13)
 
@@ -1496,9 +1548,9 @@ reflect its state. The markup still carries data, never expressions or
 serialized closures; the provider is the local authority boundary.
 Client components wrapping the insertion point and claimed
 server-authored elements can therefore be two front doors into the
-same mutation interface. Stage 6's transactional frame writes are the
-natural writable capability such a context may expose, but claims do
-not require it.
+same mutation interface. Stage 6's frame handle (`predict` + the seam
+mount) is the natural writable capability such a context may expose,
+but claims do not require it.
 
 **Tier policy option (2026-08-13): spec'd-only built-ins.** Possibly
 the only *shipped* affordances are ones the platform has spec'd or
