@@ -984,20 +984,22 @@ retired as a pole and survives only as potential authoring sugar.
    into live read-only projections. See the case-3 build record in DR-2
    for what shipped and the scope lines (whole containers this round;
    parts and case 4 remain the designed extensions).
-6. **Stage 6 — Predictions: entity overlays + optimistic entries.**
+6. **Stage 6 — Predictions: overlays + optimistic entries.**
    **Next design/build target (model revised 2026-08-16; supersedes
    the 2026-08-14 transactional-draft seed).** The frame stays a
-   derived, readonly projection; the client speaks about it through
-   two transaction-scoped forms, both riding existing machinery:
-   **overlays** (`frame.predict(key, patch)` — JSX-attribute-shaped
-   predictions against `$key`-identified elements, re-applied over
-   every authoritative apply, evaporating at settlement) and
-   **entries** (client-rendered content portaled into a
-   server-sanctioned `$seam` container, lifetime from an optimistic
-   store). No walkable draft, no DOM-write API: structural prediction
-   is composition (client children at a server address), not
-   mutation. Substrate shipped 2026-08-15: keyed element matching in
-   the morph (`$key` → `_key`). See §9.1.
+   derived, readonly projection; server markup publishes named
+   element handles (`$ref`, frame-unique — string refs with the frame
+   as the explicit owner), and the client speaks about the frame
+   through two transaction-scoped forms riding existing machinery:
+   **overlays** (`frame.predict(ref, patch)` — JSX-attribute-shaped
+   predictions against named elements, re-asserted over every
+   authoritative apply, evaporating at settlement) and **entries**
+   (client-rendered content portaled into a named container, lifetime
+   from an optimistic store). `$key` stays morph-only identity with
+   no client-facing role. No walkable draft, no DOM-write API:
+   structural prediction is composition (client children at a server
+   address), not mutation. Substrate shipped 2026-08-15: keyed
+   element matching in the morph (`$key` → `_key`). See §9.1.
 7. **Stage 7 — Generalized claims: the micro-affordance rung.** Promoted
    from unlisted (2026-08-07, out of the Datastar comparison). The
    router's claim sweep — behavior attached by attribute over any
@@ -1058,12 +1060,14 @@ back to full re-emission + morph whenever the prefix breaks (a code
 fence closing retroactively). Additive to the chunk protocol; adopt
 when measurement earns it.
 
-### 9.1 Stage 6 design — predictions: entity overlays + optimistic entries (revised 2026-08-16)
+### 9.1 Stage 6 design — predictions: overlays + optimistic entries (revised 2026-08-16)
 
 Revision of the 2026-08-14 seed. The model and invariants below
-survive unchanged; the API surface was reworked 2026-08-15/16 and the
+survive unchanged; the API surface was reworked 2026-08-15/16 — the
 walkable transactional draft is **retired** (the supersession record
-at the end of this section explains why). Names remain provisional.
+near the end explains why), and a same-day second pass replaced the
+`$seam`/key-addressed shape with the flat `$ref` model recorded here.
+Names remain provisional.
 
 **The correspondence.** A frame is always a derived, readonly
 projection:
@@ -1140,14 +1144,40 @@ An overlay never touches them — it is composed over them at apply
 time — and an entry lives in a client-owned range the morph does not
 manage. Restoration is re-derivation, not an inverse rollback.
 
-**Form 1 — entity overlays (`predict`).** Granular optimism ("while
-this action is pending, `todo:42` is checked and disabled") is a keyed
-patch against server markup:
+**The addressing primitive — `$ref` (decided 2026-08-16).** Server
+markup publishes named element handles: `$ref` compiles to a `_ref`
+attribute (SSR-only, `_hk` family; DOM compiles strip it), and the
+frame handle is the explicit owner names resolve through —
+`frame.refs.entries`, `frame.refs[`check:${id}`]`. Old-school string
+refs, deliberately: at the slot border a name in an attribute is the
+only ref mechanism that serializes (markup cannot close over a client
+function), and the disease that killed string refs in-tree — an
+implicit ambient owner — is cured here because the owner is a handle
+you explicitly hold. Names are frame-unique (dev-checked); per-entity
+handles embed the entity in the name (`$ref={`check:${t.id}`}`) — the
+author's spelling, not a runtime scoping scheme. **`$key` has no
+client-facing role.** It is sibling-scoped (two parents may repeat a
+key), so it cannot enter a frame-level index; it stays purely the
+morph's identity contract. The two attributes answer different
+questions — `$key`: *which entity is this* (matching); `$ref`: *where
+is this part* (addressing) — and both may sit on one element, where
+the `_ref` rides the node that `_key` matching preserves, so a handle
+follows its entity across reorders for free.
+
+**Form 1 — overlays (`predict`).** Granular optimism ("while this
+action is pending, todo 42's checkbox is checked") is a patch against
+a named handle:
 
 ```tsx
-const toggle = action(async (todo: Todo) => {
-  frame.predict(todo.id, { checked: !todo.completed, disabled: true });
-  await toggleTodo(todo.id);
+// server
+<li $key={t.id} class={t.completed ? "completed" : ""}>
+  <input $ref={`check:${t.id}`} type="checkbox" checked={t.completed} />
+</li>
+
+// client
+const toggle = action(async (t: Todo) => {
+  frame.predict(`check:${t.id}`, { checked: !t.completed });
+  await toggleTodo(t.id);
 });
 ```
 
@@ -1156,21 +1186,12 @@ The patch vocabulary is JSX attribute semantics — `class`/`classList`,
 text — applied by the same binding code client JSX uses. **No third
 vocabulary:** an author who can write a Solid attribute expression can
 write a prediction; anything expressible as a JSX attribute is
-expressible as a patch, and nothing else is. Targets are elements
-carrying entity identity in server markup:
-
-```tsx
-// inside the "use server" component
-<li $key={todo.id} class={todo.completed ? "completed" : ""}>…</li>
-```
-
-`$key` compiles to the `_key` attribute (SSR-only; DOM compiles strip
-it; on a component `$key` remains slot occurrence identity). Overlays
-re-apply after every authoritative apply to the frame — morph, hole
-update, attribute record — so server updates land *under* still-active
-predictions rather than erasing them. The live properties the
-attribute morpher deliberately preserves (`checked`, `value`, `open`)
-are exactly what overlays own while pending.
+expressible as a patch, and nothing else is. Overlays re-assert after
+every authoritative apply to the frame — morph, hole update, attribute
+record — so server updates land *under* still-active predictions
+rather than erasing them. The live properties the attribute morpher
+deliberately preserves (`checked`, `value`, `open`) are exactly what
+overlays own while pending.
 
 **Shipped substrate (2026-08-15, `keyed-morph`).** Keyed element
 matching landed in the morph: `compatible()` requires equal `_key` on
@@ -1182,10 +1203,11 @@ notes-sidebar "edited note jumps to top" misattribution).
 Sibling-scoped, matching client `For` semantics: an author key is only
 unique among siblings, and a cross-parent move is a teardown. This fix
 ships independently of Stage 6 — it corrects a live defect — and is
-also the precondition for overlays: a prediction keyed to `todo:42` is
-only coherent if the morph tracks which element *is* `todo:42`.
+also what makes overlays coherent across reorders: the `_ref` handle a
+prediction targets rides the element that `_key` matching preserves,
+so the patch follows the entity instead of latching to a position.
 
-**Form 2 — optimistic entries (portal into a seam).** The
+**Form 2 — optimistic entries (portal into a named container).** The
 transactional DOM draft died here, and its retirement is this
 revision's main event. A structural prediction (the optimistic `<li>`)
 has no derivation source, but draft-authoring it in server-markup
@@ -1195,14 +1217,14 @@ the client must render the content anyway, a real client render is
 strictly stronger than a static recipe: it can be live (pending
 styling, a retry button), it composes with overlays, and it needs no
 replay discipline. Structural prediction is therefore **composition,
-not mutation**: the server sanctions an insertion point; the client
-portals real client-owned content into it.
+not mutation**: the server publishes a handle to an insertion point;
+the client portals real client-owned content into it.
 
 ```tsx
-// server: one bare seam where entries land
+// server: a named container where entries land
 <ul class="todo-list">
   {/* authoritative rows */}
-  <div $seam />
+  <div $ref="entries" />
 </ul>
 
 // client
@@ -1213,26 +1235,30 @@ const addTodo = action(async (title: string) => {
   await createTodo(title);
 });
 
-<Portal mount={frame.mount}>
+<Portal mount={frame.refs.entries}>
   <For each={pending}>{todo => <TodoRow todo={todo} pending />}</For>
 </Portal>;
 ```
 
-`$seam` compiles to a container the frame registers and exposes as
-`frame.mount`; the morph treats its interior as client-owned (the same
-foreign-range skip client slot fills already rely on). Entry lifetime
-comes entirely from the optimistic store: it empties at settlement,
-the portal content unmounts, and the authoritative row — if the
-mutation succeeded — is already in the morphed record.
+There is no separate seam concept (a `$seam` marker lived for a few
+hours on 2026-08-16 and dissolved into `$ref`): the entries container
+is an ordinary named handle, and refs cover what seams could not — the
+status banner someone predicts `textContent` on, the leaf input inside
+a keyed row. The ownership contract moved from markup declaration to
+the act: when a Portal mounts into a server-owned container, the frame
+marks that range foreign (the same skip client slot fills rely on), so
+the morph flows around portal content without a marker promising it in
+advance. Publishing a `$ref` *is* the sanction — the server exposing
+an element; what the client does with the handle is client business.
+Entry lifetime comes entirely from the optimistic store: it empties at
+settlement, the portal content unmounts, and the authoritative row —
+if the mutation succeeded — is already in the morphed record.
 **Retire-and-replace is the default:** the optimistic node and the
 authoritative node are different elements, and the swap is accepted.
 Keyed adoption (a temp-key protocol transferring the live optimistic
 node into authoritative ownership for perfect DOM continuity) is a
 designed escalation, deliberately deferred — it is the expensive tier
-and nothing in the acceptance gate requires it. A named seam
-(`$seam="archive"`, resolved off the handle) is the disambiguator when
-one frame needs multiple entry points; the bare form covers the common
-case.
+and nothing in the acceptance gate requires it.
 
 **In-flight streaming — same rule as derived optimistic stores.**
 Authoritative updates do not wait for optimism:
@@ -1244,15 +1270,15 @@ latest root/hole/attribute records
 ```
 
 Every incoming chunk first advances the authoritative records, the
-morph applies them (skipping entry seam interiors as foreign ranges),
-and overlays re-assert on the result. No whole-frame draft
-materialization is required — the layers never conflate because
-overlays are patches over elements the morph owns, and entries live in
-ranges the morph never enters. This is the structural payoff of
-retiring the draft: the streaming path keeps today's direct apply.
+morph applies them (skipping portal-occupied ranges as foreign), and
+overlays re-assert on the result. No whole-frame draft materialization
+is required — the layers never conflate because overlays are patches
+over elements the morph owns, and entries live in ranges the morph
+never enters. This is the structural payoff of retiring the draft: the
+streaming path keeps today's direct apply.
 
 **Package boundary.** `dom-expressions` knows `_key` matching
-(shipped), seam registration, foreign-range skipping, and overlay
+(shipped), `_ref` indexing, foreign-range skipping, and overlay
 re-assertion inside its apply pipeline — not Solid transactions.
 `solid-web` binds predictions to Solid's transaction machinery and
 provides the `Portal`/optimistic-store composition. Today's
@@ -1284,16 +1310,22 @@ where it should be.) Site-local state — focus, selection, an open
 menu — was never prediction state; it stays with claims and
 components.
 
-**Surface (2026-08-16 lean).** One handle, two verbs, one door:
+**Surface (2026-08-16 lean).** One handle, one verb, one index, one
+door:
 
 ```ts
 interface Frame {
-  /** entity-keyed overlay; transaction-scoped; $key scope = this frame */
-  predict(key: string | number, patch: JSXAttributes): void;
-  /** the frame's $seam container — Portal target for optimistic entries */
-  mount: Node;
+  /** overlay against a $ref-named element; transaction-scoped */
+  predict(ref: string, patch: JSXAttributes): void;
+  /** reactive index of the frame's $ref-named elements (claim-maintained) */
+  refs: Record<string, Element>;
 }
 ```
+
+`refs` entries are reactive: the index is maintained by the claim
+sweep (below), so a lookup re-resolves when a morph replaces the
+element — a `Portal` mounted on `frame.refs.entries` re-targets
+instead of holding a detached node.
 
 Acquisition is **ref-only**, and the `ref` lives on the
 frame-returned component itself: the server function's returned
@@ -1312,17 +1344,19 @@ is client code; even the t=0 document is the client app SSR'd — so
 the handle is always acquirable where the mount is written and travels
 by closure, prop, or user-defined context from there. `Portal`
 placement is orthogonal to ownership: the portal is authored in client
-code (ownership and cleanup with the client owner) while `mount`
-points inside the frame's DOM (placement) — the same split `Portal`
-has always had.
+code (ownership and cleanup with the client owner) while its mount
+target points inside the frame's DOM (placement) — the same split
+`Portal` has always had.
 
 **Scope contracts.**
 
-- `$key` values must be unique within one frame's markup (dev-mode
-  check). The frame is the prediction scope; that is design pressure
-  in the right direction — a server component rendering one collection
-  is the natural unit — and prefixed keys or a component split resolve
-  genuine collisions.
+- `$ref` names must be unique within one frame's markup (dev-mode
+  check on the index). `$key` keeps its shipped contract — unique
+  among siblings only — which is exactly why it cannot double as an
+  addressing primitive. The frame is the prediction scope; that is
+  design pressure in the right direction — a server component
+  rendering one collection is the natural unit — and name prefixes or
+  a component split resolve genuine collisions.
 - Predictions do not cross into nested server component (region)
   interiors: a region's markup belongs to its own address, and a
   root-frame handle predicting into a child region is unsupported.
@@ -1331,16 +1365,51 @@ has always had.
   their acceptance gate — but they are explicitly out of TodoMVC's
   scope, which stays flat.
 
+**Relation to claims (Stage 7) — one engine, two directions
+(2026-08-16).** Claims and refs are both ways client code touches
+server-materialized elements, and they divide cleanly: **a claim's
+argument is the element; a ref's argument is the name.** A claim is
+class-based and push-directed — "every element carrying this attribute
+behaves this way"; the registry drives lifecycle (fire on
+materialization, re-fire when a morph replaces the element, cleanup on
+removal), no handle or name involved — which is why it is the only
+path to behavior on content nobody can name ahead of time (code blocks
+streaming through a markdown hole). A ref is instance-based and
+pull-directed — code already holding the frame needs one known
+occurrence now (an action predicting, a portal mounting). A claim
+cannot answer a pull; an index cannot attach per-kind behavior with
+element-scoped cleanup. Complementary, not competing.
+
+The convergence is in the implementation: **the ref index and overlay
+re-assertion are built ON the claim engine** — internal consumers of
+the same sweep the router's link layer already uses. A built-in `_ref`
+claim maintains the reactive index (entry on materialization, removal
+on cleanup, re-point on morph replacement — which is what makes `refs`
+lookups reactive), and overlay application is the same sweep
+projecting the frame's prediction map onto elements, so
+re-assert-after-morph falls out of claim re-firing rather than being a
+bespoke pass. Stage 6 consumes the claim engine internally; Stage 7
+remains the *public opening* of that engine and is not a dependency.
+One open line this creates: precedence when a user claim and an
+overlay write the same attribute — likely namespace discipline (claims
+attach behavior, overlays own server-shaped visual state; overlays
+apply last), decided at the prototype.
+
 **Open wobbles (expected to surface in the prototype).**
 
-- Leaf-keying ergonomics: how much `$key` annotation does a realistic
-  component need before overlays can express its pending states?
+- Ref-name volume: per-entity handles put an attribute on every
+  addressable leaf and rebuild index entries as lists churn — fine at
+  TodoMVC scale, worth measuring at HN-thread scale.
 - Text/children predictions: `textContent` in a patch covers the
   simple case; whether a prediction may replace an element's children
   wholesale (and how that interacts with the morph) is undecided.
-- Read surface: v1 has none (no selector reads over the frame). Does
-  anything in TodoMVC force one?
-- Naming throughout (`predict`, `mount`, `$seam`) is provisional.
+- Raw-element discipline: `refs` hands back real elements, so
+  imperative writes that bypass `predict` are *possible* — does v1
+  document the discipline, wrap the element, or dev-warn on mutation
+  of server-owned attributes?
+- Claim/overlay precedence on a shared attribute (see the claims
+  relation above).
+- Naming throughout (`predict`, `refs`, `$ref`) is provisional.
 
 **Why the transactional draft died (supersession record,
 2026-08-15/16).** The 2026-08-14 seed's `frame.update(draft => ...)`
@@ -1368,8 +1437,9 @@ overlapping transitions. The existing app is the derived
 `createOptimisticStore` reference implementation; the port replaces
 its authoritative data/render with server-component markup plus
 predictions. The pass condition: **every optimistic behavior lands in
-`predict`, one seam portal, or data-shaped client state — zero
-imperative DOM writes, zero vocabulary beyond JSX attributes.**
+`predict`, one entries portal (`$ref` + `Portal`), or data-shaped
+client state — zero imperative DOM writes, zero vocabulary beyond JSX
+attributes and ref names.**
 Toggle/pending/disabled/error markup are overlays; add is an entry;
 counters and filter state are data-shaped (slot args / client
 signals). Do not publish the API until add/remove/toggle success and
@@ -1551,9 +1621,11 @@ reflect its state. The markup still carries data, never expressions or
 serialized closures; the provider is the local authority boundary.
 Client components wrapping the insertion point and claimed
 server-authored elements can therefore be two front doors into the
-same mutation interface. Stage 6's frame handle (`predict` + the seam
-mount) is the natural writable capability such a context may expose,
-but claims do not require it.
+same mutation interface. Stage 6's frame handle (`predict` + `refs`)
+is the natural writable capability such a context may expose, but
+claims do not require it — and Stage 6 already consumes the claim
+engine internally for its ref index and overlay re-assertion (see
+§9.1), so Stage 7 opens a seam that by then has three consumers.
 
 **Tier policy option (2026-08-13): spec'd-only built-ins.** Possibly
 the only *shipped* affordances are ones the platform has spec'd or
