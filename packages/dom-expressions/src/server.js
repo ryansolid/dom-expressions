@@ -432,7 +432,16 @@ export function escape(s, attr) {
       for (let i = 0; i < s.length; i++) s[i] = escape(s[i]);
       return s;
     }
-    if (attr && t === "boolean") return String(s);
+    if (attr) {
+      if (t === "boolean") return String(s);
+      // Nullish values pass through so callers can omit the attribute, and
+      // numbers can never contain `&` or `"`. Everything else (arrays,
+      // objects) would be stringified by the surrounding template literal
+      // anyway, so coerce to the final string here first — matching what the
+      // client DOM receives — and run it through the normal string path.
+      if (s == null || t === "number") return s;
+      return escape(String(s), attr);
+    }
     return s;
   }
   const delim = attr ? '"' : "<";
