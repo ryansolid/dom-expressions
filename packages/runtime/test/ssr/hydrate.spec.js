@@ -83,6 +83,35 @@ describe("r.hydrate", () => {
     expect(el1.nextSibling.nextSibling).toBe(el3);
   });
 
+  it("warns in dev on a hydration key miss instead of silently creating detached DOM (solidjs/solid#3000)", () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    // Server markup keyed under a different id namespace than the client walk
+    // computes (e.g. hydrating a subtree of a larger server render without
+    // NoHydration/Hydration or a matching renderId).
+    container.innerHTML = `<div _hk=42>server</div>`;
+    const serverEl = container.firstChild;
+
+    let clientEl;
+    const dispose = r.hydrate(() => {
+      clientEl = r.getNextElement(_tmpl$2);
+      r.runHydrationEvents();
+      return clientEl;
+    }, container);
+
+    // The miss healed by creating a fresh element — the server node was not
+    // claimed — and dev reported the mismatch actionably.
+    expect(clientEl).not.toBe(serverEl);
+    const missWarnings = warnSpy.mock.calls.filter(
+      c => typeof c[0] === "string" && c[0].includes("Hydration key miss")
+    );
+    expect(missWarnings).toHaveLength(1);
+    expect(missWarnings[0][0]).toContain("NoHydration");
+
+    warnSpy.mockRestore();
+    dispose();
+    container.innerHTML = "";
+  });
+
   it("hydrates fragment with adjacent text items", () => {
     rendered = r2.renderToString(() => ["prefix", "hello"]);
     expect(rendered).toBe("prefix<!--!$-->hello");
