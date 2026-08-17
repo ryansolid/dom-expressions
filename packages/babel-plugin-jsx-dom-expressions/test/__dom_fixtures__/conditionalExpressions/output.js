@@ -200,6 +200,11 @@ const template14a = _$createComponent(Comp, {
     return _$memo(() => !!state.dynamic)() && good.good;
   }
 });
+const template14b = _$createComponent(Comp, {
+  get value() {
+    return _$memo(() => !!a())() && a();
+  }
+});
 
 // no dynamic predicate
 const template15 = _$createComponent(Comp, {
