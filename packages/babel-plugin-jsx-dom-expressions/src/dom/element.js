@@ -994,7 +994,7 @@ function transformAttributes(path, results) {
         }
       } else {
         if (config.hydratable && key === "$ServerOnly") {
-          results.skipTemplate = true;
+          if (config.omitServerOnlyTemplates) results.skipTemplate = true;
           return;
         }
         if (t.isJSXExpressionContainer(value)) value = value.expression;
