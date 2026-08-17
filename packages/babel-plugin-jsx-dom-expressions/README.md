@@ -184,6 +184,28 @@ When `true` (the default), the template output drops the whitespace between a qu
 
 Set this to `false` to emit a single space between attributes (`<svg width="12" height="13">`) so the generated HTML is strictly valid. This may also be desirable together with `omitQuotes: false` / `omitLastClosingTag: false` when targeting stricter parsers.
 
+### omitServerOnlyTemplates
+
+- Type: `boolean`
+- Default: `true`
+
+Only applies when `hydratable` is `true`. When `true` (the default), an element marked `$ServerOnly` has no template registered, so its markup is never shipped to the client and the generated code calls `getNextElement()` with no argument. That element can then only be obtained by hydrating against server-rendered DOM.
+
+Because `getNextElement` falls back to `template()` whenever it is not hydrating, such an element throws `TypeError: template is not a function` if it is ever re-created on the client. Hot module replacement does exactly that: it disposes the old root and re-runs the component outside of hydration, so editing any file containing `$ServerOnly` breaks the page in development.
+
+Set this to `false` to keep registering the template. The hydration path is unchanged, since `getNextElement` prefers the hydration registry and only calls `template()` when there is nothing to hydrate. The only cost is the template markup being present in the output, which makes this suitable for development builds:
+
+```js
+{
+  plugins: [
+    ["jsx-dom-expressions", {
+      hydratable: true,
+      omitServerOnlyTemplates: process.env.NODE_ENV === "production"
+    }]
+  ]
+}
+```
+
 ### requireImportSource
 
 - Type: `string | false`

@@ -247,3 +247,54 @@ describe("ref scope for cleanup in the spread for elements and components", () =
   });
 
 });
+
+describe("nullish value through spread (#2957)", () => {
+  it("renders empty for a spread carrying value: undefined", () => {
+    let input, disposer;
+
+    S.root(dispose => {
+      disposer = dispose;
+      <input ref={input} {...{ value: undefined, placeholder: "p" }} />;
+    });
+
+    expect(input.value).toBe("");
+    expect(input.getAttribute("placeholder")).toBe("p");
+    disposer();
+  });
+
+  it("clears the field when a reactive spread value flips to undefined", () => {
+    let input, disposer;
+    const value = S.data("typed");
+
+    S.root(dispose => {
+      disposer = dispose;
+      <input
+        ref={input}
+        {...{
+          get value() {
+            return value();
+          }
+        }}
+      />;
+    });
+
+    expect(input.value).toBe("typed");
+    value(undefined);
+    expect(input.value).toBe("");
+    disposer();
+  });
+
+  it("treats textarea value and input defaultValue the same way", () => {
+    let textarea, input, disposer;
+
+    S.root(dispose => {
+      disposer = dispose;
+      <textarea ref={textarea} {...{ value: undefined }} />;
+      <input ref={input} {...{ defaultValue: undefined }} />;
+    });
+
+    expect(textarea.value).toBe("");
+    expect(input.defaultValue).toBe("");
+    disposer();
+  });
+});

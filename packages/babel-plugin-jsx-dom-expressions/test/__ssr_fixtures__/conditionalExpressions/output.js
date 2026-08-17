@@ -1,4 +1,5 @@
 import { createComponent as _$createComponent } from "r-server";
+import { memo as _$memo } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 var _tmpl$ = ["<div>", "</div>"],
@@ -22,7 +23,7 @@ const template11 = _$ssr(
 );
 const template12 = _$createComponent(Comp, {
   get render() {
-    return state.dynamic ? good() : bad;
+    return _$memo(() => !!state.dynamic)() ? good() : bad;
   }
 });
 
@@ -34,7 +35,12 @@ const template13 = _$createComponent(Comp, {
 });
 const template14 = _$createComponent(Comp, {
   get render() {
-    return state.dynamic && good();
+    return _$memo(() => !!state.dynamic)() && good();
+  }
+});
+const template14b = _$createComponent(Comp, {
+  get value() {
+    return _$memo(() => !!a())() && a();
   }
 });
 
@@ -51,7 +57,9 @@ const template16 = _$createComponent(Comp, {
 });
 const template17 = _$createComponent(Comp, {
   get render() {
-    return state.dynamic ? _$createComponent(Comp, {}) : _$createComponent(Comp, {});
+    return _$memo(() => !!state.dynamic)()
+      ? _$createComponent(Comp, {})
+      : _$createComponent(Comp, {});
   }
 });
 const template18 = _$createComponent(Comp, {
@@ -95,7 +103,7 @@ const template29 = _$ssr(_tmpl$, _$escape((thing() && thing1()) ?? thing2() ?? t
 const template30 = _$ssr(_tmpl$, _$escape(thing() || thing1() || thing2()));
 const template31 = _$createComponent(Comp, {
   get value() {
-    return count() ? (count() ? count() : count()) : count();
+    return _$memo(() => !!count())() ? (_$memo(() => !!count())() ? count() : count()) : count();
   }
 });
 const template32 = _$ssr(_tmpl$, _$escape(something?.()));

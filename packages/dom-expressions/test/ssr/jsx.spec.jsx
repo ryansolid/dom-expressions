@@ -61,3 +61,26 @@ describe("renderToString", () => {
     expect(JSON.stringify(v)).toBe(stringified);
   });
 }
+
+describe("SSR attribute escaping (JSX)", () => {
+  it("escapes quotes in template-literal quasis used as object style values", () => {
+    const src = "onclick='alert(1);'";
+    const res = r.renderToString(() => (
+      <div
+        style={{
+          height: "100px",
+          "background-image": `url("${src}")`
+        }}
+      />
+    ));
+    expect(res).toContain("background-image:url(&quot;");
+    expect(res).not.toContain('"onclick=');
+  });
+
+  it("escapes quotes in template-literal quasis used as attribute values", () => {
+    const src = "onclick='alert(1);'";
+    const res = r.renderToString(() => <div title={`url("${src}")`} />);
+    expect(res).toContain('title="url(&quot;');
+    expect(res).not.toContain('"onclick=');
+  });
+});

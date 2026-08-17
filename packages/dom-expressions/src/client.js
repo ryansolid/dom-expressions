@@ -107,7 +107,14 @@ export function clearDelegatedEvents(document = window.document) {
 
 export function setProperty(node, name, value) {
   if (isHydrating(node)) return;
-  node[name] = value;
+  // Compiler on next emits `el.value = v ?? ""` for input/textarea. 0.40.x
+  // still goes through setProperty, so apply the same rule here (#2957).
+  if (
+    (name === "value" || name === "defaultValue") &&
+    (node.nodeName === "INPUT" || node.nodeName === "TEXTAREA")
+  )
+    node[name] = value ?? "";
+  else node[name] = value;
 }
 
 export function setAttribute(node, name, value) {
@@ -384,6 +391,12 @@ function assignProp(node, prop, value, prev, isSVG, skipRef, props) {
     } else if (isHydrating(node)) return value;
     if (prop === "class" || prop === "className") className(node, value);
     else if (isCE && !isProp && !isChildProp) node[toPropertyName(prop)] = value;
+    else if (
+      (prop === "value" || prop === "defaultValue") &&
+      (node.nodeName === "INPUT" || node.nodeName === "TEXTAREA")
+    )
+      // Spread path assigned raw, so value={undefined} painted "undefined" (#2957).
+      node[propAlias || prop] = value ?? "";
     else node[propAlias || prop] = value;
   } else {
     const ns = isSVG && prop.indexOf(":") > -1 && SVGNamespace[prop.split(":")[0]];

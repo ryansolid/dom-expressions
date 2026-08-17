@@ -186,7 +186,6 @@ export default function transformComponent(path) {
           ) {
             if (
               config.wrapConditionals &&
-              config.generate !== "ssr" &&
               (t.isLogicalExpression(value.expression) ||
                 t.isConditionalExpression(value.expression))
             ) {

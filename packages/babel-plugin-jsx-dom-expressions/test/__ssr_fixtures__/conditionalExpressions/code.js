@@ -26,6 +26,7 @@ const template12 = <Comp render={state.dynamic ? good() : bad} />;
 const template13 = <Comp render={state.dynamic ? good : bad} />;
 
 const template14 = <Comp render={state.dynamic && good()} />;
+const template14b = <Comp value={a() && a()} />;
 
 // no dynamic predicate
 const template15 = <Comp render={state.dynamic && good} />;
