@@ -1016,7 +1016,12 @@ retired as a pole and survives only as potential authoring sugar.
    "transport-indifference"). Includes making the discipline
    enforceable, not just documented: the live graph is a re-derivable
    projection of durable state — reconnection is re-invocation, and dev
-   should surface violations.
+   should surface violations. Seed recorded 2026-08-17 (§9.3): no new
+   APIs on either side — a connection is a response that doesn't end;
+   resume is supersession with settled emission; the document face is
+   bounded by an opt-in window; mutations settle against a watermark.
+   The related data-API question (top-level async iterators from plain
+   `"use server"` calls) is scoped separately and comes first.
 
 Ordering note (revised 2026-08-14): Stage 6 is the next target. Stages
 7 and 8 are independent afterward; their order remains preference, not
@@ -1722,3 +1727,151 @@ output contract, version-paired, unchanged regardless).
 dedupe contract (element-keyed WeakSet per consumer is the obvious
 shape); how `data-bind` discovers the router without a hard
 dependency.
+
+### 9.3 Stage 8 seed — connection-shaped transport (2026-08-17)
+
+Recorded from the design conversation; nothing here is built. The
+stage shrank three times during the pass, each time by discovering
+the capability already existed — what remains is a continuation story
+and a contract with failure, not a transport feature.
+
+**Scope split (decided the same night).** Server-component liveness
+(this section) is distinct from the data-API question: what a
+top-level async iterator returned from a plain `"use server"` call
+means as a Solid data primitive (consumption semantics, SSR, sharing,
+reconnection). The data layer is prioritized FIRST and investigated
+separately; the frames value tier should ride whatever it decides.
+This seed covers the frame/markup face only.
+
+**No new APIs — a connection is a response that doesn't end.**
+`"use server"` is untouched on both sides. The component not
+terminating is the entire liveness declaration, and it is observed,
+not configured: the stream face already waits on reactivity, because
+every live server source is await-shaped — a projection over a feed
+sits on a pending `next()` between events, a generator holds an
+outstanding yield, the retry loop holds an unsettled promise. There
+is no "subscribed but nothing pending" state (raw post-flush writes
+are already forbidden), so "waits on pending" and "waits on
+reactivity" are the same wait, and a component over an infinite feed
+would hold its response and keep emitting today. Stage 8 is the
+warranty on that accident, plus the pieces below.
+
+Configuration therefore lives at the edges, where config already
+lives: the server entry owns the operational envelope (carrier
+framing, hold caps, idle timeouts — per-route), the client host owns
+reconnect policy (backoff, a knob beside retention). Because
+reconnection is re-invocation, every cap is a QoS dial, not a
+correctness switch: a 30-second platform limit produces a 30-second
+resume cycle — chattier, still correct — degrading in the
+pathological limit to long-polling, emergent and never implemented.
+
+**Carrier is content negotiation.** The invocation is a POST whose
+response body is the record stream; "use SSE" is a response
+*framing*, not a channel. The entry opts in (`carrier: "sse"`),
+Content-Type carries the decision, the client picks its decoder off
+the header. SSE framing, NOT the EventSource API (which cannot POST,
+and whose auto-reconnect we do not want — the host owns resume): what
+SSE buys is the middleboxes — proxies and platform load balancers
+that buffer opaque chunked responses pass `text/event-stream`
+unbuffered — plus comment-line heartbeats against idle timeouts, and
+an `id:` field that is a natural home for the watermark. Live
+responses ship `Cache-Control: no-store` (a cached clone of an
+unbounded stream outlives its page). WebSocket stays deferred until
+proven necessary — upgrade handshake, bidirectional, the client must
+know a URL: the one carrier that would cost API.
+
+**Taxonomy: promises for eventual, iterators for persistent.** Every
+persistent thing the system already built is iterator-shaped —
+container traces (snapshot + patch iterable), generator components,
+live-hole re-emissions, the record stream itself. The only
+promise-factory is the retry loop, correctly, because it names an
+EVENTUAL value. Persistence and eventuality are the two async kinds;
+promise factories masquerading as persistence should not exist.
+
+**Resume is supersession, not continuation.** Iterators are not
+seekable; re-invocation replays from the start. So a resume is a
+SUPERSEDING RENDER of the address, never a continuation of the old
+iterator: fresh snapshot from durable state, morph converges,
+identical regions no-op, retained element state follows `_key`.
+Value-tier iterables get fresh-instance supersession — the resumed
+render's args replace the old ones, a client `For` re-renders from
+the new iterable, nothing appends twice. Cursors (true positional
+resume for sources with real sequence numbers) are an opt-in
+optimization, never the baseline, because the baseline must hold for
+sources that have none. The re-derivability line, sharpened: **if
+losing the transport loses the value, the value belonged in durable
+state, not in the iterator.** An in-flight LLM generation is eventual
+wearing iterator clothes — its durable form (the message row) is what
+a resume renders; the lost tail is app semantics, not framework
+failure. Dev-mode chaos reconnect is the enforcement.
+
+**Settled emission — progressiveness is consumer-relative.** The
+client's async-holds-latest rule, applied at the emitter: do not
+stream the settling journey to a consumer already holding content.
+The progression — fallbacks, partial reveals, loading states — is UX
+for an empty screen, not data; a resuming consumer has no empty
+screen. Same render, two emission policies, selected by the request
+itself (a resume request carries "I hold version N"; that bit IS the
+selector): fresh consumer → progressive, today's streaming; resuming
+consumer → render quietly to the existing settlement latch, emit one
+converged snapshot, keep the sink open. Regression never hits the
+wire — which retired the client-side version-floor guard an earlier
+draft of this seed needed.
+
+**Quiet resume contract.** A resume is lifecycle-silent: the host
+resume loop runs OUTSIDE transitions (no `isPending` pulses on a
+platform's 30-second cycle), retained content keeps boundaries
+revealed (first-content gating and async-holds-latest already
+guarantee no fallback flash), and a resume's own settlement settles
+nothing transaction-shaped — predictions hold to their watermark,
+never to the resume.
+
+**Watermark = cursor.** A mutation ack carries "reflected as of
+version N"; the transaction and its overlays hold until the
+address's version passes N — whether that version arrives on the
+original response, a live stream, or a resume snapshot. The same
+"I hold version N" is the resume request's emission-policy selector.
+Requires per-address versions monotonic across responses; the
+address-resident store is the authority.
+
+**Document face: bounded by a window, not by detection.** Persistence
+cannot be detected — a feed's pending `next()` is byte-identical to a
+finite generator's, and "will this settle?" is the halting problem —
+so it is DEMONSTRATED instead: the document window (an entry-level
+knob) closes the document response, and whatever outlives it is
+persistent by demonstration. Eventual = settles within the window;
+persistent = outlives it — an operational taxonomy, the same rule as
+any transport cap. **Default = no window = today's
+wait-for-full-settlement**: bounded generators stream their whole
+progression into the document (full content, SEO) exactly as now;
+nothing breaks. Setting the window is the opt-in to live-at-t=0, and
+is REQUIRED there — an unbounded source with no window holds the
+document open forever (tab spinner, `load` never fires, buffering
+proxies, unflushed serializer state). At the window: clean close at a
+record boundary, final sweep, a live-marker bit on frames whose
+bindings remained open; adoption sees the bit and starts the resume
+loop. The document is just the transport that ends first and most
+predictably; the gap between close and resume is covered by the
+settled snapshot (self-healing — no missed-event protocol). Honest
+cost: one extra server render per live frame per page load — the
+seam where per-address fan-out slots in later if it ever matters.
+
+**Work items (the whole stage, current best understanding):**
+
+1. Emission-policy selector on the frame render (progressive vs
+   settled), driven by the request's "I hold version N".
+2. Host resume loop: re-invoke on response death, backoff, outside
+   transitions.
+3. Fresh-iterable supersession proven on the resume path (existing
+   rule; needs the test).
+4. Watermark on mutation acks + monotonic per-address versions.
+5. Server teardown on client disconnect: response abort cancels the
+   generator and disposes the render — without this, every abandoned
+   tab leaks a server loop.
+6. Document window + live-marker bit + adoption-triggered resume.
+7. Open surface question: expose connection state on the frame handle
+   (a `connected` signal for "reconnecting…" UI) — small, additive,
+   undecided.
+
+Deliberately absent: any client authoring API, any server authoring
+API, any subscription registry, any cursor protocol, WebSocket.
