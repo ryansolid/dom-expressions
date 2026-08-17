@@ -2436,6 +2436,13 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 }
             }
             Expression::TemplateLiteral(template) => {
+                // Interpolations are escaped recursively. The static quasis
+                // are not — `url("${x}")` would otherwise leave a raw `"`
+                // inside style="..." / attr="...". Escape those parts at
+                // compile time when this expression is landing in an attribute.
+                if attr {
+                    self.escape_template_quasis_for_attr(template);
+                }
                 for expression in template.expressions.iter_mut() {
                     self.escape_expression_in_place(expression, attr, escape_literals);
                 }
@@ -2506,6 +2513,41 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                     self.escape_expression(span, inner)
                 };
             }
+        }
+    }
+
+    /// Escape static template-literal quasis in attribute position so
+    /// `url("${x}")` cannot leave a raw `"` inside style="..." / attr="...".
+    fn escape_template_quasis_for_attr(&self, template: &mut oxc_ast::ast::TemplateLiteral<'a>) {
+        let specs: std::vec::Vec<Option<(String, String)>> = template
+            .quasis
+            .iter()
+            .map(|quasi| {
+                let src = quasi
+                    .value
+                    .cooked
+                    .as_deref()
+                    .unwrap_or(quasi.value.raw.as_str());
+                let escaped = escape_html_attribute(src);
+                if escaped == src {
+                    None
+                } else {
+                    let raw = escaped
+                        .replace('\\', "\\\\")
+                        .replace('`', "\\`")
+                        .replace("${", "\\${");
+                    Some((escaped, raw))
+                }
+            })
+            .collect();
+        for (quasi, spec) in template.quasis.iter_mut().zip(specs) {
+            let Some((cooked, raw)) = spec else {
+                continue;
+            };
+            let cooked_atom = self.ast().str(&cooked);
+            let raw_atom = self.ast().str(&raw);
+            quasi.value.cooked = Some(cooked_atom);
+            quasi.value.raw = raw_atom;
         }
     }
 

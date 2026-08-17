@@ -556,6 +556,21 @@ describe("jsx-dom-expressions-compiler AST-native milestone", () => {
     expect(result.code).toContain("_$escape(name)");
   });
 
+  it("escapes quotes in template-literal quasis used as SSR style values", () => {
+    const result = transform(
+      'const view = <div style={{ "background-image": `url("${src}")` }} />;',
+      {
+        filename: "input.jsx",
+        moduleName: "r-server",
+        generate: "ssr"
+      }
+    );
+
+    expect(result.code).toContain("ssrStyleProperty");
+    expect(result.code).toContain("url(&quot;");
+    expect(result.code).not.toContain('url("${');
+  });
+
   it("lowers DOM spread attributes through spread and mergeProps", () => {
     const result = transform('<div id="main" {...props} title={title()} />', {
       filename: "input.jsx",

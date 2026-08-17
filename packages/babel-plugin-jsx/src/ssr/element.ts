@@ -323,6 +323,11 @@ function escapeExpression(
         | babelTypes.BlockStatement;
     return expression;
   } else if (t.isTemplateLiteral(expression)) {
+    // Interpolations are escaped recursively. The static quasis are not —
+    // `url("${x}")` would otherwise leave a raw `"` inside style="..." /
+    // attr="...". Escape those parts at compile time when this expression
+    // is landing in an attribute.
+    if (attr) escapeTemplateQuasis(expression, true);
     expression.expressions = expression.expressions.map(
       e =>
         escapeExpression(
@@ -412,6 +417,18 @@ function escapeExpression(
     registerImportMethod(path, "escape"),
     [expression as babelTypes.Expression].concat(attr ? [t.booleanLiteral(true)] : [])
   );
+}
+
+function escapeTemplateQuasis(expression: babelTypes.TemplateLiteral, attr: boolean) {
+  for (const quasi of expression.quasis) {
+    const src = quasi.value.cooked != null ? quasi.value.cooked : quasi.value.raw;
+    const escaped = escapeHTML(src, attr);
+    if (typeof escaped !== "string" || escaped === src) continue;
+    quasi.value.cooked = escaped;
+    // Codegen prints `raw`. Re-escape template delimiters so `&quot;` etc.
+    // stay literal text.
+    quasi.value.raw = escaped.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+  }
 }
 
 // Predicts whether a JSXFragment AST will compile to a single runtime

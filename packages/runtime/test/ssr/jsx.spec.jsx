@@ -292,6 +292,29 @@ describe("SSR attribute escaping (JSX)", () => {
     expect(res).not.toContain('onmouseover="alert');
   });
 
+  it('escapes `"` in template-literal quasis used as object style values', () => {
+    // Compiler walks interpolations but used to leave quasis raw, so
+    // `url("${src}")` wrote a literal `"` into style="...".
+    const src = "onclick='alert(1);'";
+    const res = r.renderToString(() => (
+      <div
+        style={{
+          height: "100px",
+          "background-image": `url("${src}")`
+        }}
+      />
+    ));
+    expect(res).toContain("background-image:url(&quot;");
+    expect(res).not.toContain('"onclick=');
+  });
+
+  it('escapes `"` in template-literal quasis used as attribute values', () => {
+    const src = "onclick='alert(1);'";
+    const res = r.renderToString(() => <div title={`url("${src}")`} />);
+    expect(res).toContain('title="url(&quot;');
+    expect(res).not.toContain('"onclick=');
+  });
+
   it('escapes `"` in a computed object style key', () => {
     // Plugin emits _$ssrStyleProperty(userExpr + ":", _$escape(val, true)).
     // Before the fix, `userExpr` was interpolated raw into style="...".
