@@ -596,6 +596,24 @@ impl<'a> AstDomTransform<'a, '_> {
                 initial: None,
             });
         }
+        // Boxed by text — Babel's `wrappedByText` arm of the marker decision:
+        // a dedicated placeholder is structurally required, because the
+        // preceding and following template texts would otherwise merge into a
+        // single node during HTML parsing, leaving the following-sibling walk
+        // pointing past the slot (solidjs/solid#3004: a component between two
+        // static texts was inserted after the trailing text).
+        if self.slot_boxed_by_text(children, index) {
+            return Some(InsertMarker {
+                marker: self.dedicated_slot_placeholder(
+                    span,
+                    element_id,
+                    child_node_index,
+                    template,
+                    declarations,
+                ),
+                initial: None,
+            });
+        }
         if has_following_static_content(&children[following_start..]) {
             return Some(InsertMarker {
                 marker: self.child_walk_expression(span, element_id, *child_node_index),
@@ -677,6 +695,19 @@ impl<'a> AstDomTransform<'a, '_> {
         {
             return self.child_walk_expression(span, element_id, *child_node_index);
         }
+        self.dedicated_slot_placeholder(span, element_id, child_node_index, template, declarations)
+    }
+
+    /// Emit a dedicated `<!>` placeholder at the slot's template position and
+    /// declare a positional walk var referencing it.
+    fn dedicated_slot_placeholder(
+        &mut self,
+        span: oxc_span::Span,
+        element_id: &str,
+        child_node_index: &mut usize,
+        template: &mut crate::dom::template::TemplateHtml,
+        declarations: &mut std::vec::Vec<Statement<'a>>,
+    ) -> Expression<'a> {
         template.push_both("<!>");
         let marker_name = self.next_element_id();
         let lookup = self.child_walk_expression(span, element_id, *child_node_index);

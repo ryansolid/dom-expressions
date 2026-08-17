@@ -239,3 +239,13 @@ function MyComponent(props) {
   return <div ref={el} {...others}>{props.children}</div>
 }
 
+// solidjs/solid#3004: a component boxed by static text needs a dedicated
+// `<!>` marker — the surrounding template texts merge into a single node
+// when the template HTML is parsed, so the following-sibling walk cannot
+// serve as the insertion anchor.
+const template38 = (
+  <p>
+    (<Comp n={1} />)
+  </p>
+);
+

@@ -17,6 +17,7 @@ var _tmpl$7 = /* @__PURE__ */ _$template(`<div> | <!> |  |  | <!> | `);
 var _tmpl$8 = /* @__PURE__ */ _$template(`<span>1`);
 var _tmpl$9 = /* @__PURE__ */ _$template(`<span>2`);
 var _tmpl$10 = /* @__PURE__ */ _$template(`<span>3`);
+var _tmpl$11 = /* @__PURE__ */ _$template(`<p>(<!>)`);
 import { Show, binding } from "somewhere";
 function refFn() {}
 const refConst = null;
@@ -363,3 +364,13 @@ function MyComponent(props) {
 	});
 	return _el$48;
 }
+var _el$49 = _tmpl$11();
+var _el$50 = _el$49.firstChild;
+var _el$51 = _el$50.nextSibling;
+var _el$52 = _el$51.nextSibling;
+_$insert(_el$49, _$createComponent(Comp, { n: 1 }), _el$51);
+// solidjs/solid#3004: a component boxed by static text needs a dedicated
+// `<!>` marker — the surrounding template texts merge into a single node
+// when the template HTML is parsed, so the following-sibling walk cannot
+// serve as the insertion anchor.
+const template38 = _el$49;
