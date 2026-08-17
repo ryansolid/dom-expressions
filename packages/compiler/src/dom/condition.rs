@@ -4,7 +4,7 @@ use oxc_span::{GetSpan, Span};
 
 use crate::dom::element::AstDomTransform;
 use crate::shared::condition::{
-    is_condition_shape, memo_wrap_thunk, transform_condition, zero_arg_call_thunk, ConditionBuilder,
+    ConditionBuilder, is_condition_shape, memo_wrap_thunk, transform_condition, zero_arg_call_thunk,
 };
 use crate::shared::mode_lower::ModeLower;
 
@@ -31,9 +31,7 @@ impl<'a> ConditionBuilder<'a> for AstDomTransform<'a, '_> {
     }
 }
 
-impl<'a> crate::shared::component_children::ComponentChildLower<'a>
-    for AstDomTransform<'a, '_>
-{
+impl<'a> crate::shared::component_children::ComponentChildLower<'a> for AstDomTransform<'a, '_> {
     fn lower_child_element_with_setup(
         &mut self,
         element: &JSXElement<'a>,
@@ -85,5 +83,4 @@ impl<'a> AstDomTransform<'a, '_> {
         }
         self.arrow_return_expression(span, value)
     }
-
 }

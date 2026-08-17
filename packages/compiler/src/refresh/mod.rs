@@ -25,7 +25,7 @@ use oxc_allocator::Allocator;
 use oxc_codegen::{Codegen, CodegenOptions};
 use oxc_parser::{ParseOptions, Parser};
 
-use crate::config::{source_type_for_filename, TransformResult};
+use crate::config::{TransformResult, source_type_for_filename};
 use transform::{Bundler, RefreshConfig, RefreshTransform};
 
 pub const DEFAULT_IMPORT_SOURCE: &str = "solid-refresh";
@@ -72,7 +72,7 @@ pub fn transform_refresh(
         Some(other) => {
             return Err(Error::from_reason(format!(
                 "transformRefresh `bundler` option must be \"esm\", \"vite\", \"webpack5\", \"rspack-esm\" or \"standard\", got {other:?}"
-            )))
+            )));
         }
     };
     if options.jsx == Some(true) {
@@ -100,8 +100,8 @@ pub fn transform_refresh(
             ..ParseOptions::default()
         })
         .parse();
-    if let Some(error) = parsed.errors.into_iter().next() {
-        return Err(Error::from_reason(error.to_string()));
+    if let Some(error) = crate::shared::parser::first_parser_error(parsed.diagnostics) {
+        return Err(Error::from_reason(error));
     }
 
     let mut program = parsed.program;

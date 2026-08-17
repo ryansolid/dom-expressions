@@ -15,8 +15,7 @@
 
 use oxc_allocator::{Allocator, Vec as ArenaVec};
 use oxc_ast::ast::*;
-use oxc_ast::{AstBuilder, NONE};
-use oxc_ast_visit::{walk, Visit};
+use oxc_ast_visit::{Visit, walk};
 use oxc_semantic::{ScopeId, Scoping, SemanticBuilder, SymbolId};
 use oxc_span::{GetSpan, Span};
 
@@ -25,6 +24,7 @@ use crate::directives::xxhash::xxhash32;
 use crate::shared::ast::{
     expression_to_argument, import_named, object_property, variable_statement,
 };
+use crate::shared::ast_builder::AstBuilder;
 
 use super::signature::{CommentInfo, Printer};
 
@@ -289,10 +289,9 @@ impl<'a> RefreshTransform<'a> {
                         if let Some((_, callee_type)) = definitions
                             .iter()
                             .find(|(name, _)| *name == imported.as_str())
+                            && let Some(symbol_id) = specifier.local.symbol_id.get()
                         {
-                            if let Some(symbol_id) = specifier.local.symbol_id.get() {
-                                identifiers.insert(symbol_id, *callee_type);
-                            }
+                            identifiers.insert(symbol_id, *callee_type);
                         }
                     }
                     ImportDeclarationSpecifier::ImportNamespaceSpecifier(specifier) => {
@@ -338,10 +337,10 @@ impl<'a> RefreshTransform<'a> {
         if self.config.fix_render && (!identifiers.is_empty() || !namespaces.is_empty()) {
             let mut targets = std::collections::HashSet::new();
             collect_render_statements(&program.body, &mut |statement| {
-                if let Some(call) = unwrap_call(&statement.expression) {
-                    if resolve(&call.callee, CalleeType::Render) {
-                        targets.insert(statement.span.start);
-                    }
+                if let Some(call) = unwrap_call(&statement.expression)
+                    && resolve(&call.callee, CalleeType::Render)
+                {
+                    targets.insert(statement.span.start);
                 }
             });
             self.analysis.render_statements = targets;
@@ -352,8 +351,8 @@ impl<'a> RefreshTransform<'a> {
             for statement in &program.body {
                 let declaration = match statement {
                     Statement::VariableDeclaration(declaration) => Some(&**declaration),
-                    Statement::ExportNamedDeclaration(export) => match &export.declaration {
-                        Some(Declaration::VariableDeclaration(declaration)) => Some(&**declaration),
+                    Statement::ExportDeclaration(export) => match &export.declaration {
+                        Declaration::VariableDeclaration(declaration) => Some(&**declaration),
                         _ => None,
                     },
                     _ => None,
@@ -365,10 +364,10 @@ impl<'a> RefreshTransform<'a> {
                     let Some(init) = &declarator.init else {
                         continue;
                     };
-                    if let Some(call) = unwrap_call(init) {
-                        if resolve(&call.callee, CalleeType::Context) {
-                            self.analysis.context_calls.insert(call.span.start);
-                        }
+                    if let Some(call) = unwrap_call(init)
+                        && resolve(&call.callee, CalleeType::Context)
+                    {
+                        self.analysis.context_calls.insert(call.span.start);
                     }
                 }
             }
@@ -384,11 +383,11 @@ impl<'a> RefreshTransform<'a> {
                     Statement::FunctionDeclaration(function) => {
                         self.collect_candidate_function(function, scoping, root_scope)
                     }
-                    Statement::ExportNamedDeclaration(export) => match &export.declaration {
-                        Some(Declaration::FunctionDeclaration(function)) => {
+                    Statement::ExportDeclaration(export) => match &export.declaration {
+                        Declaration::FunctionDeclaration(function) => {
                             self.collect_candidate_function(function, scoping, root_scope)
                         }
-                        Some(Declaration::VariableDeclaration(declaration)) => {
+                        Declaration::VariableDeclaration(declaration) => {
                             self.collect_candidate_declarators(declaration, scoping, root_scope)
                         }
                         _ => {}
@@ -438,10 +437,8 @@ impl<'a> RefreshTransform<'a> {
 
         for statement in &program.body {
             match statement {
-                Statement::ExportNamedDeclaration(export) => {
-                    if let Some(declaration) = &export.declaration {
-                        collect_merge_bindings(declaration, &mut bindings, &mut candidates);
-                    }
+                Statement::ExportDeclaration(export) => {
+                    collect_merge_bindings(&export.declaration, &mut bindings, &mut candidates);
                 }
                 Statement::ExportDefaultDeclaration(export) => {
                     if let ExportDefaultDeclarationKind::FunctionDeclaration(function) =
@@ -600,20 +597,19 @@ impl<'a> RefreshTransform<'a> {
                     self.fix_statements(&mut body.statements);
                 }
             }
-            Statement::ExportNamedDeclaration(export) => {
-                if let Some(Declaration::FunctionDeclaration(function)) = &mut export.declaration {
-                    if let Some(body) = &mut function.body {
-                        self.fix_statements(&mut body.statements);
-                    }
+            Statement::ExportDeclaration(export) => {
+                if let Declaration::FunctionDeclaration(function) = &mut export.declaration
+                    && let Some(body) = &mut function.body
+                {
+                    self.fix_statements(&mut body.statements);
                 }
             }
             Statement::ExportDefaultDeclaration(export) => {
                 if let ExportDefaultDeclarationKind::FunctionDeclaration(function) =
                     &mut export.declaration
+                    && let Some(body) = &mut function.body
                 {
-                    if let Some(body) = &mut function.body {
-                        self.fix_statements(&mut body.statements);
-                    }
+                    self.fix_statements(&mut body.statements);
                 }
             }
             _ => {}
@@ -651,7 +647,7 @@ impl<'a> RefreshTransform<'a> {
         arguments.push(Argument::Identifier(
             ast.alloc_identifier_reference(SPAN, ast.ident(&name)),
         ));
-        let dispose_call = ast.expression_call(SPAN, dispose_callee, NONE, arguments, false);
+        let dispose_call = ast.expression_call(SPAN, dispose_callee, None, arguments, false);
         let dispose = ast.statement_if(
             SPAN,
             hot,
@@ -683,16 +679,15 @@ impl<'a> RefreshTransform<'a> {
                     hoisted.push(Statement::FunctionDeclaration(function));
                     first_bubbled_exported.get_or_insert(false);
                 }
-                Statement::ExportNamedDeclaration(export)
+                Statement::ExportDeclaration(export)
                     if matches!(
                         &export.declaration,
-                        Some(Declaration::FunctionDeclaration(function))
+                        Declaration::FunctionDeclaration(function)
                             if self.function_is_wrappable(function)
                     ) =>
                 {
                     let export = export.unbox();
-                    let Some(Declaration::FunctionDeclaration(function)) = export.declaration
-                    else {
+                    let Declaration::FunctionDeclaration(function) = export.declaration else {
                         unreachable!("matched above");
                     };
                     let name = function.id.as_ref().unwrap().name.as_str().to_string();
@@ -752,11 +747,8 @@ impl<'a> RefreshTransform<'a> {
         );
         Statement::ExportNamedDeclaration(ast.alloc_export_named_declaration(
             SPAN,
-            None,
             ast.vec1(specifier),
-            None,
             ImportOrExportKind::Value,
-            NONE,
         ))
     }
 
@@ -781,12 +773,11 @@ impl<'a> RefreshTransform<'a> {
                 self.wrap_declarators(index, &mut declaration);
                 Statement::VariableDeclaration(declaration)
             }
-            Statement::ExportNamedDeclaration(mut export) => {
-                if let Some(Declaration::VariableDeclaration(declaration)) = &mut export.declaration
-                {
+            Statement::ExportDeclaration(mut export) => {
+                if let Declaration::VariableDeclaration(declaration) = &mut export.declaration {
                     self.wrap_declarators(index, declaration);
                 }
-                Statement::ExportNamedDeclaration(export)
+                Statement::ExportDeclaration(export)
             }
             other => other,
         }
@@ -889,11 +880,7 @@ impl<'a> RefreshTransform<'a> {
                 self.allocator,
                 SPAN,
                 "location",
-                Expression::StringLiteral(ast.alloc_string_literal(
-                    SPAN,
-                    ast.atom(&location),
-                    None,
-                )),
+                Expression::StringLiteral(ast.alloc_string_literal(SPAN, ast.str(&location), None)),
             ));
         }
         if self.config.granular {
@@ -908,7 +895,7 @@ impl<'a> RefreshTransform<'a> {
                 "signature",
                 Expression::StringLiteral(ast.alloc_string_literal(
                     SPAN,
-                    ast.atom(&signature),
+                    ast.str(&signature),
                     None,
                 )),
             ));
@@ -932,7 +919,7 @@ impl<'a> RefreshTransform<'a> {
         ));
         arguments.push(Argument::StringLiteral(ast.alloc_string_literal(
             SPAN,
-            ast.atom(name),
+            ast.str(name),
             None,
         )));
         arguments.push(expression_to_argument(component));
@@ -946,7 +933,7 @@ impl<'a> RefreshTransform<'a> {
             Expression::Identifier(
                 ast.alloc_identifier_reference(SPAN, ast.ident(&component_import)),
             ),
-            NONE,
+            None,
             arguments,
             false,
         )
@@ -963,7 +950,7 @@ impl<'a> RefreshTransform<'a> {
         ));
         arguments.push(Argument::StringLiteral(ast.alloc_string_literal(
             SPAN,
-            ast.atom(name),
+            ast.str(name),
             None,
         )));
         arguments.push(expression_to_argument(call));
@@ -974,7 +961,7 @@ impl<'a> RefreshTransform<'a> {
             Expression::Identifier(
                 ast.alloc_identifier_reference(SPAN, ast.ident(&component_import)),
             ),
-            NONE,
+            None,
             arguments,
             false,
         )
@@ -1002,14 +989,14 @@ impl<'a> RefreshTransform<'a> {
             SPAN,
             FormalParameterKind::ArrowFormalParameters,
             ast.vec(),
-            NONE,
+            None,
         );
         let body = ast.function_body(
             SPAN,
             ast.vec(),
             ast.vec1(ast.statement_expression(SPAN, object)),
         );
-        ast.expression_arrow_function(SPAN, true, false, NONE, params, NONE, body)
+        ast.expression_arrow_function(SPAN, true, false, None, params, None, body)
     }
 
     fn print_signature(&self, component: &Expression<'a>, synthesized: bool) -> String {
@@ -1038,7 +1025,7 @@ impl<'a> RefreshTransform<'a> {
             Expression::Identifier(
                 ast.alloc_identifier_reference(SPAN, ast.ident(&registry_import)),
             ),
-            NONE,
+            None,
             ast.vec(),
             false,
         );
@@ -1067,11 +1054,7 @@ impl<'a> RefreshTransform<'a> {
                     Bundler::Webpack5 | Bundler::RspackEsm => "webpackHot",
                     _ => "hot",
                 };
-                let meta = ast.expression_meta_property(
-                    SPAN,
-                    ast.identifier_name(SPAN, "import"),
-                    ast.identifier_name(SPAN, "meta"),
-                );
+                let meta = ast.expression_import_meta(SPAN);
                 Expression::StaticMemberExpression(ast.alloc_static_member_expression(
                     SPAN,
                     meta,
@@ -1106,7 +1089,7 @@ impl<'a> RefreshTransform<'a> {
         ));
         ast.statement_expression(
             SPAN,
-            ast.expression_call(SPAN, callee, NONE, arguments, false),
+            ast.expression_call(SPAN, callee, None, arguments, false),
         )
     }
 
@@ -1122,7 +1105,7 @@ impl<'a> RefreshTransform<'a> {
         let mut arguments = ast.vec();
         arguments.push(Argument::StringLiteral(ast.alloc_string_literal(
             SPAN,
-            ast.atom(self.config.bundler.as_str()),
+            ast.str(self.config.bundler.as_str()),
             None,
         )));
         arguments.push(expression_to_argument(self.hot_expression()));
@@ -1136,7 +1119,7 @@ impl<'a> RefreshTransform<'a> {
                 Expression::Identifier(
                     ast.alloc_identifier_reference(SPAN, ast.ident(&refresh_local)),
                 ),
-                NONE,
+                None,
                 arguments,
                 false,
             ),
@@ -1164,12 +1147,12 @@ impl<'a> RefreshTransform<'a> {
                     ast.identifier_name(SPAN, "invalidate"),
                     false,
                 ));
-            let invalidate = ast.expression_call(SPAN, invalidate_callee, NONE, ast.vec(), false);
+            let invalidate = ast.expression_call(SPAN, invalidate_callee, None, ast.vec(), false);
             let params = ast.formal_parameters(
                 SPAN,
                 FormalParameterKind::ArrowFormalParameters,
                 ast.vec(),
-                NONE,
+                None,
             );
             let arrow_body = ast.function_body(
                 SPAN,
@@ -1177,7 +1160,7 @@ impl<'a> RefreshTransform<'a> {
                 ast.vec1(ast.statement_expression(SPAN, invalidate)),
             );
             let callback =
-                ast.expression_arrow_function(SPAN, true, false, NONE, params, NONE, arrow_body);
+                ast.expression_arrow_function(SPAN, true, false, None, params, None, arrow_body);
             let mut arguments = ast.vec();
             arguments.push(expression_to_argument(callback));
             body.push(self.hot_member_call("accept", arguments));
@@ -1186,7 +1169,7 @@ impl<'a> RefreshTransform<'a> {
             let mut arguments = ast.vec();
             arguments.push(Argument::StringLiteral(ast.alloc_string_literal(
                 SPAN,
-                ast.atom(self.config.bundler.as_str()),
+                ast.str(self.config.bundler.as_str()),
                 None,
             )));
             arguments.push(expression_to_argument(self.hot_expression()));
@@ -1197,7 +1180,7 @@ impl<'a> RefreshTransform<'a> {
                     Expression::Identifier(
                         ast.alloc_identifier_reference(SPAN, ast.ident(&decline_local)),
                     ),
-                    NONE,
+                    None,
                     arguments,
                     false,
                 ),
@@ -1245,22 +1228,18 @@ fn collect_merge_bindings(
                 bindings.push((id.name.to_string(), id.span.start));
             }
         }
-        Declaration::TSEnumDeclaration(declaration) => {
-            if !declaration.declare {
-                bindings.push((declaration.id.name.to_string(), declaration.id.span.start));
-            }
+        Declaration::TSEnumDeclaration(declaration) if !declaration.declare => {
+            bindings.push((declaration.id.name.to_string(), declaration.id.span.start));
         }
         // Conservative: any non-ambient `namespace A` / `module A` counts
         // as a merge even if its body turns out type-only (skipping the
         // wrap is always safe; the component still renders, it just isn't
         // hot-wrapped).
-        Declaration::TSModuleDeclaration(declaration) => {
+        Declaration::TSNamespaceDeclaration(declaration) => {
             if declaration.declare {
                 return;
             }
-            if let TSModuleDeclarationName::Identifier(id) = &declaration.id {
-                bindings.push((id.name.to_string(), id.span.start));
-            }
+            bindings.push((declaration.id.name.to_string(), declaration.id.span.start));
         }
         _ => {}
     }
@@ -1442,19 +1421,18 @@ fn collect_render_statement<'a, 'p>(
                 collect_render_statements(&body.statements, callback);
             }
         }
-        Statement::ExportNamedDeclaration(export) => {
-            if let Some(Declaration::FunctionDeclaration(function)) = &export.declaration {
-                if let Some(body) = &function.body {
-                    collect_render_statements(&body.statements, callback);
-                }
+        Statement::ExportDeclaration(export) => {
+            if let Declaration::FunctionDeclaration(function) = &export.declaration
+                && let Some(body) = &function.body
+            {
+                collect_render_statements(&body.statements, callback);
             }
         }
         Statement::ExportDefaultDeclaration(export) => {
             if let ExportDefaultDeclarationKind::FunctionDeclaration(function) = &export.declaration
+                && let Some(body) = &function.body
             {
-                if let Some(body) = &function.body {
-                    collect_render_statements(&body.statements, callback);
-                }
+                collect_render_statements(&body.statements, callback);
             }
         }
         _ => {}

@@ -165,14 +165,17 @@ impl<'a> AstDomTransform<'a, '_> {
                     attr.span,
                     &name,
                     self.ast()
-                        .expression_string_literal(attr.span, self.ast().atom(&value), None),
+                        .expression_string_literal(attr.span, self.ast().str(&value), None),
                 ))
             }
             Some(JSXAttributeValue::ExpressionContainer(container)) => {
-                let dynamic = container.expression.as_expression().is_some_and(|expression| {
-                    self.classify()
-                        .is_dynamic(Some(container.span.start), expression, false)
-                });
+                let dynamic = container
+                    .expression
+                    .as_expression()
+                    .is_some_and(|expression| {
+                        self.classify()
+                            .is_dynamic(Some(container.span.start), expression, false)
+                    });
                 let value = self.attribute_value_expression(container);
                 if dynamic {
                     // No condition memo in spread getters (#2959): attribute

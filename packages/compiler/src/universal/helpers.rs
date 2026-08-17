@@ -1,9 +1,6 @@
-use oxc_ast::{
-    ast::{
-        Argument, Expression, FormalParameterKind, ObjectPropertyKind, Statement,
-        VariableDeclarationKind,
-    },
-    AstBuilder, NONE,
+use oxc_ast::ast::{
+    Argument, Expression, FormalParameterKind, ObjectPropertyKind, Statement,
+    VariableDeclarationKind,
 };
 use oxc_span::Span;
 
@@ -11,6 +8,7 @@ use crate::shared::ast::{
     expression_to_argument, import_named, object_getter_property, object_property,
     variable_statement,
 };
+use crate::shared::ast_builder::AstBuilder;
 use crate::universal::transform::AstUniversalTransform;
 
 impl<'a> AstUniversalTransform<'a, '_> {
@@ -67,12 +65,12 @@ impl<'a> AstUniversalTransform<'a, '_> {
             span,
             FormalParameterKind::ArrowFormalParameters,
             self.ast().vec(),
-            NONE,
+            None,
         );
         let body = self.ast().function_body(span, self.ast().vec(), statements);
         let arrow = self
             .ast()
-            .expression_arrow_function(span, false, false, NONE, params, NONE, body);
+            .expression_arrow_function(span, false, false, None, params, None, body);
         self.call_expression(span, arrow, std::vec::Vec::new())
     }
 
@@ -85,7 +83,7 @@ impl<'a> AstUniversalTransform<'a, '_> {
         self.ast().expression_call(
             span,
             callee,
-            NONE,
+            None,
             self.ast()
                 .vec_from_iter(args.into_iter().map(expression_to_argument)),
             false,
@@ -102,7 +100,7 @@ impl<'a> AstUniversalTransform<'a, '_> {
             span,
             self.ast()
                 .expression_identifier(span, self.ast().ident(callee)),
-            NONE,
+            None,
             self.ast().vec_from_iter(args),
             false,
         )
@@ -111,7 +109,7 @@ impl<'a> AstUniversalTransform<'a, '_> {
     pub(super) fn string_arg(&self, span: Span, value: &str) -> Argument<'a> {
         Argument::StringLiteral(
             self.ast()
-                .alloc_string_literal(span, self.ast().atom(value), None),
+                .alloc_string_literal(span, self.ast().str(value), None),
         )
     }
 

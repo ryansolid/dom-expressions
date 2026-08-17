@@ -25,7 +25,7 @@
 //! ignored just like the transform ignores them.
 
 use oxc_ast::ast::{Expression, Program, PropertyKind};
-use oxc_ast_visit::{walk, Visit};
+use oxc_ast_visit::{Visit, walk};
 use oxc_semantic::{Scoping, SemanticBuilder};
 use oxc_span::Span;
 use oxc_syntax::scope::ScopeId;
@@ -187,9 +187,9 @@ impl<'a> Visit<'a> for CaptureValidator<'_> {
         // Mirrors the transform's eligibility: arrows with block bodies and
         // function expressions in expression position.
         let marked = match expression {
-            Expression::ArrowFunctionExpression(arrow) if !arrow.expression => {
-                self.body_has_directive(&arrow.body)
-            }
+            Expression::ArrowFunctionExpression(arrow) if !arrow.is_expression() => arrow
+                .get_function_body()
+                .is_some_and(|body| self.body_has_directive(body)),
             Expression::FunctionExpression(function) => function
                 .body
                 .as_ref()

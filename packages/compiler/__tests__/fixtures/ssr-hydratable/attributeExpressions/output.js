@@ -465,8 +465,8 @@ const propsSpread = {
 	something: color(),
 	style: {
 		"background-color": color(),
-		color: color(),
-		"margin-right": props.right
+		color: /* @static*/ color(),
+		"margin-right": /* @static */ props.right
 	}
 };
 const template80 = _$ssrElement("div", propsSpread, undefined, true);
@@ -476,7 +476,7 @@ const template82 = _$ssrElement("div", () => {
 		get ["data-dynamic"]() {
 			return color();
 		},
-		"data-static": color()
+		"data-static": /* @static */ color()
 	});
 }, undefined, true);
 const template83 = _$ssrElement("div", () => {
@@ -484,7 +484,7 @@ const template83 = _$ssrElement("div", () => {
 		get ["data-dynamic"]() {
 			return color();
 		},
-		"data-static": color()
+		"data-static": /* @static */ color()
 	});
 }, undefined, true);
 const template84 = _$ssrElement("div", () => {
@@ -492,7 +492,7 @@ const template84 = _$ssrElement("div", () => {
 		get ["data-dynamic"]() {
 			return color();
 		},
-		"data-static": color()
+		"data-static": /* @static */ color()
 	});
 }, undefined, true);
 // STATIC PROPERTY OF OBJECT ACCESS

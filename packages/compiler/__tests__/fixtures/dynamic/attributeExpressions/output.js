@@ -480,8 +480,8 @@ const propsSpread = {
 	something: color(),
 	style: {
 		"background-color": color(),
-		color: color(),
-		"margin-right": props.right
+		color: /* @static*/ color(),
+		"margin-right": /* @static */ props.right
 	}
 };
 var _el$100 = _tmpl$4();
@@ -495,7 +495,7 @@ _$spread(_el$102, _$mergeProps(propsSpread, {
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), false);
 const template82 = _el$102;
 var _el$103 = _tmpl$4();
@@ -503,7 +503,7 @@ _$spread(_el$103, _$mergeProps({ ...propsSpread }, {
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), false);
 const template83 = _el$103;
 var _el$104 = _tmpl$4();
@@ -511,7 +511,7 @@ _$spread(_el$104, _$mergeProps({ ...propsSpread1 }, propsSpread2, { ...propsSpre
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), false);
 const template84 = _el$104;
 // STATIC PROPERTY OF OBJECT ACCESS

@@ -1,13 +1,11 @@
 use oxc_allocator::{Allocator, Vec as ArenaVec};
-use oxc_ast::{
-    ast::{
-        Argument, Expression, FormalParameterKind, FunctionType, ImportOrExportKind,
-        ObjectPropertyKind, PropertyKey, PropertyKind, Statement, VariableDeclarationKind,
-    },
-    AstBuilder, NONE,
+use oxc_ast::ast::{
+    Argument, Expression, FormalParameterKind, FunctionType, ImportOrExportKind,
+    ObjectPropertyKind, PropertyKey, PropertyKind, Statement, VariableDeclarationKind,
 };
 use oxc_span::{GetSpan, Span};
 
+use crate::shared::ast_builder::AstBuilder;
 use crate::shared::utils::{is_identifier_key, is_valid_babel_identifier};
 
 fn ast<'a>(allocator: &'a Allocator) -> AstBuilder<'a> {
@@ -25,7 +23,8 @@ pub(crate) fn expression_to_argument<'a>(expression: Expression<'a>) -> Argument
         Expression::ArrayExpression(value) => Argument::ArrayExpression(value),
         Expression::TemplateLiteral(value) => Argument::TemplateLiteral(value),
         Expression::Identifier(value) => Argument::Identifier(value),
-        Expression::MetaProperty(value) => Argument::MetaProperty(value),
+        Expression::ImportMeta(value) => Argument::ImportMeta(value),
+        Expression::NewTarget(value) => Argument::NewTarget(value),
         Expression::Super(value) => Argument::Super(value),
         Expression::ThisExpression(value) => Argument::ThisExpression(value),
         Expression::CallExpression(value) => Argument::CallExpression(value),
@@ -79,9 +78,9 @@ pub(crate) fn import_named<'a>(
     Statement::ImportDeclaration(ast.alloc_import_declaration(
         span,
         Some(ast.vec1(specifier)),
-        ast.string_literal(span, ast.atom(module_name), None),
+        ast.string_literal(span, ast.str(module_name), None),
         None,
-        NONE,
+        None,
         ImportOrExportKind::Value,
     ))
 }
@@ -96,7 +95,7 @@ pub(crate) fn object_property<'a>(
     let key = if is_identifier_key(name) {
         ast.property_key_static_identifier(span, ast.ident(name))
     } else {
-        PropertyKey::StringLiteral(ast.alloc_string_literal(span, ast.atom(name), None))
+        PropertyKey::StringLiteral(ast.alloc_string_literal(span, ast.str(name), None))
     };
     ast.object_property_kind_object_property(
         span,
@@ -130,14 +129,14 @@ pub(crate) fn object_method_property<'a>(
     let key = if is_identifier_key(name) {
         ast.property_key_static_identifier(span, ast.ident(name))
     } else {
-        PropertyKey::StringLiteral(ast.alloc_string_literal(span, ast.atom(name), None))
+        PropertyKey::StringLiteral(ast.alloc_string_literal(span, ast.str(name), None))
     };
     let param = ast.formal_parameter(
         span,
         ast.vec(),
         ast.binding_pattern_binding_identifier(span, ast.ident(param_name)),
-        NONE,
-        NONE,
+        None,
+        None,
         false,
         None,
         false,
@@ -147,7 +146,7 @@ pub(crate) fn object_method_property<'a>(
         span,
         FormalParameterKind::FormalParameter,
         ast.vec1(param),
-        NONE,
+        None,
     );
     let body = ast.function_body(span, ast.vec(), statements);
     let value = ast.expression_function(
@@ -157,10 +156,10 @@ pub(crate) fn object_method_property<'a>(
         false,
         false,
         false,
-        NONE,
-        NONE,
+        None,
+        None,
         params,
-        NONE,
+        None,
         Some(body),
     );
     ast.object_property_kind_object_property(
@@ -201,9 +200,9 @@ pub(crate) fn object_getter_property_with_statements<'a>(
     let key = if is_valid_babel_identifier(name) {
         ast.property_key_static_identifier(span, ast.ident(name))
     } else {
-        PropertyKey::StringLiteral(ast.alloc_string_literal(span, ast.atom(name), None))
+        PropertyKey::StringLiteral(ast.alloc_string_literal(span, ast.str(name), None))
     };
-    let params = ast.formal_parameters(span, FormalParameterKind::FormalParameter, ast.vec(), NONE);
+    let params = ast.formal_parameters(span, FormalParameterKind::FormalParameter, ast.vec(), None);
     let body = ast.function_body(span, ast.vec(), statements);
     let value = ast.expression_function(
         span,
@@ -212,10 +211,10 @@ pub(crate) fn object_getter_property_with_statements<'a>(
         false,
         false,
         false,
-        NONE,
-        NONE,
+        None,
+        None,
         params,
-        NONE,
+        None,
         Some(body),
     );
     // Babel: `t.objectMethod("get", id, [], body, !t.isValidIdentifier(key))` —
@@ -241,13 +240,24 @@ pub(crate) fn function_body_statements<'a>(
 ) -> ArenaVec<'a, Statement<'a>> {
     let ast = ast(allocator);
     let mut body = body.unbox();
-    if is_expression {
-        if let Some(Statement::ExpressionStatement(statement)) = body.statements.pop() {
-            let expression = statement.unbox().expression;
-            return ast.vec1(ast.statement_return(span, Some(expression)));
-        }
+    if is_expression && let Some(Statement::ExpressionStatement(statement)) = body.statements.pop()
+    {
+        let expression = statement.unbox().expression;
+        return ast.vec1(ast.statement_return(span, Some(expression)));
     }
     body.statements
+}
+
+pub(crate) fn arrow_body_statements<'a>(
+    allocator: &'a Allocator,
+    span: Span,
+    body: oxc_ast::ast::ArrowFunctionBody<'a>,
+) -> ArenaVec<'a, Statement<'a>> {
+    let ast = ast(allocator);
+    match body {
+        oxc_ast::ast::ArrowFunctionBody::FunctionBody(body) => body.unbox().statements,
+        body => ast.vec1(ast.statement_return(span, Some(body.into_expression()))),
+    }
 }
 
 /// Babel inlines `(() => { ... })()` component prop values into the generated
@@ -276,12 +286,7 @@ pub(crate) fn zero_arg_iife_statements<'a>(
         unreachable!("shape checked above");
     };
     let arrow = arrow.unbox();
-    Ok(function_body_statements(
-        allocator,
-        span,
-        arrow.expression,
-        arrow.body,
-    ))
+    Ok(arrow_body_statements(allocator, span, arrow.body))
 }
 
 /// Splits `(() => { ...setup; return value; })()` into its setup statements
@@ -311,7 +316,7 @@ pub(crate) fn split_zero_arg_iife<'a>(
     let ast = ast(allocator);
     let iife = arrow_iife(allocator, span, statements);
     (
-        ast.expression_call(span, iife, NONE, ast.vec(), false),
+        ast.expression_call(span, iife, None, ast.vec(), false),
         std::vec::Vec::new(),
     )
 }
@@ -326,14 +331,14 @@ pub(crate) fn arrow_return_expression<'a>(
         span,
         FormalParameterKind::ArrowFormalParameters,
         ast.vec(),
-        NONE,
+        None,
     );
     let body = ast.function_body(
         span,
         ast.vec(),
         ast.vec1(ast.statement_return(span, Some(value))),
     );
-    ast.expression_arrow_function(span, false, false, NONE, params, NONE, body)
+    ast.expression_arrow_function(span, false, false, None, params, None, body)
 }
 
 /// `() => value` with a concise (expression) body. Deferred JSX inside stays
@@ -349,14 +354,14 @@ pub(crate) fn concise_arrow_thunk<'a>(
         span,
         FormalParameterKind::ArrowFormalParameters,
         ast.vec(),
-        NONE,
+        None,
     );
     let body = ast.function_body(
         span,
         ast.vec(),
         ast.vec1(ast.statement_expression(span, value)),
     );
-    ast.expression_arrow_function(span, true, false, NONE, params, NONE, body)
+    ast.expression_arrow_function(span, true, false, None, params, None, body)
 }
 
 pub(crate) fn arrow_iife<'a>(
@@ -369,10 +374,10 @@ pub(crate) fn arrow_iife<'a>(
         span,
         FormalParameterKind::ArrowFormalParameters,
         ast.vec(),
-        NONE,
+        None,
     );
     let body = ast.function_body(span, ast.vec(), statements);
-    ast.expression_arrow_function(span, false, false, NONE, params, NONE, body)
+    ast.expression_arrow_function(span, false, false, None, params, None, body)
 }
 
 pub(crate) fn variable_statement<'a>(
@@ -387,7 +392,7 @@ pub(crate) fn variable_statement<'a>(
         span,
         kind,
         ast.binding_pattern_binding_identifier(span, ast.ident(name)),
-        NONE,
+        None,
         Some(init),
         false,
     );

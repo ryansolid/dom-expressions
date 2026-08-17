@@ -72,7 +72,7 @@ const template2 = _$createComponent(Child, {
 	get dynamic() {
 		return state.data;
 	},
-	stale: state.data,
+	stale: /*@static*/ state.data,
 	handleClick: clickHandler,
 	get ["hyphen-ated"]() {
 		return state.data;

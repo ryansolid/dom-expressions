@@ -6,9 +6,8 @@
 
 use html5ever::tendril::TendrilSink;
 use html5ever::{
-    local_name, ns, parse_fragment, serialize,
+    ParseOpts, QualName, local_name, ns, parse_fragment, serialize,
     serialize::{SerializeOpts, TraversalScope},
-    ParseOpts, QualName,
 };
 use markup5ever_rcdom::{RcDom, SerializableHandle};
 

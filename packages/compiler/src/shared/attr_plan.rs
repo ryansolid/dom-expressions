@@ -4,11 +4,11 @@ use oxc_ast::ast::{
     ArrayExpressionElement, Expression, FormalParameterKind, JSXAttributeItem, JSXAttributeValue,
     JSXChild, JSXExpression, ObjectPropertyKind, TemplateElementValue,
 };
-use oxc_ast::{AstBuilder, NONE};
-use oxc_span::{GetSpan, Span, SPAN};
+use oxc_span::{GetSpan, SPAN, Span};
 
+use crate::shared::ast_builder::AstBuilder;
 use crate::shared::bindings::BindingTable;
-use crate::shared::utils::{decode_html_entities, format_number, StaticValue};
+use crate::shared::utils::{StaticValue, decode_html_entities, format_number};
 
 /// Planned attribute value, mirroring the states a Babel JSX attribute value
 /// moves through during preprocessing (`node.value` replaced by string
@@ -284,7 +284,7 @@ impl<'a> AttrPlanner<'a, '_> {
                 Some(ConfidentValue::Str(value)) => {
                     *expression = self.ast().expression_string_literal(
                         expression.span(),
-                        self.ast().atom(&value),
+                        self.ast().str(&value),
                         None,
                     );
                 }
@@ -500,7 +500,7 @@ impl<'a> AttrPlanner<'a, '_> {
     fn stateful_value_child(&self, plan: &AttrPlan<'a>) -> JSXChild<'a> {
         match &plan.value {
             PlanValue::Literal(text) => {
-                let atom = self.ast().atom(text);
+                let atom = self.ast().str(text);
                 self.ast().jsx_child_text(plan.span, atom, Some(atom))
             }
             PlanValue::Expr(expression) => self.ast().jsx_child_expression_container(
@@ -545,8 +545,8 @@ impl<'a> AttrPlanner<'a, '_> {
     /// Babel converts string styles to template literals so a multi-line
     /// string survives the no-`inlineStyles` wrap.
     pub(crate) fn style_string_template_literal(&self, span: Span, text: &str) -> Expression<'a> {
-        let raw = self.ast().atom(text);
-        let quasi = self.ast().template_element(
+        let raw = self.ast().str(text);
+        let quasi = self.ast().template_element_with_lone_surrogates(
             SPAN,
             TemplateElementValue {
                 raw,
@@ -563,7 +563,7 @@ impl<'a> AttrPlanner<'a, '_> {
     pub(crate) fn style_no_inline_iife(&self, span: Span, value: Expression<'a>) -> Expression<'a> {
         let arrow = self.arrow_with_return(span, value);
         self.ast()
-            .expression_call(span, arrow, oxc_ast::NONE, self.ast().vec(), false)
+            .expression_call(span, arrow, None, self.ast().vec(), false)
     }
 
     fn arrow_with_return(&self, span: Span, value: Expression<'a>) -> Expression<'a> {
@@ -574,11 +574,11 @@ impl<'a> AttrPlanner<'a, '_> {
             span,
             FormalParameterKind::ArrowFormalParameters,
             self.ast().vec(),
-            NONE,
+            None,
         );
         let body = self.ast().function_body(span, self.ast().vec(), statements);
         self.ast()
-            .expression_arrow_function(span, false, false, NONE, params, NONE, body)
+            .expression_arrow_function(span, false, false, None, params, None, body)
     }
 
     /// Inline styles pass: string styles and confidently static object
@@ -916,7 +916,7 @@ impl<'a> AttrPlanner<'a, '_> {
                             expression.clone_in(self.allocator),
                             oxc_ast::ast::LogicalOperator::Or,
                             self.ast()
-                                .expression_string_literal(SPAN, self.ast().atom(""), None),
+                                .expression_string_literal(SPAN, self.ast().str(""), None),
                         ),
                     );
                     quasis.push(if is_last {
@@ -950,8 +950,8 @@ impl<'a> AttrPlanner<'a, '_> {
             let elements =
                 self.ast()
                     .vec_from_iter(quasis.into_iter().enumerate().map(|(index, raw)| {
-                        let atom = self.ast().atom(&raw);
-                        self.ast().template_element(
+                        let atom = self.ast().str(&raw);
+                        self.ast().template_element_with_lone_surrogates(
                             SPAN,
                             TemplateElementValue {
                                 raw: atom,

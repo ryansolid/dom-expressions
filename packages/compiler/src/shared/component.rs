@@ -4,20 +4,18 @@
 
 use napi::bindgen_prelude::*;
 use oxc_allocator::CloneIn;
-use oxc_ast::{
-    ast::{
-        Expression, JSXAttributeItem, JSXAttributeValue, JSXElement, ObjectPropertyKind, Statement,
-    },
-    AstBuilder,
+use oxc_ast::ast::{
+    Expression, JSXAttributeItem, JSXAttributeValue, JSXElement, ObjectPropertyKind, Statement,
 };
 use oxc_span::{GetSpan, Span};
 
 use crate::dom::element::AstDomTransform;
-use crate::shared::component_callee::{component_callee_expression, ComponentCalleeContext};
-use crate::shared::component_children::{component_children, ComponentChildLower};
+use crate::shared::ast_builder::AstBuilder;
+use crate::shared::component_callee::{ComponentCalleeContext, component_callee_expression};
+use crate::shared::component_children::{ComponentChildLower, component_children};
 use crate::shared::component_props::{
-    component_property, component_props_expression, component_spread_expression,
-    flush_component_props, ComponentPropContext,
+    ComponentPropContext, component_property, component_props_expression,
+    component_spread_expression, flush_component_props,
 };
 use crate::shared::condition::{is_condition_shape, transform_condition_inline};
 use crate::shared::mode_lower::mode_ast;
@@ -88,7 +86,7 @@ pub(crate) fn lower_component_with_setup<'a, C: ComponentLower<'a>>(
                 let span = value.span;
                 let value = decode_html_entities(&value.value);
                 (
-                    ast.expression_string_literal(span, ast.atom(&value), None),
+                    ast.expression_string_literal(span, ast.str(&value), None),
                     false,
                     false,
                 )
@@ -99,10 +97,7 @@ pub(crate) fn lower_component_with_setup<'a, C: ComponentLower<'a>>(
                 // around the untransformed expression and its outer traversal
                 // lowers the JSX later. `this` was already rewritten by the
                 // root-level `transformThis` pass.
-                let mut value = container
-                    .expression
-                    .clone_in(allocator)
-                    .into_expression();
+                let mut value = container.expression.clone_in(allocator).into_expression();
                 // Dynamic conditional/logical props collapse their memos
                 // inline within the getter, mirroring Babel's
                 // `transformCondition(..., true)`.
@@ -130,10 +125,7 @@ pub(crate) fn lower_component_with_setup<'a, C: ComponentLower<'a>>(
             match crate::shared::ast::zero_arg_iife_statements(allocator, attr.span, value) {
                 Ok(statements) => {
                     running_props.push(crate::shared::ast::object_getter_property_with_statements(
-                        allocator,
-                        attr.span,
-                        &name,
-                        statements,
+                        allocator, attr.span, &name, statements,
                     ));
                 }
                 Err(value) => {
@@ -196,10 +188,13 @@ fn component_prop_is_dynamic<'a, C: ComponentLower<'a>>(
     if name == "ref" {
         return false;
     }
-    container.expression.as_expression().is_some_and(|expression| {
-        ctx.classify()
-            .is_dynamic(Some(container.span.start), expression, true)
-    })
+    container
+        .expression
+        .as_expression()
+        .is_some_and(|expression| {
+            ctx.classify()
+                .is_dynamic(Some(container.span.start), expression, true)
+        })
 }
 
 impl<'a> ComponentLower<'a> for AstDomTransform<'a, '_> {

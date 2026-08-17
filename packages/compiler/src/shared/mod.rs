@@ -1,5 +1,6 @@
 pub(crate) mod array;
 pub(crate) mod ast;
+pub(crate) mod ast_builder;
 pub(crate) mod attr_plan;
 pub(crate) mod bindings;
 pub(crate) mod classify;
@@ -11,6 +12,7 @@ pub(crate) mod condition;
 pub(crate) mod constants;
 pub(crate) mod fragment;
 pub(crate) mod mode_lower;
+pub(crate) mod parser;
 pub(crate) mod refs;
 pub(crate) mod statements;
 pub(crate) mod this;

@@ -497,8 +497,8 @@ const propsSpread = {
 	something: color(),
 	style: {
 		"background-color": color(),
-		color: color(),
-		"margin-right": props.right
+		color: /* @static*/ color(),
+		"margin-right": /* @static */ props.right
 	}
 };
 var _el$103 = _$getNextElement(_tmpl$4);
@@ -514,7 +514,7 @@ _$spread(_el$105, _$mergeProps(propsSpread, {
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), false);
 _$runHydrationEvents();
 const template82 = _el$105;
@@ -523,7 +523,7 @@ _$spread(_el$106, _$mergeProps({ ...propsSpread }, {
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), false);
 _$runHydrationEvents();
 const template83 = _el$106;
@@ -532,7 +532,7 @@ _$spread(_el$107, _$mergeProps({ ...propsSpread1 }, propsSpread2, { ...propsSpre
 	get ["data-dynamic"]() {
 		return color();
 	},
-	"data-static": color()
+	"data-static": /* @static */ color()
 }), false);
 _$runHydrationEvents();
 const template84 = _el$107;

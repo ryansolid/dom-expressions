@@ -70,7 +70,7 @@ var _v$9 = _$ssrHydrationKey(), _v$10 = _$escape(
 	state.children
 );
 const template11 = _$ssr(_tmpl$2, _v$9, _v$10);
-const template12 = Module({ children: state.children });
+const template12 = Module({ children: /*@static*/ state.children });
 var _v$11 = _$ssrHydrationKey(), _v$12 = _$escape(children);
 const template13 = _$ssr(_tmpl$2, _v$11, _v$12);
 const template14 = Module({ children });

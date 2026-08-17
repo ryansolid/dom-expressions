@@ -1,10 +1,8 @@
 use napi::bindgen_prelude::*;
-use oxc_ast::{
-    ast::{Expression, JSXElementName, JSXMemberExpression, JSXMemberExpressionObject},
-    AstBuilder,
-};
+use oxc_ast::ast::{Expression, JSXElementName, JSXMemberExpression, JSXMemberExpressionObject};
 use oxc_span::Span;
 
+use crate::shared::ast_builder::AstBuilder;
 use crate::shared::utils::is_identifier_key;
 
 /// Target-neutral hooks required to lower a component callee (the `Foo` in
@@ -107,7 +105,7 @@ fn member_property_expression<'a, C: ComponentCalleeContext<'a>>(
                 span,
                 object,
                 ctx.ast()
-                    .expression_string_literal(span, ctx.ast().atom(property), None),
+                    .expression_string_literal(span, ctx.ast().str(property), None),
                 false,
             ),
         )

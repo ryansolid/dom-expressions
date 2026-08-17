@@ -269,7 +269,7 @@ describe("jsx-dom-expressions-compiler AST-native milestone", () => {
       }
     );
 
-    expect(result.code).toContain("value: state.value");
+    expect(result.code).toContain("value: /*@once*/ state.value");
     expect(result.code).toContain("get other()");
   });
 
