@@ -275,11 +275,14 @@ export const BodyFormat = {
 
 // Nesting deeper than this is not JSON-safe. The guard itself walks an
 // explicit stack so any depth is CHECKABLE, but claiming safety means
-// JSON.stringify must then deliver, and stringify recursion is
-// engine-dependent at extreme depth — past this ceiling the value goes to
-// the codec, whose own depth limit produces a structured error instead of
-// a RangeError that dispatch would misread as the function failing.
-const JSON_SAFE_DEPTH_LIMIT = 10000;
+// JSON.stringify must then deliver. Stringify is recursive and the cliff
+// is engine-dependent: Node 24.19 (CI) overflows around 5900 nested
+// objects on the default V8 stack; Node 26 still clears 10k. The ceiling
+// sits below the Node 24 cliff with headroom for heavier frames / linux
+// x64 CI. Past it the value goes to the codec, whose own depth limit
+// produces a structured error instead of a RangeError that dispatch
+// would misread as the function failing.
+const JSON_SAFE_DEPTH_LIMIT = 4096;
 
 // Sentinel frame on the traversal stack: "all children of the entry below
 // are done — pop it from the ancestor path". Module-private, so it can
@@ -297,9 +300,8 @@ const EXIT = {};
  *
  * Traversal is iterative on an explicit stack with an ancestor set: the
  * old recursive walk overflowed on cycles (forever) and on deep nesting
- * stringify itself handles fine (~8k levels — the guard's frames are
- * heavier than the stringifier's), and that RangeError escaped into
- * dispatch's catch as a phantom function error. Cycle detection is
+ * stringify itself handles on a given engine, and that RangeError escaped
+ * into dispatch's catch as a phantom function error. Cycle detection is
  * ancestor-based on purpose: a value referenced twice WITHOUT a cycle is
  * still JSON-safe (stringify duplicates it, as the fast path always has)
  * — a seen-forever set would start waking the codec for plain data that

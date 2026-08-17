@@ -27,6 +27,7 @@ import {
   extractBody,
   getHeadersAndBody,
   getServerFunctionMetadata,
+  isJSONSafe,
   isServerFunction,
   serializeStream,
   serializeString,
@@ -302,27 +303,28 @@ describe("response format negotiation", () => {
   });
 
   it("deep JSON-safe nesting stays on the JSON fast path (stringify handles it)", async () => {
-    // ~8k levels overflowed the old recursive guard even though
-    // JSON.stringify carries it fine — and the codec CANNOT take it (its
-    // depth limit protects the decoding peer), so the guard itself must
-    // survive and answer true.
-    registerServerFunction("fmt-deep-0", async () => {
-      const root = {};
-      let cursor = root;
-      for (let i = 0; i < 8000; i++) cursor = cursor.next = {};
-      cursor.leaf = true;
-      return root;
-    });
+    // Deep enough to sit above the codec's decode cap (64) — so a wrong
+    // "not safe" answer would fail to round-trip — and shallow enough that
+    // Node 24's JSON.stringify still delivers. The old 8000 figure was
+    // measured on Node 26; Node 24 (CI) cliffs around 5900, and the
+    // guard's ceiling is 4096 so it refuses before stringify throws.
+    const levels = 2048;
+    const root = {};
+    let cursor = root;
+    for (let i = 0; i < levels; i++) cursor = cursor.next = {};
+    cursor.leaf = true;
+    expect(isJSONSafe(root)).toBe(true);
+    registerServerFunction("fmt-deep-0", async () => root);
     const response = await dispatch(scriptedRequest("fmt-deep-0"));
     expect(response.headers.get(ERROR_HEADER)).toBeNull();
     expect(response.headers.get(BODY_FORMAT_HEADER)).toBe(BodyFormat.Json);
     let depth = 0;
-    let cursor = JSON.parse(await response.text());
+    cursor = JSON.parse(await response.text());
     while (cursor.next) {
       cursor = cursor.next;
       depth++;
     }
-    expect(depth).toBe(8000);
+    expect(depth).toBe(levels);
     expect(cursor.leaf).toBe(true);
   });
 
