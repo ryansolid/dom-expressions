@@ -71,7 +71,11 @@ describe("SSR <select value> resolves to selected options", () => {
     const [lang] = createSignal("fr");
     const langs = ["en", "fr", "de"];
     const html = r.renderToString(() => (
-      <select value={lang()}>{langs.map(l => <option value={l}>{l}</option>)}</select>
+      <select value={lang()}>
+        {langs.map(l => (
+          <option value={l}>{l}</option>
+        ))}
+      </select>
     ));
     expect(html).toMatch(/value="fr"[^>]*selected/);
     expect(html).not.toMatch(/value="en"[^>]*selected/);
@@ -142,9 +146,7 @@ describe("resolveSSRSelectValues string safety", () => {
 
   it("collects option text across hydration marker comments", () => {
     const html = '<select value="French"><option><!--#-->French<!--/--></option></select>';
-    expect(resolve(html)).toBe(
-      '<select><option selected><!--#-->French<!--/--></option></select>'
-    );
+    expect(resolve(html)).toBe("<select><option selected><!--#-->French<!--/--></option></select>");
   });
 
   it("leaves a select that does not close in this chunk byte-identical", () => {
@@ -158,7 +160,8 @@ describe("resolveSSRSelectValues string safety", () => {
   });
 
   it("empty single value matches an empty-valued option", () => {
-    const html = '<select value=""><option value="">none</option><option value="a">A</option></select>';
+    const html =
+      '<select value=""><option value="">none</option><option value="a">A</option></select>';
     expect(resolve(html)).toBe(
       '<select><option value="" selected>none</option><option value="a">A</option></select>'
     );
