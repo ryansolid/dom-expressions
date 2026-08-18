@@ -1514,13 +1514,24 @@ predict(list, { append: <li class="pending">{title}</li> });   // creation
 predict(row,  { class: "saving", after: <Spinner /> });        // both, one claim
 ```
 
-The patch vocabulary is JSX attribute semantics — `class`/
-`classList`, `style` objects, `checked`/`value` as properties,
-`textContent` — **plus four relational content keys**: `before`,
-`prepend`, `append`, `after` (the platform blessed exactly this set:
-they are `insertAdjacentHTML`'s positions). An author who can write
-a Solid attribute expression can write a prediction; nothing outside
-that vocabulary exists to learn.
+The patch vocabulary is the element's JSX attribute surface, applied
+by the same code path client JSX uses (`spread`/`assign` semantics):
+`class`/`classList`, `style` strings and objects, plain attributes
+including `data-*`/`aria-*`, the property-vs-attribute heuristics
+(`checked`/`value`/`open` as properties), and the namespaced forms
+(`attr:`/`prop:`/`bool:`) for free — **plus four relational content
+keys**: `before`, `prepend`, `append`, `after` (the platform blessed
+exactly this set: they are `insertAdjacentHTML`'s positions). An
+author who can write a Solid attribute expression can write a
+prediction; nothing outside that vocabulary exists to learn. Two
+carve-outs, both dev-warned: behavior-shaped keys (`ref`, `on*`) are
+excluded — behavior is Stage 6's job with its own element-scoped
+lifecycle, and a prediction is a statement about state — and
+content-destroying keys (`children`, `innerHTML`) are excluded by
+the no-snapshot rule. `textContent` stays in with a stated edge: its
+baseline is a string, a faithful undo only on text leaves —
+predicting it on an element with element children is the `innerHTML`
+violation in quieter clothes (dev mode checks `childElementCount`).
 
 **Two rollback regimes inside one shape — why this is convergence,
 not compromise.** Every claim a client can make about server markup
