@@ -374,6 +374,38 @@ describe("root-owned event delegation", () => {
     dispose();
   });
 
+  it("does not crash on events targeting the render root when a portal container is its ancestor (solidjs/solid#3008)", () => {
+    const root = document.createElement("div");
+    const calls = [];
+    const errors = [];
+    const onError = e => {
+      errors.push(e.error);
+      e.preventDefault();
+    };
+
+    document.body.appendChild(root);
+    window.addEventListener("error", onError);
+    const dispose = r.render(() => <section onClick={() => calls.push("logical")} />, root);
+    // A Portal defaulting to document.body registers body as a delegated
+    // container owned by the app root — an ancestor of the root, unlike the
+    // sibling-mount cases above. body's handler then resumes from the root's
+    // completed walk with a boundary (the root) below the resume point, and
+    // used to climb past #document and throw.
+    r.registerDelegatedContainer(document.body, root);
+
+    try {
+      root.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
+
+      expect(errors).toEqual([]);
+      expect(calls).toEqual([]);
+    } finally {
+      window.removeEventListener("error", onError);
+      r.unregisterDelegatedContainer(document.body, root);
+      dispose();
+      document.body.removeChild(root);
+    }
+  });
+
   it("keeps container listeners until the final matching unregister", () => {
     const root = document.createElement("div");
     let button;

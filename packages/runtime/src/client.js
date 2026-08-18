@@ -1616,6 +1616,12 @@ function eventHandler(e, container, state) {
       ? container
       : findOwner(e.target, state)?.owner);
   if (state && !owner) return;
+  // Same owner as the walk that already completed: nothing remains. This is a
+  // portal container sharing its app root's ownership (registerDelegatedContainer
+  // with the root as owner) seeing an event from inside the root — the resume
+  // path below assumes the boundary is an ancestor of the resume point, which
+  // only holds for nested roots, and climbing past #document crashes (#3008).
+  if (owner && owner === resumeNode) return;
   e[$$EVENT_OWNER] = owner || true;
 
   let node = resumeNode || e.target;
@@ -1642,7 +1648,7 @@ function eventHandler(e, container, state) {
     return true;
   };
   const walkUpTree = () => {
-    while (handleNode()) {
+    while (node && handleNode()) {
       if (node === boundary || node.parentNode === boundary) break;
       node = node._$host || node.parentNode || node.host;
     }
