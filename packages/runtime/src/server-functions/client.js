@@ -573,7 +573,14 @@ export function live(fn) {
             await new Promise(resolve => {
               wake = resolve;
               timer = setTimeout(resolve, Math.min(500 * 2 ** attempts++, 10000));
+              // connectivity returning wakes the sleep — no reason to sit
+              // out an 8s backoff when the network just came back (typeof
+              // guard: non-browser consumers have no global EventTarget)
+              if (typeof addEventListener === "function")
+                addEventListener("online", resolve, { once: true });
             });
+            clearTimeout(timer);
+            if (typeof removeEventListener === "function") removeEventListener("online", wake);
             timer = wake = undefined;
           }
         }

@@ -2726,6 +2726,49 @@ describe("live declaration", () => {
     }
   });
 
+  it("connectivity returning wakes the backoff sleep early", async () => {
+    let invocations = 0;
+    registerServerReference("live-online-0", async function* () {
+      invocations++;
+      if (invocations === 1) {
+        yield "a";
+        throw new Error("death");
+      }
+      yield "b";
+    });
+    const listeners = new Set();
+    const origAdd = globalThis.addEventListener;
+    const origRemove = globalThis.removeEventListener;
+    globalThis.addEventListener = (type, fn) => {
+      if (type === "online") listeners.add(fn);
+    };
+    globalThis.removeEventListener = (type, fn) => {
+      listeners.delete(fn);
+    };
+    const liveFn = clientLive(createClientReference("live-online-0"));
+    const restore = connectTransport();
+    try {
+      const started = Date.now();
+      const firing = (async () => {
+        // the sleep registers its wake as an online listener — fire it as
+        // soon as it appears, well before the 500ms first-retry timer
+        while (!listeners.size) await new Promise(r => setTimeout(r, 5));
+        for (const fn of [...listeners]) fn();
+      })();
+      const seen = [];
+      for await (const v of liveFn()) seen.push(v);
+      await firing;
+      expect(seen).toEqual(["a", "b"]);
+      expect(Date.now() - started).toBeLessThan(400);
+      // the wake was removed after use — no listener left behind
+      expect(listeners.size).toBe(0);
+    } finally {
+      globalThis.addEventListener = origAdd;
+      globalThis.removeEventListener = origRemove;
+      restore();
+    }
+  });
+
   it("first-connect failures reject like a normal call", async () => {
     registerServerReference("live-fail-0", async () => {
       throw new Error("nope");
