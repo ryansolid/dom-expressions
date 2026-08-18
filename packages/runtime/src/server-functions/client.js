@@ -492,11 +492,27 @@ export function GET(fn) {
  * (`live(GET(fn))`): live must be the outermost declaration, since its
  * behavior wraps the call.
  *
+ * Wire state, if a UI wants it, rides an optional `onstatus` hook on the
+ * returned iterable — a side channel for the facts the retry loop
+ * deliberately erases from the value stream: `"connected"` on each
+ * successful (re)connect, `"reconnecting"` (with the error) on each
+ * post-connect death, `"closed"` when the source completes or the
+ * consumer ends it. First-connect failures emit nothing (the rejection
+ * already surfaces through the call). The hook is per CALL: iterating one
+ * object twice interleaves both lifecycles into it. Data freshness is
+ * usually the better question and belongs in the value (timestamps /
+ * heartbeats) — the hook is for genuinely wire-shaped UI.
+ *
  * ```ts
  * export const stockPrice = live(async function* (symbol: string) {
  *   "use server";
  *   for await (const tick of subscribe(symbol)) yield tick.price;
  * });
+ *
+ * // consumer, wiring status to a signal:
+ * const src = stockPrice("ACME");
+ * src.onstatus = setStatus;
+ * const price = createMemo(() => src);
  * ```
  */
 export function live(fn) {
@@ -505,100 +521,130 @@ export function live(fn) {
   }
   const id = fn.id;
   const metadata = { ...getServerFunctionMetadata(fn), live: true };
-  const wrapped = (...args) => ({
-    [LIVE_SOURCE]: true,
-    [Symbol.asyncIterator]() {
-      let it; // current underlying iterator (undefined between connections)
-      let connected = false; // a connect succeeded once — later deaths reconnect
-      let attempts = 0;
-      let stopped = false;
-      let timer, wake; // interruptible backoff sleep
-      const DONE = { done: true, value: undefined };
-      const closeIt = value => {
-        const current = it;
-        it = undefined;
-        if (current) {
+  const wrapped = (...args) => {
+    const iterable = {
+      [LIVE_SOURCE]: true,
+      [Symbol.asyncIterator]() {
+        let it; // current underlying iterator (undefined between connections)
+        let connected = false; // a connect succeeded once — later deaths reconnect
+        let attempts = 0;
+        let stopped = false;
+        let ended = false; // "closed" fires exactly once per iteration
+        let timer, wake; // interruptible backoff sleep
+        const DONE = { done: true, value: undefined };
+        // Wire-state side channel: the retry loop erases deaths from the
+        // value stream BY DESIGN (encapsulated reconnect), so the hook is
+        // the only place downstream can learn them. Read late (at fire
+        // time) so consumers can assign after receiving the object; a
+        // throwing hook must not corrupt the loop. Facts only the
+        // transport knows: "connected" (each successful (re)connect),
+        // "reconnecting" (each post-connect death, with the error),
+        // "closed" (source completed or consumer ended — invisible to a
+        // memo consumer, which just latches). First-connect failures emit
+        // nothing: the rejection already surfaces through the call.
+        const emit = (state, error) => {
           try {
-            const r = current.return && current.return(value);
-            if (r && typeof r.then === "function") r.then(undefined, () => {});
+            iterable.onstatus && iterable.onstatus(state, error);
           } catch {}
-        }
-      };
-      const callOnce = () => {
-        // A GET-composed reference is already a flight-free read with its
-        // own query-string encoding — delegate to it. Otherwise call the
-        // transport directly so the POST is marked a read: live responses
-        // are streams, which have no single-flight envelope story (and
-        // flight collection is mutation policy).
-        if (metadata.method === "GET") return fn(...args);
-        const handler = config.responseHandler;
-        if (handler && handler.intercept) {
-          const hit = handler.intercept({ id, meta: metadata, args });
-          if (hit !== undefined) return hit;
-        }
-        return fetchServerFunction(fn.url, id, { read: true }, args, metadata, args);
-      };
-      const pull = async () => {
-        while (!stopped) {
-          try {
-            if (!it) {
-              const result = await callOnce();
-              connected = true;
-              // a plain-value answer is a one-value stream
-              it =
-                result !== null && typeof result === "object" && result[Symbol.asyncIterator]
-                  ? result[Symbol.asyncIterator]()
-                  : (async function* () {
-                      yield result;
-                    })();
-              // stopped while connecting: the just-arrived stream must still
-              // be ended (its return() aborts the request)
-              if (stopped) {
-                closeIt();
+        };
+        const emitClosed = () => {
+          if (ended) return;
+          ended = true;
+          emit("closed");
+        };
+        const closeIt = value => {
+          const current = it;
+          it = undefined;
+          if (current) {
+            try {
+              const r = current.return && current.return(value);
+              if (r && typeof r.then === "function") r.then(undefined, () => {});
+            } catch {}
+          }
+        };
+        const callOnce = () => {
+          // A GET-composed reference is already a flight-free read with its
+          // own query-string encoding — delegate to it. Otherwise call the
+          // transport directly so the POST is marked a read: live responses
+          // are streams, which have no single-flight envelope story (and
+          // flight collection is mutation policy).
+          if (metadata.method === "GET") return fn(...args);
+          const handler = config.responseHandler;
+          if (handler && handler.intercept) {
+            const hit = handler.intercept({ id, meta: metadata, args });
+            if (hit !== undefined) return hit;
+          }
+          return fetchServerFunction(fn.url, id, { read: true }, args, metadata, args);
+        };
+        const pull = async () => {
+          while (!stopped) {
+            try {
+              if (!it) {
+                const result = await callOnce();
+                connected = true;
+                // a plain-value answer is a one-value stream
+                it =
+                  result !== null && typeof result === "object" && result[Symbol.asyncIterator]
+                    ? result[Symbol.asyncIterator]()
+                    : (async function* () {
+                        yield result;
+                      })();
+                // stopped while connecting: the just-arrived stream must still
+                // be ended (its return() aborts the request)
+                if (stopped) {
+                  closeIt();
+                  return DONE;
+                }
+                emit("connected");
+              }
+              const r = await it.next();
+              if (r.done) {
+                emitClosed();
                 return DONE;
               }
+              if (stopped) return DONE;
+              attempts = 0; // healthy value: backoff resets
+              return r;
+            } catch (error) {
+              // First-connect failures surface (normal call semantics); a
+              // stream that had connected died — retry with backoff. The next
+              // successful connect starts a NEW logical answer: value-shaped
+              // sources re-yield current state on invocation by contract.
+              if (!connected) throw error;
+              it = undefined;
+              emit("reconnecting", error);
+              await new Promise(resolve => {
+                wake = resolve;
+                timer = setTimeout(resolve, Math.min(500 * 2 ** attempts++, 10000));
+                // connectivity returning wakes the sleep — no reason to sit
+                // out an 8s backoff when the network just came back (typeof
+                // guard: non-browser consumers have no global EventTarget)
+                if (typeof addEventListener === "function")
+                  addEventListener("online", resolve, { once: true });
+              });
+              clearTimeout(timer);
+              if (typeof removeEventListener === "function") removeEventListener("online", wake);
+              timer = wake = undefined;
             }
-            const r = await it.next();
-            if (r.done) return DONE;
-            if (stopped) return DONE;
-            attempts = 0; // healthy value: backoff resets
-            return r;
-          } catch (error) {
-            // First-connect failures surface (normal call semantics); a
-            // stream that had connected died — retry with backoff. The next
-            // successful connect starts a NEW logical answer: value-shaped
-            // sources re-yield current state on invocation by contract.
-            if (!connected) throw error;
-            it = undefined;
-            await new Promise(resolve => {
-              wake = resolve;
-              timer = setTimeout(resolve, Math.min(500 * 2 ** attempts++, 10000));
-              // connectivity returning wakes the sleep — no reason to sit
-              // out an 8s backoff when the network just came back (typeof
-              // guard: non-browser consumers have no global EventTarget)
-              if (typeof addEventListener === "function")
-                addEventListener("online", resolve, { once: true });
-            });
-            clearTimeout(timer);
-            if (typeof removeEventListener === "function") removeEventListener("online", wake);
-            timer = wake = undefined;
           }
-        }
-        return DONE;
-      };
-      return {
-        next: () => pull(),
-        return(value) {
-          stopped = true;
-          if (timer !== undefined) clearTimeout(timer);
-          if (wake) wake();
-          // ends the in-flight call through the transport's return() wiring
-          closeIt(value);
-          return Promise.resolve({ done: true, value });
-        }
-      };
-    }
-  });
+          return DONE;
+        };
+        return {
+          next: () => pull(),
+          return(value) {
+            stopped = true;
+            if (timer !== undefined) clearTimeout(timer);
+            if (wake) wake();
+            // ends the in-flight call through the transport's return() wiring
+            closeIt(value);
+            emitClosed();
+            return Promise.resolve({ done: true, value });
+          }
+        };
+      }
+    };
+    return iterable;
+  };
   wrapped[SERVER_FUNCTION_METADATA] = metadata;
   wrapped.id = id;
   // lazy like the base proxy's: the endpoint may be configured after the

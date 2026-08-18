@@ -2726,6 +2726,78 @@ describe("live declaration", () => {
     }
   });
 
+  it("onstatus reports the wire facts the value stream erases", async () => {
+    let invocations = 0;
+    registerServerReference("live-status-0", async function* () {
+      invocations++;
+      if (invocations === 1) {
+        yield "a";
+        throw new Error("mid-stream death");
+      }
+      yield "b";
+    });
+    const liveFn = clientLive(createClientReference("live-status-0"));
+    const restore = connectTransport();
+    try {
+      const statuses = [];
+      const src = liveFn();
+      // assigned AFTER receiving the object — the loop reads it late
+      src.onstatus = (state, error) => statuses.push([state, error && error.message]);
+      const seen = [];
+      for await (const v of src) seen.push(v);
+      expect(seen).toEqual(["a", "b"]);
+      expect(statuses).toEqual([
+        ["connected", undefined],
+        ["reconnecting", "mid-stream death"],
+        ["connected", undefined],
+        ["closed", undefined]
+      ]);
+    } finally {
+      restore();
+    }
+  });
+
+  it("onstatus: consumer break reports closed exactly once", async () => {
+    registerServerReference("live-status-break-0", async function* () {
+      yield "only";
+      await new Promise(() => {});
+    });
+    const liveFn = clientLive(createClientReference("live-status-break-0"));
+    const restore = connectTransport();
+    try {
+      const statuses = [];
+      const src = liveFn();
+      src.onstatus = state => statuses.push(state);
+      const it = src[Symbol.asyncIterator]();
+      expect((await it.next()).value).toBe("only");
+      await it.return();
+      // a second return (legal on iterators) must not double-report
+      await it.return();
+      expect(statuses).toEqual(["connected", "closed"]);
+    } finally {
+      restore();
+    }
+  });
+
+  it("onstatus: first-connect failures emit nothing — the rejection is the channel", async () => {
+    registerServerReference("live-status-fail-0", async () => {
+      throw new Error("no such thing");
+    });
+    const liveFn = clientLive(createClientReference("live-status-fail-0"));
+    const restore = connectTransport();
+    try {
+      const statuses = [];
+      const src = liveFn();
+      src.onstatus = state => statuses.push(state);
+      const it = src[Symbol.asyncIterator]();
+      // (message unasserted: production sanitization rewrites it)
+      await expect(it.next()).rejects.toThrow();
+      expect(statuses).toEqual([]);
+    } finally {
+      restore();
+    }
+  });
+
   it("connectivity returning wakes the backoff sleep early", async () => {
     let invocations = 0;
     registerServerReference("live-online-0", async function* () {

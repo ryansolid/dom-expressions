@@ -156,6 +156,20 @@ export function GET<A extends readonly any[], R>(
   fn: (...args: A) => R
 ): ServerFunction<A, Awaited<R>>;
 
+/** Wire-state transitions a live call's iterable can report. */
+export type LiveSourceStatus = "connected" | "reconnecting" | "closed";
+
+/**
+ * A live call's answer: the source's iterable, plus an optional `onstatus`
+ * side channel for the wire facts the reconnect loop erases from the value
+ * stream — `"connected"` on each successful (re)connect, `"reconnecting"`
+ * (with the error) on each post-connect death, `"closed"` when the source
+ * completes or the consumer ends it.
+ */
+export type LiveSource<R> = R & {
+  onstatus?: (state: LiveSourceStatus, error?: unknown) => void;
+};
+
 /**
  * Declares a value-shaped live source: a server function returning an async
  * iterable whose yields are successive VALUES of one logical query, with the
@@ -165,11 +179,12 @@ export function GET<A extends readonly any[], R>(
  * (reset per healthy value, woken early by connectivity returning),
  * first-connect failures reject like a normal call, and `break` aborts the
  * in-flight request. Live calls are reads and never opt into single-flight
- * enveloping. Compose with `GET` inside-out: `live(GET(fn))`.
+ * enveloping. Wire state, if wanted, rides the returned iterable's
+ * `onstatus` hook. Compose with `GET` inside-out: `live(GET(fn))`.
  */
 export function live<A extends readonly any[], R>(
   fn: (...args: A) => R
-): ServerFunction<A, Awaited<R>>;
+): ServerFunction<A, LiveSource<Awaited<R>>>;
 
 /**
  * Compiler ABI — emitted by compiled `"use server"` client output where a

@@ -392,6 +392,19 @@ export function GET<A extends readonly any[], R>(
   fn: (...args: A) => R
 ): ServerFunction<A, Awaited<R>>;
 
+/** Wire-state transitions a live call's iterable can report (client side). */
+export type LiveSourceStatus = "connected" | "reconnecting" | "closed";
+
+/**
+ * Type-level mirror of the client's live answer shape so isomorphic code
+ * assigning `onstatus` typechecks against either build's declarations. On
+ * the server the hook is inert: in-process calls hand back the source's
+ * own iterable — there is no connection to report on.
+ */
+export type LiveSource<R> = R & {
+  onstatus?: (state: LiveSourceStatus, error?: unknown) => void;
+};
+
 /**
  * Declares a value-shaped live source: a server function returning an async
  * iterable whose yields are successive VALUES of one logical query, with
@@ -405,7 +418,7 @@ export function GET<A extends readonly any[], R>(
  */
 export function live<A extends readonly any[], R>(
   fn: (...args: A) => R
-): ServerFunction<A, Awaited<R>>;
+): ServerFunction<A, LiveSource<Awaited<R>>>;
 
 /** Identity of the currently executing server function call. */
 export interface ServerFunctionInvocation {
