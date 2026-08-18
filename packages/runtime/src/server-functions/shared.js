@@ -335,6 +335,11 @@ export function isJSONSafe(value) {
     } else {
       const proto = Object.getPrototypeOf(v);
       if (proto !== Object.prototype && proto !== null) return false;
+      // A plain object carrying an iteration protocol is NOT its enumerable
+      // keys: stringify would drop the symbol-keyed method and ship `{}`,
+      // silently losing the stream (async generators dodge this branch only
+      // by prototype). Such values must ride the codec.
+      if (Symbol.asyncIterator in v || Symbol.iterator in v) return false;
       for (const k in v) stack.push(v[k]);
     }
   }
@@ -530,6 +535,12 @@ export class ChunkReader {
  * Serializes a value as a stream of framed SerovalNode chunks. Async values
  * keep the stream open until they settle. Codec options (plugins, feature
  * policy, depth limit) must match the deserializing peer.
+ *
+ * Deliberately teardown-free: this half is re-exported into CLIENT bundles
+ * (rich-args upload, serializeString), where request-lifetime plumbing is
+ * dead weight. The server response path — the only place a consumer can
+ * disconnect from a still-producing stream — uses the hardened variant in
+ * server.js.
  */
 export function serializeStream(value, codecOptions) {
   return new ReadableStream({
@@ -586,7 +597,18 @@ export async function deserializeStream(source, codecOptions) {
       return deserializeChunk(JSON.parse(chunk));
     }
 
-    void reader.drain(interpretChunk);
+    // Failure wiring for the drain: a network drop or malformed frame must
+    // fail every value still waiting on later chunks — otherwise their
+    // promises hang forever and open streams never terminate (and the drain
+    // rejection itself goes unhandled). Normal completion runs the same
+    // sweep: on a well-formed stream every value has already settled and the
+    // sweep no-ops, while a truncation that lands exactly on a frame
+    // boundary — indistinguishable from completion — leaves stranded values
+    // that can never settle once the body is done.
+    reader.drain(interpretChunk).then(
+      () => deserializeChunk.abort(new Error("Server function stream ended unexpectedly.")),
+      error => deserializeChunk.abort(error)
+    );
 
     return interpretChunk(result.value);
   }

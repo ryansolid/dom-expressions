@@ -18,6 +18,7 @@ import {
   ERROR_HEADER,
   FILE_FORM_KEY,
   SINGLE_FLIGHT_HEADER,
+  createChunk,
   decodeErrorHeaderValue,
   decodeResponse,
   decodeResponsePayload,
@@ -54,6 +55,7 @@ import {
   registerServerFunction,
   registerServerReference,
   sanitizeServerError,
+  serializeResponseStream,
   setServerFunctionsDev
 } from "../../src/server-functions/server";
 import { FLASH_COOKIE, clearFlashCookie, hasFlashCookie } from "../../src/server-functions/shared";
@@ -2429,6 +2431,195 @@ describe("argument encoding fast path", () => {
       expect(requests[0].init.body.startsWith(";0x")).toBe(true);
     } finally {
       restore();
+    }
+  });
+});
+
+describe("async-iterable teardown and failure wiring", () => {
+  // A producer whose lifecycle is observable at the iterator protocol level:
+  // yields the given values, then parks the next pull on a promise that never
+  // settles — the shape of a stream whose producer is still working. Unlike
+  // an async generator (which can't honor return() while suspended mid-await),
+  // this surfaces teardown deterministically via onClose.
+  function hangingIterable(onClose, values = ["first"]) {
+    return {
+      [Symbol.asyncIterator]() {
+        let i = 0;
+        return {
+          next() {
+            if (i < values.length) return Promise.resolve({ done: false, value: values[i++] });
+            return new Promise(() => {});
+          },
+          return(value) {
+            onClose && onClose();
+            return Promise.resolve({ done: true, value });
+          }
+        };
+      }
+    };
+  }
+
+  // Collects `count` frames off a live codec stream, then cancels the source.
+  // Frames are 1:1 with codec emissions (root node first, then one per
+  // settled async value), so this gives deterministic "the wire carried this
+  // much before dying" prefixes for the drop tests.
+  async function takeFrames(stream, count) {
+    const reader = stream.getReader();
+    const frames = [];
+    for (let i = 0; i < count; i++) frames.push((await reader.read()).value);
+    void reader.cancel();
+    return frames;
+  }
+
+  function bodyFrom(frames, terminal) {
+    return new ReadableStream({
+      // paced delivery: erroring a stream DISCARDS its queued chunks, so
+      // frames must clear the consumer's pump before the terminal action —
+      // a macrotask gap per frame makes "arrived, then the wire died"
+      // deterministic instead of a race against internal pull timing
+      async start(controller) {
+        for (const frame of frames) {
+          controller.enqueue(frame);
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        terminal(controller);
+      }
+    });
+  }
+
+  it("plain-object iterables are not JSON-safe (the stream must ride the codec)", () => {
+    // stringify would ship `{}` and silently drop the stream
+    expect(isJSONSafe(hangingIterable(null))).toBe(false);
+    expect(isJSONSafe({ [Symbol.iterator]: function* () {} })).toBe(false);
+    expect(isJSONSafe({ plain: true })).toBe(true);
+  });
+
+  it("consumer cancelling the response stream closes the producer iterator", async () => {
+    let closed = false;
+    const stream = serializeResponseStream(hangingIterable(() => (closed = true)));
+    const reader = stream.getReader();
+    await reader.read(); // root frame — the codec holds the iterator now
+    expect(closed).toBe(false);
+    await reader.cancel();
+    expect(closed).toBe(true);
+  });
+
+  it("request signal abort closes the producer and terminates the stream", async () => {
+    let closed = false;
+    const controller = new AbortController();
+    const stream = serializeResponseStream(
+      hangingIterable(() => (closed = true)),
+      undefined,
+      controller.signal
+    );
+    const reader = stream.getReader();
+    await reader.read();
+    controller.abort();
+    expect(closed).toBe(true);
+    // the stream errors for anyone still reading — no hang
+    await expect(reader.read()).rejects.toThrow();
+  });
+
+  it("an already-aborted signal never opens the producer", async () => {
+    let opened = false;
+    const controller = new AbortController();
+    controller.abort();
+    const stream = serializeResponseStream(
+      {
+        [Symbol.asyncIterator]() {
+          opened = true;
+          return { next: () => new Promise(() => {}) };
+        }
+      },
+      undefined,
+      controller.signal
+    );
+    const reader = stream.getReader();
+    expect((await reader.read()).done).toBe(true);
+    expect(opened).toBe(false);
+  });
+
+  it("a dropped body rejects a pending top-level promise instead of hanging", async () => {
+    const frames = await takeFrames(
+      serializeStream({ ready: 1, pending: new Promise(() => {}) }),
+      1
+    );
+    const result = await deserializeStream(
+      new Response(bodyFrom(frames, c => c.error(new Error("connection lost"))))
+    );
+    expect(result.ready).toBe(1);
+    await expect(result.pending).rejects.toThrow("connection lost");
+  });
+
+  it("a dropped body rejects an open stream's next() instead of hanging", async () => {
+    // two frames: the root node, then the "first" value push
+    const frames = await takeFrames(serializeStream(hangingIterable(null, ["first"])), 2);
+    const result = await deserializeStream(
+      new Response(bodyFrom(frames, c => c.error(new Error("connection lost"))))
+    );
+    const it = result[Symbol.asyncIterator]();
+    await expect(it.next()).resolves.toEqual({ done: false, value: "first" });
+    await expect(it.next()).rejects.toThrow("connection lost");
+  });
+
+  it("truncation on a frame boundary still fails stranded values", async () => {
+    // the body CLOSES cleanly (indistinguishable from completion), but the
+    // promise never got its resolution chunk — it must not hang forever
+    const frames = await takeFrames(serializeStream({ pending: new Promise(() => {}) }), 1);
+    const result = await deserializeStream(new Response(bodyFrom(frames, c => c.close())));
+    await expect(result.pending).rejects.toThrow(/ended unexpectedly/);
+  });
+
+  it("a malformed frame mid-stream fails pending values", async () => {
+    const frames = await takeFrames(serializeStream({ pending: new Promise(() => {}) }), 1);
+    const result = await deserializeStream(
+      new Response(
+        bodyFrom(frames, c => {
+          c.enqueue(createChunk("not json"));
+          c.close();
+        })
+      )
+    );
+    await expect(result.pending).rejects.toThrow();
+  });
+
+  it("normal completion is unaffected by the failure sweep", async () => {
+    const result = await deserializeStream(
+      new Response(serializeStream({ eventual: Promise.resolve("later"), now: 2 }))
+    );
+    expect(result.now).toBe(2);
+    await expect(result.eventual).resolves.toBe("later");
+    // give the drain's end-of-stream sweep a beat: the settled promise must
+    // stay settled (rejecting a resolved promise is a no-op)
+    await new Promise(r => setTimeout(r, 0));
+    await expect(result.eventual).resolves.toBe("later");
+  });
+
+  it("iterator.return() on a streamed result aborts the call and tears down the producer", async () => {
+    let serverClosed = false;
+    registerServerReference("stream-teardown-0", async () =>
+      hangingIterable(() => (serverClosed = true), ["first"])
+    );
+    const callable = createClientReference("stream-teardown-0");
+    const original = globalThis.fetch;
+    // Request(url, init) adopts init.signal as request.signal, so this
+    // in-process transport carries the client abort to the server handler
+    // the same way a real fetch cancellation would.
+    globalThis.fetch = (url, init) =>
+      handleServerFunctionRequest(new Request(new URL(url, "http://localhost"), init), {
+        provideEvent: (event, run) => run()
+      });
+    try {
+      const result = await callable();
+      const it = result[Symbol.asyncIterator]();
+      await expect(it.next()).resolves.toEqual({ done: false, value: "first" });
+      expect(serverClosed).toBe(false);
+      await expect(it.return()).resolves.toEqual({ done: true, value: undefined });
+      // abort propagation is a listener hop; give it a beat
+      await new Promise(r => setTimeout(r, 10));
+      expect(serverClosed).toBe(true);
+    } finally {
+      globalThis.fetch = original;
     }
   });
 });

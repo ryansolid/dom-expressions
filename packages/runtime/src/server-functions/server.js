@@ -32,7 +32,7 @@ import {
   isJSONSafe,
   isServerFunction,
   provideServerFunctionRPC,
-  serializeStream,
+  createChunk,
   withMeta
 } from "./shared.js";
 
@@ -557,13 +557,132 @@ function isFormPost(request) {
   );
 }
 
-function serializedResponse(value, headers, codec) {
-  headers.set(BODY_FORMAT_HEADER, BodyFormat.Serialized);
-  headers.set("Content-Type", "text/plain");
-  return new Response(serializeStream(value, codec), { headers });
+/**
+ * The response-side codec stream: `serializeStream` (shared.js) hardened
+ * with request-lifetime teardown. Server-only on purpose — the shared half
+ * is re-exported into client bundles, where this plumbing is dead weight.
+ *
+ * An abort of `signal` (the platform fires request.signal when the caller's
+ * fetch aborts or the tab goes away) or the consumer cancelling the
+ * ReadableStream (how platforms surface a dropped connection to the body)
+ * stops pending serialization and tears down a top-level async-iterable
+ * value — the producer's `iterator.return()` runs, so generator `finally`
+ * blocks execute instead of the server pumping a stream nobody is reading.
+ * Top-level only: that is the value-tier shape ("return a stream from the
+ * server function"); iterables nested inside user objects are consumed by
+ * the codec directly and stay untouched.
+ */
+export function serializeResponseStream(value, codecOptions, signal) {
+  let closeIterator = null;
+  let closed = false;
+  let cancelSerialize = null;
+  let onAbort = null;
+  const teardown = () => {
+    if (closed) return;
+    closed = true;
+    if (onAbort) signal.removeEventListener("abort", onAbort);
+    if (cancelSerialize) cancelSerialize();
+    if (closeIterator) closeIterator();
+  };
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    typeof value[Symbol.asyncIterator] === "function"
+  ) {
+    // Teardown-aware wrapper, installed BEFORE the codec sees the value:
+    // seroval's stream pump has no cancellation of its own — once it holds
+    // the iterator it pulls until done — so this wrapper is the only seam
+    // where a dropped consumer can stop the producer. The codec only ever
+    // calls next(), so that is all the wrapper exposes.
+    const source = value;
+    value = {
+      [Symbol.asyncIterator]() {
+        const it = source[Symbol.asyncIterator]();
+        let finished = false;
+        closeIterator = () => {
+          if (finished) return;
+          finished = true;
+          try {
+            const returned = it.return && it.return();
+            if (returned && typeof returned.then === "function") returned.then(undefined, () => {});
+          } catch {}
+        };
+        // torn down before the codec opened the value (abort raced the
+        // codec load): close the source immediately, never pull
+        if (closed) closeIterator();
+        return {
+          next: () => (finished ? Promise.resolve({ done: true, value: undefined }) : it.next())
+        };
+      }
+    };
+  }
+  return new ReadableStream({
+    // async on purpose: the codec is late-loaded (see the loading notes at
+    // the top of shared.js), and a ReadableStream start may return a
+    // promise — reads wait for it, so the stream's contract is unchanged
+    async start(controller) {
+      if (signal) {
+        if (signal.aborted) {
+          teardown();
+          controller.close();
+          return;
+        }
+        // Beyond producer teardown, an abort must TERMINATE the stream for
+        // anyone still reading it (an in-process consumer's drain would
+        // otherwise hang on a stream nobody will ever close). The cancel()
+        // path below must NOT do this — there the stream is already
+        // cancelled and the controller unusable.
+        onAbort = () => {
+          const alreadyClosed = closed;
+          teardown();
+          if (!alreadyClosed) {
+            try {
+              controller.error(signal.reason || new Error("The operation was aborted."));
+            } catch {}
+          }
+        };
+        signal.addEventListener("abort", onAbort);
+      }
+      const { serializeJSON } = await import("../serializer.js");
+      if (closed) {
+        // torn down while the codec was loading; nothing was started
+        try {
+          controller.close();
+        } catch {}
+        return;
+      }
+      cancelSerialize = serializeJSON(value, {
+        ...codecOptions,
+        onParse(node) {
+          if (!closed) controller.enqueue(createChunk(JSON.stringify(node)));
+        },
+        onDone() {
+          if (closed) return;
+          closed = true;
+          if (onAbort) signal.removeEventListener("abort", onAbort);
+          controller.close();
+        },
+        onError(error) {
+          if (closed) return;
+          closed = true;
+          if (onAbort) signal.removeEventListener("abort", onAbort);
+          controller.error(error);
+        }
+      });
+    },
+    cancel() {
+      teardown();
+    }
+  });
 }
 
-function encodeResult(value, headers, status, codec) {
+function serializedResponse(value, headers, codec, signal) {
+  headers.set(BODY_FORMAT_HEADER, BodyFormat.Serialized);
+  headers.set("Content-Type", "text/plain");
+  return new Response(serializeResponseStream(value, codec, signal), { headers });
+}
+
+function encodeResult(value, headers, status, codec, signal) {
   const direct = getHeadersAndBody(value);
   if (direct) {
     for (const [key, val] of Object.entries(direct.headers || {})) {
@@ -603,7 +722,7 @@ function encodeResult(value, headers, status, codec) {
     // fall through — serializedResponse overwrites the format headers the
     // JSON attempt may have set before stringify threw
   }
-  const response = serializedResponse(value, headers, codec);
+  const response = serializedResponse(value, headers, codec, signal);
   return status === 200 ? response : new Response(response.body, { status, headers });
 }
 
@@ -873,10 +992,10 @@ export async function handleServerFunctionRequest(request, options = {}) {
       if (!instance) {
         if (handleNoJS) return handleNoJS(result, request, parsed);
         if (result instanceof Response) return result;
-        return encodeResult(result, headers, 200, codec);
+        return encodeResult(result, headers, 200, codec, request.signal);
       }
 
-      return encodeResult(result, headers, status, codec);
+      return encodeResult(result, headers, status, codec, request.signal);
     } catch (x) {
       if (x instanceof Response || isResponseEnvelope(x)) {
         if (transformResult) {
@@ -944,7 +1063,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
           if (handleNoJS) return handleNoJS(x ?? metadata, request, parsed, true);
           if (x instanceof Response) return x;
         }
-        return encodeResult(x, headers, status, codec);
+        return encodeResult(x, headers, status, codec, request.signal);
       }
 
       // Plain thrown value (not a Response/envelope): the security-sensitive
@@ -965,7 +1084,7 @@ export async function handleServerFunctionRequest(request, options = {}) {
       // above U+00FF, so non-latin1 messages ride percent-encoded (the client
       // decodes symmetrically; the structured error still travels in the body)
       headers.set(ERROR_HEADER, encodeErrorHeaderValue(error));
-      return encodeResult(safe, headers, 200, codec);
+      return encodeResult(safe, headers, 200, codec, request.signal);
     }
   };
   return commitEventResponse(await dispatch(), event);

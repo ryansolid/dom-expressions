@@ -275,6 +275,16 @@ async function fetchServerFunction(base, id, options, args, meta, callArgs = arg
   const handler = config.responseHandler;
   const context = handler && handler.capture ? handler.capture({ id, meta }) : undefined;
 
+  // The call owns an AbortController so a streaming result can be ENDED, not
+  // just abandoned: `iterator.return()` on the received iterable aborts the
+  // fetch, which closes the response body here (settling the codec's
+  // bookkeeping through the drain's failure sweep) and fires
+  // `request.signal` on the server (tearing the producer down). Only minted
+  // when the caller didn't bring a signal — a caller-supplied signal already
+  // owns the wire, and cancellation stays theirs.
+  const controller = options.signal ? undefined : new AbortController();
+  if (controller) options = { ...options, signal: controller.signal };
+
   const response = await initializeResponse(base, id, instance, options, args, meta);
 
   // The integration seam sees the response first: a handler that claims it
@@ -323,6 +333,21 @@ async function fetchServerFunction(base, id, options, args, meta, callArgs = arg
   const result = await decodeResponse(response.clone());
   if (response.headers.has(ERROR_HEADER)) {
     throw result;
+  }
+  // Streaming result: wrap so stopping consumption stops the CALL. Without
+  // this, `return()` (a `break` in for-await) only detaches the local
+  // iterator — the fetch keeps downloading and the server keeps producing.
+  // Top-level only, matching the server's value-tier teardown scope.
+  if (controller && result?.[Symbol.asyncIterator]) {
+    return {
+      [Symbol.asyncIterator]() {
+        const it = result[Symbol.asyncIterator]();
+        return {
+          next: () => it.next(),
+          return: value => (controller.abort(), Promise.resolve({ done: true, value }))
+        };
+      }
+    };
   }
   return result;
 }

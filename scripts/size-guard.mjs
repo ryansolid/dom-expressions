@@ -233,11 +233,21 @@ const SCENARIOS = {
   // a registered cross-copy global — this scenario carries the plugin
   // through the codec defaults, so the shared-state indirection lands
   // here too). Re-guarded at actual+20 (8859 measured).
+  // Then +131 for async-value failure wiring: the deserializer's abort
+  // sweep (fail every value still pending in the shared refs map — open
+  // streams thrown into, pending-promise resolvers rejected with a
+  // defusing handler; ~94, in the lazy codec so plain transports pay 0)
+  // plus the drain's completion/failure hookup in deserializeStream (~35,
+  // eager): a dropped or truncated body now rejects everything stranded
+  // instead of hanging promises and streams forever. Server-side teardown
+  // (request.signal/cancel → iterator.return) deliberately lives in
+  // server.js — zero client bytes. Re-guarded at actual+20 (9004
+  // measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
-    8879
+    9024
   ]
 };
 
@@ -368,6 +378,18 @@ await check(
 // punt to the codec, whose depth limit protects the decoding peer), plus
 // the argument leg's try/catch fallthrough to the codec. Re-guarded at
 // actual+20 (2729 measured).
+// Then +152 for async-iterable failure wiring, the client's share: the
+// call-owned AbortController (minted only when the caller brought no
+// signal) whose abort is how a streamed result gets ENDED rather than
+// abandoned, the top-level wrap giving that result a `return()` that
+// aborts the wire (break in for-await stops the download AND fires
+// request.signal server-side), the drain's failure/completion sweep in
+// deserializeStream (drop or truncation rejects stranded values instead
+// of hanging them forever), and isJSONSafe answering false for iteration
+// protocols on plain objects (stringify would ship `{}` and silently
+// drop the stream). The abort SWEEP itself is in the lazy codec; the
+// server teardown half is in server.js — neither charges this slice.
+// Re-guarded at actual+20 (2888 measured).
 await check(
   "server-functions client: eager transport (reference + GET, lazy codec)",
   `export {
@@ -375,7 +397,7 @@ await check(
      GET,
      configureServerFunctionsClient
    } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
-  2749,
+  2908,
   ["seroval", "seroval-plugins"]
 );
 await check(

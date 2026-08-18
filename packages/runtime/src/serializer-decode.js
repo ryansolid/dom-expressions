@@ -92,9 +92,36 @@ export function resolveCodecOptions({ plugins, disabledFeatures, depthLimit } = 
 export function createJSONDeserializer(options) {
   const refs = new Map();
   const resolved = resolveCodecOptions(options);
-  return function deserializeJSONChunk(node) {
+  function deserializeJSONChunk(node) {
     return fromCrossJSON(node, { refs, ...resolved });
+  }
+  /**
+   * Fails every value still waiting on chunks that will never arrive. The
+   * shared refs map holds seroval's in-progress state between chunks: open
+   * streams (`__SEROVAL_STREAM__`) and pending-promise resolvers (`{p, s, f}`
+   * — the promise under one id, its resolver under the special-reference id
+   * next to it). Both settle idempotently — throwing into a completed stream
+   * and rejecting a resolved promise are no-ops — so the sweep is safe to
+   * run on normal end-of-stream too. The defusing handler on `p` keeps a
+   * rejection nobody awaited (a pending promise the app never touched) from
+   * surfacing as an unhandled rejection.
+   */
+  deserializeJSONChunk.abort = function abort(error) {
+    for (const value of refs.values()) {
+      if (value === null || typeof value !== "object") continue;
+      if (value.__SEROVAL_STREAM__) {
+        value.throw(error);
+      } else if (
+        typeof value.s === "function" &&
+        typeof value.f === "function" &&
+        value.p instanceof Promise
+      ) {
+        value.p.then(undefined, () => {});
+        value.f(error);
+      }
+    }
   };
+  return deserializeJSONChunk;
 }
 
 /**
