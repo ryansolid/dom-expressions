@@ -586,6 +586,18 @@ function transformAttributes(
           (
             value as babelTypes.JSXExpressionContainer & { _groupableTextContent?: boolean }
           )._groupableTextContent = true;
+        // innerHTML/textContent/innerText redirects travel the child pipeline,
+        // but their values are opaque content (an HTML/text string), never
+        // id-allocating JSX — and the client applies them as plain prop
+        // effects with no owner. Flag them so transformChildren skips the
+        // _$scope wrap a call-shaped value would otherwise get: the scope
+        // reserves a hydration child id the client never allocates, shifting
+        // every keyed sibling after it (#3015). The `children` attribute stays
+        // eligible — it is a real insert on the client and scopes there too.
+        if (key !== "children")
+          (
+            value as babelTypes.JSXExpressionContainer & { _childProperty?: boolean }
+          )._childProperty = true;
         children = value;
       } else {
         const isDynamicValue = isDynamic(attribute.get("value").get("expression"), {
@@ -804,7 +816,10 @@ function transformChildren(
         `Fragments can only be used top level in JSX. Not used under a <${tagName}>.`
       );
     }
-    const allocatesIds = hydratable && canChildSlotAllocateIds(node);
+    const allocatesIds =
+      hydratable &&
+      !(node.node as babelTypes.Node & { _childProperty?: boolean })._childProperty &&
+      canChildSlotAllocateIds(node);
     const child = transformNode(node, { doNotEscape, parentResults: results });
     if (!child) return;
     appendToTemplate(results.template, child.template as string | string[]);

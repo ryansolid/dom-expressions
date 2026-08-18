@@ -196,14 +196,14 @@ const template18 = Comp({ get children() {
 		return !!state.dynamic;
 	})() ? Comp({}) : Comp({});
 } });
-var _v$37 = _$ssrHydrationKey(), _v$38 = _$scope((() => {
+var _v$37 = _$ssrHydrationKey(), _v$38 = (() => {
 	var _c$14 = _$memo(() => {
 		return !!state.dynamic;
 	});
 	return () => {
 		return _c$14() ? Comp({}) : Comp({});
 	};
-})());
+})();
 const template19 = _$ssr(_tmpl$, _v$37, _v$38);
 var _v$39 = _$ssrHydrationKey(), _v$40 = _$scope((() => {
 	var _c$15 = _$memo(() => {
@@ -234,9 +234,9 @@ const template25 = Comp({ get render() {
 const template26 = Comp({ get children() {
 	return state.dynamic ?? Comp({});
 } });
-var _v$45 = _$ssrHydrationKey(), _v$46 = _$scope(() => {
+var _v$45 = _$ssrHydrationKey(), _v$46 = () => {
 	return state.dynamic ?? Comp({});
-});
+};
 const template27 = _$ssr(_tmpl$, _v$45, _v$46);
 var _v$47 = _$ssrHydrationKey(), _v$48 = _$scope(() => {
 	return _$escape(state.dynamic ?? Comp({}));

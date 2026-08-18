@@ -155,6 +155,11 @@ struct AttrChildren<'a> {
     groupable: bool,
     /// The source attribute carried the `/*@static*/` marker.
     marker_static: bool,
+    /// Only the `children` attribute redirect may allocate hydration ids —
+    /// it is a real insert on the client. innerHTML/textContent/innerText
+    /// are opaque prop writes there, so their holes never take the
+    /// `_$scope` id reservation (solidjs/solid#3015).
+    can_allocate_ids: bool,
 }
 
 impl<'a, 'source> AstSsrTransform<'a, 'source> {
@@ -2053,6 +2058,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             do_not_escape: key == "innerHTML",
             groupable: key == "textContent",
             marker_static,
+            can_allocate_ids: key == "children",
         })
     }
 
@@ -2210,6 +2216,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             do_not_escape,
             groupable,
             marker_static,
+            can_allocate_ids,
         } = children;
         let do_not_escape = do_not_escape || element_do_not_escape;
         // Literal after folding — Babel's `getStaticExpression` text path.
@@ -2234,7 +2241,15 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             _ => {}
         }
         let dynamic = !marker_static && self.classify().is_dynamic(None, &value, false);
-        let allocates = self.hydratable && expression_can_return_hydratable_child(&value);
+        // Only the `children` attribute redirect may take the `_$scope` id
+        // reservation — it is a real insert on the client and scopes there
+        // too. innerHTML/textContent/innerText values are opaque content (an
+        // HTML/text string) the client applies as plain prop effects with no
+        // owner; a scope here would reserve a hydration child id the client
+        // never allocates, shifting every keyed sibling after it (#3015).
+        let allocates = self.hydratable
+            && can_allocate_ids
+            && expression_can_return_hydratable_child(&value);
         let value = self.dynamic_child_value(span, value, dynamic);
         let value = if do_not_escape {
             value

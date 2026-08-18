@@ -340,3 +340,15 @@ function MyVideo() {
 // #2959: conditional attribute merged into a spread stays a bare expression
 // (parity with the dom generate — neither side allocates a hydration id).
 const template97 = <svg {...spread} stroke-width={cond() ? width() : 2} fill={cond() && color()} />;
+
+// solidjs/solid#3015: innerHTML/textContent redirects are opaque content — a
+// call-shaped value must not get the _$scope id reservation (the client
+// applies these as plain prop effects that never allocate hydration ids), or
+// every hydratable sibling after it shifts by one id.
+const template98 = (
+  <div>
+    <div innerHTML={createIcon(props.radius)} />
+    <div textContent={getLabel(props.id)} />
+    <input type="checkbox" checked={checked()} />
+  </div>
+);

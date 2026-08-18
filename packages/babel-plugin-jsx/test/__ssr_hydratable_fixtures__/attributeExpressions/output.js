@@ -68,7 +68,8 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
     "><video muted></video><video></video><video></video><video muted></video><video",
     '></video><video src="test.mp4" muted></video></div>'
   ],
-  _tmpl$49 = ["<video", ' src="test.mp4" muted></video>'];
+  _tmpl$49 = ["<video", ' src="test.mp4" muted></video>'],
+  _tmpl$50 = ["<div", "><div>", "</div><div>", '</div><input type="checkbox"', "></div>"];
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}
@@ -640,3 +641,13 @@ const template97 = _$ssrElement(
   undefined,
   true
 );
+
+// solidjs/solid#3015: innerHTML/textContent redirects are opaque content — a
+// call-shaped value must not get the _$scope id reservation (the client
+// applies these as plain prop effects that never allocate hydration ids), or
+// every hydratable sibling after it shifts by one id.
+var _v$118 = _$ssrHydrationKey(),
+  _v$119 = () => createIcon(props.radius),
+  _v$120 = () => _$escape(getLabel(props.id) || " "),
+  _v$121 = () => _$ssrAttribute("checked", _$escape(checked(), true));
+const template98 = _$ssr(_tmpl$50, _v$118, _v$119, _v$120, _v$121);
