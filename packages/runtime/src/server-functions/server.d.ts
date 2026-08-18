@@ -392,6 +392,21 @@ export function GET<A extends readonly any[], R>(
   fn: (...args: A) => R
 ): ServerFunction<A, Awaited<R>>;
 
+/**
+ * Declares a value-shaped live source: a server function returning an async
+ * iterable whose yields are successive VALUES of one logical query, with
+ * the contract that the source re-yields current state on every invocation.
+ * Writes `live: true` on the metadata channel and brands the resolved
+ * iterable (registered symbol `solid.LiveSource`) so SSR faces meeting the
+ * value in-process can apply live policy (document face: first value, then
+ * client takeover). Dispatch is untouched — over-the-wire calls stream the
+ * raw registered function's result. Declare live outermost:
+ * `live(GET(fn))`.
+ */
+export function live<A extends readonly any[], R>(
+  fn: (...args: A) => R
+): ServerFunction<A, Awaited<R>>;
+
 /** Identity of the currently executing server function call. */
 export interface ServerFunctionInvocation {
   id: string;

@@ -157,6 +157,21 @@ export function GET<A extends readonly any[], R>(
 ): ServerFunction<A, Awaited<R>>;
 
 /**
+ * Declares a value-shaped live source: a server function returning an async
+ * iterable whose yields are successive VALUES of one logical query, with the
+ * contract that the source re-yields current state on every invocation.
+ * Calls to the returned reference produce an iterable that survives the
+ * connection — post-connect deaths re-invoke with exponential backoff
+ * (reset per healthy value, woken early by connectivity returning),
+ * first-connect failures reject like a normal call, and `break` aborts the
+ * in-flight request. Live calls are reads and never opt into single-flight
+ * enveloping. Compose with `GET` inside-out: `live(GET(fn))`.
+ */
+export function live<A extends readonly any[], R>(
+  fn: (...args: A) => R
+): ServerFunction<A, Awaited<R>>;
+
+/**
  * Compiler ABI — emitted by compiled `"use server"` client output where a
  * server function was referenced; produces the fetch-backed callable for
  * the function's build-stable id. Development builds pass the function's
