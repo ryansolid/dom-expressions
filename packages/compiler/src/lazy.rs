@@ -1,7 +1,7 @@
 //! `lazy()` module-URL pass, ported from the Babel implementation in
 //! vite-plugin-solid (`src/lazy-module-url.ts`). Detects
 //! `lazy(() => import("specifier"))` calls where `lazy` is a named import
-//! from `solid-js` and appends a placeholder string second argument
+//! from `solid-js` and appends a placeholder string argument
 //! (`"__SOLID_LAZY_MODULE__:<specifier>"`). The placeholder format is a
 //! frozen contract: the bundler plugin's `resolveLazyModuleUrls` regex
 //! (`"__SOLID_LAZY_MODULE__:([^"]+)"`) rewrites it to a resolved
@@ -9,11 +9,13 @@
 //!
 //! The same pass recognizes `clientOnly(() => import("specifier"))` where
 //! `clientOnly` is a named import from `@solidjs/web`, so the server half
-//! can emit early modulepreload hints for the browser-only module. Because
-//! `clientOnly` already takes an options bag in second position, the
-//! placeholder is appended as a *third* argument, padding the options slot
-//! with `void 0` when the call site omits it — the runtime's `moduleUrl`
-//! parameter is positionally stable either way.
+//! can emit early modulepreload hints for the browser-only module.
+//!
+//! Both runtimes take an options bag in second position (`lazy`'s
+//! `{ export }`, `clientOnly`'s `{ lazy, export }`), so the placeholder is
+//! appended as a *third* argument, padding the options slot with `void 0`
+//! when the call site omits it — the runtime's `moduleUrl` parameter is
+//! positionally stable either way.
 
 use crate::shared::ast_builder::AstBuilder;
 use napi::bindgen_prelude::*;
@@ -112,10 +114,9 @@ struct Target {
 ///   callee must be spelled with the canonical name,
 /// - the first argument is a function/arrow whose body is directly
 ///   `import("literal")` (or a block whose sole statement returns one),
-/// - `lazy` takes exactly one argument; `clientOnly` takes one (options
-///   omitted — the placeholder needs a `void 0` filler) or two (the second
-///   being its options bag). More arguments mean the call is already
-///   annotated and is left untouched.
+/// - the call takes one argument (options omitted — the placeholder needs a
+///   `void 0` filler) or two (the second being the options bag). More
+///   arguments mean the call is already annotated and is left untouched.
 fn collect_targets(program: &Program<'_>) -> Vec<Target> {
     let semantic = SemanticBuilder::new().build(program).semantic;
     let scoping = semantic.scoping();
@@ -187,9 +188,9 @@ fn eligible_target(
     let Expression::Identifier(callee) = &call.callee else {
         return None;
     };
-    let (eligible, max_arguments) = match callee.name.as_str() {
-        "lazy" => (lazy_symbols, 1),
-        "clientOnly" => (client_only_symbols, 2),
+    let eligible = match callee.name.as_str() {
+        "lazy" => lazy_symbols,
+        "clientOnly" => client_only_symbols,
         _ => return None,
     };
     let symbol = callee
@@ -201,7 +202,7 @@ fn eligible_target(
     }
     // Babel: bail on more arguments than the bare form takes (already
     // annotated) and on 0 arguments.
-    if call.arguments.is_empty() || call.arguments.len() > max_arguments {
+    if call.arguments.is_empty() || call.arguments.len() > 2 {
         return None;
     }
     // A spread in the options slot hides the real arity — leave it alone.
@@ -213,9 +214,9 @@ fn eligible_target(
     Some(Target {
         span: call.span,
         specifier,
-        // The placeholder always lands in `clientOnly`'s third slot; a
-        // callsite without an options bag gets `void 0` filler.
-        pad_options: max_arguments == 2 && call.arguments.len() == 1,
+        // The placeholder always lands in the third slot; a callsite
+        // without an options bag gets `void 0` filler.
+        pad_options: call.arguments.len() == 1,
     })
 }
 

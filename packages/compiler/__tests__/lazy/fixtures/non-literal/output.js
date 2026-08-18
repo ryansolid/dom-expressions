@@ -8,5 +8,5 @@ const K = lazy(() => somethingElse('./K')); // not a dynamic import
 const L = lazy(async () => await import('./L')); // await wraps the call
 // Argument-count bails:
 const M = lazy();
-const N = lazy(() => import('./N'), 'extra');
+const N = lazy(() => import('./N'), void 0, 'resolved');
 export { H, I, J, K, L, M, N };
