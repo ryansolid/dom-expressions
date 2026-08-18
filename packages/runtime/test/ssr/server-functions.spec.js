@@ -17,6 +17,7 @@ import {
   BodyFormat,
   ERROR_HEADER,
   FILE_FORM_KEY,
+  LIVE_SOURCE,
   SINGLE_FLIGHT_HEADER,
   createChunk,
   decodeErrorHeaderValue,
@@ -38,7 +39,8 @@ import {
 import {
   GET as clientGET,
   createServerReference as createClientReference,
-  configureServerFunctionsClient
+  configureServerFunctionsClient,
+  live as clientLive
 } from "../../src/server-functions/client";
 import {
   GET as serverGET,
@@ -52,6 +54,7 @@ import {
   getServerFunction,
   getServerFunctionInvocation,
   handleServerFunctionRequest,
+  live as serverLive,
   registerServerFunction,
   registerServerReference,
   sanitizeServerError,
@@ -2620,6 +2623,184 @@ describe("async-iterable teardown and failure wiring", () => {
       expect(serverClosed).toBe(true);
     } finally {
       globalThis.fetch = original;
+    }
+  });
+});
+
+describe("live declaration", () => {
+  // A signal-honoring in-process transport: Request(url, init) adopts
+  // init.signal as request.signal, so client aborts reach the server
+  // handler like a real fetch cancellation would.
+  function connectTransport(requests) {
+    const original = globalThis.fetch;
+    globalThis.fetch = (url, init) => {
+      requests && requests.push({ url: String(url), init });
+      return handleServerFunctionRequest(new Request(new URL(url, "http://localhost"), init), {
+        provideEvent: (event, run) => run()
+      });
+    };
+    return () => {
+      globalThis.fetch = original;
+    };
+  }
+
+  function hangingIterable(onClose, values = ["first"]) {
+    return {
+      [Symbol.asyncIterator]() {
+        let i = 0;
+        return {
+          next() {
+            if (i < values.length) return Promise.resolve({ done: false, value: values[i++] });
+            return new Promise(() => {});
+          },
+          return(value) {
+            onClose && onClose();
+            return Promise.resolve({ done: true, value });
+          }
+        };
+      }
+    };
+  }
+
+  it("server live() writes metadata and brands the in-process resolved iterable", async () => {
+    const callable = createServerReference(
+      registerServerReference("live-brand-0", async function* () {
+        yield 1;
+        yield 2;
+      })
+    );
+    const liveRef = serverLive(callable);
+    expect(getServerFunctionMetadata(liveRef).live).toBe(true);
+    expect(liveRef.id).toBe("live-brand-0");
+    expect(liveRef.url).toContain("live-brand-0");
+
+    const event = { request: new Request("http://localhost/"), locals: {} };
+    const result = await globalThis[RequestContext].run(event, () => liveRef());
+    expect(result[LIVE_SOURCE]).toBe(true);
+    // the brand is a marker, not a wrapper: the stream consumes as-is
+    const seen = [];
+    for await (const v of result) seen.push(v);
+    expect(seen).toEqual([1, 2]);
+  });
+
+  it("client live() streams values, completes with the source, and brands the iterable", async () => {
+    registerServerReference("live-basic-0", async function* () {
+      yield 1;
+      yield 2;
+    });
+    const liveFn = clientLive(createClientReference("live-basic-0"));
+    expect(getServerFunctionMetadata(liveFn).live).toBe(true);
+    const restore = connectTransport();
+    try {
+      const iterable = liveFn();
+      expect(iterable[LIVE_SOURCE]).toBe(true);
+      const seen = [];
+      for await (const v of iterable) seen.push(v);
+      expect(seen).toEqual([1, 2]);
+    } finally {
+      restore();
+    }
+  });
+
+  it("reconnects with backoff when a connected stream dies", async () => {
+    let invocations = 0;
+    registerServerReference("live-reconnect-0", async function* () {
+      invocations++;
+      if (invocations === 1) {
+        yield "a";
+        throw new Error("mid-stream death");
+      }
+      yield "b";
+    });
+    const liveFn = clientLive(createClientReference("live-reconnect-0"));
+    const restore = connectTransport();
+    try {
+      const seen = [];
+      for await (const v of liveFn()) seen.push(v);
+      // the death was invisible to the consumer: values flowed across the
+      // reconnect and the SECOND (healthy) completion ended the iterable
+      expect(seen).toEqual(["a", "b"]);
+      expect(invocations).toBe(2);
+    } finally {
+      restore();
+    }
+  });
+
+  it("first-connect failures reject like a normal call", async () => {
+    registerServerReference("live-fail-0", async () => {
+      throw new Error("nope");
+    });
+    const liveFn = clientLive(createClientReference("live-fail-0"));
+    const restore = connectTransport();
+    try {
+      const it = liveFn()[Symbol.asyncIterator]();
+      await expect(it.next()).rejects.toThrow();
+    } finally {
+      restore();
+    }
+  });
+
+  it("break ends the in-flight call and tears down the producer", async () => {
+    let serverClosed = false;
+    registerServerReference("live-teardown-0", async () =>
+      hangingIterable(() => (serverClosed = true), ["first"])
+    );
+    const liveFn = clientLive(createClientReference("live-teardown-0"));
+    const restore = connectTransport();
+    try {
+      for await (const v of liveFn()) {
+        expect(v).toBe("first");
+        break;
+      }
+      await new Promise(r => setTimeout(r, 10));
+      expect(serverClosed).toBe(true);
+    } finally {
+      restore();
+    }
+  });
+
+  it("live calls are reads: no single-flight enveloping with a consumer registered", async () => {
+    registerServerReference("live-read-0", async function* () {
+      yield "v";
+    });
+    const liveFn = clientLive(createClientReference("live-read-0"));
+    const requests = [];
+    const restore = connectTransport(requests);
+    const unsubscribe = subscribeFlightData(() => {});
+    try {
+      const seen = [];
+      for await (const v of liveFn()) seen.push(v);
+      expect(seen).toEqual(["v"]);
+      expect(requests).toHaveLength(1);
+      expect(requests[0].init.headers[SINGLE_FLIGHT_HEADER]).toBeUndefined();
+    } finally {
+      unsubscribe();
+      restore();
+    }
+  });
+
+  it("composes with GET: live(GET(fn)) rides the GET transport", async () => {
+    serverGET(
+      createServerReference(
+        registerServerReference("live-get-0", async function* (n) {
+          yield n * 2;
+        })
+      )
+    );
+    const liveFn = clientLive(clientGET(createClientReference("live-get-0")));
+    expect(getServerFunctionMetadata(liveFn)).toEqual(
+      expect.objectContaining({ method: "GET", live: true })
+    );
+    const requests = [];
+    const restore = connectTransport(requests);
+    try {
+      const seen = [];
+      for await (const v of liveFn(21)) seen.push(v);
+      expect(seen).toEqual([42]);
+      expect(requests[0].init.method).toBe("GET");
+      expect(requests[0].url).toContain("args=");
+    } finally {
+      restore();
     }
   });
 });

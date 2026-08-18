@@ -390,6 +390,11 @@ await check(
 // drop the stream). The abort SWEEP itself is in the lazy codec; the
 // server teardown half is in server.js — neither charges this slice.
 // Re-guarded at actual+20 (2888 measured).
+// Then +7 for the `read` request option (single-flight suppression for
+// POST-shaped reads) — the ONLY shared-path bytes of the live()
+// declaration, whose reconnect/brand machinery lives entirely inside its
+// own export and treeshakes out of this slice (unimported here by
+// construction). 2895 measured, ceiling kept.
 await check(
   "server-functions client: eager transport (reference + GET, lazy codec)",
   `export {

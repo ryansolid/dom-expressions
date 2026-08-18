@@ -9,6 +9,7 @@ import {
   ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
+  LIVE_SOURCE,
   SERVER_FUNCTION_METADATA,
   SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
@@ -140,7 +141,14 @@ async function createRequest(base, id, instance, options, meta) {
   // mutation call; a consumer-less app never asks the server to do
   // collection work. GET-encoded calls are reads (cacheable URLs) and stay
   // plain — folding per-request flight data into them would defeat caching.
-  if (getFlightDataConsumer() && (!options.method || options.method.toUpperCase() !== "GET")) {
+  // `read: true` marks a POST-shaped call as a read the same way (e.g.
+  // live sources: streams have no envelope story and flight hooks are
+  // mutation policy).
+  if (
+    getFlightDataConsumer() &&
+    !options.read &&
+    (!options.method || options.method.toUpperCase() !== "GET")
+  ) {
     headers[SINGLE_FLIGHT_HEADER] = "true";
   }
   let init = {
@@ -450,6 +458,143 @@ export function GET(fn) {
   });
   // the declaration itself is a metadata write like any other
   return withMeta(wrapped, { method: "GET" });
+}
+
+/**
+ * Declares a value-shaped live source: a server function returning an async
+ * iterable whose yields are successive VALUES of one logical query. The
+ * declaration buys the wire-level lifecycle a raw stream doesn't have:
+ * calls to the returned reference produce an iterable that survives the
+ * connection — when the stream dies (network drop, server restart; the
+ * rejections the transport's failure wiring produces) it re-invokes the
+ * function with exponential backoff and keeps yielding, resetting the
+ * backoff on every healthy value. A failure on the FIRST connect still
+ * rejects like a normal call (a typo shouldn't retry silently), normal
+ * completion completes the iterable, and `break` aborts the in-flight
+ * request through the transport's return() wiring.
+ *
+ * Deliberately wire-level ONLY: no keying, no connection sharing, no value
+ * cache — deduping concurrent consumers of the same logical query is the
+ * data layer's job (wrap with the router's `query`: its keyed dedupe hands
+ * every consumer the same iterable, hence the same connection), and
+ * latest-wins is how reactive consumption already reads a stream. There is
+ * no cached value here by design: the value-shaped contract makes the
+ * SERVER the cache — every (re)connect re-yields current state as its
+ * first value. Live calls are reads, so they never opt into single-flight
+ * enveloping. All behavior lives inside this declaration — apps that never
+ * import `live` carry none of it. Compose with `GET` inside-out
+ * (`live(GET(fn))`): live must be the outermost declaration, since its
+ * behavior wraps the call.
+ *
+ * ```ts
+ * export const stockPrice = live(async function* (symbol: string) {
+ *   "use server";
+ *   for await (const tick of subscribe(symbol)) yield tick.price;
+ * });
+ * ```
+ */
+export function live(fn) {
+  if (!isServerFunction(fn)) {
+    throw new Error("live expects a server function reference");
+  }
+  const id = fn.id;
+  const metadata = { ...getServerFunctionMetadata(fn), live: true };
+  const wrapped = (...args) => ({
+    [LIVE_SOURCE]: true,
+    [Symbol.asyncIterator]() {
+      let it; // current underlying iterator (undefined between connections)
+      let connected = false; // a connect succeeded once — later deaths reconnect
+      let attempts = 0;
+      let stopped = false;
+      let timer, wake; // interruptible backoff sleep
+      const DONE = { done: true, value: undefined };
+      const closeIt = value => {
+        const current = it;
+        it = undefined;
+        if (current) {
+          try {
+            const r = current.return && current.return(value);
+            if (r && typeof r.then === "function") r.then(undefined, () => {});
+          } catch {}
+        }
+      };
+      const callOnce = () => {
+        // A GET-composed reference is already a flight-free read with its
+        // own query-string encoding — delegate to it. Otherwise call the
+        // transport directly so the POST is marked a read: live responses
+        // are streams, which have no single-flight envelope story (and
+        // flight collection is mutation policy).
+        if (metadata.method === "GET") return fn(...args);
+        const handler = config.responseHandler;
+        if (handler && handler.intercept) {
+          const hit = handler.intercept({ id, meta: metadata, args });
+          if (hit !== undefined) return hit;
+        }
+        return fetchServerFunction(fn.url, id, { read: true }, args, metadata, args);
+      };
+      const pull = async () => {
+        while (!stopped) {
+          try {
+            if (!it) {
+              const result = await callOnce();
+              connected = true;
+              // a plain-value answer is a one-value stream
+              it =
+                result !== null && typeof result === "object" && result[Symbol.asyncIterator]
+                  ? result[Symbol.asyncIterator]()
+                  : (async function* () {
+                      yield result;
+                    })();
+              // stopped while connecting: the just-arrived stream must still
+              // be ended (its return() aborts the request)
+              if (stopped) {
+                closeIt();
+                return DONE;
+              }
+            }
+            const r = await it.next();
+            if (r.done) return DONE;
+            if (stopped) return DONE;
+            attempts = 0; // healthy value: backoff resets
+            return r;
+          } catch (error) {
+            // First-connect failures surface (normal call semantics); a
+            // stream that had connected died — retry with backoff. The next
+            // successful connect starts a NEW logical answer: value-shaped
+            // sources re-yield current state on invocation by contract.
+            if (!connected) throw error;
+            it = undefined;
+            await new Promise(resolve => {
+              wake = resolve;
+              timer = setTimeout(resolve, Math.min(500 * 2 ** attempts++, 10000));
+            });
+            timer = wake = undefined;
+          }
+        }
+        return DONE;
+      };
+      return {
+        next: () => pull(),
+        return(value) {
+          stopped = true;
+          if (timer !== undefined) clearTimeout(timer);
+          if (wake) wake();
+          // ends the in-flight call through the transport's return() wiring
+          closeIt(value);
+          return Promise.resolve({ done: true, value });
+        }
+      };
+    }
+  });
+  wrapped[SERVER_FUNCTION_METADATA] = metadata;
+  wrapped.id = id;
+  // lazy like the base proxy's: the endpoint may be configured after the
+  // module-scope live(...) call runs
+  Object.defineProperty(wrapped, "url", {
+    get: () => fn.url,
+    configurable: true
+  });
+  return wrapped;
 }
 
 // Only ever referenced by server-mode compiler output; present so a

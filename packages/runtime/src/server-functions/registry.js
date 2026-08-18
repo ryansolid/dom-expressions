@@ -75,6 +75,18 @@ export function withMeta(fn, meta) {
   return fn;
 }
 
+// The live-source value brand. `live(fn)` declarations mark the async
+// iterable a call produces — ON THE VALUE, not just the reference — so
+// consumers meeting the result after it has traveled (through a promise
+// resolution, a reactive computation, a face policy deciding how to render
+// it) can still tell "this is a value-shaped stream with reconnect
+// semantics" without holding the declaration. A registered symbol for the
+// same reason as the metadata channel: duplicated module instances must
+// agree by construction — and, like the metadata symbol, it is inert data:
+// the branding and detection LOGIC lives with its users (the server
+// dispatch path, face policies), never in this eager layer.
+export const LIVE_SOURCE = Symbol.for("solid.LiveSource");
+
 // ---- late-bound RPC seam ----
 //
 // The transport surface routers consume (`GET` re-declaration, response

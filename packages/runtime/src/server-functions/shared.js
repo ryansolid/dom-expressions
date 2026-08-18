@@ -36,6 +36,7 @@
 // the cookie codec in ../cookies.js. Re-exported here so every existing
 // import site of the shared wire layer keeps working.
 export {
+  LIVE_SOURCE,
   SERVER_FUNCTION_METADATA,
   getServerFunctionMetadata,
   getServerFunctionRPC,

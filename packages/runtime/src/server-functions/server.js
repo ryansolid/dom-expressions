@@ -20,6 +20,7 @@ import {
   ERROR_HEADER,
   FUNCTION_HEADER,
   INSTANCE_HEADER,
+  LIVE_SOURCE,
   SERVER_FUNCTION_METADATA,
   SINGLE_FLIGHT_HEADER,
   configureServerFunctionsCodec,
@@ -28,6 +29,7 @@ import {
   encodeErrorHeaderValue,
   extractBody,
   getHeadersAndBody,
+  getServerFunctionMetadata,
   getServerFunctionsCodec,
   isJSONSafe,
   isServerFunction,
@@ -254,6 +256,55 @@ export function GET(fn) {
   METHODS.set(fn.id, "GET");
   // the declaration itself is a metadata write like any other
   return withMeta(fn, { method: "GET" });
+}
+
+/**
+ * Declares a value-shaped live source: a server function returning an async
+ * iterable whose yields are successive VALUES of one logical query (latest
+ * wins), not events to be accumulated. The declaration is what buys the
+ * managed lifecycle — on the client the reference gains reconnect-with-
+ * backoff and connection sharing (see the client half); faces detect the
+ * declaration on the VALUE via the `LIVE_SOURCE` brand (e.g. SSR taking
+ * the first value and handing the stream to the client rather than
+ * draining it).
+ *
+ * Unlike `GET` (a pure metadata write), `live` carries behavior — so the
+ * behavior lives INSIDE the declaration and treeshakes with it: nothing in
+ * the dispatch path or the shared layer knows live exists; a build that
+ * never imports `live` carries none of this. The server half's whole
+ * behavior is the value brand: in-process calls (SSR) meet the result
+ * after it has left the reference's hands, so the brand must travel on the
+ * value. Dispatch is untouched — over-the-wire calls stream the raw
+ * registered function's result exactly as before. Composes with `GET` but
+ * does not imply it; declare live outermost (`live(GET(fn))`), matching
+ * the client half where live's behavior wraps the call.
+ *
+ * ```ts
+ * export const stockPrice = live(async function* (symbol: string) {
+ *   "use server";
+ *   for await (const tick of subscribe(symbol)) yield tick.price;
+ * });
+ * ```
+ */
+export function live(fn) {
+  if (!isServerFunction(fn) || typeof fn.id !== "string") {
+    throw new Error("live expects a server function reference");
+  }
+  const metadata = { ...getServerFunctionMetadata(fn), live: true };
+  const wrapped = async (...args) => {
+    const result = await fn(...args);
+    if (result !== null && typeof result === "object" && result[Symbol.asyncIterator]) {
+      result[LIVE_SOURCE] = true;
+    }
+    return result;
+  };
+  wrapped[SERVER_FUNCTION_METADATA] = metadata;
+  wrapped.id = fn.id;
+  Object.defineProperty(wrapped, "url", {
+    get: () => fn.url,
+    configurable: true
+  });
+  return wrapped;
 }
 
 /**
