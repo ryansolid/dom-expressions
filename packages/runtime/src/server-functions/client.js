@@ -479,15 +479,18 @@ export function GET(fn) {
  * reader of that memo shares its latest value, so sharing across the tree
  * means hoisting the memo, the same idiom as any fetch. There is no cached
  * value by design: the value-shaped contract makes the SERVER the cache —
- * every (re)connect re-yields current state as its first value. Note this
- * is NOT a `query` layer and doesn't want one: a live source has nothing
- * query manages — no stale value to serve, no revalidation (it
- * self-updates; a mutation's effects arrive through the open stream), and
- * hence no single-flight participation (live calls are reads and never
- * request enveloping). All behavior lives inside this declaration — apps
- * that never import `live` carry none of it. Compose with `GET`
- * inside-out (`live(GET(fn))`): live must be the outermost declaration,
- * since its behavior wraps the call.
+ * every (re)connect re-yields current state as its first value. This is
+ * the wire contract a data layer builds ON, not a data layer itself: a
+ * router-level live query can hold ONE iteration open and multicast it
+ * (keying, replay-latest, refcounts all channel-side), and its refresh
+ * stays honest — close the iteration, open a new one, fresh connection by
+ * construction. There is no revalidation here (a live source self-updates;
+ * a mutation's effects arrive through the open stream) and hence no
+ * single-flight participation (live calls are reads and never request
+ * enveloping). All behavior lives inside this declaration — apps that
+ * never import `live` carry none of it. Compose with `GET` inside-out
+ * (`live(GET(fn))`): live must be the outermost declaration, since its
+ * behavior wraps the call.
  *
  * ```ts
  * export const stockPrice = live(async function* (symbol: string) {
