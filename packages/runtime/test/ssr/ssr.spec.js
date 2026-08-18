@@ -1049,6 +1049,59 @@ describe("root-level module asset serialization", () => {
     expect(html).toContain("./Scoped.tsx");
   });
 
+  // Regression (cold-boot hydration halt): a boundary's module map is a
+  // mutable shared object that can be serialized more than once — once early
+  // (e.g. the reactive library's boundary commit writes it via ctx.serialize)
+  // and again at fragment flush. A nested lazy under a lazy layout registers
+  // BETWEEN those writes (during the template-hole drain on a cold module
+  // cache). Seroval dedupes repeated object references across stream writes,
+  // so re-serializing the same live map emitted a bare back-reference to the
+  // stale first snapshot and silently dropped the late entry — the client
+  // never learned the nested chunk's hydration-id mapping and lazy hydration
+  // halted. serializeFragmentAssets must snapshot, so the flush emission
+  // carries the map's current contents.
+  it("fragment flush re-serialization carries modules registered after an earlier write", async () => {
+    let ctx;
+    const html = await new Promise(resolve => {
+      const chunks = [];
+      let done;
+      r.renderToStream(() => {
+        ctx = sharedConfig.context;
+        done = ctx.registerFragment("b1");
+        ctx._currentBoundaryId = "b1";
+        ctx.registerModule("./Layout.tsx", "/assets/Layout-aaa.js");
+        ctx._currentBoundaryId = null;
+        // Upstream boundary commit: serialize the LIVE map early, exactly as
+        // a consumer handing the shared object to the serializer would.
+        ctx.serialize("b1_assets", ctx.getBoundaryModules("b1"));
+        return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
+      }).pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+      setTimeout(() => {
+        // The nested lazy registers after the first serialization...
+        ctx._currentBoundaryId = "b1";
+        ctx.registerModule("./NestedPage.tsx", "/assets/NestedPage-bbb.js");
+        ctx._currentBoundaryId = null;
+        // ...and the fragment then flushes, re-serializing b1's map.
+        done("<span>loaded</span>");
+      });
+    });
+
+    expect(html).toContain("<span>loaded</span>");
+    expect(html).toContain("./Layout.tsx");
+    // The late entry must survive the re-emission. With the live map handed
+    // to the serializer both times, the flush write deduped to a back
+    // reference of the first snapshot and this mapping vanished entirely.
+    expect(html).toContain("./NestedPage.tsx");
+    expect(html).toContain("/assets/NestedPage-bbb.js");
+  });
+
   // Regression: when a boundary fragment resolves while root holes are still
   // cascading (shell not yet committed), the fragment's post-resolve flushEnd
   // must not flush the serializer before the final root `_assets` write runs.

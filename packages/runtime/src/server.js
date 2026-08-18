@@ -2714,7 +2714,10 @@ export function ssrHydrationKey() {
 function decodeSSREntities(s) {
   return s.indexOf("&") < 0
     ? s
-    : s.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&amp;/g, "&");
+    : s
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, "<")
+        .replace(/&amp;/g, "&");
 }
 
 const SELECT_VALUE_ATTR = /\svalue="([^"]*)"/;
@@ -3059,10 +3062,18 @@ function renderHeadAssets(emittedAssets, inlineStyles, nonce) {
 // call that owns it; whole-document renders (renderId "") keep the bare name.
 // Boundary maps need no scoping: their keys are hydration ids, which already
 // carry the renderId prefix.
+// The map is serialized as a SNAPSHOT (`{ ...map }`), never as the live
+// object. A boundary's module map keeps mutating after its first
+// serialization — a nested lazy under a lazy layout registers during the
+// template-hole drain loop, after the boundary already flushed — and seroval
+// dedupes repeated references across stream writes: handing it the same
+// (mutated) object again emits a bare back-reference to the stale first
+// snapshot, silently dropping the new entries. The client then never learns
+// the nested chunk's hydration-id mapping and lazy hydration halts.
 function serializeFragmentAssets(key, boundaryModules, context, name = key) {
   const map = boundaryModules.get(key);
   if (!map || !Object.keys(map).length) return;
-  context.serialize(name + "_assets", map);
+  context.serialize(name + "_assets", { ...map });
 }
 
 function propagateBoundaryStyles(childKey, parentKey, tracking) {
