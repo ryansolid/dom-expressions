@@ -776,7 +776,11 @@ re-render it (A1, A2). The blessed pattern: optimistic state lives in client slo
 (which can overlay, badge, strike-through, or hide server content); server content
 itself settles when the mutation's single-flight response morphs it. The transport
 guarantees the two compose: a slot's optimistic state survives the settling morph
-(A7), so the overlay never flickers.
+(A7), so the overlay never flickers. (Stage 7 refines, not repeals, this line:
+transaction-scoped drafts may temporarily perturb server-rendered DOM as
+*predictions*, replayed over every authoritative apply and evaporating at
+settlement — the invariant that only server records make output durable stands.
+See §9.2.)
 
 ### 5.8 Producer-side symmetry
 
@@ -984,32 +988,39 @@ retired as a pole and survives only as potential authoring sugar.
    into live read-only projections. See the case-3 build record in DR-2
    for what shipped and the scope lines (whole containers this round;
    parts and case 4 remain the designed extensions).
-6. **Stage 6 — Predictions: overlays + optimistic entries.**
-   **Next design/build target (model revised 2026-08-16; supersedes
-   the 2026-08-14 transactional-draft seed).** The frame stays a
-   derived, readonly projection; server markup publishes named
-   element handles (`$ref`, frame-unique — string refs with the frame
-   as the explicit owner), and the client speaks about the frame
-   through two transaction-scoped forms riding existing machinery:
-   **overlays** (`frame.predict(ref, patch)` — JSX-attribute-shaped
-   predictions against named elements, re-asserted over every
-   authoritative apply, evaporating at settlement) and **entries**
-   (client-rendered content portaled into a named container, lifetime
-   from an optimistic store). `$key` stays morph-only identity with
-   no client-facing role. No walkable draft, no DOM-write API:
-   structural prediction is composition (client children at a server
-   address), not mutation. Substrate shipped 2026-08-15: keyed
-   element matching in the morph (`$key` → `_key`). See §9.1.
-7. **Stage 7 — Generalized claims: the micro-affordance rung.** Promoted
-   from unlisted (2026-08-07, out of the Datastar comparison). The
-   router's claim sweep — behavior attached by attribute over any
-   server-materialized subtree, re-firing when a morph touches the
-   element — opened to user-defined claims, plus a shipped set of
-   micro-affordances. Kills "the first affordance costs a full
-   component ceremony" without adopting attribute-expression strings.
-   It can later expose Stage 6 mutation capabilities through mount
-   context, but does not depend on them. Design sketch expanded
-   2026-08-13/14 — see §9.2.
+6. **Stage 6 — Behavior across the border: ref props, event props,
+   open claims.** **Next build target (re-scoped 2026-08-18; absorbs
+   the 08-13 claims sketch and supersedes the 08-16 predictions
+   design, whose surviving model moved to Stage 7).** Functions
+   already cross the slot border as render props; Stage 6 completes
+   the taxonomy: a slot-arg function in *ref position* on a server
+   element delivers the element to the client closure — typed
+   through the server component's props, claim-engine lifecycle
+   (fire on adoption, re-fire on morph re-materialization), owner
+   and cleanup from the passing scope — and *event position* is the
+   same marker as sugar. SSR cost is gated at evaluation by the
+   render context's frame flag. Attribute-keyed claims remain the
+   class direction for content nobody can name (markdown holes) plus
+   the affordance tier. More fundamental than optimism and lands
+   first: no transaction machinery, the claim engine already exists,
+   and event wiring / third-party mounts / observers justify it
+   standalone. Retires `$ref`/`frame.refs` as author surface. See
+   §9.1.
+7. **Stage 7 — Optimistic drafts.** **Design revised 2026-08-18
+   (supersedes overlays + entries, which superseded the 08-14
+   transactional draft — the draft returns imperative, anchored by
+   Stage 6 ref props).** One primitive: a transaction-scoped
+   re-runnable draft — imperative DOM edits (plain JSX as node
+   literals under per-run disposable roots) against fresh
+   authoritative DOM, replayed after every intersecting
+   authoritative apply, disposed at settlement. Reset is
+   re-derivation (retained authoritative records + surviving
+   drafts), never inverse patches. Display-only by contract;
+   interactive optimistic UI is a client component. `frame.predict`,
+   entry portals, and the frame handle itself retire as author
+   surface; keyed adoption stays the deferred continuity
+   escalation. Substrate shipped 2026-08-15: keyed element matching
+   in the morph (`$key` → `_key`). See §9.2.
 8. **Stage 8 — Connection-shaped transport.** Promoted from parked: the
    sink-lifetime separation means SSE/socket transports turn the same
    authored component non-terminating (generator-only-model.md §9,
@@ -1023,14 +1034,17 @@ retired as a pole and survives only as potential authoring sugar.
    The related data-API question (top-level async iterators from plain
    `"use server"` calls) is scoped separately and comes first.
 
-Ordering note (revised 2026-08-14): Stage 6 is the next target. Stages
-7 and 8 are independent afterward; their order remains preference, not
-dependency. Stage 7 can use Stage 6 as the writable capability behind a
-claim, but generalized claims stand alone. Stage 8 must eventually add
-causal settlement (a mutation's transaction remains open until the
-separate connection has applied its authoritative frame version), but
-Stage 6 is first proved against today's simpler single-flight ordering,
-where the response morph lands before the action transaction settles.
+Ordering note (revised 2026-08-18): Stage 6 is the next target and
+now *precedes* optimism — it is dependency-shallow (a compiler round
+plus the existing claim engine; no solid-core or transaction changes)
+and carries standalone value (event wiring, third-party mounts, the
+chat demo's copy button). Stage 7 consumes Stage 6's anchors and its
+replay rides the same sweep. Stage 8 is independent afterward; it
+must eventually add causal settlement (a mutation's transaction
+remains open until the separate connection has applied its
+authoritative frame version), but Stage 7 is first proved against
+today's simpler single-flight ordering, where the response morph
+lands before the action transaction settles.
 
 **Parked here (2026-08-11), state of the world for whoever resumes:**
 Stages 1–5 are built, merged to `next` in both repos, and released
@@ -1065,463 +1079,176 @@ back to full re-emission + morph whenever the prefix breaks (a code
 fence closing retroactively). Additive to the chunk protocol; adopt
 when measurement earns it.
 
-### 9.1 Stage 6 design — predictions: overlays + optimistic entries (revised 2026-08-16)
+### 9.1 Stage 6 design — behavior across the border: ref props, event props, and open claims (2026-08-18)
 
-Revision of the 2026-08-14 seed. The model and invariants below
-survive unchanged; the API surface was reworked 2026-08-15/16 — the
-walkable transactional draft is **retired** (the supersession record
-near the end explains why), and a same-day second pass replaced the
-`$seam`/key-addressed shape with the flat `$ref` model recorded here.
-Names remain provisional.
+Collapsed out of two prior sections during the 2026-08-17/18 design
+pass (Dev's ref-prop sketch; the SSR-cost resolution that followed):
+the 2026-08-16 predictions design that previously lived here is
+superseded — its surviving model moved to §9.2 (Stage 7) — and the
+2026-08-13 generalized-claims sketch that lived in §9.2 folds in
+below as this stage's class-based direction. Stage 6 also moved
+*ahead* of optimism in the roadmap: it is dependency-shallow (one
+compiler round plus the claim engine that already exists — no
+transaction machinery, no solid-core changes) and carries standalone
+value. Names remain provisional.
 
-**The correspondence.** A frame is always a derived, readonly
-projection:
-
-```text
-derived optimistic store          frame
-────────────────────────          ─────
-authoritative derived source      resident frame records
-transaction-local prediction      overlay / entry
-source recompute                  authoritative frame write
-store reconciliation              frame morph + prediction re-apply
-```
-
-Unlike `createOptimisticStore`, the frame has no plain form to support.
-There is no locally writable authoritative base: an optimistic entry
-becomes durable only when server output independently contains it. On
-settlement the frame therefore *always* reconciles from its current
-records — success keeps the prediction because those records advanced;
-failure removes it because they did not.
-
-**Optimism is the write's type, not a safety feature.** Under
-single-writer discipline the server owns frame markup, so a client
-statement about that markup is definitionally a *prediction* — a claim
-about what the server will soon say. Transaction scoping is what keeps
-the frame derived under that discipline: predictions are held state
-composed over the record, so any authoritative apply (including one
-triggered by a *different* concurrent transaction) re-derives
-`record + still-active predictions` instead of client writes stomping
-server truth or being stomped by it. Datastar asks authors to manually
-undo client state on failure; here rollback and re-application are the
-same operation — recompute the derivation with one input removed.
-There is no inverse-patch log; the authoritative record *is* the
-rollback state.
-
-**Same transaction wave.** This is not an action-only mode. Every Solid
-2.0 write already enters the transaction machinery; an async action
-merely keeps that transaction open. A prediction registers in the
-current batch like an optimistic store write, is visible immediately,
-and is adopted into the action transition when that batch becomes one.
-A synchronous transaction with no authoritative frame update settles
-back to the unchanged source at the normal flush.
-
-Frames become a third optimistic participant beside signals and stores:
+**The reframe that makes this one stage.** Functions already cross
+the slot border: a function-valued slot arg *called* during server
+render is a render prop — the call becomes a slot record, the client
+executes the real closure, and the output fills the marked range.
+The closure never ships; a coordinate does. Stage 6 completes that
+taxonomy with the two remaining use sites, riding the same
+occurrence/binding bookkeeping:
 
 ```text
-transaction
-├── optimistic signals
-├── optimistic stores
-└── frame predictions (overlays + entries)
+use site         server emits                    client resolves to
+────────         ────────────                    ──────────────────
+called           slot record (id + args)         a range it renders into
+ref position     claim marker on the element     the element, in hand
+event position   claim marker on the element     a listener, attached
 ```
 
-Concurrent transactions clear independently. When A settles while B is
-still active, the frame morphs the latest authoritative records, drops
-A's predictions, and re-applies B's. This retains per-lane intent, not
-inverse DOM patches.
+One exposure story covers all three: what ships is never behavior,
+only an address where behavior resolves from the passing scope.
 
-**Morph is the correction.** A speculative append illustrates both
-outcomes:
-
-```text
-success: base + optimistic entry <li>
-         → response records contain the <li>
-         → settlement: entry retires; authoritative <li> is present
-         → <li> remains
-
-failure: base + optimistic entry <li>
-         → records remain the old list
-         → settlement: entry retires
-         → <li> disappears
-```
-
-The frame's resident root/hole records remain the only durable truth.
-An overlay never touches them — it is composed over them at apply
-time — and an entry lives in a client-owned range the morph does not
-manage. Restoration is re-derivation, not an inverse rollback.
-
-**The addressing primitive — `$ref` (decided 2026-08-16).** Server
-markup publishes named element handles: `$ref` compiles to a `_ref`
-attribute (SSR-only, `_hk` family; DOM compiles strip it), and the
-frame handle is the explicit owner names resolve through —
-`frame.refs.entries`, `frame.refs[`check:${id}`]`. Old-school string
-refs, deliberately: at the slot border a name in an attribute is the
-only ref mechanism that serializes (markup cannot close over a client
-function), and the disease that killed string refs in-tree — an
-implicit ambient owner — is cured here because the owner is a handle
-you explicitly hold. Names are frame-unique (dev-checked); per-entity
-handles embed the entity in the name (`$ref={`check:${t.id}`}`) — the
-author's spelling, not a runtime scoping scheme. **`$key` has no
-client-facing role.** It is sibling-scoped (two parents may repeat a
-key), so it cannot enter a frame-level index; it stays purely the
-morph's identity contract. The two attributes answer different
-questions — `$key`: *which entity is this* (matching); `$ref`: *where
-is this part* (addressing) — and both may sit on one element, where
-the `_ref` rides the node that `_key` matching preserves, so a handle
-follows its entity across reorders for free.
-
-**Form 1 — overlays (`predict`).** Granular optimism ("while this
-action is pending, todo 42's checkbox is checked") is a patch against
-a named handle:
+**Ref props — the instance direction, typed.** The server component
+uses a function prop in ref position; the client passes a closure:
 
 ```tsx
+// client
+<CodeBlock copyBtn={el => {
+  const onClick = () =>
+    navigator.clipboard.writeText(el.closest("pre")?.textContent ?? "");
+  el.addEventListener("click", onClick);
+  onCleanup(() => el.removeEventListener("click", onClick));
+}} />
+
 // server
-<li $key={t.id} class={t.completed ? "completed" : ""}>
-  <input $ref={`check:${t.id}`} type="checkbox" checked={t.completed} />
-</li>
-
-// client
-const toggle = action(async (t: Todo) => {
-  frame.predict(`check:${t.id}`, { checked: !t.completed });
-  await toggleTodo(t.id);
-});
-```
-
-The patch vocabulary is JSX attribute semantics — `class`/`classList`,
-`style` objects, `checked`/`value` as properties, `textContent` for
-text — applied by the same binding code client JSX uses. **No third
-vocabulary:** an author who can write a Solid attribute expression can
-write a prediction; anything expressible as a JSX attribute is
-expressible as a patch, and nothing else is. Overlays re-assert after
-every authoritative apply to the frame — morph, hole update, attribute
-record — so server updates land *under* still-active predictions
-rather than erasing them. The live properties the attribute morpher
-deliberately preserves (`checked`, `value`, `open`) are exactly what
-overlays own while pending.
-
-**Shipped substrate (2026-08-15, `keyed-morph`).** Keyed element
-matching landed in the morph: `compatible()` requires equal `_key` on
-elements, so the existing relocation lookahead moves a keyed node into
-position instead of rewriting positions. Live element state — typed
-`value`, `checked`, `open`, focus — now follows the *entity* across
-reordering morphs; previously it silently latched to the position (the
-notes-sidebar "edited note jumps to top" misattribution).
-Sibling-scoped, matching client `For` semantics: an author key is only
-unique among siblings, and a cross-parent move is a teardown. This fix
-ships independently of Stage 6 — it corrects a live defect — and is
-also what makes overlays coherent across reorders: the `_ref` handle a
-prediction targets rides the element that `_key` matching preserves,
-so the patch follows the entity instead of latching to a position.
-
-**Form 2 — optimistic entries (portal into a named container).** The
-transactional DOM draft died here, and its retirement is this
-revision's main event. A structural prediction (the optimistic `<li>`)
-has no derivation source, but draft-authoring it in server-markup
-shape means hand-maintaining a client fork of the server component's
-render — one that silently rots as the server markup evolves. And once
-the client must render the content anyway, a real client render is
-strictly stronger than a static recipe: it can be live (pending
-styling, a retry button), it composes with overlays, and it needs no
-replay discipline. Structural prediction is therefore **composition,
-not mutation**: the server publishes a handle to an insertion point;
-the client portals real client-owned content into it.
-
-```tsx
-// server: a named container where entries land
-<ul class="todo-list">
-  {/* authoritative rows */}
-  <div $ref="entries" />
-</ul>
-
-// client
-const [pending, setPending] = createOptimisticStore<Todo[]>([]);
-
-const addTodo = action(async (title: string) => {
-  setPending(p => p.push({ id: tempId(), title, completed: false }));
-  await createTodo(title);
-});
-
-<Portal mount={frame.refs.entries}>
-  <For each={pending}>{todo => <TodoRow todo={todo} pending />}</For>
-</Portal>;
-```
-
-There is no separate seam concept (a `$seam` marker lived for a few
-hours on 2026-08-16 and dissolved into `$ref`): the entries container
-is an ordinary named handle, and refs cover what seams could not — the
-status banner someone predicts `textContent` on, the leaf input inside
-a keyed row. The ownership contract moved from markup declaration to
-the act: when a Portal mounts into a server-owned container, the frame
-marks that range foreign (the same skip client slot fills rely on), so
-the morph flows around portal content without a marker promising it in
-advance. Publishing a `$ref` *is* the sanction — the server exposing
-an element; what the client does with the handle is client business.
-Entry lifetime comes entirely from the optimistic store: it empties at
-settlement, the portal content unmounts, and the authoritative row —
-if the mutation succeeded — is already in the morphed record.
-**Retire-and-replace is the default:** the optimistic node and the
-authoritative node are different elements, and the swap is accepted.
-Keyed adoption (a temp-key protocol transferring the live optimistic
-node into authoritative ownership for perfect DOM continuity) is a
-designed escalation, deliberately deferred — it is the expensive tier
-and nothing in the acceptance gate requires it.
-
-**In-flight streaming — same rule as derived optimistic stores.**
-Authoritative updates do not wait for optimism:
-
-```text
-latest root/hole/attribute records
-+ all still-active predictions
-= visible target DOM
-```
-
-Every incoming chunk first advances the authoritative records, the
-morph applies them (skipping portal-occupied ranges as foreign), and
-overlays re-assert on the result. No whole-frame draft materialization
-is required — the layers never conflate because overlays are patches
-over elements the morph owns, and entries live in ranges the morph
-never enters. This is the structural payoff of retiring the draft: the
-streaming path keeps today's direct apply.
-
-**Package boundary.** `dom-expressions` knows `_key` matching
-(shipped), `_ref` indexing, foreign-range skipping, and overlay
-re-assertion inside its apply pipeline — not Solid transactions.
-`solid-web` binds predictions to Solid's transaction machinery and
-provides the `Portal`/optimistic-store composition. Today's
-single-flight response naturally applies authoritative records before
-transaction settlement. Stage 8's separate connection will need a
-causal token/watermark so an acknowledged mutation does not settle
-before its frame version arrives.
-
-**Decided (2026-08-14, survives the revision): predictions are
-address-scoped.** A prediction belongs to the content address captured
-at write time, not the mount site — the DR-1 answer. Rebinding a mount
-to a new address never carries the old call's prediction (markup
-predicted for one render must not graft onto a different render);
-rebinding back while the transaction is still active restores it. Two
-mounts of one address show the same prediction, and since both
-authoritative records and predictions live in the host's
-address-resident store, there is ONE derived view per address that
-every mount morphs to — the per-mount "whose prediction wins" question
-dissolves. The consequence is the tier's honest boundary line:
-**predictions do not span addresses.** An optimistic toggle written
-against `getTodos("all")` does not appear in `getTodos("active")`,
-though the server would reflect it in both — the frame layer holds
-markup, not data, so a prediction is a statement about one render.
-When optimism must span multiple server renders, it is data-shaped and
-belongs in a client store/projection. (TodoMVC probes this line:
-client-side filter claims over one address keep one prediction
-covering everything; per-filter addresses hit the boundary exactly
-where it should be.) Site-local state — focus, selection, an open
-menu — was never prediction state; it stays with claims and
-components.
-
-**Surface (2026-08-16 lean).** One handle, one verb, one index, one
-door:
-
-```ts
-interface Frame {
-  /** overlay against a $ref-named element; transaction-scoped */
-  predict(ref: string, patch: JSXAttributes): void;
-  /** reactive index of the frame's $ref-named elements (claim-maintained) */
-  refs: Record<string, Element>;
+function CodeBlock(props) {
+  return <pre>
+    <button ref={props.copyBtn} aria-label="Copy">⧉</button>
+    <code>{highlighted}</code>
+  </pre>;
 }
 ```
 
-`refs` entries are reactive: the index is maintained by the claim
-sweep (below), so a lookup re-resolves when a morph replaces the
-element — a `Portal` mounted on `frame.refs.entries` re-targets
-instead of holding a detached node.
+This **replaces `$ref` strings and `frame.refs` as author surface**
+(the 2026-08-16 addressing decision is superseded; the index
+machinery survives internally, below). Coordination moved from a
+stringly name resolved through a frame handle into the props
+contract: the component's signature *declares* the handle, TypeScript
+checks both ends, and there is no handle to acquire — the
+`ServerComponent<P>` generic widens from "every prop is a `Slot`" to
+"every prop is a `Slot` or a behavior function." Under the hood
+nothing is new: the server recognizes a cross-border function in ref
+position and emits a marker attribute (`_hk` family) whose value
+indexes the occurrence's existing binding table — occurrence-scoped
+by construction, so two instances of one component never bleed, and
+an element carrying several bindings packs one attribute. Lifecycle
+is the claim engine's, which is exactly the contract behavior wants:
+fires per element (several elements may take the same prop), on
+adoption and on morph re-materialization (new element identity → the
+old per-element scope disposes, the callback re-runs, listeners
+re-attach), NOT re-fired when an attribute patch lands on a
+surviving element. The owner is the client component that passed the
+prop, so `onCleanup` works and context resolves.
 
-Acquisition is **ref-only**, and the `ref` lives on the
-frame-returned component itself: the server function's returned
-component is typed `ServerComponent<{ item: Slot<ItemProps>; empty?:
-Slot }>` — the generic enforces that every authored prop is a `Slot`
-(server inputs remain arguments to the outer server function) — and
-that type carries a client-only `ref?: Ref<Frame>` attribute, so
-`<View ref={frame}>` is written on the component at its mount site.
-`dynamic()` is merely how that component came to exist; `ref` is
-consumed by the server-binding branch, never enters `slotsFor`, and
-has no server meaning. There is **no ambient
-`useFrame()` context**: with nested frames, "the nearest frame" is
-ambiguous in exactly the cases that matter, and the mounting client
-component always exists — a boundary is mounted by `dynamic()`, which
-is client code; even the t=0 document is the client app SSR'd — so
-the handle is always acquirable where the mount is written and travels
-by closure, prop, or user-defined context from there. `Portal`
-placement is orthogonal to ownership: the portal is authored in client
-code (ownership and cleanup with the client owner) while its mount
-target points inside the frame's DOM (placement) — the same split
-`Portal` has always had.
+What this buys beyond Stage 7's anchors — the reason the stage
+stands alone: event wiring; third-party mounts (chart/editor/map
+libraries that want a DOM node, which server markup could never host
+before); observers and measurement (`IntersectionObserver`,
+`ResizeObserver`, focus management, scroll anchoring); persistent
+client islands (`insert(el, () => <Widget/>)` inside the callback —
+the `Portal` replacement for client content living inside server
+markup, with morph re-assertion re-mounting it). At the limit a
+client component is **pure behavior**: no markup of its own, a bag
+of functions handed to a server component — the server owns
+structure, the client owns interaction. That is the resolved form of
+the Datastar comparison: they attach behavior through attributes
+interpreted by a global runtime; we attach it through typed props
+that resolve to real closures with owner, context, and cleanup.
 
-**Scope contracts.**
+**Event props — the same marker, sugar.** `<button
+onClick={props.onCopy}>` on a server intrinsic is mechanically
+identical to a ref claim: marker out, native `addEventListener` on
+adoption (not Solid delegated events — ordering and `currentTarget`
+behave natively; an author who needs delegation semantics is writing
+a client component). Decided 2026-08-18: supported — a server
+component accepting `onX` props reads exactly like normal Solid —
+with the caveat recorded that it makes the boundary invisible at the
+use site (attach-on-adoption timing, re-attach on
+re-materialization), where the ref spelling keeps the crossing
+explicit. Refs ship as the primitive; event-position sugar follows
+once the claim lifecycle has proven out — it compiles to the same
+marker, so deferring costs nothing structurally.
 
-- `$ref` names must be unique within one frame's markup (dev-mode
-  check on the index). `$key` keeps its shipped contract — unique
-  among siblings only — which is exactly why it cannot double as an
-  addressing primitive. The frame is the prediction scope; that is
-  design pressure in the right direction — a server component
-  rendering one collection is the natural unit — and name prefixes or
-  a component split resolve genuine collisions.
-- Predictions do not cross into nested server component (region)
-  interiors: a region's markup belongs to its own address, and a
-  root-frame handle predicting into a child region is unsupported.
-  **Region handles are a real need, not a cut** — the HN comment tree
-  (optimistic reply into a nested, server-composed thread region) is
-  their acceptance gate — but they are explicitly out of TodoMVC's
-  scope, which stays flat.
+**The SSR cost story (settled 2026-08-18): minimally detrimental by
+construction.** Handler expressions in SSR output are today dropped
+at compile time, *unevaluated*. The compiler round (Babel + Rust,
+the `$key` shape) emits a guarded expression instead:
 
-**Relation to claims (Stage 7) — one engine, two directions
-(2026-08-16).** Claims and refs are both ways client code touches
-server-materialized elements, and they divide cleanly: **a claim's
-argument is the element; a ref's argument is the name.** A claim is
-class-based and push-directed — "every element carrying this attribute
-behaves this way"; the registry drives lifecycle (fire on
-materialization, re-fire when a morph replaces the element, cleanup on
-removal), no handle or name involved — which is why it is the only
-path to behavior on content nobody can name ahead of time (code blocks
-streaming through a markdown hole). A ref is instance-based and
-pull-directed — code already holding the frame needs one known
-occurrence now (an action predicting, a portal mounting). A claim
-cannot answer a pull; an index cannot attach per-kind behavior with
-element-scoped cleanup. Complementary, not competing.
+```js
+sharedConfig.context.frame ? _$claim(props.onCopy) : ""
+```
 
-The convergence is in the implementation: **the ref index and overlay
-re-assertion are built ON the claim engine** — internal consumers of
-the same sweep the router's link layer already uses. A built-in `_ref`
-claim maintains the reactive index (entry on materialization, removal
-on cleanup, re-point on morph replacement — which is what makes `refs`
-lookups reactive), and overlay application is the same sweep
-projecting the frame's prediction map onto elements, so
-re-assert-after-morph falls out of claim re-firing rather than being a
-bespoke pass. Stage 6 consumes the claim engine internally; Stage 7
-remains the *public opening* of that engine and is not a dependency.
+The frame flag on the shared render context — the established
+channel for ambient render mode (the async property, hydration ids)
+— gates *evaluation*, not just output: normal SSR pays one property
+read per handler position and the expression never runs (no new
+work, no new side effects, byte-identical markup). Carrying the sink
+reference on the context rather than a boolean makes the flag test
+and the binding-table handle the same read. Inside a frame render
+the brand test sorts values: cross-border function → marker into the
+occurrence's binding table; anything else → empty string plus a
+dev-mode warning ("this handler can never run — pass it from the
+client"). Zero client bytes for non-frames apps (the claim engine is
+frames-bundle-only); markup weight only on elements that actually
+claim. Pre-adoption clicks share hydration's dead window; if it ever
+matters, root-level delegation for marker-bearing elements is the
+known answer — deferred. In hydratable SSR the gate is closed by
+scope (no frame context), so client-compiled hydration keeps sole
+ownership of handlers — no double attachment.
 
-**Claims predict too (2026-08-16).** A claimed element is exactly the
-code most likely to initiate a mutation (a `data-toggle` button firing
-an action), so claims need optimism — and giving it to them closes the
-model instead of complicating it: **one overlay ledger, two address
-forms.** By name (`frame.predict(ref, patch)`) for code holding the
-frame handle; by element-in-hand for claims (the claim scope exposes
-`predict(patch)` against the element it received — no name needed).
-The element form is not sugar: claims exist precisely for content
-nobody could name ahead of time (code blocks streamed through a
-markdown hole), where a `_ref` requirement would exclude the claim's
-home turf. Re-assertion is the sweep in both cases, keyed differently:
-named entries re-resolve through the index; claim entries re-assert
-because the claim re-fires on the replacement element after a morph.
-Both share transaction scoping and record-as-undo. The consequence is
-the discipline line, now crisp and dev-enforceable: **claims never
-write server-shaped attributes imperatively — a claim that wants to
-perturb markup makes a prediction.** With one applier there is one
-ordering and one rollback semantics, and the former claim/overlay
-precedence question reduces to warning on direct writes.
+**The class direction — open attribute claims (folded from the
+2026-08-13 sketch; still this stage).** Ref props answer code that
+can name its element in a component contract. They cannot answer
+content *nobody can name ahead of time* — every code block streaming
+through a markdown hole, where no per-element prop exists and a live
+hole cannot mint components as it grows (the owner-creation latch,
+by design). That is the claim registry's home turf, and the sketch
+survives intact.
 
-**Open wobbles (expected to surface in the prototype).**
-
-- Ref-name volume: per-entity handles put an attribute on every
-  addressable leaf and rebuild index entries as lists churn — fine at
-  TodoMVC scale, worth measuring at HN-thread scale.
-- Text/children predictions: `textContent` in a patch covers the
-  simple case; whether a prediction may replace an element's children
-  wholesale (and how that interacts with the morph) is undecided.
-- Raw-element discipline: `refs` and claim callbacks hand back real
-  elements, so imperative writes that bypass `predict` are *possible*
-  — does v1 document the discipline, wrap the element, or dev-warn on
-  mutation of server-owned attributes? (The claims-predict resolution
-  reduces the old precedence question to exactly this warning.)
-- Claim-scope surface: how the element-addressed `predict` reaches the
-  claim callback (second argument, ambient during sweep, or on a scope
-  object) — decided at the prototype.
-- Naming throughout (`predict`, `refs`, `$ref`) is provisional.
-
-**Why the transactional draft died (supersession record,
-2026-08-15/16).** The 2026-08-14 seed's `frame.update(draft => ...)`
-earned its keep only for structural prediction — the two-tier
-resolution had already moved everything granular into entity overlays.
-But a draft-authored node must *mirror what the server will render* to
-be a coherent prediction, which means hand-maintaining a client fork
-of server markup that silently rots as the server component evolves;
-and the recipe/replay discipline (deterministic recipes, stale-handle
-avoidance, draft materialization while lanes are active, the
-walkable-DOM subset) existed only to serve that case. Composition
-dissolves it: the client renders its own placeholder with its own
-tools — live bindings and all, since it has a real owner — the server
-sanctions where it lands, and settlement is subtraction rather than
-replay. What the seed got right is retained above: the derived frame,
-transaction scoping, morph-as-correction, address-scoped predictions,
-and the two-tier insight that granular optimism has a derivation form.
-What it got wrong was putting a DOM-write API on a surface whose whole
-design premise is that the client does not write server markup.
-
-**Acceptance gate — Server Component TodoMVC (revised 2026-08-16).**
-Port the existing `examples/todos` beside itself, preserving its
-delays, ~33% write failure, per-item retry, bulk actions, filters, and
-overlapping transitions. The existing app is the derived
-`createOptimisticStore` reference implementation; the port replaces
-its authoritative data/render with server-component markup plus
-predictions. The pass condition: **every optimistic behavior lands in
-`predict`, one entries portal (`$ref` + `Portal`), or data-shaped
-client state — zero imperative DOM writes, zero vocabulary beyond JSX
-attributes and ref names.**
-Toggle/pending/disabled/error markup are overlays; add is an entry;
-counters and filter state are data-shaped (slot args / client
-signals). Do not publish the API until add/remove/toggle success and
-failure, checkbox correction, concurrent and bulk mutations,
-retry/error markup, state retention across reordering morphs (the
-`_key` substrate: focus, typed values), and clean hydration all work.
-The decision criterion beyond correctness is simplicity parity: if the
-port relocates the current store's simplicity into prediction
-bookkeeping, the abstraction fails.
-
-**Non-negotiable invariant:** the frame itself remains derived.
-Predictions may temporarily perturb its rendered projection, but only
-an authoritative frame record can make that output durable.
-
-### 9.2 Stage 7 sketch — generalized claims and the affordance tier (2026-08-13)
-
-Recorded from the design conversation before parking, so the shape
-survives the break. Nothing here is built.
-
-**The problem, precisely.** In the current model the smallest unit of
-client behavior is a component fill: a copy button on a code block
-costs a slot prop on the server component, an authored client
-component, and wiring at every call site. Worse than ceremony, there is
-an expressiveness hole: a live markup hole cannot mint components as it
-grows (the owner-creation latch, by design), so content streaming
-through a hole — every code block in a chat reply — has *no path to
-client behavior at all* today.
-
-**The substrate exists.** The element-claim seam in the client runtime
+*The substrate exists.* The element-claim seam in the client runtime
 (`registerElementClaim`, `claimElement`, `claimElementTree`,
 `CLAIM_SEAM`): compiled DOM output claims elements at creation;
 everything that materializes *serialized* server content — frame
-streams, adopted SSR ranges, morph grafts — sweeps the subtree through
-the same registry, re-firing when a morph touches an element. Dormant
-by design (a null check when no consumer is registered), idempotent,
-importless across bundled copies. Today it has one consumer (the
-router's link layer) and a hard-coded selector (`a[href],
-form[action]`). Stage 7 is that seam, opened.
+streams, adopted SSR ranges, morph grafts — sweeps the subtree
+through the same registry, re-firing when a morph touches an
+element. Dormant by design (a null check when no consumer is
+registered), idempotent, importless across bundled copies. Today it
+has one consumer (the router's link layer) and a hard-coded selector
+(`a[href], form[action]`). Ref-prop markers make Stage 6 itself the
+second consumer; open registration is the third move:
 
-**Three moves:**
-
-1. *Open registration.* Consumer-declared claims keyed by an attribute
-   namespace (not arbitrary selectors — the sweep stays one
-   `querySelectorAll` over a fixed pattern). A server component writes
-   `<button data-copy>`; a registered claim owns that attribute and
-   attaches behavior when the element materializes, under the current
-   reactive owner for cleanup. Attribute values are declarative
-   arguments (`data-confirm="Delete this note?"`) — never code.
+1. *Open registration.* Consumer-declared claims keyed by an
+   attribute namespace (not arbitrary selectors — the sweep stays
+   one `querySelectorAll` over a fixed pattern). A server component
+   writes `<button data-copy>`; a registered claim owns that
+   attribute and attaches behavior when the element materializes,
+   under the current reactive owner for cleanup. Attribute values
+   are declarative arguments (`data-confirm="Delete this note?"`) —
+   never code.
 2. *The lifecycle contract, stated.* Claims fire at creation, at
    materialization of serialized content, and again when a morph
-   replaces the element; handlers are idempotent (element-keyed dedupe
-   per consumer). Identity-first morph does most state preservation for
-   free — matched elements are the same DOM nodes — so only
-   wholesale-replaced ranges re-claim fresh.
+   replaces the element; handlers are idempotent (element-keyed
+   dedupe per consumer). Identity-first morph does most state
+   preservation for free — matched elements are the same DOM nodes —
+   so only wholesale-replaced ranges re-claim fresh.
 3. *A shipped affordance tier* — prebuilt claims (each ~10 lines,
    tree-shakeable entry) so the first affordance costs one attribute.
 
-**API sketch (2026-08-13, names provisional).** The primitive: register
-a behavior against an attribute, once, on the client:
+The primitive: register a behavior against an attribute, once, on
+the client:
 
 ```tsx
 import { registerClaim } from "@solidjs/web";
@@ -1535,8 +1262,8 @@ registerClaim("data-copy", el => {
 });
 ```
 
-Server markup opts in by writing the attribute — no slot declared, no
-fill wired, no client component:
+Server markup opts in by writing the attribute — no slot declared,
+no fill wired, no client component:
 
 ```tsx
 // inside a "use server" component — or markdown post-processing
@@ -1546,8 +1273,6 @@ fill wired, no client component:
 </pre>
 ```
 
-The handler runs when the element materializes (initial adoption, frame
-streams, morphs) and again on the new element when a morph replaces it.
 Arguments are attribute values — declarative data, never code:
 
 ```tsx
@@ -1572,8 +1297,8 @@ import { toggle, indicator, copy } from "@solidjs/web/affordances";
 ```
 
 And because sweeps run under the frame boundary's client owner, a
-user-defined claim can resolve mount context — the capability form (see
-the revised state contract below): the attribute names an operation,
+user-defined claim can resolve mount context — the capability form
+(see the state contract below): the attribute names an operation,
 the nearest provider supplies its meaning and authority:
 
 ```tsx
@@ -1590,17 +1315,23 @@ registerClaim("data-action", el => {
 // client: <Actions.Provider value={{ retry: () => refetch() }}>…</Actions.Provider>
 ```
 
-**The authoring split.** `ref` is the client-side answer: an arbitrary
-closure attached in JSX. That form cannot cross the slot border (a
-closure does not serialize; inside a hole there is no owner to hold
-it). A claim attribute is the serializable *name* of behavior
-registered ahead of time on the client — behavior where all you have is
-markup. Same job, two transports, mirroring every other split in this
-design. (Solid 2.0 removed `use:` directives; there is no directive
-form to unify with — `ref` and claims are the complete pair.)
+**The authoring split, revised (2026-08-18).** The 08-13 sketch
+said "`ref` cannot cross the slot border (a closure does not
+serialize)" — half superseded: the closure still never ships, but
+its *coordinate* does, and that coordinate is exactly what ref props
+are. The split is now typed-instance vs attributed-class: a **ref
+prop** is behavior for elements the component contract can name —
+per-instance, typed, resolved from the passing scope; a **claim
+attribute** is the serializable name of behavior registered ahead of
+time — per-kind, for markup where all you have is markup. Same
+engine, two directions — a claim's argument is the element, a ref
+prop's argument is the closure — complementary, not competing. (Solid
+2.0 removed `use:` directives; ref props and attribute claims are
+the complete pair.)
 
-**Candidate tier** (filter: leans on semantics already in the markup,
-needs zero expressions, or one of our examples already hand-wrote it):
+**Candidate tier** (filter: leans on semantics already in the
+markup, needs zero expressions, or one of our examples already
+hand-wrote it):
 
 | Affordance | Goes on | Does |
 |---|---|---|
@@ -1617,9 +1348,13 @@ Four of these were already paid for by hand: the chat transcript's
 `ResizeObserver` pinning (`data-scroll`), the notes save/delete flows
 (`data-indicator`, `data-confirm`), the notes search field
 (`data-bind` + `data-autosubmit` — currently a client component whose
-whole job is "input writes a query param, debounced"). The composition
-is the pitch: `data-bind` plus a server component keyed by that param
-is live search with zero client components.
+whole job is "input writes a query param, debounced"). The
+composition is the pitch: `data-bind` plus a server component keyed
+by that param is live search with zero client components. Note the
+overlap with ref props is real but shallow: where a component
+contract exists, the copy button is better as a ref prop (typed, no
+attribute vocabulary); `data-copy` earns its place inside markdown
+holes and post-processed content.
 
 **Positioning.** The tier is htmx's affordance lineage
 (request-lifecycle dressing: confirm/indicator/trigger), not
@@ -1631,24 +1366,22 @@ What we take from Datastar is architectural — morph-surviving
 attachment as a first-class contract, which htmx historically bolts
 on. One line: htmx's affordance tier, on Datastar's morph-survival
 discipline, under Solid's rule that expressions live in JSX. The
-escape hatch up from the tier is a component, never an attribute
-expression.
+escape hatch up from the tier is a ref prop, then a component —
+never an attribute expression.
 
-**The state contract, revised 2026-08-14.** Spec/native built-ins should
-remain transport- or DOM-local: submit, navigate, confirm, busy,
-open/closed, focus, scroll, a URL param. The *primitive* is not so
-limited. Claim sweeps already run under the client owner associated
-with the frame boundary, so a user-defined claim may resolve the
-nearest client context and invoke a named capability or reactively
-reflect its state. The markup still carries data, never expressions or
-serialized closures; the provider is the local authority boundary.
-Client components wrapping the insertion point and claimed
-server-authored elements can therefore be two front doors into the
-same mutation interface. Stage 6's frame handle (`predict` + `refs`)
-is the natural writable capability such a context may expose, but
-claims do not require it — and Stage 6 already consumes the claim
-engine internally for its ref index and overlay re-assertion (see
-§9.1), so Stage 7 opens a seam that by then has three consumers.
+**The state contract (2026-08-14, unchanged).** Spec/native
+built-ins should remain transport- or DOM-local: submit, navigate,
+confirm, busy, open/closed, focus, scroll, a URL param. The
+*primitive* is not so limited. Claim sweeps already run under the
+client owner associated with the frame boundary, so a user-defined
+claim may resolve the nearest client context and invoke a named
+capability or reactively reflect its state. The markup still carries
+data, never expressions or serialized closures; the provider is the
+local authority boundary. Client components wrapping the insertion
+point and claimed server-authored elements can therefore be two
+front doors into the same mutation interface. Stage 7's draft
+machinery is the natural writable capability such a context may
+expose, but claims do not require it.
 
 **Tier policy option (2026-08-13): spec'd-only built-ins.** Possibly
 the only *shipped* affordances are ones the platform has spec'd or
@@ -1666,7 +1399,9 @@ almost nothing today, loose reading tracks moving drafts. Spectrum to
 decide at build time, not before stable (the substrate is identical
 across all three): (a) spec'd-only + recipes, (b) spec'd built-ins +
 a blessed-recipes package that is explicitly non-contract, (c) the
-invented tier. Packaging posture only.
+invented tier. Packaging posture only. Ref props soften every cost
+here: the flagship compositions can also ship as typed helper
+components/props with no attribute vocabulary at all.
 
 **Native alignment rule.** The htmx-adjacent platform proposals
 (Triptych's button `action`/`method`, invoker `command`/`commandfor`
@@ -1681,25 +1416,26 @@ is deleting one registration. The exchange itself (partial
 replacement, Triptych's biggest ask) is *not* affordance-tier — frame
 streams and morphs already own it and do more.
 
-**RC-freeze compatibility (2026-08-13).** The claim trio is frozen
-public API — `@solidjs/web`'s client entry wholesale re-exports the
-runtime client, so `registerElementClaim`/`claimElement`/
-`claimElementTree` and their semantics (handlers observe the
-navigation-relevant set: `a[href]`, `form[action]`) are in the RC
-contract, with the router's `setupLinkClaims` as a live consumer. The
-generalization is additive *only if* one line holds: attribute-keyed
-claims route through their own per-attribute handler lists — the
-existing `registerElementClaim` broadcast channel must NOT widen to
-observe attribute-claimed elements, or every frozen-API consumer
-starts receiving element kinds the contract never promised. Likewise
-the `CLAIM_SEAM` registered symbol (a flat handler array shared across
+**RC-freeze compatibility (2026-08-13, unchanged).** The claim trio
+is frozen public API — `@solidjs/web`'s client entry wholesale
+re-exports the runtime client, so `registerElementClaim`/
+`claimElement`/`claimElementTree` and their semantics (handlers
+observe the navigation-relevant set: `a[href]`, `form[action]`) are
+in the RC contract, with the router's `setupLinkClaims` as a live
+consumer. The generalization is additive *only if* one line holds:
+attribute-keyed claims (and the internal ref-marker claim) route
+through their own per-attribute handler lists — the existing
+`registerElementClaim` broadcast channel must NOT widen to observe
+attribute-claimed elements, or every frozen-API consumer starts
+receiving element kinds the contract never promised. Likewise the
+`CLAIM_SEAM` registered symbol (a flat handler array shared across
 separately bundled — potentially differently versioned — runtime
 copies) keeps its shape; attribute-keyed registration hangs off a
 second registered symbol.
 
 **Decide before stable (2026-08-13; the seam is movable during RC,
 frozen after).** Two decisions harden at stable; everything else in
-this sketch is provably additive later:
+this section is provably additive later:
 
 1. *The navigation element set.* `a[href], form[action]` is baked into
    the frozen channel's semantics — consumer filters are written
@@ -1716,17 +1452,240 @@ this sketch is provably additive later:
    claims living on a second registered symbol (zero RC churn — the
    recorded lean).
 
-Explicitly additive later, no RC action: attribute-keyed registration
-(new function, own routing), the affordance tier (new entry), a
-trailing metadata parameter on handlers (creation vs sweep vs
-morph-touch phase), and `claimElement`/`claimElementTree` (compiler
-output contract, version-paired, unchanged regardless).
+**What died here (2026-08-18):** `$ref` and `frame.refs` as author
+surface (the marker/index machinery survives as the internal claim
+that resolves ref-prop coordinates); ref-only `Frame` acquisition
+for behavior purposes; `Portal` as the sanctioned mechanism for
+client content inside server markup (a ref-prop callback with
+`insert` covers it, owner-correct); `$seam` was already dead. `$key`
+is untouched — morph-only identity, no client-facing role.
 
-**Open questions:** exact attribute namespace and sweep cost; packaging
-(which entry ships the tier so it stays tree-shakeable); the re-claim
-dedupe contract (element-keyed WeakSet per consumer is the obvious
-shape); how `data-bind` discovers the router without a hard
-dependency.
+**Open questions.** Marker encoding final form (one packed attribute
+vs per-binding); the ref callback's cleanup contract (returned
+cleanup vs ambient `onCleanup` — lean: both, matching client refs);
+whether event sugar ships in the same compiler round or the next;
+exact attribute namespace and sweep cost for open claims; packaging
+(which entry ships the affordance tier so it stays tree-shakeable);
+the re-claim dedupe contract (element-keyed WeakSet per consumer is
+the obvious shape); how `data-bind` discovers the router without a
+hard dependency.
+
+### 9.2 Stage 7 design — optimistic drafts (revised 2026-08-18; supersedes overlays + optimistic entries)
+
+Third form of this design, and the supersession chain is the story:
+the 2026-08-14 seed was a walkable transactional draft
+(`frame.update(draft => ...)`); 2026-08-15/16 killed it for overlays
+(`frame.predict`) plus entry portals, on the argument that a
+draft-authored node must mirror server markup to be a coherent
+prediction; 2026-08-18 the draft returns — imperative, reshaped so
+the mirror argument no longer applies — and the overlay/portal
+surface retires. The trigger was authoring weight (portal +
+optimistic store + a row component authored isomorphically or twice,
+versus a colocated snippet; client JSX works as a plain node literal
+inside an imperative body) plus a mechanical realization: a draft
+that *re-runs against fresh authoritative DOM after every apply* is
+an overlay with an imperative body — the same GGPO discipline, none
+of the recipe/replay machinery that killed the 08-14 form. What the
+08-16 pass got right survives below unchanged: the derived frame,
+the transaction wave, morph-as-correction, address scoping, and the
+`_key` substrate. What it got wrong was concluding that structural
+prediction needs a *declarative* surface to stay honest —
+re-running from authoritative truth is what keeps it honest; the
+vocabulary can be imperative. And its own core judgment stands: a
+draft must never *pretend to be* the authoritative row. The 08-18
+form makes that structural — drafts are display-only placeholders
+(below), so the "silently rots as server markup evolves" failure
+mode has nothing to rot against.
+
+**The correspondence (unchanged).** A frame is always a derived,
+readonly projection:
+
+```text
+derived optimistic store          frame
+────────────────────────          ─────
+authoritative derived source      resident frame records
+transaction-local prediction      draft
+source recompute                  authoritative frame write
+store reconciliation              authoritative restore + draft replay
+```
+
+There is no locally writable authoritative base: a draft's output
+becomes durable only when server output independently contains it.
+On settlement the frame always reconciles from its current records —
+success keeps the outcome because those records advanced; failure
+removes it because they did not.
+
+**Optimism is the write's type (unchanged).** Under single-writer
+discipline the server owns frame markup, so a client statement about
+that markup is definitionally a *prediction*. Transaction scoping is
+what keeps the frame derived under that discipline: drafts are held
+intent composed over the record, so any authoritative apply —
+including one triggered by a *different* concurrent transaction —
+re-derives `record + still-active drafts` instead of client writes
+stomping server truth or being stomped by it. There is no
+inverse-patch log; the authoritative record *is* the rollback state.
+Datastar asks authors to manually undo client state on failure; here
+rollback and re-application are the same operation — recompute the
+derivation with one input removed. Concurrent transactions clear
+independently: when A settles while B is still active, the frame
+restores the latest authoritative records, drops A's drafts, and
+replays B's — per-lane intent, not inverse DOM patches.
+
+**The primitive.** One verb, transaction-registered:
+
+```tsx
+// client
+const send = action(async function* (text: string) {
+  update(() => {
+    list()?.append(
+      <li class="pending"><p>{text}</p><small>Sending…</small></li>
+    );
+  });
+  yield* sendComment(text);
+});
+
+<Comments list={setList} />   // a Stage 6 ref prop doubles as the anchor
+
+// server
+function Comments(props) {
+  return <ul ref={props.list}>{/* authoritative rows */}</ul>;
+}
+```
+
+Semantics:
+
+- **Same transaction wave.** A draft registers in the current batch
+  like an optimistic store write — visible immediately, adopted into
+  the action transition when that batch becomes one, disposed at
+  settlement. Frames stay the third optimistic participant beside
+  signals and stores; this is not an action-only mode.
+- **Re-runnable — the GGPO loop.** After every authoritative apply
+  that intersects a draft (morph, hole update, attribute record),
+  the engine restores the affected regions from retained
+  authoritative records and replays surviving drafts in transaction
+  start order. Every run starts from fresh authoritative DOM, which
+  makes appends naturally idempotent and stale-handle bugs
+  structurally unreachable. Restoration is re-derivation, not
+  inverse rollback: server snapshots are ground truth, drafts are
+  replayed predictions.
+- **Anchored by ref props, captured in closure.** No `querySelector`
+  coupling to server markup shape, and no frame handle: the anchor
+  elements a draft touches define its re-run scope, so `update()`
+  needs no frame argument. It belongs to the action/optimistic
+  machinery in solid, not to a handle in dom-expressions.
+- **JSX is a node literal.** Each run executes under a per-run
+  disposable root: static JSX is `cloneNode`, expression holes get
+  effects that dispose before the next run. Drafts are NOT
+  signal-reactive — they re-run on authoritative applies, not on
+  client signal changes; per-run evaluation reads current values and
+  that is the entire reactivity story, by design. (This resolves the
+  "what does client JSX compile to without an owner" objection that
+  killed JSX-in-draft on first look.)
+- **Display-only, as a hard documented line.** Re-runs recreate
+  nodes, so interactive content inside a draft (an input holding
+  focus and half-typed text) loses state on any intersecting apply.
+  Anything interactive during a pending transaction is a real client
+  component — mounted through a Stage 6 ref callback if it must live
+  inside server markup. Keyed adoption (a temp-key protocol
+  transferring a live draft node into authoritative ownership for
+  perfect DOM continuity) remains the designed escalation,
+  deliberately deferred — nothing in the acceptance gate requires
+  it.
+
+**The settle race, answered by single-flight.** Does the "Sending…"
+row coexist with the confirmed row? Under single-flight, no: the
+confirming morph and the transaction settling are the same event, so
+the draft disposes in the tick its prediction comes true. The race
+exists only when an out-of-band refresh lands mid-transaction with
+the row already committed — then the author dedupes (the draft runs
+against real authoritative DOM and can check it; this is the
+jQuery-era honesty being signed up for) or accepts a transient
+duplicate. Entity-keyed overlays solved this by construction; the
+imperative form trades it for authoring freedom, and the trade is
+acceptable *because it is stated*. Stage 8's separate connection
+needs the causal watermark (§9.3) before this guarantee transfers.
+
+**In-flight streaming (unchanged rule).** Authoritative updates do
+not wait for optimism: every incoming chunk first advances the
+authoritative records, the morph applies them, and drafts replay on
+the result. `latest records + still-active drafts = visible DOM`.
+No whole-frame draft materialization exists at any point; the
+streaming path keeps today's direct apply.
+
+**Address-scoped (unchanged decision, restated for drafts).** A
+draft belongs to the content addresses of the elements it anchors,
+captured at registration — the DR-1 answer. Rebinding a mount to a
+new address never carries the old call's draft (markup predicted for
+one render must not graft onto a different render); rebinding back
+while the transaction is still active restores it; two mounts of one
+address replay the same draft. The tier's honest boundary line
+stands: **predictions do not span addresses.** An optimistic row
+under `getTodos("all")`'s list does not appear in
+`getTodos("active")`, though the server would reflect it in both —
+the frame layer holds markup, not data. When optimism must span
+multiple server renders, it is data-shaped and belongs in a client
+store/projection. Site-local state — focus, selection, an open menu
+— was never prediction state; it stays with components and Stage 6
+behavior.
+
+**Shipped substrate (2026-08-15, `keyed-morph`) — unchanged.** Keyed
+element matching landed in the morph: `compatible()` requires equal
+`_key`, so the relocation lookahead moves a keyed node into position
+instead of rewriting positions, and live element state — typed
+`value`, `checked`, `open`, focus — follows the *entity* across
+reordering morphs. Sibling-scoped, matching client `For` semantics.
+This shipped independently (it corrected a live defect) and is what
+makes draft anchors coherent across reorders: the ref-prop element a
+draft captured rides the node `_key` matching preserves.
+
+**Package boundary.** dom-expressions owns restore-and-replay: the
+apply pipeline exposes "an authoritative apply landed here" plus the
+retained records to restore from, and the ref-marker claim supplies
+anchors (Stage 6). solid-web binds draft registration to Solid's
+transaction machinery and owns the per-run roots. Today's
+single-flight response applies authoritative records before
+transaction settlement, which the race answer above relies on.
+
+**Open questions.**
+
+- Does a declarative element-in-hand patch form (`predict(el,
+  {checked: true})`) survive as sugar over drafts? The 08-16
+  "claims predict too" resolution reduces to a one-line draft now
+  (`update(() => { el.checked = true })` replays identically). Lean:
+  not in v1; add it if the TodoMVC port shows patch-shaped drafts
+  dominating and the sugar earns its bytes.
+- `update()`'s name and home — it parallels optimistic-store writes
+  more than anything frame-shaped; naming should say
+  transaction-scoped, not frame-scoped.
+- The intersect definition: which applies trigger which drafts —
+  anchor-containing regions only, or any apply to the anchor's
+  address. Start coarse (address), tighten if replay cost shows up.
+- Whether draft replay rides the claim sweep (one engine, Stage 6's
+  third internal consumer) or hooks the apply pipeline directly.
+
+**Acceptance gate — Server Component TodoMVC (restated for
+drafts).** Port the existing `examples/todos` beside itself,
+preserving its delays, ~33% write failure, per-item retry, bulk
+actions, filters, and overlapping transitions. The existing app is
+the derived `createOptimisticStore` reference implementation; the
+port replaces its authoritative data/render with server-component
+markup plus drafts. Pass condition: **every optimistic behavior
+lands in drafts anchored by ref props, or in data-shaped client
+state — zero selector coupling to server markup, zero vocabulary
+beyond JSX and imperative DOM against elements in hand.**
+Toggle/pending/disabled/error markup and the optimistic add row are
+drafts; counters and filter state are data-shaped (slot args /
+client signals). Do not publish the API until add/remove/toggle
+success and failure, checkbox correction, concurrent and bulk
+mutations, retry/error markup, state retention across reordering
+morphs (the `_key` substrate: focus, typed values), and clean
+hydration all work. The decision criterion beyond correctness is
+simplicity parity: if the port relocates the current store's
+simplicity into draft bookkeeping, the abstraction fails.
+
+**Non-negotiable invariant (unchanged):** the frame itself remains
+derived. Drafts may temporarily perturb its rendered projection, but
+only an authoritative frame record can make that output durable.
 
 ### 9.3 Stage 8 seed — connection-shaped transport (2026-08-17)
 
