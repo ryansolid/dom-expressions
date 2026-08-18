@@ -777,10 +777,9 @@ re-render it (A1, A2). The blessed pattern: optimistic state lives in client slo
 itself settles when the mutation's single-flight response morphs it. The transport
 guarantees the two compose: a slot's optimistic state survives the settling morph
 (A7), so the overlay never flickers. (Stage 7 refines, not repeals, this line:
-transaction-scoped drafts may temporarily perturb server-rendered DOM as
-*predictions*, replayed over every authoritative apply and evaporating at
-settlement — the invariant that only server records make output durable stands.
-See §9.2.)
+transaction-scoped predictions may temporarily perturb server-rendered DOM,
+re-asserted over every authoritative apply and evaporating at settlement — the
+invariant that only server records make output durable stands. See §9.2.)
 
 ### 5.8 Producer-side symmetry
 
@@ -1006,21 +1005,22 @@ retired as a pole and survives only as potential authoring sugar.
    and event wiring / third-party mounts / observers justify it
    standalone. Retires `$ref`/`frame.refs` as author surface. See
    §9.1.
-7. **Stage 7 — Optimistic drafts.** **Design revised 2026-08-18
-   (supersedes overlays + entries, which superseded the 08-14
-   transactional draft — the draft returns imperative, anchored by
-   Stage 6 ref props).** One primitive: a transaction-scoped
-   re-runnable draft — imperative DOM edits (plain JSX as node
-   literals under per-run disposable roots) against fresh
-   authoritative DOM, replayed after every intersecting
-   authoritative apply, disposed at settlement. Reset is
-   re-derivation (retained authoritative records + surviving
-   drafts), never inverse patches. Display-only by contract;
-   interactive optimistic UI is a client component. `frame.predict`,
-   entry portals, and the frame handle itself retire as author
-   surface; keyed adoption stays the deferred continuity
-   escalation. Substrate shipped 2026-08-15: keyed element matching
-   in the morph (`$key` → `_key`). See §9.2.
+7. **Stage 7 — Predictions.** **Design settled 2026-08-18 after a
+   same-night four-shape search (§9.2's decision record): one
+   declarative verb.** `predict(anchor, patch)` — transaction-scoped
+   claims about server markup, anchored by elements in hand (Stage 6
+   event/ref props; no names, no frame handle). The patch vocabulary
+   is JSX attribute semantics (per-key baselines captured at apply,
+   re-asserted over authoritative applies via the claim sweep,
+   baseline-restored at settlement) plus four relational content
+   keys — `before`/`prepend`/`append`/`after` — whose JSX renders
+   under a transaction-scoped owner into foreign ranges the morph
+   flows around; removal is their entire undo. No snapshots
+   anywhere; `children` replacement is excluded by that rule.
+   Content-key nodes persist across morphs, so predicted content may
+   be interactive — the old display-only caveat is repealed.
+   Substrate shipped 2026-08-15: keyed element matching in the morph
+   (`$key` → `_key`). See §9.2.
 8. **Stage 8 — Connection-shaped transport.** Promoted from parked: the
    sink-lifetime separation means SSE/socket transports turn the same
    authored component non-terminating (generator-only-model.md §9,
@@ -1039,7 +1039,7 @@ now *precedes* optimism — it is dependency-shallow (a compiler round
 plus the existing claim engine; no solid-core or transaction changes)
 and carries standalone value (event wiring, third-party mounts, the
 chat demo's copy button). Stage 7 consumes Stage 6's anchors and its
-replay rides the same sweep. Stage 8 is independent afterward; it
+re-assertion rides the same sweep. Stage 8 is independent afterward; it
 must eventually add causal settlement (a mutation's transaction
 remains open until the separate connection has applied its
 authoritative frame version), but Stage 7 is first proved against
@@ -1158,9 +1158,13 @@ stands alone: event wiring; third-party mounts (chart/editor/map
 libraries that want a DOM node, which server markup could never host
 before); observers and measurement (`IntersectionObserver`,
 `ResizeObserver`, focus management, scroll anchoring); persistent
-client islands (`insert(el, () => <Widget/>)` inside the callback —
-the `Portal` replacement for client content living inside server
-markup, with morph re-assertion re-mounting it). At the limit a
+client islands — client content living inside server markup mounts
+through a real mount site fed by the ref prop (a `Portal` whose
+`mount` is a ref-delivered signal, re-targeting when the claim
+re-fires), NOT by hand-rolling `insert` inside the callback: a claim
+callback is behavior attachment, not a mount, and it re-fires
+(corrected 2026-08-18 — transaction-scoped optimistic content has
+its own, lighter path: §9.2's content keys). At the limit a
 client component is **pure behavior**: no markup of its own, a bag
 of functions handed to a server component — the server owns
 structure, the client owns interaction. That is the resolved form of
@@ -1379,9 +1383,9 @@ capability or reactively reflect its state. The markup still carries
 data, never expressions or serialized closures; the provider is the
 local authority boundary. Client components wrapping the insertion
 point and claimed server-authored elements can therefore be two
-front doors into the same mutation interface. Stage 7's draft
-machinery is the natural writable capability such a context may
-expose, but claims do not require it.
+front doors into the same mutation interface. Stage 7's `predict`
+is the natural writable capability such a context may expose, but
+claims do not require it.
 
 **Tier policy option (2026-08-13): spec'd-only built-ins.** Possibly
 the only *shipped* affordances are ones the platform has spec'd or
@@ -1455,10 +1459,12 @@ this section is provably additive later:
 **What died here (2026-08-18):** `$ref` and `frame.refs` as author
 surface (the marker/index machinery survives as the internal claim
 that resolves ref-prop coordinates); ref-only `Frame` acquisition
-for behavior purposes; `Portal` as the sanctioned mechanism for
-client content inside server markup (a ref-prop callback with
-`insert` covers it, owner-correct); `$seam` was already dead. `$key`
-is untouched — morph-only identity, no client-facing role.
+for behavior purposes; `$seam` was already dead. `Portal` did NOT
+die — what died is its *addressing* (names through a frame index):
+persistent islands still mount through it, fed by a ref-prop signal,
+because a mount needs an owner, lifecycle, and reactive re-targeting
+that a fire-again claim callback cannot supply. `$key` is untouched
+— morph-only identity, no client-facing role.
 
 **Open questions.** Marker encoding final form (one packed attribute
 vs per-binding); the ref callback's cleanup contract (returned
@@ -1470,222 +1476,269 @@ the re-claim dedupe contract (element-keyed WeakSet per consumer is
 the obvious shape); how `data-bind` discovers the router without a
 hard dependency.
 
-### 9.2 Stage 7 design — optimistic drafts (revised 2026-08-18; supersedes overlays + optimistic entries)
+### 9.2 Stage 7 design — predictions: one declarative verb (settled 2026-08-18; supersedes the imperative-draft revival, overlays + entries, and the transactional draft)
 
-Third form of this design, and the supersession chain is the story:
-the 2026-08-14 seed was a walkable transactional draft
-(`frame.update(draft => ...)`); 2026-08-15/16 killed it for overlays
-(`frame.predict`) plus entry portals, on the argument that a
-draft-authored node must mirror server markup to be a coherent
-prediction; 2026-08-18 the draft returns — imperative, reshaped so
-the mirror argument no longer applies — and the overlay/portal
-surface retires. The trigger was authoring weight (portal +
-optimistic store + a row component authored isomorphically or twice,
-versus a colocated snippet; client JSX works as a plain node literal
-inside an imperative body) plus a mechanical realization: a draft
-that *re-runs against fresh authoritative DOM after every apply* is
-an overlay with an imperative body — the same GGPO discipline, none
-of the recipe/replay machinery that killed the 08-14 form. What the
-08-16 pass got right survives below unchanged: the derived frame,
-the transaction wave, morph-as-correction, address scoping, and the
-`_key` substrate. What it got wrong was concluding that structural
-prediction needs a *declarative* surface to stay honest —
-re-running from authoritative truth is what keeps it honest; the
-vocabulary can be imperative. And its own core judgment stands: a
-draft must never *pretend to be* the authoritative row. The 08-18
-form makes that structural — drafts are display-only placeholders
-(below), so the "silently rots as server markup evolves" failure
-mode has nothing to rot against.
-
-**The correspondence (unchanged).** A frame is always a derived,
-readonly projection:
+Fourth and, by its structure, final form of this design. The
+supersession chain compressed into one night's search once the
+machinery was priced honestly, and the search record is the most
+valuable thing on this page — four shapes were tried, and each wrong
+one died on a *named cost*, which is how we know the survivor is a
+minimum and not a mood:
 
 ```text
-derived optimistic store          frame
-────────────────────────          ─────
-authoritative derived source      resident frame records
-transaction-local prediction      draft
-source recompute                  authoritative frame write
-store reconciliation              authoritative restore + draft replay
+shape                            died on
+─────                            ───────
+imperative draft (mutate + add)  snapshot/restore/replay machinery —
+  (08-14 seed; revived 08-18)    arbitrary mutation of server-owned
+                                 nodes needs prior state; property
+                                 writes are invisible to observation;
+                                 restore must be a morph with property
+                                 overrides. Died twice.
+declarative patch + Portal       ceremony — mount site + optimistic
+  entries (08-16)                store + row authored away from the
+                                 action it predicts for.
+patch + imperative additive      the split — two grammars for one
+  body (08-18, hours)            concept; and a body exists only to
+                                 place nodes, which is four words of
+                                 vocabulary, not a function's worth.
+patch + JSX-valued position      position-as-third-argument grows an
+  argument (08-18, minutes)      hx-swap enum outside the patch.
 ```
 
-There is no locally writable authoritative base: a draft's output
-becomes durable only when server output independently contains it.
-On settlement the frame always reconciles from its current records —
-success keeps the outcome because those records advanced; failure
-removes it because they did not.
-
-**Optimism is the write's type (unchanged).** Under single-writer
-discipline the server owns frame markup, so a client statement about
-that markup is definitionally a *prediction*. Transaction scoping is
-what keeps the frame derived under that discipline: drafts are held
-intent composed over the record, so any authoritative apply —
-including one triggered by a *different* concurrent transaction —
-re-derives `record + still-active drafts` instead of client writes
-stomping server truth or being stomped by it. There is no
-inverse-patch log; the authoritative record *is* the rollback state.
-Datastar asks authors to manually undo client state on failure; here
-rollback and re-application are the same operation — recompute the
-derivation with one input removed. Concurrent transactions clear
-independently: when A settles while B is still active, the frame
-restores the latest authoritative records, drops A's drafts, and
-replays B's — per-lane intent, not inverse DOM patches.
-
-**The primitive.** One verb, transaction-registered:
+The resolution: **placement is only four words, so it fits in the
+patch.** One verb, one declarative shape:
 
 ```tsx
-// client
-const send = action(async function* (text: string) {
-  update(() => {
-    list()?.append(
-      <li class="pending"><p>{text}</p><small>Sending…</small></li>
-    );
-  });
-  yield* sendComment(text);
-});
-
-<Comments list={setList} />   // a Stage 6 ref prop doubles as the anchor
-
-// server
-function Comments(props) {
-  return <ul ref={props.list}>{/* authoritative rows */}</ul>;
-}
+predict(el,   { checked: true });                              // mutation
+predict(list, { append: <li class="pending">{title}</li> });   // creation
+predict(row,  { class: "saving", after: <Spinner /> });        // both, one claim
 ```
 
-Semantics:
+The patch vocabulary is JSX attribute semantics — `class`/
+`classList`, `style` objects, `checked`/`value` as properties,
+`textContent` — **plus four relational content keys**: `before`,
+`prepend`, `append`, `after` (the platform blessed exactly this set:
+they are `insertAdjacentHTML`'s positions). An author who can write
+a Solid attribute expression can write a prediction; nothing outside
+that vocabulary exists to learn.
 
-- **Same transaction wave.** A draft registers in the current batch
-  like an optimistic store write — visible immediately, adopted into
-  the action transition when that batch becomes one, disposed at
-  settlement. Frames stay the third optimistic participant beside
-  signals and stores; this is not an action-only mode.
-- **Re-runnable — the GGPO loop.** After every authoritative apply
-  that intersects a draft (morph, hole update, attribute record),
-  the engine restores the affected regions from retained
-  authoritative records and replays surviving drafts in transaction
-  start order. Every run starts from fresh authoritative DOM, which
-  makes appends naturally idempotent and stale-handle bugs
-  structurally unreachable. Restoration is re-derivation, not
-  inverse rollback: server snapshots are ground truth, drafts are
-  replayed predictions.
-- **Anchored by ref props, captured in closure.** No `querySelector`
-  coupling to server markup shape, and no frame handle: the anchor
-  elements a draft touches define its re-run scope, so `update()`
-  needs no frame argument. It belongs to the action/optimistic
-  machinery in solid, not to a handle in dom-expressions.
-- **JSX is a node literal.** Each run executes under a per-run
-  disposable root: static JSX is `cloneNode`, expression holes get
-  effects that dispose before the next run. Drafts are NOT
-  signal-reactive — they re-run on authoritative applies, not on
-  client signal changes; per-run evaluation reads current values and
-  that is the entire reactivity story, by design. (This resolves the
-  "what does client JSX compile to without an owner" objection that
-  killed JSX-in-draft on first look.)
-- **Display-only, as a hard documented line.** Re-runs recreate
-  nodes, so interactive content inside a draft (an input holding
-  focus and half-typed text) loses state on any intersecting apply.
-  Anything interactive during a pending transaction is a real client
-  component — mounted through a Stage 6 ref callback if it must live
-  inside server markup. Keyed adoption (a temp-key protocol
-  transferring a live draft node into authoritative ownership for
-  perfect DOM continuity) remains the designed escalation,
-  deliberately deferred — nothing in the acceptance gate requires
-  it.
+**Two rollback regimes inside one shape — why this is convergence,
+not compromise.** Every claim a client can make about server markup
+is one of two kinds, and they have different capture problems:
+
+- *Mutation* ("this element will look different"). Rollback needs
+  the prior state, and the only cheap, sound way to get it is for
+  the author to declare which keys they touch — then baselines are
+  bounded and captured per-key at apply time (`el.checked` read
+  before written). This is precisely the data no other mechanism can
+  reach: property writes fire no mutation records, and the morph
+  deliberately preserves `checked`/`value`/`open` on matched nodes,
+  so an undeclared property prediction would survive its own
+  rollback. Declaration IS the rollback data — which is why mutation
+  must be declarative, not why it's prettier.
+- *Creation* ("new content will exist"). Rollback needs no memory at
+  all — removal is the undo — and the engine built the nodes, so
+  tracking is free without observing anything. Content-key JSX
+  renders under a **transaction-scoped owner** into a
+  marker-delimited range at the named position; the morph flows
+  around it as foreign (the same skip slot fills use); settlement
+  disposes the owner and removes the range.
+
+The design invariant that falls out, worth guarding in review: **no
+snapshots anywhere.** Which is also why the vocabulary has a
+deliberate hole — there is no `children` key. Wholesale replacement
+is mutation-shaped (it destroys server-owned content, so its undo
+needs a snapshot). The line, stated for authors: *predictions
+decorate and add; they never remove or rewrite what the server
+rendered.* If a real case ever demands replacement, it is a
+separately priced escalation tier, not a fifth content key.
+
+**Anchors are elements in hand.** No names, no frame handle, no
+index: the element arrives through Stage 6 — an event prop's
+`currentTarget`, a ref prop's delivery — and entity identity travels
+on the element (`data-id`, or the `_key` already present for the
+morph). Per-entity ref naming schemes (`$ref={`check:${id}`}`)
+dissolve entirely; the only ref props left are containers and
+singletons, which retires the old "ref-name volume at HN scale"
+wobble. The `_key` substrate is what makes an element pointer a
+stable anchor: keyed matching preserves the node across reordering
+morphs, so the common case never re-targets. Wholesale replacement
+of an anchor is the uncommon case, and the claim engine's re-fire on
+the replacement element is the re-target hook — attribute keys
+re-baseline and re-apply; content ranges re-mount at their named
+position.
+
+**Same transaction wave (unchanged).** A prediction registers in the
+current batch like an optimistic store write — visible immediately,
+adopted into the action transition when that batch becomes one,
+evaporating at settlement. Frames stay the third optimistic
+participant beside signals and stores. Success and failure are one
+code path: on success the settling morph's records already contain
+the predicted state (attribute baselines are written back into
+markup that now agrees; the authoritative row stands where the
+pending range vanished); on failure the records did not advance and
+the same restore/removal exposes them unchanged. Concurrent
+transactions clear independently — A settling restores A's baselines
+and removes A's ranges; B's predictions stand. Per-lane intent, no
+inverse DOM patches.
+
+**Re-assertion rides the claim sweep.** After every authoritative
+apply that touches a predicted element — morph, hole update,
+attribute record — attribute-key predictions re-capture baselines
+from the fresh authoritative state and re-apply, so server updates
+land *under* still-active predictions instead of erasing them.
+Content ranges don't re-assert at all in the common case: they are
+persistent foreign ranges the apply pipeline flows around. Which
+repeals the old display-only caveat for them — the nodes are never
+recreated, they have a real owner, so content inside a prediction
+may be genuinely interactive (pending styling with live bindings, a
+retry button that works).
 
 **The settle race, answered by single-flight.** Does the "Sending…"
 row coexist with the confirmed row? Under single-flight, no: the
 confirming morph and the transaction settling are the same event, so
-the draft disposes in the tick its prediction comes true. The race
+the range is removed in the tick its prediction comes true. The race
 exists only when an out-of-band refresh lands mid-transaction with
-the row already committed — then the author dedupes (the draft runs
-against real authoritative DOM and can check it; this is the
-jQuery-era honesty being signed up for) or accepts a transient
-duplicate. Entity-keyed overlays solved this by construction; the
-imperative form trades it for authoring freedom, and the trade is
-acceptable *because it is stated*. Stage 8's separate connection
-needs the causal watermark (§9.3) before this guarantee transfers.
+the row already committed — a transient duplicate until settlement.
+Entity-keyed settlement (matching a prediction to the authoritative
+row that fulfills it) is deliberately NOT mechanism — it was the
+overlay model's answer, and it required naming schemes this design
+just deleted. Accepted, because it is stated. Stage 8's separate
+connection needs the causal watermark (§9.3) before the single-flight
+guarantee transfers.
 
 **In-flight streaming (unchanged rule).** Authoritative updates do
 not wait for optimism: every incoming chunk first advances the
-authoritative records, the morph applies them, and drafts replay on
-the result. `latest records + still-active drafts = visible DOM`.
-No whole-frame draft materialization exists at any point; the
-streaming path keeps today's direct apply.
+authoritative records, the morph applies them (flowing around
+prediction ranges), attribute-key predictions re-assert on the
+result. `latest records + still-active predictions = visible DOM`.
+One honest note on geometry: a prediction range parked *between*
+authoritative siblings floats — it keeps its approximate position
+(before its next surviving authoritative sibling) as the morph
+inserts and reorders around it, not a guaranteed slot. Position-by-
+DOM instead of position-by-model; for pending-row UX, the right
+trade.
 
-**Address-scoped (unchanged decision, restated for drafts).** A
-draft belongs to the content addresses of the elements it anchors,
-captured at registration — the DR-1 answer. Rebinding a mount to a
-new address never carries the old call's draft (markup predicted for
-one render must not graft onto a different render); rebinding back
-while the transaction is still active restores it; two mounts of one
-address replay the same draft. The tier's honest boundary line
-stands: **predictions do not span addresses.** An optimistic row
-under `getTodos("all")`'s list does not appear in
-`getTodos("active")`, though the server would reflect it in both —
-the frame layer holds markup, not data. When optimism must span
-multiple server renders, it is data-shaped and belongs in a client
-store/projection. Site-local state — focus, selection, an open menu
-— was never prediction state; it stays with components and Stage 6
-behavior.
+**Address-scoped (unchanged decision).** A prediction belongs to the
+content address of its anchor, captured at write time — the DR-1
+answer. Rebinding a mount to a new address never carries the old
+call's predictions; rebinding back while the transaction is active
+restores them; two mounts of one address show the same prediction.
+The tier's honest boundary line stands: **predictions do not span
+addresses.** An optimistic toggle against `getTodos("all")` does not
+appear in `getTodos("active")`, though the server would reflect it
+in both — the frame layer holds markup, not data. When optimism must
+span multiple server renders or outlive a transaction, it is
+data-shaped and belongs in a client store/projection (rendered, if
+it must live inside server markup, through a ref-fed `Portal` — the
+persistent-island path in §9.1, which remains available and simply
+stops being the blessed path for transaction-scoped optimism).
+Site-local state — focus, selection, an open menu — was never
+prediction state; it stays with components and Stage 6 behavior.
+
+**The worked case — TodoMVC add + toggle:**
+
+```tsx
+// ── server ("use server" component) ──────────────────────────
+function Todos(props) {
+  const todos = getTodos();
+  return (
+    <ul class="todo-list" ref={props.list}>
+      <For each={todos}>{t => (
+        <li $key={t.id} class={t.completed ? "completed" : ""}>
+          <input type="checkbox" checked={t.completed}
+                 data-id={t.id} onChange={props.onToggle} />
+          <label>{t.title}</label>
+        </li>
+      )}</For>
+    </ul>
+  );
+}
+
+// ── client ───────────────────────────────────────────────────
+const add = action(async (title: string) => {
+  predict(list(), { append: <li class="pending">{title} <small>Sending…</small></li> });
+  await createTodo(title);
+});
+
+const toggle = action(async (el: HTMLInputElement, completed: boolean) => {
+  predict(el, { checked: completed });
+  await toggleTodo(el.getAttribute("data-id"), completed);
+});
+
+<Todos list={setList}
+       onToggle={e => toggle(e.currentTarget, e.currentTarget.checked)} />;
+```
+
+The optimistic row is one line inside the action it predicts for —
+the colocation the imperative draft was chasing — and it makes no
+attempt to mirror the server row (deliberately pending-styled), so
+the "client fork that rots" failure mode has nothing to bite.
 
 **Shipped substrate (2026-08-15, `keyed-morph`) — unchanged.** Keyed
-element matching landed in the morph: `compatible()` requires equal
-`_key`, so the relocation lookahead moves a keyed node into position
-instead of rewriting positions, and live element state — typed
-`value`, `checked`, `open`, focus — follows the *entity* across
-reordering morphs. Sibling-scoped, matching client `For` semantics.
-This shipped independently (it corrected a live defect) and is what
-makes draft anchors coherent across reorders: the ref-prop element a
-draft captured rides the node `_key` matching preserves.
+element matching in the morph: `compatible()` requires equal `_key`,
+so live element state — typed `value`, `checked`, `open`, focus —
+follows the *entity* across reordering morphs. Shipped independently
+(it corrected a live defect); here it is what makes element-in-hand
+anchors stable and what keeps a prediction on the node it was made
+about.
 
-**Package boundary.** dom-expressions owns restore-and-replay: the
-apply pipeline exposes "an authoritative apply landed here" plus the
-retained records to restore from, and the ref-marker claim supplies
-anchors (Stage 6). solid-web binds draft registration to Solid's
-transaction machinery and owns the per-run roots. Today's
-single-flight response applies authoritative records before
-transaction settlement, which the race answer above relies on.
+**Machinery ledger (the argument that settled the shape).** Net-new
+engine code, all in known territory: the patch applier is the JSX
+binding logic `spread`/`assign` already contain, wrapped with
+per-key baseline capture; content keys are the fill machinery
+(marker ranges, foreign skip — shipped) plus a transaction-scoped
+`createRoot`; re-assertion and re-targeting are consumers of the
+Stage 6 claim sweep; settlement hooks into the transaction machinery
+solid already runs. Nothing from the imperative draft's expensive
+tier — snapshots, restore-morph with property overrides, replay-wave
+scheduling, per-run disposable roots, mutation capture — survives as
+a requirement. dom-expressions owns the applier, ranges, and sweep
+consumers; solid-web binds registration to Solid's transactions.
 
 **Open questions.**
 
-- Does a declarative element-in-hand patch form (`predict(el,
-  {checked: true})`) survive as sugar over drafts? The 08-16
-  "claims predict too" resolution reduces to a one-line draft now
-  (`update(() => { el.checked = true })` replays identically). Lean:
-  not in v1; add it if the TodoMVC port shows patch-shaped drafts
-  dominating and the sugar earns its bytes.
-- `update()`'s name and home — it parallels optimistic-store writes
-  more than anything frame-shaped; naming should say
-  transaction-scoped, not frame-scoped.
-- The intersect definition: which applies trigger which drafts —
-  anchor-containing regions only, or any apply to the anchor's
-  address. Start coarse (address), tighten if replay cost shows up.
-- Whether draft replay rides the claim sweep (one engine, Stage 6's
-  third internal consumer) or hooks the apply pipeline directly.
+- Pre-materialization predictions: `predict` against an anchor whose
+  frame hasn't adopted yet (queue until the claim delivers the
+  element, or no-op with a dev warning). Lean: queue — actions can
+  legitimately race adoption at t=0.
+- Content-key naming: `before`/`prepend`/`append`/`after` vs the
+  platform's `beforebegin`/`afterbegin`/`beforeend`/`afterend`.
+  Lean: ours read better and map 1:1; document the mapping.
+- The floating-range geometry above: whether "before next surviving
+  authoritative sibling" is stated contract or implementation
+  detail.
+- Whether repeated `predict` calls on one anchor in one transaction
+  merge (last-write-wins per key) or stack. Lean: merge per key —
+  matches how authors think about "the predicted state."
+- Dev-mode enforcement surface for the discipline line (warn on
+  imperative writes to server-owned attributes from claim/action
+  scopes).
 
-**Acceptance gate — Server Component TodoMVC (restated for
-drafts).** Port the existing `examples/todos` beside itself,
-preserving its delays, ~33% write failure, per-item retry, bulk
-actions, filters, and overlapping transitions. The existing app is
-the derived `createOptimisticStore` reference implementation; the
-port replaces its authoritative data/render with server-component
-markup plus drafts. Pass condition: **every optimistic behavior
-lands in drafts anchored by ref props, or in data-shaped client
-state — zero selector coupling to server markup, zero vocabulary
-beyond JSX and imperative DOM against elements in hand.**
-Toggle/pending/disabled/error markup and the optimistic add row are
-drafts; counters and filter state are data-shaped (slot args /
+**Acceptance gate — Server Component TodoMVC (restated).** Port the
+existing `examples/todos` beside itself, preserving its delays, ~33%
+write failure, per-item retry, bulk actions, filters, and
+overlapping transitions. The existing app is the derived
+`createOptimisticStore` reference implementation; the port replaces
+its authoritative data/render with server-component markup plus
+predictions. Pass condition: **every optimistic behavior lands in
+`predict` patches (attribute or content keys) or in data-shaped
+client state — zero imperative DOM writes, zero selector coupling,
+zero vocabulary beyond JSX attributes and four position words.**
+Toggle/pending/disabled/error markup are attribute keys; add is a
+content key; counters and filter state are data-shaped (slot args /
 client signals). Do not publish the API until add/remove/toggle
 success and failure, checkbox correction, concurrent and bulk
 mutations, retry/error markup, state retention across reordering
 morphs (the `_key` substrate: focus, typed values), and clean
 hydration all work. The decision criterion beyond correctness is
 simplicity parity: if the port relocates the current store's
-simplicity into draft bookkeeping, the abstraction fails.
+simplicity into prediction bookkeeping, the abstraction fails.
 
 **Non-negotiable invariant (unchanged):** the frame itself remains
-derived. Drafts may temporarily perturb its rendered projection, but
-only an authoritative frame record can make that output durable.
+derived. Predictions may temporarily perturb its rendered
+projection, but only an authoritative frame record can make that
+output durable.
 
 ### 9.3 Stage 8 seed — connection-shaped transport (2026-08-17)
 
