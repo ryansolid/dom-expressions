@@ -908,7 +908,7 @@ export function renderToString(code, options = {}) {
   serializer.close();
   const head = renderShellHead(headRegistry, nonce, null);
   return assembleDocument(
-    html,
+    resolveSSRSelectValues(html),
     tracking.emittedAssets,
     tracking.inlineStyles,
     scripts.length ? scripts : "",
@@ -1392,7 +1392,11 @@ export function renderToStream(code, options = {}) {
               // The error rides the sink call: the document sink ignores it
               // (its protocol rejects `<key>_fr` via item.resolve below), but
               // transport sinks with no resume protocol need the signal.
-              sink.fragment(key, value !== undefined ? value : " ", { styles, revealGroup, error });
+              sink.fragment(key, resolveSSRSelectValues(value !== undefined ? value : " "), {
+                styles,
+                revealGroup,
+                error
+              });
               item.resolve(error);
             }
           }
@@ -1488,7 +1492,7 @@ export function renderToStream(code, options = {}) {
     // Shell head flush: commits every registration not owned by a
     // still-pending fragment (those flush with their fragment later).
     const head = renderShellHead(headRegistry, nonce, k => registry.has(k));
-    sink.shell(html, {
+    sink.shell(resolveSSRSelectValues(html), {
       preloads: tracking.emittedAssets,
       inlineStyles: tracking.inlineStyles,
       tasks,
@@ -2682,6 +2686,146 @@ export function ssrAttribute(key, value) {
 export function ssrHydrationKey() {
   const hk = getHydrationKey();
   return hk ? ` _hk=${hk}` : "";
+}
+
+// --- <select value> resolution (solidjs/solid#3013) ---------------------------
+//
+// HTML defines no `value` attribute for <select>: a browser's initial
+// selection comes from `selected` on an <option>. The compiler (and the
+// runtime spread path) emit the bound value as a `value` attribute in the
+// markup; this flush-time pass resolves it into `selected` on the matching
+// option(s) and strips the attribute — React SSR parity — so no-JS clients
+// and crawlers see the right selection. Hydration still assigns the `value`
+// property, so JS clients were already correct.
+//
+// String-scan safety: this only ever runs on our own serializer output.
+// `escape(s, true)` guarantees `"` cannot appear inside an attribute value,
+// so a quote-aware tag walk (skip "…" runs, then `>` really ends the tag)
+// is exact — `<` / `>` ARE legal inside attribute values and a naive
+// indexOf would mis-scan on them. Text content has `<` escaped, so between
+// tags only comments (hydration markers) start with `<`. One deliberate
+// blind spot: `multiple` as a word inside a quoted attribute value reads as
+// the multiple attribute, which only matters when the bound value contains
+// a comma. A select split across flush chunks (a Loading boundary inside
+// it) is left untouched: its options stream later as a fragment template
+// and hydration assigns the property.
+
+// Decodes the entities our own escape() produces (attr and content forms).
+function decodeSSREntities(s) {
+  return s.indexOf("&") < 0
+    ? s
+    : s.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&amp;/g, "&");
+}
+
+const SELECT_VALUE_ATTR = /\svalue="([^"]*)"/;
+
+// True end (`>`) of the tag opening at `i`, skipping quoted attribute
+// values. -1 when the tag never closes in this string.
+function tagEnd(html, i) {
+  for (let j = i + 1; j < html.length; j++) {
+    const c = html.charCodeAt(j);
+    if (c === 34) {
+      j = html.indexOf('"', j + 1);
+      if (j < 0) return -1;
+    } else if (c === 62) return j;
+  }
+  return -1;
+}
+
+// Text content of an option starting at `from`, collecting across comment
+// nodes (hydration markers around dynamic text) until a real tag starts.
+function optionText(html, from) {
+  let t = "";
+  let i = from;
+  for (;;) {
+    const lt = html.indexOf("<", i);
+    if (lt < 0) return t + html.slice(i);
+    t += html.slice(i, lt);
+    if (!html.startsWith("<!--", lt)) return t;
+    const ce = html.indexOf("-->", lt);
+    if (ce < 0) return t;
+    i = ce + 3;
+  }
+}
+
+// Whether the tag at `i` is `<name` at a proper name boundary.
+function tagIs(html, i, name) {
+  if (!html.startsWith(name, i + 1)) return false;
+  const c = html.charCodeAt(i + 1 + name.length);
+  return c === 32 || c === 62 || c === 9 || c === 10 || c === 13;
+}
+
+export function resolveSSRSelectValues(html) {
+  if (html.indexOf("<select") < 0) return html;
+  let out = "";
+  let idx = 0; // emitted through idx
+  let sel = null; // active value-carrying select, pending until its close
+  let i = html.indexOf("<");
+  // Text-level tag walk. Between tags `<` is escaped, so every position here
+  // is a real tag or comment start; quote-aware tagEnd keeps in-attribute
+  // `<` / `>` from ever becoming scan positions.
+  while (i >= 0) {
+    let e;
+    if (html.charCodeAt(i + 1) === 33) {
+      // Comment (hydration marker) or bare <!> placeholder.
+      e = html.charCodeAt(i + 2) === 45 ? html.indexOf("-->", i) : html.indexOf(">", i);
+      if (e < 0) break;
+      if (html.charCodeAt(i + 2) === 45) e += 2;
+    } else {
+      e = tagEnd(html, i);
+      if (e < 0) break;
+      if (sel) {
+        // "</select>" exactly: <selectedcontent>'s close also starts "</select".
+        if (html.startsWith("</select>", i)) {
+          // Commit: drop the value attribute, then mark the matched options —
+          // unless an option carried `selected` already (a defaultSelected):
+          // per the forms contract the DEFAULT is the SSR state and the bound
+          // value applies at hydration, exactly like defaultValue + value on
+          // an <input>. A select that never closes in this chunk (a Loading
+          // boundary inside it) never commits and stays byte-identical.
+          out += html.slice(idx, sel.strip) + html.slice(sel.stripEnd, sel.body);
+          let seg = sel.body;
+          if (!sel.defaulted) {
+            for (let k = 0; k < sel.marks.length; k++) {
+              out += html.slice(seg, sel.marks[k]) + " selected";
+              seg = sel.marks[k];
+            }
+          }
+          out += html.slice(seg, i);
+          idx = i;
+          sel = null;
+        } else if (tagIs(html, i, "option")) {
+          const attrs = html.slice(i + 7, e);
+          if (/\sselected(?=[\s=]|$)/.test(attrs)) sel.defaulted = true;
+          else {
+            const vm = SELECT_VALUE_ATTR.exec(attrs);
+            // Spec: no value attribute → text content, whitespace collapsed.
+            const value = vm
+              ? decodeSSREntities(vm[1])
+              : decodeSSREntities(optionText(html, e + 1))
+                  .replace(/\s+/g, " ")
+                  .trim();
+            if (sel.values.includes(value)) sel.marks.push(e);
+          }
+        }
+      } else if (tagIs(html, i, "select")) {
+        const m = SELECT_VALUE_ATTR.exec(html.slice(i, e + 1));
+        if (m) {
+          const bound = decodeSSREntities(m[1]);
+          sel = {
+            values: /\smultiple(?=[\s>=])/.test(html.slice(i, e + 1)) ? bound.split(",") : [bound],
+            strip: i + m.index,
+            stripEnd: i + m.index + m[0].length,
+            body: e + 1,
+            marks: [],
+            defaulted: false
+          };
+        }
+      }
+    }
+    i = html.indexOf("<", e + 1);
+  }
+  return out + html.slice(idx);
 }
 
 export function escape(s, attr) {
