@@ -11,6 +11,7 @@
   attribute and style values, so quotes in expressions like
   `url("${src}")` stay inside the attribute.
 - 88703b6: Upgrade the native compiler to Rust 1.95, Oxc 0.144, and the latest compatible N-API and transitive dependencies while supporting Oxc's updated AST, parser diagnostics, and code generation behavior.
+- WASI builds link again on rust-lld 1.95+: `napi-build` 2.4.1 hard-exports `emnapi_create_env` / `emnapi_delete_env` for emnapi v2 archives we do not ship, so the WASI `build.rs` path uses `--export-if-defined` for those symbols.
 
 ## 0.50.0-next.42
 
