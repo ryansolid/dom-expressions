@@ -1,5 +1,17 @@
 # @dom-expressions/compiler
 
+## 0.50.0-next.43
+
+### Patch Changes
+
+- 287875f: A component (or spread child) boxed by static text now gets a dedicated `<!>` insertion marker in the dom generate, matching Babel's `wrappedByText` behavior. Without it the surrounding template texts merged into a single node during HTML parsing, so the following-sibling walk resolved to null and the inserted content landed after the trailing text (solidjs/solid#3004: `<p>(<Comp />)</p>` rendered `()…` with the component appended at the end).
+- d1a392c: Keyed element matching in the frame morph: `$key` on an intrinsic element in server JSX compiles to a `_key` attribute (SSR-only — DOM compiles strip it, components pass it through as slot identity), and the morph matches keyed elements by key instead of by position. Live element state the morph deliberately preserves — `value`/`checked` properties, `open` on `<details>`, focus — now follows the entity across reordering morphs instead of latching to its old position (previously, a keyed list reorder silently reattributed user state to whatever entity landed at that position). Sibling-scoped, matching client `For` semantics; unkeyed elements keep positional matching unchanged.
+- 0856717: `transformLazy` now appends the module-URL placeholder as `lazy()`'s third argument (padding the options slot with `void 0` when omitted), matching `clientOnly`'s shape: `solid-js` 2.0's `lazy(fn, options?, moduleUrl?)` takes an `{ export }` options bag in second position. Call sites with an options bag (`lazy(fn, { export: "Name" })`) are now annotated too.
+- 435e45f: SSR now HTML-escapes the static parts of template literals used as
+  attribute and style values, so quotes in expressions like
+  `url("${src}")` stay inside the attribute.
+- 88703b6: Upgrade the native compiler to Rust 1.95, Oxc 0.144, and the latest compatible N-API and transitive dependencies while supporting Oxc's updated AST, parser diagnostics, and code generation behavior.
+
 ## 0.50.0-next.42
 
 ## 0.50.0-next.41

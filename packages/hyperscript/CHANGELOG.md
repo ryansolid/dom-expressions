@@ -1,5 +1,7 @@
 # hyper-dom-expressions
 
+## 0.50.0-next.43
+
 ## 0.50.0-next.42
 
 ## 0.50.0-next.41
