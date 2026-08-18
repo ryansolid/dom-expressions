@@ -473,18 +473,21 @@ export function GET(fn) {
  * completion completes the iterable, and `break` aborts the in-flight
  * request through the transport's return() wiring.
  *
- * Deliberately wire-level ONLY: no keying, no connection sharing, no value
- * cache — deduping concurrent consumers of the same logical query is the
- * data layer's job (wrap with the router's `query`: its keyed dedupe hands
- * every consumer the same iterable, hence the same connection), and
- * latest-wins is how reactive consumption already reads a stream. There is
- * no cached value here by design: the value-shaped contract makes the
- * SERVER the cache — every (re)connect re-yields current state as its
- * first value. Live calls are reads, so they never opt into single-flight
- * enveloping. All behavior lives inside this declaration — apps that never
- * import `live` carry none of it. Compose with `GET` inside-out
- * (`live(GET(fn))`): live must be the outermost declaration, since its
- * behavior wraps the call.
+ * Deliberately wire-level ONLY. Each iteration of the returned iterable is
+ * its own connection (that's what makes reconnect trivial); sharing is the
+ * reactive graph's job — ONE call site consumes the stream and every
+ * reader of that memo shares its latest value, so sharing across the tree
+ * means hoisting the memo, the same idiom as any fetch. There is no cached
+ * value by design: the value-shaped contract makes the SERVER the cache —
+ * every (re)connect re-yields current state as its first value. Note this
+ * is NOT a `query` layer and doesn't want one: a live source has nothing
+ * query manages — no stale value to serve, no revalidation (it
+ * self-updates; a mutation's effects arrive through the open stream), and
+ * hence no single-flight participation (live calls are reads and never
+ * request enveloping). All behavior lives inside this declaration — apps
+ * that never import `live` carry none of it. Compose with `GET`
+ * inside-out (`live(GET(fn))`): live must be the outermost declaration,
+ * since its behavior wraps the call.
  *
  * ```ts
  * export const stockPrice = live(async function* (symbol: string) {
