@@ -106,10 +106,11 @@ describe("server component authored in JSX", () => {
     ]);
   });
 
-  it("$key on a DOM element is inert: just an attribute, no occurrence semantics", async () => {
-    // $key names occurrences on PROJECTION CALLS only. Server elements have
-    // no identity to name, so on an element it compiles to a plain attribute
-    // and nothing else.
+  it("$key on a DOM element compiles to the _key morph identity attribute, no occurrence semantics", async () => {
+    // $key names occurrences on PROJECTION CALLS. On an intrinsic element it
+    // is entity identity for the morph: SSR compiles it away into the
+    // framework-owned `_key` attribute (bfc236f8) — a literal `$key` is never
+    // intended output, and there are still no slot-occurrence semantics.
     const comp = props => (
       <div $key="c1">
         <span>
@@ -132,7 +133,8 @@ describe("server component authored in JSX", () => {
       }
     });
     await streamInto(renderServerComponent(comp, { frame: { id: "inert", version: 1 } }), host);
-    expect(boundary.querySelector("div").getAttribute("$key")).toBe("c1");
+    expect(boundary.querySelector("div").getAttribute("_key")).toBe("c1");
+    expect(boundary.querySelector("div").getAttribute("$key")).toBe(null);
     // The slot call next to it still keyed normally.
     expect(seen).toEqual(["hi"]);
     expect(boundary.querySelector("span b").textContent).toBe("hi");
