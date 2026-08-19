@@ -395,6 +395,8 @@ await check(
 // declaration, whose reconnect/brand machinery lives entirely inside its
 // own export and treeshakes out of this slice (unimported here by
 // construction). 2895 measured, ceiling kept.
+// Then +59 for bare 5xx and body-less error handling, including single-flight.
+// Re-guarded at actual+20 (2954 measured).
 await check(
   "server-functions client: eager transport (reference + GET, lazy codec)",
   `export {
@@ -402,7 +404,7 @@ await check(
      GET,
      configureServerFunctionsClient
    } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
-  2908,
+  2974,
   ["seroval", "seroval-plugins"]
 );
 await check(

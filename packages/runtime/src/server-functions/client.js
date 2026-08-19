@@ -130,6 +130,10 @@ function provideRPC() {
   provideServerFunctionRPC({ GET, decodeResponse });
 }
 
+function serverFunctionFailure(response, value) {
+  return value ?? new Error(`Server function call failed with status ${response.status}`);
+}
+
 async function createRequest(base, id, instance, options, meta) {
   const headers = {
     ...options.headers,
@@ -302,6 +306,9 @@ async function fetchServerFunction(base, id, options, args, meta, callArgs = arg
     if (handled !== undefined) return handled;
   }
 
+  // Proxies may omit the protocol error header on 5xx responses.
+  const failed = response.headers.has(ERROR_HEADER) || response.status >= 500;
+
   // Single-flight responses: with a registered consumer the transport owns
   // the unwrap — the standardized `{ value, data }` body is decoded, `data`
   // is delivered to the consumer (with the response as envelope context:
@@ -315,12 +322,8 @@ async function fetchServerFunction(base, id, options, args, meta, callArgs = arg
     if (consumer) {
       const payload = await decodeResponse(response);
       await consumer(payload.data, { response });
-      if (
-        response.headers.has(ERROR_HEADER) &&
-        !response.headers.has("Location") &&
-        !response.headers.has(REVALIDATE_HEADER)
-      ) {
-        throw payload.value;
+      if (failed && !response.headers.has("Location") && !response.headers.has(REVALIDATE_HEADER)) {
+        throw serverFunctionFailure(response, payload.value);
       }
       return payload.value;
     }
@@ -339,8 +342,8 @@ async function fetchServerFunction(base, id, options, args, meta, callArgs = arg
   }
 
   const result = await decodeResponse(response.clone());
-  if (response.headers.has(ERROR_HEADER)) {
-    throw result;
+  if (failed) {
+    throw serverFunctionFailure(response, result);
   }
   // Streaming result: wrap so stopping consumption stops the CALL. Without
   // this, `return()` (a `break` in for-await) only detaches the local
