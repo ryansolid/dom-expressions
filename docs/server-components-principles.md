@@ -1101,15 +1101,19 @@ taxonomy with the two remaining use sites, riding the same
 occurrence/binding bookkeeping:
 
 ```text
-use site         server emits                    client resolves to
-────────         ────────────                    ──────────────────
+use site         server emits                    client resolves via
+────────         ────────────                    ───────────────────
 called           slot record (id + args)         a range it renders into
-ref position     claim marker on the element     the element, in hand
-event position   claim marker on the element     a listener, attached
+ref position     claim marker on the element     claim engine (per-element scope)
+event position   claim marker on the element     delegation (dispatch-time lookup)
 ```
 
 One exposure story covers all three: what ships is never behavior,
-only an address where behavior resolves from the passing scope.
+only an address where behavior resolves from the passing scope. But
+the two marker positions resolve through different machinery, and
+the split is a real tiering (2026-08-18): events are the cheap,
+common tier — no per-element lifecycle at all — while refs are the
+powerful tier that pays for one.
 
 **Ref props — the instance direction, typed.** The server component
 uses a function prop in ref position; the client passes a closure:
@@ -1153,8 +1157,24 @@ re-attach), NOT re-fired when an attribute patch lands on a
 surviving element. The owner is the client component that passed the
 prop, so `onCleanup` works and context resolves.
 
-What this buys beyond Stage 7's anchors — the reason the stage
-stands alone: event wiring; third-party mounts (chart/editor/map
+Two contract lines that fall out (2026-08-18). *Function form only*:
+client Solid's assignment refs (`ref={myEl}`, `ref={els[i]}`)
+compile to assignments and cannot cross the border — the
+`ServerComponent` type says `(el: T) => void`, not `Ref<T>`. And
+*no array refs*: the array idiom exists client-side because refs
+fire once with no departure hook, but an ordered array is precisely
+what morphs make a lie (after a reorder, insertion order no longer
+matches document order — the misattribution `_key` just fixed,
+reborn in userland). The claim lifecycle is richer — per-element
+fire with cleanup — so N-element uses are per-element bodies, and a
+genuine collection is a Set maintained by the same pattern
+(`add` in the callback, `delete` in `onCleanup`). Nothing special
+ships; the pattern is documentation, a helper only if it earns
+itself later.
+
+What refs buy beyond Stage 7's anchors — with event wiring now the
+delegation tier's job, refs keep the element-in-hand-at-
+materialization set: third-party mounts (chart/editor/map
 libraries that want a DOM node, which server markup could never host
 before); observers and measurement (`IntersectionObserver`,
 `ResizeObserver`, focus management, scroll anchoring); persistent
@@ -1172,19 +1192,53 @@ the Datastar comparison: they attach behavior through attributes
 interpreted by a global runtime; we attach it through typed props
 that resolve to real closures with owner, context, and cleanup.
 
-**Event props — the same marker, sugar.** `<button
-onClick={props.onCopy}>` on a server intrinsic is mechanically
-identical to a ref claim: marker out, native `addEventListener` on
-adoption (not Solid delegated events — ordering and `currentTarget`
-behave natively; an author who needs delegation semantics is writing
-a client component). Decided 2026-08-18: supported — a server
-component accepting `onX` props reads exactly like normal Solid —
-with the caveat recorded that it makes the boundary invisible at the
-use site (attach-on-adoption timing, re-attach on
-re-materialization), where the ref spelling keeps the crossing
-explicit. Refs ship as the primitive; event-position sugar follows
-once the claim lifecycle has proven out — it compiles to the same
-marker, so deferring costs nothing structurally.
+**Event props — the same marker, delegated (mechanics revised
+2026-08-18, superseding the same-day per-element-attach lean).**
+`<button onClick={props.onCopy}>` on a server intrinsic emits the
+same marker as a ref — but resolution is dispatch-time, not
+lifecycle-time. The tell was the list case: one `onToggle` prop
+serves N rows with identity read off the element (`data-id`, the
+`_key` already there) — one handler, many elements,
+identity-at-the-element *is* delegation, so the implementation
+should literally delegate. No `addEventListener` per element:
+the existing delegated-event up-walk (the same seam client Solid's
+`delegateEvents` uses, which the router already sequences itself
+after) additionally checks the marker attribute and resolves the
+occurrence's binding table at dispatch. What falls out:
+
+- *Zero per-element machinery.* Nothing attaches, so morphs have
+  nothing to re-attach — the marker rides the markup through every
+  re-materialization for free, and the claim sweep never touches
+  event bindings.
+- *Hole content gains event handlers.* The owner-creation latch
+  means live markup holes cannot mint per-element claim scopes —
+  but delegation needs none: a marker-bearing element arriving
+  through a hole re-emission is live the instant it hits the DOM.
+  Event props work in exactly the territory previously written off
+  to attribute claims.
+- *Solid semantics, not a third dialect.* Riding the client
+  delegation seam inherits retargeted `currentTarget`,
+  `preventDefault`/`stopPropagation` behavior, and ordering against
+  the router's document-level handlers — a server-element handler
+  behaves identically to a client-element handler, which largely
+  dissolves the boundary-invisibility caveat this paragraph used to
+  carry (the dead window before a frame's binding table arrives is
+  what remains, and it is hydration's dead window, same answer).
+- *Non-bubbling events keep the old plan.* `focus`/`blur`/media
+  events can't delegate (same constraint as client Solid): those few
+  fall back to per-element attachment through the claim path, or the
+  bubbling variants (`focusin`/`focusout`).
+
+Decided 2026-08-18: supported — a server component accepting `onX`
+props reads exactly like normal Solid. The earlier "events are sugar
+over the ref marker" framing inverted: events are the *cheaper*
+tier, and by usage weight the bigger one (Datastar's catalog audit:
+`data-on` is their interaction workhorse and maps entirely here;
+their materialization tier — intersect/resize/scroll-into-view/init
+— is the small set that genuinely needs refs; half their attributes
+are the client-reactive-state layer Solid natively is, or `predict`'s
+transaction-scoped slice of it). Refs remain the powerful tier for
+element-in-hand at materialization: mounts, observers, measurement.
 
 **The SSR cost story (settled 2026-08-18): minimally detrimental by
 construction.** Handler expressions in SSR output are today dropped
@@ -1204,8 +1258,19 @@ reference on the context rather than a boolean makes the flag test
 and the binding-table handle the same read. Inside a frame render
 the brand test sorts values: cross-border function → marker into the
 occurrence's binding table; anything else → empty string plus a
-dev-mode warning ("this handler can never run — pass it from the
-client"). Zero client bytes for non-frames apps (the claim engine is
+dev-mode warning naming the three exits ("this handler can never
+run — pass it from the client's props, register a claim, or bind a
+mutation to `action=`"). The warning is runtime-only by necessity,
+not laziness (2026-08-18): SSR compilation is context-blind — the
+same compiled module serves hydratable SSR, where a local handler is
+legitimate (the client compilation of the same source owns it), and
+frame renders, where it's the mistake — so a static warning would
+false-positive on every ordinary hydratable component. Only the
+frame flag knows which face a render is on; the warning lives at the
+same layer as the gate. The teachable line, with its one carve-out:
+**requests may be server-authored (`action`/`formaction` serialize
+to URLs and the router upgrades them through delegation);
+interaction must be client-authored.** Zero client bytes for non-frames apps (the claim engine is
 frames-bundle-only); markup weight only on elements that actually
 claim. Pre-adoption clicks share hydration's dead window; if it ever
 matters, root-level delegation for marker-bearing elements is the
@@ -1215,12 +1280,16 @@ ownership of handlers — no double attachment.
 
 **The class direction — open attribute claims (folded from the
 2026-08-13 sketch; still this stage).** Ref props answer code that
-can name its element in a component contract. They cannot answer
-content *nobody can name ahead of time* — every code block streaming
-through a markdown hole, where no per-element prop exists and a live
-hole cannot mint components as it grows (the owner-creation latch,
-by design). That is the claim registry's home turf, and the sketch
-survives intact.
+can name its element in a component contract, and delegated event
+props now reach even hole-streamed markup — so the claims territory
+narrowed (2026-08-18) but did not close. What remains is content
+*not authored with the component's props in scope*: markup minted by
+post-processing (a markdown pipeline injecting copy buttons has no
+binding table to index into), and materialization-time behavior on
+unnameable elements (a live hole cannot mint per-element claim
+scopes as it grows — the owner-creation latch — so ref props don't
+reach inside holes even though event markers do). That is the claim
+registry's home turf, and the sketch survives intact.
 
 *The substrate exists.* The element-claim seam in the client runtime
 (`registerElementClaim`, `claimElement`, `claimElementTree`,
