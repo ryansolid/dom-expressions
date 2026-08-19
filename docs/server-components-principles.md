@@ -1535,10 +1535,37 @@ because a mount needs an owner, lifecycle, and reactive re-targeting
 that a fire-again claim callback cannot supply. `$key` is untouched
 — morph-only identity, no client-facing role.
 
-**Open questions.** Marker encoding final form (one packed attribute
-vs per-binding); the ref callback's cleanup contract (returned
-cleanup vs ambient `onCleanup` — lean: both, matching client refs);
-whether event sugar ships in the same compiler round or the next;
+**Spec-before-build (2026-08-18 audit — the three load-bearing
+bolts; everything after them is prototype-decidable):**
+
+1. *Marker wire format, fully.* Delegation needs event-type routing
+   at dispatch: which binding serves which event on this element
+   (`click` → 3, `input` → 5, ref → 7). Either the marker encodes an
+   event-name map or the binding-table entry carries the event name
+   from its compile position. Also unstated: how an element resolves
+   to *its occurrence's* table — walk to the nearest occurrence
+   root, with nested regions making "nearest" worth a paragraph.
+2. *Binding-table supersession.* Occurrences re-render and tables
+   get replaced; a dispatch can land in the window between a new
+   record arriving and its morph applying. Old marker indices
+   against a new table is a misdispatch, not a dead click. Tables
+   need versioning tied to applied markup, or indices stable across
+   re-renders of one occurrence. The one place in this stage with
+   real design risk.
+3. *Brand and composition rules.* Only the client-passed function
+   carries the brand: `onClick={debounce(props.onCopy)}` on the
+   server is a server-local closure and correctly fails the test —
+   composition belongs on the client, before passing — but authors
+   hit this in week one, so it must be stated, warned, and tested.
+   Same rule for spreads: v1 recognizes named ref/`on*` positions
+   only; handler-bearing spreads on server intrinsics warn.
+
+**Open questions (prototype-decidable).** The ref callback's cleanup
+contract (returned cleanup vs ambient `onCleanup` — lean: both,
+matching client refs); whether event sugar ships in the same
+compiler round or the next; dead-window policy stated as drop
+(hydration's answer) with root-replay as the known upgrade; the
+per-node attribute check's cost on the shared delegation walk;
 exact attribute namespace and sweep cost for open claims; packaging
 (which entry ships the affordance tier so it stays tree-shakeable);
 the re-claim dedupe contract (element-keyed WeakSet per consumer is
