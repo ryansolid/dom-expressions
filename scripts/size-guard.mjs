@@ -402,7 +402,7 @@ await check(
      GET,
      configureServerFunctionsClient
    } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
-  2908,
+  3082,
   ["seroval", "seroval-plugins"]
 );
 await check(

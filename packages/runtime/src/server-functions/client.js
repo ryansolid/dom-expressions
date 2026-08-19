@@ -68,6 +68,25 @@ const config = {
   serializeArgs: undefined
 };
 
+const CALL_OBSERVERS = new Set();
+
+function notifyCallObservers(type, id, instance, source, meta) {
+  if (CALL_OBSERVERS.size === 0) return;
+  const call = { type, id, instance, source, meta, time: performance.now() };
+  for (const observer of new Set(CALL_OBSERVERS)) {
+    try {
+      observer({ ...call, source: source.clone() });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+
+export function observeServerFunctionCalls(observer) {
+  CALL_OBSERVERS.add(observer);
+  return () => CALL_OBSERVERS.delete(observer);
+}
+
 function serializeArguments(args) {
   if (!config.serializeArgs) {
     throw new Error(
@@ -162,7 +181,13 @@ async function createRequest(base, id, instance, options, meta) {
   if (config.prepareRequest) {
     init = (await config.prepareRequest(init, { id, meta })) || init;
   }
-  return fetch(base, init);
+  if (CALL_OBSERVERS.size === 0) return fetch(base, init);
+
+  const request = new Request(new URL(base, globalThis.location?.href || "http://localhost"), init);
+  notifyCallObservers("request", id, instance, request, meta);
+  const response = await fetch(request);
+  notifyCallObservers("response", id, instance, response, meta);
+  return response;
 }
 
 async function initializeResponse(base, id, instance, options, args, meta) {

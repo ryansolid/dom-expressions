@@ -40,7 +40,8 @@ import {
   GET as clientGET,
   createServerReference as createClientReference,
   configureServerFunctionsClient,
-  live as clientLive
+  live as clientLive,
+  observeServerFunctionCalls
 } from "../../src/server-functions/client";
 import {
   GET as serverGET,
@@ -2326,6 +2327,101 @@ describe("prepareRequest", () => {
       expect(await authed()).toBe("Bearer secret");
       expect(await plain()).toBe(null);
     } finally {
+      restore();
+    }
+  });
+});
+
+describe("server function call observers", () => {
+  function connectTransport() {
+    const original = globalThis.fetch;
+    globalThis.fetch = (input, init) => {
+      const request =
+        input instanceof Request ? input : new Request(new URL(input, "http://localhost"), init);
+      return handleServerFunctionRequest(request);
+    };
+    return () => {
+      globalThis.fetch = original;
+    };
+  }
+
+  it("observes requests and responses without claiming the transport", async () => {
+    registerServerFunction("observe-0", async (a, b) => ({ total: a + b }));
+    const calls = [];
+    const stop = observeServerFunctionCalls(call => calls.push(call));
+    const restore = connectTransport();
+    try {
+      const result = await createClientReference("observe-0", "add")(2, 3);
+      expect(result).toEqual({ total: 5 });
+      expect(calls).toHaveLength(2);
+      expect(calls[0]).toMatchObject({
+        type: "request",
+        id: "observe-0",
+        instance: expect.any(String),
+        meta: { name: "add" },
+        time: expect.any(Number)
+      });
+      expect(calls[1]).toMatchObject({
+        type: "response",
+        id: "observe-0",
+        instance: calls[0].instance,
+        meta: { name: "add" },
+        time: expect.any(Number)
+      });
+      await expect(calls[0].source.json()).resolves.toEqual([2, 3]);
+      await expect(calls[1].source.json()).resolves.toEqual({ total: 5 });
+    } finally {
+      stop();
+      restore();
+    }
+  });
+
+  it("isolates observers and supports unsubscribe", async () => {
+    registerServerFunction("observe-1", async () => "ok");
+    const error = new Error("observer failed");
+    const report = jest.spyOn(console, "error").mockImplementation(() => {});
+    const first = jest.fn(() => {
+      throw error;
+    });
+    const second = jest.fn();
+    const stopFirst = observeServerFunctionCalls(first);
+    const stopSecond = observeServerFunctionCalls(second);
+    const restore = connectTransport();
+    try {
+      await expect(createClientReference("observe-1")()).resolves.toBe("ok");
+      expect(first).toHaveBeenCalledTimes(2);
+      expect(second).toHaveBeenCalledTimes(2);
+      expect(report).toHaveBeenCalledWith(error);
+
+      stopFirst();
+      stopSecond();
+      first.mockClear();
+      second.mockClear();
+      await createClientReference("observe-1")();
+      expect(first).not.toHaveBeenCalled();
+      expect(second).not.toHaveBeenCalled();
+    } finally {
+      stopFirst();
+      stopSecond();
+      report.mockRestore();
+      restore();
+    }
+  });
+
+  it("observes the final GET request URL", async () => {
+    serverGET(createServerReference(registerServerReference("observe-get-0", async id => id)));
+    const calls = [];
+    const stop = observeServerFunctionCalls(call => calls.push(call));
+    const restore = connectTransport();
+    try {
+      const result = await clientGET(createClientReference("observe-get-0"))(42);
+      expect(result).toBe(42);
+      const request = calls.find(call => call.type === "request").source;
+      expect(request.method).toBe("GET");
+      expect(request.url).toContain("id=observe-get-0");
+      expect(request.url).toContain("args=%5B42%5D");
+    } finally {
+      stop();
       restore();
     }
   });
