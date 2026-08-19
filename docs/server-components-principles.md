@@ -987,24 +987,26 @@ retired as a pole and survives only as potential authoring sugar.
    into live read-only projections. See the case-3 build record in DR-2
    for what shipped and the scope lines (whole containers this round;
    parts and case 4 remain the designed extensions).
-6. **Stage 6 — Behavior across the border: ref props, event props,
-   open claims.** **Next build target (re-scoped 2026-08-18; absorbs
-   the 08-13 claims sketch and supersedes the 08-16 predictions
-   design, whose surviving model moved to Stage 7).** Functions
-   already cross the slot border as render props; Stage 6 completes
-   the taxonomy: a slot-arg function in *ref position* on a server
+6. **Stage 6 — Behavior across the border: ref props and event
+   props.** **Next build target (re-scoped 2026-08-18; supersedes
+   the 08-16 predictions design, whose surviving model moved to
+   Stage 7; the 08-13 claims sketch was folded in and then cut the
+   same day — claims stay internal, see §9.1).** Functions already
+   cross the slot border as render props; Stage 6 completes the
+   taxonomy: a slot-arg function in *ref position* on a server
    element delivers the element to the client closure — typed
    through the server component's props, claim-engine lifecycle
    (fire on adoption, re-fire on morph re-materialization), owner
-   and cleanup from the passing scope — and *event position* is the
-   same marker as sugar. SSR cost is gated at evaluation by the
-   render context's frame flag. Attribute-keyed claims remain the
-   class direction for content nobody can name (markdown holes) plus
-   the affordance tier. More fundamental than optimism and lands
-   first: no transaction machinery, the claim engine already exists,
-   and event wiring / third-party mounts / observers justify it
-   standalone. Retires `$ref`/`frame.refs` as author surface. See
-   §9.1.
+   and cleanup from the passing scope — and *event position*
+   resolves through delegation at dispatch. SSR cost is gated at
+   evaluation by the render context's frame flag. One grammar: a
+   prop, used in a JSX position — interactive elements are authored
+   as JSX (hole thunks interleave `innerHTML` content with real JSX
+   affordances), so no attribute-claim author surface exists. More
+   fundamental than optimism and lands first: no transaction
+   machinery, the claim engine already exists, and event wiring /
+   third-party mounts / observers justify it standalone. Retires
+   `$ref`/`frame.refs` as author surface. See §9.1.
 7. **Stage 7 — Predictions.** **Design settled 2026-08-18 after a
    same-night four-shape search (§9.2's decision record): one
    declarative verb.** `predict(anchor, patch)` — transaction-scoped
@@ -1079,18 +1081,20 @@ back to full re-emission + morph whenever the prefix breaks (a code
 fence closing retroactively). Additive to the chunk protocol; adopt
 when measurement earns it.
 
-### 9.1 Stage 6 design — behavior across the border: ref props, event props, and open claims (2026-08-18)
+### 9.1 Stage 6 design — behavior across the border: ref props and event props (2026-08-18)
 
 Collapsed out of two prior sections during the 2026-08-17/18 design
 pass (Dev's ref-prop sketch; the SSR-cost resolution that followed):
 the 2026-08-16 predictions design that previously lived here is
 superseded — its surviving model moved to §9.2 (Stage 7) — and the
-2026-08-13 generalized-claims sketch that lived in §9.2 folds in
-below as this stage's class-based direction. Stage 6 also moved
-*ahead* of optimism in the roadmap: it is dependency-shallow (one
-compiler round plus the claim engine that already exists — no
-transaction machinery, no solid-core changes) and carries standalone
-value. Names remain provisional.
+2026-08-13 generalized-claims sketch that lived in §9.2 was folded
+in as a "class direction" for a few hours before being cut the same
+day (the internal-claims section below records why; the sketch
+survives in git history). One grammar remains: a prop, used in a
+JSX position. Stage 6 also moved *ahead* of optimism in the roadmap:
+it is dependency-shallow (one compiler round plus the claim engine
+that already exists — no transaction machinery, no solid-core
+changes) and carries standalone value. Names remain provisional.
 
 **The reframe that makes this one stage.** Functions already cross
 the slot border: a function-valued slot arg *called* during server
@@ -1278,262 +1282,90 @@ known answer — deferred. In hydratable SSR the gate is closed by
 scope (no frame context), so client-compiled hydration keeps sole
 ownership of handlers — no double attachment.
 
-**The class direction — open attribute claims (folded from the
-2026-08-13 sketch; still this stage).** Ref props answer code that
-can name its element in a component contract, and delegated event
-props now reach even hole-streamed markup — so the claims territory
-narrowed (2026-08-18) but did not close. What remains is content
-*not authored with the component's props in scope*: markup minted by
-post-processing (a markdown pipeline injecting copy buttons has no
-binding table to index into), and materialization-time behavior on
-unnameable elements (a live hole cannot mint per-element claim
-scopes as it grows — the owner-creation latch — so ref props don't
-reach inside holes even though event markers do). That is the claim
-registry's home turf, and the sketch survives intact.
+**Claims stay internal (2026-08-18, second pass — the folded
+attribute tier is cut).** The morning pass folded the 08-13
+generalized-claims sketch in here as a "class direction" for content
+not authored with props in scope; the evening pass killed it. The
+attraction of this stage is that there is exactly ONE grammar — a
+prop, used in a JSX position — and every rescue attempt for the
+attribute tier reintroduced a second one (a `registerClaim` registry
+with its own vocabulary; then a `claimAttr` string helper minting
+markers in post-processing output, briefly). The load-bearing case
+dissolved instead: **interactive elements are JSX — the pipeline
+produces content, not affordances.** The chat copy button doesn't
+need injecting into the markdown HTML string; the hole thunk
+interleaves — prose ships as `innerHTML`, code blocks are real JSX
+(`<pre><button onClick={props.onCopy}>⧉</button><code
+innerHTML={highlighted}/></pre>`) — and this works inside a
+streaming hole with nothing new: the thunk evaluates server-side,
+the event marker is an attribute in the emitted HTML, delegation
+resolves it at dispatch, and the owner-creation latch is irrelevant
+because no per-element scope is needed. Ref props stay out of hole
+interiors (they need the lifecycle the latch forbids); interaction
+there is event-shaped anyway. The pure rule: **behavior means JSX
+with a client prop. Content you won't parse into JSX gets no
+behavior** — the escape is parsing it, not a registry.
 
-*The substrate exists.* The element-claim seam in the client runtime
-(`registerElementClaim`, `claimElement`, `claimElementTree`,
-`CLAIM_SEAM`): compiled DOM output claims elements at creation;
-everything that materializes *serialized* server content — frame
-streams, adopted SSR ranges, morph grafts — sweeps the subtree
-through the same registry, re-firing when a morph touches an
-element. Dormant by design (a null check when no consumer is
-registered), idempotent, importless across bundled copies. Today it
-has one consumer (the router's link layer) and a hard-coded selector
-(`a[href], form[action]`). Ref-prop markers make Stage 6 itself the
-second consumer; open registration is the third move:
+What this kills as author surface, permanently: the `registerClaim`
+public opening, the `data-*` affordance vocabulary and its tier
+policy, the forward-polyfill program, the capability/context claim
+form. The 08-13/14 sketches survive in git history (and remain the
+reference if a future wave reopens the seam — nothing below
+forecloses that; it is simply no longer plan of record). What does
+NOT die: the element-claim seam itself (`registerElementClaim`,
+`claimElement`, `claimElementTree`, `CLAIM_SEAM`) — it stays exactly
+what it is today, frozen engine machinery with the router's link
+layer as its one public consumer, gaining Stage 6's ref-marker
+resolution as a second, *internal* consumer. Unnameable
+post-processed content that needs *materialization-time* behavior
+(an observer on every element of an injected string) is accepted as
+unsupported.
 
-1. *Open registration.* Consumer-declared claims keyed by an
-   attribute namespace (not arbitrary selectors — the sweep stays
-   one `querySelectorAll` over a fixed pattern). A server component
-   writes `<button data-copy>`; a registered claim owns that
-   attribute and attaches behavior when the element materializes,
-   under the current reactive owner for cleanup. Attribute values
-   are declarative arguments (`data-confirm="Delete this note?"`) —
-   never code.
-2. *The lifecycle contract, stated.* Claims fire at creation, at
-   materialization of serialized content, and again when a morph
-   replaces the element; handlers are idempotent (element-keyed
-   dedupe per consumer). Identity-first morph does most state
-   preservation for free — matched elements are the same DOM nodes —
-   so only wholesale-replaced ranges re-claim fresh.
-3. *A shipped affordance tier* — prebuilt claims (each ~10 lines,
-   tree-shakeable entry) so the first affordance costs one attribute.
-
-The primitive: register a behavior against an attribute, once, on
-the client:
-
-```tsx
-import { registerClaim } from "@solidjs/web";
-import { onCleanup } from "solid-js";
-
-registerClaim("data-copy", el => {
-  const onClick = () =>
-    navigator.clipboard.writeText(el.closest("pre")?.textContent ?? "");
-  el.addEventListener("click", onClick);
-  onCleanup(() => el.removeEventListener("click", onClick));
-});
-```
-
-Server markup opts in by writing the attribute — no slot declared,
-no fill wired, no client component:
-
-```tsx
-// inside a "use server" component — or markdown post-processing
-<pre>
-  <button data-copy aria-label="Copy">⧉</button>
-  <code>{highlighted}</code>
-</pre>
-```
-
-Arguments are attribute values — declarative data, never code:
-
-```tsx
-registerClaim("data-confirm", el => {
-  el.addEventListener("submit", e => {
-    if (!confirm(el.getAttribute("data-confirm")!)) e.preventDefault();
-  });
-});
-
-// server side: <form action={deleteNote} data-confirm="Delete this note?">
-```
-
-The shipped tier is nothing more than a set of these, each a
-`registerClaim` call in a tree-shakeable entry:
-
-```tsx
-import { toggle, indicator, copy } from "@solidjs/web/affordances";
-
-// then server markup anywhere:
-<button data-toggle="#sidebar">☰</button>
-<form action={save}><button data-indicator>Save</button></form>
-```
-
-And because sweeps run under the frame boundary's client owner, a
-user-defined claim can resolve mount context — the capability form
-(see the state contract below): the attribute names an operation,
-the nearest provider supplies its meaning and authority:
-
-```tsx
-const Actions = createContext<Record<string, () => void>>();
-
-registerClaim("data-action", el => {
-  const actions = useContext(Actions);
-  const click = () => actions?.[el.getAttribute("data-action")!]?.();
-  el.addEventListener("click", click);
-  onCleanup(() => el.removeEventListener("click", click));
-});
-
-// server: <button data-action="retry">Retry</button>
-// client: <Actions.Provider value={{ retry: () => refetch() }}>…</Actions.Provider>
-```
-
-**The authoring split, revised (2026-08-18).** The 08-13 sketch
-said "`ref` cannot cross the slot border (a closure does not
-serialize)" — half superseded: the closure still never ships, but
-its *coordinate* does, and that coordinate is exactly what ref props
-are. The split is now typed-instance vs attributed-class: a **ref
-prop** is behavior for elements the component contract can name —
-per-instance, typed, resolved from the passing scope; a **claim
-attribute** is the serializable name of behavior registered ahead of
-time — per-kind, for markup where all you have is markup. Same
-engine, two directions — a claim's argument is the element, a ref
-prop's argument is the closure — complementary, not competing. (Solid
-2.0 removed `use:` directives; ref props and attribute claims are
-the complete pair.)
-
-**Candidate tier** (filter: leans on semantics already in the
-markup, needs zero expressions, or one of our examples already
-hand-wrote it):
-
-| Affordance | Goes on | Does |
-|---|---|---|
-| `data-toggle="#target"` | button | toggle class/`open` on target; menus, collapse |
-| `data-copy` | button | clipboard-write nearest `<pre>`/target text |
-| `data-confirm="msg"` | form, a | native `confirm()` gate before submit/navigate |
-| `data-indicator` | form, button | busy class + disabled while action/navigation in flight |
-| `data-autosubmit="300"` | input, select | debounced `requestSubmit()` of owning form |
-| `data-bind="param"` | input | two-way sync with a URL query param (router-aware) |
-| `data-scroll="bottom"` | container | follow appended/morphed content while reader at bottom |
-| `data-focus` | element | focus on materialize; preserve focus/caret across morphs |
-
-Four of these were already paid for by hand: the chat transcript's
-`ResizeObserver` pinning (`data-scroll`), the notes save/delete flows
-(`data-indicator`, `data-confirm`), the notes search field
-(`data-bind` + `data-autosubmit` — currently a client component whose
-whole job is "input writes a query param, debounced"). The
-composition is the pitch: `data-bind` plus a server component keyed
-by that param is live search with zero client components. Note the
-overlap with ref props is real but shallow: where a component
-contract exists, the copy button is better as a ref prop (typed, no
-attribute vocabulary); `data-copy` earns its place inside markdown
-holes and post-processed content.
-
-**Positioning.** The tier is htmx's affordance lineage
-(request-lifecycle dressing: confirm/indicator/trigger), not
-Datastar's (a client reactive system in attributes —
-`data-signals`/`data-show`/`data-on` with expressions). We refuse the
-Datastar layer not because it is bad but because Solid already has a
-strictly better version: signals and JSX, typed, compiled, DCE'd.
-What we take from Datastar is architectural — morph-surviving
-attachment as a first-class contract, which htmx historically bolts
-on. One line: htmx's affordance tier, on Datastar's morph-survival
-discipline, under Solid's rule that expressions live in JSX. The
-escape hatch up from the tier is a ref prop, then a component —
-never an attribute expression.
-
-**The state contract (2026-08-14, unchanged).** Spec/native
-built-ins should remain transport- or DOM-local: submit, navigate,
-confirm, busy, open/closed, focus, scroll, a URL param. The
-*primitive* is not so limited. Claim sweeps already run under the
-client owner associated with the frame boundary, so a user-defined
-claim may resolve the nearest client context and invoke a named
-capability or reactively reflect its state. The markup still carries
-data, never expressions or serialized closures; the provider is the
-local authority boundary. Client components wrapping the insertion
-point and claimed server-authored elements can therefore be two
-front doors into the same mutation interface. Stage 7's `predict`
-is the natural writable capability such a context may expose, but
-claims do not require it.
-
-**Tier policy option (2026-08-13): spec'd-only built-ins.** Possibly
-the only *shipped* affordances are ones the platform has spec'd or
-formally proposed — `command`/`commandfor` enhancement, `popover`,
-`<details name>`, Triptych's forms — and Solid never mints attribute
-vocabulary at all: everything invented in the table above ships as
-documented `registerClaim` recipes, not package API. Buys: dissolves
-naming entirely; shrinks freeze exposure to ~zero (the shipped set is
-defined by an external process; deprecation is the browser shipping);
-makes the primitive the product. Costs: the two flagship compositions
-(`data-bind` live search, `data-scroll` stream-following) have no
-platform equivalent on any horizon and drop from one attribute to
-copy-a-recipe; and "spec'd" needs a line drawn — strict reading ships
-almost nothing today, loose reading tracks moving drafts. Spectrum to
-decide at build time, not before stable (the substrate is identical
-across all three): (a) spec'd-only + recipes, (b) spec'd built-ins +
-a blessed-recipes package that is explicitly non-contract, (c) the
-invented tier. Packaging posture only. Ref props soften every cost
-here: the flagship compositions can also ship as typed helper
-components/props with no attribute vocabulary at all.
-
-**Native alignment rule.** The htmx-adjacent platform proposals
-(Triptych's button `action`/`method`, invoker `command`/`commandfor`
-— shipping, `popover` — shipped, `<details name>` — shipped) are
-attribute-shaped, expression-free, form/anchor-semantic: the same
-dialect. Each affordance is therefore written as a forward-polyfill —
-where a native attribute exists or is proposed, adopt its vocabulary
-(prefer enhancing `commandfor` over inventing toggle syntax) so markup
-written today degrades toward the platform, not away from it. The
-claims substrate makes the exit graceful: "the browser does this now"
-is deleting one registration. The exchange itself (partial
-replacement, Triptych's biggest ask) is *not* affordance-tier — frame
-streams and morphs already own it and do more.
-
-**RC-freeze compatibility (2026-08-13, unchanged).** The claim trio
-is frozen public API — `@solidjs/web`'s client entry wholesale
+**RC-freeze compatibility (2026-08-13, still binding).** The claim
+trio is frozen public API — `@solidjs/web`'s client entry wholesale
 re-exports the runtime client, so `registerElementClaim`/
 `claimElement`/`claimElementTree` and their semantics (handlers
 observe the navigation-relevant set: `a[href]`, `form[action]`) are
 in the RC contract, with the router's `setupLinkClaims` as a live
-consumer. The generalization is additive *only if* one line holds:
-attribute-keyed claims (and the internal ref-marker claim) route
-through their own per-attribute handler lists — the existing
-`registerElementClaim` broadcast channel must NOT widen to observe
-attribute-claimed elements, or every frozen-API consumer starts
-receiving element kinds the contract never promised. Likewise the
-`CLAIM_SEAM` registered symbol (a flat handler array shared across
-separately bundled — potentially differently versioned — runtime
-copies) keeps its shape; attribute-keyed registration hangs off a
-second registered symbol.
+consumer. Stage 6's internal ref-marker claim must route through its
+own channel — the frozen `registerElementClaim` broadcast must NOT
+widen to observe marker-claimed elements, or every frozen-API
+consumer starts receiving element kinds the contract never promised.
+Likewise the `CLAIM_SEAM` registered symbol (a flat handler array
+shared across separately bundled — potentially differently
+versioned — runtime copies) keeps its shape; the marker claim hangs
+off its own registered symbol.
 
 **Decide before stable (2026-08-13; the seam is movable during RC,
-frozen after).** Two decisions harden at stable; everything else in
-this section is provably additive later:
+frozen after).** Two decisions harden at stable regardless of the
+attribute tier's death, because the trio is frozen API either way:
 
-1. *The navigation element set.* `a[href], form[action]` is baked into
-   the frozen channel's semantics — consumer filters are written
-   against it — and it is currently incomplete as a navigation
-   contract: `area[href]` navigates, `button[formaction]` re-targets a
-   form. Widening after stable changes what every registered handler
-   receives (the self-inflicted version of the "channel never widens"
-   hazard). Settle the set during RC, or document it as closed and
-   final.
+1. *The navigation element set.* `a[href], form[action]` is baked
+   into the frozen channel's semantics — consumer filters are
+   written against it — and it is currently incomplete as a
+   navigation contract: `area[href]` navigates, `button[formaction]`
+   re-targets a form. Widening after stable changes what every
+   registered handler receives. Settle the set during RC, or
+   document it as closed and final.
 2. *The seam global's shape.* `CLAIM_SEAM` holds a bare array shared
    across separately bundled — potentially differently versioned —
    runtime copies, so stable's shape is the wire format forever.
-   Either reshape to an extensible object now, or commit to attribute
-   claims living on a second registered symbol (zero RC churn — the
-   recorded lean).
+   Either reshape to an extensible object now, or commit to internal
+   marker claims living on a second registered symbol (zero RC
+   churn — the recorded lean).
 
 **What died here (2026-08-18):** `$ref` and `frame.refs` as author
 surface (the marker/index machinery survives as the internal claim
 that resolves ref-prop coordinates); ref-only `Frame` acquisition
-for behavior purposes; `$seam` was already dead. `Portal` did NOT
-die — what died is its *addressing* (names through a frame index):
-persistent islands still mount through it, fed by a ref-prop signal,
-because a mount needs an owner, lifecycle, and reactive re-targeting
-that a fire-again claim callback cannot supply. `$key` is untouched
-— morph-only identity, no client-facing role.
+for behavior purposes; `$seam` was already dead; and — the evening
+pass — the attribute-claim tier as author surface (`registerClaim`,
+the affordance vocabulary; see the internal-claims section above).
+`Portal` did NOT die — what died is its *addressing* (names through
+a frame index): persistent islands still mount through it, fed by a
+ref-prop signal, because a mount needs an owner, lifecycle, and
+reactive re-targeting that a fire-again claim callback cannot
+supply. `$key` is untouched — morph-only identity, no client-facing
+role.
 
 **Spec-before-build (2026-08-18 audit — the three load-bearing
 bolts; everything after them is prototype-decidable):**
@@ -1565,12 +1397,9 @@ contract (returned cleanup vs ambient `onCleanup` — lean: both,
 matching client refs); whether event sugar ships in the same
 compiler round or the next; dead-window policy stated as drop
 (hydration's answer) with root-replay as the known upgrade; the
-per-node attribute check's cost on the shared delegation walk;
-exact attribute namespace and sweep cost for open claims; packaging
-(which entry ships the affordance tier so it stays tree-shakeable);
-the re-claim dedupe contract (element-keyed WeakSet per consumer is
-the obvious shape); how `data-bind` discovers the router without a
-hard dependency.
+per-node attribute check's cost on the shared delegation walk; the
+re-fire dedupe contract for the internal marker claim (element-keyed
+WeakSet is the obvious shape).
 
 ### 9.2 Stage 7 design — predictions: one declarative verb (settled 2026-08-18; supersedes the imperative-draft revival, overlays + entries, and the transactional draft)
 
