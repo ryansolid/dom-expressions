@@ -1380,30 +1380,56 @@ reactive re-targeting that a fire-again claim callback cannot
 supply. `$key` is untouched — morph-only identity, no client-facing
 role.
 
-**Spec-before-build (2026-08-18 audit — the three load-bearing
-bolts; everything after them is prototype-decidable):**
+**The three load-bearing bolts (flagged spec-before-build in the
+2026-08-18 audit; all three settled 2026-08-19 — Stage 6 is
+build-ready):**
 
-1. *Marker wire format, fully.* Delegation needs event-type routing
-   at dispatch: which binding serves which event on this element
-   (`click` → 3, `input` → 5, ref → 7). Either the marker encodes an
-   event-name map or the binding-table entry carries the event name
-   from its compile position. Also unstated: how an element resolves
-   to *its occurrence's* table — walk to the nearest occurrence
-   root, with nested regions making "nearest" worth a paragraph.
-2. *Binding-table supersession.* Occurrences re-render and tables
-   get replaced; a dispatch can land in the window between a new
-   record arriving and its morph applying. Old marker indices
-   against a new table is a misdispatch, not a dead click. Tables
-   need versioning tied to applied markup, or indices stable across
-   re-renders of one occurrence. The one place in this stage with
-   real design risk.
-3. *Brand and composition rules.* Only the client-passed function
-   carries the brand: `onClick={debounce(props.onCopy)}` on the
-   server is a server-local closure and correctly fails the test —
-   composition belongs on the client, before passing — but authors
-   hit this in week one, so it must be stated, warned, and tested.
-   Same rule for spreads: v1 recognizes named ref/`on*` positions
-   only; handler-bearing spreads on server intrinsics warn.
+1. *Marker wire format — settled 2026-08-19: fully-qualified, one
+   attribute.* Elements with cross-border behavior positions carry
+   one marker attribute (`_bnd`, the `_hk` family) with grammar
+   `_bnd="<occ>:<pos>=<row>[,<pos>=<row>]*"` — occurrence id, then
+   position (lowercased event name, or `ref`) mapped to a row in
+   that occurrence's binding table. Fully-qualified rather than
+   ancestry-resolved, deliberately: encoding the occurrence id kills
+   the nearest-occurrence-root walk (and its nested-region
+   ambiguity) and stays correct for hole-emitted content wherever
+   the DOM puts it. All positions on one element share one
+   occurrence by construction — minted at one compile position
+   during one occurrence render — so the id is paid once per
+   element. Dispatch parses on first hit and caches keyed by the
+   attribute's string value; morph rewrites invalidate by changing
+   the string.
+2. *Binding-table supersession — settled 2026-08-19: the risk
+   dissolves into an invariant.* Rows are mint-order ordinals
+   within one occurrence render (loops mint N rows, one per
+   iteration — no compile-time-stable-index scheme survives loops,
+   so none is attempted). The invariant: **markers in applied DOM
+   always pair with the binding table of the same commit** —
+   guaranteed by construction because the morph applier swaps the
+   occurrence's table and patches the markup (including `_bnd`
+   values on `_key`-preserved rows) in one synchronous step, and
+   single-threaded JS means no dispatch interleaves. No versioning
+   protocol needed. What remains is dispatch on nodes the morph
+   dropped or detached mid-flight: row lookup misses, policy is
+   drop + dev-warn (hydration's dead-window answer). Ref claims
+   fire only from the post-apply sweep, so refs never see the
+   window at all.
+3. *Brand and composition rules — settled 2026-08-19: the stub is
+   the brand.* A function-valued slot arg arrives server-side as a
+   branded frame-function stub carrying its client coordinate —
+   that is already what makes render props callable — so the
+   evaluation test is stub-or-not, no new detection system. Branded
+   → mint a row storing the coordinate (the same stub in multiple
+   positions mints multiple rows to one coordinate, matching
+   latest-props semantics). Unbranded function under the frame flag
+   → empty string + the two-exit dev warning:
+   `onClick={debounce(props.onCopy)}` on the server is a
+   server-local closure and correctly fails — composition belongs
+   on the client, before passing. Spreads: v1 recognizes named
+   `ref`/`on*` JSX positions only; the SSR spread helper, under the
+   frame flag in dev, warns on handler-bearing keys (static
+   warnings are impossible — compilation is context-blind, as
+   recorded above).
 
 **Open questions (prototype-decidable).** The ref callback's cleanup
 contract (returned cleanup vs ambient `onCleanup` — lean: both,
