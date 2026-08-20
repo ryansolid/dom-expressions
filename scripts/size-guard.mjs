@@ -272,13 +272,18 @@ const SCENARIOS = {
   // OPTION (platform glue passes delegateEvents to createFrameHost)
   // because publishing it from client.js retains the event system in
   // every tree-shaken subset — the failure mode the router-eager-subset
-  // scenario pins. Re-guarded at actual+20 (9519 measured, post-rebase on
+// scenario pins. Re-guarded at actual+20 (9519 measured, post-rebase on
   // the stream-mint wire).
+  // Then +18 for owner-scoped ref firing: the marker sweep runs under the
+  // frame creator's ownerScope, so effects/context/onCleanup work inside
+  // ref callbacks (cleanups bound to the frame's owner, not per element) —
+  // the §9.1 lifecycle promise, delivered as one scope wrap around the
+  // whole pass. Re-guarded at actual+20 (9536 measured, post-rebase).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
-    9539
+    9556
   ]
 };
 

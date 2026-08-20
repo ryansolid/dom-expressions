@@ -1475,16 +1475,16 @@ diverged simpler, and this paragraph is the record.
   reads the registered-symbol seam from inside the delegation walk —
   and document-listener arming flows as `createFrameHost`'s
   `delegate` option, wired by platform glue to `delegateEvents`.
-- *Refs fire bare, once per (element, prop).* v1 does not mint a
-  per-element claim scope: the sweep calls the ref with the element,
-  dedupes via element expando (a morph that replaces the element
-  re-fires on the fresh node; in-place patches don't), and the
-  cleanup contract is deferred — a ref that attaches observers owns
-  its own teardown for now. This also means refs DO work inside hole
-  interiors (nothing needs the lifecycle the owner-creation latch
-  forbids), narrowing the "refs stay out of holes" line above to the
-  cleanup-bearing uses. Upgrading to owned scopes when the contract
-  is needed is additive.
+- *Refs fire owner-scoped, once per (element, prop).* v1 does not
+  mint a per-element claim scope, but the sweep runs under the frame
+  creator's ownerScope: effects, context, and `onCleanup` work inside
+  the callback, with cleanups bound to the FRAME's owner — they run at
+  disposal, not at element replacement (amended 2026-08-20; the first
+  cut fired bare). Dedupe rides an element expando (a morph that
+  replaces the element re-fires on the fresh node; in-place patches
+  don't). Refs DO work inside hole interiors — the owner is the
+  creator's, minted before the latch, so nothing trips it. Per-element
+  scopes (cleanup at replacement) remain the known additive upgrade.
 - *Proving case.* The chat demo's streamed markdown renders code
   blocks as JSX with `<button onClick={props.copy}>` — a client
   clipboard handler crossing into server markup that arrives through

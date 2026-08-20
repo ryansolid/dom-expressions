@@ -129,7 +129,7 @@ function claimFn(frame, pos, prop) {
  * document listeners for claimed event types, and fire ref positions.
  * Dormant cost without markers: one selector query per apply.
  */
-function sweepBound(root, frame, delegate) {
+function sweepBound(root, frame, delegate, scope) {
   const isElement = root.nodeType === ELEMENT_NODE;
   if (!isElement && root.nodeType !== 11 /* DOCUMENT_FRAGMENT_NODE */) return;
   let els;
@@ -140,17 +140,25 @@ function sweepBound(root, frame, delegate) {
     for (let i = 0; i < found.length; i++) els.push(found[i]);
   }
   if (!els) return;
-  let types;
-  for (const el of els) {
-    el._$bndFrame = frame;
-    const map = bndMap(el);
-    if (!map) continue;
-    for (const pos in map) {
-      if (pos === "ref") fireRefs(frame, el, map.ref);
-      else (types || (types = [])).push(pos);
+  // The whole marker pass runs under the creator's ownerScope (the client
+  // component that passed the props): refs get effects, context, and
+  // onCleanup inside the callback, bounded by the frame's owner — the
+  // contract §9.1 promises. Arming is scope-indifferent, so one wrap covers
+  // everything.
+  const run = () => {
+    let types;
+    for (const el of els) {
+      el._$bndFrame = frame;
+      const map = bndMap(el);
+      if (!map) continue;
+      for (const pos in map) {
+        if (pos === "ref") fireRefs(frame, el, map.ref);
+        else (types || (types = [])).push(pos);
+      }
     }
-  }
-  if (types && delegate) delegate(types);
+    if (types && delegate) delegate(types);
+  };
+  scope ? scope(run) : run();
 }
 
 // Ref-position dedupe rides an expando: refs fire once per (element, prop) —
@@ -457,7 +465,7 @@ class FrameImpl {
     // kept elements keep their stamp.
     if (!direct && node.nodeType !== TEXT_NODE && node.nodeType !== COMMENT_NODE) {
       const o = this.#options;
-      sweepBound(node, this, o.delegate || (o.host && o.host.delegate));
+      sweepBound(node, this, o.delegate || (o.host && o.host.delegate), o.ownerScope);
     }
     const handlers = claimHandlers();
     if (!handlers) return;
