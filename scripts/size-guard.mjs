@@ -397,6 +397,8 @@ await check(
 // construction). 2895 measured, ceiling kept.
 // Then +59 for bare 5xx and body-less error handling, including single-flight.
 // Re-guarded at actual+20 (2954 measured).
+// Then call observers (cloned Request/Response inspection). Combined with
+// the 5xx path; re-measure after merge.
 await check(
   "server-functions client: eager transport (reference + GET, lazy codec)",
   `export {
@@ -404,7 +406,7 @@ await check(
      GET,
      configureServerFunctionsClient
    } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
-  2974,
+  3141,
   ["seroval", "seroval-plugins"]
 );
 await check(

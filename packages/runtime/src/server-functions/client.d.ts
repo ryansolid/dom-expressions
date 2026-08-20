@@ -127,6 +127,31 @@ export interface ServerFunctionsClientConfig {
  */
 export function configureServerFunctionsClient(config?: ServerFunctionsClientConfig): void;
 
+export interface ServerFunctionRequestCall {
+  type: "request";
+  id: string;
+  instance: string;
+  source: Request;
+  meta: ServerFunctionMetadata | undefined;
+  time: number;
+}
+
+export interface ServerFunctionResponseCall {
+  type: "response";
+  id: string;
+  instance: string;
+  source: Response;
+  meta: ServerFunctionMetadata | undefined;
+  time: number;
+}
+
+export type ServerFunctionCall = ServerFunctionRequestCall | ServerFunctionResponseCall;
+
+/** Observes cloned requests and responses without handling them. */
+export function observeServerFunctionCalls(
+  observer: (call: ServerFunctionCall) => void
+): () => void;
+
 /**
  * Declares a server function callable over HTTP GET: calls to the returned
  * reference go out as GET requests with the arguments codec-encoded in the
