@@ -250,7 +250,7 @@ describe("handleServerFunctionRequest folds the event response stub", () => {
         method: "POST",
         headers: { ...INSTANCE_HEADERS, ...extraHeaders }
       }),
-      { createEvent: () => event, ...options }
+      { createEvent: () => event, csrf: false, ...options }
     );
   }
 

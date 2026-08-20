@@ -42,6 +42,7 @@ class FakeStorage {
 
 beforeEach(() => {
   globalThis[RequestContext] = new FakeStorage();
+  configureServerFunctionsServer({ csrf: false });
 });
 
 afterEach(() => {

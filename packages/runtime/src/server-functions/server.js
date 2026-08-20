@@ -65,7 +65,8 @@ const config = {
   transformFlightResult: undefined,
   transformDirectResult: undefined,
   handleNoJS: undefined,
-  endpoint: "/_server"
+  endpoint: "/_server",
+  csrf: true
 };
 
 /**
@@ -95,6 +96,7 @@ export function configureServerFunctionsServer({
   transformDirectResult,
   handleNoJS,
   endpoint,
+  csrf,
   codec
 } = {}) {
   if (provideEvent !== undefined) config.provideEvent = provideEvent;
@@ -105,6 +107,7 @@ export function configureServerFunctionsServer({
   if (transformDirectResult !== undefined) config.transformDirectResult = transformDirectResult;
   if (handleNoJS !== undefined) config.handleNoJS = handleNoJS;
   if (endpoint !== undefined) config.endpoint = endpoint;
+  if (csrf !== undefined) config.csrf = csrf;
   if (codec !== undefined) configureServerFunctionsCodec(codec);
 }
 
@@ -833,6 +836,70 @@ export function sanitizeServerError(value) {
   return new Error(GENERIC_SERVER_ERROR_MESSAGE);
 }
 
+async function matchesOrigin(origin, request, matcher) {
+  if (matcher === undefined) return origin === new URL(request.url).origin;
+  if (typeof matcher === "function") return !!(await matcher(origin, request));
+  return Array.isArray(matcher) ? matcher.includes(origin) : origin === matcher;
+}
+
+async function allowsServerFunctionRequest(request, options) {
+  const fetchSite = request.headers.get("Sec-Fetch-Site");
+  if (fetchSite === "same-origin") return true;
+  if (fetchSite === "same-site" || fetchSite === "cross-site" || fetchSite === "none") {
+    return false;
+  }
+
+  const origin = request.headers.get("Origin");
+  if (origin !== null) return matchesOrigin(origin, request, options.origin);
+
+  const referer = request.headers.get("Referer");
+  if (referer !== null) {
+    try {
+      return matchesOrigin(new URL(referer).origin, request, options.origin);
+    } catch {
+      return false;
+    }
+  }
+
+  return options.allowRequestsWithoutOriginCheck === true;
+}
+
+const CSRF_VARY = ["Sec-Fetch-Site", "Origin", "Referer"];
+
+function withCSRFVary(response) {
+  const current = response.headers.get("Vary");
+  if (current === "*") return response;
+
+  const values = current ? current.split(",").map(value => value.trim()) : [];
+  const names = new Set(values.map(value => value.toLowerCase()));
+  for (const value of CSRF_VARY) {
+    if (!names.has(value.toLowerCase())) values.push(value);
+  }
+  const vary = values.join(", ");
+
+  try {
+    response.headers.set("Vary", vary);
+    return response;
+  } catch {
+    const headers = new Headers(response.headers);
+    headers.set("Vary", vary);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    });
+  }
+}
+
+function forbiddenResponse() {
+  return withCSRFVary(
+    new Response(DEV ? "Forbidden" : null, {
+      status: 403,
+      headers: { "Cache-Control": "no-store" }
+    })
+  );
+}
+
 /**
  * Web-standard HTTP handler for server function calls. Mount it on the
  * endpoint the client transport targets (default `/_server`).
@@ -880,23 +947,34 @@ export function sanitizeServerError(value) {
  *   `createNoJSHandler()` for browser form posts (redirect back with the
  *   outcome in a flash cookie); other no-instance callers, such as direct
  *   HTTP requests, get the normal serialized response.
+ * - `csrf`: configures same-origin request validation, or disables it with
+ *   `false`. Enabled by default.
  * - `codec`: overrides the configured codec options for this handler.
  */
 export async function handleServerFunctionRequest(request, options = {}) {
   const codec = options.codec !== undefined ? options.codec : getServerFunctionsCodec();
   const url = new URL(request.url);
+  const csrf = options.csrf !== undefined ? options.csrf : config.csrf;
+  const protectsRequest = csrf !== false;
+  if (protectsRequest && !(await allowsServerFunctionRequest(request, csrf === true ? {} : csrf))) {
+    return forbiddenResponse();
+  }
   const instance = request.headers.get(INSTANCE_HEADER);
   const functionId = resolveFunctionId(request, url);
 
   if (!functionId) {
-    return new Response(DEV ? "Server function not found" : null, { status: 404 });
+    const response = new Response(DEV ? "Server function not found" : null, { status: 404 });
+    return protectsRequest ? withCSRFVary(response) : response;
   }
 
   let serverFunction;
   try {
     serverFunction = getServerFunction(functionId);
   } catch {
-    return new Response(DEV ? `Unknown server function: ${functionId}` : null, { status: 404 });
+    const response = new Response(DEV ? `Unknown server function: ${functionId}` : null, {
+      status: 404
+    });
+    return protectsRequest ? withCSRFVary(response) : response;
   }
 
   // method enforcement: GET requests only dispatch to functions that
@@ -906,10 +984,14 @@ export async function handleServerFunctionRequest(request, options = {}) {
   // default transport (e.g. a query()-wrapped function also called
   // directly).
   if (request.method === "GET" && METHODS.get(functionId) !== "GET") {
-    return new Response(DEV ? `Method not allowed for server function: ${functionId}` : null, {
-      status: 405,
-      headers: { Allow: "POST" }
-    });
+    const response = new Response(
+      DEV ? `Method not allowed for server function: ${functionId}` : null,
+      {
+        status: 405,
+        headers: { Allow: "POST" }
+      }
+    );
+    return protectsRequest ? withCSRFVary(response) : response;
   }
 
   const event = options.createEvent ? options.createEvent(request) : { request, locals: {} };
@@ -1138,5 +1220,6 @@ export async function handleServerFunctionRequest(request, options = {}) {
       return encodeResult(safe, headers, 200, codec, request.signal);
     }
   };
-  return commitEventResponse(await dispatch(), event);
+  const response = commitEventResponse(await dispatch(), event);
+  return protectsRequest ? withCSRFVary(response) : response;
 }
