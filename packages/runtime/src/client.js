@@ -20,7 +20,12 @@ import {
   // store's row-ops channel instead of mapArray + reconcileArrays. Cores
   // that don't provide it degrade gracefully — list accessors carrying the
   // `$ll` marker are simply called (the classic mapArray path).
-  driveList
+  driveList,
+  // Optional seam paired with driveList: while the core is purity-probing a
+  // row bind, a function-valued insert disqualifies the row and is skipped
+  // (its construction would be guaranteed-discarded work). No-op outside a
+  // probe; static inserts always proceed.
+  probeGate
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
@@ -560,6 +565,7 @@ export function insert(parent, accessor, marker, initial, options) {
   const host = options && options.host;
   if (multi && !initial) initial = [];
   if (hydrationRt !== null) initial = hydrationRt.claimInitial(parent, multi, initial);
+  if (probeGate !== undefined && probeGate(accessor)) return;
   // Patch-mode list seam: a list accessor carrying `$ll` metadata is offered
   // to the core's row-ops driver first (no hydration claiming yet — hydrated
   // regions keep the classic path). A false return means the driver declined
