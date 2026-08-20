@@ -23,6 +23,11 @@ export interface JSXDOMExpressionsConfig {
   contextToCustomElements: boolean;
   staticMarker: string;
   effectWrapper: string | false;
+  /** Patch-mode driver import name (DESIGN-PATCH-CHANNEL.md): when set,
+   * template scopes whose dynamic bindings are pure member reads of one
+   * subject compile to a compiled patch body + driver call instead of the
+   * grouped effect. false = feature off (default). */
+  patchDriver: string | false;
   memoWrapper: string | false;
   validate: boolean;
   inlineStyles: boolean;
@@ -47,6 +52,7 @@ const config: JSXDOMExpressionsConfig = {
   contextToCustomElements: false,
   staticMarker: "@static",
   effectWrapper: "effect",
+  patchDriver: false,
   memoWrapper: "memo",
   validate: true,
   inlineStyles: true,
