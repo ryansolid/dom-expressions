@@ -37,10 +37,7 @@ describe("SSR serverComponents behavior claims", () => {
   });
 
   it("stays inert when the option is off — refs hoist, on* drops, no claim import", () => {
-    const source = fs.readFileSync(
-      path.join(babelFixtures, "behaviorClaims", "code.js"),
-      "utf8"
-    );
+    const source = fs.readFileSync(path.join(babelFixtures, "behaviorClaims", "code.js"), "utf8");
     const output = transformSsr(source, "behaviorClaims", false);
     expect(output).not.toContain("ssrClaim");
     expect(output).not.toContain("sharedConfig");

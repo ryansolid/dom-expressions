@@ -2758,6 +2758,21 @@ export function ssrElement(tag, props, children, needsId) {
       prop.slice(0, 2) === "on" ||
       prop.slice(0, 5) === "prop:"
     ) {
+      // Behavior claims ride NAMED ref/on* positions only — the compiler
+      // can't see through a spread, so a claim-carrying stub landing here
+      // silently drops. Say so where the author can act on it.
+      if (
+        "_DX_DEV_" &&
+        typeof value === "function" &&
+        value[CLAIM_PROP] !== undefined &&
+        (prop === "ref" || prop.slice(0, 2) === "on")
+      ) {
+        console.warn(
+          `A spread on a server-rendered <${tag}> carries \`${prop}\` from client props — ` +
+            `spreads don't participate in behavior claims, so this drops. ` +
+            `Write the position out: \`${prop}={props.${String(value[CLAIM_PROP])}}\`.`
+        );
+      }
       continue;
     } else if (typeof value === "boolean") {
       if (!value) continue;

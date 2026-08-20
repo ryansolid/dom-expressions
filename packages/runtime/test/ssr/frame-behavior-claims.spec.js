@@ -111,6 +111,37 @@ describe("behavior claims — stream face", () => {
       warn.mockRestore();
     }
   });
+
+  it("a claim-carrying stub inside a SPREAD warns and drops — claims ride named positions only", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const chunks = await collectStream(props =>
+        r.ssrElement("button", { class: "copy", onClick: props.onCopy }, "x", false)
+      );
+      const html = htmlOf(chunks);
+      expect(html).toContain(`<button class="copy"`);
+      expect(html).not.toContain("_bnd");
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toMatch(/spread/i);
+      expect(warn.mock.calls[0][0]).toContain("onClick={props.onCopy}");
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("a server-local function in a spread stays silent — the compiler dropped it before claims existed", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const local = () => {};
+      const chunks = await collectStream(() =>
+        r.ssrElement("button", { onClick: local }, "x", false)
+      );
+      expect(htmlOf(chunks)).toContain("<button");
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
 });
 
 describe("behavior claims — document face", () => {
