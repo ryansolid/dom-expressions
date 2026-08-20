@@ -91,7 +91,13 @@ function serverOwned(render) {
 function serverComponentScope(render) {
   return runInServerComponentScope ? runInServerComponentScope(render) : render();
 }
-import { renderToStream, createLiveHoles, CLAIM_PROP } from "./server.js";
+import {
+  renderToStream,
+  createLiveHoles,
+  CLAIM_PROP,
+  CLAIMS_STREAM,
+  CLAIMS_DOCUMENT
+} from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
 import { envelopeContainerTraces, isContainerTraced } from "./frame-container-plugin.js";
 import {
@@ -502,6 +508,9 @@ export function renderServerComponent(component, options = {}) {
         // is live for the response window. The document face never sets
         // this (t=0 latches to the V1 snapshot).
         ctx.liveHoles = createLiveHoles(sink);
+        // Behavior claims (Stage 6): arm the compiled guard for the whole
+        // response — everything here is the component's own render.
+        ctx.claims = CLAIMS_STREAM;
       }
       return serverComponentScope(() => component(props));
     };
@@ -680,15 +689,10 @@ function suppressedFill(render) {
   const live = sharedConfig.context && sharedConfig.context.liveHoles;
   if (!live) return render();
   live.suppressed++;
-  // Fill content is client-hydrated: its handlers attach through hydration,
-  // so the claims gate closes for the window (a server-local handler inside
-  // a fill is legitimate, never a claim or a warning).
-  live.clientOwned++;
   try {
     return render();
   } finally {
     live.suppressed--;
-    live.clientOwned--;
   }
 }
 
@@ -1205,6 +1209,12 @@ export function frameTransformDirectResult(value, { id, args }) {
     // own render is context-isolated.
     serverOwned(() => {
       armDocumentLiveHoles(sharedConfig.context);
+      // Behavior claims (Stage 6): arm the compiled guard for this subtree
+      // (descendant context clones spread-copy it). Minting is additionally
+      // scope-gated inside ssrClaim, so client fill content — which
+      // re-enters the zone owner outside the component barrier — neither
+      // claims nor warns.
+      sharedConfig.context.claims = CLAIMS_DOCUMENT;
       const slotProps = createDocumentSlotProps(props, id);
       return serverComponentScope(() => component(slotProps));
     }),

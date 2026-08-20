@@ -2075,18 +2075,6 @@ export function createLiveHoles(sink, scoped) {
   // renders pass nothing (the entire response is the component).
   const inScope =
     scoped && typeof inServerComponentScope === "function" ? inServerComponentScope : null;
-  // Arm the claims gate (Stage 6): compiled SSR output under the
-  // `serverComponents` option guards ref/event claim evaluation on
-  // `sharedConfig.context.claims`. Renders that never arm an engine leave
-  // the property undefined — plain SSR pays one property miss and the
-  // expressions never evaluate.
-  const armCtx = sharedConfig.context;
-  if (armCtx) {
-    Object.defineProperty(armCtx, "claims", {
-      configurable: true,
-      get: () => engine.claimsActive()
-    });
-  }
   // Baselines compare marker-free: a first render's html carries nested
   // holes' markers, while sweep re-evaluations are mint-suppressed and
   // produce none — the equality gate must not read that as a change.
@@ -2125,21 +2113,6 @@ export function createLiveHoles(sink, scoped) {
     // sweeps suppress nested minting.
     suppressed: 0,
     sweeping: false,
-    // Client-owned spans (document-face slot fills): a SECOND counter,
-    // deliberately not `suppressed` — retry re-resolves and sweeps also
-    // raise `suppressed`, but claims (`_bnd` markers, Stage 6) must keep
-    // emitting through those so morphs never strip behavior. Only fill
-    // windows raise this: fill content is client-hydrated DOM whose
-    // handlers attach through hydration, so claims there are wrong (and a
-    // fill's server-local handler is legitimate, never a warning).
-    clientOwned: 0,
-    /** The compiled claims-gate (`sharedConfig.context.claims`) delegates
-     *  here: on for the whole render on the stream face (the response IS
-     *  the component), scope-gated to server-component interiors on the
-     *  document face, and off inside client-owned fill windows on both. */
-    claimsActive() {
-      return !engine.clientOwned && (!inScope || inScope());
-    },
     parent: null,
     // The impurity gates. Slot/region records are emit-once (occurrence
     // identity is positional), and reactive scopes are render-once (a memo
@@ -2291,17 +2264,14 @@ export function createLiveHoles(sink, scoped) {
           (value !== null && typeof value === "object" && value.$slot))
       ) {
         // …and a slot-tagged value resolves unmarked (suppressed, so a
-        // wrapped getter isn't re-intercepted one level down). Slot
-        // interiors are client-owned: claims stay off (clientOwned).
+        // wrapped getter isn't re-intercepted one level down).
         engine.parent = prevParent;
         const r = { t: [""], h: [], p: [] };
         engine.suppressed++;
-        engine.clientOwned++;
         try {
           resolveSSRNode(value, r);
         } finally {
           engine.suppressed--;
-          engine.clientOwned--;
         }
         return r.h.length ? r : r.t[0];
       }
@@ -2828,7 +2798,21 @@ export function ssrHydrationKey() {
 // dispatch/adoption time through the frame's LIVE props (nearest `data-fid`
 // ancestor), which is what makes re-renders latest-props by construction: no
 // binding table, no versioning, no supersession window.
+//
+// The gate has two layers, split between evaluation and mint:
+// - `ctx.claims` (the compiled guard) is ARMING — a plain enum the frame
+//   renderers set at server-component entry, so renders with no server
+//   components never evaluate the expressions (a property miss), and
+//   context clones carry it by spread.
+// - the mint check here is SCOPE — on the document face (CLAIMS_DOCUMENT)
+//   only owner chains inside the component barrier mint. Client fill
+//   content re-enters the zone owner captured OUTSIDE the barrier, so
+//   fills neither claim nor warn (their handlers are hydration's, and
+//   legitimate). The stream face (CLAIMS_STREAM) mints unconditionally:
+//   the whole response is the component and fills never render there.
 export const CLAIM_PROP = /*#__PURE__*/ Symbol.for("dom-expressions.claim-prop");
+export const CLAIMS_STREAM = 1;
+export const CLAIMS_DOCUMENT = 2;
 
 // `_bnd` value grammar: `pos=prop[,pos=prop]*`. Prop names are client-
 // controlled strings landing in a quoted attribute that splits on `,`/`=`,
@@ -2845,6 +2829,14 @@ function encodeClaimKey(key) {
 }
 
 export function ssrClaim(map) {
+  const mode = sharedConfig.context && sharedConfig.context.claims;
+  if (
+    !mode ||
+    (mode === CLAIMS_DOCUMENT &&
+      !(typeof inServerComponentScope === "function" && inServerComponentScope()))
+  ) {
+    return "";
+  }
   let out = "";
   for (const pos in map) {
     const value = map[pos];
@@ -3436,10 +3428,7 @@ function resolveSSRNode(
     // the adopting frame claims, so it resolves mint-suppressed exactly
     // like the hole-valued slot shapes above — no markers, no bindings.
     const slotLive = node.$slot && sharedConfig.context && sharedConfig.context.liveHoles;
-    if (slotLive) {
-      slotLive.suppressed++;
-      slotLive.clientOwned++;
-    }
+    if (slotLive) slotLive.suppressed++;
     try {
       let prevNonObj = false;
       for (let i = 0, len = node.length; i < len; i++) {
@@ -3450,10 +3439,7 @@ function resolveSSRNode(
         resolveSSRNode(item, result);
       }
     } finally {
-      if (slotLive) {
-        slotLive.suppressed--;
-        slotLive.clientOwned--;
-      }
+      if (slotLive) slotLive.suppressed--;
     }
   } else if (t === "object") {
     if (node.h) {
