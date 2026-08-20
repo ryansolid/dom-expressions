@@ -538,6 +538,11 @@ function transformAttributes(
   const hasChildren = path.node.children.length > 0,
     attributes = normalizeAttributes(path);
   let children: babelTypes.JSXExpressionContainer | undefined;
+  // Server-components claims: ref/on* positions on server-rendered
+  // intrinsics collect here and emit as one guarded whole-attribute hole
+  // (` _bnd="..."` or "") after the loop. Evaluation is gated on the render
+  // context's claims flag so plain SSR never runs the expressions.
+  const claims: [string, babelTypes.Expression][] = [];
 
   attributes.forEach(attribute => {
     if (!t.isJSXAttribute(attribute.node)) return;
@@ -568,12 +573,26 @@ function transformAttributes(
     ) {
       if (t.isJSXEmptyExpression(value.expression)) return;
       if (key === "ref") {
+        if (info.serverComponents) {
+          claims.push(["ref", value.expression as babelTypes.Expression]);
+          return;
+        }
         results.declarations.push(
           t.variableDeclarator(path.scope.generateUidIdentifier("_ref$"), value.expression)
         );
         return;
       }
-      if (key.startsWith("prop:") || key.startsWith("on")) return;
+      if (key.startsWith("prop:")) return;
+      if (key.startsWith("on")) {
+        // Capture-phase variants can't ride delegation; v1 drops them as
+        // before. `on:x` keeps the raw name, `onXxx` lowercases — the same
+        // event-name derivation as the client runtime.
+        if (info.serverComponents && !key.startsWith("oncapture:")) {
+          const pos = key.startsWith("on:") ? key.slice(3) : key.slice(2).toLowerCase();
+          if (pos) claims.push([pos, value.expression as babelTypes.Expression]);
+        }
+        return;
+      }
       if (ChildProperties.has(key)) {
         if (info.hydratable && key === "textContent" && value && value.expression) {
           const comments = value.expression.leadingComments;
@@ -746,6 +765,44 @@ function transformAttributes(
       );
     }
   });
+  if (claims.length) {
+    // Duplicate event keys were already last-wins-stripped above; `ref` is
+    // exempt from that pass (client semantics fire every ref), so multiple
+    // refs merge into an array value.
+    const byPos = new Map<string, babelTypes.Expression[]>();
+    for (const [pos, expr] of claims) {
+      let list = byPos.get(pos);
+      if (!list) byPos.set(pos, (list = []));
+      list.push(expr);
+    }
+    const map = t.objectExpression(
+      [...byPos].map(([pos, exprs]) =>
+        t.objectProperty(
+          t.stringLiteral(pos),
+          exprs.length === 1 ? exprs[0] : t.arrayExpression(exprs)
+        )
+      )
+    );
+    // `_$sharedConfig.context && _$sharedConfig.context.claims
+    //    ? _$ssrClaim({...}) : ""`
+    // — the claims flag is only set inside a server component's render
+    // scope (and cleared inside suppressed fill windows), so ordinary SSR
+    // pays the property reads and never evaluates the expressions.
+    const sharedConfigId = registerImportMethod(path, "sharedConfig");
+    const contextRead = () =>
+      t.memberExpression(t.cloneNode(sharedConfigId), t.identifier("context"));
+    const guarded = t.conditionalExpression(
+      t.logicalExpression(
+        "&&",
+        contextRead(),
+        t.memberExpression(contextRead(), t.identifier("claims"))
+      ),
+      t.callExpression(registerImportMethod(path, "ssrClaim"), [map]),
+      t.stringLiteral("")
+    );
+    results.template.push("");
+    results.templateValues.push(hoistExpression(path, results, guarded));
+  }
   if (!hasChildren && children) {
     path.node.children.push(children);
   }

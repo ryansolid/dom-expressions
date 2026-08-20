@@ -54,6 +54,10 @@ export { createComponent, effect, memo, untrack, mergeProps } from "rxcore";
 // framework owns the implementation (owner creation + per-attempt reset).
 export { ssrScope as scope } from "rxcore";
 export { getOwner };
+// Read by compiled SSR output under the `serverComponents` compiler option:
+// the claims-gate guard (`sharedConfig.context.claims ? ssrClaim(...) : ""`)
+// needs the shared render context at template-evaluation time.
+export { sharedConfig };
 
 export {
   DOMWithState,
@@ -2071,6 +2075,18 @@ export function createLiveHoles(sink, scoped) {
   // renders pass nothing (the entire response is the component).
   const inScope =
     scoped && typeof inServerComponentScope === "function" ? inServerComponentScope : null;
+  // Arm the claims gate (Stage 6): compiled SSR output under the
+  // `serverComponents` option guards ref/event claim evaluation on
+  // `sharedConfig.context.claims`. Renders that never arm an engine leave
+  // the property undefined — plain SSR pays one property miss and the
+  // expressions never evaluate.
+  const armCtx = sharedConfig.context;
+  if (armCtx) {
+    Object.defineProperty(armCtx, "claims", {
+      configurable: true,
+      get: () => engine.claimsActive()
+    });
+  }
   // Baselines compare marker-free: a first render's html carries nested
   // holes' markers, while sweep re-evaluations are mint-suppressed and
   // produce none — the equality gate must not read that as a change.
@@ -2109,6 +2125,21 @@ export function createLiveHoles(sink, scoped) {
     // sweeps suppress nested minting.
     suppressed: 0,
     sweeping: false,
+    // Client-owned spans (document-face slot fills): a SECOND counter,
+    // deliberately not `suppressed` — retry re-resolves and sweeps also
+    // raise `suppressed`, but claims (`_bnd` markers, Stage 6) must keep
+    // emitting through those so morphs never strip behavior. Only fill
+    // windows raise this: fill content is client-hydrated DOM whose
+    // handlers attach through hydration, so claims there are wrong (and a
+    // fill's server-local handler is legitimate, never a warning).
+    clientOwned: 0,
+    /** The compiled claims-gate (`sharedConfig.context.claims`) delegates
+     *  here: on for the whole render on the stream face (the response IS
+     *  the component), scope-gated to server-component interiors on the
+     *  document face, and off inside client-owned fill windows on both. */
+    claimsActive() {
+      return !engine.clientOwned && (!inScope || inScope());
+    },
     parent: null,
     // The impurity gates. Slot/region records are emit-once (occurrence
     // identity is positional), and reactive scopes are render-once (a memo
@@ -2260,14 +2291,17 @@ export function createLiveHoles(sink, scoped) {
           (value !== null && typeof value === "object" && value.$slot))
       ) {
         // …and a slot-tagged value resolves unmarked (suppressed, so a
-        // wrapped getter isn't re-intercepted one level down).
+        // wrapped getter isn't re-intercepted one level down). Slot
+        // interiors are client-owned: claims stay off (clientOwned).
         engine.parent = prevParent;
         const r = { t: [""], h: [], p: [] };
         engine.suppressed++;
+        engine.clientOwned++;
         try {
           resolveSSRNode(value, r);
         } finally {
           engine.suppressed--;
+          engine.clientOwned--;
         }
         return r.h.length ? r : r.t[0];
       }
@@ -2781,6 +2815,57 @@ export function ssrAttribute(key, value) {
 export function ssrHydrationKey() {
   const hk = getHydrationKey();
   return hk ? ` _hk=${hk}` : "";
+}
+
+// ---- server-component behavior claims (Stage 6: ref/event props) ----
+//
+// Compiled SSR output (behind the `serverComponents` compiler option) emits
+// `ctx.claims ? ssrClaim({ click: expr, ref: expr2 }) : ""` as a
+// whole-attribute hole on intrinsic elements carrying ref/on* positions. The
+// brand is the slot-props stub: a function-valued prop read off a server
+// component's props proxy carries its prop name (CLAIM_PROP), and the marker
+// simply names it — `_bnd="click=onCopy"`. Resolution happens client-side at
+// dispatch/adoption time through the frame's LIVE props (nearest `data-fid`
+// ancestor), which is what makes re-renders latest-props by construction: no
+// binding table, no versioning, no supersession window.
+export const CLAIM_PROP = /*#__PURE__*/ Symbol.for("dom-expressions.claim-prop");
+
+// `_bnd` value grammar: `pos=prop[,pos=prop]*`. Prop names are client-
+// controlled strings landing in a quoted attribute that splits on `,`/`=`,
+// so they percent-encode onto the occurrence-id alphabet (same scheme as
+// frame-sink's encodeOccurrenceKey; `%` itself encodes, so the mapping is
+// injective). Position names come from static JSX attribute names and are
+// grammar-safe by construction.
+const CLAIM_UNSAFE = /[^A-Za-z0-9_.-]/g;
+function encodeClaimKey(key) {
+  return String(key).replace(CLAIM_UNSAFE, c => {
+    const code = c.codePointAt(0);
+    return "%" + (code < 16 ? "0" : "") + code.toString(16);
+  });
+}
+
+export function ssrClaim(map) {
+  let out = "";
+  for (const pos in map) {
+    const value = map[pos];
+    const list = Array.isArray(value) ? value : [value];
+    for (const fn of list) {
+      const prop = (typeof fn === "function" && fn[CLAIM_PROP]) || undefined;
+      if (prop === undefined) {
+        if ("_DX_DEV_") {
+          console.warn(
+            `A \`${pos}\` position on a server-rendered element received a server-local ` +
+              `${typeof fn} — this handler can never run. Pass the function through the ` +
+              `server component's props from the client (compose on the client before ` +
+              `passing), or bind a mutation to \`action=\`.`
+          );
+        }
+        continue;
+      }
+      out += `${out ? "," : ""}${pos}=${encodeClaimKey(prop)}`;
+    }
+  }
+  return out ? ` _bnd="${out}"` : "";
 }
 
 // --- <select value> resolution (solidjs/solid#3013) ---------------------------
@@ -3351,7 +3436,10 @@ function resolveSSRNode(
     // the adopting frame claims, so it resolves mint-suppressed exactly
     // like the hole-valued slot shapes above — no markers, no bindings.
     const slotLive = node.$slot && sharedConfig.context && sharedConfig.context.liveHoles;
-    if (slotLive) slotLive.suppressed++;
+    if (slotLive) {
+      slotLive.suppressed++;
+      slotLive.clientOwned++;
+    }
     try {
       let prevNonObj = false;
       for (let i = 0, len = node.length; i < len; i++) {
@@ -3362,7 +3450,10 @@ function resolveSSRNode(
         resolveSSRNode(item, result);
       }
     } finally {
-      if (slotLive) slotLive.suppressed--;
+      if (slotLive) {
+        slotLive.suppressed--;
+        slotLive.clientOwned--;
+      }
     }
   } else if (t === "object") {
     if (node.h) {

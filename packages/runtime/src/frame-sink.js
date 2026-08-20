@@ -91,7 +91,7 @@ function serverOwned(render) {
 function serverComponentScope(render) {
   return runInServerComponentScope ? runInServerComponentScope(render) : render();
 }
-import { renderToStream, createLiveHoles } from "./server.js";
+import { renderToStream, createLiveHoles, CLAIM_PROP } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
 import { envelopeContainerTraces, isContainerTraced } from "./frame-container-plugin.js";
 import {
@@ -680,10 +680,15 @@ function suppressedFill(render) {
   const live = sharedConfig.context && sharedConfig.context.liveHoles;
   if (!live) return render();
   live.suppressed++;
+  // Fill content is client-hydrated: its handlers attach through hydration,
+  // so the claims gate closes for the window (a server-local handler inside
+  // a fill is legitimate, never a claim or a warning).
+  live.clientOwned++;
   try {
     return render();
   } finally {
     live.suppressed--;
+    live.clientOwned--;
   }
 }
 
@@ -1000,6 +1005,10 @@ export function createDocumentSlotProps(clientProps, frameId) {
         // same way it does on the stream face (the impurity gates would
         // latch it anyway — this makes it exact rather than incidental).
         fn.$lhSkip = true;
+        // The claim brand (Stage 6): a stub placed in a ref/on* position
+        // instead of being called claims by prop name — `ssrClaim` reads
+        // this to mint `_bnd`.
+        fn[CLAIM_PROP] = prop;
         getters.set(prop, fn);
       }
       return fn;
@@ -1626,6 +1635,9 @@ export function createSlotProps(sink, frame) {
         // function-shaped hole; the tag opts it out of live-hole marking the
         // same way `$slot` opts out its returned range.
         fn.$lhSkip = true;
+        // The claim brand (Stage 6): see createDocumentSlotProps — same
+        // contract on the stream face.
+        fn[CLAIM_PROP] = prop;
         getters.set(prop, fn);
       }
       return fn;

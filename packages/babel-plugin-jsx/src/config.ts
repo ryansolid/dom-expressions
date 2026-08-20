@@ -26,6 +26,7 @@ export interface JSXDOMExpressionsConfig {
   memoWrapper: string | false;
   validate: boolean;
   inlineStyles: boolean;
+  serverComponents: boolean;
   renderers?: RendererConfig[];
 }
 
@@ -48,7 +49,8 @@ const config: JSXDOMExpressionsConfig = {
   effectWrapper: "effect",
   memoWrapper: "memo",
   validate: true,
-  inlineStyles: true
+  inlineStyles: true,
+  serverComponents: false
 };
 
 export default config;
