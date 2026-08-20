@@ -697,6 +697,55 @@ describe("handler", () => {
     expect(unknown.status).toBe(404);
   });
 
+  it("rejects bare 5xx client responses", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () => new Response(null, { status: 500 });
+    try {
+      await expect(createClientReference("bare-500")()).rejects.toThrow(
+        "Server function call failed with status 500"
+      );
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it("rejects bodyless protocol errors with a useful fallback", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () =>
+      new Response(null, { status: 403, headers: { [ERROR_HEADER]: "true" } });
+    try {
+      await expect(createClientReference("bodyless-error")()).rejects.toThrow(
+        "Server function call failed with status 403"
+      );
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it("rejects bare 5xx single-flight responses after delivering their data", async () => {
+    const original = globalThis.fetch;
+    const consume = jest.fn();
+    const unsubscribe = subscribeFlightData(consume);
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ data: { refreshed: true } }), {
+        status: 502,
+        headers: {
+          "Content-Type": "application/json",
+          [BODY_FORMAT_HEADER]: BodyFormat.Json,
+          [SINGLE_FLIGHT_HEADER]: "true"
+        }
+      });
+    try {
+      await expect(createClientReference("single-flight-502")()).rejects.toThrow(
+        "Server function call failed with status 502"
+      );
+      expect(consume).toHaveBeenCalledWith({ refreshed: true }, { response: expect.any(Response) });
+    } finally {
+      unsubscribe();
+      globalThis.fetch = original;
+    }
+  });
+
   it("roundtrips a full client call", async () => {
     registerServerFunction("echo-0", async (a, b) => ({ sum: a + b, when: new Date(0) }));
     const restore = connectTransport();
