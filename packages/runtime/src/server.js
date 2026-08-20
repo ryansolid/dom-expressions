@@ -2816,16 +2816,15 @@ export const CLAIMS_DOCUMENT = 2;
 
 // `_bnd` value grammar: `pos=prop[,pos=prop]*`. Prop names are client-
 // controlled strings landing in a quoted attribute that splits on `,`/`=`,
-// so they percent-encode onto the occurrence-id alphabet (same scheme as
-// frame-sink's encodeOccurrenceKey; `%` itself encodes, so the mapping is
-// injective). Position names come from static JSX attribute names and are
-// grammar-safe by construction.
-const CLAIM_UNSAFE = /[^A-Za-z0-9_.-]/g;
+// so unsafe characters percent-encode — URI-style (UTF-8 %XX sequences),
+// because unlike occurrence ids the CLIENT decodes these back to prop names
+// (`decodeURIComponent` at dispatch). The passthrough alphabet is attribute-
+// and grammar-safe; `%` itself encodes, so the mapping is injective.
+// Position names come from static JSX attribute names and are grammar-safe
+// by construction.
+const CLAIM_UNSAFE = /[^A-Za-z0-9_.!~*'()-]/g;
 function encodeClaimKey(key) {
-  return String(key).replace(CLAIM_UNSAFE, c => {
-    const code = c.codePointAt(0);
-    return "%" + (code < 16 ? "0" : "") + code.toString(16);
-  });
+  return String(key).replace(CLAIM_UNSAFE, c => encodeURIComponent(c));
 }
 
 export function ssrClaim(map) {

@@ -89,9 +89,7 @@ describe("behavior claims — stream face", () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const local = () => {};
-      const chunks = await collectStream(
-        props => r.ssr`<span${claim({ click: local })}>x</span>`
-      );
+      const chunks = await collectStream(props => r.ssr`<span${claim({ click: local })}>x</span>`);
       expect(htmlOf(chunks)).toContain("<span>x</span>");
       expect(htmlOf(chunks)).not.toContain("_bnd");
       expect(warn).toHaveBeenCalledTimes(1);
@@ -131,10 +129,9 @@ describe("behavior claims — document face", () => {
       // The client's render prop: its fill renders inline on the document
       // face, inside the suppressed/client-owned window. A local handler
       // there is legitimate (hydration owns it) — no marker, no warning.
-      const html = await collectDocument(
-        props => r.ssr`<div>${[props.row({ n: 1 })]}</div>`,
-        { row: () => r.ssr`<em${claim({ click: localHandler })}>fill</em>` }
-      );
+      const html = await collectDocument(props => r.ssr`<div>${[props.row({ n: 1 })]}</div>`, {
+        row: () => r.ssr`<em${claim({ click: localHandler })}>fill</em>`
+      });
       expect(html).toContain("<em>fill</em>");
       expect(html).not.toContain("_bnd");
       expect(warn).not.toHaveBeenCalled();
@@ -151,13 +148,9 @@ describe("behavior claims — document face", () => {
       { id: "f" }
     );
     const html = await new Promise(resolve => {
-      r.renderToStream(
-        () => [
-          r.ssr`<nav${claim({ click: localHandler })}>out</nav>`,
-          Inline({})
-        ],
-        { plugins: [ServerComponentPlugin] }
-      ).pipe({
+      r.renderToStream(() => [r.ssr`<nav${claim({ click: localHandler })}>out</nav>`, Inline({})], {
+        plugins: [ServerComponentPlugin]
+      }).pipe({
         write: c => chunks.push(c),
         end: () => resolve(chunks.join(""))
       });
