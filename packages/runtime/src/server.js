@@ -114,6 +114,9 @@ function registerEntryAssets(manifest) {
       const assets = resolveAssets(key, manifest);
       if (assets) {
         for (let i = 0; i < assets.css.length; i++) ctx.registerAsset("style", assets.css[i]);
+        // js[0] is the entry itself, which the document loads with its own <script>;
+        // preload only its static import closure.
+        for (let i = 1; i < assets.js.length; i++) ctx.registerAsset("module", assets.js[i]);
       }
       return;
     }
