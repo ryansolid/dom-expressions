@@ -836,6 +836,12 @@ export function sanitizeServerError(value) {
   return new Error(GENERIC_SERVER_ERROR_MESSAGE);
 }
 
+// Client-only inspection seam. Present as a no-op so isomorphic
+// `@solidjs/web/server-functions` imports resolve on the server entry.
+export function observeServerFunctionCalls() {
+  return () => {};
+}
+
 async function matchesOrigin(origin, request, matcher) {
   if (matcher === undefined) return origin === new URL(request.url).origin;
   if (typeof matcher === "function") return !!(await matcher(origin, request));

@@ -70,12 +70,13 @@ const config = {
 
 const CALL_OBSERVERS = new Set();
 
-function notifyCallObservers(type, id, instance, source, meta) {
+function notifyCallObservers(type, id, instance, value, meta) {
   if (CALL_OBSERVERS.size === 0) return;
-  const call = { type, id, instance, source, meta, time: performance.now() };
+  const field = type === "request" ? "request" : "response";
+  const time = performance.now();
   for (const observer of new Set(CALL_OBSERVERS)) {
     try {
-      observer({ ...call, source: source.clone() });
+      observer({ type, id, instance, [field]: value.clone(), meta, time });
     } catch (error) {
       console.error(error);
     }

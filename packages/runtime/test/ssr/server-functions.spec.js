@@ -56,6 +56,7 @@ import {
   getServerFunctionInvocation,
   handleServerFunctionRequest,
   live as serverLive,
+  observeServerFunctionCalls as observeServerFunctionCallsOnServer,
   registerServerFunction,
   registerServerReference,
   sanitizeServerError,
@@ -2553,8 +2554,8 @@ describe("server function call observers", () => {
         meta: { name: "add" },
         time: expect.any(Number)
       });
-      await expect(calls[0].source.json()).resolves.toEqual([2, 3]);
-      await expect(calls[1].source.json()).resolves.toEqual({ total: 5 });
+      await expect(calls[0].request.json()).resolves.toEqual([2, 3]);
+      await expect(calls[1].response.json()).resolves.toEqual({ total: 5 });
     } finally {
       stop();
       restore();
@@ -2601,10 +2602,24 @@ describe("server function call observers", () => {
     try {
       const result = await clientGET(createClientReference("observe-get-0"))(42);
       expect(result).toBe(42);
-      const request = calls.find(call => call.type === "request").source;
+      const request = calls.find(call => call.type === "request").request;
       expect(request.method).toBe("GET");
       expect(request.url).toContain("id=observe-get-0");
       expect(request.url).toContain("args=%5B42%5D");
+    } finally {
+      stop();
+      restore();
+    }
+  });
+
+  it("is a no-op on the server entry", async () => {
+    const observer = jest.fn();
+    const stop = observeServerFunctionCallsOnServer(observer);
+    registerServerFunction("observe-server-noop-0", async () => "ok");
+    const restore = connectTransport();
+    try {
+      await expect(createClientReference("observe-server-noop-0")()).resolves.toBe("ok");
+      expect(observer).not.toHaveBeenCalled();
     } finally {
       stop();
       restore();

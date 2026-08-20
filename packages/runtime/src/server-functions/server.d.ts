@@ -28,7 +28,7 @@ export type {
 } from "./shared.js";
 export { decodeFlashCookie, encodeFlashCookie } from "./flash.js";
 export type { FlashSubmission } from "./flash.js";
-import { ServerFunction } from "./shared.js";
+import { ServerFunction, ServerFunctionMetadata } from "./shared.js";
 
 /**
  * The request event a server function call runs under: the base
@@ -640,6 +640,34 @@ export const GENERIC_SERVER_ERROR_MESSAGE: string;
  * Exposed for frameworks composing their own dispatch around the same policy.
  */
 export function sanitizeServerError(value: unknown): unknown;
+
+export interface ServerFunctionRequestCall {
+  type: "request";
+  id: string;
+  instance: string;
+  request: Request;
+  meta: ServerFunctionMetadata | undefined;
+  time: number;
+}
+
+export interface ServerFunctionResponseCall {
+  type: "response";
+  id: string;
+  instance: string;
+  response: Response;
+  meta: ServerFunctionMetadata | undefined;
+  time: number;
+}
+
+export type ServerFunctionCall = ServerFunctionRequestCall | ServerFunctionResponseCall;
+
+/**
+ * Client-only inspection seam. A no-op on this entry so isomorphic
+ * `@solidjs/web/server-functions` imports resolve.
+ */
+export function observeServerFunctionCalls(
+  observer: (call: ServerFunctionCall) => void
+): () => void;
 
 /**
  * Overrides the build-variant dev flag for this module instance — the seam

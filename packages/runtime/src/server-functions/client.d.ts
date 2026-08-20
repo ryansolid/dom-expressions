@@ -131,7 +131,7 @@ export interface ServerFunctionRequestCall {
   type: "request";
   id: string;
   instance: string;
-  source: Request;
+  request: Request;
   meta: ServerFunctionMetadata | undefined;
   time: number;
 }
@@ -140,14 +140,19 @@ export interface ServerFunctionResponseCall {
   type: "response";
   id: string;
   instance: string;
-  source: Response;
+  response: Response;
   meta: ServerFunctionMetadata | undefined;
   time: number;
 }
 
 export type ServerFunctionCall = ServerFunctionRequestCall | ServerFunctionResponseCall;
 
-/** Observes cloned requests and responses without handling them. */
+/**
+ * Observes cloned requests and responses without handling them. Subscribe
+ * from devtools; do not use this to replace `prepareRequest` /
+ * `responseHandler`. The server entry exports a no-op of the same name so
+ * isomorphic `@solidjs/web/server-functions` imports resolve.
+ */
 export function observeServerFunctionCalls(
   observer: (call: ServerFunctionCall) => void
 ): () => void;
