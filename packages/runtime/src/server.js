@@ -507,7 +507,7 @@ function emitHeadResource(registry, context, tracking, emitResource, nonce, desc
         if (!styles) tracking.boundaryStyles.set(tracking.currentBoundaryId, (styles = new Set()));
         styles.add(entry);
       }
-      const markup = `<link${attrHtml}>`;
+      const markup = `<link${attrHtml}${nonceAttr(nonce, "style")}>`;
       if (emitResource) emitResource(markup, entry);
       else {
         registry.eagerHtml += markup;
@@ -667,7 +667,7 @@ function renderShellHead(registry, nonce, isPendingFragment) {
 // `["a", identity, tag, attrs, children]` append. Only identities present in
 // the newly committed groups can change (the server never disposes), so the
 // diff walks just those.
-function flushHeadFragment(registry, boundary) {
+function flushHeadFragment(registry, boundary, nonce) {
   const groups = commitHeadBoundary(registry, boundary);
   if (!groups.length) return null;
   const winners = resolveHead(registry.committed);
@@ -700,11 +700,89 @@ function flushHeadFragment(registry, boundary) {
         if (v == null || v === false) continue;
         attrs[name] = v === true ? "" : String(v);
       }
+      // The client applies these with setAttribute, so the nonce must ride in
+      // attrs — the shell path gets it from renderHeadTagMarkup instead.
+      if (nonce && !hasNonceProp(t.props)) {
+        const destination = nonceDestination(t.tag, t.props);
+        const value = destination && nonce[destination];
+        if (value) attrs.nonce = String(value);
+      }
       const children = t.props.children;
       ops.push(["a", identity, t.tag, attrs, children == null ? null : String(children)]);
     }
   }
   return ops.length ? ops : null;
+}
+
+// Only script-src and style-src match nonces. The escaped attribute text is
+// precomputed once per render; emission sites just concatenate it.
+function normalizeNonce(nonce) {
+  if (nonce == null) return undefined;
+  if (typeof nonce === "string") {
+    const attr = nonce ? ` nonce="${escape(nonce, true)}"` : "";
+    return { script: nonce, style: nonce, scriptAttr: attr, styleAttr: attr };
+  }
+  const script = nonce.script;
+  const style = nonce.style;
+  if (script == null && style == null) return undefined;
+  return {
+    script,
+    style,
+    scriptAttr: script ? ` nonce="${escape(String(script), true)}"` : "",
+    styleAttr: style ? ` nonce="${escape(String(style), true)}"` : ""
+  };
+}
+
+// HTML compares rel/as ASCII case-insensitively; toLowerCase would fold a
+// non-ASCII character onto an ASCII one the parser never matches.
+function asciiLowerCase(value) {
+  return value.replace(/[A-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 32));
+}
+
+// Attribute names are ASCII case-insensitive, so a caller-supplied `Nonce`
+// counts as one too.
+function hasNonceProp(props) {
+  for (const name in props)
+    if (name.length === 5 && asciiLowerCase(name) === "nonce" && props[name] != null) return true;
+  return false;
+}
+
+// Directive governing a head tag's fetch. `as` keywords are the union of
+// preload and module preload destinations; anything else is "no state", which
+// modulepreload resolves to script and a plain preload treats as an error.
+function nonceDestination(tag, props) {
+  if (tag === "script") return "script";
+  if (tag === "style") return "style";
+  if (tag !== "link") return null;
+  const rel = props.rel;
+  if (typeof rel !== "string") return null;
+  const rels = asciiLowerCase(rel).split(/[\t\n\f\r ]+/);
+  // One element can create several links; stylesheet wins because a single
+  // attribute cannot carry two nonces. Split the element if they differ.
+  if (rels.includes("stylesheet")) return "style";
+  const isModulePreload = rels.includes("modulepreload");
+  if (!isModulePreload && !rels.includes("preload")) return null;
+  const as = typeof props.as === "string" ? asciiLowerCase(props.as) : "";
+  if (as === "style") return "style";
+  if (as === "script") return "script";
+  // A preload needs a valid `as`, and only script/style are nonce-aware.
+  if (!isModulePreload) return null;
+  switch (as) {
+    case "fetch":
+    case "font":
+    case "image":
+    case "json":
+    case "text":
+    case "track":
+      return null;
+    default:
+      return "script";
+  }
+}
+
+function nonceAttr(nonce, destination) {
+  if (!nonce || !destination) return "";
+  return destination === "script" ? nonce.scriptAttr : nonce.styleAttr;
 }
 
 function renderHeadAttrHtml(props) {
@@ -741,7 +819,9 @@ function headAttrRecord(props, skipRelHref) {
 function renderHeadTagMarkup(tag, props, identity, nonce) {
   let attrs = renderHeadAttrHtml(props);
   if (identity != null) attrs += ` data-dh="${escape(identity, true)}"`;
-  if (nonce && (tag === "script" || tag === "style")) attrs += ` nonce="${nonce}"`;
+  // renderHeadAttrHtml already emitted a caller-supplied nonce; appending the
+  // render one would duplicate the attribute.
+  if (nonce && !hasNonceProp(props)) attrs += nonceAttr(nonce, nonceDestination(tag, props));
   if (tag === "meta" || tag === "link" || tag === "base") return `<${tag}${attrs}>`;
   let body = props.children == null ? "" : String(props.children);
   if (tag === "script") body = body.replace(/<\/(script)/gi, "<\\/$1");
@@ -833,7 +913,8 @@ const REPLACE_SCRIPT = `function $df(e){return _$HY.f?_$HY.f(e):$dfr(e)}function
 const HEAD_SCRIPT = `function $dha(o,i,e,n){for(i=0;i<o.length;i++)e=o[i],"t"==e[0]?((n=document.querySelector("title"))||(n=document.createElement("title"),document.head.appendChild(n)),n.textContent=e[1],n.setAttribute("data-dh","title")):"r"==e[0]?$dhr(e[1]):(n=document.createElement(e[2]),Object.keys(e[3]).forEach(function(a){n.setAttribute(a,e[3][a])}),null!=e[4]&&(n.textContent=e[4]),n.setAttribute("data-dh",e[1]),document.head.appendChild(n))}function $dhr(v,l,i){for(l=document.head.querySelectorAll("[data-dh]"),i=0;i<l.length;i++)l[i].getAttribute("data-dh")==v&&l[i].remove()}function $dh(o){_$HY.h?_$HY.h(o):$dha(o)}`;
 
 export function renderToString(code, options = {}) {
-  const { renderId = "", nonce, noScripts, manifest, onHead } = options;
+  const { renderId = "", noScripts, manifest, onHead } = options;
+  const nonce = normalizeNonce(options.nonce);
   let scripts = "";
   const serializer = createHydrationSerializer({
     scopeId: renderId,
@@ -919,15 +1000,8 @@ export function renderToString(code, options = {}) {
 }
 
 export function renderToStream(code, options = {}) {
-  let {
-    nonce,
-    onCompleteShell,
-    onCompleteAll,
-    renderId = "",
-    noScripts,
-    manifest,
-    onHead
-  } = options;
+  let { onCompleteShell, onCompleteAll, renderId = "", noScripts, manifest, onHead } = options;
+  const nonce = normalizeNonce(options.nonce);
   let dispose;
   let dead = false;
   // Client-disconnect teardown. A sink that throws from `write`/`end` (its
@@ -1043,6 +1117,7 @@ export function renderToStream(code, options = {}) {
         buffer.write(renderInlineStyle(styles.inline[i], nonce));
       }
       if (styles.links.length) {
+        const styleAttr = nonceAttr(nonce, "style");
         emitTask(`$dfs("${key}",${styles.links.length},${deferActivation ? 1 : 0})`);
         // Flush the $dfs gate before the links so their onload can't fire
         // ahead of the pending-style registration.
@@ -1050,8 +1125,8 @@ export function renderToStream(code, options = {}) {
         for (const entry of styles.links) {
           buffer.write(
             typeof entry === "string"
-              ? `<link rel="stylesheet" href="${entry}" onload="$dfc('${key}')" onerror="$dfc('${key}')">`
-              : `<link${entry.attrHtml} onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+              ? `<link rel="stylesheet" href="${entry}"${styleAttr} onload="$dfc('${key}')" onerror="$dfc('${key}')">`
+              : `<link${entry.attrHtml}${styleAttr} onload="$dfc('${key}')" onerror="$dfc('${key}')">`
           );
         }
         buffer.write(`<template id="${key}">${value}</template>`);
@@ -1074,7 +1149,7 @@ export function renderToStream(code, options = {}) {
     // already-rendered markup and write through eagerly.
     asset(type, value) {
       if (type === "module") {
-        buffer.write(`<link rel="modulepreload" href="${value}">`);
+        buffer.write(`<link rel="modulepreload" href="${value}"${nonceAttr(nonce, "script")}>`);
       } else if (type === "inline-style") {
         buffer.write(renderInlineStyle(value, nonce));
       } else if (type === "head-tag") {
@@ -1160,7 +1235,7 @@ export function renderToStream(code, options = {}) {
   const registry = new Map();
   const writeTasks = () => {
     if (tasks.length && !completed && firstFlushed) {
-      buffer.write(`<script${nonce ? ` nonce="${nonce}"` : ""}>${tasks}</script>`);
+      buffer.write(`<script${nonceAttr(nonce, "script")}>${tasks}</script>`);
       tasks = "";
     }
     timer = null;
@@ -1387,7 +1462,7 @@ export function renderToStream(code, options = {}) {
               // fragment's $df so head update and reveal stay atomic. Must
               // precede sink.fragment so the ops land in the same task batch
               // as (and before) the activation call.
-              const headOps = error ? null : flushHeadFragment(headRegistry, key);
+              const headOps = error ? null : flushHeadFragment(headRegistry, key, nonce);
               if (headOps) emitHeadOps(key, headOps);
               // The error rides the sink call: the document sink ignores it
               // (its protocol rejects `<key>_fr` via item.resolve below), but
@@ -1733,7 +1808,7 @@ export function renderToStream(code, options = {}) {
 // components
 export function HydrationScript(props) {
   const { nonce } = sharedConfig.context;
-  return ssr(generateHydrationScript({ nonce, ...props }));
+  return ssr(generateHydrationScript({ nonce: nonce && nonce.script, ...props }));
 }
 
 // Compiler-emitted: tags `fn` so `ssr()` routes it through the grouped
@@ -2936,8 +3011,9 @@ export function applyRef(r, element) {
 }
 
 export function generateHydrationScript({ eventNames = ["click", "input"], nonce } = {}) {
+  const value = typeof nonce === "string" ? nonce : nonce && nonce.script;
   return `<script${
-    nonce ? ` nonce="${nonce}"` : ""
+    value ? ` nonce="${escape(String(value), true)}"` : ""
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '","'
   )}"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;
@@ -2979,7 +3055,7 @@ function allSettled(promises) {
 // contain `</head>`, splicing is automatic and `onHead` is not called: one
 // mode or the other, decided by the render output itself.
 function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, headTags, onHead) {
-  const scriptTag = scripts ? `<script${nonce ? ` nonce="${nonce}"` : ""}>${scripts}</script>` : "";
+  const scriptTag = scripts ? `<script${nonceAttr(nonce, "script")}>${scripts}</script>` : "";
   const headTagsHtml = headTags ? headTags.html : "";
   const headPrelude = headTags ? headTags.prelude : "";
   if (
@@ -3036,11 +3112,13 @@ function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, hea
 // entries are consumed (marked emitted) by whichever path renders them first.
 function renderHeadAssets(emittedAssets, inlineStyles, nonce) {
   let head = "";
+  const styleAttr = nonceAttr(nonce, "style");
+  const scriptAttr = nonceAttr(nonce, "script");
   if (emittedAssets && emittedAssets.size) {
     for (const url of emittedAssets) {
       head += isCssUrl(url)
-        ? `<link rel="stylesheet" href="${url}">`
-        : `<link rel="modulepreload" href="${url}">`;
+        ? `<link rel="stylesheet" href="${url}"${styleAttr}>`
+        : `<link rel="modulepreload" href="${url}"${scriptAttr}>`;
     }
   }
   if (inlineStyles && inlineStyles.size) {
@@ -3124,15 +3202,17 @@ function escapeStyleContent(content) {
 
 function renderInlineStyle(entry, nonce) {
   let attrs = "";
+  let hasNonce = false;
   if (entry.attrs) {
     for (const name in entry.attrs) {
+      if (name.length === 5 && asciiLowerCase(name) === "nonce") hasNonce = true;
       attrs += ` ${name}="${escape(String(entry.attrs[name]), true)}"`;
     }
   }
-  return `<style${nonce ? ` nonce="${nonce}"` : ""} data-asset="${escape(
-    entry.id,
-    true
-  )}"${attrs}>${escapeStyleContent(entry.content)}</style>`;
+  const nonceHtml = hasNonce ? "" : nonceAttr(nonce, "style");
+  return `<style${nonceHtml} data-asset="${escape(entry.id, true)}"${attrs}>${escapeStyleContent(
+    entry.content
+  )}</style>`;
 }
 
 function waitForFragments(registry, key) {
@@ -3529,10 +3609,6 @@ function deriveHead(stub, responseInit = {}) {
   return { status, statusText, headers };
 }
 
-function escapeAttribute(value) {
-  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-}
-
 /**
  * Derives the outgoing `Response` for an SSR render result, running the
  * response-head lifecycle against `event.response`:
@@ -3556,7 +3632,8 @@ function escapeAttribute(value) {
  */
 export function createSSRResponse(result, event, options = {}) {
   const stub = event && event.response;
-  const { responseInit, nonce, transformChunk } = options;
+  const { responseInit, transformChunk } = options;
+  const nonce = normalizeNonce(options.nonce);
 
   if (typeof result === "string") {
     if (stub) commitResponseStub(stub);
@@ -3631,7 +3708,7 @@ export function createSSRResponse(result, event, options = {}) {
         // side that can still honor it.
         const location = stub && stub.headers.get("Location");
         if (location) {
-          const attr = nonce ? ` nonce="${escapeAttribute(nonce)}"` : "";
+          const attr = nonceAttr(nonce, "script");
           enqueue(
             `<script${attr}>window.location=${JSON.stringify(location).replace(
               /</g,

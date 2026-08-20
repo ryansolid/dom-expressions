@@ -57,10 +57,21 @@ export type AssetResolverFn = (
   key: string
 ) => ResolvedAssets | null | undefined | Promise<ResolvedAssets | null | undefined>;
 
+/**
+ * CSP nonce for the tags the render emits. A string applies to both
+ * nonce-aware destinations; a `{ script, style }` pair routes each tag to the directive
+ * governing its fetch — the `script-src-elem`/`style-src-elem` chains, which
+ * fall back to `script-src`/`style-src` and then `default-src`. Worker
+ * destinations take the script nonce, which only applies when their own
+ * fallback reaches `script-src`. A nonce supplied through a `useHead` tag's
+ * own props always wins.
+ */
+export type CSPNonce = string | { script?: string; style?: string };
+
 export function renderToString<T>(
   fn: () => T,
   options?: {
-    nonce?: string;
+    nonce?: CSPNonce;
     renderId?: string;
     noScripts?: boolean;
     plugins?: SerializerPlugin[];
@@ -82,7 +93,7 @@ export function renderToString<T>(
 export function renderToStream<T>(
   fn: () => T,
   options?: {
-    nonce?: string;
+    nonce?: CSPNonce;
     renderId?: string;
     noScripts?: boolean;
     plugins?: SerializerPlugin[];
@@ -188,7 +199,8 @@ export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): J
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function generateHydrationScript(options?: {
-  nonce?: string;
+  /** A pair is accepted for symmetry; only its `script` half is used. */
+  nonce?: CSPNonce;
   eventNames?: string[];
 }): string;
 /**
@@ -368,8 +380,8 @@ export type {
 export interface SSRResponseOptions {
   /** Base head; the stub's status/headers win over it. */
   responseInit?: ResponseInit;
-  /** Nonce carried by the post-flush `<script>` redirect fallback. */
-  nonce?: string;
+  /** Nonce carried by the post-flush `<script>` redirect fallback (its `script` half). */
+  nonce?: CSPNonce;
   /** Rewrites each outgoing HTML chunk (entry script injection, ...). */
   transformChunk?: (chunk: string) => string;
 }
