@@ -998,7 +998,9 @@ retired as a pole and survives only as potential authoring sugar.
    through the server component's props, claim-engine lifecycle
    (fire on adoption, re-fire on morph re-materialization), owner
    and cleanup from the passing scope — and *event position*
-   resolves through delegation at dispatch. SSR cost is gated at
+   resolves through delegation at dispatch. The transform is behind
+   the server-components compiler option (non-SC apps compile
+   byte-for-byte as today); with it on, SSR cost is gated at
    evaluation by the render context's frame flag. One grammar: a
    prop, used in a JSX position — interactive elements are authored
    as JSX (hole thunks interleave `innerHTML` content with real JSX
@@ -1244,27 +1246,38 @@ are the client-reactive-state layer Solid natively is, or `predict`'s
 transaction-scoped slice of it). Refs remain the powerful tier for
 element-in-hand at materialization: mounts, observers, measurement.
 
-**The SSR cost story (settled 2026-08-18): minimally detrimental by
-construction.** Handler expressions in SSR output are today dropped
-at compile time, *unevaluated*. The compiler round (Babel + Rust,
-the `$key` shape) emits a guarded expression instead:
+**The SSR cost story (settled 2026-08-18; opt-in amendment
+2026-08-19): minimally detrimental by construction, and zero unless
+asked for.** Handler expressions in SSR output are today dropped at
+compile time, *unevaluated*. Behind a compiler option (the server
+components flag — apps not enabling server components never get the
+transform, and their SSR output compiles byte-for-byte as today),
+the compiler round (Babel + Rust, the `$key` shape) emits a guarded
+expression instead:
 
 ```js
 sharedConfig.context.frame ? _$claim(props.onCopy) : ""
 ```
 
-The frame flag on the shared render context — the established
-channel for ambient render mode (the async property, hydration ids)
-— gates *evaluation*, not just output: normal SSR pays one property
-read per handler position and the expression never runs (no new
-work, no new side effects, byte-identical markup). Carrying the sink
+This is a compile-time capability flag with exact precedent in
+`hydratable`, carrying the same known trade-off: modules precompiled
+without the option can't offer ref/event positions inside an SC app,
+just as non-hydratable precompiled code can't hydrate — acceptable
+and established, since the plugin sets it app-wide and libraries
+shipping source (the ecosystem norm) inherit the app's setting. With
+the option on, the frame flag on the shared render context — the
+established channel for ambient render mode (the async property,
+hydration ids) — gates *evaluation*, not just output: normal SSR in
+an SC-enabled app pays one property read per handler position and
+the expression never runs (no new work, no new side effects,
+byte-identical markup). Carrying the sink
 reference on the context rather than a boolean makes the flag test
 and the binding-table handle the same read. Inside a frame render
 the brand test sorts values: cross-border function → marker into the
 occurrence's binding table; anything else → empty string plus a
-dev-mode warning naming the three exits ("this handler can never
-run — pass it from the client's props, register a claim, or bind a
-mutation to `action=`"). The warning is runtime-only by necessity,
+dev-mode warning naming the two exits ("this handler can never
+run — pass it from the client's props, or bind a mutation to
+`action=`"). The warning is runtime-only by necessity,
 not laziness (2026-08-18): SSR compilation is context-blind — the
 same compiled module serves hydratable SSR, where a local handler is
 legitimate (the client compilation of the same source owns it), and
