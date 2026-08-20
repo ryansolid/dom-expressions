@@ -67,37 +67,35 @@ const claimedAttr = name => name === "href" || name === "action";
 // under the `serverComponents` option) naming which CLIENT props hold the
 // behavior for each position. Dispatch resolves by name through the frame's
 // live props at event time — latest-props by construction, no table. The
-// seam with client.js is a registered symbol (importless in both
-// directions): client.js contributes `delegate` (document-listener arming)
-// and reads `resolve` from its delegation walk.
+// seam with client.js is a registered symbol read from inside its delegation
+// walk (importless in both directions, zero top-level bytes there); THIS
+// module is the only writer. Document-listener arming flows the other way as
+// a host/frame option (`delegate`, wired by the platform glue to
+// delegateEvents) — publishing it from client.js would drag the whole event
+// system into every tree-shaken subset of the core entry.
 const BOUND_SEAM = Symbol.for("dom-expressions.bound-claims");
 const boundSeam = globalThis[BOUND_SEAM] || (globalThis[BOUND_SEAM] = {});
 const BND_ATTR = "_bnd";
 const BND_SELECTOR = "[_bnd]";
 
-// Parse cache: keyed per element by the attribute STRING, so a morph that
-// rewrites the marker in place invalidates naturally.
-const bndCache = new WeakMap();
+// Parsed on demand — the string is a handful of entries and reads happen
+// per dispatch / per sweep, so a cache would cost more bytes than it saves.
 function bndMap(el) {
   const s = el.getAttribute(BND_ATTR);
   if (!s) return undefined;
-  let c = bndCache.get(el);
-  if (!c || c.s !== s) {
-    const map = {};
-    for (const entry of s.split(",")) {
-      const eq = entry.indexOf("=");
-      if (eq < 1) continue;
-      const pos = entry.slice(0, eq);
-      const prop = decodeURIComponent(entry.slice(eq + 1));
-      // Repeated positions (multiple refs) accumulate.
-      const prev = map[pos];
-      if (prev === undefined) map[pos] = prop;
-      else if (Array.isArray(prev)) prev.push(prop);
-      else map[pos] = [prev, prop];
-    }
-    bndCache.set(el, (c = { s, map }));
+  const map = {};
+  for (const entry of s.split(",")) {
+    const eq = entry.indexOf("=");
+    if (eq < 1) continue;
+    const pos = entry.slice(0, eq);
+    const prop = decodeURIComponent(entry.slice(eq + 1));
+    // Repeated positions (multiple refs) accumulate.
+    const prev = map[pos];
+    if (prev === undefined) map[pos] = prop;
+    else if (Array.isArray(prev)) prev.push(prop);
+    else map[pos] = [prev, prop];
   }
-  return c.map;
+  return map;
 }
 
 // Dispatch-time resolution for the delegation walk. The owning frame rides
@@ -109,21 +107,21 @@ boundSeam.resolve = (el, type) => {
   const map = bndMap(el);
   const prop = map && map[type];
   if (typeof prop !== "string") return undefined;
+  return claimFn(frame, type, prop);
+};
+
+/** Read one claimed prop off the frame, warning (dev) on non-functions. */
+function claimFn(frame, pos, prop) {
   const fn = frame.clientProp(prop);
   if (typeof fn === "function") return fn;
   if ("_DX_DEV_" && fn !== undefined) {
     console.warn(
-      `A server element claims \`${type}\` from client prop \`${prop}\`, but the mounted ` +
+      `A server element claims \`${pos}\` from client prop \`${prop}\`, but the mounted ` +
         `frame's prop is not a function.`
     );
   }
   return undefined;
-};
-
-// Ref-position dedupe: refs fire once per (element, prop) — a morph that
-// replaces the element re-fires on the fresh node; a re-sweep over a kept
-// node does not.
-const firedRefs = new WeakMap();
+}
 
 /**
  * Sweep one materialized/morph-touched subtree for `_bnd` markers: stamp
@@ -131,7 +129,7 @@ const firedRefs = new WeakMap();
  * document listeners for claimed event types, and fire ref positions.
  * Dormant cost without markers: one selector query per apply.
  */
-function sweepBound(root, frame) {
+function sweepBound(root, frame, delegate) {
   const isElement = root.nodeType === ELEMENT_NODE;
   if (!isElement && root.nodeType !== 11 /* DOCUMENT_FRAGMENT_NODE */) return;
   let els;
@@ -152,23 +150,19 @@ function sweepBound(root, frame) {
       else (types || (types = [])).push(pos);
     }
   }
-  if (types && boundSeam.delegate) boundSeam.delegate(types);
+  if (types && delegate) delegate(types);
 }
 
+// Ref-position dedupe rides an expando: refs fire once per (element, prop) —
+// a morph that replaces the element re-fires on the fresh node (fresh
+// expando); a re-sweep over a kept node does not.
 function fireRefs(frame, el, prop) {
-  let fired = firedRefs.get(el);
-  if (!fired) firedRefs.set(el, (fired = new Set()));
+  const fired = el._$bndFired || (el._$bndFired = new Set());
   for (const p of Array.isArray(prop) ? prop : [prop]) {
     if (fired.has(p)) continue;
     fired.add(p);
-    const fn = frame.clientProp(p);
-    if (typeof fn === "function") fn(el);
-    else if ("_DX_DEV_" && fn !== undefined) {
-      console.warn(
-        `A server element claims \`ref\` from client prop \`${p}\`, but the mounted frame's ` +
-          `prop is not a function.`
-      );
-    }
+    const fn = claimFn(frame, "ref", p);
+    if (fn) fn(el);
   }
 }
 
@@ -310,6 +304,10 @@ export function createFrameHost(options = {}) {
     return true;
   };
   return {
+    // Document-listener arming for behavior-claim event positions: the
+    // platform glue passes delegateEvents here so frames can arm types no
+    // compiled client handler ever registered (see the seam note above).
+    delegate: options.delegate,
     register(id, frame) {
       let set = frames.get(id);
       if (!set) frames.set(id, (set = new Set()));
@@ -455,10 +453,11 @@ class FrameImpl {
     // Behavior claims sweep first, and unconditionally — `_bnd` markers are
     // this frame's own contract, not a registered-consumer one. `direct`
     // re-checks (in-place attribute rewrites) are nav-claim specific; a
-    // morph that rewrites `_bnd` in place invalidates through the parse
-    // cache at next dispatch, and kept elements keep their stamp.
+    // morph that rewrites `_bnd` in place re-parses at next dispatch, and
+    // kept elements keep their stamp.
     if (!direct && node.nodeType !== TEXT_NODE && node.nodeType !== COMMENT_NODE) {
-      sweepBound(node, this);
+      const o = this.#options;
+      sweepBound(node, this, o.delegate || (o.host && o.host.delegate));
     }
     const handlers = claimHandlers();
     if (!handlers) return;

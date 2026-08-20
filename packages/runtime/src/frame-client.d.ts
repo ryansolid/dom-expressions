@@ -245,6 +245,15 @@ export interface FrameHostOptions {
    * identity only.
    */
   isContainer?(value: unknown): boolean;
+  /**
+   * Arms event types for behavior claims: the `_bnd` sweep collects the
+   * event names it finds and hands them here so delegated dispatch can
+   * reach them. Platform glue passes its `delegateEvents` — the option
+   * exists (rather than client.js importing the event system) so
+   * tree-shaken subsets without events pay nothing. Frames registered
+   * with this host inherit it unless they pass their own `delegate`.
+   */
+  delegate?(eventNames: Iterable<string>): void;
 }
 
 /** @experimental */
@@ -284,6 +293,8 @@ export interface FrameOptions {
    * streamed chunks).
    */
   ownerScope?<T>(fn: () => T): T;
+  /** Per-frame override of the host's `delegate` (see FrameHostOptions). */
+  delegate?(eventNames: Iterable<string>): void;
   /**
    * Boundary-driven segment reveal. When present, `#revealSegment` hands the
    * placeholder seam to this hook instead of swapping imperatively: the binding

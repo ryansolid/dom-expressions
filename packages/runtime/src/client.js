@@ -299,20 +299,6 @@ export function claimElement(node) {
   return node;
 }
 
-// === Behavior claims (Stage 6: ref/event props on server elements) ===
-//
-// Server-rendered elements carrying `_bnd="pos=prop"` markers resolve their
-// handlers at DISPATCH through the frame runtime: the delegation walk asks
-// the seam for a handler when an element carries the marker, and the frame
-// runtime (separately bundled, importless in both directions — the claim
-// seam pattern) resolves prop → the frame's live client props. This module
-// contributes `delegate` so marker sweeps can arm document listeners for
-// event types no client handler ever registered. Dormant: without a frame
-// runtime the walk pays one extra check per marker-less element.
-const BOUND_SEAM = Symbol.for("dom-expressions.bound-claims");
-const boundClaims = globalThis[BOUND_SEAM] || (globalThis[BOUND_SEAM] = {});
-boundClaims.delegate = eventNames => delegateEvents(eventNames);
-
 export function setAttribute(node, name, value) {
   if (isHydrating(node)) return;
   if (value == null || value === false) node.removeAttribute(name);
@@ -1649,16 +1635,16 @@ function eventHandler(e, container, state) {
     });
   const handleNode = () => {
     let handler = node[key];
-    // Server-claimed handler (`_bnd` marker): resolved at dispatch through
-    // the frame runtime's seam — latest-props by construction. Only pays
-    // when no compiled handler exists on the node.
-    if (
-      handler === undefined &&
-      boundClaims.resolve !== undefined &&
-      node.hasAttribute &&
-      node.hasAttribute("_bnd")
-    ) {
-      handler = boundClaims.resolve(node, e.type);
+    // Server-claimed handler (`_bnd` marker, Stage 6 behavior claims):
+    // resolved at dispatch through the frame runtime's registered-symbol
+    // seam — latest-props by construction, importless in both directions.
+    // The read lives entirely inside this walk (no module-level state):
+    // client.js contributes ZERO top-level bytes to tree-shaken subsets,
+    // and the seam stays live for markers adopted before the frame runtime
+    // loads (the document face). Only pays when no compiled handler exists.
+    if (handler === undefined && node.hasAttribute && node.hasAttribute("_bnd")) {
+      const seam = globalThis[Symbol.for("dom-expressions.bound-claims")];
+      if (seam) handler = seam.resolve(node, e.type);
     }
     if (handler && !node.disabled) {
       const data = node[`${key}Data`];

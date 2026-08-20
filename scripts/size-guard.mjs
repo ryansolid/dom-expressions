@@ -30,9 +30,16 @@ const SERIALIZER_DECODE = resolve(ROOT, "packages/runtime/src/serializer-decode.
 
 // name -> [entry (import statements or subset against CLIENT), gzip ceiling]
 const SCENARIOS = {
+  // +19 for Stage 6 behavior claims' dispatch hook: the delegation walk's
+  // one extra branch (marker check + registered-symbol seam read, entirely
+  // inside eventHandler — client.js gained ZERO top-level statements, which
+  // the router-eager-subset scenario below enforces at actual+20; an early
+  // draft published `delegate` from module scope and blew that subset from
+  // 401 to 1189 by retaining the whole event system in every slice).
+  // Re-guarded at actual+20 (4499 measured).
   "client: compiled-JSX core (render/template/insert/delegateEvents/effects)": [
     "{ render, template, insert, delegateEvents, className, style, setAttribute, addEvent, spread }",
-    4480
+    4519
   ],
   // Ceiling history: guarded 7950 at landing; 7958 after the boundary-driven
   // reveal round (+60: the revealed fragment's parent on the _$HY.fe hook);
@@ -86,8 +93,11 @@ const SCENARIOS = {
   // Then +6 for the multi-root hydrate/islands fix: per-root
   // registry/gather re-install across the deferred _assets preload render
   // and renderId-scoped root asset map names. Re-guarded at actual+20
-  // (10810 measured).
-  "client: full surface": ["*", 10830],
+  // (10810 measured). Then +52 for Stage 6 behavior claims' core half —
+  // the dispatch-hook bytes charged to the compiled-JSX core scenario
+  // above, reaching this scenario through the same delegation walk.
+  // Re-guarded at actual+20 (10862 measured).
+  "client: full surface": ["*", 10882],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
@@ -243,7 +253,7 @@ const SCENARIOS = {
   // (request.signal/cancel → iterator.return) deliberately lives in
   // server.js — zero client bytes. Re-guarded at actual+20 (9004
   // measured).
-  // Then +84 for the container-trace stream mint: traces cross as RAW
+// Then +84 for the container-trace stream mint: traces cross as RAW
   // seroval streams (sync buffered replay — a document-delivered snapshot
   // must be readable during hydration's synchronous claim walk; the
   // async-iterable wrapper made a settled boundary suspend and hydrate a
@@ -252,11 +262,23 @@ const SCENARIOS = {
   // 0 — the plugin module itself stays seroval-free) plus the parse-face
   // mint branches and the stream-shaped marker probe. Re-guarded at
   // actual+20 (9088 measured).
+  // Then +431 for Stage 6 behavior claims (principles §9.1), the frame
+  // half: `_bnd` marker parse (no cache — per-dispatch parsing of a
+  // handful of entries beats the WeakMap's bytes), the sweep at every
+  // materialization/morph site (frame expando stamp, event-type arming
+  // through the host's `delegate` option, ref firing with per-element
+  // expando dedupe), and the seam's `resolve` — the only writer to the
+  // registered symbol client.js reads at dispatch. Arming flows AS AN
+  // OPTION (platform glue passes delegateEvents to createFrameHost)
+  // because publishing it from client.js retains the event system in
+  // every tree-shaken subset — the failure mode the router-eager-subset
+  // scenario pins. Re-guarded at actual+20 (9519 measured, post-rebase on
+  // the stream-mint wire).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
-    9108
+    9539
   ]
 };
 
