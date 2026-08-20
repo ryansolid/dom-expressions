@@ -61,6 +61,117 @@ function claimNode(handlers, el) {
 
 const claimedAttr = name => name === "href" || name === "action";
 
+// === Behavior claims (Stage 6: ref/event props on server elements) ===
+//
+// Server markup carries `_bnd="pos=prop[,pos=prop]*"` markers (compiled
+// under the `serverComponents` option) naming which CLIENT props hold the
+// behavior for each position. Dispatch resolves by name through the frame's
+// live props at event time — latest-props by construction, no table. The
+// seam with client.js is a registered symbol (importless in both
+// directions): client.js contributes `delegate` (document-listener arming)
+// and reads `resolve` from its delegation walk.
+const BOUND_SEAM = Symbol.for("dom-expressions.bound-claims");
+const boundSeam = globalThis[BOUND_SEAM] || (globalThis[BOUND_SEAM] = {});
+const BND_ATTR = "_bnd";
+const BND_SELECTOR = "[_bnd]";
+
+// Parse cache: keyed per element by the attribute STRING, so a morph that
+// rewrites the marker in place invalidates naturally.
+const bndCache = new WeakMap();
+function bndMap(el) {
+  const s = el.getAttribute(BND_ATTR);
+  if (!s) return undefined;
+  let c = bndCache.get(el);
+  if (!c || c.s !== s) {
+    const map = {};
+    for (const entry of s.split(",")) {
+      const eq = entry.indexOf("=");
+      if (eq < 1) continue;
+      const pos = entry.slice(0, eq);
+      const prop = decodeURIComponent(entry.slice(eq + 1));
+      // Repeated positions (multiple refs) accumulate.
+      const prev = map[pos];
+      if (prev === undefined) map[pos] = prop;
+      else if (Array.isArray(prev)) prev.push(prop);
+      else map[pos] = [prev, prop];
+    }
+    bndCache.set(el, (c = { s, map }));
+  }
+  return c.map;
+}
+
+// Dispatch-time resolution for the delegation walk. The owning frame rides
+// a sweep-stamped expando (not an ancestor climb: range-bounded frames have
+// no wrapping element, and morphs re-stamp replaced elements on re-sweep).
+boundSeam.resolve = (el, type) => {
+  const frame = el._$bndFrame;
+  if (!frame) return undefined;
+  const map = bndMap(el);
+  const prop = map && map[type];
+  if (typeof prop !== "string") return undefined;
+  const fn = frame.clientProp(prop);
+  if (typeof fn === "function") return fn;
+  if ("_DX_DEV_" && fn !== undefined) {
+    console.warn(
+      `A server element claims \`${type}\` from client prop \`${prop}\`, but the mounted ` +
+        `frame's prop is not a function.`
+    );
+  }
+  return undefined;
+};
+
+// Ref-position dedupe: refs fire once per (element, prop) — a morph that
+// replaces the element re-fires on the fresh node; a re-sweep over a kept
+// node does not.
+const firedRefs = new WeakMap();
+
+/**
+ * Sweep one materialized/morph-touched subtree for `_bnd` markers: stamp
+ * each marked element with its owning frame (dispatch resolution), arm
+ * document listeners for claimed event types, and fire ref positions.
+ * Dormant cost without markers: one selector query per apply.
+ */
+function sweepBound(root, frame) {
+  const isElement = root.nodeType === ELEMENT_NODE;
+  if (!isElement && root.nodeType !== 11 /* DOCUMENT_FRAGMENT_NODE */) return;
+  let els;
+  if (isElement && root.hasAttribute(BND_ATTR)) (els = []).push(root);
+  const found = root.querySelectorAll(BND_SELECTOR);
+  if (found.length) {
+    els || (els = []);
+    for (let i = 0; i < found.length; i++) els.push(found[i]);
+  }
+  if (!els) return;
+  let types;
+  for (const el of els) {
+    el._$bndFrame = frame;
+    const map = bndMap(el);
+    if (!map) continue;
+    for (const pos in map) {
+      if (pos === "ref") fireRefs(frame, el, map.ref);
+      else (types || (types = [])).push(pos);
+    }
+  }
+  if (types && boundSeam.delegate) boundSeam.delegate(types);
+}
+
+function fireRefs(frame, el, prop) {
+  let fired = firedRefs.get(el);
+  if (!fired) firedRefs.set(el, (fired = new Set()));
+  for (const p of Array.isArray(prop) ? prop : [prop]) {
+    if (fired.has(p)) continue;
+    fired.add(p);
+    const fn = frame.clientProp(p);
+    if (typeof fn === "function") fn(el);
+    else if ("_DX_DEV_" && fn !== undefined) {
+      console.warn(
+        `A server element claims \`ref\` from client prop \`${p}\`, but the mounted frame's ` +
+          `prop is not a function.`
+      );
+    }
+  }
+}
+
 /** Sweep `root` (element or fragment) and its claimable interior. */
 function claimTree(handlers, root) {
   const isElement = root.nodeType === ELEMENT_NODE;
@@ -341,10 +452,24 @@ class FrameImpl {
   // longer matches the sweep selector), mirroring compiled setAttribute.
   // Stable identity so it threads into the morph without allocation.
   #claimTree = (node, direct) => {
+    // Behavior claims sweep first, and unconditionally — `_bnd` markers are
+    // this frame's own contract, not a registered-consumer one. `direct`
+    // re-checks (in-place attribute rewrites) are nav-claim specific; a
+    // morph that rewrites `_bnd` in place invalidates through the parse
+    // cache at next dispatch, and kept elements keep their stamp.
+    if (!direct && node.nodeType !== TEXT_NODE && node.nodeType !== COMMENT_NODE) {
+      sweepBound(node, this);
+    }
     const handlers = claimHandlers();
     if (!handlers) return;
     this.#scoped(() => (direct ? claimNode(handlers, node) : claimTree(handlers, node)));
   };
+
+  /** A raw client prop, read live — behavior-claim resolution (`_bnd`). */
+  clientProp(name) {
+    const props = this.#options.props;
+    return props ? props[name] : undefined;
+  }
 
   /** Run `fn` under the creator's `ownerScope` (when provided). */
   #scoped(fn) {
@@ -1330,7 +1455,9 @@ class FrameImpl {
 
   /** Sweep-claim the frame's existing content (the adoption path). */
   #claimContent() {
-    if (!claimHandlers()) return;
+    // No consumer gate here: #claimTree self-gates each half (nav claims on
+    // registered handlers, the behavior-claim sweep on `_bnd` presence), and
+    // adopted content must sweep markers even when no router registered.
     let n = this.#firstContent();
     while (n && n !== this.#end) {
       this.#claimTree(n);

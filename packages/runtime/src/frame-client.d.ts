@@ -261,6 +261,13 @@ export interface FrameOptions {
   /** Client content keyed by prop name (occurrences resolve by prop). */
   slots?: Record<string, Slot>;
   /**
+   * Raw client props for behavior-claim resolution: server elements carrying
+   * `_bnd="pos=prop"` markers (compiled under the `serverComponents` option)
+   * resolve ref/event positions by name through this object — read live at
+   * dispatch/materialize time, so compiled prop getters stay latest-value.
+   */
+  props?: Record<string, unknown>;
+  /**
    * Adopt existing server-rendered DOM: the first apply morphs against it,
    * and slots sync immediately (hydration attach) — a document-SSR boot
    * needs no chunk.
