@@ -1364,9 +1364,11 @@ class FrameImpl {
       parent.insertBefore(fragment, this.#end);
       this.#hasContent = true;
     } else {
-      // Dormancy hoisted to once per apply: a null claim keeps the reconcile
-      // inner loop at a register compare per node instead of a seam read.
-      const claim = claimHandlers() ? this.#claimTree : null;
+      // #claimTree self-gates each half (nav claims on registered handlers,
+      // the behavior-claim sweep on `_bnd` presence), so it threads in
+      // unconditionally — reconcile-inserted subtrees must sweep markers
+      // even when no nav-claim consumer registered.
+      const claim = this.#claimTree;
       // Frame-wide displaced-range index. Slot ranges are keyed by occurrence
       // id, unique within this frame's content, and a keyed re-render can move
       // an occurrence ACROSS PARENTS (deleting a list item shifts every range
@@ -1416,8 +1418,10 @@ class FrameImpl {
       }
       return false;
     }
-    const claim = claimHandlers() ? this.#claimTree : null;
-    reconcileChildren(open.parentNode, parseFragment(html), open, close, claim);
+    // Unconditional for the same reason as the root morph: hole re-emissions
+    // carry `_bnd` markers (the chat copy-button shape — an event prop inside
+    // a streaming hole), and those must sweep regardless of nav consumers.
+    reconcileChildren(open.parentNode, parseFragment(html), open, close, this.#claimTree);
     return true;
   }
 
