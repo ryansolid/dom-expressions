@@ -45,6 +45,7 @@ pub(crate) struct AstSsrTransform<'a, 'source> {
     pub(crate) built_ins: std::vec::Vec<String>,
     built_in_imports: std::vec::Vec<String>,
     hydratable: bool,
+    server_components: bool,
     wrap_conditionals: bool,
     /// The memo wrapper import name; `None` disables memo wrapping.
     memo_wrapper: Option<String>,
@@ -62,6 +63,7 @@ pub(crate) struct AstSsrTransform<'a, 'source> {
     uses_ssr_class_name: bool,
     uses_ssr_group: bool,
     uses_apply_ref: bool,
+    uses_ssr_claim: bool,
     pub(crate) pending_this_capture: Option<String>,
     pub(crate) current_this_capture: Option<String>,
     pub(crate) function_parent_stack: std::vec::Vec<crate::shared::transform::FunctionParentKind>,
@@ -180,6 +182,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         source: &'source str,
         module_name: &'source str,
         hydratable: bool,
+        server_components: bool,
         wrap_conditionals: bool,
         memo_wrapper: Option<String>,
         static_marker: String,
@@ -192,6 +195,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             built_ins,
             built_in_imports: std::vec::Vec::new(),
             hydratable,
+            server_components,
             wrap_conditionals,
             memo_wrapper,
             static_marker,
@@ -208,6 +212,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             uses_ssr_class_name: false,
             uses_ssr_group: false,
             uses_apply_ref: false,
+            uses_ssr_claim: false,
             pending_this_capture: None,
             current_this_capture: None,
             function_parent_stack: std::vec::Vec::new(),
@@ -487,6 +492,10 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         }
         if self.uses_apply_ref {
             statements.push(self.import_named("applyRef", "_$applyRef"));
+        }
+        if self.uses_ssr_claim {
+            statements.push(self.import_named("ssrClaim", "_$ssrClaim"));
+            statements.push(self.import_named("sharedConfig", "_$sharedConfig"));
         }
         for built_in in &self.built_in_imports {
             statements.push(self.import_named(built_in, &format!("_${built_in}")));
@@ -1579,6 +1588,9 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             .plan_attributes(&element.opening_element.attributes, &tag_name)?;
         let has_children = !element.children.is_empty() || outcome.children_replacement.is_some();
         let mut attr_children: Option<AttrChildren<'a>> = None;
+        // Server-components behavior claims: ref/on* positions collected
+        // across the element's attributes (Babel's `claims`).
+        let mut claims: std::vec::Vec<(String, Expression<'a>)> = std::vec::Vec::new();
         for plan in outcome.plans {
             self.append_planned_attribute(
                 &tag_name,
@@ -1587,7 +1599,12 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 has_children,
                 &mut attr_children,
                 &mut child_do_not_escape,
+                &mut claims,
             )?;
+        }
+        if !claims.is_empty() {
+            let hole = self.ssr_claim_hole(element.span, claims, &mut template);
+            template.push_expr(hole);
         }
         template.current_mut().push('>');
         if !is_void_element(&tag_name) {
@@ -1608,6 +1625,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     /// refs hoist `_ref$N` declarations, `prop:`/`on*` drop, child properties
     /// redirect into children, class/style get their SSR serializers, and
     /// everything else routes through `setAttr` or an inline quoted hole.
+    #[allow(clippy::too_many_arguments)]
     fn append_planned_attribute(
         &mut self,
         tag_name: &str,
@@ -1616,6 +1634,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         has_children: bool,
         attr_children: &mut Option<AttrChildren<'a>>,
         child_do_not_escape: &mut bool,
+        claims: &mut std::vec::Vec<(String, Expression<'a>)>,
     ) -> Result<()> {
         let key = plan.key;
         let span = plan.span;
@@ -1687,6 +1706,10 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
 
         // Babel's dynamic branch.
         if key == "ref" {
+            if self.server_components {
+                claims.push(("ref".to_string(), expression));
+                return Ok(());
+            }
             // `var _ref$N = <expr>;` keeps the evaluation without emitting
             // anything into the HTML. JSX inside stays raw for the deferred
             // pass.
@@ -1695,7 +1718,23 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             template.declarations.push(Some((name, value)));
             return Ok(());
         }
-        if key.starts_with("prop:") || key.starts_with("on") {
+        if key.starts_with("prop:") {
+            return Ok(());
+        }
+        if key.starts_with("on") {
+            // Capture-phase variants can't ride delegation; they drop as
+            // before. `on:x` keeps the raw name, `onXxx` lowercases — the
+            // same event-name derivation as the client runtime.
+            if self.server_components && !key.starts_with("oncapture:") {
+                let pos = if let Some(raw) = key.strip_prefix("on:") {
+                    raw.to_string()
+                } else {
+                    key[2..].to_lowercase()
+                };
+                if !pos.is_empty() {
+                    claims.push((pos, expression));
+                }
+            }
             return Ok(());
         }
         if child_properties(&key) {
@@ -2336,6 +2375,82 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             args,
             false,
         )
+    }
+
+    /// One guarded whole-attribute behavior-claim hole per element (Babel's
+    /// `claims` emission): duplicate positions merge into arrays (multiple
+    /// refs), and the expressions only evaluate when the render context's
+    /// claims flag is set —
+    /// `_$sharedConfig.context && _$sharedConfig.context.claims
+    ///    ? _$ssrClaim({...}) : ""`.
+    fn ssr_claim_hole(
+        &mut self,
+        span: Span,
+        claims: std::vec::Vec<(String, Expression<'a>)>,
+        template: &mut SsrTemplate<'a>,
+    ) -> Expression<'a> {
+        self.uses_ssr_claim = true;
+        let mut by_pos: std::vec::Vec<(String, std::vec::Vec<Expression<'a>>)> =
+            std::vec::Vec::new();
+        for (pos, expr) in claims {
+            if let Some(entry) = by_pos.iter_mut().find(|(name, _)| *name == pos) {
+                entry.1.push(expr);
+            } else {
+                by_pos.push((pos, vec![expr]));
+            }
+        }
+        let mut properties = self.ast().vec();
+        for (pos, mut exprs) in by_pos {
+            let value = if exprs.len() == 1 {
+                exprs.pop().expect("single claim expression exists")
+            } else {
+                let elements = self.ast().vec_from_iter(
+                    exprs
+                        .into_iter()
+                        .map(oxc_ast::ast::ArrayExpressionElement::from),
+                );
+                self.ast().expression_array(span, elements)
+            };
+            properties.push(self.object_property(span, &pos, value));
+        }
+        let map = self.ast().expression_object(span, properties);
+        let context_read = |transform: &Self| -> Expression<'a> {
+            Expression::StaticMemberExpression(transform.ast().alloc_static_member_expression(
+                span,
+                transform
+                    .ast()
+                    .expression_identifier(span, transform.ast().ident("_$sharedConfig")),
+                transform
+                    .ast()
+                    .identifier_name(span, transform.ast().ident("context")),
+                false,
+            ))
+        };
+        let claims_read = Expression::StaticMemberExpression(
+            self.ast().alloc_static_member_expression(
+                span,
+                context_read(self),
+                self.ast().identifier_name(span, self.ast().ident("claims")),
+                false,
+            ),
+        );
+        let test = self.ast().expression_logical(
+            span,
+            context_read(self),
+            oxc_ast::ast::LogicalOperator::And,
+            claims_read,
+        );
+        let call = self.call_expression(
+            span,
+            self.ast()
+                .expression_identifier(span, self.ast().ident("_$ssrClaim")),
+            vec![map],
+        );
+        let empty = self
+            .ast()
+            .expression_string_literal(span, self.ast().str(""), None);
+        let guarded = self.ast().expression_conditional(span, test, call, empty);
+        self.hoist_expression(template, span, guarded, false, false)
     }
 
     fn ssr_hydration_key_call(&mut self, span: Span) -> Expression<'a> {

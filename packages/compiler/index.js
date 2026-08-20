@@ -246,6 +246,7 @@ const nativeOptionKeys = new Set([
   "staticMarker",
   "omitNestedClosingTags",
   "omitLastClosingTag",
+  "serverComponents",
   "builtIns",
   "renderers"
 ]);

@@ -158,6 +158,7 @@ pub fn transform(code: String, options: Option<TransformOptions>) -> Result<Tran
                 &code,
                 module_name,
                 options.hydratable.unwrap_or(false),
+                options.server_components.unwrap_or(false),
                 options.wrap_conditionals.unwrap_or(true),
                 wrapper_name(&options.memo_wrapper, "memo"),
                 static_marker(&options),

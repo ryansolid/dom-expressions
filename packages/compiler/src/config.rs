@@ -44,6 +44,10 @@ pub struct TransformOptions {
     pub validate: Option<bool>,
     pub omit_nested_closing_tags: Option<bool>,
     pub omit_last_closing_tag: Option<bool>,
+    /// Babel's `serverComponents`: SSR-only. `ref`/`on*` positions on
+    /// intrinsic elements compile to a guarded `_$ssrClaim` hole (the
+    /// `_bnd` behavior-claim marker) instead of dropping.
+    pub server_components: Option<bool>,
     pub built_ins: Option<Vec<String>>,
     pub renderers: Option<Vec<RendererOption>>,
 }

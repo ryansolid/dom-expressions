@@ -18,6 +18,7 @@ export interface TransformOptions {
   validate?: boolean;
   omitNestedClosingTags?: boolean;
   omitLastClosingTag?: boolean;
+  serverComponents?: boolean;
   builtIns?: string[];
   requireImportSource?: false | string;
   renderers?: RendererOption[];
