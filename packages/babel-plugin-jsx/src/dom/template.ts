@@ -9,6 +9,7 @@ import {
   wrapForEffect
 } from "../shared/utils";
 import { setAttr } from "./element";
+import { analyzePatchEligibility, substituteSubject } from "../shared/patch";
 import type { NodePath } from "@babel/traverse";
 import type { DynamicBinding, ProgramScopeData, TemplateRecord, TransformResult } from "../types";
 
@@ -139,9 +140,73 @@ function registerTemplate(path: NodePath, results: TransformResult) {
   results.decl = t.variableDeclaration("var", results.declarations as t.VariableDeclarator[]);
 }
 
+/** Patch-mode emission (shared/patch.ts): one compiled body doing inline
+ * compares + setAttr writes, handed to the runtime driver which registers
+ * on the store patch channel (patchable subject) or falls back to a
+ * tracked force-mode effect running the SAME body. Returns undefined when
+ * the scope is ineligible — caller falls through to the effect shapes. */
+function wrapPatchMode(path: NodePath, dynamics: DynamicBinding[]): t.Statement | undefined {
+  const config = getConfig(path);
+  const eligibility = analyzePatchEligibility(dynamics.map(d => d.value as t.Expression));
+  if (!eligibility) return;
+  const subject = eligibility.subject;
+  // The subject must be a stable local binding (not reassigned): row params
+  // and const destructures qualify; anything else falls back to effects.
+  const binding = path.scope.getBinding(subject);
+  if (!binding || !binding.constant) return;
+  const nId = path.scope.generateUidIdentifier("n");
+  const pId = path.scope.generateUidIdentifier("p");
+  const fId = path.scope.generateUidIdentifier("f");
+  const stmts: t.Statement[] = [];
+  for (const d of dynamics) {
+    let value = d.value as t.Expression;
+    if (d.classProperty && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
+      value = t.unaryExpression("!", t.unaryExpression("!", value));
+    }
+    const vId = path.scope.generateUidIdentifier("v");
+    stmts.push(
+      t.variableDeclaration("const", [
+        t.variableDeclarator(vId, substituteSubject(value, subject, nId))
+      ])
+    );
+    stmts.push(
+      t.ifStatement(
+        t.logicalExpression(
+          "||",
+          fId,
+          t.binaryExpression("!==", vId, substituteSubject(value, subject, pId))
+        ),
+        t.expressionStatement(
+          setAttr(path, d.elem, d.key, vId, {
+            tagName: d.tagName,
+            dynamic: true,
+            styleProperty: d.styleProperty,
+            classProperty: d.classProperty
+          })
+        )
+      )
+    );
+  }
+  const driverId = registerImportMethod(path, config.patchDriver as string, undefined);
+  return t.expressionStatement(
+    t.callExpression(driverId, [
+      t.identifier(subject),
+      t.arrowFunctionExpression([nId, pId, fId], t.blockStatement(stmts))
+    ])
+  );
+}
+
 function wrapDynamics(path: NodePath, dynamics: DynamicBinding[]) {
   if (!dynamics.length) return;
   const config = getConfig(path);
+
+  // Patch mode: compiled compare/write body driven by the store's diff when
+  // the runtime driver finds a patchable subject (dual driver — semantics
+  // identical on the effect fallback).
+  if (config.patchDriver) {
+    const patched = wrapPatchMode(path, dynamics);
+    if (patched) return patched;
+  }
 
   // dynamics are only queued when effectWrapper is configured (element.ts
   // guards every push), so the name is always a string here
