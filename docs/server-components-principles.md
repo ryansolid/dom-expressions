@@ -1440,6 +1440,58 @@ per-node attribute check's cost on the shared delegation walk; the
 re-fire dedupe contract for the internal marker claim (element-keyed
 WeakSet is the obvious shape).
 
+**As built (2026-08-20).** The implementation landed on both repos'
+`ref-props` branches; where it diverged from the leans above, it
+diverged simpler, and this paragraph is the record.
+
+- *Bolt 1 dissolved into names.* The marker is
+  `_bnd="pos=prop[,pos=prop]*"` — event type or `ref` mapped to the
+  **client prop's name** (percent-encoded), not a binding-table
+  index. Occurrence resolution is not a walk: the sweep that runs at
+  every materialization/adoption/morph site stamps each marked
+  element with its owning frame (`_$bndFrame` expando), so dispatch
+  is expando → frame → `props[name]`, and hole-emitted content
+  resolves identically to root content.
+- *Bolt 2 evaporated.* With names addressing the frame's LIVE props
+  there is no table to supersede — a dispatch after a props change
+  reads the new function with no re-render, no version window, no
+  misdispatch. The e2e pins this: flipping a signal the prop derives
+  from swaps what the same DOM node's click resolves, morphlessly.
+- *Bolt 3 shipped as specced.* The frame-function stub is the brand
+  (`CLAIM_PROP`, carrying the original prop name for the marker);
+  server-local functions in claim positions warn and drop; spreads
+  carrying branded stubs warn at the spread site.
+- *The compiler gate.* Babel + Rust emit, under `serverComponents`
+  (set by the vite plugin's `serverFunctions.components`), a guarded
+  hole: `sharedConfig.context.claims ? _$ssrClaim(map) : ""`. The
+  gate value is an enum the SC entry points set — stream face
+  unconditionally, document face scoped to SC renders — so hydratable
+  document SSR outside server components stays byte-identical.
+- *Arming is an option, not a global.* The size guard caught the
+  first draft publishing `delegate` from the core client entry's
+  module scope: that retained the whole event system in every
+  tree-shaken subset (the router eager slice tripled). As landed,
+  client.js contributes zero top-level bytes — the dispatch hook
+  reads the registered-symbol seam from inside the delegation walk —
+  and document-listener arming flows as `createFrameHost`'s
+  `delegate` option, wired by platform glue to `delegateEvents`.
+- *Refs fire bare, once per (element, prop).* v1 does not mint a
+  per-element claim scope: the sweep calls the ref with the element,
+  dedupes via element expando (a morph that replaces the element
+  re-fires on the fresh node; in-place patches don't), and the
+  cleanup contract is deferred — a ref that attaches observers owns
+  its own teardown for now. This also means refs DO work inside hole
+  interiors (nothing needs the lifecycle the owner-creation latch
+  forbids), narrowing the "refs stay out of holes" line above to the
+  cleanup-bearing uses. Upgrading to owned scopes when the contract
+  is needed is additive.
+- *Proving case.* The chat demo's streamed markdown renders code
+  blocks as JSX with `<button onClick={props.copy}>` — a client
+  clipboard handler crossing into server markup that arrives through
+  live-hole re-emissions, working mid-stream via the delegation
+  path. §9.1 is implemented; what remains for the stage is release
+  packaging (compiler binary sync, plugin release with the flag).
+
 ### 9.2 Stage 7 design — predictions: one declarative verb (settled 2026-08-18; supersedes the imperative-draft revival, overlays + entries, and the transactional draft)
 
 Fourth and, by its structure, final form of this design. The
