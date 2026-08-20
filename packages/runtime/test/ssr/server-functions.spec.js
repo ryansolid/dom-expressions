@@ -86,6 +86,7 @@ class FakeStorage {
 
 beforeEach(() => {
   globalThis[RequestContext] = new FakeStorage();
+  configureServerFunctionsServer({ csrf: false });
 });
 
 afterEach(() => {
@@ -1374,6 +1375,141 @@ describe("handler", () => {
     );
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/?flash=value");
+  });
+});
+
+describe("CSRF protection", () => {
+  function handle(request, options = {}) {
+    return handleServerFunctionRequest(request, { csrf: true, ...options });
+  }
+
+  function request(id, headers) {
+    return new Request("http://localhost/_server", {
+      method: "POST",
+      headers: {
+        "X-Server-Function-Id": id,
+        "X-Server-Function-Instance": "server-function:test",
+        ...headers
+      }
+    });
+  }
+
+  it.each([
+    ["fetch metadata", { "Sec-Fetch-Site": "same-origin" }],
+    ["Origin", { Origin: "http://localhost" }],
+    ["Referer", { Referer: "http://localhost/page" }]
+  ])("allows requests proven same-origin by %s", async (_, headers) => {
+    registerServerFunction("csrf-same-origin", async () => "ok");
+    const response = await handle(request("csrf-same-origin", headers));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Vary")).toBe("Sec-Fetch-Site, Origin, Referer");
+    expect(await decodeResponse(response)).toBe("ok");
+  });
+
+  it.each(["same-site", "cross-site", "none"])(
+    "rejects %s fetch metadata before invoking the function",
+    async fetchSite => {
+      const fn = jest.fn(async () => "unsafe");
+      registerServerFunction(`csrf-fetch-${fetchSite}`, fn);
+      const response = await handle(
+        request(`csrf-fetch-${fetchSite}`, {
+          "Sec-Fetch-Site": fetchSite,
+          Origin: "http://localhost",
+          Referer: "http://localhost/page"
+        })
+      );
+      expect(response.status).toBe(403);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(response.headers.get("Vary")).toBe("Sec-Fetch-Site, Origin, Referer");
+      expect(fn).not.toHaveBeenCalled();
+    }
+  );
+
+  it("falls back to Origin for unknown fetch metadata", async () => {
+    const fn = jest.fn(async () => "ok");
+    registerServerFunction("csrf-fetch-unknown", fn);
+    const response = await handle(
+      request("csrf-fetch-unknown", {
+        "Sec-Fetch-Site": "future-value",
+        Origin: "http://localhost"
+      })
+    );
+    expect(response.status).toBe(200);
+
+    fn.mockClear();
+    const denied = await handle(
+      request("csrf-fetch-unknown", { "Sec-Fetch-Site": "future-value" })
+    );
+    expect(denied.status).toBe(403);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("rejects a mismatched Origin without falling back to Referer", async () => {
+    const fn = jest.fn(async () => "unsafe");
+    registerServerFunction("csrf-origin", fn);
+    const response = await handle(
+      request("csrf-origin", {
+        Origin: "https://attacker.example",
+        Referer: "http://localhost/page"
+      })
+    );
+    expect(response.status).toBe(403);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("rejects requests without origin metadata by default", async () => {
+    const fn = jest.fn(async () => "unsafe");
+    registerServerFunction("csrf-missing", fn);
+    const response = await handle(request("csrf-missing"));
+    expect(response.status).toBe(403);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("supports a configured public origin", async () => {
+    registerServerFunction("csrf-public-origin", async () => "ok");
+    const response = await handle(
+      request("csrf-public-origin", { Origin: "https://app.example.com" }),
+      { csrf: { origin: "https://app.example.com" } }
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it("can allow requests without origin metadata explicitly", async () => {
+    registerServerFunction("csrf-missing-opt-in", async () => "ok");
+    const response = await handle(request("csrf-missing-opt-in"), {
+      csrf: { allowRequestsWithoutOriginCheck: true }
+    });
+    expect(response.status).toBe(200);
+  });
+
+  it("can be disabled explicitly", async () => {
+    registerServerFunction("csrf-disabled", async () => "ok");
+    const response = await handle(request("csrf-disabled"), { csrf: false });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Vary")).toBe(null);
+  });
+
+  it("preserves existing Vary values", async () => {
+    registerServerFunction(
+      "csrf-vary",
+      async () =>
+        new Response("ok", {
+          headers: { "X-Content-Raw": "true", Vary: "Accept-Encoding" }
+        })
+    );
+    const response = await handle(request("csrf-vary", { "Sec-Fetch-Site": "same-origin" }));
+    expect(response.headers.get("Vary")).toBe("Accept-Encoding, Sec-Fetch-Site, Origin, Referer");
+  });
+
+  it("supports server-wide configuration", async () => {
+    registerServerFunction("csrf-configured", async () => "ok");
+    configureServerFunctionsServer({ csrf: true });
+    try {
+      const response = await handleServerFunctionRequest(request("csrf-configured"));
+      expect(response.status).toBe(403);
+    } finally {
+      configureServerFunctionsServer({ csrf: false });
+    }
   });
 });
 

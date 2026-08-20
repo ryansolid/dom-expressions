@@ -197,6 +197,26 @@ export function createNoJSHandler(
   options?: NoJSHandlerOptions
 ): (result: unknown, request: Request, args: unknown[], thrown?: boolean) => Response;
 
+export type ServerFunctionOriginMatcher =
+  | string
+  | readonly string[]
+  | ((origin: string, request: Request) => boolean | Promise<boolean>);
+
+/** Same-origin validation options for server function requests. */
+export interface ServerFunctionCSRFOptions {
+  /**
+   * Expected public origin. Defaults to the incoming request URL's origin.
+   * A function can validate origins dynamically for multi-tenant hosts.
+   */
+  origin?: ServerFunctionOriginMatcher;
+  /**
+   * Allows requests without `Sec-Fetch-Site`, `Origin`, or `Referer`.
+   * Cross-origin metadata is still rejected.
+   * @default false
+   */
+  allowRequestsWithoutOriginCheck?: boolean;
+}
+
 /** Options for `configureServerFunctionsServer`. */
 export interface ServerFunctionsServerConfig {
   /**
@@ -287,6 +307,12 @@ export interface ServerFunctionsServerConfig {
    * @default "/_server"
    */
   endpoint?: string;
+  /**
+   * Same-origin protection for HTTP server function calls. Enabled by
+   * default. Set to `false` only when another trusted layer protects the
+   * endpoint.
+   */
+  csrf?: boolean | ServerFunctionCSRFOptions;
   /**
    * Codec options (extra plugins etc.) for decoding arguments and encoding
    * results — must match the client's. Stored in the shared layer, so
@@ -529,6 +555,11 @@ export interface HandleServerFunctionOptions {
     args: unknown[],
     thrown?: boolean
   ): Response | Promise<Response>;
+  /**
+   * Overrides same-origin protection for this handler. Set to `false` only
+   * when another trusted layer protects the endpoint.
+   */
+  csrf?: boolean | ServerFunctionCSRFOptions;
   /** Overrides the configured codec options for this handler. */
   codec?: JSONCodecOptions;
 }
@@ -542,6 +573,10 @@ export interface HandleServerFunctionOptions {
  * through headers). Mount it on the endpoint the client transport targets
  * (default `/_server`); platform adapters (h3, express, ...) convert their
  * request shape to a web `Request` around it.
+ *
+ * Requests are same-origin by default. The handler accepts browser requests
+ * proven by `Sec-Fetch-Site`, `Origin`, or `Referer`, and rejects requests
+ * without usable metadata unless explicitly configured otherwise.
  *
  * When the event carries a `response` head stub (`event.response`, see the
  * server entry's `ResponseStub`), the handler folds it onto every outgoing

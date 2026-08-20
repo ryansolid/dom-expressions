@@ -43,7 +43,8 @@ describe("frameTransformResult", () => {
       new Request("http://localhost/_server?id=story%230", { method: "POST" }),
       {
         createEvent: request => Object.assign(event, { request }),
-        provideEvent: (evt, fn) => fn()
+        provideEvent: (evt, fn) => fn(),
+        csrf: false
       }
     );
     expect(seeded.status).toBe(200);
@@ -117,7 +118,8 @@ describe("server component over the real handler", () => {
         transformResult: frameTransformResult,
         // The policy reads the event from its arguments, not async context —
         // a pass-through provider is enough here.
-        provideEvent: (event, fn) => fn()
+        provideEvent: (event, fn) => fn(),
+        csrf: false
       }
     );
   }
