@@ -567,12 +567,12 @@ export function insert(parent, accessor, marker, initial, options) {
   if (hydrationRt !== null) initial = hydrationRt.claimInitial(parent, multi, initial);
   if (probeGate !== undefined && probeGate(accessor)) return;
   // Patch-mode list seam: a list accessor carrying `$ll` metadata is offered
-  // to the core's row-ops driver first (no hydration claiming yet — hydrated
-  // regions keep the classic path). A false return means the driver declined
-  // (non-store subject, impure rows) and the accessor runs classically.
+  // to the core's row-ops driver first. During hydration the driver claims
+  // server rows and registers without initial writes; a false return means
+  // it declined (non-store subject, impure rows, marker-bounded hydration
+  // region, key/count mismatch) and the accessor runs classically.
   if (
     driveList !== undefined &&
-    hydrationRt === null &&
     typeof accessor === "function" &&
     accessor.$ll !== undefined &&
     driveList(parent, accessor, marker)
