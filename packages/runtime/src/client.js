@@ -15,7 +15,12 @@ import {
   // contexts (transitions, boundary reveals) hold and retry on settle;
   // no-op once settled. Cores that don't provide it degrade gracefully —
   // the reveal gate is disabled, warm-at-discovery still works.
-  waitAsset
+  waitAsset,
+  // Optional seam (patch-mode lists): drives a keyed store array through the
+  // store's row-ops channel instead of mapArray + reconcileArrays. Cores
+  // that don't provide it degrade gracefully — list accessors carrying the
+  // `$ll` marker are simply called (the classic mapArray path).
+  driveList
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
@@ -555,6 +560,18 @@ export function insert(parent, accessor, marker, initial, options) {
   const host = options && options.host;
   if (multi && !initial) initial = [];
   if (hydrationRt !== null) initial = hydrationRt.claimInitial(parent, multi, initial);
+  // Patch-mode list seam: a list accessor carrying `$ll` metadata is offered
+  // to the core's row-ops driver first (no hydration claiming yet — hydrated
+  // regions keep the classic path). A false return means the driver declined
+  // (non-store subject, impure rows) and the accessor runs classically.
+  if (
+    driveList !== undefined &&
+    hydrationRt === null &&
+    typeof accessor === "function" &&
+    accessor.$ll !== undefined &&
+    driveList(parent, accessor, marker)
+  )
+    return;
   if (typeof accessor !== "function") {
     accessor = normalize(accessor, initial, multi, true);
     if (typeof accessor !== "function") {
