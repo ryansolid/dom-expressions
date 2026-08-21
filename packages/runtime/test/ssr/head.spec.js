@@ -1035,3 +1035,380 @@ describe("root-level pending head props hold the streaming shell", () => {
     warn.mockRestore();
   });
 });
+
+// Script/style head tags take the render nonce automatically; a caller that
+// supplies its own must not end up with the attribute twice.
+describe("head tag nonces", () => {
+  it("applies the render nonce to script and style tags", () => {
+    const html = r.renderToString(
+      () => {
+        r.useHead({ tag: "style", props: { children: ".a{color:red}" } });
+        r.useHead({ tag: "script", props: { children: "void 0;" } });
+        return DOC();
+      },
+      { nonce: "n0nce" }
+    );
+    expect(html).toContain('nonce="n0nce">.a{color:red}</style>');
+    expect(html).toContain('nonce="n0nce">void 0;</script>');
+  });
+
+  it("does not duplicate the attribute when the caller supplies a nonce", () => {
+    const html = r.renderToString(
+      () => {
+        r.useHead({ tag: "style", props: { nonce: "style-nonce", children: ".a{}" } });
+        return DOC();
+      },
+      { nonce: "script-nonce" }
+    );
+    const tag = html.match(/<style[^>]*>/)[0];
+    expect(tag.match(/nonce=/g).length).toBe(1);
+    expect(tag).toContain('nonce="style-nonce"');
+    expect(tag).not.toContain("script-nonce");
+  });
+
+  it("leaves the tag un-nonced when the caller opts out with false", () => {
+    const html = r.renderToString(
+      () => {
+        r.useHead({ tag: "style", props: { nonce: false, children: ".a{}" } });
+        return DOC();
+      },
+      { nonce: "script-nonce" }
+    );
+    expect(html.match(/<style[^>]*>/)[0]).not.toContain("nonce");
+  });
+});
+
+// Links the runtime emits itself (manifest entries, registerAsset, streamed
+// boundary styles) carry the render nonce, routed by the directive governing
+// each fetch — so `nonce` also accepts a { script, style } pair.
+describe("split CSP nonces", () => {
+  it("applies a string nonce to both destinations (back-compat)", () => {
+    const html = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerAsset("style", "/route.css");
+        ctx.registerAsset("module", "/chunk.js");
+        return DOC();
+      },
+      { nonce: "shared" }
+    );
+    expect(html).toContain('<link rel="stylesheet" href="/route.css" nonce="shared">');
+    expect(html).toContain('<link rel="modulepreload" href="/chunk.js" nonce="shared">');
+  });
+
+  it("routes stylesheet links to style and module preloads to script", () => {
+    const html = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerAsset("style", "/route.css");
+        ctx.registerAsset("module", "/chunk.js");
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    expect(html).toContain('<link rel="stylesheet" href="/route.css" nonce="y-n">');
+    expect(html).toContain('<link rel="modulepreload" href="/chunk.js" nonce="s-n">');
+  });
+
+  it("routes manifest entry CSS to the style nonce", () => {
+    const manifest = {
+      _base: "/out/",
+      "app.tsx": { file: "app-abc.js", css: ["app.css"], isEntry: true }
+    };
+    const html = r.renderToString(() => DOC(), {
+      manifest,
+      nonce: { script: "s-n", style: "y-n" }
+    });
+    expect(html).toContain('<link rel="stylesheet" href="/out/app.css" nonce="y-n">');
+  });
+
+  it("routes useHead tags by tag and by link rel/as", () => {
+    const html = r.renderToString(
+      () => {
+        r.useHead({ tag: "style", props: { children: ".a{}" } });
+        r.useHead({ tag: "script", props: { children: "void 0;" } });
+        r.useHead({ tag: "link", props: { rel: "stylesheet", href: "/x.css", media: "print" } });
+        r.useHead({ tag: "link", props: { rel: "modulepreload", href: "/m.mjs", media: "all" } });
+        r.useHead({ tag: "link", props: { rel: "preload", href: "/p.css", as: "style" } });
+        r.useHead({ tag: "link", props: { rel: "preload", href: "/p.js", as: "script" } });
+        r.useHead({ tag: "link", props: { rel: "preload", href: "/f.woff2", as: "font" } });
+        r.useHead({ tag: "meta", props: { name: "description", content: "d" } });
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    expect(html).toContain('nonce="y-n">.a{}</style>');
+    expect(html).toContain('nonce="s-n">void 0;</script>');
+    expect(html).toContain('<link rel="stylesheet" href="/x.css" media="print" nonce="y-n">');
+    expect(html).toContain('<link rel="modulepreload" href="/m.mjs" media="all" nonce="s-n">');
+    expect(html).toContain('<link rel="preload" href="/p.css" as="style" nonce="y-n">');
+    expect(html).toContain('<link rel="preload" href="/p.js" as="script" nonce="s-n">');
+    // A font preload is governed by neither directive — no nonce.
+    expect(html.match(/<link[^>]*\/f\.woff2[^>]*>/)[0]).not.toContain("nonce");
+    expect(html.match(/<meta name="description"[^>]*>/)[0]).not.toContain("nonce");
+  });
+
+  it("reads rel as a token list and lets as override the preload destination", () => {
+    const html = r.renderToString(
+      () => {
+        // rel is a set of tokens: stylesheet wins wherever it appears.
+        r.useHead({ tag: "link", props: { rel: "preload stylesheet", href: "/a.css" } });
+        // A preload's nonce follows its request destination, which `as` sets.
+        r.useHead({ tag: "link", props: { rel: "modulepreload", as: "style", href: "/b.css" } });
+        // Keywords are ASCII case-insensitive.
+        r.useHead({ tag: "link", props: { rel: "MODULEPRELOAD", href: "/c.mjs" } });
+        r.useHead({ tag: "link", props: { rel: "preload", as: "SCRIPT", href: "/d.js" } });
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    expect(html.match(/<link[^>]*\/a\.css[^>]*>/)[0]).toContain('nonce="y-n"');
+    expect(html.match(/<link[^>]*\/b\.css[^>]*>/)[0]).toContain('nonce="y-n"');
+    expect(html.match(/<link[^>]*\/c\.mjs[^>]*>/)[0]).toContain('nonce="s-n"');
+    expect(html.match(/<link[^>]*\/d\.js[^>]*>/)[0]).toContain('nonce="s-n"');
+  });
+
+  it("gives script-like preload destinations the script nonce", () => {
+    // Worklets are script-src directly; worker destinations take the script
+    // nonce too, which applies when their worker-src chain falls back to it.
+    const html = r.renderToString(
+      () => {
+        for (const as of [
+          "worker",
+          "serviceworker",
+          "sharedworker",
+          "audioworklet",
+          "paintworklet"
+        ])
+          r.useHead({ tag: "link", props: { rel: "modulepreload", as, href: `/${as}.js` } });
+        // connect-src has no nonce semantics.
+        r.useHead({ tag: "link", props: { rel: "modulepreload", as: "json", href: "/d.json" } });
+        r.useHead({ tag: "link", props: { rel: "preload", as: "font", href: "/f.woff2" } });
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    for (const as of ["worker", "serviceworker", "sharedworker", "audioworklet", "paintworklet"])
+      expect(html.match(new RegExp(`<link[^>]*/${as}\\.js[^>]*>`))[0]).toContain('nonce="s-n"');
+    expect(html.match(/<link[^>]*\/d\.json[^>]*>/)[0]).not.toContain("nonce");
+    expect(html.match(/<link[^>]*\/f\.woff2[^>]*>/)[0]).not.toContain("nonce");
+  });
+
+  it("lowercases rel and as as ASCII, not Unicode", () => {
+    const html = r.renderToString(
+      () => {
+        // U+212A KELVIN SIGN folds to "k" under Unicode case mapping; the HTML
+        // parser would never treat this as a recognized keyword.
+        r.useHead({ tag: "link", props: { rel: "styleshee\u212a", href: "/k.css" } });
+        r.useHead({ tag: "link", props: { rel: "STYLESHEET", href: "/u.css" } });
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    expect(html.match(/<link[^>]*\/k\.css[^>]*>/)[0]).not.toContain("nonce");
+    expect(html.match(/<link[^>]*\/u\.css[^>]*>/)[0]).toContain('nonce="y-n"');
+  });
+
+  it("escapes the nonce value into the attribute", () => {
+    const html = r.renderToString(
+      () => {
+        sharedConfig.context.registerAsset("style", "/a.css");
+        return DOC();
+      },
+      { nonce: { style: 'a"b' } }
+    );
+    expect(html).toContain('<link rel="stylesheet" href="/a.css" nonce="a&quot;b">');
+    expect(html).not.toContain('nonce="a"b"');
+  });
+
+  it("splits rel on ASCII whitespace only, as HTML does", () => {
+    const html = r.renderToString(
+      () => {
+        // A non-breaking space is not an HTML space character, so this is one
+        // unrecognized token — not "preload" + "stylesheet".
+        r.useHead({ tag: "link", props: { rel: "preload\u00a0stylesheet", href: "/n.css" } });
+        r.useHead({ tag: "link", props: { rel: "preload\tstylesheet", href: "/t.css" } });
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    expect(html.match(/<link[^>]*\/n\.css[^>]*>/)[0]).not.toContain("nonce");
+    expect(html.match(/<link[^>]*\/t\.css[^>]*>/)[0]).toContain('nonce="y-n"');
+  });
+
+  it("leaves a destination un-nonced when only the other side is given", () => {
+    const html = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerAsset("style", "/route.css");
+        ctx.registerAsset("module", "/chunk.js");
+        return DOC();
+      },
+      { nonce: { style: "y-n" } }
+    );
+    expect(html).toContain('<link rel="stylesheet" href="/route.css" nonce="y-n">');
+    expect(html).toContain('<link rel="modulepreload" href="/chunk.js">');
+  });
+
+  it("keeps a caller-supplied nonce over the routed one", () => {
+    const html = r.renderToString(
+      () => {
+        r.useHead({ tag: "style", props: { nonce: "mine", children: ".a{}" } });
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    const tag = html.match(/<style[^>]*>/)[0];
+    expect(tag.match(/nonce=/g).length).toBe(1);
+    expect(tag).toContain('nonce="mine"');
+  });
+
+  it("routes streamed boundary stylesheets and late modules", async () => {
+    let done;
+    const html = await pipeToString(
+      r.renderToStream(
+        () => {
+          const ctx = sharedConfig.context;
+          done = ctx.registerFragment("sp");
+          ctx._currentBoundaryId = "sp";
+          ctx.registerAsset("style", "/frag.css");
+          ctx._currentBoundaryId = null;
+          setTimeout(() => {
+            sharedConfig.context.registerAsset("module", "/late.js");
+            done("<span>b</span>");
+          }, 10);
+          return r.ssr`<html><head></head><body><div><template id="pl-sp"></template><!--pl-sp--></div></body></html>`;
+        },
+        { nonce: { script: "s-n", style: "y-n" } }
+      )
+    );
+    expect(html).toContain('href="/frag.css" nonce="y-n"');
+    expect(html).toContain('<link rel="modulepreload" href="/late.js" nonce="s-n">');
+    // Runtime task scripts are script-src governed.
+    expect(html).toContain('<script nonce="s-n">');
+  });
+});
+
+describe("split CSP nonces — review follow-ups", () => {
+  it("nonces head tags patched in after the shell", async () => {
+    let done;
+    const html = await pipeToString(
+      r.renderToStream(
+        () => {
+          const ctx = sharedConfig.context;
+          done = ctx.registerFragment("lp");
+          ctx._currentBoundaryId = "lp";
+          r.useHead({ tag: "style", props: { children: ".late{}" } });
+          ctx._currentBoundaryId = null;
+          setTimeout(() => done("<span>x</span>"), 10);
+          return r.ssr`<html><head></head><body><div><template id="pl-lp"></template><!--pl-lp--></div></body></html>`;
+        },
+        { nonce: { script: "s-n", style: "y-n" } }
+      )
+    );
+    expect(html).toContain('"nonce":"y-n"');
+  });
+
+  it("treats an unrecognized modulepreload as as no state (script)", () => {
+    const html = r.renderToString(
+      () => {
+        // Enumerated attributes have no invalid-value default here: an
+        // unrecognized value is "no state", which modulepreload maps to script.
+        r.useHead({ tag: "link", props: { rel: "modulepreload", as: "bogus", href: "/a.js" } });
+        // HTML does not strip whitespace before matching the keyword.
+        r.useHead({ tag: "link", props: { rel: "modulepreload", as: " style ", href: "/b.js" } });
+        return DOC();
+      },
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    expect(html.match(/<link[^>]*\/a\.js[^>]*>/)[0]).toContain('nonce="s-n"');
+    expect(html.match(/<link[^>]*\/b\.js[^>]*>/)[0]).toContain('nonce="s-n"');
+  });
+
+  it("does not duplicate nonce on an inline style that carries its own", () => {
+    const html = r.renderToString(
+      () => {
+        sharedConfig.context.registerAsset("inline-style", {
+          id: "d.css",
+          content: ".x{}",
+          attrs: { nonce: "mine" }
+        });
+        return DOC();
+      },
+      { nonce: { style: "y-n" } }
+    );
+    const tag = html.match(/<style[^>]*>/)[0];
+    expect(tag.match(/nonce=/g).length).toBe(1);
+    expect(tag).toContain('nonce="mine"');
+  });
+});
+
+describe("split CSP nonces — `as` keyword states", () => {
+  const link = props => r.useHead({ tag: "link", props });
+  const render = fn => r.renderToString(fn, { nonce: { script: "s-n", style: "y-n" } });
+  const tagFor = (html, href) => html.match(new RegExp(`<link[^>]*${href}[^>]*>`))[0];
+
+  it("maps values outside the keyword union to no state (script for modulepreload)", () => {
+    // Fetch has these destinations, but they are not `as` keywords, so the
+    // attribute has no state — which modulepreload resolves to script.
+    const html = render(() => {
+      for (const as of ["audio", "document", "embed", "iframe", "video", "bogus"])
+        link({ rel: "modulepreload", as, href: `/${as}.js` });
+      return DOC();
+    });
+    for (const as of ["audio", "document", "embed", "iframe", "video", "bogus"])
+      expect(tagFor(html, `/${as}\\.js`)).toContain('nonce="s-n"');
+  });
+
+  it("gives no nonce to keywords whose directives never match one", () => {
+    const html = render(() => {
+      for (const as of ["fetch", "font", "image", "json", "text", "track"])
+        link({ rel: "modulepreload", as, href: `/${as}.bin` });
+      return DOC();
+    });
+    for (const as of ["fetch", "font", "image", "json", "text", "track"])
+      expect(tagFor(html, `/${as}\\.bin`)).not.toContain("nonce");
+  });
+
+  it("nonces a plain preload only for script and style", () => {
+    // `worker` is not a preload destination, so the attribute has no state and
+    // the preload is an error — no request, no nonce.
+    const html = render(() => {
+      link({ rel: "preload", as: "script", href: "/p.js" });
+      link({ rel: "preload", as: "style", href: "/p.css" });
+      link({ rel: "preload", as: "worker", href: "/p.worker" });
+      link({ rel: "preload", href: "/p.none" });
+      return DOC();
+    });
+    expect(tagFor(html, "/p\\.js")).toContain('nonce="s-n"');
+    expect(tagFor(html, "/p\\.css")).toContain('nonce="y-n"');
+    expect(tagFor(html, "/p\\.worker")).not.toContain("nonce");
+    expect(tagFor(html, "/p\\.none")).not.toContain("nonce");
+  });
+
+  it("treats an uppercase Nonce prop as the caller's own", () => {
+    const html = render(() => {
+      r.useHead({ tag: "style", props: { Nonce: "mine", children: ".a{}" } });
+      return DOC();
+    });
+    const tag = html.match(/<style[^>]*>/)[0];
+    expect(tag.match(/[Nn]once=/g).length).toBe(1);
+    expect(tag).toContain('Nonce="mine"');
+  });
+
+  it("treats an uppercase nonce attr on an inline style as the caller's own", () => {
+    const html = r.renderToString(
+      () => {
+        sharedConfig.context.registerAsset("inline-style", {
+          id: "u.css",
+          content: ".x{}",
+          attrs: { Nonce: "mine" }
+        });
+        return DOC();
+      },
+      { nonce: { style: "y-n" } }
+    );
+    const tag = html.match(/<style[^>]*>/)[0];
+    expect(tag.match(/[Nn]once=/g).length).toBe(1);
+  });
+});
