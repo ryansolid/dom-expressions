@@ -1,5 +1,6 @@
 import { template as _$template } from "r-dom";
 import { delegateEvents as _$delegateEvents } from "r-dom";
+import { patchDriver as _$patchDriver } from "r-dom";
 import { getNextMarker as _$getNextMarker } from "r-dom";
 import { scope as _$scope } from "r-dom";
 import { insert as _$insert } from "r-dom";
@@ -397,32 +398,26 @@ const template32 = _$getNextElement(_tmpl$4);
 const template33 = [
   (() => {
     var _el$47 = _$getNextElement(_tmpl$19);
-    _$effect(
-      () => styles.button,
-      (_v$, _$p) => {
-        _$className(_el$47, _v$, _$p);
-      }
-    );
+    _$patchDriver(styles, (_n, _p, _f) => {
+      const _v = _n.button;
+      if (_f || _v !== _p.button) _$className(_el$47, _v);
+    });
     return _el$47;
   })(),
   (() => {
     var _el$48 = _$getNextElement(_tmpl$19);
-    _$effect(
-      () => styles["foo--bar"],
-      (_v$, _$p) => {
-        _$className(_el$48, _v$, _$p);
-      }
-    );
+    _$patchDriver(styles, (_n2, _p2, _f2) => {
+      const _v2 = _n2["foo--bar"];
+      if (_f2 || _v2 !== _p2["foo--bar"]) _$className(_el$48, _v2);
+    });
     return _el$48;
   })(),
   (() => {
     var _el$49 = _$getNextElement(_tmpl$19);
-    _$effect(
-      () => styles.foo.bar,
-      (_v$, _$p) => {
-        _$className(_el$49, _v$, _$p);
-      }
-    );
+    _$patchDriver(styles, (_n3, _p3, _f3) => {
+      const _v3 = _n3.foo.bar;
+      if (_f3 || _v3 !== _p3.foo.bar) _$className(_el$49, _v3);
+    });
     return _el$49;
   })(),
   (() => {
@@ -681,12 +676,10 @@ var _el$104 = _$getNextElement(_tmpl$4);
 _$style(_el$104, /* @static */ styleProp.style);
 const template85 = _el$104;
 var _el$105 = _$getNextElement(_tmpl$4);
-_$effect(
-  () => styleProp.style,
-  (_v$, _$p) => {
-    _$style(_el$105, _v$, _$p);
-  }
-);
+_$patchDriver(styleProp, (_n4, _p4, _f4) => {
+  const _v4 = _n4.style;
+  if (_f4 || _v4 !== _p4.style) _$style(_el$105, _v4);
+});
 const template86 = _el$105;
 const style = {
   background: "red",
