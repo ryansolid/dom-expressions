@@ -1721,15 +1721,15 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         if key.starts_with("prop:") {
             return Ok(());
         }
-        if key.starts_with("on") {
+        if let Some(rest) = key.strip_prefix("on") {
             // Capture-phase variants can't ride delegation; they drop as
             // before. `on:x` keeps the raw name, `onXxx` lowercases — the
             // same event-name derivation as the client runtime.
             if self.server_components && !key.starts_with("oncapture:") {
-                let pos = if let Some(raw) = key.strip_prefix("on:") {
+                let pos = if let Some(raw) = rest.strip_prefix(':') {
                     raw.to_string()
                 } else {
-                    key[2..].to_lowercase()
+                    rest.to_lowercase()
                 };
                 if !pos.is_empty() {
                     claims.push((pos, expression));
