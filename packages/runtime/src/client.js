@@ -21,11 +21,12 @@ import {
   // that don't provide it degrade gracefully — list accessors carrying the
   // `$ll` marker are simply called (the classic mapArray path).
   driveList,
-  // Optional seam paired with driveList: while the core is purity-probing a
-  // row bind, a function-valued insert disqualifies the row and is skipped
-  // (its construction would be guaranteed-discarded work). No-op outside a
-  // probe; static inserts always proceed.
-  probeGate
+  // Optional seams paired with driveList: while the core is purity-probing a
+  // row bind, the first impurity marker (function-valued insert, ref) aborts
+  // the speculative build — user code must never observe a probe. No-ops
+  // outside a probe; static inserts always proceed.
+  probeGate,
+  probeMark
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
@@ -454,10 +455,14 @@ export function dynamicProperty(props, key) {
 }
 
 export function applyRef(r, element) {
+  // A ref during a list probe would hand userland an element that never
+  // mounts — disqualify and abort the speculative build instead.
+  if (probeMark !== undefined) probeMark();
   Array.isArray(r) ? r.flat(Infinity).forEach(f => f && f(element)) : r(element);
 }
 
 export function ref(fn, element) {
+  if (probeMark !== undefined) probeMark();
   const resolved = untrack(fn);
   runWithOwner(null, () => applyRef(resolved, element));
 }
@@ -580,7 +585,13 @@ export function insert(parent, accessor, marker, initial, options) {
     if (
       driveList(parent, accessor, marker, () =>
         runWithOwner(owner, () =>
-          insert(parent, () => listAccessor(), marker, marker !== undefined ? [] : undefined, options)
+          insert(
+            parent,
+            () => listAccessor(),
+            marker,
+            marker !== undefined ? [] : undefined,
+            options
+          )
         )
       )
     )
