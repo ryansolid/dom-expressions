@@ -1417,10 +1417,13 @@ describe("split CSP nonces — public surface", () => {
   it("leaves context.nonce as the user value", () => {
     const pair = { script: "s-n", style: "y-n" };
     let seen;
-    r.renderToString(() => {
-      seen = sharedConfig.context.nonce;
-      return DOC();
-    }, { nonce: pair });
+    r.renderToString(
+      () => {
+        seen = sharedConfig.context.nonce;
+        return DOC();
+      },
+      { nonce: pair }
+    );
     expect(seen).toBe(pair);
   });
 
