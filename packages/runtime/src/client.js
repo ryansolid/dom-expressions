@@ -570,14 +570,22 @@ export function insert(parent, accessor, marker, initial, options) {
   // to the core's row-ops driver first. During hydration the driver claims
   // server rows and registers without initial writes; a false return means
   // it declined (non-store subject, impure rows, marker-bounded hydration
-  // region, key/count mismatch) and the accessor runs classically.
-  if (
-    driveList !== undefined &&
-    typeof accessor === "function" &&
-    accessor.$ll !== undefined &&
-    driveList(parent, accessor, marker)
-  )
-    return;
+  // region, key/count mismatch) and the accessor runs classically. Empty
+  // lists engage TENTATIVELY (the purity probe defers to the first row) —
+  // the late-classic thunk re-enters this insert with a bare accessor (no
+  // `$ll` marker) under the ORIGINAL owner if that deferred probe declines.
+  if (driveList !== undefined && typeof accessor === "function" && accessor.$ll !== undefined) {
+    const listAccessor = accessor;
+    const owner = getOwner();
+    if (
+      driveList(parent, accessor, marker, () =>
+        runWithOwner(owner, () =>
+          insert(parent, () => listAccessor(), marker, marker !== undefined ? [] : undefined, options)
+        )
+      )
+    )
+      return;
+  }
   if (typeof accessor !== "function") {
     accessor = normalize(accessor, initial, multi, true);
     if (typeof accessor !== "function") {
