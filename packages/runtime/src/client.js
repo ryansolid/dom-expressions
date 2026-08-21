@@ -1643,7 +1643,7 @@ function eventHandler(e, container, state) {
     // and the seam stays live for markers adopted before the frame runtime
     // loads (the document face). Only pays when no compiled handler exists.
     if (handler === undefined && node.hasAttribute && node.hasAttribute("_bnd")) {
-      const seam = globalThis[Symbol.for("dom-expressions.bound-claims")];
+      const seam = globalThis[Symbol.for("dx.bnd")];
       if (seam) handler = seam.resolve(node, e.type);
     }
     if (handler && !node.disabled) {

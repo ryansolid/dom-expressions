@@ -30,16 +30,22 @@ const SERIALIZER_DECODE = resolve(ROOT, "packages/runtime/src/serializer-decode.
 
 // name -> [entry (import statements or subset against CLIENT), gzip ceiling]
 const SCENARIOS = {
-  // +19 for Stage 6 behavior claims' dispatch hook: the delegation walk's
-  // one extra branch (marker check + registered-symbol seam read, entirely
-  // inside eventHandler — client.js gained ZERO top-level statements, which
-  // the router-eager-subset scenario below enforces at actual+20; an early
+  // Stage 6 behavior claims' dispatch hook: the delegation walk's one extra
+  // branch (marker check + registered-symbol seam read, entirely inside
+  // eventHandler — client.js gained ZERO top-level statements, which the
+  // router-eager-subset scenario below enforces at actual+20; an early
   // draft published `delegate` from module scope and blew that subset from
-  // 401 to 1189 by retaining the whole event system in every slice).
-  // Re-guarded at actual+20 (4499 measured).
+  // 401 to 1189 by retaining the whole event system in every slice). The
+  // hook is ~121 min bytes (the seam key is the deliberately terse
+  // `Symbol.for("dx.bnd")` — it mirrors the _bnd attribute; a longer
+  // namespaced key cost 17 gz here for zero collision-risk delta); its gz
+  // weight floats with the neighborhood (+19 when first measured, +58
+  // against today's base). Then +22 from the entry-import-preloads/
+  // CSP-nonce round riding the rebase base. Re-guarded at actual+20
+  // (4504 measured).
   "client: compiled-JSX core (render/template/insert/delegateEvents/effects)": [
     "{ render, template, insert, delegateEvents, className, style, setAttribute, addEvent, spread }",
-    4519
+    4524
   ],
   // Ceiling history: guarded 7950 at landing; 7958 after the boundary-driven
   // reveal round (+60: the revealed fragment's parent on the _$HY.fe hook);
@@ -96,8 +102,11 @@ const SCENARIOS = {
   // (10810 measured). Then +52 for Stage 6 behavior claims' core half —
   // the dispatch-hook bytes charged to the compiled-JSX core scenario
   // above, reaching this scenario through the same delegation walk.
-  // Re-guarded at actual+20 (10862 measured).
-  "client: full surface": ["*", 10882],
+  // Re-guarded at actual+20 (10862 measured). Then +25 from the
+  // entry-import-preloads/CSP-nonce round, which landed on next 12 over
+  // this ceiling (unguarded); absorbed here at the Stage 6 rebase.
+  // Re-guarded at actual+20 (10885 measured, post seam-key shortening).
+  "client: full surface": ["*", 10905],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two

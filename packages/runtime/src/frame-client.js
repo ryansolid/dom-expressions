@@ -73,7 +73,7 @@ const claimedAttr = name => name === "href" || name === "action";
 // a host/frame option (`delegate`, wired by the platform glue to
 // delegateEvents) — publishing it from client.js would drag the whole event
 // system into every tree-shaken subset of the core entry.
-const BOUND_SEAM = Symbol.for("dom-expressions.bound-claims");
+const BOUND_SEAM = Symbol.for("dx.bnd");
 const boundSeam = globalThis[BOUND_SEAM] || (globalThis[BOUND_SEAM] = {});
 const BND_ATTR = "_bnd";
 const BND_SELECTOR = "[_bnd]";
