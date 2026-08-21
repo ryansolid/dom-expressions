@@ -1215,7 +1215,7 @@ describe("split CSP nonces", () => {
         sharedConfig.context.registerAsset("style", "/a.css");
         return DOC();
       },
-      { nonce: { style: 'a"b' } }
+      { nonce: { script: false, style: 'a"b' } }
     );
     expect(html).toContain('<link rel="stylesheet" href="/a.css" nonce="a&quot;b">');
     expect(html).not.toContain('nonce="a"b"');
@@ -1244,7 +1244,7 @@ describe("split CSP nonces", () => {
         ctx.registerAsset("module", "/chunk.js");
         return DOC();
       },
-      { nonce: { style: "y-n" } }
+      { nonce: { script: false, style: "y-n" } }
     );
     expect(html).toContain('<link rel="stylesheet" href="/route.css" nonce="y-n">');
     expect(html).toContain('<link rel="modulepreload" href="/chunk.js">');
@@ -1335,7 +1335,7 @@ describe("split CSP nonces — review follow-ups", () => {
         });
         return DOC();
       },
-      { nonce: { style: "y-n" } }
+      { nonce: { script: false, style: "y-n" } }
     );
     const tag = html.match(/<style[^>]*>/)[0];
     expect(tag.match(/nonce=/g).length).toBe(1);
@@ -1406,9 +1406,39 @@ describe("split CSP nonces — `as` keyword states", () => {
         });
         return DOC();
       },
-      { nonce: { style: "y-n" } }
+      { nonce: { script: false, style: "y-n" } }
     );
     const tag = html.match(/<style[^>]*>/)[0];
     expect(tag.match(/[Nn]once=/g).length).toBe(1);
+  });
+});
+
+describe("split CSP nonces — public surface", () => {
+  it("leaves context.nonce as the user value", () => {
+    const pair = { script: "s-n", style: "y-n" };
+    let seen;
+    r.renderToString(() => {
+      seen = sharedConfig.context.nonce;
+      return DOC();
+    }, { nonce: pair });
+    expect(seen).toBe(pair);
+  });
+
+  it("projects each half and treats false as omitted", () => {
+    const pair = { script: "s-n", style: false };
+    expect(r.scriptNonce(pair)).toBe("s-n");
+    expect(r.styleNonce(pair)).toBeUndefined();
+    expect(r.scriptNonce("shared")).toBe("shared");
+    expect(r.styleNonce("shared")).toBe("shared");
+    expect(r.scriptNonce(undefined)).toBeUndefined();
+  });
+
+  it("HydrationScript uses the script half of the render nonce", () => {
+    const html = r.renderToString(
+      () => r.ssr`<html><head>${r.HydrationScript()}</head><body></body></html>`,
+      { nonce: { script: "s-n", style: "y-n" } }
+    );
+    expect(html).toContain('<script nonce="s-n">');
+    expect(html).not.toContain("y-n");
   });
 });

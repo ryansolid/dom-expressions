@@ -724,13 +724,30 @@ function normalizeNonce(nonce) {
   }
   const script = nonce.script;
   const style = nonce.style;
-  if (script == null && style == null) return undefined;
+  if (!script && !style) return undefined;
   return {
     script,
     style,
-    scriptAttr: script ? ` nonce="${escape(String(script), true)}"` : "",
-    styleAttr: style ? ` nonce="${escape(String(style), true)}"` : ""
+    scriptAttr: typeof script === "string" && script ? ` nonce="${escape(script, true)}"` : "",
+    styleAttr: typeof style === "string" && style ? ` nonce="${escape(style, true)}"` : ""
   };
+}
+
+function destinationNonce(nonce, destination) {
+  if (nonce == null) return undefined;
+  if (typeof nonce === "string") return nonce || undefined;
+  const value = nonce[destination];
+  return typeof value === "string" && value ? value : undefined;
+}
+
+/** The script-destination half of a render `nonce`. */
+export function scriptNonce(nonce) {
+  return destinationNonce(nonce, "script");
+}
+
+/** The style-destination half of a render `nonce`. */
+export function styleNonce(nonce) {
+  return destinationNonce(nonce, "style");
 }
 
 // HTML compares rel/as ASCII case-insensitively; toLowerCase would fold a
@@ -935,7 +952,7 @@ export function renderToString(code, options = {}) {
   const tracking = createAssetTracking();
   const headRegistry = createHeadRegistry();
   sharedConfig.context = {
-    nonce,
+    nonce: options.nonce,
     escape: escape,
     resolve: resolveSSRNode,
     ssr: ssr,
@@ -1293,7 +1310,7 @@ export function renderToStream(code, options = {}) {
 
   sharedConfig.context = context = {
     async: true,
-    nonce,
+    nonce: options.nonce,
     // The document face's live-hole carrier (Stage 4). Components render
     // under per-component context CLONES (spread copies), so a mutation on
     // the clone a server component armed under never reaches this root
@@ -1807,8 +1824,8 @@ export function renderToStream(code, options = {}) {
 
 // components
 export function HydrationScript(props) {
-  const { nonce } = sharedConfig.context;
-  return ssr(generateHydrationScript({ nonce: nonce && nonce.script, ...props }));
+  const nonce = scriptNonce(sharedConfig.context && sharedConfig.context.nonce);
+  return ssr(generateHydrationScript({ nonce, ...props }));
 }
 
 // Compiler-emitted: tags `fn` so `ssr()` routes it through the grouped
@@ -3011,9 +3028,8 @@ export function applyRef(r, element) {
 }
 
 export function generateHydrationScript({ eventNames = ["click", "input"], nonce } = {}) {
-  const value = typeof nonce === "string" ? nonce : nonce && nonce.script;
   return `<script${
-    value ? ` nonce="${escape(String(value), true)}"` : ""
+    nonce ? ` nonce="${escape(String(nonce), true)}"` : ""
   }>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute("_hk")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));["${eventNames.join(
     '","'
   )}"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs-->`;

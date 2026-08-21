@@ -58,15 +58,25 @@ export type AssetResolverFn = (
 ) => ResolvedAssets | null | undefined | Promise<ResolvedAssets | null | undefined>;
 
 /**
- * CSP nonce for the tags the render emits. A string applies to both
- * nonce-aware destinations; a `{ script, style }` pair routes each tag to the directive
- * governing its fetch — the `script-src-elem`/`style-src-elem` chains, which
- * fall back to `script-src`/`style-src` and then `default-src`. Worker
+ * CSP nonce for the tags a server render emits. A string applies to both
+ * nonce-aware destinations. A `{ script, style }` pair routes each tag to
+ * the directive governing its fetch (`script-src-elem` / `style-src-elem`,
+ * falling back to `script-src` / `style-src` then `default-src`). Both
+ * keys are required; `false` leaves that destination un-nonced. Worker
  * destinations take the script nonce, which only applies when their own
- * fallback reaches `script-src`. A nonce supplied through a `useHead` tag's
- * own props always wins.
+ * fallback reaches `script-src`. A nonce on a `useHead` tag's own props
+ * always wins.
+ *
+ * Only `renderToString` / `renderToStream` take this shape. Surfaces that
+ * emit one script (`HydrationScript`, `generateHydrationScript`,
+ * `createSSRResponse`) take a string — project with `scriptNonce`.
  */
-export type CSPNonce = string | { script?: string; style?: string };
+export type CSPNonce = string | { script: string | false; style: string | false };
+
+/** The script-destination half of a render `nonce`. */
+export function scriptNonce(nonce?: CSPNonce): string | undefined;
+/** The style-destination half of a render `nonce`. */
+export function styleNonce(nonce?: CSPNonce): string | undefined;
 
 export function renderToString<T>(
   fn: () => T,
@@ -199,8 +209,7 @@ export function createComponent<T>(Comp: (props: T) => JSX.Element, props: T): J
 export function mergeProps(...sources: unknown[]): unknown;
 export function getOwner(): unknown;
 export function generateHydrationScript(options?: {
-  /** A pair is accepted for symmetry; only its `script` half is used. */
-  nonce?: CSPNonce;
+  nonce?: string;
   eventNames?: string[];
 }): string;
 /**
@@ -380,8 +389,8 @@ export type {
 export interface SSRResponseOptions {
   /** Base head; the stub's status/headers win over it. */
   responseInit?: ResponseInit;
-  /** Nonce carried by the post-flush `<script>` redirect fallback (its `script` half). */
-  nonce?: CSPNonce;
+  /** Nonce carried by the post-flush `<script>` redirect fallback. */
+  nonce?: string;
   /** Rewrites each outgoing HTML chunk (entry script injection, ...). */
   transformChunk?: (chunk: string) => string;
 }
