@@ -1149,12 +1149,12 @@ describe("root-level module asset serialization", () => {
   });
 });
 
-// Manifest support threads through `renderToString`. When an entry is
-// marked with `isEntry: true`, its CSS should register as a preload link;
-// `context.resolveAssets` should walk the `imports` chain and collect the
-// full js+css closure.
+// Manifest support threads through both server renderers. When an entry is
+// marked with `isEntry: true`, its CSS and static JS imports should register
+// as head assets; `context.resolveAssets` walks the `imports` chain and
+// collects the full js+css closure.
 describe("manifest-driven asset resolution", () => {
-  it("emits preload links for CSS of manifest entries when </head> is present", () => {
+  it("emits stylesheet links for CSS of manifest entries when </head> is present", () => {
     const manifest = {
       _base: "/out/",
       "app.tsx": {
@@ -1169,14 +1169,76 @@ describe("manifest-driven asset resolution", () => {
       }
     };
 
-    // injectPreloadLinks looks for `</head>` as its insertion point, so the
-    // document must include a head to observe the effect.
+    // Head assets are inserted before `</head>`, so the document must include
+    // a head to observe the effect.
     const html = r.renderToString(
       () => r.ssr`<html><head></head><body><div>x</div></body></html>`,
       { manifest }
     );
     expect(html).toContain("/out/app.css");
     expect(html).toContain("/out/shared.css");
+  });
+
+  it("modulepreloads the full static entry graph exactly once", () => {
+    // entry -> a -> shared -> leaf
+    //       -> b ---------^
+    const manifest = {
+      _base: "/out/",
+      "src/entry.tsx": {
+        file: "entry.js",
+        imports: ["_a.js", "_b.js"],
+        dynamicImports: ["src/lazy.tsx"],
+        isEntry: true
+      },
+      "_a.js": { file: "a.js", imports: ["_shared.js"] },
+      "_b.js": { file: "b.js", imports: ["_shared.js"] },
+      "_shared.js": { file: "shared.js", imports: ["_leaf.js"] },
+      "_leaf.js": { file: "leaf.js" },
+      "src/lazy.tsx": { file: "lazy.js" }
+    };
+
+    const html = r.renderToString(
+      () => r.ssr`<html><head></head><body><div>x</div></body></html>`,
+      { manifest }
+    );
+
+    for (const file of ["a.js", "b.js", "shared.js", "leaf.js"]) {
+      expect(html.match(new RegExp(`href="/out/${file}"`, "g"))).toHaveLength(1);
+    }
+    // The document loads the entry itself; dynamic imports remain demand-driven.
+    expect(html).not.toContain('href="/out/entry.js"');
+    expect(html).not.toContain('href="/out/lazy.js"');
+  });
+
+  it("emits the static entry graph through renderToStream", async () => {
+    const manifest = {
+      _base: "/out/",
+      "src/entry.tsx": {
+        file: "entry.js",
+        css: ["entry.css"],
+        imports: ["_shared.js"],
+        isEntry: true
+      },
+      "_shared.js": { file: "shared.js", css: ["shared.css"] }
+    };
+    const html = await new Promise(resolve => {
+      const chunks = [];
+      r.renderToStream(() => r.ssr`<html><head></head><body><div>x</div></body></html>`, {
+        manifest
+      }).pipe({
+        write(chunk) {
+          chunks.push(chunk);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+
+    expect(html).toContain('<link rel="stylesheet" href="/out/entry.css">');
+    expect(html).toContain('<link rel="stylesheet" href="/out/shared.css">');
+    expect(html).toContain('<link rel="modulepreload" href="/out/shared.js">');
+    expect(html).not.toContain('href="/out/entry.js"');
   });
 
   it("context.resolveAssets walks the import graph and prefixes _base", () => {
