@@ -135,15 +135,20 @@ export function createRenderer({
       after = getNextSibling(a[aEnd - 1]),
       map = null;
 
+    // `a[]` can name a node that replace/swap already took out of this
+    // parent. Prefix/suffix must not treat those as still-live common ends
+    // — same drop as the DOM reconcile (#574).
+    const isLive = n => n && getParentNode(n) === parentNode;
+
     while (aStart < aEnd || bStart < bEnd) {
       // common prefix
-      if (a[aStart] === b[bStart]) {
+      if (a[aStart] === b[bStart] && isLive(a[aStart])) {
         aStart++;
         bStart++;
         continue;
       }
       // common suffix
-      while (a[aEnd - 1] === b[bEnd - 1]) {
+      while (a[aEnd - 1] === b[bEnd - 1] && isLive(a[aEnd - 1])) {
         aEnd--;
         bEnd--;
       }

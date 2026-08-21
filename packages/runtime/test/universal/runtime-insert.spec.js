@@ -191,6 +191,32 @@ describe("universal insert transitions", () => {
     expect(parent.innerHTML).toBe("<span>2</span><span>1</span>");
     dispose();
   });
+
+  it("keeps a node that replace + end-swap left detached (#574)", () => {
+    const parent = document.createElement("div");
+    const mk = t => {
+      const s = document.createElement("span");
+      s.textContent = t;
+      return s;
+    };
+    const A = mk("i1"),
+      B = mk("i3"),
+      C = mk("i4"),
+      D = mk("i1"),
+      E = mk("i5");
+    const [list, setList] = createSignal([A, B, C, D, E]);
+    let dispose;
+    createRoot(d => {
+      dispose = d;
+      r.insert(parent, () => list());
+    });
+    flush();
+    setList([B, A, E, C, D]);
+    flush();
+    expect([...parent.children].map(n => n.textContent).join(",")).toBe("i3,i1,i5,i4,i1");
+    expect(parent.contains(C)).toBe(true);
+    dispose();
+  });
 });
 
 describe("universal render()", () => {

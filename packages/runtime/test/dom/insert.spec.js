@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import * as r from "../../src/client";
+import reconcileArrays from "../../src/reconcile";
 import { createRoot, createSignal, flush, onCleanup } from "@solidjs/signals";
 
 describe("r.insert", () => {
@@ -744,6 +745,30 @@ describe("r.insert with migrating nodes", () => {
 
   // The tests above exercise the `cleanChildren` path (single-clear).
   // The tests below drive `reconcileArrays` migration branches.
+
+  it("reconcileArrays keeps a node that replace + end-swap left detached (#574)", () => {
+    // A B C D E → B A E C D. After two map-fallback replaces, C is out of
+    // the DOM but still in a[]. The single-anchor swap then moves E; the
+    // suffix walk used to treat detached C as a live common end and skip
+    // the insert.
+    const parent = document.createElement("div");
+    const mk = t => {
+      const s = document.createElement("span");
+      s.textContent = t;
+      return s;
+    };
+    const A = mk("i1"),
+      B = mk("i3"),
+      C = mk("i4"),
+      D = mk("i1"),
+      E = mk("i5");
+    const a = [A, B, C, D, E];
+    const b = [B, A, E, C, D];
+    a.forEach(n => parent.appendChild(n));
+    reconcileArrays(parent, a, b);
+    expect([...parent.children].map(n => n.textContent).join(",")).toBe("i3,i1,i5,i4,i1");
+    expect(parent.contains(C)).toBe(true);
+  });
 
   it("reconcile keeps a migrated node alive when its array drops it", () => {
     // Insert [n1, n2, n3]; user code migrates n2 to another parent; then

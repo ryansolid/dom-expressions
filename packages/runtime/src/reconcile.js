@@ -22,15 +22,24 @@ export default function reconcileArrays(parentNode, a, b, marker) {
     anchor,
     anchorTag;
 
+  // `a[]` can name a node that replace/swap already took out of this
+  // parent (or out of this slot). Prefix/suffix must not treat those as
+  // still-live common ends — that was the 2fe6310f drop (#574).
+  const isLive = n => {
+    if (!n) return false;
+    const tag = n[$$SLOT];
+    return n.parentNode === parentNode && (!tag || tag === marker);
+  };
+
   while (aStart < aEnd || bStart < bEnd) {
     // common prefix
-    if (a[aStart] === b[bStart]) {
+    if (a[aStart] === b[bStart] && isLive(a[aStart])) {
       aStart++;
       bStart++;
       continue;
     }
     // common suffix
-    while (a[aEnd - 1] === b[bEnd - 1]) {
+    while (a[aEnd - 1] === b[bEnd - 1] && isLive(a[aEnd - 1])) {
       aEnd--;
       bEnd--;
     }
