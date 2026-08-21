@@ -26,7 +26,11 @@ export interface JSXDOMExpressionsConfig {
   /** Patch-mode driver import name (DESIGN-PATCH-CHANNEL.md): when set,
    * template scopes whose dynamic bindings are pure member reads of one
    * subject compile to a compiled patch body + driver call instead of the
-   * grouped effect. false = feature off (default). */
+   * grouped effect. ON by default for DOM output — the dual driver decides
+   * per instantiation at runtime (patchable store record -> channel,
+   * anything else -> the same body on a tracked effect), so semantics are
+   * authoring-invisible. Set false to opt out (requires a runtime without
+   * the patchDriver export, e.g. pre-0.50.0-next.44 pairings). */
   patchDriver: string | false;
   memoWrapper: string | false;
   validate: boolean;
@@ -52,7 +56,7 @@ const config: JSXDOMExpressionsConfig = {
   contextToCustomElements: false,
   staticMarker: "@static",
   effectWrapper: "effect",
-  patchDriver: false,
+  patchDriver: "patchDriver",
   memoWrapper: "memo",
   validate: true,
   inlineStyles: true,
