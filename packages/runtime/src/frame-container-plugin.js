@@ -34,7 +34,8 @@
 /**
  * @type {{
  *   resolveTrace?: (value: unknown) => ({ subscribe(): AsyncIterable<any>, array: boolean } | undefined),
- *   materializeTrace?: (marker: { $tr: AsyncIterable<any>, $ta?: number }) => unknown,
+ *   materializeTrace?: (marker: { $tr: any, $ta?: number }) => unknown,
+ *   streamOf?: (iterable: AsyncIterable<any>) => any,
  *   materialized: WeakMap<object, unknown>,
  *   materializedValues: WeakSet<object>
  * }}
@@ -55,6 +56,26 @@ export function setContainerTraceResolver(fn) {
 /** Client half: install the reactive core's trace materializer. */
 export function setContainerTraceMaterializer(fn) {
   state.materializeTrace = fn;
+}
+
+/**
+ * Serializer half: install the async-iterable → raw-seroval-stream mint
+ * (serializer-decode.js, which already carries seroval — this module must
+ * stay seroval-free because it also rides the EAGER frames-client graph,
+ * and seroval ships without `sideEffects: false`).
+ *
+ * Why a raw stream and not the iterable itself: seroval decodes an async
+ * iterable as a generator WRAPPER over its internal stream, so every
+ * buffered value is microtasks away — but hydration's claim walk is
+ * SYNCHRONOUS. A trace whose snapshot the document already delivered must
+ * read as ready DURING the walk (every other async source has a sync
+ * hydration answer: promise stamps, serialized records), or the consuming
+ * boundary renders a phantom fallback over settled markup (the chat
+ * welcome/status meter miss). A raw stream decodes as the stream object
+ * itself, whose `.on()` replays the buffer synchronously at subscribe.
+ */
+export function setContainerTraceStreamMint(fn) {
+  state.streamOf = fn;
 }
 
 /**
@@ -149,17 +170,16 @@ export function isMaterializedContainer(value) {
 
 /**
  * Whether a decoded value is a trace marker: the eval face serializes a
- * trace as `{ $tr: iterable, $ta: 0|1 }` (a plain literal — data scripts
+ * trace as `{ $tr: stream, $ta: 0|1 }` (a plain literal — data scripts
  * execute before any runtime that could materialize is guaranteed
- * resident, so revival is deferred to the arg-read site).
+ * resident, so revival is deferred to the arg-read site). `$tr` is a raw
+ * seroval stream (see setContainerTraceStreamMint); the async-iterable
+ * shape is accepted for payloads minted before the stream protocol.
  */
 export function isContainerTraceMarker(value) {
-  return (
-    value != null &&
-    typeof value === "object" &&
-    value.$tr != null &&
-    typeof value.$tr[Symbol.asyncIterator] === "function"
-  );
+  if (value == null || typeof value !== "object" || value.$tr == null) return false;
+  const tr = value.$tr;
+  return tr.__SEROVAL_STREAM__ === true || typeof tr[Symbol.asyncIterator] === "function";
 }
 
 /**
@@ -181,9 +201,18 @@ export function reviveContainerTraces(value) {
   return value;
 }
 
+// The subscription crosses as a RAW seroval stream when the mint is
+// installed (it always is on a parsing face — the plugin set itself
+// resolves through the module that installs it): the decode side then holds
+// the stream object directly, whose `.on()` replays buffered emissions
+// SYNCHRONOUSLY — a snapshot the document already delivered is readable
+// during hydration's synchronous claim walk. Parsing the iterable directly
+// (the fallback) wraps it in seroval's async generator on decode, pushing
+// every buffered value at least a microtask away.
 function parseTrace(value, ctx) {
   const trace = value[TRACE];
-  return { a: trace.array ? 1 : 0, i: ctx.parse(trace.subscribe()) };
+  const sub = trace.subscribe();
+  return { a: trace.array ? 1 : 0, i: ctx.parse(state.streamOf ? state.streamOf(sub) : sub) };
 }
 
 /**
@@ -210,7 +239,11 @@ export const ContainerTracePlugin = {
     },
     async async(value, ctx) {
       const trace = value[TRACE];
-      return { a: trace.array ? 1 : 0, i: await ctx.parse(trace.subscribe()) };
+      const sub = trace.subscribe();
+      return {
+        a: trace.array ? 1 : 0,
+        i: await ctx.parse(state.streamOf ? state.streamOf(sub) : sub)
+      };
     },
     stream: parseTrace
   },

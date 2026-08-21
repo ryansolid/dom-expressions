@@ -243,11 +243,20 @@ const SCENARIOS = {
   // (request.signal/cancel → iterator.return) deliberately lives in
   // server.js — zero client bytes. Re-guarded at actual+20 (9004
   // measured).
+  // Then +84 for the container-trace stream mint: traces cross as RAW
+  // seroval streams (sync buffered replay — a document-delivered snapshot
+  // must be readable during hydration's synchronous claim walk; the
+  // async-iterable wrapper made a settled boundary suspend and hydrate a
+  // phantom fallback). The pump install rides serializer-decode (this
+  // codec-inclusive scenario charges it; real consumers' eager slices pay
+  // 0 — the plugin module itself stays seroval-free) plus the parse-face
+  // mint branches and the stream-shaped marker probe. Re-guarded at
+  // actual+20 (9088 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
-    9024
+    9108
   ]
 };
 

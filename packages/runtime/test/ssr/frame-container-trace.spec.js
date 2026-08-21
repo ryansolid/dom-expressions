@@ -160,9 +160,16 @@ describe("container traces — stream face wire", () => {
     // The table hands back the MATERIALIZED container, not a marker.
     expect(value.$live).toBe(true);
     expect(received.length).toBe(1);
-    // The marker's iterable replays the full trace.
+    // The marker carries the RAW seroval stream (not an async-iterable
+    // wrapper): subscribe replays the buffered trace SYNCHRONOUSLY, which is
+    // what lets a document-face consumer read a delivered snapshot during
+    // hydration's synchronous claim walk (see setContainerTraceStreamMint).
+    const stream = received[0].marker.$tr;
+    expect(stream.__SEROVAL_STREAM__).toBe(true);
     const yields = [];
-    for await (const v of received[0].marker.$tr) yields.push(v);
+    let ended = false;
+    stream.on({ next: v => yields.push(v), return: () => (ended = true), throw: () => {} });
+    expect(ended).toBe(true); // bounded trace: buffer replays to completion, sync
     expect(yields[0]).toEqual({ n: 1 });
     expect(yields[1]).toEqual([[["n"], 2]]);
   });
