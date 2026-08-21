@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::{Error, Result};
 use oxc_allocator::{Allocator, CloneIn};
 use oxc_ast::ast::{
     ArrayExpressionElement, Expression, FormalParameterKind, JSXAttributeItem, JSXAttributeValue,

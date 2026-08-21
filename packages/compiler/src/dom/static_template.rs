@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::{Error, Result};
 use oxc_ast::ast::{JSXChild, JSXElement, JSXExpression};
 
 use crate::dom::attrs::CloseTagContext;

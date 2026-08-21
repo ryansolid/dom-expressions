@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::Result;
 use oxc_allocator::{Allocator, CloneIn};
 use oxc_ast::ast::{
     AssignmentOperator, AssignmentTarget, Expression, JSXElement, JSXExpression, Statement,

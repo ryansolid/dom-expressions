@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::{Error, Result};
 use oxc_allocator::{Allocator, CloneIn, Vec as ArenaVec};
 use oxc_ast::ast::{
     Argument, Expression, JSXAttributeItem, JSXAttributeValue, JSXChild, JSXElement, JSXExpression,
@@ -2286,9 +2286,8 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         // HTML/text string) the client applies as plain prop effects with no
         // owner; a scope here would reserve a hydration child id the client
         // never allocates, shifting every keyed sibling after it (#3015).
-        let allocates = self.hydratable
-            && can_allocate_ids
-            && expression_can_return_hydratable_child(&value);
+        let allocates =
+            self.hydratable && can_allocate_ids && expression_can_return_hydratable_child(&value);
         let value = self.dynamic_child_value(span, value, dynamic);
         let value = if do_not_escape {
             value

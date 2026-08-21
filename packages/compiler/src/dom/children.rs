@@ -2,12 +2,12 @@ use crate::dom::attrs::CloseTagContext;
 use crate::dom::element::{AstDomTransform, jsx_expression_to_expression};
 use crate::dom::static_template::lower_static_native_template;
 use crate::dom::template::InsertMarker;
+use crate::error::{Error, Result};
 use crate::shared::classify::check_length;
 use crate::shared::utils::{
     child_slot_allocates_ids, element_name, escape_html_text, escape_html_text_expression,
     is_component_name, static_jsx_expression, trim_jsx_text,
 };
-use napi::bindgen_prelude::*;
 use oxc_allocator::CloneIn;
 use oxc_ast::ast::Expression;
 use oxc_ast::ast::{

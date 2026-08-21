@@ -42,6 +42,28 @@ const result = transform(`const view = <div>Hello</div>;`, {
 console.log(result.code);
 ```
 
+## Rust compiler core
+
+The crate also exposes a host-independent Rust API:
+
+```rust
+use dom_expressions_compiler::{compile, CompileOptions};
+
+let output = compile(
+    "const view = <div>{name()}</div>;",
+    &CompileOptions::default(),
+)?;
+```
+
+Build with `--no-default-features` when embedding the compiler without its
+Node-API adapter. The existing Node `transform()` delegates to the same
+compiler core and keeps its current interface.
+
+> **Stability:** the Rust API is unstable while the compiler is pre-1.0. It
+> carries no semver commitment — options, output, and error types may change
+> shape in any release, so pin an exact revision when embedding it. The Node
+> `transform()` interface remains the supported public contract.
+
 `transformAsync()` is also available for integration points that expect a
 promise-returning transform:
 

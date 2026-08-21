@@ -7,8 +7,8 @@
 //! pattern — so `lower_fragment` (and the component-children pipeline) can be
 //! generic while emission stays per-mode.
 
+use crate::error::Result;
 use crate::shared::ast_builder::AstBuilder;
-use napi::bindgen_prelude::Result;
 use oxc_ast::ast::{Expression, JSXElement, JSXFragment};
 use oxc_span::Span;
 

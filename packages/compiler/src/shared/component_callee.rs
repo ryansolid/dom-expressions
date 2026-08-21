@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::{Error, Result};
 use oxc_ast::ast::{Expression, JSXElementName, JSXMemberExpression, JSXMemberExpressionObject};
 use oxc_span::Span;
 

@@ -3,6 +3,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
+    if env::var_os("CARGO_FEATURE_NODE").is_none() {
+        return;
+    }
     let target = env::var("TARGET").unwrap_or_default();
     if target.contains("wasm32") {
         // napi-build 2.4.1 hard-exports `emnapi_create_env` / `emnapi_delete_env`

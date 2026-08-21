@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::*;
+use crate::error::Result;
 use oxc_allocator::Vec as ArenaVec;
 use oxc_ast::ast::{
     ArrayExpressionElement, Expression, ObjectPropertyKind, Program, Statement,

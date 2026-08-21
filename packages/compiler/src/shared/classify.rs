@@ -306,21 +306,25 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::trace::{Question, capture};
-    use crate::config::TransformOptions;
+    use crate::{CompileOptions, Generate};
 
-    const MODES: [&str; 3] = ["dom", "ssr", "universal"];
+    const MODES: [(&str, Generate); 3] = [
+        ("dom", Generate::Dom),
+        ("ssr", Generate::Ssr),
+        ("universal", Generate::Universal),
+    ];
 
-    fn classify_decisions(source: &str, generate: &str) -> BTreeMap<Question, Vec<bool>> {
-        let options = TransformOptions {
+    fn classify_decisions(source: &str, generate: Generate) -> BTreeMap<Question, Vec<bool>> {
+        let options = CompileOptions {
             filename: Some("classify-trace.jsx".into()),
-            module_name: Some("r-test".into()),
-            generate: Some(generate.into()),
-            wrap_conditionals: Some(true),
-            built_ins: Some(vec!["For".into(), "Show".into()]),
+            module_name: "r-test".into(),
+            generate,
+            wrap_conditionals: true,
+            built_ins: vec!["For".into(), "Show".into()],
             ..Default::default()
         };
-        let (result, decisions) = capture(|| crate::transform(source.to_string(), Some(options)));
-        result.unwrap_or_else(|error| panic!("{generate} failed on {source:?}: {error}"));
+        let (result, decisions) = capture(|| crate::compile(source, &options));
+        result.unwrap_or_else(|error| panic!("{generate:?} failed on {source:?}: {error}"));
         let mut answers: BTreeMap<Question, Vec<bool>> = BTreeMap::new();
         for (question, dynamic) in decisions {
             let slot = answers.entry(question).or_default();
@@ -369,7 +373,7 @@ mod tests {
         for source in corpus {
             let per_mode: Vec<(&str, BTreeMap<Question, Vec<bool>>)> = MODES
                 .iter()
-                .map(|generate| (*generate, classify_decisions(source, generate)))
+                .map(|(name, generate)| (*name, classify_decisions(source, *generate)))
                 .collect();
             for (mode, answers) in &per_mode {
                 assert!(

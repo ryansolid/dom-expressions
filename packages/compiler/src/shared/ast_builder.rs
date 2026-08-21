@@ -20,6 +20,10 @@ pub(crate) struct AstBuilder<'a> {
     allocator: &'a Allocator,
 }
 
+// Several helpers are only reached from the node-gated passes (directives,
+// lazy, refresh); the default-feature clippy config still flags genuinely
+// dead code.
+#[cfg_attr(not(feature = "node"), allow(dead_code))]
 impl<'a> AstBuilder<'a> {
     pub(crate) fn new(allocator: &'a Allocator) -> Self {
         Self { allocator }
