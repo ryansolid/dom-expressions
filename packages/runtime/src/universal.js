@@ -352,6 +352,15 @@ export function createRenderer({
     memo,
     createComponent,
     applyRef,
-    ref
+    ref,
+    // Patch-mode dual driver, universal flavor: no store/record seams here,
+    // so every compiled body runs through the classic dual-phase effect
+    // (compute pass reads with next === prev; commit pass force-applies).
+    patchDriver(subject, body) {
+      effect(
+        () => body(subject, subject, false),
+        () => body(subject, undefined, true)
+      );
+    }
   };
 }

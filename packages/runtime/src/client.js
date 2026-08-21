@@ -26,7 +26,13 @@ import {
   // the speculative build — user code must never observe a probe. No-ops
   // outside a probe; static inserts always proceed.
   probeGate,
-  probeMark
+  probeMark,
+  // Optional seams (patch-mode records): resolve a subject to its patchable
+  // raw backing and register a compiled patch body against it. Cores that
+  // don't provide them degrade gracefully — patchDriver below runs every
+  // compiled body through the classic dual-phase effect instead.
+  patchableRaw,
+  registerPatch
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
@@ -563,6 +569,33 @@ function stripTextSeparators(nodes) {
   }
   nodes.length = j;
   return nodes;
+}
+
+// Patch-mode dual driver: compiled template scopes whose bindings are pure
+// member reads of ONE subject hand a single compiled body
+// `(next, prev, force) => { compares + writes }` here.
+// - Patchable record (core provides the seams): the initial force-apply
+//   reads the raw backing, then the core's own visibility transitions
+//   dispatch the body through its patch channel. Under hydration the
+//   registration alone arms the record — server HTML already carries
+//   current values, so the initial apply is skipped.
+// - Anything else (props, derived objects, unaware cores): a dual-phase
+//   effect runs the same body — the compute pass calls it with
+//   next === prev so every compare fails and it becomes a pure tracked
+//   read; the commit pass force-applies, keeping DOM writes in the effect
+//   phase where transitions and batching expect them.
+export function patchDriver(subject, body) {
+  const raw =
+    patchableRaw !== undefined && registerPatch !== undefined ? patchableRaw(subject) : undefined;
+  if (raw !== undefined) {
+    if (!sharedConfig.hydrating) body(raw, undefined, true);
+    registerPatch(subject, body);
+  } else {
+    effect(
+      () => body(subject, subject, false),
+      () => body(subject, undefined, true)
+    );
+  }
 }
 
 export function insert(parent, accessor, marker, initial, options) {
