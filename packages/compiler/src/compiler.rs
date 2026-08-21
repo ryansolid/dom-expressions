@@ -149,13 +149,13 @@ fn compile_inner(source: &str, options: &CompileOptions) -> Result<CompileOutput
         return Err(CompileError::parse(error));
     }
 
-    if let Some(lib) = options.require_import_source.as_deref() {
-        if !has_jsx_import_source(&parsed.program, source, lib) {
-            return Ok(CompileOutput {
-                code: source.to_string(),
-                source_map: None,
-            });
-        }
+    if let Some(lib) = options.require_import_source.as_deref()
+        && !has_jsx_import_source(&parsed.program, source, lib)
+    {
+        return Ok(CompileOutput {
+            code: source.to_string(),
+            source_map: None,
+        });
     }
 
     let mut program = parsed.program;

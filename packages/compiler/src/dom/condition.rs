@@ -35,8 +35,7 @@ impl<'a> crate::shared::component_children::ComponentChildLower<'a> for AstDomTr
     fn lower_child_element_with_setup(
         &mut self,
         element: &JSXElement<'a>,
-    ) -> crate::error::Result<(Expression<'a>, std::vec::Vec<oxc_ast::ast::Statement<'a>>)>
-    {
+    ) -> crate::error::Result<(Expression<'a>, std::vec::Vec<oxc_ast::ast::Statement<'a>>)> {
         self.lower_element_with_setup(element)
     }
 }
