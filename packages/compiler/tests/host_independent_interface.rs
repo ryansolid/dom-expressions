@@ -271,7 +271,7 @@ fn semantic_tracing_does_not_change_code_or_source_maps() {
     assert_eq!(
         ordinary.source_map.as_deref(),
         Some(
-            r#"{"version":3,"names":["style={{ color: signal() }}","<div style={{ color: signal() }} />"],"sources":["input.jsx"],"sourcesContent":["const view = <div style={{ color: signal() }} />;"],"mappings":";;;;AAAa,mBAAmC;AAA9BA;QAAO,EAAE,OAAO,QAAQ,EAAE;IAA1B;wBAA2B;;AAA7C,MAAM,OAAOC"}"#,
+            r#"{"version":3,"names":["style={{ color: signal() }}","<div style={{ color: signal() }} />"],"sources":["input.jsx"],"sourcesContent":["const view = <div style={{ color: signal() }} />;"],"mappings":";;;;AAAa,kBAAkC;AAA7BA;QAAO,EAAE,OAAO,OAAO,EAAE;AAAC,IAA1B;uBAA0B;;AAA5C,MAAM,OAAOC"}"#,
         )
     );
     assert_eq!(traced.code, ordinary.code);
