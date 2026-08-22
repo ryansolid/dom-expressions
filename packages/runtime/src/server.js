@@ -2965,34 +2965,75 @@ function tagIs(html, i, name) {
   return c === 32 || c === 62 || c === 9 || c === 10 || c === 13;
 }
 
+// Compiler-armed gate (stage-4 SSR): compiled output containing a
+// `<select value=…>` (or a spread on a select) emits `_$ssrSelectValues()`
+// once per module. Apps that never bind a select value never even SCAN —
+// profiling showed the gate's own indexOf costing >50% of a select-free
+// page's render, because the first pass over the freshly-assembled rope
+// pays its flattening. Raw HTML injected around the compiler (innerHTML
+// escape hatches) intentionally gets browser semantics — the select-value
+// forms contract is a JSX-level promise.
+let selectValuesActive = false;
+export function ssrSelectValues() {
+  selectValuesActive = true;
+}
+
 export function resolveSSRSelectValues(html) {
-  if (html.indexOf("<select") < 0) return html;
+  // Region-jumping walk: attribute values escape `<` (ESCAPE_ATTR), so
+  // every "<select" hit below is a genuine tag position — jump candidate to
+  // candidate and walk tags ONLY inside value-carrying select regions;
+  // everything between regions is copied verbatim. (The old form walked
+  // EVERY tag in the document once any <select> existed — O(document) per
+  // render and per streamed fragment.)
+  if (!selectValuesActive) return html;
+  let cand = html.indexOf("<select");
+  if (cand < 0) return html;
   let out = "";
   let idx = 0; // emitted through idx
-  let sel = null; // active value-carrying select, pending until its close
-  let i = html.indexOf("<");
-  // Text-level tag walk. Between tags `<` is escaped, so every position here
-  // is a real tag or comment start; quote-aware tagEnd keeps in-attribute
-  // `<` / `>` from ever becoming scan positions.
-  while (i >= 0) {
-    let e;
-    if (html.charCodeAt(i + 1) === 33) {
-      // Comment (hydration marker) or bare <!> placeholder.
-      e = html.charCodeAt(i + 2) === 45 ? html.indexOf("-->", i) : html.indexOf(">", i);
-      if (e < 0) break;
-      if (html.charCodeAt(i + 2) === 45) e += 2;
-    } else {
-      e = tagEnd(html, i);
-      if (e < 0) break;
-      if (sel) {
+  while (cand >= 0) {
+    // Word boundary — skips <selectedcontent> hits.
+    if (!tagIs(html, cand, "select")) {
+      cand = html.indexOf("<select", cand + 7);
+      continue;
+    }
+    const e0 = tagEnd(html, cand);
+    if (e0 < 0) break;
+    const open = html.slice(cand, e0 + 1);
+    const m = SELECT_VALUE_ATTR.exec(open);
+    if (!m) {
+      // No bound value: nothing to resolve in this select.
+      cand = html.indexOf("<select", e0 + 1);
+      continue;
+    }
+    const bound = decodeSSREntities(m[1]);
+    const sel = {
+      values: /\smultiple(?=[\s>=])/.test(open) ? bound.split(",") : [bound],
+      strip: cand + m.index,
+      stripEnd: cand + m.index + m[0].length,
+      body: e0 + 1,
+      marks: [],
+      defaulted: false
+    };
+    // Tag walk scoped to the region: options and comments until the close.
+    let committed = false;
+    let i = html.indexOf("<", e0 + 1);
+    while (i >= 0) {
+      let e;
+      if (html.charCodeAt(i + 1) === 33) {
+        // Comment (hydration marker) or bare <!> placeholder.
+        e = html.charCodeAt(i + 2) === 45 ? html.indexOf("-->", i) : html.indexOf(">", i);
+        if (e < 0) break;
+        if (html.charCodeAt(i + 2) === 45) e += 2;
+      } else {
+        e = tagEnd(html, i);
+        if (e < 0) break;
         // "</select>" exactly: <selectedcontent>'s close also starts "</select".
         if (html.startsWith("</select>", i)) {
           // Commit: drop the value attribute, then mark the matched options —
           // unless an option carried `selected` already (a defaultSelected):
           // per the forms contract the DEFAULT is the SSR state and the bound
           // value applies at hydration, exactly like defaultValue + value on
-          // an <input>. A select that never closes in this chunk (a Loading
-          // boundary inside it) never commits and stays byte-identical.
+          // an <input>.
           out += html.slice(idx, sel.strip) + html.slice(sel.stripEnd, sel.body);
           let seg = sel.body;
           if (!sel.defaulted) {
@@ -3003,7 +3044,8 @@ export function resolveSSRSelectValues(html) {
           }
           out += html.slice(seg, i);
           idx = i;
-          sel = null;
+          committed = true;
+          break;
         } else if (tagIs(html, i, "option")) {
           const attrs = html.slice(i + 7, e);
           if (/\sselected(?=[\s=]|$)/.test(attrs)) sel.defaulted = true;
@@ -3018,23 +3060,16 @@ export function resolveSSRSelectValues(html) {
             if (sel.values.includes(value)) sel.marks.push(e);
           }
         }
-      } else if (tagIs(html, i, "select")) {
-        const m = SELECT_VALUE_ATTR.exec(html.slice(i, e + 1));
-        if (m) {
-          const bound = decodeSSREntities(m[1]);
-          sel = {
-            values: /\smultiple(?=[\s>=])/.test(html.slice(i, e + 1)) ? bound.split(",") : [bound],
-            strip: i + m.index,
-            stripEnd: i + m.index + m[0].length,
-            body: e + 1,
-            marks: [],
-            defaulted: false
-          };
-        }
       }
+      i = html.indexOf("<", e + 1);
     }
-    i = html.indexOf("<", e + 1);
+    // A select that never closes in this chunk (a Loading boundary inside
+    // it) never commits and stays byte-identical — matching the old walk,
+    // which also never processed anything past an uncommitted select.
+    if (!committed) break;
+    cand = html.indexOf("<select", idx);
   }
+  if (idx === 0) return html;
   return out + html.slice(idx);
 }
 
@@ -3071,18 +3106,19 @@ export function escape(s, attr) {
 }
 
 const ESCAPE_CONTENT = /[&<]/;
-const ESCAPE_ATTR = /[&"]/;
+// `<` escapes in attribute values too (stage-4 SSR): it costs nothing on
+// the fast path (same single regex scan) and guarantees that a raw
+// "<select" byte sequence in the document is ALWAYS a genuine tag start —
+// the invariant resolveSSRSelectValues' region-jumping depends on. Also
+// matches React/octane escaping norms.
+const ESCAPE_ATTR = /[&"<]/;
 
-// Slow path: at least one of `&`, `<`/`"` was found at position `start`.
+// Slow path: at least one escapable char was found at position `start`.
 // Kept separate so `escape()` stays small and inlinable in the hot path.
 function escapeSlow(s, attr, start) {
-  const delim = attr ? '"' : "<";
-  const delimCode = attr ? 34 : 60;
-  const escDelim = attr ? "&quot;" : "&lt;";
-  // Seed iDelim/iAmp from the first hit we already found, so we don't
-  // re-scan the prefix we just proved is clean.
+  if (attr) return escapeAttrSlow(s, start);
   const c0 = s.charCodeAt(start);
-  let iDelim = c0 === delimCode ? start : s.indexOf(delim, start);
+  let iDelim = c0 === 60 ? start : s.indexOf("<", start);
   let iAmp = c0 === 38 ? start : s.indexOf("&", start);
 
   let left = 0,
@@ -3091,9 +3127,9 @@ function escapeSlow(s, attr, start) {
   while (iDelim >= 0 && iAmp >= 0) {
     if (iDelim < iAmp) {
       if (left < iDelim) out += s.substring(left, iDelim);
-      out += escDelim;
+      out += "&lt;";
       left = iDelim + 1;
-      iDelim = s.indexOf(delim, left);
+      iDelim = s.indexOf("<", left);
     } else {
       if (left < iAmp) out += s.substring(left, iAmp);
       out += "&amp;";
@@ -3105,9 +3141,9 @@ function escapeSlow(s, attr, start) {
   if (iDelim >= 0) {
     do {
       if (left < iDelim) out += s.substring(left, iDelim);
-      out += escDelim;
+      out += "&lt;";
       left = iDelim + 1;
-      iDelim = s.indexOf(delim, left);
+      iDelim = s.indexOf("<", left);
     } while (iDelim >= 0);
   } else
     while (iAmp >= 0) {
@@ -3116,6 +3152,45 @@ function escapeSlow(s, attr, start) {
       left = iAmp + 1;
       iAmp = s.indexOf("&", left);
     }
+
+  return left < s.length ? out + s.substring(left) : out;
+}
+
+// Attr slow path: three cached pointers (`"` `&` `<`), same
+// advance-only-the-consumed-pointer structure as the content path.
+function escapeAttrSlow(s, start) {
+  const c0 = s.charCodeAt(start);
+  let iQuot = c0 === 34 ? start : s.indexOf('"', start);
+  let iAmp = c0 === 38 ? start : s.indexOf("&", start);
+  let iLt = c0 === 60 ? start : s.indexOf("<", start);
+
+  let left = 0,
+    out = "";
+
+  for (;;) {
+    // Next hit = smallest non-negative pointer.
+    let i = -1,
+      ent;
+    if (iQuot >= 0) {
+      i = iQuot;
+      ent = "&quot;";
+    }
+    if (iAmp >= 0 && (i < 0 || iAmp < i)) {
+      i = iAmp;
+      ent = "&amp;";
+    }
+    if (iLt >= 0 && (i < 0 || iLt < i)) {
+      i = iLt;
+      ent = "&lt;";
+    }
+    if (i < 0) break;
+    if (left < i) out += s.substring(left, i);
+    out += ent;
+    left = i + 1;
+    if (i === iQuot) iQuot = s.indexOf('"', left);
+    else if (i === iAmp) iAmp = s.indexOf("&", left);
+    else iLt = s.indexOf("<", left);
+  }
 
   return left < s.length ? out + s.substring(left) : out;
 }

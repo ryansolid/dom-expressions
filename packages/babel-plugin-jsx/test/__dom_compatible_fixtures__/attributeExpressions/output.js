@@ -48,7 +48,7 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div><h1><a href="/">Welcome</a></h1></di
   _tmpl$27 = /*#__PURE__*/ _$template(`<div><iframe src></iframe></div>`),
   _tmpl$28 = /*#__PURE__*/ _$template(`<iframe src loading="lazy"></iframe>`, 1),
   _tmpl$29 = /*#__PURE__*/ _$template(`<div><iframe src loading="lazy"></iframe></div>`, 1),
-  _tmpl$30 = /*#__PURE__*/ _$template(`<div title="<u>data</u>"></div>`),
+  _tmpl$30 = /*#__PURE__*/ _$template(`<div title="&lt;u>data&lt;/u>"></div>`),
   _tmpl$31 = /*#__PURE__*/ _$template(`<div true truestr="true"truestrjs="true"></div>`),
   _tmpl$32 = /*#__PURE__*/ _$template(`<div falsestr="false"falsestrjs="false"></div>`),
   _tmpl$33 = /*#__PURE__*/ _$template(`<div true></div>`),

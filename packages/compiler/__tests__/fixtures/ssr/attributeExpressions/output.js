@@ -1,6 +1,7 @@
 import { memo as _$memo } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
+import { ssrSelectValues as _$ssrSelectValues } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { ssrClassName as _$ssrClassName } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
@@ -78,7 +79,7 @@ var _tmpl$30 = "<iframe src></iframe>";
 var _tmpl$31 = "<div><iframe src></iframe></div>";
 var _tmpl$32 = "<iframe src loading=\"lazy\"></iframe>";
 var _tmpl$33 = "<div><iframe src loading=\"lazy\"></iframe></div>";
-var _tmpl$34 = "<div title=\"<u>data</u>\"></div>";
+var _tmpl$34 = "<div title=\"&lt;u>data&lt;/u>\"></div>";
 var _tmpl$35 = "<div true truestr=\"true\" truestrjs=\"true\"></div>";
 var _tmpl$36 = "<div falsestr=\"false\" falsestrjs=\"false\"></div>";
 var _tmpl$37 = "<div true></div>";
@@ -120,6 +121,7 @@ var _tmpl$53 = [
 	"</textarea><textarea>static content</textarea><textarea>static content</textarea></div>"
 ];
 var _tmpl$54 = ["<div><video muted></video><video></video><video></video><video muted></video><video", "></video><video src=\"test.mp4\" muted></video></div>"];
+_$ssrSelectValues();
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}

@@ -240,7 +240,9 @@ describe("renderToString head rendering", () => {
       return DOC();
     });
     expect(html).toContain('>&lt;script>"x"</title>');
-    expect(html).toContain('content="&quot;quoted&quot; &amp; <tag>"');
+    // `<` escapes in attribute values too (stage-4: the resolveSSRSelectValues
+    // region-jump invariant — raw "<select" is always a genuine tag start).
+    expect(html).toContain('content="&quot;quoted&quot; &amp; &lt;tag>"');
     expect(html).toContain('{"a":"<\\/script>"}');
     expect(html).toContain("a<\\/style><script>");
   });
