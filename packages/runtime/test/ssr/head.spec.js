@@ -25,6 +25,11 @@ function pipeToString(stream) {
 
 const DOC = () => r.ssr`<html><head></head><body><div>app</div></body></html>`;
 
+// Embedded (onHead) renders can't byte-rewrite the host's static <title> —
+// its markup isn't visible — so the title winner rides the delivered head
+// string as a retitle script. This matches the script's applied-payload tail.
+const retitle = text => `})(${JSON.stringify(text)})</script>`;
+
 describe("renderToString head rendering", () => {
   it("renders a registered title into head with an ownership marker", () => {
     const html = r.renderToString(() => {
@@ -33,6 +38,21 @@ describe("renderToString head rendering", () => {
     });
     expect(html).toContain('<title data-dh="title">Store</title>');
     expect(html.indexOf("<title")).toBeLessThan(html.indexOf("</head>"));
+  });
+
+  it("rewrites the shell's static <title> in place instead of shipping a duplicate", () => {
+    const html = r.renderToString(() => {
+      r.useHead({ tag: "title", props: { children: "Route" } });
+      return r.ssr`<html><head><title>Static Fallback</title></head><body></body></html>`;
+    });
+    // The served BYTES carry the route's title — the whole point: the browser
+    // honors the first title tag, so a second flushed tag would let the
+    // shell's static fallback shadow the winner in the served page. The
+    // static text is stashed on data-dhf for the client registry to restore
+    // when every title registration disposes.
+    expect(html).toContain('<title data-dh="title" data-dhf="Static Fallback">Route</title>');
+    expect(html.match(/<title/g).length).toBe(1);
+    expect(html).not.toContain(">Static Fallback</title>");
   });
 
   it("last-committed registration wins per identity (title is a hard singleton)", () => {
@@ -338,9 +358,13 @@ describe("onHead (embedded renders, host-owned document)", () => {
     expect(html).toContain("<div>widget</div>");
     // Body untouched: nothing head-bound leaked into the fragment.
     expect(html).not.toContain("<title");
-    // Prelude first, then resources/winners/tracked assets.
+    // Prelude first, then resources/winners/tracked assets. The title rides
+    // the delivered string as its retitle script: the host's template may
+    // carry its own static title, which the script rewrites in place
+    // (stashing the original on data-dhf as the client registry's fallback).
     expect(head.startsWith('<meta charset="utf-8"')).toBe(true);
-    expect(head).toContain('<title data-dh="title">Widget</title>');
+    expect(head).toContain(retitle("Widget"));
+    expect(head).not.toContain("<title");
     expect(head).toContain('<link rel="preload" href="/hero.jpg" as="image">');
     expect(head).toContain('<link rel="stylesheet" href="/widget.css">');
   });
@@ -395,7 +419,7 @@ describe("onHead (embedded renders, host-owned document)", () => {
     expect(html).toContain("<span>content</span>");
     // Head delivered first, before any chunk hit the writer.
     expect(sequence[0][0]).toBe("head");
-    expect(sequence[0][1]).toContain('<title data-dh="title">Shell</title>');
+    expect(sequence[0][1]).toContain(retitle("Shell"));
     expect(sequence[1][0]).toBe("chunk");
     // The boundary's retitle still parks on the fragment reveal via the stream.
     expect(html).toContain('["eh1"]=[["t","Page"]]');

@@ -639,11 +639,22 @@ function headGroupSignature(winner) {
 }
 
 // Shell flush: commit + resolve + render winning tags to markup. Returns
-// `{ prelude, html }` for document assembly — `prelude` (charset/base)
+// `{ prelude, html, title }` for document assembly — `prelude` (charset/base)
 // splices immediately after the `<head>` open tag to satisfy hard placement
 // constraints; `html` splices before `</head>`, resources first (earliness),
 // then replaceable tags by category: link/style, meta, others, script.
-function renderShellHead(registry, nonce, isPendingFragment) {
+//
+// `title` is the winning title's TEXT, not markup: the document shell may
+// carry its own static `<title>` (the RFC's fallback, restored when every
+// registration disposes), and emitting a second tag ships two titles — the
+// browser honors the FIRST, so the fallback wins over the route's title in
+// the served page. `assembleDocument` applies the winner instead: rewriting
+// the shell's static <title> bytes in place (stashing its text on `data-dhf`
+// for the client registry's restore) when it owns the `</head>` splice, or a
+// retitle script for embedded (`onHead`) hosts whose bytes it cannot see.
+// `noScripts` rides along for the embedded case — there is no script channel,
+// so the title falls back to a literal tag in the delivered string.
+function renderShellHead(registry, nonce, isPendingFragment, noScripts) {
   commitHeadBoundary(registry, "", isPendingFragment);
   registry.shellFlushed = true;
   const winners = resolveHead(registry.committed);
@@ -653,8 +664,14 @@ function renderShellHead(registry, nonce, isPendingFragment) {
   let metas = "";
   let others = "";
   let scripts = "";
+  let title = null;
   for (const [identity, winner] of winners) {
     registry.flushed.set(identity, headGroupSignature(winner));
+    if (identity === "title") {
+      const children = winner.tags[0].props.children;
+      title = children == null ? "" : String(children);
+      continue;
+    }
     for (let i = 0; i < winner.tags.length; i++) {
       const t = winner.tags[i];
       const markup = renderHeadTagMarkup(t.tag, t.props, identity, nonce);
@@ -665,7 +682,7 @@ function renderShellHead(registry, nonce, isPendingFragment) {
       else others += markup;
     }
   }
-  return { prelude, html: registry.eagerHtml + links + metas + others + scripts };
+  return { prelude, html: registry.eagerHtml + links + metas + others + scripts, title, noScripts };
 }
 
 // Fragment flush: commit the boundary's registrations, re-resolve, and diff
@@ -934,7 +951,11 @@ const REPLACE_SCRIPT = `function $df(e){return _$HY.f?_$HY.f(e):$dfr(e)}function
 // Patch application is triggered from $df when the owning fragment reveals
 // (see _$HY.hp in REPLACE_SCRIPT), so head updates and content reveal stay
 // atomic — including through style gates and deferred reveal groups.
-const HEAD_SCRIPT = `function $dha(o,i,e,n){for(i=0;i<o.length;i++)e=o[i],"t"==e[0]?((n=document.querySelector("title"))||(n=document.createElement("title"),document.head.appendChild(n)),n.textContent=e[1],n.setAttribute("data-dh","title")):"r"==e[0]?$dhr(e[1]):(n=document.createElement(e[2]),Object.keys(e[3]).forEach(function(a){n.setAttribute(a,e[3][a])}),null!=e[4]&&(n.textContent=e[4]),n.setAttribute("data-dh",e[1]),document.head.appendChild(n))}function $dhr(v,l,i){for(l=document.head.querySelectorAll("[data-dh]"),i=0;i<l.length;i++)l[i].getAttribute("data-dh")==v&&l[i].remove()}function $dh(o){_$HY.h?_$HY.h(o):$dha(o)}`;
+// The "t" op stashes an unmarked title's text on `data-dhf` before the first
+// overwrite: an unmarked <title> is user-authored shell markup — the fallback
+// the client registry restores when every title registration disposes — and
+// this op is the last reader that can still see it.
+const HEAD_SCRIPT = `function $dha(o,i,e,n){for(i=0;i<o.length;i++)e=o[i],"t"==e[0]?((n=document.querySelector("title"))?n.hasAttribute("data-dh")||n.setAttribute("data-dhf",n.textContent):(n=document.createElement("title"),document.head.appendChild(n)),n.textContent=e[1],n.setAttribute("data-dh","title")):"r"==e[0]?$dhr(e[1]):(n=document.createElement(e[2]),Object.keys(e[3]).forEach(function(a){n.setAttribute(a,e[3][a])}),null!=e[4]&&(n.textContent=e[4]),n.setAttribute("data-dh",e[1]),document.head.appendChild(n))}function $dhr(v,l,i){for(l=document.head.querySelectorAll("[data-dh]"),i=0;i<l.length;i++)l[i].getAttribute("data-dh")==v&&l[i].remove()}function $dh(o){_$HY.h?_$HY.h(o):$dha(o)}`;
 
 export function renderToString(code, options = {}) {
   const { renderId = "", noScripts, manifest, onHead } = options;
@@ -1011,7 +1032,7 @@ export function renderToString(code, options = {}) {
   serializeFragmentAssets("", tracking.boundaryModules, sharedConfig.context, renderId);
   sharedConfig.context.noHydrate = true;
   serializer.close();
-  const head = renderShellHead(headRegistry, nonce, null);
+  const head = renderShellHead(headRegistry, nonce, null, noScripts);
   return assembleDocument(
     resolveSSRSelectValues(html),
     tracking.emittedAssets,
@@ -1590,7 +1611,7 @@ export function renderToStream(code, options = {}) {
     serializeRootAssets();
     // Shell head flush: commits every registration not owned by a
     // still-pending fragment (those flush with their fragment later).
-    const head = renderShellHead(headRegistry, nonce, k => registry.has(k));
+    const head = renderShellHead(headRegistry, nonce, k => registry.has(k), noScripts);
     sink.shell(resolveSSRSelectValues(html), {
       preloads: tracking.emittedAssets,
       inlineStyles: tracking.inlineStyles,
@@ -3166,10 +3187,12 @@ function allSettled(promises) {
 // mode or the other, decided by the render output itself.
 function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, headTags, onHead) {
   const scriptTag = scripts ? `<script${nonceAttr(nonce, "script")}>${scripts}</script>` : "";
-  const headTagsHtml = headTags ? headTags.html : "";
+  const title = headTags ? headTags.title : null;
+  let headTagsHtml = headTags ? headTags.html : "";
   const headPrelude = headTags ? headTags.prelude : "";
   if (
     !onHead &&
+    title == null &&
     !headTagsHtml &&
     !headPrelude &&
     !(emittedAssets && emittedAssets.size) &&
@@ -3193,13 +3216,32 @@ function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, hea
       html = html.slice(0, at) + headPrelude + html.slice(at);
     }
   }
-  const headIdx = html.indexOf("</head>");
+  let headIdx = html.indexOf("</head>");
   if (headIdx === -1) {
     if (onHead) {
       // Embedded mode: hand the host everything it would have received via
       // the `</head>` splice, prelude first (its placement constraints are
-      // the host template's responsibility from here).
-      onHead(headPrelude + headTagsHtml + renderHeadAssets(emittedAssets, inlineStyles, nonce));
+      // the host template's responsibility from here). The title winner can't
+      // be byte-rewritten — the host's markup is not visible here — so it
+      // ships as a retitle script (in-place rewrite of the host's static
+      // <title>, stashing its text on `data-dhf` for the client registry's
+      // restore), or as a literal tag for `noScripts` renders, where a host
+      // static title would still shadow it (first tag wins) — the host owns
+      // that dedup.
+      let titleHtml = "";
+      if (title != null) {
+        titleHtml = headTags.noScripts
+          ? `<title data-dh="title">${escape(title)}</title>`
+          : `<script${nonceAttr(nonce, "script")}>(function(x,t){(t=document.querySelector("title"))?(t.hasAttribute("data-dh")||t.setAttribute("data-dhf",t.textContent),t.textContent=x):(document.title=x,t=document.querySelector("title"));t&&t.setAttribute("data-dh","title")})(${JSON.stringify(
+              title
+            ).replace(/</g, "\\u003C")})</script>`;
+      }
+      onHead(
+        headPrelude +
+          headTagsHtml +
+          titleHtml +
+          renderHeadAssets(emittedAssets, inlineStyles, nonce)
+      );
     }
     // No head to splice into: without `onHead`, assets/preloads/styles are
     // dropped and left unemitted, exactly as the individual helpers'
@@ -3207,6 +3249,35 @@ function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, hea
     if (!scriptTag) return html;
     const xs = html.indexOf("<!--xs-->");
     return xs === -1 ? html + scriptTag : html.slice(0, xs) + scriptTag + html.slice(xs);
+  }
+  // Document mode: the title winner is applied to the BYTES. The shell may
+  // carry its own static <title> (the RFC's fallback, restored when every
+  // title registration disposes) — and since the browser honors the first
+  // title tag, emitting a second one would let the fallback shadow the
+  // route's winner in the served page. Rewrite the static tag in place:
+  // winner text in the element, original text stashed on `data-dhf` for the
+  // client registry's restore, `data-dh` marking registry ownership. With no
+  // static title, a marked tag joins the `</head>` splice. Bytes, not a
+  // script, so view-source, crawlers, and `noScripts` renders all see the
+  // real title.
+  if (title != null) {
+    const winner = escape(title);
+    const open = html.match(/<head(?:\s[^>]*)?>/);
+    const from = open ? open.index + open[0].length : 0;
+    const m = /<title(\s[^>]*)?>([\s\S]*?)<\/title>/.exec(html.slice(from, headIdx));
+    if (m) {
+      const at = from + m.index;
+      // The stash is the raw inner bytes (already element-escaped by the
+      // author); only quotes need attribute escaping on top.
+      const stash = m[2].replace(/"/g, "&quot;");
+      html =
+        html.slice(0, at) +
+        `<title${m[1] || ""} data-dh="title" data-dhf="${stash}">${winner}</title>` +
+        html.slice(at + m[0].length);
+      headIdx = html.indexOf("</head>");
+    } else {
+      headTagsHtml = `<title data-dh="title">${winner}</title>` + headTagsHtml;
+    }
   }
   const head = headTagsHtml + renderHeadAssets(emittedAssets, inlineStyles, nonce);
   if (!scriptTag) return html.slice(0, headIdx) + head + html.slice(headIdx);

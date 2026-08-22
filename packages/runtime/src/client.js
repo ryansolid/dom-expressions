@@ -869,9 +869,15 @@ function initHeadRegistry() {
   headApplied = new Map();
   // A <title> without an ownership marker is user-authored shell markup: the
   // fallback restored when every title registration has disposed. A marked
-  // one is server-registry output — there is no static fallback behind it.
+  // one is server-registry output — but if the server's retitle overwrote a
+  // static shell title, the original text was stashed on `data-dhf` (by the
+  // shell title script or the inline $dha runtime) and is still the fallback.
   const t = document.querySelector("title");
-  headFallbackTitle = t && !t.hasAttribute("data-dh") ? t.textContent : null;
+  headFallbackTitle = t
+    ? t.hasAttribute("data-dh")
+      ? t.getAttribute("data-dhf")
+      : t.textContent
+    : null;
   if (globalThis._$HY) globalThis._$HY.h = applyServerHeadOps;
 }
 
@@ -942,7 +948,11 @@ function flushHeadRegistry() {
     headOwned.delete(identity);
     headApplied.delete(identity);
     if (identity === "title") {
-      if (headFallbackTitle != null) setHeadTitle(headFallbackTitle).removeAttribute("data-dh");
+      if (headFallbackTitle != null) {
+        const el = setHeadTitle(headFallbackTitle);
+        el.removeAttribute("data-dh");
+        el.removeAttribute("data-dhf");
+      }
     } else {
       for (let i = 0; i < els.length; i++) els[i].remove();
     }
