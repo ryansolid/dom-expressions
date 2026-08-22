@@ -2006,18 +2006,42 @@ single-shot relatedness that cannot be re-derived through a query.
 The identity work should wait for THOSE to bite, not for layout
 cases the shared-query pattern serves.
 
-**The call as preload (same conversation).** Because intrinsic
-addressing makes a call an idempotent NAME, "invoke early, await
-where consumed" is a preload pattern with zero new surface, at both
-faces. In-process: a parent starts child calls (their db queries)
-before awaiting anything — shells render, awaits inside land on
-work already in flight; the standard answer to nested-SC server
-waterfalls. Cross-border: a route preload invokes the SC function
-with the mount's args at hover/intent; the mount derives the same
-`frameAddress(fn, args)` and should ADOPT the in-flight call's
+**Don't await in the server function body — closure capture is the
+preload (the actual insight of the conversation; the readings below
+it were derived en route and stand on their own).** The idiom every
+simple example teaches —
+`const data = await db.query(id); return props => <div>…` — holds
+the ENTIRE component hostage: the function hasn't resolved, so the
+frame element, the shell, the stream's first byte all wait on the
+query. The body can initiate WITHOUT awaiting and return
+immediately; the pending promise rides in the CLOSURE (which never
+crosses a serialization border — the address-material objection does
+not apply), and the component consumes it through machinery it
+already has: value tier, holes, `Loading` boundaries, shell gating.
+Body = initiation scope, component = consumption scope. Authoring
+rule for docs and snippets when that workstream opens: **await for
+decisions (auth, redirect, branch), initiate-and-capture for
+presentation** — the awaited form should be the exception that
+signals "nothing below is valid without this."
+
+This also RESTORES the strongest motivation for object returns,
+which the shared-query amendment above had argued down: one body,
+one un-awaited initiation, N returned components sharing the
+closure — `const stats = db.bigQuery(range); return { kpis: () =>
+<Kpis data={stats}/>, alerts: () => <Alerts data={stats}/> }` — one
+db call, independently addressed boundaries, independent reveals.
+Closure-shared state is single-shot relatedness that children
+CANNOT re-derive through a deduped query; it is exactly the
+carve-out where the per-key identity work earns its cost.
+
+**The call as preload (derived en route, still true).** Intrinsic
+addressing makes a call an idempotent NAME, so "invoke early, render
+later" extends across the border: a route preload invokes the SC
+function at hover/intent, and the mount, deriving the same
+`frameAddress(fn, args)`, should ADOPT the in-flight call's
 address-keyed store rather than reissue — the SC analog of
-liveQuery's preload warming, with the key supplied by DR-1 instead
-of hand-hashing. Work item before blessing: verify (probe) that a
-mount adopts a concurrently in-flight call at the same address;
-host retention proves the re-mount case, the race case is likely
-"second call reissues" today — wasteful, not wrong.
+liveQuery's preload warming, with the key supplied by DR-1. Work
+item before blessing: probe whether a mount adopts a concurrently
+in-flight call at the same address; host retention proves the
+re-mount case, the race case is likely "second call reissues"
+today — wasteful, not wrong.
