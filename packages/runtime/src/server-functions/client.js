@@ -151,7 +151,13 @@ function provideRPC() {
 }
 
 function serverFunctionFailure(response, value) {
-  return value ?? new Error(`Server function call failed with status ${response.status}`);
+  const error = value ?? new Error(`Server function call failed with status ${response.status}`);
+  // Stamp the HTTP status so policy layers (live retry loops, router
+  // channels) can classify the failure: 4xx is a definite rejection that
+  // retrying cannot change, 5xx/status-less is transient. An error that
+  // already carries a status (app-authored) keeps its own.
+  if (error instanceof Error && !("status" in error)) error.status = response.status;
+  return error;
 }
 
 async function createRequest(base, id, instance, options, meta) {
@@ -526,7 +532,10 @@ export function GET(fn) {
  * deliberately erases from the value stream: `"connected"` on each
  * successful (re)connect, `"reconnecting"` (with the error) on each
  * post-connect death, `"closed"` when the source completes or the
- * consumer ends it. First-connect failures emit nothing (the rejection
+ * consumer ends it. Retry is for transient deaths only: a definite
+ * rejection (4xx — the server understood and refused) fails fast, firing
+ * `"closed"` with the error and rejecting the consumer's pull.
+ * First-connect failures emit nothing (the rejection
  * already surfaces through the call). The hook is per CALL: iterating one
  * object twice interleaves both lifecycles into it. Data freshness is
  * usually the better question and belongs in the value (timestamps /
@@ -576,10 +585,10 @@ export function live(fn) {
             iterable.onstatus && iterable.onstatus(state, error);
           } catch {}
         };
-        const emitClosed = () => {
+        const emitClosed = error => {
           if (ended) return;
           ended = true;
-          emit("closed");
+          emit("closed", error);
         };
         const closeIt = value => {
           const current = it;
@@ -640,6 +649,21 @@ export function live(fn) {
               // successful connect starts a NEW logical answer: value-shaped
               // sources re-yield current state on invocation by contract.
               if (!connected) throw error;
+              // Definite rejections fail fast: a 4xx means the server
+              // understood and refused — auth revoked, resource gone —
+              // and retrying cannot change the answer. The error surfaces
+              // through the consumer like a first-connect failure would.
+              if (
+                error !== null &&
+                typeof error === "object" &&
+                typeof error.status === "number" &&
+                error.status >= 400 &&
+                error.status < 500
+              ) {
+                stopped = true;
+                emitClosed(error);
+                throw error;
+              }
               it = undefined;
               emit("reconnecting", error);
               await new Promise(resolve => {

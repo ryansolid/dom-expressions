@@ -193,8 +193,9 @@ export type LiveSourceStatus = "connected" | "reconnecting" | "closed";
  * A live call's answer: the source's iterable, plus an optional `onstatus`
  * side channel for the wire facts the reconnect loop erases from the value
  * stream — `"connected"` on each successful (re)connect, `"reconnecting"`
- * (with the error) on each post-connect death, `"closed"` when the source
- * completes or the consumer ends it.
+ * (with the error) on each transient post-connect death, `"closed"` when
+ * the source completes or the consumer ends it — with the error when the
+ * end was a definite rejection (4xx) failing fast instead of retrying.
  */
 export type LiveSource<R> = R & {
   onstatus?: (state: LiveSourceStatus, error?: unknown) => void;

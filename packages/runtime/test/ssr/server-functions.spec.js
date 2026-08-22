@@ -3053,6 +3053,46 @@ describe("live declaration", () => {
     }
   });
 
+  it("fails fast on definite rejections: a 4xx reconnect ends the call with the error", async () => {
+    let calls = 0;
+    registerServerReference("live-fatal-0", async function () {
+      calls++;
+      // first connect streams then dies (transient); the reconnect is
+      // REFUSED — intentional control flow with a definite status
+      if (calls > 1) throw respond(markSafeError(new Error("revoked")), { status: 403 });
+      return (async function* () {
+        yield "a";
+        throw new Error("cut");
+      })();
+    });
+    const liveFn = clientLive(createClientReference("live-fatal-0"));
+    const restore = connectTransport();
+    try {
+      const statuses = [];
+      const src = liveFn();
+      src.onstatus = (state, error) => statuses.push([state, error && error.status]);
+      const it = src[Symbol.asyncIterator]();
+      expect((await it.next()).value).toBe("a");
+      const rejection = await it.next().then(
+        () => undefined,
+        e => e
+      );
+      expect(rejection).toBeInstanceOf(Error);
+      expect(rejection.message).toBe("revoked");
+      expect(rejection.status).toBe(403); // stamped by the transport
+      expect(calls).toBe(2); // no retry after the refusal
+      expect(statuses).toEqual([
+        ["connected", undefined],
+        ["reconnecting", undefined], // the transient cut (status-less)
+        ["closed", 403] // the refusal, with its error
+      ]);
+      // the call is over: further pulls answer done
+      expect((await it.next()).done).toBe(true);
+    } finally {
+      restore();
+    }
+  });
+
   it("onstatus: consumer break reports closed exactly once", async () => {
     registerServerReference("live-status-break-0", async function* () {
       yield "only";

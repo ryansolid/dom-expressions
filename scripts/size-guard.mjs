@@ -444,6 +444,11 @@ await check(
 // Re-guarded at actual+20 (2954 measured).
 // Then +175 for call observers (cloned Request/Response inspection).
 // Re-guarded at actual+20 (3129 measured).
+// Then +24 for the failure status stamp (serverFunctionFailure writes the
+// HTTP status onto thrown Errors so policy layers — live()'s fail-fast,
+// router live channels — can classify definite rejections vs transient
+// deaths; the classification logic itself lives in those lazy layers).
+// Re-guarded at actual+20 (3153 measured).
 await check(
   "server-functions client: eager transport (reference + GET, lazy codec)",
   `export {
@@ -451,7 +456,7 @@ await check(
      GET,
      configureServerFunctionsClient
    } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
-  3149,
+  3173,
   ["seroval", "seroval-plugins"]
 );
 await check(

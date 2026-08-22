@@ -418,7 +418,9 @@ export function GET<A extends readonly any[], R>(
   fn: (...args: A) => R
 ): ServerFunction<A, Awaited<R>>;
 
-/** Wire-state transitions a live call's iterable can report (client side). */
+/** Wire-state transitions a live call's iterable can report (client side).
+ * `"closed"` carries the error when a definite rejection (4xx) ended the
+ * call instead of the retry loop. */
 export type LiveSourceStatus = "connected" | "reconnecting" | "closed";
 
 /**
