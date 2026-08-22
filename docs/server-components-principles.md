@@ -1914,3 +1914,76 @@ seam where per-address fan-out slots in later if it ever matters.
 
 Deliberately absent: any client authoring API, any server authoring
 API, any subscription registry, any cursor protocol, WebSocket.
+
+### 9.4 Batching seeds — relatedness decides atomicity (2026-08-22)
+
+Recorded from the design conversation around router PR 554
+(`batchedQuery`); nothing here is built. Three related findings, one
+principle.
+
+**The principle: atomicity follows relatedness, and relatedness is
+something only the author can declare.** An author-declared batch
+("these calls resolve together from one source" — one `WHERE id IN`,
+one render pass) may settle atomically; that IS its semantics, and
+there is no "slowest member" because there is one shared latency.
+Infrastructure-observed co-occurrence (calls that merely happen in
+the same tick) may share a CONNECTION but never a COMPLETION — atomic
+settlement there couples unrelated latencies nobody consented to. A
+mechanism that is declared by infrastructure but settles atomically
+is claiming a relation nobody asserted; reject it on sight.
+
+**Data batching (router-side, for the record).** The Svelte-style
+server-resolver shape (`query.batch`: fn returns a lookup closure the
+framework applies per-arg) is UNAVAILABLE here: a server function's
+top-level function return already means "server component" — the
+strictest protocol position we have — and no out-of-band flag should
+overload it. The viable shape is the original PR's: the batch fn is a
+plain server function (array in, ONE serializable value out, ships
+once), and the per-caller lookup is a client-side pure derivation.
+That makes batching pure caller-side promise coalescing — no wire
+fact, nothing for this repo to declare — so it lives in the router
+beside `query`, with two fixes owed: the collection queue must be
+request-scoped on the server face (module scope = cross-request
+bleed), and per-arg calls should key into the query cache
+individually. Emergent win: a revalidation sweep's refetches
+auto-coalesce.
+
+**Server-component request grouping (transport seed, hold until
+proven).** N same-tick SC invocations COULD ride one request: the
+response side already multiplexes (records carry the producing
+frame's id — regions, single-flight bodies, and the document face all
+prove one-stream-many-components), so only the request-side
+invocation shape is missing. Each batched entry keeps its own
+`frameAddress(id, args)` — transport aggregation, identity untouched.
+Per the principle, the batch shares the pipe, never the completion:
+each component's shell flushes when IT renders (shell-gating
+discipline already guarantees sync shells), and the one
+implementation trap is buffering the batch response, which would
+silently convert shared-connection semantics into atomic-completion
+semantics. Held because the heavy cases are already covered (t=0 by
+the document, mutations by single-flight) and Stage 8's persistent
+connection dissolves the question entirely.
+
+**Multi-component returns — object-first (designed, unbuilt).** A
+server function returning `{ header: SC, feed: SC }` is
+author-declared relatedness for components: one call settles
+atomically (its semantics), each value is its own independently
+addressed boundary. Mechanics discovered during the pass: the
+serializer is ALREADY depth-agnostic (`ServerComponentPlugin` tests
+the brand, not the position) — the top-level restriction lives
+entirely in the two branding transforms (`frameTransformResult`,
+`frameTransformDirectResult`), so the wire face is nearly free. What
+it actually costs is identity: DR-1's "one call, one address" becomes
+"one call, one address SPACE" — elements sub-addressed
+`(fn, args, key)` — and the mount-identity half (per-function
+placeholder memoization, the equals-gated dynamic, adoption) must
+become per `(function, key)`. Objects first because property names
+are stable sub-keys for free; ARRAYS are deferred until element
+keying is author-declarable, because index-keyed identity
+misattributes content stores on reorder — the keyed-morph lesson
+repeating at the boundary level. What it buys is a real capability,
+not sugar: client-side compositional control over server-rendered
+units (hold the references, lay them out, filter/reorder/paginate
+locally) while each unit stays server-owned, addressable,
+refetchable, morphable — the thing "one component rendering a list
+internally" structurally cannot do.
