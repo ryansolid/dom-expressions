@@ -6,6 +6,7 @@ use oxc_ast::ast::{
 
 use crate::dom::attrs::CloseTagContext;
 use crate::dom::template::DomTemplateState;
+use crate::shared::attr_plan::ConfidentValue;
 use crate::shared::bindings::BindingTable;
 use crate::shared::component::lower_component_with_setup;
 use crate::shared::utils::{
@@ -230,25 +231,36 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             .attributes
             .iter()
             .any(|attr| matches!(attr, oxc_ast::ast::JSXAttributeItem::SpreadAttribute(_)));
-        let element: &JSXElement<'a> =
-            if !is_void_element(&tag_name) && !has_spread && element.children.is_empty() {
-                if let Some(container) = children_attribute_container(element) {
-                    let mut clone = element.clone_in(self.allocator);
-                    clone
-                        .children
-                        .push(oxc_ast::ast::JSXChild::ExpressionContainer(
-                            oxc_allocator::Box::new_in(
-                                container.clone_in(self.allocator),
-                                &self.allocator,
-                            ),
-                        ));
-                    self.allocator.alloc(clone)
-                } else {
-                    element
-                }
-            } else {
-                element
-            };
+        // Babel runs evaluateAndInline before transformAttributes captures
+        // children, so only expressions that remain non-literal participate
+        // in child insertion.
+        let attribute_child = if !is_void_element(&tag_name)
+            && !has_spread
+            && element.children.is_empty()
+        {
+            children_attribute_container(element).filter(|container| {
+                let Some(expression) = container.expression.as_expression() else {
+                    return true;
+                };
+                !matches!(
+                    self.evaluate_confident(expression),
+                    Some(ConfidentValue::Str(_) | ConfidentValue::Num(_) | ConfidentValue::Bool(_))
+                )
+            })
+        } else {
+            None
+        };
+        let element: &JSXElement<'a> = if let Some(container) = attribute_child {
+            let mut clone = element.clone_in(self.allocator);
+            clone
+                .children
+                .push(oxc_ast::ast::JSXChild::ExpressionContainer(
+                    oxc_allocator::Box::new_in(container.clone_in(self.allocator), &self.allocator),
+                ));
+            self.allocator.alloc(clone)
+        } else {
+            element
+        };
 
         // XML partial handling (Babel parity): template-root SVG/MathML
         // elements other than <svg>/<math> themselves get wrapped in their

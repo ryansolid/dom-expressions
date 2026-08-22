@@ -586,6 +586,20 @@ const a = <div class="one" class="two" title={t1()} title={t2()}>{x()}</div>;
   "duplicate children attributes": `
 const a = <div children={a()} children={b()} />;
 `,
+  "foldable children attribute": `
+const child = "hello";
+const a = <div children={child} />;
+`,
+  "children attribute folding controls": `
+const child = "hello";
+const literal = <div children="hello" />;
+const member = <div children={props.child} />;
+const call = <div children={getChild()} />;
+const existing = <div children={child}>existing</div>;
+const spread = <div children={child} {...props} />;
+const nullish = <div children={null} />;
+const object = <div children={{ value: "kept" }} />;
+`,
   "children attribute before spread": `
 const a = <div children={fallback()} {...props} />;
 `,
