@@ -52,6 +52,7 @@ pub(crate) struct AstSsrTransform<'a, 'source> {
     static_marker: String,
     uses_ssr: bool,
     uses_ssr_hydration_key: bool,
+    uses_ssr_select_values: bool,
     uses_escape: bool,
     uses_ssr_element: bool,
     uses_merge_props: bool,
@@ -201,6 +202,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             static_marker,
             uses_ssr: false,
             uses_ssr_hydration_key: false,
+            uses_ssr_select_values: false,
             uses_escape: false,
             uses_ssr_element: false,
             uses_merge_props: false,
@@ -440,6 +442,7 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     pub(crate) fn prepend_helpers(&mut self, program: &mut Program<'a>) {
         if !self.uses_ssr
             && !self.uses_ssr_hydration_key
+            && !self.uses_ssr_select_values
             && !self.uses_escape
             && !self.uses_ssr_element
             && !self.uses_merge_props
@@ -468,6 +471,9 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         }
         if self.uses_ssr_hydration_key {
             statements.push(self.import_named("ssrHydrationKey", "_$ssrHydrationKey"));
+        }
+        if self.uses_ssr_select_values {
+            statements.push(self.import_named("ssrSelectValues", "_$ssrSelectValues"));
         }
         if self.uses_ssr_attribute {
             statements.push(self.import_named("ssrAttribute", "_$ssrAttribute"));
@@ -524,6 +530,19 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
                 &name,
                 init,
             ));
+        }
+        if self.uses_ssr_select_values {
+            // `_$ssrSelectValues();` — arms the runtime's select-value
+            // resolution pass (only modules that bind a select value, or
+            // spread onto a select, opt the app in). Matches the Babel
+            // plugin's post-template statement position.
+            let callee = self
+                .ast()
+                .expression_identifier(SPAN, self.ast().ident("_$ssrSelectValues"));
+            let call = self
+                .ast()
+                .expression_call(SPAN, callee, None, self.ast().vec(), false);
+            statements.push(self.ast().statement_expression(SPAN, call));
         }
         statements.extend(program.body.drain(..));
         let mut body = ArenaVec::new_in(&self.allocator);
@@ -1229,6 +1248,10 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
     ) -> Result<Expression<'a>> {
         self.uses_ssr_element = true;
         let tag_name = element_name(&element.opening_element.name)?;
+        if tag_name == "select" {
+            // A spread on a select can carry `value` — arm conservatively.
+            self.uses_ssr_select_values = true;
+        }
         let do_not_escape = tag_name == "script" || tag_name == "style";
         let props = self.spread_props(
             &element.opening_element.attributes,
@@ -1575,6 +1598,16 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         top_level: bool,
     ) -> Result<SsrTemplate<'a>> {
         let tag_name = element_name(&element.opening_element.name)?;
+        // A `<select value=…>` opts this module into the runtime's SSR
+        // select-value resolution pass (see prepend_helpers).
+        if tag_name == "select"
+            && element.opening_element.attributes.iter().any(|a| {
+                matches!(a, JSXAttributeItem::Attribute(attr)
+                    if matches!(&attr.name, oxc_ast::ast::JSXAttributeName::Identifier(id) if id.name == "value"))
+            })
+        {
+            self.uses_ssr_select_values = true;
+        }
         // Babel: `<script>`/`<style>` contents render raw (`path.doNotEscape`).
         let mut child_do_not_escape = tag_name == "script" || tag_name == "style";
         let mut template = SsrTemplate::new(format!("<{tag_name}"));

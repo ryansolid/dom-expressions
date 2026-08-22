@@ -1,3 +1,4 @@
+import { ssrSelectValues as _$ssrSelectValues } from "r-server";
 import { scope as _$scope } from "r-server";
 import { ssrClassName as _$ssrClassName } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
@@ -47,7 +48,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   _tmpl$29 = ["<div", "><iframe src></iframe></div>"],
   _tmpl$30 = ["<iframe", ' src loading="lazy"></iframe>'],
   _tmpl$31 = ["<div", '><iframe src loading="lazy"></iframe></div>'],
-  _tmpl$32 = ["<div", ' title="<u>data</u>"></div>'],
+  _tmpl$32 = ["<div", ' title="&lt;u>data&lt;/u>"></div>'],
   _tmpl$33 = ["<div", ' true truestr="true" truestrjs="true"></div>'],
   _tmpl$34 = ["<div", ' falsestr="false" falsestrjs="false"></div>'],
   _tmpl$35 = ["<div", " true></div>"],
@@ -70,6 +71,7 @@ var _tmpl$ = ['<a href="/" class="', '">Welcome</a>'],
   ],
   _tmpl$49 = ["<video", ' src="test.mp4" muted></video>'],
   _tmpl$50 = ["<div", "><div>", "</div><div>", '</div><input type="checkbox"', "></div>"];
+_$ssrSelectValues();
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}

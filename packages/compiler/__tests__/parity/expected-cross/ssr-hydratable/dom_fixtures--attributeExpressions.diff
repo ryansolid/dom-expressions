@@ -1,4 +1,4 @@
-@@ -67,10 +67,9 @@
+@@ -68,10 +68,9 @@
  var _g54$ = ["<div", "><video></video></div>"];
  var _g55$ = ["<div", " style=\"", "\"", "></div>"];
  var _g56$ = ["<button", " type=\"button\"", " style=\"", "\" class=\"", "\">", "</button>"];
@@ -9,10 +9,10 @@
 +var _g57$ = ["<div", " style=\"duplicate2\"></div>"];
 +var _g58$ = ["<div", "><video muted></video><video></video><video></video><video muted></video><video", "></video><video src=\"test.mp4\" muted></video></div>"];
 +var _g59$ = ["<video", " src=\"test.mp4\" muted></video>"];
+ _$ssrSelectValues__r_server();
  import * as styles from "./styles.module.css";
  import { binding } from "somewhere";
- function refFn() {}
-@@ -120,118 +119,118 @@
+@@ -122,118 +121,118 @@
      return _$escape__r_server(row.label || " ");
    }, _$ssr__r_server(_g11$, _g3$)), _$ssr__r_server("<div><div/></div>")];
  }, true);
@@ -183,7 +183,7 @@
  const template26 = _$ssrElement__r_server("div", () => {
    return _$mergeProps__r_server({
      start: "Hi",
-@@ -256,146 +255,146 @@
+@@ -258,146 +257,146 @@
      }, "<!--/-->"];
    }, false), _$ssrElement__r_server("input", api(), undefined, false), _$ssrElement__r_server("div", api(), undefined, false)];
  }, true);
@@ -416,7 +416,7 @@
  const propsSpread = {
    something: color(),
    style: {
-@@ -436,39 +435,39 @@
+@@ -438,39 +437,39 @@
      height: props.height
    }
  };
@@ -472,7 +472,7 @@
  const o = {
    ref: null
  };
-@@ -477,76 +476,76 @@
+@@ -479,76 +478,76 @@
  };
  const valid = Div({
    ref(r$) {
