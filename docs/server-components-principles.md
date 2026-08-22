@@ -1987,3 +1987,37 @@ units (hold the references, lay them out, filter/reorder/paginate
 locally) while each unit stays server-owned, addressable,
 refetchable, morphable — the thing "one component rendering a list
 internally" structurally cannot do.
+
+**Amendment (same night): the shared-query pattern eats most of the
+motivation.** "Isolated components sharing one query" does NOT need
+multi-returns: siblings take plain args and each AWAITS the same
+declared query inside — request-scoped dedupe already collapses N
+awaits into one fetch on the document face, and the request-grouping
+seed above extends that to client-driven mounts (one request → one
+request scope → one query). Addresses stay plain-data-keyed, each
+unit independently refetchable, shell-gating owns each settle. (The
+promise-as-argument variant of "fetch outside, await inside" is an
+ANTI-PATTERN at the call border: promises are not address material —
+every refetch mints a new identity and churns the content store.)
+What object returns still uniquely own after this: the mixed
+`{ data, card }` shape (machine data + its rendered presentation as
+one atomically related value — the map/canvas/editor case), and
+single-shot relatedness that cannot be re-derived through a query.
+The identity work should wait for THOSE to bite, not for layout
+cases the shared-query pattern serves.
+
+**The call as preload (same conversation).** Because intrinsic
+addressing makes a call an idempotent NAME, "invoke early, await
+where consumed" is a preload pattern with zero new surface, at both
+faces. In-process: a parent starts child calls (their db queries)
+before awaiting anything — shells render, awaits inside land on
+work already in flight; the standard answer to nested-SC server
+waterfalls. Cross-border: a route preload invokes the SC function
+with the mount's args at hover/intent; the mount derives the same
+`frameAddress(fn, args)` and should ADOPT the in-flight call's
+address-keyed store rather than reissue — the SC analog of
+liveQuery's preload warming, with the key supplied by DR-1 instead
+of hand-hashing. Work item before blessing: verify (probe) that a
+mount adopts a concurrently in-flight call at the same address;
+host retention proves the re-mount case, the race case is likely
+"second call reissues" today — wasteful, not wrong.
