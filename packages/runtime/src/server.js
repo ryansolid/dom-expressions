@@ -1140,6 +1140,38 @@ export function renderToStream(code, options = {}) {
     }
   });
   const blockingPromises = new Set();
+  // Pre-shell pending-promise stubs (fragment `_fr` promises and thrown async
+  // sources) batch into ONE seroval write at shell flush. Every
+  // serializer.write() spins up a full crossSerializeStream session (plugin
+  // resolution, parser context, ref bookkeeping) — ~30% of shell CPU on an
+  // async-heavy page went to N of those sessions emitting formulaic deferred
+  // stubs. One object write collapses the session cost; a spreader task files
+  // each entry under its real `_$HY.r` key, and seroval's fulfillment
+  // machinery is untouched because it parses the same promise instances.
+  // Document-mode only: the serializer seam's keys are wire protocol for
+  // custom serializers (the frame sink's keyed codec addresses records BY
+  // key, no eval on the consumer), and the spreader task is a document
+  // <script> construct. Any serializer/sink override opts out of batching
+  // and gets the original per-key writes.
+  const canBatchStubs = !options.serializer && !options.sink;
+  let stubBatch = null;
+  const STUB_BATCH_KEY = "$B";
+  const flushStubBatch = () => {
+    if (!stubBatch) return;
+    const batch = stubBatch;
+    stubBatch = null;
+    if (batch.size === 1) {
+      const [id, p] = batch.entries().next().value;
+      serializer.write(id, p);
+      return;
+    }
+    const obj = {};
+    for (const [id, p] of batch) obj[id] = p;
+    serializer.write(STUB_BATCH_KEY, obj);
+    pushTask(
+      `(b=>{for(var k in b)_$HY.r[k]=b[k];delete _$HY.r["${STUB_BATCH_KEY}"]})(_$HY.r["${STUB_BATCH_KEY}"])`
+    );
+  };
   let headerEmitted = false;
   const pushTask = task => {
     if (noScripts) return;
@@ -1306,6 +1338,11 @@ export function renderToStream(code, options = {}) {
             context.live.end = null;
             end();
           }
+          // Fast-settling renders reach here before doShell() (registry
+          // drained in microtasks); post-flush writes are silently dropped,
+          // so the stub batch must land first. The task output still rides
+          // the shell snapshot — `tasks` accumulates until doShell reads it.
+          flushStubBatch();
           serializer.flush();
         })
       ); // double queue because of elsewhere
@@ -1457,10 +1494,22 @@ export function renderToStream(code, options = {}) {
     },
     serialize(id, p, deferStream) {
       if (sharedConfig.context.noHydrate) return;
-      if (!firstFlushed && deferStream && typeof p === "object" && "then" in p) {
-        blockingPromises.add(p);
-        p.then(d => serializer.write(id, d)).catch(e => serializer.write(id, e));
-      } else serializer.write(id, p);
+      if (!firstFlushed && p && typeof p === "object" && "then" in p) {
+        if (deferStream) {
+          blockingPromises.add(p);
+          p.then(d => serializer.write(id, d)).catch(e => serializer.write(id, e));
+          return;
+        }
+        // `shellCompleted` (not `firstFlushed`) gates batching: doShell()
+        // flushes the batch into the shell's task snapshot, and writes in the
+        // microtask window between the two flags must go direct or they'd
+        // strand in a batch nobody flushes.
+        if (canBatchStubs && !shellCompleted) {
+          (stubBatch ||= new Map()).set(id, p);
+          return;
+        }
+      }
+      serializer.write(id, p);
     },
     escape: escape,
     resolve: resolveSSRNode,
@@ -1498,7 +1547,8 @@ export function renderToStream(code, options = {}) {
               })
             )
         });
-        serializer.write(key + "_fr", p);
+        if (canBatchStubs && !shellCompleted) (stubBatch ||= new Map()).set(key + "_fr", p);
+        else serializer.write(key + "_fr", p);
       }
       return (value, error) => {
         if (registry.has(key)) {
@@ -1643,6 +1693,10 @@ export function renderToStream(code, options = {}) {
     // Root _assets serialization feeds sink.data → tasks, so it must run
     // before anything reads `tasks` for the shell snapshot.
     serializeRootAssets();
+    // Batched pending-promise stubs ride the same snapshot (after the
+    // root-hole/head gates above so this runs exactly once, on the attempt
+    // that actually flushes).
+    flushStubBatch();
     // Shell head flush: commits every registration not owned by a
     // still-pending fragment (those flush with their fragment later).
     const head = renderShellHead(headRegistry, nonce, k => registry.has(k), noScripts);
@@ -1687,6 +1741,14 @@ export function renderToStream(code, options = {}) {
   let drainTurn = 0;
   const scheduleFlush = fn => {
     const attempt = () => {
+      // Flush batched stubs at the TOP of the drain, not at doShell: a
+      // promise that already settled emits its fulfillment on a microtask
+      // AFTER the batch write parses it, and the shell snapshot is
+      // synchronous. Writing here gives those fulfillments the same
+      // drain-turn runway they had when writes happened at registration
+      // time, so a settled-before-shell record is visibly settled IN the
+      // shell (client boundaries branch on `.s === 1` at hydrate time).
+      flushStubBatch();
       if (registry.size !== lastRegistrySize || drainTurn++ < MIN_DRAIN_TURNS) {
         if (registry.size !== lastRegistrySize) drainTurn = 0;
         lastRegistrySize = registry.size;
@@ -3270,8 +3332,7 @@ function queue(fn) {
 // microtask chain (a boundary's template/data/reveal writes span several
 // chained thens), which no microtask count can guarantee. setImmediate on
 // Node; timer fallback for hosts without it (workerd, browsers).
-const deferFlush =
-  typeof setImmediate === "function" ? setImmediate : fn => setTimeout(fn, 0);
+const deferFlush = typeof setImmediate === "function" ? setImmediate : fn => setTimeout(fn, 0);
 
 function allSettled(promises) {
   let size = promises.size;
