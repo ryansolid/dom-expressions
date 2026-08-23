@@ -1085,6 +1085,40 @@ export function renderToStream(code, options = {}) {
     } catch (_) {}
     abandon();
   };
+  // Chunk coalescing (stage-4 §13b): a settled boundary emits its template,
+  // activation script, data script, and reveal as SEPARATE writes across one
+  // resolution burst — uncoalesced, each becomes a consumer chunk and a
+  // write syscall (measured: 41 chunks vs octane's 11 for the same page,
+  // 4x the network frames). Writes buffer; a deferred flush riding AFTER
+  // the burst's whole microtask chain emits ONE chunk per burst. The shell
+  // flushes explicitly at handoff (TTFB is never deferred), end() flushes,
+  // and >16KB flushes early for backpressure friendliness.
+  const coalesceWrites = (writeRaw, endRaw) => {
+    let buf = "";
+    let scheduled = false;
+    const flush = () => {
+      scheduled = false;
+      if (!buf) return;
+      const out = buf;
+      buf = "";
+      writeRaw(out);
+    };
+    return {
+      write(payload) {
+        buf += payload;
+        if (buf.length >= 16384) return flush();
+        if (!scheduled) {
+          scheduled = true;
+          deferFlush(flush);
+        }
+      },
+      flush,
+      end() {
+        flush();
+        endRaw();
+      }
+    };
+  };
   // Wrap an integrator-supplied `pipe` sink: contain sync throws from
   // `write`/`end` and treat them as disconnection.
   const guardSink = w => ({
@@ -1722,8 +1756,13 @@ export function renderToStream(code, options = {}) {
             }
           };
           writer.closed && writer.closed.catch(failed);
-          writable = {
-            end() {
+          buffer = writable = coalesceWrites(
+            payload => {
+              pendingWrites = pendingWrites
+                .then(() => writer.write(encoder.encode(payload)))
+                .catch(failed);
+            },
+            () => {
               pendingWrites.then(() => {
                 ended = true;
                 writer.releaseLock();
@@ -1731,15 +1770,10 @@ export function renderToStream(code, options = {}) {
                 resolve();
               });
             }
-          };
-          buffer = {
-            write(payload) {
-              pendingWrites = pendingWrites
-                .then(() => writer.write(encoder.encode(payload)))
-                .catch(failed);
-            }
-          };
+          );
           buffer.write(tmp);
+          // Shell TTFB is never deferred — flush the handoff synchronously.
+          buffer.flush();
           firstFlushed = true;
           if (completed) {
             dispose();
@@ -1817,8 +1851,11 @@ export function renderToStream(code, options = {}) {
               return;
             }
             if (!shellCompleted) return flush();
-            buffer = writable = guardSink(w);
+            const sink = guardSink(w);
+            buffer = writable = coalesceWrites(sink.write, sink.end);
             buffer.write(tmp);
+            // Shell TTFB is never deferred — flush the handoff synchronously.
+            buffer.flush();
             firstFlushed = true;
             if (completed) {
               dispose();
@@ -3228,6 +3265,13 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
 function queue(fn) {
   return Promise.resolve().then(fn);
 }
+
+// Macrotask defer for chunk coalescing: must ride AFTER an arbitrary-depth
+// microtask chain (a boundary's template/data/reveal writes span several
+// chained thens), which no microtask count can guarantee. setImmediate on
+// Node; timer fallback for hosts without it (workerd, browsers).
+const deferFlush =
+  typeof setImmediate === "function" ? setImmediate : fn => setTimeout(fn, 0);
 
 function allSettled(promises) {
   let size = promises.size;
