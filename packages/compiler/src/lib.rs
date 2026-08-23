@@ -35,8 +35,9 @@ mod universal;
 pub use compiler::{CompileOptions, CompileOutput, Generate, Renderer, Wrapper, compile};
 pub use error::{CompileError, CompileErrorKind};
 pub use semantic_trace::{
-    CallbackDecision, ExecutionSite, ExecutionSiteKind, OwnershipDecision, OwnershipSite,
-    SemanticTrace, SourceSpan, TerminalDecision, ValueDecision,
+    CallbackDecision, ComponentRenderSite, DeferredCallbackSite, ExecutionSite, ExecutionSiteKind,
+    OwnerEstablishment, OwnershipDecision, OwnershipSite, SEMANTIC_TRACE_VERSION, SemanticTrace,
+    SourceSpan, TerminalDecision, ValueDecision,
 };
 
 /// Cargo package version of the compiler implementation producing semantic

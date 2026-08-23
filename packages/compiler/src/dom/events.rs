@@ -1,6 +1,6 @@
 use oxc_allocator::CloneIn;
 use oxc_ast::ast::{AssignmentOperator, AssignmentTarget, Expression, Statement};
-use oxc_span::Span;
+use oxc_span::{GetSpan, Span};
 
 use crate::dom::element::AstDomTransform;
 use crate::shared::constants::delegated_events;
@@ -17,6 +17,13 @@ impl<'a> AstDomTransform<'a, '_> {
         handler: Expression<'a>,
     ) -> std::vec::Vec<Statement<'a>> {
         let event_name = to_event_name(name);
+        let identity = if self.should_delegate_event(&event_name) {
+            "delegated"
+        } else {
+            "direct"
+        };
+        self.semantic_trace
+            .owner_establishment(handler.span(), identity, None);
 
         if self.should_delegate_event(&event_name) {
             self.register_delegated_event(&event_name);
@@ -132,7 +139,7 @@ impl<'a> AstDomTransform<'a, '_> {
 
     /// `<element_id>.<property> = <handler>;`
     fn delegated_assignment_statement(
-        &self,
+        &mut self,
         span: Span,
         element_id: &str,
         property: &str,
@@ -148,7 +155,7 @@ impl<'a> AstDomTransform<'a, '_> {
 
     /// `<element_id>.addEventListener("<event>", <handler>);`
     fn add_event_listener_statement(
-        &self,
+        &mut self,
         span: Span,
         element_id: &str,
         event_name: &str,

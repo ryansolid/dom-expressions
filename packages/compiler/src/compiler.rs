@@ -575,6 +575,7 @@ mod tests {
         assert_eq!(
             traced.semantic_trace,
             Some(SemanticTrace {
+                version: crate::semantic_trace::SEMANTIC_TRACE_VERSION,
                 sites: vec![
                     ExecutionSite {
                         span: span(source, "name()"),
@@ -607,6 +608,30 @@ mod tests {
                         decision: OwnershipDecision::Owned,
                     },
                 ],
+                owner_establishments: vec![
+                    crate::semantic_trace::OwnerEstablishment {
+                        span: span(source, "name()"),
+                        wrapper: "effect".into(),
+                        group_id: None,
+                    },
+                    crate::semantic_trace::OwnerEstablishment {
+                        span: span(source, "handle"),
+                        wrapper: "delegated".into(),
+                        group_id: None,
+                    },
+                    crate::semantic_trace::OwnerEstablishment {
+                        span: span(source, "node"),
+                        wrapper: "ref-apply".into(),
+                        group_id: None,
+                    },
+                    crate::semantic_trace::OwnerEstablishment {
+                        span: span(source, "count()"),
+                        wrapper: "insert".into(),
+                        group_id: None,
+                    },
+                ],
+                component_render_sites: vec![],
+                deferred_callback_sites: vec![],
             })
         );
     }
@@ -683,6 +708,7 @@ mod tests {
         assert_eq!(
             output.semantic_trace,
             Some(SemanticTrace {
+                version: crate::semantic_trace::SEMANTIC_TRACE_VERSION,
                 sites: vec![
                     ExecutionSite {
                         span: span(source, "items()"),
@@ -704,6 +730,43 @@ mod tests {
                     span: span(source, "item.name"),
                     decision: OwnershipDecision::Owned,
                 }],
+                owner_establishments: vec![
+                    crate::semantic_trace::OwnerEstablishment {
+                        span: span(
+                            source,
+                            "<For each={items()}>{item => <span>{item.name}</span>}</For>"
+                        ),
+                        wrapper: "createComponent".into(),
+                        group_id: None,
+                    },
+                    crate::semantic_trace::OwnerEstablishment {
+                        span: span(source, "item.name"),
+                        wrapper: "insert".into(),
+                        group_id: None,
+                    },
+                ],
+                component_render_sites: vec![crate::semantic_trace::ComponentRenderSite {
+                    span: span(
+                        source,
+                        "<For each={items()}>{item => <span>{item.name}</span>}</For>"
+                    ),
+                }],
+                deferred_callback_sites: vec![
+                    crate::semantic_trace::DeferredCallbackSite {
+                        span: span(source, "items()"),
+                        receiver_span: span(
+                            source,
+                            "<For each={items()}>{item => <span>{item.name}</span>}</For>"
+                        ),
+                    },
+                    crate::semantic_trace::DeferredCallbackSite {
+                        span: span(source, "item => <span>{item.name}</span>"),
+                        receiver_span: span(
+                            source,
+                            "<For each={items()}>{item => <span>{item.name}</span>}</For>"
+                        ),
+                    }
+                ],
             })
         );
     }
@@ -823,12 +886,16 @@ mod tests {
         assert_eq!(
             output.semantic_trace,
             Some(SemanticTrace {
+                version: crate::semantic_trace::SEMANTIC_TRACE_VERSION,
                 sites: vec![ExecutionSite {
                     span: span(source, "signal()"),
                     kind: ExecutionSiteKind::NativeAttribute,
                     decision: TerminalDecision::Value(ValueDecision::EagerOnce),
                 }],
                 ownership_sites: vec![],
+                owner_establishments: vec![],
+                component_render_sites: vec![],
+                deferred_callback_sites: vec![],
             })
         );
         let byte_span = span(source, "signal()");

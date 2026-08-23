@@ -3180,7 +3180,13 @@ impl<'a> crate::shared::mode_lower::ModeLower<'a> for AstSsrTransform<'a, '_> {
         self.lower_element_impl(element, true)
     }
 
-    fn memo_wrap_dynamic_child(&mut self, span: Span, thunk: Expression<'a>) -> Expression<'a> {
+    fn memo_wrap_dynamic_child(
+        &mut self,
+        span: Span,
+        _trace_span: Span,
+        thunk: Expression<'a>,
+    ) -> Expression<'a> {
+        // The ssr generate does not trace, so the source span is unused.
         self.memo_wrap_fragment_child(span, thunk)
     }
 }

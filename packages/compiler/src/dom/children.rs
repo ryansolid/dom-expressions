@@ -165,6 +165,8 @@ impl<'a> AstDomTransform<'a, '_> {
                             lowered,
                             marker,
                         ));
+                        self.semantic_trace
+                            .owner_establishment(child.span, "insert", None);
                     } else if let Some(static_template) = lower_static_native_template(
                         self,
                         child,
@@ -331,7 +333,11 @@ impl<'a> AstDomTransform<'a, '_> {
                             && self.hydratable
                             && child_slot_allocates_ids(dynamic_child)
                         {
-                            self.scope_child_expression(container.span, value)
+                            self.scope_child_expression(
+                                container.span,
+                                container.expression.span(),
+                                value,
+                            )
                         } else {
                             value
                         };
@@ -359,6 +365,11 @@ impl<'a> AstDomTransform<'a, '_> {
                             value,
                             marker,
                         ));
+                        self.semantic_trace.owner_establishment(
+                            container.expression.span(),
+                            "insert",
+                            None,
+                        );
                     }
                     index = run_end;
                     continue;
@@ -380,7 +391,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     // Spread children always allocate ids; scope keyed off the
                     // same shared dynamic predicate as the ssr generate.
                     let value = if self.hydratable && self.classify().is_dynamic_child_slot(child) {
-                        self.scope_child_expression(spread.span, value)
+                        self.scope_child_expression(spread.span, spread.expression.span(), value)
                     } else {
                         value
                     };
@@ -396,6 +407,11 @@ impl<'a> AstDomTransform<'a, '_> {
                         declarations,
                     );
                     operations.push(self.insert_statement(element.span, element_id, value, marker));
+                    self.semantic_trace.owner_establishment(
+                        spread.expression.span(),
+                        "insert",
+                        None,
+                    );
                 }
                 _ => {
                     return Err(Error::from_reason(
@@ -909,12 +925,20 @@ impl<'a> AstDomTransform<'a, '_> {
     /// Wraps an insert accessor in `_$scope(...)`. The child lowering
     /// simplifies `{sig()}` to the bare getter `sig`; rewrap it as
     /// `() => sig()` so tagging the scope doesn't mutate the user's function.
+    ///
+    /// `span` is the emission span (the JSX container, matching the `insert`
+    /// statement's own emission span); `trace_span` is the wrapped source
+    /// expression, which is the span the neighbouring `insert` fact and the
+    /// `ExecutionSite` for this hole already use.
     fn scope_child_expression(
         &mut self,
         span: oxc_span::Span,
+        trace_span: oxc_span::Span,
         value: Expression<'a>,
     ) -> Expression<'a> {
         self.template_state.uses_scope = true;
+        self.semantic_trace
+            .owner_establishment(trace_span, "scope", None);
         let already_function = match &value {
             Expression::ArrowFunctionExpression(_) | Expression::FunctionExpression(_) => true,
             Expression::CallExpression(call) => matches!(
