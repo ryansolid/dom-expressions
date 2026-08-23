@@ -451,10 +451,7 @@ export function escapeHTML(s: unknown, attr?: boolean): unknown {
     // region-jumps on it). Amp first so entities aren't double-escaped;
     // compile-time only, so plain replaces beat pointer games.
     if (!/[&"<]/.test(s)) return s;
-    return s
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;");
+    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   }
   const delim = "<";
   const escDelim = "&lt;";
