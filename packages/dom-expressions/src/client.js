@@ -527,7 +527,27 @@ function insertExpression(parent, value, current, marker, unwrapArray) {
       if (!array.length) return current;
       if (marker === undefined) return (current = [...parent.childNodes]);
       let node = array[0];
-      if (node.parentNode !== parent) return current;
+      if (node.parentNode !== parent) {
+        // A streamed Suspense boundary's placeholder was swapped out by the server's
+        // replace script before this ran, so `current` holds detached nodes. Recover
+        // the live range from the DOM: everything between the matching "$" marker
+        // and `marker`.
+        if (!marker || marker.nodeType !== 8 || marker.data !== "/") return current;
+        let start = marker,
+          count = 0;
+        while ((start = start.previousSibling)) {
+          if (start.nodeType !== 8) continue;
+          if (start.data === "/") count++;
+          else if (start.data === "$") {
+            if (count === 0) break;
+            count--;
+          }
+        }
+        if (!start) return current;
+        const nodes = [];
+        while ((start = start.nextSibling) !== marker) nodes.push(start);
+        return (current = nodes);
+      }
       const nodes = [node];
       while ((node = node.nextSibling) !== marker) nodes.push(node);
       return (current = nodes);
