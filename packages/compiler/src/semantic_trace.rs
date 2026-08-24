@@ -210,6 +210,9 @@ impl ExecutionCensus {
             sites: BTreeSet<SiteKey>,
             ignored_literal_spans: BTreeSet<SourceSpan>,
             component_child_fragments: BTreeSet<SourceSpan>,
+            /// Void native elements whose child list survives into DOM
+            /// lowering. See [`Self::mark_nested_void_children`].
+            nested_void_elements: BTreeSet<SourceSpan>,
             built_ins: HashSet<&'a str>,
             bindings: &'bindings BindingTable,
             inline_styles: bool,
@@ -366,6 +369,33 @@ impl ExecutionCensus {
                 for child in children {
                     if let JSXChild::Fragment(fragment) = child {
                         self.component_child_fragments.insert(fragment.span.into());
+                    }
+                }
+            }
+
+            /// Record which void children of a *native* element keep their own
+            /// children through lowering.
+            ///
+            /// A void element's child list survives exactly when the element is
+            /// lowered as a nested native child: `lower_dynamic_native_child`
+            /// walks into `lower_dom_children` unconditionally, so
+            /// `<div><br>{x()}</br></div>` emits a real reactive
+            /// `insert(_el$2, x)` into the `<br>`. Every other position makes
+            /// the void element a template root of its own — a bare JSX root, a
+            /// fragment child, a component child, an attribute value — and
+            /// `lower_dom_element` gates child lowering on `!is_void_element`,
+            /// so the child list is discarded with no code emitted.
+            ///
+            /// Only a native parent marks: a component's children and a
+            /// fragment's children each become their own template root.
+            fn mark_nested_void_children(&mut self, children: &[JSXChild<'_>]) {
+                for child in children {
+                    if let JSXChild::Element(child) = child
+                        && let Some(tag) = Self::native_tag_name(child)
+                        && !is_component_name(&child.opening_element.name)
+                        && is_void_element(tag)
+                    {
+                        self.nested_void_elements.insert(child.span.into());
                     }
                 }
             }
@@ -583,8 +613,14 @@ impl ExecutionCensus {
                                 ExecutionSiteKind::Ref
                             } else if !component && name.starts_with("on") {
                                 ExecutionSiteKind::EventHandler
+                            // `children` is promoted to a child insert only
+                            // where lowering promotes it: `lower_dom_element`
+                            // gates the capture on `!is_void_element`, so on a
+                            // void element the value stays an attribute (and,
+                            // as in Babel, emits nothing at all).
                             } else if !component
                                 && name == "children"
+                                && !native_tag_name.is_some_and(is_void_element)
                                 && (has_spread || element.children.is_empty())
                             {
                                 ExecutionSiteKind::JsxChild
@@ -598,12 +634,24 @@ impl ExecutionCensus {
                     }
                 }
 
-                // Void native elements discard their child list before the
-                // 2.0 lowering pass reaches it; do not census expressions the
-                // emitter cannot resolve.
-                if native_tag_name.is_some_and(is_void_element) {
+                // A void native element that is a template root discards its
+                // child list before the 2.0 lowering pass reaches it; do not
+                // census expressions the emitter never resolves. A void element
+                // in *nested* native-child position keeps them — see
+                // `mark_nested_void_children` — so it censuses like any other
+                // native element. Attributes are censused either way above:
+                // they are not children, and lowering emits them for both
+                // shapes.
+                if native_tag_name.is_some_and(is_void_element)
+                    && !self
+                        .nested_void_elements
+                        .contains(&SourceSpan::from(element.span))
+                {
                     oxc_ast_visit::walk::walk_jsx_opening_element(self, &element.opening_element);
                     return;
+                }
+                if !component {
+                    self.mark_nested_void_children(&element.children);
                 }
                 for child in &element.children {
                     match child {
@@ -671,6 +719,7 @@ impl ExecutionCensus {
             sites: BTreeSet::new(),
             ignored_literal_spans: BTreeSet::new(),
             component_child_fragments: BTreeSet::new(),
+            nested_void_elements: BTreeSet::new(),
             built_ins: built_ins.iter().map(String::as_str).collect(),
             bindings: &bindings,
             inline_styles,
@@ -687,6 +736,9 @@ impl ExecutionCensus {
 pub(crate) struct TraceRecorder {
     census: Option<ExecutionCensus>,
     decisions: BTreeMap<SiteKey, TerminalDecision>,
+    /// Spans a lowering path *synthesizes* rather than reads from the source
+    /// tree. See [`Self::ignore_synthesized_child`].
+    synthesized_spans: BTreeSet<SourceSpan>,
     default_effect_wrapper: bool,
     // Compatibility output for the currently pinned checker. This is filled
     // when lowering resolves a reactive value, rather than reconstructed from
@@ -821,6 +873,59 @@ impl TraceRecorder {
         }
     }
 
+    /// Withdraw every censused site inside a source range whose lowering the
+    /// emitter skipped wholesale.
+    ///
+    /// Reached when a lowering path discards a whole child list rather than
+    /// deciding it value by value — a nested native element whose dynamic
+    /// `textContent` replaces its children with a text placeholder, the
+    /// textarea `value` fold, an inert `<noscript>`. Nothing in the range is
+    /// emitted, so no site there exists to decide; retracting is the truthful
+    /// outcome, and the alternative is a file-wide "unresolved execution
+    /// sites" failure over expressions that never run.
+    ///
+    /// A site already decided is kept, matching [`Self::retract`]: this only
+    /// removes sites nothing has spoken for.
+    pub(crate) fn retract_within(&mut self, span: Span) {
+        let Self {
+            census, decisions, ..
+        } = self;
+        let Some(census) = census.as_mut() else {
+            return;
+        };
+        census.sites.retain(|site| {
+            decisions.contains_key(site) || site.span.start < span.start || site.span.end > span.end
+        });
+    }
+
+    /// Declare that a span carries a child the lowering *synthesized*, so a
+    /// decision recorded there is not an execution site.
+    ///
+    /// The textarea `value` fold builds its replacement child out of the
+    /// attribute (`stateful_value_child`) and spans it at the attribute. That
+    /// child is not a source expression — nothing the author wrote executes at
+    /// that span — so the census, which only walks source, rightly claims no
+    /// site there. Where the synthesized value is a string or number the
+    /// census has already ignored the literal it was cloned from; where it is
+    /// the `true` of a valueless `value` the expression does not exist in the
+    /// source at all, and lowering's `insert` decision would otherwise fail
+    /// the file as a decision for an uncensused site.
+    ///
+    /// Silence, not a site, is the truthful outcome: the emitted `insert` is
+    /// still reported as an `owner_establishment`, exactly as for a
+    /// literal-only source hole, and joins to no site.
+    ///
+    /// Invariant: `resolve()` consults these spans only when the census holds
+    /// no site there, and every span registered here is an attribute span,
+    /// which no source expression can exactly occupy. A future caller that
+    /// registers a span a censused source expression *does* occupy would
+    /// silence that site's decision instead of failing the file — do not.
+    pub(crate) fn ignore_synthesized_child(&mut self, span: Span) {
+        if self.census.is_some() && span.start < span.end {
+            self.synthesized_spans.insert(span.into());
+        }
+    }
+
     pub(crate) fn value(&mut self, span: Span, kind: ExecutionSiteKind, decision: ValueDecision) {
         self.resolve(span, kind, TerminalDecision::Value(decision));
     }
@@ -842,11 +947,12 @@ impl TraceRecorder {
             span: span.into(),
             kind,
         };
+        let not_a_site = census
+            .ignored_literal_spans
+            .contains(&SourceSpan::from(span))
+            || self.synthesized_spans.contains(&SourceSpan::from(span));
         if !census.sites.contains(&key) {
-            if census
-                .ignored_literal_spans
-                .contains(&SourceSpan::from(span))
-            {
+            if not_a_site {
                 return;
             }
             self.fail(format!(

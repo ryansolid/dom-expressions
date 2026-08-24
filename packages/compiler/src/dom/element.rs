@@ -295,9 +295,12 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         let needs_text_placeholder = attrs_lowering.needs_text_placeholder;
 
         // Babel's textarea `value` fold replaces the element's children
-        // (`path.node.children = [child]`).
+        // (`path.node.children = [child]`), discarding the source list here
+        // exactly as the nested path does; reconcile the census with both
+        // halves of the swap.
         let element: &JSXElement<'a> = match attrs_lowering.children_replacement {
             Some(child) => {
+                self.discard_folded_children(&element.children, &child);
                 let mut clone = element.clone_in(self.allocator);
                 clone.children.clear();
                 clone.children.push(child);

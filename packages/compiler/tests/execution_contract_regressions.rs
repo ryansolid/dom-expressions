@@ -431,3 +431,459 @@ fn disabled_wrappers_do_not_invent_wrapper_facts() {
             .all(|fact| fact.wrapper != "effect" && fact.wrapper != "memo")
     );
 }
+
+/// A void element's child list is dropped by the parity-target Babel plugin in
+/// every position; this fork's `lower_dynamic_native_child` keeps it in *nested*
+/// native-child position and emits a real reactive `insert` into the void
+/// element (a transform-parity divergence that is out of scope here, since
+/// `transform()` output is frozen). Either way the census and lowering must
+/// agree: the nested shape reports the site it emits, the template-root shapes
+/// report nothing, and no file fails reconciliation.
+#[test]
+fn void_element_children_reconcile_in_every_position() {
+    let nested = "const el = <div><br>{x()}</br></div>;";
+    let rendered = trace(nested);
+    assert_eq!(
+        rendered
+            .sites
+            .iter()
+            .map(|site| (
+                source_text(nested, site.span.start, site.span.end),
+                site.kind,
+                site.decision
+            ))
+            .collect::<Vec<_>>(),
+        [(
+            "x()",
+            ExecutionSiteKind::JsxChild,
+            TerminalDecision::Value(ValueDecision::ReactiveRerun)
+        )],
+        "a nested void element's lowered child must be censused and decided"
+    );
+    assert_eq!(
+        rendered
+            .ownership_sites
+            .iter()
+            .map(|site| source_text(nested, site.span.start, site.span.end))
+            .collect::<Vec<_>>(),
+        ["x()"]
+    );
+
+    // Every other position makes the void element its own template root, where
+    // `lower_dom_element` discards the child list without emitting anything.
+    // The discarded child list is the source range between the void element's
+    // `>` and its closing tag; nothing inside it may claim a site. (An
+    // attribute-position void element still has its own attribute-value site
+    // for the whole JSX expression, which is why this checks the range rather
+    // than emptiness.)
+    for (source, discarded) in [
+        ("const el = <br>{x()}</br>;", "{x()}"),
+        ("const el = <><br>{x()}</br></>;", "{x()}"),
+        ("const el = <Comp><br>{x()}</br></Comp>;", "{x()}"),
+        ("const el = <div a={<br>{x()}</br>} />;", "{x()}"),
+        (
+            "const el = <br><span class={x()}>{y()}</span></br>;",
+            "<span class={x()}>{y()}</span>",
+        ),
+        ("const el = <br>{...x}</br>;", "{...x}"),
+    ] {
+        let start = source.find(discarded).expect("discarded range") as u32;
+        let end = start + discarded.len() as u32;
+        let rendered = trace(source);
+        let inside = rendered
+            .sites
+            .iter()
+            .filter(|site| site.span.start >= start && site.span.end <= end)
+            .collect::<Vec<_>>();
+        assert!(
+            inside.is_empty(),
+            "{source}: a discarded void child list must claim no site, got {inside:?}"
+        );
+        assert!(
+            rendered
+                .ownership_sites
+                .iter()
+                .all(|site| site.span.start < start || site.span.end > end),
+            "{source}: a discarded void child list must claim no ownership site"
+        );
+    }
+
+    // `children` on a void element is never promoted to a child insert —
+    // `lower_dom_element` gates the capture on `!is_void_element`, and like
+    // Babel it emits nothing — so it stays an attribute site resolved as data.
+    for source in [
+        "const el = <br children={x()} />;",
+        "const el = <div><br children={x()} /></div>;",
+    ] {
+        let rendered = trace(source);
+        assert_eq!(
+            rendered
+                .sites
+                .iter()
+                .map(|site| (
+                    source_text(source, site.span.start, site.span.end),
+                    site.kind,
+                    site.decision
+                ))
+                .collect::<Vec<_>>(),
+            [(
+                "x()",
+                ExecutionSiteKind::NativeAttribute,
+                TerminalDecision::Value(ValueDecision::Elided)
+            )],
+            "{source}: a void `children` attribute is not a child insert"
+        );
+    }
+
+    // A void element's *attributes* are not children: they lower in both
+    // positions and must keep their sites.
+    for source in [
+        "const el = <div><br class={x()} /></div>;",
+        "const el = <br class={x()} />;",
+        "const el = <div><br class={x()}>{y()}</br></div>;",
+    ] {
+        let rendered = trace(source);
+        assert!(
+            rendered.sites.iter().any(|site| {
+                source_text(source, site.span.start, site.span.end) == "x()"
+                    && site.kind == ExecutionSiteKind::NativeAttribute
+                    && site.decision == TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            }),
+            "{source}: a void element's attribute site must survive, got {:?}",
+            rendered.sites
+        );
+    }
+}
+
+/// A void element must not perturb its siblings' or a plain element's facts.
+#[test]
+fn void_children_leave_neighbouring_facts_untouched() {
+    let source = "const el = <div><br>{x()}</br><span>{y()}</span></div>;";
+    let rendered = trace(source);
+    assert_eq!(
+        rendered
+            .sites
+            .iter()
+            .map(|site| (
+                source_text(source, site.span.start, site.span.end),
+                site.kind,
+                site.decision
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "x()",
+                ExecutionSiteKind::JsxChild,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            ),
+            (
+                "y()",
+                ExecutionSiteKind::JsxChild,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            ),
+        ]
+    );
+
+    let plain = "const el = <div><span>{y()}</span></div>;";
+    let rendered = trace(plain);
+    assert_eq!(
+        rendered
+            .sites
+            .iter()
+            .map(|site| (
+                source_text(plain, site.span.start, site.span.end),
+                site.kind,
+                site.decision
+            ))
+            .collect::<Vec<_>>(),
+        [(
+            "y()",
+            ExecutionSiteKind::JsxChild,
+            TerminalDecision::Value(ValueDecision::ReactiveRerun)
+        )]
+    );
+    assert_eq!(
+        rendered
+            .ownership_sites
+            .iter()
+            .map(|site| source_text(plain, site.span.start, site.span.end))
+            .collect::<Vec<_>>(),
+        ["y()"]
+    );
+}
+
+/// A nested element whose dynamic `textContent` replaces its content discards
+/// the source child list unlowered. (The template-root path in `element.rs`
+/// reaches *its* placeholder branch only when the element has no children of
+/// its own, so that branch discards nothing.) The discarded children must claim
+/// no site.
+#[test]
+fn dynamic_text_content_retracts_the_children_it_discards() {
+    for source in [
+        "const el = <div><span textContent={x()}>{y()}</span></div>;",
+        "const el = <div><br textContent={x()}>{y()}</br></div>;",
+        // The retraction prunes *every* site kind inside the discarded subtree,
+        // not just the value sites of a flat child list: a ref and an event
+        // handler nested under it are equally unemitted.
+        "const el = <div><span textContent={x()}><div ref={r} onClick={h}>{y()}</div></span></div>;",
+    ] {
+        let rendered = trace(source);
+        assert_eq!(
+            rendered
+                .sites
+                .iter()
+                .map(|site| (
+                    source_text(source, site.span.start, site.span.end),
+                    site.kind
+                ))
+                .collect::<Vec<_>>(),
+            [("x()", ExecutionSiteKind::NativeAttribute)],
+            "{source}: only the textContent attribute survives"
+        );
+    }
+}
+
+/// Babel's textarea `value` fold (`path.node.children = [child]`) discards the
+/// element's source children on every path that performs it — the nested
+/// native-child lowering, the template root, and the static-template fast path,
+/// which the fold can make static *because* the dynamic source children are
+/// dropped. Babel discards them too (`<div><textarea value="lit">{y()}</textarea></div>`
+/// compiles to a bare `_$template("<div><textarea>lit")` with no insert), so
+/// retracting their censused sites is parity-clean. The fold's replacement is
+/// not a source expression and claims no site of its own.
+#[test]
+fn textarea_value_fold_reconciles_the_children_it_discards() {
+    for (source, discarded) in [
+        // Nested native-child position (`lower_dynamic_native_child`).
+        (
+            "const el = <div><textarea value=\"lit\">{y()}</textarea></div>;",
+            "{y()}",
+        ),
+        (
+            "const el = <div><textarea value={\"lit\"}>{y()}</textarea></div>;",
+            "{y()}",
+        ),
+        (
+            "const el = <div><textarea value={1}>{y()}</textarea></div>;",
+            "{y()}",
+        ),
+        // Template root (`lower_dom_element`).
+        (
+            "const el = <textarea value=\"lit\">{y()}</textarea>;",
+            "{y()}",
+        ),
+        (
+            "const el = <textarea value={\"lit\"}>{y()}</textarea>;",
+            "{y()}",
+        ),
+        // Fragment, component and attribute positions all reach the template
+        // root through their own wrappers.
+        (
+            "const el = <><textarea value=\"lit\">{y()}</textarea></>;",
+            "{y()}",
+        ),
+        (
+            "const el = <Comp><textarea value=\"lit\">{y()}</textarea></Comp>;",
+            "{y()}",
+        ),
+        (
+            "const el = <div a={<textarea value=\"lit\">{y()}</textarea>} />;",
+            "{y()}",
+        ),
+        // Static-template fast path (`lower_static_native_template`): the whole
+        // subtree inlines because the fold dropped the dynamic child.
+        (
+            "const el = <div><p><textarea value=\"lit\">{y()}</textarea></p></div>;",
+            "{y()}",
+        ),
+        // The retraction prunes every site kind in the discarded subtree.
+        (
+            "const el = <textarea value=\"lit\"><span ref={r} onClick={h}>{y()}</span></textarea>;",
+            "<span ref={r} onClick={h}>{y()}</span>",
+        ),
+        (
+            "const el = <div><textarea value=\"lit\"><span onClick={h}>{y()}</span></textarea></div>;",
+            "<span onClick={h}>{y()}</span>",
+        ),
+    ] {
+        let start = source.find(discarded).expect("discarded range") as u32;
+        let end = start + discarded.len() as u32;
+        let rendered = trace(source);
+        let inside = rendered
+            .sites
+            .iter()
+            .filter(|site| site.span.start >= start && site.span.end <= end)
+            .collect::<Vec<_>>();
+        assert!(
+            inside.is_empty(),
+            "{source}: a folded-away child list must claim no site, got {inside:?}"
+        );
+        assert!(
+            rendered
+                .ownership_sites
+                .iter()
+                .all(|site| site.span.start < start || site.span.end > end),
+            "{source}: a folded-away child list must claim no ownership site"
+        );
+    }
+
+    // A valueless `value` folds to a synthesized `{true}` spanned at the
+    // attribute, which really is inserted. It is not a source expression, so it
+    // is not a site — but the `insert` the lowering emits is still reported,
+    // joining to nothing exactly as a literal-only source hole's does.
+    for (source, attribute) in [
+        (
+            "const el = <div><textarea value>{y()}</textarea></div>;",
+            "value",
+        ),
+        ("const el = <textarea value>{y()}</textarea>;", "value"),
+    ] {
+        let rendered = trace(source);
+        assert!(
+            rendered.sites.is_empty(),
+            "{source}: neither the discarded child nor the synthesized one is a site, got {:?}",
+            rendered.sites
+        );
+        let start = source.find(attribute).expect("attribute span") as u32;
+        assert!(
+            rendered.owner_establishments.iter().any(|fact| {
+                fact.wrapper == "insert"
+                    && fact.span.start == start
+                    && fact.span.end == start + attribute.len() as u32
+            }),
+            "{source}: the emitted insert is still reported, got {:?}",
+            rendered.owner_establishments
+        );
+    }
+
+    // The fold touches only the child list: sibling children and the element's
+    // own other attributes keep their sites.
+    let source = "const el = <div><textarea value=\"lit\" class={c()}>{y()}</textarea><span>{z()}</span></div>;";
+    let rendered = trace(source);
+    assert_eq!(
+        rendered
+            .sites
+            .iter()
+            .map(|site| (
+                source_text(source, site.span.start, site.span.end),
+                site.kind,
+                site.decision
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "c()",
+                ExecutionSiteKind::NativeAttribute,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            ),
+            (
+                "z()",
+                ExecutionSiteKind::JsxChild,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            ),
+        ]
+    );
+}
+
+/// `<noscript>` markup is inert: the static-template fast path emits the tag
+/// and returns without visiting the children, and Babel drops them too. The
+/// discarded children must claim no site — but a `<noscript>` whose attributes
+/// force the dynamic path, and one that is its own template root (a bare root
+/// or a fragment child), do lower their children and keep their sites (those
+/// diverge from Babel, which emits no insert in any position; the trace reports
+/// what this compiler emits).
+#[test]
+fn inert_noscript_children_reconcile_in_every_position() {
+    for (source, discarded) in [
+        ("const el = <div><noscript>{x()}</noscript></div>;", "{x()}"),
+        (
+            "const el = <div><noscript><span onClick={h}>{y()}</span></noscript></div>;",
+            "<span onClick={h}>{y()}</span>",
+        ),
+        // The outer element bails out of the fast path because of the dynamic
+        // sibling, so the `<noscript>` is re-visited on the fallback path; the
+        // retraction must survive that.
+        (
+            "const el = <div><noscript>{x()}</noscript><b>{z()}</b></div>;",
+            "{x()}",
+        ),
+    ] {
+        let start = source.find(discarded).expect("discarded range") as u32;
+        let end = start + discarded.len() as u32;
+        let rendered = trace(source);
+        let inside = rendered
+            .sites
+            .iter()
+            .filter(|site| site.span.start >= start && site.span.end <= end)
+            .collect::<Vec<_>>();
+        assert!(
+            inside.is_empty(),
+            "{source}: an inert `<noscript>` child list must claim no site, got {inside:?}"
+        );
+    }
+
+    // Attributes that force the dynamic path, and every template-root position
+    // (bare root, fragment child), all lower the children — so the sites stay.
+    for source in [
+        "const el = <div><noscript class={c()}>{x()}</noscript></div>;",
+        "const el = <noscript>{x()}</noscript>;",
+        "const el = <><noscript>{x()}</noscript></>;",
+    ] {
+        let rendered = trace(source);
+        assert!(
+            rendered.sites.iter().any(|site| {
+                source_text(source, site.span.start, site.span.end) == "x()"
+                    && site.kind == ExecutionSiteKind::JsxChild
+                    && site.decision == TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            }),
+            "{source}: a lowered `<noscript>` child keeps its site, got {:?}",
+            rendered.sites
+        );
+    }
+}
+
+/// Every shape whose child list a lowering path discards must compile
+/// identically with tracing on and off. Reconciling the census is a
+/// fact-side-channel change; it may not move a byte of `transform()` output.
+#[test]
+fn discarded_child_shapes_do_not_move_transform_output() {
+    // Compare source maps for real: the shared `options()` leaves
+    // `source_map: false`, which would make the assertion below `None == None`.
+    let with_map = |semantic_trace: bool| CompileOptions {
+        source_map: true,
+        ..options(semantic_trace)
+    };
+    // One warm-up compile keeps Oxc's lazy source-map initialization out of
+    // the comparison, as host_independent_interface.rs does.
+    let _warmup = compile("const el = <div>{w()}</div>;", &with_map(false));
+    for source in [
+        "const el = <div><textarea value=\"lit\">{y()}</textarea></div>;",
+        "const el = <div><textarea value>{y()}</textarea></div>;",
+        "const el = <div><textarea value={1}>{y()}</textarea></div>;",
+        "const el = <textarea value=\"lit\">{y()}</textarea>;",
+        "const el = <textarea value>{y()}</textarea>;",
+        "const el = <div><p><textarea value=\"lit\">{y()}</textarea></p></div>;",
+        "const el = <><textarea value=\"lit\">{y()}</textarea></>;",
+        "const el = <Comp><textarea value=\"lit\">{y()}</textarea></Comp>;",
+        "const el = <div a={<textarea value=\"lit\">{y()}</textarea>} />;",
+        "const el = <div><span textContent={x()}>{y()}</span></div>;",
+        "const el = <div><span textContent={x()}><div ref={r} onClick={h}>{y()}</div></span></div>;",
+        "const el = <span textContent={x()}>{y()}</span>;",
+        "const el = <div><noscript>{x()}</noscript></div>;",
+        "const el = <div><noscript>{x()}</noscript><b>{z()}</b></div>;",
+        "const el = <noscript>{x()}</noscript>;",
+        "const el = <div><br>{x()}</br></div>;",
+        "const el = <br>{x()}</br>;",
+    ] {
+        let traced = compile(source, &with_map(true)).expect("compile with tracing");
+        let plain = compile(source, &with_map(false)).expect("compile without tracing");
+        assert_eq!(
+            traced.code, plain.code,
+            "{source}: tracing changed the emitted code"
+        );
+        assert_eq!(
+            traced.source_map, plain.source_map,
+            "{source}: tracing changed the source map"
+        );
+    }
+}

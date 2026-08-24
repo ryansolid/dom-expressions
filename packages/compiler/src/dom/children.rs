@@ -845,6 +845,45 @@ impl<'a> AstDomTransform<'a, '_> {
         Ok(self.call_identifier(child.span, "_$getNextMatch", vec![base, tag]))
     }
 
+    /// Withdraw the censused execution sites of a child list this lowering
+    /// discards without visiting. The children occupy one contiguous source
+    /// range, so every site inside it belongs to the discarded subtree.
+    pub(crate) fn retract_children_sites(&mut self, children: &[JSXChild<'a>]) {
+        let Some(first) = children.first() else {
+            return;
+        };
+        let last = children
+            .last()
+            .expect("a non-empty child list has a last child");
+        self.semantic_trace
+            .retract_within(oxc_span::Span::new(first.span().start, last.span().end));
+    }
+
+    /// Reconcile the census with the textarea `value` fold, which replaces an
+    /// element's children with one child synthesized from the attribute
+    /// (Babel's `path.node.children = [child]`). Both halves of that swap are
+    /// invisible to the census, which only walks source:
+    ///
+    /// - the source children are discarded unlowered, so their sites are
+    ///   withdrawn — nothing is emitted for them, so there is nothing to
+    ///   decide;
+    /// - the replacement is not a source expression, so a decision recorded
+    ///   for it is not a site.
+    ///
+    /// Every path that performs the fold must call this: the nested
+    /// native-child lowering, the template root in `element.rs`, and the
+    /// static-template fast path, which the fold can make static *because* it
+    /// drops dynamic source children.
+    pub(crate) fn discard_folded_children(
+        &mut self,
+        source_children: &[JSXChild<'a>],
+        replacement: &JSXChild<'a>,
+    ) {
+        self.retract_children_sites(source_children);
+        self.semantic_trace
+            .ignore_synthesized_child(replacement.span());
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn lower_dynamic_native_child(
         &mut self,
@@ -876,9 +915,14 @@ impl<'a> AstDomTransform<'a, '_> {
             dynamics,
         )?;
 
+        // The source child list, before any attribute-driven replacement: this
+        // is the range the fold and the placeholder branch below discard.
+        let source_children = child.children.as_slice();
+
         // Babel's textarea `value` fold replaces the element's children.
         let child: &JSXElement<'a> = match attrs_lowering.children_replacement {
             Some(replacement) => {
+                self.discard_folded_children(source_children, &replacement);
                 let mut clone = child.clone_in(self.allocator);
                 clone.children.clear();
                 clone.children.push(replacement);
@@ -889,6 +933,15 @@ impl<'a> AstDomTransform<'a, '_> {
 
         child_template.push_both(">");
         if attrs_lowering.needs_text_placeholder {
+            // A dynamic `textContent` takes over this element's content: the
+            // template gets a single-space text node the effect writes into and
+            // the source child list is discarded, unlowered. (The template-root
+            // path in `element.rs` reaches *its* placeholder branch only when
+            // the element has no children of its own — Babel's `!hasChildren`
+            // gate — so that branch discards nothing; its fold branch does, and
+            // retracts there.) Withdraw the discarded children's censused
+            // sites: no code is emitted for them, so there is nothing to decide.
+            self.retract_children_sites(source_children);
             child_template.html.push(' ');
         } else {
             self.lower_dom_children(
