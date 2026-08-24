@@ -15,4 +15,5 @@ while its synthesized replacement child claims no site of its own; and an inert
 visits. One known shape still fails reconciliation deliberately — a `children`
 attribute on a nested non-void element with no source children, where this
 fork emits nothing and the parity target inserts — because that failure is
-the divergence's only detection signal. `transform()` output is unchanged.
+the divergence's only detection signal. (The promotion itself is fixed
+separately, which retires that failure.) `transform()` output is unchanged.

@@ -597,6 +597,9 @@ const a = <div class="one" class="two" title={t1()} title={t2()}>{x()}</div>;
   "duplicate children attributes": `
 const a = <div children={a()} children={b()} />;
 `,
+  "duplicate children attributes literal last": `
+const a = <span children={x()} children={"s"} />;
+`,
   "children attribute before spread": `
 const a = <div children={fallback()} {...props} />;
 `,
@@ -1920,6 +1923,86 @@ const a = <div tabindex={0} />;
 `,
   "1x attribute boolean expression false": `
 const a = <input disabled={false} />;
+`,
+
+  // --- nested children-attribute promotion ---------------------------------
+  // Babel promotes a non-literal "children" attribute to a child insert in
+  // every position; this fork only did it for template roots, so these shapes
+  // could not be asserted before. They pin both halves of Babel's single
+  // "children" slot: who fills it (the attribute, a dynamic textContent, the
+  // textarea value fold) and where the push is gated (void elements, spreads,
+  // an element that already has source children, noscript).
+  "nested children attribute promoted to insert": `
+const a = <div><span children={content()} /></div>;
+`,
+  "nested children attribute shadowed by source child": `
+const a = <div><span children={content()}>{child()}</span></div>;
+`,
+  "nested children attribute on void element": `
+const a = <div><br children={content()} /></div>;
+`,
+  "nested children attribute folded to a property write": `
+const a = <div><span children={"a" + "b"} /></div>;
+`,
+  "nested children attribute boolean literal": `
+const a = <div><span children={true} /></div>;
+`,
+  "nested children attribute marked once": `
+const a = <div><span children={/* @once */ content()} /></div>;
+`,
+  "nested children attribute after spread": `
+const a = <div><span {...props} children={content()} /></div>;
+`,
+  "nested children attribute before spread": `
+const a = <div><span children={content()} {...props} /></div>;
+`,
+  "nested children attribute duplicated": `
+const a = <div><span children={first()} children={second()} /></div>;
+`,
+  "nested children attribute after dynamic textContent": `
+const a = <div><span textContent={text()} children={content()} /></div>;
+`,
+  "nested children attribute before dynamic textContent": `
+const a = <div><span children={content()} textContent={text()} /></div>;
+`,
+  "nested children attribute on textarea with literal value": `
+const a = <div><textarea value="lit" children={content()} /></div>;
+`,
+  "nested children attribute on noscript": `
+const a = <div><noscript children={content()} /></div>;
+`,
+  "nested children attribute two levels deep": `
+const a = <div><section><span children={content()} /></section></div>;
+`,
+  "nested children attribute beside a dynamic sibling": `
+const a = <div><span children={content()} />{sibling()}</div>;
+`,
+  "nested children attribute between static text": `
+const a = <div>lead<span children={content()} />tail</div>;
+`,
+  "nested children attribute on two siblings": `
+const a = <div><span children={first()} /><span children={second()} /></div>;
+`,
+  "nested children attribute with a dynamic attribute": `
+const a = <div><span id={id()} children={content()} /></div>;
+`,
+  "nested children attribute with ref and handler": `
+const a = <div><span ref={node} onClick={handler} children={content()} /></div>;
+`,
+  "nested children attribute inside a component child": `
+const a = <Comp><div><span children={content()} /></div></Comp>;
+`,
+  "nested children attribute literal duplicate wins": `
+const a = <div><span children={x()} children={"s"} /></div>;
+`,
+  "nested children attribute literal duplicate unbraced": `
+const a = <div><span children={x()} children="s" /></div>;
+`,
+  "nested children attribute literal duplicate after dynamic textContent": `
+const a = <div><span textContent={t()} children={x()} children={"s"} /></div>;
+`,
+  "nested children attribute literal duplicate before dynamic textContent": `
+const a = <div><span children={x()} children={"s"} textContent={t()} /></div>;
 `
 };
 

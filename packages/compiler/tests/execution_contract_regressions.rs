@@ -435,8 +435,8 @@ fn disabled_wrappers_do_not_invent_wrapper_facts() {
 /// A void element's child list is dropped by the parity-target Babel plugin in
 /// every position; this fork's `lower_dynamic_native_child` keeps it in *nested*
 /// native-child position and emits a real reactive `insert` into the void
-/// element (a transform-parity divergence that is out of scope here, since
-/// `transform()` output is frozen). Either way the census and lowering must
+/// element (divergence 1 in docs/execution-contract.md, still open and out of
+/// scope for this test). Either way the census and lowering must
 /// agree: the nested shape reports the site it emits, the template-root shapes
 /// report nothing, and no file fails reconciliation.
 #[test]
@@ -842,6 +842,161 @@ fn inert_noscript_children_reconcile_in_every_position() {
     }
 }
 
+/// A non-literal `children` attribute is promoted to a child insert in *nested*
+/// native-child position, as it already was at a template root and as Babel
+/// does in every position (`if (!hasChildren && children)
+/// path.node.children.push(children)`). The census already named the value a
+/// `jsx-child` site from its spelling; nested lowering now resolves it, so the
+/// shape reconciles instead of failing the file.
+#[test]
+fn nested_children_attribute_is_promoted_to_a_child_insert() {
+    // The promoted value is an ordinary reactive child, identical in both
+    // positions, and the emitted `insert` is reported at its span.
+    for source in [
+        "const el = <div><span children={x()} /></div>;",
+        "const el = <span children={x()} />;",
+        "const el = <div><section><span children={x()} /></section></div>;",
+        "const el = <Comp><div><span children={x()} /></div></Comp>;",
+    ] {
+        let rendered = trace(source);
+        assert!(
+            rendered.sites.iter().any(|site| {
+                source_text(source, site.span.start, site.span.end) == "x()"
+                    && site.kind == ExecutionSiteKind::JsxChild
+                    && site.decision == TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            }),
+            "{source}: the promoted `children` value is a reactive JSX child, got {:?}",
+            rendered.sites
+        );
+        assert!(
+            rendered.owner_establishments.iter().any(|fact| {
+                fact.wrapper == "insert"
+                    && source_text(source, fact.span.start, fact.span.end) == "x()"
+            }),
+            "{source}: the emitted insert is reported at the promoted value, got {:?}",
+            rendered.owner_establishments
+        );
+    }
+
+    // Babel writes one `children` slot per element, and the last writer wins:
+    // a dynamic `textContent` overwrites the captured attribute value with its
+    // synthesized text node, so a `children` attribute *before* it is
+    // discarded, while one *after* it survives and takes the insert. The
+    // textarea `value` fold fills the child list in preprocessing, so
+    // `!hasChildren` blocks the push outright; and `<noscript>`'s child list is
+    // pushed but never visited (`if (tagName !== "noscript")`). All three
+    // discard the value unlowered, and Babel emits nothing for it either.
+    for source in [
+        "const el = <div><span children={x()} textContent={t()} /></div>;",
+        "const el = <div><textarea value=\"lit\" children={x()} /></div>;",
+        "const el = <div><noscript children={x()} /></div>;",
+    ] {
+        let rendered = trace(source);
+        assert!(
+            rendered.sites.iter().any(|site| {
+                source_text(source, site.span.start, site.span.end) == "x()"
+                    && site.kind == ExecutionSiteKind::JsxChild
+                    && site.decision == TerminalDecision::Value(ValueDecision::Elided)
+            }),
+            "{source}: a discarded capture is decided as data, got {:?}",
+            rendered.sites
+        );
+        assert!(
+            rendered.owner_establishments.iter().all(|fact| source_text(
+                source,
+                fact.span.start,
+                fact.span.end
+            ) != "x()"),
+            "{source}: a discarded capture emits nothing to own, got {:?}",
+            rendered.owner_establishments
+        );
+    }
+
+    // A `children` attribute *after* the dynamic `textContent` wins the slot:
+    // both the attribute effect and the child insert are emitted.
+    let source = "const el = <div><span textContent={t()} children={x()} /></div>;";
+    let rendered = trace(source);
+    assert_eq!(
+        rendered
+            .sites
+            .iter()
+            .map(|site| (
+                source_text(source, site.span.start, site.span.end),
+                site.kind,
+                site.decision
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "t()",
+                ExecutionSiteKind::NativeAttribute,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            ),
+            (
+                "x()",
+                ExecutionSiteKind::JsxChild,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            ),
+        ]
+    );
+
+    // Source children shadow the attribute in both positions: only they are
+    // inserted, and the attribute stays a native-attribute site resolved as
+    // data. (A void element's `children` attribute is covered by
+    // `void_element_children_reconcile_in_every_position`.)
+    for source in [
+        "const el = <div><span children={x()}>{y()}</span></div>;",
+        "const el = <span children={x()}>{y()}</span>;",
+    ] {
+        let rendered = trace(source);
+        assert_eq!(
+            rendered
+                .sites
+                .iter()
+                .map(|site| (
+                    source_text(source, site.span.start, site.span.end),
+                    site.kind,
+                    site.decision
+                ))
+                .collect::<Vec<_>>(),
+            [
+                (
+                    "x()",
+                    ExecutionSiteKind::NativeAttribute,
+                    TerminalDecision::Value(ValueDecision::Elided)
+                ),
+                (
+                    "y()",
+                    ExecutionSiteKind::JsxChild,
+                    TerminalDecision::Value(ValueDecision::ReactiveRerun)
+                ),
+            ],
+            "{source}: source children shadow the attribute"
+        );
+    }
+
+    // Duplicates resolve to the last `children` attribute, as Babel's
+    // deduplication does, and the shadowed one claims nothing.
+    let source = "const el = <div><span children={x()} children={y()} /></div>;";
+    let rendered = trace(source);
+    assert_eq!(
+        rendered
+            .sites
+            .iter()
+            .map(|site| (
+                source_text(source, site.span.start, site.span.end),
+                site.kind,
+                site.decision
+            ))
+            .collect::<Vec<_>>(),
+        [(
+            "y()",
+            ExecutionSiteKind::JsxChild,
+            TerminalDecision::Value(ValueDecision::ReactiveRerun)
+        )]
+    );
+}
+
 /// Every shape whose child list a lowering path discards must compile
 /// identically with tracing on and off. Reconciling the census is a
 /// fact-side-channel change; it may not move a byte of `transform()` output.
@@ -874,6 +1029,12 @@ fn discarded_child_shapes_do_not_move_transform_output() {
         "const el = <noscript>{x()}</noscript>;",
         "const el = <div><br>{x()}</br></div>;",
         "const el = <br>{x()}</br>;",
+        // The `children`-attribute captures a slot writer discards.
+        "const el = <div><span children={x()} textContent={t()} /></div>;",
+        "const el = <div><textarea value=\"lit\" children={x()} /></div>;",
+        "const el = <div><noscript children={x()} /></div>;",
+        // …and the promotion itself, which does emit.
+        "const el = <div><span children={x()} /></div>;",
     ] {
         let traced = compile(source, &with_map(true)).expect("compile with tracing");
         let plain = compile(source, &with_map(false)).expect("compile without tracing");

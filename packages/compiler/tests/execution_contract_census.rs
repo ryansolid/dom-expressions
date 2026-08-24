@@ -185,7 +185,7 @@ fn every_parity_probe_reconciles_census_against_lowering() {
     let sources = probe_sources();
     assert_eq!(
         sources.len(),
-        449,
+        474,
         "expected the complete probe corpus, extracted {}",
         sources.len()
     );
@@ -295,6 +295,50 @@ fn transform_output_matches_parent_baseline() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+/// Rewrite `tests/transform-output-baseline.txt` from the current build.
+///
+/// The baseline is the transform-invariant's only witness, so regenerating it
+/// is a deliberate act, not a convenience: it is `#[ignore]`d so no ordinary
+/// run reaches it, and gated on an environment variable so
+/// `--include-ignored` cannot rewrite the baseline as a side effect. Run it
+/// only after `transform_output_matches_parent_baseline` has named every entry
+/// that moves and every one of them is a change the branch intends:
+///
+/// ```sh
+/// UPDATE_TRANSFORM_BASELINE=1 cargo test --no-default-features \
+///   --test execution_contract_census regenerate_transform_output_baseline \
+///   -- --ignored --nocapture
+/// ```
+///
+/// Review the resulting diff line by line. An entry that moves for a reason
+/// the branch cannot explain is a codegen regression, not a stale baseline.
+#[test]
+#[ignore = "rewrites the checked-in transform baseline; see the doc comment"]
+fn regenerate_transform_output_baseline() {
+    assert!(
+        std::env::var_os("UPDATE_TRANSFORM_BASELINE").is_some(),
+        "set UPDATE_TRANSFORM_BASELINE=1 to rewrite the baseline"
+    );
+    let mut lines = String::new();
+    for (id, source) in corpus_sources() {
+        match compile(&source, &options(false)) {
+            Ok(output) => {
+                let hex = output
+                    .code
+                    .as_bytes()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                lines.push_str(&format!("{id}\tok\t{hex}\n"));
+            }
+            Err(_) => lines.push_str(&format!("{id}\treject\n")),
+        }
+    }
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/transform-output-baseline.txt");
+    std::fs::write(&path, lines).expect("baseline is writable");
+    println!("rewrote {}", path.display());
 }
 
 #[test]

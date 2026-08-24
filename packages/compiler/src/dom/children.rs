@@ -903,11 +903,43 @@ impl<'a> AstDomTransform<'a, '_> {
         let mut child_declarations = std::vec::Vec::new();
         let mut child_operations = std::vec::Vec::new();
 
+        // Babel runs one `transformElement`/`transformAttributes` pair in every
+        // position, so a nested native element promotes a non-literal
+        // `children` attribute to a child insert exactly as a template root
+        // does (`if (!hasChildren && children) path.node.children.push(...)`;
+        // the `children` capture itself is `key === "children"`, ungated on the
+        // element's position). The `!is_void_element` and `!has_spread` gates,
+        // the empty-child-list gate and the "non-literal after constant
+        // folding" filter mirror `lower_element_with_setup` — see the reasoning
+        // for each there.
+        let has_spread = child
+            .opening_element
+            .attributes
+            .iter()
+            .any(|attr| matches!(attr, JSXAttributeItem::SpreadAttribute(_)));
+        let captured_child = (!crate::shared::utils::is_void_element(&tag_name)
+            && !has_spread
+            && child.children.is_empty())
+        .then(|| crate::dom::element::children_attribute_container(child))
+        .flatten()
+        .filter(|container| {
+            container
+                .expression
+                .as_expression()
+                .is_none_or(|expression| self.evaluate_confident(expression).is_none())
+        });
+
         let attrs_lowering = self.lower_template_attributes(
             &child.opening_element.attributes,
             &tag_name,
             &child_id,
             !child.children.is_empty(),
+            // `children_from_attribute` is only read on the spread branch of
+            // `lower_template_attributes`, and `captured_child` above is
+            // gated on `!has_spread` — so on that branch it is always `None`
+            // and this argument is always dead. Literal `false`, not
+            // `captured_child.is_some()`, documents that invariant instead
+            // of silently depending on it.
             false,
             &mut child_template.html,
             &mut child_declarations,
@@ -919,6 +951,39 @@ impl<'a> AstDomTransform<'a, '_> {
         // is the range the fold and the placeholder branch below discard.
         let source_children = child.children.as_slice();
 
+        // `transformAttributes` fills a single `children` slot, and two
+        // attributes write it: the `children` attribute stores its own value,
+        // and a dynamic `textContent` overwrites it with the synthesized
+        // single-space text node (`children = t.jsxText(" ")`). The attribute
+        // loop runs in source order, so the later of the two is what
+        // `path.node.children.push` receives. The textarea `value` fold runs
+        // earlier still, in preprocessing, and fills the child list outright —
+        // `hasChildren` is then true and neither writer is pushed at all.
+        //
+        // `<noscript>` is pushed like any other element and then never visited:
+        // Babel's `transformElement` guards the recursion with
+        // `if (tagName !== "noscript") transformChildren(...)`, so the promoted
+        // value emits nothing. (This fork's nested lowering *does* visit a
+        // `<noscript>`'s source children when its attributes force it off the
+        // static fast path — divergence 3 — but promoting here would add a
+        // second insert Babel never emits, so the capture is discarded instead.)
+        let attribute_child = captured_child.filter(|_| {
+            tag_name != "noscript"
+                && attrs_lowering.children_replacement.is_none()
+                && (!attrs_lowering.needs_text_placeholder
+                    || children_attribute_outranks_text_content(child))
+        });
+        // A captured value the slot's winner discards is never lowered, and
+        // nothing is emitted for it (Babel drops it too). Decide it as data
+        // rather than leaving the censused site unresolved; the kind dispatch
+        // keeps the record on whichever site the census named for the spelling.
+        if let (None, Some(container)) = (attribute_child, captured_child) {
+            self.semantic_trace.resolve_lowered_attribute(
+                container.expression.span(),
+                crate::semantic_trace::ValueDecision::Elided,
+            );
+        }
+
         // Babel's textarea `value` fold replaces the element's children.
         let child: &JSXElement<'a> = match attrs_lowering.children_replacement {
             Some(replacement) => {
@@ -928,11 +993,28 @@ impl<'a> AstDomTransform<'a, '_> {
                 clone.children.push(replacement);
                 self.allocator.alloc(clone)
             }
-            None => child,
+            None => match attribute_child {
+                // The promoted value joins the (empty) source child list as an
+                // ordinary expression container, so child lowering inserts it
+                // and records its censused `jsx-child` decision.
+                Some(container) => {
+                    let mut clone = child.clone_in(self.allocator);
+                    clone
+                        .children
+                        .push(oxc_ast::ast::JSXChild::ExpressionContainer(
+                            oxc_allocator::Box::new_in(
+                                container.clone_in(self.allocator),
+                                &self.allocator,
+                            ),
+                        ));
+                    self.allocator.alloc(clone)
+                }
+                None => child,
+            },
         };
 
         child_template.push_both(">");
-        if attrs_lowering.needs_text_placeholder {
+        if attrs_lowering.needs_text_placeholder && attribute_child.is_none() {
             // A dynamic `textContent` takes over this element's content: the
             // template gets a single-space text node the effect writes into and
             // the source child list is discarded, unlowered. (The template-root
@@ -1045,6 +1127,34 @@ impl<'a> AstDomTransform<'a, '_> {
             _ => self.child_walk_expression(span, parent, index - 1),
         };
         self.call_identifier(span, "_$getNextSibling", vec![previous, tag])
+    }
+}
+
+/// Whether a `children` attribute wins Babel's single `children` slot against
+/// a dynamic `textContent` on the same element.
+///
+/// Both attributes write the one `children` local in `transformAttributes`, and
+/// the attribute loop walks source order, so the later spelling is the one that
+/// survives to `path.node.children.push(children)`. Duplicates resolve the same
+/// way — the deduplication keeps the last of each name, and their relative
+/// order is unchanged — so comparing the last occurrence of each is exact.
+fn children_attribute_outranks_text_content(element: &JSXElement<'_>) -> bool {
+    let last = |name: &str| {
+        element
+            .opening_element
+            .attributes
+            .iter()
+            .rposition(|attr| match attr {
+                JSXAttributeItem::Attribute(attr) => {
+                    matches!(&attr.name, JSXAttributeName::Identifier(ident) if ident.name == name)
+                }
+                JSXAttributeItem::SpreadAttribute(_) => false,
+            })
+    };
+    match (last("children"), last("textContent")) {
+        (Some(children), Some(text_content)) => children > text_content,
+        (Some(_), None) => true,
+        (None, _) => false,
     }
 }
 
