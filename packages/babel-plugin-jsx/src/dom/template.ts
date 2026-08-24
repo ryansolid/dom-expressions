@@ -170,7 +170,14 @@ function registerTemplate(path: NodePath, results: TransformResult) {
  *
  * Handler/attribute VALUE expressions may be arbitrary user code: stamped
  * rows are only ever built for real mounts (never speculatively), so their
- * evaluation timing is identical to the classic path.
+ * evaluation timing is identical to the classic path. Event handlers are
+ * not reactive bindings — values evaluate exactly once at build — so the
+ * only ownership divergence is a factory creating owned work in value
+ * position (`onClick={makeHandler(row)}` calling onCleanup), which is not
+ * a supported pattern (owned work belongs in effects/refs; ruled
+ * non-responsibility). Denying evaluation-position calls would cost
+ * legitimate currying to guard it; instead the runtime dev-asserts that a
+ * stamped row's build attaches nothing to the list owner.
  *
  * Qualifying functions are recorded and wrapped with `rowProof` at program
  * exit (postprocess) — the stamp travels with the function object, so
@@ -195,8 +202,7 @@ function recordPureRow(path: NodePath, result: TransformResult, subject: string 
     parent.parentPath.parentPath &&
     (t.isArrowFunctionExpression(parent.parentPath.parentPath.node) ||
       t.isFunctionExpression(parent.parentPath.parentPath.node)) &&
-    (parent.parentPath.parentPath.node as t.ArrowFunctionExpression).body ===
-      parent.parentPath.node
+    (parent.parentPath.parentPath.node as t.ArrowFunctionExpression).body === parent.parentPath.node
   ) {
     fn = parent.parentPath.parentPath.node as t.ArrowFunctionExpression;
   }
