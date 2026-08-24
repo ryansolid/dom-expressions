@@ -19,14 +19,10 @@ import {
   // Optional seam (patch-mode lists): drives a keyed store array through the
   // store's row-ops channel instead of mapArray + reconcileArrays. Cores
   // that don't provide it degrade gracefully — list accessors carrying the
-  // `$ll` marker are simply called (the classic mapArray path).
+  // `$ll` marker are simply called (the classic mapArray path). Admission is
+  // compile-time only: the driver engages solely for row functions carrying
+  // the `rowProof` stamp (below) — there is no runtime purity probe.
   driveList,
-  // Optional seams paired with driveList: while the core is purity-probing a
-  // row bind, the first impurity marker (function-valued insert, ref) aborts
-  // the speculative build — user code must never observe a probe. No-ops
-  // outside a probe; static inserts always proceed.
-  probeGate,
-  probeMark,
   // Optional seams (patch-mode records): resolve a subject to its patchable
   // raw backing and register a compiled patch body against it. Cores that
   // don't provide them degrade gracefully — patchDriver below runs every
@@ -461,16 +457,24 @@ export function dynamicProperty(props, key) {
 }
 
 export function applyRef(r, element) {
-  // A ref during a list probe would hand userland an element that never
-  // mounts — disqualify and abort the speculative build instead.
-  if (probeMark !== undefined) probeMark();
   Array.isArray(r) ? r.flat(Infinity).forEach(f => f && f(element)) : r(element);
 }
 
 export function ref(fn, element) {
-  if (probeMark !== undefined) probeMark();
   const resolved = untrack(fn);
   runWithOwner(null, () => applyRef(resolved, element));
+}
+
+// Compile-time row proof (DESIGN-PATCH-CHANNEL §3c): the compiler wraps row
+// functions it PROVED pure — single compiled template, no reactive or owned
+// work, patches only on the row parameter — and the patch-mode list driver
+// engages only for stamped rows. `Symbol.for` so the stamp survives
+// duplicated module instances (compiled app code and the driver's core may
+// resolve different copies of this runtime).
+const PURE_ROW = Symbol.for("solid.pure-row");
+export function rowProof(fn) {
+  fn[PURE_ROW] = true;
+  return fn;
 }
 
 // Compiler tag for holes that can allocate hydration ids: the outer insert
@@ -603,15 +607,17 @@ export function insert(parent, accessor, marker, initial, options) {
   const host = options && options.host;
   if (multi && !initial) initial = [];
   if (hydrationRt !== null) initial = hydrationRt.claimInitial(parent, multi, initial);
-  if (probeGate !== undefined && probeGate(accessor)) return;
   // Patch-mode list seam: a list accessor carrying `$ll` metadata is offered
-  // to the core's row-ops driver first. During hydration the driver claims
-  // server rows and registers without initial writes; a false return means
-  // it declined (non-store subject, impure rows, marker-bounded hydration
-  // region, key/count mismatch) and the accessor runs classically. Empty
-  // lists engage TENTATIVELY (the purity probe defers to the first row) —
-  // the late-classic thunk re-enters this insert with a bare accessor (no
-  // `$ll` marker) under the ORIGINAL owner if that deferred probe declines.
+  // to the core's row-ops driver first. Admission is decided entirely up
+  // front — the row function must carry the compiler's `rowProof` stamp and
+  // the subject must be a patchable store array — so a false return means it
+  // declined (unproven rows, non-store subject, marker-bounded hydration
+  // region, key/count mismatch) and the accessor runs classically. The
+  // late-classic thunk is NOT an admission mechanism: it serves engaged
+  // lists whose subject later LEAVES the contract (an identity swap to a
+  // derived array, a shallow<->deep kind switch) — the driver clears the
+  // region and re-enters this insert with a bare accessor (no `$ll` marker)
+  // under the ORIGINAL owner.
   if (driveList !== undefined && typeof accessor === "function" && accessor.$ll !== undefined) {
     const listAccessor = accessor;
     const owner = getOwner();
