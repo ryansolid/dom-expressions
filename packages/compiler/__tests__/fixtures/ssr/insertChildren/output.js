@@ -8,6 +8,7 @@ var _tmpl$3 = "<module>Hello</module>";
 var _tmpl$4 = ["<module>Hi ", "</module>"];
 var _tmpl$5 = "<div>Test 1</div>";
 var _tmpl$6 = ["<div>", "</div>"];
+var _tmpl$7 = "<module>hello</module>";
 const children = _$ssr(_tmpl$);
 const dynamic = { children };
 const template = Module({ children });
@@ -79,3 +80,12 @@ var _v$12 = () => {
 	return _$escape(children()());
 };
 const double = _$ssr(_tmpl$6, _v$12);
+const hello = "hello";
+const staticChildren = _$ssr(_tmpl$7);
+const foldedChildren = _$ssr(_tmpl$7);
+const childrenBeforeSpread = _$ssrElement("module", _$mergeProps({ get children() {
+	return fallback();
+} }, props), undefined, false);
+const childrenAfterSpread = _$ssrElement("module", _$mergeProps(props, { get children() {
+	return later();
+} }), undefined, false);

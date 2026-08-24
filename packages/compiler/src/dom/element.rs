@@ -6,6 +6,7 @@ use oxc_ast::ast::{
 
 use crate::dom::attrs::CloseTagContext;
 use crate::dom::template::DomTemplateState;
+use crate::shared::ast_builder::AstBuilder;
 use crate::shared::bindings::BindingTable;
 use crate::shared::component::lower_component_with_setup;
 use crate::shared::utils::{
@@ -248,12 +249,13 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         let saved_hydratable_event = self.has_hydratable_event;
         self.has_hydratable_event = false;
 
-        // Without spreads, a non-literal `children` attribute participates in
-        // child insertion rather than attribute handling (Babel parity): when
-        // the element has no real children, the value becomes its child
-        // expression; when it does, the attribute is dropped. With a spread,
-        // Babel leaves `children` in the merged props so source-order
-        // precedence is preserved by `spread()`.
+        // Without spreads, a native `children` attribute participates in
+        // child insertion rather than attribute handling: when the element
+        // has no real children, the value becomes its child expression
+        // (statics then template-inline; dynamics `insert()`). Existing JSX
+        // children win and the attribute is dropped. With a spread, Babel
+        // leaves `children` in the merged props so source-order precedence
+        // is preserved by `spread()`.
         let has_spread = element
             .opening_element
             .attributes
@@ -261,16 +263,9 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             .any(|attr| matches!(attr, oxc_ast::ast::JSXAttributeItem::SpreadAttribute(_)));
         let element: &JSXElement<'a> =
             if !is_void_element(&tag_name) && !has_spread && element.children.is_empty() {
-                if let Some(container) = children_attribute_container(element) {
+                if let Some(child) = children_attribute_child(self.allocator, element) {
                     let mut clone = element.clone_in(self.allocator);
-                    clone
-                        .children
-                        .push(oxc_ast::ast::JSXChild::ExpressionContainer(
-                            oxc_allocator::Box::new_in(
-                                container.clone_in(self.allocator),
-                                &self.allocator,
-                            ),
-                        ));
+                    clone.children.push(child);
                     self.allocator.alloc(clone)
                 } else {
                     element
@@ -623,22 +618,25 @@ fn xmlns_attribute_value(element: &JSXElement<'_>) -> Option<String> {
 }
 
 /// Matches the Babel plugin's `children`-attribute capture: the last
-/// `children` attribute with a non-literal expression container value is
-/// treated as element children (insert), not as an attribute or property.
-pub(crate) fn children_attribute_container<'e, 'a>(
-    element: &'e JSXElement<'a>,
-) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
+/// `children` attribute becomes element children (template-inline or
+/// insert), never a property write. String attributes are wrapped as
+/// expression containers so the child pass can fold them like `{ "hello" }`.
+pub(crate) fn children_attribute_child<'a>(
+    allocator: &'a Allocator,
+    element: &JSXElement<'a>,
+) -> Option<oxc_ast::ast::JSXChild<'a>> {
     element
         .opening_element
         .attributes
         .iter()
         .rev()
-        .find_map(|attr| children_attribute_container_from_item(attr))
+        .find_map(|attr| children_attribute_child_from_item(allocator, attr))
 }
 
-pub(crate) fn children_attribute_container_from_item<'e, 'a>(
-    attr: &'e oxc_ast::ast::JSXAttributeItem<'a>,
-) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
+pub(crate) fn children_attribute_child_from_item<'a>(
+    allocator: &'a Allocator,
+    attr: &oxc_ast::ast::JSXAttributeItem<'a>,
+) -> Option<oxc_ast::ast::JSXChild<'a>> {
     let oxc_ast::ast::JSXAttributeItem::Attribute(attr) = attr else {
         return None;
     };
@@ -648,19 +646,29 @@ pub(crate) fn children_attribute_container_from_item<'e, 'a>(
     if name.name != "children" {
         return None;
     }
-    let Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) = &attr.value else {
-        return None;
-    };
-    if matches!(
-        container.expression,
-        JSXExpression::StringLiteral(_)
-            | JSXExpression::NumericLiteral(_)
-            | JSXExpression::BooleanLiteral(_)
-            | JSXExpression::EmptyExpression(_)
-    ) {
-        return None;
+    let ast = AstBuilder::new(allocator);
+    match &attr.value {
+        Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) => {
+            if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
+                return None;
+            }
+            Some(ast.jsx_child_expression_container(
+                container.span,
+                container.expression.clone_in(allocator),
+            ))
+        }
+        Some(oxc_ast::ast::JSXAttributeValue::StringLiteral(value)) => {
+            Some(ast.jsx_child_expression_container(
+                value.span,
+                JSXExpression::from(ast.expression_string_literal(
+                    value.span,
+                    ast.str(&value.value),
+                    None,
+                )),
+            ))
+        }
+        _ => None,
     }
-    Some(container)
 }
 
 pub(crate) fn jsx_expression_to_expression<'a>(

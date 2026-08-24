@@ -9,6 +9,7 @@ var _tmpl$3 = /* @__PURE__ */ _$template(`<module>Hello`);
 var _tmpl$4 = /* @__PURE__ */ _$template(`<module>Hi `);
 var _tmpl$5 = /* @__PURE__ */ _$template(`<module>Hi`);
 var _tmpl$6 = /* @__PURE__ */ _$template(`<div>Test 1`);
+var _tmpl$7 = /* @__PURE__ */ _$template(`<module>hello`);
 const children = _tmpl$();
 const dynamic = { children };
 const template = _$createComponent(Module, { children });
@@ -102,3 +103,16 @@ _$insert(_el$20, () => {
 	return children()();
 });
 const double = _el$20;
+const hello = "hello";
+const staticChildren = _tmpl$7();
+const foldedChildren = _tmpl$7();
+var _el$23 = _tmpl$2();
+_$spread(_el$23, _$mergeProps({ get children() {
+	return fallback();
+} }, props), false);
+const childrenBeforeSpread = _el$23;
+var _el$24 = _tmpl$2();
+_$spread(_el$24, _$mergeProps(props, { get children() {
+	return later();
+} }), false);
+const childrenAfterSpread = _el$24;

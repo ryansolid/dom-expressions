@@ -460,6 +460,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                     attr,
                     &element_id,
                     false,
+                    has_children,
                     &mut init_props,
                     &mut ref_exprs,
                     &mut attr_exprs,
@@ -524,6 +525,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         attr: &oxc_ast::ast::JSXAttribute<'a>,
         element_id: &str,
         has_spread: bool,
+        has_children: bool,
         init_props: &mut std::vec::Vec<ObjectPropertyKind<'a>>,
         ref_exprs: &mut std::vec::Vec<Statement<'a>>,
         attr_exprs: &mut std::vec::Vec<Statement<'a>>,
@@ -578,6 +580,19 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 }
             }
             Some(JSXAttributeValue::StringLiteral(value)) => {
+                if key == "children" {
+                    if !has_children {
+                        *children_attr = Some(self.ast().jsx_expression_container(
+                            value.span,
+                            JSXExpression::from(self.ast().expression_string_literal(
+                                value.span,
+                                self.ast().str(&value.value),
+                                None,
+                            )),
+                        ));
+                    }
+                    return Ok(());
+                }
                 // Babel passes the raw attribute source string through.
                 let value = self.ast().expression_string_literal(
                     value.span,
@@ -768,6 +783,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                             attr,
                             element_id,
                             true,
+                            has_children,
                             &mut init_props,
                             ref_exprs,
                             attr_exprs,

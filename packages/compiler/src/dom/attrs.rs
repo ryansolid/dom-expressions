@@ -198,6 +198,12 @@ impl<'a> AstDomTransform<'a, '_> {
         if self.hydratable && plan.key == "$ServerOnly" {
             return PlanDisposition::Skip;
         }
+        // Native `children` is never a template attribute or a property write.
+        // Without a spread it was promoted to a child; with a spread it lives
+        // in the merged props. Either way this planned attribute is a no-op.
+        if plan.key == "children" {
+            return PlanDisposition::Skip;
+        }
         let reserved = plan.style_property || plan.class_property || plan.key.starts_with("prop:");
         match &plan.value {
             PlanValue::None => {
@@ -275,15 +281,8 @@ impl<'a> AstDomTransform<'a, '_> {
             PlanValue::None => return Ok(()),
         };
 
-        // Non-literal `children` attributes are consumed by child insertion
-        // (see `lower_element_with_setup`), never emitted as attributes;
-        // literal ones fall through to a `children` property write.
-        if plan.key == "children"
-            && !matches!(
-                raw,
-                Expression::StringLiteral(_) | Expression::NumericLiteral(_)
-            )
-        {
+        // `children` is never a property write (see `classify_plan`).
+        if plan.key == "children" {
             return Ok(());
         }
 

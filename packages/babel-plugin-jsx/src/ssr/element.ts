@@ -618,6 +618,7 @@ function transformAttributes(
         return;
       }
       if (ChildProperties.has(key)) {
+        if (key === "children" && VoidElements.has(tagName)) return;
         if (info.hydratable && key === "textContent" && value && value.expression) {
           const comments = value.expression.leadingComments;
           value.expression = t.logicalExpression("||", value.expression, t.stringLiteral(" "));

@@ -34,7 +34,8 @@ pub struct TransformOptions {
     /// same boolean shorthand as `effect_wrapper`. Default `"memo"`.
     pub memo_wrapper: Option<Either<bool, String>>,
     /// The patch-mode driver import name (Babel's `patchDriver: string`),
-    /// with the same boolean shorthand. Default `"patchDriver"` (enabled).
+    /// with the same boolean shorthand. DORMANT by default (`Wrapper::Default`
+    /// disables it); set an explicit name to opt in.
     pub patch_driver: Option<Either<bool, String>>,
     pub static_marker: Option<String>,
     /// Babel's `requireImportSource`: when set, only files carrying a

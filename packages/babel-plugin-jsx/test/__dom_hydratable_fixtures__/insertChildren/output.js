@@ -12,7 +12,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<module>Hello`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<module>Hi <!$><!/>`),
   _tmpl$5 = /*#__PURE__*/ _$template(`<module>Hi<!$><!/>`),
-  _tmpl$6 = /*#__PURE__*/ _$template(`<div>Test 1`);
+  _tmpl$6 = /*#__PURE__*/ _$template(`<div>Test 1`),
+  _tmpl$7 = /*#__PURE__*/ _$template(`<module>hello`);
 const children = _$getNextElement(_tmpl$);
 const dynamic = {
   children
@@ -142,3 +143,33 @@ _$insert(
   _$scope(() => children()())
 );
 const double = _el$22;
+const hello = "hello";
+const staticChildren = _$getNextElement(_tmpl$7);
+const foldedChildren = _$getNextElement(_tmpl$7);
+var _el$25 = _$getNextElement(_tmpl$2);
+_$spread(
+  _el$25,
+  _$mergeProps(
+    {
+      get children() {
+        return fallback();
+      }
+    },
+    props
+  ),
+  false
+);
+_$runHydrationEvents();
+const childrenBeforeSpread = _el$25;
+var _el$26 = _$getNextElement(_tmpl$2);
+_$spread(
+  _el$26,
+  _$mergeProps(props, {
+    get children() {
+      return later();
+    }
+  }),
+  false
+);
+_$runHydrationEvents();
+const childrenAfterSpread = _el$26;

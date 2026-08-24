@@ -109,3 +109,35 @@ const comma = _el$19;
 var _el$20 = _$createElement("div");
 _$insert(_el$20, () => children()());
 const double = _el$20;
+const hello = "hello";
+var _el$21 = _$createElement("module");
+_$insertNode(_el$21, _$createTextNode(`hello`));
+const staticChildren = _el$21;
+var _el$23 = _$createElement("module");
+_$insertNode(_el$23, _$createTextNode(`hello`));
+const foldedChildren = _el$23;
+var _el$25 = _$createElement("module");
+_$spread(
+  _el$25,
+  _$mergeProps(
+    {
+      get children() {
+        return fallback();
+      }
+    },
+    props
+  ),
+  false
+);
+const childrenBeforeSpread = _el$25;
+var _el$26 = _$createElement("module");
+_$spread(
+  _el$26,
+  _$mergeProps(props, {
+    get children() {
+      return later();
+    }
+  }),
+  false
+);
+const childrenAfterSpread = _el$26;

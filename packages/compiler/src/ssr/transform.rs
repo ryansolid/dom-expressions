@@ -1771,6 +1771,9 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
             return Ok(());
         }
         if child_properties(&key) {
+            if key == "children" && is_void_element(tag_name) {
+                return Ok(());
+            }
             if key == "innerHTML" {
                 *child_do_not_escape = true;
             }
@@ -2447,25 +2450,26 @@ impl<'a, 'source> AstSsrTransform<'a, 'source> {
         }
         let map = self.ast().expression_object(span, properties);
         let context_read = |transform: &Self| -> Expression<'a> {
-            Expression::StaticMemberExpression(transform.ast().alloc_static_member_expression(
-                span,
-                transform
-                    .ast()
-                    .expression_identifier(span, transform.ast().ident("_$sharedConfig")),
-                transform
-                    .ast()
-                    .identifier_name(span, transform.ast().ident("context")),
-                false,
-            ))
+            Expression::StaticMemberExpression(
+                transform.ast().alloc_static_member_expression(
+                    span,
+                    transform
+                        .ast()
+                        .expression_identifier(span, transform.ast().ident("_$sharedConfig")),
+                    transform
+                        .ast()
+                        .identifier_name(span, transform.ast().ident("context")),
+                    false,
+                ),
+            )
         };
-        let claims_read = Expression::StaticMemberExpression(
-            self.ast().alloc_static_member_expression(
+        let claims_read =
+            Expression::StaticMemberExpression(self.ast().alloc_static_member_expression(
                 span,
                 context_read(self),
                 self.ast().identifier_name(span, self.ast().ident("claims")),
                 false,
-            ),
-        );
+            ));
         let test = self.ast().expression_logical(
             span,
             context_read(self),

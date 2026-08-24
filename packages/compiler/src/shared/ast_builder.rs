@@ -678,6 +678,14 @@ impl<'a> AstBuilder<'a> {
         JSXChild::new_expression_container(span, expression, &self.inner())
     }
 
+    pub(crate) fn jsx_expression_container(
+        &self,
+        span: Span,
+        expression: JSXExpression<'a>,
+    ) -> JSXExpressionContainer<'a> {
+        JSXExpressionContainer::new(span, expression, &self.inner())
+    }
+
     pub(crate) fn template_element_with_lone_surrogates(
         &self,
         span: Span,

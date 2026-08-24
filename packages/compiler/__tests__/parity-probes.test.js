@@ -589,6 +589,19 @@ const a = <div children={a()} children={b()} />;
   "children attribute before spread": `
 const a = <div children={fallback()} {...props} />;
 `,
+  "children attribute after spread": `
+const a = <div {...props} children={later()} />;
+`,
+  "static children attribute": `
+const a = <div children="hello" />;
+`,
+  "foldable children attribute": `
+const child = "hello";
+const a = <div children={child} />;
+`,
+  "children attribute with real children": `
+const a = <div children={fallback()}>keep</div>;
+`,
   "prop namespace after spread": `
 const a = <div {...props} prop:custom={value()} />;
 `,
