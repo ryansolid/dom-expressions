@@ -10,7 +10,9 @@ const plugin = require("../index");
 
 function compile(src) {
   return babel.transformSync(src, {
-    plugins: [[plugin, { moduleName: "r-dom", generate: "dom" }]],
+    // patchDriver is DORMANT by default (extraction ruling) — this suite
+    // tests the feature itself, so it opts in explicitly.
+    plugins: [[plugin, { moduleName: "r-dom", generate: "dom", patchDriver: "patchDriver" }]],
     configFile: false,
     babelrc: false,
     filename: "row.jsx"

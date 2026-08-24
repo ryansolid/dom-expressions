@@ -294,7 +294,14 @@ fn dom_transform_config(options: &CompileOptions, built_ins: Vec<String>) -> Dom
         effect_wrapper: wrapper_name(&options.effect_wrapper, "effect"),
         wrap_conditionals: options.wrap_conditionals,
         memo_wrapper: wrapper_name(&options.memo_wrapper, "memo"),
-        patch_driver: wrapper_name(&options.patch_driver, "patchDriver"),
+        // DORMANT by default (extraction ruling, solid DESIGN §16): compiled
+        // output must not import driver exports the release core only stubs.
+        // Wrapper::Default resolves to DISABLED for the patch driver; opt in
+        // with an explicit name against a channel-bearing core.
+        patch_driver: match &options.patch_driver {
+            Wrapper::Default => None,
+            other => wrapper_name(other, "patchDriver"),
+        },
         static_marker: options.static_marker.clone(),
         omit_nested_closing_tags: options.omit_nested_closing_tags,
         omit_last_closing_tag: options.omit_last_closing_tag,
