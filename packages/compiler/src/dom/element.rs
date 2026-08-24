@@ -40,6 +40,13 @@ pub(crate) struct AstDomTransform<'a, 'source> {
     /// `wrap_pure_row` when the enclosing expression is a single-param
     /// function whose body IS that root.
     pub(crate) last_row_proof: Option<PureRowProof>,
+    /// Pre-walk function shapes (see JsxTransform::enter_function_shape):
+    /// whether each live function's block body was ORIGINALLY a lone
+    /// `return` — after lowering, inlined setup statements make that
+    /// unknowable, and user statements at build time must deny the stamp.
+    pub(crate) function_shape_stack: std::vec::Vec<bool>,
+    /// The most recently exited function's shape, read by `wrap_pure_row`.
+    pub(crate) last_function_single_return: bool,
     pub(crate) static_marker: String,
     pub(crate) omit_nested_closing_tags: bool,
     pub(crate) omit_last_closing_tag: bool,
@@ -156,6 +163,8 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             memo_wrapper: config.memo_wrapper,
             patch_driver: config.patch_driver,
             last_row_proof: None,
+            function_shape_stack: std::vec::Vec::new(),
+            last_function_single_return: false,
             static_marker: config.static_marker,
             omit_nested_closing_tags: config.omit_nested_closing_tags,
             omit_last_closing_tag: config.omit_last_closing_tag,
@@ -693,13 +702,13 @@ impl AstDomTransform<'_, '_> {
 
 impl<'a> AstDomTransform<'a, '_> {
     /// Row-proof stamping (§3c): when the just-lowered template root proved
-    /// pure and this expression is a single-plain-param, expression-bodied
-    /// function whose body IS that root, wrap it with the runtime's
-    /// `rowProof` marker. The stamp travels with the function object, so the
-    /// patch-mode list driver can engage without any runtime probe.
-    /// (Block-bodied functions inline their setup statements flat in this
-    /// compiler, so v1 stamps expression bodies only — Babel additionally
-    /// covers return-only blocks.)
+    /// pure and this expression is a single-plain-param function whose body
+    /// IS that root — an expression-bodied arrow, or a block that was
+    /// ORIGINALLY a lone `return` (pre-walk shape capture; after lowering
+    /// the inlined setup statements are indistinguishable from user code) —
+    /// wrap it with the runtime's `rowProof` marker. The stamp travels with
+    /// the function object, so the patch-mode list driver can engage
+    /// without any runtime probe.
     pub(crate) fn wrap_pure_row_expression(&mut self, expression: &mut Expression<'a>) {
         use oxc_span::GetSpan;
         if self.patch_driver.is_none() {
@@ -708,17 +717,48 @@ impl<'a> AstDomTransform<'a, '_> {
         let Some(proof) = &self.last_row_proof else {
             return;
         };
-        let Expression::ArrowFunctionExpression(arrow) = &*expression else {
-            return;
+        // A block body qualifies only when the ORIGINAL body was a lone
+        // return whose (lowered) argument is the proven root.
+        let block_return_matches = |body: &oxc_ast::ast::FunctionBody<'a>| -> bool {
+            if !self.last_function_single_return {
+                return false;
+            }
+            match body.statements.last() {
+                Some(Statement::ReturnStatement(ret)) => ret
+                    .argument
+                    .as_ref()
+                    .is_some_and(|argument| argument.span() == proof.root_span),
+                _ => false,
+            }
         };
-        if arrow.r#async || !arrow.is_expression() {
+        let (params, body_matches) = match &*expression {
+            Expression::ArrowFunctionExpression(arrow) if !arrow.r#async => (
+                &arrow.params,
+                if arrow.is_expression() {
+                    arrow
+                        .get_expression()
+                        .is_some_and(|body| body.span() == proof.root_span)
+                } else {
+                    arrow.get_function_body().is_some_and(&block_return_matches)
+                },
+            ),
+            Expression::FunctionExpression(function)
+                if !function.r#async && !function.generator =>
+            {
+                (
+                    &function.params,
+                    function.body.as_deref().is_some_and(&block_return_matches),
+                )
+            }
+            _ => return,
+        };
+        if !body_matches {
             return;
         }
-        if arrow.params.items.len() != 1 || arrow.params.rest.is_some() {
+        if params.items.len() != 1 || params.rest.is_some() {
             return;
         }
-        let oxc_ast::ast::BindingPattern::BindingIdentifier(param) =
-            &arrow.params.items[0].pattern
+        let oxc_ast::ast::BindingPattern::BindingIdentifier(param) = &params.items[0].pattern
         else {
             return;
         };
@@ -727,18 +767,12 @@ impl<'a> AstDomTransform<'a, '_> {
         {
             return;
         }
-        let Some(body) = arrow.get_expression() else {
-            return;
-        };
-        if body.span() != proof.root_span {
-            return;
-        }
         self.last_row_proof = None;
         self.template_state.uses_row_proof = true;
         let span = expression.span();
         let placeholder = self.ast().expression_null_literal(span);
-        let arrow_expr = std::mem::replace(expression, placeholder);
-        *expression = self.call_identifier(span, "_$rowProof", vec![arrow_expr]);
+        let function_expr = std::mem::replace(expression, placeholder);
+        *expression = self.call_identifier(span, "_$rowProof", vec![function_expr]);
     }
 }
 

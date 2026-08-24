@@ -391,7 +391,17 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
             // Leftover raw JSX in the dom output (foreign renderer elements,
             // deferred dynamic attribute values) lowers in the statement-level
             // deferred pass, matching Babel's outer-traversal ordering.
-            return dom.lower_element_with_setup(element);
+            // Root tracking mirrors lower_jsx_element so row proofs (§3c)
+            // record for dom template roots in dynamic mode too.
+            let is_dom_root = dom.jsx_root_span.is_none();
+            if is_dom_root {
+                dom.jsx_root_span = Some(element.span);
+            }
+            let result = dom.lower_element_with_setup(element);
+            if is_dom_root {
+                dom.jsx_root_span = None;
+            }
+            return result;
         }
         let result = self.lower_native_element(element)?;
         // Babel's `createTemplate`: a bare element (single declaration, no
