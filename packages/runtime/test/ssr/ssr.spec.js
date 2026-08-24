@@ -1827,6 +1827,58 @@ describe("renderToStream context.serialize deferStream", () => {
     );
     expect(html).toContain("<div>shell</div>");
   });
+
+  // solidjs/solid#3047: a code-split lazy route is a root-level async hole —
+  // the boundary and its deferStream read only come into existence when
+  // resolveRootHoles() re-invokes the hole inside doShell(), which already
+  // runs inside the allSettled(blockingPromises) continuation. The blockers
+  // the re-invocation registers were not in that snapshot, so the shell
+  // flushed with the boundary's fallback, defeating deferStream. The shell
+  // attempt must bail when hole resolution grows the blocking set and
+  // re-await; the boundary's pre-flush replace() then splices the resolved
+  // content into the shell.
+  it("holds the shell for a deferStream registered during root-hole re-invocation (#3047)", async () => {
+    let importResolve;
+    const importP = new Promise(res => (importResolve = res));
+    const importErr = new Error("lazy import");
+    importErr._promise = importP;
+    let calls = 0;
+    const chunks = [];
+    const stream = r.renderToStream(() => {
+      const ctx = sharedConfig.context;
+      return r.ssr`<html><body>${() => {
+        if (++calls === 1) throw importErr;
+        // The re-invoked hole mounts the route: fallback markup under
+        // replace markers plus a deferStream read of a pending source —
+        // the same mechanism a <Loading> boundary with a deferStream memo
+        // uses (fallback replaced in place while the shell is held).
+        const data = new Promise(resolve =>
+          setTimeout(() => {
+            ctx.replace("route-slot", () => r.ssr`<div>REAL DATA</div>`);
+            resolve("REAL DATA");
+          }, 20)
+        );
+        ctx.serialize("route-data", data, true);
+        return r.ssr`<!--!$route-slot--><div class="skeleton">loading</div><!--!$/route-slot-->`;
+      }}</body></html>`;
+    });
+    setTimeout(() => importResolve(), 5);
+    const html = await new Promise(resolve => {
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+    // The deferStream contract: the FIRST chunk (the shell) carries the
+    // resolved content — no skeleton flash, no late fragment.
+    expect(chunks[0]).toContain("REAL DATA");
+    expect(chunks[0]).not.toContain("skeleton");
+    expect(html).toContain("REAL DATA");
+  });
 });
 
 // registerFragment must throw when a fragment key joins a reveal group

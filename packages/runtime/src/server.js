@@ -1681,7 +1681,18 @@ export function renderToStream(code, options = {}) {
     // context. Restore this stream before re-pulling them so hydration data
     // is serialized into the response that owns the rendered markup.
     sharedConfig.context = context;
+    // A hole that completes by MOUNTING content can register new shell
+    // blockers as it renders: a deferStream read under a boundary created
+    // during this very re-invocation adds its source promise via
+    // serialize() (solidjs/solid#3047 — the code-split lazy route shape).
+    // This attempt already runs inside the previous allSettled snapshot's
+    // continuation, so flushing now would ship the fallback deferStream
+    // exists to prevent. Bail on growth; the flush loop re-awaits the grown
+    // set, and the boundary's pre-flush replace() splices the resolved
+    // content into the held shell before the retry flushes it.
+    const blockersBefore = blockingPromises.size;
     if (!resolveRootHoles()) return;
+    if (blockingPromises.size !== blockersBefore) return;
     // Root-owned head registrations join the shell-hole contract: a pending
     // prop blocks the shell on its source and this attempt bails; the flush
     // loop re-awaits and retries (#2975 follow-up).
@@ -1869,13 +1880,17 @@ export function renderToStream(code, options = {}) {
         function flush() {
           allSettled(blockingPromises).then(() => {
             scheduleFlush(() => {
-              // Same gate as doShell: pending root head props are shell
+              // Same gates as doShell: pending root head props are shell
               // blockers, so flushEnd must not run ahead of them (their
               // source may not be serialized, so the serializer alone
-              // wouldn't wait).
+              // wouldn't wait) — and a hole re-invocation that registers
+              // new blockers (deferStream under a just-mounted boundary,
+              // solidjs/solid#3047) must be re-awaited before completion.
               try {
+                const blockersBefore = blockingPromises.size;
                 if (
                   !resolveRootHoles() ||
+                  blockingPromises.size !== blockersBefore ||
                   !headShellReady(headRegistry, p => blockingPromises.add(p))
                 )
                   return flush();
