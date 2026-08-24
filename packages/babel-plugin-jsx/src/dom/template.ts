@@ -270,16 +270,21 @@ function wrapPatchMode(
   // and const destructures qualify; anything else falls back to effects.
   const binding = path.scope.getBinding(subject);
   if (!binding || !binding.constant) return;
-  const nId = path.scope.generateUidIdentifier("n");
-  const pId = path.scope.generateUidIdentifier("p");
-  const fId = path.scope.generateUidIdentifier("f");
+  // Fixed `$`-suffixed locals, matching wrapDynamics' `_v$`/`_p$` convention
+  // (and byte-parity with the Oxc compiler's emission): substitution only
+  // rewrites subject references, so nothing else in an eligible expression
+  // can collide with these.
+  const nId = t.identifier("_n$");
+  const pId = t.identifier("_p$");
+  const fId = t.identifier("_f$");
   const stmts: t.Statement[] = [];
+  let vIndex = 0;
   for (const d of dynamics) {
     let value = d.value as t.Expression;
     if (d.classProperty && !t.isBooleanLiteral(value) && !t.isUnaryExpression(value)) {
       value = t.unaryExpression("!", t.unaryExpression("!", value));
     }
-    const vId = path.scope.generateUidIdentifier("v");
+    const vId = t.identifier(++vIndex === 1 ? "_v$" : `_v$${vIndex}`);
     stmts.push(
       t.variableDeclaration("const", [
         t.variableDeclarator(vId, substituteSubject(value, subject, nId))
@@ -289,11 +294,11 @@ function wrapPatchMode(
       t.ifStatement(
         t.logicalExpression(
           "||",
-          fId,
-          t.binaryExpression("!==", vId, substituteSubject(value, subject, pId))
+          t.cloneNode(fId),
+          t.binaryExpression("!==", t.cloneNode(vId), substituteSubject(value, subject, pId))
         ),
         t.expressionStatement(
-          setAttr(path, d.elem, d.key, vId, {
+          setAttr(path, d.elem, d.key, t.cloneNode(vId), {
             tagName: d.tagName,
             dynamic: true,
             styleProperty: d.styleProperty,

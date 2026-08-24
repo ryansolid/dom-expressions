@@ -13,6 +13,7 @@ pub(crate) mod constants;
 pub(crate) mod fragment;
 pub(crate) mod mode_lower;
 pub(crate) mod parser;
+pub(crate) mod patch;
 pub(crate) mod refs;
 pub(crate) mod statements;
 pub(crate) mod this;

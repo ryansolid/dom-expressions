@@ -195,15 +195,12 @@ function supportedSubset(mode, fixture, source) {
 }
 
 function compileBabel(code, options) {
-  // Patch-mode carve-out: the Babel plugin compiles eligible templates to
-  // patchDriver registrations by default, and the Oxc compiler has not
-  // ported that emission yet. Parity covers the SHARED feature surface, so
-  // the Babel side compiles with patch mode off until the Rust port lands —
-  // this is the single place that records the known one-sided feature.
+  // Patch mode is default-on in BOTH compilers (the Oxc port landed with
+  // the §3c row-proof work), so parity covers it like any shared feature.
   return babel.transformSync(code, {
     babelrc: false,
     configFile: false,
-    plugins: [[babelPlugin, { patchDriver: false, ...options }]],
+    plugins: [[babelPlugin, options]],
     parserOpts: { plugins: ["jsx"] }
   }).code;
 }
