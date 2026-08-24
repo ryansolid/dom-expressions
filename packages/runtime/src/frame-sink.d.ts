@@ -3,6 +3,7 @@
 // shapes and the wire format may change between prereleases (RFC 11).
 // Every export in this module is @experimental.
 import { FrameChunk } from "./frame-client.js";
+import type { JSONCodecOptions } from "./serializer-decode.js";
 
 /**
  * Addresses a frame stream: the boundary id and this response's version.
@@ -95,9 +96,8 @@ export function createSlotProps(
 
 /**
  * A server component as an HTTP Response: the chunk stream framed with the
- * server-function wire convention, tagged `X-Frame-Stream: <frame id>` for
- * the client and `X-Content-Raw` so the server-function handler forwards it
- * untouched. `init` (headers/status, e.g. from a `respond()` envelope)
+ * frame wire convention, tagged `X-Frame-Stream: <frame id>` for the client
+ * and `X-Content-Raw` for handlers that support raw responses. `init`
  * merges in; the frame tags win on conflict.
  * @experimental
  */
@@ -123,7 +123,11 @@ export function serverComponentResponse(
  * ```
  * @experimental
  */
-export function frameTransformResult(event: unknown, result: unknown): unknown;
+export function frameTransformResult(
+  event: unknown,
+  result: unknown,
+  context?: { id?: string }
+): unknown;
 
 // === Document SSR (t = 0) ===
 
@@ -169,7 +173,7 @@ export function frameTransformDirectResult<T>(
 export function frameTransformFlightResult(
   event: unknown,
   outcome: { value: unknown; data: unknown },
-  context?: unknown
+  context?: { id?: string; codec?: JSONCodecOptions; flightHeader?: string }
 ): Promise<Response | undefined>;
 
 // The brands and the codec plugin live with the transport (client bundles

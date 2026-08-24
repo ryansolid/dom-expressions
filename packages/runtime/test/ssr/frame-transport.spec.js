@@ -1,11 +1,8 @@
 /**
  * @jest-environment node
  */
-// The server-component convention over HTTP, end to end: a server function
-// returning a `props => JSX` function becomes a frame-stream Response via
-// the frameTransformResult policy (handler untouched — hook-based), and the
-// client consumer pumps the framed chunks into a frame host. Framing is the
-// server-function wire convention, shared byte-for-byte.
+// The server-component convention over HTTP: a component becomes a
+// frame-stream Response and the client pumps it into a frame host.
 //
 // Node environment for the real fetch primitives (Request/Response/
 // ReadableStream); the consumer side gets a jsdom document since the frame
@@ -21,35 +18,12 @@ import {
   isFrameStreamResponse
 } from "../../src/frame-transport";
 import { respond } from "../../src/response";
-import {
-  FUNCTION_HEADER,
-  INSTANCE_HEADER,
-  handleServerFunctionRequest,
-  registerServerFunction
-} from "../../src/server-functions/server";
 import { createJSONDataTable } from "../../src/serializer";
 import { createFrame, createFrameHost } from "../../src/frame-client";
 
 describe("frameTransformResult", () => {
-  // The in-flight invocation rides a module-private WeakMap keyed by the
-  // handler's event — never `event.locals` — so seed one exactly the way
-  // the runtime does: a real dispatch keys the event it runs under.
   const event = { locals: {} };
-  beforeAll(async () => {
-    registerServerFunction("story#0", async () => null);
-    const seeded = await handleServerFunctionRequest(
-      // The id resolves from the query param — the function header carries
-      // `id#instance` and would split the id's own `#`.
-      new Request("http://localhost/_server?id=story%230", { method: "POST" }),
-      {
-        createEvent: request => Object.assign(event, { request }),
-        provideEvent: (evt, fn) => fn(),
-        csrf: false
-      }
-    );
-    expect(seeded.status).toBe(200);
-    expect(Object.keys(event.locals)).toEqual([]);
-  });
+  const context = { id: "story#0" };
 
   it("passes non-function results through untouched", async () => {
     const value = { data: 1 };
@@ -60,7 +34,7 @@ describe("frameTransformResult", () => {
 
   it("turns a function result into a frame-stream Response", async () => {
     const ServerComp = props => r.ssr`<div><h1>S</h1>${props.children}</div>`;
-    const response = frameTransformResult(event, ServerComp);
+    const response = frameTransformResult(event, ServerComp, context);
     expect(response).toBeInstanceOf(Response);
     expect(isFrameStreamResponse(response)).toBe(true);
     // Tagged with the function id (stable boundary across repeat calls) and
@@ -88,7 +62,8 @@ describe("frameTransformResult", () => {
     const ServerComp = () => r.ssr`<div>x</div>`;
     const response = frameTransformResult(
       event,
-      respond(ServerComp, { status: 201, headers: { "X-Custom": "yes" }, revalidate: "stories" })
+      respond(ServerComp, { status: 201, headers: { "X-Custom": "yes" }, revalidate: "stories" }),
+      context
     );
     expect(isFrameStreamResponse(response)).toBe(true);
     expect(response.status).toBe(201);
@@ -96,79 +71,6 @@ describe("frameTransformResult", () => {
     expect(response.headers.get("X-Revalidate")).toBe("stories");
     // The frame tags win over the envelope's application/json fallback type.
     expect(response.headers.get("Content-Type")).toBe("application/x-frame-stream");
-  });
-});
-
-describe("server component over the real handler", () => {
-  function callServer(id, body) {
-    return handleServerFunctionRequest(
-      new Request(`http://localhost/_server?id=${encodeURIComponent(id)}`, {
-        method: "POST",
-        headers: {
-          [FUNCTION_HEADER]: id,
-          [INSTANCE_HEADER]: "1",
-          ...(body !== undefined && {
-            "Content-Type": "text/plain",
-            "X-Server-Function-Format": "1"
-          })
-        },
-        body
-      }),
-      {
-        transformResult: frameTransformResult,
-        // The policy reads the event from its arguments, not async context —
-        // a pass-through provider is enough here.
-        provideEvent: (event, fn) => fn(),
-        csrf: false
-      }
-    );
-  }
-
-  it("streams a server component through fetch semantics into client DOM, twice (policy A)", async () => {
-    registerServerFunction("getStory", async storyId => {
-      const title = `Story ${storyId}`;
-      return props => r.ssr`<article><h1>${r.escape(title)}</h1>${props.children}</article>`;
-    });
-
-    const table = createJSONDataTable();
-    const host = createFrameHost({
-      applyData: c => table.apply(c),
-      resolve: ref => table.resolve(ref)
-    });
-    const boundary = document.createElement("div");
-    document.body.appendChild(boundary);
-    const toggle = document.createElement("input");
-    createFrame(boundary, { host, id: "story-pane", slots: { children: () => toggle } });
-
-    // First navigation.
-    const first = await callServer("getStory", "1");
-    expect(isFrameStreamResponse(first)).toBe(true);
-    await applyFrameResponse(first, host, { as: "story-pane" });
-    expect(boundary.querySelector("h1").textContent).toBe("Story 1");
-
-    // Client-only state between navigations.
-    toggle.checked = true;
-    const h1 = boundary.querySelector("h1");
-
-    // Second navigation: same server function, same client boundary.
-    const second = await callServer("getStory", "2");
-    await applyFrameResponse(second, host, { as: "story-pane" });
-
-    expect(boundary.querySelector("h1")).toBe(h1);
-    expect(h1.textContent).toBe("Story 2");
-    expect(boundary.querySelector("input")).toBe(toggle);
-    expect(toggle.checked).toBe(true);
-    boundary.remove();
-  });
-
-  it("leaves non-component results on the normal codec path", async () => {
-    registerServerFunction("getData", async () => ({ plain: "value" }));
-    const response = await callServer("getData");
-    expect(isFrameStreamResponse(response)).toBe(false);
-    expect(response.status).toBe(200);
-    // Not an error envelope: a genuine serialized value came back.
-    expect(response.headers.get("X-Server-Function-Error")).toBe(null);
-    expect(await response.text()).toContain("plain");
   });
 });
 

@@ -5,10 +5,6 @@
 import { FrameChunk, FrameHost } from "./frame-client.js";
 import { JSONCodecOptions } from "./serializer-decode.js";
 
-// Structural mirror of server-functions/shared.js's FlightDataConsumer:
-// this file may only reference siblings that ship with it when integrations
-// copy the frames declaration set (solid-web's types build), and the
-// server-functions declarations are copied to a different root.
 type FlightConsumer = (data: unknown, context: { response: Response }) => void | Promise<void>;
 
 /**
@@ -146,6 +142,14 @@ export function setServerComponentBootstrap(resolve: (ctx: unknown) => string): 
  */
 export function flightCodec(codec?: JSONCodecOptions): JSONCodecOptions;
 
+/** Adapter for a response protocol that carries flight data alongside frames. */
+export interface FrameFlightAdapter {
+  matches(response: Response): boolean;
+  consumer?(): FlightConsumer | undefined;
+  codec?(): JSONCodecOptions | undefined;
+  shouldThrow?(response: Response): boolean;
+}
+
 /**
  * Options for `createServerComponentHandler`.
  * @experimental
@@ -174,18 +178,7 @@ export interface ServerComponentHandlerOptions<C = unknown> {
    * never observes a pending beat.
    */
   intercept?(info: { id: string; meta: unknown; args: unknown[] }): C | undefined;
-  /**
-   * Reads the registered single-flight consumer at delivery time. The
-   * consumer is module state in the server-function client's SHARED
-   * instance; pass a getter reading that instance when your bundling gives
-   * this module a private copy. Defaults to the local copy's reader.
-   */
-  consumer?(): FlightConsumer | undefined;
-  /**
-   * Reads the configured codec options at decode time — same instance-
-   * identity contract as `consumer`. Defaults to the local copy's reader.
-   */
-  codec?(): JSONCodecOptions | undefined;
+  flight?: FrameFlightAdapter;
 }
 
 /**

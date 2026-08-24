@@ -1,25 +1,10 @@
 /**
  * Frame stream HTTP transport, client half: recognize a frame-tagged
- * server-function Response and pump its framed chunks into a frame host.
+ * Response and pump its framed chunks into a frame host.
  *
- * The wire convention is shared with the server-function transport — each
- * chunk is length-prefixed (`;0x` + 32-bit hex byte length + `;`) UTF-8 of
- * `JSON.stringify(FrameChunk)` — so both transports read and write through
- * the one framing implementation in server-functions/shared.js. The server
- * half (`serverComponentResponse` / `frameTransformResult`) lives in
- * frame-sink.js; this module stays importable from client bundles.
+ * Each chunk is length-prefixed UTF-8 of `JSON.stringify(FrameChunk)`.
  */
-import {
-  ChunkReader,
-  ERROR_HEADER,
-  SINGLE_FLIGHT_HEADER,
-  createChunk,
-  deserializeStream,
-  frameAddress,
-  getFlightDataConsumer,
-  getServerFunctionsCodec
-} from "./server-functions/shared.js";
-import { REVALIDATE_HEADER } from "./response.js";
+import { ChunkReader, createChunk, deserializeFrameValue, frameAddress } from "./frame-wire.js";
 
 /**
  * Header tagging a Response as a frame stream; its value is the producing
@@ -269,19 +254,7 @@ export function flightCodec(codec) {
  * updates on delivery; calling the binding directly (a non-gated mount)
  * passes the binding's own constant address.
  */
-export function createServerComponentHandler({
-  host,
-  component,
-  onStream,
-  intercept,
-  // The flight consumer and codec are module state in the server-function
-  // client's SHARED instance; a bundler may give this module a private copy
-  // (solid-web's frames client does), so an integrator whose bundle splits
-  // them passes getters that read the built instance. The defaults read the
-  // local copy — correct whenever there is only one.
-  consumer = getFlightDataConsumer,
-  codec = getServerFunctionsCodec
-}) {
+export function createServerComponentHandler({ host, component, onStream, intercept, flight }) {
   // Mount components, one per FUNCTION (the equals-gate identity).
   const byFn = new Map();
   const componentFor = fnId => {
@@ -344,7 +317,7 @@ export function createServerComponentHandler({
       // A single-flight response is a MUTATION's: it carries regions for the
       // calls it invalidated, and the caller wants the mutation's value
       // rather than a component.
-      if (response.headers.has(SINGLE_FLIGHT_HEADER)) {
+      if (flight && flight.matches(response)) {
         return applyFlightResponse(response, address, binding);
       }
       const version = bump(address);
@@ -416,7 +389,10 @@ export function createServerComponentHandler({
         feed = controller;
       }
     });
-    const payload = deserializeStream(new Response(source), flightCodec(codec()));
+    const payload = deserializeFrameValue(
+      new Response(source),
+      flightCodec(flight.codec && flight.codec())
+    );
     let carried = false;
 
     await applyFrameResponse(response, host, {
@@ -441,18 +417,9 @@ export function createServerComponentHandler({
     if (!carried) throw new Error("Single-flight frame response carried no outcome");
 
     const envelope = await payload;
-    const deliver = consumer();
+    const deliver = flight.consumer && flight.consumer();
     if (deliver) await deliver(envelope.data, { response });
-    // Mirrors the data-only path: responses carrying integration metadata
-    // are control flow for the consumer to interpret; a bare error-tagged
-    // one throws.
-    if (
-      response.headers.has(ERROR_HEADER) &&
-      !response.headers.has("Location") &&
-      !response.headers.has(REVALIDATE_HEADER)
-    ) {
-      throw envelope.value;
-    }
+    if (flight.shouldThrow && flight.shouldThrow(response)) throw envelope.value;
     // A mutation that answered with markup for its own boundary resolves to
     // the call's binding, like a getter would.
     return rootId ? binding : envelope.value;

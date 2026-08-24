@@ -4,21 +4,10 @@
  * The HTTP response-head lifecycle: `createRequestEvent`'s stub-backed
  * event, `createSSRResponse` deriving the outgoing head at shell flush
  * (commit, redirect protocol, post-flush script fallback), and
- * `composeMiddleware`. Plus the server-function per-invocation wrap seam
- * (`wrapInvocation`). Node environment for real Response/ReadableStream/
+ * `composeMiddleware`. Node environment for real Response/ReadableStream/
  * TextEncoder globals.
  */
 import * as r from "../../src/server";
-import {
-  configureServerFunctionsServer,
-  createServerReference,
-  getServerFunctionInvocation,
-  handleServerFunctionRequest,
-  registerServerFunction,
-  registerServerReference
-} from "../../src/server-functions/server";
-import { getEventServerFunctionInvocation } from "../../src/server-functions/server";
-import { BODY_FORMAT_HEADER, BodyFormat } from "../../src/server-functions/shared";
 import { RequestContext } from "../../src/server";
 import { sharedConfig } from "rxcore";
 
@@ -42,7 +31,6 @@ class FakeStorage {
 
 beforeEach(() => {
   globalThis[RequestContext] = new FakeStorage();
-  configureServerFunctionsServer({ csrf: false });
 });
 
 afterEach(() => {
@@ -277,19 +265,18 @@ describe("commitEventResponse", () => {
     expect(event.response.committed).toBe(true);
   });
 
-  it("never gap-fills the protocol-owned family or body metadata onto a bodiless response", () => {
+  it("excludes handler-owned headers and body metadata on a bodiless response", () => {
     const event = r.createRequestEvent(new Request("http://localhost/"));
     event.response.headers.set("Location", "/elsewhere");
     event.response.headers.set("X-Server-Function-Error", "true");
     event.response.headers.set("content-type", "text/html");
     event.response.headers.append("set-cookie", "keep=1");
-    const response = r.commitEventResponse(new Response(null, { status: 204 }), event);
-    // a stray stub Location must not turn this body into a redirect signal
+    const response = r.commitEventResponse(new Response(null, { status: 204 }), event, {
+      excludeHeaders: ["X-Server-Function-Error"]
+    });
     expect(response.headers.get("location")).toBe(null);
     expect(response.headers.get("x-server-function-error")).toBe(null);
-    // bodiless response — don't advertise a body that isn't there
     expect(response.headers.get("content-type")).toBe(null);
-    // cookies still ride along
     expect(response.headers.getSetCookie()).toEqual(["keep=1"]);
     expect(event.response.committed).toBe(true);
   });
@@ -436,92 +423,5 @@ describe("composeMiddleware", () => {
     await expect(run(new Request("http://localhost/"), () => respond("ok"))).rejects.toThrow(
       "next() called multiple times"
     );
-  });
-});
-
-describe("wrapInvocation", () => {
-  afterEach(() => {
-    configureServerFunctionsServer({ wrapInvocation: null });
-  });
-
-  it("wraps HTTP dispatch with identity available before, during and after run()", async () => {
-    registerServerFunction("wrap#0", async name => `hello ${name}`);
-    const seen = {};
-    const response = await handleServerFunctionRequest(
-      new Request("http://localhost/_server?id=wrap%230", {
-        method: "POST",
-        headers: { "content-type": "application/json", [BODY_FORMAT_HEADER]: BodyFormat.Json },
-        body: JSON.stringify(["world"])
-      }),
-      {
-        wrapInvocation: async (run, context) => {
-          seen.before = getServerFunctionInvocation();
-          seen.context = { id: context.id, args: context.args, direct: context.direct };
-          seen.hasRequest = context.request instanceof Request;
-          const result = await run();
-          // Post-await, ambient reads need real AsyncLocalStorage (the test
-          // fake is synchronous) — the event-keyed accessor proves the
-          // invocation persists through the wrap.
-          seen.after = getEventServerFunctionInvocation(context.event);
-          return result;
-        }
-      }
-    );
-    expect(response.status).toBe(200);
-    expect(seen.before).toEqual({ id: "wrap#0" });
-    expect(seen.after).toEqual({ id: "wrap#0" });
-    expect(seen.context).toEqual({ id: "wrap#0", args: ["world"], direct: false });
-    expect(seen.hasRequest).toBe(true);
-  });
-
-  it("replaces the result and routes thrown errors through normal encoding", async () => {
-    registerServerFunction("wrap#1", async () => "original");
-    const replaced = await handleServerFunctionRequest(
-      new Request("http://localhost/_server?id=wrap%231", { method: "POST" }),
-      { wrapInvocation: async run => `${await run()} (wrapped)` }
-    );
-    // strings direct-encode: the body is the raw string
-    expect(await replaced.text()).toBe("original (wrapped)");
-
-    const failed = await handleServerFunctionRequest(
-      new Request("http://localhost/_server?id=wrap%231", { method: "POST" }),
-      {
-        wrapInvocation: () => {
-          throw new Error("denied");
-        }
-      }
-    );
-    // plain thrown error, no instance header: 500 with the message in dev
-    expect(failed.status).toBe(500);
-  });
-
-  it("the configured hook also wraps direct SSR calls", async () => {
-    const seen = [];
-    configureServerFunctionsServer({
-      wrapInvocation: (run, context) => {
-        seen.push({
-          id: context.id,
-          direct: context.direct,
-          hasRequest: context.request !== undefined,
-          invocation: getServerFunctionInvocation()
-        });
-        return run();
-      }
-    });
-    const callable = createServerReference(registerServerReference("wrap#2", async n => n * 2));
-    const event = { request: new Request("http://localhost/"), locals: {} };
-    const result = await globalThis[RequestContext].run(event, () => callable(21));
-    expect(result).toBe(42);
-    expect(seen).toEqual([
-      { id: "wrap#2", direct: true, hasRequest: false, invocation: { id: "wrap#2" } }
-    ]);
-  });
-
-  it("stays transparent for synchronous direct calls", () => {
-    configureServerFunctionsServer({ wrapInvocation: (run, context) => run() });
-    const callable = createServerReference(registerServerReference("wrap#3", () => "sync"));
-    const event = { request: new Request("http://localhost/"), locals: {} };
-    const result = globalThis[RequestContext].run(event, () => callable());
-    expect(result).toBe("sync");
   });
 });

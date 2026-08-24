@@ -9,29 +9,11 @@ import {
   inServerComponentScope
 } from "rxcore";
 import { createHydrationSerializer, getLocalHeaderScript } from "./serializer";
-// Wire-protocol header names for the commit fold's gap-fill denylist
-// (`commitEventResponse`): shared constants, not copies, so the fold can
-// never drift from what the server-function handler actually sends.
 import { REVALIDATE_HEADER } from "./response.js";
-import {
-  BODY_FORMAT_HEADER,
-  ERROR_HEADER,
-  SINGLE_FLIGHT_HEADER
-} from "./server-functions/shared.js";
 // The cookie codec (the platform-gap primitives — see cookies.js for the
 // blessed read/write patterns). Re-exported, never wrapped: core owns the
 // exchange and the codec, nothing ambient.
 export { parseCookieHeader, serializeCookie } from "./cookies.js";
-// The flash cookie's isomorphic half and the codec-free server-function
-// layer (detection + the late-bound RPC seam) — mirrors of the client
-// entry's exports, so integration code reading them stays universal (see
-// the client entry and server-functions/registry.js for the reasoning).
-export { clearFlashCookie, hasFlashCookie } from "./cookies.js";
-export {
-  getServerFunctionMetadata,
-  getServerFunctionRPC,
-  isServerFunction
-} from "./server-functions/registry.js";
 import {
   HEAD_ELIGIBLE_TAGS,
   HEAD_ATTR_NAME,
@@ -3572,9 +3554,7 @@ function resolveSSRSync(node) {
 }
 
 // experimental
-// Registered symbol: the AsyncLocalStorage parked on globalThis must be
-// found by every copy of this module (core entry and server-functions entry
-// bundle separately downstream).
+// Registered so separately bundled runtime entries share one request scope.
 export const RequestContext = Symbol.for("solid.RequestContext");
 
 export function getRequestEvent() {
@@ -3708,17 +3688,8 @@ function copyInitHeaders(init) {
   return headers;
 }
 
-// Stub gap-fill exclusions: the wire-protocol family the handlers themselves
-// own must reflect THIS response's encoding, never a write parked on the
-// stub — a stray stub `Location` would turn a success body into a redirect
-// signal, a stale error/format/single-flight tag would misdescribe the
-// body to the client transport, and `X-Revalidate` keys belong to the
-// outcome that declared them. Header names via the shared wire constants;
-// lowercased once because `Headers` iteration keys are lowercase.
 const STUB_GAP_FILL_EXCLUDED = /*#__PURE__*/ new Set(
-  [ERROR_HEADER, BODY_FORMAT_HEADER, SINGLE_FLIGHT_HEADER, REVALIDATE_HEADER, "Location"].map(
-    header => header.toLowerCase()
-  )
+  [REVALIDATE_HEADER, "Location"].map(header => header.toLowerCase())
 );
 
 // Whether a stub header may gap-fill onto the outgoing response: not a
@@ -3726,8 +3697,8 @@ const STUB_GAP_FILL_EXCLUDED = /*#__PURE__*/ new Set(
 // bodiless response (the no-JS handler deliberately strips Content-Type/
 // Length from the redirects it builds — don't re-advertise a body that
 // isn't there), and not already answered by the response itself.
-function fillsStubGap(key, headers, response) {
-  if (key === "set-cookie" || STUB_GAP_FILL_EXCLUDED.has(key)) return false;
+function fillsStubGap(key, headers, response, excluded) {
+  if (key === "set-cookie" || excluded.has(key)) return false;
   if (response.body === null && (key === "content-type" || key === "content-length")) return false;
   return !headers.has(key);
 }
@@ -3753,27 +3724,34 @@ function fillsStubGap(key, headers, response) {
  * `getRequestEvent()`. Application middleware never calls this — the
  * handler edge does, once, after the middleware chain fully unwinds.
  */
-export function commitEventResponse(response, event = getRequestEvent()) {
+export function commitEventResponse(response, event = getRequestEvent(), options) {
   const stub = event && event.response;
   if (!stub || !stub.headers || stub.committed) return response;
+  const excluded =
+    options && options.excludeHeaders
+      ? new Set([
+          ...STUB_GAP_FILL_EXCLUDED,
+          ...Array.from(options.excludeHeaders, h => h.toLowerCase())
+        ])
+      : STUB_GAP_FILL_EXCLUDED;
   const cookies = stub.headers.getSetCookie ? stub.headers.getSetCookie() : [];
   commitResponseStub(stub);
   let hasGaps = false;
   stub.headers.forEach((value, key) => {
-    if (fillsStubGap(key, response.headers, response)) hasGaps = true;
+    if (fillsStubGap(key, response.headers, response, excluded)) hasGaps = true;
   });
   if (!cookies.length && !hasGaps) return response;
   try {
     for (const cookie of cookies) response.headers.append("Set-Cookie", cookie);
     stub.headers.forEach((value, key) => {
-      if (fillsStubGap(key, response.headers, response)) response.headers.set(key, value);
+      if (fillsStubGap(key, response.headers, response, excluded)) response.headers.set(key, value);
     });
     return response;
   } catch {
     const headers = copyInitHeaders(response.headers);
     for (const cookie of cookies) headers.append("Set-Cookie", cookie);
     stub.headers.forEach((value, key) => {
-      if (fillsStubGap(key, headers, response)) headers.set(key, value);
+      if (fillsStubGap(key, headers, response, excluded)) headers.set(key, value);
     });
     return new Response(response.body, {
       status: response.status,

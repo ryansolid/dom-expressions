@@ -354,7 +354,16 @@ export function commitResponseStub(
  *
  * `event` defaults to the ambient `getRequestEvent()`.
  */
-export function commitEventResponse(response: Response, event?: RequestEvent): Response;
+export interface CommitEventResponseOptions {
+  /** Headers owned by the handler protocol that must not be copied from the response stub. */
+  excludeHeaders?: Iterable<string>;
+}
+
+export function commitEventResponse(
+  response: Response,
+  event?: RequestEvent,
+  options?: CommitEventResponseOptions
+): Response;
 
 /**
  * The cookie codec (the platform-gap primitives — see cookies.d.ts): ALL
@@ -365,27 +374,6 @@ export function commitEventResponse(response: Response, event?: RequestEvent): R
  */
 export { parseCookieHeader, serializeCookie } from "./cookies.js";
 export type { CookieOptions } from "./cookies.js";
-
-/**
- * The flash cookie's isomorphic half and the codec-free server-function
- * layer (reference detection + the late-bound RPC seam) — mirrors of the
- * client entry's exports, so integration code reading them stays
- * universal. Declared through server-functions/shared.d.ts, the
- * declaration home published-types layouts ship.
- */
-export {
-  clearFlashCookie,
-  getServerFunctionMetadata,
-  getServerFunctionRPC,
-  hasFlashCookie,
-  isServerFunction
-} from "./server-functions/shared.js";
-export type {
-  ServerFunction,
-  ServerFunctionMetadata,
-  ServerFunctionRPC
-} from "./server-functions/shared.js";
-
 export interface SSRResponseOptions {
   /** Base head; the stub's status/headers win over it. */
   responseInit?: ResponseInit;

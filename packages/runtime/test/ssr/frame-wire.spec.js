@@ -6,9 +6,9 @@
  * boundaries. TCP/proxies/compression re-segment freely — a reader may
  * receive half a header, a header split from its payload, or several
  * chunks coalesced. The frame path (applyFrameResponse) and the
- * server-function codec (deserializeStream) both sit on this reader.
+ * framed value codecs both sit on this reader.
  */
-import { createChunk, ChunkReader } from "../../src/server-functions/shared.js";
+import { createChunk, ChunkReader } from "../../src/frame-wire.js";
 
 const PAYLOADS = [
   '{"type":"start","id":"f0","version":1}',

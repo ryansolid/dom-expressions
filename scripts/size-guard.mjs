@@ -79,16 +79,6 @@ const SCENARIOS = {
   // pure value transformers with legitimate browser uses, never stubs);
   // the compiled-JSX core scenario stayed byte-identical, so apps not
   // importing the codec pay 0. Re-guarded at actual+20 (10564 measured).
-  // Then +187 for the server-function decoupling round: the core entry
-  // gained the codec-free server-function layer (metadata channel +
-  // late-bound RPC seam, server-functions/registry.js) and the flash
-  // cookie's isomorphic half (now beside the cookie codec in cookies.js) —
-  // the exports that let a router's eager graph drop its static
-  // @solidjs/web/server-functions import and with it seroval + the
-  // transport (~9 KB gz in a zero-server-function app). The compiled-JSX
-  // core scenario stayed byte-identical, and the router-eager-subset
-  // scenario below pins the slice apps actually pay. Re-guarded at
-  // actual+20 (10751 measured).
   // Then +33 for two correctness fixes from live chat-demo vetting:
   // hydrating inserts keep `current` honest (the phantom-fallback node
   // scan in insertExpression, plus its callers consuming the return) and
@@ -262,7 +252,7 @@ const SCENARIOS = {
   // (request.signal/cancel → iterator.return) deliberately lives in
   // server.js — zero client bytes. Re-guarded at actual+20 (9004
   // measured).
-// Then +84 for the container-trace stream mint: traces cross as RAW
+  // Then +84 for the container-trace stream mint: traces cross as RAW
   // seroval streams (sync buffered replay — a document-delivered snapshot
   // must be readable during hydration's synchronous claim walk; the
   // async-iterable wrapper made a settled boundary suspend and hydrate a
@@ -281,7 +271,7 @@ const SCENARIOS = {
   // OPTION (platform glue passes delegateEvents to createFrameHost)
   // because publishing it from client.js retains the event system in
   // every tree-shaken subset — the failure mode the router-eager-subset
-// scenario pins. Re-guarded at actual+20 (9519 measured, post-rebase on
+  // scenario pins. Re-guarded at actual+20 (9519 measured, post-rebase on
   // the stream-mint wire).
   // Then +18 for owner-scoped ref firing: the marker sweep runs under the
   // frame creator's ownerScope, so effects/context/onCleanup work inside
@@ -320,15 +310,7 @@ const prodDefines = {
   }
 };
 
-// The codec is late-loaded (server-functions/shared.js loadSerializer):
-// every real consumer pipeline code-splits that dynamic import into its own
-// lazy chunk (solid-web's packaging resolves it to the external
-// @solidjs/web/serialization entry), so the EAGER slice these scenarios
-// measure excludes it. esbuild's single-file mode can't split — it inlines
-// the import as an __esm wrapper, which both mis-charges the eager number
-// and defeats tree-shaking inside the wrapped module — so dynamic imports
-// of the serializer go external here; static imports (a scenario that
-// deliberately includes the codec) still bundle.
+// Framed values load their codec lazily, so size checks keep dynamic serializer imports external.
 const lazyCodecSplit = {
   name: "dx-lazy-codec-split",
   setup(b) {
@@ -363,9 +345,7 @@ async function check(name, entry, ceiling, forbid) {
     console.log(`FAIL ${name}: forbidden import(s) reached the bundle: ${leaked.join(", ")}`);
   }
   failed ||= !ok;
-  console.log(
-    `${ok ? "OK  " : "FAIL"} ${name}: ${out.length} min / ${gz} gz (ceiling ${ceiling})`
-  );
+  console.log(`${ok ? "OK  " : "FAIL"} ${name}: ${out.length} min / ${gz} gz (ceiling ${ceiling})`);
 }
 
 for (const [name, [imp, ceiling]] of Object.entries(SCENARIOS)) {
@@ -377,88 +357,6 @@ for (const [name, [imp, ceiling]] of Object.entries(SCENARIOS)) {
   await check(name, entry, ceiling);
 }
 
-// The router eager subset: what a router-only app's EAGER graph reads off
-// the core client entry — server-function detection, the late-bound RPC
-// seam, and the flash cookie's isomorphic half. This is the codec-decoupling
-// contract (the ~9 KB gz seroval + plugin + transport pull-in that every
-// zero-server-function app used to pay through @solidjs/router's query.js /
-// routing.js): these names must never reach the serializer or the fetch
-// transport — the transport registers itself into the seam from
-// createServerReference/GET, which only compiled `'use server'` output
-// calls. Ceiling at actual+20 (401 measured at landing — flash matcher,
-// metadata channel, seam read, plus the per-entry external rxcore import
-// esbuild retains regardless of use); the forbidden markers fail the build
-// if any seroval external re-enters this slice.
-await check(
-  "client: router eager subset (server-fn detection + RPC seam + flash helpers, NO codec)",
-  `export {
-     isServerFunction,
-     getServerFunctionMetadata,
-     getServerFunctionRPC,
-     hasFlashCookie,
-     clearFlashCookie
-   } from ${JSON.stringify(CLIENT)};`,
-  421,
-  ["seroval", "seroval-plugins"]
-);
-// The server-function client's EAGER cost: exactly what compiled client
-// output pulls in for a `'use server'` reference — the fetch transport,
-// header/framing glue, and the JSON fast path. This is the JSON-fast-path
-// contract (the response mirror of the argument path): the server answers
-// JSON-safe results as plain JSON and void results body-less, so the codec
-// (seroval + the web plugin set, ~5.5 KB gz on top of this number) loads
-// only when a Serialized body actually arrives — through shared.js's
-// dynamic import, split out of the eager graph by every consumer pipeline
-// (modeled by lazyCodecSplit above). The forbidden markers fail the build
-// if the codec re-enters this slice statically. Ceiling at actual+20
-// (2634 measured at landing: the fetch transport with its single-flight
-// and response-seam branches, GET's query encoding, the body negotiation
-// table, and the chunk framing/ChunkReader — which stays eager because the
-// STREAMING shape of a Serialized response is transport framing; only the
-// codec behind it is lazy). Then +95 for the negotiation-guard correctness
-// round (#566): isJSONSafe rewritten iterative with ancestor-set cycle
-// detection and a depth ceiling (a cyclic value used to RangeError DURING
-// encoding and get misreported as the function throwing; deep nesting
-// stringify handles fine overflowed the guard's recursion — and it can't
-// punt to the codec, whose depth limit protects the decoding peer), plus
-// the argument leg's try/catch fallthrough to the codec. Re-guarded at
-// actual+20 (2729 measured).
-// Then +152 for async-iterable failure wiring, the client's share: the
-// call-owned AbortController (minted only when the caller brought no
-// signal) whose abort is how a streamed result gets ENDED rather than
-// abandoned, the top-level wrap giving that result a `return()` that
-// aborts the wire (break in for-await stops the download AND fires
-// request.signal server-side), the drain's failure/completion sweep in
-// deserializeStream (drop or truncation rejects stranded values instead
-// of hanging them forever), and isJSONSafe answering false for iteration
-// protocols on plain objects (stringify would ship `{}` and silently
-// drop the stream). The abort SWEEP itself is in the lazy codec; the
-// server teardown half is in server.js — neither charges this slice.
-// Re-guarded at actual+20 (2888 measured).
-// Then +7 for the `read` request option (single-flight suppression for
-// POST-shaped reads) — the ONLY shared-path bytes of the live()
-// declaration, whose reconnect/brand machinery lives entirely inside its
-// own export and treeshakes out of this slice (unimported here by
-// construction). 2895 measured, ceiling kept.
-// Then +59 for bare 5xx and body-less error handling, including single-flight.
-// Re-guarded at actual+20 (2954 measured).
-// Then +175 for call observers (cloned Request/Response inspection).
-// Re-guarded at actual+20 (3129 measured).
-// Then +24 for the failure status stamp (serverFunctionFailure writes the
-// HTTP status onto thrown Errors so policy layers — live()'s fail-fast,
-// router live channels — can classify definite rejections vs transient
-// deaths; the classification logic itself lives in those lazy layers).
-// Re-guarded at actual+20 (3153 measured).
-await check(
-  "server-functions client: eager transport (reference + GET, lazy codec)",
-  `export {
-     createServerReference,
-     GET,
-     configureServerFunctionsClient
-   } from ${JSON.stringify(resolve(ROOT, "packages/runtime/src/server-functions/client.js"))};`,
-  3173,
-  ["seroval", "seroval-plugins"]
-);
 await check(
   // 873 -> 945 gz after the live-state deny-list (`open` preservation +
   // `data-preserve`); -> 1067 after keyed slot ranges learned to relocate

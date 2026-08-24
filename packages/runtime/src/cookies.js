@@ -84,36 +84,3 @@ export function serializeCookie(name, value, options = {}) {
   }
   return cookie;
 }
-
-// ---- the flash cookie's isomorphic half ----
-//
-// Cookie carrying the outcome of a server function call made without the
-// client runtime (a no-JS form post), so the page rendered after the
-// redirect can show what happened. The name, detection and one-shot
-// clearing are cookie utilities and live HERE — integrations (routers)
-// consume the cookie eagerly per request from their isomorphic core (the
-// clear must be appended before streaming flushes the response headers,
-// and an unread outcome must not haunt a later request), and that consumer
-// must not touch the server-functions package at all: its client entry is
-// the transport + codec, which a router-only app never ships. The codec
-// that fills and decodes the cookie is server-only and stays behind the
-// server-functions server entry (server-functions/flash.js).
-export const FLASH_COOKIE = "flash";
-
-const FLASH_MATCHER = new RegExp(`(?:^|;\\s*)${FLASH_COOKIE}=([^;]+)`);
-
-/** Whether a Cookie header carries a flash cookie (readable or not). */
-export function hasFlashCookie(cookieHeader) {
-  return !!cookieHeader && FLASH_MATCHER.test(cookieHeader);
-}
-
-/** The raw encoded flash payload out of a Cookie header, if present. */
-export function matchFlashCookie(cookieHeader) {
-  const match = cookieHeader && cookieHeader.match(FLASH_MATCHER);
-  return match ? match[1] : undefined;
-}
-
-/** The Set-Cookie value clearing the flash cookie after it has been read. */
-export function clearFlashCookie() {
-  return `${FLASH_COOKIE}=; Max-Age=0; Path=/`;
-}

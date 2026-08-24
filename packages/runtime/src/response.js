@@ -1,17 +1,11 @@
-// Response helpers: constructors for the control-flow signals integrations
-// interpret — `Location`, `X-Revalidate`, statuses — expressed entirely
-// through the standard Response API. More generic than the server function
-// transport: client-only actions return these and the integration reads
-// the Response in memory (never over HTTP), while server functions return
-// (or throw) the same objects and the HTTP handler forwards their
-// metadata. No dependency on the codec or the wire format.
+// Response helpers for control-flow signals expressed through the standard
+// Response API. They have no dependency on a codec or wire format.
 //
 // The revalidation keys are opaque strings here — whatever keyed cache the
 // integration brings assigns them meaning.
 
-// Identity must survive duplicated module instances (e.g. the core entry
-// and the server-functions entry bundled separately both carrying a copy),
-// so the envelope is detected by a registered-symbol brand, not instanceof.
+// Identity must survive duplicated module instances, so the envelope is
+// detected by a registered-symbol brand, not instanceof.
 const ENVELOPE = Symbol.for("solid.ResponseEnvelope");
 
 /**

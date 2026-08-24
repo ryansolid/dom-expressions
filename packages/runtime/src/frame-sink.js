@@ -100,14 +100,7 @@ import {
 } from "./server.js";
 import { createJSONSerializer } from "./serializer.js";
 import { envelopeContainerTraces, isContainerTraced } from "./frame-container-plugin.js";
-import {
-  ChunkReader,
-  SINGLE_FLIGHT_HEADER,
-  createChunk,
-  frameAddress,
-  serializeStream
-} from "./server-functions/shared.js";
-import { getEventServerFunctionInvocation } from "./server-functions/server.js";
+import { ChunkReader, createChunk, frameAddress, serializeFrameValue } from "./frame-wire.js";
 import { isResponseEnvelope } from "./response.js";
 import {
   FRAME_STREAM_HEADER,
@@ -1741,12 +1734,7 @@ export function frameTransformResult(event, result, context) {
   }
   if (typeof result !== "function") return result;
   if (context && context.collectsFlight) return init ? { response: init, value: result } : result;
-  const invocation = getEventServerFunctionInvocation(event);
-  return serverComponentResponse(
-    result,
-    { frame: { id: (invocation && invocation.id) || "" } },
-    init
-  );
+  return serverComponentResponse(result, { frame: { id: (context && context.id) || "" } }, init);
 }
 
 /**
@@ -1799,12 +1787,11 @@ export async function frameTransformFlightResult(event, outcome, context) {
       }
     }
   }
-  const invocation = getEventServerFunctionInvocation(event);
   // The called function's own markup keeps the function id as its address,
   // the same boundary a non-flight call targets.
   const primary =
     typeof value === "function"
-      ? { id: (invocation && invocation.id) || "", component: value }
+      ? { id: (context && context.id) || "", component: value }
       : undefined;
   if (!primary && !regions.length) return undefined;
   return frameFlightResponse({
@@ -1816,7 +1803,8 @@ export async function frameTransformFlightResult(event, outcome, context) {
       value: primary ? undefined : value,
       data: serialized
     },
-    codec: context && context.codec
+    codec: context && context.codec,
+    flightHeader: context && context.flightHeader
   });
 }
 
@@ -1829,13 +1817,16 @@ export async function frameTransformFlightResult(event, outcome, context) {
  * inside flight data settle progressively exactly as they do in a plain
  * single-flight body — the consumer replays them into the same decoder.
  */
-export function frameFlightResponse({ primary, regions = [], outcome, codec }, init = {}) {
+export function frameFlightResponse(
+  { primary, regions = [], outcome, codec, flightHeader },
+  init = {}
+) {
   const frames = primary ? [primary, ...regions] : regions;
   const headers = copyInitHeaders(init.headers);
   headers.set("Content-Type", "application/x-frame-stream");
   headers.set(FRAME_STREAM_HEADER, primary ? primary.id : "");
   headers.set("X-Content-Raw", "1");
-  headers.set(SINGLE_FLIGHT_HEADER, "true");
+  if (flightHeader) headers.set(flightHeader, "true");
   // Same disconnect guard as serverComponentResponse: post-cancel writes
   // drop instead of throwing through a serializer flush.
   let closed = false;
@@ -1863,7 +1854,7 @@ export function frameFlightResponse({ primary, regions = [], outcome, codec }, i
           // Component-valued entries serialize as flight references — the
           // protocol injects its own plugin (see `flightCodec`), so nothing
           // registers it.
-          const reader = new ChunkReader(serializeStream(outcome, flightCodec(codec)));
+          const reader = new ChunkReader(serializeFrameValue(outcome, flightCodec(codec)));
           for (let node = await reader.next(); !node.done; node = await reader.next()) {
             write({ type: "outcome", payload: node.value });
           }
