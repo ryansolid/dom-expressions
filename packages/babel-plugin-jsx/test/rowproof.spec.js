@@ -101,9 +101,7 @@ describe("row-proof admission", () => {
   });
 
   test("does NOT stamp block bodies with statements beyond the return", () => {
-    const code = compile(
-      `const row = r => { doWork(r); return <li textContent={r.name} />; };`
-    );
+    const code = compile(`const row = r => { doWork(r); return <li textContent={r.name} />; };`);
     expect(stamps(code)).toBe(0);
   });
 

@@ -381,25 +381,25 @@ const template32 = _tmpl$4();
 const template33 = [
   (() => {
     var _el$43 = _tmpl$19();
-    _$patchDriver(styles, (_n, _p, _f) => {
-      const _v = _n.button;
-      if (_f || _v !== _p.button) _$className(_el$43, _v);
+    _$patchDriver(styles, (_n$, _p$, _f$) => {
+      const _v$ = _n$.button;
+      if (_f$ || _v$ !== _p$.button) _$className(_el$43, _v$);
     });
     return _el$43;
   })(),
   (() => {
     var _el$44 = _tmpl$19();
-    _$patchDriver(styles, (_n2, _p2, _f2) => {
-      const _v2 = _n2["foo--bar"];
-      if (_f2 || _v2 !== _p2["foo--bar"]) _$className(_el$44, _v2);
+    _$patchDriver(styles, (_n$, _p$, _f$) => {
+      const _v$ = _n$["foo--bar"];
+      if (_f$ || _v$ !== _p$["foo--bar"]) _$className(_el$44, _v$);
     });
     return _el$44;
   })(),
   (() => {
     var _el$45 = _tmpl$19();
-    _$patchDriver(styles, (_n3, _p3, _f3) => {
-      const _v3 = _n3.foo.bar;
-      if (_f3 || _v3 !== _p3.foo.bar) _$className(_el$45, _v3);
+    _$patchDriver(styles, (_n$, _p$, _f$) => {
+      const _v$ = _n$.foo.bar;
+      if (_f$ || _v$ !== _p$.foo.bar) _$className(_el$45, _v$);
     });
     return _el$45;
   })(),
@@ -654,9 +654,9 @@ var _el$100 = _tmpl$4();
 _$style(_el$100, /* @static */ styleProp.style);
 const template85 = _el$100;
 var _el$101 = _tmpl$4();
-_$patchDriver(styleProp, (_n4, _p4, _f4) => {
-  const _v4 = _n4.style;
-  if (_f4 || _v4 !== _p4.style) _$style(_el$101, _v4);
+_$patchDriver(styleProp, (_n$, _p$, _f$) => {
+  const _v$ = _n$.style;
+  if (_f$ || _v$ !== _p$.style) _$style(_el$101, _v$);
 });
 const template86 = _el$101;
 const style = {
