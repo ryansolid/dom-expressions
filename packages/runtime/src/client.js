@@ -1198,7 +1198,9 @@ function loadModuleAssets(mapping) {
   const pending = [];
   for (const key in mapping) {
     if (hy.modules[key]) continue;
-    const entryUrl = mapping[key];
+    // Vite adds `?import` to opaque dynamic imports of source files. Absolute
+    // URLs bypass that rewrite and retain the same identity as literal imports.
+    const entryUrl = new URL(mapping[key], document.baseURI).href;
     if (!hy.loading[key]) {
       hy.loading[key] = import(/* @vite-ignore */ entryUrl).then(
         mod => {
