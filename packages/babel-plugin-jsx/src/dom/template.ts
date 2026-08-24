@@ -26,9 +26,16 @@ export function createTemplate(
       !(result.exprs.length || result.dynamics.length || result.postExprs?.length) &&
       decl.declarations.length === 1
     ) {
+      // Static single-root template: a candidate row function returning it is
+      // trivially pure (no reactive work at all).
+      if (config.patchDriver) recordPureRow(path, result, null);
       return decl.declarations[0].init as t.Expression;
     } else {
-      const dynamicsStmt = wrapDynamics(path, result.dynamics);
+      const patched = config.patchDriver ? wrapPatchMode(path, result.dynamics) : undefined;
+      const dynamicsStmt = patched ? patched.stmt : wrapDynamics(path, result.dynamics);
+      if (config.patchDriver && (result.dynamics.length === 0 || patched)) {
+        recordPureRow(path, result, patched ? patched.subject : null);
+      }
       const stmts = [
         decl,
         ...result.exprs,
@@ -140,13 +147,116 @@ function registerTemplate(path: NodePath, results: TransformResult) {
   results.decl = t.variableDeclaration("var", results.declarations as t.VariableDeclarator[]);
 }
 
+/**
+ * Row-proof analysis (DESIGN-PATCH-CHANNEL §3c). A function qualifies as a
+ * PURE ROW — buildable with no per-row owner, so the patch-mode list driver
+ * may engage — when ALL of:
+ *
+ *  - it is a single-parameter function (plain Identifier param, not
+ *    destructured; not async/generator) whose body is exactly this compiled
+ *    template: an expression body, or a block whose ONLY statement returns
+ *    it (checked before the flat-statement emission inserts our own);
+ *  - the template has a single root element (`result.id` — fragments never
+ *    reach here) and emitted NO reactive or owned work: dynamics either
+ *    absent or all landed in ONE patchDriver body, and `result.exprs` holds
+ *    only inert DOM wiring (member-target assignments like `_el$.$$click =
+ *    fn` / `_el$.style.cssText = v`, and `_el$.addEventListener(...)`) —
+ *    any `insert`/`createComponent`/`memo`/`use`/ref/spread emission is a
+ *    call or conditional shape and fails the walk (default-deny);
+ *  - the patch subject IS the row parameter. A pure template patching an
+ *    OUTER subject would register once per created row on a long-lived
+ *    record with no per-row disposal — the foreign-subject leak the runtime
+ *    probe never caught.
+ *
+ * Handler/attribute VALUE expressions may be arbitrary user code: stamped
+ * rows are only ever built for real mounts (never speculatively), so their
+ * evaluation timing is identical to the classic path.
+ *
+ * Qualifying functions are recorded and wrapped with `rowProof` at program
+ * exit (postprocess) — the stamp travels with the function object, so
+ * extracted row functions prove at their DEFINITION site and work across
+ * modules, which the runtime probe could never see.
+ */
+function recordPureRow(path: NodePath, result: TransformResult, subject: string | null) {
+  const parent = path.parentPath;
+  if (!parent) return;
+  let fn: t.ArrowFunctionExpression | t.FunctionExpression | undefined;
+  if (
+    (t.isArrowFunctionExpression(parent.node) || t.isFunctionExpression(parent.node)) &&
+    (parent.node as t.ArrowFunctionExpression).body === path.node
+  ) {
+    fn = parent.node as t.ArrowFunctionExpression;
+  } else if (
+    t.isReturnStatement(parent.node) &&
+    parent.node.argument === path.node &&
+    parent.parentPath &&
+    t.isBlockStatement(parent.parentPath.node) &&
+    parent.parentPath.node.body.length === 1 &&
+    parent.parentPath.parentPath &&
+    (t.isArrowFunctionExpression(parent.parentPath.parentPath.node) ||
+      t.isFunctionExpression(parent.parentPath.parentPath.node)) &&
+    (parent.parentPath.parentPath.node as t.ArrowFunctionExpression).body ===
+      parent.parentPath.node
+  ) {
+    fn = parent.parentPath.parentPath.node as t.ArrowFunctionExpression;
+  }
+  if (!fn || fn.async || (fn as t.FunctionExpression).generator) return;
+  if (fn.params.length !== 1 || !t.isIdentifier(fn.params[0])) return;
+  const param = (fn.params[0] as t.Identifier).name;
+  if (subject !== null && subject !== param) return;
+
+  const isLocalMemberTarget = (n: t.Node): boolean => {
+    if (!t.isMemberExpression(n) || n.computed) return false;
+    let obj: t.Node = n.object;
+    while (t.isMemberExpression(obj) && !obj.computed) obj = obj.object;
+    return t.isIdentifier(obj);
+  };
+  for (const stmt of result.exprs) {
+    if (!t.isExpressionStatement(stmt)) return;
+    const e = stmt.expression;
+    if (t.isAssignmentExpression(e) && e.operator === "=" && isLocalMemberTarget(e.left)) continue;
+    if (
+      t.isCallExpression(e) &&
+      t.isMemberExpression(e.callee) &&
+      !e.callee.computed &&
+      t.isIdentifier(e.callee.property) &&
+      e.callee.property.name === "addEventListener"
+    )
+      continue;
+    return;
+  }
+  if (result.postExprs?.length) {
+    const data = path.scope.getProgramParent().data as ProgramScopeData;
+    const moduleName = getRendererConfig(path, "dom").moduleName;
+    const rheUid = data.imports?.get(`${moduleName}:runHydrationEvents`);
+    for (const stmt of result.postExprs) {
+      if (
+        !t.isExpressionStatement(stmt) ||
+        !t.isCallExpression(stmt.expression) ||
+        !t.isIdentifier(stmt.expression.callee) ||
+        !rheUid ||
+        stmt.expression.callee.name !== rheUid.name
+      )
+        return;
+    }
+  }
+
+  const data = path.scope.getProgramParent().data as ProgramScopeData;
+  (data.pureRows || (data.pureRows = new Set())).add(fn);
+}
+
 /** Patch-mode emission (shared/patch.ts): one compiled body doing inline
  * compares + setAttr writes, handed to the runtime driver which registers
  * on the store patch channel (patchable subject) or falls back to a
  * tracked force-mode effect running the SAME body. Returns undefined when
- * the scope is ineligible — caller falls through to the effect shapes. */
-function wrapPatchMode(path: NodePath, dynamics: DynamicBinding[]): t.Statement | undefined {
+ * the scope is ineligible — caller falls through to the effect shapes.
+ * The subject rides along for row-proof analysis (recordPureRow). */
+function wrapPatchMode(
+  path: NodePath,
+  dynamics: DynamicBinding[]
+): { stmt: t.Statement; subject: string } | undefined {
   const config = getConfig(path);
+  if (dynamics.length === 0) return;
   const eligibility = analyzePatchEligibility(dynamics.map(d => d.value as t.Expression));
   if (!eligibility) return;
   const subject = eligibility.subject;
@@ -188,25 +298,20 @@ function wrapPatchMode(path: NodePath, dynamics: DynamicBinding[]): t.Statement 
     );
   }
   const driverId = registerImportMethod(path, config.patchDriver as string, undefined);
-  return t.expressionStatement(
-    t.callExpression(driverId, [
-      t.identifier(subject),
-      t.arrowFunctionExpression([nId, pId, fId], t.blockStatement(stmts))
-    ])
-  );
+  return {
+    stmt: t.expressionStatement(
+      t.callExpression(driverId, [
+        t.identifier(subject),
+        t.arrowFunctionExpression([nId, pId, fId], t.blockStatement(stmts))
+      ])
+    ),
+    subject
+  };
 }
 
 function wrapDynamics(path: NodePath, dynamics: DynamicBinding[]) {
   if (!dynamics.length) return;
   const config = getConfig(path);
-
-  // Patch mode: compiled compare/write body driven by the store's diff when
-  // the runtime driver finds a patchable subject (dual driver — semantics
-  // identical on the effect fallback).
-  if (config.patchDriver) {
-    const patched = wrapPatchMode(path, dynamics);
-    if (patched) return patched;
-  }
 
   // dynamics are only queued when effectWrapper is configured (element.ts
   // guards every push), so the name is always a string here
