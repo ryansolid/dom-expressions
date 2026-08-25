@@ -495,6 +495,23 @@ impl ExecutionCensus {
                             },
                         ),
                         JSXAttributeItem::Attribute(attribute) => {
+                            let name = Self::attribute_name(&attribute.name);
+                            if !component
+                                && name == "children"
+                                && let Some(JSXAttributeValue::StringLiteral(value)) =
+                                    &attribute.value
+                            {
+                                // Upstream `bba3db6c` promotes an
+                                // unbraced string attribute into a synthesized
+                                // JSX expression container. Child lowering
+                                // consequently records at the original string
+                                // span, but literal-only values are not
+                                // execution sites. Remember the span so that
+                                // recording remains a no-op, exactly as for a
+                                // braced literal child.
+                                self.ignore_literal(value.span);
+                                continue;
+                            }
                             let Some(JSXAttributeValue::ExpressionContainer(container)) =
                                 &attribute.value
                             else {
@@ -503,7 +520,6 @@ impl ExecutionCensus {
                             if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
                                 continue;
                             }
-                            let name = Self::attribute_name(&attribute.name);
                             if !component
                                 && Self::stateful_dynamic_key(
                                     native_tag_name,

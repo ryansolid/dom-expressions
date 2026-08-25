@@ -934,13 +934,11 @@ impl<'a> AstDomTransform<'a, '_> {
             &tag_name,
             &child_id,
             !child.children.is_empty(),
-            // `children_from_attribute` is only read on the spread branch of
-            // `lower_template_attributes`, and `captured_child` above is
-            // gated on `!has_spread` — so on that branch it is always `None`
-            // and this argument is always dead. Literal `false`, not
-            // `captured_child.is_some()`, documents that invariant instead
-            // of silently depending on it.
-            false,
+            // A captured value is owned by child lowering. Tell the attribute
+            // pass not to resolve the same censused site as elided first; if a
+            // later dynamic `textContent` wins the shared slot, the explicit
+            // loser branch below records that one terminal decision instead.
+            captured_child.is_some(),
             &mut child_template.html,
             &mut child_declarations,
             &mut child_operations,

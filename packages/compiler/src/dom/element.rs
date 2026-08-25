@@ -1,7 +1,8 @@
 use crate::error::Result;
 use oxc_allocator::{Allocator, CloneIn};
 use oxc_ast::ast::{
-    AssignmentOperator, AssignmentTarget, Expression, JSXElement, JSXExpression, Statement,
+    AssignmentOperator, AssignmentTarget, Expression, JSXAttributeItem, JSXAttributeName,
+    JSXElement, JSXExpression, Statement,
 };
 
 use crate::dom::attrs::CloseTagContext;
@@ -269,7 +270,11 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         // promoted value is decided by the child lowering path.
         let attribute_child =
             (!is_void_element(&tag_name) && !has_spread && element.children.is_empty())
-                .then(|| children_attribute_child(self.allocator, element))
+                .then(|| {
+                    (!children_attribute_is_overwritten_by_dynamic_text_content(self, element))
+                        .then(|| children_attribute_child(self.allocator, element))
+                        .flatten()
+                })
                 .flatten();
         let children_from_attribute = attribute_child.is_some();
         let element: &JSXElement<'a> = if let Some(child) = attribute_child {
@@ -656,6 +661,53 @@ fn is_children_attribute(attr: &oxc_ast::ast::JSXAttributeItem<'_>) -> bool {
         &attr.name,
         oxc_ast::ast::JSXAttributeName::Identifier(name) if name.name == "children"
     )
+}
+
+/// Babel's attribute loop stores native `children` and dynamic `textContent`
+/// in one slot. At a template root a later dynamic `textContent` therefore
+/// overwrites an earlier `children` capture; the child value is not emitted.
+/// Keep this order check on the template-root capture only. The nested path's
+/// native-children lowering is a separate, known residue after bba3db6c and is
+/// documented and pinned independently rather than repaired here.
+fn children_attribute_is_overwritten_by_dynamic_text_content(
+    transform: &AstDomTransform<'_, '_>,
+    element: &JSXElement<'_>,
+) -> bool {
+    let last = |name: &str| {
+        element
+            .opening_element
+            .attributes
+            .iter()
+            .rposition(|attr| match attr {
+                JSXAttributeItem::Attribute(attr) => matches!(
+                    &attr.name,
+                    JSXAttributeName::Identifier(identifier) if identifier.name == name
+                ),
+                JSXAttributeItem::SpreadAttribute(_) => false,
+            })
+    };
+    let Some(children_index) = last("children") else {
+        return false;
+    };
+    let Some(text_content_index) = last("textContent") else {
+        return false;
+    };
+    if text_content_index <= children_index || transform.effect_wrapper.is_none() {
+        return false;
+    }
+    let JSXAttributeItem::Attribute(attribute) =
+        &element.opening_element.attributes[text_content_index]
+    else {
+        return false;
+    };
+    let Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) = &attribute.value
+    else {
+        return false;
+    };
+    let Some(expression) = container.expression.as_expression() else {
+        return false;
+    };
+    transform.classify().is_dynamic(None, expression, false)
 }
 
 /// The nested lowering path only promotes a non-literal expression container;
