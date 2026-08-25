@@ -153,6 +153,45 @@ describe("document face — the sc:live channel", () => {
     expect(html).toContain('class=\\"b\\"');
   });
 
+  it("a swept re-emission keeps minting _bnd: the mint-time context rides the sweep", async () => {
+    // The greeting-copy-button regression: markup that GROWS a claim-carrying
+    // element only in a later value of a live hole. Sweeps re-evaluate under
+    // `runWithOwner`, which restores the owner but not `sharedConfig.context`
+    // — and on the document face the module global has long moved past the
+    // component by the time a commit lands, so the compiled guard read
+    // `claims: undefined` and the button shipped inert. (The stream face
+    // never noticed: its whole response is one render, so the global still
+    // pointed at the armed context.) The engine now captures the render
+    // context at hole mint and restores it around sweep evaluation.
+    const claim = map =>
+      sharedConfig.context && sharedConfig.context.claims ? r.ssrClaim(map) : "";
+    let ctx;
+    let release;
+    let grown = false;
+    const Inline = inline(props => {
+      ctx = sharedConfig.context;
+      release = ctx.hold();
+      return r.ssr(["<section>", "</section>"], () =>
+        grown ? r.ssr`<button${claim({ click: props.onCopy })}>Copy</button>` : r.escape("wait")
+      );
+    });
+    const done = renderDocument(() => Inline({}));
+    await new Promise(res => setTimeout(res, 0));
+    // Another request renders while this response is held open — on a real
+    // server the module global always points somewhere else by commit time.
+    await renderDocument(() => r.ssr(["<i>", "</i>"], () => r.escape("other")));
+    grown = true;
+    ctx.commit();
+    await new Promise(res => setTimeout(res, 0));
+    release();
+    const html = await done;
+    // V1 page markup: no button, no marker (nothing claimed at t=0).
+    expect(html).toMatch(/<section><!--lh:(\d+)-->wait<!--lh:\/\1--><\/section>/);
+    // The channel op carries the grown button WITH its claim marker.
+    expect(html).toContain(`_bnd=`);
+    expect(html).toContain("click=onCopy");
+  });
+
   it("a getter slot arg re-emits the occurrence's record as a fid-tagged slot op on commit", async () => {
     // The natural authored shape — `arg={expr()}`, a compiled getter — is
     // the SAME shape as a markup hole and must be exactly as live at t=0:

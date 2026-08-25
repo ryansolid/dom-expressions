@@ -2214,6 +2214,25 @@ export function createLiveHoles(sink, scoped) {
   // holes' markers, while sweep re-evaluations are mint-suppressed and
   // produce none — the equality gate must not read that as a change.
   const stripMarkers = html => html.replace(/<!--lh:\/?\d+-->/g, "");
+  // Sweeps re-evaluate under the mint-time render CONTEXT as well as the
+  // owner. `runWithOwner` restores only the owner; everything a compiled
+  // template reads off `sharedConfig.context` (the behavior-claims arming
+  // enum, key scopes) is a module global the render moves past. The stream
+  // face never noticed — its whole response is one render, so the global
+  // still points at the armed context when async sweeps fire. The document
+  // face replaces it as the document renders past the component, so swept
+  // re-emissions there lost every context-derived byte: `_bnd` claim
+  // markers vanished from late holes (a copy button that compiled, streamed
+  // its markup, and never armed).
+  const swept = (owner, ctx, fn) => {
+    const prev = sharedConfig.context;
+    sharedConfig.context = ctx;
+    try {
+      return owner ? runWithOwner(owner, fn) : fn();
+    } finally {
+      sharedConfig.context = prev;
+    }
+  };
   // Resolve a hole thunk's value to a `{ t, h, p }` result. NotReady
   // escalations are absorbed into h/p (the caller decides pending
   // semantics); real errors propagate.
@@ -2316,6 +2335,7 @@ export function createLiveHoles(sink, scoped) {
       const recordsBefore = engine.recordStamp;
       const ownersBefore = stamp();
       const owner = getOwner();
+      const holeCtx = sharedConfig.context;
       const b = {
         key: null,
         children: [],
@@ -2329,9 +2349,7 @@ export function createLiveHoles(sink, scoped) {
           const sweepOwnersBefore = stamp();
           let res;
           try {
-            res = owner
-              ? runWithOwner(owner, () => resolveHoleValue(hole))
-              : resolveHoleValue(hole);
+            res = swept(owner, holeCtx, () => resolveHoleValue(hole));
           } catch (err) {
             // A real error is terminal for the hole — the last emitted
             // markup stands and the failure surfaces as a keyed error.
@@ -2491,6 +2509,7 @@ export function createLiveHoles(sink, scoped) {
      */
     attr(cap) {
       const owner = getOwner();
+      const holeCtx = sharedConfig.context;
       const b = {
         key: "lha:" + cap.id,
         children: [],
@@ -2526,7 +2545,7 @@ export function createLiveHoles(sink, scoped) {
                 if (vt === "string" || vt === "number") html += v;
               }
             };
-            owner ? runWithOwner(owner, run) : run();
+            swept(owner, holeCtx, run);
           } catch (err) {
             // NotReady holds for a later commit (the end-latch sweep is the
             // floor); a real error is terminal, same rule as content holes.
