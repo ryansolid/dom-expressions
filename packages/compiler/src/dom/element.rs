@@ -1,8 +1,7 @@
 use crate::error::Result;
 use oxc_allocator::{Allocator, CloneIn};
 use oxc_ast::ast::{
-    AssignmentOperator, AssignmentTarget, Expression, JSXAttributeItem, JSXAttributeName,
-    JSXElement, JSXExpression, Statement,
+    AssignmentOperator, AssignmentTarget, Expression, JSXElement, JSXExpression, Statement,
 };
 
 use crate::dom::attrs::CloseTagContext;
@@ -270,11 +269,7 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         // promoted value is decided by the child lowering path.
         let attribute_child =
             (!is_void_element(&tag_name) && !has_spread && element.children.is_empty())
-                .then(|| {
-                    (!children_attribute_is_overwritten_by_dynamic_text_content(self, element))
-                        .then(|| children_attribute_child(self.allocator, element))
-                        .flatten()
-                })
+                .then(|| children_attribute_child(self.allocator, element))
                 .flatten();
         let children_from_attribute = attribute_child.is_some();
         let element: &JSXElement<'a> = if let Some(child) = attribute_child {
@@ -395,10 +390,10 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
                 subject: patched_subject.clone(),
             });
         }
-        if patched_subject.is_none() {
-            if let Some(statement) = self.wrap_dynamics_statement(dynamics) {
-                operations.push(statement);
-            }
+        if patched_subject.is_none()
+            && let Some(statement) = self.wrap_dynamics_statement(dynamics)
+        {
+            operations.push(statement);
         }
         if self.should_close_tag(&tag_name, CloseTagContext::root()) {
             template.html.push_str(&format!("</{tag_name}>"));
@@ -632,123 +627,20 @@ fn xmlns_attribute_value(element: &JSXElement<'_>) -> Option<String> {
     })
 }
 
-/// Matches the Babel plugin's `children`-attribute capture. JSX attribute
-/// dedup selects by *name* first — the last attribute spelled `children`
-/// wins, regardless of its value's shape — and only then captures that
-/// survivor as element children (template-inline or insert). String
-/// attributes are wrapped as expression containers so the child pass can
-/// fold them like `{ "hello" }`.
+/// Matches upstream's `children`-attribute capture: the last capturable
+/// `children` attribute becomes element children (template-inline or insert).
+/// String attributes are wrapped as expression containers so the child pass
+/// can fold them like `{ "hello" }`.
 pub(crate) fn children_attribute_child<'a>(
     allocator: &'a Allocator,
     element: &JSXElement<'a>,
 ) -> Option<oxc_ast::ast::JSXChild<'a>> {
-    let last_named_children = element
+    element
         .opening_element
         .attributes
         .iter()
-        .rposition(is_children_attribute)?;
-    children_attribute_child_from_item(
-        allocator,
-        &element.opening_element.attributes[last_named_children],
-    )
-}
-
-fn is_children_attribute(attr: &oxc_ast::ast::JSXAttributeItem<'_>) -> bool {
-    let oxc_ast::ast::JSXAttributeItem::Attribute(attr) = attr else {
-        return false;
-    };
-    matches!(
-        &attr.name,
-        oxc_ast::ast::JSXAttributeName::Identifier(name) if name.name == "children"
-    )
-}
-
-/// Babel's attribute loop stores native `children` and dynamic `textContent`
-/// in one slot. At a template root a later dynamic `textContent` therefore
-/// overwrites an earlier `children` capture; the child value is not emitted.
-/// Keep this order check on the template-root capture only. The nested path's
-/// native-children lowering is a separate, known residue after bba3db6c and is
-/// documented and pinned independently rather than repaired here.
-fn children_attribute_is_overwritten_by_dynamic_text_content(
-    transform: &AstDomTransform<'_, '_>,
-    element: &JSXElement<'_>,
-) -> bool {
-    let last = |name: &str| {
-        element
-            .opening_element
-            .attributes
-            .iter()
-            .rposition(|attr| match attr {
-                JSXAttributeItem::Attribute(attr) => matches!(
-                    &attr.name,
-                    JSXAttributeName::Identifier(identifier) if identifier.name == name
-                ),
-                JSXAttributeItem::SpreadAttribute(_) => false,
-            })
-    };
-    let Some(children_index) = last("children") else {
-        return false;
-    };
-    let Some(text_content_index) = last("textContent") else {
-        return false;
-    };
-    if text_content_index <= children_index || transform.effect_wrapper.is_none() {
-        return false;
-    }
-    let JSXAttributeItem::Attribute(attribute) =
-        &element.opening_element.attributes[text_content_index]
-    else {
-        return false;
-    };
-    let Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) = &attribute.value
-    else {
-        return false;
-    };
-    let Some(expression) = container.expression.as_expression() else {
-        return false;
-    };
-    transform.classify().is_dynamic(None, expression, false)
-}
-
-/// The nested lowering path only promotes a non-literal expression container;
-/// keep this view separate from the template-root helper, which also captures
-/// strings and numbers after the upstream native-children parity change.
-pub(crate) fn children_attribute_container<'e, 'a>(
-    element: &'e JSXElement<'a>,
-) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
-    let last_named_children = element
-        .opening_element
-        .attributes
-        .iter()
-        .rposition(is_children_attribute)?;
-    children_attribute_container_from_item(&element.opening_element.attributes[last_named_children])
-}
-
-pub(crate) fn children_attribute_container_from_item<'e, 'a>(
-    attr: &'e oxc_ast::ast::JSXAttributeItem<'a>,
-) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
-    let oxc_ast::ast::JSXAttributeItem::Attribute(attr) = attr else {
-        return None;
-    };
-    let oxc_ast::ast::JSXAttributeName::Identifier(name) = &attr.name else {
-        return None;
-    };
-    if name.name != "children" {
-        return None;
-    }
-    let Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) = &attr.value else {
-        return None;
-    };
-    if matches!(
-        container.expression,
-        JSXExpression::StringLiteral(_)
-            | JSXExpression::NumericLiteral(_)
-            | JSXExpression::BooleanLiteral(_)
-            | JSXExpression::EmptyExpression(_)
-    ) {
-        return None;
-    }
-    Some(container)
+        .rev()
+        .find_map(|attr| children_attribute_child_from_item(allocator, attr))
 }
 
 pub(crate) fn children_attribute_child_from_item<'a>(

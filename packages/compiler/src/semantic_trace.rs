@@ -847,10 +847,9 @@ impl TraceRecorder {
     /// once did — failed the whole file for `on*`/`ref`/`children` spellings,
     /// either as an unresolved site or as a category mismatch.
     ///
-    /// A *promoted* `children` value must not come through here: child
-    /// insertion owns its decision, and the promotion (see
-    /// `children_attribute_container`) only captures values the constant fold
-    /// leaves alone, so the attribute pipeline never resolves those spans.
+    /// A template-root `children` value promoted by upstream must not come
+    /// through here: child insertion owns its decision, and the attribute
+    /// pipeline is told that the child came from the attribute.
     pub(crate) fn resolve_lowered_attribute(&mut self, span: Span, decision: ValueDecision) {
         for kind in [
             ExecutionSiteKind::NativeAttribute,

@@ -43,22 +43,18 @@ fixed: run `transform_output_matches_parent_baseline` first and read the entries
 it names, confirm every one is a shape the change predicts, then regenerate with
 the `#[ignore]`d, environment-gated `regenerate_transform_output_baseline` and
 review the diff line by line. An entry that moves for a reason the branch cannot
-explain is a codegen regression, not a stale baseline. Synchronizing the two
-`next` histories brought upstream native-children and escaping output changes,
-and exposed twelve already-present probes that the stale baseline had not yet
-appended (four native-children cases and eight row-proof cases). This
-divergence-5 change adds three root-order probes. This divergence-2 change adds
-two probes for the nested `textContent` child-list gate: one real child and one
-textarea `value` replacement. The regenerated baseline contains exactly the
-base-synchronization entries, the three root-order entries, and those two
-newly parity-matched outputs; the known native-children residue remains
-represented by its baseline entries and named parity exclusions.
+explain is a codegen regression, not a stale baseline. The baseline now records
+the synchronized upstream `next` transform with semantic tracing disabled.
+Trace work may add probes and therefore append entries, but it may not
+deliberately move an existing entry. Compiler-behavior proposals belong on
+separate topic branches and enter this branch only after upstream adopts them.
 
-### The trace describes this compiler, not the parity target
+### The trace describes upstream `next`, not the parity target
 
-The trace is truthful about *this compiler's* emissions, even where they
-diverge from the parity-target Babel plugin. Three rules follow, and they are
-binding on both producer and consumer:
+This fork's production contract is upstream `next` plus an observational trace.
+The trace is truthful about upstream's emissions, even where they diverge from
+the parity-target Babel plugin. Three rules follow, and they are binding on both
+producer and consumer:
 
 - A site is retracted only where a child list is genuinely discarded by *this*
   compiler. Retracting to match the parity target — or inventing a site because
@@ -83,16 +79,12 @@ regeneration — see "The transform baseline" below:
    position and emits no insert. The census follows the emission, so the site
    is reported as `jsx-child`/`reactive-rerun`. A consumer must treat a
    `jsx-child` site inside a void native element as **uncertifiable**.
-2. **Resolved — nested dynamic-`textContent` children.**
-   `<div><span textContent={x()}>{y()}</span></div>`: Babel emits no
-   placeholder there — template `` `<div><span>` ``, `_$insert(_el$2, y)`, and
-   an effect writing `_el$3.data` where `_el$3 = _el$2.firstChild` is whatever
-   the insert produced; its text placeholder appears only in the no-children
-   shape (`<div><span textContent={x()}/>`). Nested lowering now applies the
-   same `!hasChildren` gate as the template-root path: it lowers the existing
-   child list, retains its execution sites, and emits the placeholder only for
-   the empty-child shape. The textarea `value` replacement participates in the
-   same gate, so its literal seed remains the effect's initial text node.
+2. **Nested dynamic-`textContent` children.**
+   `<div><span textContent={x()}>{y()}</span></div>`: Babel keeps the source
+   child and emits `_$insert(_el$2, y)`. Upstream `next` takes its unconditional
+   nested placeholder path and drops the source child. The trace retracts `y`
+   because upstream emits nothing for it; a consumer targeting Babel must treat
+   the shape as uncertifiable.
 3. **Template-root `<noscript>` children.** `<noscript>{x()}</noscript>`: Babel
    drops `<noscript>` children in every position; this fork drops them only on
    the static-template fast path, and where the `<noscript>` is its own template
@@ -108,7 +100,7 @@ regeneration — see "The transform baseline" below:
    `_$insert(_el$, c)`; Babel's `transformElement` never visits a
    `<noscript>`'s children at all — pushed-by-promotion or written
    directly — so it emits nothing. Still divergent.
-4. **Nested `children` attribute promotion.** *Reopened by `bba3db6c`.*
+4. **Nested `children` attribute promotion.**
    The upstream fix made native `children` child content everywhere and the
    fork's attribute planner now correctly skips it as a DOM property. However,
    the existing nested static-template fast path can consequently classify a
@@ -124,44 +116,31 @@ regeneration — see "The transform baseline" below:
    excluded only in `dom-wrapperless`, where it actually differs. The two
    non-literal dynamic `textContent` order probes match Babel in every mode and
    remain asserted.
-   This branch does not reintroduce a nested workaround or alter the upstream
-   `children` semantics. The semantic trace remains truthful about the fork's
-   output: a value that is skipped by this path is resolved as elided, and no
-   synthetic child site is invented.
+   This branch does not add a nested workaround or alter upstream's `children`
+   semantics. The semantic trace remains truthful about upstream's output: a
+   skipped value is resolved as elided, and no synthetic child site is
+   invented.
 
    The shapes that still agree remain asserted: source children shadow the
    attribute, void elements and spreads do not promote it, and the surviving
    source-order cases are covered separately. See "Discarded child lists" for
    the writers that can take Babel's single `children` slot away.
 
-   **Dedup note.** `children_attribute_container`'s first cut selected by
-   walking attributes in reverse and skipping past any `children` whose value
-   failed the literal/constant-fold filter — so a trailing literal duplicate
-   (`<span children={x()} children={"s"}/>`) fell through to an *earlier*
-   non-literal `children` and wrongly promoted it. Babel's own attribute
-   dedup selects by name first (`babel-plugin-jsx/src/dom/element.ts:505-524`)
-   and only then judges literal-ness on that single survivor, so a trailing
-   literal duplicate blocks promotion outright — it does not resurrect an
-   earlier attribute the dedup already discarded. The fix selects the last
-   attribute named `children` by position alone (`rposition`, the same
-   name-only selection `children_attribute_outranks_text_content` already
-   used), then applies the literal filter to that one attribute and bails on
-   failure. This was a latent bug in the template-root path too, not only the
-   nested one added here — both call the same function.
+   Upstream's root capture also walks backward to the last *capturable*
+   `children` value rather than selecting the last spelling before testing its
+   value shape. The trace follows whichever value upstream actually lowers;
+   it does not repair duplicate selection to match Babel.
 
-Divergences found while resolving 4 above, all pre-existing. Each entry records
-its current scope and status; divergences 6, 7, and 9 remain open:
+Divergences found while investigating 4 above, all pre-existing:
 
-5. **Template-root slot order.** *Resolved for the template-root path.*
+5. **Template-root slot order.**
    `<span children={x()} textContent={t()}/>`: Babel's
    `transformAttributes` keeps one `children` slot, so the later dynamic
    `textContent` overwrites the captured attribute value with its synthesized
-   text node and `x` is dropped. The fork now applies the same last-writer
-   check before root child promotion. The focused probes also pin the converse
-   order (`textContent` before `children`) and a static `textContent`: both
-   retain the `children` insert, matching Babel. This fix is intentionally
-   limited to template roots; the reopened nested residue above is a separate
-   static-path issue.
+   text node and `x` is dropped. Upstream captures the child before its
+   attribute loop and therefore still inserts `x`. The trace records that
+   insert; a Babel-targeting consumer must treat this ordering as
+   uncertifiable.
 6. **JSX-valued holes.** `<span children={<b>{x()}</b>}/>` and the plain
    `<span>{<b>{x()}</b>}</span>` both emit Babel's `() => (() => {…})()` as
    `() => {…}` — the same expression, a different lowering shape. Unrelated to
@@ -171,14 +150,12 @@ its current scope and status; divergences 6, 7, and 9 remain open:
    so it promotes and emits `_$insert(_el$, undefined)`; this fork's promotion
    filter asks whether the constant fold is confident at all, so it keeps the
    value as an attribute and emits nothing. Identical in both positions.
-8. **Nested custom-element owner context.** *Resolved for every DOM lowering
-   path.* With `contextToCustomElements`, nested dashed custom elements,
-   customized built-ins carrying `is=`, and `<slot>` now receive the same
-   `_$owner = _$getOwner()` assignment as template roots. The assignment is
-   emitted after attribute operations and before child inserts. Three focused
-   probes pin the nested forms across all ten modes; the applicable DOM and
-   dynamic-DOM outputs match Babel, while SSR and universal modes remain
-   unchanged.
+8. **Nested custom-element owner context.** With
+   `contextToCustomElements`, upstream assigns `_$owner = _$getOwner()` at a
+   template root but not for nested dashed custom elements, customized built-ins
+   carrying `is=`, or `<slot>`. The trace must not invent the missing owner
+   establishment; a Babel-targeting consumer must treat those nested contexts
+   as uncertifiable.
 9. **Textarea `value` fold on a non-literal-spelled but constant expression.**
    `<textarea value={"a" + "b"}/>`: Babel's fold judges "literal" by AST node
    type only (`StringLiteral`/`NumericLiteral`/`BooleanLiteral`/`NullLiteral`),
@@ -201,13 +178,13 @@ its current scope and status; divergences 6, 7, and 9 remain open:
    const a = _g1$();
    ```
    Both forms render the same textarea value at first paint, but the emitted
-   code differs, and — critically — a real `children` attribute alongside a
+   code differs. At a template root, a real `children` attribute alongside a
    non-literal-spelled constant `value` is promoted by Babel (the fold never
-   claims the child slot there) while this fork's fold still claims it and
-   drops the promotion. Pre-existing, not introduced by resolving 4 above, and
-   present in both the template-root and nested position since both paths
-   share the same attribute planner. The fold bullet under "Discarded child
-   lists" is scoped to a genuine literal spelling for this reason — a
+   claims the child slot there) while upstream's fold claims it and drops the
+   promotion. The textarea fold itself is present in both positions because
+   both paths share the same attribute planner; nested `children` is already
+   omitted independently by divergence 4. The fold bullet under "Discarded
+   child lists" is scoped to a genuine literal spelling for this reason — a
    constant-foldable non-literal expression is this divergence, not that
    bullet's parity-clean case.
 
@@ -249,32 +226,17 @@ discard a child list:
   insert — the capture is gated on `!is_void_element` in both
   `lower_dom_element` and `lower_dynamic_native_child` — so it stays a
   `native-attribute` site resolved as `elided`.
-- A `children` **attribute another writer of Babel's `children` slot takes
-  away**. `transformAttributes` fills one slot per element, so the value can be
-  captured and then discarded unlowered. This is a discarded *value*, not a
-  discarded list: nothing is emitted for it, so the census's `jsx-child` site is
-  decided as `elided` rather than retracted, and Babel emits nothing for it
-  either, so the decision is parity-clean. Three writers take the slot in
-  nested native-child position: a **dynamic `textContent` later in the
-  attribute list** (`<div><span children={x()} textContent={t()}/></div>` —
-  Babel's `children = t.jsxText(" ")` overwrites the capture; a `textContent`
-  *before* the attribute loses, and then both the effect and the insert are
-  emitted), the **textarea `value` fold on a literal spelling**, which fills
-  the child list in preprocessing so `!hasChildren` blocks the push
-  (`<div><textarea value="lit" children={x()}/></div>` — a constant-foldable
-  but non-literal-spelled `value` does not fill the slot in Babel and is
-  divergence 9, not this bullet), and **`<noscript>`**,
-  whose pushed child list Babel never visits at all
-  (`if (tagName !== "noscript") transformChildren(…)`), so the capture is
-  discarded rather than promoted into an insert Babel does not emit. At the
-  template root the same shapes are reached differently: the fold retracts the
-  already-promoted child instead of eliding it, `<noscript>` is divergence 3
-  above, and the attribute-order contest is divergence 5.
-- A native element with dynamic `textContent` receives a synthesized text
-  placeholder only when its final child list is empty. Nested and template-root
-  lowering share Babel's `!hasChildren` gate: with source children, a promoted
-  `children` value, or a textarea `value` replacement, ordinary child lowering
-  supplies the `firstChild` whose `data` the text-content effect updates.
+- A nested native element's `children` **attribute** is not promoted by
+  upstream's nested paths. Its censused `jsx-child` value is decided as
+  `elided`, whether the nested element uses the static fast path or full
+  attribute lowering. At a template root upstream does promote the value;
+  dynamic `textContent` source order and duplicate selection can therefore
+  produce the Babel divergences 5 and 4 above.
+- A nested native element with dynamic `textContent` always receives
+  upstream's synthesized placeholder. Any source child list is discarded and
+  its sites are retracted. Template-root lowering retains its existing
+  `!hasChildren` gate; the two positions intentionally describe different
+  upstream paths here.
 - The **textarea `value` fold, for a genuine literal spelling of `value`**
   (a string, numeric, or boolean literal, or no value at all — not merely a
   constant-foldable expression; see divergence 9), replaces the element's

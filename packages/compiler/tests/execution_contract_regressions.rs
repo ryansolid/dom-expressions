@@ -612,12 +612,11 @@ fn void_children_leave_neighbouring_facts_untouched() {
     );
 }
 
-/// Babel's `!hasChildren` gate applies in nested position too: a dynamic
-/// `textContent` contributes the `firstChild` effect, while real children still
-/// lower and retain their execution sites. Only the no-child shape receives the
-/// synthesized placeholder.
+/// Upstream's nested dynamic-`textContent` path emits its placeholder even
+/// when source children exist, so those children are discarded rather than
+/// lowered. The trace must describe that output instead of repairing it.
 #[test]
-fn dynamic_text_content_keeps_real_children() {
+fn dynamic_text_content_reports_upstream_discarded_children() {
     let source = "const el = <div><span textContent={x()}>{y()}</span></div>;";
     let rendered = trace(source);
     assert_eq!(
@@ -630,18 +629,18 @@ fn dynamic_text_content_keeps_real_children() {
                 site.decision
             ))
             .collect::<Vec<_>>(),
-        [
-            (
-                "x()",
-                ExecutionSiteKind::NativeAttribute,
-                TerminalDecision::Value(ValueDecision::ReactiveRerun)
-            ),
-            (
-                "y()",
-                ExecutionSiteKind::JsxChild,
-                TerminalDecision::Value(ValueDecision::ReactiveRerun)
-            )
-        ]
+        [(
+            "x()",
+            ExecutionSiteKind::NativeAttribute,
+            TerminalDecision::Value(ValueDecision::ReactiveRerun)
+        )]
+    );
+    assert!(
+        rendered
+            .owner_establishments
+            .iter()
+            .all(|fact| source_text(source, fact.span.start, fact.span.end) != "y()"),
+        "the discarded child must not acquire an invented owner"
     );
 
     let no_child = "const el = <div><span textContent={x()} /></div>;";
@@ -854,11 +853,9 @@ fn inert_noscript_children_reconcile_in_every_position() {
     }
 }
 
-/// Upstream `bba3db6c` makes a non-literal `children` attribute
-/// child content. Template roots and nested elements that take the dynamic
-/// lowering path promote it to an insert. The fork's existing nested static
-/// fast path still skips that promotion, so its trace truthfully reports the
-/// value as elided until that separate transform divergence is fixed.
+/// Upstream `bba3db6c` makes a native `children` attribute child content at a
+/// template root. Its nested paths still drop the value, including paths with
+/// dynamic attributes. The trace follows those two actual lowering paths.
 #[test]
 fn native_children_trace_matches_the_selected_lowering_path() {
     // A template root promotes the value to an ordinary reactive child and
@@ -913,8 +910,8 @@ fn native_children_trace_matches_the_selected_lowering_path() {
         );
     }
 
-    // Dynamic attributes or callbacks force the nested element through full
-    // lowering, where the promoted child does emit and owns an insert.
+    // Dynamic attributes or callbacks force full nested lowering, but
+    // upstream still does not promote the `children` value there.
     for source in [
         "const el = <div><span id={id()} children={x()} /></div>;",
         "const el = <div><span ref={node} onClick={handler} children={x()} /></div>;",
@@ -924,17 +921,18 @@ fn native_children_trace_matches_the_selected_lowering_path() {
             rendered.sites.iter().any(|site| {
                 source_text(source, site.span.start, site.span.end) == "x()"
                     && site.kind == ExecutionSiteKind::JsxChild
-                    && site.decision == TerminalDecision::Value(ValueDecision::ReactiveRerun)
+                    && site.decision == TerminalDecision::Value(ValueDecision::Elided)
             }),
-            "{source}: full nested lowering promotes the child, got {:?}",
+            "{source}: full nested lowering drops the child, got {:?}",
             rendered.sites
         );
         assert!(
-            rendered.owner_establishments.iter().any(|fact| {
-                fact.wrapper == "insert"
-                    && source_text(source, fact.span.start, fact.span.end) == "x()"
-            }),
-            "{source}: full nested lowering reports the insert, got {:?}",
+            rendered.owner_establishments.iter().all(|fact| source_text(
+                source,
+                fact.span.start,
+                fact.span.end
+            ) != "x()"),
+            "{source}: full nested lowering emits no child insert, got {:?}",
             rendered.owner_establishments
         );
     }
@@ -973,8 +971,8 @@ fn native_children_trace_matches_the_selected_lowering_path() {
         );
     }
 
-    // A `children` attribute *after* the dynamic `textContent` wins the slot:
-    // both the attribute effect and the child insert are emitted.
+    // Attribute order does not repair upstream's nested omission: the
+    // `textContent` effect remains, while `children` is elided.
     let source = "const el = <div><span textContent={t()} children={x()} /></div>;";
     let rendered = trace(source);
     assert_eq!(
@@ -996,7 +994,7 @@ fn native_children_trace_matches_the_selected_lowering_path() {
             (
                 "x()",
                 ExecutionSiteKind::JsxChild,
-                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+                TerminalDecision::Value(ValueDecision::Elided)
             ),
         ]
     );
