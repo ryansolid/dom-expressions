@@ -734,6 +734,15 @@ const a = <Comp flag another={true}>{x()}</Comp>;
   "custom element props and events": `
 const a = <my-el prop:custom={c()} attr:plain={p()} onSomething={h} value={v()}>{x()}</my-el>;
 `,
+  "nested custom element owner context": `
+const a = <div><my-widget id={i()} /></div>;
+`,
+  "nested customized builtin owner context": `
+const a = <div><button is="my-button" id={i()} /></div>;
+`,
+  "nested slot owner context": `
+const a = <div><slot name={n()} /></div>;
+`,
   "slot element": `
 const a = <slot name={n()}>{fallback()}</slot>;
 `,

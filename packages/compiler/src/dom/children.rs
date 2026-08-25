@@ -945,6 +945,14 @@ impl<'a> AstDomTransform<'a, '_> {
             dynamics,
         )?;
 
+        // Babel attaches the current owner to every custom element when
+        // `contextToCustomElements` is enabled, including elements lowered
+        // through this nested native path. Keep the assignment after attribute
+        // operations and before child inserts, matching the template-root path.
+        if self.should_capture_custom_element_context(child, &tag_name) {
+            child_operations.push(self.custom_element_context_statement(child.span, &child_id));
+        }
+
         // The source child list, before any attribute-driven replacement: this
         // is the range the fold and the placeholder branch below discard.
         let source_children = child.children.as_slice();
