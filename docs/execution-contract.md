@@ -14,7 +14,7 @@ Before lowering, `ExecutionCensus` enumerates every supported JSX execution
 site. During lowering, `TraceRecorder` records the decision at the emission
 site. `finish()` rejects an unresolved censused site, a conflicting decision,
 or a decision for a site absent from the census. The corpus test runs every
-fixture family and all 489 parity probes through this reconciliation.
+fixture family and all 491 parity probes through this reconciliation.
 
 ### The transform baseline
 
@@ -47,10 +47,12 @@ explain is a codegen regression, not a stale baseline. Synchronizing the two
 `next` histories brought upstream native-children and escaping output changes,
 and exposed twelve already-present probes that the stale baseline had not yet
 appended (four native-children cases and eight row-proof cases). This
-divergence-5 change adds three root-order probes. The regenerated baseline
-contains exactly those base-synchronization entries and the three intentional
-root-order entries; the known nested residue remains represented by its
-baseline entries and named parity exclusions.
+divergence-5 change adds three root-order probes. This divergence-2 change adds
+two probes for the nested `textContent` child-list gate: one real child and one
+textarea `value` replacement. The regenerated baseline contains exactly the
+base-synchronization entries, the three root-order entries, and those two
+newly parity-matched outputs; the known native-children residue remains
+represented by its baseline entries and named parity exclusions.
 
 ### The trace describes this compiler, not the parity target
 
@@ -81,16 +83,16 @@ regeneration — see "The transform baseline" below:
    position and emits no insert. The census follows the emission, so the site
    is reported as `jsx-child`/`reactive-rerun`. A consumer must treat a
    `jsx-child` site inside a void native element as **uncertifiable**.
-2. **Nested dynamic-`textContent` children.**
+2. **Resolved — nested dynamic-`textContent` children.**
    `<div><span textContent={x()}>{y()}</span></div>`: Babel emits no
    placeholder there — template `` `<div><span>` ``, `_$insert(_el$2, y)`, and
    an effect writing `_el$3.data` where `_el$3 = _el$2.firstChild` is whatever
    the insert produced; its text placeholder appears only in the no-children
-   shape (`<div><span textContent={x()}/>`). This fork takes the placeholder
-   branch even with children — it is missing Babel's `!hasChildren` gate,
-   which its own template-root path does have — and drops the insert. The
-   discarded children's sites are retracted, so a consumer must read that
-   absence as **uncertifiable**, not as no-execution.
+   shape (`<div><span textContent={x()}/>`). Nested lowering now applies the
+   same `!hasChildren` gate as the template-root path: it lowers the existing
+   child list, retains its execution sites, and emits the placeholder only for
+   the empty-child shape. The textarea `value` replacement participates in the
+   same gate, so its literal seed remains the effect's initial text node.
 3. **Template-root `<noscript>` children.** `<noscript>{x()}</noscript>`: Babel
    drops `<noscript>` children in every position; this fork drops them only on
    the static-template fast path, and where the `<noscript>` is its own template
@@ -266,13 +268,11 @@ discard a child list:
   template root the same shapes are reached differently: the fold retracts the
   already-promoted child instead of eliding it, `<noscript>` is divergence 3
   above, and the attribute-order contest is divergence 5.
-- A **nested** native element with a dynamic `textContent` replaces its content
-  with a text placeholder and discards its source children; the recorder
-  retracts their censused sites (divergence 2 above). The **template-root**
-  path is different in two ways: it reaches its placeholder branch only when
-  the element has no children of its own (Babel's `!hasChildren` gate), so that
-  branch discards nothing — but its `value` fold, below, discards on the root
-  path exactly as the nested path does.
+- A native element with dynamic `textContent` receives a synthesized text
+  placeholder only when its final child list is empty. Nested and template-root
+  lowering share Babel's `!hasChildren` gate: with source children, a promoted
+  `children` value, or a textarea `value` replacement, ordinary child lowering
+  supplies the `firstChild` whose `data` the text-content effect updates.
 - The **textarea `value` fold, for a genuine literal spelling of `value`**
   (a string, numeric, or boolean literal, or no value at all — not merely a
   constant-foldable expression; see divergence 9), replaces the element's
@@ -287,11 +287,9 @@ discard a child list:
   `<div><textarea value="lit">{y()}</textarea></div>` into a bare
   `_$template("<div><textarea>lit")` with no insert, and a `ref`/`on*` inside
   the discarded subtree goes with them — so these retractions are parity-clean
-  for a literal spelling. (A dynamic `textContent` alongside a literal `value`
-  — `<textarea value="lit" textContent={t()}>` — instead hits divergence 2:
-  the placeholder branch discards the folded child same as any other, but
-  this fork's placeholder emits a blank space where Babel's still carries the
-  literal text into the template ahead of the effect's overwrite.)
+  for a literal spelling. A dynamic `textContent` alongside a literal `value`
+  — `<textarea value="lit" textContent={t()}>` — keeps that folded child in
+  both compilers; it is the initial text node the effect later overwrites.
 
   The fold's replacement child is spanned at the *attribute*, and it is not a
   source expression: nothing the author wrote executes there, so it is not a

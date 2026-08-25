@@ -893,9 +893,8 @@ impl TraceRecorder {
     /// emitter skipped wholesale.
     ///
     /// Reached when a lowering path discards a whole child list rather than
-    /// deciding it value by value — a nested native element whose dynamic
-    /// `textContent` replaces its children with a text placeholder, the
-    /// textarea `value` fold, an inert `<noscript>`. Nothing in the range is
+    /// deciding it value by value — the textarea `value` fold or an inert
+    /// `<noscript>`. Nothing in the range is
     /// emitted, so no site there exists to decide; retracting is the truthful
     /// outcome, and the alternative is a file-wide "unresolved execution
     /// sites" failure over expressions that never run.
