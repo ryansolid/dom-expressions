@@ -475,7 +475,7 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         }
     }
 
-    fn should_capture_custom_element_context(
+    pub(crate) fn should_capture_custom_element_context(
         &self,
         element: &JSXElement<'a>,
         tag_name: &str,
@@ -535,7 +535,7 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         })
     }
 
-    fn custom_element_context_statement(
+    pub(crate) fn custom_element_context_statement(
         &mut self,
         span: oxc_span::Span,
         element_id: &str,

@@ -149,9 +149,8 @@ regeneration — see "The transform baseline" below:
    failure. This was a latent bug in the template-root path too, not only the
    nested one added here — both call the same function.
 
-Divergences found while resolving 4 above, all pre-existing and none of them
-nested-path-specific. Divergence 5 is resolved for template roots above; the
-remaining entries below are still open:
+Divergences found while resolving 4 above, all pre-existing. Each entry records
+its current scope and status; divergences 6, 7, and 9 remain open:
 
 5. **Template-root slot order.** *Resolved for the template-root path.*
    `<span children={x()} textContent={t()}/>`: Babel's
@@ -172,11 +171,14 @@ remaining entries below are still open:
    so it promotes and emits `_$insert(_el$, undefined)`; this fork's promotion
    filter asks whether the constant fold is confident at all, so it keeps the
    value as an attribute and emits nothing. Identical in both positions.
-8. **Nested custom-element owner context.** `<div><my-widget id={i()}/></div>`
-   with `contextToCustomElements`: `lower_dom_element` emits the
-   `_$owner = _$getOwner()` assignment for a template-root custom element,
-   `lower_dynamic_native_child` emits nothing for a nested one. Independent of
-   `children` — a nested custom element with any dynamic content shows it.
+8. **Nested custom-element owner context.** *Resolved for every DOM lowering
+   path.* With `contextToCustomElements`, nested dashed custom elements,
+   customized built-ins carrying `is=`, and `<slot>` now receive the same
+   `_$owner = _$getOwner()` assignment as template roots. The assignment is
+   emitted after attribute operations and before child inserts. Three focused
+   probes pin the nested forms across all ten modes; the applicable DOM and
+   dynamic-DOM outputs match Babel, while SSR and universal modes remain
+   unchanged.
 9. **Textarea `value` fold on a non-literal-spelled but constant expression.**
    `<textarea value={"a" + "b"}/>`: Babel's fold judges "literal" by AST node
    type only (`StringLiteral`/`NumericLiteral`/`BooleanLiteral`/`NullLiteral`),
