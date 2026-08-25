@@ -14,7 +14,7 @@ Before lowering, `ExecutionCensus` enumerates every supported JSX execution
 site. During lowering, `TraceRecorder` records the decision at the emission
 site. `finish()` rejects an unresolved censused site, a conflicting decision,
 or a decision for a site absent from the census. The corpus test runs every
-fixture family and all 474 parity probes through this reconciliation.
+fixture family and all 489 parity probes through this reconciliation.
 
 ### The transform baseline
 
@@ -43,13 +43,14 @@ fixed: run `transform_output_matches_parent_baseline` first and read the entries
 it names, confirm every one is a shape the change predicts, then regenerate with
 the `#[ignore]`d, environment-gated `regenerate_transform_output_baseline` and
 review the diff line by line. An entry that moves for a reason the branch cannot
-explain is a codegen regression, not a stale baseline. Resolving divergence 4
-moved no existing entry at all — no corpus entry had the shape — and added the
-twenty `nested children attribute …` probes that could not be asserted before.
-Resolving the literal-duplicate selection bug (see divergence 4's dedup note)
-likewise moved nothing and added five more: four `nested children attribute
-literal duplicate …` probes and the template-root `duplicate children
-attributes literal last` probe.
+explain is a codegen regression, not a stale baseline. Synchronizing the two
+`next` histories brought upstream native-children and escaping output changes,
+and exposed twelve already-present probes that the stale baseline had not yet
+appended (four native-children cases and eight row-proof cases). This
+divergence-5 change adds three root-order probes. The regenerated baseline
+contains exactly those base-synchronization entries and the three intentional
+root-order entries; the known nested residue remains represented by its
+baseline entries and named parity exclusions.
 
 ### The trace describes this compiler, not the parity target
 
@@ -105,23 +106,31 @@ regeneration — see "The transform baseline" below:
    `_$insert(_el$, c)`; Babel's `transformElement` never visits a
    `<noscript>`'s children at all — pushed-by-promotion or written
    directly — so it emits nothing. Still divergent.
-4. **Nested `children` attribute promotion.** *Resolved.*
-   `<div><span children={x()}/></div>`: Babel promotes the attribute to
-   `_$insert(_el$2, x)`; this fork emitted nothing, because
-   `lower_dynamic_native_child` never captured a `children` attribute the way
-   `lower_dom_element` did. Until it was fixed the shape was left as a **hard
-   reconciliation failure** — the census named a `jsx-child` site that lowering
-   never resolved, and the file was rejected — because that failure was the
-   divergence's only detection signal. `lower_dynamic_native_child` now
-   performs the promotion, so the nested shape emits Babel's insert, the site
-   resolves as `jsx-child`/`reactive-rerun`, and the file reconciles. The
-   shapes that already agreed still do: with source children
-   (`<div><span children={x()}>{y()}</span></div>`) both compilers insert only
-   `y` and report the attribute as `native-attribute`/`elided`, a void
-   element's attribute is never promoted, a spread keeps `children` in the
-   merged props, and a value the constant fold resolves stays a `children`
-   property write. See "Discarded child lists" for the three writers that can
-   take the slot away from a `children` attribute.
+4. **Nested `children` attribute promotion.** *Reopened by `bba3db6c`.*
+   The upstream fix made native `children` child content everywhere and the
+   fork's attribute planner now correctly skips it as a DOM property. However,
+   the existing nested static-template fast path can consequently classify a
+   nested element as having no dynamic work before
+   `lower_dynamic_native_child` gets a chance to append the promoted value.
+   For `<div><span children={x()}/></div>`, Babel emits
+   `_$insert(_el$2, x)` while this fork emits only the `<span>` template. The
+   same output residue covers the named nested promotion, duplicate, sibling,
+   and component-child probes excluded in `parity-probes.test.js`. Those probes
+   remain in the corpus as evidence: thirteen are excluded only in the six DOM
+   modes where they differ, leaving their four matching SSR/universal modes
+   asserted. The literal-duplicate-before-dynamic-`textContent` case is
+   excluded only in `dom-wrapperless`, where it actually differs. The two
+   non-literal dynamic `textContent` order probes match Babel in every mode and
+   remain asserted.
+   This branch does not reintroduce a nested workaround or alter the upstream
+   `children` semantics. The semantic trace remains truthful about the fork's
+   output: a value that is skipped by this path is resolved as elided, and no
+   synthetic child site is invented.
+
+   The shapes that still agree remain asserted: source children shadow the
+   attribute, void elements and spreads do not promote it, and the surviving
+   source-order cases are covered separately. See "Discarded child lists" for
+   the writers that can take Babel's single `children` slot away.
 
    **Dedup note.** `children_attribute_container`'s first cut selected by
    walking attributes in reverse and skipping past any `children` whose value
@@ -138,15 +147,20 @@ regeneration — see "The transform baseline" below:
    failure. This was a latent bug in the template-root path too, not only the
    nested one added here — both call the same function.
 
-Divergences found while resolving 4 above, all pre-existing, none of them
-nesting-specific, and all still open:
+Divergences found while resolving 4 above, all pre-existing and none of them
+nested-path-specific. Divergence 5 is resolved for template roots above; the
+remaining entries below are still open:
 
-5. **Template-root slot order.** `<span children={x()} textContent={t()}/>`:
-   Babel's `transformAttributes` keeps one `children` slot, so the later
+5. **Template-root slot order.** *Resolved for the template-root path.*
+   `<span children={x()} textContent={t()}/>`: Babel's
+   `transformAttributes` keeps one `children` slot, so the later dynamic
    `textContent` overwrites the captured attribute value with its synthesized
-   text node and `x` is dropped; `lower_dom_element` captures the attribute
-   without regard to attribute order and inserts `x`. Nested lowering follows
-   Babel's order (both writers are compared there); the template root does not.
+   text node and `x` is dropped. The fork now applies the same last-writer
+   check before root child promotion. The focused probes also pin the converse
+   order (`textContent` before `children`) and a static `textContent`: both
+   retain the `children` insert, matching Babel. This fix is intentionally
+   limited to template roots; the reopened nested residue above is a separate
+   static-path issue.
 6. **JSX-valued holes.** `<span children={<b>{x()}</b>}/>` and the plain
    `<span>{<b>{x()}</b>}</span>` both emit Babel's `() => (() => {…})()` as
    `() => {…}` — the same expression, a different lowering shape. Unrelated to

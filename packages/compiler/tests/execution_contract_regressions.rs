@@ -842,22 +842,16 @@ fn inert_noscript_children_reconcile_in_every_position() {
     }
 }
 
-/// A non-literal `children` attribute is promoted to a child insert in *nested*
-/// native-child position, as it already was at a template root and as Babel
-/// does in every position (`if (!hasChildren && children)
-/// path.node.children.push(children)`). The census already named the value a
-/// `jsx-child` site from its spelling; nested lowering now resolves it, so the
-/// shape reconciles instead of failing the file.
+/// Upstream `bba3db6c` makes a non-literal `children` attribute
+/// child content. Template roots and nested elements that take the dynamic
+/// lowering path promote it to an insert. The fork's existing nested static
+/// fast path still skips that promotion, so its trace truthfully reports the
+/// value as elided until that separate transform divergence is fixed.
 #[test]
-fn nested_children_attribute_is_promoted_to_a_child_insert() {
-    // The promoted value is an ordinary reactive child, identical in both
-    // positions, and the emitted `insert` is reported at its span.
-    for source in [
-        "const el = <div><span children={x()} /></div>;",
-        "const el = <span children={x()} />;",
-        "const el = <div><section><span children={x()} /></section></div>;",
-        "const el = <Comp><div><span children={x()} /></div></Comp>;",
-    ] {
+fn native_children_trace_matches_the_selected_lowering_path() {
+    // A template root promotes the value to an ordinary reactive child and
+    // reports the emitted insert at the source expression.
+    for source in ["const el = <span children={x()} />;"] {
         let rendered = trace(source);
         assert!(
             rendered.sites.iter().any(|site| {
@@ -874,6 +868,61 @@ fn nested_children_attribute_is_promoted_to_a_child_insert() {
                     && source_text(source, fact.span.start, fact.span.end) == "x()"
             }),
             "{source}: the emitted insert is reported at the promoted value, got {:?}",
+            rendered.owner_establishments
+        );
+    }
+
+    // A nested element that the parent folds into its static template never
+    // reaches nested dynamic lowering. Current transform output drops the
+    // value, so the trace records one elided JSX-child decision and no insert.
+    for source in [
+        "const el = <div><span children={x()} /></div>;",
+        "const el = <div><section><span children={x()} /></section></div>;",
+        "const el = <Comp><div><span children={x()} /></div></Comp>;",
+    ] {
+        let rendered = trace(source);
+        assert!(
+            rendered.sites.iter().any(|site| {
+                source_text(source, site.span.start, site.span.end) == "x()"
+                    && site.kind == ExecutionSiteKind::JsxChild
+                    && site.decision == TerminalDecision::Value(ValueDecision::Elided)
+            }),
+            "{source}: the nested static-path residue is elided, got {:?}",
+            rendered.sites
+        );
+        assert!(
+            rendered.owner_establishments.iter().all(|fact| source_text(
+                source,
+                fact.span.start,
+                fact.span.end
+            ) != "x()"),
+            "{source}: the nested static-path residue emits no insert, got {:?}",
+            rendered.owner_establishments
+        );
+    }
+
+    // Dynamic attributes or callbacks force the nested element through full
+    // lowering, where the promoted child does emit and owns an insert.
+    for source in [
+        "const el = <div><span id={id()} children={x()} /></div>;",
+        "const el = <div><span ref={node} onClick={handler} children={x()} /></div>;",
+    ] {
+        let rendered = trace(source);
+        assert!(
+            rendered.sites.iter().any(|site| {
+                source_text(source, site.span.start, site.span.end) == "x()"
+                    && site.kind == ExecutionSiteKind::JsxChild
+                    && site.decision == TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            }),
+            "{source}: full nested lowering promotes the child, got {:?}",
+            rendered.sites
+        );
+        assert!(
+            rendered.owner_establishments.iter().any(|fact| {
+                fact.wrapper == "insert"
+                    && source_text(source, fact.span.start, fact.span.end) == "x()"
+            }),
+            "{source}: full nested lowering reports the insert, got {:?}",
             rendered.owner_establishments
         );
     }
@@ -975,8 +1024,9 @@ fn nested_children_attribute_is_promoted_to_a_child_insert() {
         );
     }
 
-    // Duplicates resolve to the last `children` attribute, as Babel's
-    // deduplication does, and the shadowed one claims nothing.
+    // Duplicates resolve to the last `children` attribute. The shadowed one
+    // claims nothing, and the surviving value follows the same nested static
+    // fast-path residue as a single attribute.
     let source = "const el = <div><span children={x()} children={y()} /></div>;";
     let rendered = trace(source);
     assert_eq!(
@@ -992,7 +1042,7 @@ fn nested_children_attribute_is_promoted_to_a_child_insert() {
         [(
             "y()",
             ExecutionSiteKind::JsxChild,
-            TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            TerminalDecision::Value(ValueDecision::Elided)
         )]
     );
 }
@@ -1033,7 +1083,7 @@ fn discarded_child_shapes_do_not_move_transform_output() {
         "const el = <div><span children={x()} textContent={t()} /></div>;",
         "const el = <div><textarea value=\"lit\" children={x()} /></div>;",
         "const el = <div><noscript children={x()} /></div>;",
-        // …and the promotion itself, which does emit.
+        // …and the nested static-path residue, which is elided.
         "const el = <div><span children={x()} /></div>;",
     ] {
         let traced = compile(source, &with_map(true)).expect("compile with tracing");
