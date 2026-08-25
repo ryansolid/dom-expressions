@@ -1012,16 +1012,13 @@ impl<'a> AstDomTransform<'a, '_> {
         };
 
         child_template.push_both(">");
-        if attrs_lowering.needs_text_placeholder && attribute_child.is_none() {
-            // A dynamic `textContent` takes over this element's content: the
-            // template gets a single-space text node the effect writes into and
-            // the source child list is discarded, unlowered. (The template-root
-            // path in `element.rs` reaches *its* placeholder branch only when
-            // the element has no children of its own — Babel's `!hasChildren`
-            // gate — so that branch discards nothing; its fold branch does, and
-            // retracts there.) Withdraw the discarded children's censused
-            // sites: no code is emitted for them, so there is nothing to decide.
-            self.retract_children_sites(source_children);
+        if attrs_lowering.needs_text_placeholder && child.children.is_empty() {
+            // Babel's `!hasChildren` gate: dynamic `textContent` contributes a
+            // synthesized placeholder only when neither source children, a
+            // promoted `children` value, nor the textarea `value` fold already
+            // filled the child list. With children, the `firstChild`
+            // declaration and effect still emit and ordinary child lowering
+            // supplies the node whose `data` the effect updates.
             child_template.html.push(' ');
         } else {
             self.lower_dom_children(

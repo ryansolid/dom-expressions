@@ -588,6 +588,12 @@ const a = <div innerHTML={html()}>fallback text</div>;
   "textContent with real children": `
 const a = <div textContent={t()}><span>kid</span></div>;
 `,
+  "nested textContent with real children": `
+const a = <div><span textContent={t()}>{kid()}</span></div>;
+`,
+  "nested textarea value fold with dynamic textContent": `
+const a = <div><textarea value="seed" textContent={t()} /></div>;
+`,
   "innerHTML static string": `
 const a = <div innerHTML={"<b>bold</b>"} />;
 `,

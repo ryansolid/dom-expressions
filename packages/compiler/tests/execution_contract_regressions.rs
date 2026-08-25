@@ -612,35 +612,47 @@ fn void_children_leave_neighbouring_facts_untouched() {
     );
 }
 
-/// A nested element whose dynamic `textContent` replaces its content discards
-/// the source child list unlowered. (The template-root path in `element.rs`
-/// reaches *its* placeholder branch only when the element has no children of
-/// its own, so that branch discards nothing.) The discarded children must claim
-/// no site.
+/// Babel's `!hasChildren` gate applies in nested position too: a dynamic
+/// `textContent` contributes the `firstChild` effect, while real children still
+/// lower and retain their execution sites. Only the no-child shape receives the
+/// synthesized placeholder.
 #[test]
-fn dynamic_text_content_retracts_the_children_it_discards() {
-    for source in [
-        "const el = <div><span textContent={x()}>{y()}</span></div>;",
-        "const el = <div><br textContent={x()}>{y()}</br></div>;",
-        // The retraction prunes *every* site kind inside the discarded subtree,
-        // not just the value sites of a flat child list: a ref and an event
-        // handler nested under it are equally unemitted.
-        "const el = <div><span textContent={x()}><div ref={r} onClick={h}>{y()}</div></span></div>;",
-    ] {
-        let rendered = trace(source);
-        assert_eq!(
-            rendered
-                .sites
-                .iter()
-                .map(|site| (
-                    source_text(source, site.span.start, site.span.end),
-                    site.kind
-                ))
-                .collect::<Vec<_>>(),
-            [("x()", ExecutionSiteKind::NativeAttribute)],
-            "{source}: only the textContent attribute survives"
-        );
-    }
+fn dynamic_text_content_keeps_real_children() {
+    let source = "const el = <div><span textContent={x()}>{y()}</span></div>;";
+    let rendered = trace(source);
+    assert_eq!(
+        rendered
+            .sites
+            .iter()
+            .map(|site| (
+                source_text(source, site.span.start, site.span.end),
+                site.kind,
+                site.decision
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "x()",
+                ExecutionSiteKind::NativeAttribute,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            ),
+            (
+                "y()",
+                ExecutionSiteKind::JsxChild,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            )
+        ]
+    );
+
+    let no_child = "const el = <div><span textContent={x()} /></div>;";
+    assert_eq!(
+        trace(no_child)
+            .sites
+            .iter()
+            .map(|site| source_text(no_child, site.span.start, site.span.end))
+            .collect::<Vec<_>>(),
+        ["x()"]
+    );
 }
 
 /// Babel's textarea `value` fold (`path.node.children = [child]`) discards the
@@ -1071,8 +1083,6 @@ fn discarded_child_shapes_do_not_move_transform_output() {
         "const el = <><textarea value=\"lit\">{y()}</textarea></>;",
         "const el = <Comp><textarea value=\"lit\">{y()}</textarea></Comp>;",
         "const el = <div a={<textarea value=\"lit\">{y()}</textarea>} />;",
-        "const el = <div><span textContent={x()}>{y()}</span></div>;",
-        "const el = <div><span textContent={x()}><div ref={r} onClick={h}>{y()}</div></span></div>;",
         "const el = <span textContent={x()}>{y()}</span>;",
         "const el = <div><noscript>{x()}</noscript></div>;",
         "const el = <div><noscript>{x()}</noscript><b>{z()}</b></div>;",
