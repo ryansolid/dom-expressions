@@ -19,6 +19,18 @@ pub(crate) trait ConditionBuilder<'a> {
     fn memo_wrapper_enabled(&self) -> bool;
     /// Marks the memo helper as used and returns its local identifier.
     fn register_memo(&mut self) -> String;
+    /// Records a wrapper emitted around a source span. Non-DOM modes keep
+    /// this as a no-op so the shared traversal remains mode-agnostic.
+    fn trace_wrapper(&mut self, _span: Span, _wrapper: &str, _group_id: Option<u64>) {}
+    /// Whether semantic facts are being recorded. This keeps trace-only
+    /// allocations out of ordinary transforms.
+    fn trace_enabled(&self) -> bool {
+        false
+    }
+    /// Identity of the memo wrapper emitted by this mode, when enabled.
+    fn memo_wrapper_identity(&self) -> Option<&str> {
+        None
+    }
     /// Fresh identifier for a hoisted memoized condition (Babel's `_c$` uid).
     fn next_condition_id(&mut self) -> String;
     /// The shared classification authority (Babel's `isDynamic` probes on
@@ -129,11 +141,20 @@ fn booleanize<'a>(allocator: &'a Allocator, span: Span, value: Expression<'a>) -
 /// The memoized-condition handle: inline mode calls the memo expression
 /// directly (`memo(() => cond)()`), hoisted mode calls a generated id that the
 /// caller declares (`_c$()`).
+///
+/// `trace_span` is the source span of the test this memo actually memoizes —
+/// the memo wraps the booleanized test, never the surrounding conditional — so
+/// the hoisted form can emit its fact at the same span the inline form does.
 struct ConditionHoist<'a> {
     condition: Expression<'a>,
     id: String,
+    trace_span: Span,
 }
 
+/// Condition lowering. The emission span (`span`) is Babel's and is never
+/// derived from tracing; every memo fact is emitted at the span of the test it
+/// memoizes, which this function derives itself — there is deliberately no
+/// caller-supplied trace span to get wrong.
 pub(crate) fn transform_condition<'a, C: ConditionBuilder<'a>>(
     ctx: &mut C,
     span: Span,
@@ -144,7 +165,7 @@ pub(crate) fn transform_condition<'a, C: ConditionBuilder<'a>>(
     let (expr, hoist) = transform_condition_value(ctx, span, value, inline);
     if let Some(hoist) = hoist {
         debug_assert!(!inline, "inline conditions never hoist");
-        let memo_init = memo_expression(ctx, span, hoist.condition);
+        let memo_init = memo_expression(ctx, span, hoist.trace_span, hoist.condition);
         let memo_statement = variable_statement(
             allocator,
             span,
@@ -161,7 +182,8 @@ pub(crate) fn transform_condition<'a, C: ConditionBuilder<'a>>(
 }
 
 /// `transformCondition(path, true).body` — the transformed expression itself,
-/// with memos collapsed inline.
+/// with memos collapsed inline. Memo facts are spanned as in
+/// [`transform_condition`].
 pub(crate) fn transform_condition_inline<'a, C: ConditionBuilder<'a>>(
     ctx: &mut C,
     span: Span,
@@ -171,13 +193,34 @@ pub(crate) fn transform_condition_inline<'a, C: ConditionBuilder<'a>>(
 }
 
 /// `memo(thunk)` — or the thunk unchanged when `memoWrapper` is disabled.
+///
+/// For generates that do not trace only: it reports at the emission span, so a
+/// tracing generate must call [`memo_wrap_thunk_with_trace`] with the wrapped
+/// expression's own span instead.
 pub(crate) fn memo_wrap_thunk<'a, C: ConditionBuilder<'a>>(
     ctx: &mut C,
     span: Span,
     thunk: Expression<'a>,
 ) -> Expression<'a> {
+    memo_wrap_thunk_with_trace(ctx, span, span, thunk)
+}
+
+/// `memo(thunk)` with a separate source span for the semantic fact. The
+/// emission span remains untouched so tracing cannot move generated AST
+/// locations or output; the trace span is the wrapped source expression.
+pub(crate) fn memo_wrap_thunk_with_trace<'a, C: ConditionBuilder<'a>>(
+    ctx: &mut C,
+    span: Span,
+    trace_span: Span,
+    thunk: Expression<'a>,
+) -> Expression<'a> {
     if !ctx.memo_wrapper_enabled() {
         return thunk;
+    }
+    if ctx.trace_enabled()
+        && let Some(wrapper) = ctx.memo_wrapper_identity().map(str::to_owned)
+    {
+        ctx.trace_wrapper(trace_span, &wrapper, None);
     }
     let allocator = ctx.condition_allocator();
     let memo_local = ctx.register_memo();
@@ -196,10 +239,11 @@ pub(crate) fn memo_wrap_thunk<'a, C: ConditionBuilder<'a>>(
 fn memo_expression<'a, C: ConditionBuilder<'a>>(
     ctx: &mut C,
     span: Span,
+    trace_span: Span,
     condition: Expression<'a>,
 ) -> Expression<'a> {
     let thunk = arrow_return_expression(ctx.condition_allocator(), span, condition);
-    memo_wrap_thunk(ctx, span, thunk)
+    memo_wrap_thunk_with_trace(ctx, span, trace_span, thunk)
 }
 
 fn call_expression_no_args<'a>(
@@ -212,16 +256,18 @@ fn call_expression_no_args<'a>(
 }
 
 /// Builds the `id()` (hoisted) or `memo(() => cond)()` (inline) test call and
-/// the hoist record for the caller.
+/// the hoist record for the caller. `trace_span` is the source span of the test
+/// being memoized — one memo emission, one fact, at its own span.
 fn condition_test_call<'a, C: ConditionBuilder<'a>>(
     ctx: &mut C,
     span: Span,
+    trace_span: Span,
     condition: Expression<'a>,
     inline: bool,
 ) -> (Expression<'a>, Option<ConditionHoist<'a>>) {
     let allocator = ctx.condition_allocator();
     if inline {
-        let memo = memo_expression(ctx, span, condition);
+        let memo = memo_expression(ctx, span, trace_span, condition);
         (call_expression_no_args(allocator, span, memo), None)
     } else {
         let id = ctx.next_condition_id();
@@ -231,7 +277,14 @@ fn condition_test_call<'a, C: ConditionBuilder<'a>>(
             span,
             ast.expression_identifier(span, ast.ident(&id)),
         );
-        (call, Some(ConditionHoist { condition, id }))
+        (
+            call,
+            Some(ConditionHoist {
+                condition,
+                id,
+                trace_span,
+            }),
+        )
     }
 }
 
@@ -267,11 +320,15 @@ fn transform_condition_value<'a, C: ConditionBuilder<'a>>(
             if !ctx.classify().is_dynamic(None, &conditional.test, false) {
                 return (Expression::ConditionalExpression(conditional), None);
             }
+            // The memo wraps the booleanized *test*; the branches run in the
+            // caller's scope, so the fact belongs at the test's own span.
+            let test_span = conditional.test.span();
             let condition = booleanize(allocator, span, conditional.test.clone_in(allocator));
-            let (test_call, hoist) = condition_test_call(ctx, span, condition, inline);
+            let (test_call, hoist) = condition_test_call(ctx, span, test_span, condition, inline);
             // Nested conditionals/logicals in the branches collapse their own
             // memos inline, exactly like Babel's recursive
-            // `transformCondition(..., true).body`.
+            // `transformCondition(..., true).body` — and record their own
+            // memos at their own tests' spans.
             let consequent = inline_branch(ctx, span, conditional.consequent.clone_in(allocator));
             let alternate = inline_branch(ctx, span, conditional.alternate.clone_in(allocator));
             let ast = AstBuilder::new(allocator);
@@ -347,9 +404,12 @@ fn transform_logical_chain<'a, C: ConditionBuilder<'a>>(
     // Statically boolean lefts skip the ternary: the memo's value is the
     // expression's value, so the logical form is already exact and the left
     // never evaluates twice.
+    // The memo covers the booleanized left operand only — the right operand
+    // still evaluates in the caller's scope — so the fact is spanned there.
     let bool_left = is_boolean_expression(&logical.left);
+    let left_span = logical.left.span();
     let condition = booleanize(allocator, span, logical.left.clone_in(allocator));
-    let (test_call, hoist) = condition_test_call(ctx, span, condition, inline);
+    let (test_call, hoist) = condition_test_call(ctx, span, left_span, condition, inline);
     let ast = AstBuilder::new(allocator);
     let replaced = if bool_left {
         ast.expression_logical(

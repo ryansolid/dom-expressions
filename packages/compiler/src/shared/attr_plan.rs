@@ -367,6 +367,11 @@ impl<'a> AttrPlanner<'a, '_> {
             // in shared/utils.ts.)
             let key = if key == "$key" {
                 if !self.is_ssr {
+                    if let Some(JSXAttributeValue::ExpressionContainer(container)) = &attr.value
+                        && let Some(expression) = container.expression.as_expression()
+                    {
+                        elided_value_spans.push(expression.span());
+                    }
                     continue;
                 }
                 "_key".to_string()
@@ -392,27 +397,25 @@ impl<'a> AttrPlanner<'a, '_> {
                     };
                     let marker = self.marker_between(container.span.start, expression.span().start);
                     let semantic_span = expression.span();
-                    if key == "style" || key == "class" {
-                        if let Expression::ObjectExpression(object) = expression {
-                            if object.properties.iter().all(|property| {
-                                matches!(
-                                    property,
-                                    ObjectPropertyKind::ObjectProperty(property)
-                                        if !property.computed
-                                )
-                            }) {
-                                relevant_object_value_spans.extend(
-                                    object.properties.iter().filter_map(|property| {
-                                        let ObjectPropertyKind::ObjectProperty(property) = property
-                                        else {
-                                            return None;
-                                        };
-                                        (!is_literal_only_expression(&property.value))
-                                            .then(|| property.value.span())
-                                    }),
-                                );
-                            }
-                        }
+                    if (key == "style" || key == "class")
+                        && let Expression::ObjectExpression(object) = expression
+                        && object.properties.iter().all(|property| {
+                            matches!(
+                                property,
+                                ObjectPropertyKind::ObjectProperty(property)
+                                    if !property.computed
+                            )
+                        })
+                    {
+                        relevant_object_value_spans.extend(object.properties.iter().filter_map(
+                            |property| {
+                                let ObjectPropertyKind::ObjectProperty(property) = property else {
+                                    return None;
+                                };
+                                (!is_literal_only_expression(&property.value))
+                                    .then(|| property.value.span())
+                            },
+                        ));
                     }
                     let mut value = expression.clone_in(self.allocator);
                     self.fold_confident(&mut value);

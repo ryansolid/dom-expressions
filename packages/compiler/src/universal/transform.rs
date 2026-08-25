@@ -1809,7 +1809,13 @@ impl<'a> crate::shared::mode_lower::ModeLower<'a> for AstUniversalTransform<'a, 
         Ok(self.setup_iife(element.span, setup, value))
     }
 
-    fn memo_wrap_dynamic_child(&mut self, span: Span, thunk: Expression<'a>) -> Expression<'a> {
+    fn memo_wrap_dynamic_child(
+        &mut self,
+        span: Span,
+        _trace_span: Span,
+        thunk: Expression<'a>,
+    ) -> Expression<'a> {
+        // The universal generate does not trace, so the source span is unused.
         memo_wrap_thunk(self, span, thunk)
     }
 }

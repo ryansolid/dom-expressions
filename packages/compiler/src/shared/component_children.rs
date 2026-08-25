@@ -19,6 +19,9 @@ use crate::shared::utils::{decode_html_entities, trim_jsx_text};
 /// children keep their setup statements (template declarations + operations)
 /// separate so the caller can host them in the `children` getter.
 pub(crate) trait ComponentChildLower<'a>: ModeLower<'a> {
+    /// Records a deferred child callback and its receiving JSX component.
+    fn trace_deferred_callback(&mut self, _span: oxc_span::Span, _receiver_span: oxc_span::Span) {}
+
     fn lower_child_element_with_setup(
         &mut self,
         element: &JSXElement<'a>,
@@ -57,6 +60,7 @@ pub(crate) fn component_children<'a, C: ComponentChildLower<'a>>(
     ctx: &mut C,
     children: &[JSXChild<'a>],
     render_callbacks: bool,
+    receiver_span: oxc_span::Span,
 ) -> Result<Option<ComponentChildren<'a>>> {
     let allocator = ctx.condition_allocator();
     let ast = mode_ast(ctx);
@@ -99,6 +103,7 @@ pub(crate) fn component_children<'a, C: ComponentChildLower<'a>>(
                             | JSXExpression::FunctionExpression(_)
                     );
                 if render_callback {
+                    ctx.trace_deferred_callback(container.expression.span(), receiver_span);
                     ctx.trace_callback(
                         container.expression.span(),
                         crate::semantic_trace::ExecutionSiteKind::ControlFlowRender,
@@ -207,6 +212,7 @@ pub(crate) fn component_children<'a, C: ComponentChildLower<'a>>(
                 .into_iter()
                 .map(|child| {
                     let span = child.value.span();
+                    let trace_span = child.semantic_span.unwrap_or(span);
                     // Element children keep their setup in a per-entry IIFE;
                     // dynamic expression children are memo-wrapped
                     // (`createTemplate(wrap: true)` with an arrow thunk —
@@ -219,7 +225,7 @@ pub(crate) fn component_children<'a, C: ComponentChildLower<'a>>(
                         ast.expression_call(span, iife, None, ast.vec(), false)
                     } else if matches!(child.kind, ChildKind::DynamicExpression) {
                         let thunk = arrow_return_expression(allocator, span, child.value);
-                        ctx.memo_wrap_dynamic_child(span, thunk)
+                        ctx.memo_wrap_dynamic_child(span, trace_span, thunk)
                     } else {
                         child.value
                     };

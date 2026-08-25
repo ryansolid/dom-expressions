@@ -1,4 +1,6 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+
+use serde::{Deserialize, Serialize};
 
 use oxc_ast::ast::{
     JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild, JSXElement, JSXExpression,
@@ -7,11 +9,17 @@ use oxc_ast::ast::{
 use oxc_ast_visit::Visit;
 use oxc_span::{GetSpan, Span};
 
+/// Version of the typed semantic-trace schema.
+pub const SEMANTIC_TRACE_VERSION: u32 = 2;
+
 use crate::shared::attr_plan::static_style_key;
 use crate::shared::bindings::BindingTable;
-use crate::shared::utils::{dedupe_attributes, is_component_name, is_literal_only_expression};
+use crate::shared::utils::{
+    dedupe_attributes, is_component_name, is_literal_only_expression, is_void_element,
+};
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct SourceSpan {
     pub start: u32,
     pub end: u32,
@@ -26,7 +34,8 @@ impl From<Span> for SourceSpan {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum ExecutionSiteKind {
     JsxChild,
     NativeAttribute,
@@ -53,7 +62,8 @@ impl ExecutionSiteKind {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum ValueDecision {
     EagerOnce,
     ReactiveRerun,
@@ -61,31 +71,119 @@ pub enum ValueDecision {
     Elided,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum CallbackDecision {
     LaterEvent,
     LaterRender,
     RefApply,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum TerminalDecision {
     Value(ValueDecision),
     Callback(CallbackDecision),
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExecutionSite {
     pub span: SourceSpan,
     pub kind: ExecutionSiteKind,
     pub decision: TerminalDecision,
 }
 
+/// Reactive owner state established by compiler-generated lowering around a
+/// source region. The trace reports only states the compiler proves; absence
+/// means the surrounding runtime or caller determines ownership.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum OwnershipDecision {
+    Owned,
+    Unowned,
+    Leaf,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OwnershipSite {
+    pub span: SourceSpan,
+    pub decision: OwnershipDecision,
+}
+
 /// Experimental facts about how JSX source values and callbacks are lowered
 /// and executed in DOM mode.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OwnerEstablishment {
+    pub span: SourceSpan,
+    pub wrapper: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group_id: Option<u64>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ComponentRenderSite {
+    pub span: SourceSpan,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DeferredCallbackSite {
+    pub span: SourceSpan,
+    pub receiver_span: SourceSpan,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct SemanticTrace {
+    pub version: u32,
     pub sites: Vec<ExecutionSite>,
+    pub ownership_sites: Vec<OwnershipSite>,
+    #[serde(default)]
+    pub owner_establishments: Vec<OwnerEstablishment>,
+    #[serde(default)]
+    pub component_render_sites: Vec<ComponentRenderSite>,
+    #[serde(default)]
+    pub deferred_callback_sites: Vec<DeferredCallbackSite>,
+}
+
+impl Default for SemanticTrace {
+    fn default() -> Self {
+        Self {
+            version: SEMANTIC_TRACE_VERSION,
+            sites: Vec::new(),
+            ownership_sites: Vec::new(),
+            owner_establishments: Vec::new(),
+            component_render_sites: Vec::new(),
+            deferred_callback_sites: Vec::new(),
+        }
+    }
+}
+
+impl ValueDecision {
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::EagerOnce => "eager-once",
+            Self::ReactiveRerun => "reactive-rerun",
+            Self::CallerContext => "caller-context",
+            Self::Elided => "elided",
+        }
+    }
+}
+
+impl CallbackDecision {
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::LaterEvent => "later-event",
+            Self::LaterRender => "later-render",
+            Self::RefApply => "ref-apply",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -112,6 +210,9 @@ impl ExecutionCensus {
             sites: BTreeSet<SiteKey>,
             ignored_literal_spans: BTreeSet<SourceSpan>,
             component_child_fragments: BTreeSet<SourceSpan>,
+            /// Void native elements whose child list survives into DOM
+            /// lowering. See [`Self::mark_nested_void_children`].
+            nested_void_elements: BTreeSet<SourceSpan>,
             built_ins: HashSet<&'a str>,
             bindings: &'bindings BindingTable,
             inline_styles: bool,
@@ -140,6 +241,57 @@ impl ExecutionCensus {
                         format!("{}:{}", name.namespace.name, name.name.name)
                     }
                 }
+            }
+
+            fn stateful_dynamic_key(
+                tag_name: Option<&str>,
+                name: &str,
+                value: &JSXExpression<'_>,
+            ) -> Option<String> {
+                let expression = value.as_expression()?;
+                if tag_name.is_none() || is_literal_only_expression(expression) {
+                    return None;
+                }
+                let tag_name = tag_name?.to_ascii_uppercase();
+                let stateful = match tag_name.as_str() {
+                    "INPUT" => matches!(
+                        name,
+                        "value"
+                            | "defaultValue"
+                            | "checked"
+                            | "defaultChecked"
+                            | "prop:value"
+                            | "prop:defaultValue"
+                            | "prop:checked"
+                            | "prop:defaultChecked"
+                    ),
+                    "SELECT" => matches!(name, "value" | "prop:value"),
+                    "OPTION" => matches!(
+                        name,
+                        "value"
+                            | "selected"
+                            | "defaultSelected"
+                            | "prop:value"
+                            | "prop:selected"
+                            | "prop:defaultSelected"
+                    ),
+                    "TEXTAREA" => matches!(
+                        name,
+                        "value" | "defaultValue" | "prop:value" | "prop:defaultValue"
+                    ),
+                    "VIDEO" | "AUDIO" => matches!(
+                        name,
+                        "muted" | "defaultMuted" | "prop:muted" | "prop:defaultMuted"
+                    ),
+                    _ => false,
+                };
+                stateful.then(|| {
+                    if name.starts_with("prop:") {
+                        name.to_string()
+                    } else {
+                        format!("prop:{name}")
+                    }
+                })
             }
 
             fn native_tag_name<'node, 'ast>(
@@ -221,6 +373,33 @@ impl ExecutionCensus {
                 }
             }
 
+            /// Record which void children of a *native* element keep their own
+            /// children through lowering.
+            ///
+            /// A void element's child list survives exactly when the element is
+            /// lowered as a nested native child: `lower_dynamic_native_child`
+            /// walks into `lower_dom_children` unconditionally, so
+            /// `<div><br>{x()}</br></div>` emits a real reactive
+            /// `insert(_el$2, x)` into the `<br>`. Every other position makes
+            /// the void element a template root of its own — a bare JSX root, a
+            /// fragment child, a component child, an attribute value — and
+            /// `lower_dom_element` gates child lowering on `!is_void_element`,
+            /// so the child list is discarded with no code emitted.
+            ///
+            /// Only a native parent marks: a component's children and a
+            /// fragment's children each become their own template root.
+            fn mark_nested_void_children(&mut self, children: &[JSXChild<'_>]) {
+                for child in children {
+                    if let JSXChild::Element(child) = child
+                        && let Some(tag) = Self::native_tag_name(child)
+                        && !is_component_name(&child.opening_element.name)
+                        && is_void_element(tag)
+                    {
+                        self.nested_void_elements.insert(child.span.into());
+                    }
+                }
+            }
+
             fn census_children(&mut self, children: &[JSXChild<'_>], component: bool) {
                 for child in children {
                     match child {
@@ -289,6 +468,22 @@ impl ExecutionCensus {
                 } else {
                     dedupe_attributes(&element.opening_element.attributes)
                 };
+                let mut last_stateful = HashMap::new();
+                for item in &attributes {
+                    let JSXAttributeItem::Attribute(attribute) = item else {
+                        continue;
+                    };
+                    let Some(JSXAttributeValue::ExpressionContainer(container)) = &attribute.value
+                    else {
+                        continue;
+                    };
+                    let name = Self::attribute_name(&attribute.name);
+                    if let Some(key) =
+                        Self::stateful_dynamic_key(native_tag_name, &name, &container.expression)
+                    {
+                        last_stateful.insert(key, attribute.span);
+                    }
+                }
                 for item in attributes {
                     match item {
                         JSXAttributeItem::SpreadAttribute(spread) => self.push(
@@ -308,6 +503,17 @@ impl ExecutionCensus {
                             if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
                                 continue;
                             }
+                            let name = Self::attribute_name(&attribute.name);
+                            if !component
+                                && Self::stateful_dynamic_key(
+                                    native_tag_name,
+                                    &name,
+                                    &container.expression,
+                                )
+                                .is_some_and(|key| last_stateful.get(&key) != Some(&attribute.span))
+                            {
+                                continue;
+                            }
                             if container
                                 .expression
                                 .as_expression()
@@ -316,7 +522,6 @@ impl ExecutionCensus {
                                 self.ignore_literal(container.expression.span());
                                 continue;
                             }
-                            let name = Self::attribute_name(&attribute.name);
                             if !component && name == "_hk" {
                                 continue;
                             }
@@ -334,76 +539,73 @@ impl ExecutionCensus {
                             if !component
                                 && !has_spread
                                 && (name == "class" || (name == "style" && self.inline_styles))
-                            {
-                                if let Some(oxc_ast::ast::Expression::ObjectExpression(object)) =
+                                && let Some(oxc_ast::ast::Expression::ObjectExpression(object)) =
                                     container.expression.as_expression()
-                                {
-                                    let has_spread = object.properties.iter().any(|property| {
-                                        matches!(
-                                            property,
-                                            oxc_ast::ast::ObjectPropertyKind::SpreadProperty(_)
-                                        )
-                                    });
-                                    let decomposes = if name == "class" {
-                                        Self::class_object_splits(object)
-                                    } else {
-                                        !has_spread
-                                    };
-                                    if decomposes {
-                                        if name == "style"
-                                            && object.properties.iter().any(|property| {
-                                                matches!(
-                                                    property,
-                                                    oxc_ast::ast::ObjectPropertyKind::ObjectProperty(property)
-                                                        if property.computed
-                                                )
-                                            })
-                                        {
-                                            self.push(
-                                                container.expression.span(),
-                                                ExecutionSiteKind::NativeAttribute,
-                                            );
-                                        }
-                                        for property in &object.properties {
-                                            let oxc_ast::ast::ObjectPropertyKind::ObjectProperty(
+                            {
+                                let has_spread = object.properties.iter().any(|property| {
+                                    matches!(
+                                        property,
+                                        oxc_ast::ast::ObjectPropertyKind::SpreadProperty(_)
+                                    )
+                                });
+                                let decomposes = if name == "class" {
+                                    Self::class_object_splits(object)
+                                } else {
+                                    !has_spread
+                                };
+                                if decomposes {
+                                    if name == "style"
+                                        && object.properties.iter().any(|property| {
+                                            matches!(
                                                 property,
-                                            ) = property
-                                            else {
-                                                unreachable!("fixed object checked above");
-                                            };
-                                            if property.computed {
-                                                continue;
-                                            }
-                                            if is_literal_only_expression(&property.value) {
-                                                continue;
-                                            }
-                                            self.push(
-                                                property.value.span(),
-                                                ExecutionSiteKind::NativeAttribute,
-                                            );
-                                        }
-                                        continue;
+                                                oxc_ast::ast::ObjectPropertyKind::ObjectProperty(property)
+                                                    if property.computed
+                                            )
+                                        })
+                                    {
+                                        self.push(
+                                            container.expression.span(),
+                                            ExecutionSiteKind::NativeAttribute,
+                                        );
                                     }
+                                    for property in &object.properties {
+                                        let oxc_ast::ast::ObjectPropertyKind::ObjectProperty(
+                                            property,
+                                        ) = property
+                                        else {
+                                            unreachable!("fixed object checked above");
+                                        };
+                                        if property.computed {
+                                            continue;
+                                        }
+                                        if is_literal_only_expression(&property.value) {
+                                            continue;
+                                        }
+                                        self.push(
+                                            property.value.span(),
+                                            ExecutionSiteKind::NativeAttribute,
+                                        );
+                                    }
+                                    continue;
                                 }
                             }
-                            if !component && !has_spread && name == "class" {
-                                if let Some(expression) = container.expression.as_expression() {
-                                    if let Some(object) = Self::split_class_array_object(expression)
-                                    {
-                                        for property in &object.properties {
-                                            let oxc_ast::ast::ObjectPropertyKind::ObjectProperty(
-                                                property,
-                                            ) = property
-                                            else {
-                                                unreachable!("split class array is fixed");
-                                            };
-                                            if !is_literal_only_expression(&property.value) {
-                                                self.push(
-                                                    property.value.span(),
-                                                    ExecutionSiteKind::NativeAttribute,
-                                                );
-                                            }
-                                        }
+                            if !component
+                                && !has_spread
+                                && name == "class"
+                                && let Some(expression) = container.expression.as_expression()
+                                && let Some(object) = Self::split_class_array_object(expression)
+                            {
+                                for property in &object.properties {
+                                    let oxc_ast::ast::ObjectPropertyKind::ObjectProperty(property) =
+                                        property
+                                    else {
+                                        unreachable!("split class array is fixed");
+                                    };
+                                    if !is_literal_only_expression(&property.value) {
+                                        self.push(
+                                            property.value.span(),
+                                            ExecutionSiteKind::NativeAttribute,
+                                        );
                                     }
                                 }
                             }
@@ -411,8 +613,14 @@ impl ExecutionCensus {
                                 ExecutionSiteKind::Ref
                             } else if !component && name.starts_with("on") {
                                 ExecutionSiteKind::EventHandler
+                            // `children` is promoted to a child insert only
+                            // where lowering promotes it: `lower_dom_element`
+                            // gates the capture on `!is_void_element`, so on a
+                            // void element the value stays an attribute (and,
+                            // as in Babel, emits nothing at all).
                             } else if !component
                                 && name == "children"
+                                && !native_tag_name.is_some_and(is_void_element)
                                 && (has_spread || element.children.is_empty())
                             {
                                 ExecutionSiteKind::JsxChild
@@ -426,6 +634,25 @@ impl ExecutionCensus {
                     }
                 }
 
+                // A void native element that is a template root discards its
+                // child list before the 2.0 lowering pass reaches it; do not
+                // census expressions the emitter never resolves. A void element
+                // in *nested* native-child position keeps them — see
+                // `mark_nested_void_children` — so it censuses like any other
+                // native element. Attributes are censused either way above:
+                // they are not children, and lowering emits them for both
+                // shapes.
+                if native_tag_name.is_some_and(is_void_element)
+                    && !self
+                        .nested_void_elements
+                        .contains(&SourceSpan::from(element.span))
+                {
+                    oxc_ast_visit::walk::walk_jsx_opening_element(self, &element.opening_element);
+                    return;
+                }
+                if !component {
+                    self.mark_nested_void_children(&element.children);
+                }
                 for child in &element.children {
                     match child {
                         JSXChild::ExpressionContainer(container)
@@ -492,6 +719,7 @@ impl ExecutionCensus {
             sites: BTreeSet::new(),
             ignored_literal_spans: BTreeSet::new(),
             component_child_fragments: BTreeSet::new(),
+            nested_void_elements: BTreeSet::new(),
             built_ins: built_ins.iter().map(String::as_str).collect(),
             bindings: &bindings,
             inline_styles,
@@ -508,6 +736,18 @@ impl ExecutionCensus {
 pub(crate) struct TraceRecorder {
     census: Option<ExecutionCensus>,
     decisions: BTreeMap<SiteKey, TerminalDecision>,
+    /// Spans a lowering path *synthesizes* rather than reads from the source
+    /// tree. See [`Self::ignore_synthesized_child`].
+    synthesized_spans: BTreeSet<SourceSpan>,
+    default_effect_wrapper: bool,
+    // Compatibility output for the currently pinned checker. This is filled
+    // when lowering resolves a reactive value, rather than reconstructed from
+    // the finished site list.
+    ownership_sites: Vec<OwnershipSite>,
+    owner_establishments: Vec<OwnerEstablishment>,
+    component_render_sites: Vec<ComponentRenderSite>,
+    deferred_callback_sites: Vec<DeferredCallbackSite>,
+    next_group_id: u64,
     error: Option<String>,
 }
 
@@ -516,10 +756,47 @@ impl TraceRecorder {
         Self::default()
     }
 
-    pub(crate) fn new(census: ExecutionCensus) -> Self {
+    pub(crate) fn new(census: ExecutionCensus, default_effect_wrapper: bool) -> Self {
         Self {
             census: Some(census),
+            default_effect_wrapper,
             ..Self::default()
+        }
+    }
+
+    pub(crate) fn next_group_id(&mut self) -> u64 {
+        let group_id = self.next_group_id;
+        self.next_group_id = self.next_group_id.wrapping_add(1);
+        group_id
+    }
+
+    pub(crate) fn is_recording(&self) -> bool {
+        self.census.is_some()
+    }
+
+    pub(crate) fn owner_establishment(&mut self, span: Span, wrapper: &str, group_id: Option<u64>) {
+        if self.census.is_some() {
+            self.owner_establishments.push(OwnerEstablishment {
+                span: span.into(),
+                wrapper: wrapper.to_string(),
+                group_id,
+            });
+        }
+    }
+
+    pub(crate) fn component_render_site(&mut self, span: Span) {
+        if self.census.is_some() {
+            self.component_render_sites
+                .push(ComponentRenderSite { span: span.into() });
+        }
+    }
+
+    pub(crate) fn deferred_callback_site(&mut self, span: Span, receiver_span: Span) {
+        if self.census.is_some() {
+            self.deferred_callback_sites.push(DeferredCallbackSite {
+                span: span.into(),
+                receiver_span: receiver_span.into(),
+            });
         }
     }
 
@@ -596,6 +873,59 @@ impl TraceRecorder {
         }
     }
 
+    /// Withdraw every censused site inside a source range whose lowering the
+    /// emitter skipped wholesale.
+    ///
+    /// Reached when a lowering path discards a whole child list rather than
+    /// deciding it value by value — a nested native element whose dynamic
+    /// `textContent` replaces its children with a text placeholder, the
+    /// textarea `value` fold, an inert `<noscript>`. Nothing in the range is
+    /// emitted, so no site there exists to decide; retracting is the truthful
+    /// outcome, and the alternative is a file-wide "unresolved execution
+    /// sites" failure over expressions that never run.
+    ///
+    /// A site already decided is kept, matching [`Self::retract`]: this only
+    /// removes sites nothing has spoken for.
+    pub(crate) fn retract_within(&mut self, span: Span) {
+        let Self {
+            census, decisions, ..
+        } = self;
+        let Some(census) = census.as_mut() else {
+            return;
+        };
+        census.sites.retain(|site| {
+            decisions.contains_key(site) || site.span.start < span.start || site.span.end > span.end
+        });
+    }
+
+    /// Declare that a span carries a child the lowering *synthesized*, so a
+    /// decision recorded there is not an execution site.
+    ///
+    /// The textarea `value` fold builds its replacement child out of the
+    /// attribute (`stateful_value_child`) and spans it at the attribute. That
+    /// child is not a source expression — nothing the author wrote executes at
+    /// that span — so the census, which only walks source, rightly claims no
+    /// site there. Where the synthesized value is a string or number the
+    /// census has already ignored the literal it was cloned from; where it is
+    /// the `true` of a valueless `value` the expression does not exist in the
+    /// source at all, and lowering's `insert` decision would otherwise fail
+    /// the file as a decision for an uncensused site.
+    ///
+    /// Silence, not a site, is the truthful outcome: the emitted `insert` is
+    /// still reported as an `owner_establishment`, exactly as for a
+    /// literal-only source hole, and joins to no site.
+    ///
+    /// Invariant: `resolve()` consults these spans only when the census holds
+    /// no site there, and every span registered here is an attribute span,
+    /// which no source expression can exactly occupy. A future caller that
+    /// registers a span a censused source expression *does* occupy would
+    /// silence that site's decision instead of failing the file — do not.
+    pub(crate) fn ignore_synthesized_child(&mut self, span: Span) {
+        if self.census.is_some() && span.start < span.end {
+            self.synthesized_spans.insert(span.into());
+        }
+    }
+
     pub(crate) fn value(&mut self, span: Span, kind: ExecutionSiteKind, decision: ValueDecision) {
         self.resolve(span, kind, TerminalDecision::Value(decision));
     }
@@ -617,11 +947,12 @@ impl TraceRecorder {
             span: span.into(),
             kind,
         };
+        let not_a_site = census
+            .ignored_literal_spans
+            .contains(&SourceSpan::from(span))
+            || self.synthesized_spans.contains(&SourceSpan::from(span));
         if !census.sites.contains(&key) {
-            if census
-                .ignored_literal_spans
-                .contains(&SourceSpan::from(span))
-            {
+            if not_a_site {
                 return;
             }
             self.fail(format!(
@@ -637,13 +968,23 @@ impl TraceRecorder {
             ));
             return;
         }
-        if let Some(previous) = self.decisions.insert(key, decision) {
-            if previous != decision {
-                self.fail(format!(
-                    "semantic site {kind:?} at {}..{} received conflicting terminal decisions",
-                    span.start, span.end
-                ));
-            }
+        if let Some(previous) = self.decisions.insert(key, decision)
+            && previous != decision
+        {
+            self.fail(format!(
+                "semantic site {kind:?} at {}..{} received conflicting terminal decisions",
+                span.start, span.end
+            ));
+        } else if self.default_effect_wrapper
+            && matches!(
+                decision,
+                TerminalDecision::Value(ValueDecision::ReactiveRerun)
+            )
+        {
+            self.ownership_sites.push(OwnershipSite {
+                span: span.into(),
+                decision: OwnershipDecision::Owned,
+            });
         }
     }
 
@@ -679,8 +1020,27 @@ impl TraceRecorder {
                 kind: site.kind,
                 decision: self.decisions[&site],
             })
-            .collect();
-        Ok(Some(SemanticTrace { sites }))
+            .collect::<Vec<_>>();
+        let mut ownership_sites = self.ownership_sites;
+        ownership_sites.sort_unstable();
+        ownership_sites.dedup();
+        let mut owner_establishments = self.owner_establishments;
+        owner_establishments.sort_unstable();
+        owner_establishments.dedup();
+        let mut component_render_sites = self.component_render_sites;
+        component_render_sites.sort_unstable();
+        component_render_sites.dedup();
+        let mut deferred_callback_sites = self.deferred_callback_sites;
+        deferred_callback_sites.sort_unstable();
+        deferred_callback_sites.dedup();
+        Ok(Some(SemanticTrace {
+            version: SEMANTIC_TRACE_VERSION,
+            sites,
+            ownership_sites,
+            owner_establishments,
+            component_render_sites,
+            deferred_callback_sites,
+        }))
     }
 }
 
@@ -702,13 +1062,13 @@ mod tests {
 
     #[test]
     fn finish_rejects_an_unresolved_site() {
-        let recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild));
+        let recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
         assert!(recorder.finish().unwrap_err().contains("unresolved"));
     }
 
     #[test]
     fn finish_rejects_conflicting_decisions() {
-        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild));
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
         recorder.value(
             Span::new(1, 2),
             ExecutionSiteKind::JsxChild,
@@ -724,12 +1084,82 @@ mod tests {
 
     #[test]
     fn finish_rejects_uncensused_decisions() {
-        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild));
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
         recorder.value(
             Span::new(3, 4),
             ExecutionSiteKind::JsxChild,
             ValueDecision::EagerOnce,
         );
         assert!(recorder.finish().unwrap_err().contains("uncensused"));
+    }
+
+    #[test]
+    fn owner_establishments_keep_a_shared_group_id_and_sort_deterministically() {
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
+        recorder.value(
+            Span::new(1, 2),
+            ExecutionSiteKind::JsxChild,
+            ValueDecision::ReactiveRerun,
+        );
+        assert_eq!(
+            recorder.finish().unwrap().unwrap().ownership_sites,
+            vec![OwnershipSite {
+                span: SourceSpan { start: 1, end: 2 },
+                decision: OwnershipDecision::Owned,
+            }]
+        );
+
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), true);
+        let group_id = recorder.next_group_id();
+        recorder.value(
+            Span::new(1, 2),
+            ExecutionSiteKind::JsxChild,
+            ValueDecision::EagerOnce,
+        );
+        recorder.owner_establishment(Span::new(3, 4), "effect", Some(group_id));
+        recorder.owner_establishment(Span::new(1, 2), "effect", Some(group_id));
+        let trace = recorder.finish().unwrap().unwrap();
+        assert_eq!(
+            trace.owner_establishments,
+            vec![
+                OwnerEstablishment {
+                    span: SourceSpan { start: 1, end: 2 },
+                    wrapper: "effect".into(),
+                    group_id: Some(0),
+                },
+                OwnerEstablishment {
+                    span: SourceSpan { start: 3, end: 4 },
+                    wrapper: "effect".into(),
+                    group_id: Some(0),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn custom_effect_reruns_make_no_owner_claim() {
+        let mut recorder = TraceRecorder::new(census(ExecutionSiteKind::JsxChild), false);
+        recorder.value(
+            Span::new(1, 2),
+            ExecutionSiteKind::JsxChild,
+            ValueDecision::ReactiveRerun,
+        );
+        assert!(
+            recorder
+                .finish()
+                .unwrap()
+                .unwrap()
+                .ownership_sites
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn disabled_recorders_do_not_allocate_additive_facts() {
+        let mut recorder = TraceRecorder::disabled();
+        recorder.owner_establishment(Span::new(1, 2), "customEffect", None);
+        recorder.component_render_site(Span::new(1, 2));
+        recorder.deferred_callback_site(Span::new(1, 2), Span::new(3, 4));
+        assert_eq!(recorder.finish().unwrap(), None);
     }
 }

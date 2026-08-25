@@ -90,6 +90,10 @@ fn public_core_returns_owned_code_and_typed_semantics() {
 
     assert!(output.code.contains("insert"));
     let trace = output.semantic_trace.expect("semantic trace");
+    assert_eq!(
+        trace.version,
+        dom_expressions_compiler::SEMANTIC_TRACE_VERSION
+    );
     assert_eq!(trace.sites.len(), 1);
     assert_eq!(trace.sites[0].kind, ExecutionSiteKind::JsxChild);
     assert_eq!(
@@ -276,6 +280,51 @@ fn semantic_tracing_does_not_change_code_or_source_maps() {
     );
     assert_eq!(traced.code, ordinary.code);
     assert_eq!(traced.source_map, ordinary.source_map);
+}
+
+#[test]
+fn semantic_trace_facts_round_trip_with_closed_vocabulary() {
+    let source = "const C = (props) => <Thing value={props.value} />;";
+    let trace = compile(
+        source,
+        &CompileOptions {
+            semantic_trace: true,
+            ..CompileOptions::default()
+        },
+    )
+    .expect("compile with tracing")
+    .semantic_trace
+    .expect("semantic trace");
+
+    let json = serde_json::to_string(&trace).expect("serialize semantic trace");
+    assert!(json.contains("component_render_sites"));
+    assert!(json.contains("deferred_callback_sites"));
+    assert!(json.contains("owner_establishments"));
+    let decoded: dom_expressions_compiler::SemanticTrace =
+        serde_json::from_str(&json).expect("deserialize semantic trace");
+    assert_eq!(decoded, trace);
+}
+
+#[test]
+fn pinned_ownership_trace_fields_remain_accepted_until_consumer_migration() {
+    let legacy = r#"{"version":2,"sites":[],"ownership_sites":[]}"#;
+    let trace = serde_json::from_str::<dom_expressions_compiler::SemanticTrace>(legacy)
+        .expect("the pinned consumer still reads ownership_sites");
+    assert_eq!(
+        trace.version,
+        dom_expressions_compiler::SEMANTIC_TRACE_VERSION
+    );
+    assert!(trace.sites.is_empty());
+    assert!(trace.ownership_sites.is_empty());
+    assert!(trace.owner_establishments.is_empty());
+}
+
+#[test]
+fn semantic_trace_rejects_unknown_fields() {
+    let result = serde_json::from_str::<dom_expressions_compiler::SemanticTrace>(
+        r#"{"version":2,"sites":[],"ownership_sites":[],"future":[]}"#,
+    );
+    assert!(result.is_err());
 }
 
 #[test]

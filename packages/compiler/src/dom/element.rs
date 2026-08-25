@@ -295,9 +295,12 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         let needs_text_placeholder = attrs_lowering.needs_text_placeholder;
 
         // Babel's textarea `value` fold replaces the element's children
-        // (`path.node.children = [child]`).
+        // (`path.node.children = [child]`), discarding the source list here
+        // exactly as the nested path does; reconcile the census with both
+        // halves of the swap.
         let element: &JSXElement<'a> = match attrs_lowering.children_replacement {
             Some(child) => {
+                self.discard_folded_children(&element.children, &child);
                 let mut clone = element.clone_in(self.allocator);
                 clone.children.clear();
                 clone.children.push(child);
@@ -574,18 +577,33 @@ fn xmlns_attribute_value(element: &JSXElement<'_>) -> Option<String> {
     })
 }
 
-/// Matches the Babel plugin's `children`-attribute capture: the last
-/// `children` attribute with a non-literal expression container value is
-/// treated as element children (insert), not as an attribute or property.
+/// Matches the Babel plugin's `children`-attribute capture. JSX attribute
+/// dedup selects by *name* first — the last attribute spelled `children`
+/// wins, regardless of its value's shape (babel-plugin-jsx/src/dom/element.ts:505-524)
+/// — and only then decides whether that single survivor's value is literal.
+/// A trailing literal `children` duplicate therefore blocks promotion
+/// outright; it must not fall back to an earlier non-literal `children`
+/// attribute, because Babel's dedup already discarded that earlier one
+/// before the literal check ever runs.
 pub(crate) fn children_attribute_container<'e, 'a>(
     element: &'e JSXElement<'a>,
 ) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
-    element
+    let last_named_children = element
         .opening_element
         .attributes
         .iter()
-        .rev()
-        .find_map(|attr| children_attribute_container_from_item(attr))
+        .rposition(is_children_attribute)?;
+    children_attribute_container_from_item(&element.opening_element.attributes[last_named_children])
+}
+
+fn is_children_attribute(attr: &oxc_ast::ast::JSXAttributeItem<'_>) -> bool {
+    let oxc_ast::ast::JSXAttributeItem::Attribute(attr) = attr else {
+        return false;
+    };
+    matches!(
+        &attr.name,
+        oxc_ast::ast::JSXAttributeName::Identifier(name) if name.name == "children"
+    )
 }
 
 pub(crate) fn children_attribute_container_from_item<'e, 'a>(

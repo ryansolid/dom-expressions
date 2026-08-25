@@ -55,8 +55,17 @@ pub(crate) fn lower_fragment<'a, C: ModeLower<'a>>(
                     values.push(expression);
                     continue;
                 }
+                // The emission spans stay Babel's (`container.span`); the
+                // child thunk's own memo fact lands on the wrapped source
+                // expression, the same span this hole's `ExecutionSite` was
+                // recorded at above. A condition inside the hole records its
+                // own memos at their tests.
                 let thunk = dynamic_child_thunk(ctx, container.span, expression);
-                values.push(ctx.memo_wrap_dynamic_child(container.span, thunk));
+                values.push(ctx.memo_wrap_dynamic_child(
+                    container.span,
+                    container.expression.span(),
+                    thunk,
+                ));
             }
             JSXChild::Element(element) => {
                 values.push(ctx.lower_child_element(element)?);
@@ -84,7 +93,11 @@ pub(crate) fn lower_fragment<'a, C: ModeLower<'a>>(
                     continue;
                 }
                 let thunk = arrow_return_expression(allocator, spread.span, expression);
-                values.push(ctx.memo_wrap_dynamic_child(spread.span, thunk));
+                values.push(ctx.memo_wrap_dynamic_child(
+                    spread.span,
+                    spread.expression.span(),
+                    thunk,
+                ));
             }
         }
     }
