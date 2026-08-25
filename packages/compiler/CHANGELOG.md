@@ -1,5 +1,22 @@
 # @dom-expressions/compiler
 
+## 0.50.0-next.44
+
+### Minor Changes
+
+- e9ac254: The Oxc compiler ports patch-mode compilation and compile-time row proofs (DESIGN-PATCH-CHANNEL PR-C/§3c), closing the one-sided feature gap: eligible template scopes compile to `patchDriver` bodies and proven-pure row functions are wrapped with `rowProof`, byte-identical to the Babel plugin's emission (the parity harness no longer pins `patchDriver: false`). The subject guard resolves through the binding table (function params now declared; program-wide reassignment scan approximates Babel's `binding.constant`). The Babel plugin aligns its patch-body locals to the fixed `_n$`/`_p$`/`_f$`/`_v$` convention for cross-compiler parity.
+
+### Patch Changes
+
+- 152cb59: The WASI compiler binary links on rust-lld 1.95 again. `napi-build` 2.4.1 hard-exported `emnapi_create_env` / `emnapi_delete_env` for emnapi v2 archives; we still ship emnapi 1.x, so those `--export`s now use `--export-if-defined`.
+- b277167: Expose a host-independent Rust compile API while keeping the existing Node
+  adapter and its interface enabled by default. The Rust API surface is
+  unstable pre-1.0 and carries no semver commitment; the Node `transform()`
+  interface remains the supported public contract.
+- bba3db6: Treat a native `children` attribute as child content — template-inlined when static, inserted when dynamic — instead of writing the read-only DOM `children` property. Explicit JSX children still win; named `children` versus a spread keeps source order.
+- a2ec7bc: SSR `serverComponents` option parity with the Babel plugin: ref/on\* positions on intrinsic elements compile to one guarded `_$ssrClaim` hole per element (the `_bnd` behavior-claim marker) instead of dropping.
+- 95bd823: Gate SSR select-value resolution behind a compiler-armed flag and region-jump the resolver. Compiled output containing a select value binding (or a spread on a select) emits one ssrSelectValues() marker per module; apps that never bind a select value skip the resolution pass entirely — it was costing over half of select-free render time (the first full-output scan pays the rope flatten), worth 2.2x on news-page SSR throughput and it ran per streamed fragment. Armed pages walk only select regions (2.15x on a large page with one bound select) instead of every tag in the document; to make region jumps sound, attribute values now escape `<` alongside `&` and `"` in both compilers (matching React/Octane norms). Raw HTML injected around the compiler gets browser semantics for select values — the forms contract is a JSX-level promise.
+
 ## 0.50.0-next.43
 
 ### Patch Changes

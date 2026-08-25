@@ -163,6 +163,16 @@ function groupAttributeClosures(path: BabelPath, results: SSRTransformResult): v
   );
 }
 
+// One marker statement per program: `_$ssrSelectValues();` after imports.
+const selectValuesMarked = new WeakSet<babelTypes.Program>();
+function registerSelectValues(path: BabelPath): void {
+  const program = path.findParent(p => t.isProgram(p.node))!;
+  if (selectValuesMarked.has(program.node as babelTypes.Program)) return;
+  selectValuesMarked.add(program.node as babelTypes.Program);
+  const marker = registerImportMethod(path, "ssrSelectValues", undefined);
+  (program as any).unshiftContainer("body", t.expressionStatement(t.callExpression(marker, [])));
+}
+
 export function transformElement(
   path: BabelPath<babelTypes.JSXElement> & { doNotEscape?: boolean },
   info: TransformInfo = {}
@@ -178,6 +188,20 @@ export function transformElement(
 
   const config = getConfig(path);
   if (tagName === "script" || tagName === "style") path.doNotEscape = true;
+
+  // A `<select value=…>` (or a spread that could carry one) opts this module
+  // into the runtime's SSR select-value resolution pass. The pass is a
+  // full-output scan — the flag keeps every app that never binds a select
+  // value from paying it on any render (see resolveSSRSelectValues).
+  if (
+    tagName === "select" &&
+    path.node.openingElement.attributes.some(
+      a =>
+        t.isJSXSpreadAttribute(a) ||
+        (t.isJSXAttribute(a) && t.isJSXIdentifier(a.name) && a.name.name === "value")
+    )
+  )
+    registerSelectValues(path);
 
   // contains spread attributes
   if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
@@ -594,6 +618,7 @@ function transformAttributes(
         return;
       }
       if (ChildProperties.has(key)) {
+        if (key === "children" && VoidElements.has(tagName)) return;
         if (info.hydratable && key === "textContent" && value && value.expression) {
           const comments = value.expression.leadingComments;
           value.expression = t.logicalExpression("||", value.expression, t.stringLiteral(" "));

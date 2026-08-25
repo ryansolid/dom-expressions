@@ -7,7 +7,8 @@ var _tmpl$ = /*#__PURE__*/ _$template(`<div>`),
   _tmpl$2 = /*#__PURE__*/ _$template(`<module>`),
   _tmpl$3 = /*#__PURE__*/ _$template(`<module>Hello`),
   _tmpl$4 = /*#__PURE__*/ _$template(`<module>Hi `),
-  _tmpl$5 = /*#__PURE__*/ _$template(`<div>Test 1`);
+  _tmpl$5 = /*#__PURE__*/ _$template(`<div>Test 1`),
+  _tmpl$6 = /*#__PURE__*/ _$template(`<module>hello`);
 const children = _tmpl$();
 const dynamic = {
   children
@@ -101,3 +102,31 @@ const comma = _el$15;
 var _el$16 = _tmpl$();
 _$insert(_el$16, () => children()());
 const double = _el$16;
+const hello = "hello";
+const staticChildren = _tmpl$6();
+const foldedChildren = _tmpl$6();
+var _el$19 = _tmpl$2();
+_$spread(
+  _el$19,
+  _$mergeProps(
+    {
+      get children() {
+        return fallback();
+      }
+    },
+    props
+  ),
+  false
+);
+const childrenBeforeSpread = _el$19;
+var _el$20 = _tmpl$2();
+_$spread(
+  _el$20,
+  _$mergeProps(props, {
+    get children() {
+      return later();
+    }
+  }),
+  false
+);
+const childrenAfterSpread = _el$20;

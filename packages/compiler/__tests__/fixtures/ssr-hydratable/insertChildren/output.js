@@ -24,20 +24,21 @@ var _tmpl$6 = [
 	">",
 	"</div>"
 ];
-var _tmpl$7 = [
+var _tmpl$7 = ["<module", ">hello</module>"];
+var _tmpl$8 = [
 	"<section",
 	"><!--$-->",
 	"<!--/--><!--$-->",
 	"<!--/--></section>"
 ];
-var _tmpl$8 = [
+var _tmpl$9 = [
 	"<section",
 	"><!--$-->",
 	"<!--/--><span>native</span></section>"
 ];
-var _tmpl$9 = ["<span", ">fallback</span>"];
-var _tmpl$10 = ["<span", ">child</span>"];
-var _tmpl$11 = ["<span", ">sibling</span>"];
+var _tmpl$10 = ["<span", ">fallback</span>"];
+var _tmpl$11 = ["<span", ">child</span>"];
+var _tmpl$12 = ["<span", ">sibling</span>"];
 var _v$ = _$ssrHydrationKey();
 const children = _$ssr(_tmpl$, _v$);
 const dynamic = { children };
@@ -122,43 +123,58 @@ var _v$26 = _$ssrHydrationKey(), _v$27 = _$scope(() => {
 	return _$escape(children()());
 });
 const double = _$ssr(_tmpl$6, _v$26, _v$27);
+const hello = "hello";
+var _v$28 = _$ssrHydrationKey();
+const staticChildren = _$ssr(_tmpl$7, _v$28);
+var _v$29 = _$ssrHydrationKey();
+const foldedChildren = _$ssr(_tmpl$7, _v$29);
+const childrenBeforeSpread = _$ssrElement("module", () => {
+	return _$mergeProps({ get children() {
+		return fallback();
+	} }, props);
+}, undefined, true);
+const childrenAfterSpread = _$ssrElement("module", () => {
+	return _$mergeProps(props, { get children() {
+		return later();
+	} });
+}, undefined, true);
 function OrderedParent(props) {
-	var _v$28 = _$ssrHydrationKey(), _v$29 = _$scope(() => {
+	var _v$30 = _$ssrHydrationKey(), _v$31 = _$scope(() => {
 		return _$escape(props.children);
-	}), _v$30 = _$escape(OrderedSibling({}));
-	return _$ssr(_tmpl$7, _v$28, _v$29, _v$30);
+	}), _v$32 = _$escape(OrderedSibling({}));
+	return _$ssr(_tmpl$8, _v$30, _v$31, _v$32);
 }
 function OrderedNativeParent(props) {
-	var _v$31 = _$ssrHydrationKey(), _v$32 = _$scope(() => {
+	var _v$33 = _$ssrHydrationKey(), _v$34 = _$scope(() => {
 		return _$escape(props.children);
 	});
-	return _$ssr(_tmpl$8, _v$31, _v$32);
+	return _$ssr(_tmpl$9, _v$33, _v$34);
 }
 function OrderedExpressionParent(props) {
-	var _v$33 = _$ssrHydrationKey(), _v$34 = _$scope(() => {
+	var _v$35 = _$ssrHydrationKey(), _v$36 = _$scope(() => {
 		return _$escape(props.render());
-	}), _v$35 = _$escape(OrderedSibling({}));
-	return _$ssr(_tmpl$7, _v$33, _v$34, _v$35);
+	}), _v$37 = _$escape(OrderedSibling({}));
+	return _$ssr(_tmpl$8, _v$35, _v$36, _v$37);
 }
 function OrderedConditionalParent(props) {
-	var _v$36 = _$ssrHydrationKey(), _v$37 = _$scope((() => {
+	var _v$38 = _$ssrHydrationKey(), _v$39 = _$scope((() => {
 		var _c$ = _$memo(() => {
 			return !!props.when;
 		});
 		return () => {
-			var _v$39;
-			return _c$() ? _$escape(OrderedChild({})) : (_v$39 = _$ssrHydrationKey(), _$ssr(_tmpl$9, _v$39));
+			var _v$41;
+			return _c$() ? _$escape(OrderedChild({})) : (_v$41 = _$ssrHydrationKey(), _$ssr(_tmpl$10, _v$41));
 		};
-	})()), _v$38 = _$escape(OrderedSibling({}));
-	return _$ssr(_tmpl$7, _v$36, _v$37, _v$38);
+	})()), _v$40 = _$escape(OrderedSibling({}));
+	return _$ssr(_tmpl$8, _v$38, _v$39, _v$40);
 }
 function OrderedChild() {
-	var _v$40 = _$ssrHydrationKey();
-	return _$ssr(_tmpl$10, _v$40);
+	var _v$42 = _$ssrHydrationKey();
+	return _$ssr(_tmpl$11, _v$42);
 }
 function OrderedSibling() {
-	var _v$41 = _$ssrHydrationKey();
-	return _$ssr(_tmpl$11, _v$41);
+	var _v$43 = _$ssrHydrationKey();
+	return _$ssr(_tmpl$12, _v$43);
 }
 const orderedComponent = OrderedParent({ get children() {
 	return OrderedChild({});

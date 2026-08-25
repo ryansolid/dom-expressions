@@ -46,7 +46,7 @@ var _tmpl$28 = /* @__PURE__ */ _$template(`<iframe src>`);
 var _tmpl$29 = /* @__PURE__ */ _$template(`<div><iframe src>`);
 var _tmpl$30 = /* @__PURE__ */ _$template(`<iframe src loading=lazy>`, 1);
 var _tmpl$31 = /* @__PURE__ */ _$template(`<div><iframe src loading=lazy>`, 1);
-var _tmpl$32 = /* @__PURE__ */ _$template(`<div title="<u>data</u>">`);
+var _tmpl$32 = /* @__PURE__ */ _$template(`<div title="&lt;u>data&lt;/u>">`);
 var _tmpl$33 = /* @__PURE__ */ _$template(`<div true truestr=true truestrjs=true>`);
 var _tmpl$34 = /* @__PURE__ */ _$template(`<div falsestr=false falsestrjs=false>`);
 var _tmpl$35 = /* @__PURE__ */ _$template(`<div true>`);

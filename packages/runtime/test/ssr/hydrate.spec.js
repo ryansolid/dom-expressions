@@ -1215,6 +1215,7 @@ describe("loadModuleAssets shortcut branches", () => {
     originalHY = globalThis._$HY;
   });
   afterEach(() => {
+    jest.restoreAllMocks();
     container.innerHTML = "";
     globalThis._$HY = originalHY;
   });
@@ -1247,6 +1248,45 @@ describe("loadModuleAssets shortcut branches", () => {
     // pending list) and hydrate falls through to the synchronous path.
     expect(rendered).toBe(true);
     expect(globalThis._$HY.modules[moduleUrl]).toBe(preloaded);
+  });
+
+  it("resolves module asset URLs against the document before importing", async () => {
+    const moduleUrl = "./QueryLazy.tsx?variant=a";
+    const entryUrl = "/src/QueryLazy.tsx?variant=a";
+    const resolvedModule = require.resolve("../../src/constants");
+    const NativeURL = globalThis.URL;
+    jest.spyOn(globalThis, "URL").mockImplementation((url, base) => {
+      if (url === entryUrl) {
+        expect(base).toBe(document.baseURI);
+        return { href: resolvedModule };
+      }
+      return new NativeURL(url, base);
+    });
+
+    globalThis._$HY = {
+      events: [],
+      completed: new WeakSet(),
+      r: { _assets: { [moduleUrl]: entryUrl } },
+      modules: {},
+      loading: {},
+      done: false,
+      fe() {}
+    };
+    container.innerHTML = '<div _hk="0">Query</div>';
+    const _tmpl$ = r.template("<div>Query</div>");
+
+    let rendered = false;
+    r.hydrate(() => {
+      rendered = true;
+      const _el$ = r.getNextElement(_tmpl$);
+      r.insert(container, _el$, undefined, [...container.childNodes]);
+    }, container);
+
+    expect(rendered).toBe(false);
+    await globalThis._$HY.loading[moduleUrl];
+    await new Promise(resolve => setTimeout(resolve));
+    expect(globalThis._$HY.modules[moduleUrl]).toBeDefined();
+    expect(rendered).toBe(true);
   });
 
   it("reuses an in-flight loading promise without kicking off another import", async () => {

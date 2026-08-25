@@ -100,3 +100,20 @@ _$insert(_el$19, () => {
 	return children()();
 });
 const double = _el$19;
+const hello = "hello";
+var _el$20 = _$createElement("module");
+_$insertNode(_el$20, _$createTextNode("hello"));
+const staticChildren = _el$20;
+var _el$21 = _$createElement("module");
+_$insertNode(_el$21, _$createTextNode("hello"));
+const foldedChildren = _el$21;
+var _el$22 = _$createElement("module");
+_$spread(_el$22, _$mergeProps({ get children() {
+	return fallback();
+} }, props), false);
+const childrenBeforeSpread = _el$22;
+var _el$23 = _$createElement("module");
+_$spread(_el$23, _$mergeProps(props, { get children() {
+	return later();
+} }), false);
+const childrenAfterSpread = _el$23;

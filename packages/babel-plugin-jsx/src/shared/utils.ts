@@ -444,8 +444,17 @@ export function transformCondition(
 
 export function escapeHTML(s: unknown, attr?: boolean): unknown {
   if (typeof s !== "string") return s;
-  const delim = attr ? '"' : "<";
-  const escDelim = attr ? "&quot;" : "&lt;";
+  if (attr) {
+    // Attr mode escapes `&` `"` AND `<` (compile-time statics half of the
+    // runtime's ESCAPE_ATTR invariant: a raw "<select" byte sequence in SSR
+    // output is always a genuine tag start — resolveSSRSelectValues
+    // region-jumps on it). Amp first so entities aren't double-escaped;
+    // compile-time only, so plain replaces beat pointer games.
+    if (!/[&"<]/.test(s)) return s;
+    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+  const delim = "<";
+  const escDelim = "&lt;";
   let iDelim = s.indexOf(delim);
   let iAmp = s.indexOf("&");
 

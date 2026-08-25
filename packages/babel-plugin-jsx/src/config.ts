@@ -23,6 +23,15 @@ export interface JSXDOMExpressionsConfig {
   contextToCustomElements: boolean;
   staticMarker: string;
   effectWrapper: string | false;
+  /** Patch-mode driver import name (DESIGN-PATCH-CHANNEL.md): when set,
+   * template scopes whose dynamic bindings are pure member reads of one
+   * subject compile to a compiled patch body + driver call instead of the
+   * grouped effect. DORMANT (off) by default while the patch channel
+   * completes on its stage-2 branch (extraction ruling, solid DESIGN §16):
+   * compiled output must not import driver exports the release core only
+   * stubs. Set to the driver's export name (e.g. "patchDriver") to opt a
+   * build in against a channel-bearing core. */
+  patchDriver: string | false;
   memoWrapper: string | false;
   validate: boolean;
   inlineStyles: boolean;
@@ -47,6 +56,7 @@ const config: JSXDOMExpressionsConfig = {
   contextToCustomElements: false,
   staticMarker: "@static",
   effectWrapper: "effect",
+  patchDriver: false,
   memoWrapper: "memo",
   validate: true,
   inlineStyles: true,

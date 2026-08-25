@@ -7,7 +7,8 @@ var _tmpl$ = "<div></div>",
   _tmpl$3 = "<module>Hello</module>",
   _tmpl$4 = ["<module>Hi ", "</module>"],
   _tmpl$5 = "<div>Test 1</div>",
-  _tmpl$6 = ["<div>", "</div>"];
+  _tmpl$6 = ["<div>", "</div>"],
+  _tmpl$7 = "<module>hello</module>";
 const children = _$ssr(_tmpl$);
 const dynamic = {
   children
@@ -82,3 +83,29 @@ var _v$1 = () => _$escape((expression(), "static"));
 const comma = _$ssr(_tmpl$6, _v$1);
 var _v$10 = () => _$escape(children()());
 const double = _$ssr(_tmpl$6, _v$10);
+const hello = "hello";
+const staticChildren = _$ssr(_tmpl$7);
+const foldedChildren = _$ssr(_tmpl$7);
+const childrenBeforeSpread = _$ssrElement(
+  "module",
+  _$mergeProps(
+    {
+      get children() {
+        return fallback();
+      }
+    },
+    props
+  ),
+  undefined,
+  false
+);
+const childrenAfterSpread = _$ssrElement(
+  "module",
+  _$mergeProps(props, {
+    get children() {
+      return later();
+    }
+  }),
+  undefined,
+  false
+);

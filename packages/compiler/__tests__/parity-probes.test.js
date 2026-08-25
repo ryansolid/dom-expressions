@@ -589,6 +589,19 @@ const a = <div children={a()} children={b()} />;
   "children attribute before spread": `
 const a = <div children={fallback()} {...props} />;
 `,
+  "children attribute after spread": `
+const a = <div {...props} children={later()} />;
+`,
+  "static children attribute": `
+const a = <div children="hello" />;
+`,
+  "foldable children attribute": `
+const child = "hello";
+const a = <div children={child} />;
+`,
+  "children attribute with real children": `
+const a = <div children={fallback()}>keep</div>;
+`,
   "prop namespace after spread": `
 const a = <div {...props} prop:custom={value()} />;
 `,
@@ -652,6 +665,33 @@ function f() {
 function f(items) {
   return items.map(item => <li data-id={item.id}>{item.name}</li>);
 }
+`,
+  "pure row expression arrow (rowProof stamps)": `
+const row = r => <li class={r.done ? "done" : ""} onClick={() => pick(r.id)} textContent={r.name} />;
+`,
+  "pure row return-only block arrow (rowProof stamps)": `
+const row = r => { return <li textContent={r.name} />; };
+`,
+  "pure row function expression (rowProof stamps)": `
+const row = function (r) { return <li textContent={r.name} />; };
+`,
+  "row with user statement declines rowProof": `
+const row = r => { doWork(r); return <li textContent={r.name} />; };
+`,
+  "row with ref declines rowProof": `
+const row = r => <li ref={r.el} textContent={r.name} />;
+`,
+  "row with insert hole declines rowProof": `
+const row = r => <li>{r.name}</li>;
+`,
+  "foreign-subject row declines rowProof": `
+const outer = getStore();
+const row = r => <li textContent={outer.title} />;
+`,
+  "reassigned subject declines patch mode": `
+let subject = first();
+subject = second();
+const view = <li textContent={subject.name} />;
 `,
   "component member expression props": `
 const a = <Comp a={obj.prop} b={obj[key()]} c={obj?.maybe} d={fn.call} />;

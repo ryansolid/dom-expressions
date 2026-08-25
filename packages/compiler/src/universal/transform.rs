@@ -87,6 +87,7 @@ pub(crate) struct DynamicDomConfig<'source> {
     pub(crate) effect_wrapper: Option<String>,
     pub(crate) wrap_conditionals: bool,
     pub(crate) memo_wrapper: Option<String>,
+    pub(crate) patch_driver: Option<String>,
     pub(crate) static_marker: String,
     pub(crate) omit_nested_closing_tags: bool,
     pub(crate) omit_last_closing_tag: bool,
@@ -203,6 +204,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 effect_wrapper: dom.effect_wrapper,
                 wrap_conditionals: dom.wrap_conditionals,
                 memo_wrapper: dom.memo_wrapper,
+                patch_driver: dom.patch_driver,
                 static_marker: dom.static_marker,
                 omit_nested_closing_tags: dom.omit_nested_closing_tags,
                 omit_last_closing_tag: dom.omit_last_closing_tag,
@@ -389,7 +391,17 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
             // Leftover raw JSX in the dom output (foreign renderer elements,
             // deferred dynamic attribute values) lowers in the statement-level
             // deferred pass, matching Babel's outer-traversal ordering.
-            return dom.lower_element_with_setup(element);
+            // Root tracking mirrors lower_jsx_element so row proofs (§3c)
+            // record for dom template roots in dynamic mode too.
+            let is_dom_root = dom.jsx_root_span.is_none();
+            if is_dom_root {
+                dom.jsx_root_span = Some(element.span);
+            }
+            let result = dom.lower_element_with_setup(element);
+            if is_dom_root {
+                dom.jsx_root_span = None;
+            }
+            return result;
         }
         let result = self.lower_native_element(element)?;
         // Babel's `createTemplate`: a bare element (single declaration, no
@@ -448,6 +460,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                     attr,
                     &element_id,
                     false,
+                    has_children,
                     &mut init_props,
                     &mut ref_exprs,
                     &mut attr_exprs,
@@ -512,6 +525,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
         attr: &oxc_ast::ast::JSXAttribute<'a>,
         element_id: &str,
         has_spread: bool,
+        has_children: bool,
         init_props: &mut std::vec::Vec<ObjectPropertyKind<'a>>,
         ref_exprs: &mut std::vec::Vec<Statement<'a>>,
         attr_exprs: &mut std::vec::Vec<Statement<'a>>,
@@ -566,6 +580,19 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                 }
             }
             Some(JSXAttributeValue::StringLiteral(value)) => {
+                if key == "children" {
+                    if !has_children {
+                        *children_attr = Some(self.ast().jsx_expression_container(
+                            value.span,
+                            JSXExpression::from(self.ast().expression_string_literal(
+                                value.span,
+                                self.ast().str(&value.value),
+                                None,
+                            )),
+                        ));
+                    }
+                    return Ok(());
+                }
                 // Babel passes the raw attribute source string through.
                 let value = self.ast().expression_string_literal(
                     value.span,
@@ -756,6 +783,7 @@ impl<'a, 'source> AstUniversalTransform<'a, 'source> {
                             attr,
                             element_id,
                             true,
+                            has_children,
                             &mut init_props,
                             ref_exprs,
                             attr_exprs,

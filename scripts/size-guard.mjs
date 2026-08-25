@@ -42,10 +42,12 @@ const SCENARIOS = {
   // weight floats with the neighborhood (+19 when first measured, +58
   // against today's base). Then +22 from the entry-import-preloads/
   // CSP-nonce round riding the rebase base. Re-guarded at actual+20
-  // (4504 measured).
+  // (4504 measured). Then +81 from the patch-mode / DORMANT landing
+  // (the list seam and related core walk), which went unguarded.
+  // Re-guarded at actual+20 (4585 measured).
   "client: compiled-JSX core (render/template/insert/delegateEvents/effects)": [
     "{ render, template, insert, delegateEvents, className, style, setAttribute, addEvent, spread }",
-    4524
+    4605
   ],
   // Ceiling history: guarded 7950 at landing; 7958 after the boundary-driven
   // reveal round (+60: the revealed fragment's parent on the _$HY.fe hook);
@@ -106,7 +108,10 @@ const SCENARIOS = {
   // entry-import-preloads/CSP-nonce round, which landed on next 12 over
   // this ceiling (unguarded); absorbed here at the Stage 6 rebase.
   // Re-guarded at actual+20 (10885 measured, post seam-key shortening).
-  "client: full surface": ["*", 10905],
+  // Then +187 unguarded from the patch-mode / DORMANT landing (11072),
+  // plus +16 for hydration module-identity URL resolution (#578).
+  // Re-guarded at actual+20 (11088 measured).
+  "client: full surface": ["*", 11108],
   // The whole server-components consumer: store/versioning, host routing,
   // reveal machinery, slot model, morph, transport, codec glue (seroval
   // external, like everything here). Apps not importing it pay 0 — the two
@@ -387,8 +392,9 @@ for (const [name, [imp, ceiling]] of Object.entries(SCENARIOS)) {
 // createServerReference/GET, which only compiled `'use server'` output
 // calls. Ceiling at actual+20 (401 measured at landing — flash matcher,
 // metadata channel, seam read, plus the per-entry external rxcore import
-// esbuild retains regardless of use); the forbidden markers fail the build
-// if any seroval external re-enters this slice.
+// esbuild retains regardless of use); then +11 from the patch-mode /
+// DORMANT landing. Re-guarded at actual+20 (432 measured). The forbidden
+// markers fail the build if any seroval external re-enters this slice.
 await check(
   "client: router eager subset (server-fn detection + RPC seam + flash helpers, NO codec)",
   `export {
@@ -398,7 +404,7 @@ await check(
      hasFlashCookie,
      clearFlashCookie
    } from ${JSON.stringify(CLIENT)};`,
-  421,
+  452,
   ["seroval", "seroval-plugins"]
 );
 // The server-function client's EAGER cost: exactly what compiled client

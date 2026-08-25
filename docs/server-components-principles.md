@@ -1914,3 +1914,134 @@ seam where per-address fan-out slots in later if it ever matters.
 
 Deliberately absent: any client authoring API, any server authoring
 API, any subscription registry, any cursor protocol, WebSocket.
+
+### 9.4 Batching seeds — relatedness decides atomicity (2026-08-22)
+
+Recorded from the design conversation around router PR 554
+(`batchedQuery`); nothing here is built. Three related findings, one
+principle.
+
+**The principle: atomicity follows relatedness, and relatedness is
+something only the author can declare.** An author-declared batch
+("these calls resolve together from one source" — one `WHERE id IN`,
+one render pass) may settle atomically; that IS its semantics, and
+there is no "slowest member" because there is one shared latency.
+Infrastructure-observed co-occurrence (calls that merely happen in
+the same tick) may share a CONNECTION but never a COMPLETION — atomic
+settlement there couples unrelated latencies nobody consented to. A
+mechanism that is declared by infrastructure but settles atomically
+is claiming a relation nobody asserted; reject it on sight.
+
+**Data batching (router-side, for the record).** The Svelte-style
+server-resolver shape (`query.batch`: fn returns a lookup closure the
+framework applies per-arg) is UNAVAILABLE here: a server function's
+top-level function return already means "server component" — the
+strictest protocol position we have — and no out-of-band flag should
+overload it. The viable shape is the original PR's: the batch fn is a
+plain server function (array in, ONE serializable value out, ships
+once), and the per-caller lookup is a client-side pure derivation.
+That makes batching pure caller-side promise coalescing — no wire
+fact, nothing for this repo to declare — so it lives in the router
+beside `query`, with two fixes owed: the collection queue must be
+request-scoped on the server face (module scope = cross-request
+bleed), and per-arg calls should key into the query cache
+individually. Emergent win: a revalidation sweep's refetches
+auto-coalesce.
+
+**Server-component request grouping (transport seed, hold until
+proven).** N same-tick SC invocations COULD ride one request: the
+response side already multiplexes (records carry the producing
+frame's id — regions, single-flight bodies, and the document face all
+prove one-stream-many-components), so only the request-side
+invocation shape is missing. Each batched entry keeps its own
+`frameAddress(id, args)` — transport aggregation, identity untouched.
+Per the principle, the batch shares the pipe, never the completion:
+each component's shell flushes when IT renders (shell-gating
+discipline already guarantees sync shells), and the one
+implementation trap is buffering the batch response, which would
+silently convert shared-connection semantics into atomic-completion
+semantics. Held because the heavy cases are already covered (t=0 by
+the document, mutations by single-flight) and Stage 8's persistent
+connection dissolves the question entirely.
+
+**Multi-component returns — object-first (designed, unbuilt).** A
+server function returning `{ header: SC, feed: SC }` is
+author-declared relatedness for components: one call settles
+atomically (its semantics), each value is its own independently
+addressed boundary. Mechanics discovered during the pass: the
+serializer is ALREADY depth-agnostic (`ServerComponentPlugin` tests
+the brand, not the position) — the top-level restriction lives
+entirely in the two branding transforms (`frameTransformResult`,
+`frameTransformDirectResult`), so the wire face is nearly free. What
+it actually costs is identity: DR-1's "one call, one address" becomes
+"one call, one address SPACE" — elements sub-addressed
+`(fn, args, key)` — and the mount-identity half (per-function
+placeholder memoization, the equals-gated dynamic, adoption) must
+become per `(function, key)`. Objects first because property names
+are stable sub-keys for free; ARRAYS are deferred until element
+keying is author-declarable, because index-keyed identity
+misattributes content stores on reorder — the keyed-morph lesson
+repeating at the boundary level. What it buys is a real capability,
+not sugar: client-side compositional control over server-rendered
+units (hold the references, lay them out, filter/reorder/paginate
+locally) while each unit stays server-owned, addressable,
+refetchable, morphable — the thing "one component rendering a list
+internally" structurally cannot do.
+
+**Amendment (same night): the shared-query pattern eats most of the
+motivation.** "Isolated components sharing one query" does NOT need
+multi-returns: siblings take plain args and each AWAITS the same
+declared query inside — request-scoped dedupe already collapses N
+awaits into one fetch on the document face, and the request-grouping
+seed above extends that to client-driven mounts (one request → one
+request scope → one query). Addresses stay plain-data-keyed, each
+unit independently refetchable, shell-gating owns each settle. (The
+promise-as-argument variant of "fetch outside, await inside" is an
+ANTI-PATTERN at the call border: promises are not address material —
+every refetch mints a new identity and churns the content store.)
+What object returns still uniquely own after this: the mixed
+`{ data, card }` shape (machine data + its rendered presentation as
+one atomically related value — the map/canvas/editor case), and
+single-shot relatedness that cannot be re-derived through a query.
+The identity work should wait for THOSE to bite, not for layout
+cases the shared-query pattern serves.
+
+**Don't await in the server function body — closure capture is the
+preload (the actual insight of the conversation; the readings below
+it were derived en route and stand on their own).** The idiom every
+simple example teaches —
+`const data = await db.query(id); return props => <div>…` — holds
+the ENTIRE component hostage: the function hasn't resolved, so the
+frame element, the shell, the stream's first byte all wait on the
+query. The body can initiate WITHOUT awaiting and return
+immediately; the pending promise rides in the CLOSURE (which never
+crosses a serialization border — the address-material objection does
+not apply), and the component consumes it through machinery it
+already has: value tier, holes, `Loading` boundaries, shell gating.
+Body = initiation scope, component = consumption scope. Authoring
+rule for docs and snippets when that workstream opens: **await for
+decisions (auth, redirect, branch), initiate-and-capture for
+presentation** — the awaited form should be the exception that
+signals "nothing below is valid without this."
+
+This also RESTORES the strongest motivation for object returns,
+which the shared-query amendment above had argued down: one body,
+one un-awaited initiation, N returned components sharing the
+closure — `const stats = db.bigQuery(range); return { kpis: () =>
+<Kpis data={stats}/>, alerts: () => <Alerts data={stats}/> }` — one
+db call, independently addressed boundaries, independent reveals.
+Closure-shared state is single-shot relatedness that children
+CANNOT re-derive through a deduped query; it is exactly the
+carve-out where the per-key identity work earns its cost.
+
+**The call as preload (derived en route, still true).** Intrinsic
+addressing makes a call an idempotent NAME, so "invoke early, render
+later" extends across the border: a route preload invokes the SC
+function at hover/intent, and the mount, deriving the same
+`frameAddress(fn, args)`, should ADOPT the in-flight call's
+address-keyed store rather than reissue — the SC analog of
+liveQuery's preload warming, with the key supplied by DR-1. Work
+item before blessing: probe whether a mount adopts a concurrently
+in-flight call at the same address; host retention proves the
+re-mount case, the race case is likely "second call reissues"
+today — wasteful, not wrong.

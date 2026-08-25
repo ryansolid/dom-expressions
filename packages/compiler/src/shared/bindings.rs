@@ -73,6 +73,9 @@ pub(crate) struct BindingTable {
     /// consult this so user code that already uses `_el$`-style names can't
     /// clash with compiler output.
     pub(crate) taken_names: std::collections::HashSet<String>,
+    /// Names appearing as assignment/update targets anywhere in the program
+    /// (see `is_reassigned`).
+    reassigned_names: std::collections::HashSet<String>,
     /// Span starts of JSX tag identifiers that match a configured built-in
     /// but resolve to a real binding in their scope chain (Babel's
     /// `!path.scope.hasBinding(name)` gate on built-in aliasing). Populated
@@ -88,6 +91,7 @@ impl Default for BindingTable {
             // Root frame so program-level collection always has a target.
             scopes: vec![BindingScopeKind::Function],
             taken_names: std::collections::HashSet::new(),
+            reassigned_names: std::collections::HashSet::new(),
             shadowed_builtin_spans: std::collections::HashSet::new(),
         }
     }
@@ -169,6 +173,31 @@ impl BindingTable {
         });
     }
 
+    /// Whether `name` resolves to ANY live declaration (Babel's
+    /// `scope.getBinding` presence check for the patch-mode subject guard).
+    pub(crate) fn has_binding(&self, name: &str) -> bool {
+        self.resolve(name).is_some()
+    }
+
+    /// Declares a function's parameters in the current frame. The statement
+    /// walk only covers declarations; patch-mode subject resolution needs
+    /// params (row functions' subjects ARE their params).
+    pub(crate) fn declare_function_params(
+        &mut self,
+        params: &oxc_ast::ast::FormalParameters<'_>,
+    ) {
+        let mut names = std::vec::Vec::new();
+        for param in &params.items {
+            collect_binding_names(&param.pattern, &mut names);
+        }
+        if let Some(rest) = &params.rest {
+            collect_binding_names(&rest.rest.argument, &mut names);
+        }
+        for name in names {
+            self.declare(&name, DeclarationFacts::default());
+        }
+    }
+
     pub(crate) fn is_const(&self, name: &str) -> bool {
         self.resolve(name).is_some_and(|binding| binding.is_const)
     }
@@ -196,13 +225,26 @@ impl BindingTable {
         self.taken_names.contains(name)
     }
 
+    /// Whether `name` is ever the target of an assignment or update anywhere
+    /// in the program. The patch-mode subject guard (Babel checked
+    /// `binding.constant`): a reassignable subject must fall back to effects,
+    /// which re-evaluate the subject reference per run — a registered patch
+    /// captures it once. Program-wide (scope-insensitive) is conservative in
+    /// the safe direction, and it admits function params, which the binding
+    /// table does not track.
+    pub(crate) fn is_reassigned(&self, name: &str) -> bool {
+        self.reassigned_names.contains(name)
+    }
+
     /// Deep pre-scan of the whole program for identifier names (Babel's
-    /// `generateUid` collision set). Runs once before transformation.
+    /// `generateUid` collision set) and assignment targets. Runs once before
+    /// transformation.
     pub(crate) fn scan_taken_names(&mut self, program: &oxc_ast::ast::Program<'_>) {
         use oxc_ast_visit::Visit;
 
         struct TakenNames<'t> {
             taken: &'t mut std::collections::HashSet<String>,
+            reassigned: &'t mut std::collections::HashSet<String>,
         }
 
         impl<'b> Visit<'b> for TakenNames<'_> {
@@ -212,10 +254,25 @@ impl BindingTable {
             fn visit_identifier_reference(&mut self, it: &oxc_ast::ast::IdentifierReference<'b>) {
                 self.taken.insert(it.name.to_string());
             }
+            fn visit_assignment_target(&mut self, it: &oxc_ast::ast::AssignmentTarget<'b>) {
+                if let oxc_ast::ast::AssignmentTarget::AssignmentTargetIdentifier(ident) = it {
+                    self.reassigned.insert(ident.name.to_string());
+                }
+                oxc_ast_visit::walk::walk_assignment_target(self, it);
+            }
+            fn visit_update_expression(&mut self, it: &oxc_ast::ast::UpdateExpression<'b>) {
+                if let oxc_ast::ast::SimpleAssignmentTarget::AssignmentTargetIdentifier(ident) =
+                    &it.argument
+                {
+                    self.reassigned.insert(ident.name.to_string());
+                }
+                oxc_ast_visit::walk::walk_update_expression(self, it);
+            }
         }
 
         let mut collector = TakenNames {
             taken: &mut self.taken_names,
+            reassigned: &mut self.reassigned_names,
         };
         collector.visit_program(program);
     }

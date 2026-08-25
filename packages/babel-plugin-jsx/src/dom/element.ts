@@ -1169,6 +1169,18 @@ function transformAttributes(
           staticValue = value.expression as babelTypes.Expression;
         }
 
+        // Native `children` is child content, not a DOM property and not an
+        // HTML attribute. Promote it so the child pass can template-inline
+        // statics or `insert()` dynamics — same as writing `{value}` as a child.
+        if (key === "children") {
+          if (!hasChildren && !VoidElements.has(tagName) && staticValue) {
+            children = t.isJSXExpressionContainer(value)
+              ? value
+              : t.jsxExpressionContainer(staticValue as babelTypes.Expression);
+          }
+          return;
+        }
+
         // boolean as `<el attr={true | false}/>`, not as `<el attr={"true" | "false"}/>`
         // `<el attr={true}/>` becomes `<el attr/>`
         // `<el attr={false}/>` becomes `<el/>`

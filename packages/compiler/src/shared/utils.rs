@@ -308,9 +308,16 @@ pub(crate) fn escape_html_text_expression(value: &str) -> String {
 }
 
 /// Attribute-position HTML escaping, mirroring the Babel plugin's
-/// `escapeHTML(s, true)`: only `&` and `"` are escaped (`<` stays literal).
+/// `escapeHTML(s, true)`: `&`, `"` AND `<` — uniform across DOM and SSR
+/// output (stage-4 SSR invariant: a raw "<select" byte sequence in SSR
+/// output is always a genuine tag start, so the runtime's
+/// resolveSSRSelectValues can region-jump on it; in innerHTML template
+/// strings `&lt;` parses identically to a raw `<`).
 pub(crate) fn escape_html_attribute(value: &str) -> String {
-    value.replace('&', "&amp;").replace('"', "&quot;")
+    value
+        .replace('&', "&amp;")
+        .replace('"', "&quot;")
+        .replace('<', "&lt;")
 }
 
 /// Full WHATWG entity decoding (named + numeric, including semicolon-less

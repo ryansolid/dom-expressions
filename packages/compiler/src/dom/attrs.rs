@@ -179,7 +179,8 @@ impl<'a> AstDomTransform<'a, '_> {
             if matches!(
                 disposition,
                 PlanDisposition::Skip | PlanDisposition::Inline(_)
-            ) {
+            ) && !(plan.key == "children" && children_from_attribute)
+            {
                 // Resolved as data — the census-kind dispatch decides value
                 // sites and withdraws callback sites, so a folded
                 // `on*`/`ref`/`children` no longer fails the file.
@@ -227,6 +228,12 @@ impl<'a> AstDomTransform<'a, '_> {
     /// static-vs-expression branch in the attribute loop.
     fn classify_plan(&self, plan: &AttrPlan<'a>) -> PlanDisposition {
         if self.hydratable && plan.key == "$ServerOnly" {
+            return PlanDisposition::Skip;
+        }
+        // Native `children` is never a template attribute or a property write.
+        // Without a spread it was promoted to a child; with a spread it lives
+        // in the merged props. Either way this planned attribute is a no-op.
+        if plan.key == "children" {
             return PlanDisposition::Skip;
         }
         let reserved = plan.style_property || plan.class_property || plan.key.starts_with("prop:");
@@ -306,32 +313,8 @@ impl<'a> AstDomTransform<'a, '_> {
             }
             PlanValue::None => return Ok(()),
         };
-        // Non-literal `children` attributes are consumed by child insertion
-        // (see `lower_element_with_setup`), never emitted as attributes;
-        // literal ones fall through to a `children` property write.
-        if plan.key == "children"
-            && !matches!(
-                raw,
-                Expression::StringLiteral(_) | Expression::NumericLiteral(_)
-            )
-        {
-            if let Some(span) = semantic_span {
-                // A shadowed `children` attribute (real children present) is
-                // censused as a native attribute and dropped here; a promoted
-                // one is censused as a JSX child and belongs to child
-                // insertion, which records its own decision — so only the
-                // former is resolved from the attribute side.
-                if self.semantic_trace.has_site(
-                    span,
-                    crate::semantic_trace::ExecutionSiteKind::NativeAttribute,
-                ) {
-                    self.semantic_trace.value(
-                        span,
-                        crate::semantic_trace::ExecutionSiteKind::NativeAttribute,
-                        crate::semantic_trace::ValueDecision::Elided,
-                    );
-                }
-            }
+        // `children` is never a property write (see `classify_plan`).
+        if plan.key == "children" {
             return Ok(());
         }
 

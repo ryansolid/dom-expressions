@@ -37,6 +37,12 @@ const template25 = <div>{tiles}</div>;
 const comma = <div>{expression(), "static"}</div>
 const double = <div>{children()()}</div>
 
+const hello = "hello";
+const staticChildren = <module children="hello" />;
+const foldedChildren = <module children={hello} />;
+const childrenBeforeSpread = <module children={fallback()} {...props} />;
+const childrenAfterSpread = <module {...props} children={later()} />;
+
 function OrderedParent(props) {
   return (
     <section>

@@ -6,6 +6,7 @@ use oxc_ast::ast::{
 
 use crate::dom::attrs::CloseTagContext;
 use crate::dom::template::DomTemplateState;
+use crate::shared::ast_builder::AstBuilder;
 use crate::shared::bindings::BindingTable;
 use crate::shared::component::lower_component_with_setup;
 use crate::shared::utils::{
@@ -31,6 +32,22 @@ pub(crate) struct AstDomTransform<'a, 'source> {
     /// The memo wrapper import name (`memo` by default); `None` disables
     /// memo wrapping (Babel's falsy `memoWrapper`).
     pub(crate) memo_wrapper: Option<String>,
+    /// The patch-mode driver import name (`patchDriver` by default); `None`
+    /// disables patch-mode compilation (Babel's falsy `patchDriver`).
+    pub(crate) patch_driver: Option<String>,
+    /// Row proof of the most recently lowered template root (DESIGN-PATCH-
+    /// CHANNEL §3c): set when the root emitted only inert DOM wiring and its
+    /// dynamics all landed in one patchDriver body. Consumed by
+    /// `wrap_pure_row` when the enclosing expression is a single-param
+    /// function whose body IS that root.
+    pub(crate) last_row_proof: Option<PureRowProof>,
+    /// Pre-walk function shapes (see JsxTransform::enter_function_shape):
+    /// whether each live function's block body was ORIGINALLY a lone
+    /// `return` — after lowering, inlined setup statements make that
+    /// unknowable, and user statements at build time must deny the stamp.
+    pub(crate) function_shape_stack: std::vec::Vec<bool>,
+    /// The most recently exited function's shape, read by `wrap_pure_row`.
+    pub(crate) last_function_single_return: bool,
     pub(crate) static_marker: String,
     pub(crate) omit_nested_closing_tags: bool,
     pub(crate) omit_last_closing_tag: bool,
@@ -84,6 +101,14 @@ pub(crate) struct AstDomTransform<'a, 'source> {
     pub(crate) semantic_trace: crate::semantic_trace::TraceRecorder,
 }
 
+/// See `AstDomTransform::last_row_proof`.
+pub(crate) struct PureRowProof {
+    pub(crate) root_span: oxc_span::Span,
+    /// The patch subject when the root had dynamics (must equal the row
+    /// param); `None` for fully static roots.
+    pub(crate) subject: Option<String>,
+}
+
 pub(crate) struct DomTransformConfig {
     pub(crate) hydratable: bool,
     pub(crate) dev: bool,
@@ -96,6 +121,7 @@ pub(crate) struct DomTransformConfig {
     pub(crate) effect_wrapper: Option<String>,
     pub(crate) wrap_conditionals: bool,
     pub(crate) memo_wrapper: Option<String>,
+    pub(crate) patch_driver: Option<String>,
     pub(crate) static_marker: String,
     pub(crate) omit_nested_closing_tags: bool,
     pub(crate) omit_last_closing_tag: bool,
@@ -137,6 +163,10 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             effect_wrapper: config.effect_wrapper,
             wrap_conditionals: config.wrap_conditionals,
             memo_wrapper: config.memo_wrapper,
+            patch_driver: config.patch_driver,
+            last_row_proof: None,
+            function_shape_stack: std::vec::Vec::new(),
+            last_function_single_return: false,
             static_marker: config.static_marker,
             omit_nested_closing_tags: config.omit_nested_closing_tags,
             omit_last_closing_tag: config.omit_last_closing_tag,
@@ -221,42 +251,30 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         let saved_hydratable_event = self.has_hydratable_event;
         self.has_hydratable_event = false;
 
-        // Without spreads, a non-literal `children` attribute participates in
-        // child insertion rather than attribute handling (Babel parity): when
-        // the element has no real children, the value becomes its child
-        // expression; when it does, the attribute is dropped. With a spread,
-        // Babel leaves `children` in the merged props so source-order
-        // precedence is preserved by `spread()`.
+        // Without spreads, a native `children` attribute participates in
+        // child insertion rather than attribute handling: when the element
+        // has no real children, the value becomes its child expression
+        // (statics then template-inline; dynamics `insert()`). Existing JSX
+        // children win and the attribute is dropped. With a spread, Babel
+        // leaves `children` in the merged props so source-order precedence
+        // is preserved by `spread()`.
         let has_spread = element
             .opening_element
             .attributes
             .iter()
             .any(|attr| matches!(attr, oxc_ast::ast::JSXAttributeItem::SpreadAttribute(_)));
-        // "Non-literal" is judged after constant folding, because that is the
-        // order Babel runs in: its fold rewrites every attribute value before
-        // the `children` capture ever sees it, so a value that folds to a
-        // string or number is a literal there and lowers as a `children`
-        // property write. Judging the raw AST here instead promoted the value
-        // AND left the attribute plan alive — the same value emitted twice,
-        // and two trace decisions colliding over one censused site.
+        // Native `children` participates in child insertion when there are
+        // no source children and no spread. Keep the capture flag for the
+        // semantic trace: the attribute plan is still present, but the
+        // promoted value is decided by the child lowering path.
         let attribute_child =
             (!is_void_element(&tag_name) && !has_spread && element.children.is_empty())
-                .then(|| children_attribute_container(element))
-                .flatten()
-                .filter(|container| {
-                    container
-                        .expression
-                        .as_expression()
-                        .is_none_or(|expression| self.evaluate_confident(expression).is_none())
-                });
+                .then(|| children_attribute_child(self.allocator, element))
+                .flatten();
         let children_from_attribute = attribute_child.is_some();
-        let element: &JSXElement<'a> = if let Some(container) = attribute_child {
+        let element: &JSXElement<'a> = if let Some(child) = attribute_child {
             let mut clone = element.clone_in(self.allocator);
-            clone
-                .children
-                .push(oxc_ast::ast::JSXChild::ExpressionContainer(
-                    oxc_allocator::Box::new_in(container.clone_in(self.allocator), &self.allocator),
-                ));
+            clone.children.push(child);
             self.allocator.alloc(clone)
         } else {
             element
@@ -338,9 +356,41 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
             }
         }
         // All dynamic attribute bindings collected across this template root
-        // batch into one effect, appended after the other expressions.
-        if let Some(statement) = self.wrap_dynamics_statement(dynamics) {
-            operations.push(statement);
+        // batch into one patch body (eligible scopes — Babel's wrapPatchMode)
+        // or one effect, appended after the other expressions.
+        let is_root = self.jsx_root_span == Some(element.span);
+        let had_dynamics = !dynamics.is_empty();
+        // Row-proof inertness is judged BEFORE the dynamics statement joins
+        // the operations (Babel checks result.exprs, which never carries it).
+        let ops_inert =
+            is_root && self.patch_driver.is_some() && operations_are_row_inert(&operations);
+        let patched_subject = if self.patch_driver.is_some() {
+            match self.wrap_patch_mode_statement(&dynamics) {
+                Some((statement, subject)) => {
+                    operations.push(statement);
+                    Some(subject)
+                }
+                None => None,
+            }
+        } else {
+            None
+        };
+        // Row proof (§3c): a template root qualifies when every operation is
+        // inert DOM wiring (member-target assignments, addEventListener,
+        // runHydrationEvents) and dynamics either don't exist or all landed
+        // in ONE patchDriver body. Recorded for `wrap_pure_row`, which stamps
+        // the enclosing single-param function.
+        if is_root && self.patch_driver.is_some() {
+            let pure = ops_inert && (!had_dynamics || patched_subject.is_some());
+            self.last_row_proof = pure.then(|| PureRowProof {
+                root_span: element.span,
+                subject: patched_subject.clone(),
+            });
+        }
+        if patched_subject.is_none() {
+            if let Some(statement) = self.wrap_dynamics_statement(dynamics) {
+                operations.push(statement);
+            }
         }
         if self.should_close_tag(&tag_name, CloseTagContext::root()) {
             template.html.push_str(&format!("</{tag_name}>"));
@@ -575,22 +625,25 @@ fn xmlns_attribute_value(element: &JSXElement<'_>) -> Option<String> {
 }
 
 /// Matches the Babel plugin's `children`-attribute capture: the last
-/// `children` attribute with a non-literal expression container value is
-/// treated as element children (insert), not as an attribute or property.
-pub(crate) fn children_attribute_container<'e, 'a>(
-    element: &'e JSXElement<'a>,
-) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
+/// `children` attribute becomes element children (template-inline or
+/// insert), never a property write. String attributes are wrapped as
+/// expression containers so the child pass can fold them like `{ "hello" }`.
+pub(crate) fn children_attribute_child<'a>(
+    allocator: &'a Allocator,
+    element: &JSXElement<'a>,
+) -> Option<oxc_ast::ast::JSXChild<'a>> {
     element
         .opening_element
         .attributes
         .iter()
         .rev()
-        .find_map(|attr| children_attribute_container_from_item(attr))
+        .find_map(|attr| children_attribute_child_from_item(allocator, attr))
 }
 
-pub(crate) fn children_attribute_container_from_item<'e, 'a>(
-    attr: &'e oxc_ast::ast::JSXAttributeItem<'a>,
-) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
+pub(crate) fn children_attribute_child_from_item<'a>(
+    allocator: &'a Allocator,
+    attr: &oxc_ast::ast::JSXAttributeItem<'a>,
+) -> Option<oxc_ast::ast::JSXChild<'a>> {
     let oxc_ast::ast::JSXAttributeItem::Attribute(attr) = attr else {
         return None;
     };
@@ -600,19 +653,29 @@ pub(crate) fn children_attribute_container_from_item<'e, 'a>(
     if name.name != "children" {
         return None;
     }
-    let Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) = &attr.value else {
-        return None;
-    };
-    if matches!(
-        container.expression,
-        JSXExpression::StringLiteral(_)
-            | JSXExpression::NumericLiteral(_)
-            | JSXExpression::BooleanLiteral(_)
-            | JSXExpression::EmptyExpression(_)
-    ) {
-        return None;
+    let ast = AstBuilder::new(allocator);
+    match &attr.value {
+        Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) => {
+            if matches!(container.expression, JSXExpression::EmptyExpression(_)) {
+                return None;
+            }
+            Some(ast.jsx_child_expression_container(
+                container.span,
+                container.expression.clone_in(allocator),
+            ))
+        }
+        Some(oxc_ast::ast::JSXAttributeValue::StringLiteral(value)) => {
+            Some(ast.jsx_child_expression_container(
+                value.span,
+                JSXExpression::from(ast.expression_string_literal(
+                    value.span,
+                    ast.str(&value.value),
+                    None,
+                )),
+            ))
+        }
+        _ => None,
     }
-    Some(container)
 }
 
 pub(crate) fn jsx_expression_to_expression<'a>(
@@ -650,4 +713,129 @@ impl AstDomTransform<'_, '_> {
     pub(crate) fn classify(&self) -> crate::shared::classify::Classify<'_> {
         crate::shared::classify::Classify::new(&self.bindings, self.source, &self.static_marker)
     }
+}
+
+impl<'a> AstDomTransform<'a, '_> {
+    /// Row-proof stamping (§3c): when the just-lowered template root proved
+    /// pure and this expression is a single-plain-param function whose body
+    /// IS that root — an expression-bodied arrow, or a block that was
+    /// ORIGINALLY a lone `return` (pre-walk shape capture; after lowering
+    /// the inlined setup statements are indistinguishable from user code) —
+    /// wrap it with the runtime's `rowProof` marker. The stamp travels with
+    /// the function object, so the patch-mode list driver can engage
+    /// without any runtime probe.
+    pub(crate) fn wrap_pure_row_expression(&mut self, expression: &mut Expression<'a>) {
+        use oxc_span::GetSpan;
+        if self.patch_driver.is_none() {
+            return;
+        }
+        let Some(proof) = &self.last_row_proof else {
+            return;
+        };
+        // A block body qualifies only when the ORIGINAL body was a lone
+        // return whose (lowered) argument is the proven root.
+        let block_return_matches = |body: &oxc_ast::ast::FunctionBody<'a>| -> bool {
+            if !self.last_function_single_return {
+                return false;
+            }
+            match body.statements.last() {
+                Some(Statement::ReturnStatement(ret)) => ret
+                    .argument
+                    .as_ref()
+                    .is_some_and(|argument| argument.span() == proof.root_span),
+                _ => false,
+            }
+        };
+        let (params, body_matches) = match &*expression {
+            Expression::ArrowFunctionExpression(arrow) if !arrow.r#async => (
+                &arrow.params,
+                if arrow.is_expression() {
+                    arrow
+                        .get_expression()
+                        .is_some_and(|body| body.span() == proof.root_span)
+                } else {
+                    arrow.get_function_body().is_some_and(&block_return_matches)
+                },
+            ),
+            Expression::FunctionExpression(function)
+                if !function.r#async && !function.generator =>
+            {
+                (
+                    &function.params,
+                    function.body.as_deref().is_some_and(&block_return_matches),
+                )
+            }
+            _ => return,
+        };
+        if !body_matches {
+            return;
+        }
+        if params.items.len() != 1 || params.rest.is_some() {
+            return;
+        }
+        let oxc_ast::ast::BindingPattern::BindingIdentifier(param) = &params.items[0].pattern
+        else {
+            return;
+        };
+        if let Some(subject) = &proof.subject
+            && *subject != param.name.as_str()
+        {
+            return;
+        }
+        self.last_row_proof = None;
+        self.template_state.uses_row_proof = true;
+        let span = expression.span();
+        let placeholder = self.ast().expression_null_literal(span);
+        let function_expr = std::mem::replace(expression, placeholder);
+        *expression = self.call_identifier(span, "_$rowProof", vec![function_expr]);
+    }
+}
+
+/// Row-proof inertness (§3c): every operation a pure row template may carry
+/// is inert DOM wiring — assignments whose target is a member chain rooted
+/// at an identifier (`_el$.$$click = fn`, `_el$.textContent = v`,
+/// `_el$.style.cssText = "…"`), `addEventListener` calls on such a chain,
+/// and the hydration-events flush. Anything else (insert holes, components,
+/// refs, spreads, effects, memos — all call or conditional shapes) fails the
+/// walk. Handler/attribute VALUE expressions stay arbitrary user code:
+/// stamped rows only ever build for real mounts, so evaluation timing is
+/// identical to the classic path (ruled non-responsibility; the runtime
+/// dev-asserts ownership).
+fn operations_are_row_inert(operations: &[Statement<'_>]) -> bool {
+    fn is_identifier_rooted_member(expr: &Expression<'_>) -> bool {
+        match expr {
+            Expression::Identifier(_) => true,
+            Expression::StaticMemberExpression(member) => {
+                !member.optional && is_identifier_rooted_member(&member.object)
+            }
+            _ => false,
+        }
+    }
+    operations.iter().all(|statement| {
+        let Statement::ExpressionStatement(expression_statement) = statement else {
+            return false;
+        };
+        match &expression_statement.expression {
+            Expression::AssignmentExpression(assignment) => {
+                if assignment.operator != oxc_syntax::operator::AssignmentOperator::Assign {
+                    return false;
+                }
+                match &assignment.left {
+                    oxc_ast::ast::AssignmentTarget::StaticMemberExpression(member) => {
+                        !member.optional && is_identifier_rooted_member(&member.object)
+                    }
+                    _ => false,
+                }
+            }
+            Expression::CallExpression(call) => match &call.callee {
+                Expression::StaticMemberExpression(member) => {
+                    member.property.name == "addEventListener"
+                        && is_identifier_rooted_member(&member.object)
+                }
+                Expression::Identifier(ident) => ident.name == "_$runHydrationEvents",
+                _ => false,
+            },
+            _ => false,
+        }
+    })
 }

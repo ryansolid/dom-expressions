@@ -15,7 +15,20 @@ import {
   // contexts (transitions, boundary reveals) hold and retry on settle;
   // no-op once settled. Cores that don't provide it degrade gracefully —
   // the reveal gate is disabled, warm-at-discovery still works.
-  waitAsset
+  waitAsset,
+  // Optional seam (patch-mode lists): drives a keyed store array through the
+  // store's row-ops channel instead of mapArray + reconcileArrays. Cores
+  // that don't provide it degrade gracefully — list accessors carrying the
+  // `$ll` marker are simply called (the classic mapArray path). Admission is
+  // compile-time only: the driver engages solely for row functions carrying
+  // the `rowProof` stamp (below) — there is no runtime purity probe.
+  driveList,
+  // Optional seams (patch-mode records): resolve a subject to its patchable
+  // raw backing and register a compiled patch body against it. Cores that
+  // don't provide them degrade gracefully — patchDriver below runs every
+  // compiled body through the classic dual-phase effect instead.
+  patchableRaw,
+  registerPatch
 } from "rxcore";
 import reconcileArrays from "./reconcile";
 import { DOMWithState } from "./constants";
@@ -452,6 +465,18 @@ export function ref(fn, element) {
   runWithOwner(null, () => applyRef(resolved, element));
 }
 
+// Compile-time row proof (DESIGN-PATCH-CHANNEL §3c): the compiler wraps row
+// functions it PROVED pure — single compiled template, no reactive or owned
+// work, patches only on the row parameter — and the patch-mode list driver
+// engages only for stamped rows. `Symbol.for` so the stamp survives
+// duplicated module instances (compiled app code and the driver's core may
+// resolve different copies of this runtime).
+const PURE_ROW = Symbol.for("solid.pure-row");
+export function rowProof(fn) {
+  fn[PURE_ROW] = true;
+  return fn;
+}
+
 // Compiler tag for holes that can allocate hydration ids: the outer insert
 // effect gets its own (non-transparent) id scope, mirroring the server's
 // `scope()` owner. Keeps sibling ids stable no matter when the hole runs.
@@ -550,11 +575,67 @@ function stripTextSeparators(nodes) {
   return nodes;
 }
 
+// Patch-mode dual driver: compiled template scopes whose bindings are pure
+// member reads of ONE subject hand a single compiled body
+// `(next, prev, force) => { compares + writes }` here.
+// - Patchable record (core provides the seams): the initial force-apply
+//   reads the raw backing, then the core's own visibility transitions
+//   dispatch the body through its patch channel. Under hydration the
+//   registration alone arms the record — server HTML already carries
+//   current values, so the initial apply is skipped.
+// - Anything else (props, derived objects, unaware cores): a dual-phase
+//   effect runs the same body — the compute pass calls it with
+//   next === prev so every compare fails and it becomes a pure tracked
+//   read; the commit pass force-applies, keeping DOM writes in the effect
+//   phase where transitions and batching expect them.
+export function patchDriver(subject, body) {
+  const raw =
+    patchableRaw !== undefined && registerPatch !== undefined ? patchableRaw(subject) : undefined;
+  if (raw !== undefined) {
+    if (!sharedConfig.hydrating) body(raw, undefined, true);
+    registerPatch(subject, body);
+  } else {
+    effect(
+      () => body(subject, subject, false),
+      () => body(subject, undefined, true)
+    );
+  }
+}
+
 export function insert(parent, accessor, marker, initial, options) {
   const multi = marker !== undefined;
   const host = options && options.host;
   if (multi && !initial) initial = [];
   if (hydrationRt !== null) initial = hydrationRt.claimInitial(parent, multi, initial);
+  // Patch-mode list seam: a list accessor carrying `$ll` metadata is offered
+  // to the core's row-ops driver first. Admission is decided entirely up
+  // front — the row function must carry the compiler's `rowProof` stamp and
+  // the subject must be a patchable store array — so a false return means it
+  // declined (unproven rows, non-store subject, marker-bounded hydration
+  // region, key/count mismatch) and the accessor runs classically. The
+  // late-classic thunk is NOT an admission mechanism: it serves engaged
+  // lists whose subject later LEAVES the contract (an identity swap to a
+  // derived array, a shallow<->deep kind switch) — the driver clears the
+  // region and re-enters this insert with a bare accessor (no `$ll` marker)
+  // under the ORIGINAL owner.
+  if (driveList !== undefined && typeof accessor === "function" && accessor.$ll !== undefined) {
+    const listAccessor = accessor;
+    const owner = getOwner();
+    if (
+      driveList(parent, accessor, marker, () =>
+        runWithOwner(owner, () =>
+          insert(
+            parent,
+            () => listAccessor(),
+            marker,
+            marker !== undefined ? [] : undefined,
+            options
+          )
+        )
+      )
+    )
+      return;
+  }
   if (typeof accessor !== "function") {
     accessor = normalize(accessor, initial, multi, true);
     if (typeof accessor !== "function") {
@@ -1198,7 +1279,9 @@ function loadModuleAssets(mapping) {
   const pending = [];
   for (const key in mapping) {
     if (hy.modules[key]) continue;
-    const entryUrl = mapping[key];
+    // Vite adds `?import` to opaque dynamic imports of source files. Absolute
+    // URLs bypass that rewrite and retain the same identity as literal imports.
+    const entryUrl = new URL(mapping[key], document.baseURI).href;
     if (!hy.loading[key]) {
       hy.loading[key] = import(/* @vite-ignore */ entryUrl).then(
         mod => {

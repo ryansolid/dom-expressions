@@ -3,6 +3,7 @@ import { scope as _$scope } from "r-server";
 import { escape as _$escape } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { ssrHydrationKey as _$ssrHydrationKey } from "r-server";
+import { ssrSelectValues as _$ssrSelectValues } from "r-server";
 import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { ssrClassName as _$ssrClassName } from "r-server";
 import { ssrStyle as _$ssrStyle } from "r-server";
@@ -115,7 +116,7 @@ var _tmpl$30 = ["<iframe", " src></iframe>"];
 var _tmpl$31 = ["<div", "><iframe src></iframe></div>"];
 var _tmpl$32 = ["<iframe", " src loading=\"lazy\"></iframe>"];
 var _tmpl$33 = ["<div", "><iframe src loading=\"lazy\"></iframe></div>"];
-var _tmpl$34 = ["<div", " title=\"<u>data</u>\"></div>"];
+var _tmpl$34 = ["<div", " title=\"&lt;u>data&lt;/u>\"></div>"];
 var _tmpl$35 = ["<div", " true truestr=\"true\" truestrjs=\"true\"></div>"];
 var _tmpl$36 = ["<div", " falsestr=\"false\" falsestrjs=\"false\"></div>"];
 var _tmpl$37 = ["<div", " true></div>"];
@@ -170,6 +171,7 @@ var _tmpl$52 = [
 	"</div><input type=\"checkbox\"",
 	"></div>"
 ];
+_$ssrSelectValues();
 import * as styles from "./styles.module.css";
 import { binding } from "somewhere";
 function refFn() {}

@@ -1085,6 +1085,40 @@ export function renderToStream(code, options = {}) {
     } catch (_) {}
     abandon();
   };
+  // Chunk coalescing (stage-4 §13b): a settled boundary emits its template,
+  // activation script, data script, and reveal as SEPARATE writes across one
+  // resolution burst — uncoalesced, each becomes a consumer chunk and a
+  // write syscall (measured: 41 chunks vs octane's 11 for the same page,
+  // 4x the network frames). Writes buffer; a deferred flush riding AFTER
+  // the burst's whole microtask chain emits ONE chunk per burst. The shell
+  // flushes explicitly at handoff (TTFB is never deferred), end() flushes,
+  // and >16KB flushes early for backpressure friendliness.
+  const coalesceWrites = (writeRaw, endRaw) => {
+    let buf = "";
+    let scheduled = false;
+    const flush = () => {
+      scheduled = false;
+      if (!buf) return;
+      const out = buf;
+      buf = "";
+      writeRaw(out);
+    };
+    return {
+      write(payload) {
+        buf += payload;
+        if (buf.length >= 16384) return flush();
+        if (!scheduled) {
+          scheduled = true;
+          deferFlush(flush);
+        }
+      },
+      flush,
+      end() {
+        flush();
+        endRaw();
+      }
+    };
+  };
   // Wrap an integrator-supplied `pipe` sink: contain sync throws from
   // `write`/`end` and treat them as disconnection.
   const guardSink = w => ({
@@ -1106,6 +1140,38 @@ export function renderToStream(code, options = {}) {
     }
   });
   const blockingPromises = new Set();
+  // Pre-shell pending-promise stubs (fragment `_fr` promises and thrown async
+  // sources) batch into ONE seroval write at shell flush. Every
+  // serializer.write() spins up a full crossSerializeStream session (plugin
+  // resolution, parser context, ref bookkeeping) — ~30% of shell CPU on an
+  // async-heavy page went to N of those sessions emitting formulaic deferred
+  // stubs. One object write collapses the session cost; a spreader task files
+  // each entry under its real `_$HY.r` key, and seroval's fulfillment
+  // machinery is untouched because it parses the same promise instances.
+  // Document-mode only: the serializer seam's keys are wire protocol for
+  // custom serializers (the frame sink's keyed codec addresses records BY
+  // key, no eval on the consumer), and the spreader task is a document
+  // <script> construct. Any serializer/sink override opts out of batching
+  // and gets the original per-key writes.
+  const canBatchStubs = !options.serializer && !options.sink;
+  let stubBatch = null;
+  const STUB_BATCH_KEY = "$B";
+  const flushStubBatch = () => {
+    if (!stubBatch) return;
+    const batch = stubBatch;
+    stubBatch = null;
+    if (batch.size === 1) {
+      const [id, p] = batch.entries().next().value;
+      serializer.write(id, p);
+      return;
+    }
+    const obj = {};
+    for (const [id, p] of batch) obj[id] = p;
+    serializer.write(STUB_BATCH_KEY, obj);
+    pushTask(
+      `(b=>{for(var k in b)_$HY.r[k]=b[k];delete _$HY.r["${STUB_BATCH_KEY}"]})(_$HY.r["${STUB_BATCH_KEY}"])`
+    );
+  };
   let headerEmitted = false;
   const pushTask = task => {
     if (noScripts) return;
@@ -1272,6 +1338,11 @@ export function renderToStream(code, options = {}) {
             context.live.end = null;
             end();
           }
+          // Fast-settling renders reach here before doShell() (registry
+          // drained in microtasks); post-flush writes are silently dropped,
+          // so the stub batch must land first. The task output still rides
+          // the shell snapshot — `tasks` accumulates until doShell reads it.
+          flushStubBatch();
           serializer.flush();
         })
       ); // double queue because of elsewhere
@@ -1423,10 +1494,22 @@ export function renderToStream(code, options = {}) {
     },
     serialize(id, p, deferStream) {
       if (sharedConfig.context.noHydrate) return;
-      if (!firstFlushed && deferStream && typeof p === "object" && "then" in p) {
-        blockingPromises.add(p);
-        p.then(d => serializer.write(id, d)).catch(e => serializer.write(id, e));
-      } else serializer.write(id, p);
+      if (!firstFlushed && p && typeof p === "object" && "then" in p) {
+        if (deferStream) {
+          blockingPromises.add(p);
+          p.then(d => serializer.write(id, d)).catch(e => serializer.write(id, e));
+          return;
+        }
+        // `shellCompleted` (not `firstFlushed`) gates batching: doShell()
+        // flushes the batch into the shell's task snapshot, and writes in the
+        // microtask window between the two flags must go direct or they'd
+        // strand in a batch nobody flushes.
+        if (canBatchStubs && !shellCompleted) {
+          (stubBatch ||= new Map()).set(id, p);
+          return;
+        }
+      }
+      serializer.write(id, p);
     },
     escape: escape,
     resolve: resolveSSRNode,
@@ -1464,7 +1547,8 @@ export function renderToStream(code, options = {}) {
               })
             )
         });
-        serializer.write(key + "_fr", p);
+        if (canBatchStubs && !shellCompleted) (stubBatch ||= new Map()).set(key + "_fr", p);
+        else serializer.write(key + "_fr", p);
       }
       return (value, error) => {
         if (registry.has(key)) {
@@ -1597,7 +1681,18 @@ export function renderToStream(code, options = {}) {
     // context. Restore this stream before re-pulling them so hydration data
     // is serialized into the response that owns the rendered markup.
     sharedConfig.context = context;
+    // A hole that completes by MOUNTING content can register new shell
+    // blockers as it renders: a deferStream read under a boundary created
+    // during this very re-invocation adds its source promise via
+    // serialize() (solidjs/solid#3047 — the code-split lazy route shape).
+    // This attempt already runs inside the previous allSettled snapshot's
+    // continuation, so flushing now would ship the fallback deferStream
+    // exists to prevent. Bail on growth; the flush loop re-awaits the grown
+    // set, and the boundary's pre-flush replace() splices the resolved
+    // content into the held shell before the retry flushes it.
+    const blockersBefore = blockingPromises.size;
     if (!resolveRootHoles()) return;
+    if (blockingPromises.size !== blockersBefore) return;
     // Root-owned head registrations join the shell-hole contract: a pending
     // prop blocks the shell on its source and this attempt bails; the flush
     // loop re-awaits and retries (#2975 follow-up).
@@ -1609,6 +1704,10 @@ export function renderToStream(code, options = {}) {
     // Root _assets serialization feeds sink.data → tasks, so it must run
     // before anything reads `tasks` for the shell snapshot.
     serializeRootAssets();
+    // Batched pending-promise stubs ride the same snapshot (after the
+    // root-hole/head gates above so this runs exactly once, on the attempt
+    // that actually flushes).
+    flushStubBatch();
     // Shell head flush: commits every registration not owned by a
     // still-pending fragment (those flush with their fragment later).
     const head = renderShellHead(headRegistry, nonce, k => registry.has(k), noScripts);
@@ -1653,6 +1752,14 @@ export function renderToStream(code, options = {}) {
   let drainTurn = 0;
   const scheduleFlush = fn => {
     const attempt = () => {
+      // Flush batched stubs at the TOP of the drain, not at doShell: a
+      // promise that already settled emits its fulfillment on a microtask
+      // AFTER the batch write parses it, and the shell snapshot is
+      // synchronous. Writing here gives those fulfillments the same
+      // drain-turn runway they had when writes happened at registration
+      // time, so a settled-before-shell record is visibly settled IN the
+      // shell (client boundaries branch on `.s === 1` at hydrate time).
+      flushStubBatch();
       if (registry.size !== lastRegistrySize || drainTurn++ < MIN_DRAIN_TURNS) {
         if (registry.size !== lastRegistrySize) drainTurn = 0;
         lastRegistrySize = registry.size;
@@ -1722,8 +1829,13 @@ export function renderToStream(code, options = {}) {
             }
           };
           writer.closed && writer.closed.catch(failed);
-          writable = {
-            end() {
+          buffer = writable = coalesceWrites(
+            payload => {
+              pendingWrites = pendingWrites
+                .then(() => writer.write(encoder.encode(payload)))
+                .catch(failed);
+            },
+            () => {
               pendingWrites.then(() => {
                 ended = true;
                 writer.releaseLock();
@@ -1731,15 +1843,10 @@ export function renderToStream(code, options = {}) {
                 resolve();
               });
             }
-          };
-          buffer = {
-            write(payload) {
-              pendingWrites = pendingWrites
-                .then(() => writer.write(encoder.encode(payload)))
-                .catch(failed);
-            }
-          };
+          );
           buffer.write(tmp);
+          // Shell TTFB is never deferred — flush the handoff synchronously.
+          buffer.flush();
           firstFlushed = true;
           if (completed) {
             dispose();
@@ -1773,13 +1880,17 @@ export function renderToStream(code, options = {}) {
         function flush() {
           allSettled(blockingPromises).then(() => {
             scheduleFlush(() => {
-              // Same gate as doShell: pending root head props are shell
+              // Same gates as doShell: pending root head props are shell
               // blockers, so flushEnd must not run ahead of them (their
               // source may not be serialized, so the serializer alone
-              // wouldn't wait).
+              // wouldn't wait) — and a hole re-invocation that registers
+              // new blockers (deferStream under a just-mounted boundary,
+              // solidjs/solid#3047) must be re-awaited before completion.
               try {
+                const blockersBefore = blockingPromises.size;
                 if (
                   !resolveRootHoles() ||
+                  blockingPromises.size !== blockersBefore ||
                   !headShellReady(headRegistry, p => blockingPromises.add(p))
                 )
                   return flush();
@@ -1817,8 +1928,11 @@ export function renderToStream(code, options = {}) {
               return;
             }
             if (!shellCompleted) return flush();
-            buffer = writable = guardSink(w);
+            const sink = guardSink(w);
+            buffer = writable = coalesceWrites(sink.write, sink.end);
             buffer.write(tmp);
+            // Shell TTFB is never deferred — flush the handoff synchronously.
+            buffer.flush();
             firstFlushed = true;
             if (completed) {
               dispose();
@@ -2965,34 +3079,75 @@ function tagIs(html, i, name) {
   return c === 32 || c === 62 || c === 9 || c === 10 || c === 13;
 }
 
+// Compiler-armed gate (stage-4 SSR): compiled output containing a
+// `<select value=…>` (or a spread on a select) emits `_$ssrSelectValues()`
+// once per module. Apps that never bind a select value never even SCAN —
+// profiling showed the gate's own indexOf costing >50% of a select-free
+// page's render, because the first pass over the freshly-assembled rope
+// pays its flattening. Raw HTML injected around the compiler (innerHTML
+// escape hatches) intentionally gets browser semantics — the select-value
+// forms contract is a JSX-level promise.
+let selectValuesActive = false;
+export function ssrSelectValues() {
+  selectValuesActive = true;
+}
+
 export function resolveSSRSelectValues(html) {
-  if (html.indexOf("<select") < 0) return html;
+  // Region-jumping walk: attribute values escape `<` (ESCAPE_ATTR), so
+  // every "<select" hit below is a genuine tag position — jump candidate to
+  // candidate and walk tags ONLY inside value-carrying select regions;
+  // everything between regions is copied verbatim. (The old form walked
+  // EVERY tag in the document once any <select> existed — O(document) per
+  // render and per streamed fragment.)
+  if (!selectValuesActive) return html;
+  let cand = html.indexOf("<select");
+  if (cand < 0) return html;
   let out = "";
   let idx = 0; // emitted through idx
-  let sel = null; // active value-carrying select, pending until its close
-  let i = html.indexOf("<");
-  // Text-level tag walk. Between tags `<` is escaped, so every position here
-  // is a real tag or comment start; quote-aware tagEnd keeps in-attribute
-  // `<` / `>` from ever becoming scan positions.
-  while (i >= 0) {
-    let e;
-    if (html.charCodeAt(i + 1) === 33) {
-      // Comment (hydration marker) or bare <!> placeholder.
-      e = html.charCodeAt(i + 2) === 45 ? html.indexOf("-->", i) : html.indexOf(">", i);
-      if (e < 0) break;
-      if (html.charCodeAt(i + 2) === 45) e += 2;
-    } else {
-      e = tagEnd(html, i);
-      if (e < 0) break;
-      if (sel) {
+  while (cand >= 0) {
+    // Word boundary — skips <selectedcontent> hits.
+    if (!tagIs(html, cand, "select")) {
+      cand = html.indexOf("<select", cand + 7);
+      continue;
+    }
+    const e0 = tagEnd(html, cand);
+    if (e0 < 0) break;
+    const open = html.slice(cand, e0 + 1);
+    const m = SELECT_VALUE_ATTR.exec(open);
+    if (!m) {
+      // No bound value: nothing to resolve in this select.
+      cand = html.indexOf("<select", e0 + 1);
+      continue;
+    }
+    const bound = decodeSSREntities(m[1]);
+    const sel = {
+      values: /\smultiple(?=[\s>=])/.test(open) ? bound.split(",") : [bound],
+      strip: cand + m.index,
+      stripEnd: cand + m.index + m[0].length,
+      body: e0 + 1,
+      marks: [],
+      defaulted: false
+    };
+    // Tag walk scoped to the region: options and comments until the close.
+    let committed = false;
+    let i = html.indexOf("<", e0 + 1);
+    while (i >= 0) {
+      let e;
+      if (html.charCodeAt(i + 1) === 33) {
+        // Comment (hydration marker) or bare <!> placeholder.
+        e = html.charCodeAt(i + 2) === 45 ? html.indexOf("-->", i) : html.indexOf(">", i);
+        if (e < 0) break;
+        if (html.charCodeAt(i + 2) === 45) e += 2;
+      } else {
+        e = tagEnd(html, i);
+        if (e < 0) break;
         // "</select>" exactly: <selectedcontent>'s close also starts "</select".
         if (html.startsWith("</select>", i)) {
           // Commit: drop the value attribute, then mark the matched options —
           // unless an option carried `selected` already (a defaultSelected):
           // per the forms contract the DEFAULT is the SSR state and the bound
           // value applies at hydration, exactly like defaultValue + value on
-          // an <input>. A select that never closes in this chunk (a Loading
-          // boundary inside it) never commits and stays byte-identical.
+          // an <input>.
           out += html.slice(idx, sel.strip) + html.slice(sel.stripEnd, sel.body);
           let seg = sel.body;
           if (!sel.defaulted) {
@@ -3003,7 +3158,8 @@ export function resolveSSRSelectValues(html) {
           }
           out += html.slice(seg, i);
           idx = i;
-          sel = null;
+          committed = true;
+          break;
         } else if (tagIs(html, i, "option")) {
           const attrs = html.slice(i + 7, e);
           if (/\sselected(?=[\s=]|$)/.test(attrs)) sel.defaulted = true;
@@ -3018,23 +3174,16 @@ export function resolveSSRSelectValues(html) {
             if (sel.values.includes(value)) sel.marks.push(e);
           }
         }
-      } else if (tagIs(html, i, "select")) {
-        const m = SELECT_VALUE_ATTR.exec(html.slice(i, e + 1));
-        if (m) {
-          const bound = decodeSSREntities(m[1]);
-          sel = {
-            values: /\smultiple(?=[\s>=])/.test(html.slice(i, e + 1)) ? bound.split(",") : [bound],
-            strip: i + m.index,
-            stripEnd: i + m.index + m[0].length,
-            body: e + 1,
-            marks: [],
-            defaulted: false
-          };
-        }
       }
+      i = html.indexOf("<", e + 1);
     }
-    i = html.indexOf("<", e + 1);
+    // A select that never closes in this chunk (a Loading boundary inside
+    // it) never commits and stays byte-identical — matching the old walk,
+    // which also never processed anything past an uncommitted select.
+    if (!committed) break;
+    cand = html.indexOf("<select", idx);
   }
+  if (idx === 0) return html;
   return out + html.slice(idx);
 }
 
@@ -3071,18 +3220,19 @@ export function escape(s, attr) {
 }
 
 const ESCAPE_CONTENT = /[&<]/;
-const ESCAPE_ATTR = /[&"]/;
+// `<` escapes in attribute values too (stage-4 SSR): it costs nothing on
+// the fast path (same single regex scan) and guarantees that a raw
+// "<select" byte sequence in the document is ALWAYS a genuine tag start —
+// the invariant resolveSSRSelectValues' region-jumping depends on. Also
+// matches React/octane escaping norms.
+const ESCAPE_ATTR = /[&"<]/;
 
-// Slow path: at least one of `&`, `<`/`"` was found at position `start`.
+// Slow path: at least one escapable char was found at position `start`.
 // Kept separate so `escape()` stays small and inlinable in the hot path.
 function escapeSlow(s, attr, start) {
-  const delim = attr ? '"' : "<";
-  const delimCode = attr ? 34 : 60;
-  const escDelim = attr ? "&quot;" : "&lt;";
-  // Seed iDelim/iAmp from the first hit we already found, so we don't
-  // re-scan the prefix we just proved is clean.
+  if (attr) return escapeAttrSlow(s, start);
   const c0 = s.charCodeAt(start);
-  let iDelim = c0 === delimCode ? start : s.indexOf(delim, start);
+  let iDelim = c0 === 60 ? start : s.indexOf("<", start);
   let iAmp = c0 === 38 ? start : s.indexOf("&", start);
 
   let left = 0,
@@ -3091,9 +3241,9 @@ function escapeSlow(s, attr, start) {
   while (iDelim >= 0 && iAmp >= 0) {
     if (iDelim < iAmp) {
       if (left < iDelim) out += s.substring(left, iDelim);
-      out += escDelim;
+      out += "&lt;";
       left = iDelim + 1;
-      iDelim = s.indexOf(delim, left);
+      iDelim = s.indexOf("<", left);
     } else {
       if (left < iAmp) out += s.substring(left, iAmp);
       out += "&amp;";
@@ -3105,9 +3255,9 @@ function escapeSlow(s, attr, start) {
   if (iDelim >= 0) {
     do {
       if (left < iDelim) out += s.substring(left, iDelim);
-      out += escDelim;
+      out += "&lt;";
       left = iDelim + 1;
-      iDelim = s.indexOf(delim, left);
+      iDelim = s.indexOf("<", left);
     } while (iDelim >= 0);
   } else
     while (iAmp >= 0) {
@@ -3116,6 +3266,45 @@ function escapeSlow(s, attr, start) {
       left = iAmp + 1;
       iAmp = s.indexOf("&", left);
     }
+
+  return left < s.length ? out + s.substring(left) : out;
+}
+
+// Attr slow path: three cached pointers (`"` `&` `<`), same
+// advance-only-the-consumed-pointer structure as the content path.
+function escapeAttrSlow(s, start) {
+  const c0 = s.charCodeAt(start);
+  let iQuot = c0 === 34 ? start : s.indexOf('"', start);
+  let iAmp = c0 === 38 ? start : s.indexOf("&", start);
+  let iLt = c0 === 60 ? start : s.indexOf("<", start);
+
+  let left = 0,
+    out = "";
+
+  for (;;) {
+    // Next hit = smallest non-negative pointer.
+    let i = -1,
+      ent;
+    if (iQuot >= 0) {
+      i = iQuot;
+      ent = "&quot;";
+    }
+    if (iAmp >= 0 && (i < 0 || iAmp < i)) {
+      i = iAmp;
+      ent = "&amp;";
+    }
+    if (iLt >= 0 && (i < 0 || iLt < i)) {
+      i = iLt;
+      ent = "&lt;";
+    }
+    if (i < 0) break;
+    if (left < i) out += s.substring(left, i);
+    out += ent;
+    left = i + 1;
+    if (i === iQuot) iQuot = s.indexOf('"', left);
+    else if (i === iAmp) iAmp = s.indexOf("&", left);
+    else iLt = s.indexOf("<", left);
+  }
 
   return left < s.length ? out + s.substring(left) : out;
 }
@@ -3153,6 +3342,12 @@ export function generateHydrationScript({ eventNames = ["click", "input"], nonce
 function queue(fn) {
   return Promise.resolve().then(fn);
 }
+
+// Macrotask defer for chunk coalescing: must ride AFTER an arbitrary-depth
+// microtask chain (a boundary's template/data/reveal writes span several
+// chained thens), which no microtask count can guarantee. setImmediate on
+// Node; timer fallback for hosts without it (workerd, browsers).
+const deferFlush = typeof setImmediate === "function" ? setImmediate : fn => setTimeout(fn, 0);
 
 function allSettled(promises) {
   let size = promises.size;

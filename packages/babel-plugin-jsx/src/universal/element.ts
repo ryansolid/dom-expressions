@@ -195,7 +195,7 @@ function transformAttributes(
             );
           }
         } else if (key === "children") {
-          children = value;
+          if (!hasChildren) children = value;
         } else if (
           config.effectWrapper &&
           isDynamic(attribute.get("value").get("expression"), {
@@ -213,6 +213,12 @@ function transformAttributes(
             value.expression as t.Expression,
             hasSpread
           );
+        }
+      } else if (key === "children") {
+        if (!hasChildren) {
+          children = t.isJSXExpressionContainer(value)
+            ? value
+            : t.jsxExpressionContainer((value as t.Expression) || t.booleanLiteral(true));
         }
       } else {
         addStaticAttr(attribute, results, initProps, elem, key, value as t.Expression, hasSpread);
