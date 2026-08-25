@@ -313,9 +313,12 @@ impl<'a, 'source> AstDomTransform<'a, 'source> {
         let needs_text_placeholder = attrs_lowering.needs_text_placeholder;
 
         // Babel's textarea `value` fold replaces the element's children
-        // (`path.node.children = [child]`).
+        // (`path.node.children = [child]`), discarding the source list here
+        // exactly as the nested path does; reconcile the census with both
+        // halves of the swap.
         let element: &JSXElement<'a> = match attrs_lowering.children_replacement {
             Some(child) => {
+                self.discard_folded_children(&element.children, &child);
                 let mut clone = element.clone_in(self.allocator);
                 clone.children.clear();
                 clone.children.push(child);
@@ -624,20 +627,76 @@ fn xmlns_attribute_value(element: &JSXElement<'_>) -> Option<String> {
     })
 }
 
-/// Matches the Babel plugin's `children`-attribute capture: the last
-/// `children` attribute becomes element children (template-inline or
-/// insert), never a property write. String attributes are wrapped as
-/// expression containers so the child pass can fold them like `{ "hello" }`.
+/// Matches the Babel plugin's `children`-attribute capture. JSX attribute
+/// dedup selects by *name* first — the last attribute spelled `children`
+/// wins, regardless of its value's shape — and only then captures that
+/// survivor as element children (template-inline or insert). String
+/// attributes are wrapped as expression containers so the child pass can
+/// fold them like `{ "hello" }`.
 pub(crate) fn children_attribute_child<'a>(
     allocator: &'a Allocator,
     element: &JSXElement<'a>,
 ) -> Option<oxc_ast::ast::JSXChild<'a>> {
-    element
+    let last_named_children = element
         .opening_element
         .attributes
         .iter()
-        .rev()
-        .find_map(|attr| children_attribute_child_from_item(allocator, attr))
+        .rposition(is_children_attribute)?;
+    children_attribute_child_from_item(
+        allocator,
+        &element.opening_element.attributes[last_named_children],
+    )
+}
+
+fn is_children_attribute(attr: &oxc_ast::ast::JSXAttributeItem<'_>) -> bool {
+    let oxc_ast::ast::JSXAttributeItem::Attribute(attr) = attr else {
+        return false;
+    };
+    matches!(
+        &attr.name,
+        oxc_ast::ast::JSXAttributeName::Identifier(name) if name.name == "children"
+    )
+}
+
+/// The nested lowering path only promotes a non-literal expression container;
+/// keep this view separate from the template-root helper, which also captures
+/// strings and numbers after the upstream native-children parity change.
+pub(crate) fn children_attribute_container<'e, 'a>(
+    element: &'e JSXElement<'a>,
+) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
+    let last_named_children = element
+        .opening_element
+        .attributes
+        .iter()
+        .rposition(is_children_attribute)?;
+    children_attribute_container_from_item(&element.opening_element.attributes[last_named_children])
+}
+
+pub(crate) fn children_attribute_container_from_item<'e, 'a>(
+    attr: &'e oxc_ast::ast::JSXAttributeItem<'a>,
+) -> Option<&'e oxc_ast::ast::JSXExpressionContainer<'a>> {
+    let oxc_ast::ast::JSXAttributeItem::Attribute(attr) = attr else {
+        return None;
+    };
+    let oxc_ast::ast::JSXAttributeName::Identifier(name) = &attr.name else {
+        return None;
+    };
+    if name.name != "children" {
+        return None;
+    }
+    let Some(oxc_ast::ast::JSXAttributeValue::ExpressionContainer(container)) = &attr.value else {
+        return None;
+    };
+    if matches!(
+        container.expression,
+        JSXExpression::StringLiteral(_)
+            | JSXExpression::NumericLiteral(_)
+            | JSXExpression::BooleanLiteral(_)
+            | JSXExpression::EmptyExpression(_)
+    ) {
+        return None;
+    }
+    Some(container)
 }
 
 pub(crate) fn children_attribute_child_from_item<'a>(

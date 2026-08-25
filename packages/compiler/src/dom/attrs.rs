@@ -131,6 +131,8 @@ impl<'a> AstDomTransform<'a, '_> {
                         crate::semantic_trace::ExecutionSiteKind::Ref,
                         crate::semantic_trace::CallbackDecision::RefApply,
                     );
+                    self.semantic_trace
+                        .owner_establishment(expression.span(), "ref-apply", None);
                     let value = expression.clone_in(self.allocator);
                     front_groups.push(self.dom_ref_statements(attr.span, element_id, value));
                 }
@@ -325,6 +327,8 @@ impl<'a> AstDomTransform<'a, '_> {
                     crate::semantic_trace::ExecutionSiteKind::Ref,
                     crate::semantic_trace::CallbackDecision::RefApply,
                 );
+                self.semantic_trace
+                    .owner_establishment(span, "ref-apply", None);
             }
             front_groups.push(self.dom_ref_statements(span, element_id, raw));
             return Ok(());
@@ -382,6 +386,7 @@ impl<'a> AstDomTransform<'a, '_> {
             };
             dynamics.push(DynamicSlot {
                 span,
+                trace_span: semantic_span,
                 elem,
                 key: plan.key,
                 value,

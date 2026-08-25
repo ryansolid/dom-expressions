@@ -165,6 +165,8 @@ impl<'a> AstDomTransform<'a, '_> {
                             lowered,
                             marker,
                         ));
+                        self.semantic_trace
+                            .owner_establishment(child.span, "insert", None);
                     } else if let Some(static_template) = lower_static_native_template(
                         self,
                         child,
@@ -331,7 +333,11 @@ impl<'a> AstDomTransform<'a, '_> {
                             && self.hydratable
                             && child_slot_allocates_ids(dynamic_child)
                         {
-                            self.scope_child_expression(container.span, value)
+                            self.scope_child_expression(
+                                container.span,
+                                container.expression.span(),
+                                value,
+                            )
                         } else {
                             value
                         };
@@ -359,6 +365,11 @@ impl<'a> AstDomTransform<'a, '_> {
                             value,
                             marker,
                         ));
+                        self.semantic_trace.owner_establishment(
+                            container.expression.span(),
+                            "insert",
+                            None,
+                        );
                     }
                     index = run_end;
                     continue;
@@ -380,7 +391,7 @@ impl<'a> AstDomTransform<'a, '_> {
                     // Spread children always allocate ids; scope keyed off the
                     // same shared dynamic predicate as the ssr generate.
                     let value = if self.hydratable && self.classify().is_dynamic_child_slot(child) {
-                        self.scope_child_expression(spread.span, value)
+                        self.scope_child_expression(spread.span, spread.expression.span(), value)
                     } else {
                         value
                     };
@@ -396,6 +407,11 @@ impl<'a> AstDomTransform<'a, '_> {
                         declarations,
                     );
                     operations.push(self.insert_statement(element.span, element_id, value, marker));
+                    self.semantic_trace.owner_establishment(
+                        spread.expression.span(),
+                        "insert",
+                        None,
+                    );
                 }
                 _ => {
                     return Err(Error::from_reason(
@@ -829,6 +845,45 @@ impl<'a> AstDomTransform<'a, '_> {
         Ok(self.call_identifier(child.span, "_$getNextMatch", vec![base, tag]))
     }
 
+    /// Withdraw the censused execution sites of a child list this lowering
+    /// discards without visiting. The children occupy one contiguous source
+    /// range, so every site inside it belongs to the discarded subtree.
+    pub(crate) fn retract_children_sites(&mut self, children: &[JSXChild<'a>]) {
+        let Some(first) = children.first() else {
+            return;
+        };
+        let last = children
+            .last()
+            .expect("a non-empty child list has a last child");
+        self.semantic_trace
+            .retract_within(oxc_span::Span::new(first.span().start, last.span().end));
+    }
+
+    /// Reconcile the census with the textarea `value` fold, which replaces an
+    /// element's children with one child synthesized from the attribute
+    /// (Babel's `path.node.children = [child]`). Both halves of that swap are
+    /// invisible to the census, which only walks source:
+    ///
+    /// - the source children are discarded unlowered, so their sites are
+    ///   withdrawn — nothing is emitted for them, so there is nothing to
+    ///   decide;
+    /// - the replacement is not a source expression, so a decision recorded
+    ///   for it is not a site.
+    ///
+    /// Every path that performs the fold must call this: the nested
+    /// native-child lowering, the template root in `element.rs`, and the
+    /// static-template fast path, which the fold can make static *because* it
+    /// drops dynamic source children.
+    pub(crate) fn discard_folded_children(
+        &mut self,
+        source_children: &[JSXChild<'a>],
+        replacement: &JSXChild<'a>,
+    ) {
+        self.retract_children_sites(source_children);
+        self.semantic_trace
+            .ignore_synthesized_child(replacement.span());
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn lower_dynamic_native_child(
         &mut self,
@@ -848,11 +903,43 @@ impl<'a> AstDomTransform<'a, '_> {
         let mut child_declarations = std::vec::Vec::new();
         let mut child_operations = std::vec::Vec::new();
 
+        // Babel runs one `transformElement`/`transformAttributes` pair in every
+        // position, so a nested native element promotes a non-literal
+        // `children` attribute to a child insert exactly as a template root
+        // does (`if (!hasChildren && children) path.node.children.push(...)`;
+        // the `children` capture itself is `key === "children"`, ungated on the
+        // element's position). The `!is_void_element` and `!has_spread` gates,
+        // the empty-child-list gate and the "non-literal after constant
+        // folding" filter mirror `lower_element_with_setup` — see the reasoning
+        // for each there.
+        let has_spread = child
+            .opening_element
+            .attributes
+            .iter()
+            .any(|attr| matches!(attr, JSXAttributeItem::SpreadAttribute(_)));
+        let captured_child = (!crate::shared::utils::is_void_element(&tag_name)
+            && !has_spread
+            && child.children.is_empty())
+        .then(|| crate::dom::element::children_attribute_container(child))
+        .flatten()
+        .filter(|container| {
+            container
+                .expression
+                .as_expression()
+                .is_none_or(|expression| self.evaluate_confident(expression).is_none())
+        });
+
         let attrs_lowering = self.lower_template_attributes(
             &child.opening_element.attributes,
             &tag_name,
             &child_id,
             !child.children.is_empty(),
+            // `children_from_attribute` is only read on the spread branch of
+            // `lower_template_attributes`, and `captured_child` above is
+            // gated on `!has_spread` — so on that branch it is always `None`
+            // and this argument is always dead. Literal `false`, not
+            // `captured_child.is_some()`, documents that invariant instead
+            // of silently depending on it.
             false,
             &mut child_template.html,
             &mut child_declarations,
@@ -860,19 +947,83 @@ impl<'a> AstDomTransform<'a, '_> {
             dynamics,
         )?;
 
+        // The source child list, before any attribute-driven replacement: this
+        // is the range the fold and the placeholder branch below discard.
+        let source_children = child.children.as_slice();
+
+        // `transformAttributes` fills a single `children` slot, and two
+        // attributes write it: the `children` attribute stores its own value,
+        // and a dynamic `textContent` overwrites it with the synthesized
+        // single-space text node (`children = t.jsxText(" ")`). The attribute
+        // loop runs in source order, so the later of the two is what
+        // `path.node.children.push` receives. The textarea `value` fold runs
+        // earlier still, in preprocessing, and fills the child list outright —
+        // `hasChildren` is then true and neither writer is pushed at all.
+        //
+        // `<noscript>` is pushed like any other element and then never visited:
+        // Babel's `transformElement` guards the recursion with
+        // `if (tagName !== "noscript") transformChildren(...)`, so the promoted
+        // value emits nothing. (This fork's nested lowering *does* visit a
+        // `<noscript>`'s source children when its attributes force it off the
+        // static fast path — divergence 3 — but promoting here would add a
+        // second insert Babel never emits, so the capture is discarded instead.)
+        let attribute_child = captured_child.filter(|_| {
+            tag_name != "noscript"
+                && attrs_lowering.children_replacement.is_none()
+                && (!attrs_lowering.needs_text_placeholder
+                    || children_attribute_outranks_text_content(child))
+        });
+        // A captured value the slot's winner discards is never lowered, and
+        // nothing is emitted for it (Babel drops it too). Decide it as data
+        // rather than leaving the censused site unresolved; the kind dispatch
+        // keeps the record on whichever site the census named for the spelling.
+        if let (None, Some(container)) = (attribute_child, captured_child) {
+            self.semantic_trace.resolve_lowered_attribute(
+                container.expression.span(),
+                crate::semantic_trace::ValueDecision::Elided,
+            );
+        }
+
         // Babel's textarea `value` fold replaces the element's children.
         let child: &JSXElement<'a> = match attrs_lowering.children_replacement {
             Some(replacement) => {
+                self.discard_folded_children(source_children, &replacement);
                 let mut clone = child.clone_in(self.allocator);
                 clone.children.clear();
                 clone.children.push(replacement);
                 self.allocator.alloc(clone)
             }
-            None => child,
+            None => match attribute_child {
+                // The promoted value joins the (empty) source child list as an
+                // ordinary expression container, so child lowering inserts it
+                // and records its censused `jsx-child` decision.
+                Some(container) => {
+                    let mut clone = child.clone_in(self.allocator);
+                    clone
+                        .children
+                        .push(oxc_ast::ast::JSXChild::ExpressionContainer(
+                            oxc_allocator::Box::new_in(
+                                container.clone_in(self.allocator),
+                                &self.allocator,
+                            ),
+                        ));
+                    self.allocator.alloc(clone)
+                }
+                None => child,
+            },
         };
 
         child_template.push_both(">");
-        if attrs_lowering.needs_text_placeholder {
+        if attrs_lowering.needs_text_placeholder && attribute_child.is_none() {
+            // A dynamic `textContent` takes over this element's content: the
+            // template gets a single-space text node the effect writes into and
+            // the source child list is discarded, unlowered. (The template-root
+            // path in `element.rs` reaches *its* placeholder branch only when
+            // the element has no children of its own — Babel's `!hasChildren`
+            // gate — so that branch discards nothing; its fold branch does, and
+            // retracts there.) Withdraw the discarded children's censused
+            // sites: no code is emitted for them, so there is nothing to decide.
+            self.retract_children_sites(source_children);
             child_template.html.push(' ');
         } else {
             self.lower_dom_children(
@@ -909,12 +1060,20 @@ impl<'a> AstDomTransform<'a, '_> {
     /// Wraps an insert accessor in `_$scope(...)`. The child lowering
     /// simplifies `{sig()}` to the bare getter `sig`; rewrap it as
     /// `() => sig()` so tagging the scope doesn't mutate the user's function.
+    ///
+    /// `span` is the emission span (the JSX container, matching the `insert`
+    /// statement's own emission span); `trace_span` is the wrapped source
+    /// expression, which is the span the neighbouring `insert` fact and the
+    /// `ExecutionSite` for this hole already use.
     fn scope_child_expression(
         &mut self,
         span: oxc_span::Span,
+        trace_span: oxc_span::Span,
         value: Expression<'a>,
     ) -> Expression<'a> {
         self.template_state.uses_scope = true;
+        self.semantic_trace
+            .owner_establishment(trace_span, "scope", None);
         let already_function = match &value {
             Expression::ArrowFunctionExpression(_) | Expression::FunctionExpression(_) => true,
             Expression::CallExpression(call) => matches!(
@@ -968,6 +1127,34 @@ impl<'a> AstDomTransform<'a, '_> {
             _ => self.child_walk_expression(span, parent, index - 1),
         };
         self.call_identifier(span, "_$getNextSibling", vec![previous, tag])
+    }
+}
+
+/// Whether a `children` attribute wins Babel's single `children` slot against
+/// a dynamic `textContent` on the same element.
+///
+/// Both attributes write the one `children` local in `transformAttributes`, and
+/// the attribute loop walks source order, so the later spelling is the one that
+/// survives to `path.node.children.push(children)`. Duplicates resolve the same
+/// way — the deduplication keeps the last of each name, and their relative
+/// order is unchanged — so comparing the last occurrence of each is exact.
+fn children_attribute_outranks_text_content(element: &JSXElement<'_>) -> bool {
+    let last = |name: &str| {
+        element
+            .opening_element
+            .attributes
+            .iter()
+            .rposition(|attr| match attr {
+                JSXAttributeItem::Attribute(attr) => {
+                    matches!(&attr.name, JSXAttributeName::Identifier(ident) if ident.name == name)
+                }
+                JSXAttributeItem::SpreadAttribute(_) => false,
+            })
+    };
+    match (last("children"), last("textContent")) {
+        (Some(children), Some(text_content)) => children > text_content,
+        (Some(_), None) => true,
+        (None, _) => false,
     }
 }
 

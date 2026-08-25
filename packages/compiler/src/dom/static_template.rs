@@ -43,6 +43,15 @@ pub(crate) fn lower_static_native_template<'a>(
     template.push_both(">");
 
     if tag_name == "noscript" {
+        // `<noscript>` markup is inert, so this path emits the tag and returns
+        // without visiting the children at all — the fold's replacement
+        // included, hence the source list here rather than `children` below.
+        // Babel drops them too, so retracting their censused sites is
+        // parity-clean; nothing is emitted for them, so there is nothing to
+        // decide. (A `<noscript>` whose attributes force the dynamic path, and
+        // a `<noscript>` that is its own template root, do lower their
+        // children and keep their sites.)
+        ctx.retract_children_sites(&element.children);
         if ctx.should_close_tag(&tag_name, close_context.clone()) {
             template.html.push_str(&format!("</{tag_name}>"));
         }
@@ -54,9 +63,14 @@ pub(crate) fn lower_static_native_template<'a>(
 
     let child_to_be_closed = ctx.child_close_context(&tag_name, close_context.clone());
     // The textarea `value` fold replaces the element's children with a
-    // single synthesized child.
+    // single synthesized child. That is what lets this fast path succeed on a
+    // subtree whose source children are dynamic: they are dropped, not
+    // lowered, so reconcile the census with the swap.
     let children: &[JSXChild<'a>] = match &children_replacement {
-        Some(child) => std::slice::from_ref(child),
+        Some(child) => {
+            ctx.discard_folded_children(&element.children, child);
+            std::slice::from_ref(child)
+        }
         None => &element.children,
     };
     let last_element = ctx.find_last_element(children);
