@@ -116,10 +116,12 @@ regeneration — see "The transform baseline" below:
    `_$insert(_el$2, x)` while this fork emits only the `<span>` template. The
    same output residue covers the named nested promotion, duplicate, sibling,
    and component-child probes excluded in `parity-probes.test.js`. Those probes
-   remain in the corpus as evidence and are explicitly excluded by identity;
-   the literal-duplicate-before-dynamic-`textContent` case is excluded only in
-   `dom-wrapperless`, where it actually differs. The two non-literal dynamic
-   `textContent` order probes match Babel in every mode and remain asserted.
+   remain in the corpus as evidence: thirteen are excluded only in the six DOM
+   modes where they differ, leaving their four matching SSR/universal modes
+   asserted. The literal-duplicate-before-dynamic-`textContent` case is
+   excluded only in `dom-wrapperless`, where it actually differs. The two
+   non-literal dynamic `textContent` order probes match Babel in every mode and
+   remain asserted.
    This branch does not reintroduce a nested workaround or alter the upstream
    `children` semantics. The semantic trace remains truthful about the fork's
    output: a value that is skipped by this path is resolved as elided, and no

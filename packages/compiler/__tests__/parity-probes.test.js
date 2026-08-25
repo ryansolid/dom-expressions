@@ -2066,13 +2066,9 @@ const parityCases = cases;
 // bytes. The nine `children` cases exercise the 2.0 component prop-loop gap
 // (an explicit children prop is emitted alongside JSX children); the three
 // namespace cases and one namespaced directive use 1.x syntax that the 2.0
-// AST-native milestone rejects before lowering. The native-children cases
-// below remain excluded because upstream bba3db6c made `children` child
-// content everywhere, while this fork's existing nested static fast path still
-// skips the promoted value. Most differ in every DOM mode; the one
-// `dom-wrapperless:` key scopes its exclusion to that mode so its other nine
-// mode assertions remain live. They are retained as named evidence for the
-// reopened nested residue rather than changing the upstream behavior.
+// AST-native milestone rejects before lowering. Native-children residues are
+// scoped separately below by both probe and mode so matching SSR/universal
+// assertions remain live.
 const parityExclusions = new Map([
   [
     "1x children attribute shadowed by jsx child",
@@ -2121,69 +2117,52 @@ const parityExclusions = new Map([
     "2.0 AST-native lowering rejects this namespaced directive ordering"
   ],
   [
-    "nested children attribute promoted to insert",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute boolean literal",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute marked once",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute duplicated",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute folded to a property write",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute inside a component child",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute beside a dynamic sibling",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute between static text",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute on two siblings",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute two levels deep",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute literal duplicate wins",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute literal duplicate unbraced",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
-    "nested children attribute literal duplicate after dynamic textContent",
-    "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open"
-  ],
-  [
     "dom-wrapperless:nested children attribute literal duplicate before dynamic textContent",
     "bba3db6c's native-children plan still differs in wrapperless nested lowering"
   ]
 ]);
+
+// Upstream bba3db6c made `children` child content everywhere, while this
+// fork's nested static fast path can still skip the promoted value. These
+// thirteen probes differ only in the six DOM-family modes listed here; keep
+// all four matching SSR/universal assertions live for every probe.
+const nestedNativeChildrenResidueCases = new Set([
+  "nested children attribute promoted to insert",
+  "nested children attribute boolean literal",
+  "nested children attribute marked once",
+  "nested children attribute duplicated",
+  "nested children attribute folded to a property write",
+  "nested children attribute inside a component child",
+  "nested children attribute beside a dynamic sibling",
+  "nested children attribute between static text",
+  "nested children attribute on two siblings",
+  "nested children attribute two levels deep",
+  "nested children attribute literal duplicate wins",
+  "nested children attribute literal duplicate unbraced",
+  "nested children attribute literal duplicate after dynamic textContent"
+]);
+const nestedNativeChildrenResidueModes = new Set([
+  "dom",
+  "dom-hydratable",
+  "dom-hydratable-dev",
+  "dom-no-inline-styles",
+  "dom-wrapperless",
+  "dynamic"
+]);
+const nestedNativeChildrenResidueReason =
+  "bba3db6c's native-children plan is skipped by the existing nested fast path; nested promotion remains open";
 
 describe("Babel vs Oxc parity probes", () => {
   for (const mode of Object.keys(modes)) {
     describe(mode, () => {
       test.each(Object.keys(parityCases))("%s", name => {
         const exclusionReason =
-          parityExclusions.get(`${mode}:${name}`) ?? parityExclusions.get(name);
+          parityExclusions.get(`${mode}:${name}`) ??
+          parityExclusions.get(name) ??
+          (nestedNativeChildrenResidueCases.has(name) &&
+          nestedNativeChildrenResidueModes.has(mode)
+            ? nestedNativeChildrenResidueReason
+            : undefined);
         if (exclusionReason) {
           expect(exclusionReason).toEqual(expect.any(String));
           return;
