@@ -2314,6 +2314,44 @@ describe("chunk addressing", () => {
     expect(el.innerHTML).toBe("<p>buffered</p>");
   });
 
+  it("retains every root asset chunk until the frame registers", () => {
+    const host = createFrameHost(createMockSerializer());
+    host.apply({
+      type: "assets",
+      id: "warm-assets",
+      version: 1,
+      key: "",
+      modules: ["/warm-module-a.js"]
+    });
+    host.apply({
+      type: "assets",
+      id: "warm-assets",
+      version: 1,
+      key: "",
+      modules: ["/warm-module-b.js"]
+    });
+    host.apply({
+      type: "assets",
+      id: "warm-assets",
+      version: 1,
+      key: "",
+      preloads: [{ href: "/warm-font.woff2", attrs: { as: "font", crossorigin: "" } }]
+    });
+
+    // Arrival only warms the resident store; registration applies its full snapshot.
+    expect(document.head.querySelector('link[href="/warm-module-a.js"]')).toBeNull();
+    expect(document.head.querySelector('link[href="/warm-module-b.js"]')).toBeNull();
+    expect(document.head.querySelector('link[href="/warm-font.woff2"]')).toBeNull();
+    createFrame(boundary, { id: "warm-assets", host });
+    expect(document.head.querySelector('link[href="/warm-module-a.js"]')).not.toBeNull();
+    expect(document.head.querySelector('link[href="/warm-module-b.js"]')).not.toBeNull();
+    expect(document.head.querySelector('link[href="/warm-font.woff2"]')).not.toBeNull();
+
+    document.head.querySelector('link[href="/warm-module-a.js"]').remove();
+    document.head.querySelector('link[href="/warm-module-b.js"]').remove();
+    document.head.querySelector('link[href="/warm-font.woff2"]').remove();
+  });
+
   it("routes a flat, out-of-order stream through a recursive frame tree", () => {
     const host = createFrameHost(createMockSerializer());
     const replyButton = document.createElement("button");
