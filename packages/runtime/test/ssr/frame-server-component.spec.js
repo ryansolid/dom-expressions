@@ -435,6 +435,83 @@ describe("renderServerComponent (slot emission)", () => {
     links[0].remove();
   });
 
+  it("applies typed preloads by full identity across repeated root asset records", () => {
+    const frame = createFrame(boundary);
+    frame.apply({
+      version: 1,
+      r: {
+        "seg::assets": {
+          type: "assets",
+          key: "",
+          preloads: [
+            {
+              href: "/shared.bin",
+              attrs: { as: "image", type: "image/avif", fetchpriority: "high" }
+            },
+            { href: "/shared.bin", attrs: { as: "fetch", crossorigin: "anonymous" } }
+          ]
+        }
+      }
+    });
+
+    let links = [...document.head.querySelectorAll('link[rel="preload"]')].filter(
+      link => link.getAttribute("href") === "/shared.bin"
+    );
+    expect(links).toHaveLength(2);
+    expect(links.find(link => link.getAttribute("as") === "image").getAttribute("type")).toBe(
+      "image/avif"
+    );
+    expect(
+      links.find(link => link.getAttribute("as") === "image").getAttribute("fetchpriority")
+    ).toBe("high");
+    expect(
+      links.find(link => link.getAttribute("as") === "fetch").getAttribute("crossorigin")
+    ).toBe("anonymous");
+
+    // A later root assets chunk overwrites the same resident-store key. It is
+    // still a new record and must be processed instead of being mistaken for
+    // the shell's already-consumed asset record.
+    const lateAssets = {
+      type: "assets",
+      key: "",
+      preloads: [{ href: "/late.woff2", attrs: { as: "font", crossorigin: "" } }]
+    };
+    frame.apply({
+      version: 1,
+      r: {
+        "seg::assets": lateAssets
+      }
+    });
+    expect(
+      [...document.head.querySelectorAll('link[rel="preload"]')].some(
+        link => link.getAttribute("href") === "/late.woff2"
+      )
+    ).toBe(true);
+
+    // A separate record for the same request adopts the existing link.
+    frame.apply({
+      version: 1,
+      r: {
+        "seg:duplicate:assets": {
+          type: "assets",
+          key: "duplicate",
+          preloads: [{ href: "/shared.bin", attrs: { as: "image", type: "image/avif" } }]
+        }
+      }
+    });
+    links = [...document.head.querySelectorAll('link[rel="preload"]')].filter(
+      link => link.getAttribute("href") === "/shared.bin" && link.getAttribute("as") === "image"
+    );
+    expect(links).toHaveLength(1);
+
+    // Asset-consumption state is response-scoped. Even a retained record
+    // object can be replayed after a version reset if its DOM link vanished.
+    document.head.querySelector('link[href="/late.woff2"]').remove();
+    frame.apply({ version: 2, r: { "seg::assets": lateAssets } });
+    expect(document.head.querySelector('link[href="/late.woff2"]')).not.toBeNull();
+    for (const link of document.head.querySelectorAll('link[rel="preload"]')) link.remove();
+  });
+
   it("reveals a slot inside an async fragment and mounts its client content", async () => {
     let fragDone;
     const ServerComp = props => {

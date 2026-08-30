@@ -47,6 +47,7 @@ export type FrameChunk =
       modules?: string[];
       styles?: string[];
       inlineStyles?: { id: string; content?: string; attrs?: Record<string, string> }[];
+      preloads?: { href: string; attrs: Record<string, string> }[];
     }
   | { type: "slot"; id: string; version: number; key: string; args: Record<string, unknown> }
   | { type: "complete"; id: string; version: number }

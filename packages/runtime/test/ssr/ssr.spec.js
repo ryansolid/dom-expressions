@@ -1270,6 +1270,75 @@ describe("manifest-driven asset resolution", () => {
     });
   });
 
+  it("collects explicit preload links from the static import graph", () => {
+    const manifest = {
+      _base: "/assets/",
+      "app.tsx": {
+        file: "app.js",
+        imports: ["shared.tsx"],
+        dynamicImports: ["lazy.tsx"],
+        assets: ["not-automatically-preloaded.png"],
+        isEntry: true,
+        preloads: [
+          { href: "", as: "image" },
+          {
+            href: "hero.avif",
+            as: "image",
+            type: "image/avif",
+            fetchpriority: "high"
+          }
+        ]
+      },
+      "shared.tsx": {
+        file: "shared.js",
+        preloads: [
+          {
+            href: "fonts/app.woff2?v=1",
+            as: "font",
+            type: "font/woff2",
+            crossorigin: ""
+          }
+        ]
+      },
+      "lazy.tsx": {
+        file: "lazy.js",
+        preloads: [{ href: "hidden.webp", as: "image" }]
+      }
+    };
+
+    let resolved;
+    const html = r.renderToString(
+      () => {
+        resolved = sharedConfig.context.resolveAssets("app.tsx");
+        return r.ssr`<html><head></head><body><div>x</div></body></html>`;
+      },
+      { manifest }
+    );
+
+    expect(resolved.preloads).toEqual([
+      {
+        href: "/assets/hero.avif",
+        as: "image",
+        type: "image/avif",
+        fetchpriority: "high"
+      },
+      {
+        href: "/assets/fonts/app.woff2?v=1",
+        as: "font",
+        type: "font/woff2",
+        crossorigin: ""
+      }
+    ]);
+    expect(html).toContain(
+      '<link rel="preload" href="/assets/hero.avif" as="image" type="image/avif" fetchpriority="high">'
+    );
+    expect(html).toContain(
+      '<link rel="preload" href="/assets/fonts/app.woff2?v=1" as="font" type="font/woff2" crossorigin="">'
+    );
+    expect(html).not.toContain("hidden.webp");
+    expect(html).not.toContain("not-automatically-preloaded.png");
+  });
+
   it("context.resolveAssets returns null for unknown module urls", () => {
     const manifest = { _base: "/", "a.tsx": { file: "a.js" } };
     let resolved;
@@ -1310,7 +1379,8 @@ describe("manifest-driven asset resolution", () => {
     const resolver = {
       resolve: key => ({
         js: ["/" + key],
-        css: [{ id: "/src/a.css", content: ".a{}", attrs: { "data-vite-dev-id": "/src/a.css" } }]
+        css: [{ id: "/src/a.css", content: ".a{}", attrs: { "data-vite-dev-id": "/src/a.css" } }],
+        preloads: [{ href: "/hero.webp", as: "image", fetchpriority: "high" }]
       }),
       resolveSync: key => ({ js: ["/" + key], css: [] })
     };
@@ -1325,6 +1395,7 @@ describe("manifest-driven asset resolution", () => {
     );
     expect(resolved.js).toEqual(["/src/a.tsx"]);
     expect(resolved.css[0].content).toBe(".a{}");
+    expect(resolved.preloads).toEqual([{ href: "/hero.webp", as: "image", fetchpriority: "high" }]);
     expect(resolvedSync).toEqual({ js: ["/src/a.tsx"], css: [] });
   });
 
@@ -2040,6 +2111,182 @@ describe("renderToStream late registerAsset(module)", () => {
     );
     expect(html).toContain('rel="modulepreload"');
     expect(html).toContain("/late-chunk.js");
+  });
+});
+
+describe("typed preload links", () => {
+  function pipeToString(stream) {
+    return new Promise(resolve => {
+      const chunks = [];
+      stream.pipe({
+        write(v) {
+          chunks.push(v);
+        },
+        end() {
+          resolve(chunks.join(""));
+        }
+      });
+    });
+  }
+
+  it("renders fetch metadata and dedupes by the full resource identity", () => {
+    const html = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        const image = {
+          href: '/hero.avif?size="wide"',
+          as: "image",
+          type: "image/avif",
+          integrity: "sha384-image",
+          referrerpolicy: "no-referrer",
+          fetchpriority: "high",
+          media: "(min-width: 60rem)"
+        };
+        ctx.registerAsset("preload", image);
+        ctx.registerAsset("preload", image);
+        ctx.registerAsset("preload", { ...image, integrity: "sha384-conflict" });
+        ctx.registerAsset("preload", {
+          href: image.href,
+          as: "fetch",
+          crossorigin: "anonymous"
+        });
+        ctx.registerAsset("preload", { ...image, crossorigin: true });
+        ctx.registerAsset("preload", { ...image, crossorigin: "" });
+        return r.ssr`<html><head></head><body></body></html>`;
+      },
+      { nonce: { script: "script-nonce", style: "style-nonce" } }
+    );
+
+    expect(html.match(/href="\/hero\.avif\?size=&quot;wide&quot;"/g)).toHaveLength(3);
+    const image = html.match(/<link[^>]*sha384-image[^>]*>/)[0];
+    expect(image).toContain('rel="preload"');
+    expect(image).toContain('as="image"');
+    expect(image).toContain('type="image/avif"');
+    expect(image).toContain('referrerpolicy="no-referrer"');
+    expect(image).toContain('fetchpriority="high"');
+    expect(image).toContain('media="(min-width: 60rem)"');
+    expect(image).not.toContain("nonce");
+    expect(html.match(/crossorigin=""/g)).toHaveLength(1);
+    expect(html).not.toContain("sha384-conflict");
+  });
+
+  it("warns once for each emitted font or fetch preload without crossorigin", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    r.renderToString(() => {
+      const ctx = sharedConfig.context;
+      ctx.registerAsset("preload", { href: "/a.woff2", as: "font" });
+      ctx.registerAsset("preload", { href: "/a.woff2", as: "font" });
+      ctx.registerAsset("preload", { href: "/b.json", as: "fetch" });
+      ctx.registerAsset("preload", { href: "/c.woff2", as: "font", crossorigin: "" });
+      ctx.registerAsset("preload", { href: "/d.avif", as: "image" });
+      return r.ssr`<html><head></head><body></body></html>`;
+    });
+
+    const warned = warn.mock.calls.map(c => String(c[0])).filter(m => m.includes("crossorigin"));
+    expect(warned).toHaveLength(2);
+    expect(warned[0]).toContain('as="font"');
+    expect(warned[1]).toContain('as="fetch"');
+    warn.mockRestore();
+  });
+
+  it("routes script and style preload nonces", () => {
+    const html = r.renderToString(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerAsset("preload", { href: "/script.bin", as: "SCRIPT" });
+        ctx.registerAsset("preload", { href: "/style.bin", as: "style" });
+        ctx.registerAsset("preload", { href: "/font.bin", as: "font", crossorigin: "" });
+        return r.ssr`<html><head></head><body></body></html>`;
+      },
+      { nonce: { script: "script-nonce", style: "style-nonce" } }
+    );
+
+    expect(html.match(/<link[^>]*\/script\.bin[^>]*>/)[0]).toContain('nonce="script-nonce"');
+    expect(html.match(/<link[^>]*\/style\.bin[^>]*>/)[0]).toContain('nonce="style-nonce"');
+    expect(html.match(/<link[^>]*\/font\.bin[^>]*>/)[0]).not.toContain("nonce");
+  });
+
+  it("delivers preload links through onHead for embedded renders", () => {
+    let head;
+    const html = r.renderToString(
+      () => {
+        sharedConfig.context.registerAsset("preload", {
+          href: "/embedded.webp",
+          as: "image",
+          fetchpriority: "high"
+        });
+        return r.ssr`<main>embedded</main>`;
+      },
+      { onHead: value => (head = value) }
+    );
+
+    expect(html).toBe("<main>embedded</main>");
+    expect(head).toBe('<link rel="preload" href="/embedded.webp" as="image" fetchpriority="high">');
+  });
+
+  it("dedupes against useHead regardless of registration order", () => {
+    const before = r.renderToString(() => {
+      const link = { href: "/before.avif", as: "image", type: "image/avif" };
+      sharedConfig.context.registerAsset("preload", link);
+      r.useHead({ tag: "link", props: { rel: "preload", ...link } });
+      return r.ssr`<html><head></head><body></body></html>`;
+    });
+    const after = r.renderToString(() => {
+      const link = { href: "/after.avif", as: "image", type: "image/avif" };
+      r.useHead({ tag: "link", props: { rel: "preload", ...link } });
+      sharedConfig.context.registerAsset("preload", link);
+      return r.ssr`<html><head></head><body></body></html>`;
+    });
+
+    expect(before.match(/href="\/before\.avif"/g)).toHaveLength(1);
+    expect(after.match(/href="\/after\.avif"/g)).toHaveLength(1);
+  });
+
+  it("rejects untyped and invalid preload destinations", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    let html, warningCount;
+    try {
+      html = r.renderToString(() => {
+        const ctx = sharedConfig.context;
+        ctx.registerAsset("preload", "/untyped.bin");
+        ctx.registerAsset("preload", { href: "/missing-as.bin" });
+        ctx.registerAsset("preload", { href: "/invalid.bin", as: " style " });
+        return r.ssr`<html><head></head><body></body></html>`;
+      });
+    } finally {
+      warningCount = warn.mock.calls.length;
+      warn.mockRestore();
+    }
+    expect(html).not.toContain("untyped.bin");
+    expect(html).not.toContain("missing-as.bin");
+    expect(html).not.toContain("invalid.bin");
+    expect(warningCount).toBe(3);
+  });
+
+  it("emits a link registered after the shell without waiting for its boundary", async () => {
+    let done;
+    const html = await pipeToString(
+      r.renderToStream(() => {
+        const ctx = sharedConfig.context;
+        done = ctx.registerFragment("late-link");
+        setTimeout(() => {
+          ctx._currentBoundaryId = "late-link";
+          ctx.registerAsset("preload", {
+            href: "/late.woff2",
+            as: "font",
+            type: "font/woff2",
+            crossorigin: ""
+          });
+          ctx._currentBoundaryId = null;
+          done("<span>done</span>");
+        }, 10);
+        return r.ssr`<div><template id="pl-late-link"></template><!--pl-late-link--></div>`;
+      })
+    );
+
+    expect(html).toContain(
+      '<link rel="preload" href="/late.woff2" as="font" type="font/woff2" crossorigin="">'
+    );
   });
 });
 

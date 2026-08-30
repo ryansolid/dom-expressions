@@ -93,6 +93,7 @@ function resolveAssets(moduleUrl, manifest) {
   if (!entry) return null;
   const css = [];
   const js = [];
+  let preloads;
   const visited = new Set();
   const walk = key => {
     if (visited.has(key)) return;
@@ -101,10 +102,20 @@ function resolveAssets(moduleUrl, manifest) {
     if (!e) return;
     js.push(joinAssetPath(base, e.file));
     if (e.css) for (let i = 0; i < e.css.length; i++) css.push(joinAssetPath(base, e.css[i]));
+    if (e.preloads) {
+      for (let i = 0; i < e.preloads.length; i++) {
+        const link = e.preloads[i];
+        if (!link || typeof link.href !== "string" || !link.href) continue;
+        if (!preloads) preloads = [];
+        preloads.push({ ...link, href: joinAssetPath(base, link.href) });
+      }
+    }
     if (e.imports) for (let i = 0; i < e.imports.length; i++) walk(e.imports[i]);
   };
   walk(moduleUrl);
-  return { js, css };
+  const assets = { js, css };
+  if (preloads) assets.preloads = preloads;
+  return assets;
 }
 
 function registerEntryAssets(manifest) {
@@ -117,6 +128,9 @@ function registerEntryAssets(manifest) {
     if (manifest[key].isEntry) {
       const assets = resolveAssets(key, manifest);
       if (assets) {
+        if (assets.preloads)
+          for (let i = 0; i < assets.preloads.length; i++)
+            ctx.registerAsset("preload", assets.preloads[i]);
         for (let i = 0; i < assets.css.length; i++) ctx.registerAsset("style", assets.css[i]);
         // js[0] is the entry itself, which the document loads with its own <script>;
         // preload only its static import closure.
@@ -140,6 +154,7 @@ function createAssetTracking() {
     boundaryStyles,
     emittedAssets,
     inlineStyles,
+    preloadLinks: null,
     // Inline styles (dev CSS collected from the module graph, critical CSS)
     // dedupe by `id` — repeated registrations reuse the same entry object so
     // boundary Sets and the head injection never emit the same style twice.
@@ -291,6 +306,74 @@ function applyAssetTracking(context, tracking, manifest, noScripts) {
 function isCssUrl(url) {
   const q = url.search(/[?#]/);
   return (q === -1 ? url : url.slice(0, q)).endsWith(".css");
+}
+
+const PRELOAD_LINK_ATTRIBUTES = [
+  "type",
+  "crossorigin",
+  "integrity",
+  "referrerpolicy",
+  "fetchpriority",
+  "media"
+];
+
+// Normalize once for document/frame output and dedupe with useHead resources.
+function registerPreloadLink(tracking, headRegistry, link, nonce) {
+  if (!link || typeof link !== "object" || typeof link.href !== "string" || !link.href) {
+    if ("_DX_DEV_") console.warn('registerAsset("preload") requires a non-empty string href.');
+    return null;
+  }
+  if (typeof link.as !== "string") {
+    if ("_DX_DEV_") console.warn('registerAsset("preload") requires an as destination.');
+    return null;
+  }
+  const as = asciiLowerCase(link.as);
+  let destination = null;
+  switch (as) {
+    case "script":
+    case "style":
+      destination = as;
+      break;
+    case "fetch":
+    case "font":
+    case "image":
+    case "track":
+      break;
+    default:
+      if ("_DX_DEV_")
+        console.warn(
+          `registerAsset("preload") received an unsupported as destination "${link.as}".`
+        );
+      return null;
+  }
+  const props = { rel: "preload", href: link.href, as };
+  for (let i = 0; i < PRELOAD_LINK_ATTRIBUTES.length; i++) {
+    const name = PRELOAD_LINK_ATTRIBUTES[i];
+    const value = link[name];
+    if (value == null || value === false) continue;
+    props[name] = value === true ? "" : String(value);
+  }
+  const identity = resourceIdentity("link", props);
+  if (headRegistry.resources.has(identity)) return null;
+  // A different CORS or credentials mode has a different preload key.
+  if ("_DX_DEV_" && props.crossorigin == null && (as === "font" || as === "fetch"))
+    console.warn(
+      `registerAsset("preload") with as="${as}" has no crossorigin and may not match the eventual request.`
+    );
+
+  const attrs = headAttrRecord(props, true);
+  const nonceValue = destination && nonce && nonce[destination];
+  if (typeof nonceValue === "string" && nonceValue) attrs.nonce = nonceValue;
+  const entry = {
+    href: props.href,
+    attrs,
+    attrHtml: renderHeadAttrHtml(props) + nonceAttr(nonce, destination)
+  };
+  headRegistry.resources.add(identity);
+  let links = tracking.preloadLinks;
+  if (!links) tracking.preloadLinks = links = [];
+  links.push(entry);
+  return entry;
 }
 
 function createHeadRegistry() {
@@ -1005,6 +1088,10 @@ export function renderToString(code, options = {}) {
       serializer.write(id, p);
     },
     registerAsset(type, value) {
+      if (type === "preload") {
+        registerPreloadLink(tracking, headRegistry, value, nonce);
+        return;
+      }
       if (type === "inline-style") {
         tracking.registerInlineStyle(value);
         return;
@@ -1036,6 +1123,7 @@ export function renderToString(code, options = {}) {
   return assembleDocument(
     resolveSSRSelectValues(html),
     tracking.emittedAssets,
+    tracking.preloadLinks,
     tracking.inlineStyles,
     scripts.length ? scripts : "",
     nonce,
@@ -1261,6 +1349,8 @@ export function renderToStream(code, options = {}) {
     asset(type, value) {
       if (type === "module") {
         buffer.write(`<link rel="modulepreload" href="${value}"${nonceAttr(nonce, "script")}>`);
+      } else if (type === "preload") {
+        buffer.write(`<link${value.attrHtml}>`);
       } else if (type === "inline-style") {
         buffer.write(renderInlineStyle(value, nonce));
       } else if (type === "head-tag") {
@@ -1278,6 +1368,7 @@ export function renderToStream(code, options = {}) {
         assembleDocument(
           shellHtml,
           meta.preloads,
+          meta.preloadLinks,
           meta.inlineStyles,
           meta.tasks.length ? meta.tasks : "",
           nonce,
@@ -1441,6 +1532,11 @@ export function renderToStream(code, options = {}) {
       );
     },
     registerAsset(type, value) {
+      if (type === "preload") {
+        const entry = registerPreloadLink(tracking, headRegistry, value, nonce);
+        if (entry && firstFlushed) sink.asset("preload", entry);
+        return;
+      }
       if (type === "inline-style") {
         const entry = tracking.registerInlineStyle(value);
         // Boundary-attributed inline styles flush with their fragment; a late
@@ -1713,6 +1809,7 @@ export function renderToStream(code, options = {}) {
     const head = renderShellHead(headRegistry, nonce, k => registry.has(k), noScripts);
     sink.shell(resolveSSRSelectValues(html), {
       preloads: tracking.emittedAssets,
+      preloadLinks: tracking.preloadLinks,
       inlineStyles: tracking.inlineStyles,
       tasks,
       head
@@ -3399,7 +3496,16 @@ function allSettled(promises) {
 // output passes through with only the script splice. When the output does
 // contain `</head>`, splicing is automatic and `onHead` is not called: one
 // mode or the other, decided by the render output itself.
-function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, headTags, onHead) {
+function assembleDocument(
+  html,
+  emittedAssets,
+  preloadLinks,
+  inlineStyles,
+  scripts,
+  nonce,
+  headTags,
+  onHead
+) {
   const scriptTag = scripts ? `<script${nonceAttr(nonce, "script")}>${scripts}</script>` : "";
   const title = headTags ? headTags.title : null;
   let headTagsHtml = headTags ? headTags.html : "";
@@ -3410,6 +3516,7 @@ function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, hea
     !headTagsHtml &&
     !headPrelude &&
     !(emittedAssets && emittedAssets.size) &&
+    !preloadLinks &&
     !(inlineStyles && inlineStyles.size)
   ) {
     // Nothing head-bound: never look for `</head>`. Body-only renders (no
@@ -3454,7 +3561,7 @@ function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, hea
         headPrelude +
           headTagsHtml +
           titleHtml +
-          renderHeadAssets(emittedAssets, inlineStyles, nonce)
+          renderHeadAssets(emittedAssets, preloadLinks, inlineStyles, nonce)
       );
     }
     // No head to splice into: without `onHead`, assets/preloads/styles are
@@ -3493,7 +3600,7 @@ function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, hea
       headTagsHtml = `<title data-dh="title">${winner}</title>` + headTagsHtml;
     }
   }
-  const head = headTagsHtml + renderHeadAssets(emittedAssets, inlineStyles, nonce);
+  const head = headTagsHtml + renderHeadAssets(emittedAssets, preloadLinks, inlineStyles, nonce);
   if (!scriptTag) return html.slice(0, headIdx) + head + html.slice(headIdx);
   const xsIdx = html.indexOf("<!--xs-->");
   if (xsIdx === -1) return html.slice(0, headIdx) + head + html.slice(headIdx) + scriptTag;
@@ -3502,10 +3609,11 @@ function assembleDocument(html, emittedAssets, inlineStyles, scripts, nonce, hea
     : html.slice(0, headIdx) + head + html.slice(headIdx, xsIdx) + scriptTag + html.slice(xsIdx);
 }
 
-// Tracked asset links (stylesheet/modulepreload by URL) and unconsumed inline
-// styles, rendered for a head splice or an `onHead` delivery. Inline-style
-// entries are consumed (marked emitted) by whichever path renders them first.
-function renderHeadAssets(emittedAssets, inlineStyles, nonce) {
+// Tracked asset links (stylesheet/modulepreload by URL), typed preload links,
+// and unconsumed inline styles, rendered for a head splice or an `onHead`
+// delivery. Inline-style entries are consumed (marked emitted) by whichever
+// path renders them first.
+function renderHeadAssets(emittedAssets, preloadLinks, inlineStyles, nonce) {
   let head = "";
   const styleAttr = nonceAttr(nonce, "style");
   const scriptAttr = nonceAttr(nonce, "script");
@@ -3515,6 +3623,9 @@ function renderHeadAssets(emittedAssets, inlineStyles, nonce) {
         ? `<link rel="stylesheet" href="${url}"${styleAttr}>`
         : `<link rel="modulepreload" href="${url}"${scriptAttr}>`;
     }
+  }
+  if (preloadLinks) {
+    for (const entry of preloadLinks) head += `<link${entry.attrHtml}>`;
   }
   if (inlineStyles && inlineStyles.size) {
     for (const entry of inlineStyles.values()) {

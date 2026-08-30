@@ -225,6 +225,40 @@ describe("renderToStream options.sink — fragment/reveal/asset seam", () => {
     expect(html).not.toContain("/late-chunk.js");
   });
 
+  it("routes late typed preload links through sink.asset", async () => {
+    const assets = [];
+    let fragDone;
+    const html = await pipeToString(
+      r.renderToStream(
+        () => {
+          const ctx = sharedConfig.context;
+          fragDone = ctx.registerFragment("b1");
+          return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
+        },
+        { sink: { asset: (type, value) => assets.push([type, value]) } }
+      ),
+      () =>
+        setTimeout(() => {
+          sharedConfig.context.registerAsset("preload", {
+            href: "/late.webp",
+            as: "image",
+            fetchpriority: "high"
+          });
+          fragDone("<span>B</span>");
+        })
+    );
+    expect(assets).toEqual([
+      [
+        "preload",
+        expect.objectContaining({
+          href: "/late.webp",
+          attrs: { as: "image", fetchpriority: "high" }
+        })
+      ]
+    ]);
+    expect(html).not.toContain("/late.webp");
+  });
+
   it("document fragment/reveal output is unchanged when no sink is passed", async () => {
     let fragDone;
     const html = await pipeToString(
@@ -262,6 +296,30 @@ describe("renderToStream options.sink — shell seam", () => {
         expect([...meta.preloads]).toContain("/entry.js");
         // Serialized data accumulated pre-flush rides along as tasks.
         expect(meta.tasks).toContain("pt");
+        done();
+      }
+    });
+  });
+
+  it("keeps typed preload links separate from the existing URL preload set", done => {
+    const shells = [];
+    r.renderToStream(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerAsset("module", "/entry.js");
+        ctx.registerAsset("preload", { href: "/hero.webp", as: "image" });
+        return r.ssr`<head></head><span>shell</span>`;
+      },
+      { sink: { shell: (html, meta) => shells.push([html, meta]) } }
+    ).pipe({
+      write() {},
+      end() {
+        const meta = shells[0][1];
+        expect([...meta.preloads]).toEqual(["/entry.js"]);
+        expect(meta.preloadLinks).toHaveLength(1);
+        expect(meta.preloadLinks[0]).toEqual(
+          expect.objectContaining({ href: "/hero.webp", attrs: { as: "image" } })
+        );
         done();
       }
     });

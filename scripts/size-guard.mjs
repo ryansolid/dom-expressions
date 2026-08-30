@@ -293,11 +293,17 @@ const SCENARIOS = {
   // ref callbacks (cleanups bound to the frame's owner, not per element) —
   // the §9.1 lifecycle promise, delivered as one scope wrap around the
   // whole pass. Re-guarded at actual+20 (9536 measured, post-rebase).
+  // Then +203 for typed preload links: frame assets carry explicit request
+  // metadata into document.head, adopt by the same full identity as useHead,
+  // consume late records by identity, and accumulate their shared root key in
+  // the warm resident store so a later mount receives every link. The
+  // document/client scenarios stay byte-identical; only frame consumers pay.
+  // Re-guarded at actual+20 (9739 measured).
   "frames: full consumer (runtime + transport + codec glue)": [
     `export * from ${JSON.stringify(FRAME_CLIENT)};
      export * from ${JSON.stringify(FRAME_TRANSPORT)};
      export { createJSONDataTable } from ${JSON.stringify(SERIALIZER_DECODE)};`,
-    9556
+    9759
   ]
 };
 

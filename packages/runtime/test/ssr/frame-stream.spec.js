@@ -237,6 +237,37 @@ describe("renderToFrameStream chunk sequences", () => {
     expect(assets).toBeLessThan(html);
   });
 
+  it("carries typed preload links and their routed nonces in the shell assets chunk", async () => {
+    const chunks = await renderToFrameStream(
+      () => {
+        const ctx = sharedConfig.context;
+        ctx.registerAsset("preload", {
+          href: "/font.woff2",
+          as: "font",
+          type: "font/woff2",
+          crossorigin: ""
+        });
+        ctx.registerAsset("preload", { href: "/critical.js", as: "script" });
+        ctx.registerAsset("preload", { href: "/critical.css", as: "style" });
+        return r.ssr`<div>app</div>`;
+      },
+      {
+        frame: { id: "f6-links", version: 1 },
+        nonce: { script: "script-nonce", style: "style-nonce" }
+      }
+    );
+    const assets = chunks.find(c => c.type === "assets");
+    expect(assets.preloads).toEqual([
+      {
+        href: "/font.woff2",
+        attrs: { as: "font", type: "font/woff2", crossorigin: "" }
+      },
+      { href: "/critical.js", attrs: { as: "script", nonce: "script-nonce" } },
+      { href: "/critical.css", attrs: { as: "style", nonce: "style-nonce" } }
+    ]);
+    expect(chunks.indexOf(assets)).toBeLessThan(typeIndex(chunks, "html"));
+  });
+
   it("emits late module assets as their own assets chunks", async () => {
     let fragDone;
     const chunks = await collect(
@@ -258,6 +289,40 @@ describe("renderToFrameStream chunk sequences", () => {
     );
     expect(chunks.filter(c => c.type === "assets")).toEqual([
       { type: "assets", id: "f7", version: 1, key: "", modules: ["/late-chunk.js"] }
+    ]);
+  });
+
+  it("emits late preload links as their own root assets chunks", async () => {
+    let fragDone;
+    const chunks = await collect(
+      renderToFrameStream(
+        () => {
+          const ctx = sharedConfig.context;
+          fragDone = ctx.registerFragment("b1");
+          return r.ssr`<div><template id="pl-b1"></template><!--pl-b1--></div>`;
+        },
+        { frame: { id: "f7-links", version: 1 } }
+      ),
+      c => {
+        if (c.type === "html")
+          setTimeout(() => {
+            sharedConfig.context.registerAsset("preload", {
+              href: "/late.webp",
+              as: "image",
+              fetchpriority: "high"
+            });
+            fragDone("<span>B</span>");
+          });
+      }
+    );
+    expect(chunks.filter(c => c.type === "assets")).toEqual([
+      {
+        type: "assets",
+        id: "f7-links",
+        version: 1,
+        key: "",
+        preloads: [{ href: "/late.webp", attrs: { as: "image", fetchpriority: "high" } }]
+      }
     ]);
   });
 
