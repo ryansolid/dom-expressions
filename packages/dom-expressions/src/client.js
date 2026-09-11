@@ -54,9 +54,10 @@ export function render(code, element, init, options = {}) {
   let disposer;
   root(dispose => {
     disposer = dispose;
+    // Hydration owns the whole container, including nodes streamed in after init.
     element === document
       ? code()
-      : insert(element, code(), element.firstChild ? null : undefined, init);
+      : insert(element, code(), !init && element.firstChild ? null : undefined, init);
   }, options.owner);
   return () => {
     disposer();
