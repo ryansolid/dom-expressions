@@ -329,7 +329,7 @@ const template44 = [
 const template45 = _$ssr(_tmpl$26, _$ssrAttribute("playsinline", value, true));
 const template46 = _$ssr(_tmpl$27);
 const template47 = _$ssr(_tmpl$28);
-const template48 = _$ssr(_tmpl$26, _$ssrAttribute("playsinline", _$escape(value, true), false));
+const template48 = _$ssr(_tmpl$26, _$ssrAttribute("playsinline", value, true));
 const template49 = _$ssr(_tmpl$27);
 const template50 = _$ssr(_tmpl$28);
 const nope = () => undefined;
