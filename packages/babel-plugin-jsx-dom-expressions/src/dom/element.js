@@ -15,6 +15,7 @@ import {
   getTagName,
   isDynamic,
   isComponent,
+  isRawTextElement,
   registerImportMethod,
   filterChildren,
   toEventName,
@@ -1039,6 +1040,7 @@ function findLastElement(children, hydratable) {
 function transformChildren(path, results, config) {
   let tempPath = results.id && results.id.name,
     tagName = getTagName(path.node),
+    doNotEscape = isRawTextElement(path),
     nextPlaceholder,
     childPostExprs = [],
     i = 0;
@@ -1051,6 +1053,7 @@ function transformChildren(path, results, config) {
         );
       }
       const transformed = transformNode(child, {
+        doNotEscape,
         toBeClosed: results.toBeClosed,
         lastElement: index === lastElement,
         skipId: !results.id || !detectExpressions(filteredChildren, index, config)

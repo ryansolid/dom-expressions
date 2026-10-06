@@ -119,11 +119,11 @@ importers:
         specifier: ^3.1
         version: 3.1.1
       seroval:
-        specifier: ~1.5.0
-        version: 1.5.0
+        specifier: ~1.6.8
+        version: 1.6.8
       seroval-plugins:
-        specifier: ~1.5.0
-        version: 1.5.0(seroval@1.5.0)
+        specifier: ~1.6.8
+        version: 1.6.8(seroval@1.6.8)
 
   packages/hyper-dom-expressions:
     devDependencies:
@@ -3674,14 +3674,14 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  seroval-plugins@1.5.0:
-    resolution: {integrity: sha512-EAHqADIQondwRZIdeW2I636zgsODzoBDwb3PT/+7TLDWyw1Dy/Xv7iGUIEXXav7usHDE9HVhOU61irI3EnyyHA==}
+  seroval-plugins@1.6.8:
+    resolution: {integrity: sha512-N7mWAMydj89EnYTHtRpS3LBrAz3J9O6oVrqpuXuvlAHfAUG8WEKqtbAd7SBiJNY5NfCAFhSdyAh7wI4Shjqy4g==}
     engines: {node: '>=10'}
     peerDependencies:
       seroval: ^1.0
 
-  seroval@1.5.0:
-    resolution: {integrity: sha512-OE4cvmJ1uSPrKorFIH9/w/Qwuvi/IMcGbv5RKgcJ/zjA/IohDLU6SVaxFN9FwajbP7nsX0dQqMDes1whk3y+yw==}
+  seroval@1.6.8:
+    resolution: {integrity: sha512-HlSgSAkTk4EqHcje1ptJjfZi1YDv5KbhVJ/d3P7T/nAXua2VmDu+AKDX5VTdFfZf48nDkWB2TKYt0DrCSa+3wg==}
     engines: {node: '>=10'}
 
   set-blocking@2.0.0:
@@ -8718,11 +8718,11 @@ snapshots:
     dependencies:
       lru-cache: 6.0.0
 
-  seroval-plugins@1.5.0(seroval@1.5.0):
+  seroval-plugins@1.6.8(seroval@1.6.8):
     dependencies:
-      seroval: 1.5.0
+      seroval: 1.6.8
 
-  seroval@1.5.0: {}
+  seroval@1.6.8: {}
 
   set-blocking@2.0.0: {}
 

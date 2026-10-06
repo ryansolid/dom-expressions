@@ -132,7 +132,7 @@ export function transformNode(path, info = {}) {
         ? info.doNotEscape
           ? staticValue.toString()
           : escapeHTML(staticValue.toString())
-        : trimWhitespace(node.extra.raw);
+        : trimWhitespace(info.doNotEscape ? node.value : node.extra.raw);
     if (!text.length) return null;
     const results = {
       template: text,

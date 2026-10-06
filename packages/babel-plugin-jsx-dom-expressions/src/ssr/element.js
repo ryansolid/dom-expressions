@@ -19,6 +19,7 @@ import {
   trimWhitespace,
   isDynamic,
   isComponent,
+  isRawTextElement,
   convertJSXIdentifier
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
@@ -43,7 +44,7 @@ export function transformElement(path, info) {
 
   const config = getConfig(path);
   const tagName = getTagName(path.node);
-  if (tagName === "script" || tagName === "style") path.doNotEscape = true;
+  if (isRawTextElement(path)) path.doNotEscape = true;
 
   // contains spread attributes
   if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
@@ -342,8 +343,11 @@ function transformAttributes(path, results, info) {
         let doEscape = true;
 
         if (key.startsWith("attr:")) key = key.replace("attr:", "");
-        if (BooleanAttributes.has(key) || key.startsWith("bool:")) {
-          key = key.replace("bool:", "");
+        // preservesPitch is a boolean property, but not an HTML boolean attribute.
+        const isBooleanAttribute =
+          key !== "preservesPitch" && BooleanAttributes.has(toAttribute(key, isSVG));
+        if (isBooleanAttribute || key.startsWith("bool:")) {
+          key = toAttribute(key.replace("bool:", ""), isSVG);
           results.template.push("");
           const fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
             t.stringLiteral(key),

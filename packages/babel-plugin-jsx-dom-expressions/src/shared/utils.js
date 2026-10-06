@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
+import { SVGElements } from "dom-expressions/src/constants";
 
 export const reservedNameSpaces = new Set([
   "class",
@@ -75,6 +76,25 @@ export function isComponent(tagName) {
     tagName.includes(".") ||
     /[^a-zA-Z]/.test(tagName[0])
   );
+}
+
+// <script> and <style> are only raw text in HTML. Inside SVG the parser decodes
+// entities and treats `<` as markup, so their children still need escaping.
+export function isRawTextElement(path) {
+  const tagName = getTagName(path.node);
+  if (tagName !== "script" && tagName !== "style") return false;
+  let parent = path.parentPath,
+    rootTag;
+  while (t.isJSXElement(parent.node)) {
+    const parentTag = getTagName(parent.node);
+    if (isComponent(parentTag)) break;
+    if (parentTag === "foreignObject") return true;
+    if (parentTag === "svg") return false;
+    rootTag = parentTag;
+    parent = parent.parentPath;
+  }
+  // a top-level SVG element is parsed inside an <svg> wrapper
+  return !rootTag || !SVGElements.has(rootTag);
 }
 
 export function hasStaticMarker(object, path) {
