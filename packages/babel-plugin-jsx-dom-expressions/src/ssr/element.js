@@ -342,8 +342,11 @@ function transformAttributes(path, results, info) {
         let doEscape = true;
 
         if (key.startsWith("attr:")) key = key.replace("attr:", "");
-        if (BooleanAttributes.has(key) || key.startsWith("bool:")) {
-          key = key.replace("bool:", "");
+        // preservesPitch is a boolean property, but not an HTML boolean attribute.
+        const isBooleanAttribute =
+          key !== "preservesPitch" && BooleanAttributes.has(toAttribute(key, isSVG));
+        if (isBooleanAttribute || key.startsWith("bool:")) {
+          key = toAttribute(key.replace("bool:", ""), isSVG);
           results.template.push("");
           const fn = t.callExpression(registerImportMethod(attribute, "ssrAttribute"), [
             t.stringLiteral(key),
