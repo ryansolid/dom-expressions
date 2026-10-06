@@ -354,3 +354,52 @@ describe("r.insert with Markers", () => {
     return parent;
   }
 });
+
+describe("empty string replacement", () => {
+  it.each(["node", "array"])("replaces empty text with %s content", shape => {
+    S.root(dispose => {
+      try {
+        const parent = document.createElement("div");
+        const first = document.createElement("first-page");
+        const second = document.createElement("second-page");
+        const third = document.createElement("third-page");
+        const content = S.data("");
+        const value = node => (shape === "array" ? [node] : node);
+
+        r.insert(parent, content);
+        content(value(first));
+        expect(Array.from(parent.childNodes)).toEqual([first]);
+
+        content(value(second));
+        expect(Array.from(parent.childNodes)).toEqual([second]);
+        expect(first.parentNode).toBeNull();
+
+        content("");
+        content(value(third));
+        expect(Array.from(parent.childNodes)).toEqual([third]);
+        expect(second.parentNode).toBeNull();
+      } finally {
+        dispose();
+      }
+    });
+  });
+
+  it.each(["node", "array"])("inserts %s content after the parent has been cleared", shape => {
+    S.root(dispose => {
+      try {
+        const parent = document.createElement("div");
+        const child = document.createElement("page-content");
+        const content = S.data("");
+
+        r.insert(parent, content);
+        content(null);
+        expect(parent.childNodes.length).toBe(0);
+
+        content(shape === "array" ? [child] : child);
+        expect(Array.from(parent.childNodes)).toEqual([child]);
+      } finally {
+        dispose();
+      }
+    });
+  });
+});
