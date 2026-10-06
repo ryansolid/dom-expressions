@@ -47,4 +47,25 @@ describe("raw-text element children", () => {
       expect(output).toContain(`<${tagName}>&lt;&amp;`);
     }
   );
+
+  describe.each(["dom", "ssr"])("in SVG content for the %s transform", generate => {
+    test.each([
+      ["inside <svg>", `<svg><style>{"<&"}</style></svg>`],
+      ["inside a top-level SVG element", `<g><style>{"<&"}</style></g>`],
+      ["inside SVG passed as component children", `<Comp><g><style>{"<&"}</style></g></Comp>`]
+    ])("escapes <style> %s", (_, jsx) => {
+      const output = transform(`const template = ${jsx};`, generate);
+
+      expect(output).toContain("<style>&lt;&amp;");
+    });
+
+    test("does not escape <style> inside <foreignObject>", () => {
+      const output = transform(
+        `const template = <svg><foreignObject><style>{"<&"}</style></foreignObject></svg>;`,
+        generate
+      );
+
+      expect(output).toContain("<style><&");
+    });
+  });
 });

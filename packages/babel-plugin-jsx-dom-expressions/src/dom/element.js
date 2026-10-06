@@ -15,6 +15,7 @@ import {
   getTagName,
   isDynamic,
   isComponent,
+  isRawTextElement,
   registerImportMethod,
   filterChildren,
   toEventName,
@@ -1039,7 +1040,7 @@ function findLastElement(children, hydratable) {
 function transformChildren(path, results, config) {
   let tempPath = results.id && results.id.name,
     tagName = getTagName(path.node),
-    doNotEscape = tagName === "script" || tagName === "style",
+    doNotEscape = isRawTextElement(path),
     nextPlaceholder,
     childPostExprs = [],
     i = 0;

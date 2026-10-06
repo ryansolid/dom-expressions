@@ -19,6 +19,7 @@ import {
   trimWhitespace,
   isDynamic,
   isComponent,
+  isRawTextElement,
   convertJSXIdentifier
 } from "../shared/utils";
 import { transformNode, getCreateTemplate } from "../shared/transform";
@@ -43,7 +44,7 @@ export function transformElement(path, info) {
 
   const config = getConfig(path);
   const tagName = getTagName(path.node);
-  if (tagName === "script" || tagName === "style") path.doNotEscape = true;
+  if (isRawTextElement(path)) path.doNotEscape = true;
 
   // contains spread attributes
   if (path.node.openingElement.attributes.some(a => t.isJSXSpreadAttribute(a)))
