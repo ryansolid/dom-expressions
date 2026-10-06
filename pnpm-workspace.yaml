@@ -4,3 +4,6 @@ allowBuilds:
   '@parcel/watcher': true
   nx: true
 linkWorkspacePackages: true
+
+overrides:
+  'browserslist': '4.28.7'
