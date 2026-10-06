@@ -449,27 +449,35 @@ function eventHandler(e) {
   // cancel hydration
   if (sharedConfig.registry && !sharedConfig.done) sharedConfig.done = _$HY.done = true;
 
-  if (e.composedPath) {
-    const path = e.composedPath();
-    retarget(path[0]);
-    for (let i = 0; i < path.length - 2; i++) {
-      node = path[i];
-      if (!handleNode()) break;
-      if (node._$host) {
-        node = node._$host;
-        // bubble up from portal mount instead of composedPath
-        walkUpTree();
-        break;
-      }
-      if (node.parentNode === oriCurrentTarget) {
-        break; // don't bubble above root of event delegation
+  try {
+    if (e.composedPath) {
+      const path = e.composedPath();
+      retarget(path[0]);
+      for (let i = 0; i < path.length - 2; i++) {
+        node = path[i];
+        if (!handleNode()) break;
+        if (node._$host) {
+          node = node._$host;
+          // bubble up from portal mount instead of composedPath
+          walkUpTree();
+          break;
+        }
+        if (node.parentNode === oriCurrentTarget) {
+          break; // don't bubble above root of event delegation
+        }
       }
     }
+    // fallback for browsers that don't support composedPath
+    else walkUpTree();
+    // Mixing portals and shadow dom can lead to a nonstandard target, so reset here.
+    retarget(oriTarget);
+  } finally {
+    // The currentTarget getter shares this closure scope. Chromium keeps the
+    // getter from the first event of each event interface reachable for the
+    // page's lifetime (via the interface's shared map descriptors), so release
+    // the event and the last walked node to not pin a detached DOM tree.
+    e = node = null;
   }
-  // fallback for browsers that don't support composedPath
-  else walkUpTree();
-  // Mixing portals and shadow dom can lead to a nonstandard target, so reset here.
-  retarget(oriTarget);
 }
 
 function insertExpression(parent, value, current, marker, unwrapArray) {
