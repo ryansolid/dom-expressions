@@ -183,6 +183,151 @@ describe("escape value coercion", () => {
   });
 });
 
+describe("dynamic attribute and tag names", () => {
+  const invalidNames = [
+    "",
+    "a b",
+    'a"b',
+    "a'b",
+    "a=b",
+    "a>b",
+    "a<b",
+    "a/b",
+    "a\tb",
+    "a\nb",
+    "a\fb",
+    "a\rb",
+    "a\0b",
+    "a\x7Fb",
+    "a\x85b"
+  ];
+  const validProps = {
+    "@click": "a",
+    "x-on:click": "b",
+    ":class": "c",
+    "xlink:href": "#d",
+    "data-a&b": "e",
+    "aria-label": 'f"g',
+    "bool:inert": true,
+    "attr:foo": 1,
+    htmlFor: "x",
+    "a.b": "y"
+  };
+  const validAttrs =
+    '@click="a" x-on:click="b" :class="c" xlink:href="#d" data-a&amp;b="e" aria-label="f&quot;g" inert foo="1" for="x" a.b="y"';
+
+  function withNames(make) {
+    const props = { id: "a" };
+    for (const name of invalidNames) props[make(name)] = "x";
+    props.title = "t";
+    return props;
+  }
+  const plainKeys = withNames(n => n);
+  const attrKeys = withNames(n => "attr:" + n);
+  const boolKeys = withNames(n => "bool:" + n);
+
+  it("ssrElement drops spread keys that are not a single attribute name", () => {
+    expect(r.ssrElement("div", plainKeys, undefined, false).t).toBe('<div id="a" title="t"></div>');
+  });
+
+  it("ssrElement drops invalid names behind attr: and bool:", () => {
+    expect(r.ssrElement("div", attrKeys, undefined, false).t).toBe('<div id="a" title="t"></div>');
+    expect(r.ssrElement("div", boolKeys, undefined, false).t).toBe('<div id="a" title="t"></div>');
+  });
+
+  it("ssrElement spaces a dropped last key like a skipped one", () => {
+    const skipped = r.ssrElement("div", { id: "a", title: undefined }, undefined, false).t;
+    expect(r.ssrElement("div", { id: "a", "a b": "x" }, undefined, false).t).toBe(skipped);
+    expect(r.ssrElement("div", { id: "a", "bool:a b": true }, undefined, false).t).toBe(skipped);
+    expect(r.ssrElement("div", { id: "a", "attr:a b": "x" }, undefined, false).t).toBe(skipped);
+  });
+
+  it("ssrElement writes valid names unchanged", () => {
+    expect(r.ssrElement("div", validProps, undefined, false).t).toBe(`<div ${validAttrs}></div>`);
+  });
+
+  it("ssrElement throws for a tag that is not a single tag name", () => {
+    for (const tag of ["div x", "div>", "div/", 'div"', "div\t", "1div", "-div", ":div", ""]) {
+      expect(() => r.ssrElement(tag, { id: "a" }, undefined, false)).toThrow(
+        `"${tag}" is not a valid tag name`
+      );
+    }
+  });
+
+  it("ssrElement accepts custom element and SVG tag names", () => {
+    expect(
+      ["my-widget", "x-foo.bar", "math-α", "foreignObject", "svg:rect"].map(
+        tag => r.ssrElement(tag, { id: "a" }, undefined, false).t
+      )
+    ).toEqual([
+      '<my-widget id="a"></my-widget>',
+      '<x-foo.bar id="a"></x-foo.bar>',
+      '<math-α id="a"></math-α>',
+      '<foreignObject id="a"></foreignObject>',
+      '<svg:rect id="a"></svg:rect>'
+    ]);
+  });
+
+  it("ssrElement validates names on repeated renders and past the cache bound", () => {
+    const many = {};
+    for (let i = 0; i < 600; i++) many["data-k" + i] = i;
+    const html = r.ssrElement("div", many, undefined, false).t;
+    expect(html).toContain('data-k0="0"');
+    expect(html).toContain('data-k599="599"');
+    for (let i = 0; i < 2; i++) {
+      expect(r.ssrElement("div", plainKeys, undefined, false).t).toBe(
+        '<div id="a" title="t"></div>'
+      );
+      expect(r.ssrElement("div", { "a b": "x", "data-late": "y" }, undefined, false).t).toBe(
+        '<div data-late="y"></div>'
+      );
+      expect(() => r.ssrElement("div x", {}, undefined, false)).toThrow();
+    }
+    for (let i = 0; i < 600; i++) r.ssrElement("x-tag" + i, {}, undefined, false);
+    expect(() => r.ssrElement("x-tag 600", {}, undefined, false)).toThrow();
+    expect(r.ssrElement("x-tag600", {}, undefined, false).t).toBe("<x-tag600 ></x-tag600>");
+  });
+
+  it("ssrSpread drops spread keys that are not a single attribute name", () => {
+    expect(r.ssrSpread(plainKeys, false, true)).toBe('id="a" title="t"');
+    expect(r.ssrSpread(attrKeys, false, true)).toBe('id="a" title="t"');
+    expect(r.ssrSpread(boolKeys, false, true)).toBe('id="a" title="t"');
+  });
+
+  it("ssrSpread spaces a dropped last key like a skipped one", () => {
+    const skipped = r.ssrSpread({ id: "a", title: undefined }, false, true);
+    expect(r.ssrSpread({ id: "a", "a b": "x" }, false, true)).toBe(skipped);
+    expect(r.ssrSpread({ id: "a", "bool:a b": true }, false, true)).toBe(skipped);
+    expect(r.ssrSpread({ id: "a", "attr:a b": "x" }, false, true)).toBe(skipped);
+  });
+
+  it("ssrSpread writes valid names unchanged", () => {
+    expect(r.ssrSpread(validProps, false, true)).toBe(validAttrs);
+  });
+
+  it("ssrSpread escapes class values like ssrElement", () => {
+    const props = { class: 'a"b&c', className: 'd"e', classList: { f: true } };
+    expect(r.ssrSpread(props, false, true)).toBe('class="a&quot;b&amp;c d&quot;e f" ');
+    expect(r.ssrElement("div", props, undefined, false).t).toBe(
+      '<div class="a&quot;b&amp;c d&quot;e f" ></div>'
+    );
+  });
+
+  it("ssrClassList escapes class names for the class attribute", () => {
+    expect(r.ssrClassList({ 'a"b': true, c: true, "d-e": true })).toBe("a&quot;b c d-e");
+  });
+
+  it("ssrStyle escapes property names for the style attribute", () => {
+    expect(r.ssrStyle({ 'a"b': "1", color: "red", "--x": "2" })).toBe("a&quot;b:1;color:red;--x:2");
+  });
+
+  it("ssrStyleProperty escapes names for the style attribute", () => {
+    expect(r.ssrStyleProperty('a"b:', "1")).toBe("a&quot;b:1");
+    expect(r.ssrStyleProperty(";color:", "red")).toBe(";color:red");
+    expect(r.ssrStyleProperty(";color:", undefined)).toBe("");
+  });
+});
+
 describe("custom serialization plugins", () => {
   class Point {
     constructor(x, y) {

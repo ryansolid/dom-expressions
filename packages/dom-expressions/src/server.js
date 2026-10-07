@@ -20,6 +20,39 @@ const VOID_ELEMENTS =
   /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
 const REPLACE_SCRIPT = `function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)}`;
 
+// A name without these characters (and starting with an ASCII letter for a tag)
+// is read back by the HTML parser as exactly that one name.
+const INVALID_NAME = /[\0-\x20\x7F-\x9F"'<>/=]/;
+const TAG_START = /^[a-zA-Z]/;
+// Bounded: spread keys, style keys and dynamic tags can be any runtime string.
+const validTags = new Set();
+const attrNames = new Map();
+const styleNames = new Map();
+function checkTag(tag) {
+  if (validTags.has(tag)) return;
+  if (!TAG_START.test(tag) || INVALID_NAME.test(tag))
+    throw new Error(`"${tag}" is not a valid tag name`);
+  if (validTags.size < 512) validTags.add(tag);
+}
+// The attribute name written for a spread key, or "" when it is not a valid name.
+function attrName(prop, prefixed) {
+  let name = attrNames.get(prop);
+  if (name !== undefined) return name;
+  const raw = prefixed ? prop.slice(5) : prop;
+  if (raw === "" || INVALID_NAME.test(raw)) return "";
+  name = (!prefixed && Aliases[raw]) || escape(raw);
+  if (attrNames.size < 512) attrNames.set(prop, name);
+  return name;
+}
+function styleName(name) {
+  let s = styleNames.get(name);
+  if (s === undefined) {
+    s = escape(name, true);
+    if (styleNames.size < 512) styleNames.set(name, s);
+  }
+  return s;
+}
+
 export function renderToString(code, options = {}) {
   const { renderId } = options;
   let scripts = "";
@@ -333,7 +366,7 @@ export function ssrClassList(value) {
       classValue = !!value[key];
     if (!key || key === "undefined" || !classValue) continue;
     i && (result += " ");
-    result += escape(key);
+    result += escape(key, true);
   }
   return result;
 }
@@ -351,16 +384,17 @@ export function ssrStyle(value) {
       if (i) result += ";";
       const r = escape(v, true);
       if (r != undefined && r !== "undefined") {
-        result += `${s}:${r}`;
+        result += `${styleName(s)}:${r}`;
       }
     }
   }
   return result;
 }
 export function ssrStyleProperty(name, value) {
-  return value != null ? name + value : "";
+  return value != null ? styleName(name) + value : "";
 }
 export function ssrElement(tag, props, children, needsId) {
+  checkTag(tag);
   if (props == null) props = {};
   else if (typeof props === "function") props = props();
   const skipChildren = VOID_ELEMENTS.test(tag);
@@ -400,11 +434,17 @@ export function ssrElement(tag, props, children, needsId) {
       continue;
     } else if (prop.slice(0, 5) === "bool:") {
       if (!value) continue;
-      result += escape(prop.slice(5));
+      const name = attrName(prop, true);
+      if (!name) continue;
+      result += name;
     } else if (prop.slice(0, 5) === "attr:") {
-      result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
+      const name = attrName(prop, true);
+      if (!name) continue;
+      result += `${name}="${escape(value, true)}"`;
     } else {
-      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
+      const name = attrName(prop, false);
+      if (!name) continue;
+      result += `${name}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
@@ -691,9 +731,10 @@ export function ssrSpread(props, isSVG, skipChildren) {
     } else if (prop === "class" || prop === "className" || prop === "classList") {
       if (classResolved) continue;
       let n;
-      result += `class="${(n = props.class) ? n + " " : ""}${
-        (n = props.className) ? n + " " : ""
-      }${ssrClassList(props.classList)}"`;
+      result += `class="${
+        escape(((n = props.class) ? n + " " : "") + ((n = props.className) ? n + " " : ""), true) +
+        ssrClassList(props.classList)
+      }"`;
       classResolved = true;
     } else if (prop !== "value" && Properties.has(prop)) {
       if (value) result += prop;
@@ -707,11 +748,17 @@ export function ssrSpread(props, isSVG, skipChildren) {
       continue;
     } else if (prop.slice(0, 5) === "bool:") {
       if (!value) continue;
-      result += escape(prop.slice(5));
+      const name = attrName(prop, true);
+      if (!name) continue;
+      result += name;
     } else if (prop.slice(0, 5) === "attr:") {
-      result += `${escape(prop.slice(5))}="${escape(value, true)}"`;
+      const name = attrName(prop, true);
+      if (!name) continue;
+      result += `${name}="${escape(value, true)}"`;
     } else {
-      result += `${Aliases[prop] || escape(prop)}="${escape(value, true)}"`;
+      const name = attrName(prop, false);
+      if (!name) continue;
+      result += `${name}="${escape(value, true)}"`;
     }
     if (i !== keys.length - 1) result += " ";
   }
