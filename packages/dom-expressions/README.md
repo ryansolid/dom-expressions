@@ -78,6 +78,17 @@ If precompilation is not an option Tagged Template Literals are the next best th
 
 While not as performant as the other options this library provides a mechanism to expose a HyperScript version. [Hyper DOM Expressions](https://github.com/ryansolid/dom-expressions/blob/main/packages/hyper-dom-expressions) offers the greatest flexibility working with existing tooling for HyperScript and enables pure JS DSLs.
 
+## Server serialization
+
+`renderToString`, `renderToStringAsync`, and `renderToStream` accept an optional
+`transformSerializedScript: (script: string) => string` render option. It transforms each complete
+Seroval data statement before the statement joins the hydration script. Frameworks can use it to
+schedule custom deserialization after their client runtime is ready.
+
+The default leaves serialization unchanged. The hook does not transform reference headers, DOM
+replacement tasks, or script tags and their nonce attributes. Returned source must preserve script
+escaping, and any runtime used by the transformed statement must exist before that statement runs.
+
 ## Work in Progress
 
 This is still a work in progress. My goal here is to better understand and generalize this approach to provide non Virtual DOM alternatives to developing web applications.

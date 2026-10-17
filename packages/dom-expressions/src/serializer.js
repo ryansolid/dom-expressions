@@ -19,7 +19,14 @@ const ES2017FLAG =
 
 const GLOBAL_IDENTIFIER = '_$HY.r'; // TODO this is a pending name
 
-export function createSerializer({ onData, onDone, scopeId, onError, plugins: customPlugins }) {
+export function createSerializer({
+  onData,
+  onDone,
+  scopeId,
+  onError,
+  plugins: customPlugins,
+  transformSerializedScript
+}) {
   const defaultPlugins = [
     AbortSignalPlugin,
     // BlobPlugin,
@@ -43,7 +50,9 @@ export function createSerializer({ onData, onDone, scopeId, onError, plugins: cu
     plugins: allPlugins,
     globalIdentifier: GLOBAL_IDENTIFIER,
     disabledFeatures: ES2017FLAG,
-    onData,
+    onData: transformSerializedScript
+      ? script => onData(transformSerializedScript(script))
+      : onData,
     onDone,
     onError,
   });

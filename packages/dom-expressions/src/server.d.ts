@@ -15,6 +15,8 @@ export function renderToString<T>(
   options?: {
     nonce?: string;
     renderId?: string;
+    /** Transform each serialized data statement before it joins the hydration script. */
+    transformSerializedScript?: (script: string) => string;
     onError?: (err: any) => void;
   }
 ): string;
@@ -24,6 +26,8 @@ export function renderToStringAsync<T>(
     timeoutMs?: number;
     nonce?: string;
     renderId?: string;
+    /** Transform each serialized data statement before it joins the hydration script. */
+    transformSerializedScript?: (script: string) => string;
     noScripts?: boolean;
     onError?: (err: any) => void;
   }
@@ -33,6 +37,8 @@ export function renderToStream<T>(
   options?: {
     nonce?: string;
     renderId?: string;
+    /** Transform each serialized data statement before it joins the hydration script. */
+    transformSerializedScript?: (script: string) => string;
     onCompleteShell?: (info: { write: (v: string) => void }) => void;
     onCompleteAll?: (info: { write: (v: string) => void }) => void;
     onError?: (err: any) => void;
