@@ -219,7 +219,14 @@ export function createRenderer({
     }
     effect(() => props.ref && props.ref(node));
     effect(() => {
-      for (const prop in props) {
+      const propNames = new Set();
+      for (const prop in props) propNames.add(prop);
+      for (const prop in prevProps) {
+        if (prop === "children" || prop === "ref" || propNames.has(prop)) continue;
+        setProperty(node, prop, undefined, prevProps[prop]);
+        delete prevProps[prop];
+      }
+      for (const prop of propNames) {
         if (prop === "children" || prop === "ref") continue;
         const value = props[prop];
         if (value === prevProps[prop]) continue;
