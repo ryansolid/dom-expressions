@@ -2793,6 +2793,7 @@ export namespace JSX {
   interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
     cx?: FunctionMaybe<number | string | undefined>;
     cy?: FunctionMaybe<number | string | undefined>;
+    fr?: FunctionMaybe<number | string | undefined>;
     fx?: FunctionMaybe<number | string | undefined>;
     fy?: FunctionMaybe<number | string | undefined>;
     r?: FunctionMaybe<number | string | undefined>;
