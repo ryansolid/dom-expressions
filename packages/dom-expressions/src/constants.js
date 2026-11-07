@@ -295,6 +295,49 @@ const SVGElements = /*#__PURE__*/ new Set([
   "vkern"
 ]);
 
+const MathMLElements = /*#__PURE__*/ new Set([
+  "annotation",
+  "annotation-xml",
+  "maction",
+  "math",
+  "menclose",
+  "merror",
+  "mfenced",
+  "mfrac",
+  "mi",
+  "mmultiscripts",
+  "mn",
+  "mo",
+  "mover",
+  "mpadded",
+  "mphantom",
+  "mprescripts",
+  "mroot",
+  "mrow",
+  "ms",
+  "mspace",
+  "msqrt",
+  "mstyle",
+  "msub",
+  "msubsup",
+  "msup",
+  "mtable",
+  "mtd",
+  "mtext",
+  "mtr",
+  "munder",
+  "munderover",
+  "semantics"
+]);
+
+const MathMLTextIntegrationPoints = /*#__PURE__*/ new Set([
+  "mi",
+  "mo",
+  "mn",
+  "ms",
+  "mtext"
+]);
+
 const SVGNamespace = {
   xlink: "http://www.w3.org/1999/xlink",
   xml: "http://www.w3.org/XML/1998/namespace"
@@ -601,6 +644,8 @@ export {
   Aliases,
   DelegatedEvents,
   SVGElements,
+  MathMLElements,
+  MathMLTextIntegrationPoints,
   SVGNamespace,
   DOMElements
 };

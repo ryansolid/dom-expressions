@@ -1,6 +1,10 @@
 import * as t from "@babel/types";
 import { addNamed } from "@babel/helper-module-imports";
-import { SVGElements } from "dom-expressions/src/constants";
+import {
+  SVGElements,
+  MathMLElements,
+  MathMLTextIntegrationPoints
+} from "dom-expressions/src/constants";
 
 export const reservedNameSpaces = new Set([
   "class",
@@ -78,23 +82,56 @@ export function isComponent(tagName) {
   );
 }
 
-// <script> and <style> are only raw text in HTML. Inside SVG the parser decodes
-// entities and treats `<` as markup, so their children still need escaping.
+// <annotation-xml> is a MathML HTML integration point only when its encoding
+// is text/html or application/xhtml+xml
+function isHTMLEncodingAnnotationXML(node) {
+  const encoding = node.openingElement.attributes.find(
+    attr => t.isJSXAttribute(attr) && t.isJSXIdentifier(attr.name) && attr.name.name === "encoding"
+  );
+  return (
+    t.isStringLiteral(encoding?.value) &&
+    /^(?:text\/html|application\/xhtml\+xml)$/i.test(encoding.value.value)
+  );
+}
+
+// <script> and <style> are only raw text in HTML. Inside SVG or MathML the
+// parser decodes entities and treats `<` as markup, so their children still
+// need escaping. Integration points (<foreignObject> in SVG; the MathML text
+// integration points and <annotation-xml> with an HTML encoding in MathML)
+// switch their content back to HTML parsing.
 export function isRawTextElement(path) {
   const tagName = getTagName(path.node);
   if (tagName !== "script" && tagName !== "style") return false;
-  let parent = path.parentPath,
-    rootTag;
+  const ancestors = [];
+  let parent = path.parentPath;
   while (t.isJSXElement(parent.node)) {
-    const parentTag = getTagName(parent.node);
-    if (isComponent(parentTag)) break;
-    if (parentTag === "foreignObject") return true;
-    if (parentTag === "svg") return false;
-    rootTag = parentTag;
+    if (isComponent(getTagName(parent.node))) break;
+    ancestors.push(parent.node);
     parent = parent.parentPath;
   }
-  // a top-level SVG element is parsed inside an <svg> wrapper
-  return !rootTag || !SVGElements.has(rootTag);
+  const rootTag = ancestors.length ? getTagName(ancestors[ancestors.length - 1]) : undefined;
+  // a top-level SVG element is parsed inside an <svg> wrapper and a top-level
+  // MathML element inside a MathML template
+  let namespace = SVGElements.has(rootTag)
+    ? "svg"
+    : MathMLElements.has(rootTag)
+      ? "math"
+      : "html";
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    const parentTag = getTagName(ancestors[i]);
+    if (namespace === "html") {
+      if (parentTag === "svg") namespace = "svg";
+      else if (parentTag === "math") namespace = "math";
+    } else if (namespace === "svg") {
+      if (parentTag === "foreignObject") namespace = "html";
+    } else if (
+      MathMLTextIntegrationPoints.has(parentTag) ||
+      (parentTag === "annotation-xml" && isHTMLEncodingAnnotationXML(ancestors[i]))
+    ) {
+      namespace = "html";
+    }
+  }
+  return namespace === "html";
 }
 
 export function hasStaticMarker(object, path) {
