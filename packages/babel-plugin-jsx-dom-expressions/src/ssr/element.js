@@ -127,26 +127,38 @@ function setAttr(attribute, results, name, value, isSVG) {
   }
 }
 
-function escapeExpression(path, expression, attr, escapeLiterals) {
+/**
+ * How `escapeExpression` treats a string literal it reaches.
+ * - `undefined`: the hole itself. The caller escapes a literal when it
+ *   inlines it into the template, so it stays as written here.
+ * - `"escape"`: a position whose value the runtime writes as is.
+ * - `"keep"`: inside a function value in an attribute. `ssrAttribute`
+ *   stringifies the function's source, so literals stay as written.
+ */
+function escapeExpression(path, expression, attr, literals) {
+  if (!expression) return expression;
+  // A literal in a branch is the hole's value, which `ssr` and
+  // `ssrAttribute` write as is, so branches escape literals.
+  const branch = literals === "keep" ? "keep" : "escape";
+  // A function's returns escape like branches, except for a function value in
+  // an attribute: `ssrAttribute` stringifies its source, so its literals stay
+  // as written at every depth.
+  const returns = literals === undefined && attr ? "keep" : branch;
   if (
     t.isStringLiteral(expression) ||
     t.isNumericLiteral(expression) ||
     (t.isTemplateLiteral(expression) && expression.expressions.length === 0)
   ) {
-    if (escapeLiterals) {
+    if (literals === "escape") {
       if (t.isStringLiteral(expression)) return t.stringLiteral(escapeHTML(expression.value, attr));
       else if (t.isTemplateLiteral(expression))
-        return t.stringLiteral(escapeHTML(expression.quasis[0].value.raw, attr));
+        return t.stringLiteral(
+          escapeHTML(expression.quasis[0].value.cooked ?? expression.quasis[0].value.raw, attr)
+        );
     }
     return expression;
   } else if (t.isFunction(expression)) {
-    if (t.isBlockStatement(expression.body)) {
-      expression.body.body = expression.body.body.map(e => {
-        if (t.isReturnStatement(e))
-          e.argument = escapeExpression(path, e.argument, attr, escapeLiterals);
-        return e;
-      });
-    } else expression.body = escapeExpression(path, expression.body, attr, escapeLiterals);
+    escapeFunctionResult(path, expression, attr, returns);
     return expression;
   } else if (t.isTemplateLiteral(expression)) {
     // Interpolations are escaped recursively. The static quasis are not —
@@ -154,35 +166,30 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
     // attr="...", which HTML parses as attribute injection.
     if (attr) escapeTemplateQuasis(expression, true);
     expression.expressions = expression.expressions.map(e =>
-      escapeExpression(path, e, attr, escapeLiterals)
+      escapeExpression(path, e, attr, literals)
     );
     return expression;
   } else if (t.isUnaryExpression(expression)) {
     return expression;
   } else if (t.isBinaryExpression(expression)) {
-    expression.left = escapeExpression(path, expression.left, attr, escapeLiterals);
-    expression.right = escapeExpression(path, expression.right, attr, escapeLiterals);
+    expression.left = escapeExpression(path, expression.left, attr, literals);
+    expression.right = escapeExpression(path, expression.right, attr, literals);
     return expression;
   } else if (t.isConditionalExpression(expression)) {
-    expression.consequent = escapeExpression(path, expression.consequent, attr, escapeLiterals);
-    expression.alternate = escapeExpression(path, expression.alternate, attr, escapeLiterals);
+    expression.consequent = escapeExpression(path, expression.consequent, attr, branch);
+    expression.alternate = escapeExpression(path, expression.alternate, attr, branch);
     return expression;
   } else if (t.isLogicalExpression(expression)) {
     // Preserve the old short-circuit shape for && while still escaping the
     // selected result of || and ?? as a whole.
     if (expression.operator === "&&") {
-      expression.right = escapeExpression(path, expression.right, attr, escapeLiterals);
+      expression.right = escapeExpression(path, expression.right, attr, branch);
       return expression;
     }
   } else if (t.isCallExpression(expression) && t.isFunction(expression.callee)) {
-    if (t.isBlockStatement(expression.callee.body)) {
-      expression.callee.body.body = expression.callee.body.body.map(e => {
-        if (t.isReturnStatement(e))
-          e.argument = escapeExpression(path, e.argument, attr, escapeLiterals);
-        return e;
-      });
-    } else
-      expression.callee.body = escapeExpression(path, expression.callee.body, attr, escapeLiterals);
+    // The call's result is the hole's value, so its returns escape like
+    // branches.
+    escapeFunctionResult(path, expression.callee, attr, branch);
     return expression;
   } else if (t.isJSXElement(expression) && !isComponent(getTagName(expression))) {
     expression.wontEscape = true;
@@ -193,6 +200,37 @@ function escapeExpression(path, expression, attr, escapeLiterals) {
     registerImportMethod(path, "escape"),
     [expression].concat(attr ? [t.booleanLiteral(true)] : [])
   );
+}
+
+/** Escapes a function's expression body or its `return` arguments. */
+function escapeFunctionResult(path, fn, attr, literals) {
+  if (t.isBlockStatement(fn.body)) escapeReturns(path, fn.body, attr, literals);
+  else fn.body = escapeExpression(path, fn.body, attr, literals);
+}
+
+/**
+ * Escapes the `return` arguments in a statement at any depth, without
+ * entering nested functions or classes.
+ */
+function escapeReturns(path, statement, attr, literals) {
+  if (!statement) return;
+  if (t.isReturnStatement(statement)) {
+    statement.argument = escapeExpression(path, statement.argument, attr, literals);
+  } else if (t.isBlockStatement(statement)) {
+    for (const child of statement.body) escapeReturns(path, child, attr, literals);
+  } else if (t.isIfStatement(statement)) {
+    escapeReturns(path, statement.consequent, attr, literals);
+    escapeReturns(path, statement.alternate, attr, literals);
+  } else if (t.isSwitchStatement(statement)) {
+    for (const switchCase of statement.cases)
+      for (const child of switchCase.consequent) escapeReturns(path, child, attr, literals);
+  } else if (t.isTryStatement(statement)) {
+    escapeReturns(path, statement.block, attr, literals);
+    escapeReturns(path, statement.handler && statement.handler.body, attr, literals);
+    escapeReturns(path, statement.finalizer, attr, literals);
+  } else if (t.isLoop(statement) || t.isLabeledStatement(statement) || t.isWithStatement(statement)) {
+    escapeReturns(path, statement.body, attr, literals);
+  }
 }
 
 function escapeTemplateQuasis(expression, attr) {
@@ -370,14 +408,14 @@ function transformAttributes(path, results, info) {
               if (p.computed) {
                 return t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
                   t.binaryExpression("+", p.key, t.stringLiteral(":")),
-                  escapeExpression(path, p.value, true, true)
+                  escapeExpression(path, p.value, true, "escape")
                 ]);
               }
               return t.callExpression(registerImportMethod(path, "ssrStyleProperty"), [
                 t.stringLiteral(
                   (i ? ";" : "") + (t.isIdentifier(p.key) ? p.key.name : p.key.value) + ":"
                 ),
-                escapeExpression(path, p.value, true, true)
+                escapeExpression(path, p.value, true, "escape")
               ]);
             });
 

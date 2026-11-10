@@ -1,9 +1,11 @@
+import { ssrAttribute as _$ssrAttribute } from "r-server";
 import { createComponent as _$createComponent } from "r-server";
 import { memo as _$memo } from "r-server";
 import { ssr as _$ssr } from "r-server";
 import { escape as _$escape } from "r-server";
 var _tmpl$ = ["<div>", "</div>"],
-  _tmpl$2 = "<div>Output</div>";
+  _tmpl$2 = "<div>Output</div>",
+  _tmpl$3 = ["<div", "></div>"];
 const template1 = _$ssr(_tmpl$, _$escape(simple));
 const template2 = _$ssr(_tmpl$, _$escape(state.dynamic));
 const template3 = _$ssr(_tmpl$, simple ? _$escape(good) : _$escape(bad));
@@ -122,3 +124,50 @@ const template40 = (state.dynamic && good()) || bad;
 const template41 = state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback";
 const template42 = state.a ? a() : state.b ? b() : state.c ? "c" : "fallback";
 const template43 = obj1.prop ? (obj2.prop ? _$ssr(_tmpl$2) : []) : [];
+
+// string literals in a branch are the hole's value, so they escape at compile
+// time like a literal child does (solidjs/solid#4710)
+const template44 = _$ssr(_tmpl$, state.open ? "Close" : "&lt;b>Open&lt;/b>");
+const template45 = _$ssr(_tmpl$, state.open && "&lt;i>");
+const template46 = _$ssr(_tmpl$, state.open ? "&lt;i>" : 0);
+const template47 = _$ssr(_tmpl$, state.a ? 0 : state.b ? 1 : "&lt;i>");
+const template48 = _$ssr(_tmpl$, () => "&lt;i>");
+const template49 = _$ssr(
+  _tmpl$3,
+  _$ssrAttribute("title", state.open ? "&quot;<i>" : _$escape(undefined, true), false)
+);
+// `ssrAttribute` stringifies a function value's source, so the literals in its
+// branches stay as written
+const template50 = _$ssr(
+  _tmpl$3,
+  _$ssrAttribute("title", () => (state.open ? '"<' : "b"), false)
+);
+const template51 = _$ssr(
+  _tmpl$3,
+  _$ssrAttribute("title", () => state.open && '"<', false)
+);
+// every `return` of a function child is the hole's value, at any depth
+const template52 = _$ssr(
+  _tmpl$,
+  (() => {
+    if (state.open) return "&lt;i>";
+    return "&lt;b>";
+  })()
+);
+const template53 = _$ssr(
+  _tmpl$,
+  (() => {
+    if (state.open) return _$escape(state.text);
+    return "&lt;b>";
+  })()
+);
+const template54 = _$ssr(_tmpl$, () => {
+  switch (state.kind) {
+    case 1:
+      return "&lt;i>";
+    default: {
+      const inner = () => "<u>";
+      return _$escape(inner);
+    }
+  }
+});
