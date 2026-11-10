@@ -86,3 +86,47 @@ const template41 = <>{state.a ? "a" : state.b ? "b" : state.c ? "c" : "fallback"
 const template42 = <>{state.a ? a() : state.b ? b() : state.c ? "c" : "fallback"}</>;
 
 const template43 = <>{obj1.prop ? obj2.prop ? <div>Output</div> : <></> : <></>}</>
+
+// string literals in a branch are the hole's value, so they escape at compile
+// time like a literal child does (solidjs/solid#4710)
+const template44 = <div>{state.open ? "Close" : "<b>Open</b>"}</div>;
+const template45 = <div>{state.open && "<i>"}</div>;
+const template46 = <div>{state.open ? `<i>` : 0}</div>;
+const template47 = <div>{state.a ? 0 : state.b ? 1 : "<i>"}</div>;
+const template48 = <div>{() => "<i>"}</div>;
+const template49 = <div title={state.open ? '"<i>' : undefined} />;
+// `ssrAttribute` stringifies a function value's source, so the literals in its
+// branches stay as written
+const template50 = <div title={() => (state.open ? '"<' : "b")} />;
+const template51 = <div title={() => state.open && '"<'} />;
+// every `return` of a function child is the hole's value, at any depth
+const template52 = (
+  <div>
+    {(() => {
+      if (state.open) return "<i>";
+      return "<b>";
+    })()}
+  </div>
+);
+const template53 = (
+  <div>
+    {(() => {
+      if (state.open) return state.text;
+      return "<b>";
+    })()}
+  </div>
+);
+const template54 = (
+  <div>
+    {() => {
+      switch (state.kind) {
+        case 1:
+          return "<i>";
+        default: {
+          const inner = () => "<u>";
+          return inner;
+        }
+      }
+    }}
+  </div>
+);
