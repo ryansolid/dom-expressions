@@ -68,4 +68,56 @@ describe("raw-text element children", () => {
       expect(output).toContain("<style><&");
     });
   });
+
+  describe.each(["dom", "ssr"])("in MathML content for the %s transform", generate => {
+    test.each([
+      ["inside <math>", `<math><style>{"<&"}</style></math>`],
+      ["inside <math> through an element", `<math><mrow><style>{"<&"}</style></mrow></math>`],
+      ["inside a top-level MathML element", `<mrow><style>{"<&"}</style></mrow>`],
+      ["inside MathML passed as component children", `<Comp><math><style>{"<&"}</style></math></Comp>`],
+      ["inside <math> nested in <svg>", `<svg><math><style>{"<&"}</style></math></svg>`],
+      ["inside <foreignObject> nested in <math>", `<math><foreignObject><style>{"<&"}</style></foreignObject></math>`],
+      ["inside <annotation-xml> without an HTML encoding", `<math><annotation-xml><style>{"<&"}</style></annotation-xml></math>`]
+    ])("escapes <style> %s", (_, jsx) => {
+      const output = transform(`const template = ${jsx};`, generate);
+
+      expect(output).toContain("<style>&lt;&amp;");
+    });
+
+    test("escapes <script> inside <math>", () => {
+      const output = transform(`const template = <math><script>{"<&"}</script></math>;`, generate);
+
+      expect(output).toContain("<script>&lt;&amp;");
+    });
+
+    test.each(["mi", "mo", "mn", "ms", "mtext"])(
+      "does not escape <style> inside MathML text integration point <%s>",
+      tagName => {
+        const output = transform(
+          `const template = <math><${tagName}><style>{"<&"}</style></${tagName}></math>;`,
+          generate
+        );
+
+        expect(output).toContain("<style><&");
+      }
+    );
+
+    test("does not escape <style> inside <annotation-xml> with an HTML encoding", () => {
+      const output = transform(
+        `const template = <math><annotation-xml encoding="text/html"><style>{"<&"}</style></annotation-xml></math>;`,
+        generate
+      );
+
+      expect(output).toContain("<style><&");
+    });
+
+    test("escapes <style> inside <mtext> nested in <svg>", () => {
+      const output = transform(
+        `const template = <svg><mtext><style>{"<&"}</style></mtext></svg>;`,
+        generate
+      );
+
+      expect(output).toContain("<style>&lt;&amp;");
+    });
+  });
 });
