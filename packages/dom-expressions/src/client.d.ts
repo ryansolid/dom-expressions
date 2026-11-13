@@ -16,6 +16,9 @@ export function render(
   options?: { owner?: unknown }
 ): () => void;
 export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
+export function setTrustedTypesPolicy(
+  policy: { createHTML(html: string): unknown } | undefined
+): void;
 export function effect<T>(fn: (prev?: T) => T, init?: T): void;
 export function memo<T>(fn: () => T, equal: boolean): () => T;
 export function untrack<T>(fn: () => T): T;

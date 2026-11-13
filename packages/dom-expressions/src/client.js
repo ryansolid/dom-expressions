@@ -66,17 +66,8 @@ export function render(code, element, init, options = {}) {
 }
 
 let policy;
-function trustedHTML(html) {
-  if (policy === undefined) {
-    policy = null;
-    const tt = globalThis.trustedTypes;
-    if (tt) {
-      try {
-        policy = tt.createPolicy("dom-expressions", { createHTML: s => s });
-      } catch (e) {}
-    }
-  }
-  return policy ? policy.createHTML(html) : html;
+export function setTrustedTypesPolicy(value) {
+  policy = value;
 }
 
 export function template(html, isImportNode, isSVG, isMathML) {
@@ -90,7 +81,7 @@ export function template(html, isImportNode, isSVG, isMathML) {
     const t = isMathML
       ? document.createElementNS("http://www.w3.org/1998/Math/MathML", "template")
       : document.createElement("template");
-    t.innerHTML = trustedHTML(html);
+    t.innerHTML = policy ? policy.createHTML(html) : html;
 
     return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
   };

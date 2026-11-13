@@ -1,44 +1,40 @@
 /**
  * @jest-environment jsdom
  */
-describe("template with Trusted Types", () => {
-  afterEach(() => {
-    delete window.trustedTypes;
-    jest.resetModules();
+import * as r from "../../src/client";
+
+describe("r.setTrustedTypesPolicy", () => {
+  afterEach(() => r.setTrustedTypesPolicy(undefined));
+
+  it("assigns the TrustedHTML the policy creates", () => {
+    const assigned = [];
+    const setter = jest
+      .spyOn(Element.prototype, "innerHTML", "set")
+      .mockImplementation(function (value) {
+        assigned.push(value);
+        this.content.appendChild(document.createElement("div"));
+      });
+    const createHTML = jest.fn(html => ({ html }));
+    r.setTrustedTypesPolicy({ createHTML });
+
+    r.template("<div>First</div>")();
+    setter.mockRestore();
+
+    expect(createHTML.mock.calls).toEqual([["<div>First</div>"]]);
+    expect(assigned).toEqual([createHTML.mock.results[0].value]);
   });
 
-  it("creates templates through a named policy", () => {
-    const createHTML = jest.fn(html => ({ toString: () => html }));
-    const createPolicy = jest.fn(() => ({ createHTML }));
-    window.trustedTypes = { createPolicy };
-    const r = require("../../src/client");
+  it("creates each template once", () => {
+    const createHTML = jest.fn(html => html);
+    r.setTrustedTypesPolicy({ createHTML });
+    const tmpl = r.template("<span>Second</span>");
 
-    const first = r.template("<div>First</div>")();
-    const second = r.template("<span>Second</span>")();
-
-    expect(first.outerHTML).toBe("<div>First</div>");
-    expect(second.outerHTML).toBe("<span>Second</span>");
-    expect(createPolicy).toHaveBeenCalledTimes(1);
-    expect(createPolicy.mock.calls[0][0]).toBe("dom-expressions");
-    expect(createPolicy.mock.calls[0][1].createHTML("<p></p>")).toBe("<p></p>");
-    expect(createHTML.mock.calls).toEqual([["<div>First</div>"], ["<span>Second</span>"]]);
+    expect(tmpl().outerHTML).toBe("<span>Second</span>");
+    expect(tmpl().outerHTML).toBe("<span>Second</span>");
+    expect(createHTML).toHaveBeenCalledTimes(1);
   });
 
-  it("falls back to a string when the policy is not allowed", () => {
-    const createPolicy = jest.fn(() => {
-      throw new TypeError("Policy dom-expressions disallowed.");
-    });
-    window.trustedTypes = { createPolicy };
-    const r = require("../../src/client");
-
-    expect(r.template("<div>First</div>")().outerHTML).toBe("<div>First</div>");
-    expect(r.template("<span>Second</span>")().outerHTML).toBe("<span>Second</span>");
-    expect(createPolicy).toHaveBeenCalledTimes(1);
-  });
-
-  it("falls back to a string without Trusted Types support", () => {
-    const r = require("../../src/client");
-
+  it("assigns the string without a policy", () => {
     expect(r.template("<div>First</div>")().outerHTML).toBe("<div>First</div>");
   });
 });

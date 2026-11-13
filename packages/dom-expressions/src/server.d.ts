@@ -156,6 +156,10 @@ export function render(code: () => JSX.Element, element: MountableElement): () =
 /** @deprecated not supported on the server side */
 export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
 /** @deprecated not supported on the server side */
+export function setTrustedTypesPolicy(
+  policy: { createHTML(html: string): unknown } | undefined
+): void;
+/** @deprecated not supported on the server side */
 export function setProperty(node: Element, name: string, value: any): void;
 /** @deprecated not supported on the server side */
 export function className(node: Element, value: string): void;

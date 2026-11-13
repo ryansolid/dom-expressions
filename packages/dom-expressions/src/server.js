@@ -779,6 +779,7 @@ export {
   notSup as addEventListener,
   notSup as render,
   notSup as template,
+  notSup as setTrustedTypesPolicy,
   notSup as setProperty,
   notSup as className,
   notSup as assign,
