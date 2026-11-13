@@ -65,6 +65,11 @@ export function render(code, element, init, options = {}) {
   };
 }
 
+let policy;
+export function setTrustedTypesPolicy(value) {
+  policy = value;
+}
+
 export function template(html, isImportNode, isSVG, isMathML) {
   let node;
   const create = () => {
@@ -76,7 +81,7 @@ export function template(html, isImportNode, isSVG, isMathML) {
     const t = isMathML
       ? document.createElementNS("http://www.w3.org/1998/Math/MathML", "template")
       : document.createElement("template");
-    t.innerHTML = html;
+    t.innerHTML = policy ? policy.createHTML(html) : html;
 
     return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
   };
