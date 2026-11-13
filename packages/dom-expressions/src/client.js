@@ -65,6 +65,20 @@ export function render(code, element, init, options = {}) {
   };
 }
 
+let policy;
+function trustedHTML(html) {
+  if (policy === undefined) {
+    policy = null;
+    const tt = globalThis.trustedTypes;
+    if (tt) {
+      try {
+        policy = tt.createPolicy("dom-expressions", { createHTML: s => s });
+      } catch (e) {}
+    }
+  }
+  return policy ? policy.createHTML(html) : html;
+}
+
 export function template(html, isImportNode, isSVG, isMathML) {
   let node;
   const create = () => {
@@ -76,7 +90,7 @@ export function template(html, isImportNode, isSVG, isMathML) {
     const t = isMathML
       ? document.createElementNS("http://www.w3.org/1998/Math/MathML", "template")
       : document.createElement("template");
-    t.innerHTML = html;
+    t.innerHTML = trustedHTML(html);
 
     return isSVG ? t.content.firstChild.firstChild : isMathML ? t.firstChild : t.content.firstChild;
   };
