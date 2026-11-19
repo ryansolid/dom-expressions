@@ -793,6 +793,10 @@ export {
   notSup as clearDelegatedEvents
 };
 
+// Trusted Types are a DOM concern: on the server a policy has nothing to
+// create, and an isomorphic entry that sets one must not throw.
+export function setTrustedTypesPolicy() {}
+
 function notSup() {
   throw new Error(
     "Client-only API called on the server side. Run client-only code in onMount, or conditionally run client-only component with <Show>."
