@@ -779,7 +779,6 @@ export {
   notSup as addEventListener,
   notSup as render,
   notSup as template,
-  notSup as setTrustedTypesPolicy,
   notSup as setProperty,
   notSup as className,
   notSup as assign,
@@ -793,6 +792,10 @@ export {
   notSup as setStyleProperty,
   notSup as clearDelegatedEvents
 };
+
+// Trusted Types are a DOM concern: on the server a policy has nothing to
+// create, and an isomorphic entry that sets one must not throw.
+export function setTrustedTypesPolicy() {}
 
 function notSup() {
   throw new Error(

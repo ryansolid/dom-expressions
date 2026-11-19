@@ -155,7 +155,7 @@ export function addEventListener(
 export function render(code: () => JSX.Element, element: MountableElement): () => void;
 /** @deprecated not supported on the server side */
 export function template(html: string, isCE?: boolean, isSVG?: boolean): () => Element;
-/** @deprecated not supported on the server side */
+/** No-op on the server, so an isomorphic entry can call it. */
 export function setTrustedTypesPolicy(
   policy: { createHTML(html: string): unknown } | undefined
 ): void;
